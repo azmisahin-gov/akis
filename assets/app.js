@@ -198,7 +198,7 @@ function docxXml(c){
   body+=wP(reportTypeSpec(c.reportType).heading,{bold:true,color:'1C426B',size:34,align:'center',before:170,after:100,keep:true});
   body+=wP('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{color:'58718A',size:18,align:'center',after:240});
   if(c.synthetic){body+=`<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{bold:true,color:'9A6B2D',size:18})}</w:p>`;}
-  body+=wTable([['DOSYA NO',c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!=='DOSYA NO')],{widths:[3000,6000],header:false,shadeFirstCol:true});
+  body+=wTable([[reportTypeSpec(c.reportType).fileNo,c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!==reportTypeSpec(c.reportType).fileNo)],{widths:[3000,6000],header:false,shadeFirstCol:true});
   body+=headingXml('İÇİNDEKİLER');
   const toc=['1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI','2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR','3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR','4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR','5. ANALİZ, TESPİT VE DEĞERLENDİRME','6. GEREKÇELİ SONUÇ','7. EKLER'];
   toc.forEach(t=>{body+=wP(t,{size:20,bold:true,color:'385873',before:60,after:120,keep:true});});
@@ -269,7 +269,7 @@ async function makeUdf(){
   el.push(paragraph(reportTypeSpec(c.reportType).heading,{size:22,bold:true,color:'navy',align:1,before:8,after:7}));
   el.push(paragraph('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{size:10,bold:true,color:'muted',align:1,after:15}));
   if(c.synthetic)el.push(paragraph('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{size:10,bold:true,color:'mid',align:1,after:10}));
-  el.push(table([['DOSYA NO',c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!=='DOSYA NO')],[170,340],{header:false,shadeFirstCol:true}));
+  el.push(table([[reportTypeSpec(c.reportType).fileNo,c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!==reportTypeSpec(c.reportType).fileNo)],[170,340],{header:false,shadeFirstCol:true}));
   el.push(paragraph('İÇİNDEKİLER',{size:16,bold:true,color:'navy',before:8,after:12}));
   const toc=['1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI','2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR','3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR','4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR','5. ANALİZ, TESPİT VE DEĞERLENDİRME','6. GEREKÇELİ SONUÇ','7. EKLER'];
   toc.forEach(t=>el.push(paragraph(t,{size:11,bold:true,color:'mid',before:5,after:8})));

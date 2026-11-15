@@ -1,7 +1,20 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.23-AKIS-YEDEK-DOGRULAMA
+Sürüm: 2026.11.24-AKIS-KAPAK-DUZELTME
 
 Bu güncellemede:
+- Kapak tablosunda çift satır hatası düzeltildi. Mercie özel dosya numarası etiketi
+  ("SORUŞTURMA NO") eklenirken DOCX ve UDF kodundaki sabit "DOSYA NO" filtresi güncellenmemişti;
+  bu yüzden Cumhuriyet Başsavcılığı raporunda hem "DOSYA NO" hem "SORUŞTURMA NO" satırı
+  birlikte çıkıyordu. Filtre artık seçili merciin kendi etiketini kullanıyor. Dört merci
+  için gerçek uygulama fonksiyonlarıyla doğrulandı.
+- Yedekleme akışı uçtan uca doğrulandı; .akis paketi tüm ses blob'ları, bölümler, teknik
+  envanter ve SHA-256 ile eksiksiz geri yükleniyor.
+- Dosya adı üretiminde çift nokta kusuru giderildi.
+- Deşifre doğruluğu ölçüldü: orta model 0,378; küçük model 0,651; temel model bir pencerede
+  hata verdi. Model etiketleri ve öneri bu ölçüme dayanıyor.
+- Pencere dayanıklılığı: tek pencere hatası artık tüm kaydı çökertmiyor.
+- Bölüm bazında dinleme, merci terminolojisi, model yöneticisi, dijital delil güvenliği,
+  gelişmiş deşifre editörü, uzun kayıt yönetimi ve toplu çözümleme bu sürümde korunuyor.
 - Yedekleme akışı uçtan uca doğrulandı. Dışa aktarılan .akis paketinde dosya bilgileri,
   sorular, yöntem metni, bölümler, teknik envanter ve SHA-256 özeti ile tüm ses blob'ları
   eksiksiz taşınıyor; içe aktarmada hepsi geri geliyor. Adli bir araçta çalışma kaybı en
