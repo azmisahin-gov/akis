@@ -1,0 +1,447 @@
+{
+  "notice": "Tüm kayıtlar sentetik TTS çıktısıdır; gerçek kişi, olay veya dosyayla ilişkili değildir.",
+  "cases": [
+    {
+      "sampleKey": "hukuk-kira-01",
+      "name": "2026/214 E. · Kira ve depozito uyuşmazlığı",
+      "reportType": "hukuk",
+      "court": "Antalya 4. Asliye Hukuk Mahkemesi",
+      "fileNo": "2026/214 E.",
+      "assignmentDate": "2026-10-12",
+      "dueDate": "2026-11-15",
+      "plaintiff": "Deniz Aras",
+      "plaintiffCounsel": "Av. Ece Koral",
+      "defendant": "Mert Yalçın",
+      "defendantCounsel": "Av. Baran Uslu",
+      "subject": "Konut kira ilişkisi kapsamında depozitonun iadesi ve teslim sonrası ileri sürülen kesintiler hakkında ses kayıtlarının çözümlenmesi.",
+      "caseDate": "2025-09-01",
+      "inspectionDate": "2026-11-10",
+      "expertName": "Örnek Bilirkişi",
+      "registryNo": "TEST-56.12-001",
+      "expertField": "56.12 – Ses kayıtlarının metin hâline dönüştürülmesi",
+      "reportDate": "2026-11-15",
+      "assignmentScope": "Taraflar arasında geçen görüşmelere ait olduğu bildirilen üç ses kaydının konuşma içeriğinin çözümlenmesi, duyulabilen bölümlerin zaman aralıklarıyla gösterilmesi ve mahkemece yöneltilen teknik soruların cevaplanması istenmiştir.",
+      "questions": [
+        {
+          "question": "Ses kayıtlarında depozito ve kesinti kalemleri hakkında hangi ifadeler yer almaktadır?",
+          "answer": "Bu sorunun cevabı, kayıtların uzman tarafından dinlenip kontrol edilmesinden sonra yazılmalıdır.",
+          "basis": "Ses kayıtları 1–3; ilgili zaman aralıkları kontrol edilecek."
+        },
+        {
+          "question": "Tarafların anahtar teslim tarihi ve teslim tutanağı hakkındaki beyanları nelerdir?",
+          "answer": "Bu sorunun cevabı, ilgili konuşma bölümleri dinlenip doğrulandıktan sonra yazılmalıdır.",
+          "basis": "Ses kaydı 2; ilgili zaman aralıkları kontrol edilecek."
+        }
+      ],
+      "materials": [
+        {
+          "name": "ses_01_kira_gorusmesi.wav",
+          "path": "sample_data/audio/ses_01_kira_gorusmesi.wav",
+          "duration": 47.7,
+          "expectedText": "Merhaba, geçen ay yatırdığım yirmi dört bin lira depozito ile ilgili konuşmak istiyorum. Evet, evi teslim aldığımda duvarlarda boya ihtiyacı vardı. Boya masrafını depozitodan düşeceğimi söylemiştim. Evi teslim ederken anahtarları verdim ve teslim tutanağını da imzaladık. Tutanakta duvarların temiz olduğu yazıyor. Tutanağı hatırlıyorum ama sonradan bir usta çağırdım. Faturayı bulursam sana göndereceğim. Faturayı ve hangi kalem için kesildiğini görmek istiyorum. Kalan tutarın da hesabıma iade edilmesini bekliyorum.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 7.574784580498866,
+              "speaker": "Kiracı",
+              "text": "Merhaba, geçen ay yatırdığım yirmi dört bin lira depozito ile ilgili konuşmak istiyorum."
+            },
+            {
+              "start": 7.954784580498866,
+              "end": 18.19437641723356,
+              "speaker": "Ev sahibi",
+              "text": "Evet, evi teslim aldığımda duvarlarda boya ihtiyacı vardı. Boya masrafını depozitodan düşeceğimi söylemiştim."
+            },
+            {
+              "start": 18.57437641723356,
+              "end": 28.255283446712017,
+              "speaker": "Kiracı",
+              "text": "Evi teslim ederken anahtarları verdim ve teslim tutanağını da imzaladık. Tutanakta duvarların temiz olduğu yazıyor."
+            },
+            {
+              "start": 28.635283446712016,
+              "end": 37.169614512471654,
+              "speaker": "Ev sahibi",
+              "text": "Tutanağı hatırlıyorum ama sonradan bir usta çağırdım. Faturayı bulursam sana göndereceğim."
+            },
+            {
+              "start": 37.549614512471656,
+              "end": 47.32498866213152,
+              "speaker": "Kiracı",
+              "text": "Faturayı ve hangi kalem için kesildiğini görmek istiyorum. Kalan tutarın da hesabıma iade edilmesini bekliyorum."
+            }
+          ]
+        },
+        {
+          "name": "ses_02_teslim_kaydi.wav",
+          "path": "sample_data/audio/ses_02_teslim_kaydi.wav",
+          "duration": 38.89,
+          "expectedText": "Anahtarları on beş Eylül günü saat on birde teslim ettim. Evin sayaçlarını da birlikte fotoğrafladık. Doğru, sayaç fotoğrafları bende var. Fakat mutfak dolabının kapağında çizik olduğunu o gün fark etmemiştim. O çizik taşınmadan önce vardı. Eski fotoğrafları mesaj olarak göndermiştim, tarihleri de telefonumda duruyor. Mesajları kontrol ederim. Benim itirazım esas olarak son ayın aidat ve boya giderleriyle ilgili.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 8.760408163265305,
+              "speaker": "Kiracı",
+              "text": "Anahtarları on beş Eylül günü saat on birde teslim ettim. Evin sayaçlarını da birlikte fotoğrafladık."
+            },
+            {
+              "start": 9.140408163265306,
+              "end": 19.337278911564624,
+              "speaker": "Ev sahibi",
+              "text": "Doğru, sayaç fotoğrafları bende var. Fakat mutfak dolabının kapağında çizik olduğunu o gün fark etmemiştim."
+            },
+            {
+              "start": 19.717278911564623,
+              "end": 29.269342403628116,
+              "speaker": "Kiracı",
+              "text": "O çizik taşınmadan önce vardı. Eski fotoğrafları mesaj olarak göndermiştim, tarihleri de telefonumda duruyor."
+            },
+            {
+              "start": 29.649342403628115,
+              "end": 38.50721088435374,
+              "speaker": "Ev sahibi",
+              "text": "Mesajları kontrol ederim. Benim itirazım esas olarak son ayın aidat ve boya giderleriyle ilgili."
+            }
+          ]
+        },
+        {
+          "name": "ses_03_odeme_mesaji.wav",
+          "path": "sample_data/audio/ses_03_odeme_mesaji.wav",
+          "duration": 36.96,
+          "expectedText": "Yirmi sekiz Eylül tarihinde bana gönderdiğiniz mesajda depozitonun tamamını iade edeceğinizi yazmıştınız. Evet, o mesajı gönderdim. Daha sonra apartman yönetiminden ortak alan temizliği için bir borç bildirimi geldi. Bu borç benim daireyi kullandığım döneme ait değil. Bildirimde tarih olarak Ağustos ayı yazıyor. Tarihi tekrar kontrol etmem gerekiyor. Şimdilik kesin bir kesinti miktarı söyleyemem.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 8.400045351473922,
+              "speaker": "Kiracı",
+              "text": "Yirmi sekiz Eylül tarihinde bana gönderdiğiniz mesajda depozitonun tamamını iade edeceğinizi yazmıştınız."
+            },
+            {
+              "start": 8.780045351473923,
+              "end": 19.18675736961451,
+              "speaker": "Ev sahibi",
+              "text": "Evet, o mesajı gönderdim. Daha sonra apartman yönetiminden ortak alan temizliği için bir borç bildirimi geldi."
+            },
+            {
+              "start": 19.56675736961451,
+              "end": 27.925714285714285,
+              "speaker": "Kiracı",
+              "text": "Bu borç benim daireyi kullandığım döneme ait değil. Bildirimde tarih olarak Ağustos ayı yazıyor."
+            },
+            {
+              "start": 28.305714285714284,
+              "end": 36.5766439909297,
+              "speaker": "Ev sahibi",
+              "text": "Tarihi tekrar kontrol etmem gerekiyor. Şimdilik kesin bir kesinti miktarı söyleyemem."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sampleKey": "ceza-trafik-02",
+      "name": "2026/88 E. · Trafik olayı ses kayıtları",
+      "reportType": "ceza",
+      "court": "Antalya 8. Asliye Ceza Mahkemesi",
+      "fileNo": "2026/88 E.",
+      "assignmentDate": "2026-10-22",
+      "dueDate": "2026-11-20",
+      "plaintiff": "Kamu",
+      "defendant": "Kurgusal Sanık A.",
+      "subject": "Kurgusal trafik olayı sonrasında alınan görüşme kayıtlarının konuşma içeriğinin çözümlenmesi.",
+      "caseDate": "2026-08-03",
+      "expertName": "Örnek Bilirkişi",
+      "registryNo": "TEST-56.12-001",
+      "expertField": "56.12 – Ses kayıtlarının metin hâline dönüştürülmesi",
+      "reportDate": "2026-11-15",
+      "assignmentScope": "Trafik olayına ilişkin olduğu belirtilen ses kayıtlarının teknik olarak dinlenmesi, konuşma bölümlerinin zaman damgalarıyla gösterilmesi ve kayıtların anlaşılabilirlik durumunun raporlanması istenmiştir.",
+      "questions": [
+        {
+          "question": "Kayıtlarda olayın oluş sırası hakkında hangi sözlü beyanlar bulunmaktadır?",
+          "answer": "Bu cevap, kayıtların tamamının dinlenmesi ve ilgili zaman aralıklarının doğrulanmasıyla doldurulmalıdır.",
+          "basis": "Ses kayıtları 4–6."
+        }
+      ],
+      "materials": [
+        {
+          "name": "ses_04_kavsak_gorusmesi.wav",
+          "path": "sample_data/audio/ses_04_kavsak_gorusmesi.wav",
+          "duration": 38.64,
+          "expectedText": "Kavşağa yaklaşırken ışık sarıya döndü. Ben fren yaptım, karşı yönden gelen araç ise hızını azaltmadı. Ben ışığın yeşil olduğunu gördüm. Çarpışmadan hemen önce korna sesini duydum ama aracı durduramadım. Ben kaldırımdaydım. Önce lastik sesi, hemen ardından çarpma sesi geldi. Işığın rengini net göremedim. Kaza sonrasında araçtan indim ve diğer sürücünün iyi olup olmadığını sordum. Sonra polis ekiplerini aradım.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 9.551655328798185,
+              "speaker": "Sürücü 1",
+              "text": "Kavşağa yaklaşırken ışık sarıya döndü. Ben fren yaptım, karşı yönden gelen araç ise hızını azaltmadı."
+            },
+            {
+              "start": 9.931655328798186,
+              "end": 18.563038548752836,
+              "speaker": "Sürücü 2",
+              "text": "Ben ışığın yeşil olduğunu gördüm. Çarpışmadan hemen önce korna sesini duydum ama aracı durduramadım."
+            },
+            {
+              "start": 18.943038548752835,
+              "end": 28.085850340136055,
+              "speaker": "Tanık",
+              "text": "Ben kaldırımdaydım. Önce lastik sesi, hemen ardından çarpma sesi geldi. Işığın rengini net göremedim."
+            },
+            {
+              "start": 28.465850340136054,
+              "end": 38.26172335600907,
+              "speaker": "Sürücü 1",
+              "text": "Kaza sonrasında araçtan indim ve diğer sürücünün iyi olup olmadığını sordum. Sonra polis ekiplerini aradım."
+            }
+          ]
+        },
+        {
+          "name": "ses_05_olay_yeri.wav",
+          "path": "sample_data/audio/ses_05_olay_yeri.wav",
+          "duration": 34.31,
+          "expectedText": "Saat yaklaşık akşam yediye geliyordu. Kavşakta trafik yoğundu ve yağmur yeni başlamıştı. Yolun kaygan olduğunu fark ettim. Fren yaptığımda araç biraz kaydı ve sağ taraftan darbe aldım. Çarpışmadan sonra bir kişi telefonuyla araçların fotoğrafını çekti. Plakaları okuyamadım. Benim aracımın ön tamponunda hasar oluştu. Olay yerindeki kamera kaydının incelenmesini istiyorum.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 7.735419501133787,
+              "speaker": "Tanık",
+              "text": "Saat yaklaşık akşam yediye geliyordu. Kavşakta trafik yoğundu ve yağmur yeni başlamıştı."
+            },
+            {
+              "start": 8.115419501133788,
+              "end": 16.628208616780046,
+              "speaker": "Sürücü 2",
+              "text": "Yolun kaygan olduğunu fark ettim. Fren yaptığımda araç biraz kaydı ve sağ taraftan darbe aldım."
+            },
+            {
+              "start": 17.008208616780045,
+              "end": 24.976009070294786,
+              "speaker": "Tanık",
+              "text": "Çarpışmadan sonra bir kişi telefonuyla araçların fotoğrafını çekti. Plakaları okuyamadım."
+            },
+            {
+              "start": 25.356009070294785,
+              "end": 33.92852607709751,
+              "speaker": "Sürücü 1",
+              "text": "Benim aracımın ön tamponunda hasar oluştu. Olay yerindeki kamera kaydının incelenmesini istiyorum."
+            }
+          ]
+        },
+        {
+          "name": "ses_06_sigorta_telefonu.wav",
+          "path": "sample_data/audio/ses_06_sigorta_telefonu.wav",
+          "duration": 39.08,
+          "expectedText": "Sigorta şirketini ertesi sabah aradım ve dosya numarasını aldım. Aramada benden kaza saatini tekrar istediler. Bize iletilen tutanakta saat on dokuz on beş olarak görünüyor. Fotoğrafları da sisteme yükleyebilirsiniz. Telefonumdaki görüntülerde saat bilgisi mevcut. Ancak olayın hemen sonrasında çekilmiş iki fotoğraf var. Görüntülerin orijinal dosya olarak iletilmesi, tarih bilgilerinin korunması açısından daha uygun olacaktır.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 10.109750566893425,
+              "speaker": "Sürücü",
+              "text": "Sigorta şirketini ertesi sabah aradım ve dosya numarasını aldım. Aramada benden kaza saatini tekrar istediler."
+            },
+            {
+              "start": 10.489750566893425,
+              "end": 19.547573696145125,
+              "speaker": "Görevli",
+              "text": "Bize iletilen tutanakta saat on dokuz on beş olarak görünüyor. Fotoğrafları da sisteme yükleyebilirsiniz."
+            },
+            {
+              "start": 19.927573696145124,
+              "end": 29.58816326530612,
+              "speaker": "Sürücü",
+              "text": "Telefonumdaki görüntülerde saat bilgisi mevcut. Ancak olayın hemen sonrasında çekilmiş iki fotoğraf var."
+            },
+            {
+              "start": 29.96816326530612,
+              "end": 38.69587301587301,
+              "speaker": "Görevli",
+              "text": "Görüntülerin orijinal dosya olarak iletilmesi, tarih bilgilerinin korunması açısından daha uygun olacaktır."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sampleKey": "savcilik-tuketici-03",
+      "name": "2026/501 S. · Ürün teslimi başvurusu",
+      "reportType": "savcilik",
+      "court": "Antalya Cumhuriyet Başsavcılığı",
+      "fileNo": "2026/501 S.",
+      "assignmentDate": "2026-10-25",
+      "dueDate": "2026-11-18",
+      "plaintiff": "Başvuran Kurgusal Kişi",
+      "defendant": "Kurgusal Satıcı A.Ş.",
+      "subject": "Ürün teslimi ve müşteri hizmetleri görüşmelerine ait ses kayıtlarının çözümlenmesi.",
+      "caseDate": "2026-09-14",
+      "expertName": "Örnek Bilirkişi",
+      "registryNo": "TEST-56.12-001",
+      "expertField": "56.12 – Ses kayıtlarının metin hâline dönüştürülmesi",
+      "reportDate": "2026-11-15",
+      "assignmentScope": "Başvuru kapsamında sunulan görüşme kayıtlarının çözümlenmesi, anlaşılmayan kısımların belirtilmesi ve kayıtların teknik özelliklerinin raporlanması istenmiştir.",
+      "questions": [
+        {
+          "question": "Ürünün hasarlı teslim edildiğine ilişkin hangi beyanlar bulunmaktadır?",
+          "answer": "İlgili kayıtlar dinlenip doğrulandıktan sonra cevaplandırılmalıdır.",
+          "basis": "Ses kayıtları 7–8."
+        }
+      ],
+      "materials": [
+        {
+          "name": "ses_07_urun_teslimi.wav",
+          "path": "sample_data/audio/ses_07_urun_teslimi.wav",
+          "duration": 38.94,
+          "expectedText": "Ürünü teslim aldığımda kutunun alt kısmı ezilmişti. Kuryeye durumu gösterdim ve teslim ekranına not düştüm. Bize ulaşan kayıtta teslimatın hasarsız olduğu işaretlenmiş. Kuryenin notunu ayrıca kontrol edeceğiz. Aynı gün çektiğim fotoğrafları başvuru dosyasına ekledim. Ürünü çalıştırmadan önce hasarı bildirdim. Fotoğraflar bize ulaştığında servis birimi inceleme yapacak. İade veya değişim konusunda sonra bilgi vereceğiz.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 8.985714285714286,
+              "speaker": "Alıcı",
+              "text": "Ürünü teslim aldığımda kutunun alt kısmı ezilmişti. Kuryeye durumu gösterdim ve teslim ekranına not düştüm."
+            },
+            {
+              "start": 9.365714285714287,
+              "end": 18.69401360544218,
+              "speaker": "Satıcı",
+              "text": "Bize ulaşan kayıtta teslimatın hasarsız olduğu işaretlenmiş. Kuryenin notunu ayrıca kontrol edeceğiz."
+            },
+            {
+              "start": 19.07401360544218,
+              "end": 27.94857142857143,
+              "speaker": "Alıcı",
+              "text": "Aynı gün çektiğim fotoğrafları başvuru dosyasına ekledim. Ürünü çalıştırmadan önce hasarı bildirdim."
+            },
+            {
+              "start": 28.32857142857143,
+              "end": 38.56081632653061,
+              "speaker": "Satıcı",
+              "text": "Fotoğraflar bize ulaştığında servis birimi inceleme yapacak. İade veya değişim konusunda sonra bilgi vereceğiz."
+            }
+          ]
+        },
+        {
+          "name": "ses_08_telefon_gorusmesi.wav",
+          "path": "sample_data/audio/ses_08_telefon_gorusmesi.wav",
+          "duration": 37.93,
+          "expectedText": "Görüşmede bana üç iş günü içinde geri dönüş yapılacağı söylendi. Fakat bir hafta boyunca arayan olmadı. Başvuru numaranızı alabilir miyim? Sistem üzerinden kayıt tarihini ve size gönderilen bilgilendirmeyi kontrol edeceğim. Başvuru numarası iki bin yirmi altı, yüz kırk sekiz. E-posta adresime yalnızca otomatik bir mesaj geldi. Kaydı buldum. İlk inceleme notunda ürünün ambalaj hasarıyla teslim edildiğine dair bir açıklama mevcut.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 8.849251700680272,
+              "speaker": "Başvuran",
+              "text": "Görüşmede bana üç iş günü içinde geri dönüş yapılacağı söylendi. Fakat bir hafta boyunca arayan olmadı."
+            },
+            {
+              "start": 9.229251700680273,
+              "end": 19.06072562358277,
+              "speaker": "Temsilci",
+              "text": "Başvuru numaranızı alabilir miyim? Sistem üzerinden kayıt tarihini ve size gönderilen bilgilendirmeyi kontrol edeceğim."
+            },
+            {
+              "start": 19.440725623582768,
+              "end": 28.67492063492064,
+              "speaker": "Başvuran",
+              "text": "Başvuru numarası iki bin yirmi altı, yüz kırk sekiz. E-posta adresime yalnızca otomatik bir mesaj geldi."
+            },
+            {
+              "start": 29.054920634920638,
+              "end": 37.5524716553288,
+              "speaker": "Temsilci",
+              "text": "Kaydı buldum. İlk inceleme notunda ürünün ambalaj hasarıyla teslim edildiğine dair bir açıklama mevcut."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sampleKey": "icra-taksit-04",
+      "name": "2026/7301 T. · Taksit ve mahsup görüşmesi",
+      "reportType": "icra",
+      "court": "Antalya 2. İcra Müdürlüğü",
+      "fileNo": "2026/7301 T.",
+      "assignmentDate": "2026-10-30",
+      "dueDate": "2026-11-22",
+      "plaintiff": "Kurgusal Alacaklı",
+      "defendant": "Kurgusal Borçlu",
+      "subject": "Ödeme ve taksit görüşmelerine ait ses kayıtlarının konuşma içeriğinin çözümlenmesi.",
+      "caseDate": "2026-10-01",
+      "expertName": "Örnek Bilirkişi",
+      "registryNo": "TEST-56.12-001",
+      "expertField": "56.12 – Ses kayıtlarının metin hâline dönüştürülmesi",
+      "reportDate": "2026-11-15",
+      "assignmentScope": "Ödeme ve taksit görüşmelerine ilişkin iki ses kaydında duyulabilen konuşmaların çözümlenmesi ve zaman aralıklarıyla gösterilmesi istenmiştir.",
+      "questions": [
+        {
+          "question": "Kayıtlarda ödeme tutarı, ödeme zamanı ve mahsup konusunda hangi ifadeler yer almaktadır?",
+          "answer": "İlgili bölümler dinlenip doğrulandıktan sonra cevaplandırılmalıdır.",
+          "basis": "Ses kayıtları 9–10."
+        }
+      ],
+      "materials": [
+        {
+          "name": "ses_09_taksit_odemesi.wav",
+          "path": "sample_data/audio/ses_09_taksit_odemesi.wav",
+          "duration": 39.25,
+          "expectedText": "Geçen hafta on iki bin lira gönderdim. Açıklama kısmına dosya numarasını ve taksit ödemesi yazdım. Ödeme hesabıma geldi, ancak toplam borçtan düşüldüğünde geriye yedi bin beş yüz lira kaldığını hesapladım. Benim hesaplamamda kalan miktar altı bin sekiz yüz lira. Faiz başlangıç tarihimiz konusunda farklı düşünüyoruz. Ödeme dekontunu ve hesap çizelgesini karşılaştıralım. Hangi kalemlerin mahsup edildiğini ayrı ayrı yazalım.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 8.708480725623582,
+              "speaker": "Borçlu",
+              "text": "Geçen hafta on iki bin lira gönderdim. Açıklama kısmına dosya numarasını ve taksit ödemesi yazdım."
+            },
+            {
+              "start": 9.088480725623583,
+              "end": 18.62952380952381,
+              "speaker": "Alacaklı",
+              "text": "Ödeme hesabıma geldi, ancak toplam borçtan düşüldüğünde geriye yedi bin beş yüz lira kaldığını hesapladım."
+            },
+            {
+              "start": 19.00952380952381,
+              "end": 28.66249433106576,
+              "speaker": "Borçlu",
+              "text": "Benim hesaplamamda kalan miktar altı bin sekiz yüz lira. Faiz başlangıç tarihimiz konusunda farklı düşünüyoruz."
+            },
+            {
+              "start": 29.042494331065758,
+              "end": 38.8659410430839,
+              "speaker": "Alacaklı",
+              "text": "Ödeme dekontunu ve hesap çizelgesini karşılaştıralım. Hangi kalemlerin mahsup edildiğini ayrı ayrı yazalım."
+            }
+          ]
+        },
+        {
+          "name": "ses_10_takip_mutabakati.wav",
+          "path": "sample_data/audio/ses_10_takip_mutabakati.wav",
+          "duration": 38.21,
+          "expectedText": "Daha önce konuştuğumuz üç taksitten ilkini yatırdım. İkinci taksit için ayın yirmi beşini kararlaştırmıştık. Benim notumda ikinci ödeme için ay sonu yazıyor. Mesaj kayıtlarında hangi tarihin geçtiğini kontrol edelim. Mesajı tekrar gönderebilirim. Ödeme tarihini değiştirdiğimiz gün karşılıklı olarak onay vermiştik. Tamam, dekont ve mesaj görüntülerini bir araya getirelim. Kalan tutarı aynı çizelgede gösterelim.",
+          "referenceSegments": [
+            {
+              "start": 0.0,
+              "end": 9.283809523809524,
+              "speaker": "Borçlu",
+              "text": "Daha önce konuştuğumuz üç taksitten ilkini yatırdım. İkinci taksit için ayın yirmi beşini kararlaştırmıştık."
+            },
+            {
+              "start": 9.663809523809524,
+              "end": 19.323945578231292,
+              "speaker": "Alacaklı",
+              "text": "Benim notumda ikinci ödeme için ay sonu yazıyor. Mesaj kayıtlarında hangi tarihin geçtiğini kontrol edelim."
+            },
+            {
+              "start": 19.70394557823129,
+              "end": 28.17138321995465,
+              "speaker": "Borçlu",
+              "text": "Mesajı tekrar gönderebilirim. Ödeme tarihini değiştirdiğimiz gün karşılıklı olarak onay vermiştik."
+            },
+            {
+              "start": 28.551383219954648,
+              "end": 37.82866213151927,
+              "speaker": "Alacaklı",
+              "text": "Tamam, dekont ve mesaj görüntülerini bir araya getirelim. Kalan tutarı aynı çizelgede gösterelim."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

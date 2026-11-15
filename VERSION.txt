@@ -1,0 +1,18 @@
+AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
+Sürüm: 2026.11.15-AKIS-UDF-STANDART
+
+Bu güncellemede:
+- Hukuk/İdare-Vergi raporunun bölüm sırası Bakanlığın yayımladığı örnek hukuk raporu yapısına göre düzenlendi.
+- Kapak bilgileri resmi örnek terminolojisine yaklaştırıldı; görevlendirme süresi ayrı gün alanı olarak eklendi.
+- Kapak bilgileri ve kısa içindekiler aynı ilk sayfada toplandı; ana rapor bir sonraki sayfada başlatıldı.
+- UDF sayfa kenar boşlukları DOCX ile aynı A4 geometriye yaklaştırıldı.
+- UDF tablolarında koyu çizgiler hafifletildi, hücre içi boşluklar dengelendi ve açık satır dolguları eklendi.
+- Marka AKİS olarak güncellendi; eski MİHENK tarayıcı depolaması ve .mihenk yedek içe aktarma uyumluluğu korundu.
+- Birincil çıktı UDF olarak belirlendi; DOCX isteğe bağlı yardımcı kopyadır.
+- DOCX ve UDF bölüm sırası eşitlendi.
+
+Notlar:
+- Adalet Bakanlığı eğitim kaynağına göre bilirkişi raporları için tek ve zorunlu bir görsel şablon bulunmamaktadır; raporun mevzuatta sayılan unsurları içermesi, anlaşılır ve denetlenebilir olması gerekir.
+- Bu sürüm Hukuk/İdare-Vergi örnek yapısına odaklanır. Ceza, Savcılık ve İcra türleri için ayrı alan/rapor modülleri bir sonraki geliştirme aşamasıdır.
+- UDF dosyası, kullanıcı tarafından sağlanan boş BOS.udf dosyasındaki biçim yapısı esas alınarak doğrudan oluşturulur. XML/ZIP yapısı test edilmiştir; gerçek UYAP Editörü içindeki sayfa görünümü son kullanıcı bilgisayarında doğrulanmalıdır.
+- Uygulama e-imza üretmez ve UYAP'a belge göndermez.

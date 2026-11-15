@@ -1,0 +1,15 @@
+KURGUSAL TEST DOSYALARI
+
+1) Hukuk Mahkemesi – Kira ve depozito uyuşmazlığı
+Üç ses kaydı. Depozito, konutun teslimi, boya/aidat kesintisi, teslim tutanağı ve mesaj içeriği temaları. Kurgusal kişiler ve tutarlar.
+
+2) Ceza Mahkemesi – Trafik olayı
+Üç ses kaydı. Kavşak, trafik ışığı, tanık anlatımı, yağış ve sigorta görüşmesi temaları. Olay ve kişiler tamamen kurgusaldır.
+
+3) Cumhuriyet Başsavcılığı – Ürün teslimi başvurusu
+İki ses kaydı. Hasarlı teslim, müşteri hizmetleri görüşmesi ve başvuru numarası temaları. Kurgu içeriktir.
+
+4) İcra Müdürlüğü – Taksit ve mahsup görüşmesi
+İki ses kaydı. Kısmi ödeme, taksit tarihi, kalan miktar ve mahsup konuşmaları. Tüm değerler kurgusaldır.
+
+Sesler eSpeak tabanlı sentetik Türkçe TTS ile oluşturulmuştur. Gerçek insan sesi, gerçek dosya veya gerçek olay içermez. Deşifre modellerini ve rapor iş akışını denemek içindir.
