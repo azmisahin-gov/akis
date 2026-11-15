@@ -34,6 +34,9 @@
 .history-item:last-child{border-bottom:0}
 .history-item small{font-size:9px;color:#8392a1}
 .history-item p{font-size:11px;color:#3b5068;line-height:1.55;margin:4px 0 0}
+.tech-meta{border-top:1px dashed #eef2f6}
+.evidence-actions{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.warn-box.verify-ok{background:#f2faf6;border-color:#cfe8dc;border-left-color:#3f9c74;color:#2f6f56}
 
 /* Official civil/admin court report structure + AKİS visual system */
 .report-paper .cover-fields td:first-child{width:34%;background:#eaf0f6;color:#24486f;font-weight:700;text-transform:uppercase;font-size:9px;letter-spacing:.2px}

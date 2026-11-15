@@ -86,6 +86,9 @@ Kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir; her pencere sonund
 DEŞİFRE EDİTÖRÜ VE KONTROL DURUMLARI
 Her deşifre bölümü dört durumdan biriyle işaretlenir: Onaylandı, Kontrol bekliyor, Anlaşılmadı ve Yeniden dinlenecek. Yalnızca “Onaylandı” ve “Anlaşılmadı” uzman denetiminden geçmiş sayılır; “Yeniden dinlenecek” hiçbir zaman doğrulanmış kabul edilmez, böylece kontrol edilmemiş bir bölüm rapora doğrulanmış gibi yansımaz. “Anlaşılmadı” işaretli bölümler raporda vurgulanır ve rapor öncesi uyarı üretir. Bir bölümün metni düzeltildiğinde önceki sürüm saat damgasıyla saklanır ve “Geçmiş” düğmesinden görüntülenebilir. Önceki MİHENK/AKİS kayıtlarındaki “kontrol edildi” onay kutusu “Onaylandı” durumuna eşlenir.
 
+DİJİTAL DELİL GÜVENLİĞİ
+Her kayıt için dosya adı, biçim, boyut, süre, codec, kanal sayısı, örnekleme frekansı, bit derinliği ve SHA-256 özeti kaydedilir. WAV başlığı chunk yürüyerek okunur; sabit offset varsayımı LIST/fact gibi ek chunk içeren dosyalarda yanlış sonuç verdiği için kullanılmaz. “SHA-256 doğrula” düğmesi kaydı yerel depodan yeniden okuyup özeti yeniden hesaplar ve ilk değerle karşılaştırır; fark çıkarsa dosyanın değişmiş olabileceği açıkça bildirilir. Kayıt ekleme, çözümleme ve doğrulama işlemleri tarih-saat damgasıyla delil işlem günlüğüne yazılır ve “İşlem günlüğü” düğmesinden görüntülenir. Rapor envanter tablosunda kanal ve örnekleme bilgileri ayrıca gösterilir. Bu bilgiler tarayıcının sağlayabildiği konteyner düzeyindedir; kaydın gerçekliğini, kayıt tarihini veya montaj yapılıp yapılmadığını tek başına kanıtlamaz.
+
 
 MARKA VE ÇIKTI ÖNCELİĞİ
 Uygulamanın adı AKİS (Adli Konuşma İnceleme Sistemi) olarak güncellenmiştir. Bilirkişi Portalı için birincil ve zorunlu çıktı UDF’dir. DOCX yalnızca isteğe bağlı yardımcı kopyadır.

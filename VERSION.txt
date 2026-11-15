@@ -1,7 +1,35 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.17-AKIS-DESIFRE-EDITORU
+Sürüm: 2026.11.18-AKIS-DELIL-GUVENLIGI
 
 Bu güncellemede:
+- Dijital delil güvenliği eklendi: her kayıt için codec, kanal sayısı, örnekleme frekansı ve
+  bit derinliği otomatik çıkarılır; WAV başlığı chunk yürüyerek okunur (sabit offset varsayımı
+  LIST/fact gibi ek chunk'larda yanlış sonuç verdiği için terk edildi).
+- Sonradan SHA-256 doğrulama eklendi: kayıt yerel depodan yeniden okunup özeti yeniden hesaplanır
+  ve ilk hesapla karşılaştırılır. Fark çıkarsa dosyanın değişmiş olabileceği açıkça bildirilir.
+- Delil işlem günlüğü eklendi: kayıt ekleme, çözümleme ve doğrulama işlemleri tarih-saat
+  damgasıyla kaydedilir ve "İşlem günlüğü" düğmesinden görüntülenir.
+- Rapor envanter tablosuna "Kanal / örnekleme" sütunu eklendi (önizleme, DOCX ve UDF).
+- Mevcut kayıtlar için teknik bilgi ve işlem günlüğü açılışta tek seferlik geri doldurulur.
+- Gelişmiş deşifre editörü durumları eklendi: her bölüm için Onaylandı, Kontrol bekliyor,
+  Anlaşılmadı ve Yeniden dinlenecek durumları ayrı ayrı seçilebilir.
+- Yalnızca "Onaylandı" ve "Anlaşılmadı" uzman denetiminden geçmiş sayılır; "Yeniden dinlenecek"
+  asla doğrulanmış kabul edilmez. Böylece kontrol edilmemiş bir bölüm rapora doğrulanmış
+  gibi yansımaz.
+- Bölüm metni değişiklik geçmişi eklendi: bir bölümün metni her düzeltildiğinde önceki sürüm
+  saat damgasıyla saklanır ve "Geçmiş" düğmesinden görüntülenebilir.
+- Uzun kayıt yönetimi eklendi: kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir.
+  Böylece uzun kayıtlarda tarayıcı belleği şişmez; her pencere sonunda ilerleme kaydedilir.
+- Çözümleme iptal edilebilir; o ana kadar bulunan bölümler korunur.
+- Toplu çözümleme kuyruğu eklendi: birden fazla kayıt sırayla işlenir, genel ilerleme ve
+  tahmini kalan süre gösterilir, kuyruk durdurulabilir, hatalı kayıtlar tekrar denenebilir.
+- Konuşma çözümleme motoru düzeltildi: q8 kuantizasyonu uzun kayıtlarda anlamlı metin yerine
+  tekrarlı dolgu ifadeleri üretiyordu. Modeller artık fp16/fp32 ile çalışıyor.
+- WebGPU algılama eklendi; WebGPU yoksa otomatik olarak WASM (CPU) kullanılır.
+- Çözümleme modeli listesi genişletildi: temel, küçük, orta ve large-v3-turbo.
+- Dolgu/halüsinasyon tespiti eklendi: "(Konuşma)" gibi ifade üreten bölümler işaretlenir.
+- Rapor kapak alanları ve rol etiketleri merci türüne göre uyarlanır.
+- Kullanılmayan kod kaldırıldı; START.bat'ın işaret ettiği README_TR.txt eklendi.
 - Gelişmiş deşifre editörü durumları eklendi: her bölüm için Onaylandı, Kontrol bekliyor,
   Anlaşılmadı ve Yeniden dinlenecek durumları ayrı ayrı seçilebilir.
 - Yalnızca "Onaylandı" ve "Anlaşılmadı" uzman denetiminden geçmiş sayılır; "Yeniden dinlenecek"
