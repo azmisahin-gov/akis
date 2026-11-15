@@ -168,3 +168,25 @@ kaybolmasıydı; bu bir veri kaybıydı.
 - `tools/rapor-tutarlilik-testi.mjs` eklendi: üç oluşturucuyu aynı veriyle
   çalıştırıp metinleri karşılaştırır ve kaynakta `REPORT_TEXT` değerlerinin
   sabit kopyasını denetler. Beş senaryo, tümü geçiyor.
+
+### v2.1 — Deşifre ve kontrol çalışma alanı
+
+Uzmanın en çok zaman geçirdiği alan yeniden tasarlandı; hedef, uzun kayıtlarda
+(20–60 dakika, dosya başına on kayıt) hızlı ve hatasız denetimdi.
+
+- **Klavye kısayolları** eklendi: `Boşluk` oynat/durdur, `↑`/`↓` bölüm değiştir,
+  `Enter` aktif bölümü onayla, `Y` dinle, `[`/`]` hız, `←`/`→` 5 sn geri/ileri,
+  `Esc` metin alanından çık. Uzman elini klavyeden ayırmadan çalışır.
+- **Aktif bölüm** belirgin işaretlenir; `Enter` ile onaylanınca otomatik olarak
+  sonraki bölüme geçer.
+- **Bölüm filtresi** eklendi (Tümü / Bekleyen / Onaylandı / Anlaşılmadı /
+  Yeniden dinlenecek), her birinin sayısı görünür.
+- **Oynatma hızı** 0,75×–2× eklendi; kayda bağlı saklanır.
+- **Denetim ilerleme çubuğu** ve yapışkan tablo başlığı eklendi.
+- **Anlamlı metin yok** işareti artık metin yazıldığında canlı kaybolur.
+- **İki hata düzeltildi:** (1) Metin geçmişi her tuş vuruşunda kaydediliyordu;
+  bu, geçmişi aynı metnin onlarca ara hâliyle doldurup localStorage'ı
+  şişiriyordu. Artık geçmiş düzenleme oturumu başına bir kez tutulur. (2) Eski
+  sürümlerden kalan kirlenmiş geçmiş açılışta otomatik sıkıştırılır.
+- `focusout` sırasında tam tablo yeniden çizilerek odak kaybolmasına yol açan
+  davranış giderildi.

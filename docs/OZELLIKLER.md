@@ -60,6 +60,30 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 - Bölüm metni değişiklik geçmişi.
 - Elle bölüm ekleme.
 
+## Deşifre ve kontrol çalışma alanı
+
+Uzmanın en çok zaman geçirdiği alan olduğu için hızlı ve hatasız kontrol
+hedefiyle tasarlanmıştır.
+
+- **Klavye kısayolları** (eller metinden ayrılmadan):
+  - `Boşluk` oynat/durdur
+  - `↑` `↓` önceki/sonraki bölüm
+  - `Enter` aktif bölümü onayla ve sonrakine geç
+  - `Y` aktif bölümü dinle
+  - `[` `]` oynatma hızını düşür/artır
+  - `←` `→` 5 saniye geri/ileri
+  - Metin alanındayken `Esc` ile alandan çık, klavye gezinmesine dön
+- **Aktif bölüm** belirgin şekilde işaretlenir (sol kenar ve zemin); uzun
+  kayıtta göz nerede olduğunu kaybetmez.
+- **Bölüm filtresi:** Tümü / Bekleyen / Onaylandı / Anlaşılmadı / Yeniden
+  dinlenecek. Her filtrenin sayısı görünür; uzman yalnızca kalan işe odaklanır.
+- **Oynatma hızı** 0,75× – 2× arasında seçilir ve kayda bağlı saklanır.
+- **Denetim ilerlemesi** çubuğu: kaç bölümün denetlendiğini gösterir.
+- **Anlamlı metin yok** işareti, dolgu ifadesi içeren bölümlerde görünür ve
+  metin yazıldığında canlı olarak kaybolur.
+- Kontrol durumları renkle ayrılır (yeşil/turuncu/kırmızı kenar ve zemin).
+- Uzun kayıtta tablo başlığı yapışkan kalır.
+
 ## Dijital delil güvenliği
 
 - SHA-256 sonradan doğrulama; fark çıkarsa açık uyarı.
