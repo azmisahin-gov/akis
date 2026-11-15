@@ -38,20 +38,27 @@ kullanılmaz; tüm mantık `assets/app.js` içindedir.
 
 ## Bilinen önemli borç (v2'de çözülecek)
 
-Rapor metinlerinin tek kaynaktan (`REPORT_TEXT`) gelmesi hedeflenmiştir ancak
-**HTML önizleme hâlâ birçok metni sabit yazar**. Ölçülen dokuz sapma ve tam
-ayrıntı: [`docs/BILINEN_SORUNLAR.md`](docs/BILINEN_SORUNLAR.md).
+Rapor metinlerinin tek kaynaktan (`REPORT_TEXT`) gelmesi hedefine yönelik
+sapmalar giderildi; ayrıntı ve durum için
+[`docs/BILINEN_SORUNLAR.md`](docs/BILINEN_SORUNLAR.md) dosyasına bakın.
 
-En kritik madde: `hallucinationWarning` ("Çözümleme uyarısı") yalnızca HTML
-önizlemede görünür; DOCX ve UDF çıktısında kaybolur. Bu bir veri kaybıdır.
+Rapor metni sapmaları v2.0'da çözüldü. Kalan borç: `app.js` okunabilirliği ve
+deşifre/model/yedekleme akışlarının otomatik test kapsamı dışında olması.
 
-## Doğrulama yöntemi (test altyapısı yok)
+## Doğrulama
 
-Repoda otomatik test yoktur. Rapor oluşturucuları doğrulamak için `app.js`
-Node.js `vm` içinde sahte bir DOM ile yüklenip `makeUdf` / `makeDocx` /
-`renderReport` fonksiyonları çağrılabilir; çıktı ZIP'leri açılıp
-`content.xml` (UDF) ve `word/document.xml` (DOCX) incelenebilir. JSZip
-`assets/vendor/jszip.min.js` içindedir.
+Rapor oluşturucuları için otomatik kontrol betiği vardır:
+
+```bash
+node tools/rapor-tutarlilik-testi.mjs
+```
+
+Betik, `assets/app.js`'i Node.js `vm` içinde sahte bir DOM ile yükler; üç rapor
+oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı veriyle çalıştırır ve
+metinleri karşılaştırır. Ayrıca kaynakta `REPORT_TEXT` değerlerinin sabit
+kopyası kalıp kalmadığını denetler. Çıkış kodu 0 = tüm kontroller geçti.
+
+Rapor dışı akışlar (deşifre, model yöneticisi, yedekleme) elle doğrulanır.
 
 ## Sürüm şeması
 

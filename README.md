@@ -75,6 +75,18 @@ rapora aktarmayın; kaydı elle dinleyip bölümleri kendiniz girin.
 **Ses okunmuyor.** WAV veya MP3 biçimine dönüştürüp tekrar deneyin. Tarayıcının
 çözemediği bazı codec'ler sessizce atlanabilir.
 
+## Geliştirme ve doğrulama
+
+Rapor oluşturucularını (HTML önizleme, DOCX, UDF) denetleyen betik:
+
+```bash
+node tools/rapor-tutarlilik-testi.mjs
+```
+
+Betik üç oluşturucuyu aynı veriyle çalıştırıp metinleri karşılaştırır ve
+kaynakta rapor metinlerinin sabit kopyası kalıp kalmadığını denetler. Harici
+paket gerektirmez; Node.js yeterlidir.
+
 ## Veri saklama
 
 Dosya bilgileri tarayıcı `localStorage`, ses kayıtları IndexedDB içinde
