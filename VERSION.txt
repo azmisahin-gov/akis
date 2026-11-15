@@ -1,7 +1,19 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.26-AKIS-DALGA-FORMU
+Sürüm: 2026.11.27-AKIS-YERLESIM
 
 Bu güncellemede:
+- Ses kayıtları görünümünün yerleşimi düzenlendi. Önceden dört panel üst üste diziliyordu ve
+  asıl çalışma alanı olan "Eklenen ses kayıtları" listesi en altta kalıyordu; kullanıcı her
+  seferinde sayfayı kaydırmak zorundaydı. Artık sıra: yükleme alanı, ses kayıtları listesi,
+  ardından katlanabilir "Çözümleme ve model ayarları" bölümü.
+- Model seçimi, işlem kuyruğu ve model yöneticisi tek bir katlanabilir bölümde toplandı; bu
+  paneller varsayılan olarak kapalı gelir, ihtiyaç hâlinde açılır.
+- Ses dalga formu eklendi (Canvas): dalga formuna tıklayarak kaydın istenen yerine gidilir,
+  deşifre bölümlerinin zaman aralıkları üzerinde işaretlenir ve oynatma konumu imleçle gösterilir.
+- Resmî standartlar KAYNAK.md'ye eklendi: zorunlu şablon yoktur; Bilirkişi Portalı UDF ve
+  geçerli e-imza/m-imza ister.
+- Hazır test verisinde teknik envanter dolduruldu; kapak tablosundaki çift satır hatası
+  giderildi; dosya adı üretimindeki çift nokta kusuru düzeltildi.
 - Ses dalga formu eklendi. Her kaydın altında Canvas ile çizilen bir dalga formu görünür;
   üzerine tıklayarak kaydın istenen yerine gidilebilir. Deşifre bölümlerinin zaman aralıkları
   dalga formu üzerinde gölgeli alan ve dikey çizgilerle işaretlenir; oynatma sırasında konumu
