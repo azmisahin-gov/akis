@@ -63,6 +63,9 @@ const REPORT_TEXT = {
   inventoryNote:'Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
   attachmentsText:'Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.',
   inventoryHeaders:['DOSYA ADI','BİÇİM / BOYUT','SÜRE','KANAL / ÖRNEKLEME','SHA-256 ÖZETİ'],
+  speakerHeaders:['KONUŞMACI','ROL','CİNSİYET','YAŞ ARALIĞI','ÖLÇÜLEN PERDE','BÖLÜM / NOT'],
+  speakerIntro:'Kayıtta konuşan kişiler, uzmanın verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler uzman beyanına dayanır; uygulama konuşmacı kimliğini kendiliğinden tespit etmez. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+  noSpeakerRow:['Konuşmacı etiketi girilmemiştir.','','','','',''],
   segmentHeaders:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],
   emptySpeaker:'Belirtilmemiş',
   timeDash:'—',
@@ -141,7 +144,7 @@ function renderQuestions(){const c=currentCase();if(!c)return;const root=$('#que
 function addQuestion(){const c=currentCase();c.questions.push({question:'',answer:'',basis:''});persist();renderQuestions();}
 async function attachObjectUrl(c,m){const key=blobKey(c,m);if(objectUrls.has(key))return objectUrls.get(key);const blob=await readBlob(key);if(!blob)return '';const u=URL.createObjectURL(blob);objectUrls.set(key,u);return u;}
 async function getAudioBlob(c,m){const key=blobKey(c,m);let blob=await readBlob(key);return blob;}
-async function renderAudioList(){const c=currentCase();if(!c)return;$('#audioListLabel').textContent=`${c.materials.length} kayıt`;renderQueue();const root=$('#audioList');root.innerHTML='';root.classList.toggle('empty-list',!c.materials.length);if(!c.materials.length){root.innerHTML='<div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div>';return;}for(const m of c.materials){const card=document.createElement('div');card.className='audio-card';const segs=m.segments||[];const checked=segs.filter(s=>isReviewed(s)).length;const status=m.status||'Bekliyor';card.innerHTML=`<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type||'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration||0)}</small></div><div class="audio-actions">${m.status==='Çözümleme sürüyor'?`<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>`:`<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length?'Yeniden çözümle':'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256||'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic?'<span><b>Kurgusal sentetik kayıt</b></span>':''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec||'—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate?esc(m.tech.sampleRate+' Hz'):'—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth?esc(m.tech.bitDepth+' bit'):'—'}</b></span><span>Eklenme: <b>${esc(m.addedAt?new Date(m.addedAt).toLocaleString('tr-TR'):'—')}</b></span></div>${m.lastVerify?`<div class="warn-box ${m.lastVerify.ok?'verify-ok':''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok?'özet eşleşti (dosya değişmemiş)':'özet farklı (dosya değişmiş olabilir)'}</div>`:''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress==='number'?`<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>`:''}${m.hallucinationWarning?`<div class="warn-box">${esc(m.hallucinationWarning)}</div>`:''}${m.languageWarning?`<div class="warn-box">${esc(m.languageWarning)}</div>`:''}<div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Dalga formuna tıklayarak kaydın istediğiniz yerine gidin.</div></div><audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio><div class="transcript-editor"><div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} zamanlı bölüm · "Onaylandı" ve "Anlaşılmadı" uzman dinlemesini ifade eder; "Yeniden dinlenecek" doğrulanmış sayılmaz</small></div><div class="segments-root" id="segments-${esc(m.id)}"></div>${m.referenceSegments?.length?`<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map(s=>`<p><b>${timecode(s.start)}–${timecode(s.end)} · ${esc(s.speaker)}</b><br>${esc(s.text)}</p>`).join('')}</div></details>`:''}</div>`;root.appendChild(card);const url=await attachObjectUrl(c,m);const player=$(`#player-${CSS.escape(m.id)}`,card);if(player&&url){player.src=url;if(m.playbackRate)player.playbackRate=m.playbackRate;}attachWave(card,m,url);renderSegments(m,card);}}
+async function renderAudioList(){const c=currentCase();if(!c)return;$('#audioListLabel').textContent=`${c.materials.length} kayıt`;renderQueue();const root=$('#audioList');root.innerHTML='';root.classList.toggle('empty-list',!c.materials.length);if(!c.materials.length){root.innerHTML='<div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div>';return;}for(const m of c.materials){const card=document.createElement('div');card.className='audio-card';const segs=m.segments||[];const checked=segs.filter(s=>isReviewed(s)).length;const status=m.status||'Bekliyor';card.innerHTML=`<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type||'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration||0)}</small></div><div class="audio-actions">${m.status==='Çözümleme sürüyor'?`<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>`:`<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length?'Yeniden çözümle':'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256||'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic?'<span><b>Kurgusal sentetik kayıt</b></span>':''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec||'—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate?esc(m.tech.sampleRate+' Hz'):'—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth?esc(m.tech.bitDepth+' bit'):'—'}</b></span><span>Eklenme: <b>${esc(m.addedAt?new Date(m.addedAt).toLocaleString('tr-TR'):'—')}</b></span></div>${m.lastVerify?`<div class="warn-box ${m.lastVerify.ok?'verify-ok':''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok?'özet eşleşti (dosya değişmemiş)':'özet farklı (dosya değişmiş olabilir)'}</div>`:''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress==='number'?`<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>`:''}${m.hallucinationWarning?`<div class="warn-box">${esc(m.hallucinationWarning)}</div>`:''}${m.languageWarning?`<div class="warn-box">${esc(m.languageWarning)}</div>`:''}<div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Dalga formuna tıklayarak kaydın istediğiniz yerine gidin.</div></div><audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio><details class="config-fold" style="margin-top:10px"><summary>Konuşmacılar ve ses özellikleri</summary><div class="panel"><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div><p class="storage-note">Konuşmacı etiketlerini uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.</p></div></details><div class="transcript-editor"><div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} zamanlı bölüm · "Onaylandı" ve "Anlaşılmadı" uzman dinlemesini ifade eder; "Yeniden dinlenecek" doğrulanmış sayılmaz</small></div><div class="segments-root" id="segments-${esc(m.id)}"></div>${m.referenceSegments?.length?`<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map(s=>`<p><b>${timecode(s.start)}–${timecode(s.end)} · ${esc(s.speaker)}</b><br>${esc(s.text)}</p>`).join('')}</div></details>`:''}</div>`;root.appendChild(card);const url=await attachObjectUrl(c,m);const player=$(`#player-${CSS.escape(m.id)}`,card);if(player&&url){player.src=url;if(m.playbackRate)player.playbackRate=m.playbackRate;}attachWave(card,m,url);renderSegments(m,card);ensureSpeakers(m);renderSpeakersPanel(m);}}
 // Waveform rendering. Peaks are computed once per material and cached on the
 // material object, so re-rendering the list does not re-decode the audio.
 // Segment boundaries are drawn on top so the expert can see which part of the
@@ -150,12 +153,146 @@ async function computePeaks(blob,buckets){const AC=window.AudioContext||window.w
 function drawWave(canvas,peaks,m){if(!canvas)return;const ctx=canvas.getContext('2d');const w=canvas.width;const h=canvas.height;ctx.clearRect(0,0,w,h);if(!peaks||!peaks.length){ctx.fillStyle='#eef2f6';ctx.fillRect(0,h/2-1,w,2);return;}const dur=Number(m.duration)||0;ctx.fillStyle='#c9d6e4';ctx.fillRect(0,0,w,h);const mid=h/2;for(let x=0;x<w;x++){const p=peaks[Math.floor(x/w*peaks.length)]||0;const bar=Math.max(1,p*mid*0.92);ctx.fillStyle='#4a7bab';ctx.fillRect(x,mid-bar,1,bar*2);}const segs=m.segments||[];if(dur>0){for(const sg of segs){const st=secondsFromTimecode(sg.start);const en=secondsFromTimecode(sg.end);if(!(en>st))continue;const x0=Math.floor(st/dur*w);const x1=Math.ceil(en/dur*w);ctx.fillStyle='rgba(49,95,145,0.10)';ctx.fillRect(x0,0,Math.max(1,x1-x0),h);ctx.strokeStyle='#315f91';ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0,h);ctx.moveTo(x1,0);ctx.lineTo(x1,h);ctx.stroke();}}}
 const peakCache=new Map();
 function attachWave(card,m,url){const canvas=card.querySelector('canvas.wave-canvas');if(!canvas)return;const player=card.querySelector('audio');if(!player)return;const paint=()=>drawWave(canvas,peakCache.get(m.id),m);if(peakCache.has(m.id)){paint();}else if(url){getAudioBlob(currentCase(),m).then(blob=>{if(!blob)return;return computePeaks(blob,1200).then(pk=>{if(pk)peakCache.set(m.id,pk);paint();});});}canvas.addEventListener('click',e=>{const rect=canvas.getBoundingClientRect();const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));const dur=Number(m.duration)||player.duration||0;if(dur>0){player.currentTime=ratio*dur;player.play().catch(()=>{});}});const ph=()=>{const dur=Number(m.duration)||player.duration||0;if(!(dur>0))return;paint();const x=Math.floor(player.currentTime/dur*canvas.width);const ctx=canvas.getContext('2d');ctx.strokeStyle='#b88645';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();};player.addEventListener('timeupdate',ph);player.addEventListener('seeked',ph);}
-// Deşifre ve kontrol çalışma alanı. Uzmanın en çok zaman geçirdiği yer olduğu
-// için tasarım üç hedefe göre kurulmuştur:
-//   1) Hızlı gezinme: klavye kısayolları, oynatma hızı, bölüm filtresi.
-//   2) Doğru kontrol: aktif bölüm belirgin, onaylayınca sonraki bölüme geçiş.
-//   3) Denetlenebilirlik: durumlar renkle ayrılır, dolgu metni ayrıca işaretlenir.
-// Filtre ve aktif bölüm materyal nesnesinde tutulur (m.uiFilter, m.activeSeg).
+// ==== Konuşmacı yönetimi ve ses analizi ====
+// Önemli sınır: uygulama konuşmacı KİMLİĞİNİ tespit etmez. Konuşmacı etiketleri
+// uzman tarafından verilir. Burada yapılan, ölçülebilir akustik büyüklüklerdir:
+// temel frekans (perde) tahmini ve konuşma süresi. Perde, cinsiyet hakkında
+// güçlü bir gösterge olabilir ama kesin değildir; arayüz bunu "ölçüm" olarak
+// sunar, "tespit" olarak değil. Aynı konuşmacıyı bulma yalnızca benzer perde
+// aralığına göre ÖNERİ üretir ve öneri olduğu açıkça yazılır.
+const SPEAKER_ROLES=['Belirtilmedi','Davacı','Davalı','Müşteki/Mağdur','Sanık','Şüpheli','Alacaklı','Borçlu','Tanık','Bilirkişi','Üçüncü kişi','Tercüman'];
+const SPEAKER_GENDERS=['Belirtilmedi','Kadın','Erkek','Belirsiz'];
+// Perde aralığı ölçümüne göre kaba yönlendirme (tıbbi/kesin değil, kaba gösterge).
+function pitchHint(f0){
+  if(!f0)return '';
+  if(f0<95)return 'çok düşük perde (genellikle yetişkin erkek)';
+  if(f0<155)return 'düşük perde (genellikle erkek)';
+  if(f0<200)return 'orta perde';
+  if(f0<255)return 'yüksek perde (genellikle kadın)';
+  return 'çok yüksek perde (genellikle kadın veya çocuk)';
+}
+// Segment listesindeki konuşmacı etiketlerinden konuşmacı kayıtlarını türetir.
+// Var olan profillerin nitelikleri korunur; yeni etiketler eklenir.
+function ensureSpeakers(m){
+  m.speakers=m.speakers||[];
+  const byName=new Map(m.speakers.map(s=>[s.name,s]));
+  for(const sg of m.segments||[]){
+    const name=(sg.speaker||'').trim();
+    if(!name||name==='Belirtilmedi')continue;
+    if(!byName.has(name)){const rec={id:uid(),name,role:'Belirtilmedi',gender:'Belirtilmedi',ageRange:'',notes:'',pitch:null,pitchAt:null};m.speakers.push(rec);byName.set(name,rec);}
+  }
+  return m.speakers;
+}
+function speakerByName(m,name){return (m.speakers||[]).find(s=>s.name===name)||null;}
+function speakerSegments(m,name){return (m.segments||[]).filter(sg=>(sg.speaker||'')===name);}
+function fmtHz(hz){return hz?`${Math.round(hz)} Hz`:'';}
+
+// Temel frekans (f0) tahmini: otokorelasyon yöntemi. Bir bölümün ortasından
+// 0,4 sn'lik pencere alınır, 70-400 Hz aralığında en güçlü periyodiklik aranır.
+// Bu gerçek bir DSP ölçümüdür; sonuç "kayıt koşullarına bağlı tahmin" olarak
+// sunulur. Kullanıcı ölçümü tetikler, uygulama kendiliğinden çalıştırmaz.
+function detectPitchHz(samples,sampleRate){
+  const N=Math.min(samples.length,Math.floor(sampleRate*0.4));
+  if(N<sampleRate*0.05)return null;
+  const buf=new Float32Array(N);
+  let mean=0;for(let i=0;i<N;i++){buf[i]=samples[i];mean+=buf[i];}
+  mean/=N;
+  for(let i=0;i<N;i++)buf[i]-=mean; // DC bileşenini çıkar
+  let r0=0;for(let i=0;i<N;i++)r0+=buf[i]*buf[i];
+  if(r0<=0)return null;
+  const minLag=Math.max(2,Math.floor(sampleRate/400)),maxLag=Math.floor(sampleRate/70);
+  let bestLag=-1,bestNorm=0;
+  for(let lag=minLag;lag<=maxLag&&lag<N;lag++){
+    let corr=0;
+    for(let i=0;i<N-lag;i++)corr+=buf[i]*buf[i+lag];
+    // Normalize otokorelasyon: r(lag)/r(0). 1'e yakın = güçlü periyodiklik.
+    const norm=corr/r0;
+    if(norm>bestNorm){bestNorm=norm;bestLag=lag;}
+  }
+  if(bestLag<0||bestNorm<0.3)return null; // yeterli periyodiklik yok
+  return sampleRate/bestLag;
+}
+// Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
+// birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
+// yapılır ve kayda bağlı saklanır.
+async function measureSpeakerPitch(m){
+  const c=currentCase();const blob=await getAudioBlob(c,m);
+  if(!blob){showToast('Ses dosyası bulunamadı.');return;}
+  const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();
+  let audio;try{audio=await ctx.decodeAudioData(await blob.arrayBuffer());}catch(e){await ctx.close();showToast('Ses çözümlenemedi.');return;}
+  const sr=audio.sampleRate;const ch=audio.getChannelData(0);
+  ensureSpeakers(m);
+  for(const sp of m.speakers){
+    const segs=speakerSegments(m,sp.name).slice(0,12);
+    const vals=[];
+    for(const sg of segs){
+      const st=secondsFromTimecode(sg.start);const en=secondsFromTimecode(sg.end);
+      // Süresi olmayan bölümde de ölçüm yapılabilir: başlangıçtan pencere alınır.
+      const mid=en>st?Math.floor((st+en)/2*sr):Math.floor(st*sr)+Math.floor(sr*0.2);
+      const win=ch.subarray(Math.max(0,mid-Math.floor(sr*0.2)),Math.min(ch.length,mid+Math.floor(sr*0.2)));
+      const f=detectPitchHz(win,sr);
+      if(f)vals.push(f);
+    }
+    if(vals.length){vals.sort((a,b)=>a-b);sp.pitch=vals[Math.floor(vals.length/2)];sp.pitchSamples=vals.length;sp.pitchAt=new Date().toISOString();}
+    else{sp.pitch=null;sp.pitchAt=new Date().toISOString();}
+  }
+  await ctx.close();
+  (m.log=m.log||[]).push({at:new Date().toISOString(),event:'Konuşmacı perde ölçümü',detail:`${m.speakers.length} konuşmacı için perde tahmini hesaplandı`});
+  persist();renderAudioList();showToast('Konuşmacı perde ölçümü tamamlandı.');
+}
+// Benzer perde aralığındaki konuşmacıları gruplama ÖNERİSİ. Kimlik tespiti
+// değildir; yalnızca "bu etiketler benzer perdede, aynı kişi olabilir"
+// ihtimalini uzmana hatırlatır. Uzman kararı esastır.
+function suggestSpeakerMerges(m){
+  const sp=(m.speakers||[]).filter(s=>s.pitch);
+  const groups=[];
+  for(const s of sp){
+    let placed=false;
+    for(const g of groups){const ref=g[0];if(Math.abs(s.pitch-ref.pitch)/ref.pitch<0.12){g.push(s);placed=true;break;}}
+    if(!placed)groups.push([s]);
+  }
+  return groups.filter(g=>g.length>1);
+}
+
+// Konuşmacı paneli: her konuşmacı için rol, cinsiyet, yaş aralığı, not ve
+// ölçülen perde. Bu bilgiler rapora "Konuşmacılar" tablosu olarak akar.
+function speakersPanelHtml(m){
+  const sp=m.speakers||[];
+  if(!sp.length)return '<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>';
+  const merges=suggestSpeakerMerges(m);
+  const mergeNote=merges.length?`<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map(g=>g.map(s=>esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`:'';
+  const rows=sp.map(s=>{
+    const segs=speakerSegments(m,s.name);
+    const roleOpts=SPEAKER_ROLES.map(r=>`<option value="${esc(r)}" ${s.role===r?'selected':''}>${esc(r)}</option>`).join('');
+    const genOpts=SPEAKER_GENDERS.map(r=>`<option value="${esc(r)}" ${s.gender===r?'selected':''}>${esc(r)}</option>`).join('');
+    return `<div class="spk-card" data-spk-card="${esc(s.id)}">
+      <div class="seg-row2">
+        <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}"></div>
+        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOpts}</select></div>
+      </div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender">${genOpts}</select></div>
+        <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange||'')}" placeholder="Örn. 30-40"></div>
+      </div>
+      <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes||'')}" placeholder="Örn. aksanlı, kısık ses"></div>
+      <small>${segs.length} bölüm · ${s.pitch?`ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples?` (${s.pitchSamples} örnek)`:''}`:'perde ölçülmedi'}</small>
+    </div>`;
+  }).join('');
+  return `${mergeNote}<div class="spk-list">${rows}</div>`;
+}
+function renderSpeakersPanel(m){
+  const root=$(`#spk-panel-${CSS.escape(m.id)}`);if(!root)return;
+  root.innerHTML=speakersPanelHtml(m);
+}
+// ==== Deşifre ve kontrol çalışma alanı ====
+// Bilirkişinin en çok zaman geçirdiği alan. Mimari kararlar:
+//  1) İki panel: solda bölüm listesi, sağda aktif bölüm detayı. Aktif bölüm
+//     değişince DOM yeniden çizilmez; yalnızca .is-active sınıfı taşınır ve
+//     sağ panel alanları güncellenir. Böylece kaydırma, odak ve ok tuşları
+//     bozulmaz (önceki sürümde tam yeniden çizim bunları bozuyordu).
+//  2) Liste bir kez kurulur; metin değişikliği yalnızca ilgili öğeyi günceller.
+//  3) Model güven skoru vermediği için uydurma skor üretilmez; bunun yerine
+//     şeffaf, gerekçeli bir "inceleme önceliği" hesaplanır (bkz. segPriority).
 const SEG_FILTERS=[
   ['all','Tümü'],
   ['pending','Bekleyen'],
@@ -167,58 +304,143 @@ const PLAYBACK_SPEEDS=[0.75,1,1.25,1.5,2];
 function segFilter(m){return m.uiFilter||'all';}
 function segMatchesFilter(s,filter){const r=segReview(s);if(filter==='all')return true;if(filter==='pending')return !isReviewed(s);return r===filter;}
 function segCounts(m){const segs=m.segments||[];const c={all:segs.length,pending:0,onaylandi:0,anlasilmadi:0,yeniden:0};for(const s of segs){const r=segReview(s);if(r==='onaylandi')c.onaylandi++;else if(r==='anlasilmadi')c.anlasilmadi++;else if(r==='yeniden')c.yeniden++;if(!isReviewed(s))c.pending++;}return c;}
-function renderSegments(m,card){
-  const root=$(`#segments-${CSS.escape(m.id)}`,card);if(!root)return;
+// İnceleme önceliği: hangi bölümün önce dinlenmesi gerektiğini gösteren şeffaf
+// bir işaret. Model güven skoru verilmediği için yalnızca gözlemlenebilir
+// işaretlerden hesaplanır: boş/dolgu metin, çok kısa bölüm, çok uzun bölüm,
+// sıfır süre, üst üste binen aralık. Gerekçe arayüzde gösterilir; uydurma bir
+// "doğruluk yüzdesi" sunulmaz.
+// Zaman damgasını saniyeye çevirir. Bölüm çalma ve öncelik hesabı bunu kullanır.
+function secondsFromTimecode(t){const p=String(t||'').split(':').map(Number);if(p.some(Number.isNaN))return 0;if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return p[0]||0;}
+function segDurationSec(s){const a=secondsFromTimecode(s.start),b=secondsFromTimecode(s.end);return b>a?b-a:0;}
+function segPriority(s,prev){
+  let score=0;const reasons=[];
+  if(isHallucination(s.text)){score+=40;reasons.push('anlamlı metin yok');}
+  const d=segDurationSec(s);
+  if(d===0){score+=25;reasons.push('süre sıfır');}
+  else if(d<1.2){score+=15;reasons.push('çok kısa bölüm');}
+  if(d>60){score+=10;reasons.push('çok uzun bölüm');}
+  if(prev){const pa=secondsFromTimecode(prev.start),pb=secondsFromTimecode(prev.end);if(pa<pb&&secondsFromTimecode(s.start)<pb){score+=12;reasons.push('öncekiyle çakışıyor');}}
+  return {score,reasons};
+}
+function segPriorityBadge(s,prev){const p=segPriority(s,prev);if(p.score<15)return '';const label=p.score>=40?'Yüksek':(p.score>=20?'Orta':'Düşük');return `<span class="badge prio" title="${esc(p.reasons.join(', '))}">Öncelik: ${label}</span>`;}
+
+// ---- Liste (sol panel) ----
+function segItemHtml(m,s,i,prev){
+  const rev=segReview(s);const halluc=isHallucination(s.text);
+  const spk=s.speaker&&s.speaker!=='Belirtilmedi'?`<span class="badge spk" title="Konuşmacı">${esc(s.speaker)}</span>`:'';
+  const state=rev==='onaylandi'?'<span class="badge done">Onaylandı</span>':rev==='anlasilmadi'?'<span class="badge warn">Anlaşılmadı</span>':rev==='yeniden'?'<span class="badge again">Yeniden</span>':'<span class="badge">Bekliyor</span>';
+  return `<div class="seg-item st-${rev} ${halluc?'is-empty':''}" data-seg-item="${i}" role="button" tabindex="0">
+    <span class="seg-no">${i+1}</span>
+    <span class="seg-time">${esc(s.start||'—')}</span>
+    <span class="seg-text">${esc((s.text||'').trim())||'(metin yok)'}</span>
+    <span class="seg-badges">${spk}${segPriorityBadge(s,prev)}${state}</span>
+  </div>`;
+}
+function segListHtml(m){
   const segs=m.segments||[];
-  if(!segs.length){root.innerHTML='<div class="empty-state" style="padding:12px"><span>Henüz deşifre bölümü yok. Ses çözümlemesini başlatabilir veya elle bölüm ekleyebilirsiniz.</span></div>';return;}
-  const filter=segFilter(m);const counts=segCounts(m);
-  const reviewed=counts.onaylandi+counts.anlasilmadi;
-  const pct=segs.length?Math.round(reviewed/segs.length*100):0;
-  const active=Number.isInteger(m.activeSeg)?m.activeSeg:-1;
-  // Filtre çubuğu: her durumun sayısı görünür; sıfır olanlar pasif.
-  const chips=SEG_FILTERS.map(([k,label])=>`<button class="filter-chip ${filter===k?'on':''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`).join('');
-  const shown=segs.map((s,i)=>({s,i})).filter(x=>segMatchesFilter(x.s,filter));
-  const rows=shown.map(({s,i})=>{
-    const rev=segReview(s);const opts=Object.keys(REVIEW_STATES).map(k=>`<option value="${k}" ${rev===k?'selected':''}>${REVIEW_STATES[k].label}</option>`).join('');
-    const hist=(s.history||[]).length;
-    const halluc=isHallucination(s.text);
-    const cls=['seg-row',`st-${rev}`,i===active?'is-active':'',halluc?'is-halluc':''].filter(Boolean).join(' ');
-    return `<tr class="${cls}" data-seg-row="${i}" tabindex="0">
-      <td class="seg-no">${i+1}</td>
-      <td><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start??'')}" aria-label="Bölüm ${i+1} başlangıç"></td>
-      <td><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end??'')}" aria-label="Bölüm ${i+1} bitiş"></td>
-      <td><input class="speaker-input" data-seg="${i}" data-key="speaker" value="${esc(s.speaker||'Belirtilmedi')}" aria-label="Bölüm ${i+1} konuşmacı"></td>
-      <td><textarea data-seg="${i}" data-key="text" aria-label="Bölüm ${i+1} konuşma metni">${esc(s.text||'')}</textarea>${halluc?'<span class="halluc-flag">Anlamlı metin yok — dinleyip doldurun</span>':''}</td>
-      <td><select class="review-select" data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Bölüm ${i+1} kontrol durumu">${opts}</select>${hist?`<button class="mini-button history-button" data-history="${i}" title="Önceki metinleri görüntüle">Geçmiş (${hist})</button>`:''}</td>
-      <td><div class="row-actions"><button class="icon-mini play" data-play-seg="${i}" title="Bu bölümü dinle (Boşluk)" aria-label="Bölüm ${i+1} dinle">▶</button><button class="icon-mini" data-delete-seg="${i}" title="Bölümü kaldır" aria-label="Bölüm ${i+1} kaldır">×</button></div></td>
-    </tr>`;
-  }).join('');
-  const table=shown.length
-    ? `<table class="segments-table"><thead><tr><th class="seg-no">#</th><th class="time-col">Başlangıç</th><th class="time-col">Bitiş</th><th class="speaker-col">Konuşmacı</th><th>Metin</th><th class="status-col">Kontrol durumu</th><th class="act-col"></th></tr></thead><tbody>${rows}</tbody></table>`
-    : `<div class="seg-hidden-note">Bu filtreye uyan bölüm yok. "Tümü" seçeneğine dönün.</div>`;
-  root.innerHTML=`<div class="transcript-toolbar">
-      <div class="group" role="group" aria-label="Gezinme">
-        <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑ Önceki</button>
-        <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓ Sonraki</button>
+  if(!segs.length)return '<div class="seg-empty-note">Henüz bölüm yok. "Çözümle" veya "＋ Bölüm" ile başlayın.</div>';
+  const filter=segFilter(m);
+  const rows=segs.map((s,i)=>({s,i})).filter(x=>segMatchesFilter(x.s,filter));
+  if(!rows.length)return '<div class="seg-empty-note">Bu filtreye uyan bölüm yok.</div>';
+  return rows.map(({s,i})=>segItemHtml(m,s,i,segs[i-1])).join('');
+}
+function renderSegList(m){
+  const root=$(`#seg-list-${CSS.escape(m.id)}`);if(!root)return;
+  root.innerHTML=segListHtml(m);
+}
+// Metin/durum değişince yalnızca tek liste öğesini günceller; tam çizim yok.
+function updateSegListItem(m,i){
+  const root=$(`#seg-list-${CSS.escape(m.id)}`);if(!root)return;
+  const item=root.querySelector(`[data-seg-item="${i}"]`);if(!item)return;
+  const s=m.segments[i];const tmp=document.createElement('div');tmp.innerHTML=segItemHtml(m,s,i,m.segments[i-1]);
+  const fresh=tmp.firstElementChild;fresh.classList.toggle('is-active',item.classList.contains('is-active'));
+  item.replaceWith(fresh);
+}
+
+// ---- Detay (sağ panel) ----
+function segDetailHtml(m){
+  const segs=m.segments||[];
+  if(!segs.length)return '<div class="seg-detail-empty">Bölüm seçmek için soldan bir kayıt çözümleyin veya bölüm ekleyin.</div>';
+  const i=Number.isInteger(m.activeSeg)?m.activeSeg:0;
+  const s=segs[i];if(!s)return '<div class="seg-detail-empty">Bölüm bulunamadı.</div>';
+  const rev=segReview(s);
+  const opts=Object.keys(REVIEW_STATES).map(k=>`<option value="${k}" ${rev===k?'selected':''}>${REVIEW_STATES[k].label}</option>`).join('');
+  const hist=(s.history||[]).length;
+  const halluc=isHallucination(s.text);
+  const pr=segPriority(s,segs[i-1]);
+  return `<div class="seg-detail-head">
+      <span class="idx">Bölüm ${i+1} / ${segs.length}</span>
+      <span class="nav">
+        <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
+        <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
+        <button class="seg-tool" data-play-active="1" title="Bu bölümü dinle (Boşluk)">▶ Dinle</button>
+      </span>
+    </div>
+    ${halluc?`<div class="halluc-note">Bu bölümde anlamlı metin yok. Kaydı dinleyip metni doldurun; boş bırakılamaz.</div>`:''}
+    ${pr.score>=15?`<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">İnceleme önceliği: ${esc(pr.reasons.join(', '))}</div>`:''}
+    <div class="seg-row2">
+      <div class="seg-field"><label>Başlangıç</label><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start||'')}"></div>
+      <div class="seg-field"><label>Bitiş</label><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end||'')}"></div>
+    </div>
+    <div class="seg-field"><label>Konuşmacı</label><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker||'')}" placeholder="Örn. Kiracı, Ev sahibi, Konuşmacı 1"></div>
+    <div class="seg-field"><label>Çözümlenen konuşma (düzeltilebilir)</label><textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text||'')}</textarea></div>
+    <div class="seg-row2">
+      <div class="seg-field"><label>Kontrol durumu</label><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></div>
+      <div class="seg-field"><label>Bölüm işlemleri</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${hist?`<button class="mini-button" data-history="${i}">Geçmiş (${hist})</button>`:''}
+          <button class="mini-button" data-split-seg="${i}">Buradan böl</button>
+          <button class="mini-button" data-merge-next="${i}">Sonrakiyle birleştir</button>
+          <button class="mini-button danger" data-delete-seg="${i}">Sil</button>
+        </div>
       </div>
-      <div class="group" role="group" aria-label="Oynatma hızı"><span>Hız</span>${PLAYBACK_SPEEDS.map(sp=>`<button class="seg-tool speed-tool ${(m.playbackRate||1)===sp?'on':''}" data-seg-speed="${sp}" title="${sp}x hızında dinle">${sp}×</button>`).join('')}</div>
-      <button class="seg-tool" data-seg-approve="1" title="Aktif bölümü onayla ve sonrakine geç (Enter)">✓ Onayla</button>
+    </div>
+    <div class="seg-actions">
+      <button class="mini-button primary" data-approve-seg="${i}">✓ Onayla ve sonrakine geç (Enter)</button>
+      <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinlenecek</button>
+      <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
+    </div>`;
+}
+function renderSegDetail(m){
+  const root=$(`#seg-detail-${CSS.escape(m.id)}`);if(!root)return;
+  root.innerHTML=segDetailHtml(m);
+}
+function renderSegments(m,card){
+  const root=$(`#segments-${CSS.escape(m.id)}`,card||document);if(!root)return;
+  const segs=m.segments||[];
+  const counts=segCounts(m);const reviewed=counts.onaylandi+counts.anlasilmadi;
+  const pct=segs.length?Math.round(reviewed/segs.length*100):0;
+  const filter=segFilter(m);
+  const chips=SEG_FILTERS.map(([k,label])=>`<button class="filter-chip ${filter===k?'on':''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`).join('');
+  const spkOptions=[...new Set(segs.map(s=>s.speaker).filter(x=>x&&x!=='Belirtilmedi'))];
+  root.innerHTML=`<div class="transcript-toolbar">
+      <div class="group"><span>Hız</span>${PLAYBACK_SPEEDS.map(sp=>`<button class="seg-tool speed-tool ${(m.playbackRate||1)===sp?'on':''}" data-seg-speed="${sp}">${sp}×</button>`).join('')}</div>
+      <div class="group"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠ Öncelikliye git</button></div>
     </div>
     <div class="transcript-toolbar">${chips}</div>
     <div class="seg-progress"><div class="bar"><span style="width:${pct}%"></span></div><small>${reviewed}/${segs.length} denetlendi · %${pct}</small></div>
-    ${table}
-    <div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm değiştir · <kbd>Enter</kbd> aktif bölümü onayla · <kbd>Y</kbd> aktif bölümü dinle · <kbd>[</kbd><kbd>]</kbd> hız düşür/artır · <kbd>←</kbd><kbd>→</kbd> 5 sn geri/ileri · Metin alanındayken <kbd>Esc</kbd> ile çık</div>`;
+    <datalist id="spk-options-${esc(m.id)}">${spkOptions.map(x=>`<option value="${esc(x)}"></option>`).join('')}</datalist>
+    <div class="seg-workspace">
+      <div class="seg-list" id="seg-list-${esc(m.id)}" role="list">${segListHtml(m)}</div>
+      <div class="seg-detail" id="seg-detail-${esc(m.id)}">${segDetailHtml(m)}</div>
+    </div>
+    <div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>Enter</kbd> onayla · <kbd>Y</kbd> dinle · <kbd>[</kbd><kbd>]</kbd> hız · <kbd>←</kbd><kbd>→</kbd> 5 sn · Metin alanındayken <kbd>Esc</kbd> ile çık</div>`;
+  // Aktif bölüm işaretini kur
+  const active=Number.isInteger(m.activeSeg)?m.activeSeg:0;
+  root.querySelectorAll('.seg-item').forEach(el=>el.classList.toggle('is-active',Number(el.dataset.segItem)===active));
 }
-// Aktif bölümü ayarlar ve görünür hâle getirir. Uzun kayıtta uzmanın nerede
-// olduğunu kaybetmemesi için satır kaydırılır.
-function setActiveSegment(m,index,{scroll=true,render=true}={}){
+// Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
+// ve sağ panel yenilenir. Kaydırma ve odak korunur.
+function setActiveSegment(m,index,{scroll=true}={}){
   const segs=m.segments||[];if(!segs.length)return;
   m.activeSeg=Math.max(0,Math.min(segs.length-1,index));
-  if(render){const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');if(card)renderSegments(m,card);}
-  if(scroll){const row=$(`[data-seg-row="${m.activeSeg}"]`);if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});}
+  const root=$(`#segments-${CSS.escape(m.id)}`);
+  if(root){
+    root.querySelectorAll('.seg-item').forEach(el=>el.classList.toggle('is-active',Number(el.dataset.segItem)===m.activeSeg));
+    if(scroll){const el=root.querySelector(`.seg-item[data-seg-item="${m.activeSeg}"]`);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});}
+  }
+  renderSegDetail(m);
 }
-// Klavye ile gezinme aktif bölümü değiştirir; filtreden bağımsız olarak
-// görünür bir satır seçilir ki odak kaybolmasın.
 function navSegment(m,dir){
   const segs=m.segments||[];if(!segs.length)return;
   const filter=segFilter(m);
@@ -230,7 +452,16 @@ function navSegment(m,dir){
   pos=Math.max(0,Math.min(list.length-1,pos+dir));
   setActiveSegment(m,list[pos]);
 }
-// Aktif bölümü oynatıcıya yükleyip çalar. Uzun kayıtta tek tuşla dinleme.
+// En yüksek inceleme önceliğini taşıyan ve henüz onaylanmamış bölüme atlar.
+function jumpToPriority(m){
+  const segs=m.segments||[];if(!segs.length)return;
+  let best=-1,bestScore=14;
+  for(let i=0;i<segs.length;i++){if(segReview(segs[i])==='onaylandi')continue;const p=segPriority(segs[i],segs[i-1]);if(p.score>bestScore){bestScore=p.score;best=i;}}
+  if(best<0){showToast('Öncelikli bekleyen bölüm yok.');return;}
+  if(segFilter(m)!=='all'){m.uiFilter='all';renderSegments(m,$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card'));}
+  setActiveSegment(m,best);
+  showToast(`Öncelikli bölüme gidildi: ${best+1}. bölüm.`);
+}
 function playActiveSegment(m){
   const s=m.segments?.[m.activeSeg];if(!s)return;
   const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');if(!card)return;
@@ -242,48 +473,44 @@ function cycleSpeed(m,delta){
   m.playbackRate=PLAYBACK_SPEEDS[i];
   const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player=card?.querySelector('audio');if(player)player.playbackRate=m.playbackRate;
-  if(card)renderSegments(m,card);persist();
-  showToast(`Oynatma hızı: ${m.playbackRate}×`);
+  card?.querySelectorAll('[data-seg-speed]').forEach(b=>b.classList.toggle('on',Number(b.dataset.segSpeed)===m.playbackRate));
+  persist();showToast(`Oynatma hızı: ${m.playbackRate}×`);
 }
-
-// Aktif bölümü onaylar ve bir sonrakine geçer. Uzmanın dinle-düzelt-onayla
-// döngüsünü tek tuşla sürdürmesi için tasarlandı; uzun kayıtta elle satır
-// seçmek gerekmez. Filtre "Bekleyen" iken onaylanan satır listeden düşer.
+// Aktif bölümü onaylar ve sonrakine geçer. Liste öğesi ve sağ panel cerrahi
+// güncellenir; tam yeniden çizim yapılmaz.
 function approveActiveSegment(m){
   const segs=m.segments||[];if(!segs.length)return;
   if(!Number.isInteger(m.activeSeg))m.activeSeg=0;
-  const s=segs[m.activeSeg];if(!s)return;
+  const i=m.activeSeg;const s=segs[i];if(!s)return;
   s.review='onaylandi';s.checked=true;
-  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   persist();renderOverview();
-  const next=m.activeSeg+1;
-  if(next<segs.length){m.activeSeg=next;} // sonraki bölüme geç
-  if(card)renderSegments(m,card);
-  const row=$(`[data-seg-row="${m.activeSeg}"]`);if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});
+  const root=$(`#segments-${CSS.escape(m.id)}`);
+  // Filtre "Bekleyen" ise onaylanan öğe listeden düşer; o durumda listeyi kur.
+  if(root){const filter=segFilter(m);if(filter==='pending'){renderSegList(m);}else{updateSegListItem(m,i);}refreshSegChips(m);}
+  const next=Math.min(segs.length-1,i+1);m.activeSeg=next;
+  setActiveSegment(m,next);
   if($('#view-report').classList.contains('active'))renderReport();
-  showToast(`Bölüm ${m.activeSeg+1}/${segs.length} — onaylandı.`);
+  showToast(`Bölüm ${i+1} onaylandı. Şimdi ${next+1}. bölüm.`);
 }
-// Satıra tıklanınca o satır aktif bölüm olur; uzman fareyle de bağlam kurabilir.
-function focusSegmentRow(row){
-  const card=row.closest('.audio-card');if(!card)return;
+function refreshSegChips(m){
+  const root=$(`#segments-${CSS.escape(m.id)}`);if(!root)return;
+  const counts=segCounts(m);const segs=m.segments||[];const reviewed=counts.onaylandi+counts.anlasilmadi;
+  const pct=segs.length?Math.round(reviewed/segs.length*100):0;
+  root.querySelectorAll('[data-seg-filter]').forEach(ch=>{const k=ch.dataset.segFilter;const n=ch.querySelector('.n');if(n)n.textContent=counts[k];});
+  const bar=root.querySelector('.seg-progress .bar span');if(bar)bar.style.width=pct+'%';
+  const lbl=root.querySelector('.seg-progress small');if(lbl)lbl.textContent=`${reviewed}/${segs.length} denetlendi · %${pct}`;
+}
+function focusSegmentRow(el){
+  const card=el.closest('.audio-card');if(!card)return;
   const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;
   const m=currentCase().materials.find(x=>x.id===id);if(!m)return;
-  m.activeSeg=Number(row.dataset.segRow);
-  card.querySelectorAll('tr.seg-row.is-active').forEach(r=>r.classList.remove('is-active'));
-  row.classList.add('is-active');
-  // Klavye kısayollarının çalışması için satır odaklanır; böylece uzman fareyle
-  // bir bölüme geçip ardından klavyeyle devam edebilir.
-  if(row.focus)row.focus({preventScroll:true});
+  setActiveSegment(m,Number(el.dataset.segItem),{scroll:false});
 }
-// Klavye kısayolları: metin alanlarına yazarken devreye girmez (bkz. keydown
-// yöneticisi). Burada yalnızca hangi tuşun ne yaptığı tanımlıdır.
 function handleSegKey(e,card,m){
   const tag=(e.target.tagName||'').toLowerCase();
   const typing=tag==='textarea'||tag==='input'||tag==='select';
   if(e.ctrlKey||e.metaKey||e.altKey)return false;
-  // Metin alanında yazarken kısayollar devre dışıdır (yoksa yazılamaz). Esc ile
-  // alandan çıkılır ve satır odaklanır; uzman yazmayı bitirip klavyeyle sürdürür.
-  if(e.key==='Escape'&&typing){e.preventDefault();e.target.blur();const row=e.target.closest('tr.seg-row');if(row&&row.focus)row.focus({preventScroll:true});return true;}
+  if(e.key==='Escape'&&typing){e.preventDefault();e.target.blur();return true;}
   if(e.key==='ArrowUp'&&!typing){navSegment(m,-1);e.preventDefault();return true;}
   if(e.key==='ArrowDown'&&!typing){navSegment(m,1);e.preventDefault();return true;}
   if(e.key===' '&&!typing){const player=card.querySelector('audio');if(player){player.paused?player.play().catch(()=>{}):player.pause();}e.preventDefault();return true;}
@@ -296,21 +523,41 @@ function handleSegKey(e,card,m){
   if(e.key==='ArrowRight'&&!typing){const player=card.querySelector('audio');if(player)player.currentTime=player.currentTime+5;e.preventDefault();return true;}
   return false;
 }
-// Seek the card's player to the segment start and play, so the expert can
-// verify the transcript against the actual audio without hunting for the time.
-function secondsFromTimecode(t){const p=String(t||'').split(':').map(Number);if(p.some(Number.isNaN))return 0;if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return p[0]||0;}
-// Bir bölümün zaman aralığını çalar ve bitişte durur. Oynatma hızı uygulanır,
-// böylece uzman uzun kayıtları hızlandırarak dinleyebilir. Aktif bölüm işaretlenir.
+// Bir bölümün zaman aralığını çalar ve bitişte durur. Oynatma hızı uygulanır.
+// Aktif bölüm yalnızca sınıflarla işaretlenir; tablo yeniden çizilmez, böylece
+// oynatma sırasında metin ve kaydırma yerinde kalır.
 function playSegmentRange(card,m,s,index){
   const player=card.querySelector('audio');if(!player)return;
   const start=secondsFromTimecode(s.start);const end=secondsFromTimecode(s.end);
   player.playbackRate=m.playbackRate||1;
-  player.currentTime=start;player.play().catch(()=>{});
-  if(Number.isInteger(index)){m.activeSeg=index;const root=$(`#segments-${CSS.escape(m.id)}`,card);if(root)renderSegments(m,card);}
+  try{player.currentTime=start;}catch(e){}
+  player.play().catch(()=>{});
+  if(Number.isInteger(index)){m.activeSeg=index;const root=$(`#segments-${CSS.escape(m.id)}`,card);if(root){root.querySelectorAll('.seg-item').forEach(el=>el.classList.toggle('is-active',Number(el.dataset.segItem)===index));}renderSegDetail(m);}
   if(end>start){const stop=()=>{if(player.currentTime>=end){player.pause();player.removeEventListener('timeupdate',stop);}};player.removeEventListener('timeupdate',stop);player.addEventListener('timeupdate',stop);}
   showToast(`Bölüm ${(index??0)+1} dinleniyor: ${s.start||'—'}–${s.end||'—'}`);
 }
 function playSegment(btn){const card=btn.closest('.audio-card');if(!card)return;const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(btn.dataset.playSeg);const s=m?.segments?.[i];if(!s)return;playSegmentRange(card,m,s,i);}
+// Bölümü, oynatıcının geçerli konumundan ikiye böler. Uzun bir bölümün ortası
+// ayrı bir konuşma içeriyorsa uzman kaydı dinlerken buradan ayırır.
+function splitSegmentAtPlayer(m,index){
+  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');if(!card)return;
+  const player=card.querySelector('audio');const segs=m.segments||[];const s=segs[index];if(!s||!player)return;
+  const cut=player.currentTime;const a=secondsFromTimecode(s.start),b=secondsFromTimecode(s.end);
+  if(!(cut>a+0.2&&cut<b-0.2)){showToast('Bölmek için oynatıcıyı bölümün ortasına getirin.');return;}
+  const left={...s,end:timecode(cut),history:[]};const right={...s,start:timecode(cut),history:[]};
+  segs.splice(index,1,left,right);m.activeSeg=index;
+  persist();renderSegments(m,card);renderOverview();
+  showToast(`Bölüm ${index+1} ikiye ayrıldı (${timecode(cut)}).`);
+}
+function mergeSegmentWithNext(m,index){
+  const segs=m.segments||[];const s=segs[index],n=segs[index+1];if(!s||!n){showToast('Birleştirilecek sonraki bölüm yok.');return;}
+  s.end=n.end;if((n.text||'').trim())s.text=(s.text||'')+(s.text?' ':'')+n.text;
+  s.review='bekliyor';s.checked=false;
+  segs.splice(index+1,1);m.activeSeg=index;
+  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  persist();if(card)renderSegments(m,card);renderOverview();
+  showToast(`Bölüm ${index+1} ile sonraki birleştirildi.`);
+}
 function showSegmentHistory(m,index,anchor){const s=m.segments[index];if(!s)return;const existing=document.querySelector('.history-dialog');if(existing)existing.remove();const items=(s.history||[]).slice().reverse();const dlg=document.createElement('div');dlg.className='history-dialog';dlg.innerHTML=`<div class="history-inner"><div class="history-head"><b>${esc(m.name)} · bölüm ${index+1} metin geçmişi</b><button class="mini-button" data-close-history>Kapat</button></div><div class="history-body">${items.length?items.map(h=>`<div class="history-item"><small>${esc(new Date(h.at).toLocaleString('tr-TR'))}</small><p>${esc(h.text||'(boş)')}</p></div>`).join(''):'<p class="paper-muted">Bu bölüm için kayıtlı önceki metin yok.</p>'}</div></div>`;document.body.appendChild(dlg);dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.dataset.closeHistory!==undefined)dlg.remove();});}
 async function sha256(blob){try{const buf=await blob.arrayBuffer();const hash=await crypto.subtle.digest('SHA-256',buf);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){return 'Hesaplanamadı (tarayıcı güvenlik kısıtı)';}}
 // Technical inventory for the evidence record. The browser can only expose
@@ -358,7 +605,8 @@ async function transcribe(id){const c=currentCase(),m=c.materials.find(x=>x.id==
 // A new manual segment starts where the previous one ended, or at the player's
 // current position, so the expert does not have to type timecodes by hand while
 // listening. Both fall back to 00:00:00 when neither is available.
-function addManualSegment(id){const c=currentCase(),m=c.materials.find(x=>x.id===id);if(!m)return;m.segments=m.segments||[];const last=m.segments[m.segments.length-1];let start=last?last.end:null;if(!start){const card0=$(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');const pl=card0?.querySelector('audio');if(pl&&Number.isFinite(pl.currentTime)&&pl.currentTime>0)start=timecode(pl.currentTime);}start=start||'00:00:00';m.segments.push({start,end:start,speaker:'Konuşmacı 1',text:'',checked:false});persist();const card=$(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');if(card)renderSegments(m,card);renderOverview();}
+function addManualSegment(id){const c=currentCase(),m=c.materials.find(x=>x.id===id);if(!m)return;m.segments=m.segments||[];const last=m.segments[m.segments.length-1];let start=last?last.end:null;if(!start){const card0=$(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');const pl=card0?.querySelector('audio');if(pl&&Number.isFinite(pl.currentTime)&&pl.currentTime>0)start=timecode(pl.currentTime);}start=start||'00:00:00';// Yeni bölüme makul bir bitiş ver: oynatıcı konumundan 5 sn, kayıt sonunu aşmaz.
+const stSec=secondsFromTimecode(start);const durSec=Number(m.duration)||0;let endSec=stSec+5;if(durSec>0)endSec=Math.min(endSec,durSec);const end=timecode(endSec>stSec?endSec:stSec);m.segments.push({start,end,speaker:'Konuşmacı 1',text:'',checked:false});m.activeSeg=m.segments.length-1;persist();const card=$(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');if(card)renderSegments(m,card);renderOverview();}
 function niceDate(d){if(!d)return '—';try{return new Date(`${d}T00:00:00`).toLocaleDateString('tr-TR');}catch(e){return d;}}
 // Court type drives the cover-field terminology and the report heading. The
 // Ministry publishes a separate template per jurisdiction, so a criminal file
@@ -392,6 +640,18 @@ const REPORT_TYPES = {
 const TR_VOWELS='aeıioöuü';
 const TR_POSSESSIVE=/(sı|si|su|sü|ğı|ği|ğu|ğü)$/;
 function trDative(name){const s=String(name||'').trim();if(!s)return 'NE';const lower=s.toLocaleLowerCase('tr-TR');let last='e';for(let i=lower.length-1;i>=0;i--){if(TR_VOWELS.includes(lower[i])){last=lower[i];break;}}const back='aıou'.includes(last);const v=back?'a':'e';const endsVowel=TR_VOWELS.includes(lower[lower.length-1]);const suf=endsVowel?(TR_POSSESSIVE.test(lower)?'n':'y')+v:v;return suf.toLocaleUpperCase('tr-TR');}
+// Konuşmacı tablosu satırlarını üretir (HTML/DOCX/UDF ortak veri).
+function speakerRows(c){
+  const out=[];
+  for(const m of c.materials||[]){for(const sp of (m.speakers||[])){
+    if(!sp.name||sp.name==='Belirtilmedi')continue;
+    const segs=(m.segments||[]).filter(sg=>(sg.speaker||'')===sp.name);
+    const dur=segs.length?`${m.name}: ${segs.length} bölüm`:`${m.name}`;
+    const note=[sp.notes,sp.pitchSamples?`perde ${sp.pitchSamples} örnek`:''].filter(Boolean).join(' · ');
+    out.push([sp.name,sp.role||'Belirtilmedi',sp.gender||'Belirtilmedi',sp.ageRange||'—',sp.pitch?`${Math.round(sp.pitch)} Hz (${pitchHint(sp.pitch)})`:'Ölçülmedi',`${dur}${note?' · '+note:''}`]);
+  }}
+  return out;
+}
 function reportTypeSpec(t){return REPORT_TYPES[t]||REPORT_TYPES.hukuk;}
 function reportTypeLabel(t){return reportTypeSpec(t).label;}
 function reportRows(c){const spec=reportTypeSpec(c.reportType);const r=spec.roles;return [[spec.fileNo,c.fileNo],[r.plaintiff,c.plaintiff],[r.plaintiffCounsel,c.plaintiffCounsel],[r.defendant,c.defendant],[r.defendantCounsel,c.defendantCounsel],[spec.subject,c.subject],[spec.date,niceDate(c.caseDate)],['GÖREVLENDİRME TARİHİ',niceDate(c.assignmentDate)],['VERİLEN SÜRE',c.assignmentDurationDays?`${c.assignmentDurationDays} GÜN`:'' ],['SON TESLİM TARİHİ',niceDate(c.dueDate)],['KEŞİF / İNCELEME TARİHİ',niceDate(c.inspectionDate)],['RAPOR TARİHİ',niceDate(c.reportDate)],['BİLİRKİŞİ ADI SOYADI',c.expertName],['UZMANLIK ALANI',c.expertField],['BİLİRKİŞİ SİCİL NO',c.registryNo]].filter(x=>x[1]&&x[1]!=='—');}
@@ -418,6 +678,8 @@ function renderReport(){
   if(c.questions?.length){html+=`<ol class="question-list">${c.questions.map(q=>`<li>${esc(q.question||REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;}else html+=`<p>${esc(REPORT_TEXT.defaultQuestions)}</p>`;
   html+=`</div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length?materials.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec||m.type||REPORT_TEXT.codecFallback)} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration||0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate?' · '+esc(m.tech.sampleRate)+' Hz':''}${m.tech?.bitDepth?' · '+esc(m.tech.bitDepth)+' bit':''}</td><td style="font-size:8px;word-break:break-all">${esc(m.sha256||'Hesaplanamadı')}</td></tr>`).join(''):`<tr><td colspan="5">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
+  const spkRows=speakerRows(c);
+  html+=`<div class="paper-section"><h3>Konuşmacılar</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length?spkRows.map(r=>`<tr>${r.map(x=>`<td>${esc(x)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText||DEFAULT_METHOD).replace(/\n/g,'<br>')}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
   if(materials.length){for(let i=0;i<materials.length;i++){const m=materials[i];html+=`<h4>5.1.${i+1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration||0)} · Biçim: ${esc(m.type||REPORT_TEXT.codecFallback)} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments||[]).length}</p>`;if(m.hallucinationWarning)html+=`<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;if(m.languageWarning)html+=`<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;if(m.segments?.length){html+=`<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map(s=>`<tr><td>${esc(s.start||REPORT_TEXT.timeDash)} – ${esc(s.end||REPORT_TEXT.timeDash)}</td><td>${esc(s.speaker||REPORT_TEXT.emptySpeaker)}</td><td>${esc(s.text||'')}</td><td>${reviewLabel(s)}</td></tr>`).join('')}</tbody></table>`;}else html+=`<p>${esc(REPORT_TEXT.noTranscript)}</p>`;}}else html+=`<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -455,6 +717,10 @@ function docxXml(c){
   body+=wP(REPORT_TEXT.defaultInventoryIntro);
   body+=wTable([[...REPORT_TEXT.inventoryHeaders],...(c.materials.length?c.materials.map(m=>[m.name,`${m.tech?.codec||m.type||REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}`,m.sha256||'Hesaplanamadı']):[REPORT_TEXT.noInventoryRow])],{widths:[2200,1500,900,1700,2700],header:true});
   body+=wP(REPORT_TEXT.inventoryNote,{color:'74869A',size:17,italic:true});
+  const dSpk=speakerRows(c);
+  body+=headingXml('Konuşmacılar');
+  body+=wP(REPORT_TEXT.speakerIntro);
+  body+=wTable([[...REPORT_TEXT.speakerHeaders],...(dSpk.length?dSpk:[REPORT_TEXT.noSpeakerRow])],{widths:[1500,1200,1100,1200,1900,2200],header:true});
   body+=headingXml(REPORT_TEXT.sections[3]);
   body+=wP(c.methodText||DEFAULT_METHOD);
   body+=headingXml(REPORT_TEXT.sections[4]);
@@ -530,6 +796,10 @@ async function makeUdf(){
   const inventory=(c.materials||[]).map(m=>[m.name,`${m.tech?.codec||m.type||REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}`,m.sha256||'Hesaplanamadı']);
   el.push(table([[...REPORT_TEXT.inventoryHeaders],...(inventory.length?inventory:[[REPORT_TEXT.noInventoryRow[0],'—','—','—','—']])],[125,95,45,120,155],{header:true}));
   el.push(paragraph(REPORT_TEXT.inventoryNote,{size:9,italic:true,color:'muted',after:7}));
+  const uSpk=speakerRows(c);
+  el.push(h('Konuşmacılar'));
+  el.push(paragraph(REPORT_TEXT.speakerIntro,{size:10}));
+  el.push(table([[...REPORT_TEXT.speakerHeaders],...(uSpk.length?uSpk:[REPORT_TEXT.noSpeakerRow])],[90,80,70,70,110,150],{header:true}));
   el.push(h(REPORT_TEXT.sections[3]));
   el.push(paragraphLines(c.methodText||DEFAULT_METHOD,{justify:true}));
   el.push(h(REPORT_TEXT.sections[4]));
@@ -562,14 +832,17 @@ $$('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(
 $('#caseSelect').addEventListener('change',async e=>{appState.activeCaseId=e.target.value;persist();populateCaseForm();populateQuestionsForm();renderOverview();await renderAudioList();renderQueue();});$('#newCaseBtn').addEventListener('click',()=>{const c=freshCase();appState.cases.push(c);appState.activeCaseId=c.id;persist();renderCaseSelect();populateCaseForm();populateQuestionsForm();renderOverview();renderAudioList();switchView('case');});
 $('#view-case').addEventListener('input',readCaseForm);$('#view-case').addEventListener('change',readCaseForm);$('#view-questions').addEventListener('input',e=>{const t=e.target;if(t.dataset.q!==undefined){const c=currentCase(),q=c.questions[Number(t.dataset.q)];if(q)q[t.dataset.k]=t.value;persist();}else readQuestionsForm();});$('#view-questions').addEventListener('change',e=>{if(e.target.dataset.q===undefined)readQuestionsForm();});$('#addQuestionBtn').addEventListener('click',addQuestion);$('#questionsList').addEventListener('click',e=>{const b=e.target.closest('[data-remove-q]');if(!b)return;const c=currentCase();c.questions.splice(Number(b.dataset.removeQ),1);persist();renderQuestions();});
 $('#audioInput').addEventListener('change',async e=>{const files=[...e.target.files];if(files.length)await addAudioFiles(files);e.target.value='';});const dz=$('#dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',async e=>{const files=[...e.dataTransfer.files];if(files.length)await addAudioFiles(files);});
-$('#audioList').addEventListener('click',async e=>{const row=e.target.closest('tr.seg-row');if(row&&!e.target.closest('button')&&!e.target.closest('input')&&!e.target.closest('textarea')&&!e.target.closest('select')){focusSegmentRow(row);}const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.segFilter!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.uiFilter=b.dataset.segFilter;renderSegments(m,card);}}else if(b.dataset.segNav!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)navSegment(m,b.dataset.segNav==='next'?1:-1);}else if(b.dataset.segSpeed!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.playbackRate=Number(b.dataset.segSpeed);const pl=card.querySelector('audio');if(pl)pl.playbackRate=m.playbackRate;renderSegments(m,card);persist();}}else if(b.dataset.segApprove!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);approveActiveSegment(m);}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
+$('#audioList').addEventListener('click',async e=>{const item=e.target.closest('.seg-item');if(item){focusSegmentRow(item);}const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.segFilter!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.uiFilter=b.dataset.segFilter;renderSegments(m,card);}}else if(b.dataset.segNav!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)navSegment(m,b.dataset.segNav==='next'?1:-1);}else if(b.dataset.segSpeed!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.playbackRate=Number(b.dataset.segSpeed);const pl=card.querySelector('audio');if(pl)pl.playbackRate=m.playbackRate;renderSegments(m,card);persist();}}else if(b.dataset.segApprove!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);approveActiveSegment(m);}else if(b.dataset.approveSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)approveActiveSegment(m);}else if(b.dataset.reviewSet!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const [ix,val]=b.dataset.reviewSet.split('|');const s2=m.segments[Number(ix)];if(s2){s2.review=val;s2.checked=(val==='onaylandi');persist();updateSegListItem(m,Number(ix));refreshSegChips(m);renderSegDetail(m);renderOverview();if($('#view-report').classList.contains('active'))renderReport();}}}else if(b.dataset.playActive!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)playActiveSegment(m);}else if(b.dataset.jumpPrio!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)jumpToPriority(m);}else if(b.dataset.splitSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)splitSegmentAtPlayer(m,Number(b.dataset.splitSeg));}else if(b.dataset.mergeNext!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)mergeSegmentWithNext(m,Number(b.dataset.mergeNext));}else if(b.dataset.measurePitch!==undefined){const mm=c.materials.find(x=>x.id===b.dataset.measurePitch);if(mm)measureSpeakerPitch(mm);}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
 $('#audioList').addEventListener('focusin',e=>{const el=e.target;if(el.dataset&&el.dataset.key==='text'){const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(s)snapshotSegmentText(s);}});
-$('#audioList').addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||el.dataset.key!=='text')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(pushSegmentHistory(s))persist();// Odak aynı tabloda başka bir alana geçtiyse tabloyu yeniden çizmeyiz; yoksa
-// kullanıcının tıkladığı hedef DOM'dan silinir ve odak kaybolur.
-const rt=e.relatedTarget;const sameTable=rt&&rt.dataset&&(rt.dataset.seg!==undefined||rt.dataset.segFilter!==undefined);if(!sameTable&&card){renderSegments(m,card);if($('#view-report').classList.contains('active'))renderReport();}});
-$('#audioList').addEventListener('input',e=>{const el=e.target;if(el.dataset.seg===undefined)return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(el.dataset.key==='text'){s.text=el.value;// Yazarken yalnızca bu satırın 'anlamlı metin yok' işareti güncellenir;
-// tüm tabloyu yeniden çizmek odak ve imleç konumunu bozardı.
-const row=el.closest('tr.seg-row');if(row){const flag=row.querySelector('.halluc-flag');const bad=isHallucination(s.text);if(bad&&!flag){const span=document.createElement('span');span.className='halluc-flag';span.textContent='Anlamlı metin yok — dinleyip doldurun';el.parentElement.appendChild(span);row.classList.add('is-halluc');}else if(!bad&&flag){flag.remove();row.classList.remove('is-halluc');}}}else if(el.dataset.key==='checked'){s.checked=el.checked;s.review=el.checked?'onaylandi':'bekliyor';}else s[el.dataset.key]=el.value;persist();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});$('#audioList').addEventListener('change',e=>{const el=e.target;if(el.dataset.key!=='review')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;s.review=el.value;s.checked=(el.value==='onaylandi');el.dataset.state=el.value;persist();renderAudioList();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});
+$('#audioList').addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||el.dataset.key!=='text')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(el.dataset.seg);const s=m?.segments[i];if(!s)return;if(pushSegmentHistory(s))persist();// Odak aynı detay panelinde kaldıysa paneli yeniden çizmeyiz; yoksa odak kaybolur.
+const rt=e.relatedTarget;const samePane=rt&&rt.dataset&&(rt.dataset.seg!==undefined||rt.closest&&rt.closest('.seg-detail'));if(!samePane){updateSegListItem(m,i);if($('#view-report').classList.contains('active'))renderReport();}});
+$('#audioList').addEventListener('input',e=>{const el=e.target;if(el.dataset.seg===undefined)return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(el.dataset.key==='text')s.text=el.value;else if(el.dataset.key==='speaker')s.speaker=el.value;else s[el.dataset.key]=el.value;persist();updateSegListItem(m,Number(el.dataset.seg));refreshSegChips(m);renderOverview();if($('#view-report').classList.contains('active'))renderReport();});
+$('#audioList').addEventListener('input',e=>{const el=e.target;if(!el.dataset||el.dataset.spk===undefined)return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);if(!m)return;const rec=(m.speakers||[]).find(x=>x.id===el.dataset.spk);if(!rec)return;const key=el.dataset.spkKey;const oldName=rec.name;rec[key]=el.value;// Etiket adı değişirse bölümlerdeki konuşmacı referansları da güncellenir.
+if(key==='name'&&el.value.trim()&&el.value!==oldName){for(const sg of m.segments||[]){if((sg.speaker||'')===oldName)sg.speaker=el.value;}}persist();});
+$('#audioList').addEventListener('change',e=>{const el=e.target;if(el.dataset&&el.dataset.spk!==undefined){const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);if(m){const rec=(m.speakers||[]).find(x=>x.id===el.dataset.spk);if(rec){rec[el.dataset.spkKey]=el.value;persist();renderSpeakersPanel(m);renderOverview();}}}if(el.dataset.key!=='review')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(el.dataset.seg);const s=m?.segments[i];if(!s)return;s.review=el.value;s.checked=(el.value==='onaylandi');el.dataset.state=el.value;persist();updateSegListItem(m,i);refreshSegChips(m);renderOverview();if($('#view-report').classList.contains('active'))renderReport();});
+$('#audioList').addEventListener('focusin',e=>{const el=e.target;if(!el.dataset||el.dataset.key!=='text')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(s)snapshotSegmentText(s);});
+$('#audioList').addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||el.dataset.key!=='text')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(el.dataset.seg);const s=m?.segments[i];if(!s)return;if(pushSegmentHistory(s))persist();// Odak aynı detay panelinde kaldıysa paneli yeniden çizmeyiz; yoksa odak kaybolur.
+const rt=e.relatedTarget;const samePane=rt&&rt.closest&&rt.closest('.seg-detail');if(!samePane){updateSegListItem(m,i);if($('#view-report').classList.contains('active'))renderReport();}});
 $('#loadModelBtn').addEventListener('click',()=>ensureModel().catch(e=>showToast(e.message)));$('#refreshStorageBtn').addEventListener('click',()=>refreshStorage());$('#clearAllModelsBtn').addEventListener('click',()=>clearModelCache());$('#storageList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.deleteModel){await deleteModelCache(b.dataset.deleteModel);}else if(b.dataset.verifyModel){await verifyModelCache(b.dataset.verifyModel);}else if(b.dataset.useModel){const sel=$('#modelSelect');if(sel){sel.value=b.dataset.useModel;showToast('Model seçildi: '+b.dataset.useModel);}}});$('#startQueueBtn').addEventListener('click',()=>runQueue());$('#cancelQueueBtn').addEventListener('click',()=>{const c=currentCase();if(c)c.queueCancel=true;showToast('Kuyruk durdurulacak; geçerli kayıt bitince duracak.');});$('#retryFailedBtn').addEventListener('click',()=>{const c=currentCase();if(!c)return;for(const m of c.materials||[]){if(m.status==='Çözümleme hatası')m.status='İnceleme bekliyor';}persist();renderQueue();renderAudioList();showToast('Hatalı kayıtlar kuyruğa alındı.');});$('#loadSamplesBtn').addEventListener('click',loadSamples);$('#downloadDocxBtn').addEventListener('click',()=>makeDocx().catch(e=>showToast(e.message)));$('#downloadUdfBtn').addEventListener('click',()=>makeUdf().catch(e=>showToast(e.message)));$('#exportProjectBtn').addEventListener('click',()=>exportProject().catch(e=>showToast(e.message)));$('#importProjectBtn').addEventListener('click',()=>$('#importProjectInput').click());$('#importProjectInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f){try{await importProject(f);}catch(err){showToast(`İçe aktarma başarısız: ${err.message}`);}e.target.value='';}});
 $('#audioList').addEventListener('keydown',e=>{const card=e.target.closest('.audio-card');if(!card)return;const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);if(!m)return;handleSegKey(e,card,m);});
 $('#helpBtn').addEventListener('click',()=>$('#helpDialog').showModal());$('#closeHelp').addEventListener('click',()=>$('#helpDialog').close());$('#confirmCancel').addEventListener('click',()=>$('#confirmDialog').close());$('#closeConfirm').addEventListener('click',()=>$('#confirmDialog').close());$('#confirmOk').addEventListener('click',()=>$('#confirmDialog').close());

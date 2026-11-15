@@ -174,19 +174,30 @@ kaybolmasıydı; bu bir veri kaybıydı.
 Uzmanın en çok zaman geçirdiği alan yeniden tasarlandı; hedef, uzun kayıtlarda
 (20–60 dakika, dosya başına on kayıt) hızlı ve hatasız denetimdi.
 
-- **Klavye kısayolları** eklendi: `Boşluk` oynat/durdur, `↑`/`↓` bölüm değiştir,
-  `Enter` aktif bölümü onayla, `Y` dinle, `[`/`]` hız, `←`/`→` 5 sn geri/ileri,
-  `Esc` metin alanından çık. Uzman elini klavyeden ayırmadan çalışır.
-- **Aktif bölüm** belirgin işaretlenir; `Enter` ile onaylanınca otomatik olarak
-  sonraki bölüme geçer.
-- **Bölüm filtresi** eklendi (Tümü / Bekleyen / Onaylandı / Anlaşılmadı /
-  Yeniden dinlenecek), her birinin sayısı görünür.
-- **Oynatma hızı** 0,75×–2× eklendi; kayda bağlı saklanır.
-- **Denetim ilerleme çubuğu** ve yapışkan tablo başlığı eklendi.
-- **Anlamlı metin yok** işareti artık metin yazıldığında canlı kaybolur.
-- **İki hata düzeltildi:** (1) Metin geçmişi her tuş vuruşunda kaydediliyordu;
-  bu, geçmişi aynı metnin onlarca ara hâliyle doldurup localStorage'ı
-  şişiriyordu. Artık geçmiş düzenleme oturumu başına bir kez tutulur. (2) Eski
-  sürümlerden kalan kirlenmiş geçmiş açılışta otomatik sıkıştırılır.
-- `focusout` sırasında tam tablo yeniden çizilerek odak kaybolmasına yol açan
-  davranış giderildi.
+**İlk sürümdeki hatalar giderildi.** Alan ilk kez eklenirken her bölüm
+değişiminde tablo `innerHTML` ile baştan çiziliyordu; bu, kaydırmanın zıplamasına,
+odağın kaybolmasına, ok tuşlarının çalışmamasına ve oynatma sırasında metnin
+sıçramasına yol açıyordu. Alan bu kez doğru mimariyle kuruldu.
+
+- **İki panel:** solda bölüm listesi, sağda aktif bölüm detayı. Aktif bölüm
+  değişince DOM yeniden çizilmez; yalnızca işaret ve detay alanları güncellenir.
+  Kaydırma, odak ve ok tuşları korunur.
+- **Klavye kısayolları:** `Boşluk` oynat/durdur, `↑`/`↓` bölüm, `Enter` onayla,
+  `Y` dinle, `[`/`]` hız, `←`/`→` 5 sn, `Esc` metin alanından çık.
+- **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve durum
+  tek satırda. Bölüm filtresi (Tümü/Bekleyen/Onaylandı/Anlaşılmadı/Yeniden).
+- **İnceleme önceliği:** hangi bölümün önce dinlenmesi gerektiğini gösteren
+  şeffaf, gerekçeli işaret. "Öncelikliye git" düğmesi en yüksek öncelikli
+  bekleyen bölüme atlar.
+- **Bölüm işlemleri:** oynatıcı konumundan böl, sonrakiyle birleştir, sil.
+- **Oynatma hızı** 0,75×–2× ve denetim ilerleme çubuğu.
+- **Konuşmacı yönetimi:** rol, cinsiyet (uzman beyanı), yaş aralığı ve not
+  alanları; bu bilgiler rapora "Konuşmacılar" tablosu olarak akar.
+- **Perde (temel frekans) ölçümü:** otokorelasyon yöntemiyle gerçek DSP ölçümü.
+  Birim testiyle doğrulandı (120 Hz sinüs → 120 Hz, 220 Hz → 221 Hz, gürültü →
+  sonuç yok). Ölçüm uzman tarafından tetiklenir, otomatik çalışmaz.
+- **Konuşmacı eşleştirme önerisi:** benzer perdedeki etiketler "aynı kişi
+  olabilir" diye önerilir; kimlik tespiti değildir ve bu açıkça belirtilir.
+- **Düzeltilen iki hata:** (1) Metin geçmişi her tuş vuruşunda kaydediliyordu;
+  artık düzenleme oturumu başına bir kez. (2) Eski sürümlerden kalan kirlenmiş
+  geçmiş açılışta otomatik sıkıştırılır (`Geçmiş (20)` → `Geçmiş (1)`).

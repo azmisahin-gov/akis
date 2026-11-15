@@ -73,11 +73,13 @@
 .question-list li{font-size:10px;line-height:1.6;margin:7px 0}
 .paper-section h3{line-height:1.4}
 
-/* ==== Deşifre ve kontrol çalışma alanı (v2.1) ====
-   Uzmanın en çok zaman geçirdiği alan. Tasarım ilkeleri:
-   - Aktif bölüm net görünsün (sol kenar + zemin), uzun kayıtta göz kaybolmasın.
-   - Durum renkleri tek bakışta okunsun; metin okunabilirliği ön planda.
-   - Klavye ile eller metinden ayrılmadan gezinme ve onaylama. */
+
+/* ==== Deşifre ve kontrol çalışma alanı ====
+   Bilirkişinin en çok zaman geçirdiği alan. Tasarım ilkeleri:
+   - İki panel: solda bölüm listesi (gezinme), sağda aktif bölüm detayı (çalışma).
+   - Aktif bölüm değişince DOM yeniden çizilmez; yalnızca görünürlük ve sınıflar
+     güncellenir. Böylece kaydırma, odak ve ok tuşları korunur.
+   - Durum renkleri ve öncelik rozetleri tek bakışta okunur. */
 .transcript-editor{border-top:1px solid #e6ecf2;margin-top:14px;padding-top:13px}
 .transcript-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
 .transcript-head b{font-size:12px;color:var(--navy);letter-spacing:.2px}
@@ -98,41 +100,55 @@
 .seg-progress .bar{flex:1;height:6px;background:#eef2f6;border-radius:20px;overflow:hidden}
 .seg-progress .bar span{display:block;height:100%;background:linear-gradient(90deg,#2c8062,#42a079);transition:width .3s ease}
 .seg-progress small{font-size:9px;color:#8392a1;white-space:nowrap}
-.segments-table{width:100%;border-collapse:separate;border-spacing:0}
-.segments-table thead th{position:sticky;top:0;z-index:2;background:#eef3f8;color:#5d7288;text-align:left;padding:8px;font-size:9px;font-weight:700;letter-spacing:.4px;border-bottom:1px solid #dbe4ee}
-.segments-table thead th:first-child{border-radius:7px 0 0 0}
-.segments-table thead th:last-child{border-radius:0 7px 0 0}
-.segments-table td{border-bottom:1px solid #eef2f6;padding:8px;vertical-align:top}
-.segments-table tr.seg-row{outline:none;transition:background .12s ease}
-.segments-table tr.seg-row:hover td{background:#fafcfe}
-.segments-table tr.seg-row:focus-visible td{background:#f4f8fc;box-shadow:inset 0 0 0 2px #b9cfe4}
-.segments-table tr.seg-row.is-active td{background:#f2f7fc}
-.segments-table tr.st-onaylandi td:first-child{box-shadow:inset 3px 0 0 #2c8062}
-.segments-table tr.st-anlasilmadi td:first-child{box-shadow:inset 3px 0 0 #c9903f}
-.segments-table tr.st-yeniden td:first-child{box-shadow:inset 3px 0 0 #b95252}
-.segments-table tr.is-active td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
-.segments-table .seg-no{width:28px;color:#9aa9b8;font:700 10px Manrope;text-align:center;padding-top:11px}
-.segments-table .time-col{width:74px}
-.segments-table .speaker-col{width:104px}
-.segments-table .status-col{width:152px}
-.segments-table .act-col{width:36px}
-.segments-table input,.segments-table textarea{border:1px solid #e3e9ef;border-radius:6px;padding:6px 7px;font:12px 'Segoe UI';color:#2f465c;width:100%;min-width:0;background:#fff;transition:border .15s}
-.segments-table input:focus,.segments-table textarea:focus{border-color:#7292b4;box-shadow:0 0 0 3px #7292b414;outline:none}
-.segments-table textarea{min-height:46px;resize:vertical;line-height:1.5}
-.segments-table .time-input{font:600 11px 'Consolas','Segoe UI',monospace;color:#3a5673;text-align:center}
-.segments-table .speaker-input{font-size:11px}
-.segments-table tr.st-anlasilmadi textarea{background:#fffdf8}
-.segments-table tr.is-halluc textarea{background:#fffaf0}
-.review-select{border:1px solid #e3e9ef;border-radius:6px;padding:6px 7px;font:600 10px 'Segoe UI';color:#34495e;background:#fff;width:100%}
-.review-select[data-state="onaylandi"]{color:#1f6b50;border-color:#bfe0d2;background:#f1faf6}
-.review-select[data-state="anlasilmadi"]{color:#8a6320;border-color:#eddcbd;background:#fff9ee}
-.review-select[data-state="yeniden"]{color:#9c3f3f;border-color:#eccfcf;background:#fdf3f3}
-.row-actions{display:flex;flex-direction:column;gap:4px;align-items:center}
-.icon-mini{border:1px solid #e3e9ef;background:#fff;color:#5a7089;border-radius:6px;width:26px;height:26px;font-size:12px;cursor:pointer;display:grid;place-items:center}
-.icon-mini:hover{background:#eef3f8;border-color:#cfdbe7;color:var(--navy)}
-.icon-mini.play{color:#2f6f95}
-.halluc-flag{display:inline-block;margin-top:5px;font-size:9px;color:#9a6b2d;background:#fff6e9;border:1px solid #f0dfc3;border-radius:5px;padding:2px 6px}
-.seg-hidden-note{padding:11px;text-align:center;font-size:10px;color:#8795a4;background:#fafcfd;border:1px dashed #dbe4ee;border-radius:7px;margin-top:8px}
+
+/* İki panelli gövde */
+.seg-workspace{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);gap:12px;align-items:start}
+@media(max-width:1080px){.seg-workspace{grid-template-columns:1fr}}
+.seg-list{max-height:520px;overflow:auto;border:1px solid #e6ecf2;border-radius:9px;background:#fff}
+.seg-item{display:grid;grid-template-columns:22px 58px 1fr auto;gap:8px;align-items:center;padding:8px 9px;border-bottom:1px solid #eef2f6;cursor:pointer;border-left:3px solid transparent}
+.seg-item:last-child{border-bottom:0}
+.seg-item:hover{background:#fafcfe}
+.seg-item.is-active{background:#f2f7fc;border-left-color:var(--gold)}
+.seg-item.st-onaylandi{border-left-color:#2c8062}
+.seg-item.st-anlasilmadi{border-left-color:#c9903f}
+.seg-item.st-yeniden{border-left-color:#b95252}
+.seg-item.is-active{border-left-color:var(--gold)!important;box-shadow:inset 0 0 0 1px #dbe7f2}
+.seg-no{font:700 10px Manrope;color:#9aa9b8;text-align:center}
+.seg-time{font:600 10px 'Consolas','Segoe UI',monospace;color:#5a7089}
+.seg-text{font-size:11px;color:#3a5069;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seg-item.is-empty .seg-text{color:#a0895f;font-style:italic}
+.seg-badges{display:flex;gap:4px;align-items:center}
+.badge{font:700 8px 'Segoe UI';letter-spacing:.3px;border-radius:4px;padding:2px 5px;white-space:nowrap}
+.badge.done{background:#e8f5ef;color:#1f6b50}
+.badge.warn{background:#fff4e3;color:#8a6320}
+.badge.bad{background:#fdeeee;color:#9c3f3f}
+.badge.again{background:#fdf3f3;color:#9c3f3f}
+.badge.prio{background:#eef4fb;color:#2f6f95}
+.badge.spk{background:#f1eefb;color:#5b4b9a}
+.seg-empty-note{padding:14px;text-align:center;font-size:10px;color:#8795a4}
+
+/* Sağ panel: aktif bölüm detayı */
+.seg-detail{border:1px solid #e6ecf2;border-radius:9px;background:#fff;padding:14px}
+.seg-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:11px;padding-bottom:9px;border-bottom:1px solid #eef2f6}
+.seg-detail-head .idx{font:700 12px Manrope;color:var(--navy)}
+.seg-detail-head .nav{display:flex;gap:4px}
+.seg-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.seg-field>label{font:600 9px 'Segoe UI';letter-spacing:.4px;color:#7d8ea0}
+.seg-row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg-detail input,.seg-detail textarea,.seg-detail select{border:1px solid #e3e9ef;border-radius:6px;padding:8px 9px;font:13px 'Segoe UI';color:#24384d;width:100%;background:#fff;transition:border .15s}
+.seg-detail textarea{min-height:120px;resize:vertical;line-height:1.6;font-size:14px}
+.seg-detail input:focus,.seg-detail textarea:focus,.seg-detail select:focus{border-color:#7292b4;box-shadow:0 0 0 3px #7292b414;outline:none}
+.seg-detail .time-input{font:600 12px 'Consolas','Segoe UI',monospace;text-align:center}
+.seg-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px;padding-top:11px;border-top:1px solid #eef2f6}
+.seg-detail .halluc-note{background:#fffaf0;border:1px solid #f0dfc3;color:#8a6320;font-size:10px;border-radius:7px;padding:8px 10px;margin-bottom:10px}
+.seg-nav-foot{display:flex;justify-content:space-between;gap:8px;margin-top:11px}
+.seg-detail-empty{color:#8795a4;font-size:11px;text-align:center;padding:30px 10px}
+
+/* Öncelik/konuşmacı yardımcıları */
+.spk-list{display:grid;gap:7px}
+.spk-card{border:1px solid #e6ecf2;border-radius:8px;padding:10px;background:#fbfcfd}
+.spk-card b{font-size:11px;color:#2c4055}
+.spk-card small{display:block;font-size:9px;color:#8b98a7;margin-top:3px}
 .kbd-hint{font-size:9px;color:#8795a4;line-height:1.7;background:#f7fafc;border:1px solid #e6eef5;border-radius:7px;padding:8px 10px;margin-top:9px}
 .kbd-hint b{color:#3a5673}
 .kbd-hint kbd{display:inline-block;font:600 9px 'Consolas',monospace;background:#fff;border:1px solid #d3dfea;border-bottom-width:2px;border-radius:4px;padding:1px 5px;color:#33506c;margin:0 1px}
