@@ -31,28 +31,35 @@ UDF çıktısında kaybolmasıydı. Tüm sapmalar giderildi ve tekrar oluşması
 önlemek için `tools/rapor-tutarlilik-testi.mjs` eklendi. Ayrıntı:
 [`BILINEN_SORUNLAR.md`](BILINEN_SORUNLAR.md).
 
-### v2.1 — Yeni AKİS PRO arayüzü
+### v2.1 — Deşifre ve kontrol çalışma alanı (tamamlandı)
 
-- Yenilenmiş ana kontrol paneli.
-- Modern dosya yönetimi ve toplu işlem ekranı.
-- Gelişmiş rapor önizlemesi.
+Uzmanın en çok zaman geçirdiği alan yeniden tasarlandı. Klavye kısayolları,
+aktif bölüm odağı, bölüm filtresi, oynatma hızı ve denetim ilerlemesi eklendi.
+Ayrıca metin geçmişinin her tuş vuruşunda kaydedilmesi hatası ve kirlenmiş
+geçmiş giderildi. Ayrıntı: [`../CHANGELOG.md`](../CHANGELOG.md).
 
 ### v2.2 — Deşifre doğruluğunu artırma
 
 - Daha büyük modellerle (large-v3-turbo) doğruluk karşılaştırması ve ölçümü.
 - Ölçüm sonuçlarının belgelenmesi.
+- Düşük güvenli kelimelerin işaretlenmesi (model güven skoru kullanılabilirse).
 
-### v2.3 — Mercie özel rapor alanları
+### v2.3 — Yeni AKİS PRO arayüzü
+
+- Yenilenmiş ana kontrol paneli ve modern dosya yönetimi.
+- Gelişmiş rapor önizlemesi ve toplu işlem ekranı.
+
+### v2.4 — Mercie özel rapor alanları
 
 v1'de bölüm yapısı dört merci türünde aynıdır; fark yalnızca kapak alanlarındadır.
 v2'de ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması
 değerlendirilecektir.
 
-### v2.4 — Test kapsamını genişletme
+### v2.5 — Test kapsamını genişletme
 
-Rapor oluşturucuları artık otomatik denetleniyor. Deşifre motoru, model
-yöneticisi ve yedekleme akışları için de otomatik kontrol eklenmesi
-değerlendirilecektir.
+Rapor oluşturucuları ve deşifre alanı artık otomatik denetleniyor. Deşifre
+motoru, model yöneticisi ve yedekleme akışları için de otomatik kontrol
+eklenmesi değerlendirilecektir.
 
 ## Değişmez kurallar
 
