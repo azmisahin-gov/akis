@@ -1,7 +1,17 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.27-AKIS-YERLESIM
+Sürüm: 2026.11.28-AKIS-DEPOLAMA-DUZELTME
 
 Bu güncellemede:
+- Dalga formu verisinin kalıcı depolamaya yazılması hatası giderildi. Peak dizisi kayıt
+  başına yaklaşık 32 KB tutuyor ve yanlışlıkla localStorage'a kaydediliyordu; 10 kayıtta
+  320 KB, 100 kayıtta 3,2 MB şişme ve depolama kotası aşımı riski doğuyordu. Peak verisi
+  artık yalnızca bellekte tutuluyor (kayıt kimliğine göre eşleme), diske yazılmıyor.
+- Önceki sürümlerde kaydedilmiş peak verisi, uygulama açılışında temizleniyor; böylece
+  mevcut kullanıcıların tarayıcı depolaması da gerçek boyutuna dönüyor.
+- Ölçüm: düzeltme öncesi 3 kayıtla 103 KB, sonrasında 10 kayıtla 23 KB. Kayıt başına yük
+  yaklaşık 27 KB'den 2,3 KB'ye indi.
+- Bölüm bazında dinleme, dalga formu, katlanabilir ayar bölümü ve yerleşim düzenlemesi
+  bu sürümde korunuyor.
 - Ses kayıtları görünümünün yerleşimi düzenlendi. Önceden dört panel üst üste diziliyordu ve
   asıl çalışma alanı olan "Eklenen ses kayıtları" listesi en altta kalıyordu; kullanıcı her
   seferinde sayfayı kaydırmak zorundaydı. Artık sıra: yükleme alanı, ses kayıtları listesi,
