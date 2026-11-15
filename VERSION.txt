@@ -1,7 +1,26 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.20-AKIS-MERCI-TERMINOLOJISI
+Sürüm: 2026.11.21-AKIS-BOLUM-DINLEME
 
 Bu güncellemede:
+- Bölüm bazında dinleme eklendi: her deşifre satırındaki "▶" düğmesi, kaydın oynatıcısını
+  ilgili bölümün başlangıç zamanına getirip çalar ve bitiş zamanında durur. Uzman, metni
+  kayıtla karşılaştırırken zamanı elle aramak zorunda kalmaz.
+- Merci terminolojisi Bakanlığın yayımladığı resmî şablonlara göre hizalandı. Şablonlar
+  indirilip incelendi; ölçülen sonuç: dört mercinin de yedi bölümlü rapor yapısı birebir aynı,
+  yalnızca kapak alanları değişiyor.
+- Kapak dosya numarası etiketi mercie göre değişiyor: hukuk/ceza/icra "DOSYA NO",
+  Cumhuriyet Başsavcılığı "SORUŞTURMA NO".
+- Taraf etiketleri resmî şablon terminolojisine çekildi (MÜŞTEKİ/MAĞDUR /KATILAN, SANIK,
+  ŞÜPHELİ, ALACAKLI, BORÇLU ve vekil karşılıkları).
+- Konu ve tarih alanları mercie göre adlandırılıyor: DAVA KONUSU/DAVA TARİHİ,
+  İNCELEME KONUSU/SUÇ TARİHİ, SORUŞTURMA KONUSU/SUÇ TARİHİ, TAKİP KONUSU/TAKİP TARİHİ.
+- Rapor başlığındaki yönelme eki hesaplanıyor: sabit "NE" yerine Türkçe ünlü uyumuna ve
+  iyelik ekine göre "MAHKEMESİ'NE", "BAŞSAVCILIĞI'NA", "MÜDÜRLÜĞÜ'NE" üretiliyor.
+- Soru bölümü başlığı merciden bağımsız hâle getirildi.
+- Model yöneticisi eklendi: indirilen modeller listelenir, boyut gösterilir, bütünlük
+  doğrulanır, silinir; donanıma göre model önerilir.
+- Dijital delil güvenliği, gelişmiş deşifre editörü, uzun kayıt yönetimi, toplu çözümleme
+  kuyruğu ve konuşma motoru düzeltmesi bu sürümde korunuyor.
 - Merci terminolojisi Bakanlığın yayımladığı resmî şablonlara göre hizalandı. Şablonlar
   indirilip incelendi; ölçülen sonuç: dört mercinin de yedi bölümlü rapor yapısı birebir aynı,
   yalnızca kapak alanları değişiyor. Bu nedenle ayrım bölüm yapısında değil kapak alanlarında.
