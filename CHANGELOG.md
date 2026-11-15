@@ -144,5 +144,27 @@ büyük çalışma. Yol haritası için [`docs/YOL_HARITASI.md`](docs/YOL_HARITA
 
 ## v2 — Sıradaki çalışma
 
-Henüz başlanmadı. Kapsam ve öncelikler için
-[`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md) dosyasına bakın.
+### v2.0 — Rapor metni tutarlılığı
+
+v1 incelemesinde üç rapor oluşturucu (HTML önizleme, DOCX, UDF) arasında dokuz
+metin sapması ölçüldü. En ciddisi, "Çözümleme uyarısı" (`hallucinationWarning`)
+bilgisinin yalnızca önizlemede görünüp dışa aktarılan DOCX ve UDF belgelerinde
+kaybolmasıydı; bu bir veri kaybıydı.
+
+- HTML önizlemedeki tüm sabit metinler `REPORT_TEXT` üzerinden okunacak şekilde
+  bağlandı (alt başlık, mahkeme yer tutucusu, 5.1 meta etiketi, segment tablosu
+  başlıkları, envanter notu, 5.2 fallback, malzeme yok ve dosya yok metinleri).
+- DOCX ve UDF'e çözümleme uyarısı eklendi; artık üç çıktıda da görünüyor.
+- DOCX'teki "Bölüm sayısı" etiketi, diğer çıktılardaki "Deşifre bölümü" ile
+  `segmentCountLabel` üzerinden tekilleştirildi.
+- DOCX ve UDF'teki 5.2 fallback'i yanlışlıkla bölüm 2 metnini kullanıyordu;
+  `defaultEvaluation` ile düzeltildi.
+- Codec yedek metni, mahkeme yer tutucusu (7/12 nokta tutarsızlığı) ve zaman
+  aralığı tire işareti üç oluşturucuda tek kaynağa bağlandı.
+- Kullanılmayan `REPORT_TEXT` anahtarları (`emptyCourt`, `timeDash`,
+  `evidenceWarningPrefix`, `languageWarningPrefix`, `fileMissing`) kullanıma
+  bağlandı; ölü tanım kalmadı.
+- `noInventoryRow`, tek `noMaterials` metninden türetiliyor.
+- `tools/rapor-tutarlilik-testi.mjs` eklendi: üç oluşturucuyu aynı veriyle
+  çalıştırıp metinleri karşılaştırır ve kaynakta `REPORT_TEXT` değerlerinin
+  sabit kopyasını denetler. Beş senaryo, tümü geçiyor.

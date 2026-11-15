@@ -21,21 +21,15 @@ v1 kapsamındaki çalışmalar tamamlanmış ve `main` dalında yayındadır.
 Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyasına
 bakın.
 
-## v2 — Sıradaki büyük çalışma
+## v2 — Sıradaki çalışma
 
-### v2.0 — Teknik temizlik ve doğrulama (öncelik)
+### v2.0 — Rapor metni tutarlılığı (tamamlandı)
 
-v2'ye başlamadan önce v1'de tespit edilen borç kapatılmalıdır. Ayrıntı:
+v1 incelemesinde üç rapor oluşturucu arasında dokuz metin sapması bulundu;
+en ciddisi "Çözümleme uyarısı" bilgisinin yalnızca önizlemede görünüp DOCX ve
+UDF çıktısında kaybolmasıydı. Tüm sapmalar giderildi ve tekrar oluşmasını
+önlemek için `tools/rapor-tutarlilik-testi.mjs` eklendi. Ayrıntı:
 [`BILINEN_SORUNLAR.md`](BILINEN_SORUNLAR.md).
-
-- Rapor metinlerini üç oluşturucuda da (HTML önizleme, DOCX, UDF) tam olarak
-  `REPORT_TEXT` üzerinden okumak; kalan sapmaları gidermek.
-- Özellikle `hallucinationWarning` ("Çözümleme uyarısı") bilgisini DOCX ve UDF
-  çıktısına da eklemek (şu an yalnızca önizlemede görünüyor).
-- Ölü `REPORT_TEXT` anahtarlarını kaldırmak veya kullanmak.
-- Üç rapor oluşturucuyu aynı girdiyle karşılaştıran otomatik kontrol betiği
-  eklemek.
-- `app.js`'i okunabilir satırlara ayırmak (isteğe bağlı, düşük öncelik).
 
 ### v2.1 — Yeni AKİS PRO arayüzü
 
@@ -52,6 +46,12 @@ v2'ye başlamadan önce v1'de tespit edilen borç kapatılmalıdır. Ayrıntı:
 
 v1'de bölüm yapısı dört merci türünde aynıdır; fark yalnızca kapak alanlarındadır.
 v2'de ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması
+değerlendirilecektir.
+
+### v2.4 — Test kapsamını genişletme
+
+Rapor oluşturucuları artık otomatik denetleniyor. Deşifre motoru, model
+yöneticisi ve yedekleme akışları için de otomatik kontrol eklenmesi
 değerlendirilecektir.
 
 ## Değişmez kurallar

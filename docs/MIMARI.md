@@ -91,6 +91,18 @@ Ses dosyası  →  IndexedDB (blob) + localStorage (meta, SHA-256, teknik envant
 
 ## Bilinen mimari borç
 
-Rapor metinlerinin tek kaynaktan gelmesi hedeflenmiştir ancak HTML önizleme
-hâlâ birçok metni sabit yazar. Ayrıntı ve ölçümler için
-[`BILINEN_SORUNLAR.md`](BILINEN_SORUNLAR.md) dosyasına bakın.
+Rapor metinlerinin tek kaynaktan gelmesi hedefine yönelik sapmalar giderildi
+(v2.0). Ayrıntı ve kalan borç için [`BILINEN_SORUNLAR.md`](BILINEN_SORUNLAR.md).
+
+## Doğrulama
+
+Rapor oluşturucularını denetleyen betik:
+
+```bash
+node tools/rapor-tutarlilik-testi.mjs
+```
+
+`tools/rapor-tutarlilik-testi.mjs`, `assets/app.js`'i Node.js `vm` içinde sahte
+bir DOM ile yükler; üç oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı
+veriyle çalıştırır ve çıktı metinlerini karşılaştırır. Ayrıca kaynakta
+`REPORT_TEXT` değerlerinin sabit kopyası kalıp kalmadığını denetler.
