@@ -1,7 +1,21 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.25-AKIS-TEST-VERISI-DUZELTME
+Sürüm: 2026.11.26-AKIS-DALGA-FORMU
 
 Bu güncellemede:
+- Ses dalga formu eklendi. Her kaydın altında Canvas ile çizilen bir dalga formu görünür;
+  üzerine tıklayarak kaydın istenen yerine gidilebilir. Deşifre bölümlerinin zaman aralıkları
+  dalga formu üzerinde gölgeli alan ve dikey çizgilerle işaretlenir; oynatma sırasında konumu
+  gösteren bir imleç ilerler.
+- Dalga formu verisi (peak dizisi) kayıt başına bir kez hesaplanıp önbelleğe alınır; liste
+  yeniden çizildiğinde ses yeniden çözümlenmez.
+- Bu özellik, uzmanın metni kayıtla karşılaştırmasını kolaylaştırır: bölüm sınırları görsel
+  olarak görülür ve dinlenecek yer tek tıklamayla bulunur.
+- Resmî standartlar incelenerek KAYNAK.md'ye eklendi: rapor için zorunlu şablon yoktur;
+  Bilirkişi Portalı UDF ve geçerli e-imza/m-imza ister. Bu, AKİS'in birincil çıktıyı UDF
+  yapma ve e-imza üretmeme kararını doğrular.
+- Hazır test verisinde teknik envanter dolduruldu; kapak tablosundaki çift satır hatası
+  giderildi; dosya adı üretimindeki çift nokta kusuru düzeltildi.
+- Deşifre doğruluğu ölçüldü: orta model 0,378; küçük model 0,651.
 - Hazır test dosyaları yüklenirken teknik envanter atlanıyordu. Normal dosya eklemede codec,
   kanal, örnekleme ve bit derinliği hesaplanıp işlem günlüğü açılıyordu; "Hazır test
   dosyalarını yükle" yolunda bu adımlar yoktu. Bu yüzden test kayıtlarında envanter
