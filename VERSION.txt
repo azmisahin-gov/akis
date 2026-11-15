@@ -1,7 +1,31 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.18-AKIS-DELIL-GUVENLIGI
+Sürüm: 2026.11.19-AKIS-MODEL-YONETICISI
 
 Bu güncellemede:
+- Model yöneticisi eklendi: indirilmiş konuşma modelleri listelenir, her biri için dosya sayısı
+  ve disk boyutu gösterilir. Model seçilebilir, bütünlüğü doğrulanabilir ve silinebilir;
+  tüm model önbelleği tek düğmeyle temizlenebilir.
+- Model bütünlük kontrolü eklendi: bir Whisper çözümleme hattının ihtiyaç duyduğu dosyaların
+  (config, tokenizer, encoder, decoder) tümü mevcut ve boş olmayan boyutta mı diye denetlenir.
+  Yarım kalan indirme bu kontrolle yakalanır. Kitaplık yayınlanmış sağlama toplamı (checksum)
+  sunmadığı için doğrulama yapısal düzeydedir; bu sınırlılık arayüzde açıkça belirtilir.
+- Donanıma göre model önerisi eklendi: WebGPU varsa large-v3-turbo, yoksa CPU üzerinde
+  en iyi dengeyi veren küçük model önerilir ve gerekçesi gösterilir.
+- Depolama alanı kontrolü eklendi: toplam önbellek boyutu ve model başına boyut görünür.
+- İndirme duraklatma hakkında dürüst not: kitaplık indirmeyi teknik olarak duraklatıp kaldığı
+  yerden sürdürmeye izin vermez; ancak tamamlanan her dosya hemen önbelleğe yazıldığı için
+  kesilen indirme yeniden başlatıldığında tamamlanmış dosyaları yeniden indirmez.
+- Dijital delil güvenliği eklendi: her kayıt için codec, kanal sayısı, örnekleme frekansı ve
+  bit derinliği otomatik çıkarılır; WAV başlığı chunk yürüyerek okunur.
+- Sonradan SHA-256 doğrulama ve delil işlem günlüğü eklendi.
+- Gelişmiş deşifre editörü durumları: Onaylandı, Kontrol bekliyor, Anlaşılmadı, Yeniden dinlenecek.
+- Uzun kayıt yönetimi: kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir.
+- Toplu çözümleme kuyruğu: sıralı işlem, genel ilerleme, tahmini kalan süre, hatalıyı tekrar.
+- Konuşma çözümleme motoru düzeltildi: modeller fp16/fp32 ile çalışıyor; q8 kuantizasyonu
+  uzun kayıtlarda anlamlı metin yerine dolgu ifadesi üretiyordu.
+- WebGPU algılama; WebGPU yoksa otomatik WASM (CPU) geri dönüşü.
+- Dolgu/halüsinasyon tespiti; rapor kapak alanları ve rol etiketleri merci türüne göre uyarlanır.
+- Kullanılmayan kod kaldırıldı; START.bat'ın işaret ettiği README_TR.txt eklendi.
 - Dijital delil güvenliği eklendi: her kayıt için codec, kanal sayısı, örnekleme frekansı ve
   bit derinliği otomatik çıkarılır; WAV başlığı chunk yürüyerek okunur (sabit offset varsayımı
   LIST/fact gibi ek chunk'larda yanlış sonuç verdiği için terk edildi).

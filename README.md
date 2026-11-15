@@ -89,6 +89,12 @@ Her deşifre bölümü dört durumdan biriyle işaretlenir: Onaylandı, Kontrol 
 DİJİTAL DELİL GÜVENLİĞİ
 Her kayıt için dosya adı, biçim, boyut, süre, codec, kanal sayısı, örnekleme frekansı, bit derinliği ve SHA-256 özeti kaydedilir. WAV başlığı chunk yürüyerek okunur; sabit offset varsayımı LIST/fact gibi ek chunk içeren dosyalarda yanlış sonuç verdiği için kullanılmaz. “SHA-256 doğrula” düğmesi kaydı yerel depodan yeniden okuyup özeti yeniden hesaplar ve ilk değerle karşılaştırır; fark çıkarsa dosyanın değişmiş olabileceği açıkça bildirilir. Kayıt ekleme, çözümleme ve doğrulama işlemleri tarih-saat damgasıyla delil işlem günlüğüne yazılır ve “İşlem günlüğü” düğmesinden görüntülenir. Rapor envanter tablosunda kanal ve örnekleme bilgileri ayrıca gösterilir. Bu bilgiler tarayıcının sağlayabildiği konteyner düzeyindedir; kaydın gerçekliğini, kayıt tarihini veya montaj yapılıp yapılmadığını tek başına kanıtlamaz.
 
+MODEL YÖNETİCİSİ
+İndirilmiş konuşma modelleri listelenir; her model için dosya sayısı ve disk boyutu gösterilir. Bir model seçilebilir, bütünlüğü doğrulanabilir ve silinebilir; tüm model önbelleği tek düğmeyle temizlenebilir. Bütünlük kontrolü, bir Whisper çözümleme hattının ihtiyaç duyduğu dosyaların (config, tokenizer, encoder, decoder) tümü mevcut ve boş olmayan boyutta mı diye denetler; yarım kalan indirme böylece yakalanır. Kitaplık yayınlanmış sağlama toplamı (checksum) sunmadığı için bu denetim yapısal düzeydedir. Uygulama, algılanan donanıma göre model önerir: WebGPU varsa large-v3-turbo, yoksa CPU üzerinde en iyi dengeyi veren küçük model.
+
+İNDİRME DAVRANIŞI
+Tarayıcı ve kullanılan kitaplık, indirmeyi teknik olarak duraklatıp kaldığı yerden sürdürmeye izin vermez. Ancak tamamlanan her dosya hemen önbelleğe yazıldığı için, kesilen bir indirme yeniden başlatıldığında tamamlanmış dosyalar yeniden indirilmez. İndirme yarıda kalırsa “Modeli yükle”ye tekrar basmak yeterlidir.
+
 
 MARKA VE ÇIKTI ÖNCELİĞİ
 Uygulamanın adı AKİS (Adli Konuşma İnceleme Sistemi) olarak güncellenmiştir. Bilirkişi Portalı için birincil ve zorunlu çıktı UDF’dir. DOCX yalnızca isteğe bağlı yardımcı kopyadır.
