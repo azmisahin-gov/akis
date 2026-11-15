@@ -1,10 +1,40 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.15-AKIS-UDF-STANDART
+Sürüm: 2026.11.16-AKIS-TOPLU-CALISMA
 
 Bu güncellemede:
+- Uzun kayıt yönetimi eklendi: kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir.
+  Böylece uzun kayıtlarda tarayıcı belleği şişmez; her pencere sonunda ilerleme kaydedilir.
+- Çözümleme ilerleme çubuğu eklendi; pencere bazında yüzde gösterilir.
+- Çözümleme iptal edilebilir: "İptal et" düğmesi geçerli pencereyi bitirip durur ve
+  o ana kadar bulunan bölümler korunur.
+- Toplu çözümleme kuyruğu eklendi: birden fazla kayıt sırayla işlenir, genel ilerleme ve
+  tahmini kalan süre gösterilir, kuyruk durdurulabilir.
+- Hatalı kayıtları tekrar kuyruğa alma ("Hatalıları tekrar dene") eklendi.
 - Konuşma çözümleme motoru düzeltildi: q8 kuantizasyonu uzun kayıtlarda anlamlı metin yerine
   tekrarlı dolgu ifadeleri üretiyordu. Modeller artık fp16/fp32 ile çalışıyor ve tarayıcıda
   gerçek Türkçe metin üretiyor.
+- WebGPU algılama eklendi; WebGPU yoksa otomatik olarak WASM (CPU) kullanılır ve arayüzde gösterilir.
+- Çözümleme modeli listesi genişletildi: temel, küçük, orta ve large-v3-turbo; her biri için
+  yaklaşık indirme boyutu ve doğruluk notu gösterilir.
+- Dolgu/halüsinasyon tespiti eklendi: yalnızca "(Konuşma)", "(Müzik - Jenerik)" gibi ifade üreten
+  bölümler "anlamlı metin yok" diye işaretlenir ve rapor öncesi uyarı üretir.
+- Rapor kapak alanları ve rol etiketleri merci türüne göre uyarlanır: hukuk (davacı-davalı),
+  ceza (mağdur-katılan/sanık), savcılık (müşteki-şüpheli), icra (alacaklı-borçlu).
+- Kullanılmayan kod kaldırıldı; START.bat'ın işaret ettiği README_TR.txt eklendi.
+- Hukuk/İdare-Vergi raporunun bölüm sırası Bakanlığın yayımladığı örnek hukuk raporu yapısına göre düzenlendi.
+- Kapak bilgileri ve kısa içindekiler aynı ilk sayfada toplandı; ana rapor bir sonraki sayfada başlatıldı.
+- UDF sayfa kenar boşlukları DOCX ile aynı A4 geometriye yaklaştırıldı.
+- UDF tablolarında koyu çizgiler hafifletildi, hücre içi boşluklar dengelendi ve açık satır dolguları eklendi.
+- Marka AKİS olarak güncellendi; eski MİHENK tarayıcı depolaması ve .mihenk yedek içe aktarma uyumluluğu korundu.
+- Birincil çıktı UDF olarak belirlendi; DOCX isteğe bağlı yardımcı kopyadır.
+
+Notlar:
+- Adalet Bakanlığı eğitim kaynağına göre bilirkişi raporları için tek ve zorunlu bir görsel şablon bulunmamaktadır; raporun mevzuatta sayılan unsurları içermesi, anlaşılır ve denetlenebilir olması gerekir.
+- Çözümleme doğruluğu tarayıcı donanımına bağlıdır. WebGPU varsa belirgin şekilde hızlıdır; yalnızca WASM varsa uzun kayıtlar yavaş çözümlenir.
+- Kayıtlar pencerelere bölünerek işlendiği için çok uzun kayıtlar artık belleği zorlamaz; ancak toplam süre kayıt uzunluğuyla doğru orantılı artar.
+- UDF dosyası, kullanıcı tarafından sağlanan boş BOS.udf dosyasındaki biçim yapısı esas alınarak doğrudan oluşturulur. XML/ZIP yapısı test edilmiştir; gerçek UYAP Editörü içindeki sayfa görünümü son kullanıcı bilgisayarında doğrulanmalıdır.
+- Uygulama e-imza üretmez ve UYAP'a belge göndermez.
+- Otomatik deşifre uzman doğrulamasının yerine geçmez; işaretlenen bölümler dinlenerek doldurulmalıdır.
 - WebGPU algılama eklendi; WebGPU yoksa otomatik olarak WASM (CPU) kullanılır ve arayüzde gösterilir.
 - Çözümleme modeli listesi genişletildi: temel, küçük, orta ve large-v3-turbo; her biri için
   yaklaşık indirme boyutu ve doğruluk notu gösterilir.
@@ -20,12 +50,11 @@ Bu güncellemede:
 - UDF tablolarında koyu çizgiler hafifletildi, hücre içi boşluklar dengelendi ve açık satır dolguları eklendi.
 - Marka AKİS olarak güncellendi; eski MİHENK tarayıcı depolaması ve .mihenk yedek içe aktarma uyumluluğu korundu.
 - Birincil çıktı UDF olarak belirlendi; DOCX isteğe bağlı yardımcı kopyadır.
-- DOCX ve UDF bölüm sırası eşitlendi.
 
 Notlar:
 - Adalet Bakanlığı eğitim kaynağına göre bilirkişi raporları için tek ve zorunlu bir görsel şablon bulunmamaktadır; raporun mevzuatta sayılan unsurları içermesi, anlaşılır ve denetlenebilir olması gerekir.
 - Çözümleme doğruluğu tarayıcı donanımına bağlıdır. WebGPU varsa belirgin şekilde hızlıdır; yalnızca WASM varsa uzun kayıtlar yavaş çözümlenir.
-- Çok uzun kayıtlar (birkaç dakikanın üzerinde) tarayıcı belleğini zorlayabilir; parçalara bölmek önerilir.
+- Kayıtlar pencerele ayrıldığı için çok uzun kayıtlar tarayıcı belleğini zorlamaz; ancak toplam çözümleme süresi kayıt uzunluğuyla doğru orantılı artar.
 - UDF dosyası, kullanıcı tarafından sağlanan boş BOS.udf dosyasındaki biçim yapısı esas alınarak doğrudan oluşturulur. XML/ZIP yapısı test edilmiştir; gerçek UYAP Editörü içindeki sayfa görünümü son kullanıcı bilgisayarında doğrulanmalıdır.
 - Uygulama e-imza üretmez ve UYAP'a belge göndermez.
 - Otomatik deşifre uzman doğrulamasının yerine geçmez; işaretlenen bölümler dinlenerek doldurulmalıdır.
