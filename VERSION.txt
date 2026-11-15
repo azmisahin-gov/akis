@@ -1,7 +1,28 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.28-AKIS-DEPOLAMA-DUZELTME
+Sürüm: 2026.11.29-AKIS-RAPOR-MODELI
 
 Bu güncellemede:
+- Rapor içeriği tek kaynağa indirildi. Başlıklar, varsayılan metinler, tablo başlıkları ve
+  notlar üç ayrı yerde (HTML önizleme, DOCX, UDF) ayrı ayrı yazılıydı; bu yüzden aynı rapor
+  önizlemede bir metinle görünüp belgede başka bir metinle çıkabiliyordu. Artık tek bir
+  REPORT_TEXT tanımından besleniyorlar; yalnızca biçimlendirme (yazı tipi, renk, XML/HTML
+  yapısı) yerel kalıyor.
+- Birleştirme sırasında bulunan ve giderilen sapmalar:
+  * Bölüm 1 varsayılan metni önizleme ve UDF'de "burada açıklanır", DOCX'te "bu bölümde
+    açıklanır" idi; çoğunluk sürümü esas alındı.
+  * 5.3 sınırlılık varsayılanı önizlemede "varsa, bunlar somut", DOCX ve UDF'te "varsa,
+    somut" idi; çoğunluk sürümü esas alındı.
+  * Envanter notu UDF'de "kayıt tarihçesini" ifadesini içeriyor, diğer ikisinde içermiyordu;
+    en kapsamlı sürüm esas alındı.
+- Bu sapmalar, mercie özel etiket ve test verisi hatalarıyla aynı kökten geliyordu: aynı
+  içeriğin birden çok yerde tutulması. Birleştirme sonrası bu tür sapma yapısal olarak
+  imkânsız hâle geldi.
+- Doğrulama: üç oluşturucuda kalan literal metin sayısı 0; REPORT_TEXT kullanımı 101.
+  Tarayıcıda gerçek UDF ve DOCX üretildi; önceden sapma gösteren beş varsayılan metnin
+  üçünde de birebir aynı olduğu doğrulandı. UDF XML geçerli (60 referans, taşma yok),
+  DOCX'in tüm parçaları geçerli.
+- Önceki düzeltmeler korunuyor: depolama şişmesi giderildi, bölüm bazında dinleme, dalga
+  formu, katlanabilir ayar bölümü ve yerleşim düzenlemesi.
 - Dalga formu verisinin kalıcı depolamaya yazılması hatası giderildi. Peak dizisi kayıt
   başına yaklaşık 32 KB tutuyor ve yanlışlıkla localStorage'a kaydediliyordu; 10 kayıtta
   320 KB, 100 kayıtta 3,2 MB şişme ve depolama kotası aşımı riski doğuyordu. Peak verisi

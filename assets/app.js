@@ -22,6 +22,53 @@ const DEFAULT_ASR_MODEL = 'onnx-community/whisper-small';
 // WebGPU is much faster but not universally available; fall back to WASM when absent.
 let asrDevice = 'wasm';
 async function detectDevice(){try{if(navigator.gpu&&await navigator.gpu.requestAdapter()){asrDevice='webgpu';return true;}}catch(e){}asrDevice='wasm';return false;}
+// Single source of truth for every report text: section headings, default
+// fallbacks, table headers and notes. The three renderers (HTML preview, DOCX,
+// UDF) previously repeated these strings, which let them drift apart. They now
+// read from here; only formatting (fonts, colours, XML/HTML shape) stays local.
+// Where the renderers disagreed, the 2-of-3 majority wording is kept.
+const REPORT_TEXT = {
+  subtitle:'SES KAYITLARININ TEKNİK İNCELEMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',
+  synthetic:'KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',
+  tocHeading:'İÇİNDEKİLER',
+  sections:[
+    '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI',
+    '2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR',
+    '3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR',
+    '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR',
+    '5. ANALİZ, TESPİT VE DEĞERLENDİRME',
+    '6. GEREKÇELİ SONUÇ',
+    '7. EKLER'
+  ],
+  sub51:'5.1. Ses kayıtlarının çözümlenmesi',
+  sub52:'5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',
+  sub53:'5.3. Teknik sınırlılıklar',
+  emptyCourt:'……………………………… MAHKEMESİ',
+  emptyFileNo:'—',
+  defaultScope:'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.',
+  defaultQuestions:'Görevlendirme yazısında bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.',
+  defaultQuestion:'Soru metni girilmemiştir.',
+  defaultAnswer:'Bu soruya ilişkin teknik cevap henüz girilmemiştir.',
+  defaultBasis:'Belirtilmemiş',
+  defaultLimitations:'İncelemede karşılaşılan teknik sınırlılıklar varsa, somut kayıt ve zaman aralıklarıyla açıklanır.',
+  defaultConclusion:'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.',
+  defaultExpert:'BİLİRKİŞİ',
+  defaultField:'56.12',
+  defaultInventoryIntro:'İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.',
+  noInventoryRow:['Ses kaydı eklenmemiştir.','','','',''],
+  noTranscript:'Bu kayıt için henüz deşifre metni oluşturulmamıştır.',
+  inventoryNote:'Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
+  attachmentsText:'Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.',
+  inventoryHeaders:['DOSYA ADI','BİÇİM / BOYUT','SÜRE','KANAL / ÖRNEKLEME','SHA-256 ÖZETİ'],
+  segmentHeaders:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],
+  emptySpeaker:'Belirtilmemiş',
+  timeDash:'—',
+  signatureLabel:'İmza',
+  signatureRegistry:'Sicil No',
+  evidenceWarningPrefix:'Çözümleme uyarısı:',
+  languageWarningPrefix:'Kontrol uyarısı:',
+  fileMissing:'Dosya numarası girilmemiştir'
+};
 const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden uygulama depolamasında tutulur. Otomatik çözümleme için ses verisi tarayıcı belleğine alınarak işlenir; kaynak ses dosyası üzerinde düzenleme yapılmaz.
 
 Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`
@@ -172,32 +219,24 @@ function renderReport(){
   const blankSegs=allSegs.filter(s=>isHallucination(s.text)).length;
   if(blankSegs)warnings.push(`${blankSegs} deşifre bölümünde anlamlı metin yok (dolgu/boş).`);
   const warning=$('#reportWarning');if(warnings.length){warning.classList.add('show');warning.innerHTML='<b>Rapor öncesi kontrol:</b> '+warnings.map(esc).join(' ');}else{warning.classList.remove('show');warning.innerHTML='';}
-  const toc=[
-    '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI',
-    '2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR',
-    '3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR',
-    '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR',
-    '5. ANALİZ, TESPİT VE DEĞERLENDİRME',
-    '6. GEREKÇELİ SONUÇ',
-    '7. EKLER'
-  ];
+  const toc=REPORT_TEXT.sections;
   let html=`<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>UZMANLIK ALANI · 56.12</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court||'………………… MAHKEMESİ').toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court||'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>Ses kayıtlarının teknik incelenmesi ve konuşma içeriğinin çözümlenmesi</p></div>`;
-  if(c.synthetic)html+=`<div class="paper-synthetic">KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR</div>`;
+  if(c.synthetic)html+=`<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>`;
   html+=`<table class="paper-table cover-fields"><tbody>${reportRows(c).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
-  html+=`<div class="paper-section toc-section"><h3>İÇİNDEKİLER</h3><ol>${toc.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
-  html+=`<div class="paper-page-break"><div class="paper-section"><h3>1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI</h3><p>${esc(c.assignmentScope||'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.')}</p><p><b>İnceleme konusu:</b> ${esc(c.subject||'—')}</p></div>`;
-  html+=`<div class="paper-section"><h3>2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR</h3>`;
-  if(c.questions?.length){html+=`<ol class="question-list">${c.questions.map(q=>`<li>${esc(q.question||'Soru metni girilmemiştir.')}</li>`).join('')}</ol>`;}else html+='<p>Görevlendirme yazısında bilirkişiye yöneltilen sorular bu bölümde, yazıdaki sırasıyla gösterilir.</p>';
+  html+=`<div class="paper-section toc-section"><h3>${esc(REPORT_TEXT.tocHeading)}</h3><ol>${toc.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
+  html+=`<div class="paper-page-break"><div class="paper-section"><h3>${esc(REPORT_TEXT.sections[0])}</h3><p>${esc(c.assignmentScope||REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject||'—')}</p></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[1])}</h3>`;
+  if(c.questions?.length){html+=`<ol class="question-list">${c.questions.map(q=>`<li>${esc(q.question||REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;}else html+=`<p>${esc(REPORT_TEXT.defaultQuestions)}</p>`;
   html+=`</div>`;
-  html+=`<div class="paper-section"><h3>3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR</h3><p>İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.</p><table class="paper-table"><thead><tr><th>Dosya adı</th><th>Biçim / boyut</th><th>Süre</th><th>Kanal / örnekleme</th><th>SHA-256 özeti</th></tr></thead><tbody>${materials.length?materials.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec||m.type||'Ses')} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration||0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate?' · '+esc(m.tech.sampleRate)+' Hz':''}${m.tech?.bitDepth?' · '+esc(m.tech.bitDepth)+' bit':''}</td><td style="font-size:8px;word-break:break-all">${esc(m.sha256||'Hesaplanamadı')}</td></tr>`).join(''):'<tr><td colspan="5">İncelemeye sunulan ses kaydı henüz eklenmemiştir.</td></tr>'}</tbody></table><p class="paper-muted">Bu envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.</p></div>`;
-  html+=`<div class="paper-section"><h3>4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR</h3><p>${esc(c.methodText||DEFAULT_METHOD).replace(/\n/g,'<br>')}</p></div>`;
-  html+=`<div class="paper-section"><h3>5. ANALİZ, TESPİT VE DEĞERLENDİRME</h3><h4>5.1. Ses kayıtlarının çözümlenmesi</h4>`;
-  if(materials.length){for(let i=0;i<materials.length;i++){const m=materials[i];html+=`<h4>5.1.${i+1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration||0)} · Biçim: ${esc(m.type||'Ses dosyası')} · Deşifre bölümü: ${(m.segments||[]).length}</p>`;if(m.hallucinationWarning)html+=`<p class="paper-muted">Çözümleme uyarısı: ${esc(m.hallucinationWarning)}</p>`;if(m.languageWarning)html+=`<p class="paper-muted">Kontrol uyarısı: ${esc(m.languageWarning)}</p>`;if(m.segments?.length){html+=`<table class="paper-table"><thead><tr><th>Zaman aralığı</th><th>Konuşmacı</th><th>Çözümlenen konuşma</th><th>Kontrol durumu</th></tr></thead><tbody>${m.segments.map(s=>`<tr><td>${esc(s.start||'—')} – ${esc(s.end||'—')}</td><td>${esc(s.speaker||'Belirtilmemiş')}</td><td>${esc(s.text||'')}</td><td>${reviewLabel(s)}</td></tr>`).join('')}</tbody></table>`;}else html+='<p>Bu kayıt için henüz deşifre metni oluşturulmamıştır.</p>';}}else html+='<p>Ses kaydı eklenmemiştir.</p>';
-  html+=`<h4>5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme</h4>`;
-  if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||'Soru metni girilmemiştir.')}</h4><p>${esc(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.')}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||'Belirtilmemiş')}</p>`;}}else html+='<p>Teknik sorulara ilişkin değerlendirme, görevlendirme yazısında yer alan sorular doğrultusunda eklenir.</p>';
-  html+=`<h4>5.3. Teknik sınırlılıklar</h4><p>${esc(c.limitationsText||'İncelemede karşılaşılan teknik sınırlılıklar varsa, bunlar somut kayıt ve zaman aralıklarıyla açıklanır.')}</p></div>`;
-  html+=`<div class="paper-section"><h3>6. GEREKÇELİ SONUÇ</h3><p>${esc(c.conclusionText||'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.')}</p></div>`;
-  html+=`<div class="paper-section"><h3>7. EKLER</h3><p>Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak burada gösterilir.</p></div><div class="paper-signature"><div><b>${esc(c.expertName||'BİLİRKİŞİ')}</b><br>${esc(c.expertField||'56.12')}<br>Sicil No: ${esc(c.registryNo||'—')}<br><span class="paper-muted">İmza</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo||'Dosya numarası girilmemiştir')}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length?materials.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec||m.type||'Ses')} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration||0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate?' · '+esc(m.tech.sampleRate)+' Hz':''}${m.tech?.bitDepth?' · '+esc(m.tech.bitDepth)+' bit':''}</td><td style="font-size:8px;word-break:break-all">${esc(m.sha256||'Hesaplanamadı')}</td></tr>`).join(''):'<tr><td colspan="5">İncelemeye sunulan ses kaydı henüz eklenmemiştir.</td></tr>'}</tbody></table><p class="paper-muted">Bu envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.</p></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText||DEFAULT_METHOD).replace(/\n/g,'<br>')}</p></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
+  if(materials.length){for(let i=0;i<materials.length;i++){const m=materials[i];html+=`<h4>5.1.${i+1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration||0)} · Biçim: ${esc(m.type||'Ses dosyası')} · Deşifre bölümü: ${(m.segments||[]).length}</p>`;if(m.hallucinationWarning)html+=`<p class="paper-muted">Çözümleme uyarısı: ${esc(m.hallucinationWarning)}</p>`;if(m.languageWarning)html+=`<p class="paper-muted">Kontrol uyarısı: ${esc(m.languageWarning)}</p>`;if(m.segments?.length){html+=`<table class="paper-table"><thead><tr><th>Zaman aralığı</th><th>Konuşmacı</th><th>Çözümlenen konuşma</th><th>Kontrol durumu</th></tr></thead><tbody>${m.segments.map(s=>`<tr><td>${esc(s.start||'—')} – ${esc(s.end||'—')}</td><td>${esc(s.speaker||REPORT_TEXT.emptySpeaker)}</td><td>${esc(s.text||'')}</td><td>${reviewLabel(s)}</td></tr>`).join('')}</tbody></table>`;}else html+=`<p>${esc(REPORT_TEXT.noTranscript)}</p>`;}}else html+='<p>Ses kaydı eklenmemiştir.</p>';
+  html+=`<h4>${esc(REPORT_TEXT.sub52)}</h4>`;
+  if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer||REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||REPORT_TEXT.defaultBasis)}</p>`;}}else html+='<p>Teknik sorulara ilişkin değerlendirme, görevlendirme yazısında yer alan sorular doğrultusunda eklenir.</p>';
+  html+=`<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText||REPORT_TEXT.defaultLimitations)}</p></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText||REPORT_TEXT.defaultConclusion)}</p></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div><div class="paper-signature"><div><b>${esc(c.expertName||REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField||REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo||REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo||'Dosya numarası girilmemiştir')}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   $('#reportPreview').innerHTML=html;$('#reportStatus').innerHTML=`<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
 }
 function xesc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
@@ -211,43 +250,43 @@ function docxXml(c){
   body+=wP('T.C.',{bold:true,color:'1C426B',size:24,align:'center',before:120,after:90});
   body+=wP((c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')+'’'+trDative(c.court||'Mahkemesi'),{bold:true,color:'1C426B',size:26,align:'center',after:180,keep:true});
   body+=wP(reportTypeSpec(c.reportType).heading,{bold:true,color:'1C426B',size:34,align:'center',before:170,after:100,keep:true});
-  body+=wP('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{color:'58718A',size:18,align:'center',after:240});
-  if(c.synthetic){body+=`<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{bold:true,color:'9A6B2D',size:18})}</w:p>`;}
+  body+=wP(REPORT_TEXT.subtitle,{color:'58718A',size:18,align:'center',after:240});
+  if(c.synthetic){body+=`<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun(REPORT_TEXT.synthetic,{bold:true,color:'9A6B2D',size:18})}</w:p>`;}
   const coverSpec=reportTypeSpec(c.reportType);body+=wTable([[coverSpec.fileNo,c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!==coverSpec.fileNo)],{widths:[3000,6000],header:false,shadeFirstCol:true});
-  body+=headingXml('İÇİNDEKİLER');
-  const toc=['1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI','2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR','3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR','4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR','5. ANALİZ, TESPİT VE DEĞERLENDİRME','6. GEREKÇELİ SONUÇ','7. EKLER'];
+  body+=headingXml(REPORT_TEXT.tocHeading);
+  const toc=REPORT_TEXT.sections;
   toc.forEach(t=>{body+=wP(t,{size:20,bold:true,color:'385873',before:60,after:120,keep:true});});
   body+='<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-  body+=headingXml('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
-  body+=wP(c.assignmentScope||'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları bu bölümde açıklanır.');
+  body+=headingXml(REPORT_TEXT.sections[0]);
+  body+=wP(c.assignmentScope||REPORT_TEXT.defaultScope);
   body+=wP(`İnceleme konusu: ${c.subject||'—'}`,{bold:true});
-  body+=headingXml('2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR');
-  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{size:21,bold:true,color:'385873',before:70,after:80,keep:true});});}else body+=wP('Görevlendirme yazısında bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.');
-  body+=headingXml('3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR');
-  body+=wP('İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.');
-  body+=wTable([['DOSYA ADI','BİÇİM / BOYUT','SÜRE','KANAL / ÖRNEKLEME','SHA-256 ÖZETİ'],...(c.materials.length?c.materials.map(m=>[m.name,`${m.tech?.codec||m.type||'Ses'} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}`,m.sha256||'Hesaplanamadı']):[['Ses kaydı eklenmemiştir.','','','','']])],{widths:[2200,1500,900,1700,2700],header:true});
-  body+=wP('Not: Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini veya montaj yapılıp yapılmadığını doğrulamaz.',{color:'74869A',size:17,italic:true});
-  body+=headingXml('4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR');
+  body+=headingXml(REPORT_TEXT.sections[1]);
+  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:21,bold:true,color:'385873',before:70,after:80,keep:true});});}else body+=wP(REPORT_TEXT.defaultQuestions);
+  body+=headingXml(REPORT_TEXT.sections[2]);
+  body+=wP(REPORT_TEXT.defaultInventoryIntro);
+  body+=wTable([[...REPORT_TEXT.inventoryHeaders],...(c.materials.length?c.materials.map(m=>[m.name,`${m.tech?.codec||m.type||'Ses'} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}`,m.sha256||'Hesaplanamadı']):[REPORT_TEXT.noInventoryRow])],{widths:[2200,1500,900,1700,2700],header:true});
+  body+=wP(REPORT_TEXT.inventoryNote,{color:'74869A',size:17,italic:true});
+  body+=headingXml(REPORT_TEXT.sections[3]);
   body+=wP(c.methodText||DEFAULT_METHOD);
-  body+=headingXml('5. ANALİZ, TESPİT VE DEĞERLENDİRME');
-  body+=headingXml('5.1. Ses kayıtlarının çözümlenmesi',2);
+  body+=headingXml(REPORT_TEXT.sections[4]);
+  body+=headingXml(REPORT_TEXT.sub51,2);
   for(let i=0;i<c.materials.length;i++){
     const m=c.materials[i];body+=headingXml(`5.1.${i+1}. ${m.name}`,2);
     body+=wP(`Süre: ${fmtTime(m.duration||0)}  |  Biçim: ${m.type||'Ses dosyası'}  |  Bölüm sayısı: ${(m.segments||[]).length}`,{color:'6F8295',size:17});
     if(m.languageWarning)body+=wP(`Kontrol uyarısı: ${m.languageWarning}`,{color:'9A6B2D',size:17});
-    if(m.segments?.length){body+=wTable([['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],...m.segments.map(s=>[`${s.start||'—'} – ${s.end||'—'}`,s.speaker||'Belirtilmemiş',s.text||'',reviewLabel(s)])],{widths:[1600,1500,4600,1300],header:true});}
-    else body+=wP('Bu kayıt için henüz deşifre metni oluşturulmamıştır.');
+    if(m.segments?.length){body+=wTable([[...REPORT_TEXT.segmentHeaders],...m.segments.map(s=>[`${s.start||'—'} – ${s.end||'—'}`,s.speaker||REPORT_TEXT.emptySpeaker,s.text||'',reviewLabel(s)])],{widths:[1600,1500,4600,1300],header:true});}
+    else body+=wP(REPORT_TEXT.noTranscript);
   }
-  body+=headingXml('5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',2);
-  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`5.2.${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{bold:true,color:'385873',size:20,before:80,after:60,keep:true});body+=wP(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.');body+=wP(`Dayanak: ${q.basis||'Belirtilmemiş'}`,{color:'657D92',size:17,italic:true});});}
-  else body+=wP('Teknik sorulara ilişkin değerlendirme, görevlendirme yazısındaki sorular doğrultusunda eklenir.');
-  body+=headingXml('5.3. Teknik sınırlılıklar',2);
-  body+=wP(c.limitationsText||'İncelemede karşılaşılan teknik sınırlılıklar varsa, somut kayıt ve zaman aralıklarıyla açıklanır.');
-  body+=headingXml('6. GEREKÇELİ SONUÇ');
-  body+=wP(c.conclusionText||'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.');
-  body+=headingXml('7. EKLER');
-  body+=wP('Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.');
-  body+=`<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName||'BİLİRKİŞİ',{bold:true,size:22,color:'1C426B'})}<w:r><w:br/></w:r>${wRun(c.expertField||'56.12',{size:20})}<w:r><w:br/></w:r>${wRun(`Sicil No: ${c.registryNo||'—'}`,{size:20})}<w:r><w:br/></w:r>${wRun('İmza',{size:18,color:'718399'})}</w:p>`;
+  body+=headingXml(REPORT_TEXT.sub52,2);
+  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`5.2.${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{bold:true,color:'385873',size:20,before:80,after:60,keep:true});body+=wP(q.answer||REPORT_TEXT.defaultAnswer);body+=wP(`Dayanak: ${q.basis||REPORT_TEXT.defaultBasis}`,{color:'657D92',size:17,italic:true});});}
+  else body+=wP(REPORT_TEXT.defaultQuestions);
+  body+=headingXml(REPORT_TEXT.sub53,2);
+  body+=wP(c.limitationsText||REPORT_TEXT.defaultLimitations);
+  body+=headingXml(REPORT_TEXT.sections[5]);
+  body+=wP(c.conclusionText||REPORT_TEXT.defaultConclusion);
+  body+=headingXml(REPORT_TEXT.sections[6]);
+  body+=wP(REPORT_TEXT.attachmentsText);
+  body+=`<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName||'BİLİRKİŞİ',{bold:true,size:22,color:'1C426B'})}<w:r><w:br/></w:r>${wRun(c.expertField||'56.12',{size:20})}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo||REPORT_TEXT.emptyFileNo}`,{size:20})}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel,{size:18,color:'718399'})}</w:p>`;
   const sect=`<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
@@ -282,43 +321,43 @@ async function makeUdf(){
   el.push(paragraph('T.C.',{size:16,bold:true,color:'navy',align:1,after:4}));
   el.push(paragraph(`${(c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')}’${trDative(c.court||'Mahkemesi')}`,{size:15,bold:true,color:'navy',align:1,after:16}));
   el.push(paragraph(reportTypeSpec(c.reportType).heading,{size:22,bold:true,color:'navy',align:1,before:8,after:7}));
-  el.push(paragraph('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{size:10,bold:true,color:'muted',align:1,after:15}));
-  if(c.synthetic)el.push(paragraph('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{size:10,bold:true,color:'mid',align:1,after:10}));
+  el.push(paragraph(REPORT_TEXT.subtitle,{size:10,bold:true,color:'muted',align:1,after:15}));
+  if(c.synthetic)el.push(paragraph(REPORT_TEXT.synthetic,{size:10,bold:true,color:'mid',align:1,after:10}));
   const coverSpec=reportTypeSpec(c.reportType);el.push(table([[coverSpec.fileNo,c.fileNo||'—'],...reportRows(c).filter(r=>r[0]!==coverSpec.fileNo)],[170,340],{header:false,shadeFirstCol:true}));
-  el.push(paragraph('İÇİNDEKİLER',{size:16,bold:true,color:'navy',before:8,after:12}));
-  const toc=['1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI','2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR','3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR','4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR','5. ANALİZ, TESPİT VE DEĞERLENDİRME','6. GEREKÇELİ SONUÇ','7. EKLER'];
+  el.push(paragraph(REPORT_TEXT.tocHeading,{size:16,bold:true,color:'navy',before:8,after:12}));
+  const toc=REPORT_TEXT.sections;
   toc.forEach(t=>el.push(paragraph(t,{size:11,bold:true,color:'mid',before:5,after:8})));
   el.push(pageBreak());
   const h=(t)=>paragraph(t,{size:14,bold:true,color:'navy',before:9,after:5});
-  el.push(h('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI'));
-  el.push(paragraphLines(c.assignmentScope||'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.',{justify:true}));
+  el.push(h(REPORT_TEXT.sections[0]));
+  el.push(paragraphLines(c.assignmentScope||REPORT_TEXT.defaultScope,{justify:true}));
   el.push(paragraph(`İnceleme konusu: ${c.subject||'—'}`,{bold:true,after:7}));
-  el.push(h('2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR'));
-  if(c.questions?.length)c.questions.forEach((q,i)=>el.push(paragraph(`${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{size:11,bold:true,color:'mid',before:4,after:6})));
-  else el.push(paragraph('Görevlendirme yazısında bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.'));
-  el.push(h('3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR'));
-  el.push(paragraph('İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.'));
+  el.push(h(REPORT_TEXT.sections[1]));
+  if(c.questions?.length)c.questions.forEach((q,i)=>el.push(paragraph(`${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:11,bold:true,color:'mid',before:4,after:6})));
+  else el.push(paragraph(REPORT_TEXT.defaultQuestions));
+  el.push(h(REPORT_TEXT.sections[2]));
+  el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
   const inventory=(c.materials||[]).map(m=>[m.name,`${m.tech?.codec||m.type||'Ses dosyası'} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}`,m.sha256||'Hesaplanamadı']);
-  el.push(table([['DOSYA ADI','BİÇİM / BOYUT','SÜRE','KANAL / ÖRNEKLEME','SHA-256 ÖZETİ'],...(inventory.length?inventory:[['Ses kaydı eklenmemiştir','—','—','—','—']])],[125,95,45,120,155],{header:true}));
-  el.push(paragraph('Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',{size:9,italic:true,color:'muted',after:7}));
-  el.push(h('4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'));
+  el.push(table([[...REPORT_TEXT.inventoryHeaders],...(inventory.length?inventory:[[REPORT_TEXT.noInventoryRow[0],'—','—','—','—']])],[125,95,45,120,155],{header:true}));
+  el.push(paragraph(REPORT_TEXT.inventoryNote,{size:9,italic:true,color:'muted',after:7}));
+  el.push(h(REPORT_TEXT.sections[3]));
   el.push(paragraphLines(c.methodText||DEFAULT_METHOD,{justify:true}));
-  el.push(h('5. ANALİZ, TESPİT VE DEĞERLENDİRME'));
-  el.push(paragraph('5.1. Ses kayıtlarının çözümlenmesi',{size:12,bold:true,color:'mid',before:5,after:4}));
-  if(c.materials?.length){c.materials.forEach((m,i)=>{el.push(paragraph(`5.1.${i+1}. ${m.name}`,{size:11,bold:true,color:'mid',before:6,after:3}));el.push(paragraph(`Süre: ${fmtTime(m.duration||0)}   |   Biçim: ${m.type||'Ses dosyası'}   |   Deşifre bölümü: ${(m.segments||[]).length}`,{size:9,color:'muted',after:3}));if(m.languageWarning)el.push(paragraph(`Kontrol uyarısı: ${m.languageWarning}`,{size:9,italic:true,color:'muted'}));if(m.segments?.length){const segments=m.segments.map(seg=>[`${seg.start||'—'} – ${seg.end||'—'}`,seg.speaker||'Belirtilmemiş',seg.text||'',reviewLabel(seg)]);el.push(table([['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],...segments],[78,75,275,82],{header:true}));}else el.push(paragraph('Bu kayıt için henüz deşifre metni oluşturulmamıştır.',{italic:true,color:'muted'}));});}else el.push(paragraph('İncelemeye sunulan ses kaydı bulunmamaktadır.'));
-  el.push(paragraph('5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',{size:12,bold:true,color:'mid',before:7,after:4}));
-  if(c.questions?.length)c.questions.forEach((q,i)=>{el.push(paragraph(`5.2.${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{size:11,bold:true,color:'mid',before:5,after:3}));el.push(paragraphLines(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.',{justify:true}));el.push(paragraph(`Dayanak: ${q.basis||'Belirtilmemiş'}`,{size:9,italic:true,color:'muted',after:5}));});
-  else el.push(paragraph('Teknik sorulara ilişkin değerlendirme, görevlendirme yazısındaki sorular doğrultusunda eklenir.'));
-  el.push(paragraph('5.3. Teknik sınırlılıklar',{size:12,bold:true,color:'mid',before:7,after:4}));
-  el.push(paragraphLines(c.limitationsText||'İncelemede karşılaşılan teknik sınırlılıklar varsa, somut kayıt ve zaman aralıklarıyla açıklanır.',{justify:true}));
-  el.push(h('6. GEREKÇELİ SONUÇ'));
-  el.push(paragraphLines(c.conclusionText||'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.',{justify:true}));
-  el.push(h('7. EKLER'));
-  el.push(paragraph('Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.'));
-  el.push(paragraph(c.expertName||'BİLİRKİŞİ',{size:13,bold:true,color:'navy',align:2,before:18,after:2}));
-  el.push(paragraph(c.expertField||'56.12',{size:10,align:2,after:2}));
-  el.push(paragraph(`Sicil No: ${c.registryNo||'—'}`,{size:10,align:2,after:2}));
-  el.push(paragraph('İmza',{size:10,color:'muted',align:2,after:0}));
+  el.push(h(REPORT_TEXT.sections[4]));
+  el.push(paragraph(REPORT_TEXT.sub51,{size:12,bold:true,color:'mid',before:5,after:4}));
+  if(c.materials?.length){c.materials.forEach((m,i)=>{el.push(paragraph(`5.1.${i+1}. ${m.name}`,{size:11,bold:true,color:'mid',before:6,after:3}));el.push(paragraph(`Süre: ${fmtTime(m.duration||0)}   |   Biçim: ${m.type||'Ses dosyası'}   |   Deşifre bölümü: ${(m.segments||[]).length}`,{size:9,color:'muted',after:3}));if(m.languageWarning)el.push(paragraph(`Kontrol uyarısı: ${m.languageWarning}`,{size:9,italic:true,color:'muted'}));if(m.segments?.length){const segments=m.segments.map(seg=>[`${seg.start||'—'} – ${seg.end||'—'}`,seg.speaker||REPORT_TEXT.emptySpeaker,seg.text||'',reviewLabel(seg)]);el.push(table([[...REPORT_TEXT.segmentHeaders],...segments],[78,75,275,82],{header:true}));}else el.push(paragraph(REPORT_TEXT.noTranscript,{italic:true,color:'muted'}));});}else el.push(paragraph('İncelemeye sunulan ses kaydı bulunmamaktadır.'));
+  el.push(paragraph(REPORT_TEXT.sub52,{size:12,bold:true,color:'mid',before:7,after:4}));
+  if(c.questions?.length)c.questions.forEach((q,i)=>{el.push(paragraph(`5.2.${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:11,bold:true,color:'mid',before:5,after:3}));el.push(paragraphLines(q.answer||REPORT_TEXT.defaultAnswer,{justify:true}));el.push(paragraph(`Dayanak: ${q.basis||REPORT_TEXT.defaultBasis}`,{size:9,italic:true,color:'muted',after:5}));});
+  else el.push(paragraph(REPORT_TEXT.defaultQuestions));
+  el.push(paragraph(REPORT_TEXT.sub53,{size:12,bold:true,color:'mid',before:7,after:4}));
+  el.push(paragraphLines(c.limitationsText||REPORT_TEXT.defaultLimitations,{justify:true}));
+  el.push(h(REPORT_TEXT.sections[5]));
+  el.push(paragraphLines(c.conclusionText||REPORT_TEXT.defaultConclusion,{justify:true}));
+  el.push(h(REPORT_TEXT.sections[6]));
+  el.push(paragraph(REPORT_TEXT.attachmentsText));
+  el.push(paragraph(c.expertName||REPORT_TEXT.defaultExpert,{size:13,bold:true,color:'navy',align:2,before:18,after:2}));
+  el.push(paragraph(c.expertField||REPORT_TEXT.defaultField,{size:10,align:2,after:2}));
+  el.push(paragraph(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo||REPORT_TEXT.emptyFileNo}`,{size:10,align:2,after:2}));
+  el.push(paragraph(REPORT_TEXT.signatureLabel,{size:10,color:'muted',align:2,after:0}));
   const bodyText=textParts.join('');
   const udfXml=`<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${el.join('')}</elements>${styles}\n</template>`;
   const parsed=new DOMParser().parseFromString(udfXml,'application/xml');if(parsed.querySelector('parsererror'))throw new Error('UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı.');
