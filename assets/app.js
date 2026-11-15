@@ -102,7 +102,25 @@ function freshCase(){return {id:uid(),name:'Yeni inceleme dosyası',reportType:'
 // inflated localStorage by ~32 KB per recording. Drop them on load so existing
 // records shrink back to their real size.
 function stripDerivedFields(state){let cleaned=false;for(const c of state.cases||[]){for(const m of c.materials||[]){if('__peaks' in m){delete m.__peaks;cleaned=true;}}}return cleaned;}
-function loadState(){try{const raw=localStorage.getItem(STORE_KEY);if(raw){appState=JSON.parse(raw);if(!Array.isArray(appState.cases))throw 0;stripDerivedFields(appState);}}catch(e){appState={cases:[],activeCaseId:null};}if(!appState.cases.length){const c=freshCase();appState.cases.push(c);appState.activeCaseId=c.id;}if(!currentCase())appState.activeCaseId=appState.cases[0].id;persist();}
+// Eski sürümler metin geçmişini her tuş vuruşunda kaydettiği için kayıtlar aynı
+// metnin onlarca ara hâlini taşır ("" -> "M" -> "Me" -> ...). Ardışık iki kayıt
+// birbirinin öneki ise (yazma veya silme adımı) aynı düzenleme oturumudur;
+// oturumun başlangıç hâli korunur, ara adımlar atılır. Önek ilişkisi kırıldığında
+// yeni oturum başlar ve o hâl ayrıca korunur. Boş sürümler geçmişe girmez.
+function compactHistory(hist){
+  if(!Array.isArray(hist)||hist.length<2)return hist||[];
+  const out=[];
+  for(const h of hist){
+    const t=h.text||'';
+    const prev=out[out.length-1];
+    const isPrefix=prev&&(t.startsWith(prev.text)||prev.text.startsWith(t));
+    if(isPrefix)continue; // aynı oturumun ara adımı; oturum başı korunur
+    out.push({text:t,at:h.at});
+  }
+  return out.length?out:[{text:'',at:hist[hist.length-1].at}];
+}
+function compactAllHistories(state){let changed=false;for(const c of state.cases||[]){for(const m of c.materials||[]){for(const sg of m.segments||[]){if(Array.isArray(sg.history)&&sg.history.length>1){const c2=compactHistory(sg.history);if(c2.length!==sg.history.length){sg.history=c2;changed=true;}}}}}return changed;}
+function loadState(){try{const raw=localStorage.getItem(STORE_KEY);if(raw){appState=JSON.parse(raw);if(!Array.isArray(appState.cases))throw 0;stripDerivedFields(appState);if(compactAllHistories(appState))persist();}}catch(e){appState={cases:[],activeCaseId:null};}if(!appState.cases.length){const c=freshCase();appState.cases.push(c);appState.activeCaseId=c.id;}if(!currentCase())appState.activeCaseId=appState.cases[0].id;persist();}
 function dbOpen(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(DB_STORE))db.createObjectStore(DB_STORE,{keyPath:'key'});};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});return dbPromise;}
 async function storeBlob(key,blob){try{const db=await dbOpen();await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite');tx.objectStore(DB_STORE).put({key,blob});tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}catch(e){console.warn('Ses dosyası kalıcı depoya yazılamadı',e);}}
 async function readBlob(key){try{const db=await dbOpen();return await new Promise((resolve,reject)=>{const r=db.transaction(DB_STORE,'readonly').objectStore(DB_STORE).get(key);r.onsuccess=()=>resolve(r.result?.blob||null);r.onerror=()=>reject(r.error);});}catch(e){return null;}}
@@ -123,7 +141,7 @@ function renderQuestions(){const c=currentCase();if(!c)return;const root=$('#que
 function addQuestion(){const c=currentCase();c.questions.push({question:'',answer:'',basis:''});persist();renderQuestions();}
 async function attachObjectUrl(c,m){const key=blobKey(c,m);if(objectUrls.has(key))return objectUrls.get(key);const blob=await readBlob(key);if(!blob)return '';const u=URL.createObjectURL(blob);objectUrls.set(key,u);return u;}
 async function getAudioBlob(c,m){const key=blobKey(c,m);let blob=await readBlob(key);return blob;}
-async function renderAudioList(){const c=currentCase();if(!c)return;$('#audioListLabel').textContent=`${c.materials.length} kayıt`;renderQueue();const root=$('#audioList');root.innerHTML='';root.classList.toggle('empty-list',!c.materials.length);if(!c.materials.length){root.innerHTML='<div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div>';return;}for(const m of c.materials){const card=document.createElement('div');card.className='audio-card';const segs=m.segments||[];const checked=segs.filter(s=>isReviewed(s)).length;const status=m.status||'Bekliyor';card.innerHTML=`<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type||'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration||0)}</small></div><div class="audio-actions">${m.status==='Çözümleme sürüyor'?`<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>`:`<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length?'Yeniden çözümle':'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256||'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic?'<span><b>Kurgusal sentetik kayıt</b></span>':''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec||'—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate?esc(m.tech.sampleRate+' Hz'):'—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth?esc(m.tech.bitDepth+' bit'):'—'}</b></span><span>Eklenme: <b>${esc(m.addedAt?new Date(m.addedAt).toLocaleString('tr-TR'):'—')}</b></span></div>${m.lastVerify?`<div class="warn-box ${m.lastVerify.ok?'verify-ok':''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok?'özet eşleşti (dosya değişmemiş)':'özet farklı (dosya değişmiş olabilir)'}</div>`:''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress==='number'?`<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>`:''}${m.hallucinationWarning?`<div class="warn-box">${esc(m.hallucinationWarning)}</div>`:''}${m.languageWarning?`<div class="warn-box">${esc(m.languageWarning)}</div>`:''}<div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Dalga formuna tıklayarak kaydın istediğiniz yerine gidin.</div></div><audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio><div class="transcript-editor"><div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} zamanlı bölüm · "Onaylandı" ve "Anlaşılmadı" uzman dinlemesini ifade eder; "Yeniden dinlenecek" doğrulanmış sayılmaz</small></div><div class="segments-root" id="segments-${esc(m.id)}"></div>${m.referenceSegments?.length?`<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map(s=>`<p><b>${timecode(s.start)}–${timecode(s.end)} · ${esc(s.speaker)}</b><br>${esc(s.text)}</p>`).join('')}</div></details>`:''}</div>`;root.appendChild(card);const url=await attachObjectUrl(c,m);const player=$(`#player-${CSS.escape(m.id)}`,card);if(player&&url)player.src=url;attachWave(card,m,url);renderSegments(m,card);}}
+async function renderAudioList(){const c=currentCase();if(!c)return;$('#audioListLabel').textContent=`${c.materials.length} kayıt`;renderQueue();const root=$('#audioList');root.innerHTML='';root.classList.toggle('empty-list',!c.materials.length);if(!c.materials.length){root.innerHTML='<div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div>';return;}for(const m of c.materials){const card=document.createElement('div');card.className='audio-card';const segs=m.segments||[];const checked=segs.filter(s=>isReviewed(s)).length;const status=m.status||'Bekliyor';card.innerHTML=`<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type||'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration||0)}</small></div><div class="audio-actions">${m.status==='Çözümleme sürüyor'?`<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>`:`<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length?'Yeniden çözümle':'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256||'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic?'<span><b>Kurgusal sentetik kayıt</b></span>':''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec||'—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate?esc(m.tech.sampleRate+' Hz'):'—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth?esc(m.tech.bitDepth+' bit'):'—'}</b></span><span>Eklenme: <b>${esc(m.addedAt?new Date(m.addedAt).toLocaleString('tr-TR'):'—')}</b></span></div>${m.lastVerify?`<div class="warn-box ${m.lastVerify.ok?'verify-ok':''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok?'özet eşleşti (dosya değişmemiş)':'özet farklı (dosya değişmiş olabilir)'}</div>`:''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress==='number'?`<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>`:''}${m.hallucinationWarning?`<div class="warn-box">${esc(m.hallucinationWarning)}</div>`:''}${m.languageWarning?`<div class="warn-box">${esc(m.languageWarning)}</div>`:''}<div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Dalga formuna tıklayarak kaydın istediğiniz yerine gidin.</div></div><audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio><div class="transcript-editor"><div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} zamanlı bölüm · "Onaylandı" ve "Anlaşılmadı" uzman dinlemesini ifade eder; "Yeniden dinlenecek" doğrulanmış sayılmaz</small></div><div class="segments-root" id="segments-${esc(m.id)}"></div>${m.referenceSegments?.length?`<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map(s=>`<p><b>${timecode(s.start)}–${timecode(s.end)} · ${esc(s.speaker)}</b><br>${esc(s.text)}</p>`).join('')}</div></details>`:''}</div>`;root.appendChild(card);const url=await attachObjectUrl(c,m);const player=$(`#player-${CSS.escape(m.id)}`,card);if(player&&url){player.src=url;if(m.playbackRate)player.playbackRate=m.playbackRate;}attachWave(card,m,url);renderSegments(m,card);}}
 // Waveform rendering. Peaks are computed once per material and cached on the
 // material object, so re-rendering the list does not re-decode the audio.
 // Segment boundaries are drawn on top so the expert can see which part of the
@@ -132,11 +150,167 @@ async function computePeaks(blob,buckets){const AC=window.AudioContext||window.w
 function drawWave(canvas,peaks,m){if(!canvas)return;const ctx=canvas.getContext('2d');const w=canvas.width;const h=canvas.height;ctx.clearRect(0,0,w,h);if(!peaks||!peaks.length){ctx.fillStyle='#eef2f6';ctx.fillRect(0,h/2-1,w,2);return;}const dur=Number(m.duration)||0;ctx.fillStyle='#c9d6e4';ctx.fillRect(0,0,w,h);const mid=h/2;for(let x=0;x<w;x++){const p=peaks[Math.floor(x/w*peaks.length)]||0;const bar=Math.max(1,p*mid*0.92);ctx.fillStyle='#4a7bab';ctx.fillRect(x,mid-bar,1,bar*2);}const segs=m.segments||[];if(dur>0){for(const sg of segs){const st=secondsFromTimecode(sg.start);const en=secondsFromTimecode(sg.end);if(!(en>st))continue;const x0=Math.floor(st/dur*w);const x1=Math.ceil(en/dur*w);ctx.fillStyle='rgba(49,95,145,0.10)';ctx.fillRect(x0,0,Math.max(1,x1-x0),h);ctx.strokeStyle='#315f91';ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0,h);ctx.moveTo(x1,0);ctx.lineTo(x1,h);ctx.stroke();}}}
 const peakCache=new Map();
 function attachWave(card,m,url){const canvas=card.querySelector('canvas.wave-canvas');if(!canvas)return;const player=card.querySelector('audio');if(!player)return;const paint=()=>drawWave(canvas,peakCache.get(m.id),m);if(peakCache.has(m.id)){paint();}else if(url){getAudioBlob(currentCase(),m).then(blob=>{if(!blob)return;return computePeaks(blob,1200).then(pk=>{if(pk)peakCache.set(m.id,pk);paint();});});}canvas.addEventListener('click',e=>{const rect=canvas.getBoundingClientRect();const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));const dur=Number(m.duration)||player.duration||0;if(dur>0){player.currentTime=ratio*dur;player.play().catch(()=>{});}});const ph=()=>{const dur=Number(m.duration)||player.duration||0;if(!(dur>0))return;paint();const x=Math.floor(player.currentTime/dur*canvas.width);const ctx=canvas.getContext('2d');ctx.strokeStyle='#b88645';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();};player.addEventListener('timeupdate',ph);player.addEventListener('seeked',ph);}
-function renderSegments(m,card){const root=$(`#segments-${CSS.escape(m.id)}`,card);if(!root)return;if(!m.segments?.length){root.innerHTML='<div class="empty-state" style="padding:12px"><span>Henüz transkript bölümü yok. Ses çözümlemesini başlatabilir veya elle bölüm ekleyebilirsiniz.</span></div>';return;}const rows=m.segments.map((s,i)=>{const rev=segReview(s);const opts=Object.keys(REVIEW_STATES).map(k=>`<option value="${k}" ${rev===k?'selected':''}>${REVIEW_STATES[k].label}</option>`).join('');const hist=(s.history||[]).length;return `<tr class="${rev==='anlasilmadi'?'row-warn':''}"><td><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start??'')}" aria-label="Başlangıç"></td><td><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end??'')}" aria-label="Bitiş"></td><td><input class="speaker-input" data-seg="${i}" data-key="speaker" value="${esc(s.speaker||'Belirtilmedi')}" aria-label="Konuşmacı"></td><td><textarea data-seg="${i}" data-key="text" aria-label="Konuşma metni">${esc(s.text||'')}</textarea></td><td><select class="review-select" data-seg="${i}" data-key="review" aria-label="Kontrol durumu">${opts}</select>${hist?`<button class="mini-button history-button" data-history="${i}" title="Önceki metinleri görüntüle">Geçmiş (${hist})</button>`:''}</td><td><button class="mini-button" data-play-seg="${i}" title="Bu bölümü dinle">▶</button></td><td><button class="mini-button" data-delete-seg="${i}" title="Bölümü kaldır">×</button></td></tr>`;}).join('');root.innerHTML=`<table class="segments-table"><thead><tr><th>Başlangıç</th><th>Bitiş</th><th>Konuşmacı</th><th>Metin</th><th>Kontrol durumu</th><th></th><th></th></tr></thead><tbody>${rows}</tbody></table>`;}
+// Deşifre ve kontrol çalışma alanı. Uzmanın en çok zaman geçirdiği yer olduğu
+// için tasarım üç hedefe göre kurulmuştur:
+//   1) Hızlı gezinme: klavye kısayolları, oynatma hızı, bölüm filtresi.
+//   2) Doğru kontrol: aktif bölüm belirgin, onaylayınca sonraki bölüme geçiş.
+//   3) Denetlenebilirlik: durumlar renkle ayrılır, dolgu metni ayrıca işaretlenir.
+// Filtre ve aktif bölüm materyal nesnesinde tutulur (m.uiFilter, m.activeSeg).
+const SEG_FILTERS=[
+  ['all','Tümü'],
+  ['pending','Bekleyen'],
+  ['onaylandi','Onaylandı'],
+  ['anlasilmadi','Anlaşılmadı'],
+  ['yeniden','Yeniden dinlenecek'],
+];
+const PLAYBACK_SPEEDS=[0.75,1,1.25,1.5,2];
+function segFilter(m){return m.uiFilter||'all';}
+function segMatchesFilter(s,filter){const r=segReview(s);if(filter==='all')return true;if(filter==='pending')return !isReviewed(s);return r===filter;}
+function segCounts(m){const segs=m.segments||[];const c={all:segs.length,pending:0,onaylandi:0,anlasilmadi:0,yeniden:0};for(const s of segs){const r=segReview(s);if(r==='onaylandi')c.onaylandi++;else if(r==='anlasilmadi')c.anlasilmadi++;else if(r==='yeniden')c.yeniden++;if(!isReviewed(s))c.pending++;}return c;}
+function renderSegments(m,card){
+  const root=$(`#segments-${CSS.escape(m.id)}`,card);if(!root)return;
+  const segs=m.segments||[];
+  if(!segs.length){root.innerHTML='<div class="empty-state" style="padding:12px"><span>Henüz deşifre bölümü yok. Ses çözümlemesini başlatabilir veya elle bölüm ekleyebilirsiniz.</span></div>';return;}
+  const filter=segFilter(m);const counts=segCounts(m);
+  const reviewed=counts.onaylandi+counts.anlasilmadi;
+  const pct=segs.length?Math.round(reviewed/segs.length*100):0;
+  const active=Number.isInteger(m.activeSeg)?m.activeSeg:-1;
+  // Filtre çubuğu: her durumun sayısı görünür; sıfır olanlar pasif.
+  const chips=SEG_FILTERS.map(([k,label])=>`<button class="filter-chip ${filter===k?'on':''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`).join('');
+  const shown=segs.map((s,i)=>({s,i})).filter(x=>segMatchesFilter(x.s,filter));
+  const rows=shown.map(({s,i})=>{
+    const rev=segReview(s);const opts=Object.keys(REVIEW_STATES).map(k=>`<option value="${k}" ${rev===k?'selected':''}>${REVIEW_STATES[k].label}</option>`).join('');
+    const hist=(s.history||[]).length;
+    const halluc=isHallucination(s.text);
+    const cls=['seg-row',`st-${rev}`,i===active?'is-active':'',halluc?'is-halluc':''].filter(Boolean).join(' ');
+    return `<tr class="${cls}" data-seg-row="${i}" tabindex="0">
+      <td class="seg-no">${i+1}</td>
+      <td><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start??'')}" aria-label="Bölüm ${i+1} başlangıç"></td>
+      <td><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end??'')}" aria-label="Bölüm ${i+1} bitiş"></td>
+      <td><input class="speaker-input" data-seg="${i}" data-key="speaker" value="${esc(s.speaker||'Belirtilmedi')}" aria-label="Bölüm ${i+1} konuşmacı"></td>
+      <td><textarea data-seg="${i}" data-key="text" aria-label="Bölüm ${i+1} konuşma metni">${esc(s.text||'')}</textarea>${halluc?'<span class="halluc-flag">Anlamlı metin yok — dinleyip doldurun</span>':''}</td>
+      <td><select class="review-select" data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Bölüm ${i+1} kontrol durumu">${opts}</select>${hist?`<button class="mini-button history-button" data-history="${i}" title="Önceki metinleri görüntüle">Geçmiş (${hist})</button>`:''}</td>
+      <td><div class="row-actions"><button class="icon-mini play" data-play-seg="${i}" title="Bu bölümü dinle (Boşluk)" aria-label="Bölüm ${i+1} dinle">▶</button><button class="icon-mini" data-delete-seg="${i}" title="Bölümü kaldır" aria-label="Bölüm ${i+1} kaldır">×</button></div></td>
+    </tr>`;
+  }).join('');
+  const table=shown.length
+    ? `<table class="segments-table"><thead><tr><th class="seg-no">#</th><th class="time-col">Başlangıç</th><th class="time-col">Bitiş</th><th class="speaker-col">Konuşmacı</th><th>Metin</th><th class="status-col">Kontrol durumu</th><th class="act-col"></th></tr></thead><tbody>${rows}</tbody></table>`
+    : `<div class="seg-hidden-note">Bu filtreye uyan bölüm yok. "Tümü" seçeneğine dönün.</div>`;
+  root.innerHTML=`<div class="transcript-toolbar">
+      <div class="group" role="group" aria-label="Gezinme">
+        <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑ Önceki</button>
+        <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓ Sonraki</button>
+      </div>
+      <div class="group" role="group" aria-label="Oynatma hızı"><span>Hız</span>${PLAYBACK_SPEEDS.map(sp=>`<button class="seg-tool speed-tool ${(m.playbackRate||1)===sp?'on':''}" data-seg-speed="${sp}" title="${sp}x hızında dinle">${sp}×</button>`).join('')}</div>
+      <button class="seg-tool" data-seg-approve="1" title="Aktif bölümü onayla ve sonrakine geç (Enter)">✓ Onayla</button>
+    </div>
+    <div class="transcript-toolbar">${chips}</div>
+    <div class="seg-progress"><div class="bar"><span style="width:${pct}%"></span></div><small>${reviewed}/${segs.length} denetlendi · %${pct}</small></div>
+    ${table}
+    <div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm değiştir · <kbd>Enter</kbd> aktif bölümü onayla · <kbd>Y</kbd> aktif bölümü dinle · <kbd>[</kbd><kbd>]</kbd> hız düşür/artır · <kbd>←</kbd><kbd>→</kbd> 5 sn geri/ileri · Metin alanındayken <kbd>Esc</kbd> ile çık</div>`;
+}
+// Aktif bölümü ayarlar ve görünür hâle getirir. Uzun kayıtta uzmanın nerede
+// olduğunu kaybetmemesi için satır kaydırılır.
+function setActiveSegment(m,index,{scroll=true,render=true}={}){
+  const segs=m.segments||[];if(!segs.length)return;
+  m.activeSeg=Math.max(0,Math.min(segs.length-1,index));
+  if(render){const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');if(card)renderSegments(m,card);}
+  if(scroll){const row=$(`[data-seg-row="${m.activeSeg}"]`);if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});}
+}
+// Klavye ile gezinme aktif bölümü değiştirir; filtreden bağımsız olarak
+// görünür bir satır seçilir ki odak kaybolmasın.
+function navSegment(m,dir){
+  const segs=m.segments||[];if(!segs.length)return;
+  const filter=segFilter(m);
+  const order=segs.map((s,i)=>i).filter(i=>segMatchesFilter(segs[i],filter));
+  const list=order.length?order:segs.map((s,i)=>i);
+  const cur=Number.isInteger(m.activeSeg)?m.activeSeg:list[0];
+  let pos=list.indexOf(cur);
+  if(pos<0){setActiveSegment(m,list[0]);return;}
+  pos=Math.max(0,Math.min(list.length-1,pos+dir));
+  setActiveSegment(m,list[pos]);
+}
+// Aktif bölümü oynatıcıya yükleyip çalar. Uzun kayıtta tek tuşla dinleme.
+function playActiveSegment(m){
+  const s=m.segments?.[m.activeSeg];if(!s)return;
+  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');if(!card)return;
+  playSegmentRange(card,m,s,m.activeSeg);
+}
+function cycleSpeed(m,delta){
+  const cur=m.playbackRate||1;let i=PLAYBACK_SPEEDS.indexOf(cur);if(i<0)i=PLAYBACK_SPEEDS.indexOf(1);
+  i=Math.max(0,Math.min(PLAYBACK_SPEEDS.length-1,i+delta));
+  m.playbackRate=PLAYBACK_SPEEDS[i];
+  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const player=card?.querySelector('audio');if(player)player.playbackRate=m.playbackRate;
+  if(card)renderSegments(m,card);persist();
+  showToast(`Oynatma hızı: ${m.playbackRate}×`);
+}
+
+// Aktif bölümü onaylar ve bir sonrakine geçer. Uzmanın dinle-düzelt-onayla
+// döngüsünü tek tuşla sürdürmesi için tasarlandı; uzun kayıtta elle satır
+// seçmek gerekmez. Filtre "Bekleyen" iken onaylanan satır listeden düşer.
+function approveActiveSegment(m){
+  const segs=m.segments||[];if(!segs.length)return;
+  if(!Number.isInteger(m.activeSeg))m.activeSeg=0;
+  const s=segs[m.activeSeg];if(!s)return;
+  s.review='onaylandi';s.checked=true;
+  const card=$(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  persist();renderOverview();
+  const next=m.activeSeg+1;
+  if(next<segs.length){m.activeSeg=next;} // sonraki bölüme geç
+  if(card)renderSegments(m,card);
+  const row=$(`[data-seg-row="${m.activeSeg}"]`);if(row&&row.scrollIntoView)row.scrollIntoView({block:'nearest'});
+  if($('#view-report').classList.contains('active'))renderReport();
+  showToast(`Bölüm ${m.activeSeg+1}/${segs.length} — onaylandı.`);
+}
+// Satıra tıklanınca o satır aktif bölüm olur; uzman fareyle de bağlam kurabilir.
+function focusSegmentRow(row){
+  const card=row.closest('.audio-card');if(!card)return;
+  const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;
+  const m=currentCase().materials.find(x=>x.id===id);if(!m)return;
+  m.activeSeg=Number(row.dataset.segRow);
+  card.querySelectorAll('tr.seg-row.is-active').forEach(r=>r.classList.remove('is-active'));
+  row.classList.add('is-active');
+  // Klavye kısayollarının çalışması için satır odaklanır; böylece uzman fareyle
+  // bir bölüme geçip ardından klavyeyle devam edebilir.
+  if(row.focus)row.focus({preventScroll:true});
+}
+// Klavye kısayolları: metin alanlarına yazarken devreye girmez (bkz. keydown
+// yöneticisi). Burada yalnızca hangi tuşun ne yaptığı tanımlıdır.
+function handleSegKey(e,card,m){
+  const tag=(e.target.tagName||'').toLowerCase();
+  const typing=tag==='textarea'||tag==='input'||tag==='select';
+  if(e.ctrlKey||e.metaKey||e.altKey)return false;
+  // Metin alanında yazarken kısayollar devre dışıdır (yoksa yazılamaz). Esc ile
+  // alandan çıkılır ve satır odaklanır; uzman yazmayı bitirip klavyeyle sürdürür.
+  if(e.key==='Escape'&&typing){e.preventDefault();e.target.blur();const row=e.target.closest('tr.seg-row');if(row&&row.focus)row.focus({preventScroll:true});return true;}
+  if(e.key==='ArrowUp'&&!typing){navSegment(m,-1);e.preventDefault();return true;}
+  if(e.key==='ArrowDown'&&!typing){navSegment(m,1);e.preventDefault();return true;}
+  if(e.key===' '&&!typing){const player=card.querySelector('audio');if(player){player.paused?player.play().catch(()=>{}):player.pause();}e.preventDefault();return true;}
+  if(e.key==='Enter'&&!typing){approveActiveSegment(m);e.preventDefault();return true;}
+  if(e.key==='Enter'&&tag==='input'){e.preventDefault();e.target.blur();return true;}
+  if((e.key==='y'||e.key==='Y')&&!typing){playActiveSegment(m);e.preventDefault();return true;}
+  if(e.key==='['&&!typing){cycleSpeed(m,-1);e.preventDefault();return true;}
+  if(e.key===']'&&!typing){cycleSpeed(m,1);e.preventDefault();return true;}
+  if(e.key==='ArrowLeft'&&!typing){const player=card.querySelector('audio');if(player)player.currentTime=Math.max(0,player.currentTime-5);e.preventDefault();return true;}
+  if(e.key==='ArrowRight'&&!typing){const player=card.querySelector('audio');if(player)player.currentTime=player.currentTime+5;e.preventDefault();return true;}
+  return false;
+}
 // Seek the card's player to the segment start and play, so the expert can
 // verify the transcript against the actual audio without hunting for the time.
 function secondsFromTimecode(t){const p=String(t||'').split(':').map(Number);if(p.some(Number.isNaN))return 0;if(p.length===3)return p[0]*3600+p[1]*60+p[2];if(p.length===2)return p[0]*60+p[1];return p[0]||0;}
-function playSegment(btn){const card=btn.closest('.audio-card');if(!card)return;const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(btn.dataset.playSeg);const s=m?.segments?.[i];if(!s)return;const player=card.querySelector('audio');if(!player)return;const start=secondsFromTimecode(s.start);const end=secondsFromTimecode(s.end);player.currentTime=start;player.play().catch(()=>{});if(end>start){const stop=()=>{if(player.currentTime>=end){player.pause();player.removeEventListener('timeupdate',stop);}};player.addEventListener('timeupdate',stop);}showToast(`Bölüm ${i+1} dinleniyor: ${s.start||'—'}–${s.end||'—'}`);}
+// Bir bölümün zaman aralığını çalar ve bitişte durur. Oynatma hızı uygulanır,
+// böylece uzman uzun kayıtları hızlandırarak dinleyebilir. Aktif bölüm işaretlenir.
+function playSegmentRange(card,m,s,index){
+  const player=card.querySelector('audio');if(!player)return;
+  const start=secondsFromTimecode(s.start);const end=secondsFromTimecode(s.end);
+  player.playbackRate=m.playbackRate||1;
+  player.currentTime=start;player.play().catch(()=>{});
+  if(Number.isInteger(index)){m.activeSeg=index;const root=$(`#segments-${CSS.escape(m.id)}`,card);if(root)renderSegments(m,card);}
+  if(end>start){const stop=()=>{if(player.currentTime>=end){player.pause();player.removeEventListener('timeupdate',stop);}};player.removeEventListener('timeupdate',stop);player.addEventListener('timeupdate',stop);}
+  showToast(`Bölüm ${(index??0)+1} dinleniyor: ${s.start||'—'}–${s.end||'—'}`);
+}
+function playSegment(btn){const card=btn.closest('.audio-card');if(!card)return;const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const i=Number(btn.dataset.playSeg);const s=m?.segments?.[i];if(!s)return;playSegmentRange(card,m,s,i);}
 function showSegmentHistory(m,index,anchor){const s=m.segments[index];if(!s)return;const existing=document.querySelector('.history-dialog');if(existing)existing.remove();const items=(s.history||[]).slice().reverse();const dlg=document.createElement('div');dlg.className='history-dialog';dlg.innerHTML=`<div class="history-inner"><div class="history-head"><b>${esc(m.name)} · bölüm ${index+1} metin geçmişi</b><button class="mini-button" data-close-history>Kapat</button></div><div class="history-body">${items.length?items.map(h=>`<div class="history-item"><small>${esc(new Date(h.at).toLocaleString('tr-TR'))}</small><p>${esc(h.text||'(boş)')}</p></div>`).join(''):'<p class="paper-muted">Bu bölüm için kayıtlı önceki metin yok.</p>'}</div></div>`;document.body.appendChild(dlg);dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.dataset.closeHistory!==undefined)dlg.remove();});}
 async function sha256(blob){try{const buf=await blob.arrayBuffer();const hash=await crypto.subtle.digest('SHA-256',buf);return [...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');}catch(e){return 'Hesaplanamadı (tarayıcı güvenlik kısıtı)';}}
 // Technical inventory for the evidence record. The browser can only expose
@@ -161,7 +335,11 @@ const REVIEW_STATES={onaylandi:{label:'Onaylandı',cls:'good'},bekliyor:{label:'
 function segReview(s){if(s.review&&REVIEW_STATES[s.review])return s.review;return s.checked?'onaylandi':'bekliyor';}
 function isReviewed(s){const r=segReview(s);return r==='onaylandi'||r==='anlasilmadi';}
 function reviewLabel(s){return REVIEW_STATES[segReview(s)].label;}
-function pushSegmentHistory(s){if(!s.history)s.history=[];s.history.push({text:s.text||'',at:new Date().toISOString()});if(s.history.length>20)s.history.shift();}
+// Metin geçmişi, her tuş vuruşunda değil düzenleme oturumu başına bir kez tutulur.
+// Focus anında metnin anlık görüntüsü saklanır, blur anında gerçekten değiştiyse
+// geçmişe eklenir. Böylece geçmiş gerçek önceki sürümleri gösterir, tuş tuş dolmaz.
+function snapshotSegmentText(s){s.__editSnapshot=s.text||'';}
+function pushSegmentHistory(s,prevText){if(!s.history)s.history=[];const prev=prevText??s.__editSnapshot??'';if(prev===(s.text||''))return false;s.history.push({text:prev,at:new Date().toISOString()});if(s.history.length>20)s.history.shift();return true;}
 function timecode(seconds){if(seconds==null||!Number.isFinite(seconds))return '00:00:00';const s=Math.max(0,Math.floor(seconds));return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor(s%3600/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 // Filler-only output ("(Konuşma)", "(Müzik - Jenerik)" and similar bracketed tokens)
 // is how Whisper reports hallucinated silence. Such a segment carries no transcript,
@@ -384,9 +562,16 @@ $$('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(
 $('#caseSelect').addEventListener('change',async e=>{appState.activeCaseId=e.target.value;persist();populateCaseForm();populateQuestionsForm();renderOverview();await renderAudioList();renderQueue();});$('#newCaseBtn').addEventListener('click',()=>{const c=freshCase();appState.cases.push(c);appState.activeCaseId=c.id;persist();renderCaseSelect();populateCaseForm();populateQuestionsForm();renderOverview();renderAudioList();switchView('case');});
 $('#view-case').addEventListener('input',readCaseForm);$('#view-case').addEventListener('change',readCaseForm);$('#view-questions').addEventListener('input',e=>{const t=e.target;if(t.dataset.q!==undefined){const c=currentCase(),q=c.questions[Number(t.dataset.q)];if(q)q[t.dataset.k]=t.value;persist();}else readQuestionsForm();});$('#view-questions').addEventListener('change',e=>{if(e.target.dataset.q===undefined)readQuestionsForm();});$('#addQuestionBtn').addEventListener('click',addQuestion);$('#questionsList').addEventListener('click',e=>{const b=e.target.closest('[data-remove-q]');if(!b)return;const c=currentCase();c.questions.splice(Number(b.dataset.removeQ),1);persist();renderQuestions();});
 $('#audioInput').addEventListener('change',async e=>{const files=[...e.target.files];if(files.length)await addAudioFiles(files);e.target.value='';});const dz=$('#dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',async e=>{const files=[...e.dataTransfer.files];if(files.length)await addAudioFiles(files);});
-$('#audioList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
-$('#audioList').addEventListener('input',e=>{const el=e.target;if(el.dataset.seg===undefined)return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(el.dataset.key==='text'){if(s.text!==el.value)pushSegmentHistory(s);s.text=el.value;}else if(el.dataset.key==='checked'){s.checked=el.checked;s.review=el.checked?'onaylandi':'bekliyor';}else s[el.dataset.key]=el.value;persist();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});$('#audioList').addEventListener('change',e=>{const el=e.target;if(el.dataset.key!=='review')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;s.review=el.value;s.checked=(el.value==='onaylandi');persist();renderAudioList();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});
+$('#audioList').addEventListener('click',async e=>{const row=e.target.closest('tr.seg-row');if(row&&!e.target.closest('button')&&!e.target.closest('input')&&!e.target.closest('textarea')&&!e.target.closest('select')){focusSegmentRow(row);}const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.segFilter!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.uiFilter=b.dataset.segFilter;renderSegments(m,card);}}else if(b.dataset.segNav!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)navSegment(m,b.dataset.segNav==='next'?1:-1);}else if(b.dataset.segSpeed!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.playbackRate=Number(b.dataset.segSpeed);const pl=card.querySelector('audio');if(pl)pl.playbackRate=m.playbackRate;renderSegments(m,card);persist();}}else if(b.dataset.segApprove!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);approveActiveSegment(m);}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
+$('#audioList').addEventListener('focusin',e=>{const el=e.target;if(el.dataset&&el.dataset.key==='text'){const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(s)snapshotSegmentText(s);}});
+$('#audioList').addEventListener('focusout',e=>{const el=e.target;if(!el.dataset||el.dataset.key!=='text')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(pushSegmentHistory(s))persist();// Odak aynı tabloda başka bir alana geçtiyse tabloyu yeniden çizmeyiz; yoksa
+// kullanıcının tıkladığı hedef DOM'dan silinir ve odak kaybolur.
+const rt=e.relatedTarget;const sameTable=rt&&rt.dataset&&(rt.dataset.seg!==undefined||rt.dataset.segFilter!==undefined);if(!sameTable&&card){renderSegments(m,card);if($('#view-report').classList.contains('active'))renderReport();}});
+$('#audioList').addEventListener('input',e=>{const el=e.target;if(el.dataset.seg===undefined)return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;if(el.dataset.key==='text'){s.text=el.value;// Yazarken yalnızca bu satırın 'anlamlı metin yok' işareti güncellenir;
+// tüm tabloyu yeniden çizmek odak ve imleç konumunu bozardı.
+const row=el.closest('tr.seg-row');if(row){const flag=row.querySelector('.halluc-flag');const bad=isHallucination(s.text);if(bad&&!flag){const span=document.createElement('span');span.className='halluc-flag';span.textContent='Anlamlı metin yok — dinleyip doldurun';el.parentElement.appendChild(span);row.classList.add('is-halluc');}else if(!bad&&flag){flag.remove();row.classList.remove('is-halluc');}}}else if(el.dataset.key==='checked'){s.checked=el.checked;s.review=el.checked?'onaylandi':'bekliyor';}else s[el.dataset.key]=el.value;persist();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});$('#audioList').addEventListener('change',e=>{const el=e.target;if(el.dataset.key!=='review')return;const card=el.closest('.audio-card');const id=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);const s=m?.segments[Number(el.dataset.seg)];if(!s)return;s.review=el.value;s.checked=(el.value==='onaylandi');el.dataset.state=el.value;persist();renderAudioList();renderOverview();if($('#view-report').classList.contains('active'))renderReport();});
 $('#loadModelBtn').addEventListener('click',()=>ensureModel().catch(e=>showToast(e.message)));$('#refreshStorageBtn').addEventListener('click',()=>refreshStorage());$('#clearAllModelsBtn').addEventListener('click',()=>clearModelCache());$('#storageList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.deleteModel){await deleteModelCache(b.dataset.deleteModel);}else if(b.dataset.verifyModel){await verifyModelCache(b.dataset.verifyModel);}else if(b.dataset.useModel){const sel=$('#modelSelect');if(sel){sel.value=b.dataset.useModel;showToast('Model seçildi: '+b.dataset.useModel);}}});$('#startQueueBtn').addEventListener('click',()=>runQueue());$('#cancelQueueBtn').addEventListener('click',()=>{const c=currentCase();if(c)c.queueCancel=true;showToast('Kuyruk durdurulacak; geçerli kayıt bitince duracak.');});$('#retryFailedBtn').addEventListener('click',()=>{const c=currentCase();if(!c)return;for(const m of c.materials||[]){if(m.status==='Çözümleme hatası')m.status='İnceleme bekliyor';}persist();renderQueue();renderAudioList();showToast('Hatalı kayıtlar kuyruğa alındı.');});$('#loadSamplesBtn').addEventListener('click',loadSamples);$('#downloadDocxBtn').addEventListener('click',()=>makeDocx().catch(e=>showToast(e.message)));$('#downloadUdfBtn').addEventListener('click',()=>makeUdf().catch(e=>showToast(e.message)));$('#exportProjectBtn').addEventListener('click',()=>exportProject().catch(e=>showToast(e.message)));$('#importProjectBtn').addEventListener('click',()=>$('#importProjectInput').click());$('#importProjectInput').addEventListener('change',async e=>{const f=e.target.files?.[0];if(f){try{await importProject(f);}catch(err){showToast(`İçe aktarma başarısız: ${err.message}`);}e.target.value='';}});
+$('#audioList').addEventListener('keydown',e=>{const card=e.target.closest('.audio-card');if(!card)return;const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=currentCase().materials.find(x=>x.id===id);if(!m)return;handleSegKey(e,card,m);});
 $('#helpBtn').addEventListener('click',()=>$('#helpDialog').showModal());$('#closeHelp').addEventListener('click',()=>$('#helpDialog').close());$('#confirmCancel').addEventListener('click',()=>$('#confirmDialog').close());$('#closeConfirm').addEventListener('click',()=>$('#confirmDialog').close());$('#confirmOk').addEventListener('click',()=>$('#confirmDialog').close());
 }
 // Sequential batch transcription. Running one file at a time keeps memory flat
