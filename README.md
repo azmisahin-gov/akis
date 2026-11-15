@@ -84,6 +84,10 @@ Rapor kapak alanları ve rol etiketleri dört merci türüne göre uyarlanır. B
 Rapor başlığındaki yönelme eki hesaplanır; sabit “NE” yerine Türkçe ünlü uyumuna ve iyelik ekine göre “MAHKEMESİ’NE”, “BAŞSAVCILIĞI’NA”, “MÜDÜRLÜĞÜ’NE” üretilir.
 
 KONUŞMA ÇÖZÜMLEME DOĞRULUĞU
+Ölçülen doğruluk (paketteki sentetik kayıtlar ve referans metinleri kullanılarak, kelime hata oranı — WER; düşük olan daha iyidir): orta model 0,378 · küçük model 0,651 · temel model ölçülemedi (bir pencerede hata verdi). Doğruluk öncelikliyse orta modeli, hız öncelikliyse küçük modeli seçin. Bu oranlar sentetik kayıtlara aittir; gerçek kayıtlarda farklı olabilir ve her durumda uzman doğrulaması gerekir.
+
+Ölçümde doğrulanan teknik nokta: çözümlemede zaman damgası üretimi açık olmalıdır. Bu kapalıyken model gerçek metin yerine “(Konuşma)” gibi dolgu ifadeleri üretir; açıkken doğru metin üretir.
+
 Çözümleme, tarayıcıda WebGPU varsa WebGPU, yoksa WASM (CPU) üzerinde çalışır. Tarayıcı ortamında ölçülen sonuçlar: int8 kuantizasyon WASM'da yüklenemez (ConvInteger çekirdeği yoktur); q8 kuantizasyon yaklaşık 15 saniyeden uzun kayıtlarda anlamlı metin yerine tekrarlı dolgu ifadeleri üretir; fp16 kararlı ve doğru sonuç verir ancak indirme boyutu büyüktür. Bu nedenle uygulama model başına fp16/fp32 seçer ve dolgu ifadesi içeren bölümleri otomatik olarak “anlamlı metin yok” diye işaretler. İşaretlenen bölümler rapora aktarılmadan önce mutlaka dinlenerek doldurulmalıdır.
 
 UZUN KAYIT VE TOPLU ÇÖZÜMLEME

@@ -1,7 +1,23 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.21-AKIS-BOLUM-DINLEME
+Sürüm: 2026.11.22-AKIS-DOGRULUK-OLCUMU
 
 Bu güncellemede:
+- Deşifre doğruluğu ölçüldü. Paketteki sentetik kayıtlar ve referans metinleri kullanılarak
+  kelime hata oranı (WER) hesaplandı: orta model 0,378; küçük model 0,651. Temel model bir
+  pencerede "token_ids must be a non-empty array" hatasıyla durdu; bu yüzden hızlı ama en
+  düşük doğruluklu seçenek olarak işaretlendi. Model etiketleri ve donanım önerisi artık bu
+  ölçüme dayanıyor.
+- Ölçüm sırasında kritik bir parametre doğrulandı: çözümlemede return_timestamps=true
+  kullanılmalıdır. Bu kapalıyken model gerçek metin yerine "(Konuşma)" gibi dolgu üretiyor;
+  açıkken doğru metin üretiyor. Uygulama doğru değeri zaten kullanıyor.
+- Pencere dayanıklılığı artırıldı: tek bir pencere çözümlenemediğinde (örneğin temel modelde
+  görülen hata) tüm kayıt artık çökmüyor; başarısız pencere sayısı uyarı olarak gösteriliyor
+  ve diğer pencerelerin sonuçları korunuyor.
+- Bölüm bazında dinleme eklendi: her deşifre satırındaki "▶" düğmesi ilgili bölümü çalar.
+- Merci terminolojisi resmî şablonlara göre hizalandı; rapor başlığındaki yönelme eki
+  hesaplanıyor.
+- Model yöneticisi eklendi; dijital delil güvenliği, gelişmiş deşifre editörü, uzun kayıt
+  yönetimi ve toplu çözümleme kuyruğu bu sürümde korunuyor.
 - Bölüm bazında dinleme eklendi: her deşifre satırındaki "▶" düğmesi, kaydın oynatıcısını
   ilgili bölümün başlangıç zamanına getirip çalar ve bitiş zamanında durur. Uzman, metni
   kayıtla karşılaştırırken zamanı elle aramak zorunda kalmaz.
