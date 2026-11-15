@@ -63,7 +63,10 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 ## Deşifre ve kontrol çalışma alanı
 
 Uzmanın en çok zaman geçirdiği alan olduğu için hızlı ve hatasız kontrol
-hedefiyle tasarlanmıştır.
+hedefiyle tasarlanmıştır. **İki panel** kullanır: solda bölüm listesi (gezinme),
+sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden çizilmez;
+yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
+tuşları bozulmaz.
 
 - **Klavye kısayolları** (eller metinden ayrılmadan):
   - `Boşluk` oynat/durdur
@@ -73,16 +76,34 @@ hedefiyle tasarlanmıştır.
   - `[` `]` oynatma hızını düşür/artır
   - `←` `→` 5 saniye geri/ileri
   - Metin alanındayken `Esc` ile alandan çık, klavye gezinmesine dön
-- **Aktif bölüm** belirgin şekilde işaretlenir (sol kenar ve zemin); uzun
-  kayıtta göz nerede olduğunu kaybetmez.
+- **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
+  kontrol durumu tek satırda. Aktif bölüm işaretlenir.
 - **Bölüm filtresi:** Tümü / Bekleyen / Onaylandı / Anlaşılmadı / Yeniden
-  dinlenecek. Her filtrenin sayısı görünür; uzman yalnızca kalan işe odaklanır.
-- **Oynatma hızı** 0,75× – 2× arasında seçilir ve kayda bağlı saklanır.
-- **Denetim ilerlemesi** çubuğu: kaç bölümün denetlendiğini gösterir.
-- **Anlamlı metin yok** işareti, dolgu ifadesi içeren bölümlerde görünür ve
-  metin yazıldığında canlı olarak kaybolur.
-- Kontrol durumları renkle ayrılır (yeşil/turuncu/kırmızı kenar ve zemin).
-- Uzun kayıtta tablo başlığı yapışkan kalır.
+  dinlenecek; her birinin sayısı görünür.
+- **İnceleme önceliği:** hangi bölümün önce dinlenmesi gerektiğini gösteren
+  şeffaf, gerekçeli işaret (anlamlı metin yok, süre sıfır, çok kısa/uzun bölüm,
+  öncekiyle çakışma). "Öncelikliye git" düğmesi en yüksek öncelikli bekleyen
+  bölüme atlar.
+- **Bölüm işlemleri:** oynatıcı konumundan böl, sonrakiyle birleştir, sil.
+- **Oynatma hızı** 0,75× – 2× arası; kayda bağlı saklanır.
+- **Denetim ilerlemesi** çubuğu ve durum renkleri.
+- Uzun kayıtta liste paneli kayar, sağ panel sabit kalır.
+
+## Konuşmacı yönetimi ve ses özellikleri
+
+- Her konuşmacı için **rol** (davacı, davalı, müşteki, sanık, şüpheli, alacaklı,
+  borçlu, tanık, bilirkişi…), **cinsiyet** (uzman beyanı), **yaş aralığı** ve
+  **not** alanları. Bu bilgiler rapora "Konuşmacılar" tablosu olarak akar.
+- **Perde (temel frekans) ölçümü:** otokorelasyon yöntemiyle gerçek DSP ölçümü.
+  Her konuşmacının bölümlerinden örnekler alınır, ortanca perde hesaplanır ve
+  kaba bir yönlendirme gösterilir (ör. "düşük perde, genellikle erkek").
+  Ölçüm otomatik değildir; uzman "Konuşmacı perdesini ölç" düğmesiyle başlatır.
+- **Konuşmacı eşleştirme önerisi:** benzer perdede görünen etiketler uzmana
+  "aynı kişi olabilir" diye hatırlatılır. Bu bir **öneridir**; kimlik tespiti
+  değildir ve arayüzde açıkça belirtilir.
+- **Sınır:** uygulama konuşmacı kimliğini kendiliğinden tespit etmez. Etiketler
+  ve öznitelikler uzman beyanına dayanır; perde değeri kayıt koşullarına bağlı
+  bir tahmindir.
 
 ## Dijital delil güvenliği
 
@@ -109,6 +130,8 @@ hedefiyle tasarlanmıştır.
   6. Gerekçeli sonuç
   7. Ekler
 - Kapak ve içindekiler ilk sayfada; ana rapor sonraki sayfadan başlar.
+- **Konuşmacılar tablosu:** her konuşmacı için etiket, rol, cinsiyet, yaş
+  aralığı, ölçülen perde ve ilgili kayıt/bölüm bilgisi. Üç çıktıda da yer alır.
 - Rapor öncesi kontrol uyarıları (eksik alan, denetlenmemiş bölüm, dolgu metni).
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
