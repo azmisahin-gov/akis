@@ -1,0 +1,16 @@
+# İşletim sistemi ve editör artıkları
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
+*.tmp
+
+# Yerel geliştirme ve araç dosyaları
+.agent_tmp/
+.vscode/
+.idea/
+
+# Geçici rapor çıktıları (uygulama bunları tarayıcıdan indirir)
+*.akis
+*.mihenk
