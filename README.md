@@ -75,7 +75,13 @@ RESMÎ FORMAT HAKKINDA
 Adalet Bakanlığının Bilirkişilik Temel Eğitimi Kaynak Kitabı, bilirkişi raporları için tek ve zorunlu bir özel şablon bulunmadığını; buna karşılık görevlendiren merci, dosya numarası, taraflar, görevlendirme tarihi ve süresi, inceleme konusu, maddi unsurlar, yöntem, bilimsel/teknik dayanak, gerekçeli sonuç, rapor tarihi ve bilirkişi bilgileri gibi unsurların bulunması gerektiğini açıklar. Bakanlığın internet sitesindeki hukuk şablonu bölüm sırası ve kapak bilgileri bu nedenle örnek alınmıştır. Mahkeme ayrıca özel bir biçim istemişse o talimat esas alınmalıdır.
 
 KAPSAM SINIRI
-Rapor kapak alanları ve rol etiketleri dört merci türüne göre uyarlanır: hukuk/idare-vergi (davacı-davalı), ceza (mağdur-katılan/sanık), Cumhuriyet Başsavcılığı (müşteki-şüpheli) ve icra (alacaklı-borçlu). Yedi bölümlü ana rapor sırası Bakanlığın hukuk örneği esas alınarak korunmuştur; ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması sonraki geliştirme kapsamındadır.
+Rapor kapak alanları ve rol etiketleri dört merci türüne göre uyarlanır. Bu ayrım, Bakanlığın yayımladığı dört resmî şablon indirilip incelenerek yapılmıştır. Ölçülen sonuç: dört mercinin de yedi bölümlü rapor yapısı birebir aynıdır; yalnızca kapak alanları değişir. Bu nedenle ayrım bölüm yapısında değil kapak terminolojisindedir:
+
+- Dosya numarası: hukuk/ceza/icra için “DOSYA NO”, Cumhuriyet Başsavcılığı için “SORUŞTURMA NO”.
+- Taraflar: hukukta davacı/davalı; cezada müşteki-mağdur/katılan ve sanık; savcılıkta müşteki/mağdur ve şüpheli; icrada alacaklı ve borçlu.
+- Konu ve tarih: hukukta dava konusu/dava tarihi; cezada inceleme konusu/suç tarihi; savcılıkta soruşturma konusu/suç tarihi; icrada takip konusu/takip tarihi.
+
+Rapor başlığındaki yönelme eki hesaplanır; sabit “NE” yerine Türkçe ünlü uyumuna ve iyelik ekine göre “MAHKEMESİ’NE”, “BAŞSAVCILIĞI’NA”, “MÜDÜRLÜĞÜ’NE” üretilir.
 
 KONUŞMA ÇÖZÜMLEME DOĞRULUĞU
 Çözümleme, tarayıcıda WebGPU varsa WebGPU, yoksa WASM (CPU) üzerinde çalışır. Tarayıcı ortamında ölçülen sonuçlar: int8 kuantizasyon WASM'da yüklenemez (ConvInteger çekirdeği yoktur); q8 kuantizasyon yaklaşık 15 saniyeden uzun kayıtlarda anlamlı metin yerine tekrarlı dolgu ifadeleri üretir; fp16 kararlı ve doğru sonuç verir ancak indirme boyutu büyüktür. Bu nedenle uygulama model başına fp16/fp32 seçer ve dolgu ifadesi içeren bölümleri otomatik olarak “anlamlı metin yok” diye işaretler. İşaretlenen bölümler rapora aktarılmadan önce mutlaka dinlenerek doldurulmalıdır.

@@ -47,7 +47,7 @@ function switchView(name){$$('.view').forEach(v=>v.classList.toggle('active',v.i
 function renderCaseSelect(){const sel=$('#caseSelect');sel.innerHTML=appState.cases.map(c=>`<option value="${esc(c.id)}" ${c.id===appState.activeCaseId?'selected':''}>${esc(c.name||c.fileNo||'Yeni inceleme')}</option>`).join('');}
 const CASE_FIELDS=['reportType','court','fileNo','assignmentDate','dueDate','assignmentDurationDays','plaintiff','plaintiffCounsel','defendant','defendantCounsel','subject','caseDate','inspectionDate','expertName','registryNo','expertField','reportDate'];
 function populateCaseForm(){const c=currentCase();if(!c)return;for(const k of CASE_FIELDS){const el=$(`#${k}`);if(el)el.value=c[k]??'';}applyRoleLabels(c.reportType);}
-function applyRoleLabels(type){const spec=reportTypeSpec(type);const map={labelPlaintiff:spec.roles.plaintiff,labelPlaintiffCounsel:spec.roles.plaintiffCounsel,labelDefendant:spec.roles.defendant,labelDefendantCounsel:spec.roles.defendantCounsel,labelSubject:spec.subject+' *',labelCaseDate:spec.date};for(const id in map){const el=$(`#${id}`);if(el)el.textContent=map[id];}}
+function applyRoleLabels(type){const spec=reportTypeSpec(type);const map={labelFileNo:spec.fileNo+' *',labelPlaintiff:spec.roles.plaintiff,labelPlaintiffCounsel:spec.roles.plaintiffCounsel,labelDefendant:spec.roles.defendant,labelDefendantCounsel:spec.roles.defendantCounsel,labelSubject:spec.subject+' *',labelCaseDate:spec.date};for(const id in map){const el=$(`#${id}`);if(el)el.textContent=map[id];}}
 function updateCaseName(c){c.name=c.fileNo?`${c.fileNo} · ${c.court||'İnceleme dosyası'}`:(c.court||'Yeni inceleme dosyası');renderCaseSelect();}
 function readCaseForm(){const c=currentCase();if(!c)return;for(const k of CASE_FIELDS){const el=$(`#${k}`);if(el)c[k]=el.value;}applyRoleLabels(c.reportType);updateCaseName(c);persist();renderOverview();}
 function populateQuestionsForm(){const c=currentCase();if(!c)return;$('#assignmentScope').value=c.assignmentScope||'';$('#methodText').value=c.methodText||DEFAULT_METHOD;$('#limitationsText').value=c.limitationsText||'';$('#conclusionText').value=c.conclusionText||'';renderQuestions();}
@@ -104,23 +104,38 @@ function niceDate(d){if(!d)return '—';try{return new Date(`${d}T00:00:00`).toL
 // Court type drives the cover-field terminology and the report heading. The
 // Ministry publishes a separate template per jurisdiction, so a criminal file
 // must not be labelled with civil "davacı/davalı" roles.
+// Cover-field terminology per jurisdiction, taken from the Ministry's published
+// templates. Measured fact: all four templates use the *same* seven report
+// sections; only the cover labels differ. So jurisdiction handling lives here,
+// not in the section structure.
 const REPORT_TYPES = {
-  hukuk: { label:'HUKUK MAHKEMELERİ – İDARE / VERGİ MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU',
+  hukuk: { label:'HUKUK MAHKEMELERİ – İDARE / VERGİ MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU', merci:'Mahkeme',
+    fileNo:'DOSYA NO',
     roles:{ plaintiff:'DAVACI', plaintiffCounsel:'DAVACI VEKİLİ', defendant:'DAVALI', defendantCounsel:'DAVALI VEKİLİ' },
     subject:'DAVA KONUSU', date:'DAVA TARİHİ' },
-  ceza: { label:'CEZA MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU',
-    roles:{ plaintiff:'MAĞDUR / KATILAN', plaintiffCounsel:'MAĞDUR VEKİLİ', defendant:'SANIK', defendantCounsel:'SANIK MÜDAFİİ' },
-    subject:'İSNAT EDİLEN SUÇ / İNCELEME KONUSU', date:'SUÇ / OLAY TARİHİ' },
-  savcilik: { label:'CUMHURİYET BAŞSAVCILIĞI', heading:'BİLİRKİŞİ RAPORU',
-    roles:{ plaintiff:'MÜŞTEKİ / BAŞVURAN', plaintiffCounsel:'MÜŞTEKİ VEKİLİ', defendant:'ŞÜPHELİ', defendantCounsel:'ŞÜPHELİ MÜDAFİİ' },
-    subject:'SORUŞTURMA KONUSU', date:'OLAY TARİHİ' },
-  icra: { label:'İCRA MÜDÜRLÜĞÜ', heading:'BİLİRKİŞİ RAPORU',
+  ceza: { label:'CEZA MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU', merci:'Mahkeme',
+    fileNo:'DOSYA NO',
+    roles:{ plaintiff:'MÜŞTEKİ/MAĞDUR /KATILAN', plaintiffCounsel:'VEKİLİ', defendant:'SANIK', defendantCounsel:'SANIK VEKİLİ' },
+    subject:'İNCELEME KONUSU', date:'SUÇ TARİHİ' },
+  savcilik: { label:'CUMHURİYET BAŞSAVCILIĞI', heading:'BİLİRKİŞİ RAPORU', merci:'Cumhuriyet Başsavcılığı',
+    fileNo:'SORUŞTURMA NO',
+    roles:{ plaintiff:'MÜŞTEKİ/MAĞDUR', plaintiffCounsel:'VEKİLİ', defendant:'ŞÜPHELİ', defendantCounsel:'ŞÜPHELİ VEKİLİ' },
+    subject:'SORUŞTURMA KONUSU', date:'SUÇ TARİHİ' },
+  icra: { label:'İCRA MÜDÜRLÜĞÜ', heading:'BİLİRKİŞİ RAPORU', merci:'İcra Müdürlüğü',
+    fileNo:'DOSYA NO',
     roles:{ plaintiff:'ALACAKLI', plaintiffCounsel:'ALACAKLI VEKİLİ', defendant:'BORÇLU', defendantCounsel:'BORÇLU VEKİLİ' },
     subject:'TAKİP KONUSU', date:'TAKİP TARİHİ' },
 };
+// Turkish dative suffix for institution names, so the report heading reads
+// "…MAHKEMESİ'NE", "…BAŞSAVCILIĞI'NA", "…MÜDÜRLÜĞÜ'NE" instead of a fixed "NE".
+// Buffer is 'n' after a 3rd-person possessive, otherwise 'y'; the vowel follows
+// the last vowel of the name (back -> a, front -> e).
+const TR_VOWELS='aeıioöuü';
+const TR_POSSESSIVE=/(sı|si|su|sü|ğı|ği|ğu|ğü)$/;
+function trDative(name){const s=String(name||'').trim();if(!s)return 'NE';const lower=s.toLocaleLowerCase('tr-TR');let last='e';for(let i=lower.length-1;i>=0;i--){if(TR_VOWELS.includes(lower[i])){last=lower[i];break;}}const back='aıou'.includes(last);const v=back?'a':'e';const endsVowel=TR_VOWELS.includes(lower[lower.length-1]);const suf=endsVowel?(TR_POSSESSIVE.test(lower)?'n':'y')+v:v;return suf.toLocaleUpperCase('tr-TR');}
 function reportTypeSpec(t){return REPORT_TYPES[t]||REPORT_TYPES.hukuk;}
 function reportTypeLabel(t){return reportTypeSpec(t).label;}
-function reportRows(c){const r=reportTypeSpec(c.reportType).roles;return [['DOSYA NO',c.fileNo],[r.plaintiff,c.plaintiff],[r.plaintiffCounsel,c.plaintiffCounsel],[r.defendant,c.defendant],[r.defendantCounsel,c.defendantCounsel],[reportTypeSpec(c.reportType).subject,c.subject],[reportTypeSpec(c.reportType).date,niceDate(c.caseDate)],['GÖREVLENDİRME TARİHİ',niceDate(c.assignmentDate)],['VERİLEN SÜRE',c.assignmentDurationDays?`${c.assignmentDurationDays} GÜN`:'' ],['SON TESLİM TARİHİ',niceDate(c.dueDate)],['KEŞİF / İNCELEME TARİHİ',niceDate(c.inspectionDate)],['RAPOR TARİHİ',niceDate(c.reportDate)],['BİLİRKİŞİ ADI SOYADI',c.expertName],['UZMANLIK ALANI',c.expertField],['BİLİRKİŞİ SİCİL NO',c.registryNo]].filter(x=>x[1]&&x[1]!=='—');}
+function reportRows(c){const spec=reportTypeSpec(c.reportType);const r=spec.roles;return [[spec.fileNo,c.fileNo],[r.plaintiff,c.plaintiff],[r.plaintiffCounsel,c.plaintiffCounsel],[r.defendant,c.defendant],[r.defendantCounsel,c.defendantCounsel],[spec.subject,c.subject],[spec.date,niceDate(c.caseDate)],['GÖREVLENDİRME TARİHİ',niceDate(c.assignmentDate)],['VERİLEN SÜRE',c.assignmentDurationDays?`${c.assignmentDurationDays} GÜN`:'' ],['SON TESLİM TARİHİ',niceDate(c.dueDate)],['KEŞİF / İNCELEME TARİHİ',niceDate(c.inspectionDate)],['RAPOR TARİHİ',niceDate(c.reportDate)],['BİLİRKİŞİ ADI SOYADI',c.expertName],['UZMANLIK ALANI',c.expertField],['BİLİRKİŞİ SİCİL NO',c.registryNo]].filter(x=>x[1]&&x[1]!=='—');}
 function renderReport(){
   const c=currentCase();if(!c)return;
   const materials=c.materials||[];const allSegs=materials.flatMap(m=>m.segments||[]);const checked=allSegs.filter(s=>isReviewed(s)).length;const warnings=[];
@@ -143,7 +158,7 @@ function renderReport(){
     '6. GEREKÇELİ SONUÇ',
     '7. EKLER'
   ];
-  let html=`<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>UZMANLIK ALANI · 56.12</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court||'………………… MAHKEMESİ').toLocaleUpperCase('tr-TR'))}’NE</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>Ses kayıtlarının teknik incelenmesi ve konuşma içeriğinin çözümlenmesi</p></div>`;
+  let html=`<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>UZMANLIK ALANI · 56.12</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court||'………………… MAHKEMESİ').toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court||'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>Ses kayıtlarının teknik incelenmesi ve konuşma içeriğinin çözümlenmesi</p></div>`;
   if(c.synthetic)html+=`<div class="paper-synthetic">KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR</div>`;
   html+=`<table class="paper-table cover-fields"><tbody>${reportRows(c).map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
   html+=`<div class="paper-section toc-section"><h3>İÇİNDEKİLER</h3><ol>${toc.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
@@ -155,7 +170,7 @@ function renderReport(){
   html+=`<div class="paper-section"><h3>4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR</h3><p>${esc(c.methodText||DEFAULT_METHOD).replace(/\n/g,'<br>')}</p></div>`;
   html+=`<div class="paper-section"><h3>5. ANALİZ, TESPİT VE DEĞERLENDİRME</h3><h4>5.1. Ses kayıtlarının çözümlenmesi</h4>`;
   if(materials.length){for(let i=0;i<materials.length;i++){const m=materials[i];html+=`<h4>5.1.${i+1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration||0)} · Biçim: ${esc(m.type||'Ses dosyası')} · Deşifre bölümü: ${(m.segments||[]).length}</p>`;if(m.hallucinationWarning)html+=`<p class="paper-muted">Çözümleme uyarısı: ${esc(m.hallucinationWarning)}</p>`;if(m.languageWarning)html+=`<p class="paper-muted">Kontrol uyarısı: ${esc(m.languageWarning)}</p>`;if(m.segments?.length){html+=`<table class="paper-table"><thead><tr><th>Zaman aralığı</th><th>Konuşmacı</th><th>Çözümlenen konuşma</th><th>Kontrol durumu</th></tr></thead><tbody>${m.segments.map(s=>`<tr><td>${esc(s.start||'—')} – ${esc(s.end||'—')}</td><td>${esc(s.speaker||'Belirtilmemiş')}</td><td>${esc(s.text||'')}</td><td>${reviewLabel(s)}</td></tr>`).join('')}</tbody></table>`;}else html+='<p>Bu kayıt için henüz deşifre metni oluşturulmamıştır.</p>';}}else html+='<p>Ses kaydı eklenmemiştir.</p>';
-  html+=`<h4>5.2. Mahkeme sorularına ilişkin teknik değerlendirme</h4>`;
+  html+=`<h4>5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme</h4>`;
   if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||'Soru metni girilmemiştir.')}</h4><p>${esc(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.')}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||'Belirtilmemiş')}</p>`;}}else html+='<p>Teknik sorulara ilişkin değerlendirme, görevlendirme yazısında yer alan sorular doğrultusunda eklenir.</p>';
   html+=`<h4>5.3. Teknik sınırlılıklar</h4><p>${esc(c.limitationsText||'İncelemede karşılaşılan teknik sınırlılıklar varsa, bunlar somut kayıt ve zaman aralıklarıyla açıklanır.')}</p></div>`;
   html+=`<div class="paper-section"><h3>6. GEREKÇELİ SONUÇ</h3><p>${esc(c.conclusionText||'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.')}</p></div>`;
@@ -171,7 +186,7 @@ function headingXml(text,level=1){return wP(text,{style:`Heading${level}`,color:
 function docxXml(c){
   let body='';
   body+=wP('T.C.',{bold:true,color:'1C426B',size:24,align:'center',before:120,after:90});
-  body+=wP((c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')+'’NE',{bold:true,color:'1C426B',size:26,align:'center',after:180,keep:true});
+  body+=wP((c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')+'’'+trDative(c.court||'Mahkemesi'),{bold:true,color:'1C426B',size:26,align:'center',after:180,keep:true});
   body+=wP(reportTypeSpec(c.reportType).heading,{bold:true,color:'1C426B',size:34,align:'center',before:170,after:100,keep:true});
   body+=wP('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{color:'58718A',size:18,align:'center',after:240});
   if(c.synthetic){body+=`<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{bold:true,color:'9A6B2D',size:18})}</w:p>`;}
@@ -200,7 +215,7 @@ function docxXml(c){
     if(m.segments?.length){body+=wTable([['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],...m.segments.map(s=>[`${s.start||'—'} – ${s.end||'—'}`,s.speaker||'Belirtilmemiş',s.text||'',reviewLabel(s)])],{widths:[1600,1500,4600,1300],header:true});}
     else body+=wP('Bu kayıt için henüz deşifre metni oluşturulmamıştır.');
   }
-  body+=headingXml('5.2. Mahkeme sorularına ilişkin teknik değerlendirme',2);
+  body+=headingXml('5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',2);
   if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`5.2.${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{bold:true,color:'385873',size:20,before:80,after:60,keep:true});body+=wP(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.');body+=wP(`Dayanak: ${q.basis||'Belirtilmemiş'}`,{color:'657D92',size:17,italic:true});});}
   else body+=wP('Teknik sorulara ilişkin değerlendirme, görevlendirme yazısındaki sorular doğrultusunda eklenir.');
   body+=headingXml('5.3. Teknik sınırlılıklar',2);
@@ -242,7 +257,7 @@ async function makeUdf(){
   function table(rows,widths,{header=true,shadeFirstCol=false}={}){if(!rows?.length)return '';const colCount=rows[0].length;const safeWidths=widths?.length===colCount?widths:Array(colCount).fill(Math.floor(510/colCount));const rowXml=rows.map((row,ri)=>{const isHeader=header&&ri===0;const cells=row.map((value,ci)=>{let cellText=String(value??'');if(!isHeader)cellText=cellText.replace(/(\S{8})(?=\S)/g,'$1\u200B');const fill=isHeader?colors.pale:(shadeFirstCol&&ci===0?colors.pale:(ri%2===0?'16777215':udfSignedColor('F8FAFC')));const fg=isHeader?colors.navy:(shadeFirstCol&&ci===0?colors.navy:colors.body);const bold=isHeader||(shadeFirstCol&&ci===0);const ref=addText(cellText);const formatted=ref.replace('bold="false"',`bold="${bold?'true':'false'}"`).replace(`foreground="${colors.body}"`,`foreground="${fg}"`).replace('size="11"',`size="${isHeader?9.5:9.5}"`);return `<cell colspan="1" align="top" fillColor="${fill}" border="borderCell" borderSpec="3" paddingTop="3" paddingBottom="3" paddingLeft="4" paddingRight="4"><paragraph Alignment="0" SpaceBefore="1" SpaceAfter="1" LineSpacing="1.05">${formatted}</paragraph></cell>`;}).join('');return `<row rowName="r${++serial}" rowType="dataRow">${cells}</row>`;}).join('');return `<table tableName="AkisTable${serial}" columnCount="${colCount}" columnSpans="${safeWidths.join(',')}" border="borderCell" borderColor="${colors.line}" borderWidth="0.3">${rowXml}</table>`;}
   const el=[];
   el.push(paragraph('T.C.',{size:16,bold:true,color:'navy',align:1,after:4}));
-  el.push(paragraph(`${(c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')}’NE`,{size:15,bold:true,color:'navy',align:1,after:16}));
+  el.push(paragraph(`${(c.court||'……………………………… MAHKEMESİ').toLocaleUpperCase('tr-TR')}’${trDative(c.court||'Mahkemesi')}`,{size:15,bold:true,color:'navy',align:1,after:16}));
   el.push(paragraph(reportTypeSpec(c.reportType).heading,{size:22,bold:true,color:'navy',align:1,before:8,after:7}));
   el.push(paragraph('SES KAYITLARININ TEKNİK İNCELENMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',{size:10,bold:true,color:'muted',align:1,after:15}));
   if(c.synthetic)el.push(paragraph('KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',{size:10,bold:true,color:'mid',align:1,after:10}));
@@ -268,7 +283,7 @@ async function makeUdf(){
   el.push(h('5. ANALİZ, TESPİT VE DEĞERLENDİRME'));
   el.push(paragraph('5.1. Ses kayıtlarının çözümlenmesi',{size:12,bold:true,color:'mid',before:5,after:4}));
   if(c.materials?.length){c.materials.forEach((m,i)=>{el.push(paragraph(`5.1.${i+1}. ${m.name}`,{size:11,bold:true,color:'mid',before:6,after:3}));el.push(paragraph(`Süre: ${fmtTime(m.duration||0)}   |   Biçim: ${m.type||'Ses dosyası'}   |   Deşifre bölümü: ${(m.segments||[]).length}`,{size:9,color:'muted',after:3}));if(m.languageWarning)el.push(paragraph(`Kontrol uyarısı: ${m.languageWarning}`,{size:9,italic:true,color:'muted'}));if(m.segments?.length){const segments=m.segments.map(seg=>[`${seg.start||'—'} – ${seg.end||'—'}`,seg.speaker||'Belirtilmemiş',seg.text||'',reviewLabel(seg)]);el.push(table([['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],...segments],[78,75,275,82],{header:true}));}else el.push(paragraph('Bu kayıt için henüz deşifre metni oluşturulmamıştır.',{italic:true,color:'muted'}));});}else el.push(paragraph('İncelemeye sunulan ses kaydı bulunmamaktadır.'));
-  el.push(paragraph('5.2. Mahkeme sorularına ilişkin teknik değerlendirme',{size:12,bold:true,color:'mid',before:7,after:4}));
+  el.push(paragraph('5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',{size:12,bold:true,color:'mid',before:7,after:4}));
   if(c.questions?.length)c.questions.forEach((q,i)=>{el.push(paragraph(`5.2.${i+1}. ${q.question||'Soru metni girilmemiştir.'}`,{size:11,bold:true,color:'mid',before:5,after:3}));el.push(paragraphLines(q.answer||'Bu soruya ilişkin teknik cevap henüz girilmemiştir.',{justify:true}));el.push(paragraph(`Dayanak: ${q.basis||'Belirtilmemiş'}`,{size:9,italic:true,color:'muted',after:5}));});
   else el.push(paragraph('Teknik sorulara ilişkin değerlendirme, görevlendirme yazısındaki sorular doğrultusunda eklenir.'));
   el.push(paragraph('5.3. Teknik sınırlılıklar',{size:12,bold:true,color:'mid',before:7,after:4}));

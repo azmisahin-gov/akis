@@ -1,7 +1,26 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.19-AKIS-MODEL-YONETICISI
+Sürüm: 2026.11.20-AKIS-MERCI-TERMINOLOJISI
 
 Bu güncellemede:
+- Merci terminolojisi Bakanlığın yayımladığı resmî şablonlara göre hizalandı. Şablonlar
+  indirilip incelendi; ölçülen sonuç: dört mercinin de yedi bölümlü rapor yapısı birebir aynı,
+  yalnızca kapak alanları değişiyor. Bu nedenle ayrım bölüm yapısında değil kapak alanlarında.
+- Kapak dosya numarası etiketi mercie göre değişiyor: hukuk/ceza/icra "DOSYA NO",
+  Cumhuriyet Başsavcılığı "SORUŞTURMA NO".
+- Taraf etiketleri resmî şablon terminolojisine çekildi: ceza (MÜŞTEKİ/MAĞDUR /KATILAN,
+  SANIK, SANIK VEKİLİ), savcılık (MÜŞTEKİ/MAĞDUR, VEKİLİ, ŞÜPHELİ, ŞÜPHELİ VEKİLİ),
+  icra (ALACAKLI, ALACAKLI VEKİLİ, BORÇLU, BORÇLU VEKİLİ).
+- Konu ve tarih alanları mercie göre adlandırılıyor: hukukta DAVA KONUSU/DAVA TARİHİ,
+  cezada İNCELEME KONUSU/SUÇ TARİHİ, savcılıkta SORUŞTURMA KONUSU/SUÇ TARİHİ,
+  icrada TAKİP KONUSU/TAKİP TARİHİ.
+- Rapor başlığındaki yönelme eki artık hesaplanıyor: sabit "NE" yerine Türkçe ünlü uyumuna
+  ve iyelik ekine göre "MAHKEMESİ'NE", "BAŞSAVCILIĞI'NA", "MÜDÜRLÜĞÜ'NE" üretiliyor.
+- Soru bölümü başlığı merciden bağımsız hâle getirildi ("Görevlendiren merci sorularına
+  ilişkin teknik değerlendirme"); savcılık ve icra dosyalarında "mahkeme" ifadesi yanlıştı.
+- Model yöneticisi eklendi: indirilen modeller listelenir, boyut gösterilir, bütünlük
+  doğrulanır, silinir; donanıma göre model önerilir.
+- Dijital delil güvenliği, gelişmiş deşifre editörü, uzun kayıt yönetimi, toplu çözümleme
+  kuyruğu ve konuşma motoru düzeltmesi bu sürümde korunuyor.
 - Model yöneticisi eklendi: indirilmiş konuşma modelleri listelenir, her biri için dosya sayısı
   ve disk boyutu gösterilir. Model seçilebilir, bütünlüğü doğrulanabilir ve silinebilir;
   tüm model önbelleği tek düğmeyle temizlenebilir.
