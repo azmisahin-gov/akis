@@ -10,7 +10,7 @@ BAŞLATMA
 İLK KULLANIM
 1. Genel görünüm ekranında “Hazır test dosyalarını yükle” seçeneğine basın.
 2. Dört kurgusal dosya ve on sentetik WAV kaydı çalışma alanına eklenir.
-3. Ses Kayıtları bölümünde model olarak çok dilli küçük modeli seçin ve “Modeli yükle”ye basın.
+3. Ses Kayıtları bölümünde model olarak “Küçük model – önerilen doğruluk” seçeneğini seçin ve “Modeli yükle”ye basın.
 4. İlk model indirmesi internet bağlantısı gerektirir. İndirme tamamlandıktan sonra kayıtlar tarayıcıda, yerel bilgisayarda çözümlenir.
 5. Her ses kaydının yanında “Çözümle”ye basın. Çıkan zaman damgalı metni kaydı dinleyerek düzeltin.
 6. Dinleyerek kontrol ettiğiniz bölümlerin onay kutusunu işaretleyin. Konuşmacı etiketlerini uzman olarak siz girin; otomatik çözümleme konuşmacı kimliğini ayırt etmez.
@@ -39,7 +39,7 @@ TEST DOSYALARI
 Paket içinde dört kurgusal dosya türü (hukuk, ceza, Cumhuriyet Başsavcılığı, icra) ve on sentetik Türkçe WAV kaydı vardır. Sesler sentetik konuşma üretimidir; gerçek kişi veya gerçek dava kaydı değildir. “Profesyonel_Rapor_Tasarim_Ornegi.docx” rapor tasarımını gösteren kurgusal bir Word örneğidir.
 
 RESMÎ ŞABLONLAR
-Bakanlığın yayımladığı dört rapor türü için resmî DOCX bağlantıları SABLONLAR_VE_UYAP.txt dosyasındadır. Uygulama rapor türü seçimi sunar; ancak oluşturduğu DOCX, Bakanlığın indirme bağlantısındaki resmî DOCX'in piksel düzeyinde birebir kopyası değildir. Merci tarafından belirli şablonun aynısı isteniyorsa resmî şablonu esas alın.
+Bakanlığın yayımladığı dört rapor türü için resmî DOCX bağlantıları KAYNAK.md dosyasındadır. Uygulama rapor türü seçimi sunar; ancak oluşturduğu DOCX, Bakanlığın indirme bağlantısındaki resmî DOCX'in piksel düzeyinde birebir kopyası değildir. Merci tarafından belirli şablonun aynısı isteniyorsa resmî şablonu esas alın.
 
 SORUN GİDERME
 - START.bat çalışmıyorsa Windows PowerShell'in çalıştırılmasına izin verildiğini kontrol edin.
@@ -75,7 +75,10 @@ RESMÎ FORMAT HAKKINDA
 Adalet Bakanlığının Bilirkişilik Temel Eğitimi Kaynak Kitabı, bilirkişi raporları için tek ve zorunlu bir özel şablon bulunmadığını; buna karşılık görevlendiren merci, dosya numarası, taraflar, görevlendirme tarihi ve süresi, inceleme konusu, maddi unsurlar, yöntem, bilimsel/teknik dayanak, gerekçeli sonuç, rapor tarihi ve bilirkişi bilgileri gibi unsurların bulunması gerektiğini açıklar. Bakanlığın internet sitesindeki hukuk şablonu bölüm sırası ve kapak bilgileri bu nedenle örnek alınmıştır. Mahkeme ayrıca özel bir biçim istemişse o talimat esas alınmalıdır.
 
 KAPSAM SINIRI
-Bu sürümün rapor tasarımı Hukuk/İdare-Vergi örneğine göre iyileştirilmiştir. Ceza, Cumhuriyet Başsavcılığı ve İcra dosyaları için rol alanları ve rapor bölümleri ayrı ayrı uzmanlaştırılmamıştır; bu sonraki geliştirme kapsamındadır.
+Rapor kapak alanları ve rol etiketleri dört merci türüne göre uyarlanır: hukuk/idare-vergi (davacı-davalı), ceza (mağdur-katılan/sanık), Cumhuriyet Başsavcılığı (müşteki-şüpheli) ve icra (alacaklı-borçlu). Yedi bölümlü ana rapor sırası Bakanlığın hukuk örneği esas alınarak korunmuştur; ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması sonraki geliştirme kapsamındadır.
+
+KONUŞMA ÇÖZÜMLEME DOĞRULUĞU
+Çözümleme, tarayıcıda WebGPU varsa WebGPU, yoksa WASM (CPU) üzerinde çalışır. Tarayıcı ortamında ölçülen sonuçlar: int8 kuantizasyon WASM'da yüklenemez (ConvInteger çekirdeği yoktur); q8 kuantizasyon yaklaşık 15 saniyeden uzun kayıtlarda anlamlı metin yerine tekrarlı dolgu ifadeleri üretir; fp16 kararlı ve doğru sonuç verir ancak indirme boyutu büyüktür. Bu nedenle uygulama model başına fp16/fp32 seçer ve dolgu ifadesi içeren bölümleri otomatik olarak “anlamlı metin yok” diye işaretler. İşaretlenen bölümler rapora aktarılmadan önce mutlaka dinlenerek doldurulmalıdır.
 
 
 MARKA VE ÇIKTI ÖNCELİĞİ
