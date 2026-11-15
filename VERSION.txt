@@ -1,7 +1,20 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.22-AKIS-DOGRULUK-OLCUMU
+Sürüm: 2026.11.23-AKIS-YEDEK-DOGRULAMA
 
 Bu güncellemede:
+- Yedekleme akışı uçtan uca doğrulandı. Dışa aktarılan .akis paketinde dosya bilgileri,
+  sorular, yöntem metni, bölümler, teknik envanter ve SHA-256 özeti ile tüm ses blob'ları
+  eksiksiz taşınıyor; içe aktarmada hepsi geri geliyor. Adli bir araçta çalışma kaybı en
+  ciddi risk olduğu için bu akış gerçek bir paket üzerinden sınandı.
+- Dosya adı üretimi düzeltildi: dosya numarası nokta ile bittiğinde (örneğin "2026/214 E.")
+  yedek adı "2026_214_E..akis" gibi çift noktalı oluşuyordu; artık baştaki ve sondaki nokta,
+  tire ve alt çizgi temizleniyor.
+- Deşifre doğruluğu ölçüldü: orta model 0,378; küçük model 0,651; temel model bir pencerede
+  hata verdi. Model etiketleri ve donanım önerisi bu ölçüme dayanıyor.
+- Çözümlemede zaman damgası üretimi açık olmalıdır; kapalıyken model dolgu metni üretiyor.
+- Pencere dayanıklılığı: tek pencere hatası artık tüm kaydı çökertmiyor.
+- Bölüm bazında dinleme, merci terminolojisi, model yöneticisi, dijital delil güvenliği,
+  gelişmiş deşifre editörü, uzun kayıt yönetimi ve toplu çözümleme bu sürümde korunuyor.
 - Deşifre doğruluğu ölçüldü. Paketteki sentetik kayıtlar ve referans metinleri kullanılarak
   kelime hata oranı (WER) hesaplandı: orta model 0,378; küçük model 0,651. Temel model bir
   pencerede "token_ids must be a non-empty array" hatasıyla durdu; bu yüzden hızlı ama en
