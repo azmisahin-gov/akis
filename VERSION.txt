@@ -1,7 +1,17 @@
 AKİS – ADLİ KONUŞMA İNCELEME SİSTEMİ
-Sürüm: 2026.11.16-AKIS-TOPLU-CALISMA
+Sürüm: 2026.11.17-AKIS-DESIFRE-EDITORU
 
 Bu güncellemede:
+- Gelişmiş deşifre editörü durumları eklendi: her bölüm için Onaylandı, Kontrol bekliyor,
+  Anlaşılmadı ve Yeniden dinlenecek durumları ayrı ayrı seçilebilir.
+- Yalnızca "Onaylandı" ve "Anlaşılmadı" uzman denetiminden geçmiş sayılır; "Yeniden dinlenecek"
+  asla doğrulanmış kabul edilmez. Böylece kontrol edilmemiş bir bölüm rapora doğrulanmış
+  gibi yansımaz.
+- Bölüm metni değişiklik geçmişi eklendi: bir bölümün metni her düzeltildiğinde önceki sürüm
+  saat damgasıyla saklanır ve "Geçmiş" düğmesinden görüntülenebilir.
+- "Anlaşılmadı" işaretli bölümler deşifre tablosunda vurgulanır ve rapor öncesi uyarı üretir.
+- Eski kayıtlardaki "kontrol edildi" onay kutusu "Onaylandı" durumuna eşlenir; önceki MİHENK/AKİS
+  kayıtları anlamını korur.
 - Uzun kayıt yönetimi eklendi: kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir.
   Böylece uzun kayıtlarda tarayıcı belleği şişmez; her pencere sonunda ilerleme kaydedilir.
 - Çözümleme ilerleme çubuğu eklendi; pencere bazında yüzde gösterilir.
@@ -22,29 +32,6 @@ Bu güncellemede:
   ceza (mağdur-katılan/sanık), savcılık (müşteki-şüpheli), icra (alacaklı-borçlu).
 - Kullanılmayan kod kaldırıldı; START.bat'ın işaret ettiği README_TR.txt eklendi.
 - Hukuk/İdare-Vergi raporunun bölüm sırası Bakanlığın yayımladığı örnek hukuk raporu yapısına göre düzenlendi.
-- Kapak bilgileri ve kısa içindekiler aynı ilk sayfada toplandı; ana rapor bir sonraki sayfada başlatıldı.
-- UDF sayfa kenar boşlukları DOCX ile aynı A4 geometriye yaklaştırıldı.
-- UDF tablolarında koyu çizgiler hafifletildi, hücre içi boşluklar dengelendi ve açık satır dolguları eklendi.
-- Marka AKİS olarak güncellendi; eski MİHENK tarayıcı depolaması ve .mihenk yedek içe aktarma uyumluluğu korundu.
-- Birincil çıktı UDF olarak belirlendi; DOCX isteğe bağlı yardımcı kopyadır.
-
-Notlar:
-- Adalet Bakanlığı eğitim kaynağına göre bilirkişi raporları için tek ve zorunlu bir görsel şablon bulunmamaktadır; raporun mevzuatta sayılan unsurları içermesi, anlaşılır ve denetlenebilir olması gerekir.
-- Çözümleme doğruluğu tarayıcı donanımına bağlıdır. WebGPU varsa belirgin şekilde hızlıdır; yalnızca WASM varsa uzun kayıtlar yavaş çözümlenir.
-- Kayıtlar pencerelere bölünerek işlendiği için çok uzun kayıtlar artık belleği zorlamaz; ancak toplam süre kayıt uzunluğuyla doğru orantılı artar.
-- UDF dosyası, kullanıcı tarafından sağlanan boş BOS.udf dosyasındaki biçim yapısı esas alınarak doğrudan oluşturulur. XML/ZIP yapısı test edilmiştir; gerçek UYAP Editörü içindeki sayfa görünümü son kullanıcı bilgisayarında doğrulanmalıdır.
-- Uygulama e-imza üretmez ve UYAP'a belge göndermez.
-- Otomatik deşifre uzman doğrulamasının yerine geçmez; işaretlenen bölümler dinlenerek doldurulmalıdır.
-- WebGPU algılama eklendi; WebGPU yoksa otomatik olarak WASM (CPU) kullanılır ve arayüzde gösterilir.
-- Çözümleme modeli listesi genişletildi: temel, küçük, orta ve large-v3-turbo; her biri için
-  yaklaşık indirme boyutu ve doğruluk notu gösterilir.
-- Dolgu/halüsinasyon tespiti eklendi: yalnızca "(Konuşma)", "(Müzik - Jenerik)" gibi ifade üreten
-  bölümler "anlamlı metin yok" diye işaretlenir ve rapor öncesi uyarı üretir.
-- Rapor kapak alanları ve rol etiketleri merci türüne göre uyarlanır: hukuk (davacı-davalı),
-  ceza (mağdur-katılan/sanık), savcılık (müşteki-şüpheli), icra (alacaklı-borçlu).
-- Kullanılmayan kod kaldırıldı; START.bat'ın işaret ettiği README_TR.txt eklendi.
-- Hukuk/İdare-Vergi raporunun bölüm sırası Bakanlığın yayımladığı örnek hukuk raporu yapısına göre düzenlendi.
-- Kapak bilgileri resmi örnek terminolojisine yaklaştırıldı; görevlendirme süresi ayrı gün alanı olarak eklendi.
 - Kapak bilgileri ve kısa içindekiler aynı ilk sayfada toplandı; ana rapor bir sonraki sayfada başlatıldı.
 - UDF sayfa kenar boşlukları DOCX ile aynı A4 geometriye yaklaştırıldı.
 - UDF tablolarında koyu çizgiler hafifletildi, hücre içi boşluklar dengelendi ve açık satır dolguları eklendi.

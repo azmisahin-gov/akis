@@ -83,6 +83,9 @@ KONUŞMA ÇÖZÜMLEME DOĞRULUĞU
 UZUN KAYIT VE TOPLU ÇÖZÜMLEME
 Kayıtlar 30 saniyelik pencerelere bölünerek çözümlenir; her pencere sonunda sonuç kaydedilir ve ilerleme yüzdesi gösterilir. Böylece uzun kayıtlar tarayıcı belleğini zorlamaz ve işlem kesintiye uğrarsa o ana kadar bulunan bölümler korunur. Çözümleme sırasında “İptal et” ile durdurulabilir. Ses Kayıtları bölümündeki işlem kuyruğu, ekli tüm kayıtları sırayla çözer; genel ilerleme ve tahmini kalan süreyi gösterir, kuyruk durdurulabilir ve hatalı kayıtlar tekrar denenebilir.
 
+DEŞİFRE EDİTÖRÜ VE KONTROL DURUMLARI
+Her deşifre bölümü dört durumdan biriyle işaretlenir: Onaylandı, Kontrol bekliyor, Anlaşılmadı ve Yeniden dinlenecek. Yalnızca “Onaylandı” ve “Anlaşılmadı” uzman denetiminden geçmiş sayılır; “Yeniden dinlenecek” hiçbir zaman doğrulanmış kabul edilmez, böylece kontrol edilmemiş bir bölüm rapora doğrulanmış gibi yansımaz. “Anlaşılmadı” işaretli bölümler raporda vurgulanır ve rapor öncesi uyarı üretir. Bir bölümün metni düzeltildiğinde önceki sürüm saat damgasıyla saklanır ve “Geçmiş” düğmesinden görüntülenebilir. Önceki MİHENK/AKİS kayıtlarındaki “kontrol edildi” onay kutusu “Onaylandı” durumuna eşlenir.
+
 
 MARKA VE ÇIKTI ÖNCELİĞİ
 Uygulamanın adı AKİS (Adli Konuşma İnceleme Sistemi) olarak güncellenmiştir. Bilirkişi Portalı için birincil ve zorunlu çıktı UDF’dir. DOCX yalnızca isteğe bağlı yardımcı kopyadır.
