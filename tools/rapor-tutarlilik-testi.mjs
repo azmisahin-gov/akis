@@ -145,6 +145,8 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   checkShared('segment başlığı', REPORT_TEXT.segmentHeaders[0], H, U, D);
   checkShared('çözümleme uyarısı etiketi', REPORT_TEXT.evidenceWarningPrefix, H, U, D);
   checkShared('kontrol uyarısı etiketi', REPORT_TEXT.languageWarningPrefix, H, U, D);
+  checkShared('inceleme özeti başlığı', REPORT_TEXT.reviewSummaryHeading, H, U, D);
+  checkShared('köken özeti satırı', REPORT_TEXT.rsOriginFilled, H, U, D);
   checkShared('gözlem sütunu başlığı', REPORT_TEXT.segmentHeadersObs[4], H, U, D);
 }
 
