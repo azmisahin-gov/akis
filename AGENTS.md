@@ -2,6 +2,24 @@
 
 Bu dosya, AKİS deposunda çalışan ajanlar için kalıcı bağlam sağlar.
 
+## Sıradaki çalışma: arayüz tasarımı
+
+Bir sonraki oturumun konusu **arayüz tasarımı**. Başlamadan önce okuyun:
+
+- `docs/OZELLIKLER.md` — mevcut (çalışan) özelliklerin tam listesi. Arayüz
+  yenilenirken bu özelliklerin **hiçbiri kaybolmamalı**.
+- `docs/MIMARI.md` — dosya düzeni, veri akışı, GitHub Pages yayın akışı.
+- `docs/YOL_HARITASI.md` — v2.9 "Yeni AKİS PRO arayüzü" maddesi.
+
+Arayüz çalışmasında korunacaklar:
+
+- `index.html` + `assets/app.js` + `assets/app.css` üçlüsü; Python/Node yok.
+- GitHub Pages `main` kökünden yayın; göreli yollar (`assets/…`) bozulmamalı.
+- Üç rapor çıktısı (HTML önizleme, DOCX, UDF) aynı `REPORT_TEXT` kaynağından
+  beslenmeli. Arayüz değişince `bash tools/test.sh` çalıştırılmalı.
+- İki panelli deşifre çalışma alanı ve tüm araçlar (kanal, spektrogram, sınır
+  araçları, köken, konuşmacı) korunmalı.
+
 ## Proje özeti
 
 AKİS (Adli Konuşma İnceleme Sistemi), bilirkişiler için tarayıcıda çalışan bir
