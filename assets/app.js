@@ -91,6 +91,9 @@ const REPORT_TEXT = {
   rsChannel:'Kanal ayrımı yapılan kayıt',
   rsSpeaker:'Etiketlenen konuşmacı',
   rsPitch:'Perdesi ölçülen konuşmacı',
+  rsOriginFilled:'Kökeni belgelenen kayıt',
+  rsOriginMedium:'Ortam türü belirtilen kayıt',
+  rsWerMeasured:'WER ölçümü yapılan kayıt',
   segmentHeaders:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],
   emptySpeaker:'Belirtilmemiş',
   timeDash:'—',
@@ -1046,6 +1049,11 @@ function reviewSummaryRows(c){
   const chan=mats.filter(m=>m.tech?.channels===2&&channelMode(m)!=='both').length;
   const speakers=mats.reduce((n,m)=>n+(m.speakers||[]).filter(s=>s.name&&s.name!=='Belirtilmedi').length,0);
   const pitched=mats.reduce((n,m)=>n+(m.speakers||[]).filter(s=>s.pitch).length,0);
+  // Köken belgelenmiş sayılır: ortam türü 'Belirtilmedi' dışında bir değer ve
+  // en az bir teslim bilgisi (eden veya tarih) girilmişse.
+  const originFilled=mats.filter(m=>{const o=m.origin||{};return o.mediumType&&o.mediumType!=='Belirtilmedi'&&(o.deliveredBy||o.deliveredAt);}).length;
+  const originMedium=mats.filter(m=>m.origin&&m.origin.mediumType&&m.origin.mediumType!=='Belirtilmedi').length;
+  const werMeasured=mats.filter(m=>{const ref=m.expectedText||((m.referenceSegments||[]).map(s=>s.text||'').join(' '));return ref&&String(ref).trim()&&(m.segments||[]).some(s=>String(s.text||'').trim());}).length;
   return [
     [REPORT_TEXT.rsMaterials,mats.length],
     [REPORT_TEXT.rsSegments,segs.length],
@@ -1057,7 +1065,10 @@ function reviewSummaryRows(c){
     [REPORT_TEXT.rsSpectrogram,spec],
     [REPORT_TEXT.rsChannel,chan],
     [REPORT_TEXT.rsSpeaker,speakers],
-    [REPORT_TEXT.rsPitch,pitched]
+    [REPORT_TEXT.rsPitch,pitched],
+    [REPORT_TEXT.rsOriginMedium,originMedium],
+    [REPORT_TEXT.rsOriginFilled,originFilled],
+    [REPORT_TEXT.rsWerMeasured,werMeasured]
   ];
 }
 function reportTypeSpec(t){return REPORT_TYPES[t]||REPORT_TYPES.hukuk;}
