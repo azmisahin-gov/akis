@@ -20,6 +20,10 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   - Taraflar: davacı/davalı, müşteki-mağdur/katılan ve sanık, müşteki/şüpheli,
     alacaklı/borçlu (+ vekil karşılıkları).
   - Konu/tarih: dava, inceleme, soruşturma, takip konusu ve tarihi.
+- Bölüm içi ifadeler mercie göre uyarlanır: soruları yönelten merci hukuk ve
+  cezada "Mahkemece", savcılıkta "Cumhuriyet Başsavcılığınca", icrada "İcra
+  Müdürlüğünce" olarak yazılır. Savcılık dosyasında "mahkemece yöneltilen
+  sorular" ifadesi yanlış olurdu.
 - Rapor başlığındaki yönelme eki Türkçe ünlü uyumuna göre hesaplanır
   ("MAHKEMESİ'NE", "BAŞSAVCILIĞI'NA", "MÜDÜRLÜĞÜ'NE").
 - Görevlendirme tarihi, verilen süre (gün) ve son teslim tarihi alanları.

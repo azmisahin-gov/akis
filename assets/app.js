@@ -975,23 +975,32 @@ function niceDate(d){if(!d)return '—';try{return new Date(`${d}T00:00:00`).toL
 // templates. Measured fact: all four templates use the *same* seven report
 // sections; only the cover labels differ. So jurisdiction handling lives here,
 // not in the section structure.
+// Merci türüne göre kapak terminolojisi VE bölüm içi ifadeler. Bakanlığın
+// yayımladığı dört şablonun yedi bölümlü yapısı aynıdır; ancak soruları yönelten
+// merci farklı olduğundan (mahkeme, savcılık, icra müdürlüğü) bölüm içi ifadeler
+// merciye göre uyarlanmalıdır. "Mahkemece yöneltilen sorular" savcılık dosyasında
+// yanlış olurdu.
 const REPORT_TYPES = {
   hukuk: { label:'HUKUK MAHKEMELERİ – İDARE / VERGİ MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU', merci:'Mahkeme',
     fileNo:'DOSYA NO',
     roles:{ plaintiff:'DAVACI', plaintiffCounsel:'DAVACI VEKİLİ', defendant:'DAVALI', defendantCounsel:'DAVALI VEKİLİ' },
-    subject:'DAVA KONUSU', date:'DAVA TARİHİ' },
+    subject:'DAVA KONUSU', date:'DAVA TARİHİ',
+    questionSource:'Mahkemece', assignmentLabel:'Görevlendirme yazısı' },
   ceza: { label:'CEZA MAHKEMELERİ', heading:'BİLİRKİŞİ RAPORU', merci:'Mahkeme',
     fileNo:'DOSYA NO',
     roles:{ plaintiff:'MÜŞTEKİ/MAĞDUR /KATILAN', plaintiffCounsel:'VEKİLİ', defendant:'SANIK', defendantCounsel:'SANIK VEKİLİ' },
-    subject:'İNCELEME KONUSU', date:'SUÇ TARİHİ' },
+    subject:'İNCELEME KONUSU', date:'SUÇ TARİHİ',
+    questionSource:'Mahkemece', assignmentLabel:'Görevlendirme yazısı' },
   savcilik: { label:'CUMHURİYET BAŞSAVCILIĞI', heading:'BİLİRKİŞİ RAPORU', merci:'Cumhuriyet Başsavcılığı',
     fileNo:'SORUŞTURMA NO',
     roles:{ plaintiff:'MÜŞTEKİ/MAĞDUR', plaintiffCounsel:'VEKİLİ', defendant:'ŞÜPHELİ', defendantCounsel:'ŞÜPHELİ VEKİLİ' },
-    subject:'SORUŞTURMA KONUSU', date:'SUÇ TARİHİ' },
+    subject:'SORUŞTURMA KONUSU', date:'SUÇ TARİHİ',
+    questionSource:'Cumhuriyet Başsavcılığınca', assignmentLabel:'Görevlendirme yazısı' },
   icra: { label:'İCRA MÜDÜRLÜĞÜ', heading:'BİLİRKİŞİ RAPORU', merci:'İcra Müdürlüğü',
     fileNo:'DOSYA NO',
     roles:{ plaintiff:'ALACAKLI', plaintiffCounsel:'ALACAKLI VEKİLİ', defendant:'BORÇLU', defendantCounsel:'BORÇLU VEKİLİ' },
-    subject:'TAKİP KONUSU', date:'TAKİP TARİHİ' },
+    subject:'TAKİP KONUSU', date:'TAKİP TARİHİ',
+    questionSource:'İcra Müdürlüğünce', assignmentLabel:'Görevlendirme yazısı' },
 };
 // Turkish dative suffix for institution names, so the report heading reads
 // "…MAHKEMESİ'NE", "…BAŞSAVCILIĞI'NA", "…MÜDÜRLÜĞÜ'NE" instead of a fixed "NE".
@@ -1071,6 +1080,11 @@ function reviewSummaryRows(c){
     [REPORT_TEXT.rsWerMeasured,werMeasured]
   ];
 }
+// Soru ve değerlendirme bölümlerinin varsayılan metinleri mercie göre
+// uyarlanır. Örneğin savcılık dosyasında "mahkemece yöneltilen sorular"
+// yanlış olurdu; soruları Cumhuriyet Başsavcılığı yöneltir.
+function questionsFallbackText(c){const spec=reportTypeSpec(c.reportType);return `${spec.questionSource} bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.`;}
+function evaluationFallbackText(c){const spec=reportTypeSpec(c.reportType);return `Teknik sorulara ilişkin değerlendirme, ${spec.assignmentLabel.toLowerCase()}nda yer alan sorular doğrultusunda eklenir.`;}
 function reportTypeSpec(t){return REPORT_TYPES[t]||REPORT_TYPES.hukuk;}
 function reportTypeLabel(t){return reportTypeSpec(t).label;}
 function reportRows(c){const spec=reportTypeSpec(c.reportType);const r=spec.roles;return [[spec.fileNo,c.fileNo],[r.plaintiff,c.plaintiff],[r.plaintiffCounsel,c.plaintiffCounsel],[r.defendant,c.defendant],[r.defendantCounsel,c.defendantCounsel],[spec.subject,c.subject],[spec.date,niceDate(c.caseDate)],['GÖREVLENDİRME TARİHİ',niceDate(c.assignmentDate)],['VERİLEN SÜRE',c.assignmentDurationDays?`${c.assignmentDurationDays} GÜN`:'' ],['SON TESLİM TARİHİ',niceDate(c.dueDate)],['KEŞİF / İNCELEME TARİHİ',niceDate(c.inspectionDate)],['RAPOR TARİHİ',niceDate(c.reportDate)],['BİLİRKİŞİ ADI SOYADI',c.expertName],['UZMANLIK ALANI',c.expertField],['BİLİRKİŞİ SİCİL NO',c.registryNo]].filter(x=>x[1]&&x[1]!=='—');}
@@ -1094,7 +1108,7 @@ function renderReport(){
   html+=`<div class="paper-section toc-section"><h3>${esc(REPORT_TEXT.tocHeading)}</h3><ol>${toc.map(x=>`<li>${esc(x)}</li>`).join('')}</ol></div>`;
   html+=`<div class="paper-page-break"><div class="paper-section"><h3>${esc(REPORT_TEXT.sections[0])}</h3><p>${esc(c.assignmentScope||REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject||'—')}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[1])}</h3>`;
-  if(c.questions?.length){html+=`<ol class="question-list">${c.questions.map(q=>`<li>${esc(q.question||REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;}else html+=`<p>${esc(REPORT_TEXT.defaultQuestions)}</p>`;
+  if(c.questions?.length){html+=`<ol class="question-list">${c.questions.map(q=>`<li>${esc(q.question||REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;}else html+=`<p>${esc(questionsFallbackText(c))}</p>`;
   html+=`</div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length?materials.map(m=>`<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec||m.type||REPORT_TEXT.codecFallback)} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration||0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate?' · '+esc(m.tech.sampleRate)+' Hz':''}${m.tech?.bitDepth?' · '+esc(m.tech.bitDepth)+' bit':''}${m.tech?.channels===2?'<br>Dinlenen: '+esc(chanModeText(m)):''}${m.spectrogramReviewed?'<br>'+esc(REPORT_TEXT.spectrogramLabel)+' ('+esc(new Date(m.spectrogramReviewed.at).toLocaleString('tr-TR'))+')':''}</td><td style="font-size:8px;word-break:break-all">${esc(m.sha256||'Hesaplanamadı')}</td></tr>`).join(''):`<tr><td colspan="5">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows=originRows(c);
@@ -1105,7 +1119,7 @@ function renderReport(){
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
   if(materials.length){for(let i=0;i<materials.length;i++){const m=materials[i];html+=`<h4>5.1.${i+1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration||0)} · Biçim: ${esc(m.type||REPORT_TEXT.codecFallback)} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments||[]).length}</p>`;if(m.hallucinationWarning)html+=`<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;if(m.languageWarning)html+=`<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;if(m.segments?.length){html+=`<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map(s=>`<tr><td>${esc(s.start||REPORT_TEXT.timeDash)} – ${esc(s.end||REPORT_TEXT.timeDash)}</td><td>${esc(s.speaker||REPORT_TEXT.emptySpeaker)}</td><td>${esc(s.text||'')}</td><td>${reviewLabel(s)}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;}else html+=`<p>${esc(REPORT_TEXT.noTranscript)}</p>`;}}else html+=`<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
   html+=`<h4>${esc(REPORT_TEXT.sub52)}</h4>`;
-  if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer||REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||REPORT_TEXT.defaultBasis)}</p>`;}}else html+=`<p>${esc(REPORT_TEXT.defaultEvaluation)}</p>`;
+  if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer||REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||REPORT_TEXT.defaultBasis)}</p>`;}}else html+=`<p>${esc(evaluationFallbackText(c))}</p>`;
   html+=`<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText||REPORT_TEXT.defaultLimitations)}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText||REPORT_TEXT.defaultConclusion)}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
@@ -1138,7 +1152,7 @@ function docxXml(c){
   body+=wP(c.assignmentScope||REPORT_TEXT.defaultScope);
   body+=wP(`İnceleme konusu: ${c.subject||'—'}`,{bold:true});
   body+=headingXml(REPORT_TEXT.sections[1]);
-  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:21,bold:true,color:'385873',before:70,after:80,keep:true});});}else body+=wP(REPORT_TEXT.defaultQuestions);
+  if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:21,bold:true,color:'385873',before:70,after:80,keep:true});});}else body+=wP(questionsFallbackText(c));
   body+=headingXml(REPORT_TEXT.sections[2]);
   body+=wP(REPORT_TEXT.defaultInventoryIntro);
   body+=wTable([[...REPORT_TEXT.inventoryHeaders],...(c.materials.length?c.materials.map(m=>[m.name,`${m.tech?.codec||m.type||REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}${m.tech?.channels===2?' · Dinlenen: '+chanModeText(m):''}${m.spectrogramReviewed?' · Spektrogram incelendi':''}`,m.sha256||'Hesaplanamadı']):[REPORT_TEXT.noInventoryRow])],{widths:[2200,1500,900,1700,2700],header:true});
@@ -1165,7 +1179,7 @@ function docxXml(c){
   }
   body+=headingXml(REPORT_TEXT.sub52,2);
   if(c.questions?.length){c.questions.forEach((q,i)=>{body+=wP(`5.2.${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{bold:true,color:'385873',size:20,before:80,after:60,keep:true});body+=wP(q.answer||REPORT_TEXT.defaultAnswer);body+=wP(`Dayanak: ${q.basis||REPORT_TEXT.defaultBasis}`,{color:'657D92',size:17,italic:true});});}
-  else body+=wP(REPORT_TEXT.defaultEvaluation);
+  else body+=wP(evaluationFallbackText(c));
   body+=headingXml(REPORT_TEXT.sub53,2);
   body+=wP(c.limitationsText||REPORT_TEXT.defaultLimitations);
   body+=headingXml(REPORT_TEXT.sections[5]);
@@ -1225,7 +1239,7 @@ async function makeUdf(){
   el.push(paragraph(`İnceleme konusu: ${c.subject||'—'}`,{bold:true,after:7}));
   el.push(h(REPORT_TEXT.sections[1]));
   if(c.questions?.length)c.questions.forEach((q,i)=>el.push(paragraph(`${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:11,bold:true,color:'mid',before:4,after:6})));
-  else el.push(paragraph(REPORT_TEXT.defaultQuestions));
+  else el.push(paragraph(questionsFallbackText(c)));
   el.push(h(REPORT_TEXT.sections[2]));
   el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
   const inventory=(c.materials||[]).map(m=>[m.name,`${m.tech?.codec||m.type||REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,fmtTime(m.duration||0),`${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate?' · '+m.tech.sampleRate+' Hz':''}${m.tech?.bitDepth?' · '+m.tech.bitDepth+' bit':''}${m.tech?.channels===2?' · Dinlenen: '+chanModeText(m):''}${m.spectrogramReviewed?' · Spektrogram incelendi':''}`,m.sha256||'Hesaplanamadı']);
@@ -1246,7 +1260,7 @@ async function makeUdf(){
   if(c.materials?.length){c.materials.forEach((m,i)=>{el.push(paragraph(`5.1.${i+1}. ${m.name}`,{size:11,bold:true,color:'mid',before:6,after:3}));el.push(paragraph(`Süre: ${fmtTime(m.duration||0)}   |   Biçim: ${m.type||REPORT_TEXT.codecFallback}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments||[]).length}`,{size:9,color:'muted',after:3}));if(m.hallucinationWarning)el.push(paragraph(`${REPORT_TEXT.evidenceWarningPrefix} ${m.hallucinationWarning}`,{size:9,italic:true,color:'muted'}));if(m.languageWarning)el.push(paragraph(`${REPORT_TEXT.languageWarningPrefix} ${m.languageWarning}`,{size:9,italic:true,color:'muted'}));if(m.segments?.length){const segments=m.segments.map(seg=>[`${seg.start||REPORT_TEXT.timeDash} – ${seg.end||REPORT_TEXT.timeDash}`,seg.speaker||REPORT_TEXT.emptySpeaker,seg.text||'',reviewLabel(seg),segObsText(seg)]);el.push(table([[...REPORT_TEXT.segmentHeadersObs],...segments],[70,68,235,75,62],{header:true}));}else el.push(paragraph(REPORT_TEXT.noTranscript,{italic:true,color:'muted'}));});}else el.push(paragraph(REPORT_TEXT.noMaterials));
   el.push(paragraph(REPORT_TEXT.sub52,{size:12,bold:true,color:'mid',before:7,after:4}));
   if(c.questions?.length)c.questions.forEach((q,i)=>{el.push(paragraph(`5.2.${i+1}. ${q.question||REPORT_TEXT.defaultQuestion}`,{size:11,bold:true,color:'mid',before:5,after:3}));el.push(paragraphLines(q.answer||REPORT_TEXT.defaultAnswer,{justify:true}));el.push(paragraph(`Dayanak: ${q.basis||REPORT_TEXT.defaultBasis}`,{size:9,italic:true,color:'muted',after:5}));});
-  else el.push(paragraph(REPORT_TEXT.defaultEvaluation));
+  else el.push(paragraph(evaluationFallbackText(c)));
   el.push(paragraph(REPORT_TEXT.sub53,{size:12,bold:true,color:'mid',before:7,after:4}));
   el.push(paragraphLines(c.limitationsText||REPORT_TEXT.defaultLimitations,{justify:true}));
   el.push(h(REPORT_TEXT.sections[5]));
