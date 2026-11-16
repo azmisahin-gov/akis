@@ -38,28 +38,44 @@ aktif bölüm odağı, bölüm filtresi, oynatma hızı ve denetim ilerlemesi ek
 Ayrıca metin geçmişinin her tuş vuruşunda kaydedilmesi hatası ve kirlenmiş
 geçmiş giderildi. Ayrıntı: [`../CHANGELOG.md`](../CHANGELOG.md).
 
-### v2.2 — Deşifre doğruluğunu artırma
+### v2.2–v2.8 — Araç ve doğruluk katmanı (tamamlandı)
 
-- Daha büyük modellerle (large-v3-turbo) doğruluk karşılaştırması ve ölçümü.
-- Ölçüm sonuçlarının belgelenmesi.
-- Düşük güvenli kelimelerin işaretlenmesi (model güven skoru kullanılabilirse).
+Ayrıntı [`../CHANGELOG.md`](../CHANGELOG.md) ve
+[`OZELLIKLER.md`](OZELLIKLER.md) dosyalarında:
 
-### v2.3 — Yeni AKİS PRO arayüzü
+- v2.2: hassas sınır ayarı, yakınlaştırılmış dalga formu, odak modu.
+- v2.3: kanal seçimi (sol/sağ/stereo), gözlem işaretleri, böl/birleştir.
+- v2.4: spektrogram (FFT, doğruluğu birim testiyle kanıtlandı).
+- v2.5: inceleme özeti (denetim kaydı).
+- v2.6: çözümleme doğruluk ölçümü (WER).
+- v2.7: kayıt kökeni ve teslim zinciri.
+- v2.8: sayfa sıçramasının kök nedeninin giderilmesi.
+
+### v2.9 — Yeni AKİS PRO arayüzü
 
 - Yenilenmiş ana kontrol paneli ve modern dosya yönetimi.
 - Gelişmiş rapor önizlemesi ve toplu işlem ekranı.
 
-### v2.4 — Mercie özel rapor alanları
+### v2.10 — Düşük güvenli bölüm vurgusu
+
+Kullanıcı, uzmanın hızlı bitirebilmesi için düşük güvenli kelimelerin
+işaretlenmesini istedi. Kütüphane (transformers.js) dışarıya güven skoru
+vermediği için uydurma skor üretilmedi. Değerlendirilecek seçenekler:
+- Model güven skoru dışa aktarılırsa gerçek skor kullanmak.
+- Alternatif: dil modeli tabanlı tutarsızlık işareti (yine gerekçeli olmak
+  koşuluyla).
+
+### v2.11 — Mercie özel rapor alanları
 
 v1'de bölüm yapısı dört merci türünde aynıdır; fark yalnızca kapak alanlarındadır.
 v2'de ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması
 değerlendirilecektir.
 
-### v2.5 — Test kapsamını genişletme
+### v2.12 — Test kapsamını genişletme
 
-Rapor oluşturucuları ve deşifre alanı artık otomatik denetleniyor. Deşifre
-motoru, model yöneticisi ve yedekleme akışları için de otomatik kontrol
-eklenmesi değerlendirilecektir.
+Rapor oluşturucuları, deşifre alanı, WER, köken ve özet otomatik denetleniyor
+(`tools/rapor-tutarlilik-testi.mjs`, 8 senaryo). Deşifre motoru, model yöneticisi
+ve yedekleme akışları için de otomatik kontrol eklenmesi değerlendirilecektir.
 
 ## Değişmez kurallar
 

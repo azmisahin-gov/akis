@@ -43,6 +43,19 @@ başlatır ve Microsoft Edge'i açar. Bu yol internet olmadan çalışmak içind
 - Uygulama **e-imza üretmez ve UYAP'a belge göndermez**; bu adım UYAP Editöründe
   kullanıcı tarafından tamamlanır.
 
+## Öne çıkan özellikler
+
+- **Deşifre ve kontrol çalışma alanı:** iki panelli (bölüm listesi + aktif bölüm
+  detayı), klavye kısayolları, bölüm filtresi, oynatma hızı, inceleme önceliği.
+- **Hassas sınır araçları:** 0,1 sn adımlarla sınır kaydırma, yakınlaştırılmış
+  dalga formu, spektrogram (FFT).
+- **Konuşmacı yönetimi:** rol, cinsiyet (uzman beyanı), yaş aralığı, not; perde
+  (temel frekans) ölçümü ve konuşmacı eşleştirme önerisi.
+- **Dijital delil güvenliği:** SHA-256, teknik envanter, delil işlem günlüğü,
+  kayıt kökeni ve teslim zinciri.
+- **Rapor:** yedi bölümlü yapı, konuşmacılar tablosu, gözlem sütunu, WER ölçümü
+  ve inceleme özeti (denetim kaydı). UDF birincil, DOCX yardımcı çıktı.
+
 ## Belgeler
 
 | Belge | İçerik |
