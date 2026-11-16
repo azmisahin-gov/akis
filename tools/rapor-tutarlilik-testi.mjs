@@ -145,6 +145,7 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   checkShared('segment başlığı', REPORT_TEXT.segmentHeaders[0], H, U, D);
   checkShared('çözümleme uyarısı etiketi', REPORT_TEXT.evidenceWarningPrefix, H, U, D);
   checkShared('kontrol uyarısı etiketi', REPORT_TEXT.languageWarningPrefix, H, U, D);
+  checkShared('gözlem sütunu başlığı', REPORT_TEXT.segmentHeadersObs[4], H, U, D);
 }
 
 // Senaryo 2: malzeme yok, soru yok, mahkeme adı boş
@@ -228,6 +229,17 @@ console.log('\n[Senaryo 5] kaynakta sabit kopya denetimi');
     }
   }
   check(`oluşturucularda sabit kopya yok (${leaks} sızıntı)`, leaks === 0);
+}
+
+// Senaryo 6: gözlem işaretleri ve kanal bilgisi rapora yansıyor mu
+console.log('\n[Senaryo 6] gözlem ve kanal bilgisi');
+{
+  const c = withMaterial({ channelMode: 'left' });
+  c.materials[0].tech.channels = 2;
+  c.materials[0].segments[0].obs = { noise: true, overlap: true };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('gürültü etiketi', REPORT_TEXT.obsLabels.noise, H, U, D);
+  checkShared('üst üste konuşma etiketi', REPORT_TEXT.obsLabels.overlap, H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

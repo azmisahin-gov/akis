@@ -84,7 +84,15 @@ tuşları bozulmaz.
   şeffaf, gerekçeli işaret (anlamlı metin yok, süre sıfır, çok kısa/uzun bölüm,
   öncekiyle çakışma). "Öncelikliye git" düğmesi en yüksek öncelikli bekleyen
   bölüme atlar.
-- **Bölüm işlemleri:** oynatıcı konumundan böl, sonrakiyle birleştir, sil.
+- **Bölüm işlemleri:** oynatıcı konumundan böl (`B`), sonrakiyle birleştir
+  (`M`), sil.
+- **Gözlem işaretleri:** her bölüm için arka plan gürültüsü, üst üste konuşma,
+  anlaşılmaz bölüm ve müzik/ses efekti işaretlenebilir. Bu işaretler rapora
+  "Gözlem" sütunu olarak yansır.
+- **Kanal seçimi (stereo kayıtlarda):** her iki kanal, yalnız sol veya yalnız
+  sağ kanal dinlenebilir. Arka plan gürültüsünü veya tek kanaldaki konuşmayı
+  ayırt etmeye yardımcı olur. Web Audio `ChannelSplitter` ile uygulanır;
+  seçilen kanal rapor envanterinde gösterilir.
 - **Hassas sınır ayarı:** başlangıç/bitiş zamanı 0,1 sn ve 1 sn adımlarla
   kaydırılır. Uzman, konuşmanın tam başladığı/bittiği noktayı bu düğmelerle
   ayarlar.
