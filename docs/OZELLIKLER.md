@@ -160,6 +160,14 @@ tuşları bozulmaz.
 - Kapak ve içindekiler ilk sayfada; ana rapor sonraki sayfadan başlar.
 - **Konuşmacılar tablosu:** her konuşmacı için etiket, rol, cinsiyet, yaş
   aralığı, ölçülen perde ve ilgili kayıt/bölüm bilgisi. Üç çıktıda da yer alır.
+- **Gözlem sütunu:** her deşifre bölümü için işaretlenen gözlemler (gürültü,
+  üst üste konuşma, anlaşılmaz bölüm, müzik/ses efekti).
+- **İnceleme özeti (denetim kaydı):** rapor sonunda gerçekten yapılan
+  işlemlerin ve kalan eksiklerin sayısal dökümü: incelenen kayıt, çözümlenen
+  bölüm, denetlenen/denetim bekleyen bölüm, anlaşılmadı, anlamlı metin yok,
+  gözlem işareti, spektrogram incelenen kayıt, kanal ayrımı, etiketlenen ve
+  perdesi ölçülen konuşmacı sayıları. Yapılmayan işlem raporda yapılmış gibi
+  gösterilmez.
 - Rapor öncesi kontrol uyarıları (eksik alan, denetlenmemiş bölüm, dolgu metni).
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
