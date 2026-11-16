@@ -162,6 +162,13 @@ tuşları bozulmaz.
   aralığı, ölçülen perde ve ilgili kayıt/bölüm bilgisi. Üç çıktıda da yer alır.
 - **Gözlem sütunu:** her deşifre bölümü için işaretlenen gözlemler (gürültü,
   üst üste konuşma, anlaşılmaz bölüm, müzik/ses efekti).
+- **Çözümleme doğruluk ölçümü (WER):** referans metni bulunan kayıtlarda
+  otomatik çözümleme çıktısı referansla karşılaştırılır. WER (kelime hata
+  oranı) yerine koyma, silme ve ekleme hatalarını referans kelime sayısına
+  böler; düşük olan daha iyidir. Türkçe normalizasyon (küçük harf, noktalama
+  atma) uygulanır. Yalnızca hem referans hem çözümleme metni olan kayıtlar
+  ölçülür; ölçüm yapılamayan kayıt tabloda gösterilmez. Rapora hangi modelin
+  kullanıldığı da yazılır.
 - **İnceleme özeti (denetim kaydı):** rapor sonunda gerçekten yapılan
   işlemlerin ve kalan eksiklerin sayısal dökümü: incelenen kayıt, çözümlenen
   bölüm, denetlenen/denetim bekleyen bölüm, anlaşılmadı, anlamlı metin yok,

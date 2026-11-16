@@ -242,5 +242,16 @@ console.log('\n[Senaryo 6] gözlem ve kanal bilgisi');
   checkShared('üst üste konuşma etiketi', REPORT_TEXT.obsLabels.overlap, H, U, D);
 }
 
+// Senaryo 7: WER tablosu referans metni olan kayıtta rapora yansıyor mu
+console.log('\n[Senaryo 7] WER ölçümü');
+{
+  const c = withMaterial();
+  c.materials[0].expectedText = 'merhaba dünya bu bir test';
+  c.materials[0].segments[0].text = 'merhaba dünya bu bir test';
+  c.materials[0].transcribedWithModel = 'onnx-community/whisper-small';
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('WER başlığı', REPORT_TEXT.werHeading, H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

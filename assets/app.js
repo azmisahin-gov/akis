@@ -69,6 +69,10 @@ const REPORT_TEXT = {
   obsLabels:{noise:'arka plan gürültüsü',overlap:'üst üste konuşma',inaudible:'anlaşılmaz bölüm',music:'müzik/ses efekti'},
   segmentHeadersObs:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU','GÖZLEM'],
   spectrogramLabel:'Spektrogram incelendi',
+  werHeading:'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
+  werIntro:'Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümleme çıktısının referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm yalnızca referans metni bulunan kayıtlar için yapılabilir; gerçek dosyalarda referans metni genellikle bulunmaz.',
+  werHeaders:['KAYIT','MODEL','REFERANS KELİME','ÇIKTI KELİME','HATA','WER'],
+  werNoRows:['Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir).','','','','',''],
   reviewSummaryHeading:'İNCELEME ÖZETİ (denetim kaydı)',
   reviewSummaryIntro:'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
   rsMaterials:'İncelemeye alınan kayıt',
@@ -292,6 +296,64 @@ async function toggleSpectrogram(m){
 
 const peakCache=new Map();
 function attachWave(card,m,url){const canvas=card.querySelector('canvas.wave-canvas');if(!canvas)return;const player=card.querySelector('audio');if(!player)return;const paint=()=>{drawWave(canvas,peakCache.get(m.id),m);const zw=card.querySelector('canvas.zoom-wave');if(zw){const idx=Number.isInteger(m.activeSeg)?m.activeSeg:0;drawZoomWave(zw,peakCache.get(m.id),m,idx);}};if(peakCache.has(m.id)){paint();}else if(url){getAudioBlob(currentCase(),m).then(blob=>{if(!blob)return;return computePeaks(blob,1200).then(pk=>{if(pk)peakCache.set(m.id,pk);paint();});});}canvas.addEventListener('click',e=>{const rect=canvas.getBoundingClientRect();const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));const dur=Number(m.duration)||player.duration||0;if(dur>0){player.currentTime=ratio*dur;player.play().catch(()=>{});}});const ph=()=>{const dur=Number(m.duration)||player.duration||0;if(!(dur>0))return;paint();const x=Math.floor(player.currentTime/dur*canvas.width);const ctx=canvas.getContext('2d');ctx.strokeStyle='#b88645';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();};player.addEventListener('timeupdate',ph);player.addEventListener('seeked',ph);}
+
+
+// ==== Konuşma çözümleme doğruluğu (WER) ====
+// WER = kelime hata oranı = (yerine koyma + silme + ekleme) / referans kelime
+// sayısı. Levenshtein uzaklığının kelime düzeyinde uygulanmasıdır. Referans
+// metni bulunan kayıtlarda (örneğin test verisi) model çıktısı ile
+// karşılaştırılır. Bu, doğruluğun ölçülebilir tek göstergesidir; tahmin
+// içermez. Sonuç rapora yazılırken hangi model ve hangi metinle ölçüldüğü
+// belirtilir.
+// Türkçe metni karşılaştırmaya hazırlar: küçük harf, noktalama atılır,
+// sayılar olduğu gibi korunur, fazla boşluklar teklenir. Aynı normalizasyon
+// hem referansa hem çıktıya uygulanır; yoksa ölçüm yanıltıcı olur.
+function normalizeForWer(text){
+  return String(text||'')
+    .toLocaleLowerCase('tr-TR')
+    .replace(/[^\p{L}\p{N}\s]/gu,' ')
+    .replace(/\s+/g,' ')
+    .trim();
+}
+function werWords(text){const n=normalizeForWer(text);return n?n.split(' '):[];}
+// Kelime düzeyinde Levenshtein. Bellek için iki satır yeterlidir.
+function editDistance(a,b){
+  const n=a.length,m=b.length;
+  if(!n)return m;if(!m)return n;
+  let prev=new Array(m+1),cur=new Array(m+1);
+  for(let j=0;j<=m;j++)prev[j]=j;
+  for(let i=1;i<=n;i++){
+    cur[0]=i;
+    for(let j=1;j<=m;j++){
+      const cost=a[i-1]===b[j-1]?0:1;
+      cur[j]=Math.min(prev[j]+1,cur[j-1]+1,prev[j-1]+cost);
+    }
+    const t=prev;prev=cur;cur=t;
+  }
+  return prev[m];
+}
+// WER hesabı. Dönen değer: oran, ham sayılar ve kategoriler.
+function computeWer(reference,hypothesis){
+  const ref=werWords(reference),hyp=werWords(hypothesis);
+  const dist=editDistance(ref,hyp);
+  const ratio=ref.length?dist/ref.length:(hyp.length?1:0);
+  return {ratio,refCount:ref.length,hypCount:hyp.length,errors:dist};
+}
+function fmtWer(r){return Number.isFinite(r)?`%${(r*100).toFixed(1)}`:'—';}
+// Referans metni olan tüm kayıtlar için WER ölçer. Yalnızca gerçekten
+// çözümlenmiş bölümler kullanılır; çözümlenmemiş kayıt atlanır.
+function measureWerForCase(c){
+  const out=[];
+  for(const m of c.materials||[]){
+    const ref=m.expectedText||((m.referenceSegments||[]).map(s=>s.text||'').join(' '));
+    if(!ref||!String(ref).trim())continue;
+    const hyp=(m.segments||[]).map(s=>s.text||'').join(' ');
+    if(!hyp.trim())continue;
+    const r=computeWer(ref,hyp);
+    out.push({material:m.name,model:m.transcribedWithModel||null,...r});
+  }
+  return out;
+}
 
 // ==== Kanal seçimi (stereo kayıtlarda) ====
 // Stereo bir kayıtta sol ve sağ kanalları ayrı dinlemek, uzmanın arka plan
@@ -878,7 +940,7 @@ function isHallucination(text){const t=String(text||'').trim();if(!t)return true
 async function verifyIntegrity(id){const c=currentCase(),m=c.materials.find(x=>x.id===id);if(!m)return;const blob=await getAudioBlob(c,m);if(!blob){showToast('Kayıt yerel depoda bulunamadı; doğrulanamadı.');return;}const now=await sha256(blob);const ok=now===m.sha256;m.lastVerify={at:new Date().toISOString(),ok,hash:now};(m.log=m.log||[]).push({at:m.lastVerify.at,event:'SHA-256 doğrulama',detail:ok?'Özet eşleşti; dosya değişmemiş.':`Özet farklı! Beklenen ${m.sha256}, bulunan ${now}`});persist();renderAudioList();showToast(ok?'SHA-256 doğrulandı; dosya değişmemiş.':'Uyarı: dosya özeti değişmiş görünüyor!');}
 function showEvidenceLog(m){const existing=document.querySelector('.history-dialog');if(existing)existing.remove();const items=(m.log||[]).slice().reverse();const dlg=document.createElement('div');dlg.className='history-dialog';dlg.innerHTML=`<div class="history-inner"><div class="history-head"><b>${esc(m.name)} · delil işlem günlüğü</b><button class="mini-button" data-close-history>Kapat</button></div><div class="history-body">${items.length?items.map(h=>`<div class="history-item"><small>${esc(new Date(h.at).toLocaleString('tr-TR'))} · ${esc(h.event)}</small><p>${esc(h.detail||'')}</p></div>`).join(''):'<p class="paper-muted">Bu kayıt için işlem günlüğü boş.</p>'}</div></div>`;document.body.appendChild(dlg);dlg.addEventListener('click',e=>{if(e.target===dlg||e.target.dataset.closeHistory!==undefined)dlg.remove();});}
 async function transcribeWindow(pipe,window,offsetSeconds){const result=await pipe(window,{language:'turkish',task:'transcribe',return_timestamps:true});const chunks=(result.chunks||[]).filter(x=>String(x.text||'').trim());const out=[];if(chunks.length){for(const x of chunks){const st=(x.timestamp?.[0]??0);const en=(x.timestamp?.[1]??x.timestamp?.[0]??0);out.push({start:timecode(offsetSeconds+st),end:timecode(offsetSeconds+en),text:String(x.text||'').trim()});}}else if(String(result.text||'').trim()){out.push({start:timecode(offsetSeconds),end:timecode(offsetSeconds+window.length/16000),text:String(result.text||'').trim()});}return out;}
-async function transcribe(id){const c=currentCase(),m=c.materials.find(x=>x.id===id);if(!m)return;const blob=await getAudioBlob(c,m);if(!blob){showToast('Ses dosyası yerel depoda bulunamadı. Yeniden ekleyin.');return;}try{const pipe=await ensureModel();m.status='Çözümleme sürüyor';m.hallucinationWarning=null;m.progress=0;persist();renderAudioList();const audio=await decodeForAsr(blob);const total=audio.length;const step=ASR_WINDOW_SECONDS*16000;const collected=[];for(let offset=0;offset<total;offset+=step){if(m.cancelRequested){m.cancelRequested=false;m.status=collected.length?'Kısmen çözümlendi (iptal edildi)':'İptal edildi';delete m.progress;persist();renderAudioList();renderOverview();showToast(`${m.name} için çözümleme iptal edildi.`);return;}const window=audio.subarray(offset,Math.min(total,offset+step));let found=[];let windowError=null;try{found=await transcribeWindow(pipe,window,offset/16000);}catch(err){windowError=err;console.warn('Pencere çözümlenemedi',offset,err);}if(windowError){m.failedWindows=(m.failedWindows||0)+1;}else{for(const f of found)collected.push({...f,speaker:'Belirtilmedi',checked:false});}m.progress=Math.min(100,Math.round((offset+window.length)/total*100));persist();renderAudioList();}const meaningful=collected.filter(s=>!isHallucination(s.text));m.segments=collected;const fillerCount=collected.length-meaningful.length;if(m.failedWindows){m.hallucinationWarning=(m.hallucinationWarning?m.hallucinationWarning+' ':'')+`${m.failedWindows} pencere çözümlenemedi; bu bölümler kayıttan elle dinlenip doldurulmalıdır.`;}delete m.failedWindows;if(!collected.length){m.status='Çözümleme sonucu boş';m.hallucinationWarning='Model bu kayıtta konuşma tespit edemedi. Kaydı elle dinleyip bölümleri kendiniz girin.';}else if(!meaningful.length){m.status='Çözümleme sonucu boş';m.hallucinationWarning='Model bu kayıtta anlamlı konuşma metni üretemedi. Sonuç rapora aktarılmamalıdır; kaydı elle dinleyip bölümleri kendiniz girin.';}else{if(fillerCount){m.hallucinationWarning=`${fillerCount} bölümde anlamlı metin yerine dolgu ifadesi üretildi; bu bölümler uzman tarafından dinlenerek doldurulmalıdır.`;}m.status='Kontrol bekliyor';}delete m.progress;m.transcribedAt=new Date().toISOString();(m.log=m.log||[]).push({at:m.transcribedAt,event:'Çözümleme tamamlandı',detail:`${meaningful.length} anlamlı bölüm, ${fillerCount||0} dolgu bölümü`});const text=meaningful.map(s=>s.text).join(' ');const latinEnglish=(/\b(the|and|you|are|this|that|with|have|for)\b/i.test(text)&&!/[çğıöşüÇĞİÖŞÜ]/.test(text));if(latinEnglish){m.languageWarning='Çıktı Türkçe dışı görünebilir; kaydı dinleyerek kontrol edin.';}else{delete m.languageWarning;}persist();renderAudioList();renderOverview();showToast(`${m.name} için çözümleme tamamlandı. Metin kontrol bekliyor.`);}catch(e){m.status='Çözümleme hatası';delete m.progress;persist();renderAudioList();showToast(`Çözümleme başarısız: ${e.message}`);}}
+async function transcribe(id){const c=currentCase(),m=c.materials.find(x=>x.id===id);if(!m)return;const blob=await getAudioBlob(c,m);if(!blob){showToast('Ses dosyası yerel depoda bulunamadı. Yeniden ekleyin.');return;}try{const pipe=await ensureModel();m.status='Çözümleme sürüyor';m.hallucinationWarning=null;m.progress=0;persist();renderAudioList();const audio=await decodeForAsr(blob);const total=audio.length;const step=ASR_WINDOW_SECONDS*16000;const collected=[];for(let offset=0;offset<total;offset+=step){if(m.cancelRequested){m.cancelRequested=false;m.status=collected.length?'Kısmen çözümlendi (iptal edildi)':'İptal edildi';delete m.progress;persist();renderAudioList();renderOverview();showToast(`${m.name} için çözümleme iptal edildi.`);return;}const window=audio.subarray(offset,Math.min(total,offset+step));let found=[];let windowError=null;try{found=await transcribeWindow(pipe,window,offset/16000);}catch(err){windowError=err;console.warn('Pencere çözümlenemedi',offset,err);}if(windowError){m.failedWindows=(m.failedWindows||0)+1;}else{for(const f of found)collected.push({...f,speaker:'Belirtilmedi',checked:false});}m.progress=Math.min(100,Math.round((offset+window.length)/total*100));persist();renderAudioList();}const meaningful=collected.filter(s=>!isHallucination(s.text));m.segments=collected;const fillerCount=collected.length-meaningful.length;if(m.failedWindows){m.hallucinationWarning=(m.hallucinationWarning?m.hallucinationWarning+' ':'')+`${m.failedWindows} pencere çözümlenemedi; bu bölümler kayıttan elle dinlenip doldurulmalıdır.`;}delete m.failedWindows;if(!collected.length){m.status='Çözümleme sonucu boş';m.hallucinationWarning='Model bu kayıtta konuşma tespit edemedi. Kaydı elle dinleyip bölümleri kendiniz girin.';}else if(!meaningful.length){m.status='Çözümleme sonucu boş';m.hallucinationWarning='Model bu kayıtta anlamlı konuşma metni üretemedi. Sonuç rapora aktarılmamalıdır; kaydı elle dinleyip bölümleri kendiniz girin.';}else{if(fillerCount){m.hallucinationWarning=`${fillerCount} bölümde anlamlı metin yerine dolgu ifadesi üretildi; bu bölümler uzman tarafından dinlenerek doldurulmalıdır.`;}m.status='Kontrol bekliyor';}delete m.progress;m.transcribedAt=new Date().toISOString();m.transcribedWithModel=(asrPipeline&&asrPipeline.__modelId)||null;(m.log=m.log||[]).push({at:m.transcribedAt,event:'Çözümleme tamamlandı',detail:`${meaningful.length} anlamlı bölüm, ${fillerCount||0} dolgu bölümü`});const text=meaningful.map(s=>s.text).join(' ');const latinEnglish=(/\b(the|and|you|are|this|that|with|have|for)\b/i.test(text)&&!/[çğıöşüÇĞİÖŞÜ]/.test(text));if(latinEnglish){m.languageWarning='Çıktı Türkçe dışı görünebilir; kaydı dinleyerek kontrol edin.';}else{delete m.languageWarning;}persist();renderAudioList();renderOverview();showToast(`${m.name} için çözümleme tamamlandı. Metin kontrol bekliyor.`);}catch(e){m.status='Çözümleme hatası';delete m.progress;persist();renderAudioList();showToast(`Çözümleme başarısız: ${e.message}`);}}
 // A new manual segment starts where the previous one ended, or at the player's
 // current position, so the expert does not have to type timecodes by hand while
 // listening. Both fall back to 00:00:00 when neither is available.
@@ -994,6 +1056,8 @@ function renderReport(){
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText||REPORT_TEXT.defaultConclusion)}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
   const rsRows=reviewSummaryRows(c);
+  const werRows=measureWerForCase(c);
+  if(werRows.length){html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.werHeading)}</h3><p>${esc(REPORT_TEXT.werIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.werHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${werRows.map(r=>`<tr><td>${esc(r.material)}</td><td>${esc(r.model||'—')}</td><td>${r.refCount}</td><td>${r.hypCount}</td><td>${r.errors}</td><td>${esc(fmtWer(r.ratio))}</td></tr>`).join('')}</tbody></table></div>`;}
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
   html+=`<div class="paper-signature"><div><b>${esc(c.expertName||REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField||REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo||REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo||REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   $('#reportPreview').innerHTML=html;$('#reportStatus').innerHTML=`<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
@@ -1050,6 +1114,8 @@ function docxXml(c){
   body+=wP(c.conclusionText||REPORT_TEXT.defaultConclusion);
   body+=headingXml(REPORT_TEXT.sections[6]);
   body+=wP(REPORT_TEXT.attachmentsText);
+  const dWer=measureWerForCase(c);
+  if(dWer.length){body+=headingXml(REPORT_TEXT.werHeading);body+=wP(REPORT_TEXT.werIntro);body+=wTable([[...REPORT_TEXT.werHeaders],...dWer.map(r=>[r.material,r.model||'—',String(r.refCount),String(r.hypCount),String(r.errors),fmtWer(r.ratio)])],{widths:[1800,2200,1200,1200,900,700],header:true});}
   body+=headingXml(REPORT_TEXT.reviewSummaryHeading);
   body+=wP(REPORT_TEXT.reviewSummaryIntro);
   body+=wTable(reviewSummaryRows(c).map(r=>[r[0],String(r[1])]),{widths:[6000,3000],header:false,shadeFirstCol:true});
@@ -1125,6 +1191,8 @@ async function makeUdf(){
   el.push(paragraphLines(c.conclusionText||REPORT_TEXT.defaultConclusion,{justify:true}));
   el.push(h(REPORT_TEXT.sections[6]));
   el.push(paragraph(REPORT_TEXT.attachmentsText));
+  const uWer=measureWerForCase(c);
+  if(uWer.length){el.push(h(REPORT_TEXT.werHeading));el.push(paragraph(REPORT_TEXT.werIntro,{size:10}));el.push(table([[...REPORT_TEXT.werHeaders],...uWer.map(r=>[r.material,r.model||'—',String(r.refCount),String(r.hypCount),String(r.errors),fmtWer(r.ratio)])],[110,130,70,70,55,45],{header:true}));}
   el.push(h(REPORT_TEXT.reviewSummaryHeading));
   el.push(paragraph(REPORT_TEXT.reviewSummaryIntro,{size:10}));
   el.push(table(reviewSummaryRows(c).map(r=>[r[0],String(r[1])]),[320,160],{header:false,shadeFirstCol:true}));
