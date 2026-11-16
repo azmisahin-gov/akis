@@ -47,11 +47,17 @@ deşifre/model/yedekleme akışlarının otomatik test kapsamı dışında olmas
 
 ## Doğrulama
 
-Rapor oluşturucuları için otomatik kontrol betiği vardır:
+Tüm testleri tek komutla çalıştırın:
 
 ```bash
-node tools/rapor-tutarlilik-testi.mjs
+bash tools/test.sh
 ```
+
+Bu komut iki betiği çalıştırır:
+- `tools/birim-testleri.mjs` — hesaplama fonksiyonları (WER, FFT, perde,
+  Türkçe yönelme eki, zaman kodu, dolgu tespiti, geçmiş sıkıştırma, kontrol
+  durumu, mercie özel ifadeler). 46 test.
+- `tools/rapor-tutarlilik-testi.mjs` — rapor oluşturucuları (HTML/DOCX/UDF).
 
 Betik, `assets/app.js`'i Node.js `vm` içinde sahte bir DOM ile yükler; üç rapor
 oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı veriyle çalıştırır ve

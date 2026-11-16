@@ -90,15 +90,19 @@ rapora aktarmayın; kaydı elle dinleyip bölümleri kendiniz girin.
 
 ## Geliştirme ve doğrulama
 
-Rapor oluşturucularını (HTML önizleme, DOCX, UDF) denetleyen betik:
+Tüm testleri tek komutla çalıştırın:
 
 ```bash
-node tools/rapor-tutarlilik-testi.mjs
+bash tools/test.sh
 ```
 
-Betik üç oluşturucuyu aynı veriyle çalıştırıp metinleri karşılaştırır ve
-kaynakta rapor metinlerinin sabit kopyası kalıp kalmadığını denetler. Harici
-paket gerektirmez; Node.js yeterlidir.
+İki test betiği vardır:
+- `tools/birim-testleri.mjs` — hesaplama fonksiyonları (WER, FFT, perde,
+  Türkçe yönelme eki, zaman kodu, dolgu tespiti, geçmiş sıkıştırma).
+- `tools/rapor-tutarlilik-testi.mjs` — üç rapor oluşturucuyu aynı veriyle
+  çalıştırıp metinleri karşılaştırır.
+
+Harici paket gerekmez; Node.js yeterlidir.
 
 ## Veri saklama
 
