@@ -162,6 +162,12 @@ tuşları bozulmaz.
   aralığı, ölçülen perde ve ilgili kayıt/bölüm bilgisi. Üç çıktıda da yer alır.
 - **Gözlem sütunu:** her deşifre bölümü için işaretlenen gözlemler (gürültü,
   üst üste konuşma, anlaşılmaz bölüm, müzik/ses efekti).
+- **Kayıt kökeni ve teslim zinciri:** her kayıt için ortam türü (CD/DVD, USB
+  flaş, taşınabilir disk, telefon…), ortam etiketi/seri no, teslim eden kişi,
+  teslim tarihi ve kayıt cihazı bilgisi. Kaydın nereden geldiğini ve nasıl
+  teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı
+  kendiliğinden tespit etmez. Rapora "Kayıt Kökeni ve Teslim Zinciri"
+  tablosu olarak yansır.
 - **Çözümleme doğruluk ölçümü (WER):** referans metni bulunan kayıtlarda
   otomatik çözümleme çıktısı referansla karşılaştırılır. WER (kelime hata
   oranı) yerine koyma, silme ve ekleme hatalarını referans kelime sayısına
