@@ -85,9 +85,24 @@ tuşları bozulmaz.
   öncekiyle çakışma). "Öncelikliye git" düğmesi en yüksek öncelikli bekleyen
   bölüme atlar.
 - **Bölüm işlemleri:** oynatıcı konumundan böl, sonrakiyle birleştir, sil.
+- **Hassas sınır ayarı:** başlangıç/bitiş zamanı 0,1 sn ve 1 sn adımlarla
+  kaydırılır. Uzman, konuşmanın tam başladığı/bittiği noktayı bu düğmelerle
+  ayarlar.
+- **Yakınlaştırılmış dalga formu:** aktif bölümün ±0,5 sn'si büyütülür; sınır
+  çizgileri ve oynatma imleci görünür. Sol yarıya tıklayınca başlangıç, sağ
+  yarıya tıklayınca bitiş ayarlanır.
 - **Oynatma hızı** 0,75× – 2× arası; kayda bağlı saklanır.
 - **Denetim ilerlemesi** çubuğu ve durum renkleri.
+- **Kaydırma koruması:** liste yeniden kurulurken sayfanın ve panelin kaydırma
+  konumu korunur; işlem sırasında ekran zıplamaz.
 - Uzun kayıtta liste paneli kayar, sağ panel sabit kalır.
+
+## Masaüstü uygulaması hissi
+
+- **Odak modu:** kenar çubuğu gizlenir, çalışma alanı genişler; bölüm metni
+  alanı büyür. Tercih tarayıcıda saklanır.
+- **Kompakt yükleme alanı:** ses ekleme şeridi ekranın çoğunu kaplamaz.
+- İşlemler listeyi bütünüyle yeniden kurmaz; yalnızca değişen bölüm güncellenir.
 
 ## Konuşmacı yönetimi ve ses özellikleri
 
