@@ -69,6 +69,19 @@ const REPORT_TEXT = {
   obsLabels:{noise:'arka plan gürültüsü',overlap:'üst üste konuşma',inaudible:'anlaşılmaz bölüm',music:'müzik/ses efekti'},
   segmentHeadersObs:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU','GÖZLEM'],
   spectrogramLabel:'Spektrogram incelendi',
+  reviewSummaryHeading:'İNCELEME ÖZETİ (denetim kaydı)',
+  reviewSummaryIntro:'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
+  rsMaterials:'İncelemeye alınan kayıt',
+  rsSegments:'Çözümlenen bölüm',
+  rsReviewed:'Uzman denetiminden geçen bölüm',
+  rsUnreviewed:'Denetim bekleyen bölüm',
+  rsInaudible:'Anlaşılmadı işaretli bölüm',
+  rsBlank:'Anlamlı metin içermeyen bölüm',
+  rsObservations:'Gözlem işareti konulan bölüm',
+  rsSpectrogram:'Spektrogram incelenen kayıt',
+  rsChannel:'Kanal ayrımı yapılan kayıt',
+  rsSpeaker:'Etiketlenen konuşmacı',
+  rsPitch:'Perdesi ölçülen konuşmacı',
   segmentHeaders:['ZAMAN ARALIĞI','KONUŞMACI','ÇÖZÜMLENEN KONUŞMA','KONTROL DURUMU'],
   emptySpeaker:'Belirtilmemiş',
   timeDash:'—',
@@ -918,6 +931,32 @@ function speakerRows(c){
 }
 function segObsText(s){const o=s.obs||{};const keys=Object.keys(o).filter(k=>o[k]);if(!keys.length)return '—';return keys.map(k=>(REPORT_TEXT.obsLabels[k]||k)).join(', ');}
 function chanModeText(m){const mode=channelMode(m);if(m.tech?.channels!==2)return '—';return mode==='left'?'Yalnız sol kanal':mode==='right'?'Yalnız sağ kanal':'Stereo (her iki kanal)';}
+// İnceleme özeti: raporda ne yapıldığını ve ne kaldığını sayısal olarak
+// gösterir. Her satır yalnızca gerçek veriden üretilir; tahmin içermez.
+function reviewSummaryRows(c){
+  const mats=c.materials||[];const segs=mats.flatMap(m=>m.segments||[]);
+  const reviewed=segs.filter(s=>isReviewed(s)).length;
+  const inaudible=segs.filter(s=>segReview(s)==='anlasilmadi').length;
+  const blank=segs.filter(s=>isHallucination(s.text)).length;
+  const observed=segs.filter(s=>s.obs&&Object.keys(s.obs).some(k=>s.obs[k])).length;
+  const spec=mats.filter(m=>m.spectrogramReviewed).length;
+  const chan=mats.filter(m=>m.tech?.channels===2&&channelMode(m)!=='both').length;
+  const speakers=mats.reduce((n,m)=>n+(m.speakers||[]).filter(s=>s.name&&s.name!=='Belirtilmedi').length,0);
+  const pitched=mats.reduce((n,m)=>n+(m.speakers||[]).filter(s=>s.pitch).length,0);
+  return [
+    [REPORT_TEXT.rsMaterials,mats.length],
+    [REPORT_TEXT.rsSegments,segs.length],
+    [REPORT_TEXT.rsReviewed,reviewed],
+    [REPORT_TEXT.rsUnreviewed,segs.length-reviewed],
+    [REPORT_TEXT.rsInaudible,inaudible],
+    [REPORT_TEXT.rsBlank,blank],
+    [REPORT_TEXT.rsObservations,observed],
+    [REPORT_TEXT.rsSpectrogram,spec],
+    [REPORT_TEXT.rsChannel,chan],
+    [REPORT_TEXT.rsSpeaker,speakers],
+    [REPORT_TEXT.rsPitch,pitched]
+  ];
+}
 function reportTypeSpec(t){return REPORT_TYPES[t]||REPORT_TYPES.hukuk;}
 function reportTypeLabel(t){return reportTypeSpec(t).label;}
 function reportRows(c){const spec=reportTypeSpec(c.reportType);const r=spec.roles;return [[spec.fileNo,c.fileNo],[r.plaintiff,c.plaintiff],[r.plaintiffCounsel,c.plaintiffCounsel],[r.defendant,c.defendant],[r.defendantCounsel,c.defendantCounsel],[spec.subject,c.subject],[spec.date,niceDate(c.caseDate)],['GÖREVLENDİRME TARİHİ',niceDate(c.assignmentDate)],['VERİLEN SÜRE',c.assignmentDurationDays?`${c.assignmentDurationDays} GÜN`:'' ],['SON TESLİM TARİHİ',niceDate(c.dueDate)],['KEŞİF / İNCELEME TARİHİ',niceDate(c.inspectionDate)],['RAPOR TARİHİ',niceDate(c.reportDate)],['BİLİRKİŞİ ADI SOYADI',c.expertName],['UZMANLIK ALANI',c.expertField],['BİLİRKİŞİ SİCİL NO',c.registryNo]].filter(x=>x[1]&&x[1]!=='—');}
@@ -953,7 +992,10 @@ function renderReport(){
   if(c.questions?.length){for(let i=0;i<c.questions.length;i++){const q=c.questions[i];html+=`<h4>5.2.${i+1}. ${esc(q.question||REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer||REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis||REPORT_TEXT.defaultBasis)}</p>`;}}else html+=`<p>${esc(REPORT_TEXT.defaultEvaluation)}</p>`;
   html+=`<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText||REPORT_TEXT.defaultLimitations)}</p></div>`;
   html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText||REPORT_TEXT.defaultConclusion)}</p></div>`;
-  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div><div class="paper-signature"><div><b>${esc(c.expertName||REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField||REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo||REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo||REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
+  const rsRows=reviewSummaryRows(c);
+  html+=`<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
+  html+=`<div class="paper-signature"><div><b>${esc(c.expertName||REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField||REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo||REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo||REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   $('#reportPreview').innerHTML=html;$('#reportStatus').innerHTML=`<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
 }
 function xesc(s=''){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');}
@@ -1008,6 +1050,9 @@ function docxXml(c){
   body+=wP(c.conclusionText||REPORT_TEXT.defaultConclusion);
   body+=headingXml(REPORT_TEXT.sections[6]);
   body+=wP(REPORT_TEXT.attachmentsText);
+  body+=headingXml(REPORT_TEXT.reviewSummaryHeading);
+  body+=wP(REPORT_TEXT.reviewSummaryIntro);
+  body+=wTable(reviewSummaryRows(c).map(r=>[r[0],String(r[1])]),{widths:[6000,3000],header:false,shadeFirstCol:true});
   body+=`<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName||'BİLİRKİŞİ',{bold:true,size:22,color:'1C426B'})}<w:r><w:br/></w:r>${wRun(c.expertField||'56.12',{size:20})}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo||REPORT_TEXT.emptyFileNo}`,{size:20})}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel,{size:18,color:'718399'})}</w:p>`;
   const sect=`<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
@@ -1080,6 +1125,9 @@ async function makeUdf(){
   el.push(paragraphLines(c.conclusionText||REPORT_TEXT.defaultConclusion,{justify:true}));
   el.push(h(REPORT_TEXT.sections[6]));
   el.push(paragraph(REPORT_TEXT.attachmentsText));
+  el.push(h(REPORT_TEXT.reviewSummaryHeading));
+  el.push(paragraph(REPORT_TEXT.reviewSummaryIntro,{size:10}));
+  el.push(table(reviewSummaryRows(c).map(r=>[r[0],String(r[1])]),[320,160],{header:false,shadeFirstCol:true}));
   el.push(paragraph(c.expertName||REPORT_TEXT.defaultExpert,{size:13,bold:true,color:'navy',align:2,before:18,after:2}));
   el.push(paragraph(c.expertField||REPORT_TEXT.defaultField,{size:10,align:2,after:2}));
   el.push(paragraph(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo||REPORT_TEXT.emptyFileNo}`,{size:10,align:2,after:2}));
