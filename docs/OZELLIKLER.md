@@ -99,6 +99,11 @@ tuşları bozulmaz.
 - **Yakınlaştırılmış dalga formu:** aktif bölümün ±0,5 sn'si büyütülür; sınır
   çizgileri ve oynatma imleci görünür. Sol yarıya tıklayınca başlangıç, sağ
   yarıya tıklayınca bitiş ayarlanır.
+- **Spektrogram:** talep üzerine hesaplanan FFT spektrogramı (512 nokta, Hann
+  penceresi). Logaritmik frekans ekseni 20 Hz – 8 kHz; sarı çizgiler bölüm
+  sınırlarını gösterir. Bölüm sınırının tam yerini görmek ve gürültü/tıslama
+  gibi unsurları ayırt etmek için kullanılır. Hesaplama deterministiktir.
+  İncelenen spektrogram rapor envanterinde tarihiyle belirtilir.
 - **Oynatma hızı** 0,75× – 2× arası; kayda bağlı saklanır.
 - **Denetim ilerlemesi** çubuğu ve durum renkleri.
 - **Kaydırma koruması:** liste yeniden kurulurken sayfanın ve panelin kaydırma
