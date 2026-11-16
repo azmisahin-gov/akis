@@ -185,3 +185,8 @@ body.focus-mode .seg-detail textarea{min-height:180px;font-size:15px}
 .spec-wrap{margin-top:9px;border:1px solid #e6ecf2;border-radius:8px;overflow:hidden;background:#0b1a2e}
 .spec-wrap .zw-head{background:#12263f;color:#9fb3c8;border-bottom:1px solid #1d3550}
 .spec-canvas{display:block;width:100%;height:160px}
+
+/* Kart bölgeleri: durum bölgesi çözümleme sırasında sık güncellenir, içerik
+   bölgesi (oynatıcı, dalga formu, deşifre) korunur. Böylece sayfa sıçramaz. */
+.audio-status-zone{display:block}
+.audio-content-zone{display:block}
