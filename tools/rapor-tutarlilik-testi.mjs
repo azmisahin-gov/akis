@@ -253,5 +253,15 @@ console.log('\n[Senaryo 7] WER ölçümü');
   checkShared('WER başlığı', REPORT_TEXT.werHeading, H, U, D);
 }
 
+// Senaryo 8: kayıt kökeni tablosu rapora yansıyor mu
+console.log('\n[Senaryo 8] kayıt kökeni');
+{
+  const c = withMaterial();
+  c.materials[0].origin = { mediumType: 'USB flaş bellek', mediumLabel: 'FLASH-1', deliveredBy: 'Ahmet Yılmaz', deliveredAt: '2026-03-12', deviceInfo: 'cep telefonu' };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('köken başlığı', REPORT_TEXT.originHeading, H, U, D);
+  checkShared('ortam etiketi değeri', 'FLASH-1', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);
