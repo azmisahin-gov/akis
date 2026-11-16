@@ -201,3 +201,70 @@ sıçramasına yol açıyordu. Alan bu kez doğru mimariyle kuruldu.
 - **Düzeltilen iki hata:** (1) Metin geçmişi her tuş vuruşunda kaydediliyordu;
   artık düzenleme oturumu başına bir kez. (2) Eski sürümlerden kalan kirlenmiş
   geçmiş açılışta otomatik sıkıştırılır (`Geçmiş (20)` → `Geçmiş (1)`).
+
+### v2.2 — Sınır araçları, odak modu, masaüstü hissi
+
+- **Hassas sınır ayarı:** başlangıç/bitiş 0,1 sn ve 1 sn adımlarla kaydırılır.
+  Uzman, konuşmanın tam başladığı/bittiği noktayı ayarlar.
+- **Yakınlaştırılmış dalga formu:** aktif bölümün ±0,5 sn'si büyütülür; sınır
+  çizgileri ve oynatma imleci görünür. Sol yarıya tıkla = başlangıç, sağ
+  yarıya tıkla = bitiş.
+- **Odak modu:** kenar çubuğu gizlenir, çalışma alanı genişler; tercih saklanır.
+- **Kompakt yükleme alanı:** ses ekleme şeridi ekranı kaplamaz.
+- **Düzeltilen hata:** Enter çift tetikleniyordu (odak düğmedeyken tarayıcı
+  tıklaması + keydown onayı). Artık düğme odaktayken kısayol devre dışı.
+
+### v2.3 — Kanal seçimi, gözlem işaretleri, böl/birleştir kısayolları
+
+- **Kanal seçimi (stereo):** sol/sağ/stereo dinleme (Web Audio
+  `ChannelSplitter`). Grafik tembel kurulur; hata olursa normal oynatmaya döner.
+  Seçilen kanal rapor envanterinde gösterilir.
+- **Gözlem işaretleri:** arka plan gürültüsü, üst üste konuşma, anlaşılmaz
+  bölüm, müzik/ses efekti. Rapora "GÖZLEM" sütunu olarak yansır.
+- **Klavye:** `B` böl, `M` birleştir.
+
+### v2.4 — Spektrogram (FFT)
+
+- Radix-2 Cooley-Tukey FFT (yerinde, gerçek giriş), Hann penceresi, 512 nokta.
+- Logaritmik frekans ekseni 20 Hz – 8 kHz; bölüm sınırları sarı çizgiyle.
+- Hesaplama deterministiktir; aynı kayıt her zaman aynı görüntüyü verir.
+- Talep üzerine hesaplanır ve kayda bağlı saklanır.
+- **Doğruluk kanıtı:** 1000 Hz→1000.0, 300 Hz→296.9 (bin çözünürlüğü), sabit
+  sinyal→0.0.
+- İncelenen spektrogram rapor envanterine tarihiyle yansır.
+
+### v2.5 — İnceleme özeti (denetim kaydı)
+
+- Rapor sonunda "İNCELEME ÖZETİ" tablosu: incelenen kayıt, çözümlenen bölüm,
+  denetlenen/denetim bekleyen bölüm, anlaşılmadı, anlamlı metin yok, gözlem
+  işareti, spektrogram incelenen kayıt, kanal ayrımı, etiketlenen konuşmacı,
+  perdesi ölçülen konuşmacı, kökeni belgelenen kayıt, WER ölçümü yapılan kayıt.
+- Her satır yalnızca gerçek veriden üretilir; yapılmayan işlem yapılmış gibi
+  gösterilmez. Üç çıktıda da yer alır.
+- Klavye kısayolları yardım penceresine eklendi.
+
+### v2.6 — Çözümleme doğruluk ölçümü (WER)
+
+- Kelime düzeyinde Levenshtein uzaklığı + Türkçe normalizasyon (küçük harf,
+  noktalama atma). WER = hata / referans kelime sayısı.
+- **Doğruluk kanıtı (7 senaryo):** aynı metin→0, yerine koyma→0.5, silme→0.333,
+  ekleme→0.5, tamamen farklı→1.0, noktalama farkı→0, Türkçe karakter→0.
+- Gerçek veriyle: 67 kelimede 7 hata → %10.4.
+- Raporda tablo; çözümlemede kullanılan model de belirtilir.
+- Yalnızca hem referans hem çözümleme metni olan kayıtlar ölçülür.
+
+### v2.7 — Kayıt kökeni ve teslim zinciri
+
+- Her kayıt için ortam türü (CD/DVD, USB flaş, taşınabilir disk, telefon…),
+  ortam etiketi/seri no, teslim eden, teslim tarihi, kayıt cihazı bilgisi.
+- Rapora "KAYIT KÖKENİ VE TESLİM ZİNCİRİ" tablosu; üç çıktıda da.
+- Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.
+
+### v2.8 — Sayfa sıçramasını giderme (kök neden)
+
+- `transcribe` her 30 saniyelik pencere sonunda tüm listeyi yeniden kuruyordu;
+  bir saatlik kayıtta ~120 yeniden çizim. Kart iki bölgeye ayrıldı: durum
+  bölgesi (sık tazelenir) ve içerik bölgesi (oynatıcı, dalga formu, deşifre;
+  korunur). Yeniden çizim sayısı ~120'den 1'e indi.
+- `renderAudioList` sayfanın ve panelin kaydırma konumunu saklayıp geri yükler.
+- Perde ölçümü artık yalnızca konuşmacı panelini günceller.
