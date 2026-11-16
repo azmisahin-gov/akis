@@ -158,7 +158,9 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   checkShared('mahkeme yer tutucusu', REPORT_TEXT.emptyCourt.replace(/\s+$/, ''), H, U, D);
   checkShared('malzeme yok metni', REPORT_TEXT.noMaterials, H, U, D);
   checkShared('5.2 değerlendirme fallback', REPORT_TEXT.defaultEvaluation, H, U, D);
-  checkShared('bölüm 2 soru fallback', REPORT_TEXT.defaultQuestions, H, U, D);
+  // Soru fallback metni artık mercie göre üretilir (mahkeme/savcılık/icra).
+  // hukuk türünde "Mahkemece bilirkişiye yöneltilen sorular…" beklenir.
+  checkShared('bölüm 2 soru fallback', 'Mahkemece bilirkişiye yöneltilen sorular', H, U, D);
 }
 
 // Senaryo 3: dört merci türünde kapak etiketi
