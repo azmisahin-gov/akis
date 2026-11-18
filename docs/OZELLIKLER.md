@@ -80,6 +80,7 @@ tuşları bozulmaz.
   - `[` `]` oynatma hızını düşür/artır
   - `←` `→` 5 saniye geri/ileri
   - Metin alanındayken `Esc` ile alandan çık, klavye gezinmesine dön
+  - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
 - **Bölüm filtresi:** Tümü / Bekleyen / Onaylandı / Anlaşılmadı / Yeniden
@@ -98,17 +99,33 @@ tuşları bozulmaz.
   ayırt etmeye yardımcı olur. Web Audio `ChannelSplitter` ile uygulanır;
   seçilen kanal rapor envanterinde gösterilir.
 - **Hassas sınır ayarı:** başlangıç/bitiş zamanı 0,1 sn ve 1 sn adımlarla
-  kaydırılır. Uzman, konuşmanın tam başladığı/bittiği noktayı bu düğmelerle
-  ayarlar.
-- **Yakınlaştırılmış dalga formu:** aktif bölümün ±0,5 sn'si büyütülür; sınır
-  çizgileri ve oynatma imleci görünür. Sol yarıya tıklayınca başlangıç, sağ
-  yarıya tıklayınca bitiş ayarlanır.
+  kaydırılır. Zaman kodu milisaniye hassasiyetindedir (`00:00:05.100`); eski
+  `HH:MM:SS` kayıtlar da okunur. Uzman, konuşmanın tam başladığı/bittiği noktayı
+  bu düğmelerle ayarlar.
+- **Yakınlaştırılmış dalga formu:** aktif bölümün çevresi gösterilir; fare
+  tekerleğiyle yakınlaştırma, ＋/−/Sığdır düğmeleri, yeşil/kırmızı sınır
+  çizgilerini sürükleyerek başlangıç/bitiş ayarlama ve boşluğa tıklayarak
+  konuma gitme desteklenir. Canvas üstünde ▶/⏹ düğmeleri vardır.
 - **Spektrogram:** talep üzerine hesaplanan FFT spektrogramı (512 nokta, Hann
   penceresi). Logaritmik frekans ekseni 20 Hz – 8 kHz; sarı çizgiler bölüm
   sınırlarını gösterir. Bölüm sınırının tam yerini görmek ve gürültü/tıslama
   gibi unsurları ayırt etmek için kullanılır. Hesaplama deterministiktir.
   İncelenen spektrogram rapor envanterinde tarihiyle belirtilir.
-- **Oynatma hızı** 0,75× – 2× arası; kayda bağlı saklanır.
+- **Oynatma hızı** 0,25× – 2× arası; kayda bağlı saklanır.
+- **Dinle / Duraklat / Durdur:** "Dinle" düğmesi akıllıdır; aynı bölümde tekrar
+  basınca duraklar, duraklatılmışken kaldığı yerden devam eder. "Durdur" çalmayı
+  keser ve bölüm başına sarar. Bölüm bitişinde otomatik durur.
+- **Hızlı etiketler:** [sessizlik], [anlaşılmaz], [uzaktan konuşma], [gürültülü],
+  [üst üste], [müzik/ses] düğmeleri ve "Temizle". Boş veya anlaşılmaz bölümler
+  elle yazmadan işaretlenir; uygulama uydurma metin üretmez.
+- **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümler tek paragrafta
+  birleştirilir; konuşmacı değişince yeni paragraf başlar. Onaylanmamış bölüm
+  paragrafta onaylı sayılmaz.
+- **Karaoke vurgulama:** çalma sırasında o an konuşulan kelime vurgulanır. Model
+  kelime zamanı verirse gerçek zamanlama, yoksa bölüm aralığı kullanılır.
+- **Dinleme yardımcıları (DSP):** konuşma odağı (300 Hz – 3,4 kHz), uğultu kes
+  (80 Hz üstü) ve gürültü kapısı. Yalnızca dinlemeyi kolaylaştırır; kaydı
+  değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz.
 - **Denetim ilerlemesi** çubuğu ve durum renkleri.
 - **Kaydırma koruması:** liste yeniden kurulurken sayfanın ve panelin kaydırma
   konumu korunur; işlem sırasında ekran zıplamaz.
@@ -117,7 +134,8 @@ tuşları bozulmaz.
 ## Masaüstü uygulaması hissi
 
 - **Odak modu:** kenar çubuğu gizlenir, çalışma alanı genişler; bölüm metni
-  alanı büyür. Tercih tarayıcıda saklanır.
+  alanı büyür. Tercih tarayıcıda saklanır. Kenar çubuğu gizlendiği için moddan
+  çıkmak üzere üst çubukta "Odak modundan çık" düğmesi ve `Esc` kısayolu vardır.
 - **Kompakt yükleme alanı:** ses ekleme şeridi ekranın çoğunu kaplamaz.
 - İşlemler listeyi bütünüyle yeniden kurmaz; yalnızca değişen bölüm güncellenir.
 

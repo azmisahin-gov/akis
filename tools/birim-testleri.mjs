@@ -46,6 +46,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
+  'paragraphize',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -143,6 +144,18 @@ eq('65 sn', T.timecode(65), '00:01:05');
 eq('3661 sn', T.timecode(3661), '01:01:01');
 eq('timecode -> sn', T.secondsFromTimecode('00:01:05'), 65);
 eq('bozuk giriş -> 0', T.secondsFromTimecode('abc'), 0);
+// Milisaniye hassasiyeti: 0,1 sn'lik sınır kaydırma ve "buradan böl" bu
+// dönüşüme dayanır; saniyeye yuvarlanırsa alt saniye kaybolur.
+eq('0,1 sn korunur', T.timecode(5.1), '00:00:05.100');
+eq('0,5 sn korunur', T.timecode(5.5), '00:00:05.500');
+eq('ms -> sn', T.secondsFromTimecode('00:00:05.500'), 5.5);
+near('0,1 sn gidiş-dönüş', T.secondsFromTimecode(T.timecode(5.1)), 5.1, 1e-9);
+{
+  let cur = T.secondsFromTimecode('00:00:05');
+  for (let i = 0; i < 5; i++) cur = T.secondsFromTimecode(T.timecode(cur + 0.1));
+  near('5 x +0,1 sn birikimi', cur, 5.5, 1e-9);
+}
+eq('tam saniye kısa biçim', T.timecode(5), '00:00:05');
 
 // --- 7. Dolgu tespiti -----------------------------------------------------
 console.log('\n[7] Dolgu/halüsinasyon tespiti');
@@ -150,6 +163,31 @@ eq('boş metin', T.isHallucination(''), true);
 eq('(Konuşma)', T.isHallucination('(Konuşma)'), true);
 eq('(Müzik - Jenerik)', T.isHallucination('(Müzik - Jenerik)'), true);
 eq('gerçek cümle', T.isHallucination('Merhaba, depozito hakkında konuşmak istiyorum.'), false);
+
+// --- 7b. Paragraf oluşturma -----------------------------------------------
+// Ardışık aynı konuşmacı bölümleri tek paragrafta birleşmeli; konuşmacı
+// değişince yeni paragraf başlamalı. Zaman aralığı ilk baştan son bite
+// genişlemeli ve onaylanmamış içerik paragraf onaylı sayılmamalı.
+console.log('\n[7b] Paragraf oluşturma');
+{
+  const m = { segments: [
+    { start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'bir', review: 'onaylandi' },
+    { start: '00:00:05', end: '00:00:09', speaker: 'A', text: 'iki', review: 'onaylandi' },
+    { start: '00:00:09', end: '00:00:14', speaker: 'B', text: 'üç', review: 'bekliyor' },
+  ] };
+  T.paragraphize(m);
+  eq('iki paragrafa indi', m.segments.length, 2);
+  eq('aynı konuşmacı birleşti', m.segments[0].text, 'bir iki');
+  eq('aralık genişledi', [m.segments[0].start, m.segments[0].end], ['00:00:00', '00:00:09']);
+  eq('konuşmacı değişince yeni paragraf', m.segments[1].speaker, 'B');
+  eq('onaylı içerik onaylı kalır', T.isReviewed(m.segments[0]), true);
+  eq('onaysız içerik onaysız kalır', T.isReviewed(m.segments[1]), false);
+}
+{
+  const m = { segments: [{ start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'tek', review: 'onaylandi' }] };
+  T.paragraphize(m);
+  eq('tek bölüm değişmez', m.segments.length, 1);
+}
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------
 console.log('\n[8] Metin geçmişi sıkıştırma');

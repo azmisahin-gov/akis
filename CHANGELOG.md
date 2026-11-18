@@ -268,3 +268,65 @@ sıçramasına yol açıyordu. Alan bu kez doğru mimariyle kuruldu.
   korunur). Yeniden çizim sayısı ~120'den 1'e indi.
 - `renderAudioList` sayfanın ve panelin kaydırma konumunu saklayıp geri yükler.
 - Perde ölçümü artık yalnızca konuşmacı panelini günceller.
+
+## v2.9–v2.13 — Deşifre deneyimi iyileştirmeleri (uygulandı)
+
+Kullanıcı geri bildirimiyle uzmanın en çok zaman geçirdiği deşifre alanında
+kullanım kolaylığı ve doğruluk iyileştirildi. Mevcut özellikler korundu.
+
+### v2.9 — Dinleme denetimleri
+
+- **Dinle düğmesi artık akıllı:** aynı bölümde tekrar basınca duraklar,
+  duraklatılmışken kaldığı yerden devam eder, başka bölümde baştan başlar.
+- **Durdur düğmesi** eklendi: çalmayı keser ve bölüm başına sarar.
+- Bölüm bitişinde durma tek bir `timeupdate` dinleyicisiyle yapılır; önceki
+  sürümde her çalmada yeni dinleyici ekleniyordu (sızıntı giderildi).
+- Oynatma hızı seçenekleri 0,25× ve 0,5× ile genişletildi.
+
+### v2.10 — Milisaniye hassasiyetli zaman kodu
+
+- `timecode` artık alt saniyeyi korur (`00:00:05.100`). Önceki sürümde
+  `Math.floor` nedeniyle 0,1 sn'lik hassas kaydırma düğmeleri ve "buradan böl"
+  işlemi saniyeye yuvarlanıyordu; 0,1 sn beş kez kaydırıldığında toplam 0,5 sn
+  kayboluyordu. Eski `HH:MM:SS` biçimi de okunmaya devam eder (geriye dönük
+  uyumlu). Birim testleri eklendi.
+
+### v2.11 — Yakınlaştırılmış dalga formu etkileşimi
+
+- **Tekerlek ile yakınlaştırma** (imlecin altındaki zaman sabit kalır) ve
+  ＋ / − / Sığdır düğmeleri.
+- **Sınır sürükleme:** yeşil (başlangıç) ve kırmızı (bitiş) çizgiler fare ile
+  tutulup taşınabilir; imleç `ew-resize` olur.
+- **Boşluğa tıklama:** oynatıcı o konuma gider; bölüm dışı hafifçe karartılır.
+- Canvas üstünde ▶ / ⏹ düğmeleri; görünür pencere süresi başlıkta yazar.
+
+### v2.12 — Elle yazmadan düzeltme ve paragraf
+
+- **Hızlı etiketler:** [sessizlik], [anlaşılmaz], [uzaktan konuşma],
+  [gürültülü], [üst üste], [müzik/ses] düğmeleri ve "Temizle". Boş veya
+  anlaşılmaz bölümler elle yazmadan işaretlenir; uydurma metin üretilmez.
+- **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümler tek paragrafta
+  birleştirilir; konuşmacı değişince yeni paragraf başlar. Onaylanmamış içerik
+  paragrafta onaylı sayılmaz. Birim testleri eklendi.
+- **Karaoke vurgulama:** çalma sırasında o an konuşulan kelime vurgulanır.
+  Model kelime zamanı verirse gerçek zamanlama, yoksa bölüm aralığı kullanılır.
+
+### v2.13 — Dinleme yardımcıları (DSP)
+
+- **Konuşma odağı** (300 Hz yüksek geçiren + 3,4 kHz alçak geçiren),
+  **uğultu kes** (80 Hz yüksek geçiren) ve **gürültü kapısı** (sessizlikte
+  kazancı düşürür) seçenekleri eklendi.
+- Bu filtreler yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak
+  ayrıştırma (yalnız konuşmayı müzikten ayırma) ağır bir makine öğrenmesi işi
+  olduğu için uygulanmadı ve arayüzde bu sınır açıkça yazılır.
+
+### Arayüz düzeltmeleri (v2.9 ile birlikte)
+
+- **Odak modundan çıkış:** kenar çubuğu gizlenince çıkış düğmesi de
+  kayboluyordu. Üst çubuğa "Odak modundan çık" düğmesi ve Esc kısayolu eklendi.
+- **Gözlem işaretleri görünür geri bildirim:** işaret düğmeleri seçildiğinde
+  koyu zemin ve ✓ işaretiyle gösterilir (`.mini-button.on` stili eksikti).
+- **Klavye kısayolları güvenilirliği:** kısayollar belge düzeyine taşındı;
+  metin alanından Esc ile çıkınca odak bölüme döner ve kısayollar çalışmaya
+  devam eder. Boşluk tuşu odak bir düğmedeyken artık çift işlem yapmaz.
+- **Bölmeden sonra kaydırma:** yeni oluşan bölüm görünür alana getirilir.

@@ -47,13 +47,18 @@ Yapılan düzeltmeler:
 çalıştırır, metinleri karşılaştırır ve ayrıca kaynakta `REPORT_TEXT` değerlerinin
 sabit kopyası kalıp kalmadığını denetler. Şu an tüm kontroller geçer.
 
+Birim testleri (`tools/birim-testleri.mjs`) milisaniye hassasiyetli zaman kodu
+dönüşümünü ve paragraf oluşturma mantığını da kapsar (v2.10 ve v2.12'de eklendi).
+
 Hâlâ kapsam dışı olan alanlar: deşifre motoru, model yöneticisi, yedekleme/geri
-yükleme ve diğer tarayıcıya bağlı akışlar. Bunlar elle doğrulanmaktadır.
+yükleme ve diğer tarayıcıya bağlı akışlar (dalga formu etkileşimi, dinleme
+yardımcıları, karaoke). Bunlar elle doğrulanmaktadır.
 
 ## 3. Diğer gözlemler (düşük öncelik)
 
-- `assets/app.js` "415 satır" görünür ama içerik çok uzun tek satırlar hâlinde
-  sıkıştırılmıştır; okunabilirlik ve diff kalitesi düşüktür.
+- `assets/app.js` tek dosyadır ve içerik çok uzun tek satırlar hâlinde
+  sıkıştırılmıştır; okunabilirlik ve diff kalitesi düşüktür. Biçimlendirme
+  davranışı değiştirmeden ayrı bir çalışmada yapılmalıdır.
 - UDF `content.xml` içine gömülen `CDATA` metninde görünmez `U+200B`
   (zero-width space) karakterleri satır kırma noktası olarak kullanılır. Uzun
   SHA-256 dizilerinde taşmayı önlemek için makuldür, ancak bu karakterler

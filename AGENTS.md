@@ -73,8 +73,8 @@ bash tools/test.sh
 
 Bu komut iki betiği çalıştırır:
 - `tools/birim-testleri.mjs` — hesaplama fonksiyonları (WER, FFT, perde,
-  Türkçe yönelme eki, zaman kodu, dolgu tespiti, geçmiş sıkıştırma, kontrol
-  durumu, mercie özel ifadeler). 46 test.
+  Türkçe yönelme eki, ms hassasiyetli zaman kodu, dolgu tespiti, geçmiş
+  sıkıştırma, kontrol durumu, paragraf oluşturma, mercie özel ifadeler).
 - `tools/rapor-tutarlilik-testi.mjs` — rapor oluşturucuları (HTML/DOCX/UDF).
 
 Betik, `assets/app.js`'i Node.js `vm` içinde sahte bir DOM ile yükler; üç rapor
@@ -82,7 +82,22 @@ oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı veriyle çalıştır
 metinleri karşılaştırır. Ayrıca kaynakta `REPORT_TEXT` değerlerinin sabit
 kopyası kalıp kalmadığını denetler. Çıkış kodu 0 = tüm kontroller geçti.
 
-Rapor dışı akışlar (deşifre, model yöneticisi, yedekleme) elle doğrulanır.
+Rapor dışı akışlar (deşifre motoru, model yöneticisi, yedekleme, dalga formu
+etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
+
+### Deşifre alanında dikkat edilecekler
+
+- Zaman kodu `timecode`/`secondsFromTimecode` **milisaniye hassasiyetlidir**
+  (`00:00:05.100`); eski `HH:MM:SS` biçimi de okunur. Saniyeye yuvarlama
+  yapmayın; "buradan böl" ve 0,1 sn'lik sınır kaydırma buna bağlıdır.
+- Dinleme durumu tek bir `segPlayback` nesnesinde tutulur; bölüm bitişinde
+  durma tek bir `timeupdate` dinleyicisiyle yapılır (her çalmada yeni dinleyici
+  eklemeyin, sızıntı olur).
+- Klavye kısayolları belge düzeyinde dinlenir (`onGlobalSegKey`); metin
+  alanlarındayken yazmayı engellememelidir.
+- Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) bilerek yapılmaz; ağır
+  bir makine öğrenmesi işidir. Sunulan dinleme yardımcıları yalnızca DSP
+  filtreleridir ve kaydı değiştirmez.
 
 ## Sürüm şeması
 

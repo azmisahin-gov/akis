@@ -56,6 +56,12 @@ Ayrıntı [`../CHANGELOG.md`](../CHANGELOG.md) ve
 - Yenilenmiş ana kontrol paneli ve modern dosya yönetimi.
 - Gelişmiş rapor önizlemesi ve toplu işlem ekranı.
 
+> Not: Deşifre deneyimine yönelik arayüz düzeltmeleri ve iyileştirmeler
+> (dinleme denetimleri, ms zaman kodu, yakınlaştırılmış dalga formu etkileşimi,
+> hızlı etiketler, paragraf, karaoke, dinleme yardımcıları, odak modu çıkışı)
+> uygulandı ve `CHANGELOG.md` içinde v2.9–v2.13 olarak belgelendi. "Yeni AKİS
+> PRO arayüzü" kapsamındaki kalan tasarım çalışması sürüyor.
+
 ### v2.10 — Düşük güvenli bölüm vurgusu
 
 Kullanıcı, uzmanın hızlı bitirebilmesi için düşük güvenli kelimelerin
