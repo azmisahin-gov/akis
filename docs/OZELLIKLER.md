@@ -127,6 +127,10 @@ tuşları bozulmaz.
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
   sessizse "[sessizlik] etiketi uygun olabilir" notu çıkar; metin otomatik
   doldurulmaz.
+- **Terim tutarlılığı:** "Terim tutarlılığı" düğmesi kaydın tüm bölümlerinde
+  küçük yazım farkı olan sözcükleri bulur (ör. "depozito"/"depozit"). Öneri
+  listesidir; uzman bir biçimi "esas al" seçerse diğerleri ona çevrilir (tam
+  sözcük sınırında, metin geçmişine yazılarak).
 - **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümler tek paragrafta
   birleştirilir; konuşmacı değişince yeni paragraf başlar. Onaylanmamış bölüm
   paragrafta onaylı sayılmaz.

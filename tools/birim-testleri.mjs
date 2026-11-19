@@ -47,6 +47,7 @@ const EXPOSE = [
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
   'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
+  'contentWords', 'findTermInconsistencies', 'applyTermForm',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -219,6 +220,33 @@ console.log('\n[7c] Sessizlik ölçümü');
   const stats = T.analyzeSilence(quiet, sr, 0, 3);
   eq('boş metin + sessiz -> işaret', !!T.segmentSilenceFlag(stats, '', T.isHallucination), true);
   eq('anlamlı metin + sessiz -> işaret yok', T.segmentSilenceFlag(stats, 'merhaba dünya', T.isHallucination), null);
+}
+
+// --- 7d. Terim yazım tutarlılığı ------------------------------------------
+// Aynı terimin küçük yazım farkıyla geçtiği durumlar bulunmalı; farklı
+// terimler birbirine karıştırılmamalı. Uydurma yoktur; yalnızca metinde geçen
+// sözcükler karşılaştırılır.
+console.log('\n[7d] Terim yazım tutarlılığı');
+{
+  // "depozito" ve "depozit" gerçekten farklı yazımlar.
+  const issues = T.findTermInconsistencies([
+    'depozito ödemesi yapıldı', 'depozit iade edilecek', 'depozito tutarı',
+  ]);
+  eq('tutarsızlık bulundu', issues.length, 1);
+  eq('en sık biçim esas', issues[0].canonical, 'depozito');
+  eq('iki yazım listelendi', issues[0].forms.length, 2);
+  // Tek yazım varsa küme oluşmaz.
+  eq('tek yazım -> sonuç yok', T.findTermInconsistencies(['depozito depozito depozito']).length, 0);
+  // İşlev sözcükleri elenir.
+  eq('stopword elenir', T.contentWords('bir bu ve ile depozito').includes('depozito'), true);
+  eq('stopword listede yok', T.contentWords('bir bu ve ile').length, 0);
+  // Yazım düzeltme yalnızca tam sözcük sınırında çalışır.
+  const m = { segments: [ { text: 'depozit iade', history: [] }, { text: 'depozitin bir kısmı', history: [] } ] };
+  const changed = T.applyTermForm(m, 'depozit', 'depozito');
+  eq('tek tam sözcük değişti', changed, 1);
+  eq('metin güncellendi', m.segments[0].text, 'depozito iade');
+  // "depozitin" içindeki "depozit" sözcük sınırıyla eşleşmemeli.
+  eq('sözcük sınırı korunur', m.segments[1].text, 'depozitin bir kısmı');
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------

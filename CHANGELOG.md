@@ -378,3 +378,19 @@ bildirimi için deterministik bir ölçüm eklendi. Uydurma yoktur; yalnızca
 - `analyzeSilence` ve `segmentSilenceFlag` saf fonksiyonlardır; birim
   testleriyle doğrulanır (tam sessiz → ~%100, tam konuşma → ~%0, yarı yarıya
   → ~%50).
+
+## v2.16 — Terim yazım tutarlılığı (NLP katmanı)
+
+Aynı terimin metin içinde farklı yazımlarla geçtiğini bulan bir öneri aracı
+eklendi. Uydurma yoktur; yalnızca metinde gerçekten geçen sözcükler karşılaştırılır.
+
+- **"Terim tutarlılığı" düğmesi:** Kaydın tüm bölüm metinlerini tarar; küçük
+  yazım farkı olan sözcük kümelerini listeler (ör. "depozito" / "depozit").
+  İşlev sözcükleri (bir, bu, ve…) elenir; yalnızca 4+ harfli anlamlı sözcükler
+  karşılaştırılır. Eşleşme, aynı ilk üç harf ve küçük düzenleme uzaklığı ile
+  sınırlanır (yanlış eşleşmeyi önler).
+- **Otomatik değiştirme yoktur.** Uzman bir biçimi "esas al" seçerse diğer
+  yazımlar o biçime çevrilir; çevirme yalnızca tam sözcük sınırında yapılır
+  ("depozitin" içindeki "depozit" eşleşmez) ve metin geçmişine yazılır.
+- `contentWords`, `findTermInconsistencies` ve `applyTermForm` saf
+  fonksiyonlardır; birim testleriyle doğrulanır.
