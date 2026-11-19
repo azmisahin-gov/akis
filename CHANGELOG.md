@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.49.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.50.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.50 — Okuma katmanı: tema, tipografi, kontrast
+
+KULLANICI: "Bu saatlerce bu sesleri inceleyecek güzelim kadın ya da erkek
+bilirkişi için uygulamadaki tüm tasarımı gözden geçirelim; onun en rahat
+edeceği şekilde hazırlayalım. Gerekirse tema seçenekleri verelim."
+
+Önce ölçtüm, sonra düzelttim. Bulunan tasarım borcu:
+
+| Sorun | Ölçüm |
+|---|---|
+| Punto çok küçük | 54 kural 9px, 49 kural 10px, 8 kural 8px, 2 kural 7px |
+| Kontrast yetersiz | 16 metin renginin 11'i WCAG AA altı; yer tutucu 2.03:1 |
+| Font yüklenmiyor | `Manrope` 20+ yerde çağrılıyor, depoda `@font-face` yok |
+| Renk karmaşası | 202 farklı hex, 100 farklı metin rengi, 66 farklı gri |
+| CSS yama çorbası | 21 yama bloğu; `.seg-list` 11×, `.seg-detail` 10×, 26 `!important` |
+| Tema yok | Kullanıcı tercihi altyapısı hiç yoktu |
+
+### Tasarım token sistemi (`assets/tokens.css`)
+
+Tek kaynak: renk, tipografi, boşluk, yarıçap, gölge. Üç tema — **açık, koyu,
+sepya** — ve her metin rengi WCAG AA (≥4.5:1) olacak şekilde hesaplanıp
+doğrulandı:
+
+- Açık: gövde 14.97:1, ikincil 8.70:1, etiket 5.93:1
+- Koyu: 14.15 / 9.72 / 6.48
+- Sepya: 13.10 / 8.01 / 6.05
+
+Punto ölçeği 11px'te başlar (eskiden 7px'e iniyordu). Yoğunluk (rahat/sıkı) ve
+yazı boyutu (normal/büyük/çok büyük) ayrı tercihler. `prefers-reduced-motion`
+ve `prefers-contrast: more` desteklenir.
+
+### Tema seçici
+
+Ayarlar çekmecesinin en üstünde "Görünüm" paneli: üç tema, iki yoğunluk, üç
+yazı boyutu. Seçim `localStorage`'da saklanır; `index.html`'deki küçük satır
+içi betik tercihi **ilk boyamadan önce** uygular (FOUC yok). Seçenekler
+`role="radiogroup"` + `aria-checked` ile ekran okuyucuya da bildirilir.
+
+### Okuma katmanı (`assets/reading-layer.css`)
+
+Eski kuralları tek tek kovalamak yerine en sonda gelen tek tutarlı katman:
+
+- Tüm 8-10px metinler 11px tabana çekildi; deşifre metin alanı 14px'e çıktı
+  (saatlerce yazılan alan), satır aralığı 1.7.
+- Yer tutucu kontrastı 2.03:1 → 5.93:1.
+- `Manrope` referansları temizlendi; başlıklar artık yüklenen arayüz fontuyla
+  çiziliyor (önceden rastgele sistem fontu kullanılıyordu).
+- Zaman kodu eş aralıklı (tabular) fonta alındı; rakamlar hizalı okunuyor.
+- Odak halkası, kaydırma çubuğu ve uyarı kutuları temaya bağlandı.
+- Uyarılar yalnız renkle değil, metin + kenarlıkla da ayrışıyor (renk körlüğü).
+
+### Rapor kâğıdı temadan bağımsız
+
+Rapor önizlemesi basılı belgeyi temsil eder. Koyu temada bile kâğıt açık
+kalır (ayrı `--paper-*` tokenları); yazdırmada her tema beyaza çevrilir.
+Tema yalnız ekranı etkiler; UDF/DOCX çıktısı değişmez.
+
+### Doğrulama
+
+`tools/tasarim-testi.mjs` eklendi: kontrast oranlarını yeniden hesaplar, punto
+alt sınırını denetler, tema tokenlarının varlığını ve okuma katmanının yüklenme
+sırasını sınar. Testler: 169 birim + rapor tutarlılığı + sürüm + tasarım.
 
 ## v2.49 — Rapor bilirkişi adına: uygulama kimliği çıktıdan çıkarıldı, seviye ölçümü eklendi
 

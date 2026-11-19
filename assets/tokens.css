@@ -1,0 +1,277 @@
+/* ============================================================================
+   AKİS — Tasarım tokenları
+   ----------------------------------------------------------------------------
+   Neden bu dosya var: Bilirkişi bu ekranda saatlerce deşifre yazıyor. Renk ve
+   punto keyfî seçilemez; ölçülebilir olmalı. Bu dosya tek kaynaktır:
+
+     · Renkler  → üç tema (açık / koyu / sepya), hepsi WCAG AA doğrulanmış
+     · Punto    → ölçek; taban 13px, hiçbir metin 11px'in altına inmez
+     · Boşluk   → 4px ızgara
+     · Yarıçap  → 3 kademe (küçük / orta / büyük)
+
+   Tema `data-theme`, yoğunluk `data-density`, yazı boyutu `data-fontscale`
+   öznitelikleriyle <html> üzerinde değişir (bkz. assets/app.js → applyTheme).
+
+   KURAL: Bu dosyadan sonra gelen hiçbir kuralda ham `#hex` metin rengi
+   kullanılmaz. `tools/tasarim-testi.mjs` bunu denetler.
+   ============================================================================ */
+
+/* --- 1. Ölçekler (tema bağımsız) ------------------------------------------ */
+:root {
+  /* Punto ölçeği. Taban 13px: 9-10px metin saatlerce okunamıyordu.
+     En küçük kademe 11px; yalnız ikincil etiketlerde kullanılır. */
+  --fs-2xs: 11px;   /* en küçük: ikincil etiket, rozet */
+  --fs-xs: 12px;    /* yardımcı metin */
+  --fs-sm: 13px;    /* gövde taban */
+  --fs-md: 14px;    /* vurgulu gövde, girdi */
+  --fs-lg: 16px;    /* bölüm başlığı */
+  --fs-xl: 19px;    /* sayfa başlığı */
+  --fs-2xl: 24px;   /* kapak başlığı */
+  --fs-mono: 13px;  /* zaman kodu */
+
+  --lh-tight: 1.25;
+  --lh-body: 1.55;
+  --lh-loose: 1.7;
+
+  /* Satır uzunluğu: deşifre metni okunurken göz yorulmasın. */
+  --measure: 74ch;
+
+  /* Boşluk: 4px ızgara. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Yarıçap. */
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  /* Yazı tipi. Manrope hiç yüklenmiyordu (depoda @font-face yok); bu yüzden
+     başlıklar rastgele sistem fontuyla çiziliyordu. Artık yalnız kurulu
+     sistem fontları kullanılır ve yedek zinciri açıkça yazılır. */
+  --font-ui: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, 'SF Mono', Menlo, monospace;
+
+  --dur: .16s;
+
+  /* Yoğunluk: rahat (varsayılan) / sıkı. */
+  --row-h: 34px;
+  --pad-card: var(--sp-4);
+  --gap-stack: var(--sp-3);
+}
+
+/* Sıkı yoğunluk: çok kayıtlı dosyada daha çok satır görünsün. */
+[data-density='compact'] {
+  --row-h: 27px;
+  --pad-card: var(--sp-3);
+  --gap-stack: var(--sp-2);
+  --fs-sm: 12.5px;
+  --fs-xs: 11.5px;
+}
+
+/* Yazı boyutu tercihi: punto ölçeğini bir kademe büyütür/küçültür.
+   Küçültmede bile taban 12px'in altına inilmez. */
+[data-fontscale='large'] {
+  --fs-2xs: 12px;
+  --fs-xs: 13px;
+  --fs-sm: 15px;
+  --fs-md: 16px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-2xl: 27px;
+  --fs-mono: 15px;
+}
+[data-fontscale='xlarge'] {
+  --fs-2xs: 13px;
+  --fs-xs: 14px;
+  --fs-sm: 16.5px;
+  --fs-md: 18px;
+  --fs-lg: 20px;
+  --fs-xl: 25px;
+  --fs-2xl: 30px;
+  --fs-mono: 17px;
+}
+
+/* --- 2. Açık tema (varsayılan) -------------------------------------------- */
+/* Kontrast oranları yorumda verilmiştir; `tools/tasarim-testi.mjs` her birini
+   yeniden hesaplar. Değer düşerse test kalır. */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --surface-2: #f8fafc;
+  --surface-3: #eef2f7;
+  --surface-sunken: #e9eef4;
+
+  --ink: #16283c;      /* 14.97:1 — gövde metni */
+  --ink-2: #3a4d61;    /*  8.70:1 — ikincil gövde */
+  --ink-3: #52667a;    /*  5.93:1 — etiket, yardımcı */
+  --ink-inv: #ffffff;  /* koyu zemin üstünde */
+
+  --accent: #1d4a78;        /*  9.12:1 */
+  --accent-ink: #ffffff;    /* dolu düğme üstünde */
+  --accent-soft: #e8eff8;
+  --gold: #8a6320;          /*  5.40:1 */
+  --gold-soft: #fdf4e3;
+  --green: #1f6b4f;         /*  6.41:1 */
+  --green-soft: #e8f4ee;
+  --red: #9c3f3f;           /*  6.57:1 */
+  --red-soft: #fbeeee;
+
+  --line: #dde5ed;
+  --line-2: #cfd9e3;
+  --line-strong: #b8c6d4;
+
+  --rail-bg: #14283f;
+  --rail-bg-2: #1b3550;
+  --rail-ink: #e3ecf5;
+  --rail-ink-dim: #a8bdd2;
+
+  --shadow-sm: 0 1px 2px rgba(21, 44, 74, .06);
+  --shadow-md: 0 4px 14px rgba(21, 44, 74, .08);
+  --shadow-lg: 0 14px 40px rgba(21, 44, 74, .14);
+
+  --focus-ring: 0 0 0 3px rgba(29, 74, 120, .28);
+  --select-bg: #ffffff;
+}
+
+/* --- 3. Koyu tema ---------------------------------------------------------- */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #12171e;
+  --surface: #1a2029;
+  --surface-2: #212932;
+  --surface-3: #28323d;
+  --surface-sunken: #0e131a;
+
+  --ink: #e9eff6;      /* 14.15:1 */
+  --ink-2: #bcc9d6;    /*  9.72:1 */
+  --ink-3: #94a5b6;    /*  6.48:1 */
+  --ink-inv: #12171e;
+
+  --accent: #7fb0e0;      /*  7.16:1 */
+  --accent-ink: #10202f;
+  --accent-soft: #1e2e3f;
+  --gold: #d9b271;        /*  8.23:1 */
+  --gold-soft: #322a1c;
+  --green: #6fd3a5;       /*  9.00:1 */
+  --green-soft: #1a2f28;
+  --red: #f08c8c;         /*  6.89:1 */
+  --red-soft: #332020;
+
+  --line: #2e3a46;
+  --line-2: #3a4756;
+  --line-strong: #4d5c6d;
+
+  --rail-bg: #0d131a;
+  --rail-bg-2: #16202b;
+  --rail-ink: #dfe9f3;
+  --rail-ink-dim: #93a6ba;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, .45);
+  --shadow-lg: 0 16px 44px rgba(0, 0, 0, .55);
+
+  --focus-ring: 0 0 0 3px rgba(127, 176, 224, .35);
+  --select-bg: #212932;
+}
+
+/* --- 4. Sepya tema (uzun okuma) ------------------------------------------- */
+/* Kâğıt hissi: parlaklığı düşük sıcak zemin, düşük mavi ışık. Gece çalışan
+   bilirkişi için koyu temadan daha az yorucu olabilir. */
+[data-theme='sepia'] {
+  color-scheme: light;
+
+  --bg: #efe7d8;
+  --surface: #faf5ea;
+  --surface-2: #f5eee0;
+  --surface-3: #e9dfcc;
+  --surface-sunken: #e2d7c2;
+
+  --ink: #33291c;      /* 13.10:1 */
+  --ink-2: #574936;    /*  8.01:1 */
+  --ink-3: #6d5a42;    /*  6.05:1 */
+  --ink-inv: #faf5ea;
+
+  --accent: #1d4a78;      /*  8.39:1 */
+  --accent-ink: #faf5ea;
+  --accent-soft: #e2e8f0;
+  --gold: #7d5a1c;        /*  5.76:1 */
+  --gold-soft: #f3e8cf;
+  --green: #1f6b4f;       /*  5.90:1 */
+  --green-soft: #e2eee6;
+  --red: #963c3c;         /*  6.42:1 */
+  --red-soft: #f5e4e0;
+
+  --line: #ded2bd;
+  --line-2: #cdbfa6;
+  --line-strong: #b6a68a;
+
+  --rail-bg: #2b2318;
+  --rail-bg-2: #3a3023;
+  --rail-ink: #f0e7d6;
+  --rail-ink-dim: #c0ae92;
+
+  --shadow-sm: 0 1px 2px rgba(60, 45, 20, .07);
+  --shadow-md: 0 4px 14px rgba(60, 45, 20, .1);
+  --shadow-lg: 0 14px 40px rgba(60, 45, 20, .16);
+
+  --focus-ring: 0 0 0 3px rgba(29, 74, 120, .25);
+  --select-bg: #faf5ea;
+}
+
+/* --- 5. Rapor kâğıdı ------------------------------------------------------ */
+/* Rapor önizlemesi BASILI BELGEYİ temsil eder: kâğıt her temada açık kalır.
+   Koyu temada tam beyaz göz almasın diye hafifçe kısılır, ama metin/kenarlık
+   oranları korunur. Bu tokenlar tema ile DEĞİŞMEZ (yalnız parlaklık kısılır). */
+:root,
+[data-theme='light'],
+[data-theme='sepia'] {
+  --paper: #ffffff;
+  --paper-ink: #1f3042;
+  --paper-ink-2: #476078;
+  --paper-muted: #5c7085;
+  --paper-line: #d7e1eb;
+  --paper-head: #1c426b;
+  --paper-head-ink: #ffffff;
+  --paper-band: #f4f7fa;
+  --paper-dim: 1;
+}
+[data-theme='dark'] {
+  --paper: #e9edf2;
+  --paper-ink: #1a2735;
+  --paper-ink-2: #3d5165;
+  --paper-muted: #4f6478;
+  --paper-line: #c3cfdb;
+  --paper-head: #24405e;
+  --paper-head-ink: #ffffff;
+  --paper-dim: .92;
+}
+
+/* --- 6. Hareket azaltma --------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: 0s; }
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+/* --- 6. Yüksek karşıtlık tercihi ------------------------------------------ */
+/* İşletim sistemi yüksek karşıtlık istiyorsa kenarlıkları belirginleştir. */
+@media (prefers-contrast: more) {
+  :root {
+    --line: var(--line-strong);
+    --line-2: var(--line-strong);
+    --ink-3: var(--ink-2);
+  }
+}

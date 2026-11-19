@@ -1,0 +1,408 @@
+/* ============================================================================
+   v2.50 — OKUMA KATMANI (tema · tipografi · kontrast)
+   ----------------------------------------------------------------------------
+   NEDEN: Bilirkişi bu ekranda saatlerce deşifre yazıyor. Ölçüm şunu gösterdi:
+     54 kural 9px, 49 kural 10px, 8 kural 8px, 2 kural 7px punto kullanıyordu;
+     16 metin renginin 11'i WCAG AA eşiğinin altındaydı (placeholder 2.03);
+     `Manrope` 20+ yerde çağrılıyor ama depoda @font-face yok — başlıklar
+     rastgele sistem fontuyla çiziliyordu; 202 farklı hex, 66 farklı gri vardı.
+   ÇÖZÜM: Bu katman, tokens.css'teki renk/punto/boşluk tokenlarını mevcut
+   seçicilere bağlar. Amaç eski kuralları tek tek kovalamak değil; TEK bir
+   tutarlı katman kurmak. Bu katman en sonda olduğu için önceki yamaları
+   geçersiz kılar ve onların !important yarışını bitirir.
+   ============================================================================ */
+
+/* --- A. Gövde ve genel tipografi ------------------------------------------ */
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Manrope hiç yüklenmiyordu; başlıklar da arayüz fontuyla çizilsin. */
+h1, h2, h3, h4, h5, h6, .eyebrow, .stat-card strong, .step-number,
+.brand-name, .brand-mark, .mr-index, .seg-no, .panel-heading h3 {
+  font-family: var(--font-ui);
+}
+
+h1, .topbar h1, .top-title h1 { font-size: var(--fs-xl); line-height: var(--lh-tight); font-weight: 700; }
+h2, .welcome-row h2, .section-intro h2, .dialog-head h2, .drawer-head h2 {
+  font-size: var(--fs-lg); line-height: var(--lh-tight); font-weight: 700;
+}
+h3, .panel-heading h3, .model-copy h3, .upload-zone h3, .form-section-title h3,
+.dialog-body h3 { font-size: var(--fs-md); line-height: var(--lh-tight); font-weight: 700; }
+h4 { font-size: var(--fs-sm); font-weight: 700; }
+
+/* İkincil metin: 11px taban. 8-10px kademeleri kaldırıldı. */
+small, .paper-muted, .stat-card small, .workflow-step small, .quick-action small,
+.form-section-title p, .form-save-note, .upload-zone small, .model-copy p,
+.model-status, .loaded-model-badge, .queue-copy, .storage-note, .empty-state span,
+.transcript-head small, .spk-card small, .split-item small, .term-head small,
+.term-form i, .reference-box p, .reference-box summary, .report-status,
+.report-warning, .export-note, .notice-box p, .privacy-card small,
+.seg-empty-note, .halluc-note, .warn-box, .sb-note, .kbd-hint,
+.queue-progress-meta small, .progress-wrap small, .seg-progress small,
+.storage-main small, .mr-meta, .mr-status, .mr-progress, .queue-state,
+.queue-index, .queue-pct, .audio-meta span, .checked-label, .history-item small,
+.audio-file-main small, .model-details span, .overview-item small,
+.paper-topline, .paper-title p, .main-footer, .version, .wave-hint,
+.zoom-wave-wrap .zw-span, .zoom-wave-wrap .zw-head, .listen-note {
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+}
+
+/* Etiketler (ALL CAPS başlıklar): 11px taban, harf aralığı korunur. */
+.eyebrow, .stat-card span, .sidebar-caption, .overview-item small,
+.detail-panel > .panel-heading .eyebrow {
+  font-size: var(--fs-2xs);
+  letter-spacing: .9px;
+  color: var(--ink-3);
+}
+
+/* --- B. Kontrast düzeltmeleri (hepsi WCAG AA >= 4.5) ---------------------- */
+/* Eski değerler: --muted 4.02, eyebrow 2.87, empty-state 2.67,
+   placeholder 2.03, paper-muted 3.45. Hepsi token'a bağlandı. */
+.welcome-row p, .section-intro p, .queue-copy, .model-copy p,
+.model-status, .form-section-title p, .form-save-note, .upload-zone p,
+.upload-zone small, .empty-state, .empty-state span, .seg-empty-note,
+.storage-note, .report-status, .export-note, .notice-box p,
+.term-empty, .listen-note, .mr-meta, .queue-state, .spk-card small {
+  color: var(--ink-3);
+}
+.eyebrow, .stat-card span, .overview-item small, .sidebar-caption,
+.paper-topline, .zoom-wave-wrap .zw-span, .wave-hint, .kbd-hint,
+.sb-lbl, .st-item > span:first-child, .sm-item > span, .seg-no,
+.transcript-head small, .version {
+  color: var(--ink-3);
+}
+/* Yer tutucu metin: okunabilir ama gövdeden soluk. */
+input::placeholder, textarea::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+/* --- C. Yüzeyler, kenarlıklar, gölgeler ----------------------------------- */
+.panel, .stat-card, .audio-card, .spk-card, .question-card, .drawer,
+.help-dialog, .upload-zone, .model-panel, .subtle-pill, .seg-item,
+.reference-box, .record-table, .term-panel {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+.panel { box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+.stat-card { box-shadow: var(--shadow-sm); border-radius: var(--r-md); }
+.subtle-pill { color: var(--ink-3); border-color: var(--line); }
+
+/* --- D. Düğmeler ---------------------------------------------------------- */
+.button, .mini-button, .seg-tool, .quick-tag, .obs-btn, .nudge-btn,
+.filter-chip, .icon-button, .rail-btn, .text-button, .split-item,
+.workflow-step, .quick-action, .appearance-opt {
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  border-radius: var(--r-md);
+  transition: background var(--dur), border-color var(--dur), color var(--dur);
+}
+.button { font-size: var(--fs-xs); font-weight: 600; }
+.button-small, .mini-button, .seg-tool, .quick-tag, .obs-btn, .nudge-btn,
+.filter-chip { font-size: var(--fs-2xs); }
+.button-primary {
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: var(--shadow-sm);
+}
+.button-primary:hover { background: var(--accent); filter: brightness(1.12); }
+.button-light {
+  background: var(--surface); color: var(--accent);
+  border: 1px solid var(--line-2);
+}
+.button-light:hover { background: var(--surface-2); }
+.mini-button {
+  background: var(--surface); color: var(--ink-2);
+  border: 1px solid var(--line-2);
+}
+.mini-button:hover { background: var(--surface-2); color: var(--ink); }
+.mini-button.primary {
+  background: var(--accent-soft); color: var(--accent);
+  border-color: var(--accent);
+}
+.mini-button.danger { color: var(--red); border-color: var(--red); background: var(--red-soft); }
+.seg-tool, .quick-tag, .filter-chip {
+  background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);
+}
+.seg-tool.on, .quick-tag.on, .filter-chip.on {
+  background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+}
+.text-button { color: var(--accent); font-size: var(--fs-xs); }
+
+/* --- E. Form alanları ----------------------------------------------------- */
+.field > span, .field label > span { font-size: var(--fs-2xs); color: var(--ink-2); font-weight: 600; }
+.field input, .field select, .field textarea,
+.case-switcher select, .seg-meta-row input, .seg-meta-row select,
+.st-item .time-input, .sm-item input, .sm-item select, .seg-detail input,
+.seg-detail select, .seg-detail textarea, .record-table input {
+  background: var(--select-bg);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  font-family: var(--font-ui);
+  font-size: var(--fs-xs);
+  padding: var(--sp-2) var(--sp-3);
+  min-height: 32px;
+}
+.field input:focus, .field select:focus, .field textarea:focus,
+.seg-detail input:focus, .seg-detail select:focus, .seg-detail textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+/* Zaman kodu: hizalı okunması için eş aralıklı. */
+.st-item .time-input, .time-input {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .3px;
+}
+
+/* --- E2. Küçük kalan etiketler (tarama sonrası) -------------------------- */
+/* Okuma katmanı ilk yazıldığında 19 seçici gözden kaçmıştı. Hepsi günlük
+   kullanılan öğeler: dinleme filtresi, takip düğmesi, hız, durum rozetleri. */
+#view-audio .follow-btn,
+#view-audio .speed-tool,
+#view-audio .mini-button.tiny,
+#view-audio .seg-detail > .halluc-note,
+#view-audio .ws-meta,
+.listen-filter-label,
+.listen-filter-label select,
+.mini-button.tiny,
+.step-state,
+.welcome-chip,
+.model-inline,
+.model-recommendation,
+.mc-state,
+.history-button,
+.ws-meta,
+.brand-sub,
+.sha,
+.tech-fold .sha,
+.field > span,
+.seg-badges .badge,
+.queue-actions .group > span,
+.question-list li,
+.reference-box li {
+  font-size: var(--fs-2xs);
+}
+
+/* --- F. Deşifre alanı: en çok bakılan yer -------------------------------- */
+/* Bölüm metni gövde puntosunun ÜSTÜNDE olmalı; saatlerce yazılan alan. */
+#view-audio .seg-text-wrap textarea {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: var(--lh-loose);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  max-width: 100%;
+  caret-color: var(--accent);
+}
+#view-audio .seg-text-wrap textarea:focus {
+  border-color: var(--accent);
+  box-shadow: var(--focus-ring);
+  outline: none;
+}
+/* Bölüm listesi: satır yüksekliği yoğunluğa uyar, metin okunur kalır. */
+#view-audio .seg-item {
+  min-height: var(--row-h);
+  font-size: var(--fs-xs);
+  border-left-color: transparent;
+}
+#view-audio .seg-item .seg-text-preview,
+#view-audio .seg-item .seg-preview { font-size: var(--fs-xs); color: var(--ink-2); }
+#view-audio .seg-no { font-size: var(--fs-2xs); font-weight: 700; }
+#view-audio .seg-item.is-active {
+  background: var(--accent-soft);
+  border-left-color: var(--gold);
+}
+#view-audio .seg-item.is-active .seg-no { color: var(--accent); }
+
+/* --- G. Kabuk: ray, üst bar, durum çubuğu -------------------------------- */
+.rail { background: linear-gradient(180deg, var(--rail-bg), var(--rail-bg-2)); }
+.rail .nav-item { color: var(--rail-ink); }
+.rail .nav-item:hover, .rail .nav-item.active { background: rgba(255,255,255,.12); color: #fff; }
+.rail-label { font-size: var(--fs-2xs); }
+.rail .version, .rail-btn { color: var(--rail-ink-dim); }
+.rail-btn { border-color: rgba(255,255,255,.18); }
+.rail .nav-count { background: var(--gold); color: var(--ink-inv); font-size: var(--fs-2xs); }
+[data-theme='dark'] .rail .nav-count { color: #10202f; }
+
+.topbar { border-bottom-color: var(--line); }
+.topbar h1, .top-title h1 { color: var(--ink); }
+.save-state { color: var(--green); font-size: var(--fs-xs); }
+.statusbar {
+  border-top-color: var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+  font-size: var(--fs-2xs);
+}
+
+/* --- H. Kart sekmeleri ve durum şeridi ----------------------------------- */
+.card-tabs { border-bottom-color: var(--line); }
+.card-tab {
+  font-size: var(--fs-xs);
+  color: var(--ink-3);
+  padding: var(--sp-2) var(--sp-3);
+}
+.card-tab:hover { background: var(--surface-2); color: var(--ink); }
+.card-tab.on {
+  color: var(--accent);
+  border-bottom-color: var(--gold);
+  background: var(--surface-2);
+  font-weight: 700;
+}
+.card-tab .tab-n { background: var(--surface-3); color: var(--ink-2); font-size: var(--fs-2xs); }
+.card-tab.on .tab-n { background: var(--accent); color: var(--accent-ink); }
+
+.audio-card-top { border-bottom: 1px solid var(--line); }
+.audio-file-main b { font-size: var(--fs-sm); color: var(--ink); }
+.audio-file-main small { font-size: var(--fs-2xs); color: var(--ink-3); }
+.head-state, .head-check, .head-model { font-size: var(--fs-2xs); }
+.head-state.good { color: var(--green); }
+.head-state.bad { color: var(--red); }
+
+/* --- I. Uyarı kutuları: renk + metin, yalnız renk değil ------------------ */
+.warn-box, .report-warning, .halluc-note, .notice-box, .synthetic-flag {
+  border-radius: var(--r-sm);
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+  border: 1px solid var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+}
+.warn-box.verify-ok { border-color: var(--green); background: var(--green-soft); color: var(--green); }
+.sn { font-size: var(--fs-2xs); border-radius: var(--r-pill); }
+.sn.bad { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.sn.warn { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+.sn.info { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+
+/* --- J. Ayarlar: görünüm paneli ------------------------------------------ */
+.appearance-panel { display: grid; gap: var(--sp-3); }
+.appearance-group { display: grid; gap: var(--sp-1); }
+.appearance-lbl {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: .6px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.appearance-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--sp-2); }
+.appearance-opt {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  color: var(--ink-2);
+}
+.appearance-opt b { font-size: var(--fs-xs); color: var(--ink); }
+.appearance-opt small { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.35; }
+.appearance-opt:hover { border-color: var(--accent); background: var(--surface-3); }
+.appearance-opt.on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.appearance-opt.on b { color: var(--accent); }
+.appearance-opt:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.appearance-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); margin: 0; }
+
+/* --- K. Rapor kâğıdı: basılı belge temsilidir ---------------------------- */
+/* Tema yalnız EKRANI etkiler. Rapor önizlemesi kâğıdı gösterir; bu yüzden
+   kendi tokenlarını kullanır ve koyu temada bile açık kalır. */
+.report-paper {
+  background: var(--paper);
+  color: var(--paper-ink);
+  font-family: var(--font-ui);
+  border-color: var(--paper-line);
+  box-shadow: var(--shadow-md);
+}
+.paper-topline { color: var(--paper-muted); border-bottom-color: var(--paper-head); }
+.paper-title .republic, .paper-title h2 { color: var(--paper-head); }
+.paper-title p { color: var(--paper-muted); }
+.paper-section h3 { color: var(--paper-head); border-bottom-color: var(--paper-line); }
+.paper-section h4 { color: var(--paper-ink-2); }
+.paper-section p { color: var(--paper-ink); font-size: var(--fs-2xs); line-height: var(--lh-loose); }
+.paper-table { font-size: var(--fs-2xs); }
+.paper-table th { background: var(--paper-head); color: var(--paper-head-ink); }
+.paper-table td { border-color: var(--paper-line); color: var(--paper-ink); }
+.paper-table td:first-child { background: var(--paper-band); color: var(--paper-ink-2); }
+.paper-muted { color: var(--paper-muted); }
+.paper-footer { color: var(--paper-muted); border-top-color: var(--paper-line); font-size: var(--fs-2xs); }
+.paper-signature div { color: var(--paper-ink); }
+.paper-synthetic { background: var(--gold-soft); border-color: var(--gold); color: var(--gold); }
+
+/* --- L. Bildirim ve ipucu ------------------------------------------------ */
+.toast {
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs);
+  box-shadow: var(--shadow-lg);
+}
+[data-theme='dark'] .toast { background: var(--surface-3); color: var(--ink); border: 1px solid var(--line-2); }
+.info-i { color: var(--ink-3); }
+.info-i[data-tip]:hover::after, .info-i[data-tip]:focus::after {
+  background: var(--ink);
+  color: var(--surface);
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+}
+[data-theme='dark'] .info-i[data-tip]:hover::after,
+[data-theme='dark'] .info-i[data-tip]:focus::after {
+  background: var(--surface-3); color: var(--ink); border: 1px solid var(--line-2);
+}
+
+/* --- M. Çekmeceler ------------------------------------------------------- */
+.drawer { background: var(--surface); border-left: 1px solid var(--line); }
+.drawer-head { background: var(--surface-2); border-bottom-color: var(--line); }
+.drawer-head h2 { color: var(--ink); }
+.drawer-note { color: var(--ink-3); font-size: var(--fs-2xs); }
+.drawer-backdrop { background: rgba(10, 20, 32, .45); }
+
+/* --- N. Kaydırma çubuğu: temaya uyar, ince kalır ------------------------- */
+* { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3); background-clip: content-box; }
+
+/* --- O. Odak görünürlüğü (klavye kullanımı) ------------------------------ */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.button:focus-visible, .mini-button:focus-visible, .seg-tool:focus-visible,
+.nav-item:focus-visible, .card-tab:focus-visible, .workflow-step:focus-visible,
+.quick-action:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+/* --- P. Yazdırma: tema ne olursa olsun kâğıt beyaz ---------------------- */
+@media print {
+  :root, [data-theme='dark'], [data-theme='sepia'] {
+    --paper: #ffffff;
+    --paper-ink: #000000;
+    --paper-ink-2: #222222;
+    --paper-muted: #444444;
+    --paper-line: #999999;
+    --paper-head: #000000;
+    --paper-band: #f2f2f2;
+  }
+  body { background: #fff; color: #000; }
+}

@@ -79,6 +79,45 @@ Kurallar:
   Negatif sıfır ("-0,0") yazılmaz; gürültü tabanı tam 0 ise "sessizlik (0)"
   yazılır ve SNR "sonsuz (sayısal sessizlik)" olur — "ölçülemedi" değil.
 
+### Aşama 4 — Okuma katmanı: tema, tipografi, kontrast (TAMAMLANDI, v2.50)
+
+**Neden:** Bilirkişi bu ekranda saatlerce deşifre yazıyor. Ölçüm yapıldı:
+54 kural 9px, 49 kural 10px, 8 kural 8px, 2 kural 7px punto kullanıyordu;
+16 metin renginin 11'i WCAG AA altındaydı (yer tutucu 2.03:1); `Manrope`
+20+ yerde çağrılıyordu ama depoda `@font-face` yoktu — başlıklar rastgele
+sistem fontuyla çiziliyordu; 202 farklı hex, 66 farklı gri, 21 CSS yama bloğu,
+`.seg-list` 11 kez yeniden tanımlı, 26 `!important` vardı.
+
+**Mimari — üç dosya, bu sırayla yüklenir:**
+
+1. `assets/tokens.css` — TEK kaynak. Renk (üç tema), punto ölçeği, boşluk,
+   yarıçap, gölge. Ham `#hex` yalnız burada bulunur.
+2. `assets/app.css` — v2.27–v2.49 arası eski katmanlar (dokunulmadı; geri
+   alma kolay olsun diye yerinde bırakıldı).
+3. `assets/reading-layer.css` — en sonda; eski yamaları ezer, tek tutarlı
+   tipografi/kontrast katmanı kurar. Yeni tasarım kuralı buraya yazılır.
+
+**Değişmez tasarım kuralları (testle korunur):**
+
+- Hiçbir metin 11px'in altında olamaz. Deşifre metin alanı 14px, satır
+  aralığı 1.7 — en çok bakılan yer.
+- Her metin rengi WCAG AA (≥4.5:1). Üç tema ayrı ayrı doğrulanır.
+- Metin rengi ham `#hex` ile yazılmaz; `var(--ink|--ink-2|--ink-3|...)`.
+- Uyarılar yalnız renkle anlatılmaz: metin + kenarlık da taşır (renk körlüğü).
+- Rapor kâğıdı temadan bağımsızdır (`--paper-*`); koyu temada bile açık kalır,
+  yazdırmada beyaza çevrilir. Tema yalnız ekranı etkiler, çıktıyı etkilemez.
+- Yazı boyutu yalnız BÜYÜTÜLEBİLİR (normal/büyük/çok büyük); küçültme yok.
+
+**Tema altyapısı:** `<html data-theme="light|dark|sepia">`, ayrıca
+`data-density="comfortable|compact"` ve `data-fontscale="normal|large|xlarge"`.
+Tercih `localStorage`'da (`akis.theme`, `akis.density`, `akis.fontscale`).
+`index.html`'deki satır içi betik tercihi **ilk boyamadan önce** uygular
+(FOUC yok). JS tarafı: `applyTheme`, `setTheme`, `setDensity`, `setFontscale`,
+`appearancePanelHtml` (Ayarlar çekmecesinin en üstünde).
+
+Dikkat: tema değişince rapor önizlemesi yeniden çizilmez — kâğıt tokenları
+temadan bağımsız olduğu için gerek yok. UDF/DOCX çıktısı hiç etkilenmez.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -176,9 +215,13 @@ Bu komut üç betiği çalıştırır:
 - `tools/rapor-tutarlilik-testi.mjs` — rapor oluşturucuları (HTML/DOCX/UDF);
   ayrıca seviye ölçümü bölümünün yalnız ölçülmüş kayıtlarla dolduğunu ve
   çıktılarda uygulama kimliği bulunmadığını denetler.
-- `tools/surum-testi.mjs` — `APP_VERSION`, `index.html` `?v=`, CHANGELOG,
+- `tools/surum-testi.mjs` — `APP_VERSION`, dört `?v=` parametresi, CHANGELOG,
   YOL_HARITASI, README, OZELLIKLER ve AGENTS sürümlerinin aynı olduğunu
   denetler. Sürüm bir yerde artırılıp başka yerde unutulursa test kalır.
+- `tools/tasarim-testi.mjs` — üç temanın kontrast oranlarını WCAG ile yeniden
+  hesaplar, punto alt sınırını (≥11px), ham hex yasağını, stil yükleme sırasını,
+  tema bütünlüğünü ve erişilebilirlik ipuçlarını denetler. Tasarım kararı
+  bozulursa test kalır.
 
 Betik, `assets/app.js`'i Node.js `vm` içinde sahte bir DOM ile yükler; üç rapor
 oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı veriyle çalıştırır ve
@@ -220,7 +263,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.49.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.50.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

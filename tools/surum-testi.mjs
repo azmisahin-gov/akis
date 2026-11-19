@@ -48,8 +48,8 @@ check(
 );
 
 // 3) Önbellek parametreleri güncel sürümü göstermeli.
-const cacheParams = [...indexHtml.matchAll(/assets\/(app\.js|app\.css)\?v=([0-9.]+)/g)];
-check('index.html içinde iki ?v= parametresi var', cacheParams.length === 2, `${cacheParams.length} bulundu`);
+const cacheParams = [...indexHtml.matchAll(/assets\/(app\.js|app\.css|tokens\.css|reading-layer\.css)\?v=([0-9.]+)/g)];
+check('index.html içinde dört ?v= parametresi var', cacheParams.length === 4, `${cacheParams.length} bulundu`);
 for (const [, file, v] of cacheParams) {
   check(`${file} ?v= güncel sürümle aynı`, v === version, `?v=${v} · APP_VERSION=${version}`);
 }

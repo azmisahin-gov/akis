@@ -1,6 +1,6 @@
-# Özellikler (v2.49 — mevcut durum)
+# Özellikler (v2.50 — mevcut durum)
 
-Bu belge, AKİS v2.49'da **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.50'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -188,6 +188,30 @@ bilirkişi tetiklemeden çalışmaz. Ölçüm yapılmamışsa rapora satır yaz�
 
 Bu ölçümler rapora "Ses seviyesi ve kırpılma ölçümü" bölümü olarak girer;
 HTML, DOCX ve UDF çıktıları aynı tek kaynaktan beslenir.
+
+## Görünüm ve okuma konforu (v2.50)
+
+Bilirkişi bu ekranda saatlerce deşifre yazıyor. Görünüm bu yüzden ölçülebilir
+kurallara bağlandı; hiçbir metin 11px'in altında değil, her metin rengi
+WCAG AA (≥4.5:1) eşiğinin üstünde.
+
+- **Üç tema:** Açık (gündüz), Koyu (loş oda/gece), Sepya (kâğıt hissi, uzun
+  okuma). Seçim tarayıcıda saklanır; sayfa açılırken bir an bile yanlış temada
+  görünmez.
+- **İki yoğunluk:** Rahat (geniş nefes payı) ve Sıkı (uzun kayıtta daha çok
+  satır).
+- **Üç yazı boyutu:** Normal, Büyük, Çok büyük. Küçültme seçeneği yoktur;
+  okunabilirlik tek yönlü korunur.
+- **Deşifre alanı** 14px punto ve 1.7 satır aralığıyla yazılır; zaman kodu eş
+  aralıklı (tabular) fontla hizalanır.
+- **Rapor önizlemesi** temadan bağımsızdır: koyu temada bile kâğıt açık kalır,
+  yazdırmada beyaza çevrilir. Tema yalnız ekranı etkiler; UDF/DOCX çıktısı
+  değişmez.
+- **Erişilebilirlik:** Odak halkası, hareket azaltma (`prefers-reduced-motion`),
+  yüksek karşıtlık (`prefers-contrast: more`) desteklenir. Uyarılar yalnız
+  renkle değil, metin ve kenarlıkla da ayrışır.
+
+Ayarlar çekmecesinin en üstündeki **Görünüm** panelinden seçilir.
 
 ## Çıktı ilkesi
 

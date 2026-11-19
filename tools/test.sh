@@ -18,6 +18,10 @@ echo "### Sürüm tutarlılık testi ###"
 node tools/surum-testi.mjs || fail=1
 
 echo
+echo "### Tasarım tutarlılık testi ###"
+node tools/tasarim-testi.mjs || fail=1
+
+echo
 if [ "$fail" -eq 0 ]; then
   echo "== TÜM TESTLER GEÇTİ =="
 else

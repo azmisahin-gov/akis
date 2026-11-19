@@ -3,7 +3,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.49';
+const APP_VERSION = '2.50';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5531,6 +5531,18 @@ function setupEvents() {
   });
   $('#caseDrawer').addEventListener('input', readCaseForm);
   $('#caseDrawer').addEventListener('change', readCaseForm);
+  // Görünüm seçenekleri: panel her yeniden çizildiğinde düğümler tazelenir,
+  // bu yüzden dinleyici kapsayıcıya (delegasyon) bağlanır.
+  const appearanceHost = $('#appearanceHost');
+  if (appearanceHost) {
+    appearanceHost.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-theme],[data-density],[data-fontscale]');
+      if (!b) return;
+      if (b.dataset.theme) setTheme(b.dataset.theme);
+      else if (b.dataset.density) setDensity(b.dataset.density);
+      else if (b.dataset.fontscale) setFontscale(b.dataset.fontscale);
+    });
+  }
   $('#view-questions').addEventListener('input', (e) => {
     const t = e.target;
     if (t.dataset.q !== undefined) {
@@ -6564,10 +6576,124 @@ async function restoreAudioUrls() {
   }
   if (changed) persist();
 }
+// ---- Görünüm: tema, yoğunluk, yazı boyutu -------------------------------
+// Bilirkişi bu ekranda saatlerce çalışıyor; göz yorgunluğu bir konfor değil,
+// doğruluk sorunudur. Tercih <html> özniteliğine yazılır (CSS tarafı
+// assets/tokens.css), localStorage'da saklanır ve sayfa yenilenince korunur.
+// İlk boyama öncesi uygulanması için index.html'deki küçük satır içi betik
+// aynı anahtarları okur (FOUC önlemi).
+const THEME_KEY = 'akis.theme';
+const DENSITY_KEY = 'akis.density';
+const FONTSCALE_KEY = 'akis.fontscale';
+const THEMES = [
+  ['light', 'Açık', 'Gündüz çalışması için dengeli aydınlık zemin.'],
+  ['dark', 'Koyu', 'Loş odada ve gece çalışmasında göz yormaz.'],
+  ['sepia', 'Sepya', 'Kâğıt hissi; uzun okumada mavi ışığı azaltır.']
+];
+const DENSITIES = [
+  ['comfortable', 'Rahat', 'Daha çok nefes payı, daha büyük hedefler.'],
+  ['compact', 'Sıkı', 'Ekranda daha çok satır; uzun kayıtlarda hızlı gezinme.']
+];
+const FONTSCALES = [
+  ['normal', 'Normal', 'Varsayılan punto.'],
+  ['large', 'Büyük', 'Bir kademe büyük metin.'],
+  ['xlarge', 'Çok büyük', 'İki kademe büyük metin.']
+];
+function readPref(key, allowed, fallback) {
+  try {
+    const v = localStorage.getItem(key);
+    return allowed.includes(v) ? v : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+function writePref(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (e) {}
+}
+function themePref() {
+  return readPref(THEME_KEY, THEMES.map((t) => t[0]), 'light');
+}
+function densityPref() {
+  return readPref(DENSITY_KEY, DENSITIES.map((d) => d[0]), 'comfortable');
+}
+function fontscalePref() {
+  return readPref(FONTSCALE_KEY, FONTSCALES.map((f) => f[0]), 'normal');
+}
+// Temayı uygular. `announce` yalnız kullanıcı tıkladığında true olur; açılışta
+// sessiz kalır ki her yenilemede bildirim çıkmasın.
+function applyTheme({ announce = false } = {}) {
+  const root = document.documentElement;
+  const theme = themePref();
+  root.dataset.theme = theme;
+  root.dataset.density = densityPref();
+  root.dataset.fontscale = fontscalePref();
+  // Tarayıcı çubuğu rengi temaya uysun.
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#12171e' : theme === 'sepia' ? '#efe7d8' : '#14283f');
+  renderAppearancePanel();
+  if (announce) {
+    const label = (THEMES.find((t) => t[0] === theme) || THEMES[0])[1];
+    showToast(`Görünüm: ${label} tema.`);
+  }
+}
+function setTheme(theme) {
+  if (!THEMES.some((t) => t[0] === theme)) return;
+  writePref(THEME_KEY, theme);
+  applyTheme({ announce: true });
+}
+function setDensity(density) {
+  if (!DENSITIES.some((d) => d[0] === density)) return;
+  writePref(DENSITY_KEY, density);
+  applyTheme({ announce: true });
+}
+function setFontscale(scale) {
+  if (!FONTSCALES.some((f) => f[0] === scale)) return;
+  writePref(FONTSCALE_KEY, scale);
+  applyTheme({ announce: true });
+}
+// Ayarlar çekmecesindeki "Görünüm" bölümü. Seçenekler düğme olarak çizilir;
+// seçili olan aria-pressed ile işaretlenir (ekran okuyucu da görür).
+function appearancePanelHtml() {
+  const theme = themePref(),
+    density = densityPref(),
+    scale = fontscalePref();
+  const opt = (kind, value, label, hint, active) =>
+    `<button class="appearance-opt ${active ? 'on' : ''}" data-${kind}="${esc(value)}"
+       role="radio" aria-checked="${active}" title="${esc(hint)}">
+       <b>${esc(label)}</b><small>${esc(hint)}</small></button>`;
+  return `<div class="panel appearance-panel">
+    <div class="panel-heading"><div><div class="eyebrow">GÖRÜNÜM</div>
+      <h3>Okuma konforu<span class="info-i" tabindex="0" data-tip="Bu ekranda saatlerce çalışacaksınız. Tema, yoğunluk ve yazı boyutu yalnız sizin tarayıcınızda saklanır; rapora ve belgelere yansımaz.">i</span></h3></div>
+      <span class="subtle-pill">${esc((THEMES.find((t) => t[0] === theme) || THEMES[0])[1])}</span></div>
+    <div class="appearance-group" role="radiogroup" aria-label="Tema">
+      <div class="appearance-lbl">Tema</div>
+      <div class="appearance-opts">${THEMES.map(([v, l, h]) => opt('theme', v, l, h, theme === v)).join('')}</div>
+    </div>
+    <div class="appearance-group" role="radiogroup" aria-label="Yoğunluk">
+      <div class="appearance-lbl">Yoğunluk</div>
+      <div class="appearance-opts">${DENSITIES.map(([v, l, h]) => opt('density', v, l, h, density === v)).join('')}</div>
+    </div>
+    <div class="appearance-group" role="radiogroup" aria-label="Yazı boyutu">
+      <div class="appearance-lbl">Yazı boyutu</div>
+      <div class="appearance-opts">${FONTSCALES.map(([v, l, h]) => opt('fontscale', v, l, h, scale === v)).join('')}</div>
+    </div>
+    <p class="appearance-note">Seçimler yalnız bu tarayıcıda saklanır. Rapor çıktısı (UDF/DOCX) her zaman kurumsal biçimde üretilir; tema yalnız ekranı etkiler.</p>
+  </div>`;
+}
+function renderAppearancePanel() {
+  const host = $('#appearanceHost');
+  if (host) host.innerHTML = appearancePanelHtml();
+}
+
 function init() {
   // Sürüm etiketini tek kaynaktan (APP_VERSION) yaz.
   const verEl = $('#appVersion');
   if (verEl) verEl.textContent = `AKİS • v${APP_VERSION} • Yerel sürüm`;
+  // Görünüm tercihini uygula (index.html'deki satır içi betik ilk boyamayı
+  // zaten yaptı; burada yalnız paneli çizip durumu tazeliyoruz).
+  applyTheme();
   loadState();
   renderCaseSelect();
   populateCaseForm();
