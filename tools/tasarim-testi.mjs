@@ -193,5 +193,31 @@ check('tema seçenekleri radiogroup', /role="radiogroup"/.test(js) && /aria-chec
 // Uyarılar yalnız renkle anlatılmamalı: metin + kenarlık da var.
 check('uyarı kutuları kenarlık + metin taşıyor', /\.warn-box[\s\S]{0,200}border:/.test(layer));
 
+// --- v2.82 — Yerleşim: kesilen öğe olmamalı --------------------------------
+// Kullanıcı: "son değişikliklerde bazı görsel sorunlar olmuş."
+// Üç gerçek hata vardı; hepsi CSS seçici/taşma sınıfındandı.
+console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
+{
+  const rl = read('assets/reading-layer.css');
+
+  // 1) .sd-field > span, .sd-spk-pick sarmalayıcısını ezmemeli.
+  const fieldSpan = rl.match(/#view-audio \.sd-field > span[^{]*\{[^}]*\}/g) || [];
+  const leaky = fieldSpan.filter((r) => !/:not\(\.sd-spk-pick\)/.test(r));
+  check('sd-field span kuralı .sd-spk-pick\'i dışlar', leaky.length === 0, leaky.join(' | '));
+
+  // 2) Araç çubuğu ve dalga çubuğu kesmemeli (nowrap + hidden yasak).
+  const compact = rl.match(/#view-audio \.compact-bar \{[^}]*\}/g) || [];
+  const nowrap = compact.filter((r) => /nowrap/.test(r) && /overflow:\s*hidden/.test(r));
+  check('compact-bar öğe kesmiyor (nowrap+hidden yok)', nowrap.length === 0, nowrap.join(' | '));
+  check('compact-bar alt satıra inebiliyor', compact.some((r) => /flex-wrap:\s*wrap/.test(r)));
+
+  const waveBar = rl.match(/#view-audio \.sd-wave-bar \{[^}]*\}/g) || [];
+  check('sd-wave-bar alt satıra inebiliyor', waveBar.some((r) => /flex-wrap:\s*wrap/.test(r)));
+  check('sd-wave-bar düğmeleri daraltmıyor', /sd-wave-bar \.seg-tool \{[^}]*flex:\s*0 0 auto/.test(rl));
+
+  // 3) Toplu onay düğmesi onay ailesinde (yeşil) görünmeli.
+  check('toplu onay düğmesi yeşil ailede', /\[data-bulk-approve\][^{]*\{[^}]*var\(--green\)/.test(rl));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

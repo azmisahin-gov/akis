@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.81.**
+yazılır. **Güncel sürüm: v2.82.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.82 — Yerleşim düzeltmeleri (tamamlandı)
+
+Kullanıcı görsel bozulma bildirdi. Üç gerçek hata: (1) `sd-field > span` kuralı
+yeni konuşmacı seçicisini de yakalıyordu (seçim kutusu ve ＋ düğmesi etiket
+stiline düşüyordu), (2) `.compact-bar` `nowrap+hidden` olduğu için yeni filtre
+çipi ve toplu onay düğmesi kesiliyordu, (3) dalga çubuğunda beş düğme dar
+panelde sıkışıyordu. Üçü de düzeltildi; `tasarim-testi.mjs` [Yerleşim] 6
+kontrolle korur.
 
 ### v2.81 — Çözümleme profilleri (tamamlandı)
 

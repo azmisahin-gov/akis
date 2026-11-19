@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.81.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.82.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.82 — Yerleşim düzeltmeleri (görsel bozulma)
+
+KULLANICI: "Bazı görsel sorunlar olmuş, son yaptığın tüm değişikliklerdeki
+yerleşimleri tekrar kontrol et."
+
+Üç gerçek yerleşim hatası bulundu ve düzeltildi. Üçü de **CSS seçici sızıntısı
+veya taşma** sınıfındandı; işlev bozulmuyordu, bu yüzden davranış testleri
+yakalayamadı.
+
+### 1. Konuşmacı seçimi "etiket" gibi görünüyordu
+
+`#view-audio .sd-field > span` kuralı, etiket `<span>Konuşmacı</span>` için
+yazılmıştı. Yeni konuşmacı seçicisini sararken `<span class="sd-spk-pick">`
+kullandım; kural onu da yakaladı. Sonuç: seçim kutusu ve **＋** düğmesi 11px,
+soluk, kalın etiket stiline düştü.
+
+Düzeltme: `> span:not(.sd-spk-pick)`. Ayrıca `＋` düğmesi ve seçim kutusu en az
+32px yüksekliğe sabitlendi (dar ekranda birbirini ezmesin).
+
+### 2. Araç çubuğu öğeleri sessizce kesiliyordu
+
+`.compact-bar` `flex-wrap:nowrap; overflow:hidden` idi. v2.80'de filtre çipi
+sayısı 5 → 6 oldu ("Hızlı onaya uygun") ve "✓ N hızlı onayla" düğmesi eklendi.
+Sığmayan çipler ve düğme **kesiliyordu** — kullanıcı düğmeyi hiç göremiyordu.
+
+Düzeltme: çubuk ve filtre grubu alt satıra inebilir; hiçbir öğe kesilmez.
+
+### 3. Dalga araç çubuğu sıkışıyordu
+
+v2.78'de üç düğme eklendi (A · B · 🔁 Döngü); çubukta artık beş düğme var.
+Dar panelde satır taşıyor, düğme metinleri kesiliyordu.
+
+Düzeltme: `flex-wrap: wrap`, düğmeler `flex: 0 0 auto` (daralmaz), ipucu metni
+üç noktayla kısalır.
+
+### 4. Toplu onay düğmesi görsel aile kazandı
+
+Diğer araç ikonlarıyla aynı gri görünüyordu; artık **yeşil** (onay ailesi) ve
+kalın. Renk körlüğü için metin zaten "✓ N hızlı onayla" diyor.
+
+### 5. Test
+
+`tasarim-testi.mjs` [Yerleşim]: 6 yeni kontrol — seçici sızıntısı yok,
+`nowrap+hidden` yok, iki çubuk alt satıra inebiliyor, düğmeler daralmıyor,
+toplu onay yeşil ailede. Bu sınıf hata bir daha sessizce dönemez.
 
 ## v2.81 — Çözümleme profilleri (dürüst sınırla)
 

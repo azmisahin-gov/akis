@@ -689,8 +689,19 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
   display: flex; align-items: center; gap: var(--sp-2);
   padding: 3px var(--sp-2); border-bottom: 1px solid var(--line);
   background: var(--surface); font-size: var(--fs-2xs); color: var(--ink-3);
+  /* v2.81'de düğme sayısı arttı (Sığdır · A · B · 🔁 Döngü · ✂ Böl). Dar
+     panelde satır taşıyordu; düğmeler sıkışıp metin kesiliyordu. Artık
+     gerekirse alt satıra iner ve hiçbir düğme daraltılmaz. */
+  flex-wrap: wrap; row-gap: 2px;
 }
-#view-audio .sd-wave-hint { flex: 1 1 auto; min-width: 0; }
+/* İpucu metni tek satırda kalır ama gerekirse üç noktayla kısalır; düğmeleri
+   sıkıştırmaz. */
+#view-audio .sd-wave-hint {
+  flex: 1 1 120px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Dalga çubuğundaki düğmeler daralmaz. */
+#view-audio .sd-wave-bar .seg-tool { flex: 0 0 auto; }
 #view-audio .sd-zoom {
   font-family: var(--font-mono); font-size: var(--fs-2xs);
   color: var(--ink-2); flex: none;
@@ -719,7 +730,10 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
 /* 5) Konuşmacı + Kontrol */
 #view-audio .sd-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
 #view-audio .sd-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-#view-audio .sd-field > span {
+/* Yalnız ETİKET span'ı biçimlenir. v2.81'de `> span` seçicisi .sd-spk-pick
+   sarmalayıcısını da yakalıyordu: seçim kutusu ve ＋ düğmesi 11px, soluk,
+   kalın "etiket" stiline düşüyordu (görsel bozulma). :not() ile daraltıldı. */
+#view-audio .sd-field > span:not(.sd-spk-pick) {
   font-size: var(--fs-2xs); color: var(--ink-3); font-weight: 600;
 }
 #view-audio .sd-field input, #view-audio .sd-field select { width: 100%; min-width: 0; }
@@ -730,6 +744,9 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
   flex: none; border: 1px solid var(--line-2); border-radius: var(--r-sm);
   padding: 0 var(--sp-2); font-size: var(--fs-sm); line-height: 1;
 }
+/* Dar ekranda ＋ düğmesi seçim kutusunu ezmesin; ikisi eşit yükseklikte kalır. */
+#view-audio .sd-spk-pick .seg-tool { min-width: 32px; min-height: 32px; }
+#view-audio .sd-spk-pick select { min-height: 32px; }
 /* A–B dinleme döngüsü: aralık etiketi ve açık düğme durumu. */
 #view-audio .sd-loop-span {
   font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--ink-3);
@@ -963,3 +980,21 @@ body.ws-mode #view-audio .seg-list {
   background: var(--gold); color: var(--paper-ink, #1a2029);
   font-weight: 700; padding: 0 3px;
 }
+
+/* --- v2.82 — Yerleşim düzeltmeleri ---------------------------------------
+   Kullanıcı: "son değişikliklerde bazı görsel sorunlar olmuş."
+   ÖLÇÜM: v2.80'de filtre çipi sayısı 5 → 6 oldu ("Hızlı onaya uygun") ve
+   araç çubuğuna "✓ N hızlı onayla" düğmesi eklendi. `.compact-bar` ise
+   `flex-wrap:nowrap; overflow:hidden` idi: sığmayan çipler ve toplu onay
+   düğmesi SESSİZCE kesiliyordu (kullanıcı düğmeyi hiç göremiyordu).
+   Artık çubuk gerekirse alt satıra iner; hiçbir öğe kesilmez. */
+#view-audio .compact-bar { flex-wrap: wrap; overflow: visible; row-gap: 4px; }
+#view-audio .tb-filters { flex: 1 1 auto; flex-wrap: wrap; overflow-x: visible; }
+#view-audio .tb-more { flex-wrap: wrap; }
+/* Toplu onay düğmesi diğer araç ikonlarından AYRIŞSIN: yeşil aile (onay). */
+#view-audio .tb-more [data-bulk-approve] {
+  border: 1px solid var(--green); color: var(--green);
+  background: var(--green-soft); font-weight: 700;
+  padding: 3px 9px; white-space: nowrap;
+}
+#view-audio .tb-more [data-bulk-approve]:hover { filter: brightness(1.06); }
