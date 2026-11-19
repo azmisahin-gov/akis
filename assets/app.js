@@ -12,24 +12,15 @@ const DB_STORE = 'audio';
 // reference transcripts): medium ~0.38, small ~0.65. Lower is better.
 // The base model aborted on one window with "token_ids must be a non-empty
 // array", so it is offered only as a fast, low-accuracy option.
+// Boyutlar HuggingFace deposundaki GERÇEK ONNX dosyalarından ölçülmüştür
+// (encoder + decoder toplamı). GPU'da fp16, CPU'da tam (fp32) indirilir.
+// "GPU/CPU" etiketi indirilecek toplam boyutu gösterir.
 const ASR_MODELS = {
-  'onnx-community/whisper-tiny': { label: 'Tiny model – en hızlı, en düşük doğruluk (~75 MB)', dtype: 'fp32', warn: true },
-  'onnx-community/whisper-base': {
-    label: 'Temel model – hızlı, en düşük doğruluk (~146 MB)',
-    dtype: 'fp32',
-    warn: true
-  },
-  'onnx-community/whisper-small': { label: 'Küçük model – orta doğruluk (~485 MB)', dtype: 'fp32', warn: false },
-  'onnx-community/whisper-medium-ONNX': {
-    label: 'Orta model – ölçülen en yüksek doğruluk (~1,5 GB)',
-    dtype: 'fp32',
-    warn: false
-  },
-  'onnx-community/whisper-large-v3-turbo': {
-    label: 'Large-v3-turbo – ölçülmedi, çok ağır (~1,6 GB)',
-    dtype: 'fp32',
-    warn: false
-  }
+  'onnx-community/whisper-tiny': { label: 'Tiny – en hızlı, en düşük doğruluk (GPU ~73 MB / CPU ~144 MB)', dtype: 'fp32', warn: true },
+  'onnx-community/whisper-base': { label: 'Temel – hızlı, en düşük doğruluk (GPU ~139 MB / CPU ~278 MB)', dtype: 'fp32', warn: true },
+  'onnx-community/whisper-small': { label: 'Küçük – orta doğruluk (GPU ~463 MB / CPU ~923 MB)', dtype: 'fp32', warn: false },
+  'onnx-community/whisper-medium-ONNX': { label: 'Orta – ölçülen en yüksek doğruluk (GPU ~1,46 GB / CPU ~2,9 GB)', dtype: 'fp32', warn: false },
+  'onnx-community/whisper-large-v3-turbo': { label: 'Large-v3-turbo – ölçülmedi (GPU ~1,54 GB / CPU ~657 MB)', dtype: 'fp32', warn: false }
 };
 // Kullanılan sayısal duyarlılık (dtype) cihaza göre seçilir. Kalite öncelikli;
 // WebGPU'da fp16 doğru ve hızlıdır. Bellek yetmezse q4'e düşülür.

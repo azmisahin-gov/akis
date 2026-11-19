@@ -546,3 +546,24 @@ neden yüklenmiyor sorusu.
   16 GB RAM'de model CPU'da çalışır. Böylece yükleme artık kilitlenmez.
 - Durum satırı gerçek kullanılan cihazı ve dtype'ı gösterir.
 - Model menüsünde 5 model: Tiny, Temel, Küçük, Orta, Large-v3-turbo.
+
+## v2.25 — Gerçek model boyutları ve cache-busting
+
+Kullanıcı haklı olarak "dosya boyutlarını yanlış hesaplamışsın" dedi. Doğrulandı:
+HuggingFace deposundaki gerçek ONNX boyutları (encoder + decoder) ölçüldü ve
+etiketler düzeltildi:
+
+| Model | GPU (fp16) | CPU (tam) |
+|---|---|---|
+| Tiny | ~73 MB | ~144 MB |
+| Temel | ~139 MB | ~278 MB |
+| Küçük | ~463 MB | ~923 MB |
+| Orta | ~1,46 GB | ~2,9 GB |
+| Large-v3-turbo | ~1,54 GB | ~657 MB |
+
+- Eski "~485 MB" gibi yanlış/eksik etiketler gerçek toplam boyutlarla değiştirildi;
+  hem GPU hem CPU boyutu ayrı gösterilir (seçilen cihaza göre ne ineceği belli olur).
+- **Cache-busting:** `app.js`/`app.css` artık `?v=2.25` ile yüklenir. Böylece
+  tarayıcı eski JS'i önbellekten çalıştırıp eski davranışı göstermez (kullanıcı
+  "hâlâ encoder fp16 / decoder fp32 yazıyor" diyordu; bu eski kodun önbellekte
+  kalmasındandı).
