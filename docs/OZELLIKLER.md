@@ -30,6 +30,10 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 
 ## Ses kayıtları
 
+- **Kayıt listesi (master–detail):** üstte kompakt kayıt listesi (sıra, dosya
+  adı, süre/boyut, durum, kontrol ilerlemesi; sabit yükseklikte, kendi içinde
+  kayar), altta yalnızca **seçili** kaydın tam detayı. Böylece çok kayıtlı
+  dosyalarda sayfa uzamaz; seçili kayıt çalışma dosyasında saklanır.
 - Sürükle-bırak veya dosya seçme; WAV, MP3, M4A, OGG, FLAC, AAC.
 - Toplu dosya ekleme.
 - Kayıt başına teknik envanter: dosya adı, biçim, boyut, süre, codec, kanal

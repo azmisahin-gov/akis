@@ -99,6 +99,20 @@ etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
   bir makine öğrenmesi işidir. Sunulan dinleme yardımcıları yalnızca DSP
   filtreleridir ve kaydı değiştirmez.
 
+### Ses kayıtları görünümü (master–detail)
+
+- `#audioList` yalnızca kompakt kayıt satırlarını (`renderMaterialList`) çizer;
+  seçili kaydın tam kartı ayrı kapsayıcıda (`#audioDetail`,
+  `renderMaterialDetail`) durur. Yeni bir kayıt kartı **yalnızca detay
+  kapsayıcısına** eklenmelidir; listeye tam kart eklemeyin (sayfa uzar).
+- Seçili kayıt `case.activeMaterialId` ile tutulur; `activeMaterial()` erişir.
+- Olay delegasyonu `#view-audio` üzerindedir (hem liste hem detayı kapsar).
+  Araçlar `.audio-card` içindeki `[data-transcribe]` üzerinden kaydı bulur;
+  bu nedenle detay kartı `.audio-card` sınıfını ve `data-transcribe` düğmesini
+  korumalıdır.
+- Durum/ilerleme değişince `refreshAudioStatusZone` hem detay durum bölgesini
+  hem ilgili liste satırını (`refreshMaterialRow`) tazeler.
+
 ## Sürüm şeması
 
 İki parçalı: `v1` yayımlanmış sürüm, `v2` sıradaki büyük çalışma. Yol haritası:

@@ -330,3 +330,31 @@ kullanım kolaylığı ve doğruluk iyileştirildi. Mevcut özellikler korundu.
   metin alanından Esc ile çıkınca odak bölüme döner ve kısayollar çalışmaya
   devam eder. Boşluk tuşu odak bir düğmedeyken artık çift işlem yapmaz.
 - **Bölmeden sonra kaydırma:** yeni oluşan bölüm görünür alana getirilir.
+
+## v2.14 — Kayıt listesi (master–detail) düzeni
+
+Çok sayıda ses kaydı olan dosyalarda kullanılabilirlik sorunu giderildi.
+
+**Sorun:** Her ses kaydı için tam bir kart (dalga formu, oynatıcı, spektrogram,
+köken, konuşmacılar ve tam deşifre editörü) alt alta çiziliyordu. On kayıtta
+sayfa aşırı uzuyor, uzman ekranda yönünü kaybediyordu ("başım dönüyor").
+Kullanıcılar bu nedenle her kaydı ayrı bir çalışma dosyasına koyma yoluna
+gidiyordu; bu da raporun bütünlüğünü bozuyordu (rapor tek dosya üzerinden
+üretilir).
+
+**Çözüm:** Ses kayıtları görünümü iki katmana ayrıldı:
+
+- **Kayıt listesi (üst):** her kayıt tek satır — sıra, dosya adı, süre/boyut,
+  durum ve kontrol ilerlemesi. Liste sabit yükseklikte ve kendi içinde kayar;
+  yirmi kayıt da bir ekrana sığar.
+- **Seçili kayıt detayı (alt):** yalnızca seçili kaydın tam kartı çizilir
+  (dalga formu, oynatıcı, dinleme yardımcıları, spektrogram, köken, konuşmacılar
+  ve deşifre çalışma alanı). Tüm araçlar aynen korunur.
+
+- Seçili kayıt (`activeMaterialId`) çalışma dosyasında saklanır; sayfa
+  yenilenince aynı kayıt açık kalır.
+- Çözümleme sırasında hem liste satırı hem detay durum bölgesi tazelenir;
+  oynatıcı ve deşifre korunur (sayfa sıçramaz).
+- Kayıt kaldırma, ekleme ve dosya değiştirmede liste ve detay tutarlı kalır.
+- Rapor yine tek çalışma dosyasından üretilir; envanter, özet ve konuşmacı
+  tabloları bölünmez.
