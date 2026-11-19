@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.56.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.57.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.57 — Teslim alma: kod ≠ etiket hatası + rapor uyarıları
+
+### Bulunan gerçek hata (uçtan uca testte yakalandı)
+
+v2.56'da teslim alma diyaloğu Türkçe **etiket** yazıyordu, şema ise ASCII
+**kod** bekliyor:
+
+```
+Arayüz yazıyor : "USB flaş bellek"
+Şema bekliyor  : "usb"
+Sonuç          : validateCase → "origin.mediumType geçersiz"
+```
+
+Yani teslim bilgisi girilse bile kayıt yeniden yüklenince **geçersiz** oluyor
+ve bilgi görünmez hâle geliyordu. Bu, v2.56'nın kendi özelliğini boşa
+çıkarıyordu.
+
+**Çözüm:** seçeneklerin `value` değeri ASCII kod (`usb`), görünen metin Türkçe
+etiket (`USB flaş bellek`). Tabloya da etiket yazılır. Eski kayıtlarda kalmış
+Türkçe değerler `normalizeMediumType()` ile koda çevrilir; `mediumLabel`,
+`deliveredBy`, `deliveredAt` alanları korunur.
+
+### Rapor öncesi yeni uyarılar
+
+- **Teslim bilgisi eksik:** kaç kaydın ortam türü/teslim eden bilgisi yoksa
+  bildirilir; rapora "—" olarak yazılacağı söylenir.
+- **Zincir kırığı:** delil günlüğü doğrulanamayan kayıt varsa uyarılır. Bu
+  adli bir uyarıdır; sessiz geçemez.
+
+### Test
+
+`sema-testi.mjs` [7g] bloğu eklendi (192 → 220 kontrol): Türkçe etiketin koda
+çevrilmesi, kodun aynen korunması, boş/bilinmeyen değer, gerçek kaydın göçü
+(etiket metni ve teslim eden korunur) ve her etiketin bir kodu olduğu.
 
 ## v2.56 — Delil zinciri gerçekten çalışıyor + teslim alma kaydı
 

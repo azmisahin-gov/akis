@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.56';
+const APP_VERSION = '2.57';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3858,9 +3858,12 @@ async function audioDuration(blob) {
 function intakeDialogHtml(fill) {
   const sel = $('#intakeMediumType');
   if (!sel) return;
-  sel.innerHTML = REPORT_TEXT.mediumTypes
-    .map((t) => `<option value="${esc(t)}" ${fill && fill.mediumType === t ? 'selected' : ''}>${esc(t)}</option>`)
-    .join('');
+  // Değer ASCII KOD (usb), etiket Türkçe (USB flaş bellek). Karşılaştırma
+  // daima kodla yapılır; şema MEDIUM_TYPE kodlarını doğrular.
+  sel.innerHTML = MEDIUM_TYPE.map(
+    (code) =>
+      `<option value="${esc(code)}" ${(fill && fill.mediumType === code) ? 'selected' : ''}>${esc(MEDIUM_TYPE_LABEL[code] || code)}</option>`
+  ).join('');
 }
 function askIntake(count) {
   return new Promise((resolve) => {
@@ -3887,7 +3890,7 @@ function askIntake(count) {
       const id = e.currentTarget.id;
       if (id === 'intakeSkip') return finish(null);
       finish({
-        mediumType: $('#intakeMediumType').value || 'Belirtilmedi',
+        mediumType: $('#intakeMediumType').value || 'unspecified',
         mediumLabel: $('#intakeMediumLabel').value.trim(),
         deliveredBy: $('#intakeDeliveredBy').value.trim(),
         deliveredAt: $('#intakeDeliveredAt').value || '',
@@ -3933,7 +3936,7 @@ async function addAudioFiles(files, opts = {}) {
       log: [],
       origin: intake
         ? { ...intake }
-        : { mediumType: 'Belirtilmedi', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
+        : { mediumType: 'unspecified', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
     };
     c.materials.push(m);
     logEvent(m, 'Kayıt eklendi', `${file.name} · ${file.size} bayt · SHA-256 hesaplandı`);
@@ -3941,7 +3944,7 @@ async function addAudioFiles(files, opts = {}) {
       logEvent(
         m,
         'Teslim bilgisi girildi',
-        `${intake.mediumType}${intake.mediumLabel ? ' · ' + intake.mediumLabel : ''}${
+        `${MEDIUM_TYPE_LABEL[intake.mediumType] || intake.mediumType}${intake.mediumLabel ? ' · ' + intake.mediumLabel : ''}${
           intake.deliveredBy ? ' · teslim eden: ' + intake.deliveredBy : ''
         }`
       );
@@ -4761,9 +4764,10 @@ function trDative(name) {
 // Bu, kaydın nereden geldiğini ve nasıl teslim edildiğini belgeler.
 function originPanelHtml(m) {
   const o = m.origin || {};
-  const typeOpts = REPORT_TEXT.mediumTypes
-    .map((t) => `<option value="${esc(t)}" ${o.mediumType === t ? 'selected' : ''}>${esc(t)}</option>`)
-    .join('');
+  const typeOpts = MEDIUM_TYPE.map(
+    (code) =>
+      `<option value="${esc(code)}" ${o.mediumType === code ? 'selected' : ''}>${esc(MEDIUM_TYPE_LABEL[code] || code)}</option>`
+  ).join('');
   return `<div class="seg-row2">
     <div class="seg-field"><label>Ortam türü</label><select data-origin="${esc(m.id)}" data-origin-key="mediumType">${typeOpts}</select></div>
     <div class="seg-field"><label>Ortam etiketi / seri no</label><input data-origin="${esc(m.id)}" data-origin-key="mediumLabel" value="${esc(o.mediumLabel || '')}" placeholder="Örn. CD-1, FLASH-2, SN:..."></div>
@@ -4780,7 +4784,7 @@ function originRows(c) {
     const o = m.origin || {};
     out.push([
       m.name,
-      o.mediumType || REPORT_TEXT.originEmpty,
+      o.mediumType ? MEDIUM_TYPE_LABEL[o.mediumType] || o.mediumType : REPORT_TEXT.originEmpty,
       o.mediumLabel || REPORT_TEXT.originEmpty,
       o.deliveredBy || REPORT_TEXT.originEmpty,
       o.deliveredAt ? niceDate(o.deliveredAt) : REPORT_TEXT.originEmpty,
@@ -4866,10 +4870,10 @@ function reviewSummaryRows(c) {
   // en az bir teslim bilgisi (eden veya tarih) girilmişse.
   const originFilled = mats.filter((m) => {
     const o = m.origin || {};
-    return o.mediumType && o.mediumType !== 'Belirtilmedi' && (o.deliveredBy || o.deliveredAt);
+    return o.mediumType && o.mediumType !== 'unspecified' && (o.deliveredBy || o.deliveredAt);
   }).length;
   const originMedium = mats.filter(
-    (m) => m.origin && m.origin.mediumType && m.origin.mediumType !== 'Belirtilmedi'
+    (m) => m.origin && m.origin.mediumType && m.origin.mediumType !== 'unspecified'
   ).length;
   const werMeasured = mats.filter((m) => {
     const ref = m.expectedText || (m.referenceSegments || []).map((s) => s.text || '').join(' ');
@@ -4948,6 +4952,21 @@ function renderReport() {
   const warnings = [];
   if (!c.court || !c.fileNo || !c.expertName) warnings.push(REPORT_TEXT.warnMissingFields);
   if (!materials.length) warnings.push(REPORT_TEXT.warnNoMaterials);
+  // Teslim bilgisi girilmemiş kayıtlar rapora "—" olarak yazılır. Uzman
+  // bunu görmeden raporu bitirmemeli; eksik künye sessizce geçmemeli.
+  const noIntake = materials.filter(
+    (m) => !m.synthetic && (!m.origin || !m.origin.mediumType || m.origin.mediumType === 'unspecified')
+  );
+  if (noIntake.length)
+    warnings.push(
+      `${noIntake.length} kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek.`
+    );
+  // Zinciri kırık günlük varsa bu adli bir uyarıdır; sessiz geçemez.
+  const brokenLogs = materials.filter((m) => logChainState(m.log).state === 'broken');
+  if (brokenLogs.length)
+    warnings.push(
+      `${brokenLogs.length} kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir.`
+    );
   if (allSegs.length && checked < allSegs.length)
     warnings.push(`${allSegs.length - checked} deşifre bölümü henüz uzman tarafından kontrol edilmedi.`);
   const anlasilmadi = allSegs.filter((s) => segReview(s) === 'anlasilmadi').length;

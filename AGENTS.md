@@ -198,9 +198,12 @@ Durum üç hâllidir: `verified` / `legacy` (hash'siz eski kayıt — "kırık" 
 suçlanmaz) / `broken`. Eski kayıtlar açılışta `upgradeLogChain()` ile zincire
 bağlanır; girdi metni değiştirilmez.
 
-**Teslim alma (v2.56):** Dosya eklemeden önce `askIntake()` ortam bilgisi
-sorar. Tarayıcı USB seri no/etiket göremez (teknik sınır); bu bilgi **uzman
-beyanıdır**, otomatik tespit diye sunulmaz.
+**Teslim alma (v2.56/v2.57):** Dosya eklemeden önce `askIntake()` ortam
+bilgisi sorar. Tarayıcı USB seri no/etiket göremez (teknik sınır); bu bilgi
+**uzman beyanıdır**, otomatik tespit diye sunulmaz. Seçeneklerin `value`
+değeri ASCII **kod** (`usb`), görünen metin Türkçe **etiket** olmalıdır;
+v2.56'da bu karıştı ve kayıt geçersiz oldu. Eski Türkçe değerler
+`normalizeMediumType()` ile koda çevrilir.
 
 ## Bilinen açık hatalar
 
@@ -350,7 +353,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.56.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.57.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

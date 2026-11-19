@@ -134,6 +134,19 @@ export const MEDIUM_TYPE_LABEL = {
   other: 'Diğer'
 };
 
+// v2.56'da teslim alma diyaloğu bir süre Türkçe ETİKET yazdı; şema ise kod
+// bekler. Bu değerler kayıtta kalırsa doğrulayıcı hata verir ve bilgi
+// kaybolur. Etiket → kod eşlemesi burada, tek yerde.
+const MEDIUM_LABEL_TO_CODE = Object.fromEntries(
+  Object.entries(MEDIUM_TYPE_LABEL).map(([code, label]) => [label, code])
+);
+export function normalizeMediumType(v) {
+  const s = String(v == null ? '' : v).trim();
+  if (!s) return 'unspecified';
+  if (MEDIUM_TYPE.includes(s)) return s;
+  return MEDIUM_LABEL_TO_CODE[s] || 'unspecified';
+}
+
 export const TEAM_ROLE_LABEL = {
   owner: 'Dosya sorumlusu',
   expert: 'Bilirkişi',
@@ -431,7 +444,6 @@ export function normalizeMaterial(src = {}) {
   const tech = isObj(m.tech) ? m.tech : {};
   const origin = isObj(m.origin) ? m.origin : {};
   const speakers = (Array.isArray(m.speakers) ? m.speakers : []).map(normalizeSpeaker);
-  // Konuşmacı adı → id eşlemesi (v2 göçü için).
   const byLabel = new Map(speakers.map((s) => [s.label, s.id]));
   const segments = (Array.isArray(m.segments) ? m.segments : []).map((raw) => {
     const s = normalizeSegment(raw);
@@ -468,7 +480,7 @@ export function normalizeMaterial(src = {}) {
     levels: isObj(m.levels) ? m.levels : null,
     spectrogramReviewedAt: m.spectrogramReviewedAt || null,
     origin: {
-      mediumType: pick(origin.mediumType, MEDIUM_TYPE, 'unspecified'),
+      mediumType: pick(normalizeMediumType(origin.mediumType), MEDIUM_TYPE, 'unspecified'),
       mediumLabel: str(origin.mediumLabel),
       deliveredBy: str(origin.deliveredBy),
       deliveredAt: str(origin.deliveredAt),

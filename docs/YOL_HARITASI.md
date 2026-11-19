@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.56.**
+yazılır. **Güncel sürüm: v2.57.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.57 — Teslim alma: kod ≠ etiket + rapor uyarıları (tamamlandı)
+
+v2.56'da diyalog Türkçe etiket ("USB flaş bellek") yazıyordu, şema ASCII kod
+("usb") bekliyordu: kayıt yeniden yüklenince teslim bilgisi geçersiz oluyordu.
+Seçenek değeri artık kod, görünen metin etiket; eski Türkçe değerler
+`normalizeMediumType()` ile koda çevriliyor. Rapor öncesi "teslim bilgisi
+eksik" ve "zincir kırığı" uyarıları eklendi. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.56 — Delil zinciri gerçekten çalışıyor + teslim alma kaydı (tamamlandı)
 

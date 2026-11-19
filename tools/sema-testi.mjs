@@ -45,6 +45,7 @@ import {
   normalizeCase,
   normalizeMaterial,
   normalizeSegment,
+  normalizeMediumType,
   normalizeQuestion,
   validateCase,
   validateMaterial,
@@ -646,6 +647,50 @@ console.log('\n[7f] Kaynağı tanımsız düzenleme onaylı sayılmaz');
   eq('ikinci göz metni ana metne girmedi', r.merged.materials[0].segments[0].text, 'ham metin');
   eq('ikinci göz metni öneriye dönüştü', r.merged.materials[0].segments[0].proposal?.text, 'yardımcı yazdı');
   eq('ikinci göz onayı geçmedi', r.merged.materials[0].segments[0].review, 'pending');
+}
+
+// --- 7g. Teslim alma: kod ≠ etiket (gerçek hata) ---------------------
+// v2.56'da diyalog Türkçe etiket yazıyordu ("USB flaş bellek") ama şema
+// ASCII kod bekliyordu ("usb"). Sonuç: kayıt yeniden yüklenince
+// validateCase hata veriyor ve teslim bilgisi kayboluyordu.
+console.log('\n[7g] Teslim alma: kod ≠ etiket');
+{
+  eq('Türkçe etiket koda çevrildi', normalizeMediumType('USB flaş bellek'), 'usb');
+  eq('kod aynen korunur', normalizeMediumType('usb'), 'usb');
+  eq('boş değer', normalizeMediumType(''), 'unspecified');
+  eq('bilinmeyen değer', normalizeMediumType('ZZZ'), 'unspecified');
+
+  // Gerçek kayıt: etiketle yazılmış, yeniden yüklenmiş
+  const c = normalizeCase({
+    schemaVersion: 3,
+    id: 'c1',
+    materials: [
+      {
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [],
+        origin: {
+          mediumType: 'USB flaş bellek',
+          mediumLabel: 'FLASH-2',
+          deliveredBy: 'Katip',
+          deliveredAt: '2026-11-19',
+          deviceInfo: ''
+        }
+      }
+    ]
+  });
+  const o = c.materials[0].origin;
+  eq('kayıtlı etiket koda çevrildi', o.mediumType, 'usb');
+  eq('etiket metni korundu', o.mediumLabel, 'FLASH-2');
+  eq('teslim eden korundu', o.deliveredBy, 'Katip');
+  ok('göç sonrası dosya geçerli', validateCase(c).ok, validateCase(c).errors.join(','));
+
+  // Her etiketin bir kodu olmalı (kod ≠ etiket kuralı)
+  for (const [code, label] of Object.entries(MEDIUM_TYPE_LABEL)) {
+    eq(`etiket "${label}" → ${code}`, normalizeMediumType(label), code);
+    ok(`${code} geçerli kod`, MEDIUM_TYPE.includes(code));
+  }
 }
 
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
