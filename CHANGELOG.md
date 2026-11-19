@@ -6,12 +6,71 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.62.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.63.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.63 — Panel iki sütuna bölündü; sabit yükseklik kaldırıldı (kök neden)
+
+KULLANICI: "Segment detay kısmını bir türlü çözemedik. İşlevsel özellikleri
+kalsın ama rahat kullanılsın. Fazla mı, eksik mi? Ortadan ikiye bölsem nasıl
+olur?"
+
+### KÖK NEDEN bulundu (ölçümle)
+
+Sorun düğmelerin çokluğu değildi. `app.css` satır 552:
+
+```css
+#view-audio .seg-workspace { height: clamp(280px, 52vh, 620px); }
+```
+
+Panel ekranın %52'sine **sabitlenmişti**. İçerik 642px istiyor:
+
+```
+Ekran 1080px → kap 562px → 80px taşıyor
+Ekran  900px → kap 468px → 174px taşıyor
+Ekran  800px → kap 416px → 226px taşıyor
+```
+
+**Her ekranda taşıyordu.** Bu yüzden önceki üç denemede (v2.60, v2.61, v2.62)
+ne yapılırsa yapılsın "bir türlü olmuyor"du. İçerik taştığı için öğeler
+birbirine giriyordu.
+
+### Çözüm: iki sütun + serbest yükseklik
+
+```
+┌──────────────────────────────────────────────────────┐
+│ Bölüm 1 / 3              ↑ ↓ ▶ Dinle ⏹              │
+├────────────────────────┬─────────────────────────────┤
+│ ═══ DALGA ═══          │ ═══ METİN ═══               │
+│ sürükle · zoom         │                             │
+│                        │ (textarea — asıl iş)        │
+│ Başlangıç│Bitiş│Süre   │                             │
+│ Konuşmacı│Kontrol      │                             │
+│ gürültü üst üste ...   │                             │
+├────────────────────────┴─────────────────────────────┤
+│ ✓ Onayla →  Yeniden dinle  Anlaşılmadı   [araçlar]   │
+└──────────────────────────────────────────────────────┘
+```
+
+- **Sol** = teknik: dalga, zaman, konuşmacı, gözlem işaretleri
+- **Sağ** = metin: asıl iş, tam yükseklik alır
+- **Alt** = onay düğmeleri + araçlar (tam genişlik)
+
+`height: clamp(...)` **kaldırıldı**; panel artık içeriği kadar yer alır.
+
+### Ölçümle doğrulandı
+
+```
+panel h: 415px   (önce 642px)          taşma: YOK
+ÇAKIŞMA: YOK
+sol sütun: 367px   sağ sütun: 495px    yan yana: EVET
+```
+
+Panel **%35 kısaldı**; içerik sığıyor, çakışma yok.
 
 ## v2.62 — Bölüm detayı SIFIRDAN yazıldı; segment dalgası geri geldi
 

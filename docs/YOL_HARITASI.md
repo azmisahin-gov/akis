@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.62.**
+yazılır. **Güncel sürüm: v2.63.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.63 — Panel iki sütuna bölündü; sabit yükseklik kaldırıldı (tamamlandı)
+
+KÖK NEDEN: `#view-audio .seg-workspace { height: clamp(280px,52vh,620px) }`
+panel ekranın %52'sine sabitlenmişti. İçerik 642px istiyor → her ekranda
+taşıyordu (1080px'te 80px, 800px'te 226px). Önceki üç deneme bu yüzden
+"bir türlü olmuyor"du. Sabit yükseklik kaldırıldı; panel iki sütuna bölündü
+(sol: dalga/zaman/konuşmacı, sağ: metin, alt: onay+araçlar). Ölçüm: panel
+642 → 415px, taşma yok, çakışma yok.
 
 ### v2.62 — Bölüm detayı sıfırdan; segment dalgası geri (tamamlandı)
 

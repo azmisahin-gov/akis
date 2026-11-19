@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.62';
+const APP_VERSION = '2.63';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2641,6 +2641,10 @@ function segDetailHtml(m) {
   //   3. Dalga + zaman — sürüklenebilir sınırlar; elle yazmak zorunda değilsin
   //   4. Metin         — en çok yer buraya
   //   5. Onay + araçlar
+  // YERLEŞİM (v2.63): İKİ SÜTUN. Sol = teknik (dalga/zaman/konuşmacı),
+  // sağ = METİN (asıl iş, tam yükseklik). Alt = onay + araçlar (tam genişlik).
+  // Sabit yükseklik YOK; panel ihtiyacı kadar yer alır (eski clamp taşmaya
+  // yol açıyordu: içerik 642px, kap 416-562px).
   return `
   <div class="sd-head">
     <span class="sd-idx">Bölüm ${i + 1}<span class="sd-of"> / ${segs.length}</span></span>
@@ -2660,39 +2664,36 @@ function segDetailHtml(m) {
       : ''
   }
 
-  <div class="sd-wave">
-    <div class="sd-wave-bar">
-      <span class="sd-wave-hint">Sınırları sürükleyin · tekerlekle yakınlaştır</span>
-      <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
-      <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+  <div class="sd-body">
+    <div class="sd-left">
+      <div class="sd-wave">
+        <div class="sd-wave-bar">
+          <span class="sd-wave-hint">Sınırları sürükle · tekerlek: zoom</span>
+          <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
+          <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+        </div>
+        <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
+      </div>
+      <div class="sd-times">
+        <label class="sd-time"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
+        <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
+        <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
+      </div>
+      <div class="sd-meta">
+        <label class="sd-field"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
+        <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+      </div>
+      <div class="sd-obs">${obsBtns}</div>
     </div>
-    <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
-  </div>
-
-  <div class="sd-times">
-    <label class="sd-time"><span>Başlangıç</span>
-      <input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}">
-    </label>
-    <label class="sd-time"><span>Bitiş</span>
-      <input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}">
-    </label>
-    <label class="sd-time"><span>Süre</span>
-      <output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output>
-    </label>
-  </div>
-
-  <div class="sd-meta">
-    <label class="sd-field"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
-    <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
-  </div>
-
-  <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
-
-  <div class="sd-text">
-    <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
-    <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
-      ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
-      <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
+    <div class="sd-right">
+      <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
+      <div class="sd-text">
+        <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
+        <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
+          ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
+          <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2700,10 +2701,8 @@ function segDetailHtml(m) {
     <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
     <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
     <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-  </div>
-
-  <div class="sd-obs">${obsBtns}</div>
-  <div class="sd-ops">${opsBtns}</div>`;
+    <span class="sd-ops">${opsBtns}</span>
+  </div>`;
 }
 // Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
 // her tuş vuruşunda çağrılır; bu yüzden textarea odağı ve imleç korunmalı.

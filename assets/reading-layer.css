@@ -752,3 +752,55 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
   #view-audio .sd-meta { grid-template-columns: 1fr; }
   #view-audio .sd-actions .mini-button.primary { margin-left: 0; }
 }
+
+/* ============================================================================
+   v2.63 — Bölüm detayı: İKİ SÜTUN + sabit yükseklik kaldırıldı
+   KÖK NEDEN (ölçümle): .seg-workspace height:clamp(280px,52vh,620px) idi.
+   İçerik 642px istiyor; 1080px ekranda kap 562px → 80px taşıyordu. Her
+   ekranda taşıyordu. Bu yüzden panel "bir türlü olmuyor"du.
+   ============================================================================ */
+#view-audio .seg-workspace {
+  height: auto !important;
+  max-height: none !important;
+  align-items: start !important;
+}
+#view-audio .seg-list { height: auto !important; max-height: 62vh; overflow-y: auto; }
+#view-audio .seg-detail { height: auto !important; overflow: visible !important; }
+
+/* İki sütun gövde */
+#view-audio .sd-body {
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+  gap: var(--sp-3);
+  align-items: stretch;
+}
+#view-audio .sd-left {
+  display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0;
+}
+#view-audio .sd-right {
+  display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0;
+}
+#view-audio .sd-right .sd-text { flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--sp-2); }
+#view-audio .sd-right .sd-text textarea { flex: 1 1 auto; min-height: 180px; }
+
+/* Zamanlar: sol sütunda üç eşit kutu */
+#view-audio .sd-times { grid-template-columns: 1fr 1fr auto !important; }
+#view-audio .sd-time-dur .sd-dur { padding: 0; text-align: center; }
+#view-audio .sd-time-dur { min-width: 62px; }
+
+/* Gözlem: sol sütunda, metnin altında */
+#view-audio .sd-left .sd-obs { padding-top: 0; }
+
+/* Onay satırı: tam genişlik, araçlar sağda */
+#view-audio .sd-actions { justify-content: flex-start; }
+#view-audio .sd-actions .sd-ops {
+  margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+}
+
+/* Dar ekran: tek sütun, metin önce */
+@media (max-width: 900px) {
+  #view-audio .sd-body { grid-template-columns: 1fr; }
+  #view-audio .sd-left { order: 2; }
+  #view-audio .sd-right { order: 1; }
+  #view-audio .seg-list { max-height: 40vh; }
+}
