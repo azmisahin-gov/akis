@@ -6,12 +6,69 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.76.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.77.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.77 — Belge koruması, buton hiyerarşisi, takip modu düzeltmesi
+
+KULLANICI: "Bir sürü kural/plan değişikliği yapıyoruz, bunları bir yerlere not
+alıyor muyuz? İki gün sonra unutmayalım. Her yer buton oldu, hepsi aynı renk;
+gözümüz net seçsin. Takip modunda metin görünüyor ama takip etmiyor."
+
+### 1. Belge boşluğu bulundu (kullanıcı haklıydı)
+
+Ölçüm — `docs/OZELLIKLER.md` içinde:
+```
+"geri al" / "Ctrl+Z"   → 0 kez
+"yeniden çözümle"      → 0 kez
+"bölme"                → 0 kez
+"metin paylaştırma"    → 0 kez
+```
+
+Son 10 sürümün özellikleri belgede **yoktu**. Tasarım değişince kaybolurdu.
+
+**Çözüm:**
+- `OZELLIKLER.md`'ye üç yeni bölüm: Bölüm düzenleme, Geri alma, Depolama.
+- **Otomatik koruma:** `tools/surum-testi.mjs` artık 7 konuyu ve 4 yardım
+  başlığını denetliyor. Yeni özellik belgeye yazılmazsa **test kalır**.
+
+### 2. Buton hiyerarşisi (26 buton → 5 aile)
+
+| Aile | Renk | Örnek |
+|---|---|---|
+| Oynatma/gezinme | nötr gri | ↑ ↓ ⏹ |
+| Onay | **yeşil** | ✓ Onayla → |
+| Gözlem | **altın** (basılınca dolar) | gürültü, üst üste |
+| Yapısal (böl/çözümle) | **mavi** | buradan böl, ↻ Bu aralığı çözümle |
+| Yıkıcı | **kırmızı** | sil |
+
+Renk tek başına anlam taşımaz — metin/ikon da farklı (renk körlüğü).
+Araç satırının üstüne kesikli ayırıcı eklendi.
+
+### 3. Takip modu düzeltildi
+
+Ölçüm: `followKaraoke()` yalnız **karaoke kutusuna** yazıyordu; sağ paneldeki
+metin alanı beslenmiyordu. Kullanıcı "metin görünüyor ama takip etmiyor"
+diyordu — doğruydu.
+
+**Çözüm:** `markTextFollow()` eklendi. Sağ paneldeki metnin **üstünde** canlı
+okunan kısım vurgulanır (kelime zamanlaması varsa kelime kelime, yoksa
+oransal). Ayrıca bir bölüm "Dinle" ile çalınca takip **otomatik açılır**.
+
+### 4. Model seçimi sorusu — cevap
+
+Ölçüm: model seçimi **v2.73'e kadar kaydedilmiyordu**. Her açılışta
+`recommendModel()` çalışıyordu:
+- WebGPU varsa → **Orta**
+- WebGPU yoksa → **Küçük**
+
+Sizin durumunuz: Large kullanıyordunuz ama kayıt yoktu → öneri (Orta)
+uygulandı. **v2.73'ten sonra** seçiminiz `akis.model` ile saklanıyor;
+Large seçerseniz hatırlanır.
 
 ## v2.76 — Bölüm aralığını yeniden çözümle (metin kaybolursa geri getir)
 

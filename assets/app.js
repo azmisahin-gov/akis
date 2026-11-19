@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.76';
+const APP_VERSION = '2.77';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3343,6 +3343,8 @@ function playWholeRecording(m) {
   }
   segPlayback = { materialId: m.id, index: Number.isInteger(m.activeSeg) ? m.activeSeg : 0, playing: true, atEnd: false };
   // Takip kapalıysa otomatik aç: film gibi izleme ana oynatın amacıdır.
+  // Bölüm dinlerken takip otomatik açılır: kullanıcı "Dinle"ye bastığında
+  // metnin nerede okunduğunu görmek ister.
   if (!followState.on) setFollow(true);
   player.play().catch(() => {});
   refreshPlayButtons();
@@ -4028,9 +4030,52 @@ function followHighlight(m, idx) {
   syncSegDetailInPlace(m, idx);
 }
 // Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
+// Sağ paneldeki metin alanının üstünde "şu an okunan" vurgusunu gösterir.
+// Kelime zamanlaması varsa kelime kelime, yoksa oransal ilerleme.
+function markTextFollow(m, idx, t) {
+  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
+  if (!wrap) return;
+  let bar = wrap.querySelector('.sd-follow');
+  const s = (m.segments || [])[idx];
+  if (!s || !s.text || isHallucination(s.text)) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.className = 'sd-follow';
+    wrap.insertBefore(bar, wrap.firstChild);
+  }
+  const words = s.words && s.words.length ? s.words : null;
+  if (words) {
+    bar.innerHTML = words
+      .map((w) => {
+        const wa = secondsFromTimecode(w.s);
+        const wb = secondsFromTimecode(w.e);
+        const on = t >= wa && t < wb + 0.001;
+        const done = t >= wb;
+        return `<span class="${on ? 'on' : done ? 'done' : ''}">${esc(w.w)}</span>`;
+      })
+      .join(' ');
+    return;
+  }
+  const a = secondsFromTimecode(s.start);
+  const b = secondsFromTimecode(s.end);
+  const ratio = b > a ? Math.max(0, Math.min(1, (t - a) / (b - a))) : 1;
+  const chars = Math.floor(ratio * s.text.length);
+  bar.innerHTML = `<span class="done">${esc(s.text.slice(0, chars))}</span><span>${esc(s.text.slice(chars))}</span>`;
+}
 function followKaraoke(m, idx, t) {
   const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  if (!box) return;
+  // Karaoke kutusu YOKSA sağ paneldeki metin alanına canlı vurgu yapılır.
+  // Kullanıcı "takip modunda metin görünüyor ama takip etmiyor" dedi: kutu
+  // yalnız bir yerde çiziliyordu. Artık iki yer de beslenir.
+  if (!box) {
+    markTextFollow(m, idx, t);
+    return;
+  }
+  box.hidden = false;
+  markTextFollow(m, idx, t);
   const s = m.segments[idx];
   if (!s || !s.text || isHallucination(s.text)) {
     box.hidden = true;

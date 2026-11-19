@@ -90,5 +90,35 @@ for (const [file, re] of [
   check(`${file} güncel sürümü gösteriyor`, !!m && m[1] === version, m ? `v${m[1]}` : 'eşleşme yok');
 }
 
+// 7) BELGE KAPSAMI: son sürümlerin özellikleri OZELLIKLER.md'de anılmalı.
+// Kullanıcı: "Bugüne kadar yaptığımız her şeyi not alıyor muyuz? İki gün sonra
+// unutmayalım, tasarımı değiştirdiğimizde kaybolmasın." Bu kontrol, yeni bir
+// özellik belgeye yazılmadan sürüm çıkmasını engeller.
+const ozellikler = read('docs/OZELLIKLER.md');
+const REQUIRED_TOPICS = [
+  ['geri alma', /geri al|Ctrl\+Z/i],
+  ['bölme', /böl|✂/i],
+  ['aralık çözümleme', /aralığı çözümle|yeniden çözümle/i],
+  ['depolama / IndexedDB', /IndexedDB|depolama/i],
+  ['metin geçmişi', /metin geçmişi|geçmiş \(N\)/i],
+  ['dalga etkileşimi', /Shift\+sürükle|tekerlek/i],
+  ['model seçimi', /model seçimi|akis\.model/i]
+];
+for (const [label, rx] of REQUIRED_TOPICS) {
+  check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
+}
+
+// 8) YARDIM EKRANI: kullanıcının sık sorduğu konular yardımda olmalı.
+const helpHtml = read('index.html');
+const HELP_TOPICS = [
+  ['geri alma / Ctrl+Z', /Ctrl\+Z/],
+  ['bölme', /Bölme ve geri alma/],
+  ['dalga kullanımı', /Shift\+sürükle/],
+  ['ekip çalışması', /Ekip çalışması/]
+];
+for (const [label, rx] of HELP_TOPICS) {
+  check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

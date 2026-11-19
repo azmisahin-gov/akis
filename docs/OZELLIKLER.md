@@ -1,6 +1,6 @@
-# Özellikler (v2.76 — mevcut durum)
+# Özellikler (v2.77 — mevcut durum)
 
-Bu belge, AKİS v2.76'da **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.77'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -19,6 +19,47 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 - **Rapor tam ekran:** kabuk gizlenir; "← Çalışmaya dön", "Yazdır", "UDF indir".
 - **Duyarlı:** ≤900px etiketler gizlenir; ≤640px ray alt sekmeye döner.
 - **Odak modu** ikon olarak ray altında; Esc ile çıkılır.
+
+## Bölüm düzenleme (v2.60–v2.76)
+
+- **İki sütunlu bölüm detayı:** sol = dalga/zaman/konuşmacı/gözlem, sağ =
+  metin (asıl iş, tam yükseklik), alt = onay + araçlar.
+- **Bölüm dalgası:** bölümün ±0,5 sn penceresi. **Sürükle** = B/S sınırı,
+  **Shift+sürükle** = görünümü kaydır (pan), **tekerlek** = zoom. Üç işlev
+  ayrıdır. İmleç zamanı üstte yazılır (`00:00:18.000`).
+- **✂ Böl:** aktif bölümü imlecin olduğu yerden ikiye ayırır. **Metin yeniden
+  çözümlenmez**; kesim noktasına göre paylaştırılır (kelime zamanlaması varsa
+  tam, yoksa kelime sınırından tahmin). Bölünen iki bölüm de "Kontrol
+  bekliyor"a döner.
+- **↻ Bu aralığı çözümle:** yalnız o bölümün başlangıç–bitiş aralığını ses
+  dosyasından kesip modele verir. Diğer bölümlere dokunmaz. Metin kaybolduysa
+  geri getirir; eski metin geçmişe yazılır.
+- **Sonrakine ekle:** aktif bölümü sonrakiyle birleştirir; metinler boşlukla
+  birleşir.
+- **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümleri toplar.
+- **Metin geçmişi:** bölüm başına son 10 sürüm (`geçmiş (N)` düğmesi).
+
+## Geri alma (v2.75)
+
+- **Ctrl+Z** veya üst bardaki **↶ N** düğmesi; son **20 işlem**.
+- Kapsam: bölme, bölüm silme, birleştirme, paragraf, kayıt kaldırma, içe
+  aktarma, dosya birleştirme, yeniden çözümleme, aralık çözümleme.
+- Metin yazarken Ctrl+Z tarayıcının kendi geri almasını kullanır (karakter
+  geri alma); belge işlemleriyle karışmaz.
+
+## Depolama (v2.69–v2.73)
+
+- **Dava verisi IndexedDB'de** (tarayıcı kotası ~10 GB). v2.72'ye kadar
+  localStorage (5 MB) kullanılıyordu; bir dava bile doldurabiliyordu.
+- **Eski veri otomatik göç eder:** localStorage kaydı bulunursa okunur,
+  IndexedDB'ye taşınır, büyük kopya silinir.
+- **Üst barda kullanım göstergesi:** `Depolama: 5 KB / 10.00 GB (%0)`.
+  %70 altın, %90 kalın uyarı. Üzerine gelince kullanılan/kota/kalan.
+- **Yedek durumu:** `Hiç yedek alınmadı` / `Son yedek 19.11.2026` /
+  `Son yedek … (4 gün önce)` (3+ gün altın uyarı).
+- **Depolama dolunca:** büyük uyarı şeridi + "Dışa aktar" düğmesi. Sessiz
+  veri kaybı olmaz.
+- **Model seçimi hatırlanır** (`akis.model`); her açılışta öneri onu ezmez.
 
 ## Veri şeması (v3) — tek geçerli yapı
 

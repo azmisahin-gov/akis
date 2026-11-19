@@ -885,3 +885,65 @@ body.ws-mode #view-audio .seg-list {
 .sd-wave-bar [data-sd-split]:hover { background: var(--gold-soft); }
 /* Bölünmüş bölüm rozeti: hangi bölümün elle bölündüğü görünsün */
 .seg-item .badge.split { background: var(--gold-soft); color: var(--gold); }
+
+/* ============================================================================
+   v2.77 — Buton hiyerarşisi ve renk kodu
+   Kullanıcı: "Her yer buton oldu, hepsi aynı renk. Gözümüz net seçsin."
+   26 buton 5 işlev ailesine ayrıldı; her aile kendi rengini taşır.
+   Renk TEK BAŞINA anlam taşımaz: metin/ikon da farklıdır (renk körlüğü).
+   ============================================================================ */
+
+/* 1) Oynatma & gezinme — nötr (gri) */
+#view-audio .seg-tool { color: var(--ink-2); }
+#view-audio .seg-tool.play-main { color: var(--accent); border-color: var(--accent); }
+
+/* 2) Onay — yeşil (karar) */
+#view-audio .sd-actions .mini-button.primary {
+  background: var(--green); border-color: var(--green); color: var(--paper-ink, #fff);
+  font-weight: 700;
+}
+#view-audio .sd-actions .mini-button.primary:hover { filter: brightness(1.08); }
+
+/* 3) Gözlem işaretleri — altın (işaretleme) */
+#view-audio .sd-obs .obs-btn { border-color: var(--line-2); color: var(--ink-2); }
+#view-audio .sd-obs .obs-btn.on {
+  background: var(--gold-soft); border-color: var(--gold); color: var(--gold); font-weight: 700;
+}
+
+/* 4) Bölme / aralık çözümleme — mavi (yapısal değişiklik) */
+#view-audio .sd-ops [data-split-seg],
+#view-audio .sd-ops [data-retranscribe-seg] {
+  border-color: var(--accent); color: var(--accent);
+}
+#view-audio .sd-ops [data-retranscribe-seg] { font-weight: 700; }
+
+/* 5) Yıkıcı — kırmızı (sil) */
+#view-audio .sd-ops [data-delete-seg] { border-color: #b4544f; color: #b4544f; }
+
+/* Hızlı etiketler: metin ekleme — ayrı ton, küçük ve soluk */
+#view-audio .sd-text .quick-tag { border-color: var(--line-2); color: var(--ink-3); }
+#view-audio .sd-text .quick-tag-clear { color: #b4544f; border-color: #e0c9c8; }
+
+/* Araç satırları: ince ayırıcı çizgi ve grup etiketi */
+#view-audio .sd-ops {
+  padding-top: var(--sp-2); border-top: 1px dashed var(--line);
+  gap: 6px;
+}
+#view-audio .sd-obs { gap: 6px; }
+
+/* ---- v2.77 — Takip vurgusu (sağ panel metin alanı üstünde) --------------
+   Kullanıcı: "Takip modunda metin görünüyor ama takip etmiyor."
+   Artık sağ paneldeki metnin ÜSTÜNDE canlı okunan kısım vurgulanır. */
+#view-audio .sd-follow {
+  font-size: var(--fs-xs); line-height: var(--lh-body);
+  padding: var(--sp-2); margin-bottom: var(--sp-2);
+  background: var(--accent-soft); border: 1px solid var(--accent);
+  border-radius: var(--r-sm); color: var(--ink-2);
+  max-height: 120px; overflow-y: auto;
+}
+#view-audio .sd-follow span { border-radius: 3px; padding: 0 1px; transition: background .1s; }
+#view-audio .sd-follow span.done { color: var(--ink-3); }
+#view-audio .sd-follow span.on {
+  background: var(--gold); color: var(--paper-ink, #1a2029);
+  font-weight: 700; padding: 0 3px;
+}

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.76.**
+yazılır. **Güncel sürüm: v2.77.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.77 — Belge koruması, buton hiyerarşisi, takip modu (tamamlandı)
+
+Belge boşluğu bulundu: son 10 sürümün özellikleri OZELLIKLER.md'de yoktu.
+Üç yeni bölüm eklendi; `surum-testi.mjs` artık 7 konuyu ve 4 yardım başlığını
+denetliyor (yeni özellik belgeye yazılmazsa test kalır). 26 buton 5 renkli
+aileye ayrıldı (onay yeşil, gözlem altın, yapısal mavi, yıkıcı kırmızı,
+gezinme gri). Takip modu düzeltildi: `markTextFollow()` sağ paneldeki metni
+canlı vurgular; bölüm dinlenince takip otomatik açılır. Model seçimi v2.73'ten
+sonra hatırlanıyor (önce her açılışta öneri uygulanıyordu).
 
 ### v2.76 — Bölüm aralığını yeniden çözümle (tamamlandı)
 
