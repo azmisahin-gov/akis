@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.54.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.55.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.55 — Kaynağı tanımsız düzenleme onaylı sayılmaz
+
+KULLANICI: "Yardımcı ekip bölümünü doldurması gerekiyor mu, yoksa içe/dışa
+aktar yeter mi? Otomatik olur mu?"
+
+Cevap: **otomatik değildi.** Ölçüldü: yardımcı ekip bölümünü doldurmadan
+düzeltme yapıp onaylarsa, eski kod bunu kabul ediyordu:
+
+```
+metin : "yardimcinin duzeltmesi"
+review: approved   ← ONAY SIZDI
+oneri : null
+```
+
+Yani bilirkişi korunduğunu sanıyordu ama korunmuyordu. Sessiz hata — en
+tehlikeli tür.
+
+### Kural
+
+Gelen dosyanın **ekip listesi doluysa** ve düzenleyen o listeyle eşleşmiyorsa,
+o düzenlemenin **onayı kabul edilmez**. Bölüm "Kontrol bekliyor"a çekilir ve
+çakışma olarak bildirilir.
+
+Ekip listesi **boşsa** (tek kişilik dosya) eski davranış korunur; yoksa
+bilirkişi kendi onayını veremezdi.
+
+### Ek düzeltmeler
+
+- **Dışa aktarmadan önce soru:** ekip doluysa ve "Şu an bu bilgisayarda
+  çalışan" seçilmemişse uygulama sorar. Seçim yapılmazsa dışa aktarma
+  yapılmaz ve dosya bilgileri çekmecesi açılır.
+- **İkinci göz metni öneriye çevrilir:** bozuk/eski kayıtta ikinci gözün
+  yazdığı metin ana metne girmişse, birleştirmede öneriye dönüşür.
+- **Önizleme birleştirmeyle aynı kararı verir:** tanımsız onay önizlemede de
+  çakışma olarak görünür. (Burada bir hata vardı: `out.conflicts` sonda
+  yeniden atanıyordu ve tanımsız onayları siliyordu; düzeltildi.)
+
+### Test
+
+`sema-testi.mjs` [7f] bloğu eklendi (168 → 179 kontrol): ekip boşken onay
+korunur, bilirkişinin onayı korunur, tanımsız onay reddedilir, önizleme aynı
+kararı verir, ikinci göz metni öneriye dönüşür.
 
 ## v2.54 — İkinci göz: yardımcı önerir, bilirkişi onaylar
 

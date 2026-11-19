@@ -525,6 +525,72 @@ console.log('\n[7e] İkinci göz önerisi onay yerine geçmez');
   eq('bozuk öneri yok sayıldı', n2.proposal, null);
 }
 
+// --- 7f. Kaynağı tanımsız düzenleme onaylı sayılmaz --------------------
+// Yardımcı ekip bölümünü doldurmayı atlarsa eski kod onun onayını kabul
+// ediyordu; rapor "Onaylandı" diyordu. Bu sessiz hataydı: bilirkişi
+// korunduğunu sanıp korunmuyordu. Kural: ekip listesi DOLU ise ve düzenleyen
+// eşleşmiyorsa onay kabul edilmez. Ekip listesi BOŞSA (tek kişilik dosya)
+// eski davranış korunur; yoksa bilirkişi kendi onayını veremezdi.
+console.log('\n[7f] Kaynağı tanımsız düzenleme onaylı sayılmaz');
+{
+  const mk = () => {
+    const c = emptyCase({ id: 'c1', fileNo: '1' });
+    c.materials.push(
+      emptyMaterial({
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [emptySegment({ id: 's1', text: 'ham metin', review: 'pending', textRev: 0 })]
+      })
+    );
+    return c;
+  };
+  const edit = (c, text, review, editorId) => {
+    const s = c.materials[0].segments[0];
+    s.text = text;
+    s.textRev = 1;
+    s.review = review;
+    if (editorId) s.lastEditBy = editorId;
+  };
+
+  // (a) Ekip boş (tek kişilik dosya): onay korunur.
+  let mine = mk(), theirs = mk();
+  edit(theirs, 'düzeltilmiş', 'approved');
+  let r = mergeCases(mine, theirs);
+  eq('ekip boşken onay korunur', r.merged.materials[0].segments[0].review, 'approved');
+  eq('ekip boşken çakışma yok', r.conflicts.length, 0);
+
+  // (b) Ekip dolu, bilirkişi onaylar: korunur.
+  mine = mk(); theirs = mk();
+  theirs.team.push(emptyTeamMember({ id: 'tm1', name: 'Bilirkişi', role: 'expert' }));
+  edit(theirs, 'düzeltilmiş', 'approved', 'tm1');
+  r = mergeCases(mine, theirs);
+  eq('bilirkişinin onayı korunur', r.merged.materials[0].segments[0].review, 'approved');
+  eq('bilirkişi onayında çakışma yok', r.conflicts.length, 0);
+
+  // (c) Ekip dolu, düzenleyen tanımsız: onay REDDEDİLİR ve bildirilir.
+  mine = mk(); theirs = mk();
+  theirs.team.push(emptyTeamMember({ id: 'tm1', name: 'Bilirkişi', role: 'expert' }));
+  edit(theirs, 'tanımsız düzenleme', 'approved'); // lastEditBy yok
+  r = mergeCases(mine, theirs);
+  eq('tanımsız onay kontrol bekliyora çekildi', r.merged.materials[0].segments[0].review, 'pending');
+  eq('tanımsız onay metni alındı', r.merged.materials[0].segments[0].text, 'tanımsız düzenleme');
+  ok('tanımsız onay çakışma olarak bildirildi', r.conflicts.some((c) => c.kind === 'unattributed-approval'));
+
+  // (d) Önizleme aynı kararı vermeli (yalan söylememeli).
+  const cmp = compareCases(mine, theirs);
+  ok('önizleme tanımsız onayı gösterir', cmp.conflicts.some((c) => c.kind === 'unattributed-approval'));
+
+  // (e) Ekip dolu, ikinci göz metni yazmış (bozuk kayıt): öneriye dönüşür.
+  mine = mk(); theirs = mk();
+  theirs.team.push(emptyTeamMember({ id: 'tm2', name: 'Yardımcı', role: 'assistant' }));
+  edit(theirs, 'yardımcı yazdı', 'approved', 'tm2');
+  r = mergeCases(mine, theirs);
+  eq('ikinci göz metni ana metne girmedi', r.merged.materials[0].segments[0].text, 'ham metin');
+  eq('ikinci göz metni öneriye dönüştü', r.merged.materials[0].segments[0].proposal?.text, 'yardımcı yazdı');
+  eq('ikinci göz onayı geçmedi', r.merged.materials[0].segments[0].review, 'pending');
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

@@ -181,6 +181,14 @@ Birleştirme sonunda ikinci gözün verdiği onay "Kontrol bekliyor"a çekilir.
 Yeni metin yazma noktası eklerken `applyTextEdit()` kullanın; doğrudan
 `s.text = ...` ataması bu korumayı atlar.
 
+**Kaynağı tanımsız onay kabul edilmez (v2.55):** Birleştirmede, gelen dosyanın
+ekip listesi DOLUYSA ve düzenleyen o listeyle eşleşmiyorsa onay kabul edilmez;
+bölüm "Kontrol bekliyor"a çekilir ve `unattributed-approval` çakışması
+bildirilir. Ekip listesi BOŞSA (tek kişilik dosya) eski davranış korunur.
+Dışa aktarmadan önce `ensureEditorIdentity()` kimlik sorar. Önizleme
+(`compareCases`) birleştirmeyle AYNI kuralı kullanmalıdır; ayrışırsa kullanıcı
+yanlış bilgiyle karar verir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -329,7 +337,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.54.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.55.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

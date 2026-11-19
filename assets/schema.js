@@ -804,6 +804,13 @@ export function mergeCases(mine, theirs) {
     }
     // Bölüm bazında birleştir.
     const mySegs = new Map((mm.segments || []).map((s) => [s.id, s]));
+    // Gelen dosyanın ekip listesi: bir düzenlemenin KİME ait olduğunu çözmek
+    // için. Ekip listesi BOŞSA ayrım yapılamaz (tek kişilik dosya); bu durumda
+    // eski davranış korunur. Ekip listesi DOLUYSA ve düzenleyen eşleşmiyorsa
+    // onay kabul edilmez: kimin yaptığı bilinmeyen onay, adli belgede onay
+    // değildir. Bu yüzden bilirkişi kendi profilini bir kez tanımlamalıdır.
+    const theirTeam = new Map((theirs.team || []).map((t) => [t.id, t]));
+    const teamKnown = theirTeam.size > 0;
     for (const ts of tm.segments || []) {
       const ms = mySegs.get(ts.id);
       if (!ms) {
@@ -816,20 +823,50 @@ export function mergeCases(mine, theirs) {
         ms.proposal = ts.proposal;
         applied.push(`ikinci göz önerisi alındı: ${ms.id}`);
       }
+      // Gelen düzenlemenin sahibi: ekipte tanımlı mı, ikinci göz mü?
+      const tEditor = ts.lastEditBy ? theirTeam.get(ts.lastEditBy) : null;
+      const tUnattributed = teamKnown && !tEditor;
+      const tSecondEyes = !!tEditor && isSecondEyesRole(tEditor.role);
       const mt = ms.text || '';
       const tt = ts.text || '';
       if (mt !== tt) {
         const touchedMine = (Number(ms.textRev) || 0) > 0;
         const touchedTheirs = (Number(ts.textRev) || 0) > 0;
         if (!touchedMine && touchedTheirs) {
-          // Yalnız gelen taraf düzenlemiş (yardımcı düzeltmesi): alınır.
-          pushSegHistory(ms, mt, 'birleştirme: yerel sürüm');
-          ms.text = tt;
-          ms.textRev = Number(ts.textRev) || 1;
-          // Onay metne bağlıdır: metin değiştiyse gelen tarafın kontrol durumu
-          // gelir; eski onay yeni metne taşınmaz.
-          ms.review = ts.review;
-          applied.push(`bölüm metni gelen sürümden alındı (gelen taraf düzenlemiş): ${ms.id}`);
+          if (tSecondEyes) {
+            // İkinci gözün yazdığı metin ana metne GİRMEZ; öneriye dönüşür.
+            // (Uygulama bunu normalde engeller; eski/bozuk kayıt için ağ.)
+            ms.proposal = {
+              text: tt,
+              by: tEditor.name || ts.lastEditBy,
+              at: new Date().toISOString(),
+              baseText: mt
+            };
+            applied.push(`ikinci göz düzeltmesi öneriye çevrildi: ${ms.id}`);
+          } else {
+            // Yalnız gelen taraf düzenlemiş: metin alınır.
+            pushSegHistory(ms, mt, 'birleştirme: yerel sürüm');
+            ms.text = tt;
+            ms.textRev = Number(ts.textRev) || 1;
+            // Onay metne bağlıdır. Kaynağı TANIMSIZ düzenlemenin onayı kabul
+            // EDİLMEZ; bölüm "kontrol bekliyor"a çekilir ve bildirilir.
+            if (tUnattributed && ts.review === 'approved') {
+              ms.review = 'pending';
+              conflicts.push({
+                kind: 'unattributed-approval',
+                materialId: mm.id,
+                materialName: mm.fileName || mm.id,
+                segmentId: ms.id,
+                mine: mt,
+                theirs: tt,
+                reason: 'gelen düzenleme ekipte tanımlı bir kişiye ait değil'
+              });
+              applied.push(`tanımsız düzenleme: onay kabul edilmedi, kontrol bekliyor: ${ms.id}`);
+            } else {
+              ms.review = ts.review;
+            }
+            applied.push(`bölüm metni gelen sürümden alındı (gelen taraf düzenlemiş): ${ms.id}`);
+          }
         } else if (touchedMine && !touchedTheirs) {
           // Yalnız yerel taraf düzenlemiş: korunur, gelen metin geçmişe yazılır.
           pushSegHistory(ms, tt, 'birleştirme: gelen sürüm');
@@ -848,10 +885,13 @@ export function mergeCases(mine, theirs) {
         }
       } else {
         // Metin aynı: yalnız kontrol durumu ilerleyebilir
-        // (pending < relisten < inaudible/approved).
+        // (pending < relisten < inaudible/approved). Tanımsız ya da ikinci göz
+        // kaynaklı onay kabul edilmez; aksi hâlde kimse metin yazmadan yalnız
+        // onay vererek metni "onaylı" yapabilirdi.
         const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
-        if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) {
-          ms.review = ts.review;
+        const incoming = ts.review === 'approved' && (tUnattributed || tSecondEyes) ? 'pending' : ts.review;
+        if ((rank[incoming] ?? 0) > (rank[ms.review] ?? 0)) {
+          ms.review = incoming;
           applied.push(`bölüm kontrolü güncellendi: ${ms.id}`);
         }
       }
@@ -985,6 +1025,10 @@ export function compareCases(mine, theirs) {
   }
 
   const mineMats = new Map((mine.materials || []).map((m) => [m.id, m]));
+  // Gelen dosyanın ekibi: bir düzenlemenin kime ait olduğunu çözmek için.
+  // Birleştirme (mergeCases) ile AYNI kural kullanılır; önizleme yalan söylemez.
+  const theirTeam = new Map((theirs.team || []).map((t) => [t.id, t]));
+  const teamKnown = theirTeam.size > 0;
   for (const tm of theirs.materials || []) {
     const mm = mineMats.get(tm.id);
     if (!mm) {
@@ -1006,6 +1050,10 @@ export function compareCases(mine, theirs) {
         out.segments.proposals++;
         matDiffer = true;
       }
+      // Gelen düzenlemenin sahibi çözülebiliyor mu? (birleştirme ile aynı kural)
+      const tEditor = ts.lastEditBy ? theirTeam.get(ts.lastEditBy) : null;
+      const tUnattributed = teamKnown && !tEditor;
+      const tSecondEyes = !!tEditor && isSecondEyesRole(tEditor.role);
       const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
       if ((ms.text || '') !== (ts.text || '')) {
         matDiffer = true;
@@ -1020,12 +1068,32 @@ export function compareCases(mine, theirs) {
             mine: ms.text || '',
             theirs: ts.text || ''
           });
+        } else if (tSecondEyes && !touchedMine) {
+          // İkinci göz yazmış: metne girmez, öneriye dönüşür.
+          out.segments.proposals++;
+        } else if (tUnattributed && ts.review === 'approved' && !touchedMine) {
+          // Kaynağı tanımsız düzenlemenin onayı kabul edilmeyecek; kullanıcı
+          // birleştirmeden ÖNCE görsün.
+          out.segments.autoResolved++;
+          out.segments.unattributed = (out.segments.unattributed || 0) + 1;
+          out.conflicts.push({
+            kind: 'unattributed-approval',
+            materialId: mm.id,
+            materialName: mm.fileName || mm.id,
+            segmentId: ms.id,
+            mine: ms.text || '',
+            theirs: ts.text || '',
+            reason: 'gelen düzenleme ekipte tanımlı bir kişiye ait değil'
+          });
         } else {
           // Yalnız bir taraf düzenlemiş: birleştirme o tarafı alır (otomatik).
           out.segments.autoResolved++;
         }
       }
-      if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) out.segments.reviewAdvanced++;
+      if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) {
+        // Tanımsız/ikinci göz onayı ilerleme sayılmaz.
+        if (!(ts.review === 'approved' && (tUnattributed || tSecondEyes))) out.segments.reviewAdvanced++;
+      }
     }
     if (matDiffer) out.materials.differ.push({ id: mm.id, name: mm.fileName || mm.id });
     else out.materials.same.push({ id: mm.id, name: mm.fileName || mm.id });
@@ -1052,7 +1120,9 @@ export function compareCases(mine, theirs) {
     if (!mineTeam.has(tt.id)) out.team.added.push({ id: tt.id, name: tt.name || tt.id, role: tt.role });
   }
 
-  out.conflicts = [...out.segments.changed, ...out.questions.conflicts, ...out.caseFields.conflicts];
+  // Kaynağı tanımsız onaylar döngü sırasında `out.conflicts`'e eklenir; burada
+  // yeniden atama onları SİLERDİ. Bu yüzden önce toplanır, sonra birleştirilir.
+  out.conflicts = [...out.segments.changed, ...out.questions.conflicts, ...out.caseFields.conflicts, ...out.conflicts];
   return out;
 }
 

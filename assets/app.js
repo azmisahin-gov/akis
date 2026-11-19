@@ -32,7 +32,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.54';
+const APP_VERSION = '2.55';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5621,8 +5621,34 @@ function matchAudioEntries(entryNames, materials) {
   }
   return out;
 }
+// Dışa aktarmadan önce "kim olarak çalışıyorsun?" sorusu. Dosyayı paylaşan
+// kişinin kimliği belli olmadan yapılan düzeltmeler sonradan çözülemez
+// (bkz. mergeCases: kaynağı tanımsız onay kabul edilmez). Bu yüzden soru
+// burada, doğru anda sorulur.
+async function ensureEditorIdentity() {
+  const c = currentCase();
+  if (!c) return true;
+  const team = c.team || [];
+  // Tek kişilik dosya: ekip yoksa ayrım yapılamaz, sormak anlamsız.
+  if (!team.length) return true;
+  // Zaten seçili ve geçerliyse tekrar sorma.
+  if (c.lastEditedBy && team.some((t) => t.id === c.lastEditedBy)) return true;
+  return askConfirm(
+    'Kim olarak dışa aktarıyorsunuz?',
+    'Dosya bilgileri → İnceleme ekibi bölümünde "Şu an bu bilgisayarda çalışan" alanını doldurun. ' +
+      'Bu bilgi olmadan yaptığınız düzeltmelerin kime ait olduğu sonradan çözülemez ve onayları geçersiz sayılır. ' +
+      'Şimdi doldurmak ister misiniz? (Vazgeç derseniz yine de dışa aktarılır.)'
+  );
+}
 async function exportProject() {
   const c = currentCase();
+  if (!c) return;
+  // Kimliği belirsiz paylaşım sonradan çözülemez; doğru anda sorulur.
+  if (!(await ensureEditorIdentity())) {
+    setCaseDrawer(true);
+    showToast('Önce "Şu an bu bilgisayarda çalışan" alanını doldurun, sonra tekrar dışa aktarın.');
+    return;
+  }
   const zip = new JSZip();
   zip.file('case.json', JSON.stringify(buildProjectPack(c), null, 2));
   const assets = zip.folder('audio');
@@ -5700,9 +5726,12 @@ function renderMergePreview(cmp) {
             ? `Soru cevabı · ${(c.questionId || '').slice(-6)}`
             : c.kind === 'case-field'
               ? `Dosya alanı · ${c.field || ''}`
-              : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+              : c.kind === 'unattributed-approval'
+                ? `Kaynağı tanımsız düzenleme · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
+                : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
+        ${c.reason ? `<p class="merge-reason">${esc(c.reason)}</p>` : ''}
         <div class="merge-cols"><div><small>Bu dosya</small><p>${esc(c.mine || '(boş)')}</p></div><div><small>Gelen</small><p>${esc(c.theirs || '(boş)')}</p></div></div>
       </div>`;
       })

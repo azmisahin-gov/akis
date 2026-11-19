@@ -495,3 +495,4 @@ input::placeholder, textarea::placeholder {
 .sp-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); flex-wrap: wrap; }
 .sp-note { margin: var(--sp-2) 0 0; font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); }
 @media (max-width: 640px) { .sp-diff { grid-template-columns: 1fr; } }
+.merge-reason { margin: 0; padding: var(--sp-1) var(--sp-3); background: var(--gold-soft); color: var(--ink-2); font-size: var(--fs-2xs); line-height: var(--lh-body); border-bottom: 1px solid var(--line); }

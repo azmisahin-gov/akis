@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.54.**
+yazılır. **Güncel sürüm: v2.55.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.55 — Kaynağı tanımsız düzenleme onaylı sayılmaz (tamamlandı)
+
+Yardımcı ekip bölümünü doldurmayı atlarsa eski kod onun onayını kabul ediyordu
+(rapor "Onaylandı" diyordu). Kural: ekip listesi doluysa ve düzenleyen
+eşleşmiyorsa onay kabul edilmez; bölüm "Kontrol bekliyor"a çekilir ve çakışma
+olarak bildirilir. Ekip boşsa (tek kişilik dosya) eski davranış korunur.
+Ayrıca dışa aktarmadan önce "kim olarak çalışıyorsunuz?" sorulur. Ayrıntı:
+`CHANGELOG.md`.
 
 ### v2.54 — İkinci göz: yardımcı önerir, bilirkişi onaylar (tamamlandı)
 
