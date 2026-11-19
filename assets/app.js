@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.59';
+const APP_VERSION = '2.60';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -998,11 +998,11 @@ function materialCardHtml(m) {
         <div class="listen-strip">
           <div class="listen-row">
             <button class="main-play" data-main-play="${esc(m.id)}" title="Kaydın tamamını çal / duraklat (Boşluk)">▶ Çal</button>
-            <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
+            <span class="play-time" id="ptime-${esc(m.id)}">0:00 / 0:00</span>
             <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">Takip</button>
-          </div>
-          <div class="listen-tools"><label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz."><select data-listen-filter="${esc(m.id)}" aria-label="Dinleme yardımcısı">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
-          <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
+            <label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz."><select data-listen-filter="${esc(m.id)}" aria-label="Dinleme yardımcısı">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
+          <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu — tıklayarak konuma gidin"></canvas>
+          <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}" aria-hidden="true"></audio>
         </div>
         <div class="transcript-editor">
           <div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div>
@@ -1668,6 +1668,10 @@ function attachWave(card, m, url) {
   });
   const ph = () => {
     const dur = Number(m.duration) || player.duration || 0;
+    // Süre göstergesi: yerleşik <audio> denetimi gizli olduğu için zaman
+    // bilgisi burada yazılır.
+    const pt = card.querySelector(`#ptime-${CSS.escape(m.id)}`);
+    if (pt) pt.textContent = `${fmtShort(player.currentTime)} / ${fmtShort(dur)}`;
     if (!(dur > 0)) return;
     paint();
     const x = Math.floor((player.currentTime / dur) * canvas.width);
@@ -1681,6 +1685,8 @@ function attachWave(card, m, url) {
   };
   player.addEventListener('timeupdate', ph);
   player.addEventListener('seeked', ph);
+  player.addEventListener('loadedmetadata', ph);
+  ph();
 }
 
 // ==== Konuşma çözümleme doğruluğu (WER) ====
@@ -2498,11 +2504,16 @@ function segItemHtml(m, s, i, prev) {
         : rev === 'relisten'
           ? '<span class="badge again">Yeniden</span>'
           : '<span class="badge">Bekliyor</span>';
-  return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''}" data-seg-item="${i}" role="button" tabindex="0">
+  // Öneri varsa listede görünmeli; yoksa bilirkişi hangi bölümde bekleyen
+  // öneri olduğunu ancak tek tek gezinerek bulabilir.
+  const propBadge = s.proposal
+    ? `<span class="badge prop" title="İkinci göz önerisi: ${esc((s.proposal.by || '') + ' — ' + (s.proposal.text || ''))}">Öneri</span>`
+    : '';
+  return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time">${esc(s.start || '—')}</span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
-    <span class="seg-badges">${spk}${segPriorityBadge(s, prev)}${state}</span>
+    <span class="seg-badges">${spk}${propBadge}${segPriorityBadge(s, prev)}${state}</span>
   </div>`;
 }
 function segListHtml(m) {
@@ -2561,6 +2572,24 @@ function silenceNoteHtml(s, i) {
     hint = ' Sessizlik oranı yüksek ama metin girilmiş; kaydı dinleyerek doğrulayın.';
   return `<div class="halluc-note"${cls}>Ölçülen sessizlik: %${pct} (${lvl}) · sessiz süre ${st.silentSec.toFixed(1)} sn / ${st.durationSec.toFixed(1)} sn.${hint}</div>`;
 }
+// İkinci göz öneri bandı. Kabul edilene kadar ana metin değişmez; bölüm
+// "Onaylandı" sayılmaz. Bilirkişi kabul/reddeder.
+function proposalBandHtml(s, i) {
+  const prop = s.proposal;
+  if (!prop) return '';
+  return `<div class="seg-proposal" role="group" aria-label="İkinci göz önerisi">
+      <div class="sp-head"><b>İkinci göz önerisi</b><small>${esc(prop.by || 'Ad belirtilmedi')}${prop.at ? ' · ' + esc(new Date(prop.at).toLocaleString('tr-TR')) : ''}</small></div>
+      <div class="sp-diff">
+        <div><small>Şu anki metin</small><p>${esc(s.text || '(boş)')}</p></div>
+        <div><small>Önerilen</small><p>${esc(prop.text || '(boş)')}</p></div>
+      </div>
+      <div class="sp-actions">
+        <button class="mini-button primary" data-proposal-accept="${i}">Öneriyi kabul et</button>
+        <button class="mini-button" data-proposal-reject="${i}">Reddet</button>
+      </div>
+      <p class="sp-note">Öneri kabul edilene kadar rapora yansımaz ve bölüm onaylanmış sayılmaz.</p>
+    </div>`;
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -2585,24 +2614,7 @@ function segDetailHtml(m) {
   if (rep) notes.push('model tekrarı olasılığı');
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
   const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
-  // Öneri bandı: ikinci gözün düzeltmesi. Bilirkişi kabul edene kadar metin
-  // DEĞİŞMEZ ve kontrol durumu "Onaylandı" olamaz.
-  const prop = s.proposal;
-  const propBand = prop
-    ? `<div class="seg-proposal" role="group" aria-label="İkinci göz önerisi">
-        <div class="sp-head"><b>İkinci göz önerisi</b><small>${esc(prop.by || 'Ad belirtilmedi')}${prop.at ? ' · ' + esc(new Date(prop.at).toLocaleString('tr-TR')) : ''}</small></div>
-        <div class="sp-diff">
-          <div><small>Şu anki metin</small><p>${esc(s.text || '(boş)')}</p></div>
-          <div><small>Önerilen</small><p>${esc(prop.text || '(boş)')}</p></div>
-        </div>
-        <div class="sp-actions">
-          <button class="mini-button primary" data-proposal-accept="${i}">Öneriyi kabul et</button>
-          <button class="mini-button" data-proposal-reject="${i}">Reddet</button>
-        </div>
-        <p class="sp-note">Öneri kabul edilene kadar rapora yansımaz ve bölüm onaylanmış sayılmaz.</p>
-      </div>`
-    : '';
-  return `${propBand}<div class="seg-detail-head">
+  return `${proposalBandHtml(s, i)}<div class="seg-detail-head">
       <span class="idx">Bölüm ${i + 1} / ${segs.length}</span>
       <span class="nav">
         <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
@@ -2652,6 +2664,22 @@ function segDetailHtml(m) {
       <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
       <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
     </div>`;
+}
+// Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
+// her tuş vuruşunda çağrılır; bu yüzden textarea odağı ve imleç korunmalı.
+function refreshProposalBand(m, idx) {
+  const root = $(`#seg-detail-${CSS.escape(m.id)}`);
+  if (!root) return;
+  const s = (m.segments || [])[idx];
+  if (!s) return;
+  const old = root.querySelector('.seg-proposal');
+  if (!s.proposal) {
+    if (old) old.remove();
+    return;
+  }
+  const html = proposalBandHtml(s, idx);
+  if (old) old.outerHTML = html;
+  else root.insertAdjacentHTML('afterbegin', html);
 }
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
@@ -6620,7 +6648,11 @@ function setupEvents() {
     const s = m?.segments[Number(el.dataset.seg)];
     if (!s) return;
     if (el.dataset.key === 'text') {
-      applyTextEdit(s, el.value);
+      const wasProposal = applyTextEdit(s, el.value);
+      // İkinci göz yazdıysa ana metin DEĞİŞMEDİ; kullanıcı bunu görmeli.
+      // Panel yeniden çizilmez (odak kaybolmasın) ama öneri bandı yerinde
+      // güncellenir. Aksi hâlde yazdığı metin kaybolmuş gibi görünür.
+      if (wasProposal && isSecondEyesEditor()) refreshProposalBand(m, Number(el.dataset.seg));
     } else if (el.dataset.key === 'speaker') s.speaker = el.value;
     else s[el.dataset.key] = el.value;
     persist();

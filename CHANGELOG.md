@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.59.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.60.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.60 — Öneri görünür oldu + bölüm detayı yeniden düzenlendi
+
+KULLANICI: "Kontrol kısmında öneri diye bir şey yok ama? Yardımcı olunca öneri
+verecek demiştin." ve "Gözlem işaretleri kısmı karışık, scroll sıkışıyor,
+ses player ile dalga formu aynı işi yapıyor."
+
+### Bulunan hata: öneri yazarken görünmüyordu
+
+`applyTextEdit()` ikinci göz yazdığında ana metni **doğru şekilde**
+değiştirmiyor, öneriyi saklıyordu. Ama yazma anında detay paneli yeniden
+çizilmediği için **öneri bandı hiç görünmüyordu**. Yardımcı yazıyor, hiçbir
+şey olmuyor sanıyordu (tıpkı bilirkişinin "Onayla çalışmıyor" dediği gibi).
+
+**Çözüm:**
+- `proposalBandHtml()` ayrı fonksiyona çıkarıldı.
+- `refreshProposalBand()`: yazarken bandı **yerinde** tazeler; textarea odağı
+  ve imleç korunur (panel baştan çizilmez).
+- Segment listesinde **"Öneri" rozeti** ve sol kenarda altın çizgi. Bilirkişi
+  hangi bölümde bekleyen öneri olduğunu tek bakışta görür.
+
+### Arayüz: ses player kaldırıldı, dalga formu öne alındı
+
+Yerleşik `<audio>` denetimi **gizlendi**. Aynı işi iki öğe yapıyordu (düz
+çizgi player + dalga formu). Artık:
+- Dalga formu tek konum göstergesi; tıklayınca konuma gider (zaten vardı).
+- Süre göstergesi (`0:00 / 12:34`) ayrı metin olarak yazılır.
+- Dalga yüksekliği 52px → 72px (çalışma modunda 92px).
+
+### Bölüm detayı yerleşimi
+
+Dikey yığın yerine bölgeler ayrıldı:
+1. Öneri bandı (varsa)
+2. Zaman + dalga formu
+3. Konuşmacı + kontrol
+4. **Metin alanı** (esnek, büyür)
+5. Gözlem işaretleri (tek satır, sarar)
+6. İşlemler (tek satır, sarar)
+7. Onayla / Yeniden dinle / Anlaşılmadı (alt satır, Onayla sağa yaslı)
+
+### Kaydırma
+
+Sayfa gövdesi kaymaz; **yalnız bölüm listesi ve detay paneli** kendi içinde
+kayar (`overflow-y: auto` + `overscroll-behavior: contain`). Uzun deşifrede
+oynatıcı ve başlık yerinde kalır.
 
 ## v2.59 — Onay çalışıyordu ama ekranda görünmüyordu (kritik)
 

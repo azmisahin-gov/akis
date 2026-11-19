@@ -506,3 +506,48 @@ input::placeholder, textarea::placeholder {
 .chain-state.bad { background: var(--gold-soft); border-color: var(--gold); }
 .chain-state.bad b { color: var(--gold); }
 .intake-dialog { width: min(640px, calc(100vw - 30px)); }
+
+/* ---- Dinleme şeridi (v2.60) -------------------------------------------
+   Yerleşik <audio> denetimi GİZLİ. Yerine dalga formu kondu: dalga hem
+   konumu gösterir hem tıklanınca konuma gider. Böylece aynı işi yapan iki
+   öğe (düz çizgi player + dalga) yerine tek öğe kalır. */
+.listen-strip .audio-player { display: none; }
+.listen-strip .play-time {
+  font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--ink-2);
+  flex: none; padding: 0 var(--sp-1); min-width: 92px; text-align: center;
+}
+.listen-row { flex-wrap: wrap; gap: var(--sp-2); }
+.listen-strip .wave-canvas { height: 72px; }
+body.ws-mode .listen-strip .wave-canvas { height: 92px; }
+
+/* ---- Bölüm detayı yerleşimi (v2.60) -----------------------------------
+   Dikey yığın yerine üç bölge: (1) zaman + dalga, (2) metin, (3) işlemler.
+   Gözlem işaretleri ve işlem düğmeleri metnin ALTINDA tek satırda toplanır;
+   böylece metin alanı ile düğmeler iç içe geçmez. */
+#view-audio .seg-detail { display: flex; flex-direction: column; gap: var(--sp-2); }
+#view-audio .seg-detail > .seg-proposal { flex: 0 0 auto; }
+#view-audio .seg-detail .seg-times { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
+#view-audio .seg-detail .seg-text-wrap { flex: 1 1 auto; min-height: 0; }
+#view-audio .seg-detail .seg-text-wrap textarea { min-height: 120px; width: 100%; }
+#view-audio .seg-detail .seg-meta-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: var(--sp-2); }
+#view-audio .seg-detail .seg-obs-row,
+#view-audio .seg-detail .seg-ops-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+#view-audio .seg-detail .seg-actions {
+  display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center;
+  padding-top: var(--sp-2); border-top: 1px solid var(--line);
+}
+#view-audio .seg-detail .seg-actions .mini-button.primary { margin-left: auto; }
+
+/* ---- Kaydırma: yalnız bölüm listesi ve detay kendi içinde --------------
+   Sayfa gövdesi kaymaz; iki panel kendi içinde kayar. Uzun deşifrede
+   başlık ve oynatıcı yerinde kalır. */
+#view-audio.active { overflow: hidden; }
+#view-audio .audio-content-zone { min-height: 0; overflow: hidden; }
+#view-audio .card-pane.on[data-pane="transcript"] { display: flex; flex-direction: column; min-height: 0; }
+#view-audio .transcript-editor { display: flex; flex-direction: column; min-height: 0; }
+#view-audio .segments-root { min-height: 0; flex: 1 1 auto; }
+#view-audio .seg-workspace { min-height: 0; overflow: hidden; }
+#view-audio .seg-list { overflow-y: auto; overscroll-behavior: contain; }
+#view-audio .seg-detail { overflow-y: auto; overscroll-behavior: contain; }
+.badge.prop { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
+.seg-item.has-proposal { border-left: 3px solid var(--gold); }

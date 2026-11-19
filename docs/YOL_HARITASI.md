@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.59.**
+yazılır. **Güncel sürüm: v2.60.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.60 — Öneri görünür oldu + bölüm detayı düzenlendi (tamamlandı)
+
+İkinci göz yazdığında öneri saklanıyordu ama panel yeniden çizilmediği için
+görünmüyordu; yardımcı "hiçbir şey olmuyor" sanıyordu. `refreshProposalBand()`
+bandı yerinde tazeler, listede "Öneri" rozeti çıkar. Yerleşik ses player
+gizlendi (dalga formu hem konumu gösterir hem tıklanınca gider); süre metin
+olarak yazılır. Bölüm detayı bölgelere ayrıldı; kaydırma yalnız liste ve detay
+paneline hapsedildi. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.59 — Onay çalışıyordu ama ekranda görünmüyordu (tamamlandı)
 
