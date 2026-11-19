@@ -685,23 +685,31 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
   border: 1px solid var(--line); border-radius: var(--r-sm);
   overflow: hidden; background: var(--surface-2);
 }
+/* Dalga çubuğu: İKİ satır yapısı. Üstte ipucu (tek satır, kısalır), altta
+   araç düğmeleri (tek satır, kaymaz). v2.82'de hepsi tek flex satırındaydı ve
+   dar panelde BEŞ satıra kadar kırılıyordu (ölçüldü: 84px yükseklik) —
+   çirkin ve dalgayı aşağı itiyordu. */
 #view-audio .sd-wave-bar {
-  display: flex; align-items: center; gap: var(--sp-2);
-  padding: 3px var(--sp-2); border-bottom: 1px solid var(--line);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "hint meta" "tools tools";
+  align-items: center; gap: 2px var(--sp-2);
+  padding: 4px var(--sp-2); border-bottom: 1px solid var(--line);
   background: var(--surface); font-size: var(--fs-2xs); color: var(--ink-3);
-  /* v2.81'de düğme sayısı arttı (Sığdır · A · B · 🔁 Döngü · ✂ Böl). Dar
-     panelde satır taşıyordu; düğmeler sıkışıp metin kesiliyordu. Artık
-     gerekirse alt satıra iner ve hiçbir düğme daraltılmaz. */
-  flex-wrap: wrap; row-gap: 2px;
 }
-/* İpucu metni tek satırda kalır ama gerekirse üç noktayla kısalır; düğmeleri
-   sıkıştırmaz. */
 #view-audio .sd-wave-hint {
-  flex: 1 1 120px; min-width: 0;
+  grid-area: hint; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Dalga çubuğundaki düğmeler daralmaz. */
-#view-audio .sd-wave-bar .seg-tool { flex: 0 0 auto; }
+#view-audio .sd-cursor-time { grid-area: meta; justify-self: end; }
+/* Araç satırı: tek satır, yatay kaydırılabilir; düğmeler daralmaz. */
+#view-audio .sd-wave-tools {
+  grid-area: tools;
+  display: flex; align-items: center; gap: var(--sp-1);
+  overflow-x: auto; scrollbar-width: none; min-width: 0;
+}
+#view-audio .sd-wave-tools::-webkit-scrollbar { display: none; }
+#view-audio .sd-wave-tools > * { flex: 0 0 auto; }
 #view-audio .sd-zoom {
   font-family: var(--font-mono); font-size: var(--fs-2xs);
   color: var(--ink-2); flex: none;

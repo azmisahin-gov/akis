@@ -211,9 +211,18 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
   check('compact-bar öğe kesmiyor (nowrap+hidden yok)', nowrap.length === 0, nowrap.join(' | '));
   check('compact-bar alt satıra inebiliyor', compact.some((r) => /flex-wrap:\s*wrap/.test(r)));
 
+  // Dalga çubuğu: v2.82'de wrap denendi ama 5 satıra kırıldı (ölçüldü: 84px).
+  // Doğru çözüm İKİ satırlı grid: ipucu üstte, araçlar altta tek satır.
   const waveBar = rl.match(/#view-audio \.sd-wave-bar \{[^}]*\}/g) || [];
-  check('sd-wave-bar alt satıra inebiliyor', waveBar.some((r) => /flex-wrap:\s*wrap/.test(r)));
-  check('sd-wave-bar düğmeleri daraltmıyor', /sd-wave-bar \.seg-tool \{[^}]*flex:\s*0 0 auto/.test(rl));
+  check(
+    'sd-wave-bar iki satırlı grid (ipucu + araçlar)',
+    waveBar.some((r) => /display:\s*grid/.test(r) && /grid-template-areas/.test(r)),
+    waveBar.join(' | ')
+  );
+  check(
+    'araç satırı tek satırda kalır (yatay kaydırma)',
+    /sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl) && /sd-wave-tools > \* \{[^}]*flex:\s*0 0 auto/.test(rl)
+  );
 
   // 3) Toplu onay düğmesi onay ailesinde (yeşil) görünmeli.
   check('toplu onay düğmesi yeşil ailede', /\[data-bulk-approve\][^{]*\{[^}]*var\(--green\)/.test(rl));

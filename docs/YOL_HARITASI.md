@@ -29,12 +29,13 @@ bakın.
 
 ### v2.82 — Yerleşim düzeltmeleri (tamamlandı)
 
-Kullanıcı görsel bozulma bildirdi. Üç gerçek hata: (1) `sd-field > span` kuralı
-yeni konuşmacı seçicisini de yakalıyordu (seçim kutusu ve ＋ düğmesi etiket
-stiline düşüyordu), (2) `.compact-bar` `nowrap+hidden` olduğu için yeni filtre
-çipi ve toplu onay düğmesi kesiliyordu, (3) dalga çubuğunda beş düğme dar
-panelde sıkışıyordu. Üçü de düzeltildi; `tasarim-testi.mjs` [Yerleşim] 6
-kontrolle korur.
+Kullanıcı görsel bozulma bildirdi. Headless Chromium ile **ölçülerek** üç hata
+bulundu: (1) `sd-field > span` kuralı yeni konuşmacı seçicisini de yakalıyordu
+(seçim kutusu ve ＋ düğmesi etiket stiline düşüyordu), (2) `.compact-bar`
+`nowrap+hidden` olduğu için yeni filtre çipi ve toplu onay düğmesi kesiliyordu,
+(3) dalga çubuğu `wrap` ile **5 satıra** kırılıyordu (ölçüm: 84px). Dalga
+çubuğu iki satırlı grid'e çevrildi (84px → 57px). `tasarim-testi.mjs`
+[Yerleşim] bu sınıfı korur.
 
 ### v2.81 — Çözümleme profilleri (tamamlandı)
 

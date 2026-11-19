@@ -363,6 +363,32 @@ yetmez; gerçek tarayıcıda o akış **tıklanarak** denenir. Kimlik ve seçici
 uyuşmazlığı için `surum-testi` [9] koruma sağlar, ama tam kapsam için
 tarayıcı denemesi zorunludur.
 
+
+### DERS: görsel hata gözle değil ÖLÇÜLEREK bulunur
+
+Kullanıcı "bazı görsel sorunlar olmuş" dediğinde ekran görüntüsüne bakmak
+yetmez; hangi öğenin ne kadar bozulduğu ölçülmelidir. İki ölçüm yeterli:
+
+1. **Kesilme:** `el.scrollWidth > el.clientWidth + 1` → içerik taşıyor/kesiliyor.
+2. **Satır sayısı:** `new Set([...el.children].map(c => c.getBoundingClientRect().top)).size`
+   → öğe kaç satıra kırıldı.
+
+Bu yöntemle v2.82'de dalga çubuğunun `wrap` ile **5 satıra** kırıldığı
+(84px) ölçüldü; iki satırlı grid'e çevrilince **57px** oldu. "Biraz bozuk
+görünüyor" ile "5 satıra kırılıyor" arasındaki farkı yalnız ölçüm söyler.
+
+**Araç:** depo içinde headless Chromium var (`/usr/bin/chromium`). Aynı
+kaynaklı bir denetim sayfası (`iframe` + `--dump-dom`) ile ölçüm alınabilir.
+Geçici ölçüm dosyaları iş bitince **silinir** (depoya girmez).
+
+**CSS kuralı:** bir kapsayıcıya `flex-wrap: nowrap` + `overflow: hidden`
+yazmak, sığmayan öğeyi **sessizce keser**. Yerleşim çubuğunda bunun yerine
+`wrap` veya grid kullanın; kesme kararı kullanıcıya görünür olmalıdır.
+
+**Seçici kuralı:** `X > span` gibi geniş seçiciler, sonradan eklenen
+`<span class="...">` sarmalayıcıları da yakalar. Yeni bir sarmalayıcı
+eklerken `:not(.sinifin)` ile daraltın; aksi hâlde etiket stili kutuya sızar.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları

@@ -2923,15 +2923,17 @@ function segDetailHtml(m) {
     <div class="sd-left">
       <div class="sd-wave">
         <div class="sd-wave-bar">
-          <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: en yakın sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
+          <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
           <span class="sd-cursor-time" data-sd-cursor>—</span>
-          <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
-          <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
-          <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) imlecin/oynatıcının olduğu ana ayarla">A</button>
-          <button class="seg-tool" data-loop-b title="Döngü bitişini (B) imlecin/oynatıcının olduğu ana ayarla">B</button>
-          <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez)">🔁 Döngü</button>
-          <span class="sd-loop-span" data-loop-span></span>
-          <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
+          <div class="sd-wave-tools">
+            <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
+            <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+            <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) imlecin/oynatıcının olduğu ana ayarla">A</button>
+            <button class="seg-tool" data-loop-b title="Döngü bitişini (B) imlecin/oynatıcının olduğu ana ayarla">B</button>
+            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez)">🔁 Döngü</button>
+            <span class="sd-loop-span" data-loop-span></span>
+            <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
+          </div>
         </div>
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
       </div>

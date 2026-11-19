@@ -40,13 +40,17 @@ Sığmayan çipler ve düğme **kesiliyordu** — kullanıcı düğmeyi hiç gö
 
 Düzeltme: çubuk ve filtre grubu alt satıra inebilir; hiçbir öğe kesilmez.
 
-### 3. Dalga araç çubuğu sıkışıyordu
+### 3. Dalga araç çubuğu BEŞ satıra kırılıyordu
 
 v2.78'de üç düğme eklendi (A · B · 🔁 Döngü); çubukta artık beş düğme var.
-Dar panelde satır taşıyor, düğme metinleri kesiliyordu.
 
-Düzeltme: `flex-wrap: wrap`, düğmeler `flex: 0 0 auto` (daralmaz), ipucu metni
-üç noktayla kısalır.
+İlk deneme `flex-wrap: wrap` oldu — **yetersizdi**. Gerçek Chromium'da ölçtüm:
+çubuk **5 satıra** kırılıyor, **84px** yüksekliğe çıkıyor ve dalgayı aşağı
+itiyordu. Gözle bakınca "idare eder" görünen şey ölçümde çirkin çıktı.
+
+Düzeltme: **iki satırlı grid**. Üstte ipucu (tek satır, üç noktayla kısalır) ve
+imleç zamanı; altta araç düğmeleri tek satırda, gerekirse yatay kayar.
+Ölçüm: 84px → **57px**, 1400/1100/900/760px genişliklerde sabit.
 
 ### 4. Toplu onay düğmesi görsel aile kazandı
 
@@ -55,9 +59,14 @@ kalın. Renk körlüğü için metin zaten "✓ N hızlı onayla" diyor.
 
 ### 5. Test
 
-`tasarim-testi.mjs` [Yerleşim]: 6 yeni kontrol — seçici sızıntısı yok,
-`nowrap+hidden` yok, iki çubuk alt satıra inebiliyor, düğmeler daralmıyor,
-toplu onay yeşil ailede. Bu sınıf hata bir daha sessizce dönemez.
+`tasarim-testi.mjs` [Yerleşim]: seçici sızıntısı yok, `nowrap+hidden` yok,
+dalga çubuğu iki satırlı grid, araç satırı tek satırda kayar, toplu onay yeşil
+ailede. Bu sınıf hata bir daha sessizce dönemez.
+
+**Yöntem notu:** bu hatalar gözle bakılarak değil, **headless Chromium ile
+ölçülerek** bulundu (`scrollWidth > clientWidth` = kesilen içerik; çocukların
+`getBoundingClientRect().top` kümesi = satır sayısı). Ölçüm, "biraz bozuk
+görünüyor" ile "5 satıra kırılıyor" arasındaki farkı kesinleştirir.
 
 ## v2.81 — Çözümleme profilleri (dürüst sınırla)
 
