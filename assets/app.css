@@ -437,3 +437,96 @@ body.report-full .export-note{display:none!important}
 body.report-full .report-fullbar{display:flex}
 body.report-full .report-paper{max-width:none;margin:0;box-shadow:none;border:0;padding:24px 8px}
 @media print{body.report-full .report-fullbar{display:none!important}}
+
+/* ============================================================================
+   v2.32 — Sabit kabuk (masaüstü uygulaması hissi)
+   Sorun: sayfa min-height:100vh + overflow:visible olduğu için TÜM sayfa
+   kayıyordu; üst bar ve durum çubuğu kayıp gidiyordu. Özet sayfasında bile
+   kaydırma gerekiyordu.
+   Çözüm: html/body sabit yükseklik; yalnızca içerik alanı kendi içinde kayar.
+   Üst bar ve durum çubuğu HER ZAMAN görünür.
+   ============================================================================ */
+html,body{height:100%;overflow:hidden}
+.app-shell{height:100vh;min-height:0;overflow:hidden}
+.main-area{height:100vh;min-height:0;overflow:hidden;padding:0 26px}
+.topbar,.statusbar{flex:0 0 auto}
+/* İçerik alanı: tek kaydırma bölgesi. */
+.main-area>.view.active{
+  flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  padding-bottom:10px;scrollbar-gutter:stable}
+/* Durum çubuğu artık sticky değil; flex ile en altta sabit. */
+.statusbar{position:static;margin-top:0;border-top:1px solid var(--line)}
+
+/* --- Ses görünümü: bölünmüş düzen (liste solda, detay sağda) ---
+   Liste ve detay kendi içinde kayar; sayfa bir bütün olarak kaymaz. Böylece
+   kayıt seçerken ve metin düzenlerken bağlam kaybolmaz. */
+#view-audio.active{display:flex;flex-direction:column;gap:10px}
+#view-audio .upload-zone.compact{flex:0 0 auto;margin-bottom:0}
+#view-audio>.panel:not(.detail-panel){flex:0 0 auto}
+#view-audio>.panel:not(.detail-panel) .audio-list{max-height:150px;overflow:auto}
+#view-audio>.detail-panel{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;margin-top:0;overflow:hidden}
+#view-audio>.detail-panel>.panel-heading{flex:0 0 auto;margin-bottom:10px}
+#view-audio #audioDetail{flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:4px}
+/* Kart içindeki iki panel (liste + detay) ekran yüksekliğine oturur. */
+#view-audio .audio-card{height:100%;display:flex;flex-direction:column;min-height:0}
+#view-audio .seg-workspace{flex:1 1 auto;min-height:0}
+#view-audio .seg-list{max-height:none;height:100%;min-height:0}
+#view-audio .seg-detail{height:100%;overflow-y:auto;min-height:0}
+
+/* Dar ekranda bölünmüş düzeni boz: tek sütuna dön, sayfa kaysın. */
+@media(max-width:760px){
+  html,body{height:auto;overflow:auto}
+  .app-shell,.main-area{height:auto;overflow:visible}
+  .main-area>.view.active{overflow:visible}
+  #view-audio>.detail-panel{overflow:visible}
+  #view-audio #audioDetail{overflow:visible}
+  #view-audio .seg-detail{overflow:visible;height:auto}
+}
+
+/* --- Özet sayfası: tek ekrana sığacak biçimde sıkıştır (kaydırma yok) --- */
+#view-overview.active{display:flex;flex-direction:column;gap:10px}
+#view-overview .welcome-row{margin-bottom:0;flex:0 0 auto}
+#view-overview .welcome-row h2{font-size:16px;margin:0 0 3px}
+#view-overview .welcome-row p{font-size:11px}
+#view-overview .stat-grid{flex:0 0 auto;margin-bottom:0;gap:10px}
+#view-overview .stat-card{padding:11px 13px}
+#view-overview .stat-card strong{font-size:21px;margin:4px 0 1px}
+#view-overview .content-grid{flex:1 1 auto;min-height:0;gap:10px}
+#view-overview .panel{padding:14px 16px}
+#view-overview .panel-heading{margin-bottom:9px}
+#view-overview .panel-heading h3{font-size:13px}
+#view-overview .workflow-step{padding:9px 3px;gap:10px}
+#view-overview .workflow-step small{display:none}
+#view-overview .quick-action{padding:9px 0}
+#view-overview .notice-box{margin-top:9px;padding:8px 10px}
+#view-overview .recent-panel{flex:0 0 auto;margin-top:0}
+#view-overview .overview-case{gap:8px}
+#view-overview .overview-item b{font-size:11px}
+/* İçerik taşarsa yalnız bu bölge kayar (üst bar sabit kalır). */
+#view-overview{overflow-y:auto}
+
+/* --- İnceleme/sorular: bölümleri ekrana sığdır --- */
+#view-questions .section-intro{margin-bottom:12px}
+#view-questions .section-intro p{display:none}
+#view-questions .form-panel{padding:16px 18px}
+#view-questions .form-divider{margin:14px 0}
+#view-questions .field textarea{min-height:64px}
+
+/* --- Rapor: araç çubuğu sabit, önizleme kendi içinde kayar --- */
+#view-report.active{display:flex;flex-direction:column;gap:10px}
+#view-report .section-intro{flex:0 0 auto;margin-bottom:0}
+#view-report .report-toolbar,#view-report .report-fullbar,#view-report .report-warning{flex:0 0 auto;margin-bottom:0}
+#view-report #reportPreview{flex:1 1 auto;min-height:0;overflow-y:auto}
+#view-report .export-note{flex:0 0 auto;margin-top:0}
+
+/* Ses ve rapor görünümleri kendi içinde kayar; dış view kaydırmasın
+   (çift kaydırma çubuğu ve bağlam kaybını önler). */
+#view-audio.active,#view-report.active{overflow:hidden}
+
+/* Kayıt listesi: 150px çok dardı; 4-6 satır görünsün. */
+#view-audio>.panel:not(.detail-panel) .audio-list{max-height:190px}
+/* Detay kartı içinde dalga formu/oynatıcı üstte sabit, deşifre alanı kayar. */
+#view-audio .audio-content-zone{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+#view-audio .transcript-editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+#view-audio .segments-root{flex:1 1 auto;min-height:0}
