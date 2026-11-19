@@ -62,8 +62,10 @@ sapmalar giderildi; ayrıntı ve durum için
 
 Rapor metni sapmaları v2.0'da çözüldü. `app.js` okunabilirliği Prettier ile
 biçimlendirilerek giderildi (`.prettierrc.json`; `npx prettier --config
-.prettierrc.json assets/app.js`). Kalan borç: deşifre/model/yedekleme
-akışlarının otomatik test kapsamı dışında olması.
+.prettierrc.json assets/app.js`). Yedekleme, model yöneticisi ve deşifre motoru
+akışlarının karar/hesap mantığı saf fonksiyonlara ayrılıp otomatik teste
+bağlandı (v2.18). Kalan: bu akışların tarayıcıya bağlı dış kabuğu (gerçek model
+indirme, IndexedDB yazımı, ses çözme) elle doğrulanır.
 
 ## Doğrulama
 

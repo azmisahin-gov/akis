@@ -422,3 +422,20 @@ işaretlenir. Uydurma yoktur; yalnızca metindeki gerçek tekrar ölçülür.
   biçimlendirmeye dayanıklı hâle getirildi (boşluk ve süslü parantez öncesi
   boşluğa toleranslı). Böylece kaynak yeniden biçimlendirilse bile denetim
   sessizce boşa düşmez.
+
+## v2.18 — Akış test kapsamı (yedekleme, model yöneticisi, deşifre motoru)
+
+Kalan teknik borç (bu akışların otomatik test dışında olması) giderildi.
+Tarayıcıya bağlı mantık, saf ve test edilebilir fonksiyonlara ayrıldı; davranış
+değişmedi.
+
+- **Yedekleme/geri yükleme:** `buildProjectPack`, `validateProjectPack`,
+  `matchAudioEntries` ayrıldı. Paket şeması (`mihenk.project.v1`) ve ses girdisi
+  eşleme (`${m.id}_...`) artık test edilir.
+- **Model yöneticisi:** `evaluateModelIntegrity` (gerekli dosyalar + boş olmama),
+  `recommendModel(device)` ve `modelIdFromUrl` saf fonksiyonlar; test edilir.
+- **Deşifre motoru:** `asrWindows` (uzun kayıt pencere bölme), `parseAsrResult`
+  (model çıktısı ayrıştırma, zaman ofseti, kelime zamanları) ve
+  `looksNonTurkish` (dil uyarısı) ayrıldı; `transcribe` bu fonksiyonları
+  kullanır. Pencere döngüsü artık aynı sınırları üretir.
+- Toplam birim testi 114'ten 145'e çıktı; tümü geçer.

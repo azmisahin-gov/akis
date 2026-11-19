@@ -3033,6 +3033,18 @@ async function decodeForAsr(blob) {
 // and persisting after every window means an interrupted run resumes instead of
 // restarting. 30 s matches Whisper's own receptive window.
 const ASR_WINDOW_SECONDS = 30;
+// Uzun kaydı pencerelere böler: her pencere [başlangıç, bitiş) örnek aralığı ve
+// saniye cinsinden ofsettir. Son pencere kaydın sonunu aşmaz. Saf fonksiyon;
+// uzun kayıt yönetimi (kesinti, ilerleme) bu sınırlara dayandığı için test edilir.
+function asrWindows(totalSamples, sampleRate = 16000, windowSeconds = ASR_WINDOW_SECONDS) {
+  const step = Math.max(1, Math.round(windowSeconds * sampleRate));
+  const out = [];
+  for (let offset = 0; offset < totalSamples; offset += step) {
+    const end = Math.min(totalSamples, offset + step);
+    out.push({ offset, end, startSeconds: offset / sampleRate, seconds: (end - offset) / sampleRate });
+  }
+  return out;
+}
 // Segment review states. "checked" from earlier versions maps to "onaylandi" so
 // existing MİHENK/AKİS records keep their meaning. Only onaylandi and anlasilmadi
 // count as reviewed: "yeniden" means the expert still has to listen again, and
@@ -3090,6 +3102,15 @@ function isHallucination(text) {
   const stripped = t.replace(/[()\[\]\s.]/g, '');
   if (!stripped) return true;
   return HALLUCINATION_RE.test(t) && t.length < 60;
+}
+// Çıktının Türkçe dışı görünüp görünmediğini kaba biçimde tahmin eder: yaygın
+// İngilizce işlev sözcükleri var ve hiç Türkçe özel karakter yoksa uyarı verilir.
+// Bu bir ÖNERİdir; kesin dil tespiti değildir. Saf fonksiyon; test edilebilir.
+function looksNonTurkish(text) {
+  const t = String(text || '');
+  const englishMarkers = /\b(the|and|you|are|this|that|with|have|for|not|was|were)\b/i.test(t);
+  const turkishChars = /[çğıöşüÇĞİÖŞÜ]/.test(t);
+  return englishMarkers && !turkishChars;
 }
 // ---- Tekrar tespiti (NLP katmanı) ----
 // Whisper bazen aynı cümleyi/ifadeyi arka arkaya tekrarlar veya aynı kısa
@@ -3176,16 +3197,11 @@ function showEvidenceLog(m) {
     if (e.target === dlg || e.target.dataset.closeHistory !== undefined) dlg.remove();
   });
 }
-async function transcribeWindow(pipe, window, offsetSeconds) {
-  // Kelime düzeyi zaman damgaları istenir: bunlar karaoke vurgulaması için
-  // kullanılır. Model kelime zamanı vermezse yalnızca bölüm aralığına düşülür.
-  let result;
-  try {
-    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: 'word' });
-  } catch (e) {
-    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: true });
-  }
-  const chunks = (result.chunks || []).filter((x) => String(x.text || '').trim());
+// Model çıktısını bölümlere çeviren saf fonksiyon. Zaman ofseti uygulanır;
+// kelime düzeyi zamanlar (varsa) karaoke için saklanır. Ağ/model olmadan
+// test edilebilir: bilinen bir sonuç nesnesi verilip çıktı doğrulanır.
+function parseAsrResult(result, offsetSeconds, windowSeconds) {
+  const chunks = (result && result.chunks ? result.chunks : []).filter((x) => String(x.text || '').trim());
   const out = [];
   if (chunks.length) {
     for (const x of chunks) {
@@ -3196,7 +3212,6 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
         end: timecode(offsetSeconds + en),
         text: String(x.text || '').trim()
       };
-      // Kelime düzeyi zamanlar varsa her kelimenin başlangıcı saklanır.
       if (Array.isArray(x.words)) {
         seg.words = x.words.map((w) => ({
           w: String(w.word ?? w.text ?? ''),
@@ -3206,14 +3221,25 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
       }
       out.push(seg);
     }
-  } else if (String(result.text || '').trim()) {
+  } else if (result && String(result.text || '').trim()) {
     out.push({
       start: timecode(offsetSeconds),
-      end: timecode(offsetSeconds + window.length / 16000),
+      end: timecode(offsetSeconds + (windowSeconds || 0)),
       text: String(result.text || '').trim()
     });
   }
   return out;
+}
+async function transcribeWindow(pipe, window, offsetSeconds) {
+  // Kelime düzeyi zaman damgaları istenir: bunlar karaoke vurgulaması için
+  // kullanılır. Model kelime zamanı vermezse yalnızca bölüm aralığına düşülür.
+  let result;
+  try {
+    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: 'word' });
+  } catch (e) {
+    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: true });
+  }
+  return parseAsrResult(result, offsetSeconds, window.length / 16000);
 }
 async function transcribe(id) {
   const c = currentCase(),
@@ -3233,9 +3259,9 @@ async function transcribe(id) {
     refreshAudioStatusZone(m);
     const audio = await decodeForAsr(blob);
     const total = audio.length;
-    const step = ASR_WINDOW_SECONDS * 16000;
     const collected = [];
-    for (let offset = 0; offset < total; offset += step) {
+    for (const win of asrWindows(total)) {
+      const { offset, end, startSeconds } = win;
       if (m.cancelRequested) {
         m.cancelRequested = false;
         m.status = collected.length ? 'Kısmen çözümlendi (iptal edildi)' : 'İptal edildi';
@@ -3246,11 +3272,11 @@ async function transcribe(id) {
         showToast(`${m.name} için çözümleme iptal edildi.`);
         return;
       }
-      const window = audio.subarray(offset, Math.min(total, offset + step));
+      const window = audio.subarray(offset, end);
       let found = [];
       let windowError = null;
       try {
-        found = await transcribeWindow(pipe, window, offset / 16000);
+        found = await transcribeWindow(pipe, window, startSeconds);
       } catch (err) {
         windowError = err;
         console.warn('Pencere çözümlenemedi', offset, err);
@@ -3260,7 +3286,7 @@ async function transcribe(id) {
       } else {
         for (const f of found) collected.push({ ...f, speaker: 'Belirtilmedi', checked: false });
       }
-      m.progress = Math.min(100, Math.round(((offset + window.length) / total) * 100));
+      m.progress = Math.min(100, Math.round((end / total) * 100));
       persist();
       refreshAudioStatusZone(m);
     }
@@ -3295,8 +3321,7 @@ async function transcribe(id) {
       detail: `${meaningful.length} anlamlı bölüm, ${fillerCount || 0} dolgu bölümü`
     });
     const text = meaningful.map((s) => s.text).join(' ');
-    const latinEnglish = /\b(the|and|you|are|this|that|with|have|for)\b/i.test(text) && !/[çğıöşüÇĞİÖŞÜ]/.test(text);
-    if (latinEnglish) {
+    if (looksNonTurkish(text)) {
       m.languageWarning = 'Çıktı Türkçe dışı görünebilir; kaydı dinleyerek kontrol edin.';
     } else {
       delete m.languageWarning;
@@ -4325,11 +4350,35 @@ async function makeUdf() {
   downloadBlob(blob, `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.udf`);
   showToast('UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin.');
 }
+// Çalışma paketi (yedek) oluşturma ve doğrulama saf fonksiyonlara ayrıldı;
+// böylece otomatik test edilebilir. Paket biçimi MİHENK uyumluluğu için sabittir.
+const PROJECT_SCHEMA = 'mihenk.project.v1';
+function buildProjectPack(c) {
+  return { schema: PROJECT_SCHEMA, exportedAt: new Date().toISOString(), case: c };
+}
+// Paketi doğrular; geçerliyse null, değilse açıklayıcı hata metni döndürür.
+function validateProjectPack(pack) {
+  if (!pack || typeof pack !== 'object') return 'Çalışma paketi okunamadı.';
+  if (pack.schema !== PROJECT_SCHEMA) return 'Çalışma paketi sürümü tanınmadı.';
+  if (!pack.case || typeof pack.case !== 'object') return 'Çalışma paketinde dosya verisi yok.';
+  return null;
+}
+// Paket içindeki ses girdilerini materyallere eşler. Girdi adı `${m.id}_...`
+// biçimindedir; bu eşleme saf ve test edilebilirdir.
+function matchAudioEntries(entryNames, materials) {
+  const dirs = new Set(entryNames.filter((n) => n.endsWith('/')));
+  const out = [];
+  for (const m of materials || []) {
+    const prefix = `audio/${m.id}_`;
+    const entry = entryNames.find((path) => path.startsWith(prefix) && !dirs.has(path));
+    if (entry) out.push({ materialId: m.id, entry });
+  }
+  return out;
+}
 async function exportProject() {
   const c = currentCase();
   const zip = new JSZip();
-  const pack = { schema: 'mihenk.project.v1', exportedAt: new Date().toISOString(), case: c };
-  zip.file('case.json', JSON.stringify(pack, null, 2));
+  zip.file('case.json', JSON.stringify(buildProjectPack(c), null, 2));
   const assets = zip.folder('audio');
   for (const m of c.materials) {
     const blob = await getAudioBlob(c, m);
@@ -4345,17 +4394,17 @@ async function importProject(file) {
   const meta = zip.file('case.json');
   if (!meta) throw new Error('Dosya geçerli bir AKİS veya önceki MİHENK çalışma paketi değil.');
   const pack = JSON.parse(await meta.async('string'));
-  if (pack.schema !== 'mihenk.project.v1' || !pack.case) throw new Error('Çalışma paketi sürümü tanınmadı.');
+  const err = validateProjectPack(pack);
+  if (err) throw new Error(err);
   const c = pack.case;
   c.id = uid();
   c.materials = c.materials || [];
-  for (const m of c.materials) {
-    const entry = Object.keys(zip.files).find((path) => path.startsWith(`audio/${m.id}_`) && !zip.files[path].dir);
-    if (entry) {
-      const blob = await zip.file(entry).async('blob');
-      const mime = m.type || 'audio/wav';
-      await storeBlob(`${c.id}::${m.id}`, new Blob([blob], { type: mime }));
-    }
+  const entryNames = Object.keys(zip.files);
+  for (const { materialId, entry } of matchAudioEntries(entryNames, c.materials)) {
+    const m = c.materials.find((x) => x.id === materialId);
+    const blob = await zip.file(entry).async('blob');
+    const mime = m.type || 'audio/wav';
+    await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
   }
   c.name = c.name || c.fileNo || 'İçe aktarılan dosya';
   appState.cases.push(c);
@@ -5208,6 +5257,17 @@ const REQUIRED_MODEL_FILES = [
   /encoder_model.*\.onnx$/,
   /decoder_model_merged.*\.onnx$/
 ];
+// Bütünlük kontrolü saf fonksiyon: verilen URL listesi ve boş dosya sayısına
+// göre eksik dosyaları ve genel sonucu döndürür. Tarayıcı önbelleğinden
+// bağımsızdır; böylece otomatik test edilebilir.
+function evaluateModelIntegrity(presentUrls, emptyCount) {
+  const missing = REQUIRED_MODEL_FILES.filter((rx) => !presentUrls.some((u) => rx.test(u)));
+  const ok = !missing.length && emptyCount === 0;
+  const detail = ok
+    ? `${presentUrls.length} dosya eksiksiz ve boş olmayan boyutta.`
+    : `Eksik dosya: ${missing.length}, boş dosya: ${emptyCount}. İndirme tamamlanmamış olabilir; modeli yeniden yükleyin.`;
+  return { ok, missing: missing.length, empty: emptyCount, detail };
+}
 async function verifyModelCache(id) {
   try {
     const cache = await caches.open(MODEL_CACHE);
@@ -5231,14 +5291,12 @@ async function verifyModelCache(id) {
       if (size === 0) empty++;
       present.push(req.url);
     }
-    const missing = REQUIRED_MODEL_FILES.filter((rx) => !present.some((u) => rx.test(u)));
-    const ok = !missing.length && empty === 0;
-    const detail = ok
-      ? `${mine.length} dosya eksiksiz ve boş olmayan boyutta.`
-      : `Eksik dosya: ${missing.length}, boş dosya: ${empty}. İndirme tamamlanmamış olabilir; modeli yeniden yükleyin.`;
+    const { ok, detail } = evaluateModelIntegrity(present, empty);
     const st = $('#modelStatus');
     if (st) st.textContent = `${id} bütünlük kontrolü: ${ok ? 'geçti' : 'başarısız'} — ${detail}`;
-    showToast(ok ? `${id} bütünlük kontrolü geçti.` : `${id} bütünlük kontrolü başarısız. Ayrıntı model durumunda.`);
+    showToast(
+      ok ? `${id} bütünlük kontrolü geçti.` : `${id} bütünlük kontrolü başarısız. Ayrıntı model durumunda.`
+    );
   } catch (e) {
     showToast('Doğrulama başarısız: ' + e.message);
   }
@@ -5302,8 +5360,10 @@ async function clearModelCache() {
 }
 // Recommendation from observed hardware: WebGPU can carry the heavy models,
 // WASM (CPU) is realistic only for the smaller ones.
-function recommendModel() {
-  if (asrDevice === 'webgpu')
+// Öneri, ölçülen donanıma göre verilir. Cihaz parametre olarak alınabilir;
+// böylece fonksiyon saf ve test edilebilirdir (varsayılan: algılanan cihaz).
+function recommendModel(device = asrDevice) {
+  if (device === 'webgpu')
     return {
       id: 'onnx-community/whisper-medium-ONNX',
       why: 'WebGPU kullanılabilir; ölçülen en yüksek doğruluğu veren orta model önerilir (WER ~0,38).'

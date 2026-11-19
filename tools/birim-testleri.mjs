@@ -49,6 +49,9 @@ const EXPOSE = [
   'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
   'detectRepetition', 'segmentRepetitionFlag',
+  'buildProjectPack', 'validateProjectPack', 'matchAudioEntries',
+  'evaluateModelIntegrity', 'recommendModel', 'modelIdFromUrl',
+  'parseAsrResult', 'asrWindows', 'looksNonTurkish', 'safeName',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -269,6 +272,89 @@ console.log('\n[7e] Tekrar/dolgu tespiti');
   // Bölüm işareti yalnızca gerçek tekrarda.
   eq('bölüm işareti', !!T.segmentRepetitionFlag({ text: 'Evet. Evet. Evet. Evet.' }), true);
   eq('bölüm işareti yok', T.segmentRepetitionFlag({ text: 'Tek bir normal cümle yazılmış.' }), null);
+}
+
+// --- 7f. Yedekleme / geri yükleme -----------------------------------------
+// Çalışma paketi (yedek) biçimi sabittir; doğrulama ve ses eşleme saf
+// fonksiyonlarla test edilir. Böylece dışa/içe aktarma akışı regresyona karşı
+// korunur.
+console.log('\n[7f] Yedekleme / geri yükleme');
+{
+  const c = { id: 'c1', fileNo: '2026/214 E.', materials: [] };
+  const pack = T.buildProjectPack(c);
+  eq('şema sabit', pack.schema, 'mihenk.project.v1');
+  eq('dosya taşınır', pack.case, c);
+  eq('geçerli paket', T.validateProjectPack(pack), null);
+  eq('yanlış şema reddedilir', T.validateProjectPack({ schema: 'x', case: {} }) !== null, true);
+  eq('dosya yoksa reddedilir', T.validateProjectPack({ schema: 'mihenk.project.v1' }) !== null, true);
+  eq('boş paket reddedilir', T.validateProjectPack(null) !== null, true);
+  // Ses girdisi eşleme: `${m.id}_...` biçimi; klasör girdileri atlanır.
+  const names = ['case.json', 'audio/', 'audio/m1_a.wav', 'audio/m2_b.wav'];
+  const mats = [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }];
+  const matched = T.matchAudioEntries(names, mats);
+  eq('iki ses eşlendi', matched.length, 2);
+  eq('ilk eşleme', matched[0], { materialId: 'm1', entry: 'audio/m1_a.wav' });
+  eq('eşleşmeyen materyal atlanır', matched.some((x) => x.materialId === 'm3'), false);
+}
+
+// --- 7g. Model yöneticisi -------------------------------------------------
+// Bütünlük kontrolü saf fonksiyonla test edilir; kütüphane sağlama toplamı
+// yayımlamadığı için yapısal denetim yapılır (gerekli dosyalar + boş olmama).
+console.log('\n[7g] Model yöneticisi');
+{
+  const base = 'https://huggingface.co/onnx-community/whisper-small/resolve/main/';
+  const full = [
+    base + 'config.json',
+    base + 'preprocessor_config.json',
+    base + 'tokenizer.json',
+    base + 'tokenizer_config.json',
+    base + 'onnx/encoder_model.onnx',
+    base + 'onnx/decoder_model_merged.onnx'
+  ];
+  eq('eksiksiz model geçer', T.evaluateModelIntegrity(full, 0).ok, true);
+  eq('eksik dosya kalır', T.evaluateModelIntegrity(full.slice(0, 4), 0).ok, false);
+  eq('boş dosya kalır', T.evaluateModelIntegrity(full, 1).ok, false);
+  // Model kimliği URL'den çıkarılır.
+  eq('model kimliği', T.modelIdFromUrl(full[0]), 'onnx-community/whisper-small');
+  eq('model dışı URL', T.modelIdFromUrl('https://example.com/x.json'), null);
+  // Donanım önerisi.
+  eq('WebGPU -> orta model', T.recommendModel('webgpu').id, 'onnx-community/whisper-medium-ONNX');
+  eq('CPU -> küçük model', T.recommendModel('wasm').id, 'onnx-community/whisper-small');
+}
+
+// --- 7h. Deşifre motoru ---------------------------------------------------
+// Pencere bölme ve model çıktısı ayrıştırma saf fonksiyonlarla test edilir;
+// uzun kayıt yönetimi ve zaman ofseti buna dayanır.
+console.log('\n[7h] Deşifre motoru');
+{
+  // 75 sn'lik kayıt, 30 sn pencere -> 3 pencere (30+30+15).
+  const wins = T.asrWindows(75 * 16000, 16000, 30);
+  eq('pencere sayısı', wins.length, 3);
+  eq('ilk pencere', [wins[0].offset, wins[0].end, wins[0].seconds], [0, 30 * 16000, 30]);
+  eq('son pencere taşmaz', [wins[2].startSeconds, wins[2].seconds], [60, 15]);
+  eq('boş kayıt -> pencere yok', T.asrWindows(0).length, 0);
+  // Model çıktısı ayrıştırma: zaman ofseti uygulanır.
+  const res = { chunks: [{ text: ' merhaba', timestamp: [1, 3] }] };
+  const segs = T.parseAsrResult(res, 60, 30);
+  eq('ofset uygulandı', [segs[0].start, segs[0].end], ['00:01:01', '00:01:03']);
+  eq('metin kırpıldı', segs[0].text, 'merhaba');
+  // Kelime zamanları korunur (karaoke).
+  const res2 = { chunks: [{ text: 'a b', timestamp: [0, 2], words: [{ word: 'a', start: 0, end: 1 }, { word: 'b', start: 1, end: 2 }] }] };
+  const segs2 = T.parseAsrResult(res2, 0, 30);
+  eq('kelime zamanları', segs2[0].words.length, 2);
+  eq('kelime başlangıcı', segs2[0].words[1].s, '00:00:01');
+  // Chunk yoksa metin fallback pencere süresini kullanır.
+  const segs3 = T.parseAsrResult({ text: 'tek metin' }, 10, 5);
+  eq('fallback aralığı', [segs3[0].start, segs3[0].end], ['00:00:10', '00:00:15']);
+  // Boş çıktı -> bölüm yok.
+  eq('boş çıktı', T.parseAsrResult({ chunks: [] }, 0, 30).length, 0);
+  // Dil uyarısı: İngilizce işaretçiler + Türkçe karakter yok.
+  eq('İngilizce görünüm', T.looksNonTurkish('the and you are here'), true);
+  eq('Türkçe metin', T.looksNonTurkish('merhaba, depozito iade edilecek'), false);
+  eq('Türkçe karakter varsa uyarı yok', T.looksNonTurkish('the çay'), false);
+  // Dosya adı güvenliği.
+  eq('güvenli ad', T.safeName('2026/214 E.'), '2026_214_E');
+  eq('boş ad yedeği', T.safeName(''), 'AKIS_Raporu');
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------

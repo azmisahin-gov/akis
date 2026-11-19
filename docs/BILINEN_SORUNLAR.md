@@ -48,11 +48,14 @@ Yapılan düzeltmeler:
 sabit kopyası kalıp kalmadığını denetler. Şu an tüm kontroller geçer.
 
 Birim testleri (`tools/birim-testleri.mjs`) milisaniye hassasiyetli zaman kodu
-dönüşümünü ve paragraf oluşturma mantığını da kapsar (v2.10 ve v2.12'de eklendi).
+dönüşümünü, paragraf oluşturmayı, sessizlik ölçümünü, terim tutarlılığını,
+tekrar tespitini ve ayrıca yedekleme/geri yükleme, model yöneticisi ve deşifre
+motoru akışlarının saf fonksiyonlarını kapsar (v2.18'de eklendi).
 
-Hâlâ kapsam dışı olan alanlar: deşifre motoru, model yöneticisi, yedekleme/geri
-yükleme ve diğer tarayıcıya bağlı akışlar (dalga formu etkileşimi, dinleme
-yardımcıları, karaoke). Bunlar elle doğrulanmaktadır.
+Bu akışların tarayıcıya bağlı dış kabuğu (gerçek model indirme, IndexedDB
+yazımı, ses çözme) hâlâ elle doğrulanır; ancak karar/hesap mantığı (paket
+şeması, ses eşleme, bütünlük denetimi, pencere bölme, çıktı ayrıştırma, dil
+uyarısı) otomatik test edilir.
 
 ## 3. Diğer gözlemler (düşük öncelik)
 
