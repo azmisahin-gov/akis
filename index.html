@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142c4d">
   <title>AKİS | Adli Konuşma İnceleme Sistemi</title>
-  <link rel="stylesheet" href="assets/app.css?v=2.30">
+  <link rel="stylesheet" href="assets/app.css?v=2.31">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.30"></script>
+  <script type="module" src="assets/app.js?v=2.31"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -98,7 +98,13 @@
 
       <section class="view" id="view-report">
         <div class="section-intro"><div><div class="eyebrow">04 / RAPORLAMA</div><h2>Rapor önizleme ve dışa aktarma</h2><p>Rapor başlıklarını, ses çözümleme tablolarını ve sonuç bölümünü son kez kontrol edin.</p></div><span class="subtle-pill">UDF ÖNCELİKLİ · DOCX İSTEĞE BAĞLI</span></div>
-        <div class="report-toolbar"><div class="report-status" id="reportStatus"><span class="status-dot"></span> Önizleme güncel</div><div class="toolbar-actions"><button id="downloadDocxBtn" class="button button-light">İsteğe bağlı Word kopyası (.docx)</button><button id="downloadUdfBtn" class="button button-primary">Bilirkişi Portalı için UDF indir (.udf)</button></div></div>
+        <div class="report-toolbar"><div class="report-status" id="reportStatus"><span class="status-dot"></span> Önizleme güncel</div><div class="toolbar-actions"><button id="reportFullBtn" class="button button-light" title="Tam ekran önizleme (F)">⛶ Tam ekran</button><button id="downloadDocxBtn" class="button button-light">İsteğe bağlı Word kopyası (.docx)</button><button id="downloadUdfBtn" class="button button-primary">Bilirkişi Portalı için UDF indir (.udf)</button></div></div>
+        <div class="report-fullbar" id="reportFullbar" hidden>
+          <button class="button button-light button-small" id="reportBackBtn">← Çalışmaya dön</button>
+          <span class="report-fullbar-title">Rapor önizleme</span>
+          <button class="button button-light button-small" id="reportPrintBtn">🖨 Yazdır</button>
+          <button class="button button-primary button-small" id="reportUdfBtn2">UDF indir</button>
+        </div>
         <div class="report-warning" id="reportWarning"></div>
         <div id="reportPreview" class="report-paper"></div>
         <div class="export-note"><b>Birincil çıktı – UYAP UDF:</b> Uygulama, yüklediğiniz boş UYAP UDF belgesindeki sayfa ayarlarını ve stil tanımlarını temel alarak doğrudan .udf dosyası oluşturur. Word çıktısı yalnızca isteğe bağlı yardımcı kopyadır. İlk kullanımdan önce oluşturulan belgeyi kendi UYAP Doküman Editörü sürümünüzde açıp sayfa düzenini kontrol edin. Uygulama e-imza oluşturmaz ve belgeyi UYAP’a göndermez.</div>

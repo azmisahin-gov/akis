@@ -418,3 +418,22 @@ body.focus-mode .main-area{padding:0 22px}
 .storage-note,.queue-copy,.listen-note,.wave-hint{display:none!important}
 /* Model tanıtım paragrafı: çekmecede kısa tutulur. */
 .model-copy p{display:none}
+
+/* ============================================================================
+   v2.31 — Rapor tam ekran modu
+   Raporu okurken tüm kabuk gizlenir; yalnızca ince bir çubuk kalır. Böylece
+   önizleme genişler ve yazdırma çıktısı temiz olur.
+   ============================================================================ */
+.report-fullbar{display:none;align-items:center;gap:10px;margin:0 0 14px;
+  padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:9px;
+  box-shadow:0 3px 12px #17385e08}
+.report-fullbar-title{flex:1;font:700 12px Manrope;color:var(--navy);text-align:center}
+body.report-full .rail,body.report-full .topbar,body.report-full .statusbar{display:none!important}
+body.report-full .app-shell{grid-template-columns:minmax(0,1fr)}
+body.report-full .main-area{padding:14px 18px}
+body.report-full .main-area>.view:not(#view-report){display:none!important}
+body.report-full .section-intro,body.report-full .report-toolbar,
+body.report-full .export-note{display:none!important}
+body.report-full .report-fullbar{display:flex}
+body.report-full .report-paper{max-width:none;margin:0;box-shadow:none;border:0;padding:24px 8px}
+@media print{body.report-full .report-fullbar{display:none!important}}

@@ -4713,6 +4713,18 @@ async function loadSamples() {
 // Esc kısayolu bulunur.
 // Ayarlar çekmecesi: model, toplu çözümleme ve depolama burada durur. Çalışma
 // alanını kapatmadığı için uzman bağlamı kaybetmez.
+// Rapor tam ekran modu: kabuk gizlenir, yalnızca ince çubuk kalır.
+function setReportFull(on) {
+  document.body.classList.toggle('report-full', on);
+  const bar = $('#reportFullbar');
+  if (bar) bar.hidden = !on;
+  if (on) {
+    switchView('report');
+    try {
+      window.scrollTo(0, 0);
+    } catch (e) {}
+  }
+}
 // Dosya bilgileri çekmecesi. Form artık ayrı sayfa değil; çalışma alanının
 // üzerine sağdan açılır. Aynı anda yalnızca bir çekmece açık olur.
 function setCaseDrawer(open) {
@@ -5318,6 +5330,10 @@ function setupEvents() {
   document.addEventListener('keydown', onGlobalSegKey);
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
+$('#reportFullBtn').addEventListener('click', () => setReportFull(true));
+$('#reportBackBtn').addEventListener('click', () => setReportFull(false));
+$('#reportPrintBtn').addEventListener('click', () => window.print());
+$('#reportUdfBtn2').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
 $('#drawerBackdrop').addEventListener('click', () => {
   setSettingsDrawer(false);
   setCaseDrawer(false);
@@ -5338,6 +5354,11 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
     if (e.key !== 'Escape') return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'textarea' || tag === 'input' || tag === 'select') return;
+    // Tam ekran rapordan çık.
+    if (document.body.classList.contains('report-full')) {
+      setReportFull(false);
+      return;
+    }
     // Önce açık çekmeceyi kapat, sonra odak modunu.
     const anyOpen = ['#settingsDrawer', '#caseDrawer'].some((sel) => {
       const el = $(sel);
