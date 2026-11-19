@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142c4d">
   <title>AKİS | Adli Konuşma İnceleme Sistemi</title>
-  <link rel="stylesheet" href="assets/app.css?v=2.28">
+  <link rel="stylesheet" href="assets/app.css?v=2.29">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.28"></script>
+  <script type="module" src="assets/app.js?v=2.29"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -17,7 +17,6 @@
       </div>
       <nav class="rail-nav">
         <button class="nav-item active" data-view="overview" title="Genel görünüm" aria-label="Genel görünüm"><span class="nav-icon">▦</span><span class="rail-label">Özet</span></button>
-        <button class="nav-item" data-view="case" title="Dosya bilgileri" aria-label="Dosya bilgileri"><span class="nav-icon">▤</span><span class="rail-label">Dosya</span></button>
         <button class="nav-item" data-view="audio" title="Ses kayıtları" aria-label="Ses kayıtları"><span class="nav-icon">◖</span><span class="rail-label">Ses</span><span class="nav-count" id="audioCount">0</span></button>
         <button class="nav-item" data-view="questions" title="İnceleme ve sorular" aria-label="İnceleme ve sorular"><span class="nav-icon">☷</span><span class="rail-label">İnceleme</span></button>
         <button class="nav-item" data-view="report" title="Rapor oluştur" aria-label="Rapor oluştur"><span class="nav-icon">▧</span><span class="rail-label">Rapor</span></button>
@@ -46,65 +45,32 @@
       </header>
 
       <section class="view active" id="view-overview">
-        <div class="welcome-row"><div><h2 id="welcomeTitle">Çalışmaya başlayın</h2><p id="welcomeSub">Dosya bilgilerini girin, ses kayıtlarını ekleyin ve inceleme raporunuzu hazırlayın.</p></div><div class="welcome-chip">56.12 · SES KAYITLARI</div></div>
+        <div class="welcome-row"><div><h2 id="welcomeTitle">Çalışmaya başlayın</h2><p id="welcomeSub">Dosya bilgilerini girin, ses kayıtlarını ekleyin ve inceleme raporunuzu hazırlayın.</p></div><button class="button button-light button-small" id="openCaseDrawer">✎ Dosya bilgilerini düzenle</button></div>
         <div class="stat-grid">
-          <div class="stat-card"><span>SES KAYDI</span><strong id="statAudio">0</strong><small>İnceleme dosyasına eklenen</small></div>
-          <div class="stat-card"><span>TOPLAM SÜRE</span><strong id="statDuration">00:00</strong><small>Ekli ses kayıtlarının toplamı</small></div>
-          <div class="stat-card"><span>ÇÖZÜMLENEN</span><strong id="statSegments">0</strong><small>Oluşturulan metin bölümü</small></div>
-          <div class="stat-card"><span>KONTROL DURUMU</span><strong id="statChecked">0%</strong><small>Uzman denetiminden geçen metin</small></div>
+          <div class="stat-card"><span>SES KAYDI</span><strong id="statAudio">0</strong><small>Eklenen kayıt</small></div>
+          <div class="stat-card"><span>TOPLAM SÜRE</span><strong id="statDuration">00:00</strong><small>Tüm kayıtlar</small></div>
+          <div class="stat-card"><span>ÇÖZÜMLENEN</span><strong id="statSegments">0</strong><small>Metin bölümü</small></div>
+          <div class="stat-card"><span>KONTROL</span><strong id="statChecked">0%</strong><small>Denetlenen metin</small></div>
         </div>
         <div class="content-grid">
           <div class="panel workflow-panel"><div class="panel-heading"><div><div class="eyebrow">İŞ AKIŞI</div><h3>İnceleme adımları</h3></div><span class="subtle-pill">Çalışma özeti</span></div>
             <div class="workflow-list">
-              <button class="workflow-step" data-goto="case"><span class="step-number">01</span><span><b>Dosya bilgilerini tamamlayın</b><small>Mahkeme, dosya numarası, taraflar ve görevlendirme bilgileri</small></span><span class="step-state" id="stepCase">Başlanmadı</span></button>
-              <button class="workflow-step" data-goto="audio"><span class="step-number">02</span><span><b>Ses kayıtlarını ekleyin</b><small>Orijinal dosyalar ve teknik envanter</small></span><span class="step-state" id="stepAudio">0 kayıt</span></button>
-              <button class="workflow-step" data-goto="questions"><span class="step-number">03</span><span><b>İnceleme ve soruları tamamlayın</b><small>Yöntem, mahkeme soruları ve teknik değerlendirme</small></span><span class="step-state" id="stepQuestions">Bekliyor</span></button>
-              <button class="workflow-step" data-goto="report"><span class="step-number">04</span><span><b>Raporu gözden geçirin ve dışa aktarın</b><small>Öncelikli UDF çıktısı ve isteğe bağlı Word kopyası</small></span><span class="step-state" id="stepReport">Hazır değil</span></button>
+              <button class="workflow-step" id="stepCaseBtn"><span class="step-number">01</span><span><b>Dosya bilgilerini tamamlayın</b><small>Mahkeme, dosya no, taraflar</small></span><span class="step-state" id="stepCase">Başlanmadı</span></button>
+              <button class="workflow-step" data-goto="audio"><span class="step-number">02</span><span><b>Ses kayıtlarını ekleyin</b><small>Orijinal dosyalar ve envanter</small></span><span class="step-state" id="stepAudio">0 kayıt</span></button>
+              <button class="workflow-step" data-goto="questions"><span class="step-number">03</span><span><b>İnceleme ve soruları tamamlayın</b><small>Yöntem, sorular, değerlendirme</small></span><span class="step-state" id="stepQuestions">Bekliyor</span></button>
+              <button class="workflow-step" data-goto="report"><span class="step-number">04</span><span><b>Raporu gözden geçirin</b><small>UDF çıktısı, isteğe bağlı DOCX</small></span><span class="step-state" id="stepReport">Hazır değil</span></button>
             </div>
           </div>
           <div class="panel quick-panel"><div class="panel-heading"><div><div class="eyebrow">HIZLI ERİŞİM</div><h3>Başlangıç</h3></div></div>
             <button class="quick-action" data-goto="audio"><span class="quick-icon">＋</span><span><b>Ses dosyası ekle</b><small>WAV, MP3, M4A, OGG, FLAC</small></span><span>›</span></button>
-            <button class="quick-action" data-goto="case"><span class="quick-icon">✎</span><span><b>Dosya bilgilerini düzenle</b><small>Mahkeme ve bilirkişi bilgileri</small></span><span>›</span></button>
-            <button class="quick-action" id="loadSamplesBtn"><span class="quick-icon">▣</span><span><b>Hazır test dosyalarını yükle</b><small>4 kurgusal dosya, 10 sentetik ses kaydı</small></span><span>›</span></button>
-            <div class="notice-box"><b>Önemli</b><p>Otomatik konuşma çözümü bir taslaktır. Kelimeler, konuşmacı etiketleri ve zaman aralıkları uzman tarafından sesle karşılaştırılarak kontrol edilmelidir.</p></div>
+            <button class="quick-action" id="quickCaseBtn"><span class="quick-icon">✎</span><span><b>Dosya bilgilerini düzenle</b><small>Mahkeme ve bilirkişi</small></span><span>›</span></button>
+            <button class="quick-action" id="loadSamplesBtn"><span class="quick-icon">▣</span><span><b>Hazır test dosyalarını yükle</b><small>4 kurgusal dosya, 10 kayıt</small></span><span>›</span></button>
+            <div class="notice-box"><b>Önemli</b><p>Otomatik çözüm bir taslaktır; uzman kaydı dinleyerek doğrulamalıdır.</p></div>
           </div>
         </div>
-        <div class="panel recent-panel"><div class="panel-heading"><div><div class="eyebrow">DOSYA DURUMU</div><h3>Mevcut inceleme</h3></div><button class="text-button" data-goto="case">Bilgileri düzenle →</button></div><div id="overviewCase" class="overview-case"></div></div>
+        <div class="panel recent-panel"><div class="panel-heading"><div><div class="eyebrow">DOSYA DURUMU</div><h3>Mevcut inceleme</h3></div><button class="text-button" id="overviewEditBtn">Bilgileri düzenle →</button></div><div id="overviewCase" class="overview-case"></div></div>
       </section>
 
-      <section class="view" id="view-case">
-        <div class="section-intro"><div><div class="eyebrow">01 / DOSYA TANIMI</div><h2>Mahkeme ve görevlendirme bilgileri</h2><p>Raporun kapak ve giriş bölümlerinde kullanılacak bilgileri girin.</p></div><span class="subtle-pill">Zorunlu alanlar * ile işaretlidir</span></div>
-        <div class="panel form-panel">
-          <div class="form-section-title"><span>01</span><div><h3>Görevlendiren merci</h3><p>Rapor türünü ve dosyanın bağlı olduğu birimi seçin.</p></div></div>
-          <div class="form-grid three">
-            <label class="field"><span>Rapor türü *</span><select id="reportType"><option value="hukuk">Hukuk Mahkemeleri – İdare/Vergi Mahkemeleri</option><option value="ceza">Ceza Mahkemeleri</option><option value="savcilik">Cumhuriyet Başsavcılığı</option><option value="icra">İcra Müdürlüğü</option></select></label>
-            <label class="field span-2"><span>Mahkeme / merci adı *</span><input id="court" placeholder="Örn. Antalya 4. Asliye Hukuk Mahkemesi"></label>
-            <label class="field"><span id="labelFileNo">Esas / soruşturma / takip no *</span><input id="fileNo" placeholder="2026/… E."></label>
-            <label class="field"><span>Görevlendirme tarihi</span><input id="assignmentDate" type="date"></label>
-            <label class="field"><span>Verilen süre (gün)</span><input id="assignmentDurationDays" type="number" min="1" step="1" placeholder="Örn. 30"></label><label class="field"><span>Son teslim tarihi</span><input id="dueDate" type="date"></label>
-          </div>
-          <div class="form-divider"></div>
-          <div class="form-section-title"><span>02</span><div><h3>Taraf ve uyuşmazlık bilgileri</h3><p>Dosyada yer alan taraf ve konu bilgilerini girin.</p></div></div>
-          <div class="form-grid two">
-            <label class="field"><span id="labelPlaintiff">Davacı / başvuran</span><input id="plaintiff" placeholder="Taraf adı / unvanı"></label>
-            <label class="field"><span id="labelPlaintiffCounsel">Davacı / başvuran vekili</span><input id="plaintiffCounsel" placeholder="Varsa vekil bilgisi"></label>
-            <label class="field"><span id="labelDefendant">Davalı / karşı taraf</span><input id="defendant" placeholder="Taraf adı / unvanı"></label>
-            <label class="field"><span id="labelDefendantCounsel">Davalı / karşı taraf vekili</span><input id="defendantCounsel" placeholder="Varsa vekil bilgisi"></label>
-            <label class="field span-2"><span id="labelSubject">Dava / inceleme konusu *</span><textarea id="subject" rows="2" placeholder="İncelemenin konusunu kısa ve tarafsız şekilde yazın."></textarea></label>
-            <label class="field"><span id="labelCaseDate">Dava / olay tarihi</span><input id="caseDate" type="date"></label>
-            <label class="field"><span>Keşif / inceleme tarihi</span><input id="inspectionDate" type="date"></label>
-          </div>
-          <div class="form-divider"></div>
-          <div class="form-section-title"><span>03</span><div><h3>Bilirkişi bilgileri</h3><p>Rapor imza bölümünde görünecek bilgiler.</p></div></div>
-          <div class="form-grid three">
-            <label class="field span-2"><span>Bilirkişinin adı soyadı *</span><input id="expertName" placeholder="Ad Soyad"></label>
-            <label class="field"><span>Sicil numarası</span><input id="registryNo" placeholder="Bilirkişi sicil no"></label>
-            <label class="field span-2"><span>Uzmanlık alanı</span><input id="expertField" value="56.12 – Ses kayıtlarının metin hâline dönüştürülmesi"></label>
-            <label class="field"><span>Rapor tarihi</span><input id="reportDate" type="date"></label>
-          </div>
-          <div class="form-actions"><span class="form-save-note" id="caseSaveNote">Değişiklikler otomatik kaydedilir.</span><button class="button button-primary" data-goto="audio">Ses kayıtlarına geç →</button></div>
-        </div>
-      </section>
 
       <section class="view" id="view-audio">
         <div class="upload-zone compact" id="dropZone"><span class="upload-icon">⇧</span><span class="upload-text">Ses kayıtlarını buraya bırakın veya</span><label class="button button-primary button-small upload-label">dosya seç<input type="file" id="audioInput" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.aac" multiple hidden></label><small>WAV · MP3 · M4A · OGG · FLAC · AAC</small></div>
@@ -166,6 +132,44 @@
     </div>
   </aside>
   <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
+
+  <!-- Dosya bilgileri çekmecesi: form çalışma alanını işgal etmez. -->
+  <aside class="drawer" id="caseDrawer" aria-hidden="true" aria-label="Dosya bilgileri">
+    <div class="drawer-head">
+      <div><div class="eyebrow">DOSYA TANIMI</div><h2>Mahkeme ve görevlendirme</h2></div>
+      <button class="icon-button drawer-close" id="closeCase" aria-label="Kapat">×</button>
+    </div>
+    <div class="drawer-body">
+      <p class="drawer-note">Raporun kapak ve giriş bölümlerinde kullanılır. Zorunlu alanlar * ile işaretlidir; değişiklikler otomatik kaydedilir.</p>
+            <div class="form-section-title"><span>01</span><div><h3>Görevlendiren merci</h3><p>Rapor türünü ve dosyanın bağlı olduğu birimi seçin.</p></div></div>
+          <div class="form-grid three">
+            <label class="field"><span>Rapor türü *</span><select id="reportType"><option value="hukuk">Hukuk Mahkemeleri – İdare/Vergi Mahkemeleri</option><option value="ceza">Ceza Mahkemeleri</option><option value="savcilik">Cumhuriyet Başsavcılığı</option><option value="icra">İcra Müdürlüğü</option></select></label>
+            <label class="field span-2"><span>Mahkeme / merci adı *</span><input id="court" placeholder="Örn. Antalya 4. Asliye Hukuk Mahkemesi"></label>
+            <label class="field"><span id="labelFileNo">Esas / soruşturma / takip no *</span><input id="fileNo" placeholder="2026/… E."></label>
+            <label class="field"><span>Görevlendirme tarihi</span><input id="assignmentDate" type="date"></label>
+            <label class="field"><span>Verilen süre (gün)</span><input id="assignmentDurationDays" type="number" min="1" step="1" placeholder="Örn. 30"></label><label class="field"><span>Son teslim tarihi</span><input id="dueDate" type="date"></label>
+          </div>
+          <div class="form-divider"></div>
+          <div class="form-section-title"><span>02</span><div><h3>Taraf ve uyuşmazlık bilgileri</h3><p>Dosyada yer alan taraf ve konu bilgilerini girin.</p></div></div>
+          <div class="form-grid two">
+            <label class="field"><span id="labelPlaintiff">Davacı / başvuran</span><input id="plaintiff" placeholder="Taraf adı / unvanı"></label>
+            <label class="field"><span id="labelPlaintiffCounsel">Davacı / başvuran vekili</span><input id="plaintiffCounsel" placeholder="Varsa vekil bilgisi"></label>
+            <label class="field"><span id="labelDefendant">Davalı / karşı taraf</span><input id="defendant" placeholder="Taraf adı / unvanı"></label>
+            <label class="field"><span id="labelDefendantCounsel">Davalı / karşı taraf vekili</span><input id="defendantCounsel" placeholder="Varsa vekil bilgisi"></label>
+            <label class="field span-2"><span id="labelSubject">Dava / inceleme konusu *</span><textarea id="subject" rows="2" placeholder="İncelemenin konusunu kısa ve tarafsız şekilde yazın."></textarea></label>
+            <label class="field"><span id="labelCaseDate">Dava / olay tarihi</span><input id="caseDate" type="date"></label>
+            <label class="field"><span>Keşif / inceleme tarihi</span><input id="inspectionDate" type="date"></label>
+          </div>
+          <div class="form-divider"></div>
+          <div class="form-section-title"><span>03</span><div><h3>Bilirkişi bilgileri</h3><p>Rapor imza bölümünde görünecek bilgiler.</p></div></div>
+          <div class="form-grid three">
+            <label class="field span-2"><span>Bilirkişinin adı soyadı *</span><input id="expertName" placeholder="Ad Soyad"></label>
+            <label class="field"><span>Sicil numarası</span><input id="registryNo" placeholder="Bilirkişi sicil no"></label>
+            <label class="field span-2"><span>Uzmanlık alanı</span><input id="expertField" value="56.12 – Ses kayıtlarının metin hâline dönüştürülmesi"></label>
+            <label class="field"><span>Rapor tarihi</span><input id="reportDate" type="date"></label>
+          </div>
+    </div>
+  </aside>
   <dialog id="helpDialog" class="help-dialog"><div class="dialog-head"><div><div class="eyebrow">YARDIM</div><h2>Çalışma ve raporlama sınırları</h2></div><button id="closeHelp" class="icon-button">×</button></div><div class="dialog-body"><h3>Klavye kısayolları</h3><p><b>Boşluk</b> oynat/durdur · <b>↑</b> <b>↓</b> önceki/sonraki bölüm · <b>Enter</b> aktif bölümü onayla · <b>Y</b> aktif bölümü dinle · <b>B</b> bölümü oynatıcı konumundan böl · <b>M</b> sonrakiyle birleştir · <b>[</b> <b>]</b> oynatma hızı · <b>←</b> <b>→</b> 5 saniye geri/ileri · Metin alanındayken <b>Esc</b> ile alandan çık.</p><h3>Ses çözümleme</h3><p>Uygulama çok dilli bir konuşma tanıma modeli kullanır. Kaynak dil Türkçe ve görev konuşmayı metne dönüştürme olarak zorlanır. Bu ayar İngilizceye çeviri seçilmesini engeller; ancak yanlış kelime üretmeyeceğini garanti etmez.</p><h3>Gizlilik</h3><p>Ses içeriği tarayıcıda işlenir. Model dosyaları ilk kullanımda Hugging Face altyapısından indirilir. Dosyalar ve proje verisi tarayıcının yerel depolamasında tutulur. Kurumsal güvenlik politikanız gerektiriyorsa bu uygulamaya gerçek dosya yüklemeden önce ilgili birimden onay alın.</p><h3>Rapor çıktısı</h3><p>Bilirkişi Portalı için birincil çıktı UDF’dir. DOCX yalnızca yardımcı kopya olarak oluşturulabilir. UDF yapısı, uygulamaya eklenen boş UYAP belgesinin içerik yapısı ve sayfa ayarları esas alınarak oluşturulur. İlk kullanımda UYAP Doküman Editöründe açılış ve sayfa düzeni kontrolü yapılmalıdır. Uygulama e-imza üretmez ve portala gönderim yapmaz.</p><h3>Bilimsel sınırlılık</h3><p>Otomatik deşifre, ses kaydının uzman tarafından dinlenerek kontrol edilmesinin yerine geçmez. Konuşmacı kimliği, sesin gerçekliği, montaj olup olmadığı veya hukuki sorumluluk otomatik olarak tespit edilmez.</p></div></dialog>
   <dialog id="confirmDialog" class="help-dialog"><div class="dialog-head"><h2 id="confirmTitle">Onay</h2><button id="closeConfirm" class="icon-button">×</button></div><div class="dialog-body"><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="button button-light">Vazgeç</button><button id="confirmOk" class="button button-primary">Devam et</button></div></div></dialog>
   <div class="toast" id="toast"></div>

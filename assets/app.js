@@ -408,6 +408,13 @@ function showToast(msg) {
   showToast.t = setTimeout(() => el.classList.remove('show'), 3400);
 }
 function switchView(name) {
+  // "Dosya bilgileri" artık ayrı sayfa değil, sağ çekmece. Böylece çalışma
+  // alanı kapanmaz; dosya formu üzerine açılır.
+  if (name === 'case') {
+    populateCaseForm();
+    setCaseDrawer(true);
+    return;
+  }
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   const labels = {
@@ -423,7 +430,6 @@ function switchView(name) {
       ? 'ÇALIŞMA ALANI'
       : `0${['overview', 'case', 'audio', 'questions', 'report'].indexOf(name)} / AKİS`;
   if (name === 'report') renderReport();
-  if (name === 'case') populateCaseForm();
   if (name === 'questions') populateQuestionsForm();
   if (name === 'audio') renderAudioList();
 }
@@ -4707,10 +4713,22 @@ async function loadSamples() {
 // Esc kısayolu bulunur.
 // Ayarlar çekmecesi: model, toplu çözümleme ve depolama burada durur. Çalışma
 // alanını kapatmadığı için uzman bağlamı kaybetmez.
+// Dosya bilgileri çekmecesi. Form artık ayrı sayfa değil; çalışma alanının
+// üzerine sağdan açılır. Aynı anda yalnızca bir çekmece açık olur.
+function setCaseDrawer(open) {
+  const d = $('#caseDrawer');
+  const b = $('#drawerBackdrop');
+  if (!d) return;
+  if (open) setSettingsDrawer(false);
+  d.classList.toggle('open', open);
+  d.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (b) b.hidden = !open;
+}
 function setSettingsDrawer(open) {
   const d = $('#settingsDrawer');
   const b = $('#drawerBackdrop');
   if (!d) return;
+  if (open) setCaseDrawer(false);
   d.classList.toggle('open', open);
   d.setAttribute('aria-hidden', open ? 'false' : 'true');
   if (b) b.hidden = !open;
@@ -4761,10 +4779,10 @@ function setupEvents() {
     populateQuestionsForm();
     renderOverview();
     renderAudioList();
-    switchView('case');
+    setCaseDrawer(true);
   });
-  $('#view-case').addEventListener('input', readCaseForm);
-  $('#view-case').addEventListener('change', readCaseForm);
+  $('#caseDrawer').addEventListener('input', readCaseForm);
+  $('#caseDrawer').addEventListener('change', readCaseForm);
   $('#view-questions').addEventListener('input', (e) => {
     const t = e.target;
     if (t.dataset.q !== undefined) {
@@ -5300,17 +5318,34 @@ function setupEvents() {
   document.addEventListener('keydown', onGlobalSegKey);
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
-$('#drawerBackdrop').addEventListener('click', () => setSettingsDrawer(false));
+$('#drawerBackdrop').addEventListener('click', () => {
+  setSettingsDrawer(false);
+  setCaseDrawer(false);
+});
+$('#closeCase').addEventListener('click', () => setCaseDrawer(false));
+// Dosya bilgilerini açan düğmeler (özet ekranı).
+['#openCaseDrawer', '#quickCaseBtn', '#overviewEditBtn', '#stepCaseBtn'].forEach((sel) => {
+  const el = $(sel);
+  if (el)
+    el.addEventListener('click', () => {
+      populateCaseForm();
+      setCaseDrawer(true);
+    });
+});
 $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.classList.contains('focus-mode')));
   $('#focusExitBtn').addEventListener('click', () => setFocusMode(false));
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'textarea' || tag === 'input' || tag === 'select') return;
-    // Önce açık ayar çekmecesini kapat, sonra odak modunu.
-    const drawer = $('#settingsDrawer');
-    if (drawer && drawer.classList.contains('open')) {
+    // Önce açık çekmeceyi kapat, sonra odak modunu.
+    const anyOpen = ['#settingsDrawer', '#caseDrawer'].some((sel) => {
+      const el = $(sel);
+      return el && el.classList.contains('open');
+    });
+    if (anyOpen) {
       setSettingsDrawer(false);
+      setCaseDrawer(false);
       return;
     }
     if (document.body.classList.contains('focus-mode')) setFocusMode(false);
