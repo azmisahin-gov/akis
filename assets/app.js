@@ -755,11 +755,12 @@ function materialCardHtml(m) {
     <div class="audio-content-zone">
       <div class="card-pane ${tab === 'transcript' ? 'on' : ''}" data-pane="transcript" role="tabpanel">
         <div class="listen-strip">
-          <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
           <div class="listen-row">
+            <button class="main-play" data-main-play="${esc(m.id)}" title="Kaydın tamamını çal / duraklat (Boşluk)">▶ Çal</button>
             <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
-            <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">▶ Takip et</button>
+            <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">Takip</button>
           </div>
+          <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
         </div>
         <div class="transcript-editor">
           <div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div>
@@ -2241,6 +2242,33 @@ function playActiveSegment(m) {
   if (!card) return;
   playSegmentRange(card, m, s, m.activeSeg);
 }
+// ANA oynat: tüm kaydı kesintisiz çalar; bölümler takip moduyla ilerler.
+// Tek bölümü çalmak isteyen uzman bölüm başlığındaki "▶ Dinle"yi kullanır
+// (davranış aynı: duraklat/devam).
+function playWholeRecording(m) {
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const player = card && card.querySelector('audio');
+  if (!player) return;
+  ensureSegStopListener(player);
+  resumeAudioGraph(m);
+  player.playbackRate = m.playbackRate || 1;
+  if (!player.paused) {
+    player.pause();
+    refreshPlayButtons();
+    return;
+  }
+  // Bitiş sınırı YOK: kayıt sonuna kadar çalar.
+  if (player.__segStop) {
+    player.__segStop.stopAt = null;
+    player.__segStop.materialId = m.id;
+    player.__segStop.index = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+  }
+  segPlayback = { materialId: m.id, index: Number.isInteger(m.activeSeg) ? m.activeSeg : 0, playing: true, atEnd: false };
+  // Takip kapalıysa otomatik aç: film gibi izleme ana oynatın amacıdır.
+  if (!followState.on) setFollow(true);
+  player.play().catch(() => {});
+  refreshPlayButtons();
+}
 function cycleSpeed(m, delta) {
   const cur = m.playbackRate || 1;
   let i = PLAYBACK_SPEEDS.indexOf(cur);
@@ -2341,7 +2369,9 @@ function handleSegKey(e, card, m) {
     return true;
   }
   if (e.key === ' ' && !typing && !onButton) {
-    playActiveSegment(m);
+    // Boşluk = ana oynat: kaydın tamamı + takip. Tek bölüm için Y veya
+    // bölüm başlığındaki "▶ Dinle".
+    playWholeRecording(m);
     e.preventDefault();
     return true;
   }
@@ -2734,6 +2764,13 @@ function ensureSegStopListener(player) {
 }
 // Yalnızca oynatma düğmelerinin metnini/sınıfını günceller; panel yeniden çizilmez.
 function refreshPlayButtons() {
+  // Ana oynat düğmesi: çalıyorsa "⏸ Duraklat".
+  document.querySelectorAll('[data-main-play]').forEach((btn) => {
+    const id = btn.dataset.mainPlay;
+    const playing = segPlayback.materialId === id && segPlayback.playing;
+    btn.textContent = playing ? '⏸ Duraklat' : '▶ Çal';
+    btn.classList.toggle('on', playing);
+  });
   document.querySelectorAll('.audio-card').forEach((card) => {
     const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
     const btn = card.querySelector('[data-play-active]');
@@ -2827,9 +2864,9 @@ function followHighlight(m, idx) {
   const items = root.querySelectorAll('.seg-item');
   items.forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === idx));
   scrollListToItem(root.querySelector('.seg-list'), root.querySelector(`.seg-item[data-seg-item="${idx}"]`));
-  // Sağ panel yeni bölüme geçer. Takip sırasında bu kaçınılmaz bir yeniden
-  // çizimdir; ancak panel içi kaydırma korunur ve sayfa kaymaz (renderSegDetail
-  // scrollTop'u geri yükler).
+  // Sağ panel de yeni bölüme geçmeli; aksi hâlde sol liste ilerlerken sağ
+  // panel eski bölümde kalır (senkron kopukluğu).
+  renderSegDetail(m);
 }
 // Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
 function followKaraoke(m, idx, t) {
@@ -5270,6 +5307,9 @@ function setupEvents() {
         if (panel && !panel.hidden) closeTermPanel(m);
         else renderTermPanel(m);
       }
+    } else if (b.dataset.mainPlay !== undefined) {
+      const mm = c.materials.find((x) => x.id === b.dataset.mainPlay);
+      if (mm) playWholeRecording(mm);
     } else if (b.dataset.followToggle !== undefined) {
       setFollow(!followState.on);
       showToast(followState.on ? 'Takip açık: bölümler otomatik ilerleyecek.' : 'Takip kapalı.');

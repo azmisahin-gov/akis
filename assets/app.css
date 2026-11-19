@@ -1053,3 +1053,44 @@ body.ws-mode #view-audio .zoom-wave{height:64px}
 #view-audio .seg-actions{margin:0;padding-top:6px;border-top:1px solid #eef2f6;gap:6px}
 #view-audio .seg-actions .mini-button.primary{padding:5px 12px;font-weight:700}
 #view-audio .karaoke{margin:0}
+
+/* ============================================================================
+   v2.46 — Ana oynat üstte belirgin; senkron onarımı; editör yukarı
+   KULLANICI: "ana play'e basınca takip çalışmıyor gibi, senkron değil; soldaki
+   liste değişirken sağdaki detay değişmiyor; transcript-editor hâlâ aşağıda".
+   ============================================================================ */
+/* 1) Ana kontrol şeridi: Çal + oynatıcı + Takip TEK satır, dalganın üstünde.
+   Böylece en önemli kontrol en üstte; transcript-editor yukarı çıkar. */
+#view-audio .listen-strip{display:flex;flex-direction:column;gap:5px;
+  padding-bottom:6px;margin-bottom:5px}
+#view-audio .listen-row{display:flex;align-items:center;gap:7px}
+.main-play{flex:none;border:0;border-radius:8px;background:var(--navy);color:#fff;
+  font:700 12px 'Segoe UI';padding:8px 16px;cursor:pointer;min-width:104px;
+  box-shadow:0 3px 10px rgba(20,44,77,.25)}
+.main-play:hover{background:#1b3b63}
+.main-play.on{background:var(--green)}
+#view-audio .listen-row .audio-player{flex:1;min-width:0;height:34px}
+#view-audio .follow-btn{flex:none;padding:7px 10px;font-size:10px}
+#view-audio .follow-btn.on{background:var(--gold);border-color:var(--gold);
+  color:#2b1d06;font-weight:700}
+#view-audio .listen-strip .wave-canvas{height:44px}
+body.ws-mode #view-audio .listen-strip .wave-canvas{height:52px}
+
+/* 2) transcript-editor daha yukarı: kart başlık ve sekme boşlukları azaltıldı. */
+#view-audio .audio-card{padding:8px 10px}
+#view-audio .audio-card-top{gap:6px;padding-bottom:0}
+#view-audio .audio-file-icon{width:26px;height:26px;font-size:13px}
+#view-audio .audio-file-main b{font-size:11px}
+#view-audio .audio-file-main small{font-size:9px;margin-top:1px}
+#view-audio .audio-meta{padding-top:4px;margin-top:4px}
+#view-audio .card-tabs{margin:4px 0 6px}
+#view-audio .card-tab{padding:6px 11px;font-size:10px}
+#view-audio .card-pane[data-pane="transcript"] .transcript-head{display:none}
+#view-audio .compact-bar{margin-bottom:4px}
+#view-audio .compact-bar .seg-tool{padding:3px 7px;font-size:9px}
+
+/* 3) Takip çalışırken senkron göstergesi: liste ve detay aynı anda güncellenir.
+   Aktif bölüm vurgusu net; geçiş yumuşak. */
+#view-audio .seg-item.is-active{background:#eaf2fa;border-left-color:var(--gold)}
+#view-audio .seg-item.is-active .seg-no{color:var(--navy);font-weight:800}
+body.follow-on #view-audio .seg-item.is-active{box-shadow:inset 0 0 0 1px #cfdfef}
