@@ -6,8 +6,12 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-Sürüm numaralandırması iki parçalıdır: `v1` yayımlanmış sürüm, `v2` sıradaki
-büyük çalışma. Yol haritası için [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+**Güncel sürüm: v2.26.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
+değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
+
+Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
+[`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
 
 ## v1 — Yayımlanmış sürüm
 
@@ -142,7 +146,7 @@ büyük çalışma. Yol haritası için [`docs/YOL_HARITASI.md`](docs/YOL_HARITA
   zorunlu bir şablon yoktur; Bilirkişi Portalı UDF ve geçerli e-imza/m-imza
   ister.
 
-## v2 — Sıradaki çalışma
+## v2 — Aktif geliştirme sürümü
 
 ### v2.0 — Rapor metni tutarlılığı
 
@@ -411,7 +415,7 @@ işaretlenir. Uydurma yoktur; yalnızca metindeki gerçek tekrar ölçülür.
 - `detectRepetition` ve `segmentRepetitionFlag` saf fonksiyonlardır; birim
   testleriyle doğrulanır.
 
-## v2.15+ — Okunabilirlik (Faz 5)
+## v2.17.1 — Okunabilirlik (Faz 5)
 
 - `assets/app.js` Prettier ile biçimlendirildi (printWidth 120, 2 boşluk, tek
   tırnak). Dosya ~1943 sıkışık satırdan ~5368 okunabilir satıra indi; davranış

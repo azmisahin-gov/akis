@@ -1,5 +1,9 @@
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
+// TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
+// güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
+// bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
+const APP_VERSION = '2.26';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5624,6 +5628,9 @@ async function restoreAudioUrls() {
   if (changed) persist();
 }
 function init() {
+  // Sürüm etiketini tek kaynaktan (APP_VERSION) yaz.
+  const verEl = $('#appVersion');
+  if (verEl) verEl.textContent = `AKİS • v${APP_VERSION} • Yerel sürüm`;
   loadState();
   renderCaseSelect();
   populateCaseForm();

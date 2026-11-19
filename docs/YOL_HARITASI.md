@@ -1,8 +1,12 @@
 # Yol Haritası
 
-AKİS sürüm numarasını iki parçalı tutar: `v1` yayımlanmış ve çalışan sürümdür,
-`v2` ise bir sonraki büyük çalışmadır. Ayrıntılı sürüm geçmişi için
-[`../CHANGELOG.md`](../CHANGELOG.md) dosyasına bakın.
+AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
+`assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
+yazılır. **Güncel sürüm: v2.26.**
+
+Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
+başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
+[`../CHANGELOG.md`](../CHANGELOG.md).
 
 ## v1 — Yayımlanmış sürüm (tamamlandı)
 
@@ -51,37 +55,59 @@ Ayrıntı [`../CHANGELOG.md`](../CHANGELOG.md) ve
 - v2.7: kayıt kökeni ve teslim zinciri.
 - v2.8: sayfa sıçramasının kök nedeninin giderilmesi.
 
-### v2.9 — Yeni AKİS PRO arayüzü
+### v2.9–v2.13 — Deşifre deneyimi (tamamlandı)
 
-- Yenilenmiş ana kontrol paneli ve modern dosya yönetimi.
-- Gelişmiş rapor önizlemesi ve toplu işlem ekranı.
+Dinleme denetimleri (akıllı Dinle/Duraklat + Durdur), milisaniye zaman kodu,
+yakınlaştırılmış dalga formu etkileşimi, hızlı etiketler, paragraf oluşturma,
+karaoke vurgulama, DSP dinleme yardımcıları ve odak modu çıkışı. Ayrıntı:
+`CHANGELOG.md`.
 
-> Not: Deşifre deneyimine yönelik arayüz düzeltmeleri ve iyileştirmeler
-> (dinleme denetimleri, ms zaman kodu, yakınlaştırılmış dalga formu etkileşimi,
-> hızlı etiketler, paragraf, karaoke, dinleme yardımcıları, odak modu çıkışı)
-> uygulandı ve `CHANGELOG.md` içinde v2.9–v2.13 olarak belgelendi. "Yeni AKİS
-> PRO arayüzü" kapsamındaki kalan tasarım çalışması sürüyor.
+### v2.14 — Kayıt listesi (master–detail) (tamamlandı)
 
-### v2.10 — Düşük güvenli bölüm vurgusu
+Çok kayıtlı dosyalarda sayfa uzaması giderildi: üstte kompakt kayıt listesi,
+altta yalnızca seçili kaydın detayı.
 
-Kullanıcı, uzmanın hızlı bitirebilmesi için düşük güvenli kelimelerin
-işaretlenmesini istedi. Kütüphane (transformers.js) dışarıya güven skoru
-vermediği için uydurma skor üretilmedi. Değerlendirilecek seçenekler:
-- Model güven skoru dışa aktarılırsa gerçek skor kullanmak.
-- Alternatif: dil modeli tabanlı tutarsızlık işareti (yine gerekçeli olmak
-  koşuluyla).
+### v2.15–v2.17 — NLP ölçümleri (tamamlandı)
 
-### v2.11 — Mercie özel rapor alanları
+Sessizlik/boşluk ölçümü, terim yazım tutarlılığı, tekrar/dolgu tespiti.
+Hepsi deterministik; uydurma skor üretilmez.
 
-v1'de bölüm yapısı dört merci türünde aynıdır; fark yalnızca kapak alanlarındadır.
-v2'de ceza, savcılık ve icra için bölüm içi alanların ayrıca uzmanlaştırılması
-değerlendirilecektir.
+### v2.18 — Akış test kapsamı (tamamlandı)
 
-### v2.12 — Test kapsamını genişletme
+Yedekleme, model yöneticisi ve deşifre motoru karar mantığı saf fonksiyonlara
+ayrılıp otomatik teste bağlandı.
 
-Rapor oluşturucuları, deşifre alanı, WER, köken ve özet otomatik denetleniyor
-(`tools/rapor-tutarlilik-testi.mjs`, 8 senaryo). Deşifre motoru, model yöneticisi
-ve yedekleme akışları için de otomatik kontrol eklenmesi değerlendirilecektir.
+### v2.19–v2.26 — Model ve çözümleme düzeltmeleri (tamamlandı)
+
+Model görünürlüğü ve yükleme ilerlemesi; timestamp token sızıntısı ("- - - -");
+dtype/bellek sorunları; GPU→CPU geri dönüşü; gerçek model boyutları;
+cache-busting. Ayrıntı: `CHANGELOG.md`.
+
+## Planlanan çalışmalar (henüz uygulanmadı)
+
+Bu maddeler henüz kodlanmadı; sürüm numarası verilmedi.
+
+### Arayüz tasarımı
+
+Kullanım kolaylığı ve estetik: üst menü seçeneği, görsel dil, hizalama, klavye
+ile tam gezinme. `OZELLIKLER.md` listesindeki mevcut özelliklerin **hiçbiri
+kaybolmamalı**.
+
+### Düşük güvenli bölüm vurgusu
+
+Kütüphane (transformers.js) güven skoru vermediği için uydurma skor üretilmedi.
+Model skoru dışa aktarılırsa gerçek skor; aksi halde gerekçeli alternatif
+değerlendirilecek.
+
+### Mercie özel rapor alanları
+
+Bölüm yapısı dört merci türünde aynıdır; fark yalnızca kapak alanlarındadır.
+Ceza, savcılık ve icra için bölüm içi alanların uzmanlaştırılması değerlendirilecek.
+
+### Model karşılaştırma aracı
+
+Aynı kaydı birden çok modelle çözümleyip WER ve metni yan yana göstermek.
+WER yalnızca referans metni bulunan kayıtlarda hesaplanabilir.
 
 ## Değişmez kurallar
 

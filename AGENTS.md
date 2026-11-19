@@ -2,57 +2,55 @@
 
 Bu dosya, AKİS deposunda çalışan ajanlar için kalıcı bağlam sağlar.
 
-## Sıradaki çalışma: sürümleme ve arayüz tasarımı
+## Sıradaki çalışma: arayüz tasarımı
 
-Tamamlanan v2 çalışmalarından (deşifre deneyimi, master–detail, NLP ölçümleri,
-app.js biçimlendirme, akış test kapsamı) sonra iki büyük iş planlanmıştır.
-Öncelik sırası aşağıda.
+### Aşama 1 — Sürümleme ve depo organizasyonu (TAMAMLANDI, v2.26)
 
-### Aşama 1 — Sürümleme ve depo organizasyonu (öncelikli)
+Sürüm numarası artık tek kaynaktan gelir (`assets/app.js` → `APP_VERSION`),
+arayüzdeki etiket oradan yazılır ve tüm belgeler aynı numarayı gösterir.
+Yapılanlar:
 
-Şu an sürüm numarası belirsiz: arayüzde hâlâ "v1" yazıyor ama CHANGELOG v2.x
-çalışmalarını içeriyor. Yapılacaklar:
+- Arayüzdeki "v1" etiketi gerçek sürüme (v2.26) çekildi; etiket artık
+  `#appVersion` üzerinden `APP_VERSION`'dan yazılıyor.
+- `YOL_HARITASI.md` ile `CHANGELOG.md` arasındaki **sürüm numarası çakışması**
+  giderildi (v2.9–v2.12 iki belgede farklı şeyler anlatıyordu).
+- `CHANGELOG.md` sırası düzeltildi; sıra dışı "v2.15+" başlığı `v2.17.1` oldu.
+- README, OZELLIKLER, AGENTS güncel sürüme hizalandı.
+- Kural: her güncellemede `APP_VERSION` + CHANGELOG başlığı + YOL_HARITASI
+  birlikte artırılır, `?v=` parametreleri güncellenir.
 
-- Mevcut durumu tam bir depo denetimiyle çıkar; hangi sürümde, hangi
-  özelliklerin çalıştığını netleştir.
-- Tek ve tutarlı bir sürüm şeması belirle ve uygula (arayüzdeki sürüm etiketi,
-  CHANGELOG, README, YOL_HARITASI hepsi aynı numarayı göstersin).
-- Bundan sonraki her çalışma yeni bir sürüm numarasıyla yapılsın; her
-  güncellemede sürüm görünür biçimde artsın.
-- Tüm belgeleri (README, OZELLIKLER, MIMARI, YOL_HARITASI, BILINEN_SORUNLAR,
-  KAYNAK, CHANGELOG) yeni sürüme göre düzenle.
-
-### Aşama 2 — Arayüz tasarımı (sonra)
+### Aşama 2 — Arayüz tasarımı (SIRADAKİ)
 
 Kullanım kolaylığını ve estetiği artırmak; masaüstü uygulaması hissini
 güçlendirmek. Değerlendirilecekler: kenar çubuğu yerine üst menü seçeneği,
-genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md` listesindeki mevcut özelliklerin **hiçbiri kaybolmamalı**.
+genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md`
+listesindeki mevcut özelliklerin **hiçbiri kaybolmamalı**.
 
 ### Bilinen açık hatalar
 
-1. **Model yükleme ilerlemesi okunaksız:** indirme yüzdesi/çubuk karışık
-   görünüyor; hangi dosyanın yüklendiği ve genel ilerleme anlaşılmıyor.
-2. **Seçili model görünmüyor:** hangi modelin seçili olduğu ve hangi kaydın
-   hangi modelle çözümlendiği arayüzde belli değil. Her kayıt için kullanılan
-   model gösterilmeli.
-3. **Orta/temel model çıktısı bozuk:** temiz bir kayıtta orta model
-   "- - - - - -" gibi çizgiler üretiyor; küçük model "konuşma tespit edemedi"
-   diyor; large/turbo çalışıyor. Model seçimi ve dtype/kuantizasyon ayarları
-   gözden geçirilmeli (bkz. CHANGELOG: int8 WASM'da yüklenmiyor, q8 uzun
-   kayıtta dolgu üretiyor).
-4. **Model seçimi kaydı etkilemiyor gibi:** modeli seçip "Modeli yükle"
-   denmeden çözümleme eski modelle yapılıyor olabilir; seçim ile yükleme
-   arasındaki ilişki netleştirilmeli.
+**Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
+giderildi ve kullanıcı tarafından uçtan uca doğrulandı (Tiny → Large-v3-turbo
+arası tüm modeller yüklendi ve çözümledi; gerçek Türkçe çıktı alındı).
 
-Yukarıdaki 1, 2 ve 4 numaralı maddeler v2.19'da giderildi (genel ilerleme,
-"Yüklü model" rozeti, kayıt başına "Çözümleyen model", seçim-yükleme uyarısı).
-Madde 3 için dtype cihaza göre ayarlandı (WASM fp32 / WebGPU fp16); ancak
-gerçek model indirilerek **uçtan uca doğrulanması gerekir** — bu doğrulama
-yapılana kadar açık kabul edilmelidir.
+Kapanan maddeler ve sürümleri:
 
-> v2.20 notu: Madde 3'ün gerçek kök nedeni dtype değil, `return_timestamps:
-> 'word'` idi (timestamp token sızıntısı). Düzeltildi; kullanıcı doğrulaması
-> bekleniyor.
+1. Model yükleme ilerlemesi okunaksız → **v2.24/v2.26** (sabit payda,
+   hiç azalmayan yüzde, "N dosya önbellekten" notu).
+2. Seçili/yüklü model görünmüyor → **v2.19** ("Yüklü model" rozeti, kayıt
+   başına "Çözümleyen model").
+3. Orta/temel model "- - - -" üretiyordu → **v2.20** (timestamp token
+   sızıntısı: `return_timestamps:'word'` kaldırıldı, çöp ayıklama eklendi).
+4. Model seçimi yükleme ilişkisi belirsizdi → **v2.19** (seçim-yükleme uyarısı).
+5. GPU bellek taşması (`Aborted`) → **v2.23** (bellek güvenli dtype sırası,
+   GPU→CPU geri dönüşü).
+6. Model boyutu etiketleri yanlıştı → **v2.25** (gerçek ölçümler).
+
+### Bilinen sınırlar (hata değil, tasarım kararı)
+
+- WER/doğruluk oranı yalnızca **referans metni** olan kayıtlarda hesaplanır;
+  gerçek dosyalarda referans yoktur, bu yüzden çözümleme yaptıkça kendiliğinden
+  oran çıkmaz.
+- Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz; ağır ML işidir.
 
 ## Proje özeti
 
@@ -153,9 +151,23 @@ etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
 
 ## Sürüm şeması
 
-İki parçalı: `v1` yayımlanmış sürüm, `v2` sıradaki büyük çalışma. Yol haritası:
-[`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md). Sürüm geçmişi:
-[`CHANGELOG.md`](CHANGELOG.md).
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.26.**
+
+Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
+etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
+metni bulunur.
+
+Her sürüm güncellemesinde **üç yer birlikte** artırılır:
+
+1. `assets/app.js` → `APP_VERSION`
+2. `CHANGELOG.md` → yeni `## vX.Y — başlık` bölümü
+3. `docs/YOL_HARITASI.md` → ilgili sürüm başlığı
+
+Ayrıca `index.html`'deki `assets/app.js?v=…` ve `assets/app.css?v=…`
+parametreleri güncellenir (tarayıcı önbelleğini kırmak için).
+
+Sürüm geçmişi: [`CHANGELOG.md`](CHANGELOG.md). Yol haritası:
+[`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
 
 ## Commit dili
 
