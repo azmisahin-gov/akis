@@ -2,7 +2,7 @@
 
 Bu dosya, AKİS deposunda çalışan ajanlar için kalıcı bağlam sağlar.
 
-## Sıradaki çalışma: arayüz tasarımı
+## Tamamlanan aşamalar
 
 ### Aşama 1 — Sürümleme ve depo organizasyonu (TAMAMLANDI, v2.26)
 
@@ -19,12 +19,24 @@ Yapılanlar:
 - Kural: her güncellemede `APP_VERSION` + CHANGELOG başlığı + YOL_HARITASI
   birlikte artırılır, `?v=` parametreleri güncellenir.
 
-### Aşama 2 — Arayüz tasarımı (SIRADAKİ)
+### Aşama 2 — Arayüz tasarımı (TAMAMLANDI, v2.27–v2.31)
 
-Kullanım kolaylığını ve estetiği artırmak; masaüstü uygulaması hissini
-güçlendirmek. Değerlendirilecekler: kenar çubuğu yerine üst menü seçeneği,
-genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md`
-listesindeki mevcut özelliklerin **hiçbiri kaybolmamalı**.
+Beş faz uygulandı: (1) dar ikon rayı + üst bar + durum çubuğu, (2) ayarlar
+sağ çekmecede, (3) dosya bilgileri sağ çekmecede (ray 5→4), (4) uzun
+açıklamalar ⓘ ipucunda (kritik uyarılar görünür kaldı), (5) rapor tam ekran.
+
+Yeni arayüz mimarisi:
+- `#settingsDrawer` (model/kuyruk/depolama), `#caseDrawer` (dosya bilgileri).
+  Aynı anda yalnızca biri açık; Esc/×/karartma kapatır.
+- `setSettingsDrawer(open)`, `setCaseDrawer(open)`, `setReportFull(on)`.
+- `renderStatusBar()` alt durum çubuğunu besler; `renderOverview()` içinden
+  ve `updateModelBadge()`'den çağrılır.
+- `switchView('case')` artık çekmeceyi açar (eski sayfa yok); bu sayede
+  workflow/hızlı erişim/`data-goto="case"` girişleri çalışmaya devam eder.
+- Rapor: `body.report-full` sınıfı kabuğu gizler; ince çubuk kalır.
+
+Dikkat: `id`/`data-*` işaretleri deşifre/model/rapor mantığının dayanağıdır;
+çekmeceye taşırken bunlar korunmalıdır.
 
 ### Bilinen açık hatalar
 
@@ -151,7 +163,7 @@ etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.26.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.31.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

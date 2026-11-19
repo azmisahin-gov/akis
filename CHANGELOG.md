@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.26.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.31.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -586,3 +586,39 @@ Kullanıcı yüklemenin hep %70'ten başladığını bildirdi. Teknik olarak do�
   çıkmaz. Uzman, metni kaydı dinleyerek düzeltir; bu bir doğruluk ölçümü değil
   kontrol sürecidir. WER yalnızca karşılaştırma (hangi model daha iyi) için,
   referans bulunan durumlarda kullanılır.
+
+## v2.27–v2.31 — Arayüz yenilemesi (beş faz)
+
+Kullanıcı geri bildirimi: "çok güzel özellikler var ama dağınık, her yerde çok
+yazı var". Sayfa değiştirme yerine **tek çalışma alanı + çekmeceler** düzenine
+geçildi. Tüm `id`/`data-*` işaretleri korundu; deşifre/model/rapor mantığı
+değişmedi.
+
+### v2.27 — Kabuk
+- 264px kenar çubuğu → **68px dar ikon rayı** (ikon + kısa etiket, aktif
+  göstergesi, ses kaydı rozeti).
+- Çalışma dosyası seçici ve dosya adı **üst bara** taşındı.
+- **Alt durum çubuğu**: dosya · kayıt · bölüm · denetim % · yüklü model + GPU/CPU.
+- Odak modu düğmesi ikona indirildi; duyarlı (≤900px etiket gizli, ≤640px alt sekme).
+
+### v2.28 — Ayarlar çekmecesi
+- Ses kayıtları sayfası 6 dikey bloktan **3'e** indi (yükleme + liste + detay).
+- Model ayarları, toplu çözümleme ve depolama **sağ çekmeceye** taşındı;
+  çalışma alanı kapanmıyor. Esc / × / karartma ile kapanır.
+
+### v2.29 — Dosya çekmecesi
+- "Dosya bilgileri" ayrı sayfa olmaktan çıktı; **çekmeceye** taşındı.
+- Ray **5 → 4 öğe**: Özet · Ses · İnceleme · Rapor.
+- Genel görünüm sadeleşti; tüm giriş noktaları (`switchView('case')` dahil)
+  çekmeceyi açar.
+
+### v2.30 — Metin temizliği
+- "Nasıl çalışır" türü uzun açıklamalar **ⓘ ipucuna** taşındı (CSS-only,
+  klavye erişilebilir).
+- **Kritik uyarılar görünür kaldı**: mesleki sınır, "kontrol edilmedi",
+  dolgu/çöp/tekrar, sessizlik, boş sonuç yönlendirmesi.
+
+### v2.31 — Rapor tam ekran
+- **⛶ Tam ekran**: kabuk gizlenir, önizleme genişler; ince çubukta
+  "← Çalışmaya dön", "🖨 Yazdır", "UDF indir". Esc ile çıkılır.
+- Yazdırmada çubuk gizlenir; çıktı temiz kalır.

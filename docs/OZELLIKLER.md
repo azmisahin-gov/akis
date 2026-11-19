@@ -1,7 +1,24 @@
-# Özellikler (v2.26 — mevcut durum)
+# Özellikler (v2.31 — mevcut durum)
 
-Bu belge, AKİS v2.26'da **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.31'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
+
+## Arayüz düzeni (v2.27–v2.31)
+
+- **Dar ikon rayı** (68px): Özet · Ses · İnceleme · Rapor. Aktif öğe altın
+  çizgiyle işaretlenir; ses kaydı sayısı rozet olarak görünür.
+- **Üst bar:** çalışma dosyası seçici, sayfa başlığı, kayıt durumu, içe/dışa
+  aktarma düğmeleri her an görünür.
+- **Alt durum çubuğu:** dosya · kayıt sayısı · bölüm sayısı · denetim yüzdesi ·
+  yüklü model ve çalışma birimi (GPU/CPU).
+- **Sağ çekmeceler:** Ayarlar (model, toplu çözümleme, depolama) ve Dosya
+  bilgileri. Çalışma alanı kapanmaz; aynı anda yalnızca biri açılır; Esc, ×
+  veya karartmaya tıklayarak kapanır.
+- **ⓘ ipuçları:** "nasıl çalışır" türü açıklamalar başlık yanındaki ipucunda;
+  kritik uyarılar (mesleki sınır, denetlenmemiş bölüm, dolgu/çöp) görünür kalır.
+- **Rapor tam ekran:** kabuk gizlenir; "← Çalışmaya dön", "Yazdır", "UDF indir".
+- **Duyarlı:** ≤900px etiketler gizlenir; ≤640px ray alt sekmeye döner.
+- **Odak modu** ikon olarak ray altında; Esc ile çıkılır.
 
 ## Çalışma dosyası yönetimi
 

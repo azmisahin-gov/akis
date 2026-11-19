@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.26.**
+yazılır. **Güncel sürüm: v2.31.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -77,6 +77,11 @@ Hepsi deterministik; uydurma skor üretilmez.
 Yedekleme, model yöneticisi ve deşifre motoru karar mantığı saf fonksiyonlara
 ayrılıp otomatik teste bağlandı.
 
+### v2.27–v2.31 — Arayüz yenilemesi (tamamlandı)
+
+Dar ray + üst bar + durum çubuğu; ayarlar ve dosya bilgileri sağ çekmecede;
+uzun açıklamalar ⓘ ipucunda; rapor tam ekran modu. Ayrıntı: `CHANGELOG.md`.
+
 ### v2.19–v2.26 — Model ve çözümleme düzeltmeleri (tamamlandı)
 
 Model görünürlüğü ve yükleme ilerlemesi; timestamp token sızıntısı ("- - - -");
@@ -86,12 +91,6 @@ cache-busting. Ayrıntı: `CHANGELOG.md`.
 ## Planlanan çalışmalar (henüz uygulanmadı)
 
 Bu maddeler henüz kodlanmadı; sürüm numarası verilmedi.
-
-### Arayüz tasarımı
-
-Kullanım kolaylığı ve estetik: üst menü seçeneği, görsel dil, hizalama, klavye
-ile tam gezinme. `OZELLIKLER.md` listesindeki mevcut özelliklerin **hiçbiri
-kaybolmamalı**.
 
 ### Düşük güvenli bölüm vurgusu
 
