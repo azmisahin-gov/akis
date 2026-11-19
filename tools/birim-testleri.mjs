@@ -66,6 +66,7 @@ const EXPOSE = [
   'dtypeCandidates', 'dtypeLabel', 'modelShortName', 'looksLikeGarbage',
   'nudgeBoundary', 'loopRange', 'setLoopPoint', 'loopLabel',
   'segQuickCheck', 'segCounts', 'segMatchesFilter', 'tcRange', 'fmtWer',
+  'fmtBytesShort',
   'asrProfile', 'asrProfileOptions', 'ASR_PROFILES',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -697,6 +698,19 @@ console.log('\n[15] WER biçimi');
   eq('tam hata', T.fmtWer(1), '%100,0');
   eq('sayı değilse tire', T.fmtWer(NaN), '—');
   eq('nokta KULLANILMAZ', /\./.test(T.fmtWer(0.9403)), false);
+}
+
+
+// --- 16. Depolama gösterimi: dava verisi != model önbelleği ----------------
+// v2.83: tek sayı göstermek "dava verim doldu" yanılgısı yaratıyordu; model
+// indirmek (1,5 GB) dava verisini şişirmiş gibi görünüyordu.
+console.log('\n[16] Depolama gösterimi');
+{
+  eq('KB biçimi', T.fmtBytesShort(5 * 1024), '5 KB');
+  eq('MB biçimi', T.fmtBytesShort(17 * 1024 * 1024), '17.0 MB');
+  eq('GB biçimi', T.fmtBytesShort(10 * 1024 * 1024 * 1024), '10.00 GB');
+  eq('sıfır', T.fmtBytesShort(0), '0 B');
+  eq('negatif sıfır sayılır', T.fmtBytesShort(-5), '0 B');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

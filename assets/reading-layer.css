@@ -1006,3 +1006,23 @@ body.ws-mode #view-audio .seg-list {
   padding: 3px 9px; white-space: nowrap;
 }
 #view-audio .tb-more [data-bulk-approve]:hover { filter: brightness(1.06); }
+
+/* --- v2.83 — Otomatik çıktı ile düzeltme karşılaştırması ------------------
+   Adli ayrım: modelin ürettiği metin (asrText, değişmez) ile bilirkişinin
+   onayladığı metin (text) ayrı belgelerdir. Metin değiştiyse model çıktısı
+   katlanmış bir blokta gösterilir; yer kaplamaz, ama kaybolmaz. */
+#view-audio .sd-text .asr-compare {
+  border: 1px solid var(--line-2); border-left: 3px solid var(--ink-3);
+  border-radius: var(--r-sm); background: var(--surface-2);
+  font-size: var(--fs-xs); color: var(--ink-2);
+}
+#view-audio .sd-text .asr-compare > summary {
+  cursor: pointer; padding: var(--sp-2) var(--sp-3);
+  font-weight: 600; color: var(--ink-2); list-style: none;
+}
+#view-audio .sd-text .asr-compare > summary::-webkit-details-marker { display: none; }
+#view-audio .sd-text .asr-compare > summary::before { content: '▸ '; color: var(--ink-3); }
+#view-audio .sd-text .asr-compare[open] > summary::before { content: '▾ '; }
+#view-audio .sd-text .asr-body { padding: 0 var(--sp-3) var(--sp-2); }
+#view-audio .sd-text .asr-body p { margin: 0 0 var(--sp-2); line-height: var(--lh-body); }
+#view-audio .sd-text .asr-note { font-size: var(--fs-2xs); color: var(--ink-3); }

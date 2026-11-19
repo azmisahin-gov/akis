@@ -6,12 +6,68 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.82.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.83.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.83 — Otomatik çıktı ayrı saklanıyor + depolama iki havuzu ayırıyor
+
+KULLANICI: harici bir analiz metni paylaştı; "özellikle veri kısmı beni
+endişelendirdi, normalde storage'ı almıştık, veri sorunumuz yok ama".
+
+Metindeki maddelerin çoğu AKİS'te **zaten vardı** (SHA-256, değişmez günlük,
+kelime senkronizasyonu, klavye kısayolları, duyarlı arayüz). İki madde
+**gerçek boşluktu** ve ikisi de düzeltildi.
+
+### 1. Otomatik çıktı ile düzeltme ayrılmıyordu (GERÇEK BOŞLUK)
+
+Modelin ürettiği metin yalnız `history` dizisinde kalıyordu ve **10 sürümden
+sonra `shift()` ile SİLİNİYORDU**. Yani bilirkişi 11 kez düzenlerse "model ne
+dedi" bilgisi kalıcı olarak kayboluyordu. Adli incelemede bu kabul edilemez:
+otomatik çıktı ile onaylanmış metin ayrı belgelerdir.
+
+Çözüm: `asrText`, `asrModel`, `asrAt` alanları. Model çıktısı **üretim anında**
+(`parseAsrResult`) ayrı yazılır ve bir daha **değiştirilmez**. Bölüm detayında
+metin değiştiyse "Otomatik çözümleme çıktısı (değiştirilmedi)" katlanmış bloğu
+görünür — model kimliği ve zamanıyla. Eski kayıtlarda alan boştur; uydurma
+yapılmaz.
+
+### 2. Depolama göstergesi yanıltıyordu (GERİ BİLDİRİMİN HAKLI KISMI)
+
+Kota **gerçekti** (`navigator.storage.estimate()`), ama tek sayı gösteriliyordu
+ve o sayı **model önbelleğini de** içeriyor. 1,5 GB'lık Large model indirince
+"%15 dolu" görünüyordu — dava verisi boş olsa bile. "Verim doldu" korkusunun
+kaynağı buydu.
+
+Çözüm: üst bar artık **iki havuzu ayırır**:
+`Dava verisi: 17 MB · Model: 0 B · Kota: 10 GB (%0)`.
+Model boyutu `scanModelCache()`'ten gelir. İpucunda hangisinin silinebilir
+(model, yeniden indirilir) hangisinin silinemez (dava verisi) olduğu yazar.
+
+### 3. Harici metindeki diğer maddeler — durum
+
+| Madde | Durum |
+|---|---|
+| SHA-256 kaydı ve doğrulama | **Vardı** (v1'den beri) |
+| Orijinal ses değişmez | **Vardı** (çalışma kopyası kullanılır) |
+| Değişiklik kaydı (tarih/saat/kullanıcı) | **Vardı** (`history` + delil zinciri) |
+| Kelime bazlı senkronizasyon | **Vardı** (`words`, karaoke) |
+| Klavye kısayolları | **Vardı** |
+| Duyarlı arayüz | **Vardı** (900/640px kırılımları) |
+| Bölümleme kolaylığı | **Vardı** (✂ Böl, Alt+tıkla, A–B döngü) |
+| Otomatik çıktı ayrı | **YOKTU → eklendi** |
+| Depolama ayrımı | **YOKTU → eklendi** |
+| Kelime başı/sonu hassas düzenleme | Kısmen: bölüm sınırı 1 ms; kelime sınırı arayüzde düzenlenemez |
+| "Sunucu kaydı" ayrımı | **Yok ve olmayacak**: AKİS'te sunucu yok (depo ilkesi) |
+
+### 4. Test
+
+`sema-testi.mjs` [3c]: 10 kontrol — asrText/text ayrı, normalize korur, eski
+kayıtta uydurma yok. `birim-testleri.mjs` [16]: 5 kontrol — bayt biçimi.
+Toplam: 236 birim + 355 şema.
 
 ## v2.82 — Yerleşim düzeltmeleri (görsel bozulma)
 

@@ -1,6 +1,6 @@
-# Özellikler (v2.82 — mevcut durum)
+# Özellikler (v2.83 — mevcut durum)
 
-Bu belge, AKİS v2.82'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.83'te **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -44,6 +44,13 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   birleşir.
 - **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümleri toplar.
 - **Metin geçmişi:** bölüm başına son 10 sürüm (`geçmiş (N)` düğmesi).
+- **Otomatik çıktı ile düzeltme AYRI (v2.83):** modelin ürettiği ham metin
+  `asrText` alanında **değişmez** biçimde saklanır; bilirkişinin düzenlediği
+  metin `text` alanındadır. Metin değiştiyse bölüm detayında "Otomatik
+  çözümleme çıktısı (değiştirilmedi)" katlanmış bloğu açılır; model kimliği ve
+  çözümleme zamanı da görünür. Öncesinde model çıktısı yalnız `history`'de
+  kalıyor ve **10 sürümden sonra siliniyordu** — adli açıdan kabul edilemez.
+  Eski kayıtlarda alan boştur; uydurma yapılmaz.
 - **Hızlı onaya uygun filtresi (v2.80):** sol panelde **Hızlı onaya uygun**
   sekmesi yalnız *gözlemlenebilir* ölçütü geçen bekleyen bölümleri listeler.
   Uydurma bir doğruluk yüzdesi **yoktur**; dışlama nedenleri metinle yazılır:

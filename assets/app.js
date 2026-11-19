@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.82';
+const APP_VERSION = '2.83';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2844,6 +2844,24 @@ function spkSelectOptions(m, current) {
   const legacy = cur && !known ? opt(cur, `${cur} (kayıtlı değil)`, true) : '';
   return head + body + legacy;
 }
+// OTOMATİK ÇÖZÜMLEME ÇIKTISI ile bilirkişinin metnini karşılaştırır (v2.83).
+// Adli incelemede "model ne dedi" ile "bilirkişi neyi onayladı" ayrı
+// belgelerdir; bu blok ikisini yan yana gösterir. Metin değişmediyse blok
+// gösterilmez (gereksiz gürültü yok). Otomatik çıktı yoksa (eski kayıt veya
+// elle girilmiş bölüm) hiçbir şey uydurulmaz, sessiz kalınır.
+function asrCompareHtml(m, s, i) {
+  const asr = (s.asrText || '').trim();
+  if (!asr) return '';
+  const cur = (s.text || '').trim();
+  if (asr === cur) return '';
+  const model = s.asrModel ? ` · ${esc(modelShortName(s.asrModel))}` : '';
+  const when = s.asrAt ? ` · ${esc(new Date(s.asrAt).toLocaleString('tr-TR'))}` : '';
+  return `<details class="asr-compare">
+    <summary>Otomatik çözümleme çıktısı (değiştirilmedi${model}${when})</summary>
+    <div class="asr-body"><p>${esc(asr)}</p>
+    <p class="asr-note">Bu metin modelin ürettiği ham çıktıdır ve <b>değiştirilmez</b>. Yukarıdaki alan sizin düzeltmenizdir; rapora onayladığınız metin girer.</p></div>
+  </details>`;
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -2951,6 +2969,7 @@ function segDetailHtml(m) {
     <div class="sd-right">
       <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
       <div class="sd-text">
+        ${asrCompareHtml(m, s, i)}
         <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
         <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
           ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
@@ -5483,7 +5502,11 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
         id: newId('sg'),
         start: timecode(offsetSeconds + st),
         end: timecode(offsetSeconds + en),
-        text
+        text,
+        // Modelin ÜRETTİĞİ metin ayrı ve değişmez. Bilirkişi düzenledikçe
+        // `text` değişir, bu alan DEĞİŞMEZ (adli ayrım).
+        asrText: text,
+        asrAt: new Date().toISOString()
       };
       if (Array.isArray(x.words)) {
         seg.words = x.words.map((w) => ({
@@ -5501,7 +5524,9 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
         id: newId('sg'),
         start: timecode(offsetSeconds),
         end: timecode(offsetSeconds + (windowSeconds || 0)),
-        text
+        text,
+        asrText: text,
+        asrAt: new Date().toISOString()
       });
     }
   }
@@ -5673,6 +5698,10 @@ async function retranscribeSegment(materialId, index) {
       pushSegmentHistory(s, oldText);
     }
     s.text = text;
+    // Yeniden çözümlemede de model çıktısı ayrı saklanır (v2.83).
+    s.asrText = text;
+    s.asrModel = (asrPipeline && asrPipeline.__modelId) || s.asrModel || '';
+    s.asrAt = new Date().toISOString();
     s.textRev = 0;
     s.review = 'pending';
     s.words = meaningful.flatMap((f) => f.words || []);
@@ -5778,6 +5807,15 @@ async function transcribe(id) {
       refreshAudioStatusZone(m);
     }
     const meaningful = collected.filter((s) => !isHallucination(s.text));
+    // Model kimliği ve zamanı her bölüme yazılır; otomatik çıktı (asrText)
+    // parseAsrResult içinde zaten ayrıldı (v2.83).
+    const mid = (asrPipeline && asrPipeline.__modelId) || '';
+    const at = new Date().toISOString();
+    for (const sg of collected) {
+      if (!sg.asrText) sg.asrText = sg.text || '';
+      sg.asrModel = mid;
+      if (!sg.asrAt) sg.asrAt = at;
+    }
     m.segments = collected;
     const fillerCount = collected.length - meaningful.length;
     if (m.failedWindows) {
@@ -8496,12 +8534,12 @@ function renderStorage(scan) {
 // ---- Depolama kullanımı (v2.73) -----------------------------------------
 // Kullanıcı "ne kadar yer kaldı" sorusunu ekranda görmeli. Veri artık
 // IndexedDB'de (GB mertebesi kota); yine de kullanım izlenir.
-let usageInfo = { usage: 0, quota: 0 };
+let usageInfo = { usage: 0, quota: 0, modelBytes: 0 };
 async function refreshUsage() {
   try {
     if (!navigator.storage || !navigator.storage.estimate) return;
     const e = await navigator.storage.estimate();
-    usageInfo = { usage: e.usage || 0, quota: e.quota || 0 };
+    usageInfo = { usage: e.usage || 0, quota: e.quota || 0, modelBytes: usageInfo.modelBytes || 0 };
     renderUsage();
   } catch (e) {}
 }
@@ -8511,25 +8549,55 @@ function fmtBytesShort(n) {
   if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
+// Depolama göstergesi İKİ havuzu AYIRIR (v2.83).
+// Neden: `navigator.storage.estimate()` tarayıcının TÜM kullanımını verir;
+// model önbelleği (1,5 GB'a kadar) bu sayının içindedir. Tek sayı göstermek
+// "dava verim doldu" yanılgısı yaratıyordu: model indirince %15 dolu görünüp
+// veri kaybı korkusu doğuruyordu. Artık model ayrı, dava verisi ayrı yazılır.
+// Kota yine tarayıcıdan gelir (uydurma yok); yalnız sunum dürüstleşir.
 function renderUsage() {
   const el = $('#usageState');
   if (!el) return;
-  const { usage, quota } = usageInfo;
+  const { usage, quota, modelBytes } = usageInfo;
+  const dataBytes = Math.max(0, usage - (modelBytes || 0));
+  // Kota okunamazsa (gizli mod, kısıtlı tarayıcı) gösterge BOŞ BIRAKILMAZ:
+  // bilinen büyüklükler yazılır, kota "bilinmiyor" olur. Sessiz boşluk,
+  // "veri yok" izlenimi verirdi.
   if (!quota) {
-    el.textContent = '';
+    if (!usage && !modelBytes) {
+      el.textContent = '';
+      el.className = 'usage-state';
+      el.title = 'Tarayıcı depolama kotası okunamadı. Veriler yine kaydedilir.';
+      return;
+    }
+    el.textContent = `Dava verisi: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · Kota: bilinmiyor`;
+    el.className = 'usage-state';
+    el.title =
+      'Tarayıcı bu ortamda kota bilgisi vermiyor (gizli mod olabilir).\n' +
+      `Dava verisi: ${fmtBytesShort(dataBytes)}\nİndirilen modeller: ${fmtBytesShort(modelBytes)}\n` +
+      'Veriler yine kaydedilir; yedek almayı ihmal etmeyin.';
     return;
   }
   const pct = Math.min(100, Math.round((usage / quota) * 100));
-  el.textContent = `Depolama: ${fmtBytesShort(usage)} / ${fmtBytesShort(quota)} (%${pct})`;
+  el.textContent = `Dava verisi: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · Kota: ${fmtBytesShort(quota)} (%${pct})`;
   el.className = 'usage-state' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
   el.title =
-    `Kullanılan: ${fmtBytesShort(usage)}\nKota: ${fmtBytesShort(quota)}\nKalan: ${fmtBytesShort(quota - usage)}\n` +
-    'Dava verisi ve ses dosyaları bu alanda saklanır. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın.';
+    `Dava verisi (ses + deşifre + rapor): ${fmtBytesShort(dataBytes)}\n` +
+    `İndirilen modeller (önbellek): ${fmtBytesShort(modelBytes)}\n` +
+    `Toplam kullanılan: ${fmtBytesShort(usage)}\n` +
+    `Tarayıcı kotası: ${fmtBytesShort(quota)}\n` +
+    `Kalan: ${fmtBytesShort(quota - usage)}\n\n` +
+    'Model önbelleği dava verisinden ayrıdır; "Tüm model önbelleğini temizle" ile silinip yeniden indirilebilir. ' +
+    'Dava verisi silinirse geri gelmez; düzenli yedek alın.';
 }
 async function refreshStorage() {
   try {
     const scan = await scanModelCache();
     renderStorage(scan);
+    // Model önbelleği boyutu depolama göstergesine aktarılır; böylece üst bar
+    // "dava verisi" ile "model" ayrımını gösterebilir (v2.83).
+    usageInfo.modelBytes = scan.total || 0;
+    renderUsage();
   } catch (e) {
     $('#storageSummary').textContent = 'Önbellek okunamadı: ' + e.message;
   }

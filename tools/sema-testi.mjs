@@ -190,6 +190,31 @@ console.log('\n[3b] Konuşmacı kodlama standardı');
   eq('kod etiketten bağımsız', sp2.label, 'Yeni ad');
 }
 
+// --- 3c. Otomatik çıktı ayrı saklanır (adli ayrım) ----------------------
+// v2.83: modelin ürettiği metin (asrText) ile bilirkişinin onayladığı metin
+// (text) AYRI olmalı. Öncesinde model çıktısı yalnız history'de kalıyordu ve
+// 10 sürümden sonra SİLİNİYORDU — adli açıdan kabul edilemez.
+console.log('\n[3c] Otomatik çıktı ayrımı');
+{
+  const s = emptySegment({ text: 'bilirkişi metni', asrText: 'model metni' });
+  eq('asrText ayrı alan', s.asrText, 'model metni');
+  eq('text ayrı alan', s.text, 'bilirkişi metni');
+  eq('ikisi karışmaz', s.asrText !== s.text, true);
+  ok('asrModel alanı var', 'asrModel' in s);
+  ok('asrAt alanı var', 'asrAt' in s);
+
+  // Normalize sonrası da korunmalı.
+  const n = normalizeSegment({ text: 'düzeltilmiş', asrText: 'ham çıktı', asrModel: 'm1', asrAt: '2026-01-01T00:00:00Z' });
+  eq('normalize: asrText korunur', n.asrText, 'ham çıktı');
+  eq('normalize: text korunur', n.text, 'düzeltilmiş');
+  eq('normalize: model korunur', n.asrModel, 'm1');
+
+  // Eski kayıtta alan yoksa boş kalır (uydurma yok).
+  const old = normalizeSegment({ text: 'eski kayıt' });
+  eq('eski kayıtta asrText boş', old.asrText, '');
+  eq('eski kayıtta text korunur', old.text, 'eski kayıt');
+}
+
 // --- 4. Normalize: v2 → v3 kayıpsız ------------------------------------
 console.log('\n[4] v2 verisi v3\'e dönüşümü');
 {

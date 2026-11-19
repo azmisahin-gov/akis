@@ -248,7 +248,15 @@ export function emptySegment(over = {}) {
     start: '', // 'HH:MM:SS.mmm'
     end: '',
     speakerId: '', // speakers[].id — ad değil
-    text: '',
+    text: '', // bilirkişinin onayladığı/düzelttiği metin
+    // OTOMATİK ÇÖZÜMLEME ÇIKTISI, ayrı saklanır ve ASLA üzerine yazılmaz.
+    // Adli incelemede "modelin ne ürettiği" ile "bilirkişinin neyi
+    // onayladığı" ayrı belgelerdir. `text` düzenlendikçe bu alan değişmez;
+    // rapor farkı gösterebilir. v2.83'te eklendi (öncesinde model çıktısı
+    // yalnız history'de kalıyordu ve 10 sürümden sonra SİLİNİYORDU).
+    asrText: '',
+    asrModel: '', // çıktıyı üreten model kimliği
+    asrAt: '', // çözümleme zamanı (ISO)
     // Metin düzenleme sayacı. Birleştirmede hangi tarafın metninin daha yeni
     // olduğunu belirler. Duvar saati değil sayaç kullanılır: iki bilgisayarın
     // saati kayabilir, sayaç kaymaz.
@@ -403,6 +411,12 @@ export function normalizeSegment(src = {}) {
     end: str(s.end),
     speakerId: str(s.speakerId),
     text: str(s.text),
+    // Otomatik çözümleme çıktısı korunur (v2.83). Eski kayıtlarda bu alan
+    // yoktur; boş kalır ve rapor "otomatik çıktı saklanmadı" der — uydurma
+    // yapılmaz.
+    asrText: str(s.asrText),
+    asrModel: str(s.asrModel),
+    asrAt: str(s.asrAt),
     textRev: Math.max(0, Math.floor(Number(s.textRev) || 0)),
     // Öneri yalnız geçerli metin taşıyorsa saklanır; bozuk kayıt sessizce
     // düzeltme gibi görünmesin.

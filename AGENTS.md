@@ -389,6 +389,29 @@ yazmak, sığmayan öğeyi **sessizce keser**. Yerleşim çubuğunda bunun yerin
 `<span class="...">` sarmalayıcıları da yakalar. Yeni bir sarmalayıcı
 eklerken `:not(.sinifin)` ile daraltın; aksi hâlde etiket stili kutuya sızar.
 
+
+### Aşama 7 — Adli ayrım ve depolama dürüstlüğü (TAMAMLANDI, v2.83)
+
+**KURAL: otomatik çıktı ile onaylanmış metin AYRI belgelerdir.**
+`segment.asrText` modelin ürettiği ham metindir ve **asla üzerine yazılmaz**.
+`segment.text` bilirkişinin düzenlediği/onayladığı metindir. `asrModel` ve
+`asrAt` hangi modelin ne zaman ürettiğini söyler.
+
+v2.83 öncesinde model çıktısı yalnız `history` dizisinde kalıyordu ve
+`history.length > 10` olunca `shift()` ile **siliniyordu**. Bilirkişi 11 kez
+düzenlerse "model ne dedi" bilgisi kalıcı kayboluyordu. Bu adli açıdan kabul
+edilemez; `sema-testi` [3c] artık bunu denetler.
+
+Yeni bir metin yazma noktası eklerken `asrText`'e DOKUNMAYIN. Yeni bir
+çözümleme yolu eklerken `asrText`/`asrModel`/`asrAt` üçlüsünü birlikte yazın.
+
+**KURAL: depolama göstergesi iki havuzu ayırır.**
+`navigator.storage.estimate()` TÜM kullanımı verir ve model önbelleği (1,5 GB'a
+kadar) bu sayının içindedir. Tek sayı göstermek "dava verim doldu" yanılgısı
+yaratıyordu. `renderUsage()` dava verisini `usage - modelBytes` ile hesaplar;
+`refreshStorage()` model boyutunu `scanModelCache()`'ten `usageInfo.modelBytes`'e
+yazar. Kota uydurulmaz, tarayıcıdan gelir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -559,7 +582,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.82.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.83.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

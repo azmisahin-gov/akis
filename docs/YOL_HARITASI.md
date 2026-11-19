@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.82.**
+yazılır. **Güncel sürüm: v2.83.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.83 — Otomatik çıktı ayrımı + depolama iki havuz (tamamlandı)
+
+Harici bir analiz metni geldi. Maddelerin çoğu zaten vardı; iki gerçek boşluk
+düzeltildi. (1) Model çıktısı yalnız `history`'de tutuluyor ve 10 sürümden
+sonra siliniyordu; artık `asrText/asrModel/asrAt` alanlarında **değişmez**
+saklanır ve arayüzde karşılaştırma bloğu olarak görünür. (2) Depolama
+göstergesi model önbelleğini dava verisiyle topluyordu; artık iki havuz ayrı
+yazılır. Test: `sema-testi` [3c], `birim-testleri` [16].
 
 ### v2.82 — Yerleşim düzeltmeleri (tamamlandı)
 
