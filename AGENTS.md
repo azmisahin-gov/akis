@@ -172,6 +172,15 @@ bağlıdır: metin değişince kontrol durumu gelen taraftan alınır. Bölüm m
 `setSegmentText()` ile yazın ve `pushSegmentHistory()` çağırın; doğrudan
 `s.text = ...` ataması işareti atlar ve düzeltme birleştirmede kaybolur.
 
+**İkinci göz kuralı (v2.54):** `assistant` ve `reviewer` rolleri "ikinci göz"
+sayılır (`SECOND_EYES_ROLES`). Bu rollerin metin düzeltmesi ana metne YAZILMAZ;
+`segment.proposal = { text, by, at, baseText }` olarak saklanır. Onay yetkisi
+yalnız `expert`/`owner` rolündedir. Rapor "Kontrol" sütununa `reviewLabel()`
+bastığı için bu ayrım zorunludur: onaysız metin "Onaylandı" görünemez.
+Birleştirme sonunda ikinci gözün verdiği onay "Kontrol bekliyor"a çekilir.
+Yeni metin yazma noktası eklerken `applyTextEdit()` kullanın; doğrudan
+`s.text = ...` ataması bu korumayı atlar.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -320,7 +329,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.53.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.54.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

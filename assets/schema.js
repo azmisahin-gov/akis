@@ -142,6 +142,12 @@ export const TEAM_ROLE_LABEL = {
   observer: 'Gözlemci'
 };
 
+// "İkinci göz" rolleri: metni düzeltir ama ONAY VEREMEZ. Kararı bilirkişi
+// verir. Bu rollerin düzeltmesi `proposal` (öneri) olarak saklanır; bilirkişi
+// kabul veya reddeder. Rapor bu yüzden hiçbir zaman "Onaylandı" yazmaz.
+export const SECOND_EYES_ROLES = ['assistant', 'reviewer'];
+export const isSecondEyesRole = (role) => SECOND_EYES_ROLES.includes(role);
+
 export const OBS_LABEL = {
   noise: 'arka plan gürültüsü',
   overlap: 'üst üste konuşma',
@@ -224,6 +230,10 @@ export function emptySegment(over = {}) {
     // olduğunu belirler. Duvar saati değil sayaç kullanılır: iki bilgisayarın
     // saati kayabilir, sayaç kaymaz.
     textRev: 0,
+    // İkinci gözün (yardımcı/kontrol eden) önerdiği metin. Bilirkişi kabul
+    // edene kadar `text` değişmez. { text, by, at, baseText }
+    proposal: null,
+    lastEditBy: '', // teamMember.id — son düzenleyen
     review: 'pending',
     obs: { noise: false, overlap: false, inaudible: false, music: false },
     history: [], // [{ text, at, actor }]
@@ -371,6 +381,17 @@ export function normalizeSegment(src = {}) {
     speakerId: str(s.speakerId),
     text: str(s.text),
     textRev: Math.max(0, Math.floor(Number(s.textRev) || 0)),
+    // Öneri yalnız geçerli metin taşıyorsa saklanır; bozuk kayıt sessizce
+    // düzeltme gibi görünmesin.
+    proposal: isObj(s.proposal) && typeof s.proposal.text === 'string'
+      ? {
+          text: s.proposal.text,
+          by: str(s.proposal.by),
+          at: str(s.proposal.at),
+          baseText: str(s.proposal.baseText)
+        }
+      : null,
+    lastEditBy: str(s.lastEditBy),
     review: pick(s.review, REVIEW_STATE, 'pending'),
     obs: Object.fromEntries(OBS_KEYS.map((k) => [k, !!obs[k]])),
     history: Array.isArray(s.history)
@@ -790,6 +811,11 @@ export function mergeCases(mine, theirs) {
         applied.push(`bölüm eklendi: ${ts.id}`);
         continue;
       }
+      // Öneri (ikinci göz düzeltmesi) metne karışmaz; ayrı taşınır.
+      if (ts.proposal && (!ms.proposal || (ts.proposal.at || '') > (ms.proposal.at || ''))) {
+        ms.proposal = ts.proposal;
+        applied.push(`ikinci göz önerisi alındı: ${ms.id}`);
+      }
       const mt = ms.text || '';
       const tt = ts.text || '';
       if (mt !== tt) {
@@ -865,6 +891,21 @@ export function mergeCases(mine, theirs) {
     }
   }
 
+  // Onay yetkisi güvenlik ağı: bir bölüm "onaylandı" diyorsa ama son düzenleyen
+  // ikinci gözse (yardımcı/kontrol eden), bu onay geçersizdir. Eski kayıtlarda
+  // veya yanlış seçimde oluşmuş olabilir; sessizce onaylı göstermek adli
+  // belgede kabul edilemez. Durum "kontrol bekliyor"a çekilir ve bildirilir.
+  const teamById = new Map((merged.team || []).map((t) => [t.id, t]));
+  for (const m of merged.materials || []) {
+    for (const s of m.segments || []) {
+      const ed = s.lastEditBy ? teamById.get(s.lastEditBy) : null;
+      if (s.review === 'approved' && ed && isSecondEyesRole(ed.role)) {
+        s.review = 'pending';
+        applied.push(`ikinci gözün onayı geçersiz sayıldı, kontrol bekliyor: ${s.id}`);
+      }
+    }
+  }
+
   // Ekip: id ile birleşir (yinelenmez).
   const myTeam = new Map((merged.team || []).map((t) => [t.id, t]));
   for (const tt of theirs.team || []) {
@@ -908,7 +949,7 @@ export function compareCases(mine, theirs) {
     mineLabel: '',
     theirsLabel: '',
     materials: { added: [], same: [], differ: [] },
-    segments: { added: 0, changed: [], reviewAdvanced: 0, autoResolved: 0 },
+    segments: { added: 0, changed: [], reviewAdvanced: 0, autoResolved: 0, proposals: 0 },
     questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
     caseFields: { filled: [], autoResolved: [], conflicts: [] },
     team: { added: [] },
@@ -959,6 +1000,11 @@ export function compareCases(mine, theirs) {
         out.segments.added++;
         matDiffer = true;
         continue;
+      }
+      // Öneri metne karışmaz; ayrı sayılır ve birleştirmede taşınır.
+      if (ts.proposal && (!ms.proposal || (ts.proposal.at || '') > (ms.proposal.at || ''))) {
+        out.segments.proposals++;
+        matDiffer = true;
       }
       const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
       if ((ms.text || '') !== (ts.text || '')) {

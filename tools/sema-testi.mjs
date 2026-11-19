@@ -56,7 +56,8 @@ import {
   compareCases,
   speakerLabel,
   segmentById,
-  newId
+  newId,
+  isSecondEyesRole
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -449,6 +450,79 @@ console.log('\n[7d] Uçtan uca: dışa aktar → içe aktar → düzelt → birl
   eq('dokunulmamış bölüm değişmedi', r.merged.materials[0].segments[0].text, 'merhaba dünya');
   eq('bölüm sayısı artmadı (kimlik eşleşti)', r.merged.materials[0].segments.length, 2);
   eq('yanlış eşleşme çakışması yok', r.conflicts.length, 0);
+}
+
+// --- 7e. İkinci göz: öneri onay yerine geçmez --------------------------
+// Yardımcı/gönüllü metni düzeltir ama kararı bilirkişi verir. Bu yüzden
+// ikinci gözün düzeltmesi `proposal` olarak saklanır; `text` değişmez ve
+// bölüm "Onaylandı" olamaz. Adli belgede onaysız metin onaylı görünemez.
+console.log('\n[7e] İkinci göz önerisi onay yerine geçmez');
+{
+  const base = () => {
+    const c = emptyCase({ id: 'c1', fileNo: '1' });
+    c.team.push(emptyTeamMember({ id: 'tm1', name: 'Bilirkişi', role: 'expert' }));
+    c.team.push(emptyTeamMember({ id: 'tm2', name: 'Yardımcı', role: 'assistant' }));
+    c.materials.push(
+      emptyMaterial({
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [emptySegment({ id: 's1', start: '00:00:00', end: '00:00:05', text: 'ham metin', review: 'pending' })]
+      })
+    );
+    return c;
+  };
+
+  ok('assistant ikinci göz', isSecondEyesRole('assistant') === true);
+  ok('reviewer ikinci göz', isSecondEyesRole('reviewer') === true);
+  ok('expert ikinci göz değil', isSecondEyesRole('expert') === false);
+  ok('owner ikinci göz değil', isSecondEyesRole('owner') === false);
+
+  // Öneri metni ana metne karışmaz.
+  const a = base();
+  a.materials[0].segments[0].proposal = { text: 'önerilen metin', by: 'Yardımcı', at: '2026-01-02T00:00:00Z', baseText: 'ham metin' };
+  eq('öneri ana metni değiştirmez', a.materials[0].segments[0].text, 'ham metin');
+
+  // Öneri birleştirmede taşınır, metne dönüşmez.
+  const mine = base();
+  const theirs = base();
+  theirs.materials[0].segments[0].proposal = {
+    text: 'yardımcının önerisi',
+    by: 'Yardımcı',
+    at: '2026-01-02T00:00:00Z',
+    baseText: 'ham metin'
+  };
+  let r = mergeCases(mine, theirs);
+  let seg = r.merged.materials[0].segments[0];
+  eq('öneri birleşmede taşındı', seg.proposal && seg.proposal.text, 'yardımcının önerisi');
+  eq('öneri metne karışmadı', seg.text, 'ham metin');
+  eq('öneri çakışma sayılmadı', r.conflicts.length, 0);
+
+  // Önizleme öneriyi ayrı sayar.
+  const cmp = compareCases(mine, theirs);
+  eq('önizleme öneriyi sayar', cmp.segments.proposals, 1);
+  eq('önizleme öneriyi çakışma saymaz', cmp.conflicts.length, 0);
+
+  // Güvenlik ağı: ikinci gözün "onayı" geçersizdir.
+  const bad = base();
+  bad.materials[0].segments[0].review = 'approved';
+  bad.materials[0].segments[0].lastEditBy = 'tm2'; // yardımcı
+  r = mergeCases(bad, JSON.parse(JSON.stringify(bad)));
+  eq('ikinci gözün onayı kontrol bekliyora çekildi', r.merged.materials[0].segments[0].review, 'pending');
+  ok('geçersiz onay bildirildi', r.applied.some((x) => /ikinci gözün onayı geçersiz/.test(x)));
+
+  // Bilirkişinin onayı geçerlidir (yanlış pozitif yok).
+  const good = base();
+  good.materials[0].segments[0].review = 'approved';
+  good.materials[0].segments[0].lastEditBy = 'tm1'; // bilirkişi
+  r = mergeCases(good, JSON.parse(JSON.stringify(good)));
+  eq('bilirkişinin onayı korundu', r.merged.materials[0].segments[0].review, 'approved');
+
+  // Öneri normalize edilir; bozuk öneri yok sayılır.
+  const n = normalizeSegment({ id: 's1', review: 'pending', obs: {}, proposal: { text: 'x' } });
+  ok('öneri normalize edildi', n.proposal && n.proposal.text === 'x');
+  const n2 = normalizeSegment({ id: 's2', review: 'pending', obs: {}, proposal: 'bozuk' });
+  eq('bozuk öneri yok sayıldı', n2.proposal, null);
 }
 
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------

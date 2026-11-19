@@ -474,3 +474,24 @@ input::placeholder, textarea::placeholder {
 .merge-cols small { display: block; font-size: var(--fs-2xs); color: var(--ink-3); margin-bottom: 2px; }
 .merge-cols p { margin: 0; font-size: var(--fs-xs); color: var(--ink); line-height: var(--lh-body); }
 @media (max-width: 640px) { .merge-cols { grid-template-columns: 1fr; } }
+
+/* ---- İkinci göz önerisi ------------------------------------------------
+   Öneri bandı renkle değil, metin + kenarlıkla da anlatılır (renk körlüğü).
+   Kâğıt tokenları kullanılmaz; bu blok yalnız ekranda görünür. */
+.seg-proposal {
+  border: 1px solid var(--gold);
+  border-radius: var(--r-md);
+  background: var(--gold-soft);
+  padding: var(--sp-2) var(--sp-3);
+  margin: 0 0 var(--sp-2);
+}
+.sp-head { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; margin-bottom: var(--sp-2); }
+.sp-head b { font-size: var(--fs-xs); color: var(--gold); }
+.sp-head small { font-size: var(--fs-2xs); color: var(--ink-3); }
+.sp-diff { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); border-radius: var(--r-sm); overflow: hidden; }
+.sp-diff > div { background: var(--surface); padding: var(--sp-2); }
+.sp-diff small { display: block; font-size: var(--fs-2xs); color: var(--ink-3); margin-bottom: 2px; }
+.sp-diff p { margin: 0; font-size: var(--fs-xs); color: var(--ink); line-height: var(--lh-body); }
+.sp-actions { display: flex; gap: var(--sp-2); margin-top: var(--sp-2); flex-wrap: wrap; }
+.sp-note { margin: var(--sp-2) 0 0; font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); }
+@media (max-width: 640px) { .sp-diff { grid-template-columns: 1fr; } }

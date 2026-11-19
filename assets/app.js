@@ -23,7 +23,8 @@ import {
   TEAM_ROLE,
   SPEAKER_ROLE,
   SPEAKER_GENDER,
-  MEDIUM_TYPE
+  MEDIUM_TYPE,
+  isSecondEyesRole
 } from './schema.js';
 
 const $ = (s, root = document) => root.querySelector(s);
@@ -31,7 +32,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.53';
+const APP_VERSION = '2.54';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -624,9 +625,25 @@ function renderTeam() {
   }
   const roleOpts = (sel) =>
     TEAM_ROLE.map((r) => `<option value="${esc(r)}" ${sel === r ? 'selected' : ''}>${esc(TEAM_ROLE_LABEL[r])}</option>`).join('');
-  host.innerHTML = team
-    .map(
-      (t, i) => `<div class="team-card" data-team-card="${esc(t.id)}">
+  // "Şu an bu bilgisayarda kim çalışıyor" seçicisi. Seçilen kişi metin
+  // geçmişine yazılır ve ikinci göz ise düzeltmeleri öneri olarak saklanır.
+  const whoOpts = [
+    '<option value="">— seçilmedi —</option>',
+    ...team.map(
+      (t) =>
+        `<option value="${esc(t.id)}" ${c.lastEditedBy === t.id ? 'selected' : ''}>${esc(t.name || '(ad girilmedi)')} · ${esc(TEAM_ROLE_LABEL[t.role] || t.role)}</option>`
+    )
+  ].join('');
+  const whoBox = `<div class="team-who">
+      <label class="seg-field"><span>Şu an bu bilgisayarda çalışan</span>
+        <select id="whoEditingSelect">${whoOpts}</select></label>
+      <p class="drawer-note">Seçilen kişi metin geçmişine yazılır. Yardımcı veya kontrol eden seçilirse düzeltmeler <b>öneri</b> olur; onay yetkisi dosya sorumlusunda kalır.</p>
+    </div>`;
+  host.innerHTML =
+    whoBox +
+    team
+      .map(
+        (t, i) => `<div class="team-card" data-team-card="${esc(t.id)}">
       <div class="seg-row2">
         <label class="seg-field"><span>Ad soyad</span><input data-team="${esc(t.id)}" data-team-key="name" value="${esc(t.name || '')}" placeholder="Ad Soyad"></label>
         <label class="seg-field"><span>Görev</span><select data-team="${esc(t.id)}" data-team-key="role">${roleOpts(t.role)}</select></label>
@@ -637,8 +654,8 @@ function renderTeam() {
       </div>
       <button class="mini-button tiny danger" data-team-remove="${esc(t.id)}" type="button">ekipten çıkar</button>
     </div>`
-    )
-    .join('');
+      )
+      .join('');
 }
 function addTeamMember() {
   const c = currentCase();
@@ -654,11 +671,29 @@ function updateTeamMember(id, key, value) {
   if (!t) return;
   t[key] = value;
   persist();
+  // Ad veya görev değişince "kim çalışıyor" seçicisinin etiketi de tazelenir.
+  if (key === 'name' || key === 'role') refreshWhoOptions();
+}
+// "Kim çalışıyor" seçicisinin seçeneklerini, odağı bozmadan tazeler.
+function refreshWhoOptions() {
+  const c = currentCase();
+  const sel = $('#whoEditingSelect');
+  if (!c || !sel) return;
+  sel.innerHTML =
+    '<option value="">— seçilmedi —</option>' +
+    (c.team || [])
+      .map(
+        (t) =>
+          `<option value="${esc(t.id)}" ${c.lastEditedBy === t.id ? 'selected' : ''}>${esc(t.name || '(ad girilmedi)')} · ${esc(TEAM_ROLE_LABEL[t.role] || t.role)}</option>`
+      )
+      .join('');
 }
 function removeTeamMember(id) {
   const c = currentCase();
   if (!c?.team) return;
   c.team = c.team.filter((x) => x.id !== id);
+  // Çıkarılan kişi "şu an çalışan" ise seçim temizlenir; tanımsız kimlik kalmasın.
+  if (c.lastEditedBy === id) c.lastEditedBy = '';
   persist();
   renderTeam();
 }
@@ -1795,7 +1830,7 @@ function applyTermForm(m, from, to) {
     });
     if (next !== s.text) {
       const prev = s.text;
-      setSegmentText(s, next);
+      applyTextEdit(s, next);
       pushSegmentHistory(s, prev);
     }
   }
@@ -2561,7 +2596,24 @@ function segDetailHtml(m) {
   if (rep) notes.push('model tekrarı olasılığı');
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
   const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
-  return `<div class="seg-detail-head">
+  // Öneri bandı: ikinci gözün düzeltmesi. Bilirkişi kabul edene kadar metin
+  // DEĞİŞMEZ ve kontrol durumu "Onaylandı" olamaz.
+  const prop = s.proposal;
+  const propBand = prop
+    ? `<div class="seg-proposal" role="group" aria-label="İkinci göz önerisi">
+        <div class="sp-head"><b>İkinci göz önerisi</b><small>${esc(prop.by || 'Ad belirtilmedi')}${prop.at ? ' · ' + esc(new Date(prop.at).toLocaleString('tr-TR')) : ''}</small></div>
+        <div class="sp-diff">
+          <div><small>Şu anki metin</small><p>${esc(s.text || '(boş)')}</p></div>
+          <div><small>Önerilen</small><p>${esc(prop.text || '(boş)')}</p></div>
+        </div>
+        <div class="sp-actions">
+          <button class="mini-button primary" data-proposal-accept="${i}">Öneriyi kabul et</button>
+          <button class="mini-button" data-proposal-reject="${i}">Reddet</button>
+        </div>
+        <p class="sp-note">Öneri kabul edilene kadar rapora yansımaz ve bölüm onaylanmış sayılmaz.</p>
+      </div>`
+    : '';
+  return `${propBand}<div class="seg-detail-head">
       <span class="idx">Bölüm ${i + 1} / ${segs.length}</span>
       <span class="nav">
         <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
@@ -2780,6 +2832,12 @@ function approveActiveSegment(m) {
   const i = m.activeSeg;
   const s = segs[i];
   if (!s) return;
+  // Onay kararı bilirkişinindir. İkinci göz (yardımcı/kontrol eden) onaylayamaz;
+  // aksi hâlde kontrol edilmemiş metin "Onaylandı" diye rapora girer.
+  if (isSecondEyesEditor()) {
+    showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
+    return;
+  }
   s.review = 'approved';
   persist();
   renderOverview();
@@ -3613,8 +3671,7 @@ function mergeSegmentWithNext(m, index) {
   s.end = n.end;
   if ((n.text || '').trim()) {
     const prev = s.text;
-    const joined = (s.text || '') + (s.text ? ' ' : '') + n.text;
-    setSegmentText(s, joined);
+    applyTextEdit(s, (s.text || '') + (s.text ? ' ' : '') + n.text);
     pushSegmentHistory(s, prev);
   }
   s.review = 'pending';
@@ -4088,6 +4145,14 @@ function editorName() {
   const t = (c.team || []).find((x) => x.id === c.lastEditedBy);
   return t ? t.name || '' : '';
 }
+// Bu dosyada çalışan kişi "ikinci göz" mü? (Yardımcı / kontrol eden.)
+// İkinci göz metni düzeltir ama ONAY VEREMEZ; düzeltmesi öneri olarak saklanır.
+function isSecondEyesEditor() {
+  const c = currentCase();
+  if (!c || !c.lastEditedBy) return false;
+  const t = (c.team || []).find((x) => x.id === c.lastEditedBy);
+  return !!t && isSecondEyesRole(t.role);
+}
 // Bölüm metnini yazar; sayaç artırmaz (sayaç düzenleme oturumu başına bir kez
 // markTextEdited ile işaretlenir, bkz. aşağısı).
 function setSegmentText(s, next) {
@@ -4103,6 +4168,26 @@ function setSegmentText(s, next) {
 // yere kazanamaz.
 function markTextEdited(s) {
   if ((Number(s.textRev) || 0) === 0) s.textRev = 1;
+  const c = currentCase();
+  if (c && c.lastEditedBy) s.lastEditBy = c.lastEditedBy;
+}
+// Metin düzenlemesini kaydeder. İkinci göz yazıyorsa metin DEĞİŞMEZ; öneri
+// saklanır. Böylece onaysız bir düzeltme rapora "Onaylandı" olarak giremez.
+// Geçmiş kaydı BURADA tutulmaz: yazarken her tuş vuruşu geçmişe girmemeli.
+// Geçmiş odak kaybında (pushSegmentHistory) tutulur.
+function applyTextEdit(s, next) {
+  const v = next == null ? '' : String(next);
+  if ((s.text || '') === v) return false;
+  if (isSecondEyesEditor()) {
+    s.proposal = {
+      text: v,
+      by: editorName(),
+      at: new Date().toISOString(),
+      baseText: (s.proposal && s.proposal.baseText) || s.text || ''
+    };
+    return true;
+  }
+  return setSegmentText(s, v);
 }
 function pushSegmentHistory(s, prevText) {
   if (!s.history) s.history = [];
@@ -5588,6 +5673,7 @@ function renderMergePreview(cmp) {
     row('Yeni eklenecek bölüm', cmp.segments.added),
     row('Metni çakışan bölüm', cmp.segments.changed.length, cmp.segments.changed.length ? 'warn' : ''),
     row('Otomatik alınacak bölüm metni', cmp.segments.autoResolved),
+    row('Alınacak ikinci göz önerisi', cmp.segments.proposals),
     row('Kontrol durumu ilerleyen bölüm', cmp.segments.reviewAdvanced),
     row('Doldurulacak soru cevabı', cmp.questions.filled),
     row('Otomatik alınacak soru cevabı', cmp.questions.autoResolved),
@@ -5903,12 +5989,22 @@ function setupEvents() {
   // çizildiğinde düğümler tazelenir.
   $('#caseDrawer').addEventListener('input', (e) => {
     const el = e.target;
+    if (el.id === 'whoEditingSelect') return; // change olayında işlenir
     if (el.dataset && el.dataset.team !== undefined) {
       updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
     }
   });
   $('#caseDrawer').addEventListener('change', (e) => {
     const el = e.target;
+    if (el.id === 'whoEditingSelect') {
+      const c = currentCase();
+      if (c) {
+        c.lastEditedBy = el.value || '';
+        persist();
+        renderOverview();
+      }
+      return;
+    }
     if (el.dataset && el.dataset.team !== undefined) {
       updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
     }
@@ -6075,6 +6171,45 @@ function setupEvents() {
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
       if (m) approveActiveSegment(m);
+    } else if (b.dataset.proposalAccept !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      const i = Number(b.dataset.proposalAccept);
+      const s2 = m?.segments[i];
+      if (!s2 || !s2.proposal) return;
+      if (isSecondEyesEditor()) {
+        showToast('Öneriyi yalnız dosya sorumlusu kabul edebilir.');
+        return;
+      }
+      const prev = s2.text;
+      const prop = s2.proposal;
+      s2.text = prop.text;
+      s2.proposal = null;
+      pushSegmentHistory(s2, prev);
+      // Onay metne bağlıdır: kabul edilen metin yeniden kontrol ister.
+      s2.review = 'pending';
+      persist();
+      renderSegments(m, card);
+      renderOverview();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast('Öneri kabul edildi. Metni dinleyip onaylayın.');
+    } else if (b.dataset.proposalReject !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      const i = Number(b.dataset.proposalReject);
+      const s2 = m?.segments[i];
+      if (!s2 || !s2.proposal) return;
+      if (isSecondEyesEditor()) {
+        showToast('Öneriyi yalnız dosya sorumlusu reddedebilir.');
+        return;
+      }
+      s2.proposal = null;
+      persist();
+      renderSegments(m, card);
+      renderOverview();
+      showToast('Öneri reddedildi. Metin değişmedi.');
     } else if (b.dataset.reviewSet !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -6285,7 +6420,7 @@ function setupEvents() {
       if (!s) return;
       const cur = (s.text || '').trim();
       const prev = s.text;
-      setSegmentText(s, cur ? cur + ' ' + text : text);
+      applyTextEdit(s, cur ? cur + ' ' + text : text);
       pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
@@ -6300,7 +6435,7 @@ function setupEvents() {
       const s = m.segments[ix];
       if (!s) return;
       const prev = s.text;
-      setSegmentText(s, '');
+      applyTextEdit(s, '');
       pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
@@ -6329,7 +6464,8 @@ function setupEvents() {
     const i = Number(el.dataset.seg);
     const s = m?.segments[i];
     if (!s) return;
-    if (pushSegmentHistory(s)) persist(); // Odak aynı detay panelinde kaldıysa paneli yeniden çizmeyiz; yoksa odak kaybolur.
+    // İkinci göz yazdıysa metin değişmedi; geçmişe yazılacak bir şey yok.
+    if (!isSecondEyesEditor() && pushSegmentHistory(s)) persist();
     const rt = e.relatedTarget;
     const samePane = rt && rt.dataset && (rt.dataset.seg !== undefined || (rt.closest && rt.closest('.seg-detail')));
     if (!samePane) {
@@ -6346,7 +6482,7 @@ function setupEvents() {
     const s = m?.segments[Number(el.dataset.seg)];
     if (!s) return;
     if (el.dataset.key === 'text') {
-      if (setSegmentText(s, el.value)) markTextEdited(s);
+      applyTextEdit(s, el.value);
     } else if (el.dataset.key === 'speaker') s.speaker = el.value;
     else s[el.dataset.key] = el.value;
     persist();
@@ -6436,6 +6572,13 @@ function setupEvents() {
     const i = Number(el.dataset.seg);
     const s = m?.segments[i];
     if (!s) return;
+    // İkinci göz onay veremez. "Anlaşılmadı" ve "Yeniden dinlenecek" bir onay
+    // değil, gözlem olduğu için serbesttir.
+    if (el.value === 'approved' && isSecondEyesEditor()) {
+      showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
+      el.value = segReview(s);
+      return;
+    }
     s.review = el.value;
     s.checked = el.value === 'onaylandi';
     el.dataset.state = el.value;

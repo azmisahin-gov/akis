@@ -6,12 +6,63 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.53.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.54.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.54 — İkinci göz: yardımcı önerir, bilirkişi onaylar
+
+KULLANICI: "Gönüllü olarak bilirkişiye yardım etmek istiyorum. Tüm materyaller
+onun bilgisayarında; biz anlık olarak düzeltmesi gereken kısımlara ikinci bir
+göz olarak bakacağız. Kararı veren yine bilirkişinin kendisi. Tek fark: ikisi
+de ayrı bilgisayar kullanıyor."
+
+### Bulunan risk
+
+Rapor tablosunda "Kontrol" sütunu var ve oraya `reviewLabel()` yazılıyor. Yani
+yardımcı bir bölümü onaylarsa rapor **"Onaylandı"** diyordu. Bu, senaryonun
+tersidir: kararı bilirkişi verir. Onaysız bir düzeltme adli belgede onaylı
+görünemez.
+
+### Çözüm: rol ayrımı + öneri
+
+**Roller.** `assistant` (Yardımcı) ve `reviewer` (Kontrol eden) "ikinci göz"
+sayılır (`SECOND_EYES_ROLES`). `expert` ve `owner` değildir.
+
+**Kim çalışıyor.** Dosya bilgileri çekmecesindeki ekip bölümüne "Şu an bu
+bilgisayarda çalışan" seçicisi eklendi (`case.lastEditedBy`). Seçilen kişi metin
+geçmişine yazılır.
+
+**Öneri.** İkinci göz metni yazdığında **ana metin değişmez**. Düzeltme
+`segment.proposal = { text, by, at, baseText }` olarak saklanır. Bölüm detayında
+öneri bandı görünür: "Şu anki metin" / "Önerilen" ve **Kabul et / Reddet**.
+
+**Onay yetkisi.** İkinci göz:
+- `Onayla` düğmesini kullanamaz (uyarı gösterilir),
+- kontrol listesinde "Onaylandı" seçemez ("Anlaşılmadı" ve "Yeniden dinlenecek"
+  serbesttir; onlar gözlem, onay değil),
+- öneriyi kendisi kabul veya reddedemez.
+
+**Kabul edilen öneri.** Bilirkişi kabul ederse metin yazılır, öneri silinir,
+kontrol durumu **"Kontrol bekliyor"**a çekilir (metin değişti, yeniden
+dinlenmeli). Geçmiş kaydı tutulur.
+
+**Birleştirmede.** Öneri metne karışmaz, ayrı taşınır (`at` daha yeni olan
+kazanır). Önizlemede "Alınacak ikinci göz önerisi" satırı görünür.
+
+**Güvenlik ağı.** Birleştirme sonunda, "onaylandı" diyen ama son düzenleyeni
+ikinci göz olan bölümler **"Kontrol bekliyor"**a çekilir ve işlem günlüğüne
+yazılır. Eski kayıtlarda veya yanlış seçimde oluşmuş onay sızamaz.
+
+### Test
+
+`sema-testi.mjs` [7e] bloğu eklendi (153 → 168 kontrol): rol tanımı, önerinin
+ana metni değiştirmemesi, birleştirmede taşınması, önizleme sayacı, ikinci
+gözün onayının geçersiz sayılması, bilirkişinin onayının korunması ve bozuk
+önerinin yok sayılması.
 
 ## v2.53 — Yardımcı düzeltmesi birleştirmede korunuyor (kritik düzeltme)
 
