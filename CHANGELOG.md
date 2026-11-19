@@ -6,12 +6,54 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.51.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.51.1.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.51.1 — Şema tek geçerli yapı; yeni vaka akışı düzeltmesi
+
+KULLANICI: "Bundan sonra tek geçerli şemamız yapımız bu olacak. Repoda
+dokümanlarda hatalı bir bilgi varsa kaldır, düzelt. Artık yeni davaya
+başlayacağız, tekrar kontrol et, sürüm bilgilerini kontrol et."
+
+### Tek geçerli yapı ilanı ve denetimi
+
+`assets/schema.js` (v3) depodaki **tek geçerli veri yapısı** olarak sabitlendi.
+Yanlış/eski bilgi taşıyan belgeler düzeltildi:
+
+- `docs/MIMARI.md`: "app.js tek dosyadır" ifadesi yanlıştı — `schema.js`,
+  `tokens.css`, `reading-layer.css` ayrı dosyalar. Dosya düzeni ve katman
+  açıklaması güncellendi; şemanın tam ağacı ve değişmez kuralları eklendi.
+- `docs/OZELLIKLER.md`: "Veri şeması (v3) — tek geçerli yapı" bölümü eklendi;
+  çalışma dosyası yönetimi yeni vaka akışına göre güncellendi.
+- `docs/YOL_HARITASI.md`: v2.51 ve v2.50 başlıkları eklendi.
+
+### Testle kilitlendi
+
+`tools/sema-testi.mjs` iki yeni bölüm kazandı (87 → 114 kontrol):
+
+- **[9b] freshCase eşlemesi:** uygulamanın kendi oluşturucusu şemayı ve düz
+  alan eşlemesini kuruyor mu.
+- **[10] Tek geçerli yapı:** `schema.js` var mı, `app.js` onu import ediyor mu,
+  ikinci bir şema tanımı yok mu, belgeler v3'ü anlatıyor mu, "app.js tek
+  dosyadır" gibi eski ifade kaldı mı.
+
+### Tarayıcıda bulunan gerçek hata (düzeltildi)
+
+`freshCase()` eşleme tanımlayıcılarını (`defineCaseMirrors`) kurmuyordu.
+Sonuç: **yeni dosyada forma yazılan mahkeme/dosya no/taraf bilgisi kayboluyordu.**
+Eski kayıtlar `loadState` üzerinden geçtiği için sorun görünmüyordu; yalnızca
+yeni oluşturulan dosyada ortaya çıkıyordu. Düzeltildi; test [9b] bunu artık
+yakalıyor.
+
+### Sürüm denetimi
+
+Tüm sürüm izleri tarandı: `APP_VERSION` (2.51), `index.html` dört `?v=`
+parametresi, README, OZELLIKLER, AGENTS, YOL_HARITASI, CHANGELOG — hepsi aynı.
+Kalan `v2.49`/`v2.50` atıfları yalnız tarihsel bölüm başlıkları (doğru).
 
 ## v2.51 — v3 veri şeması: kimlik, kod, delil zinciri, ekip
 

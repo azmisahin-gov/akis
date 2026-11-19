@@ -1,6 +1,6 @@
-# Özellikler (v2.51 — mevcut durum)
+# Özellikler (v2.51.1 — mevcut durum)
 
-Bu belge, AKİS v2.51'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.51.1'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -20,9 +20,32 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 - **Duyarlı:** ≤900px etiketler gizlenir; ≤640px ray alt sekmeye döner.
 - **Odak modu** ikon olarak ray altında; Esc ile çıkılır.
 
+## Veri şeması (v3) — tek geçerli yapı
+
+Tüm veri `assets/schema.js` içindeki **v3 şemasına** uyar. Şema ayrı dosyada,
+tarayıcıya bağımlı olmayan saf fonksiyonlar olarak durur; üretim ve test aynı
+dosyayı kullanır.
+
+- **Kimlik:** dosya, kayıt, bölüm, soru, konuşmacı ve ekip üyesi `id` taşır.
+  Referanslar id ile kurulur (ad veya dizi indeksi değil).
+- **Kod ≠ etiket:** durum/rol/cinsiyet/ortam kodları ASCII sabittir
+  (`pending`, `approved`, `inaudible`…). Türkçe metin tek yerden türetilir.
+- **Kalıcı ≠ geçici:** sekme, aktif bölüm, ilerleme gibi oturumluk alanlar
+  diske yazılmaz.
+- **Delil zinciri:** her işlem günlüğü girdisi `prevHash`+`hash` taşır;
+  sonradan değişiklik ve silme tespit edilebilir.
+- **Genişletme güvenli:** bilinmeyen alan korunur, eksik alan varsayılanla
+  tamamlanır; sıralama/taşıma veri bağını bozmaz.
+- **Ortak çalışma:** dosyaya **inceleme ekibi** eklenebilir (ad, görev, sicil,
+  kurum). Ekip bilgisi rapora girmez; iş bölümü içindir. İki kopya
+  birleştirilirken metin çakışması sessizce ezilmez, raporlanır.
+
+Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
+
 ## Çalışma dosyası yönetimi
 
-- Birden fazla inceleme dosyası; kenar çubuğundan dosya değiştirme.
+- Birden fazla inceleme dosyası; üst bardan dosya değiştirme ve "＋" ile yeni
+  dosya. Yeni dosya boş formla açılır; bilgiler yazıldıkça otomatik kaydedilir.
 - Dosya bilgileri `localStorage`, ses kayıtları IndexedDB içinde saklanır.
 - `.akis` yedek dışa/içe aktarma (dosya bilgileri, sorular, bölümler, teknik
   envanter, SHA-256 ve tüm ses blob'ları).

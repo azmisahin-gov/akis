@@ -347,5 +347,82 @@ console.log('\n[9] Kimlik çözücüleri');
   eq('olmayan bölüm null', segmentById(c, 'm1', 'yok'), null);
 }
 
+// --- 9b. Uygulamanın kendi oluşturucusu (freshCase) -------------------
+// Şema testi yalnız schema.js'i sınıyordu; uygulamanın freshCase() fonksiyonu
+// ayrı bir yerde. Burada onu da sınıyoruz: düz alan (c.court) yazıldığında
+// iç içe yapıya (c.parties/report/...) yansımalı. Tarayıcıda bulunan hata
+// buydu: freshCase eşleme tanımlayıcılarını kurmuyordu, form yazımı kayboldu.
+console.log('\n[9b] Uygulama oluşturucusu (freshCase) eşlemesi');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  // freshCase gövdesini çıkar.
+  const i = src.indexOf('function freshCase()');
+  const j = src.indexOf('\n}\n', i);
+  const body = i >= 0 ? src.slice(i, j) : '';
+  ok('freshCase bulundu', body.length > 0);
+  ok('freshCase schemaVersion taşıyor', /schemaVersion:\s*3/.test(body));
+  ok('freshCase iç içe parties taşıyor', /parties:\s*\{/.test(body));
+  ok('freshCase iç içe assignment taşıyor', /assignment:\s*\{/.test(body));
+  ok('freshCase iç içe expert taşıyor', /expert:\s*\{/.test(body));
+  ok('freshCase iç içe report taşıyor', /report:\s*\{/.test(body));
+  ok('freshCase team dizisi taşıyor', /team:\s*\[\]/.test(body));
+  // KRİTİK: eşleme tanımlayıcıları kurulmalı; yoksa c.court yazımı kaybolur.
+  ok('freshCase defineCaseMirrors çağırıyor', /defineCaseMirrors\(c\)/.test(body));
+  ok('freshCase syncCaseMirrors çağırıyor', /syncCaseMirrors\(c\)/.test(body));
+  // Eşleme tablosu düz alanları iç içe yola bağlamalı.
+  ok('CASE_MIRROR tanımlı', /const CASE_MIRROR = \[/.test(src));
+  for (const [flat, group] of [['plaintiff','parties'],['assignmentDate','assignment'],['expertName','expert'],['reportDate','report']]) {
+    ok(`CASE_MIRROR ${flat} → ${group}`, new RegExp(`\\['${flat}',\\s*'${group}'`).test(src));
+  }
+}
+
+// --- 10. Şema tek geçerli yapı mı? -------------------------------------
+// Depoda v3 şemasını anlatan belgeler olmalı ve v2'nin "tek dosya / düz alan"
+// anlatımı kalmamalı. Bu, şemanın sessizce geri kaymasını engeller.
+console.log('\n[10] Şemanın tek geçerli yapı olması');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
+
+  // 1) schema.js var ve SCHEMA_VERSION dışa açık.
+  ok('schema.js mevcut', fs.existsSync(path.join(ROOT, 'assets/schema.js')));
+  eq('SCHEMA_VERSION 3', SCHEMA_VERSION, 3);
+
+  // 2) app.js şemayı import ediyor (kopya tanım yapmıyor).
+  const app = read('assets/app.js');
+  ok('app.js şemayı import ediyor', /from '\.\/schema\.js'/.test(app));
+  ok('app.js normalizeCase kullanıyor', /normalizeCase\(/.test(app));
+  // v2'nin tek-dosya anlatımı kodda kalmamalı: yerel emptyCase tanımı yok.
+  ok('app.js içinde ikinci bir şema tanımı yok', !/^function emptyCase\(/m.test(app));
+
+  // 3) Mimari belgesi v3'ü anlatıyor.
+  const mimari = read('docs/MIMARI.md');
+  ok('MIMARI.md schema.js anıyor', mimari.includes('schema.js'));
+  ok('MIMARI.md "TEK GEÇERLİ YAPI" diyor', /TEK GEÇERLİ YAPI/.test(mimari));
+  ok('MIMARI.md "app.js tek dosyadır" demiyor', !/app\.js`? tek dosyadır/.test(mimari));
+
+  // 4) AGENTS.md şema kurallarını taşıyor.
+  const agents = read('AGENTS.md');
+  ok('AGENTS.md v3 şemasını anıyor', /v3 veri şeması/.test(agents));
+  ok('AGENTS.md kimlik kuralını yazıyor', /Referans id ile/.test(agents));
+  ok('AGENTS.md "kod ≠ etiket" kuralını yazıyor', /Kod ≠ etiket/.test(agents));
+
+  // 5) Yol haritası v3 sürümünü listeliyor.
+  const yol = read('docs/YOL_HARITASI.md');
+  ok('YOL_HARITASI v3 şemasını anıyor', /v3 veri şeması/.test(yol));
+
+  // 6) index.html schema.js'i modül olarak yüklüyor mu? (app.js import eder,
+  //    ayrı script gerekmez; ama app.js modül olmalı.)
+  const html = read('index.html');
+  ok('index.html app.js\'i modül olarak yüklüyor', /type="module"[^>]*app\.js/.test(html));
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);
 process.exit(failed === 0 ? 0 : 1);

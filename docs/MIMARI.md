@@ -24,8 +24,11 @@ gönderilmez.
 ```
 index.html              Tek sayfalık uygulama iskeleti (beş görünüm, diyaloglar)
 assets/
-  app.js                Uygulamanın tamamı (durum, çözümleme, rapor üretimi)
-  app.css               Stil
+  schema.js             v3 veri şeması — TEK GEÇERLİ YAPI (saf fonksiyonlar)
+  app.js                Uygulama mantığı (durum, çözümleme, rapor üretimi)
+  tokens.css            Tasarım tokenları (renk/tipografi/boşluk, 3 tema)
+  app.css               Eski stil katmanı (v2.27–v2.49)
+  reading-layer.css     Okuma katmanı (en sonda; yamaları ezer)
   vendor/
     jszip.min.js        ZIP/DOCX/UDF paketleme kitaplığı (pakete gömülü)
     JSZIP_LICENSE.txt   JSZip lisans metni
@@ -41,16 +44,71 @@ run.ps1                 Windows yerel sunucusu
 START.bat               Windows başlatıcı
 ```
 
+## Veri şeması (`assets/schema.js`) — TEK GEÇERLİ YAPI
+
+Şema, uygulamanın en kritik sözleşmesidir ve **ayrı dosyada** durur:
+`assets/schema.js`. Tarayıcıya bağımlı olmayan saf fonksiyonlar içerir; bu
+sayede üretim kodu ile testler AYNI dosyayı kullanır (kopya tanım yok).
+
+**Sürüm: v3** (`SCHEMA_VERSION = 3`). Bu, depodaki tek geçerli veri yapısıdır.
+
+```
+case
+├── schemaVersion: 3, id, createdAt, updatedAt, status, reportType
+├── court, fileNo, subject, caseDate, inspectionDate
+├── parties   { plaintiff, plaintiffCounsel, defendant, defendantCounsel }
+├── assignment{ date, dueDate, durationDays, scope, body }
+├── expert    { name, registryNo, field }
+├── team[]    { id, name, role, registryNo, institution, email, phone }
+├── report    { date, methodText, limitationsText, conclusionText }
+├── questions[]{ id, no, question, answer, evidence[], basisNote, answeredBy }
+├── materials[]
+│   ├── id, fileName, mimeType, sizeBytes, durationSec, sha256
+│   ├── tech { codec, channels, sampleRate, bitDepth }
+│   ├── status (kod), statusNote, transcribedWithModel, transcribedAt
+│   ├── segments[]{ id, start, end, speakerId, text, review, obs, history,
+│   │               silence, words }
+│   ├── speakers[]{ id, label, role, gender, ageRange, notes, pitchHz }
+│   ├── referenceSegments[], expectedText
+│   ├── levels, spectrogramReviewedAt
+│   ├── origin { mediumType, mediumLabel, deliveredBy, deliveredAt, deviceInfo }
+│   └── lastVerify, log[]  (prevHash + hash zinciri)
+├── shared, lastEditedBy, mergeLog[]
+```
+
+**Değişmez kurallar:**
+
+1. **Kimlik.** Her varlık `id` taşır. Referanslar id ile kurulur:
+   `segment.speakerId`, `question.evidence[].segmentId`. Ad veya dizi indeksi
+   ile referans kurulmaz.
+2. **Kod ≠ etiket.** Durum/rol/cinsiyet/ortam kodları ASCII sabittir
+   (`pending`, `approved`, `inaudible`, `relisten`). Türkçe metin
+   `STATUS_LABEL` / `REVIEW_LABEL` gibi tek yerden türetilir. Karşılaştırma
+   daima kodla yapılır.
+3. **Kalıcı ≠ geçici.** `uiTab`, `activeSeg`, `progress`, `playbackRate`
+   oturumluktur; şemaya ve diske yazılmaz.
+4. **Delil.** Her günlük girdisi `logEntry()` ile üretilir; `prevHash` + `hash`
+   zinciri kurulur. `verifyLogChain()` kurcalamayı ve girdi silinmesini tespit
+   eder.
+5. **Genişletme.** Bilinmeyen alan korunur; `normalizeCase()` eksik alanı
+   varsayılanla tamamlar. Yeni alan eklerken `emptyCase` / `emptyMaterial` /
+   `emptySegment` varsayılanı da güncellenir.
+
+**Ortak çalışma.** `case.team[]` aynı dosyada çalışan bilirkişileri tanımlar;
+rapora girmez. `mergeCases(mine, theirs)` iki kopyayı id ile birleştirir ve
+metin çakışmasını sessizce ezmez, `conflicts[]` olarak raporlar.
+
 ## Uygulama katmanları (`assets/app.js`)
 
-`app.js` tek dosyadır ve sırasıyla şu katmanları içerir:
+`app.js` şu katmanları içerir:
 
 1. **Sabitler ve durum.** `REPORT_TEXT` (rapor metinleri), `REPORT_TYPES`
    (merci türüne göre kapak terminolojisi), `ASR_MODELS` (çözümleme modelleri),
-   `appState`, IndexedDB yardımcıları.
+   `appState`, IndexedDB yardımcıları. Veri yapısı `schema.js`'ten gelir.
 2. **Kalıcılık.** Dosya bilgileri `localStorage` (`mihenk.pro.cases.v1`
    anahtarı — eski MİHENK kayıtlarıyla uyumluluk için korunur), ses kayıtları
-   IndexedDB (`mihenk-pro-assets`) içinde tutulur.
+   IndexedDB (`mihenk-pro-assets`) içinde tutulur. Yükleme sırasında her dosya
+   `normalizeCase()` ile şemaya göre normalleştirilir.
 3. **Ses çözümleme.** Transformers.js ile Whisper modelleri; WebGPU varsa
    WebGPU, yoksa WASM. Kayıtlar 30 saniyelik pencerelere bölünür.
 4. **Deşifre editörü.** Bölüm bazında metin, konuşmacı, zaman aralığı, dört
