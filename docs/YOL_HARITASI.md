@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.72.**
+yazılır. **Güncel sürüm: v2.73.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.73 — Veri 5 MB'lık yere sıkışmıştı; 10 GB'lık alana taşındı (tamamlandı)
+
+Mimari hataydı: dava verisi localStorage'a (5 MB) yazılıyordu, oysa tarayıcı
+kotası 10 GB. v2.72'de "küçültme" yanlış yaklaşımdı. Veri IndexedDB'ye
+(`STATE_STORE`) taşındı; eski localStorage kaydı otomatik göç eder. Kalite
+geri geldi: kelime zamanlaması yine saklanıyor (karaoke), geçmiş 3 → 10.
+Üst barda "Depolama: X / Y (%)" göstergesi.
 
 ### v2.72 — Depolama bir davada doluyordu (%76 küçültüldü) (tamamlandı)
 

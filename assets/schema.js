@@ -418,11 +418,9 @@ export function normalizeSegment(src = {}) {
       ? s.history.filter(isObj).map((h) => ({ text: str(h.text), at: str(h.at), actor: str(h.actor) }))
       : [],
     silence: isObj(s.silence) ? s.silence : null,
-    // Kelime zamanlaması (karaoke) yalnız oturum içinde gerekir. Kayda ve
-    // dışa aktarıma YAZILMAZ: 200 bölümlü bir dosyada tek başına ~320 KB
-    // yer kaplar ve localStorage kotasını doldurur. Karaoke, bölüm
-    // çalındığında modelden yeniden üretilebilir; kalıcı olması gerekmez.
-    words: []
+    // v2.73: veri IndexedDB'ye taşındı (GB mertebesi kota). Kelime zamanlaması
+    // artık saklanabilir; karaoke yeniden yüklemede de çalışır.
+    words: Array.isArray(s.words) ? s.words.filter(isObj) : []
   };
   // v2 kalıntısı: `checked: true` → approved.
   if (!s.review && s.checked === true) out.review = 'approved';

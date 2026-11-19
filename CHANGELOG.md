@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.72.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.73.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.73 — Veri 5 MB'lık yere sıkışmıştı; 10 GB'lık alana taşındı
+
+KULLANICI: "Küçültüyoruz diye kaliteyi ve kullanım özelliklerini kaybetmeyelim.
+Biz niye öyle küçük bir alana kendimizi sıkıştırdık? Sesleri de geniş bir alana
+koysaydık. Ayrıca ekranda ne kadar kullandık, ne kadar kaldı yazmıyor."
+
+### Kullanıcı haklıydı: mimari hataydı
+
+Ölçüm:
+```
+Tarayıcı kotası      : 10 GB   <- IndexedDB bunu kullanır
+localStorage limiti  :  5 MB   <- dava verisi BURADA idi
+```
+
+Veri 10 GB'lık alan varken **5 MB'lık yere** yazılıyordu. v2.72'de bunu
+"küçültme" ile telafi etmeye çalıştım — yanlış yaklaşımdı. Doğrusu veriyi
+geniş alana taşımaktı.
+
+### Çözüm: dava verisi IndexedDB'ye taşındı
+
+- Aynı veritabanında ikinci store: `STATE_STORE` (DB sürümü 1 → 2).
+- `persist()` artık IndexedDB'ye yazar; 400 ms içinde biriken çağrılar tek
+  yazmada birleştirilir (yazma yarışı yok).
+- `loadState()` async oldu; `init()` bekler (boş ekran gösterilmez).
+- **Göç:** eski localStorage kaydı bulunursa okunur, IndexedDB'ye taşınır ve
+  localStorage'daki büyük kopya silinir. **Mevcut veri kaybolmaz.**
+
+### Kalite geri geldi (v2.72'de kısıtlananlar)
+
+| Alan | v2.72 (kısıtlı) | v2.73 (geri) |
+|---|---|---|
+| Kelime zamanlaması (`words`) | kaydedilmiyordu | **kaydediliyor** — karaoke yeniden yüklemede çalışır |
+| Metin geçmişi | 3 kayıt | **10 kayıt** |
+
+### Depolama göstergesi (üst barda)
+
+```
+Depolama: 5 KB / 10.00 GB (%0)
+```
+
+`navigator.storage.estimate()` ile gerçek kullanım. %70'te altın uyarı,
+%90'da kalın. Üzerine gelince kullanılan/kota/kalan ayrıntısı.
 
 ## v2.72 — Depolama bir davada doluyordu (%76 küçültüldü)
 

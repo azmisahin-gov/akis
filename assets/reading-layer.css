@@ -860,3 +860,13 @@ body.ws-mode #view-audio .seg-list {
 .storage-banner .sb-body { flex: 1 1 auto; min-width: 0; }
 .storage-banner b { display: block; color: var(--gold); font-size: var(--fs-sm); margin-bottom: 2px; }
 .storage-banner small { font-size: var(--fs-xs); color: var(--ink-2); line-height: var(--lh-body); }
+
+/* ---- v2.73 — Depolama kullanım göstergesi ------------------------------ */
+.usage-state {
+  font-size: var(--fs-2xs); padding: 2px var(--sp-2);
+  border-radius: var(--r-pill); border: 1px solid var(--line-2);
+  color: var(--ink-2); background: var(--surface-2); white-space: nowrap;
+}
+.usage-state:empty { display: none; }
+.usage-state.warn { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
+.usage-state.danger { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }

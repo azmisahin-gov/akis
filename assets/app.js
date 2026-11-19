@@ -35,11 +35,12 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.72';
+const APP_VERSION = '2.73';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
 const DB_STORE = 'audio';
+const STATE_STORE = 'state'; // dava verisi (v2.73)
 // Browser speech recognition runs on WASM. Measured on the bundled test recordings:
 // int8 throws (no ConvInteger kernel), q8 silently degrades into repeated filler
 // text beyond ~15 seconds, fp16 stays accurate but needs a large download.
@@ -286,20 +287,33 @@ function currentCase() {
 }
 // Depolama dolduğunda veri SESSİZCE kaybolmamalı. Önce küçük deneme yapılır;
 // başarısızsa kullanıcı büyük uyarıyla uyarılır ve "Dışa aktar" önerilir.
+// ---- Kalıcı kayıt (v2.73) -----------------------------------------------
+// v2.72'ye kadar dava verisi localStorage'a yazılıyordu: 5 MB sınır. Tarayıcı
+// kotası ise GB mertebesinde. Veri artık IndexedDB'de (STATE_STORE); orada
+// kota çok geniş ve dolduğunda da sessiz kayıp olmuyor.
 let storageFullWarned = false;
-function persist() {
+let persistTimer = null;
+let persistChain = Promise.resolve();
+async function persistNow() {
+  for (const c of appState.cases || []) syncCaseMirrors(c);
   try {
-    for (const c of appState.cases || []) syncCaseMirrors(c);
-    localStorage.setItem(STORE_KEY, JSON.stringify(appState));
+    const db = await dbOpen();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STATE_STORE, 'readwrite');
+      tx.objectStore(STATE_STORE).put({ key: STORE_KEY, value: appState });
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
     $('#saveState').textContent = '● Yerel kayıt güncellendi';
     $('#saveState').classList.remove('danger');
     if (storageFullWarned) {
       storageFullWarned = false;
       hideStorageBanner();
     }
+    refreshUsage();
   } catch (e) {
     const full = e && (e.name === 'QuotaExceededError' || e.code === 22 || /quota/i.test(String(e.message || '')));
-    $('#saveState').textContent = full ? '● KAYIT ALANI DOLU — yedek alın!' : '● Kayıt başarısız';
+    $('#saveState').textContent = full ? '● DEPOLAMA DOLU — yedek alın!' : '● Kayıt başarısız';
     $('#saveState').classList.add('danger');
     console.warn('Kayıt başarısız:', e);
     if (full && !storageFullWarned) {
@@ -307,6 +321,15 @@ function persist() {
       showStorageBanner();
     }
   }
+}
+// persist() sık çağrılır (her tuş vuruşu). Yazmalar sıraya alınır ve 400 ms
+// içinde biriken çağrılar tek yazmada birleştirilir; böylece yazma yarışı
+// olmaz ve disk yorulmaz.
+function persist() {
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistChain = persistChain.then(persistNow, persistNow);
+  }, 400);
 }
 // Büyük, kapatılamaz uyarı şeridi. Kullanıcı ne olduğunu ve ne yapacağını
 // açıkça görmeli; sessiz veri kaybı adli belgede kabul edilemez.
@@ -455,12 +478,8 @@ function stripDerivedFields(state) {
       }
       // v2.72: kota temizliği. Eski kayıtlarda kalmış büyük alanlar atılır.
       for (const sg of m.segments || []) {
-        if (Array.isArray(sg.words) && sg.words.length) {
-          sg.words = [];
-          cleaned = true;
-        }
-        if (Array.isArray(sg.history) && sg.history.length > 3) {
-          sg.history = sg.history.slice(-3);
+        if (Array.isArray(sg.history) && sg.history.length > 10) {
+          sg.history = sg.history.slice(-10);
           cleaned = true;
         }
       }
@@ -529,12 +548,44 @@ function compactAllHistories(state) {
   }
   return changed;
 }
-function loadState() {
+// IndexedDB'den dava verisini okur. Bulamazsa eski localStorage kaydını
+// (v2.72 ve öncesi) okur ve IndexedDB'ye TAŞIR; böylece mevcut kullanıcı
+// verisi kaybolmaz.
+async function readStoredState() {
+  try {
+    const db = await dbOpen();
+    const rec = await new Promise((resolve, reject) => {
+      const r = db.transaction(STATE_STORE, 'readonly').objectStore(STATE_STORE).get(STORE_KEY);
+      r.onsuccess = () => resolve(r.result || null);
+      r.onerror = () => reject(r.error);
+    });
+    if (rec && rec.value && Array.isArray(rec.value.cases)) return { state: rec.value, migrated: false };
+  } catch (e) {
+    console.warn('IndexedDB okunamadı, localStorage denenecek', e);
+  }
+  // Göç: eski localStorage kaydı
   try {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
-      appState = JSON.parse(raw);
+      const st = JSON.parse(raw);
+      if (Array.isArray(st.cases)) {
+        // Taşındıktan sonra localStorage'daki büyük kopya SİLİNİR (yer açar).
+        localStorage.removeItem(STORE_KEY);
+        return { state: st, migrated: true };
+      }
+    }
+  } catch (e) {
+    console.warn('localStorage kaydı okunamadı', e);
+  }
+  return { state: null, migrated: false };
+}
+async function loadState() {
+  try {
+    const { state: stored, migrated } = await readStoredState();
+    if (stored) {
+      appState = stored;
       if (!Array.isArray(appState.cases)) throw 0;
+      if (migrated) console.info('Eski localStorage kaydı IndexedDB\'ye taşındı.');
       // v3: her dosya şemaya göre normalleştirilir (eksik alan tamamlanır,
       // eski düz alanlar iç içe yapıya taşınır) ve düz alan erişimcileri
       // yeniden kurulur — JSON tanımlayıcıları taşımaz.
@@ -564,10 +615,14 @@ function loadState() {
 function dbOpen() {
   if (dbPromise) return dbPromise;
   dbPromise = new Promise((resolve, reject) => {
-    const r = indexedDB.open(DB_NAME, 1);
+    // v2.73: dava verisi de IndexedDB'ye taşındı. localStorage 5 MB ile
+    // sınırlıydı; tarayıcı kotası ise 10 GB mertebesinde. Aynı veritabanında
+    // ikinci bir store açılıyor (STATE_STORE).
+    const r = indexedDB.open(DB_NAME, 2);
     r.onupgradeneeded = () => {
       const db = r.result;
       if (!db.objectStoreNames.contains(DB_STORE)) db.createObjectStore(DB_STORE, { keyPath: 'key' });
+      if (!db.objectStoreNames.contains(STATE_STORE)) db.createObjectStore(STATE_STORE, { keyPath: 'key' });
     };
     r.onsuccess = () => resolve(r.result);
     r.onerror = () => reject(r.error);
@@ -4627,9 +4682,9 @@ function pushSegmentHistory(s, prevText) {
   const prev = prevText ?? s.__editSnapshot ?? '';
   if (prev === (s.text || '')) return false;
   s.history.push({ text: prev, at: new Date().toISOString(), actor: editorName() });
-  // v2.72: 20 -> 3. Her kayıt tüm metni sakladığı için 200 bölümlü dosyada
-  // 20 geçmiş ~770 KB yer kaplıyordu. 3 kayıt geri dönüş için yeterli.
-  if (s.history.length > 3) s.history.shift();
+  // v2.73: veri IndexedDB'ye taşındı; geçmiş sınırı 3 -> 10'a çıkarıldı.
+  // Daha uzun geri dönüş geçmişi tutulabilir.
+  if (s.history.length > 10) s.history.shift();
   markTextEdited(s);
   return true;
 }
@@ -7562,6 +7617,39 @@ function renderStorage(scan) {
     })
     .join('');
 }
+// ---- Depolama kullanımı (v2.73) -----------------------------------------
+// Kullanıcı "ne kadar yer kaldı" sorusunu ekranda görmeli. Veri artık
+// IndexedDB'de (GB mertebesi kota); yine de kullanım izlenir.
+let usageInfo = { usage: 0, quota: 0 };
+async function refreshUsage() {
+  try {
+    if (!navigator.storage || !navigator.storage.estimate) return;
+    const e = await navigator.storage.estimate();
+    usageInfo = { usage: e.usage || 0, quota: e.quota || 0 };
+    renderUsage();
+  } catch (e) {}
+}
+function fmtBytesShort(n) {
+  if (!Number.isFinite(n) || n <= 0) return '0 B';
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)} KB`;
+  if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
+  return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+function renderUsage() {
+  const el = $('#usageState');
+  if (!el) return;
+  const { usage, quota } = usageInfo;
+  if (!quota) {
+    el.textContent = '';
+    return;
+  }
+  const pct = Math.min(100, Math.round((usage / quota) * 100));
+  el.textContent = `Depolama: ${fmtBytesShort(usage)} / ${fmtBytesShort(quota)} (%${pct})`;
+  el.className = 'usage-state' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
+  el.title =
+    `Kullanılan: ${fmtBytesShort(usage)}\nKota: ${fmtBytesShort(quota)}\nKalan: ${fmtBytesShort(quota - usage)}\n` +
+    'Dava verisi ve ses dosyaları bu alanda saklanır. Tarayıcı verisi silinirse kaybolur; düzenli yedek alın.';
+}
 async function refreshStorage() {
   try {
     const scan = await scanModelCache();
@@ -7889,14 +7977,16 @@ function renderAppearancePanel() {
   if (host) host.innerHTML = appearancePanelHtml();
 }
 
-function init() {
+async function init() {
   // Sürüm etiketini tek kaynaktan (APP_VERSION) yaz.
   const verEl = $('#appVersion');
   if (verEl) verEl.textContent = `AKİS • v${APP_VERSION} • Yerel sürüm`;
   // Görünüm tercihini uygula (index.html'deki satır içi betik ilk boyamayı
   // zaten yaptı; burada yalnız paneli çizip durumu tazeliyoruz).
   applyTheme();
-  loadState();
+  // v2.73: durum IndexedDB'den okunur (async). Bitmeden çizmek boş ekran
+  // gösterirdi; bu yüzden beklenir.
+  await loadState();
   renderCaseSelect();
   populateCaseForm();
   populateQuestionsForm();
@@ -7913,7 +8003,8 @@ function init() {
     applyRecommendation();
   });
   renderBackupState();
+  refreshUsage();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());
 }
-init();
+init().catch((e) => { console.error(e); });
