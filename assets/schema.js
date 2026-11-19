@@ -825,12 +825,15 @@ export function mergeCases(mine, theirs) {
     mergeTextField(merged, mine, theirs, newer, k, applied, conflicts, k);
   }
 
-  // Rapor ve görevlendirme metinleri: yardımcı bu alanları da düzeltebilir.
-  merged.report = merged.report || {};
-  merged.assignment = merged.assignment || {};
+  // İç içe gruplar. Yardımcı bu alanları da doldurabilir/düzeltebilir.
+  // v2.65: parties / expert / assignment alanları eksikti; yardımcının
+  // doldurduğu davacı, davalı, bilirkişi adı, sicil no, tarihler sessizce
+  // kayboluyordu. Artık hepsi birleştirmeye giriyor.
   for (const [group, keys] of [
-    ['report', ['methodText', 'limitationsText', 'conclusionText']],
-    ['assignment', ['scope', 'body']]
+    ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
+    ['expert', ['name', 'registryNo', 'field']],
+    ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
+    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText']]
   ]) {
     const mg = mine[group] || {};
     const tg = theirs[group] || {};

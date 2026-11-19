@@ -730,6 +730,66 @@ console.log('\n[7g] Teslim alma: kod ≠ etiket');
   }
 }
 
+// --- 7h. Dosya alanları birleşmeye giriyor mu? -------------------------
+// v2.64'e kadar mergeCases yalnız 7 düz alanı birleştiriyordu. Arayüzdeki
+// 17 alanın 10'u (parties/expert/assignment içinde) birleştirmeye HİÇ
+// girmiyordu: yardımcı davacı/davalı/bilirkişi bilgilerini doldursa bile
+// birleşmede sessizce kayboluyordu. Ne uygulanıyor ne çakışma bildiriliyordu.
+console.log('\n[7h] Dosya alanları birleşmeye giriyor');
+{
+  const empty = () => emptyCase({ id: 'c1' });
+
+  // (a) Yardımcı boş alanları doldurmuş → hepsi gelmeli.
+  let mine = empty();
+  let theirs = empty();
+  theirs.parties.plaintiff = 'Ahmet Yılmaz';
+  theirs.parties.plaintiffCounsel = 'Av. Z';
+  theirs.parties.defendant = 'Mehmet Demir';
+  theirs.parties.defendantCounsel = 'Av. Y';
+  theirs.expert.name = 'Dr. Ayşe Kaya';
+  theirs.expert.registryNo = '12345';
+  theirs.assignment.date = '2026-11-01';
+  theirs.assignment.dueDate = '2026-12-01';
+  theirs.assignment.durationDays = '30';
+  theirs.report.date = '2026-11-19';
+  let r = mergeCases(mine, theirs);
+  eq('davacı geldi', r.merged.parties.plaintiff, 'Ahmet Yılmaz');
+  eq('davacı vekili geldi', r.merged.parties.plaintiffCounsel, 'Av. Z');
+  eq('davalı geldi', r.merged.parties.defendant, 'Mehmet Demir');
+  eq('davalı vekili geldi', r.merged.parties.defendantCounsel, 'Av. Y');
+  eq('bilirkişi adı geldi', r.merged.expert.name, 'Dr. Ayşe Kaya');
+  eq('sicil no geldi', r.merged.expert.registryNo, '12345');
+  eq('görevlendirme tarihi geldi', r.merged.assignment.date, '2026-11-01');
+  eq('son teslim geldi', r.merged.assignment.dueDate, '2026-12-01');
+  eq('süre geldi', r.merged.assignment.durationDays, '30');
+  eq('rapor tarihi geldi', r.merged.report.date, '2026-11-19');
+  ok('10 alan uygulandı', r.applied.length >= 10, `${r.applied.length}`);
+  eq('boş alan doldurmada çakışma yok', r.conflicts.length, 0);
+
+  // (b) İkisi de farklı yazmış, gelen daha yeni → gelen alınır.
+  const mk = (davaci, ad, updated) => {
+    const c = emptyCase({ id: 'c1' });
+    c.updatedAt = updated;
+    c.parties.plaintiff = davaci;
+    c.expert.name = ad;
+    return c;
+  };
+  r = mergeCases(mk('Ahmet', 'Dr. A', '2026-01-01'), mk('Mehmet', 'Dr. B', '2026-02-01'));
+  eq('gelen daha yeniyse davacı ondan', r.merged.parties.plaintiff, 'Mehmet');
+  eq('gelen daha yeniyse bilirkişi ondan', r.merged.expert.name, 'Dr. B');
+
+  // (c) Yerel daha yeni → yerel korunur, çakışma bildirilir.
+  r = mergeCases(mk('Ahmet', 'Dr. A', '2026-02-01'), mk('Mehmet', 'Dr. B', '2026-01-01'));
+  eq('yerel daha yeniyse korunur', r.merged.parties.plaintiff, 'Ahmet');
+  ok('alan çakışması bildirildi', r.conflicts.some((c) => c.kind === 'case-field'));
+  ok('çakışmada alan adı var', r.conflicts.some((c) => c.field === 'plaintiff'));
+
+  // (d) Yerel dolu, gelen boş → üzerine YAZILMAZ.
+  r = mergeCases(mk('Ahmet', 'Dr. A', '2026-01-01'), mk('', '', '2026-02-01'));
+  eq('boş gelen dolu değeri ezmez', r.merged.parties.plaintiff, 'Ahmet');
+  eq('boş gelen bilirkişiyi ezmez', r.merged.expert.name, 'Dr. A');
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

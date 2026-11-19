@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.64.**
+yazılır. **Güncel sürüm: v2.65.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.65 — Dosya bilgileri birleşmeye girmiyordu (tamamlandı)
+
+`mergeCases()` yalnız 7 düz alanı birleştiriyordu; arayüzdeki 17 alanın 10'u
+(parties/expert/assignment/report içinde) birleştirmeye hiç girmiyordu.
+Ölçüm: yardımcının doldurduğu davacı, davalı, bilirkişi adı, sicil no, tarihler
+KAYBOLDU — ne uygulandı ne çakışma bildirildi. İç içe gruplar eklendi. Kural:
+boş alan dolar, ikisi de doluysa gelen yeniyse o alınır / değilse çakışma,
+boş gelen dolu değeri asla ezmez. Test [7h]: 231 → 250 kontrol.
 
 ### v2.64 — Sol liste kaydırması geri geldi (tamamlandı)
 

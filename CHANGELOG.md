@@ -6,12 +6,69 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.64.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.65.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.65 — Dosya bilgileri birleşmeye girmiyordu (10 alan kayboluyordu)
+
+KULLANICI: "Dosya bilgilerine eklediğimiz şeyler nasıl çalışacak? Şu an hepsini
+bilirkişi kendi yapıyor. Diğerleri ne görecek, ne yapabilecek?"
+
+### Ölçümle bulunan sessiz kayıp
+
+Yardımcı dosya bilgilerini doldurdu, birleştirme yapıldı:
+
+```
+davaci               KAYBOLDU
+davali               KAYBOLDU
+davaci vekili        KAYBOLDU
+davali vekili        KAYBOLDU
+bilirkisi adi        KAYBOLDU
+sicil no             KAYBOLDU
+gorevlendirme tarihi KAYBOLDU
+son teslim           KAYBOLDU
+sure (gun)           KAYBOLDU
+rapor tarihi         KAYBOLDU
+
+uygulanan değişiklik: 0     çakışma: 0    ← ne uygulandı ne bildirildi
+```
+
+**Sebep:** `mergeCases()` yalnız 7 düz alanı birleştiriyordu
+(`court`, `fileNo`, `subject`, `caseDate`, `inspectionDate`, `reportType`,
+`status`). Arayüzdeki 17 alanın 10'u `parties` / `expert` / `assignment` /
+`report` **içinde** duruyor ve birleştirmeye hiç girmiyordu.
+
+### Çözüm
+
+İç içe gruplar da birleştirmeye girdi:
+
+| Grup | Alanlar |
+|---|---|
+| `parties` | davacı, davacı vekili, davalı, davalı vekili |
+| `expert` | ad, sicil no, uzmanlık alanı |
+| `assignment` | tarih, son teslim, süre, kapsam, yazı |
+| `report` | tarih, yöntem, sınırlılık, sonuç |
+
+Kural aynı: **boş alan her zaman doldurulur**; ikisi de doluysa gelen dosya
+daha yeniyse o alınır, değilse çakışma bildirilir; **boş gelen dolu değeri
+asla ezmez**.
+
+### Doğrulama (ölçüm)
+
+```
+Yardımcı doldurmuş → 10/10 alan GELDİ, çakışma 0
+İkisi de farklı, gelen yeni → gelen alındı
+İkisi de farklı, yerel yeni → yerel korundu + 2 çakışma bildirildi
+Yerel dolu, gelen boş → yerel korundu (ezilmedi)
+```
+
+### Test
+
+`sema-testi.mjs` [7h] bloğu eklendi (231 → 250 kontrol).
 
 ## v2.64 — Sol liste kaydırması geri geldi (200+ bölüm)
 
