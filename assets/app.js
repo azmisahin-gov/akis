@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.84';
+const APP_VERSION = '2.85';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8365,11 +8365,19 @@ function setupEvents() {
     const rec = (m.speakers || []).find((x) => x.id === el.dataset.spk);
     if (!rec) return;
     const key = el.dataset.spkKey;
-    const oldName = rec.name;
-    rec[key] = el.value; // Etiket adı değişirse bölümlerdeki konuşmacı referansları da güncellenir.
-    if (key === 'name' && el.value.trim() && el.value !== oldName) {
-      for (const sg of m.segments || []) {
-        if ((sg.speaker || '') === oldName) sg.speaker = el.value;
+    const oldName = rec.name || rec.label || '';
+    rec[key] = el.value;
+    // `name` ve `label` TEK KAYNAKTAN türetilir. Arayüz `name` yazar, şema
+    // `label` okur; ikisi ayrışırsa yükleme sonrası konuşmacı bağı kopar ve
+    // raporda S1 kodu kaybolur (v2.85'te kanıtlandı).
+    if (key === 'name') {
+      rec.label = el.value;
+      rec.name = el.value;
+      // Etiket adı değişirse bölümlerdeki konuşmacı referansları da güncellenir.
+      if (el.value.trim() && el.value !== oldName) {
+        for (const sg of m.segments || []) {
+          if ((sg.speaker || '') === oldName) sg.speaker = el.value;
+        }
       }
     }
     persist();

@@ -513,6 +513,10 @@ export function normalizeSpeaker(src = {}) {
     ...s,
     id: s.id || newId('sp'),
     code: str(s.code),
+    // `label` şemanın alanı; `name` arayüzün yaygın olarak okuduğu alan.
+    // v2.85 öncesinde yalnız `label` yazılıyordu ve `speakerByName()` gibi
+    // 15+ yer `name` aradığı için yükleme sonrası konuşmacı bağı KOPUYORDU
+    // (raporda S1 kodu kayboluyordu). İkisi tek kaynaktan türetilir.
     label: str(s.label || s.name),
     role: normalizeSpeakerRole(s.role),
     gender: normalizeSpeakerGender(s.gender),
@@ -522,6 +526,9 @@ export function normalizeSpeaker(src = {}) {
     pitchSamples: num(s.pitchSamples),
     measuredAt: s.measuredAt || s.pitchAt || null
   };
+  // `name` alanı `label` ile AYNI tutulur (tek kaynak). Arayüz `name`,
+  // şema `label` okuyor; ayrışırlarsa konuşmacı bağı kopar (v2.85).
+  out.name = out.label;
   return out;
 }
 

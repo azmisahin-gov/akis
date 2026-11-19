@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.84.**
+yazılır. **Güncel sürüm: v2.85.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.85 — Rapor çıktısı denetimi (tamamlandı)
+
+Mahkemeye giden belge denetlendi. **Gerçek hata:** şema konuşmacıyı `label`'da
+tutuyor, arayüzün 15+ yeri `name` okuyor; yükleme sonrası eşleşme kopuyor ve
+raporda `S1` kodu kayboluyordu. `normalizeSpeaker` artık `name` ve `label`
+alanlarını tek kaynaktan türetir. Ayrıca rapor testi yalnız metne bakıyordu;
+ZIP yapısı, XML dengesi, kaçış ve Türkçe karakter denetimi eklendi
+([Senaryo 11], 20 kontrol).
 
 ### v2.84 — Veri güvenliği denetimi, canlı veri (tamamlandı)
 

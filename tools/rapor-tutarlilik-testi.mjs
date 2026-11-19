@@ -337,5 +337,70 @@ console.log('\n[Senaryo 10] çıktıda uygulama kimliği yok');
   check('UDF XML içinde "Akis" geçmez', !/Akis/i.test(ux));
 }
 
+// Senaryo 11: dosya YAPISI geçerli mi (v2.85).
+// v2.85 öncesinde testler yalnız METNE bakıyordu; bozuk ZIP, eksik parça,
+// dengelenmemiş XML etiketi ve kaçırılmamış karakter görülmüyordu.
+// Kullanıcı bu belgeyi mahkemeye gönderiyor: dosya AÇILMALI.
+console.log('\n[Senaryo 11] dosya yapısı ve kaçış denetimi');
+{
+  const c = withMaterial({});
+  // Özel karakterli metin: kaçış hatalarını yakalar.
+  const OZEL = 'Açılı <parantez> & "tırnak" %12,5 — şğüıöçİĞÜŞÖÇ';
+  c.materials[0].segments[0].text = OZEL;
+  c.subject = 'Konu <>&" testi';
+  c.methodText = 'Yöntem <>&" metni';
+
+  // --- UDF yapısı
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uBuf = Buffer.from(await downloads[0].blob.arrayBuffer());
+  const uZip = await JSZip.loadAsync(uBuf);
+  const uNames = Object.keys(uZip.files);
+  check('UDF ZIP açılıyor', uNames.length > 0, `${uNames.length} dosya`);
+  check('UDF content.xml içeriyor', uNames.includes('content.xml'));
+  const ux = await uZip.file('content.xml').async('string');
+  check('UDF <template> korunmuş', /<template\s/.test(ux));
+  check('UDF <styles> korunmuş', /<styles>/.test(ux));
+  check('UDF <properties> korunmuş', /<properties>/.test(ux));
+  check('UDF format_id korunmuş', /format_id="/.test(ux));
+  // UDF mimarisi: metin <content> CDATA içinde, <elements> yalnız offset taşır.
+  const uContent = (ux.match(/<content><!\[CDATA\[([\s\S]*?)\]\]><\/content>/) || [])[1] || '';
+  check('UDF metin CDATA içinde', uContent.length > 100, `${uContent.length} karakter`);
+  // UDF tablosu uzun kelimeleri \u200B (görünmez kırma) ile böler; bu
+  // taşmayı önleyen KASITLI bir davranış. Karşılaştırma öncesi temizlenir.
+  const uClean = uContent.replace(/\u200B/g, '');
+  check('UDF bölüm metnini içeriyor', uClean.includes('parantez'), uContent.slice(0, 80).replace(/\n/g, ' '));
+  check('UDF Türkçe karakterler korunmuş', uClean.includes('şğüıöçİĞÜŞÖÇ'));
+  check('UDF özel karakterler kaçırılmamış (CDATA)', uClean.includes('<parantez>') && uClean.includes('&'));
+  // CDATA dışındaki XML kaçışlı olmalı.
+  const uOutside = ux.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '');
+  const uBad = uOutside.replace(/&amp;|&lt;|&gt;|&quot;|&apos;|&#\d+;/g, '');
+  check('UDF CDATA dışı kaçış doğru', !/&/.test(uBad), '');
+
+  // --- DOCX yapısı
+  downloads.length = 0; setCase(c); await makeDocx();
+  const dBuf = Buffer.from(await downloads[0].blob.arrayBuffer());
+  const dZip = await JSZip.loadAsync(dBuf);
+  const dNames = Object.keys(dZip.files);
+  check('DOCX ZIP açılıyor', dNames.length > 0, `${dNames.length} dosya`);
+  check('DOCX [Content_Types].xml var', dNames.includes('[Content_Types].xml'));
+  check('DOCX word/document.xml var', dNames.includes('word/document.xml'));
+  const dx = await dZip.file('word/document.xml').async('string');
+  check('DOCX Türkçe karakterler korunmuş', dx.includes('şğüıöçİĞÜŞÖÇ'));
+  const dOpen = (dx.match(/<w:p[ >]/g) || []).length;
+  const dClose = (dx.match(/<\/w:p>/g) || []).length;
+  check('DOCX paragraf etiketleri dengeli', dOpen === dClose, `aç ${dOpen} / kapa ${dClose}`);
+  const dUnescaped = dx.replace(/&amp;|&lt;|&gt;|&quot;|&apos;|&#\d+;/g, '');
+  check('DOCX kaçırılmamış & yok', !/&/.test(dUnescaped));
+
+  // --- Konuşmacı kodu üç çıktıda da görünmeli (v2.85 name/label hatası).
+  const c2 = withMaterial({});
+  c2.materials[0].speakers = [{ id: 'sp1', code: 'S1', label: 'Kiracı', name: 'Kiracı', role: 'complainant' }];
+  c2.materials[0].segments[0].speaker = 'Kiracı';
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  check('HTML çıktısında konuşmacı kodu S1 var', H2.includes('S1'), '');
+  check('UDF çıktısında konuşmacı kodu S1 var', U2.includes('S1'), '');
+  check('DOCX çıktısında konuşmacı kodu S1 var', D2.includes('S1'), '');
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

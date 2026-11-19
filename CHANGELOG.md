@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.84.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.85.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.85 — Rapor çıktısı denetimi: konuşmacı kodu kayboluyordu
+
+CANLI veri denetiminin ikinci turu. Mahkemeye giden belge denetlendi.
+
+### 1. GERÇEK HATA: konuşmacı kodu raporda kayboluyordu
+
+Şema konuşmacıyı `label` alanında tutuyor; arayüzün **15+ yeri** `name`
+okuyor (`speakerByName`, `speakerSegments`, `speakerRows`…). Yükleme
+sonrasında `name` alanı yok olduğu için eşleşme kopuyordu:
+
+```
+speakers[0]: {"code":"S1","label":"Kiracı", ...}     ← name YOK
+speakerByName bulur mu: false
+→ raporda "S1 · Kiracı" yerine yalnız "Kiracı"
+```
+
+Kanıt: test çıktısında `HTML çıktısında konuşmacı kodu S1 var` **KALDI**.
+
+**Düzeltme:** `normalizeSpeaker` içinde `out.name = out.label` (tek kaynak).
+Yazma tarafında da `name` yazılınca `label` güncellenir. Artık üç çıktıda da
+`S1 · Kiracı` görünür.
+
+### 2. Rapor testi yalnız METNE bakıyordu, DOSYAYA bakmıyordu
+
+Mevcut test UDF/DOCX üretip metnini çıkarıyordu ama **ZIP yapısını, XML
+dengesini ve kaçışları** denetlemiyordu. Kullanıcı bu dosyayı mahkemeye
+gönderiyor; dosya açılmazsa felaket.
+
+**Eklenen [Senaryo 11]** (20 kontrol):
+- ZIP gerçekten açılıyor mu, `content.xml` / `word/document.xml` var mı
+- UDF'de `<template>`, `<styles>`, `<properties>`, `format_id` korunmuş mu
+- Türkçe karakterler (şğüıöçİĞÜŞÖÇ) bozulmamış mı
+- DOCX paragraf etiketleri dengeli mi (aç = kapa)
+- CDATA dışında kaçırılmamış `&` kalmış mı
+- **Konuşmacı kodu üç çıktıda da var mı**
+
+Not: UDF tablosu uzun kelimeleri `\u200B` ile böler (taşmayı önleyen kasıtlı
+davranış); test bunu temizleyerek karşılaştırır.
+
+### 3. Ölçülen sonuçlar
+
+| Çıktı | Sonuç |
+|---|---|
+| DOCX | 57.747 bayt, 10 dosya, 137 paragraf dengeli |
+| UDF | 1 dosya, 3.915 karakter CDATA, şablon korunmuş |
+| HTML | 6.623 karakter |
+
+### 4. Test
+
+`rapor-tutarlilik-testi.mjs` [Senaryo 11]: 20 yeni kontrol.
+Toplam: 236 birim + 361 şema + rapor (tüm senaryolar).
 
 ## v2.84 — Veri güvenliği denetimi (CANLI veri)
 
