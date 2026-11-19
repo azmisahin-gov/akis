@@ -530,3 +530,45 @@ html,body{height:100%;overflow:hidden}
 #view-audio .audio-content-zone{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 #view-audio .transcript-editor{flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
 #view-audio .segments-root{flex:1 1 auto;min-height:0}
+
+/* ============================================================================
+   v2.33 — v2.32 düzeltmesi: içerik kırpılması giderildi
+   HATA: `.audio-content-zone{overflow:hidden}` deşifre bölümünü görünmez yaptı;
+   kart içeriği (dalga formu + spektrogram + oynatıcı + köken + konuşmacılar +
+   deşifre) tek ekrana sığmadığı için kırpıldı.
+   DOĞRU DAVRANIŞ: detay paneli kaydırılabilir bir bölgedir; deşifre alanı her
+   zaman erişilebilir olmalıdır. Liste ve deşifre çalışma alanı kendi içinde
+   kayar, kartın geri kalanı normal akışta kalır.
+   ============================================================================ */
+#view-audio .audio-card{height:auto;display:block;min-height:0}
+#view-audio .audio-content-zone{
+  display:block;overflow:visible;flex:none;min-height:0}
+#view-audio .transcript-editor{display:block;flex:none;min-height:0}
+#view-audio .segments-root{display:block;flex:none;min-height:0}
+/* Deşifre çalışma alanı: iki panel yan yana, her biri kendi içinde kayar.
+   Yükseklik ekrana göre ölçeklenir; en az 280px kalır. */
+#view-audio .seg-workspace{
+  display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);
+  gap:12px;align-items:stretch;height:clamp(280px,52vh,620px)}
+#view-audio .seg-list{height:100%;max-height:none;min-height:0;overflow:auto}
+#view-audio .seg-detail{height:100%;min-height:0;overflow-y:auto}
+@media(max-width:1080px){
+  #view-audio .seg-workspace{grid-template-columns:1fr;height:auto}
+  #view-audio .seg-list{height:auto;max-height:260px}
+  #view-audio .seg-detail{height:auto;overflow:visible}
+}
+
+/* Teknik bilgi katlaması (v2.33) */
+.compact-meta{align-items:center;border-top:1px solid #f0f2f5}
+.meta-spacer{flex:1}
+.mini-button.tiny{padding:3px 8px;font-size:9px}
+.tech-fold{border-top:1px dashed #eef2f6;padding-top:7px;margin-top:7px}
+.tech-fold .audio-meta{border-top:0;padding-top:0;margin-top:0}
+.tech-fold .sha{font-size:8px;word-break:break-all}
+/* Deşifre alanı görünür kalsın: kart üst bilgisi sıkıştırıldı. */
+#view-audio .audio-card-top{padding-bottom:2px}
+#view-audio .audio-meta{padding-top:6px;margin-top:6px}
+#view-audio .wave-canvas{height:40px}
+#view-audio .wave-wrap{margin-top:6px}
+#view-audio .audio-player{margin-top:6px;height:30px}
+#view-audio .transcript-editor{margin-top:8px;padding-top:8px}
