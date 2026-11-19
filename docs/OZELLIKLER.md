@@ -122,6 +122,11 @@ tuşları bozulmaz.
 - **Hızlı etiketler:** [sessizlik], [anlaşılmaz], [uzaktan konuşma], [gürültülü],
   [üst üste], [müzik/ses] düğmeleri ve "Temizle". Boş veya anlaşılmaz bölümler
   elle yazmadan işaretlenir; uygulama uydurma metin üretmez.
+- **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
+  inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
+  kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
+  sessizse "[sessizlik] etiketi uygun olabilir" notu çıkar; metin otomatik
+  doldurulmaz.
 - **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümler tek paragrafta
   birleştirilir; konuşmacı değişince yeni paragraf başlar. Onaylanmamış bölüm
   paragrafta onaylı sayılmaz.

@@ -87,6 +87,7 @@ const REPORT_TEXT = {
   rsInaudible:'Anlaşılmadı işaretli bölüm',
   rsBlank:'Anlamlı metin içermeyen bölüm',
   rsObservations:'Gözlem işareti konulan bölüm',
+  rsSilence:'Sessizlik oranı ölçülen bölüm',
   rsSpectrogram:'Spektrogram incelenen kayıt',
   rsChannel:'Kanal ayrımı yapılan kayıt',
   rsSpeaker:'Etiketlenen konuşmacı',
@@ -409,6 +410,51 @@ async function toggleSpectrogram(m){
 }
 
 const peakCache=new Map();
+// ---- Sessizlik/boşluk ölçümü (NLP öncesi sinyal katmanı) ----
+// Bir zaman aralığında konuşma olup olmadığını ölçer. Uydurma yoktur: RMS
+// tabanlı bir ölçüm yapılır ve uzmana yalnızca "bu bölümün büyük kısmı sessiz"
+// gibi gerekçeli bir işaret sunulur. Eşik, kaydın kendi gürültü zeminine göre
+// uyarlanır (mutlak eşik kullanmak yanlış olurdu).
+// Saf fonksiyon: Float32 örnek dizisi ve örnekleme frekansı alır, aralıktaki
+// sessiz oranı ve RMS dağılımını döndürür. Birim testiyle doğrulanır.
+function analyzeSilence(samples, sampleRate, startSec, endSec, opts={}){
+  const n=samples.length;const sr=sampleRate||16000;
+  const s0=Math.max(0,Math.floor((startSec||0)*sr));const s1=Math.min(n,Math.ceil((endSec||0)*sr));
+  const len=s1-s0;if(!(len>0))return {ok:false,reason:'boş aralık'};
+  // Kısa pencerelerde RMS ölçülür; pencere ~20 ms.
+  const win=Math.max(1,Math.round(sr*0.02));
+  const rms=[];
+  for(let p=s0;p<s1;p+=win){const e=Math.min(s1,p+win);let sum=0;for(let i=p;i<e;i++)sum+=samples[i]*samples[i];rms.push(Math.sqrt(sum/(e-p)));}
+  const sorted=rms.slice().sort((a,b)=>a-b);
+  const pct=(q)=>{if(!sorted.length)return 0;const idx=Math.min(sorted.length-1,Math.max(0,Math.round(q*(sorted.length-1))));return sorted[idx];};
+  const floor=pct(0.1); // alt %10 = gürültü zemini
+  const peak=pct(0.95);  // üst %5 = konuşma düzeyi
+  // Eşik: zemin ile konuşma düzeyi belirgin biçimde ayrıksa aralarında bir
+  // değer; ayrık değilse (tek düze sinyal: ya tam sessiz ya tam konuşma) genliğe
+  // göre karar verilir. Mutlak taban, gerçek sessizliğin çok küçük genlikli
+  // olmasından yararlanır.
+  const spread=peak-floor;
+  const threshold=spread>Math.max(floor,1e-4)
+    ? floor+spread*0.3
+    : Math.max(peak*0.5,0.002);
+  let silent=0;for(const r of rms)if(r<threshold)silent++;
+  const ratio=rms.length?silent/rms.length:0;
+  // Sessiz aralıkların toplam süresi.
+  const silentSec=ratio*len/sr;
+  return {ok:true,ratio,silentSec,durationSec:len/sr,rmsFloor:floor,rmsPeak:peak,threshold};
+}
+// Bölüm metni zaten anlamlıysa sessizlik uyarısı üretmeyiz; yalnızca metin boş
+// veya dolgu iken ve aralık büyük ölçüde sessizse işaret veririz.
+function segmentSilenceFlag(stats,text,isHallucinationFn){
+  if(!stats||!stats.ok)return null;
+  if(stats.durationSec<0.5)return null;
+  const blank=isHallucinationFn?isHallucinationFn(text):(!text||!String(text).trim());
+  if(!blank)return null;
+  if(stats.ratio>=0.8&&stats.durationSec>=1.5)return {level:'high',stats};
+  if(stats.ratio>=0.55&&stats.durationSec>=1)return {level:'mid',stats};
+  return null;
+}
+
 function attachWave(card,m,url){const canvas=card.querySelector('canvas.wave-canvas');if(!canvas)return;const player=card.querySelector('audio');if(!player)return;const paint=()=>{drawWave(canvas,peakCache.get(m.id),m);const zw=card.querySelector('canvas.zoom-wave');if(zw){const idx=Number.isInteger(m.activeSeg)?m.activeSeg:0;drawZoomWave(zw,peakCache.get(m.id),m,idx);}};if(peakCache.has(m.id)){paint();}else if(url){getAudioBlob(currentCase(),m).then(blob=>{if(!blob)return;return computePeaks(blob,1200).then(pk=>{if(pk)peakCache.set(m.id,pk);paint();});});}canvas.addEventListener('click',e=>{const rect=canvas.getBoundingClientRect();const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));const dur=Number(m.duration)||player.duration||0;if(dur>0){player.currentTime=ratio*dur;player.play().catch(()=>{});}});const ph=()=>{const dur=Number(m.duration)||player.duration||0;if(!(dur>0))return;paint();const x=Math.floor(player.currentTime/dur*canvas.width);const ctx=canvas.getContext('2d');ctx.strokeStyle='#b88645';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();};player.addEventListener('timeupdate',ph);player.addEventListener('seeked',ph);}
 
 
@@ -671,7 +717,26 @@ async function measureSpeakerPitch(m){
   (m.log=m.log||[]).push({at:new Date().toISOString(),event:'Konuşmacı perde ölçümü',detail:`${m.speakers.length} konuşmacı için perde tahmini hesaplandı`});
   persist();renderSpeakersPanel(m);// Perde ölçümü tüm ses listesini yeniden çizmez; yalnızca konuşmacı paneli
 // güncellenir. Böylece sayfa yerinde kalır, kaydırma ve odak korunur.
-showToast('Konuşmacı perde ölçümü tamamlandı.');
+  showToast('Konuşmacı perde ölçümü tamamlandı.');
+}
+// Seçili bölümün sessizlik oranını ölçer. Ses dosyası çözülür, aralık RMS
+// tabanlı analyzeSilence ile incelenir ve sonuç bölüme bağlanır. Ölçüm
+// deterministiktir; uydurma bir "konuşma olasılığı" üretilmez.
+async function measureSegmentSilence(m,index){
+  const s=(m.segments||[])[index];if(!s)return;
+  const c=currentCase();const blob=await getAudioBlob(c,m);
+  if(!blob){showToast('Ses dosyası bulunamadı.');return;}
+  const AC=window.AudioContext||window.webkitAudioContext;const ctx=new AC();
+  let audio;try{audio=await ctx.decodeAudioData(await blob.arrayBuffer());}catch(e){await ctx.close();showToast('Ses çözümlenemedi.');return;}
+  const sr=audio.sampleRate;const data=audio.getChannelData(0);
+  const st=secondsFromTimecode(s.start);const en=secondsFromTimecode(s.end);
+  const stats=analyzeSilence(data,sr,st,en);
+  await ctx.close();
+  if(!stats.ok){showToast('Ölçüm için geçerli bir zaman aralığı gerekir.');return;}
+  s.silence=stats;
+  (m.log=m.log||[]).push({at:new Date().toISOString(),event:'Sessizlik ölçümü',detail:`Bölüm ${index+1}: %${Math.round(stats.ratio*100)} sessiz (${stats.silentSec.toFixed(1)} sn)`});
+  persist();renderSegDetail(m);updateSegListItem(m,index);renderOverview();
+  showToast(`Bölüm ${index+1} sessizlik: %${Math.round(stats.ratio*100)}`);
 }
 // Benzer perde aralığındaki konuşmacıları gruplama ÖNERİSİ. Kimlik tespiti
 // değildir; yalnızca "bu etiketler benzer perdede, aynı kişi olabilir"
@@ -791,6 +856,19 @@ function updateSegListItem(m,i){
 }
 
 // ---- Detay (sağ panel) ----
+// Ölçülmüş sessizlik sonucunu gösteren not. Yalnızca gerçekten ölçüldüyse
+// görünür; ölçüm yapılmadıysa hiçbir şey gösterilmez (uydurma yok).
+function silenceNoteHtml(s,i){
+  const st=s.silence;if(!st||!st.ok)return '';
+  const pct=Math.round(st.ratio*100);
+  const lvl=st.ratio>=0.8?'yüksek':(st.ratio>=0.55?'orta':'düşük');
+  const cls=st.ratio>=0.55?'':' style="background:#f4f8fb;border-color:#d6e4f2;color:#2f6f95"';
+  const hasText=!isHallucination(s.text);
+  let hint='';
+  if(st.ratio>=0.55&&!hasText)hint=' Bu bölüm büyük ölçüde sessiz; metin yerine [sessizlik] etiketi uygun olabilir.';
+  else if(st.ratio>=0.55&&hasText)hint=' Sessizlik oranı yüksek ama metin girilmiş; kaydı dinleyerek doğrulayın.';
+  return `<div class="halluc-note"${cls}>Ölçülen sessizlik: %${pct} (${lvl}) · sessiz süre ${st.silentSec.toFixed(1)} sn / ${st.durationSec.toFixed(1)} sn.${hint}</div>`;
+}
 function segDetailHtml(m){
   const segs=m.segments||[];
   if(!segs.length)return '<div class="seg-detail-empty">Bölüm seçmek için soldan bir kayıt çözümleyin veya bölüm ekleyin.</div>';
@@ -814,6 +892,7 @@ function segDetailHtml(m){
       </span>
     </div>
     ${halluc?`<div class="halluc-note">Bu bölümde anlamlı metin yok. Kaydı dinleyip metni doldurun; boş bırakılamaz.</div>`:''}
+    ${silenceNoteHtml(s,i)}
     ${pr.score>=15?`<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">İnceleme önceliği: ${esc(pr.reasons.join(', '))}</div>`:''}
     <div class="seg-row2">
       <div class="seg-field"><label>Başlangıç</label><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start||'')}">
@@ -838,6 +917,7 @@ function segDetailHtml(m){
       <div class="seg-field"><label>Bölüm işlemleri</label>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${hist?`<button class="mini-button" data-history="${i}">Geçmiş (${hist})</button>`:''}
+          <button class="mini-button" data-silence="${i}" title="Bu bölümün sessizlik oranını ölç">Sessizlik ölç</button>
           <button class="mini-button" data-split-seg="${i}">Buradan böl</button>
           <button class="mini-button" data-merge-next="${i}">Sonrakiyle birleştir</button>
           <button class="mini-button danger" data-delete-seg="${i}">Sil</button>
@@ -1403,6 +1483,7 @@ function reviewSummaryRows(c){
   const inaudible=segs.filter(s=>segReview(s)==='anlasilmadi').length;
   const blank=segs.filter(s=>isHallucination(s.text)).length;
   const observed=segs.filter(s=>s.obs&&Object.keys(s.obs).some(k=>s.obs[k])).length;
+  const silenceMeasured=segs.filter(s=>s.silence&&s.silence.ok).length;
   const spec=mats.filter(m=>m.spectrogramReviewed).length;
   const chan=mats.filter(m=>m.tech?.channels===2&&channelMode(m)!=='both').length;
   const speakers=mats.reduce((n,m)=>n+(m.speakers||[]).filter(s=>s.name&&s.name!=='Belirtilmedi').length,0);
@@ -1420,6 +1501,7 @@ function reviewSummaryRows(c){
     [REPORT_TEXT.rsInaudible,inaudible],
     [REPORT_TEXT.rsBlank,blank],
     [REPORT_TEXT.rsObservations,observed],
+    [REPORT_TEXT.rsSilence,silenceMeasured],
     [REPORT_TEXT.rsSpectrogram,spec],
     [REPORT_TEXT.rsChannel,chan],
     [REPORT_TEXT.rsSpeaker,speakers],
@@ -1649,7 +1731,7 @@ $$('.nav-item[data-view]').forEach(b=>b.addEventListener('click',()=>switchView(
 $('#caseSelect').addEventListener('change',async e=>{appState.activeCaseId=e.target.value;persist();populateCaseForm();populateQuestionsForm();renderOverview();await renderAudioList();renderQueue();});$('#newCaseBtn').addEventListener('click',()=>{const c=freshCase();appState.cases.push(c);appState.activeCaseId=c.id;persist();renderCaseSelect();populateCaseForm();populateQuestionsForm();renderOverview();renderAudioList();switchView('case');});
 $('#view-case').addEventListener('input',readCaseForm);$('#view-case').addEventListener('change',readCaseForm);$('#view-questions').addEventListener('input',e=>{const t=e.target;if(t.dataset.q!==undefined){const c=currentCase(),q=c.questions[Number(t.dataset.q)];if(q)q[t.dataset.k]=t.value;persist();}else readQuestionsForm();});$('#view-questions').addEventListener('change',e=>{if(e.target.dataset.q===undefined)readQuestionsForm();});$('#addQuestionBtn').addEventListener('click',addQuestion);$('#questionsList').addEventListener('click',e=>{const b=e.target.closest('[data-remove-q]');if(!b)return;const c=currentCase();c.questions.splice(Number(b.dataset.removeQ),1);persist();renderQuestions();});
 $('#audioInput').addEventListener('change',async e=>{const files=[...e.target.files];if(files.length)await addAudioFiles(files);e.target.value='';});const dz=$('#dropZone');['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('drag');}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.remove('drag');}));dz.addEventListener('drop',async e=>{const files=[...e.dataTransfer.files];if(files.length)await addAudioFiles(files);});
-$('#view-audio').addEventListener('click',async e=>{const mr=e.target.closest('[data-material-row]');if(mr){setActiveMaterial(mr.dataset.materialRow);return;}const item=e.target.closest('.seg-item');if(item){focusSegmentRow(item);}const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;closeAudioGraph(m);await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.segFilter!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.uiFilter=b.dataset.segFilter;renderSegments(m,card);}}else if(b.dataset.segNav!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)navSegment(m,b.dataset.segNav==='next'?1:-1);}else if(b.dataset.segSpeed!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.playbackRate=Number(b.dataset.segSpeed);const pl=card.querySelector('audio');if(pl)pl.playbackRate=m.playbackRate;renderSegments(m,card);persist();}}else if(b.dataset.segApprove!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);approveActiveSegment(m);}else if(b.dataset.approveSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)approveActiveSegment(m);}else if(b.dataset.reviewSet!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const [ix,val]=b.dataset.reviewSet.split('|');const s2=m.segments[Number(ix)];if(s2){s2.review=val;s2.checked=(val==='onaylandi');persist();updateSegListItem(m,Number(ix));refreshSegChips(m);renderSegDetail(m);renderOverview();if($('#view-report').classList.contains('active'))renderReport();}}}else if(b.dataset.playActive!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)playActiveSegment(m);}else if(b.dataset.stopActive!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)stopSegmentPlayback(m);}else if(b.dataset.zwPlay!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)playActiveSegment(m);}else if(b.dataset.zwStop!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)stopSegmentPlayback(m);}else if(b.dataset.zwZoom!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)zoomWaveBy(m,Number.isInteger(m.activeSeg)?m.activeSeg:0,b.dataset.zwZoom);}else if(b.dataset.jumpPrio!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)jumpToPriority(m);}else if(b.dataset.paragraph!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)paragraphize(m);}else if(b.dataset.splitSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)splitSegmentAtPlayer(m,Number(b.dataset.splitSeg));}else if(b.dataset.mergeNext!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)mergeSegmentWithNext(m,Number(b.dataset.mergeNext));}else if(b.dataset.spec!==undefined){const mm=c.materials.find(x=>x.id===b.dataset.spec);if(mm)toggleSpectrogram(mm);}else if(b.dataset.measurePitch!==undefined){const mm=c.materials.find(x=>x.id===b.dataset.measurePitch);if(mm)measureSpeakerPitch(mm);}else if(b.dataset.obs!==undefined){const card=b.closest('.audio-card');const [ix,key]=b.dataset.obs.split('|');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const sg=m.segments[Number(ix)];if(sg){sg.obs=sg.obs||{};sg.obs[key]=!sg.obs[key];b.classList.toggle('on',sg.obs[key]);persist();renderOverview();if($('#view-report').classList.contains('active'))renderReport();}}}else if(b.dataset.chan!==undefined){const card=b.closest('.audio-card');const [mid,mode]=b.dataset.chan.split('|');const m=c.materials.find(x=>x.id===mid);if(m){m.channelMode=mode;persist();if(mode!=='both')ensureAudioGraph(m,card.querySelector('audio'));card.querySelectorAll('[data-chan]').forEach(x=>x.classList.toggle('on',x.dataset.chan.endsWith('|'+mode)));applyChannelMode(m);resumeAudioGraph(m);showToast(mode==='both'?'Stereo (her iki kanal)':(mode==='left'?'Yalnız sol kanal':'Yalnız sağ kanal'));}}else if(b.dataset.nudge!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const [ix,field,delta]=b.dataset.nudge.split('|');nudgeBoundary(m,Number(ix),field,Number(delta));}}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
+$('#view-audio').addEventListener('click',async e=>{const mr=e.target.closest('[data-material-row]');if(mr){setActiveMaterial(mr.dataset.materialRow);return;}const item=e.target.closest('.seg-item');if(item){focusSegmentRow(item);}const b=e.target.closest('button');if(!b)return;const c=currentCase();if(b.dataset.transcribe){await transcribe(b.dataset.transcribe);}else if(b.dataset.cancel){const mm=c.materials.find(x=>x.id===b.dataset.cancel);if(mm){mm.cancelRequested=true;showToast('İptal istendi; geçerli pencere bitince duracak.');}}else if(b.dataset.manual){addManualSegment(b.dataset.manual);}else if(b.dataset.removeAudio){const m=c.materials.find(x=>x.id===b.dataset.removeAudio);if(!m)return;closeAudioGraph(m);await deleteBlob(blobKey(c,m));const url=objectUrls.get(blobKey(c,m));if(url)URL.revokeObjectURL(url);objectUrls.delete(blobKey(c,m));c.materials=c.materials.filter(x=>x.id!==m.id);persist();renderAudioList();renderOverview();showToast('Ses kaydı kaldırıldı.');}else if(b.dataset.verify){await verifyIntegrity(b.dataset.verify);}else if(b.dataset.log){const lm=c.materials.find(x=>x.id===b.dataset.log);if(lm)showEvidenceLog(lm);}else if(b.dataset.history!==undefined){const card=b.closest('.audio-card');const hid=card?.querySelector('[data-transcribe]')?.dataset.transcribe;const hm=c.materials.find(x=>x.id===hid);if(hm)showSegmentHistory(hm,Number(b.dataset.history));}else if(b.dataset.playSeg!==undefined){playSegment(b);}else if(b.dataset.segFilter!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.uiFilter=b.dataset.segFilter;renderSegments(m,card);}}else if(b.dataset.segNav!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)navSegment(m,b.dataset.segNav==='next'?1:-1);}else if(b.dataset.segSpeed!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){m.playbackRate=Number(b.dataset.segSpeed);const pl=card.querySelector('audio');if(pl)pl.playbackRate=m.playbackRate;renderSegments(m,card);persist();}}else if(b.dataset.segApprove!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);approveActiveSegment(m);}else if(b.dataset.approveSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)approveActiveSegment(m);}else if(b.dataset.reviewSet!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const [ix,val]=b.dataset.reviewSet.split('|');const s2=m.segments[Number(ix)];if(s2){s2.review=val;s2.checked=(val==='onaylandi');persist();updateSegListItem(m,Number(ix));refreshSegChips(m);renderSegDetail(m);renderOverview();if($('#view-report').classList.contains('active'))renderReport();}}}else if(b.dataset.playActive!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)playActiveSegment(m);}else if(b.dataset.stopActive!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)stopSegmentPlayback(m);}else if(b.dataset.zwPlay!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)playActiveSegment(m);}else if(b.dataset.zwStop!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)stopSegmentPlayback(m);}else if(b.dataset.zwZoom!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)zoomWaveBy(m,Number.isInteger(m.activeSeg)?m.activeSeg:0,b.dataset.zwZoom);}else if(b.dataset.jumpPrio!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)jumpToPriority(m);}else if(b.dataset.paragraph!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)paragraphize(m);}else if(b.dataset.silence!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)measureSegmentSilence(m,Number(b.dataset.silence));}else if(b.dataset.splitSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)splitSegmentAtPlayer(m,Number(b.dataset.splitSeg));}else if(b.dataset.mergeNext!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m)mergeSegmentWithNext(m,Number(b.dataset.mergeNext));}else if(b.dataset.spec!==undefined){const mm=c.materials.find(x=>x.id===b.dataset.spec);if(mm)toggleSpectrogram(mm);}else if(b.dataset.measurePitch!==undefined){const mm=c.materials.find(x=>x.id===b.dataset.measurePitch);if(mm)measureSpeakerPitch(mm);}else if(b.dataset.obs!==undefined){const card=b.closest('.audio-card');const [ix,key]=b.dataset.obs.split('|');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const sg=m.segments[Number(ix)];if(sg){sg.obs=sg.obs||{};sg.obs[key]=!sg.obs[key];b.classList.toggle('on',sg.obs[key]);persist();renderOverview();if($('#view-report').classList.contains('active'))renderReport();}}}else if(b.dataset.chan!==undefined){const card=b.closest('.audio-card');const [mid,mode]=b.dataset.chan.split('|');const m=c.materials.find(x=>x.id===mid);if(m){m.channelMode=mode;persist();if(mode!=='both')ensureAudioGraph(m,card.querySelector('audio'));card.querySelectorAll('[data-chan]').forEach(x=>x.classList.toggle('on',x.dataset.chan.endsWith('|'+mode)));applyChannelMode(m);resumeAudioGraph(m);showToast(mode==='both'?'Stereo (her iki kanal)':(mode==='left'?'Yalnız sol kanal':'Yalnız sağ kanal'));}}else if(b.dataset.nudge!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);if(m){const [ix,field,delta]=b.dataset.nudge.split('|');nudgeBoundary(m,Number(ix),field,Number(delta));}}else if(b.dataset.deleteSeg!==undefined){const card=b.closest('.audio-card');const id=card.querySelector('[data-transcribe]')?.dataset.transcribe;const m=c.materials.find(x=>x.id===id);m.segments.splice(Number(b.dataset.deleteSeg),1);persist();renderAudioList();renderOverview();}});
 // Hızlı etiket: metnin sonuna gözlem ifadesi ekler (varsa boşlukla). Temizle
 // yalnızca metni boşaltır; geçmiş kaydı odak değişiminde tutulur.
 $('#view-audio').addEventListener('click',e=>{

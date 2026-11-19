@@ -46,7 +46,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize',
+  'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -187,6 +187,38 @@ console.log('\n[7b] Paragraf oluşturma');
   const m = { segments: [{ start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'tek', review: 'onaylandi' }] };
   T.paragraphize(m);
   eq('tek bölüm değişmez', m.segments.length, 1);
+}
+
+// --- 7c. Sessizlik ölçümü -------------------------------------------------
+// Sessizlik ölçümü deterministiktir: verilen sinyalin RMS dağılımına göre
+// sessiz oranı hesaplanır. Uydurma bir "konuşma olasılığı" üretilmez.
+console.log('\n[7c] Sessizlik ölçümü');
+{
+  const sr = 16000;
+  // 3 sn: ilk 1.5 sn sessiz (küçük gürültü), son 1.5 sn konuşma (büyük genlik).
+  const n = sr * 3; const s = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const t = i / sr;
+    s[i] = t < 1.5 ? 0.001 * Math.sin(i) : 0.3 * Math.sin(2 * Math.PI * 220 * t);
+  }
+  const st = T.analyzeSilence(s, sr, 0, 3);
+  eq('ölçüm geçerli', st.ok, true);
+  eq('süre ~3 sn', Math.round(st.durationSec), 3);
+  // Sessiz oran yaklaşık yarı olmalı (±0.2 tolerans).
+  near('sessiz oran ~0.5', st.ratio, 0.5, 0.2);
+  // Tümü sessiz sinyalde oran ~1.
+  const quiet = new Float32Array(n).fill(0.0005);
+  near('tam sessiz ~1', T.analyzeSilence(quiet, sr, 0, 3).ratio, 1, 0.02);
+  // Tümü konuşma sinyalinde oran ~0.
+  const loud = new Float32Array(n);
+  for (let i = 0; i < n; i++) loud[i] = 0.4 * Math.sin(2 * Math.PI * 200 * i / sr);
+  near('tam konuşma ~0', T.analyzeSilence(loud, sr, 0, 3).ratio, 0, 0.02);
+  // Boş aralık -> ok:false.
+  eq('boş aralık', T.analyzeSilence(s, sr, 3, 3).ok, false);
+  // İşaret yalnızca metin boş/dolgu iken ve yeterince sessizse üretilir.
+  const stats = T.analyzeSilence(quiet, sr, 0, 3);
+  eq('boş metin + sessiz -> işaret', !!T.segmentSilenceFlag(stats, '', T.isHallucination), true);
+  eq('anlamlı metin + sessiz -> işaret yok', T.segmentSilenceFlag(stats, 'merhaba dünya', T.isHallucination), null);
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------

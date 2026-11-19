@@ -358,3 +358,23 @@ gidiyordu; bu da raporun bütünlüğünü bozuyordu (rapor tek dosya üzerinden
 - Kayıt kaldırma, ekleme ve dosya değiştirmede liste ve detay tutarlı kalır.
 - Rapor yine tek çalışma dosyasından üretilir; envanter, özet ve konuşmacı
   tabloları bölünmez.
+
+## v2.15 — Sessizlik/boşluk ölçümü (NLP öncesi sinyal katmanı)
+
+Uzmanın "boşluklar oluyor, konuşma yok diye elle yazmam gerekiyor" geri
+bildirimi için deterministik bir ölçüm eklendi. Uydurma yoktur; yalnızca
+ölçülen bir büyüklük sunulur.
+
+- **Bölüm sessizlik ölçümü:** "Sessizlik ölç" düğmesi, bölüm aralığını RMS
+  tabanlı inceler. Eşik, kaydın kendi gürültü zeminine göre uyarlanır (mutlak
+  eşik yanlış olurdu). Sonuç: sessiz oran (%), sessiz süre ve toplam süre.
+- **Gerekçeli işaret:** Ölçüm, bölüm metni boş/dolgu iken ve aralık büyük
+  ölçüde sessizse "metin yerine [sessizlik] etiketi uygun olabilir" notu
+  gösterir. Anlamlı metin varsa yalnızca "sessizlik yüksek ama metin girilmiş;
+  doğrulayın" uyarısı verilir; metin asla otomatik doldurulmaz.
+- Ölçüm sonucu bölüme ve delil işlem günlüğüne kaydedilir.
+- Rapor inceleme özetine "Sessizlik oranı ölçülen bölüm" satırı eklendi
+  (yalnızca gerçekten ölçülen bölümler sayılır).
+- `analyzeSilence` ve `segmentSilenceFlag` saf fonksiyonlardır; birim
+  testleriyle doğrulanır (tam sessiz → ~%100, tam konuşma → ~%0, yarı yarıya
+  → ~%50).
