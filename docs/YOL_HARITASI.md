@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.83.**
+yazılır. **Güncel sürüm: v2.84.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.84 — Veri güvenliği denetimi, canlı veri (tamamlandı)
+
+Bilirkişi gerçek veriye geçti; denetim veri kaybına odaklandı. Dört kritik hata:
+(1) `loadState` içindeki tek hata **tüm arşivi** siliyordu (kanıtlandı), (2)
+`beforeunload` yoktu, son 400 ms kayboluyordu, (3) iki sekme birbirinin işini
+eziyordu (kanıtlandı), (4) dışa aktarma yalnız **aktif** dosyayı yedekliyor,
+diğerleri sessizce dışarıda kalıyordu (kanıtlandı). Dördü de düzeltildi;
+`surum-testi` [10] ve `sema-testi` [3d] korur.
 
 ### v2.83 — Otomatik çıktı ayrımı + depolama iki havuz (tamamlandı)
 

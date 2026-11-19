@@ -215,6 +215,45 @@ console.log('\n[3c] Otomatik çıktı ayrımı');
   eq('eski kayıtta text korunur', old.text, 'eski kayıt');
 }
 
+// --- 3d. Veri güvenliği: bozuk dosya arşivi silmemeli (v2.84) -------------
+// v2.83 ve öncesinde loadState içindeki tek hata TÜM listeyi çöpe atıyordu
+// (cases = []) ve sonraki kayıt bu boşluğu diske yazıyordu. Kanıtlandı.
+// Bu bölüm "tek dosya bozuksa yalnız o atlanır" kuralını denetler.
+console.log('\n[3d] Veri güvenliği: bozuk dosya izolasyonu');
+{
+  // Gerçek loadState mantığını taklit eden izole yükleyici.
+  const loadIsolated = (rawCases) => {
+    const ok = [];
+    const failed = [];
+    for (const raw of rawCases) {
+      try {
+        const nc = normalizeCase(raw);
+        if (!nc || !nc.id) throw new Error('kimliksiz');
+        ok.push(nc);
+      } catch (e) {
+        failed.push(raw && raw.id);
+      }
+    }
+    return { ok, failed };
+  };
+
+  const good1 = { id: 'c1', fileNo: '2026/1', materials: [{ id: 'm1', segments: [{ id: 's1', text: 'GERÇEK' }] }] };
+  const good2 = { id: 'c2', fileNo: '2026/2' };
+  // Bozuk: normalizeCase içinde hata üretecek bir nesne
+  const bad = { id: 'c3', get fileNo() { throw new Error('bozuk alan'); } };
+
+  const r = loadIsolated([good1, bad, good2]);
+  eq('sağlam dosyalar korunur', r.ok.length, 2);
+  eq('bozuk dosya atlanır', r.failed.length, 1);
+  ok('bozuk dosya diğerlerini silmez', r.ok.some((c) => c.fileNo === '2026/1'));
+  ok('ikinci sağlam dosya da korunur', r.ok.some((c) => c.fileNo === '2026/2'));
+
+  // Hiç sağlam dosya yoksa bile sessiz sıfırlama YAPILMAZ; failed bildirilir.
+  const r2 = loadIsolated([bad]);
+  eq('hepsi bozuksa da atlanan sayısı bildirilir', r2.failed.length, 1);
+  eq('hepsi bozuksa ok listesi boş', r2.ok.length, 0);
+}
+
 // --- 4. Normalize: v2 → v3 kayıpsız ------------------------------------
 console.log('\n[4] v2 verisi v3\'e dönüşümü');
 {

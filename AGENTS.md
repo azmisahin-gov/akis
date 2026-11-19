@@ -412,6 +412,29 @@ yaratıyordu. `renderUsage()` dava verisini `usage - modelBytes` ile hesaplar;
 `refreshStorage()` model boyutunu `scanModelCache()`'ten `usageInfo.modelBytes`'e
 yazar. Kota uydurulmaz, tarayıcıdan gelir.
 
+
+### Aşama 8 — Veri güvenliği (TAMAMLANDI, v2.84) — CANLI VERİ
+
+Bilirkişi gerçek veriye geçtikten sonra yapılan denetim. Dört kritik hata
+bulundu ve düzeltildi. **Bu kurallar bozulursa veri kaybı olur.**
+
+1. **Tek bozuk dosya arşivi silmez.** `loadState` her dosyayı AYRI
+   normalleştirir. `catch` içinde `appState = { cases: [], ... }` YAZMAYIN;
+   bu, tek hatada tüm arşivi siler (v2.84'te kanıtlandı). Bozuk dosya `failed`
+   listesine girer, ham kaydı `akis.rescue.failedCases`'e yazılır.
+2. **Kapanışta yazma zorlanır.** `flushPersist()` `beforeunload`, `pagehide`
+   ve `visibilitychange` (hidden) ile bağlıdır. Yeni bir yazma yolu eklerseniz
+   `persist()` kullanın; doğrudan IndexedDB'ye yazmayın.
+3. **Çoklu sekme koruması.** `initTabGuard()` + `tabWriteGuard()`. İkinci sekme
+   açılınca ilki yazmayı bırakır. `persistNow()` başında `tabWriteGuard()`
+   denetimi ZORUNLU.
+4. **Dışa aktarma TÜM dosyaları kapsar.** Tek dosya varsa `case.json`, birden
+   fazlaysa `archive.json` + `audio/<dosyaId>/`. `importProject` `archive.json`
+   görürse `importArchive` çağırır. Yalnız aktif dosyayı paketlemek yanıltıcıdır
+   (ekran "yedek alındı" der ama diğer dosyalar dışarıda kalır).
+
+Test: `surum-testi` [10] (8 kural), `sema-testi` [3d] (6 kontrol).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -582,7 +605,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.83.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.84.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

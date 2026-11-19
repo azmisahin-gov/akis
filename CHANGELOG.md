@@ -6,12 +6,83 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.83.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.84.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.84 — Veri güvenliği denetimi (CANLI veri)
+
+KULLANICI: "Tam bir denetim yapalım. Bilirkişi gerçek verileri girmeye başladı,
+yani CANLI'dayız."
+
+Canlı veride öncelik görsel değil **veri kaybı**dır. Dört kritik hata bulundu;
+üçü kanıtlandı, biri ölçüldü. Hepsi düzeltildi.
+
+### 1. Tek bozuk alan BÜTÜN arşivi siliyordu (en tehlikeli)
+
+`loadState()` içinde tek bir dosya normalleştirilirken hata çıkarsa `catch`
+bloğu **tüm** durumu boşaltıyordu:
+
+```js
+catch (e) { appState = { cases: [], activeCaseId: null }; }  // ← TÜM VERİ GİTTİ
+```
+
+Sonraki herhangi bir kayıt bu boş durumu diske yazıyordu. Yani tek bozuk alan
+→ arşiv yok. Node ile birebir kanıtlandı:
+
+```
+B) Tek dosyada bozuk alan (gerçek veri DOLU):
+   dosya sayısı: 0
+   GERÇEK VERİ KAYBOLDU MU?: EVET — TÜMÜ SİLİNDİ
+```
+
+**Düzeltme:** her dosya **ayrı** normalleştirilir; bozuk olan **yalnız o**
+atlanır, diğerleri korunur. Atlananların ham kaydı `akis.rescue.failedCases`
+anahtarına yazılır ve kullanıcı uyarılır. Okuma/kök hatasında **hiçbir şey
+silinmez**, üzerine yazılmaz (`showLoadFailure`).
+
+### 2. Sayfa kapanınca son 400 ms kayboluyordu
+
+`persist()` yazmayı 400 ms geciktiriyor ve `beforeunload` dinleyicisi **yoktu**.
+Bilirkişi yazıp hemen sekmeyi kapatırsa son değişiklik gidiyordu.
+
+**Düzeltme:** `flushPersist()` + `beforeunload`, `pagehide`,
+`visibilitychange` dinleyicileri. Ayrıca küçük bir **kurtarma kopyası**
+(`akis.lastSnapshot`) bırakılır; depo boş açılırsa kullanıcıya "kurtarma
+kopyası bulundu, geri yüklensin mi?" diye sorulur.
+
+### 3. İki sekmede çalışmak diğerinin işini eziyordu
+
+Her sekme **tüm** durumu yazıyordu; son yazan kazanıyordu. Node ile kanıtlandı:
+
+```
+A yazdıktan sonra disk: A METNİ
+B yazdıktan sonra disk: ORİJİNAL
+A'nın işi KAYBOLDU MU?: EVET
+```
+
+**Düzeltme:** `BroadcastChannel('akis.tab')` ile sekme sahipliği. Yeni sekme
+açılınca eskisi **yazmayı bırakır** ve "bu sekme artık kaydetmiyor" uyarısı
+gösterir. Kilitlemek yerine uyarı: bilirkişinin işi engellenmez, veri ezilmez.
+
+### 4. Dışa aktarma yalnız AKTİF dosyayı yedekliyordu
+
+4 dosya varken "Dışa aktar" tek dosyayı paketliyor, ekran yine de
+"Bu bir yedektir" diyordu. Diğer 3 dosya **sessizce yedek dışı** kalıyordu.
+
+**Düzeltme:** birden fazla dosya varsa hepsi tek pakete girer
+(`archive.json` + `audio/<dosyaId>/`). Dosya adı
+`AKIS_Yedek_4_dosya_2026-11-19.akis` olur. İçe aktarma `archive.json` görürse
+**hepsini** geri yükler (`importArchive`) — yoksa yedek işe yaramazdı.
+
+### 5. Test
+
+- `sema-testi` [3d]: bozuk dosya izolasyonu (6 kontrol).
+- `surum-testi` [10]: 8 veri güvenliği kuralı kodda var mı.
+- Toplam: 236 birim + 361 şema + sürüm kontrolü.
 
 ## v2.83 — Otomatik çıktı ayrı saklanıyor + depolama iki havuzu ayırıyor
 

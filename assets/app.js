@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.83';
+const APP_VERSION = '2.84';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -299,6 +299,10 @@ let persistTimer = null;
 let persistChain = Promise.resolve();
 async function persistNow() {
   for (const c of appState.cases || []) syncCaseMirrors(c);
+  // ÇOKLU SEKME KORUMASI (v2.84): iki sekmede aynı veri açıksa son yazan
+  // diğerinin tüm işini ezer (kanıtlandı). Kilitlemek bilirkişiyi engeller;
+  // bunun yerine bu sekmenin yazma hakkı olup olmadığı denetlenir.
+  if (!tabWriteGuard()) return;
   try {
     const db = await dbOpen();
     await new Promise((resolve, reject) => {
@@ -386,14 +390,87 @@ function renderUndoState() {
     : 'Geri alınacak işlem yok';
 }
 
+// ---- Çoklu sekme yazma koruması (v2.84) -------------------------------
+// Aynı tarayıcıda iki sekme aynı dosyada çalışırsa, her sekme TÜM durumu
+// yazar; son yazan diğerinin değişikliklerini ezer. Kanıtlandı.
+// Çözüm: her sekme açılışta bir "sahip" damgası bırakır. Yeni sekme açılınca
+// eskisine BroadcastChannel ile haber verilir; eski sekme YAZMAYI BIRAKIR ve
+// kullanıcıyı uyarır. Böylece veri ezilmez ve iş kaybedilmez.
+const TAB_ID = 'tab_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+let tabOwner = null;      // null = henüz belirlenmedi
+let tabIsWriter = true;   // bu sekme yazabilir mi
+let tabChannel = null;
+function initTabGuard() {
+  try {
+    if (typeof BroadcastChannel === 'undefined') return;
+    tabChannel = new BroadcastChannel('akis.tab');
+    tabChannel.onmessage = (ev) => {
+      const m = ev.data || {};
+      if (m.type === 'claim' && m.id !== TAB_ID) {
+        // Başka bir sekme yazma hakkı istiyor: bu sekme bırakır.
+        if (tabIsWriter) {
+          tabIsWriter = false;
+          const el = $('#saveState');
+          if (el) {
+            el.textContent = '● BAŞKA SEKME AÇIK — bu sekme artık kaydetmiyor';
+            el.classList.add('danger');
+          }
+          showToast(
+            'Uygulama başka bir sekmede açıldı. Bu sekmedeki değişiklikler KAYDEDİLMİYOR. ' +
+              'Bu sekmeyi kapatın veya sayfayı yenileyin.'
+          );
+        }
+      }
+      if (m.type === 'claim' && m.id === TAB_ID) {
+        tabIsWriter = true;
+      }
+    };
+    tabChannel.postMessage({ type: 'claim', id: TAB_ID });
+  } catch (e) {}
+}
+function tabWriteGuard() {
+  return tabIsWriter;
+}
 // persist() sık çağrılır (her tuş vuruşu). Yazmalar sıraya alınır ve 400 ms
 // içinde biriken çağrılar tek yazmada birleştirilir; böylece yazma yarışı
 // olmaz ve disk yorulmaz.
+// ANCAK gecikme, sayfa kapanırken son değişikliklerin kaybolmasına yol
+// açıyordu (v2.84 öncesi: beforeunload yoktu). Kullanıcı yazıp hemen sekmeyi
+// kapatırsa son 400 ms giderdi. Artık kapanışta bekleyen yazma ZORLANIR.
+let persistPending = false;
 function persist() {
+  persistPending = true;
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
-    persistChain = persistChain.then(persistNow, persistNow);
+    persistChain = persistChain.then(persistNow, persistNow).then(() => {
+      persistPending = false;
+    });
   }, 400);
+}
+// Bekleyen yazmayı hemen diske indirir. Sayfa gizlenince/kapanınca çağrılır.
+// IndexedDB yazması eşzamansızdır; kapanışta tamamlanmayabilir, bu yüzden
+// ayrıca localStorage'a küçük bir "son durum" kopyası bırakılır (kurtarma
+// için). Bu kopya yalnız yazma tamamlanmamışsa işe yarar.
+function flushPersist() {
+  if (!persistPending) return;
+  clearTimeout(persistTimer);
+  persistPending = false;
+  try {
+    // Küçük kurtarma kopyası: dava verisinin yalnız metin kısmı, ses hariç.
+    // Boyut riski nedeniyle yalnız bekleyen durum varsa ve sığıyorsa yazılır.
+    const snapshot = { at: new Date().toISOString(), cases: appState.cases };
+    const json = JSON.stringify(snapshot);
+    if (json.length < 4.5 * 1024 * 1024) localStorage.setItem('akis.lastSnapshot', json);
+  } catch (e) {}
+  persistChain = persistChain.then(persistNow, persistNow);
+}
+// Sayfa kapanırken/gizlenirken bekleyen yazmayı zorla.
+if (typeof window !== 'undefined' && window.addEventListener) {
+  window.addEventListener('beforeunload', flushPersist);
+  window.addEventListener('pagehide', flushPersist);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPersist();
+  });
 }
 // Büyük, kapatılamaz uyarı şeridi. Kullanıcı ne olduğunu ve ne yapacağını
 // açıkça görmeli; sessiz veri kaybı adli belgede kabul edilemez.
@@ -649,29 +726,92 @@ async function readStoredState() {
   return { state: null, migrated: false };
 }
 async function loadState() {
+  let stored = null;
+  let migrated = false;
   try {
-    const { state: stored, migrated } = await readStoredState();
-    if (stored) {
-      appState = stored;
-      if (!Array.isArray(appState.cases)) throw 0;
-      if (migrated) console.info('Eski localStorage kaydı IndexedDB\'ye taşındı.');
-      // v3: her dosya şemaya göre normalleştirilir (eksik alan tamamlanır,
-      // eski düz alanlar iç içe yapıya taşınır) ve düz alan erişimcileri
-      // yeniden kurulur — JSON tanımlayıcıları taşımaz.
-      appState.cases = appState.cases.map((c) => {
-        const nc = normalizeCase(c);
-        syncCaseMirrors(nc);
-        defineCaseMirrors(nc);
-        return nc;
-      });
-      stripDerivedFields(appState);
-      // Eski sürümler günlüğü hash'siz yazıyordu. Bu kayıtlar "kurcalanmış"
-      // sayılmamalı ama "doğrulandı" da denmemeli; zincire bağlanır.
-      upgradeAllLogChains(appState);
-      if (compactAllHistories(appState)) persist();
-    }
+    const r = await readStoredState();
+    stored = r.state;
+    migrated = r.migrated;
   } catch (e) {
-    appState = { cases: [], activeCaseId: null };
+    // Okuma hatası: veriye DOKUNMA, boş durumla başlama, ÜZERİNE YAZMA.
+    console.error('Kayıt okunamadı:', e);
+    showLoadFailure(e, 'okuma');
+    return;
+  }
+  if (!stored) {
+    // Depo boş. Ama kurtarma kopyası varsa veri kaybı olmuş olabilir:
+    // sessizce yeni dosya açmak yerine kullanıcıya SOR.
+    const rescue = readLastSnapshot();
+    if (rescue && rescue.cases && rescue.cases.length) {
+      const ok = await askConfirm(
+        'Kurtarma kopyası bulundu',
+        `Yerel depo boş, ancak ${rescue.cases.length} dosyalık bir kurtarma kopyası var ` +
+          `(${rescue.at ? new Date(rescue.at).toLocaleString('tr-TR') : 'zaman bilinmiyor'}). ` +
+          'Bu kopya geri yüklensin mi? "Vazgeç" derseniz boş yeni dosyayla başlanır ve kopya korunur.'
+      );
+      if (ok) {
+        const cases = [];
+        for (const raw of rescue.cases) {
+          try {
+            const nc = normalizeCase(raw);
+            syncCaseMirrors(nc);
+            defineCaseMirrors(nc);
+            cases.push(nc);
+          } catch (e) {}
+        }
+        if (cases.length) {
+          appState = { cases, activeCaseId: cases[0].id };
+          persist();
+          showToast(`${cases.length} dosya kurtarma kopyasından geri yüklendi.`);
+          return;
+        }
+      }
+    }
+    // Gerçekten boş kurulum: ilk dosyayı oluştur.
+    const c = freshCase();
+    appState = { cases: [c], activeCaseId: c.id };
+    persist();
+    return;
+  }
+  if (!Array.isArray(stored.cases)) {
+    // Kök yapı bozuk. Boş duruma düşüp üzerine yazmak = veri kaybı.
+    showLoadFailure(new Error('Kök yapı bozuk (cases dizi değil)'), 'yapı');
+    return;
+  }
+  if (migrated) console.info('Eski localStorage kaydı IndexedDB\'ye taşındı.');
+
+  // HER DOSYA AYRI normalleştirilir. Bir dosya bozuksa YALNIZ o atlanır;
+  // diğerleri korunur. v2.83 ve öncesinde tek hata tüm listeyi çöpe atıyor
+  // (cases = []) ve sonraki kayıt bu boşluğu diske yazıyordu — yani tek bozuk
+  // alan bütün arşivi siliyordu (kanıtlandı, v2.84).
+  const ok = [];
+  const failed = [];
+  for (const raw of stored.cases) {
+    try {
+      const nc = normalizeCase(raw);
+      syncCaseMirrors(nc);
+      defineCaseMirrors(nc);
+      ok.push(nc);
+    } catch (e) {
+      failed.push({ id: raw && raw.id, error: e });
+    }
+  }
+  appState = { ...stored, cases: ok };
+  if (!ok.some((c) => c.id === appState.activeCaseId)) appState.activeCaseId = ok[0] ? ok[0].id : null;
+
+  // Yüklenemeyen dosyalar sessizce yok sayılmaz: kullanıcı bilir, ham veri
+  // kurtarma alanına konur. Otomatik silme YOK.
+  if (failed.length) reportLoadFailures(failed, stored);
+
+  try {
+    stripDerivedFields(appState);
+    // Eski sürümler günlüğü hash'siz yazıyordu. Bu kayıtlar "kurcalanmış"
+    // sayılmamalı ama "doğrulandı" da denmemeli; zincire bağlanır.
+    upgradeAllLogChains(appState);
+    if (compactAllHistories(appState)) persist();
+  } catch (e) {
+    // Bakım hatası veriyi silmemeli: yalnız atlanır ve bildirilir.
+    console.error('Yükleme sonrası bakım hatası:', e);
   }
   if (!appState.cases.length) {
     const c = freshCase();
@@ -679,7 +819,64 @@ async function loadState() {
     appState.activeCaseId = c.id;
   }
   if (!currentCase()) appState.activeCaseId = appState.cases[0].id;
+  clearLastSnapshot();
   persist();
+}
+// Son durum kurtarma kopyasını okur (flushPersist yazar). Bozuksa null.
+function readLastSnapshot() {
+  try {
+    const raw = localStorage.getItem('akis.lastSnapshot');
+    if (!raw) return null;
+    const v = JSON.parse(raw);
+    if (!v || !Array.isArray(v.cases)) return null;
+    return v;
+  } catch (e) {
+    return null;
+  }
+}
+// Başarılı yüklemeden sonra kurtarma kopyası silinir: artık asıl kayıt var.
+function clearLastSnapshot() {
+  try {
+    localStorage.removeItem('akis.lastSnapshot');
+  } catch (e) {}
+}
+// Yükleme başarısızsa: kullanıcıya söyle, ham veriye DOKUNMA.
+// Sessiz sıfırlama yasak (v2.84).
+function showLoadFailure(err, kind) {
+  const el = $('#saveState');
+  if (el) {
+    el.textContent = '● KAYIT OKUNAMADI — veriye dokunulmadı';
+    el.classList.add('danger');
+  }
+  showToast(
+    `Kayıt okunamadı (${kind}). Hiçbir şey silinmedi. Sayfayı yenilemeyin; önce Dışa aktarmayı deneyin.`
+  );
+  console.error('loadState hatası:', err);
+}
+// Bir veya birkaç dosya yüklenemedi: ham kayıt ayrı anahtarda saklanır,
+// kullanıcı bilgilendirilir. "Bozuk dosya yüzünden arşiv gitti" olmaz.
+function reportLoadFailures(failed, stored) {
+  try {
+    const ids = new Set(failed.map((f) => f.id).filter(Boolean));
+    localStorage.setItem(
+      'akis.rescue.failedCases',
+      JSON.stringify({
+        at: new Date().toISOString(),
+        count: failed.length,
+        cases: (stored.cases || []).filter((c) => c && ids.has(c.id))
+      })
+    );
+  } catch (e) {}
+  const el = $('#saveState');
+  if (el) {
+    el.textContent = `● ${failed.length} dosya yüklenemedi — diğerleri korundu`;
+    el.classList.add('danger');
+  }
+  showToast(
+    `${failed.length} dosya okunamadı ve atlandı; diğer dosyalarınız korundu. ` +
+      'Ham kayıt kurtarma alanında tutuldu. Lütfen yedek alın.'
+  );
+  console.error('Yüklenemeyen dosyalar:', failed.map((f) => f.error));
 }
 function dbOpen() {
   if (dbPromise) return dbPromise;
@@ -7101,17 +7298,54 @@ async function exportProject() {
     showToast('Önce "Şu an bu bilgisayarda çalışan" alanını doldurun, sonra tekrar dışa aktarın.');
     return;
   }
+  // YEDEK KAPSAMI (v2.84): v2.83 ve öncesinde YALNIZ aktif dosya paketlenir,
+  // ekran yine de "bu bir yedektir" derdi. Birden fazla dosya varsa diğerleri
+  // sessizce yedek dışı kalıyordu (kanıtlandı). Artık TÜM dosyalar paketlenir.
+  const all = appState.cases || [];
+  const multi = all.length > 1;
   const zip = new JSZip();
-  zip.file('case.json', JSON.stringify(buildProjectPack(c), null, 2));
-  const assets = zip.folder('audio');
-  for (const m of c.materials) {
-    const blob = await getAudioBlob(c, m);
-    if (blob) assets.file(`${m.id}_${safeName(m.name)}`, blob);
+  if (multi) {
+    zip.file(
+      'archive.json',
+      JSON.stringify(
+        {
+          schema: PROJECT_SCHEMA,
+          exportedAt: new Date().toISOString(),
+          kind: 'archive',
+          activeCaseId: c.id,
+          cases: all
+        },
+        null,
+        2
+      )
+    );
+    // Sesler dosya kimliğiyle ayrı klasörlere yazılır; ad çakışması olmaz.
+    for (const cc of all) {
+      const folder = zip.folder(`audio/${cc.id}`);
+      for (const m of cc.materials || []) {
+        const blob = await getAudioBlob(cc, m);
+        if (blob && folder) folder.file(`${m.id}_${safeName(m.name)}`, blob);
+      }
+    }
+  } else {
+    zip.file('case.json', JSON.stringify(buildProjectPack(c), null, 2));
+    const assets = zip.folder('audio');
+    for (const m of c.materials || []) {
+      const blob = await getAudioBlob(c, m);
+      if (blob) assets.file(`${m.id}_${safeName(m.name)}`, blob);
+    }
   }
   const out = await zip.generateAsync({ type: 'blob' });
-  downloadBlob(out, `${safeName(c.fileNo || 'AKIS_Calisma_Dosyasi')}.akis`);
+  const base = multi
+    ? `AKIS_Yedek_${all.length}_dosya_${new Date().toISOString().slice(0, 10)}`
+    : safeName(c.fileNo || 'AKIS_Calisma_Dosyasi');
+  downloadBlob(out, `${base}.akis`);
   markBackupDone();
-  showToast('AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.');
+  showToast(
+    multi
+      ? `Yedek alındı: ${all.length} dosyanın tamamı (.akis). Güvenli yerde saklayın.`
+      : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.'
+  );
 }
 // ---- Ekip çalışması: dosya birleştirme ---------------------------------
 // İki bilirkişi aynı davada çalıştığında her biri kendi .akis dosyasında
@@ -7249,9 +7483,60 @@ async function applyMerge() {
   );
 }
 
+// ÇOK DOSYALI ARŞİV GERİ YÜKLEME (v2.84). Dışa aktarma artık tüm dosyaları
+// tek pakete koyar; bu yol olmadan o yedek işe yaramazdı.
+async function importArchive(zip, arch) {
+  const list = Array.isArray(arch.cases) ? arch.cases : [];
+  if (!list.length) throw new Error('Arşivde dosya yok.');
+  const ok = await askConfirm(
+    'Arşivden geri yükleme',
+    `Pakette ${list.length} dosya var. Bunlar bu bilgisayara EKLENİR; ` +
+      'mevcut dosyalarınız silinmez. Devam edilsin mi?'
+  );
+  if (!ok) return;
+  snapshotForUndo('arşivden geri yükleme');
+  let added = 0;
+  for (const raw of list) {
+    try {
+      const c = normalizeCase(raw);
+      c.id = uid();
+      c.materials = c.materials || [];
+      for (const m of c.materials) {
+        const entry = Object.keys(zip.files).find((n) =>
+          n.startsWith(`audio/${raw.id}/${m.id}_`)
+        );
+        if (entry) {
+          const blob = await zip.file(entry).async('blob');
+          await storeBlob(`${c.id}::${m.id}`, new Blob([blob], { type: m.type || 'audio/wav' }));
+        }
+      }
+      c.name = c.name || c.fileNo || 'Geri yüklenen dosya';
+      appState.cases.push(c);
+      added++;
+    } catch (e) {
+      console.error('Arşiv dosyası atlandı:', e);
+    }
+  }
+  if (!added) throw new Error('Arşivdeki dosyaların hiçbiri yüklenemedi.');
+  appState.activeCaseId = appState.cases[appState.cases.length - added].id;
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  populateQuestionsForm();
+  renderOverview();
+  await renderAudioList();
+  switchView('overview');
+  showToast(`${added} dosya arşivden geri yüklendi.`);
+}
 async function importProject(file) {
   if (!window.JSZip) throw new Error('Çalışma paketi açma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
   const zip = await JSZip.loadAsync(file);
+  // Çok dosyalı yedek mi?
+  const archMeta = zip.file('archive.json');
+  if (archMeta) {
+    const arch = JSON.parse(await archMeta.async('string'));
+    return importArchive(zip, arch);
+  }
   const meta = zip.file('case.json');
   if (!meta) throw new Error('Dosya geçerli bir AKİS veya önceki MİHENK çalışma paketi değil.');
   const pack = JSON.parse(await meta.async('string'));
@@ -8948,6 +9233,7 @@ async function init() {
   });
   renderBackupState();
   renderUndoState();
+  initTabGuard();
   refreshUsage();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());

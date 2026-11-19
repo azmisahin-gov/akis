@@ -160,5 +160,27 @@ check(
   undoFn ? '' : 'fonksiyon bulunamadı'
 );
 
+// 10) VERİ GÜVENLİĞİ KURALLARI (v2.84)
+// Kullanıcı canlı veriye geçti; bu dört koruma kodsuz kalmamalı.
+const hasFlush = /window\.addEventListener\('beforeunload'/.test(appJs);
+check('sayfa kapanışında yazma zorlanıyor (beforeunload)', hasFlush);
+check('pagehide/visibilitychange koruması var',
+  /addEventListener\('pagehide'/.test(appJs) && /visibilitychange/.test(appJs));
+check('çoklu sekme yazma koruması var (BroadcastChannel)',
+  /new BroadcastChannel\('akis\.tab'\)/.test(appJs) && /tabWriteGuard/.test(appJs));
+// loadState GÖVDESİNDE sessiz sıfırlama olmamalı (başlangıç değeri hariç).
+const loadFn = appJs.match(/async function loadState\(\)[\s\S]*?\n\}/);
+check('yükleme hatası veriyi silmiyor (showLoadFailure)',
+  !!loadFn && /function showLoadFailure/.test(appJs) &&
+    !/appState = \{ cases: \[\], activeCaseId: null \}/.test(loadFn[0]));
+check('bozuk dosya izolasyonu (reportLoadFailures)',
+  /function reportLoadFailures/.test(appJs) && /akis\.rescue\.failedCases/.test(appJs));
+check('kurtarma kopyası yazılıyor ve okunuyor',
+  /akis\.lastSnapshot/.test(appJs) && /function readLastSnapshot/.test(appJs));
+check('dışa aktarma TÜM dosyaları kapsıyor (arşiv)',
+  /kind: 'archive'/.test(appJs) && /archive\.json/.test(appJs));
+check('arşivden geri yükleme var (importArchive)',
+  /async function importArchive/.test(appJs) && /zip\.file\('archive\.json'\)/.test(appJs));
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
