@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.61';
+const APP_VERSION = '2.62';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2608,16 +2608,12 @@ function segDetailHtml(m) {
   const isPlaying = !!(pb && pb.playing);
   const canStop = !!pb;
   const rep = segmentRepetitionFlag(s);
-  // Notlar TEK satırda toplanır; ayrı ayrı blok yer kaplamaz.
   const notes = [];
   if (halluc) notes.push('anlamlı metin yok');
   if (rep) notes.push('model tekrarı olasılığı');
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
   const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
-  // Yerleşim üç bölge: (1) başlık, (2) metin, (3) araçlar.
-  // Eski sürümde ~35 düğme tek sütuna yığılıydı ve üst üste biniyordu.
-  // Kaldırılanlar: zoom dalgası (ana dalga aynı işi yapar), hız düğmeleri
-  // (araç çubuğunda var), zaman hassas kaydırma (elle yazılabilir).
+
   const obsBtns = [
     ['noise', 'gürültü', 'Arka plan gürültüsü'],
     ['overlap', 'üst üste', 'Üst üste konuşma'],
@@ -2631,51 +2627,83 @@ function segDetailHtml(m) {
     .join('');
   const opsBtns = [
     hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : '',
-    `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik</button>`,
-    `<button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">böl</button>`,
-    `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">birleştir</button>`,
+    `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>`,
+    `<button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">buradan böl</button>`,
+    `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>`,
     `<button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>`
   ]
     .filter(Boolean)
     .join('');
 
-  return `${proposalBandHtml(s, i)}
-    <div class="seg-detail-head">
-      <span class="idx">Bölüm ${i + 1} / ${segs.length}</span>
-      <span class="nav">
-        <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
-        <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
-        <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
-        <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
-      </span>
+  // YERLEŞİM (v2.62): beş bölge, hiçbiri diğerinin üstüne binmez.
+  //   1. Başlık        — bölüm no + gezinme + dinle
+  //   2. Öneri bandı   — varsa (ikinci göz)
+  //   3. Dalga + zaman — sürüklenebilir sınırlar; elle yazmak zorunda değilsin
+  //   4. Metin         — en çok yer buraya
+  //   5. Onay + araçlar
+  return `
+  <div class="sd-head">
+    <span class="sd-idx">Bölüm ${i + 1}<span class="sd-of"> / ${segs.length}</span></span>
+    <span class="sd-nav">
+      <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
+      <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
+      <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
+      <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
+    </span>
+  </div>
+
+  ${proposalBandHtml(s, i)}
+
+  ${
+    notes.length || silence
+      ? `<div class="sd-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}${pr.score >= 15 ? `<span class="sn info" title="${esc(pr.reasons.join(', '))}">öncelik ${pr.score >= 40 ? 'yüksek' : pr.score >= 20 ? 'orta' : 'düşük'}</span>` : ''}</div>`
+      : ''
+  }
+
+  <div class="sd-wave">
+    <div class="sd-wave-bar">
+      <span class="sd-wave-hint">Sınırları sürükleyin · tekerlekle yakınlaştır</span>
+      <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
+      <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
     </div>
-    ${notes.length || silence ? `<div class="seg-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}${pr.score >= 15 ? `<span class="sn info" title="${esc(pr.reasons.join(', '))}">öncelik ${pr.score >= 40 ? 'yüksek' : pr.score >= 20 ? 'orta' : 'düşük'}</span>` : ''}</div>` : ''}
-    <div class="seg-meta-row">
-      <label class="sm-item"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
-      <label class="sm-item"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+    <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
+  </div>
+
+  <div class="sd-times">
+    <label class="sd-time"><span>Başlangıç</span>
+      <input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}">
+    </label>
+    <label class="sd-time"><span>Bitiş</span>
+      <input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}">
+    </label>
+    <label class="sd-time"><span>Süre</span>
+      <output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output>
+    </label>
+  </div>
+
+  <div class="sd-meta">
+    <label class="sd-field"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
+    <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+  </div>
+
+  <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
+
+  <div class="sd-text">
+    <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
+    <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
+      ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
+      <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
     </div>
-    <div class="seg-times">
-      <label class="st-item"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
-      <label class="st-item"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
-    </div>
-    <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
-    <div class="seg-text-wrap">
-      <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
-      <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
-        ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
-        <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
-      </div>
-    </div>
-    <div class="seg-actions">
-      <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
-      <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
-      <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-    </div>
-    <details class="seg-more">
-      <summary>Gözlem ve araçlar</summary>
-      <div class="seg-obs-row"><span class="sb-lbl">Gözlem</span>${obsBtns}</div>
-      <div class="seg-ops-row">${opsBtns}</div>
-    </details>`;
+  </div>
+
+  <div class="sd-actions">
+    <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
+    <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
+    <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
+  </div>
+
+  <div class="sd-obs">${obsBtns}</div>
+  <div class="sd-ops">${opsBtns}</div>`;
 }
 // Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
 // her tuş vuruşunda çağrılır; bu yüzden textarea odağı ve imleç korunmalı.
@@ -2693,6 +2721,223 @@ function refreshProposalBand(m, idx) {
   if (old) old.outerHTML = html;
   else root.insertAdjacentHTML('afterbegin', html);
 }
+// Bölüm dalgası: başlangıç/bitiş sınırlarını SÜRÜKLEYEREK ayarla.
+// Elle saat yazmak zorunda kalmak, deşifrede en çok zaman kaybettiren şeydi.
+// Davranış:
+//   • Sınıra yakın tıkla/sürükle → o sınırı taşı
+//   • Ortaya tıkla → en yakın sınıra at (hangisi yakınsa)
+//   • Tekerlek → imlecin altındaki an sabit kalacak şekilde yakınlaştır
+//   • Sınır dışı hafif karartılır; konum çizgisi canlı güncellenir
+function attachSegWave(m, index) {
+  const canvas = $(`#sdwave-${CSS.escape(m.id)}`);
+  if (!canvas) return;
+  const s = (m.segments || [])[index];
+  if (!s) return;
+  const dur = Number(m.duration) || 0;
+  const card = canvas.closest('.audio-card');
+  const player = card?.querySelector('audio');
+
+  // Görünüm penceresi (bölüm ±0,5 sn); bölüm başına saklanır.
+  const view = () => {
+    if (m.__sdZoom && m.__sdZoom.index === index && m.__sdZoom.materialId === m.id) return m.__sdZoom;
+    const a0 = Math.max(0, secondsFromTimecode(s.start) - 0.5);
+    const b0 = Math.min(dur || secondsFromTimecode(s.end) + 0.5, secondsFromTimecode(s.end) + 0.5);
+    m.__sdZoom = { materialId: m.id, index, a: a0, b: Math.max(a0 + 0.05, b0) };
+    return m.__sdZoom;
+  };
+
+  const draw = () => {
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width,
+      h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#fbfcfd';
+    ctx.fillRect(0, 0, w, h);
+    const peaks = peakCache.get(m.id);
+    const st = secondsFromTimecode(s.start);
+    const en = secondsFromTimecode(s.end);
+    const v = view();
+    const span = Math.max(0.02, v.b - v.a);
+    const mid = h / 2;
+    const xs = (t) => Math.floor(((t - v.a) / span) * w);
+
+    // Dalga çubukları
+    if (peaks && dur > 0) {
+      ctx.fillStyle = '#4a7bab';
+      for (let x = 0; x < w; x++) {
+        const t = v.a + (x / w) * span;
+        const p = peaks[Math.floor((t / dur) * peaks.length)] || 0;
+        const bar = Math.max(1, p * mid * 0.86);
+        ctx.fillRect(x, mid - bar, 1, bar * 2);
+      }
+    } else {
+      ctx.fillStyle = '#e6ecf2';
+      ctx.fillRect(0, mid - 1, w, 2);
+    }
+
+    // Bölüm dışı karartma
+    if (st > v.a) {
+      ctx.fillStyle = 'rgba(20,44,77,0.07)';
+      ctx.fillRect(0, 0, Math.max(0, xs(st)), h);
+    }
+    if (en < v.b) {
+      const x1 = Math.max(0, xs(en));
+      ctx.fillStyle = 'rgba(20,44,77,0.07)';
+      ctx.fillRect(x1, 0, w - x1, h);
+    }
+
+    // Sınır çizgileri: kalın, tutamaçlı
+    const drawEdge = (t, color, label) => {
+      const x = xs(t);
+      if (x < -4 || x > w + 4) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x - 1, 0, 3, h);
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(x, 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 7px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.fillText(label, x, 11);
+      ctx.textAlign = 'left';
+    };
+    drawEdge(st, '#2c8062', 'B');
+    drawEdge(en, '#8a6320', 'S');
+
+    // Oynatma konumu
+    if (player && Number.isFinite(player.currentTime) && player.currentTime >= v.a && player.currentTime <= v.b) {
+      const x = xs(player.currentTime);
+      ctx.fillStyle = 'rgba(29,74,120,0.75)';
+      ctx.fillRect(x, 0, 1, h);
+    }
+
+    const zs = canvas.closest('.sd-wave')?.querySelector('[data-sd-zoom-span]');
+    if (zs) zs.textContent = `±${((v.b - v.a) / 2).toFixed(1).replace('.', ',')} sn`;
+  };
+
+  const hitTime = (ev) => {
+    const r = canvas.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (ev.clientX - r.left) / r.width));
+    const v = view();
+    return { t: v.a + ratio * (v.b - v.a), ratio };
+  };
+  const nearEdge = (t) => {
+    const v = view();
+    const tol = (v.b - v.a) * 0.045;
+    const st = secondsFromTimecode(s.start),
+      en = secondsFromTimecode(s.end);
+    if (Math.abs(t - st) <= tol) return 'start';
+    if (Math.abs(t - en) <= tol) return 'end';
+    return null;
+  };
+
+  const syncFields = () => {
+    const root = $(`#seg-detail-${CSS.escape(m.id)}`);
+    if (!root) return;
+    const a = root.querySelector(`[data-seg="${index}"][data-key="start"]`);
+    const b = root.querySelector(`[data-seg="${index}"][data-key="end"]`);
+    if (a) a.value = s.start || '';
+    if (b) b.value = s.end || '';
+    const d = root.querySelector('.sd-dur');
+    if (d) d.textContent = fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start)));
+  };
+
+  const commit = (field) => {
+    persist();
+    syncFields();
+    updateSegListItem(m, index);
+    draw();
+  };
+
+  let drag = null;
+  canvas.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
+    const { t } = hitTime(ev);
+    const edge = nearEdge(t);
+    if (edge) {
+      drag = edge;
+      canvas.setPointerCapture?.(ev.pointerId);
+      canvas.style.cursor = 'ew-resize';
+      return;
+    }
+    // Ortaya tıklandı: hangi sınıra daha yakınsa onu taşı.
+    const st = secondsFromTimecode(s.start),
+      en = secondsFromTimecode(s.end);
+    const field = Math.abs(t - st) <= Math.abs(t - en) ? 'start' : 'end';
+    const other = field === 'start' ? en : st;
+    // Sınırlar çakışmasın (en az 0,1 sn aralık).
+    if (field === 'start' && t >= other - 0.1) return;
+    if (field === 'end' && t <= other + 0.1) return;
+    s[field] = timecode(t);
+    commit(field);
+    showToast(`${field === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s[field]}`);
+    if (player && t >= st && t <= en) {
+      try {
+        player.currentTime = t;
+      } catch (e) {}
+    }
+  });
+  canvas.addEventListener('pointermove', (ev) => {
+    const { t } = hitTime(ev);
+    if (drag) {
+      const other = drag === 'start' ? secondsFromTimecode(s.end) : secondsFromTimecode(s.start);
+      const ok = drag === 'start' ? t <= other - 0.1 : t >= other + 0.1;
+      if (ok) {
+        s[drag] = timecode(Math.max(0, Math.min(dur || t, t)));
+        syncFields();
+        draw();
+      }
+      return;
+    }
+    canvas.style.cursor = nearEdge(t) ? 'ew-resize' : 'crosshair';
+  });
+  const endDrag = () => {
+    if (!drag) return;
+    const f = drag;
+    drag = null;
+    canvas.style.cursor = 'crosshair';
+    commit(f);
+    showToast(`${f === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s[f]}`);
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener(
+    'wheel',
+    (ev) => {
+      ev.preventDefault();
+      const { t, ratio } = hitTime(ev);
+      const v = view();
+      const factor = ev.deltaY < 0 ? 0.8 : 1.25;
+      let span = Math.max(0.05, Math.min(dur || 3600, (v.b - v.a) * factor));
+      let a = t - ratio * span,
+        b = a + span;
+      if (a < 0) {
+        a = 0;
+        b = span;
+      }
+      if (dur && b > dur) {
+        b = dur;
+        a = Math.max(0, dur - span);
+      }
+      v.a = a;
+      v.b = b;
+      draw();
+    },
+    { passive: false }
+  );
+  const fit = () => {
+    m.__sdZoom = null;
+    draw();
+  };
+  canvas.closest('.sd-wave')?.querySelector('[data-sd-zoom="fit"]')?.addEventListener('click', fit);
+  if (player) {
+    const ph = () => draw();
+    player.addEventListener('timeupdate', ph);
+    player.addEventListener('seeked', ph);
+  }
+  draw();
+}
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
   if (!root) return;
@@ -2703,7 +2948,7 @@ function renderSegDetail(m) {
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
-  attachZoomWave(m, idx);
+  attachSegWave(m, idx);
 }
 function renderSegments(m, card) {
   const root = $(`#segments-${CSS.escape(m.id)}`, card || document);

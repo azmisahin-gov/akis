@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.61.**
+yazılır. **Güncel sürüm: v2.62.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.62 — Bölüm detayı sıfırdan; segment dalgası geri (tamamlandı)
+
+v2.61'de zoom dalgası yanlışlıkla kaldırılmıştı; ana dalga tüm kaydı gösterdiği
+için bölüm sınırlarını hassas ayarlamaya yetmiyordu ve elle saat yazmak
+zorlayıcıydı. `attachSegWave()` eklendi: bölümün ±0,5 sn penceresinde
+sürüklenebilir B/S sınırları, tekerlek zoom, canlı konum çizgisi. Yapı yeni
+`sd-*` sınıf adlarıyla sıfırdan yazıldı; eski 21 CSS katmanı artık uymuyor.
+Ölçümle doğrulandı: taşma yok, çakışma yok.
 
 ### v2.61 — Bölüm detayı sadeleştirildi (tamamlandı)
 

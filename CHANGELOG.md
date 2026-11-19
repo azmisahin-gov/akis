@@ -6,12 +6,76 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.61.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.62.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.62 — Bölüm detayı SIFIRDAN yazıldı; segment dalgası geri geldi
+
+KULLANICI: "seg-detail kısmı hâlâ sorunlu, orayı komple sil yeniden yap.
+WAV dalgasını silmiştin, yukarıdaki dalga segmentler için işe yarıyor mu?
+Başlangıç ve bitişi elle giriyoruz ama elle sorunlu."
+
+### Kullanıcı haklıydı: dalga geri getirildi
+
+v2.61'de zoom dalgasını "ana dalga aynı işi yapıyor" diyerek kaldırmıştım.
+**Yanlıştı.** Ana dalga tüm kaydı gösterir; bölüm sınırlarını 0,1 sn
+hassasiyetle ayarlamak için yetersizdir. Elle saat yazmak deşifrede en çok
+zaman kaybettiren işti.
+
+**Yeni `attachSegWave()`:**
+- Bölümün ±0,5 sn penceresi büyütülmüş dalga olarak gösterilir
+- **Sınırları sürükleyerek** başlangıç/bitiş ayarlanır (elle yazmak gerekmez)
+- Ortaya tıkla → en yakın sınıra atlar
+- Tekerlek → imlecin altındaki an sabit kalacak şekilde yakınlaştır
+- Bölüm dışı hafif karartılır; B (başlangıç) ve S (bitiş) tutamaçları görünür
+- Oynatma konumu canlı çizgi olarak gösterilir
+- Süre alanı otomatik güncellenir (başlangıç/bitiş değişince)
+
+### Sıfırdan yazım: yeni sınıf adları (sd-*)
+
+Eski `seg-detail` yapısında 21 çakışan CSS kuralı vardı. Yeni yapı **farklı
+sınıf adları** kullanıyor (`sd-head`, `sd-wave`, `sd-times`, `sd-meta`,
+`sd-text`, `sd-actions`, `sd-obs`, `sd-ops`). Böylece eski 21 katmanın hiçbiri
+yeni yapıya uymuyor — çakışma fiziksel olarak imkânsız.
+
+### Yeni sıra
+
+```
+1. Başlık          Bölüm 1 / 3   ↑ ↓ ▶ Dinle ⏹
+2. Öneri bandı     (varsa — ikinci göz)
+3. Notlar          (varsa — öncelik/tekrar/sessizlik)
+4. DALGA           sürüklenebilir sınırlar + Sığdır
+5. Zamanlar        Başlangıç | Bitiş | Süre
+6. Konuşmacı | Kontrol
+7. METİN           (en çok yer, 150px+)
+8. Onayla → | Yeniden dinle | Anlaşılmadı
+9. Gözlem işaretleri (tek satır)
+10. Araçlar         (tek satır)
+```
+
+### Ölçümle doğrulandı
+
+Gerçek CSS + gerçek DOM ile ölçüm sayfası kuruldu:
+
+```
+panel h: 642   scrollH: 640   clientH: 640     taşma: YOK
+sd-head    top= 33  h= 36
+sd-notes   top= 77  h= 16
+sd-wave    top=101  h=124
+sd-times   top=233  h= 52
+sd-meta    top=293  h= 54
+sd-text    top=355  h=188
+sd-actions top=551  h= 38
+sd-obs     top=597  h= 25
+sd-ops     top=630  h= 19
+ÇAKIŞMA: YOK
+```
+
+Gerçek uygulamada da doğrulandı (v2.62, tarayıcı).
 
 ## v2.61 — Bölüm detayı sadeleştirildi (düğmeler üst üste biniyordu)
 
