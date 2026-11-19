@@ -4705,6 +4705,23 @@ async function loadSamples() {
 // Odak modu tek noktadan yönetilir. Kenar çubuğu gizlendiğinde modu kapatan
 // düğme de gizlenirdi; bu yüzden çıkış için ayrıca üst çubukta bir düğme ve
 // Esc kısayolu bulunur.
+// Ayarlar çekmecesi: model, toplu çözümleme ve depolama burada durur. Çalışma
+// alanını kapatmadığı için uzman bağlamı kaybetmez.
+function setSettingsDrawer(open) {
+  const d = $('#settingsDrawer');
+  const b = $('#drawerBackdrop');
+  if (!d) return;
+  d.classList.toggle('open', open);
+  d.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (b) b.hidden = !open;
+  if (open) {
+    // Açılınca güncel model/depolama durumunu tazele.
+    try {
+      updateModelBadge();
+      refreshStorage();
+    } catch (e) {}
+  }
+}
 function setFocusMode(on) {
   document.body.classList.toggle('focus-mode', on);
   const fb = $('#focusModeBtn');
@@ -5281,12 +5298,21 @@ function setupEvents() {
     }
   });
   document.addEventListener('keydown', onGlobalSegKey);
-  $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.classList.contains('focus-mode')));
+  $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
+$('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
+$('#drawerBackdrop').addEventListener('click', () => setSettingsDrawer(false));
+$('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.classList.contains('focus-mode')));
   $('#focusExitBtn').addEventListener('click', () => setFocusMode(false));
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'textarea' || tag === 'input' || tag === 'select') return;
+    // Önce açık ayar çekmecesini kapat, sonra odak modunu.
+    const drawer = $('#settingsDrawer');
+    if (drawer && drawer.classList.contains('open')) {
+      setSettingsDrawer(false);
+      return;
+    }
     if (document.body.classList.contains('focus-mode')) setFocusMode(false);
   });
   $('#helpBtn').addEventListener('click', () => $('#helpDialog').showModal());

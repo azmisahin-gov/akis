@@ -353,3 +353,34 @@ body.focus-mode .main-area{padding:0 22px}
 .sidebar,.sidebar-caption,.privacy-card,.main-footer{display:none!important}
 /* Eski .nav-item temel kuralları ray düğmelerini bozmasın */
 .rail .nav-item{height:50px;padding:0;font:inherit}
+
+/* ============================================================================
+   v2.28 — Sağ çekmece (ayarlar)
+   Model ayarları, toplu çözümleme ve depolama artık çalışma alanını işgal
+   etmez; sağdan açılan çekmecede durur. Ses sayfası yalnızca yükleme + liste +
+   detay içerir.
+   ============================================================================ */
+.drawer{position:fixed;top:0;right:0;height:100vh;width:min(460px,94vw);
+  background:#fff;border-left:1px solid var(--line);box-shadow:-14px 0 40px rgba(17,41,68,.14);
+  transform:translateX(102%);transition:transform .22s ease;z-index:60;
+  display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.drawer-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:15px 18px;border-bottom:1px solid var(--line);background:#f7fafc;flex:none}
+.drawer-head h2{font:700 15px Manrope;margin:3px 0 0;color:var(--navy)}
+.drawer-close{width:32px;height:32px;font-size:17px;background:#fff;border:1px solid var(--line);
+  color:#52677b;border-radius:8px;cursor:pointer}
+.drawer-body{flex:1;overflow:auto;padding:16px 18px 24px}
+.drawer-body .panel{border:0;box-shadow:none;padding:0 0 16px;margin-bottom:16px;
+  border-bottom:1px solid #eef2f6}
+.drawer-body .panel:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+.drawer-body .model-panel{display:block;background:none;margin-bottom:16px}
+.drawer-body .panel-heading{margin-bottom:11px}
+.drawer-body .panel-heading h3{font-size:13px}
+.drawer-backdrop{position:fixed;inset:0;background:#10233a55;z-index:55;border:0;padding:0}
+.drawer-backdrop[hidden]{display:none}
+
+/* Ayarlar düğmesi (ray altı + ses sayfası üstü) */
+#settingsBtn{position:relative}
+.rail .nav-item .dot-alert{position:absolute;top:6px;right:9px;width:6px;height:6px;
+  border-radius:50%;background:var(--gold)}
