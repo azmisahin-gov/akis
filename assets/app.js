@@ -760,6 +760,7 @@ function materialCardHtml(m) {
             <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
             <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">Takip</button>
           </div>
+          <div class="listen-tools"><label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez."><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
           <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
         </div>
         <div class="transcript-editor">
@@ -770,7 +771,6 @@ function materialCardHtml(m) {
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
-        <div class="pane-section"><div class="pane-title">Dinleme yardımcısı<span class="info-i" tabindex="0" data-tip="Yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı ayırma) yapılmaz.">i</span></div><div class="listen-tools"><label class="listen-filter-label"><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div></div>
         <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
         <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div></div>
       </div>
@@ -836,6 +836,12 @@ async function renderMaterialDetail() {
       refreshPlayButtons();
     });
     if (m.tech?.channels === 2 && channelMode(m) !== 'both') ensureAudioGraph(m, player);
+  }
+  // Dinleme filtresi açıksa şeritte görsel geri bildirim (yeniden çizimde korunur).
+  const lf = card.querySelector('[data-listen-filter]');
+  if (lf && lf.value !== 'off') {
+    const lb = lf.closest('.listen-filter-label');
+    if (lb) lb.classList.add('filter-on');
   }
   attachWave(card, m, url);
   renderSegments(m, card);
@@ -5625,6 +5631,9 @@ function setupEvents() {
       const m = currentCase().materials.find((x) => x.id === id);
       if (!m) return;
       m.listenFilter = el.value;
+      // Filtre açıksa şeritte görsel geri bildirim (altın kenar + kalın yazı).
+      const label = el.closest('.listen-filter-label');
+      if (label) label.classList.toggle('filter-on', el.value !== 'off');
       persist();
       const player = card.querySelector('audio');
       if (el.value !== 'off' && player) {

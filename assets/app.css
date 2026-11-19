@@ -1135,3 +1135,27 @@ body.follow-on #view-audio .seg-detail *{transition:none!important;animation:non
 #view-audio .seg-ops-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;
   padding:4px 0 0}
 #view-audio .seg-ops-row .mini-button{font-size:9.5px;padding:3px 8px}
+
+/* ============================================================================
+   v2.48 — Dinleme yardımcısı kontrol şeridine taşındı
+   KULLANICI: "dinleme yardımcısı Analiz içinde kalmış; oysa hem ana kaydı hem
+   segmenti dinlerken en ihtiyaç duyulan şeylerden biri".
+   Doğru yer: oynatıcının yanında, HER ZAMAN görünür (Analiz sekmesine girmeden).
+   ============================================================================ */
+/* Kontrol şeridi: Çal · oynatıcı · Takip — altında dinleme yardımcısı + dalga */
+#view-audio .listen-strip .listen-tools{display:flex;align-items:center;gap:6px;
+  flex-wrap:wrap;margin:0;padding:0}
+#view-audio .listen-strip .listen-filter-label{display:flex;align-items:center;
+  gap:4px;flex:1 1 auto;min-width:0}
+#view-audio .listen-strip .listen-filter-label select{width:100%;max-width:260px;
+  border:1px solid #dfe6ed;border-radius:6px;padding:4px 7px;font-size:10px;
+  color:#34495e;background:#fff}
+#view-audio .listen-strip .chan-select{flex:none;padding:1px}
+#view-audio .listen-strip .chan-select .lbl{font-size:9px;color:#7d8ea0;padding:0 4px}
+#view-audio .listen-strip .chan-select .seg-tool{padding:3px 7px;font-size:9px}
+/* Dinlemeyi kolaylaştıran filtre AÇIKSA şerit bunu göstersin (görsel geri bildirim) */
+#view-audio .listen-strip .listen-filter-label.filter-on select{
+  border-color:var(--gold);background:#fffdf6;font-weight:700;color:#7a5a2c}
+
+/* Analiz sekmesi artık daha sade: yalnız spektrogram + köken + konuşmacılar */
+#view-audio .card-pane[data-pane="listen"] .pane-section:first-child{padding-top:0}
