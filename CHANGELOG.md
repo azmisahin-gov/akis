@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.71.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.72.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.72 — Depolama bir davada doluyordu (%76 küçültüldü)
+
+KULLANICI: "Hemen uyarı verdi? Daha sadece bir dava var, ne kadar dolmuş ki?"
+
+### Ölçüm: üç suçlu
+
+```
+200 bölüm, geçmiş YOK                     :   60 KB
++ 30 kelime zamanlaması (karaoke)         :  380 KB
++ 20 geçmiş kaydı (her biri tam metin)    :  843 KB
++ yeniden çözümleme yedeği (v2.71)        : 1917 KB
+Gerçek yer: 3.74 MB  ->  5 MB kotanın %75'i
+```
+
+**Tek dava kotanın %75'ini dolduruyordu.** Sebepler:
+
+1. **`words` (kelime zamanlaması)** — karaoke için gerekli, ama **kalıcı
+   olması gerekmiyor**. Her kelime için `{w, s, e}` üç alan; 200 bölümde
+   ~320 KB.
+2. **`history` 20 kayıt** — her kayıt **metnin tamamını** saklıyor. 200
+   bölümde ~770 KB.
+3. **`previousSegments`** — v2.71'de eklediğim geri dönüş yedeği, bölümlerin
+   **tam kopyasını** (geçmiş ve kelimeler dahil) saklıyordu: dosyayı iki
+   katına çıkarıyordu.
+
+### Çözüm
+
+| Değişiklik | Kazanç |
+|---|---|
+| `words` kayda/dışa aktarıma yazılmaz (normalize'da boşaltılır) | ~320 KB |
+| Geçmiş sınırı 20 → 3 | ~600 KB |
+| `previousSegments` yalnız metin/zaman/kontrol taşır | ~900 KB |
+| Açılışta eski kayıtlar temizlenir | mevcut dosyalar |
+
+Karaoke çalışmaya devam eder: kelime zamanlaması bölüm çalındığında modelden
+yeniden üretilir; kalıcı olması gerekmez.
+
+### Ölçüm (sonra)
+
+```
+ÖNCE  : 639 KB | 1.25 MB | kota %25   -> 5 MB'a 4 dava
+SONRA : 151 KB | 0.30 MB | kota %6    -> 5 MB'a 16 dava
+Kazanç: %76 küçüldü
+```
 
 ## v2.71 — "Yeniden çözümle" tüm elle düzeltmeleri siliyordu (kritik)
 

@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.71';
+const APP_VERSION = '2.72';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -452,6 +452,29 @@ function stripDerivedFields(state) {
       if ('cancelRequested' in m) {
         delete m.cancelRequested;
         cleaned = true;
+      }
+      // v2.72: kota temizliği. Eski kayıtlarda kalmış büyük alanlar atılır.
+      for (const sg of m.segments || []) {
+        if (Array.isArray(sg.words) && sg.words.length) {
+          sg.words = [];
+          cleaned = true;
+        }
+        if (Array.isArray(sg.history) && sg.history.length > 3) {
+          sg.history = sg.history.slice(-3);
+          cleaned = true;
+        }
+      }
+      if (m.previousSegments) {
+        for (const sg of m.previousSegments.segments || []) {
+          if (Array.isArray(sg.words) && sg.words.length) {
+            sg.words = [];
+            cleaned = true;
+          }
+          if (Array.isArray(sg.history) && sg.history.length) {
+            sg.history = [];
+            cleaned = true;
+          }
+        }
       }
     }
     // Eski yöntem metni aracın kendisini anıyordu; kayıtlı dosyalarda da
@@ -4604,7 +4627,9 @@ function pushSegmentHistory(s, prevText) {
   const prev = prevText ?? s.__editSnapshot ?? '';
   if (prev === (s.text || '')) return false;
   s.history.push({ text: prev, at: new Date().toISOString(), actor: editorName() });
-  if (s.history.length > 20) s.history.shift();
+  // v2.72: 20 -> 3. Her kayıt tüm metni sakladığı için 200 bölümlü dosyada
+  // 20 geçmiş ~770 KB yer kaplıyordu. 3 kayıt geri dönüş için yeterli.
+  if (s.history.length > 3) s.history.shift();
   markTextEdited(s);
   return true;
 }
@@ -4878,10 +4903,23 @@ async function transcribe(id) {
       return;
     }
     // Geri dönüş kopyası: eski bölümler kayda yazılır (yalnız son 1 kopya).
+    // Yedek yalnız geri dönüş için: metin, zaman, konuşmacı, kontrol durumu.
+    // Geçmiş ve kelime zamanlaması kopyalanmaz (dosyayı iki katına çıkarıyordu).
     m.previousSegments = {
       at: new Date().toISOString(),
       count: (m.segments || []).length,
-      segments: JSON.parse(JSON.stringify(m.segments || []))
+      segments: (m.segments || []).map((s) => ({
+        id: s.id,
+        start: s.start,
+        end: s.end,
+        speaker: s.speaker,
+        speakerId: s.speakerId,
+        text: s.text,
+        review: s.review,
+        textRev: s.textRev,
+        obs: s.obs,
+        history: []
+      }))
     };
     logEvent(m, 'Yeniden çözümleme öncesi yedek', `${edited.length} elle düzeltilmiş bölüm saklandı`);
   }

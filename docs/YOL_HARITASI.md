@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.71.**
+yazılır. **Güncel sürüm: v2.72.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.72 — Depolama bir davada doluyordu (%76 küçültüldü) (tamamlandı)
+
+Üç suçlu ölçüldü: (1) `words` kelime zamanlaması kalıcı yazılıyordu (~320 KB),
+(2) geçmiş 20 kayıt her biri tam metin (~770 KB), (3) v2.71'in
+`previousSegments` yedeği bölümlerin tam kopyasını tutuyordu (dosyayı 2 katına
+çıkarıyordu). Tek dava 3.74 MB (kota %75) idi. Çözüm: words yazılmaz, geçmiş
+20→3, yedek yalnız metin. Sonuç: 1.25 MB → 0.30 MB (%76 küçük); 4 dava yerine
+16 dava sığıyor.
 
 ### v2.71 — "Yeniden çözümle" tüm elle düzeltmeleri siliyordu (tamamlandı)
 
