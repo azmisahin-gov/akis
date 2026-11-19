@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.75';
+const APP_VERSION = '2.76';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2822,6 +2822,7 @@ function segDetailHtml(m) {
     hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : '',
     `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>`,
     `<button class="mini-button tiny" data-split-seg="${i}" title="Bu bölümü oynatıcının konumundan ikiye ayırır. Metin yeniden çözümlenmez; kesim noktasına göre paylaştırılır.">buradan böl</button>`,
+    `<button class="mini-button tiny" data-retranscribe-seg="${i}" title="Yalnız bu bölümün zaman aralığını (başlangıç–bitiş) ses dosyasından kesip yeniden çözümler. Metin kaybolduysa geri getirir; diğer bölümlere dokunmaz.">↻ Bu aralığı çözümle</button>`,
     `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>`,
     `<button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>`
   ]
@@ -3999,7 +4000,7 @@ function syncSegDetailInPlace(m, idx) {
     const p = el.dataset.obs.split('|');
     el.dataset.obs = `${idx}|${p[1]}`;
   });
-  ['data-history', 'data-silence', 'data-split-seg', 'data-merge-next', 'data-delete-seg', 'data-approve-seg'].forEach((k) => {
+  ['data-history', 'data-silence', 'data-split-seg', 'data-retranscribe-seg', 'data-merge-next', 'data-delete-seg', 'data-approve-seg'].forEach((k) => {
     detail.querySelectorAll(`[${k}]`).forEach((el) => {
       el.setAttribute(k, String(idx));
     });
@@ -5155,6 +5156,88 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
     if (segs.length) return segs; // anlamlı sonuç
   }
   return [];
+}
+// BÖLÜM ARALIĞINI YENİDEN ÇÖZÜMLE (v2.76)
+// Tek bir bölümün başlangıç–bitiş aralığını ses dosyasından kesip yalnız o
+// parçayı modele verir. Kullanıcı "bu iki sınır arasındaki konuşmayı yeniden
+// çözümle" dediğinde bunu yapar. Diğer bölümlere DOKUNMAZ.
+// Metin kaybolduysa (bölme sonrası boş kaldıysa) bu yolla geri getirilir.
+async function retranscribeSegment(materialId, index) {
+  const c = currentCase();
+  const m = c?.materials.find((x) => x.id === materialId);
+  if (!m) return;
+  const s = (m.segments || [])[index];
+  if (!s) return;
+  const a = secondsFromTimecode(s.start);
+  const b = secondsFromTimecode(s.end);
+  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+    showToast('Bu bölümün zaman aralığı geçersiz. Başlangıç ve bitişi düzeltin.');
+    return;
+  }
+  if (b - a < 0.3) {
+    showToast('Aralık çok kısa (en az 0,3 sn). Sınırları genişletin.');
+    return;
+  }
+  const blob = await getAudioBlob(c, m);
+  if (!blob) {
+    showToast('Ses dosyası yerel depoda bulunamadı.');
+    return;
+  }
+  const btn = $(`[data-retranscribe-seg="${index}"]`);
+  const oldText = s.text || '';
+  if (oldText.trim()) {
+    const ok = await askConfirm(
+      'Bu bölümün metni yeniden çözümlenecek',
+      `Bölüm ${index + 1} (${s.start} – ${s.end}) ses dosyasından kesilip yeniden ` +
+        'çözümlenecek. Bu bölümün mevcut metni ve onayı değişecek. ' +
+        'Diğer bölümlere dokunulmaz. Ctrl+Z ile geri alınabilir. Devam edilsin mi?'
+    );
+    if (!ok) return;
+  }
+  snapshotForUndo(`bölüm ${index + 1} yeniden çözümlendi`);
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Çözümleniyor…';
+  }
+  try {
+    const pipe = await ensureModel();
+    const audio = await decodeForAsr(blob);
+    const sr = 16000;
+    const from = Math.max(0, Math.floor(a * sr));
+    const to = Math.min(audio.length, Math.ceil(b * sr));
+    const slice = audio.subarray(from, to);
+    if (slice.length < sr * 0.2) {
+      showToast('Aralık ses dosyasının dışında. Sınırları kontrol edin.');
+      return;
+    }
+    const found = await transcribeWindow(pipe, slice, a);
+    const meaningful = found.filter((f) => !isHallucination(f.text));
+    if (!meaningful.length) {
+      showToast('Model bu aralıkta anlamlı konuşma bulamadı. Metni elle girin veya aralığı genişletin.');
+      return;
+    }
+    const text = meaningful.map((f) => f.text).join(' ').replace(/\s+/g, ' ').trim();
+    // Eski metni geçmişe yaz; yeni metin doğrulanmamıştır.
+    if (oldText.trim()) {
+      pushSegmentHistory(s, oldText);
+    }
+    s.text = text;
+    s.textRev = 0;
+    s.review = 'pending';
+    s.words = meaningful.flatMap((f) => f.words || []);
+    logEvent(m, 'Bölüm yeniden çözümlendi', `Bölüm ${index + 1}: ${s.start}–${s.end} · ${meaningful.length} parça`);
+    persist();
+    renderAudioList();
+    renderOverview();
+    showToast(`Bölüm ${index + 1} yeniden çözümlendi. Metni dinleyerek doğrulayın.`);
+  } catch (e) {
+    showToast(`Yeniden çözümleme başarısız: ${e.message}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '↻ Bu aralığı çözümle';
+    }
+  }
 }
 async function transcribe(id) {
   const c = currentCase(),
@@ -7246,6 +7329,11 @@ function setupEvents() {
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
       if (m) splitSegmentAtPlayer(m, Number(b.dataset.splitSeg));
+    } else if (b.dataset.retranscribeSeg !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) retranscribeSegment(m.id, Number(b.dataset.retranscribeSeg));
     } else if (b.dataset.mergeNext !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;

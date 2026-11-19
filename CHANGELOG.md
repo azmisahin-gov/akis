@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.75.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.76.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.76 — Bölüm aralığını yeniden çözümle (metin kaybolursa geri getir)
+
+KULLANICI: "Bir bölümü bölüyorum ama bazen metin gidiyor. O iki aralığın
+metnini getiremez miyim, yeniden çözümleyemez miyim?"
+
+### Yeni: `↻ Bu aralığı çözümle`
+
+Bölümün **başlangıç–bitiş aralığı** ses dosyasından kesilir, yalnız o parça
+modele verilir. Diğer bölümlere **dokunulmaz**.
+
+```
+Bölüm 3:  [15.560 ───── 18.000]   ← yalnız bu aralık modele gider
+Bölüm 4:  [18.000 ───── 21.004]   ← etkilenmez
+```
+
+**Ne zaman kullanılır:**
+- Bölme sonrası metin boş kaldıysa
+- Metin yanlış çözümlendiyse, yalnız o bölüm düzeltilsin isteniyorsa
+- Bölüm sınırları değiştirildiyse, yeni aralık yeniden çözümlensin isteniyorsa
+
+**Güvenlik:**
+- Metin varsa **onay sorulur** (mevcut metin değişecek).
+- **Ctrl+Z** ile geri alınabilir.
+- Eski metin **metin geçmişine** yazılır (`geçmiş (N)` düğmesi).
+- Yeni metin **"Kontrol bekliyor"** olur — dinleyip doğrulamalısınız.
+- İşlem **delil günlüğüne** yazılır: aralık + parça sayısı.
+
+**Sınırlar:**
+- Aralık en az **0,3 sn** olmalı.
+- Model gereklidir (ilk kullanımda indirilir).
+- Aralık ses dosyasının dışındaysa uyarı verir.
+
+### Test
+
+`sema-testi.mjs` [13] bloğu eklendi (317 → 329 kontrol).
 
 ## v2.75 — Geri alma (Ctrl+Z) + dalga kaydırma + bölme netliği
 

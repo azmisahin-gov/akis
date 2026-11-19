@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.75.**
+yazılır. **Güncel sürüm: v2.76.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.76 — Bölüm aralığını yeniden çözümle (tamamlandı)
+
+Bölme sonrası metin kaybolabiliyordu. `retranscribeSegment()` eklendi: bölümün
+başlangıç–bitiş aralığı ses dosyasından kesilir, yalnız o parça modele verilir;
+diğer bölümlere dokunulmaz. Metin varsa onay sorulur, Ctrl+Z ile geri alınır,
+eski metin geçmişe yazılır, işlem delil günlüğüne girer. Test [13]:
+317 → 329.
 
 ### v2.75 — Geri alma (Ctrl+Z) + dalga kaydırma + bölme netliği (tamamlandı)
 

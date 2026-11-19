@@ -996,6 +996,32 @@ console.log('\n[12] Geri alma ve bölme netliği');
   ok('yardımda Shift\+sürükle anlatılıyor', /Shift\+sürükle/.test(html));
 }
 
+// --- 13. Bölüm aralığını yeniden çözümle --------------------------------
+// Kullanıcı: "Böldüm ama metin gitti. O iki aralığın metnini getiremez miyim,
+// yeniden çözümleyemez miyim?" v2.76 ile eklendi: ses dosyası bölüm
+// aralığına kırpılır, yalnız o parça modele verilir.
+console.log('\n[13] Bölüm aralığını yeniden çözümle');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const app = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+
+  ok('retranscribeSegment var', /async function retranscribeSegment\(materialId, index\)/.test(app));
+  ok('zaman aralığı doğrulanıyor', /secondsFromTimecode\(s\.start\)[\s\S]{0,300}secondsFromTimecode\(s\.end\)/.test(app));
+  ok('ses aralığa kırpılıyor (subarray)', /audio\.subarray\(from, to\)/.test(app));
+  ok('yalnız o aralık modele veriliyor', /transcribeWindow\(pipe, slice, a\)/.test(app));
+  ok('diğer bölümlere dokunmuyor', /s\.text = text;/.test(app) && !/m\.segments = /.test(app.slice(app.indexOf('async function retranscribeSegment'), app.indexOf('async function transcribe(id)'))));
+  ok('onay soruyor (metin varsa)', /askConfirm\([\s\S]{0,200}yeniden[\s\S]{0,100}çözümlenecek/.test(app));
+  ok('geri alınabilir', /retranscribeSegment[\s\S]{0,2500}snapshotForUndo/.test(app));
+  ok('eski metin geçmişe yazılıyor', /pushSegmentHistory\(s, oldText\)/.test(app));
+  ok('yeni metin pending olur', /s\.review = 'pending';/.test(app));
+  ok('işlem günlüğüne yazılıyor', /Bölüm yeniden çözümlendi/.test(app));
+  ok('düğme var', /data-retranscribe-seg/.test(app));
+  ok('düğme tıklaması bağlı', /dataset\.retranscribeSeg[\s\S]{0,300}retranscribeSegment/.test(app));
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.
