@@ -5,41 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142c4d">
   <title>AKİS | Adli Konuşma İnceleme Sistemi</title>
-  <link rel="stylesheet" href="assets/app.css?v=2.26">
+  <link rel="stylesheet" href="assets/app.css?v=2.27">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.26"></script>
+  <script type="module" src="assets/app.js?v=2.27"></script>
 </head>
 <body>
   <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <div class="brand-mark">A</div>
-        <div><div class="brand-name">AKİS</div><div class="brand-sub">ADLİ KONUŞMA İNCELEME SİSTEMİ</div></div>
+    <aside class="rail" aria-label="Ana gezinme">
+      <div class="rail-brand" title="AKİS — Adli Konuşma İnceleme Sistemi">
+        <span class="rail-mark">A</span>
       </div>
-      <div class="sidebar-caption">ÇALIŞMA DOSYASI</div>
-      <div class="case-switcher">
-        <select id="caseSelect" aria-label="Çalışma dosyası"></select>
-        <button id="newCaseBtn" class="icon-button" title="Yeni dosya" aria-label="Yeni dosya">＋</button>
-      </div>
-      <nav class="main-nav">
-        <button class="nav-item active" data-view="overview"><span class="nav-icon">▦</span> Genel görünüm</button>
-        <button class="nav-item" data-view="case"><span class="nav-icon">▤</span> Dosya bilgileri</button>
-        <button class="nav-item" data-view="audio"><span class="nav-icon">◖</span> Ses kayıtları <span class="nav-count" id="audioCount">0</span></button>
-        <button class="nav-item" data-view="questions"><span class="nav-icon">☷</span> İnceleme ve sorular</button>
-        <button class="nav-item" data-view="report"><span class="nav-icon">▧</span> Rapor oluştur</button>
+      <nav class="rail-nav">
+        <button class="nav-item active" data-view="overview" title="Genel görünüm" aria-label="Genel görünüm"><span class="nav-icon">▦</span><span class="rail-label">Özet</span></button>
+        <button class="nav-item" data-view="case" title="Dosya bilgileri" aria-label="Dosya bilgileri"><span class="nav-icon">▤</span><span class="rail-label">Dosya</span></button>
+        <button class="nav-item" data-view="audio" title="Ses kayıtları" aria-label="Ses kayıtları"><span class="nav-icon">◖</span><span class="rail-label">Ses</span><span class="nav-count" id="audioCount">0</span></button>
+        <button class="nav-item" data-view="questions" title="İnceleme ve sorular" aria-label="İnceleme ve sorular"><span class="nav-icon">☷</span><span class="rail-label">İnceleme</span></button>
+        <button class="nav-item" data-view="report" title="Rapor oluştur" aria-label="Rapor oluştur"><span class="nav-icon">▧</span><span class="rail-label">Rapor</span></button>
       </nav>
-      <div class="sidebar-bottom">
-        <div class="privacy-card"><div class="privacy-dot"></div><div><b>Yerel çalışma</b><small>Dosyalarınız bu tarayıcıda saklanır. Ses çözümleme için model ilk indirmede internet kullanır.</small></div></div>
-        <button class="nav-item" id="helpBtn"><span class="nav-icon">?</span> Kullanım ve sınırlar</button>
-        <button class="nav-item" id="focusModeBtn"><span class="nav-icon">⤢</span> Odak modu (kenar çubuğunu daralt)</button>
-        <div class="version" id="appVersion">AKİS • v2.26 • Yerel sürüm</div>
+      <div class="rail-bottom">
+        <button class="rail-btn" id="helpBtn" title="Kullanım ve sınırlar" aria-label="Kullanım ve sınırlar">?</button>
+        <button class="rail-btn" id="focusModeBtn" title="Odak modu" aria-label="Odak modu">⤢</button>
+        <div class="version" id="appVersion">AKİS • v2.26</div>
       </div>
     </aside>
 
     <main class="main-area">
       <header class="topbar">
-        <div><div class="eyebrow" id="topEyebrow">ÇALIŞMA ALANI</div><h1 id="pageTitle">Genel görünüm</h1></div>
-        <div class="top-actions"><span class="save-state" id="saveState">● Yerel kayıt açık</span><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn">Dosyayı içe aktar</button><button class="button button-light" id="exportProjectBtn">Dosyayı dışa aktar</button><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
+        <div class="top-left">
+          <div class="case-switcher">
+            <select id="caseSelect" aria-label="Çalışma dosyası"></select>
+            <button id="newCaseBtn" class="icon-button" title="Yeni dosya" aria-label="Yeni dosya">＋</button>
+          </div>
+          <div class="top-title">
+            <div class="eyebrow" id="topEyebrow">ÇALIŞMA ALANI</div>
+            <h1 id="pageTitle">Genel görünüm</h1>
+          </div>
+        </div>
+        <div class="top-actions"><span class="save-state" id="saveState">● Yerel kayıt açık</span><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn">İçe aktar</button><button class="button button-light" id="exportProjectBtn">Dışa aktar</button><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
       </header>
 
       <section class="view active" id="view-overview">
@@ -138,7 +140,16 @@
         <div class="export-note"><b>Birincil çıktı – UYAP UDF:</b> Uygulama, yüklediğiniz boş UYAP UDF belgesindeki sayfa ayarlarını ve stil tanımlarını temel alarak doğrudan .udf dosyası oluşturur. Word çıktısı yalnızca isteğe bağlı yardımcı kopyadır. İlk kullanımdan önce oluşturulan belgeyi kendi UYAP Doküman Editörü sürümünüzde açıp sayfa düzenini kontrol edin. Uygulama e-imza oluşturmaz ve belgeyi UYAP’a göndermez.</div>
       </section>
 
-      <footer class="main-footer"><span>AKİS • Adli ses ve konuşma inceleme aracı</span><span>Teknik bulgular bilirkişi kontrolüyle kesinleşir.</span></footer>
+      <footer class="statusbar" id="statusBar">
+        <span class="sb-item" id="sbCase">—</span>
+        <span class="sb-sep"></span>
+        <span class="sb-item"><b id="sbAudio">0</b> kayıt</span>
+        <span class="sb-item"><b id="sbSegments">0</b> bölüm</span>
+        <span class="sb-item">denetim <b id="sbChecked">%0</b></span>
+        <span class="sb-spacer"></span>
+        <span class="sb-item sb-model" id="sbModel">model yüklenmedi</span>
+        <span class="sb-item sb-note">Teknik bulgular bilirkişi kontrolüyle kesinleşir</span>
+      </footer>
     </main>
   </div>
 

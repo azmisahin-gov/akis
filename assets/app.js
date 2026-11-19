@@ -542,6 +542,35 @@ function renderOverview() {
   ]
     .map((x) => `<div class="overview-item"><small>${x[1].toUpperCase()}</small><b>${esc(x[2] || '—')}</b></div>`)
     .join('');
+  renderStatusBar();
+}
+// Alt durum çubuğu: hangi dosyada olduğumuzu ve genel durumu her an gösterir.
+// Genel görünüm sayfasındaki tekrarın yerini alır.
+function renderStatusBar() {
+  const c = currentCase();
+  if (!c) return;
+  const mats = c.materials || [];
+  const segs = mats.flatMap((m) => m.segments || []);
+  const checked = segs.filter((s) => isReviewed(s)).length;
+  const pct = segs.length ? Math.round((checked / segs.length) * 100) : 0;
+  const set = (sel, val) => {
+    const el = $(sel);
+    if (el) el.textContent = val;
+  };
+  set('#sbCase', [c.fileNo, c.court].filter(Boolean).join(' · ') || 'Yeni inceleme dosyası');
+  set('#sbAudio', String(mats.length));
+  set('#sbSegments', String(segs.length));
+  set('#sbChecked', `%${pct}`);
+  const modelEl = $('#sbModel');
+  if (modelEl) {
+    if (loadedModelId) {
+      modelEl.textContent = `${modelShortName(loadedModelId)} · ${asrPipeline && asrPipeline.__device === 'webgpu' ? 'GPU' : 'CPU'}`;
+      modelEl.classList.remove('none');
+    } else {
+      modelEl.textContent = 'model yüklenmedi';
+      modelEl.classList.add('none');
+    }
+  }
 }
 function renderQuestions() {
   const c = currentCase();
@@ -4679,8 +4708,10 @@ async function loadSamples() {
 function setFocusMode(on) {
   document.body.classList.toggle('focus-mode', on);
   const fb = $('#focusModeBtn');
-  if (fb)
-    fb.innerHTML = `<span class="nav-icon">⤢</span> ${on ? 'Odak modundan çık' : 'Odak modu (kenar çubuğunu daralt)'}`;
+  if (fb) {
+    fb.textContent = on ? '⤡' : '⤢';
+    fb.title = on ? 'Odak modundan çık' : 'Odak modu';
+  }
   const eb = $('#focusExitBtn');
   if (eb) eb.hidden = !on;
   try {
@@ -5582,6 +5613,7 @@ function applyRecommendation() {
 // başka bir model seçip yüklemeden çözümlerse, hangi modelin gerçekten
 // kullanılacağı belirsiz kalırdı; bu rozet bunu netleştirir.
 function updateModelBadge() {
+  renderStatusBar();
   const badge = $('#loadedModelBadge');
   if (!badge) return;
   const selected = $('#modelSelect') ? $('#modelSelect').value : null;
