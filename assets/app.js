@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.69';
+const APP_VERSION = '2.70';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -435,6 +435,22 @@ function stripDerivedFields(state) {
     for (const m of c.materials || []) {
       if ('__peaks' in m) {
         delete m.__peaks;
+        cleaned = true;
+      }
+      // v2.70: yarıda kalmış çözümleme durumu kayda yazılmışsa temizle.
+      // Aksi hâlde dosya sonsuza kadar "çözümleme sürüyor %70" gösterir ve
+      // iptal edilemez (dinleyen döngü yok).
+      if (m.status === 'transcribing') {
+        m.status = (m.segments || []).length ? 'partial' : 'pending';
+        delete m.progress;
+        cleaned = true;
+      }
+      if ('progress' in m && m.status !== 'transcribing') {
+        delete m.progress;
+        cleaned = true;
+      }
+      if ('cancelRequested' in m) {
+        delete m.cancelRequested;
         cleaned = true;
       }
     }

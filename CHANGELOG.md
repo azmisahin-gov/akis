@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.69.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.70.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.70 — Yarıda kalan çözümleme dosyaya yazılıyordu (donmuş %70)
+
+KULLANICI: "2.68 sürümünde dışa aktardım, başka bilgisayarda içe aktardım.
+Ama sanki çözümleme yapıyor gibi, %70'te duruyor. İptal de çalışmıyor."
+
+### Bulunan hata: geçici durum kalıcı olmuş
+
+`transcribing` bir **işlem durumu**dur (o an çalışıyor demek). `progress` de
+geçici bir sayaç. İkisi de dosyaya yazılıyordu.
+
+Ölçüm:
+```
+Dışa aktarılan dosya:  status=transcribing, progress=70
+İçe aktarma sonrası:   status=transcribing, progress=70   <- hâlâ
+Gerçekte:              çözümleme YOK (hiçbir işlem çalışmıyor)
+İptal düğmesi:         cancelRequested=true yazar, ama okuyan döngü yok
+                       -> hiçbir şey olmaz
+```
+
+Yani dosya çözümleme **sürerken** dışa aktarılmış. O donmuş hâl dosyaya
+yazılmış; başka bilgisayarda açılınca sonsuza kadar "%70 çözümlüyor" görünüyor.
+
+### Çözüm (iki katman)
+
+**1. `normalizeMaterial()`** — `transcribing` asla kalıcı olmaz:
+```
+transcribing + bölüm var  -> partial  (kısmen çözümlendi)
+transcribing + bölüm yok  -> pending  (inceleme bekliyor)
+```
+Gerçek durumlar (`review`, `pending`, `partial`, `error`, `empty`,
+`cancelled`) aynen korunur.
+
+**2. `stripDerivedFields()`** — açılışta eski kayıtlar da temizlenir:
+`transcribing` → `partial`/`pending`, `progress` silinir,
+`cancelRequested` silinir.
+
+Böylece hem yeni hem eski dosyalar güvenli. Kullanıcı dosyayı açtığında
+"Çözümle" düğmesi görünür (İptal değil) ve işlem gerçekten çalışır.
+
+### Test
+
+`sema-testi.mjs` [7j] bloğu eklendi (273 → 283 kontrol).
 
 ## v2.69 — Veri güvenliği: sessiz kayıp önlendi + model hatırlanıyor
 

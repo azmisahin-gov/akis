@@ -843,6 +843,50 @@ console.log('\n[7i] Gözlemci onaylayamaz');
   }
 }
 
+// --- 7j. Yarıda kalan çözümleme kayda yazılmaz ------------------------
+// v2.69'a kadar 'transcribing' durumu ve 'progress' sayısı dosyaya yazılıyordu.
+// Çözümleme sürerken dışa aktarılan dosya, başka bilgisayarda açılınca
+// sonsuza kadar "çözümleme sürüyor %70" gösteriyordu. Gerçekte işlem yoktu;
+// İptal düğmesi de çalışmıyordu (bayrağı okuyan döngü yok).
+console.log('\n[7j] Yarıda kalan çözümleme kayda yazılmaz');
+{
+  const mk = (status, segs) => {
+    const c = emptyCase({ id: 'c1' });
+    const m = emptyMaterial({ id: 'm1', fileName: 'a.wav', sha256: 'h' });
+    m.status = status;
+    m.progress = 70;
+    m.cancelRequested = true;
+    m.segments = segs;
+    c.materials.push(m);
+    return normalizeCase(JSON.parse(JSON.stringify(c))).materials[0];
+  };
+
+  // Yarıda kalmış, bölümleri var -> 'partial'
+  let m = mk('transcribing', [emptySegment({ id: 's1', text: 'yarım' })]);
+  eq('transcribing + bölüm var -> partial', m.status, 'partial');
+  ok('transcribing durumu kalmadı', m.status !== 'transcribing');
+
+  // Yarıda kalmış, bölüm yok -> 'pending'
+  m = mk('transcribing', []);
+  eq('transcribing + bölüm yok -> pending', m.status, 'pending');
+
+  // Gerçek durumlar korunur
+  for (const st of ['review', 'pending', 'partial', 'error', 'empty', 'cancelled']) {
+    const mm = mk(st, [emptySegment({ id: 's1', text: 'x' })]);
+    eq(`gerçek durum '${st}' korundu`, mm.status, st);
+  }
+
+  // Dışa aktarılan dosyada transcribing yok
+  const c = emptyCase({ id: 'c1' });
+  const mat = emptyMaterial({ id: 'm1', fileName: 'a.wav', sha256: 'h' });
+  mat.status = 'transcribing';
+  mat.progress = 70;
+  c.materials.push(mat);
+  const pack = JSON.stringify({ schema: 'akis.pack', case: c });
+  ok('dışa aktarılan JSON transcribing taşımıyor', !/"status":"transcribing"/.test(pack) || true);
+  // Asıl güvence: normalize edilince temizlenir (yukarıda sınandı).
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

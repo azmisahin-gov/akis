@@ -476,7 +476,13 @@ export function normalizeMaterial(src = {}) {
     },
     addedAt: str(m.addedAt),
     synthetic: !!m.synthetic,
-    status: pick(m.status, MATERIAL_STATUS, 'pending'),
+    // Geçici durumlar kayda/dışa aktarıma GİRMEZ. 'transcribing' bir işlem
+    // durumudur; dosyaya yazılırsa başka bilgisayarda açılınca sonsuza kadar
+    // "çözümleme sürüyor %70" görünür ve iptal edilemez (dinleyen döngü yok).
+    // v2.70: transcribing -> pending/partial olarak normalize edilir.
+    status: pick(m.status, MATERIAL_STATUS, 'pending') === 'transcribing'
+      ? (Array.isArray(m.segments) && m.segments.length ? 'partial' : 'pending')
+      : pick(m.status, MATERIAL_STATUS, 'pending'),
     statusNote: str(m.statusNote),
     transcribedWithModel: str(m.transcribedWithModel),
     transcribedAt: str(m.transcribedAt),
