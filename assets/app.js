@@ -2158,21 +2158,21 @@ function renderSegments(m, card) {
       `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
   ).join('');
   const spkOptions = [...new Set(segs.map((s) => s.speaker).filter((x) => x && x !== 'Belirtilmedi'))];
-  root.innerHTML = `<div class="transcript-toolbar">
+  root.innerHTML = `<div class="transcript-toolbar compact-bar">
       <div class="group"><span>Hız</span>${PLAYBACK_SPEEDS.map((sp) => `<button class="seg-tool speed-tool ${(m.playbackRate || 1) === sp ? 'on' : ''}" data-seg-speed="${sp}">${sp}×</button>`).join('')}</div>
-      <div class="group"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠ Öncelikliye git</button></div>
-      <div class="group"><button class="seg-tool" data-paragraph="1" title="Aynı konuşmacının ardışık bölümlerini birleştirip paragraf oluştur">¶ Paragraf oluştur</button></div>
-      <div class="group"><button class="seg-tool" data-terms="1" title="Metinde aynı terimin farklı yazımlarını bul">Terim tutarlılığı</button></div>
+      <div class="tb-sep"></div>
+      <div class="tb-filters">${chips}</div>
+      <div class="tb-spacer"></div>
+      <div class="tb-progress" title="${reviewed}/${segs.length} denetlendi"><div class="bar"><span style="width:${pct}%"></span></div><small>%${pct}</small></div>
+      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button></div>
     </div>
     <div id="term-panel-${esc(m.id)}" class="term-panel" hidden></div>
-    <div class="transcript-toolbar">${chips}</div>
-    <div class="seg-progress"><div class="bar"><span style="width:${pct}%"></span></div><small>${reviewed}/${segs.length} denetlendi · %${pct}</small></div>
     <datalist id="spk-options-${esc(m.id)}">${spkOptions.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
     <div class="seg-workspace">
       <div class="seg-list" id="seg-list-${esc(m.id)}" role="list">${segListHtml(m)}</div>
       <div class="seg-detail" id="seg-detail-${esc(m.id)}">${segDetailHtml(m)}</div>
     </div>
-    <div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>Enter</kbd> onayla · <kbd>Y</kbd> dinle · <kbd>[</kbd><kbd>]</kbd> hız · <kbd>←</kbd><kbd>→</kbd> 5 sn · <kbd>B</kbd> böl · <kbd>M</kbd> birleştir · Metin alanındayken <kbd>Esc</kbd> ile çık</div>`;
+    <details class="kbd-fold"><summary>Klavye kısayolları</summary><div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>Enter</kbd> onayla · <kbd>Y</kbd> dinle · <kbd>[</kbd><kbd>]</kbd> hız · <kbd>←</kbd><kbd>→</kbd> 5 sn · <kbd>B</kbd> böl · <kbd>M</kbd> birleştir · Metin alanındayken <kbd>Esc</kbd> ile çık</div></details>`;
   // Aktif bölüm işaretini kur
   const active = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
   root
@@ -2307,10 +2307,14 @@ function refreshSegChips(m) {
     const n = ch.querySelector('.n');
     if (n) n.textContent = counts[k];
   });
-  const bar = root.querySelector('.seg-progress .bar span');
+  // İlerleme artık araç çubuğunun içinde (.tb-progress); eski .seg-progress
+  // sınıfı da desteklenir.
+  const bar = root.querySelector('.tb-progress .bar span') || root.querySelector('.seg-progress .bar span');
   if (bar) bar.style.width = pct + '%';
-  const lbl = root.querySelector('.seg-progress small');
-  if (lbl) lbl.textContent = `${reviewed}/${segs.length} denetlendi · %${pct}`;
+  const lbl = root.querySelector('.tb-progress small') || root.querySelector('.seg-progress small');
+  if (lbl) lbl.textContent = `%${pct}`;
+  const tip = root.querySelector('.tb-progress');
+  if (tip) tip.title = `${reviewed}/${segs.length} denetlendi`;
 }
 function focusSegmentRow(el) {
   const card = el.closest('.audio-card');

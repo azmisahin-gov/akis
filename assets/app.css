@@ -943,3 +943,39 @@ body.ws-mode #view-audio .listen-strip .audio-player{height:36px}
   #view-audio .seg-list{height:auto!important;max-height:320px!important}
   #view-audio .seg-detail{height:auto!important;overflow:visible}
 }
+
+/* ============================================================================
+   v2.44 — Kompakt araç çubuğu: çalışma alanı yukarı çıkar
+   Önce: 2 toolbar + ayrı ilerleme çubuğu + klavye ipucu ≈ 110px yer kaplıyordu.
+   Şimdi: TEK satır toolbar (hız | filtreler | ilerleme | araçlar) ≈ 38px.
+   Kazanç: ~72px; seg-workspace ekranın ~%55'inden başlar.
+   ============================================================================ */
+/* TEK satır araç çubuğu */
+#view-audio .compact-bar{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
+  margin-bottom:6px;overflow:hidden}
+#view-audio .compact-bar .group{flex:none}
+#view-audio .compact-bar .group>span{display:none}
+#view-audio .compact-bar .speed-tool{min-width:30px;padding:4px 6px;font-size:9px}
+#view-audio .tb-sep{width:1px;height:16px;background:#dde6ee;flex:none}
+#view-audio .tb-filters{display:flex;gap:4px;flex-wrap:nowrap;overflow-x:auto;
+  min-width:0;flex:1 1 auto;scrollbar-width:none}
+#view-audio .tb-filters::-webkit-scrollbar{display:none}
+#view-audio .tb-filters .filter-chip{padding:3px 8px;font-size:9px;white-space:nowrap;flex:none}
+#view-audio .tb-spacer{display:none}
+#view-audio .tb-progress{display:flex;align-items:center;gap:5px;flex:none}
+#view-audio .tb-progress .bar{width:52px;height:5px;background:#eef2f6;border-radius:20px;
+  overflow:hidden}
+#view-audio .tb-progress .bar span{display:block;height:100%;background:#2c8062;
+  transition:width .25s ease}
+#view-audio .tb-progress small{font:700 9px 'Segoe UI';color:#2c8062}
+#view-audio .tb-more{flex:none}
+#view-audio .tb-more .seg-tool{padding:4px 7px;font-size:11px}
+
+/* Klavye ipucu: katlanır, kapalıyken yer kaplamaz. */
+#view-audio .kbd-fold{flex:0 0 auto;margin-top:5px}
+#view-audio .kbd-fold>summary{cursor:pointer;font:600 9px 'Segoe UI';color:#8795a4;
+  list-style:none;padding:3px 0}
+#view-audio .kbd-fold>summary::-webkit-details-marker{display:none}
+#view-audio .kbd-fold>summary::before{content:'▸ ';color:#315f91}
+#view-audio .kbd-fold[open]>summary::before{content:'▾ '}
+#view-audio .kbd-fold .kbd-hint{margin-top:4px}
