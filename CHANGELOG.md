@@ -6,12 +6,92 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.68.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.69.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.69 — Veri güvenliği: sessiz kayıp önlendi + model hatırlanıyor
+
+KULLANICI: "Veri kaybederiz gibi geliyor. Bilgileri nerede tutuyoruz? Umarım
+güvendedir. Ayrıca model her seferinde ortayı seçiyor, benim seçtiğimi
+hatırlamıyor."
+
+### Ölçüm: veri nerede, ne kadar güvende?
+
+```
+Metin/deşifre  -> localStorage  (tipik limit 5 MB)
+Ses dosyaları  -> IndexedDB     (çok daha büyük)
+```
+
+Kapasite ölçümü (200 bölümlü dosya = 71 KB):
+```
+5 MB limitine sığar  : ~72 dosya
+10 MB limitine sığar : ~144 dosya
+```
+
+### Bulunan sessiz veri kaybı
+
+`persist()` depolama dolduğunda yalnızca küçük bir yazı değiştiriyordu:
+
+```js
+$('#saveState').textContent = '● Kayıt alanı dolu';
+```
+
+Başka hiçbir şey olmuyordu. **Kullanıcı yazmaya devam eder, hiçbir şey
+kaydedilmez, hiçbir uyarı penceresi çıkmaz.** Adli belgede kabul edilemez.
+
+Ayrıca **hiçbir yerde yedek hatırlatması yoktu** (ölçüm: 0 sonuç).
+
+### Çözüm 1: Büyük uyarı şeridi
+
+Depolama dolduğunda ekranın üstünde kapatılabilir ama görünür bir şerit:
+
+> **Depolama doldu — yeni değişiklikler KAYDEDİLMİYOR**
+> Tarayıcının yerel alanı doldu. Şu andan sonra yaptığınız düzenlemeler
+> kaybolur. Hemen **Dışa aktar** ile dosyayı bilgisayarınıza alın, sonra eski
+> dosyaları silin.
+> [Dışa aktar] [×]
+
+Durum göstergesi de kırmızıya döner: "● KAYIT ALANI DOLU — yedek alın!"
+
+### Çözüm 2: Yedek durumu göstergesi (üst barda)
+
+```
+Hiç yedek alınmadı          (gri)
+Son yedek 19.11.2026        (yeşil)
+Son yedek 15.11.2026 (4 gün önce)  (altın, kalın)
+```
+
+Dışa aktarma yapıldığında zaman damgası kaydedilir. 3 günden eskiyse uyarır.
+Böylece "veri nerede, yedek var mı" sorusu ekranda cevaplanır.
+
+### Çözüm 3: Model seçimi hatırlanıyor
+
+Ölçüm: model seçimi **hiçbir yere kaydedilmiyordu**. Her açılışta
+`applyRecommendation()` çalışıp öneriyi (CPU'da "Küçük") uyguluyordu.
+Kullanıcı Large-v3-turbo seçse bile ertesi açılışta "Küçük"e dönüyordu.
+
+Artık `akis.model` anahtarıyla saklanır; açılışta geri yüklenir. Öneri metni
+de "Seçtiğiniz model korunuyor: …" der.
+
+### İçe aktarma sorusu (doğrulandı)
+
+Kullanıcı: "Dışa aktardım, boş tarayıcıda içe aktardım. Yeniden çözümlemem
+gerekir mi?"
+
+**Hayır.** Ölçüm:
+```
+İçe aktarma sonrası:
+  bölüm sayısı : 2 (korundu)
+  metin        : korundu
+  onay durumu  : approved (korundu)
+  model        : whisper-large-v3-turbo (korundu)
+  durum        : review (korundu)
+-> Çözümleme KORUNDU; yeniden çözümleme gerekmez.
+```
 
 ## v2.68 — Yardımcı kendi yazdığını göremiyordu (veri kaybı hissi)
 

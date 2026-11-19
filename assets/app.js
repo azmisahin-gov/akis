@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.68';
+const APP_VERSION = '2.69';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -284,16 +284,53 @@ function dateToday() {
 function currentCase() {
   return appState.cases.find((c) => c.id === appState.activeCaseId) || null;
 }
+// Depolama dolduğunda veri SESSİZCE kaybolmamalı. Önce küçük deneme yapılır;
+// başarısızsa kullanıcı büyük uyarıyla uyarılır ve "Dışa aktar" önerilir.
+let storageFullWarned = false;
 function persist() {
   try {
-    // Düz alan (v2 uyumluluk) üzerinden yapılan yazmaları iç içe yapıya aktar.
     for (const c of appState.cases || []) syncCaseMirrors(c);
     localStorage.setItem(STORE_KEY, JSON.stringify(appState));
     $('#saveState').textContent = '● Yerel kayıt güncellendi';
+    $('#saveState').classList.remove('danger');
+    if (storageFullWarned) {
+      storageFullWarned = false;
+      hideStorageBanner();
+    }
   } catch (e) {
-    $('#saveState').textContent = '● Kayıt alanı dolu';
-    console.warn(e);
+    const full = e && (e.name === 'QuotaExceededError' || e.code === 22 || /quota/i.test(String(e.message || '')));
+    $('#saveState').textContent = full ? '● KAYIT ALANI DOLU — yedek alın!' : '● Kayıt başarısız';
+    $('#saveState').classList.add('danger');
+    console.warn('Kayıt başarısız:', e);
+    if (full && !storageFullWarned) {
+      storageFullWarned = true;
+      showStorageBanner();
+    }
   }
+}
+// Büyük, kapatılamaz uyarı şeridi. Kullanıcı ne olduğunu ve ne yapacağını
+// açıkça görmeli; sessiz veri kaybı adli belgede kabul edilemez.
+function showStorageBanner() {
+  let el = $('#storageBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'storageBanner';
+    el.className = 'storage-banner';
+    el.innerHTML =
+      '<div class="sb-body"><b>Depolama doldu — yeni değişiklikler KAYDEDİLMİYOR</b>' +
+      '<small>Tarayıcının yerel alanı doldu. Şu andan sonra yaptığınız düzenlemeler kaybolur. ' +
+      'Hemen <b>Dışa aktar</b> ile dosyayı bilgisayarınıza alın, sonra eski dosyaları silin.</small></div>' +
+      '<button class="button button-primary button-small" id="storageBannerExport">Dışa aktar</button>' +
+      '<button class="icon-button" id="storageBannerClose" aria-label="Kapat">×</button>';
+    document.body.appendChild(el);
+    $('#storageBannerExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
+    $('#storageBannerClose')?.addEventListener('click', hideStorageBanner);
+  }
+  el.hidden = false;
+}
+function hideStorageBanner() {
+  const el = $('#storageBanner');
+  if (el) el.hidden = true;
 }
 function freshCase() {
   const now = new Date().toISOString();
@@ -6019,6 +6056,48 @@ function matchAudioEntries(entryNames, materials) {
   }
   return out;
 }
+// ---- Yedek takibi -------------------------------------------------------
+// Veri tarayıcıda (localStorage + IndexedDB) durur. Tarayıcı verisi silinirse
+// her şey gider. Bu yüzden son yedeğin ne zaman alındığı izlenir ve uzun süre
+// yedek alınmadıysa kullanıcı uyarılır.
+const BACKUP_KEY = 'akis.lastBackup';
+const BACKUP_WARN_DAYS = 3;
+function markBackupDone() {
+  try {
+    localStorage.setItem(BACKUP_KEY, new Date().toISOString());
+  } catch (e) {}
+  renderBackupState();
+}
+function lastBackupAt() {
+  try {
+    const v = localStorage.getItem(BACKUP_KEY);
+    return v ? new Date(v) : null;
+  } catch (e) {
+    return null;
+  }
+}
+function backupState() {
+  const at = lastBackupAt();
+  if (!at || Number.isNaN(at.getTime())) return { level: 'none', text: 'Hiç yedek alınmadı' };
+  const days = Math.floor((Date.now() - at.getTime()) / 86400000);
+  const d = at.toLocaleDateString('tr-TR');
+  if (days >= BACKUP_WARN_DAYS) return { level: 'stale', days, text: `Son yedek ${d} (${days} gün önce)` };
+  return { level: 'ok', days, text: `Son yedek ${d}` };
+}
+function renderBackupState() {
+  const el = $('#backupState');
+  if (!el) return;
+  const st = backupState();
+  el.textContent = st.text;
+  el.className = 'backup-state ' + st.level;
+  el.title =
+    st.level === 'none'
+      ? 'Henüz yedek almadınız. Veri yalnız bu tarayıcıda; tarayıcı verisi silinirse kaybolur.'
+      : st.level === 'stale'
+        ? 'Uzun süredir yedek almadınız. Veri kaybını önlemek için Dışa aktar ile yedek alın.'
+        : 'Yedek güncel.';
+}
+
 // Dışa aktarmadan önce "kim olarak çalışıyorsun?" sorusu. Dosyayı paylaşan
 // kişinin kimliği belli olmadan yapılan düzeltmeler sonradan çözülemez
 // (bkz. mergeCases: kaynağı tanımsız onay kabul edilmez). Bu yüzden soru
@@ -6056,7 +6135,8 @@ async function exportProject() {
   }
   const out = await zip.generateAsync({ type: 'blob' });
   downloadBlob(out, `${safeName(c.fileNo || 'AKIS_Calisma_Dosyasi')}.akis`);
-  showToast('AKİS çalışma dosyası dışa aktarıldı (.akis).');
+  markBackupDone();
+  showToast('AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.');
 }
 // ---- Ekip çalışması: dosya birleştirme ---------------------------------
 // İki bilirkişi aynı davada çalıştığında her biri kendi .akis dosyasında
@@ -7044,7 +7124,11 @@ function setupEvents() {
   });
   $('#loadModelBtn').addEventListener('click', () => ensureModel().catch((e) => showToast(e.message)));
   const modelSelectEl = $('#modelSelect');
-  if (modelSelectEl) modelSelectEl.addEventListener('change', () => updateModelBadge());
+  if (modelSelectEl)
+    modelSelectEl.addEventListener('change', () => {
+      saveModelPref(modelSelectEl.value);
+      updateModelBadge();
+    });
   $('#refreshStorageBtn').addEventListener('click', () => refreshStorage());
   $('#clearAllModelsBtn').addEventListener('click', () => clearModelCache());
   $('#storageList').addEventListener('click', async (e) => {
@@ -7514,12 +7598,35 @@ function recommendModel(device = asrDevice) {
     why: 'WebGPU yok; CPU üzerinde hız/doğruluk dengesi için küçük model önerilir (WER ~0,65). Doğruluk öncelikliyse orta modeli seçin (WER ~0,38), ancak CPU üzerinde belirgin şekilde yavaştır.'
   };
 }
+const MODEL_PREF_KEY = 'akis.model';
+function savedModelPref() {
+  try {
+    const v = localStorage.getItem(MODEL_PREF_KEY);
+    return v && $('#modelSelect')?.querySelector(`option[value="${CSS.escape(v)}"]`) ? v : null;
+  } catch (e) {
+    return null;
+  }
+}
+function saveModelPref(id) {
+  try {
+    localStorage.setItem(MODEL_PREF_KEY, id);
+  } catch (e) {}
+}
 function applyRecommendation() {
   const rec = recommendModel();
   const sel = $('#modelSelect');
-  if (sel) sel.value = rec.id;
+  // Kullanıcı bir model seçmişse öneri onu EZMEZ. Önceki sürümlerde her
+  // açılışta öneri uygulanıyordu; kullanıcı Large-v3-turbo seçse bile
+  // ertesi açılışta "Küçük"e dönüyordu. Seçim artık hatırlanır.
+  const saved = savedModelPref();
+  if (sel && saved) sel.value = saved;
+  else if (sel) sel.value = rec.id;
   const el = $('#modelRecommendation');
-  if (el) el.textContent = 'Öneri: ' + rec.why;
+  if (el) {
+    el.textContent = saved
+      ? 'Seçtiğiniz model korunuyor: ' + modelShortName(saved) + '. ' + rec.why
+      : 'Öneri: ' + rec.why;
+  }
   updateModelBadge();
 }
 // Yüklü model rozetini ve seçim-yükleme uyumunu gösterir. Kullanıcı dropdown'da
@@ -7706,6 +7813,7 @@ function init() {
     if (b) b.textContent = ok ? '● WebGPU hızlandırma kullanılabilir' : '● WebGPU yok · WASM (CPU) kullanılacak';
     applyRecommendation();
   });
+  renderBackupState();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());
 }

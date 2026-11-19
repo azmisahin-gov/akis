@@ -834,3 +834,29 @@ body.ws-mode #view-audio .seg-list {
   #view-audio .seg-list { max-height: 42vh !important; }
   #view-audio .seg-detail { max-height: none !important; overflow: visible !important; }
 }
+
+/* ---- v2.69 — Veri güvenliği göstergeleri ------------------------------
+   Veri yalnız tarayıcıda durur. Kullanıcı bunu görmeli: depolama dolduğunda
+   ve yedek eskidiğinde. Sessiz veri kaybı adli belgede kabul edilemez. */
+.save-state.danger { color: var(--gold); font-weight: 700; }
+
+.backup-state {
+  font-size: var(--fs-2xs); padding: 2px var(--sp-2);
+  border-radius: var(--r-pill); border: 1px solid var(--line-2);
+  color: var(--ink-2); background: var(--surface-2); white-space: nowrap;
+}
+.backup-state.ok { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+.backup-state.stale { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }
+.backup-state.none { color: var(--ink-3); }
+
+.storage-banner {
+  position: fixed; left: 0; right: 0; top: 0; z-index: 90;
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--gold-soft); border-bottom: 2px solid var(--gold);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .12);
+}
+.storage-banner[hidden] { display: none; }
+.storage-banner .sb-body { flex: 1 1 auto; min-width: 0; }
+.storage-banner b { display: block; color: var(--gold); font-size: var(--fs-sm); margin-bottom: 2px; }
+.storage-banner small { font-size: var(--fs-xs); color: var(--ink-2); line-height: var(--lh-body); }

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.68.**
+yazılır. **Güncel sürüm: v2.69.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.69 — Veri güvenliği: sessiz kayıp önlendi + model hatırlanıyor (tamamlandı)
+
+Depolama dolduğunda yalnız küçük bir yazı değişiyordu; kullanıcı yazmaya
+devam edip veri kaybediyordu. Büyük uyarı şeridi + "Dışa aktar" düğmesi
+eklendi. Üst barda yedek durumu göstergesi (hiç / güncel / 3+ gün eski).
+Model seçimi `akis.model` ile saklanıyor; her açılışta öneri onu ezmiyor.
+İçe aktarmada çözümleme korunuyor (ölçümle doğrulandı).
 
 ### v2.68 — Yardımcı kendi yazdığını göremiyordu (tamamlandı)
 
