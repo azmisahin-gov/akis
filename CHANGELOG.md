@@ -6,12 +6,63 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.73.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.74.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.74 — Bölme: metin artık paylaştırılıyor + tam noktadan bölme
+
+KULLANICI: "Böl dediğimde iki bölümde de aynı metin var. Otomatik böldüğüm
+yerden metinler ayrılmalı. Ayrıca hangi bölümü böldüğümü anlamıyorum, sanki
+ortayı bölüyor. Dalga alanı fareyle kaydırılamıyor (zoom oluyor)."
+
+### Bulunan hata: metin ikiye kopyalanıyordu
+
+Ölçüm:
+```
+Sol : "Bu konuyla da ilgili sana maruzatımı defalarca kez dile getirmeme rağmen"
+Sağ : "Bu konuyla da ilgili sana maruzatımı defalarca kez dile getirmeme rağmen"
+-> İKİSİ DE AYNI METİN
+```
+
+Bölme `{...s}` ile tüm alanları kopyalıyordu; metin paylaştırılmıyordu.
+
+### Çözüm: `splitSegmentText()`
+
+Üç kademeli:
+1. **Kelime zamanlaması (`words`) varsa** — kesim anından önceki kelimeler
+   sola, sonrakiler sağa. En doğru yöntem.
+2. **Yoksa** — metin, kesim oranına göre **kelime sınırından** bölünür
+   (yaklaşık; kullanıcı kontrol eder).
+3. **Hiçbiri mümkün değilse** — metin ikiye kopyalanır ve kullanıcı
+   uyarılır: "Metin ikiye kopyalandı; her iki bölümü de düzeltin."
+
+Ölçüm (kelime zamanlamasıyla):
+```
+SOL : "Bu konuyla da ilgili sana"
+SAĞ : "maruzatımı defalarca kez dile getirmeme rağmen"
+sol + sağ = orijinal metin  ✅
+```
+
+### Bölme noktası artık SİZİN seçtiğiniz yer
+
+- **Dalga üzerinde imleç zamanı gösterilir** (`00:00:18.000`).
+- **✂ Böl** düğmesi dalganın üzerinde: imlecin olduğu yerden böler.
+- "Buradan böl" düğmesi de aynı fonksiyonu kullanır (oynatıcı konumu).
+- "Ortayı bölüyor" hissi biter: nokta sizin kontrolünüzde.
+
+### Bölünen bölümler
+
+- Onay durumu **"Kontrol bekliyor"**a döner (metin değişti, doğrulanmadı).
+- `textRev` sıfırlanır (yeni bölümler, elle düzeltilmiş sayılmaz).
+- İki bölüme **ayrı kimlik** verilir.
+
+### Test
+
+`sema-testi.mjs` [11] bloğu eklendi (283 → 299 kontrol).
 
 ## v2.73 — Veri 5 MB'lık yere sıkışmıştı; 10 GB'lık alana taşındı
 

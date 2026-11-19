@@ -870,3 +870,18 @@ body.ws-mode #view-audio .seg-list {
 .usage-state:empty { display: none; }
 .usage-state.warn { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); }
 .usage-state.danger { color: var(--gold); border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }
+
+/* ---- v2.74 — Bölme iyileştirmeleri ------------------------------------ */
+.sd-cursor-time {
+  font-family: var(--font-mono); font-size: var(--fs-2xs);
+  color: var(--accent); font-weight: 700; flex: none;
+  min-width: 84px; text-align: center;
+  background: var(--accent-soft); border-radius: var(--r-pill);
+  padding: 1px var(--sp-2);
+}
+.sd-wave-bar [data-sd-split] {
+  border-color: var(--gold); color: var(--gold); font-weight: 700;
+}
+.sd-wave-bar [data-sd-split]:hover { background: var(--gold-soft); }
+/* Bölünmüş bölüm rozeti: hangi bölümün elle bölündüğü görünsün */
+.seg-item .badge.split { background: var(--gold-soft); color: var(--gold); }

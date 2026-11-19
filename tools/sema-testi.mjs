@@ -887,6 +887,72 @@ console.log('\n[7j] Yarıda kalan çözümleme kayda yazılmaz');
   // Asıl güvence: normalize edilince temizlenir (yukarıda sınandı).
 }
 
+// --- 11. Bölme: metin paylaştırma --------------------------------------
+// v2.73'e kadar bölme, metni İKİ TARAFA DA KOPYALIYORDU: iki bölümde aynı
+// metin kalıyordu. Kullanıcı "otomatik böldüğüm yerden metin ayrılmalı"
+// dedi. Bu blok, paylaştırma mantığını denetler.
+console.log('\n[11] Bölme: metin paylaştırma');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const i = src.indexOf('function splitSegmentText(s, cut) {');
+  const j = src.indexOf('\nfunction splitSegmentAtPlayer', i);
+  ok('splitSegmentText bulundu', i >= 0 && j > i);
+  const fnSrc = src.slice(i, j);
+
+  // timecode/secondsFromTimecode'u test ortamında tanımla (app.js ile aynı).
+  const tc = (sec) => {
+    const total = Math.max(0, sec);
+    let w = Math.floor(total);
+    let ms = Math.round((total - w) * 1000);
+    if (ms >= 1000) {
+      w += 1;
+      ms -= 1000;
+    }
+    const p = (n) => String(n).padStart(2, '0');
+    return `${p(Math.floor(w / 3600))}:${p(Math.floor((w % 3600) / 60))}:${p(w % 60)}.${String(ms).padStart(3, '0')}`;
+  };
+  const sf = (s) => {
+    const m = String(s || '').match(/^(\d{1,2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?$/);
+    if (!m) return NaN;
+    return +m[1] * 3600 + +m[2] * 60 + +m[3] + (m[4] ? +`0.${m[4]}` : 0);
+  };
+  const splitSegmentText = new Function('timecode', 'secondsFromTimecode', `${fnSrc}; return splitSegmentText;`)(tc, sf);
+
+  const kelimeler = ['Bu', 'konuyla', 'da', 'ilgili', 'sana', 'maruzatımı', 'defalarca', 'kez', 'dile', 'getirmeme', 'rağmen'];
+  const metin = kelimeler.join(' ');
+
+  // (a) Kelime zamanlaması VAR: kesim noktasına göre tam bölünmeli.
+  const words = kelimeler.map((k, ix) => ({ w: k, s: tc(15.56 + ix * 0.5), e: tc(15.56 + ix * 0.5 + 0.45) }));
+  let r = splitSegmentText({ text: metin, words, start: '00:00:15.560', end: '00:00:21.004' }, 18.0);
+  ok('kelime zamanlamasıyla otomatik bölündü', r.autoSplit === true);
+  ok('sol metin dolu', r.leftText.length > 0);
+  ok('sağ metin dolu', r.rightText.length > 0);
+  ok('iki taraf AYNI DEĞİL (kopya değil)', r.leftText !== r.rightText);
+  eq('sol + sağ = orijinal metin', `${r.leftText} ${r.rightText}`, metin);
+  ok('sol kelimeler 18 sn öncesi', r.leftWords.every((w) => sf(w.s) < 18.0));
+  ok('sağ kelimeler 18 sn sonrası', r.rightWords.every((w) => sf(w.s) >= 18.0));
+
+  // (b) Kelime zamanlaması YOK: oran tahminiyle bölünür (yaklaşık).
+  r = splitSegmentText({ text: metin, words: [], start: '00:00:15.560', end: '00:00:21.004' }, 18.0);
+  ok('kelimesiz de bölündü (tahmin)', r.autoSplit === true);
+  ok('kelimesiz: iki taraf farklı', r.leftText !== r.rightText);
+  eq('kelimesiz: birleşince orijinal', `${r.leftText} ${r.rightText}`, metin);
+
+  // (c) Metin boş: kopyalama yolu, autoSplit=false.
+  r = splitSegmentText({ text: '', words: [], start: '00:00:00', end: '00:00:05' }, 2.5);
+  eq('boş metinde autoSplit false', r.autoSplit, false);
+
+  // (d) Uygulama kodu: bölme metni paylaştırıyor mu?
+  ok('splitSegmentAt metin paylaştırıyor', /function splitSegmentAt\(m, index, cut\)[\s\S]{0,900}splitSegmentText\(s, cut\)/.test(src));
+  ok('bölünen bölümler pending olur', /left\.review = 'pending'[\s\S]{0,80}right\.review = 'pending'/.test(src));
+  ok('dalga üzerinde böl düğmesi var', /data-sd-split/.test(src));
+  ok('imleç zamanı gösteriliyor', /data-sd-cursor/.test(src));
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

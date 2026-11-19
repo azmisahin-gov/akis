@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.73.**
+yazılır. **Güncel sürüm: v2.74.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.74 — Bölme: metin paylaştırılıyor + tam noktadan bölme (tamamlandı)
+
+Bölme `{...s}` ile metni iki tarafa kopyalıyordu: iki bölümde aynı metin
+kalıyordu. `splitSegmentText()` eklendi: kelime zamanlaması varsa kesim
+noktasına göre böler; yoksa oran tahminiyle kelime sınırından; hiçbiri
+olmazsa kopyalar ve uyarır. Dalga üzerinde imleç zamanı gösterilir ve
+"✂ Böl" düğmesi imlecin olduğu yerden böler. Bölünen bölümler "Kontrol
+bekliyor"a döner, ayrı kimlik alır. Test [11]: 283 → 299.
 
 ### v2.73 — Veri 5 MB'lık yere sıkışmıştı; 10 GB'lık alana taşındı (tamamlandı)
 

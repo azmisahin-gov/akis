@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.73';
+const APP_VERSION = '2.74';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2805,8 +2805,10 @@ function segDetailHtml(m) {
       <div class="sd-wave">
         <div class="sd-wave-bar">
           <span class="sd-wave-hint">Sınırları sürükle · tekerlek: zoom</span>
+          <span class="sd-cursor-time" data-sd-cursor>—</span>
           <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
           <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+          <button class="seg-tool" data-sd-split title="İmlecin olduğu yerden ikiye böl">✂ Böl</button>
         </div>
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
       </div>
@@ -3065,7 +3067,39 @@ function attachSegWave(m, index) {
     m.__sdZoom = null;
     draw();
   };
-  canvas.closest('.sd-wave')?.querySelector('[data-sd-zoom="fit"]')?.addEventListener('click', fit);
+  const waveWrap = canvas.closest('.sd-wave');
+  waveWrap?.querySelector('[data-sd-zoom="fit"]')?.addEventListener('click', fit);
+
+  // İmleç zamanı: fare dalga üzerindeyken konumu göster. Kullanıcı nereyi
+  // böleceğini görsün; "ortayı böldü" hissi biter.
+  const cursorEl = waveWrap?.querySelector('[data-sd-cursor]');
+  let cursorT = null;
+  canvas.addEventListener('pointermove', (ev) => {
+    const { t } = hitTime(ev);
+    cursorT = t;
+    if (cursorEl) cursorEl.textContent = timecode(t);
+  });
+  canvas.addEventListener('pointerleave', () => {
+    cursorT = null;
+    if (cursorEl) cursorEl.textContent = '—';
+  });
+
+  // ✂ Böl: imlecin olduğu yerden (yoksa oynatıcı konumundan) böler.
+  // Böylece kullanıcı TAM noktayı seçer; oynatıcıyı ortalamak gerekmez.
+  waveWrap?.querySelector('[data-sd-split]')?.addEventListener('click', () => {
+    const st = secondsFromTimecode(s.start);
+    const en = secondsFromTimecode(s.end);
+    const target = cursorT != null ? cursorT : player && Number.isFinite(player.currentTime) ? player.currentTime : null;
+    if (target == null) {
+      showToast('Bölmek için dalga üzerinde bir noktaya tıklayın.');
+      return;
+    }
+    if (!(target > st + 0.05 && target < en - 0.05)) {
+      showToast('Bölme noktası bölümün içinde olmalı.');
+      return;
+    }
+    splitSegmentAt(m, index, target);
+  });
   if (player) {
     const ph = () => draw();
     player.addEventListener('timeupdate', ph);
@@ -4050,32 +4084,112 @@ function playSegment(btn) {
 }
 // Bölümü, oynatıcının geçerli konumundan ikiye böler. Uzun bir bölümün ortası
 // ayrı bir konuşma içeriyorsa uzman kaydı dinlerken buradan ayırır.
+// Bölme sırasında metni paylaştırır.
+// 1) Kelime zamanlaması (words) varsa: kesim anından önceki kelimeler sola,
+//    sonrakiler sağa. En doğru yöntem; model bu bilgiyi veriyorsa kullanılır.
+// 2) Kelime zamanlaması yoksa: metni kesim oranına göre kelime sınırından
+//    bölmeyi dener (yaklaşık). Bu bir TAHMİNDİR; kullanıcı kontrol etmeli.
+// 3) Hiçbiri mümkün değilse: metin ikiye kopyalanır (autoSplit=false).
+function splitSegmentText(s, cut) {
+  const text = s.text || '';
+  const words = Array.isArray(s.words) ? s.words : [];
+  const st = secondsFromTimecode(s.start);
+  const en = secondsFromTimecode(s.end);
+
+  // 1) Kelime zamanlaması
+  if (words.length) {
+    const leftWords = [];
+    const rightWords = [];
+    for (const w of words) {
+      const ws = secondsFromTimecode(w.s);
+      (ws < cut ? leftWords : rightWords).push(w);
+    }
+    const leftText = leftWords.map((w) => w.w).join(' ').trim();
+    const rightText = rightWords.map((w) => w.w).join(' ').trim();
+    if (leftText || rightText) {
+      return { leftText, rightText, leftWords, rightWords, autoSplit: true };
+    }
+  }
+
+  // 2) Oran tahmini: metni kelime sınırından böl
+  const span = en - st;
+  if (span > 0 && text.trim()) {
+    const ratio = Math.min(1, Math.max(0, (cut - st) / span));
+    const tokens = text.split(/(\s+)/);
+    let acc = 0;
+    let bestIdx = -1;
+    let bestDiff = Infinity;
+    let seen = 0;
+    const totalChars = text.length;
+    for (let i = 0; i < tokens.length; i++) {
+      acc += tokens[i].length;
+      seen = acc;
+      if (!tokens[i].trim()) continue;
+      const r = seen / totalChars;
+      const d = Math.abs(r - ratio);
+      if (d < bestDiff) {
+        bestDiff = d;
+        bestIdx = i;
+      }
+    }
+    if (bestIdx >= 0 && bestIdx < tokens.length - 1) {
+      const leftText = tokens.slice(0, bestIdx + 1).join('').trim();
+      const rightText = tokens.slice(bestIdx + 1).join('').trim();
+      if (leftText && rightText) {
+        return { leftText, rightText, leftWords: [], rightWords: [], autoSplit: true };
+      }
+    }
+  }
+
+  // 3) Kopyala (kullanıcı temizler)
+  return { leftText: text, rightText: text, leftWords: words, rightWords: [], autoSplit: false };
+}
 function splitSegmentAtPlayer(m, index) {
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   if (!card) return;
   const player = card.querySelector('audio');
-  const segs = m.segments || [];
-  const s = segs[index];
-  if (!s || !player) return;
-  const cut = player.currentTime;
+  if (!player) return;
+  const s = (m.segments || [])[index];
+  if (!s) return;
   const a = secondsFromTimecode(s.start),
     b = secondsFromTimecode(s.end);
-  if (!(cut > a + 0.2 && cut < b - 0.2)) {
-    showToast('Bölmek için oynatıcıyı bölümün ortasına getirin.');
+  const cut = player.currentTime;
+  if (!(cut > a + 0.05 && cut < b - 0.05)) {
+    showToast('Bölmek için oynatıcıyı bölümün içine getirin ya da dalgada bir noktaya tıklayın.');
     return;
   }
-  const left = { ...s, id: newId('sg'), end: timecode(cut), history: [] };
-  const right = { ...s, id: newId('sg'), start: timecode(cut), history: [] };
+  splitSegmentAt(m, index, cut);
+}
+// Belirli bir ANDAN böler. Dalga tıklaması ve oynatıcı konumu buradan geçer;
+// böylece iki yol aynı davranır.
+function splitSegmentAt(m, index, cut) {
+  const segs = m.segments || [];
+  const s = segs[index];
+  if (!s) return;
+  const parts = splitSegmentText(s, cut);
+  const left = { ...s, id: newId('sg'), end: timecode(cut), history: [], words: parts.leftWords };
+  const right = { ...s, id: newId('sg'), start: timecode(cut), history: [], words: parts.rightWords };
+  left.text = parts.leftText;
+  right.text = parts.rightText;
+  // Yeni bölümler doğrulanmamıştır; metin değiştiği için onay düşer.
+  left.review = 'pending';
+  right.review = 'pending';
+  left.textRev = 0;
+  right.textRev = 0;
   segs.splice(index, 1, left, right);
   m.activeSeg = index;
   segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
   persist();
-  renderSegments(m, card);
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  if (card) renderSegments(m, card);
   renderOverview();
-  // Yeni oluşan sağ bölümü görünür alana getir; uzman kaldığı yerden devam eder.
-  const item = card.querySelector(`#seg-list-${CSS.escape(m.id)} .seg-item[data-seg-item="${index + 1}"]`);
+  const item = card?.querySelector(`#seg-list-${CSS.escape(m.id)} .seg-item[data-seg-item="${index + 1}"]`);
   if (item && item.scrollIntoView) item.scrollIntoView({ block: 'nearest' });
-  showToast(`Bölüm ${index + 1} ikiye ayrıldı (${timecode(cut)}). Yeni bölüm: ${index + 2}.`);
+  showToast(
+    parts.autoSplit
+      ? `Bölüm ${index + 1} ikiye ayrıldı (${timecode(cut)}). Metin de paylaştırıldı — kontrol edin.`
+      : `Bölüm ${index + 1} ikiye ayrıldı (${timecode(cut)}). Metin ikiye kopyalandı; her iki bölümü de düzeltin.`
+  );
 }
 function mergeSegmentWithNext(m, index) {
   const segs = m.segments || [];
