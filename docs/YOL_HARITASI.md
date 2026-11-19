@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.57.**
+yazılır. **Güncel sürüm: v2.58.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.58 — "Onayla" sessizce başarısız oluyordu (tamamlandı)
+
+Bölüm yoksa `approveActiveSegment()` hiçbir şey yapmadan dönüyordu; kullanıcı
+düğmeye basıp yanıt alamıyor, sistem bozuk sanıyordu. Sessiz çıkışlar
+kaldırıldı: bölüm yoksa ve seçili bölüm yoksa açıklayıcı uyarı gösterilir.
 
 ### v2.57 — Teslim alma: kod ≠ etiket + rapor uyarıları (tamamlandı)
 

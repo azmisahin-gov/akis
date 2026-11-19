@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.57.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.58.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.58 — "Onayla" sessizce başarısız oluyordu
+
+KULLANICI: "Adım 7'de Onayla'yı seçtim ama olmadı."
+
+### Bulunan hata
+
+`approveActiveSegment()` bölüm yoksa **hiçbir şey yapmadan** dönüyordu:
+
+```js
+if (!segs.length) return;   // ← sessiz çıkış
+```
+
+Kullanıcı "✓ Onayla" düğmesine basıyor, ekranda hiçbir şey olmuyor, hata
+sanıyor. Gerçek sebep: kayıtta henüz **bölüm yok** (çözümleme yapılmamış).
+
+### Çözüm
+
+Sessiz çıkışlar kaldırıldı:
+- Bölüm yoksa: "Bu kayıtta onaylanacak bölüm yok. Önce çözümleme yapın veya
+  elle bölüm ekleyin."
+- Seçili bölüm yoksa: "Önce listeden bir bölüm seçin."
+
+Kural: kullanıcı bir düğmeye bastıysa **her zaman** bir yanıt almalı. Sessiz
+başarısızlık, hatadan daha kötüdür — kullanıcı sistemin bozuk olduğunu sanır.
 
 ## v2.57 — Teslim alma: kod ≠ etiket hatası + rapor uyarıları
 

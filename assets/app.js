@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.57';
+const APP_VERSION = '2.58';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2816,11 +2816,19 @@ function cycleSpeed(m, delta) {
 // güncellenir; tam yeniden çizim yapılmaz.
 function approveActiveSegment(m) {
   const segs = m.segments || [];
-  if (!segs.length) return;
+  // Sessiz başarısızlık yok: bölüm yoksa kullanıcı NEDEN onaylayamadığını
+  // görmeli. Aksi hâlde "Onayla"ya basıp hiçbir şey olmaması hata sanılır.
+  if (!segs.length) {
+    showToast('Bu kayıtta onaylanacak bölüm yok. Önce çözümleme yapın veya elle bölüm ekleyin.');
+    return;
+  }
   if (!Number.isInteger(m.activeSeg)) m.activeSeg = 0;
   const i = m.activeSeg;
   const s = segs[i];
-  if (!s) return;
+  if (!s) {
+    showToast('Önce listeden bir bölüm seçin.');
+    return;
+  }
   // Onay kararı bilirkişinindir. İkinci göz (yardımcı/kontrol eden) onaylayamaz;
   // aksi hâlde kontrol edilmemiş metin "Onaylandı" diye rapora girer.
   if (isSecondEyesEditor()) {
