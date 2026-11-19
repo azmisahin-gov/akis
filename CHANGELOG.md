@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.66.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.67.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.67 — Ekip çalışması akışı Yardım ekranına yazıldı
+
+KULLANICI: "Bende kontrol bölümünde öneri diye bir şey çıkacak diye
+azannediyorum... Yardımcı onaylandıya basar... sonra ben içe aktarırım...
+doğru mu böyle mi çalışıyor? Çünkü hiçbir yere bununla ilgili bir şey
+yazmamışız."
+
+### Kullanıcı haklıydı: akış hiçbir yerde yazmıyordu
+
+Yardım ekranında (?) "Klavye kısayolları", "Ses çözümleme", "Gizlilik"…
+bölümleri vardı ama **ekip çalışması yoktu**. Kullanıcı akışı tahmin etmek
+zorunda kalıyordu.
+
+### Ölçümle bulunan iki yanlış anlama
+
+Senaryo uçtan uca simüle edildi. Kullanıcının anlattığı iki nokta yanlıştı:
+
+**1. "Yardımcı onaylandıya basar"** — Yanlış. Uygulama engeller:
+```
+canApproveRole('assistant') = false
+-> ENGELLENİR: "Onay yetkisi dosya sorumlusunda" uyarısı çıkar
+```
+
+**2. "Ben içe aktarırım"** — Yanlış. İçe aktar **yeni kopya** açar
+(`case.id = uid()`), birleştirmez. Öneriler o kopyada görünür, sizin
+dosyanızda değil. Doğru düğme: **⇄ Birleştir**.
+
+### Doğru akış (Yardım ekranına eklendi)
+
+```
+1. Bilirkişi: ekip bölümüne kendini ekle (görev: Bilirkişi),
+   "Şu an çalışan"dan seç
+2. Dışa aktar → .akis dosyasını yardımcıya gönder
+3. Yardımcı: İçe aktar → kendini Yardımcı olarak ekle ve seç
+4. Yardımcı düzeltir → ÖNERİ olur (ana metin değişmez)
+   "Onayla"ya basarsa "yetki yok" uyarısı alır
+5. Yardımcı dışa aktarır → size gönderir
+6. Siz: ⇄ BİRLEŞTİR (İçe aktar DEĞİL)
+7. Listede "Öneri" rozetli satıra tıkla → Kabul et / Reddet
+8. Kabul edilen metin ana metne girer, durum "Kontrol bekliyor"a döner
+9. Onay yetkisi sizde. Rapor bilirkişi adına; ekip adı geçmez
+```
+
+### Doğrulama (simülasyon)
+
+```
+3) Yardımcı metni düzeltti -> ONERI | ana metin: "ham metin bir" (değişmedi)
+4) Yardımcı "Onaylandı" seçti -> ENGELLENDİ
+7) Birleştir: metin "ham metin bir", öneri "Ham metin bir (düzeltilmiş)."
+   uygulanan: 3, çakışma: 0
+```
 
 ## v2.66 — Gözlemci onaylayabiliyordu (rol yetkisi hatası)
 

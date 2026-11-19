@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.66.**
+yazılır. **Güncel sürüm: v2.67.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.67 — Ekip çalışması akışı Yardım ekranına yazıldı (tamamlandı)
+
+Akış hiçbir yerde yazmıyordu; kullanıcı tahmin ediyordu. Simülasyonla iki
+yanlış anlama bulundu: (1) yardımcı "Onaylandı" basamaz — uygulama engeller,
+(2) birleştirme için "İçe aktar" değil "⇄ Birleştir" kullanılır (içe aktar
+kopya açar). 9 adımlı akış Yardım ekranına eklendi.
 
 ### v2.66 — Gözlemci onaylayabiliyordu (tamamlandı)
 
