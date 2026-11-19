@@ -3008,10 +3008,14 @@ async function ensureModel() {
   // yerine tek ve tutarlı bir ilerleme çubuğu gösterilir.
   const fileState = new Map();
   let maxPct = 0;
-  // Beklenen dosya sayısı sabittir (Whisper ONNX paketi ~7 dosya). Payda
-  // dosyalar indikçe büyüdüğü için eski sürümde yüzde geriye düşüyordu
-  // ("%71 → %80 → duruyor"). Sabit payda + hiç azalmayan yüzde kullanılır.
+  let sawDownload = false;
+  // Beklenen dosya sayısı sabittir (Whisper ONNX paketi ~7 dosya).
+  // "%70'ten başlıyor" gizemi: önbellekteki dosyalar anında %100 rapor edilir;
+  // 7 dosyadan 5'i önbellekteyse 5/7=%71 çıkar. Bu teknik olarak doğru ama
+  // kullanıcıya yanıltıcı gelir. Bu yüzden önbellekten gelen dosyalar ayrı
+  // sayılır ve ilerleme metni "önbellekten yüklendi" olarak açıklanır.
   const EXPECTED_FILES = 7;
+  const cachedFiles = new Set();
   const refreshLoadStatus = (activeFile) => {
     const vals = [...fileState.values()];
     const denom = Math.max(EXPECTED_FILES, vals.length);
@@ -3022,8 +3026,10 @@ async function ensureModel() {
     const done = vals.filter((v) => v >= 100).length;
     const label = MODEL_LOAD_LABELS[modelId] || modelId;
     const active = activeFile ? ` · ${activeFile}` : '';
+    // Önbellekten gelenler varsa açıkça belirt (yanıltıcı "%70 başlangıç" yerine).
+    const cachedNote = cachedFiles.size ? ` · ${cachedFiles.size} dosya önbellekten` : '';
     $('#modelStatus').innerHTML =
-      `<b>${esc(label)}</b> yükleniyor… %${pct} (${done}/${denom} dosya)${esc(active)}`;
+      `<b>${esc(label)}</b> yükleniyor… %${pct} (${done}/${denom} dosya)${cachedNote}${esc(active)}`;
     const bar = $('#modelLoadBar');
     if (bar) {
       bar.hidden = false;
@@ -3051,7 +3057,12 @@ async function ensureModel() {
         dtype: dt,
         progress_callback: (p) => {
           if (p.status === 'progress' && p.file) {
-            fileState.set(p.file, Number(p.progress || 0));
+            // Önbellekten gelen dosyalar neredeyse anında %100'e ulaşır;
+            // bunları "önbellekten" olarak işaretle ki yüzde yanıltmasın.
+            const prev = fileState.get(p.file);
+            const val = Number(p.progress || 0);
+            if (prev === undefined && val >= 99) cachedFiles.add(p.file);
+            fileState.set(p.file, val);
             refreshLoadStatus(p.file);
           } else if (p.status === 'ready') {
             $('#modelStatus').textContent = 'Model hazır.';

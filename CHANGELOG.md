@@ -567,3 +567,18 @@ etiketler düzeltildi:
   tarayıcı eski JS'i önbellekten çalıştırıp eski davranışı göstermez (kullanıcı
   "hâlâ encoder fp16 / decoder fp32 yazıyor" diyordu; bu eski kodun önbellekte
   kalmasındandı).
+
+## v2.26 — "%70'ten başlıyor" açıklaması ve doğruluk oranı netliği
+
+Kullanıcı yüklemenin hep %70'ten başladığını bildirdi. Teknik olarak doğru:
+önbellekteki dosyalar anında %100 rapor edilir; 7 dosyadan 5'i önbellekteyse
+5/7 = %71 çıkar. Bu yanıltıcıydı.
+
+- İlerleme metni artık **"N dosya önbellekten"** notunu gösterir; böylece yüksek
+  başlangıç yüzdesinin nedeni anlaşılır.
+- **Doğruluk (WER) ölçümü netleştirildi:** WER yalnızca **referans metni** olan
+  kayıtlarda hesaplanır (test verisi gibi). Gerçek dosyalarda referans metni
+  yoktur; bu yüzden çözümleme yaptıkça "kendiliğinden" bir doğruluk oranı
+  çıkmaz. Uzman, metni kaydı dinleyerek düzeltir; bu bir doğruluk ölçümü değil
+  kontrol sürecidir. WER yalnızca karşılaştırma (hangi model daha iyi) için,
+  referans bulunan durumlarda kullanılır.
