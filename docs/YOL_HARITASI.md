@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.74.**
+yazılır. **Güncel sürüm: v2.75.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.75 — Geri alma (Ctrl+Z) + dalga kaydırma + bölme netliği (tamamlandı)
+
+Geri alma hiç yoktu; yıkıcı işlemler kurtarılamıyordu. Her işlemden önce
+anlık görüntü saklanır (son 20 adım), Ctrl+Z veya ↶ düğmesiyle geri dönülür.
+Dalga: sürükle=sınır, Shift+sürükle=kaydır, tekerlek=zoom (üç işlev ayrı).
+Bölme açıklığa kavuştu: aktif bölümü böler, metin yeniden çözümlenmez
+(v2.74'teki paylaştırma kullanılır), bölünen bölümler "Kontrol bekliyor"a
+döner. İpuçları ve Yardım ekranı güncellendi. Test [12]: 299 → 317.
 
 ### v2.74 — Bölme: metin paylaştırılıyor + tam noktadan bölme (tamamlandı)
 

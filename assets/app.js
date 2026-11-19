@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.74';
+const APP_VERSION = '2.75';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -322,6 +322,63 @@ async function persistNow() {
     }
   }
 }
+// ---- Geri alma (v2.75) ---------------------------------------------------
+// Her YIKICI işlemden önce durumun anlık görüntüsü saklanır (son 20 adım).
+// Ctrl+Z ile geri dönülür. Otomatik kaydın (her tuş vuruşu) geri alma
+// geçmişini kirletmemesi için yalnız açıkça işaretlenen işlemler saklanır.
+const UNDO_LIMIT = 20;
+let undoStack = [];
+let undoTimer = null;
+function snapshotForUndo(label) {
+  try {
+    undoStack.push({
+      label: label || 'işlem',
+      at: Date.now(),
+      cases: JSON.parse(JSON.stringify(appState.cases || [])),
+      activeCaseId: appState.activeCaseId
+    });
+    if (undoStack.length > UNDO_LIMIT) undoStack.shift();
+    renderUndoState();
+  } catch (e) {
+    console.warn('Geri alma kaydı alınamadı', e);
+  }
+}
+function undoDepth() {
+  return undoStack.length;
+}
+async function undoLast() {
+  if (!undoStack.length) {
+    showToast('Geri alınacak işlem yok.');
+    return;
+  }
+  const snap = undoStack.pop();
+  appState.cases = snap.cases;
+  appState.activeCaseId = snap.activeCaseId;
+  for (const c of appState.cases) {
+    syncCaseMirrors(c);
+    defineCaseMirrors(c);
+  }
+  if (!currentCase() && appState.cases.length) appState.activeCaseId = appState.cases[0].id;
+  renderUndoState();
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  populateQuestionsForm();
+  renderOverview();
+  await renderAudioList();
+  showToast(`Geri alındı: ${snap.label}`);
+}
+function renderUndoState() {
+  const el = $('#undoState');
+  if (!el) return;
+  const n = undoStack.length;
+  el.textContent = n ? `↶ ${n}` : '↶ 0';
+  el.disabled = !n;
+  el.title = n
+    ? `Geri alınabilir ${n} işlem (Ctrl+Z). Son: ${undoStack[n - 1].label}`
+    : 'Geri alınacak işlem yok';
+}
+
 // persist() sık çağrılır (her tuş vuruşu). Yazmalar sıraya alınır ve 400 ms
 // içinde biriken çağrılar tek yazmada birleştirilir; böylece yazma yarışı
 // olmaz ve disk yorulmaz.
@@ -2764,7 +2821,7 @@ function segDetailHtml(m) {
   const opsBtns = [
     hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : '',
     `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>`,
-    `<button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">buradan böl</button>`,
+    `<button class="mini-button tiny" data-split-seg="${i}" title="Bu bölümü oynatıcının konumundan ikiye ayırır. Metin yeniden çözümlenmez; kesim noktasına göre paylaştırılır.">buradan böl</button>`,
     `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>`,
     `<button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>`
   ]
@@ -2804,11 +2861,11 @@ function segDetailHtml(m) {
     <div class="sd-left">
       <div class="sd-wave">
         <div class="sd-wave-bar">
-          <span class="sd-wave-hint">Sınırları sürükle · tekerlek: zoom</span>
+          <span class="sd-wave-hint">Sınır: sürükle · Kaydır: Shift+sürükle · Zoom: tekerlek</span>
           <span class="sd-cursor-time" data-sd-cursor>—</span>
           <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
           <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
-          <button class="seg-tool" data-sd-split title="İmlecin olduğu yerden ikiye böl">✂ Böl</button>
+          <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
         </div>
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
       </div>
@@ -2988,7 +3045,18 @@ function attachSegWave(m, index) {
   };
 
   let drag = null;
+  // Shift + sürükle = KAYDIR (pan). Tekerlek zoom, düz sürükle sınır taşır;
+  // üçü ayrı işlevdir ve birbirine karışmaz.
+  let pan = null;
   canvas.addEventListener('pointerdown', (ev) => {
+    if (ev.shiftKey || ev.button === 1) {
+      ev.preventDefault();
+      const v = view();
+      pan = { x: ev.clientX, a: v.a, b: v.b };
+      canvas.setPointerCapture?.(ev.pointerId);
+      canvas.style.cursor = 'grabbing';
+      return;
+    }
     ev.preventDefault();
     const { t } = hitTime(ev);
     const edge = nearEdge(t);
@@ -3016,6 +3084,28 @@ function attachSegWave(m, index) {
     }
   });
   canvas.addEventListener('pointermove', (ev) => {
+    if (pan) {
+      const rect = canvas.getBoundingClientRect();
+      const span = pan.b - pan.a;
+      const dt = ((pan.x - ev.clientX) / rect.width) * span;
+      let a = pan.a + dt,
+        b = pan.b + dt;
+      if (dur) {
+        if (a < 0) {
+          b -= a;
+          a = 0;
+        }
+        if (b > dur) {
+          a -= b - dur;
+          b = dur;
+        }
+      }
+      const v = view();
+      v.a = Math.max(0, a);
+      v.b = Math.min(dur || b, b);
+      draw();
+      return;
+    }
     const { t } = hitTime(ev);
     if (drag) {
       const other = drag === 'start' ? secondsFromTimecode(s.end) : secondsFromTimecode(s.start);
@@ -3030,6 +3120,11 @@ function attachSegWave(m, index) {
     canvas.style.cursor = nearEdge(t) ? 'ew-resize' : 'crosshair';
   });
   const endDrag = () => {
+    if (pan) {
+      pan = null;
+      canvas.style.cursor = 'crosshair';
+      return;
+    }
     if (!drag) return;
     const f = drag;
     drag = null;
@@ -3342,6 +3437,13 @@ function handleSegKey(e, card, m) {
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'textarea' || tag === 'input' || tag === 'select';
   const onButton = tag === 'button' || tag === 'a';
+  // Ctrl+Z / Cmd+Z: geri al. Metin alanındaysa tarayıcının kendi geri alması
+  // çalışsın (yazarken karakter geri alma); belge düzeyinde işlem geri alınır.
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'z' || e.key === 'Z') && !typing) {
+    e.preventDefault();
+    undoLast();
+    return true;
+  }
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
   if (e.key === 'Escape' && typing) {
     e.preventDefault();
@@ -4166,6 +4268,7 @@ function splitSegmentAt(m, index, cut) {
   const segs = m.segments || [];
   const s = segs[index];
   if (!s) return;
+  snapshotForUndo(`bölüm ${index + 1} bölündü`);
   const parts = splitSegmentText(s, cut);
   const left = { ...s, id: newId('sg'), end: timecode(cut), history: [], words: parts.leftWords };
   const right = { ...s, id: newId('sg'), start: timecode(cut), history: [], words: parts.rightWords };
@@ -4199,6 +4302,7 @@ function mergeSegmentWithNext(m, index) {
     showToast('Birleştirilecek sonraki bölüm yok.');
     return;
   }
+  snapshotForUndo(`bölüm ${index + 1} birleştirildi`);
   s.end = n.end;
   if ((n.text || '').trim()) {
     const prev = s.text;
@@ -4226,6 +4330,7 @@ function paragraphize(m) {
     showToast('Paragraf oluşturmak için en az iki bölüm gerekir.');
     return;
   }
+  snapshotForUndo('paragraf oluşturuldu');
   const groups = [];
   let cur = null;
   for (const s of segs) {
@@ -5071,6 +5176,7 @@ async function transcribe(id) {
       showToast('Yeniden çözümleme iptal edildi. Mevcut düzeltmeler korundu.');
       return;
     }
+    snapshotForUndo('yeniden çözümleme');
     // Geri dönüş kopyası: eski bölümler kayda yazılır (yalnız son 1 kopya).
     // Yedek yalnız geri dönüş için: metin, zaman, konuşmacı, kontrol durumu.
     // Geçmiş ve kelime zamanlaması kopyalanmaz (dosyayı iki katına çıkarıyordu).
@@ -5214,6 +5320,7 @@ function addManualSegment(id) {
   let endSec = stSec + 5;
   if (durSec > 0) endSec = Math.min(endSec, durSec);
   const end = timecode(endSec > stSec ? endSec : stSec);
+  snapshotForUndo('elle bölüm eklendi');
   m.segments.push({
     id: newId('sg'),
     start,
@@ -6486,6 +6593,7 @@ async function applyMerge() {
   const { zip, theirs, entryNames } = pendingMerge;
   const mine = currentCase();
   if (!mine) return;
+  snapshotForUndo('çalışma dosyası birleştirildi');
   const { merged, applied, conflicts } = mergeCases(mine, theirs);
 
   // Gelen paketteki ses dosyalarını sakla (aynı kayıt id'si varsa zaten var).
@@ -6561,6 +6669,7 @@ async function importProject(file) {
     await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
   }
   c.name = c.name || c.fileNo || 'İçe aktarılan dosya';
+  snapshotForUndo('çalışma dosyası içe aktarıldı');
   appState.cases.push(c);
   appState.activeCaseId = c.id;
   persist();
@@ -6896,6 +7005,7 @@ function setupEvents() {
     } else if (b.dataset.removeAudio) {
       const m = c.materials.find((x) => x.id === b.dataset.removeAudio);
       if (!m) return;
+      snapshotForUndo(`kayıt kaldırıldı: ${m.fileName || m.name || ''}`);
       closeAudioGraph(m);
       await deleteBlob(blobKey(c, m));
       const url = objectUrls.get(blobKey(c, m));
@@ -7195,6 +7305,7 @@ function setupEvents() {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
+      snapshotForUndo(`bölüm ${Number(b.dataset.deleteSeg) + 1} silindi`);
       m.segments.splice(Number(b.dataset.deleteSeg), 1);
       persist();
       renderAudioList();
@@ -7482,7 +7593,20 @@ function setupEvents() {
       if (id) focusedMaterialId = id;
     }
   });
-  document.addEventListener('keydown', onGlobalSegKey);
+  document.addEventListener('keydown', (e) => {
+    // Ctrl+Z belge düzeyinde: hangi görünümde olursa olsun işlem geri alınır.
+    // Metin alanındayken tarayıcının kendi geri almasına bırakılır.
+    const tag = (e.target?.tagName || '').toLowerCase();
+    const typing = tag === 'textarea' || tag === 'input';
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'z' || e.key === 'Z') && !typing) {
+      e.preventDefault();
+      undoLast();
+      return;
+    }
+    onGlobalSegKey(e);
+  });
+  const undoBtn = $('#undoBtn');
+  if (undoBtn) undoBtn.addEventListener('click', () => undoLast());
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
 $('#workspaceBtn').addEventListener('click', () => setWorkspace(true));
@@ -8117,6 +8241,7 @@ async function init() {
     applyRecommendation();
   });
   renderBackupState();
+  renderUndoState();
   refreshUsage();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());

@@ -953,6 +953,49 @@ console.log('\n[11] Bölme: metin paylaştırma');
   ok('imleç zamanı gösteriliyor', /data-sd-cursor/.test(src));
 }
 
+// --- 12. Geri alma ve bölme netliği -------------------------------------
+// Kullanıcı "yanlış yaparsam geri alabilir miyim?" diye sordu. v2.74'e kadar
+// geri alma YOKTU. v2.75 ile eklendi. Bu blok varlığını ve bağlandığı
+// yıkıcı işlemleri denetler.
+console.log('\n[12] Geri alma ve bölme netliği');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const app = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+
+  ok('geri alma altyapısı var', /function snapshotForUndo\(label\)/.test(app));
+  ok('undoLast var', /async function undoLast\(\)/.test(app));
+  ok('geri alma sınırı tanımlı', /UNDO_LIMIT = 20/.test(app));
+  ok('Ctrl+Z bağlı', /e\.key === 'z'[\s\S]{0,120}undoLast\(\)/.test(app));
+
+  // Yıkıcı işlemlerin her biri geri alma kaydı almalı.
+  for (const [label, rx] of [
+    ['bölme', /splitSegmentAt\(m, index, cut\)[\s\S]{0,300}snapshotForUndo/],
+    ['birleştirme', /mergeSegmentWithNext[\s\S]{0,500}snapshotForUndo/],
+    ['paragraf', /paragraphize[\s\S]{0,400}snapshotForUndo/],
+    ['bölüm silme', /deleteSeg[\s\S]{0,400}snapshotForUndo/],
+    ['kayıt kaldırma', /removeAudio[\s\S]{0,300}snapshotForUndo/],
+    ['içe aktarma', /içe aktarıldı'\)/],
+    ['dosya birleştirme', /çalışma dosyası birleştirildi/]
+  ]) {
+    ok(`${label} geri alınabilir`, rx.test(app));
+  }
+
+  // Dalga pan (Shift+sürükle) ve imleç zamanı
+  ok('Shift+sürükle kaydırma', /ev\.shiftKey[\s\S]{0,200}pan =/.test(app));
+  ok('imleç zamanı gösteriliyor', /data-sd-cursor/.test(app));
+  ok('böl düğmesi var', /data-sd-split/.test(app));
+  ok('böl ipucu metin korunur diyor', /Metin yeniden çözümlenmez/.test(app));
+
+  // Yardım ekranında bölme/geri alma açıklaması
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  ok('yardımda bölme açıklaması var', /Bölme ve geri alma/.test(html));
+  ok('yardımda Ctrl+Z anlatılıyor', /Ctrl\+Z/.test(html));
+  ok('yardımda Shift\+sürükle anlatılıyor', /Shift\+sürükle/.test(html));
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

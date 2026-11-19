@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.74.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.75.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.75 — Geri alma (Ctrl+Z) + dalga kaydırma + bölme netliği
+
+KULLANICI: "Yanlış yaparsam geri alabilir miyim? Kaydırma kesin lazım. Bölme
+hangi bölümü bölüyor, metni yeniden mi çözümlüyor?"
+
+### 1. Geri alma — YOKTU, eklendi
+
+Ölçüm: `grep "undo|geri al"` → **0 sonuç**. Bölme, silme, birleştirme
+işlemlerinde geri dönüş yoktu; scroll sırasında kaybolan veri
+kurtarılamıyordu.
+
+**Artık:**
+- Her yıkıcı işlemden **önce** durumun anlık görüntüsü saklanır (son 20 adım).
+- **Ctrl+Z** veya üst bardaki **↶ N** düğmesi.
+- Kapsam: bölme, bölüm silme, birleştirme, paragraf, kayıt kaldırma, içe
+  aktarma, dosya birleştirme, yeniden çözümleme.
+- Metin yazarken Ctrl+Z **tarayıcının kendi** geri almasını kullanır (karakter
+  geri alma), belge işlemlerini değil. Karışmaz.
+
+### 2. Dalga kaydırma (pan)
+
+Üç işlev ayrıldı, birbirine karışmıyor:
+
+| İşlem | Ne yapar |
+|---|---|
+| **Sürükle** | B/S sınırını taşır |
+| **Shift + sürükle** (veya orta tuş) | Görünümü kaydırır (pan) |
+| **Tekerlek** | Yakınlaştırır |
+
+### 3. Bölme netliği
+
+- **✂ Böl** → sağ panelde **açık olan (aktif)** bölümü ikiye ayırır.
+  Sol listeden seçtiğiniz bölümdür.
+- **Metin yeniden çözümlenmez.** LLM çalışmaz. Mevcut metin kesim noktasına
+  göre paylaştırılır (v2.74).
+- Bölme noktası: dalga üzerinde farenin bulunduğu an (üstte zaman olarak
+  görünür) ya da oynatıcı konumu.
+- Bölünen iki bölüm de **"Kontrol bekliyor"**a döner (metin değişti).
+- İpucu metinleri ve Yardım ekranı bunu açıkça yazıyor.
+
+### Test
+
+`sema-testi.mjs` [12] bloğu eklendi (299 → 317 kontrol).
 
 ## v2.74 — Bölme: metin artık paylaştırılıyor + tam noktadan bölme
 
