@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.60';
+const APP_VERSION = '2.61';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2614,28 +2614,49 @@ function segDetailHtml(m) {
   if (rep) notes.push('model tekrarı olasılığı');
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
   const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
-  return `${proposalBandHtml(s, i)}<div class="seg-detail-head">
+  // Yerleşim üç bölge: (1) başlık, (2) metin, (3) araçlar.
+  // Eski sürümde ~35 düğme tek sütuna yığılıydı ve üst üste biniyordu.
+  // Kaldırılanlar: zoom dalgası (ana dalga aynı işi yapar), hız düğmeleri
+  // (araç çubuğunda var), zaman hassas kaydırma (elle yazılabilir).
+  const obsBtns = [
+    ['noise', 'gürültü', 'Arka plan gürültüsü'],
+    ['overlap', 'üst üste', 'Üst üste konuşma'],
+    ['inaudible', 'anlaşılmaz', 'Anlaşılmaz bölüm'],
+    ['music', 'müzik', 'Müzik/ses efekti']
+  ]
+    .map(
+      ([k, lbl, tip]) =>
+        `<button class="mini-button obs-btn ${s.obs && s.obs[k] ? 'on' : ''}" data-obs="${i}|${k}" title="${esc(tip)}">${lbl}</button>`
+    )
+    .join('');
+  const opsBtns = [
+    hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : '',
+    `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik</button>`,
+    `<button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">böl</button>`,
+    `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">birleştir</button>`,
+    `<button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>`
+  ]
+    .filter(Boolean)
+    .join('');
+
+  return `${proposalBandHtml(s, i)}
+    <div class="seg-detail-head">
       <span class="idx">Bölüm ${i + 1} / ${segs.length}</span>
       <span class="nav">
         <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
         <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
-        <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸ Duraklat' : '▶ Dinle'}</button>
+        <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
         <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
       </span>
     </div>
     ${notes.length || silence ? `<div class="seg-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}${pr.score >= 15 ? `<span class="sn info" title="${esc(pr.reasons.join(', '))}">öncelik ${pr.score >= 40 ? 'yüksek' : pr.score >= 20 ? 'orta' : 'düşük'}</span>` : ''}</div>` : ''}
-    <div class="seg-times">
-      <label class="st-item"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}">
-        <span class="st-nudge"><button class="nudge-btn" data-nudge="${i}|start|-1" title="−1 sn">−1</button><button class="nudge-btn" data-nudge="${i}|start|-0.1" title="−0,1 sn">−.1</button><button class="nudge-btn" data-nudge="${i}|start|0.1" title="+0,1 sn">+.1</button><button class="nudge-btn" data-nudge="${i}|start|1" title="+1 sn">+1</button></span>
-      </label>
-      <label class="st-item"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}">
-        <span class="st-nudge"><button class="nudge-btn" data-nudge="${i}|end|-1" title="−1 sn">−1</button><button class="nudge-btn" data-nudge="${i}|end|-0.1" title="−0,1 sn">−.1</button><button class="nudge-btn" data-nudge="${i}|end|0.1" title="+0,1 sn">+.1</button><button class="nudge-btn" data-nudge="${i}|end|1" title="+1 sn">+1</button></span>
-      </label>
-    </div>
-    <div class="zoom-wave-wrap"><div class="zw-tools"><button class="seg-tool" data-zw-play="1" title="Bölümü dinle / duraklat">▶</button><button class="seg-tool" data-zw-stop="1" title="Durdur">⏹</button><span class="zw-sep"></span><button class="seg-tool" data-zw-zoom="in" title="Yakınlaştır">＋</button><button class="seg-tool" data-zw-zoom="out" title="Uzaklaştır">−</button><button class="seg-tool" data-zw-zoom="fit" title="Bölüme sığdır">Sığdır</button><span class="zw-span">±0,5 sn</span></div><canvas class="zoom-wave" id="zoom-wave-${esc(m.id)}" width="900" height="72"></canvas></div>
     <div class="seg-meta-row">
       <label class="sm-item"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
       <label class="sm-item"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+    </div>
+    <div class="seg-times">
+      <label class="st-item"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
+      <label class="st-item"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
     </div>
     <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
     <div class="seg-text-wrap">
@@ -2645,25 +2666,16 @@ function segDetailHtml(m) {
         <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
       </div>
     </div>
-    <div class="seg-obs-row">
-      <span class="sb-lbl">Gözlem işaretleri</span>
-      <button class="mini-button obs-btn ${s.obs && s.obs.noise ? 'on' : ''}" data-obs="${i}|noise" title="Arka plan gürültüsü">gürültü</button>
-      <button class="mini-button obs-btn ${s.obs && s.obs.overlap ? 'on' : ''}" data-obs="${i}|overlap" title="Üst üste konuşma">üst üste</button>
-      <button class="mini-button obs-btn ${s.obs && s.obs.inaudible ? 'on' : ''}" data-obs="${i}|inaudible" title="Anlaşılmaz bölüm">anlaşılmaz</button>
-      <button class="mini-button obs-btn ${s.obs && s.obs.music ? 'on' : ''}" data-obs="${i}|music" title="Müzik/ses efekti">müzik</button>
-    </div>
-    <div class="seg-ops-row">
-      ${hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : ''}
-      <button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>
-      <button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">buradan böl</button>
-      <button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>
-      <button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>
-    </div>
     <div class="seg-actions">
       <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
       <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
       <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-    </div>`;
+    </div>
+    <details class="seg-more">
+      <summary>Gözlem ve araçlar</summary>
+      <div class="seg-obs-row"><span class="sb-lbl">Gözlem</span>${obsBtns}</div>
+      <div class="seg-ops-row">${opsBtns}</div>
+    </details>`;
 }
 // Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
 // her tuş vuruşunda çağrılır; bu yüzden textarea odağı ve imleç korunmalı.

@@ -551,3 +551,101 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
 #view-audio .seg-detail { overflow-y: auto; overscroll-behavior: contain; }
 .badge.prop { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
 .seg-item.has-proposal { border-left: 3px solid var(--gold); }
+
+/* ============================================================================
+   v2.61 — Bölüm detayı: TEK yetkili yerleşim
+   Önceki 21 kural birbirini eziyordu (height:100%!important + overflow
+   çakışması → içerik taşıyor, düğmeler üst üste biniyordu). Bu blok en sonda
+   geldiği için hepsini ezer. Yeni kural buraya yazılır; app.css'e dokunma.
+   ============================================================================ */
+#view-audio .seg-detail {
+  display: flex !important;
+  flex-direction: column;
+  gap: var(--sp-2);
+  height: auto !important;
+  min-height: 0;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding: var(--sp-3);
+}
+#view-audio .seg-detail > * { flex: 0 0 auto; }
+
+/* Başlık: tek satır, taşmaz. */
+#view-audio .seg-detail-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-2); margin: 0; padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--line); flex-wrap: wrap;
+}
+#view-audio .seg-detail-head .nav { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* Konuşmacı + kontrol: iki eşit sütun. */
+#view-audio .seg-detail .seg-meta-row {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+  align-items: end;
+}
+/* Zamanlar: iki sütun, dar. */
+#view-audio .seg-detail .seg-times {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+#view-audio .seg-detail .st-item,
+#view-audio .seg-detail .sm-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#view-audio .seg-detail .st-item > span,
+#view-audio .seg-detail .sm-item > span {
+  font-size: var(--fs-2xs); color: var(--ink-3); font-weight: 600; letter-spacing: .3px;
+}
+#view-audio .seg-detail .st-item input,
+#view-audio .seg-detail .sm-item input,
+#view-audio .seg-detail .sm-item select { width: 100%; min-width: 0; }
+
+/* Metin: esnek, en çok yer buraya. */
+#view-audio .seg-detail .seg-text-wrap { display: flex; flex-direction: column; gap: var(--sp-2); }
+#view-audio .seg-detail .seg-text-wrap textarea {
+  width: 100%; min-height: 140px; resize: vertical;
+  font-size: var(--fs-sm); line-height: 1.7;
+}
+#view-audio .seg-detail .quick-insert { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* Onay düğmeleri: tek satır, taşarsa sarar. Onayla sağa yaslı. */
+#view-audio .seg-detail .seg-actions {
+  display: flex !important; flex-wrap: wrap; align-items: center;
+  gap: var(--sp-2); margin: 0; padding-top: var(--sp-2);
+  border-top: 1px solid var(--line);
+}
+#view-audio .seg-detail .seg-actions .mini-button.primary { margin-left: auto; }
+
+/* Gözlem ve araçlar: katlanır bölme. Varsayılan kapalı → panel kısa kalır. */
+#view-audio .seg-detail .seg-more {
+  border: 1px solid var(--line); border-radius: var(--r-sm);
+  background: var(--surface-2, transparent); padding: 0;
+}
+#view-audio .seg-detail .seg-more > summary {
+  cursor: pointer; padding: var(--sp-1) var(--sp-2);
+  font-size: var(--fs-2xs); color: var(--ink-2); font-weight: 600;
+  list-style: none; user-select: none;
+}
+#view-audio .seg-detail .seg-more > summary::before { content: '▸ '; color: var(--ink-3); }
+#view-audio .seg-detail .seg-more[open] > summary::before { content: '▾ '; }
+#view-audio .seg-detail .seg-obs-row,
+#view-audio .seg-detail .seg-ops-row {
+  display: flex !important; flex-wrap: wrap; align-items: center;
+  gap: 4px; padding: var(--sp-1) var(--sp-2) var(--sp-2);
+}
+#view-audio .seg-detail .seg-obs-row .sb-lbl {
+  font-size: var(--fs-2xs); color: var(--ink-3); font-weight: 600;
+  margin-right: 2px;
+}
+
+/* Kaldırılan öğeler (zoom dalgası ana dalgayla aynı işi yapıyordu). */
+#view-audio .seg-detail .zoom-wave-wrap { display: none !important; }
+#view-audio .seg-detail .st-nudge { display: none !important; }
+
+/* Dar ekran: tek sütun. */
+@media (max-width: 640px) {
+  #view-audio .seg-detail .seg-meta-row,
+  #view-audio .seg-detail .seg-times { grid-template-columns: 1fr; }
+  #view-audio .seg-detail .seg-actions .mini-button.primary { margin-left: 0; }
+}

@@ -6,12 +6,69 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.60.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.61.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.61 — Bölüm detayı sadeleştirildi (düğmeler üst üste biniyordu)
+
+KULLANICI: "Segment detail kısmını bir düzeltir misin, butonlar üst üste binmiş
+hâlâ. Fazlalık varsa sil, yerleşimi değiştir."
+
+### Kök neden: 21 çakışan CSS kuralı
+
+`app.css` içinde `#view-audio .seg-detail` için **21 ayrı kural** vardı; v2.44,
+v2.45, v2.47, v2.48 ve v2.60 katmanları birbirini eziyordu. İkisi
+`height:100%!important` zorluyordu: içerik sığmayınca panel taşıyor, düğmeler
+üst üste biniyordu.
+
+### Fazlalıklar silindi
+
+| Kaldırılan | Neden |
+|---|---|
+| **Zoom dalgası** (canvas + 5 düğme) | Ana dalga formu aynı işi yapıyor; tıklayınca konuma gidiyor |
+| **Zaman hassas kaydırma** (8 düğme: −1/−.1/+.1/+1 ×2) | Zaman kutusuna elle yazılabiliyor |
+| **Hız düğmeleri** | Araç çubuğunda zaten var |
+
+Toplam **~35 düğme → ~18 düğme**. Gözlem ve araçlar katlanır bölmeye alındı
+(`Gözlem ve araçlar`), varsayılan kapalı → panel kısa kalır.
+
+### Yeni yerleşim (tek yetkili katman)
+
+`reading-layer.css` sonuna v2.61 bloğu eklendi; **en sonda** geldiği için
+önceki 21 kuralı ezer. Yeni kural oraya yazılır, `app.css`'e dokunulmaz.
+
+```
+1. Başlık (bölüm no + gezinme/dinle)
+2. Notlar (varsa)
+3. Konuşmacı | Kontrol        ← iki sütun
+4. Başlangıç | Bitiş          ← iki sütun
+5. METİN (esnek, 140px+)
+6. Onayla → / Yeniden dinle / Anlaşılmadı
+7. ▸ Gözlem ve araçlar        ← katlanır
+```
+
+### Ölçümle doğrulandı
+
+Gerçek CSS ve gerçek DOM yapısıyla statik ölçüm sayfası kuruldu; öğelerin
+`getBoundingClientRect()` değerleri karşılaştırıldı:
+
+```
+panel yükseklik: 455px   scrollHeight 453 = clientHeight 453  (taşma yok)
+seg-detail-head  top=33   h=36
+seg-notes        top=77   h=20
+seg-meta-row     top=105  h=48
+seg-times        top=161  h=48
+seg-text-wrap    top=217  h=164
+seg-actions      top=389  h=38
+seg-more         top=435  h=27
+ÇAKIŞMA: YOK
+```
+
+420px dar ekranda da tekrarlandı: **çakışma yok**.
 
 ## v2.60 — Öneri görünür oldu + bölüm detayı yeniden düzenlendi
 

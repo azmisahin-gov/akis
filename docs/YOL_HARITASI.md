@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.60.**
+yazılır. **Güncel sürüm: v2.61.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.61 — Bölüm detayı sadeleştirildi (tamamlandı)
+
+`app.css`'te `seg-detail` için 21 çakışan kural vardı; ikisi `height:100%!important`
+zorluyor, içerik taşıyor ve düğmeler üst üste biniyordu. Zoom dalgası, zaman
+hassas kaydırma ve hız düğmeleri kaldırıldı (~35 → ~18 düğme); gözlem/araçlar
+katlanır bölmeye alındı. `reading-layer.css` sonuna tek yetkili v2.61 katmanı
+eklendi. Ölçümle doğrulandı: taşma yok, çakışma yok (normal ve 420px).
 
 ### v2.60 — Öneri görünür oldu + bölüm detayı düzenlendi (tamamlandı)
 
