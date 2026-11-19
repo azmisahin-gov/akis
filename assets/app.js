@@ -30,14 +30,25 @@ const ASR_MODELS = {
     warn: false
   }
 };
-// Kullanılan sayısal duyarlılık (dtype) cihaza göre seçilir. Kalite ve doğruluk
-// her zaman önceliklidir: WASM (CPU) üzerinde fp16 güvenilir değildir ve bozuk
-// çıktı ("- - - -" gibi) üretebilir; bu nedenle WASM'da her zaman fp32 kullanılır.
-// WebGPU'da fp16 doğru sonuç verir ve belirgin biçimde hızlıdır.
+// Kullanılan sayısal duyarlılık (dtype) cihaza ve modele göre seçilir.
+// KRİTİK: onnx-community Whisper modellerinde decoder'ı fp16 çalıştırmak
+// BOZUKTUR; "- - - -" veya boş çıktı üretir. Encoder fp16 olabilir. Bu nedenle
+// dtype bileşen bazında verilir:
+//  - WebGPU: encoder fp16 (hızlı, doğru) + decoder fp32 (doğru)
+//  - WASM  : ikisi de fp32 (fp16 WASM'da güvenilmez)
+// Kalite ve doğruluk her zaman önceliklidir; decoder'ı q4 gibi kuantize
+// etmiyoruz çünkü doğruluk düşer.
 function dtypeFor(modelId, device) {
-  const spec = ASR_MODELS[modelId];
-  if (device === 'webgpu') return 'fp16';
-  return (spec && spec.dtype) || 'fp32';
+  if (device === 'webgpu') {
+    return { encoder_model: 'fp16', decoder_model_merged: 'fp32' };
+  }
+  return { encoder_model: 'fp32', decoder_model_merged: 'fp32' };
+}
+// İnsan okunur özet (durum satırında gösterilir).
+function dtypeLabel(dtype) {
+  if (typeof dtype === 'string') return dtype;
+  if (!dtype) return '—';
+  return `encoder ${dtype.encoder_model || '?'} / decoder ${dtype.decoder_model_merged || '?'}`;
 }
 const DEFAULT_ASR_MODEL = 'onnx-community/whisper-small';
 // Kısa model adları: yükleme durumunda ve kayıt kartlarında gösterilir.
@@ -2986,7 +2997,7 @@ async function ensureModel() {
   if (modelLoading) throw new Error('Model yükleniyor. Lütfen bekleyin.');
   modelLoading = true;
   const spec = ASR_MODELS[modelId] || ASR_MODELS[DEFAULT_ASR_MODEL];
-  const dtype = dtypeFor(modelId, asrDevice);
+  let dtype = dtypeFor(modelId, asrDevice);
   // Genel ilerleme: dosya bazlı yüzde yerine, tamamlanan dosya sayısına göre
   // yüzde hesaplanır. Böylece "%100 → %3" gibi zıplayan, anlaşılmaz görüntü
   // yerine tek ve tutarlı bir ilerleme çubuğu gösterilir.
@@ -3018,23 +3029,37 @@ async function ensureModel() {
         await asrPipeline.dispose();
       } catch (e) {}
     }
-    asrPipeline = await pipeline('automatic-speech-recognition', modelId, {
-      device: asrDevice,
-      dtype,
-      progress_callback: (p) => {
-        if (p.status === 'progress' && p.file) {
-          fileState.set(p.file, Number(p.progress || 0));
-          refreshLoadStatus(p.file);
-        } else if (p.status === 'ready') {
-          $('#modelStatus').textContent = 'Model hazır.';
+    // Dtype kademesi: istenen bileşen-bazlı dtype ile yüklenir. Depoda o
+    // varyant yoksa veya yüklenemezse, tümü fp32 (en güvenilir) ile yeniden
+    // denenir. Böylece dtype seçimi yüklemeyi asla kırmaz.
+    const loadWith = async (dt) =>
+      pipeline('automatic-speech-recognition', modelId, {
+        device: asrDevice,
+        dtype: dt,
+        progress_callback: (p) => {
+          if (p.status === 'progress' && p.file) {
+            fileState.set(p.file, Number(p.progress || 0));
+            refreshLoadStatus(p.file);
+          } else if (p.status === 'ready') {
+            $('#modelStatus').textContent = 'Model hazır.';
+          }
         }
-      }
-    });
+      });
+    let usedDtype = dtype;
+    try {
+      asrPipeline = await loadWith(dtype);
+    } catch (firstErr) {
+      console.warn('İstenen dtype ile yüklenemedi; fp32 ile yeniden denenecek', firstErr);
+      $('#modelStatus').textContent = 'İstenen duyarlılıkla yüklenemedi; tam duyarlılık (fp32) ile yeniden deneniyor…';
+      usedDtype = { encoder_model: 'fp32', decoder_model_merged: 'fp32' };
+      asrPipeline = await loadWith(usedDtype);
+    }
     asrPipeline.__spec = spec;
     asrPipeline.__modelId = modelId;
-    asrPipeline.__dtype = dtype;
+    asrPipeline.__dtype = usedDtype;
     asrPipeline.__device = asrDevice;
     loadedModelId = modelId;
+    dtype = usedDtype;
     const bar = $('#modelLoadBar');
     if (bar) {
       bar.hidden = true;
@@ -3046,7 +3071,7 @@ async function ensureModel() {
       (spec.warn
         ? 'Model hazır. Bu model hızlıdır ancak doğruluğu düşüktür; metni mutlaka kayıttan doğrulayın.'
         : 'Model hazır. Türkçe kaynak dili ve transkripsiyon görevi zorunlu olarak kullanılacak.') +
-      ` Çalışma birimi: ${asrDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'} · duyarlılık: ${dtype}.`;
+      ` Çalışma birimi: ${asrDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'} · duyarlılık: ${dtypeLabel(dtype)}.`;
     showToast('Konuşma modeli hazır.');
     refreshStorage();
     return asrPipeline;
@@ -3325,26 +3350,27 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
   return out;
 }
 async function transcribeWindow(pipe, window, offsetSeconds) {
-  // ÖNEMLİ: Whisper ONNX modellerinde `return_timestamps: 'word'` güvenilir
-  // değildir; model timestamp/özel token'larını metne dökerek "- - - -" veya
-  // "< - < -" gibi anlamsız çıktı üretebilir. Bu nedenle segment düzeyi
-  // (`true`) kullanılır. Tekrar döngüsünü kırmak için no_repeat_ngram_size ve
-  // repetition_penalty verilir. Türkçe dil ve transkripsiyon görevi sabittir.
-  const opts = {
-    language: 'turkish',
-    task: 'transcribe',
-    return_timestamps: true,
-    no_repeat_ngram_size: 3,
-    repetition_penalty: 1.2
-  };
-  let result;
-  try {
-    result = await pipe(window, opts);
-  } catch (e) {
-    // Bazı sürümler bu parametreleri kabul etmez; en sade çağrıya düş.
-    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: true });
+  // Zaman damgası merdiveni: bazı Whisper ONNX modelleri `return_timestamps`
+  // seçeneklerini desteklemez veya bozuk çıktı üretir. Sırayla denenir ve ilk
+  // ANLAMLI sonuç kullanılır. Çöp çıktı hiçbir zaman kabul edilmez.
+  // Türkçe dil ve transkripsiyon görevi sabittir.
+  const base = { language: 'turkish', task: 'transcribe' };
+  const attempts = [
+    { ...base, return_timestamps: true, no_repeat_ngram_size: 3, repetition_penalty: 1.2 },
+    { ...base, return_timestamps: true },
+    { ...base }
+  ];
+  for (const opts of attempts) {
+    let result;
+    try {
+      result = await pipe(window, opts);
+    } catch (e) {
+      continue; // bu seçenek desteklenmiyor; sonrakini dene
+    }
+    const segs = parseAsrResult(result, offsetSeconds, window.length / 16000);
+    if (segs.length) return segs; // anlamlı sonuç
   }
-  return parseAsrResult(result, offsetSeconds, window.length / 16000);
+  return [];
 }
 async function transcribe(id) {
   const c = currentCase(),
@@ -3410,7 +3436,9 @@ async function transcribe(id) {
     } else if (!meaningful.length) {
       m.status = 'Çözümleme sonucu boş';
       m.hallucinationWarning =
-        'Model bu kayıtta anlamlı konuşma metni üretemedi. Sonuç rapora aktarılmamalıdır; kaydı elle dinleyip bölümleri kendiniz girin.';
+        'Model bu kayıtta anlamlı konuşma metni üretemedi (çıktı yalnızca anlamsız simge/token içeriyordu ve ayıklandı). ' +
+        'Sonuç rapora aktarılmamalıdır. Denenebilecekler: (1) "Çözümleme ve model ayarları"nda Large-v3-turbo modelini seçip yükleyin; ' +
+        '(2) kayıt kalitesini kontrol edin; (3) gerekirse bölümleri elle girin.';
     } else {
       if (fillerCount) {
         m.hallucinationWarning = `${fillerCount} bölümde anlamlı metin yerine dolgu ifadesi üretildi; bu bölümler uzman tarafından dinlenerek doldurulmalıdır.`;

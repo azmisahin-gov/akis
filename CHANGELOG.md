@@ -483,3 +483,25 @@ Düzeltmeler:
   tamamlanır; bölüm artık "00:00:00–00:00:00" olmaz.
 - Birim testleri gerçek hata desenleriyle eklendi (çizgi/açı/tırnak yığını çöp;
   gerçek cümle temiz). Toplam birim testi 164'e çıktı.
+
+## v2.21 — Decoder fp16 kök nedeni ve kademeli çözümleme
+
+v2.20'den sonra orta model **boş** sonuç döndürdü. Konsol çıktısı WebGPU
+(`ort-wasm-simd-threaded.jsep`) yolunu doğruladı. Asıl kök neden bulundu:
+tek bir `dtype: 'fp16'` hem encoder hem **decoder**'a uygulanıyordu; onnx-community
+Whisper modellerinde **decoder fp16 çalıştırmak bozuktur** ve boş/token çöpü
+üretir.
+
+Düzeltmeler:
+- **Bileşen bazlı dtype:** `dtypeFor` artık `{ encoder_model, decoder_model_merged }`
+  döndürür. WebGPU: encoder fp16 + **decoder fp32**. WASM: ikisi de fp32.
+  Decoder'ın asla fp16 olmaması birim testiyle kilitlendi.
+- **Dtype kademesi:** istenen dtype ile yüklenemezse tümü fp32 ile yeniden
+  denenir; dtype seçimi yüklemeyi asla kırmaz.
+- **Zaman damgası merdiveni:** `return_timestamps:true` (+ tekrar kırıcı) →
+  `true` → parametresiz sırayla denenir; ilk anlamlı sonuç kullanılır. Çöp asla
+  kabul edilmez.
+- **Boş sonuçta yol gösterici uyarı:** çıktı yalnızca çöp ise kullanıcıya
+  Large-v3-turbo denemesi ve elle giriş önerilir.
+- `dtypeLabel` ile durum satırında "encoder … / decoder …" gösterilir.
+  Toplam birim testi 165'e çıktı.
