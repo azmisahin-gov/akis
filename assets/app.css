@@ -788,3 +788,40 @@ body.ws-mode .statusbar{height:26px;font-size:9px}
 /* Çalışma modunda dinleme çubuğu daha büyük. */
 body.ws-mode #view-audio .listen-strip .wave-canvas{height:72px}
 body.ws-mode #view-audio .listen-strip .audio-player{height:38px}
+
+/* ============================================================================
+   v2.39 — Tek satır durum şeridi + takip modu (film gibi izleme)
+   Kullanıcı: "audio-status-zone alanında bomboş ölü alan var" ve "ana play'e
+   basınca bölümler otomatik ilerlesin, metin canlı vurgulansın, hiç kaydırma
+   yapmayayım".
+   ============================================================================ */
+/* Durum şeridi: TEK satır, ölü alan yok. */
+#view-audio .audio-card-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+.head-state{font:600 9px 'Segoe UI';color:#8392a1;white-space:nowrap;padding:2px 7px;
+  border-radius:10px;background:#f2f6fa;flex:none}
+.head-state.good{background:#e8f5ef;color:#1f6b50}
+.head-state.bad{background:#fdeeee;color:#9c3f3f}
+.head-check{font:700 9px 'Segoe UI';color:#315f91;white-space:nowrap;flex:none}
+.head-model{font:600 9px 'Segoe UI';color:#2c6b4f;white-space:nowrap;flex:none;margin-left:auto}
+#view-audio .audio-actions{margin-left:auto;flex:none}
+#view-audio .head-model+.audio-actions{margin-left:6px}
+.synthetic-flag{font:700 8px 'Segoe UI';letter-spacing:.4px;color:#876338;
+  background:#fff6e9;border:1px solid #f0dfc3;border-radius:5px;padding:2px 6px;
+  display:inline-block;margin-top:5px}
+
+/* Dinleme çubuğu: oynatıcı + takip düğmesi yan yana. */
+.listen-row{display:flex;align-items:center;gap:7px}
+.listen-row .audio-player{flex:1;min-width:0}
+.follow-btn{flex:none;white-space:nowrap;font-weight:700}
+.follow-btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+
+/* Canlı vurgu (takip modu) */
+#view-audio .karaoke{border-color:#d6e4f2;background:#f2f7fc;color:#8b98a7}
+#view-audio .karaoke .kk-done{color:#2c4055}
+#view-audio .karaoke .kk-rest{color:#b3bfcb}
+#view-audio .karaoke span.done{color:#2c4055}
+#view-audio .karaoke span.on{background:#ffd479;color:#5a3f10;font-weight:700}
+/* Takip açıkken liste ve metin alanı sade; dikkat dağıtacak şey yok. */
+body.follow-on #view-audio .transcript-toolbar{opacity:.55}
+body.follow-on #view-audio .seg-item{transition:background .15s}
+body.follow-on #view-audio .seg-item.is-active{background:#eef4fa}

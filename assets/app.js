@@ -633,10 +633,14 @@ async function getAudioBlob(c, m) {
 // deşifre) yalnızca gerçekten değişince yeniden kurulur. Böylece uzun
 // kayıtta sayfa sıçramaz.
 function audioStatusZoneHtml(m) {
+  // Durum şeridi TEK satır: dosya + durum + kontrol + model + eylemler.
+  // Tekrar eden bilgiler (SHA-256, codec, köken, doğrulama, günlük) artık
+  // "Kayıt bilgileri" sekmesinde; burada ölü alan bırakılmaz.
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
   const status = m.status || 'Bekliyor';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta compact-meta"><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic ? '<span><b>Kurgusal sentetik kayıt</b></span>' : ''}${m.transcribedWithModel ? `<span class="model-inline">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}</div>${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti (dosya değişmemiş)' : 'özet farklı (dosya değişmiş olabilir)'}</div>` : ''}${m.transcribedWithModel ? `<div class="audio-meta model-meta"><span>Çözümleyen model: <b>${esc(modelShortName(m.transcribedWithModel))}</b>${m.transcribedAt ? ` · ${esc(new Date(m.transcribedAt).toLocaleString('tr-TR'))}` : ''}</span></div>` : ''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  const stCls = /hata|boş|iptal/i.test(status) ? 'bad' : /Kontrol bekliyor|tamamlandı/i.test(status) ? 'good' : '';
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && !m.lastVerify.ok ? `<div class="warn-box">Son SHA-256 doğrulaması farklı: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -743,7 +747,10 @@ function materialCardHtml(m) {
       <div class="card-pane ${tab === 'transcript' ? 'on' : ''}" data-pane="transcript" role="tabpanel">
         <div class="listen-strip">
           <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
-          <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
+          <div class="listen-row">
+            <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
+            <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">▶ Takip et</button>
+          </div>
         </div>
         <div class="transcript-editor">
           <div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div>
@@ -814,7 +821,8 @@ async function renderMaterialDetail() {
     });
     player.addEventListener('pause', () => {
       if (segPlayback.materialId === m.id) segPlayback.playing = false;
-      hideKaraoke(m);
+      // Takip açıksa vurgu kalsın (duraklatınca nerede kaldığını göster).
+      if (!followState.on) hideKaraoke(m);
       refreshPlayButtons();
     });
     if (m.tech?.channels === 2 && channelMode(m) !== 'both') ensureAudioGraph(m, player);
@@ -823,6 +831,13 @@ async function renderMaterialDetail() {
   renderSegments(m, card);
   ensureSpeakers(m);
   renderSpeakersPanel(m);
+  // Takip durumu dosya bazlı saklanır; sayfa yenilenince korunur.
+  const c2 = currentCase();
+  if (c2 && typeof c2.followMode === 'boolean') {
+    followState.on = c2.followMode;
+    document.body.classList.toggle('follow-on', followState.on);
+  }
+  refreshFollowButtons();
 }
 // Kayıt listesi + seçili kaydın detayı.
 async function renderAudioList() {
@@ -2337,6 +2352,12 @@ function handleSegKey(e, card, m) {
     return true;
   }
   // Böl / birleştir kısayolları: uzman kaydı dinlerken elleri klavyede kalır.
+  if ((e.key === 'f' || e.key === 'F') && !typing) {
+    setFollow(!followState.on);
+    showToast(followState.on ? 'Takip açık.' : 'Takip kapalı.');
+    e.preventDefault();
+    return true;
+  }
   if ((e.key === 'w' || e.key === 'W') && !typing) {
     setWorkspace(!document.body.classList.contains('ws-mode'));
     e.preventDefault();
@@ -2705,6 +2726,121 @@ function refreshPlayButtons() {
     btn.classList.toggle('on', playing);
     if (stop) stop.disabled = !isThis;
   });
+}
+// ---- Takip modu (film gibi izleme) ----
+// Ana oynatıcı çalarken aktif bölüm otomatik değişir, bölüm listesi kendiliğinden
+// kayar ve metin canlı vurgulanır. Uzman hiç kaydırma yapmaz; yalnız dinler.
+// Uydurma zamanlama yoktur: vurgu gerçek oynatma konumundan hesaplanır.
+let followTimer = null;
+// Takip modu durumu (dosya bazlı saklanır: case.followMode).
+const followState = { on: false };
+function setFollow(on) {
+  followState.on = !!on;
+  document.body.classList.toggle('follow-on', followState.on);
+  const c = currentCase();
+  if (c) {
+    c.followMode = followState.on;
+    persist();
+  }
+  refreshFollowButtons();
+  if (followState.on) startFollow(); else stopFollow();
+}
+function refreshFollowButtons() {
+  document.querySelectorAll('[data-follow-toggle]').forEach((b) => {
+    b.classList.toggle('on', followState.on);
+    b.textContent = followState.on ? '⏸ Takibi bırak' : '▶ Takip et';
+    b.title = followState.on ? 'Otomatik takibi durdur' : 'Çalarken bölümleri otomatik izle (F)';
+  });
+}
+function startFollow() {
+  stopFollow();
+  followTimer = setInterval(followTick, 120);
+}
+function stopFollow() {
+  if (followTimer) {
+    clearInterval(followTimer);
+    followTimer = null;
+  }
+}
+// Oynatma konumuna göre aktif bölümü seç, listeyi kaydır, metni vurgula.
+function followTick() {
+  if (!followState.on) return;
+  const m = activeMaterial();
+  if (!m) return;
+  const segs = m.segments || [];
+  if (!segs.length) return;
+  const card = document.querySelector('.audio-card');
+  const player = card && card.querySelector('audio');
+  if (!player) return;
+  if (player.paused) return; // duraklatınca takip bekler, konum korunur
+  const t = player.currentTime;
+  // t'yi içeren bölümü bul (yoksa en yakın sonraki).
+  let idx = -1;
+  for (let i = 0; i < segs.length; i++) {
+    const a = secondsFromTimecode(segs[i].start);
+    const b = secondsFromTimecode(segs[i].end);
+    if (t >= a && t < (b > a ? b : a + 0.01)) {
+      idx = i;
+      break;
+    }
+  }
+  if (idx < 0) {
+    for (let i = 0; i < segs.length; i++) {
+      if (secondsFromTimecode(segs[i].start) > t) {
+        idx = i;
+        break;
+      }
+    }
+  }
+  if (idx < 0) return;
+  if (m.activeSeg !== idx) {
+    m.activeSeg = idx;
+    followHighlight(m, idx);
+  }
+  followKaraoke(m, idx, t);
+}
+// Listede aktif bölümü işaretle ve görünür alana getir (yalnız liste kayar).
+function followHighlight(m, idx) {
+  const root = $(`#segments-${CSS.escape(m.id)}`);
+  if (!root) return;
+  const items = root.querySelectorAll('.seg-item');
+  items.forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === idx));
+  const el = root.querySelector(`.seg-item[data-seg-item="${idx}"]`);
+  if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
+  // Sağ paneldeki metin alanı da aktif bölüme geçsin (yeniden çizmeden).
+  const detail = root.querySelector('.seg-detail');
+  if (detail) renderSegDetail(m);
+}
+// Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
+function followKaraoke(m, idx, t) {
+  const box = $(`#karaoke-${CSS.escape(m.id)}`);
+  if (!box) return;
+  const s = m.segments[idx];
+  if (!s || !s.text || isHallucination(s.text)) {
+    box.hidden = true;
+    return;
+  }
+  const words = s.words && s.words.length ? s.words : null;
+  if (!words) {
+    // Kelime zamanı yok: bölüm aralığına göre okunma oranını göster.
+    const a = secondsFromTimecode(s.start);
+    const b = secondsFromTimecode(s.end);
+    const ratio = b > a ? Math.max(0, Math.min(1, (t - a) / (b - a))) : 1;
+    const chars = Math.floor(ratio * s.text.length);
+    box.hidden = false;
+    box.innerHTML = `<span class="kk-done">${esc(s.text.slice(0, chars))}</span><span class="kk-rest">${esc(s.text.slice(chars))}</span>`;
+    return;
+  }
+  box.hidden = false;
+  box.innerHTML = words
+    .map((w) => {
+      const wa = secondsFromTimecode(w.s);
+      const wb = secondsFromTimecode(w.e);
+      const on = t >= wa && t < wb + 0.001;
+      const done = t >= wb;
+      return `<span class="${on ? 'on' : done ? 'done' : ''}">${esc(w.w)}</span>`;
+    })
+    .join(' ');
 }
 // Karaoke vurgulaması: çalma sırasında o an konuşulan kelime (kelime zamanı
 // varsa) ya da bölüm metni vurgulanır. Kelime zamanı yoksa bölüm aralığına göre
@@ -5110,6 +5246,9 @@ function setupEvents() {
         if (panel && !panel.hidden) closeTermPanel(m);
         else renderTermPanel(m);
       }
+    } else if (b.dataset.followToggle !== undefined) {
+      setFollow(!followState.on);
+      showToast(followState.on ? 'Takip açık: bölümler otomatik ilerleyecek.' : 'Takip kapalı.');
     } else if (b.dataset.cardTab !== undefined) {
       // Sekme değiştir: DOM yeniden çizilmez, yalnız görünürlük değişir.
       const [id, tab] = b.dataset.cardTab.split('|');
