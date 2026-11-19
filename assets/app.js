@@ -13,6 +13,7 @@ const DB_STORE = 'audio';
 // The base model aborted on one window with "token_ids must be a non-empty
 // array", so it is offered only as a fast, low-accuracy option.
 const ASR_MODELS = {
+  'onnx-community/whisper-tiny': { label: 'Tiny model – en hızlı, en düşük doğruluk (~75 MB)', dtype: 'fp32', warn: true },
   'onnx-community/whisper-base': {
     label: 'Temel model – hızlı, en düşük doğruluk (~146 MB)',
     dtype: 'fp32',
@@ -52,6 +53,7 @@ function dtypeLabel(dtype) {
 const DEFAULT_ASR_MODEL = 'onnx-community/whisper-small';
 // Kısa model adları: yükleme durumunda ve kayıt kartlarında gösterilir.
 const MODEL_LOAD_LABELS = {
+  'onnx-community/whisper-tiny': 'Tiny model',
   'onnx-community/whisper-base': 'Temel model',
   'onnx-community/whisper-small': 'Küçük model',
   'onnx-community/whisper-medium-ONNX': 'Orta model',
@@ -3014,15 +3016,23 @@ async function ensureModel() {
   // yüzde hesaplanır. Böylece "%100 → %3" gibi zıplayan, anlaşılmaz görüntü
   // yerine tek ve tutarlı bir ilerleme çubuğu gösterilir.
   const fileState = new Map();
+  let maxPct = 0;
+  // Beklenen dosya sayısı sabittir (Whisper ONNX paketi ~7 dosya). Payda
+  // dosyalar indikçe büyüdüğü için eski sürümde yüzde geriye düşüyordu
+  // ("%71 → %80 → duruyor"). Sabit payda + hiç azalmayan yüzde kullanılır.
+  const EXPECTED_FILES = 7;
   const refreshLoadStatus = (activeFile) => {
-    const files = [...fileState.values()];
-    const done = files.filter((f) => f >= 100).length;
-    const total = files.length || 1;
-    const pct = Math.min(99, Math.round((done / total) * 100));
+    const vals = [...fileState.values()];
+    const denom = Math.max(EXPECTED_FILES, vals.length);
+    const sum = vals.reduce((a, b) => a + Math.max(0, Math.min(100, b)), 0);
+    let pct = Math.min(99, Math.round(sum / denom));
+    if (pct < maxPct) pct = maxPct; // asla geri gitme
+    maxPct = pct;
+    const done = vals.filter((v) => v >= 100).length;
     const label = MODEL_LOAD_LABELS[modelId] || modelId;
     const active = activeFile ? ` · ${activeFile}` : '';
     $('#modelStatus').innerHTML =
-      `<b>${esc(label)}</b> yükleniyor… genel ilerleme %${pct} (${done}/${files.length} dosya)${esc(active)}`;
+      `<b>${esc(label)}</b> yükleniyor… %${pct} (${done}/${denom} dosya)${esc(active)}`;
     const bar = $('#modelLoadBar');
     if (bar) {
       bar.hidden = false;
@@ -3044,9 +3054,9 @@ async function ensureModel() {
     // Dtype kademesi: istenen bileşen-bazlı dtype ile yüklenir. Depoda o
     // varyant yoksa veya yüklenemezse, tümü fp32 (en güvenilir) ile yeniden
     // denenir. Böylece dtype seçimi yüklemeyi asla kırmaz.
-    const loadWith = async (dt) =>
+    const loadWith = async (dt, dev = useDevice) =>
       pipeline('automatic-speech-recognition', modelId, {
-        device: useDevice,
+        device: dev,
         dtype: dt,
         progress_callback: (p) => {
           if (p.status === 'progress' && p.file) {
@@ -3059,9 +3069,15 @@ async function ensureModel() {
       });
     // Dtype adayları sırayla denenir. Her başarısız denemeden önce önceki
     // oturum serbest bırakılır ki bellek birikmesin (6 GB GPU'da önemli).
+    // Deneme planı: önce istenen cihaz + dtype adayları. GPU'da hepsi
+    // başarısız olursa (ör. bellek yetmez → Aborted) CPU (WASM) ile son bir
+    // deneme yapılır. Böylece model, GPU belleğine sığmasa da çalışır.
+    const plan = candidates.map((d) => ({ dtype: d, device: useDevice }));
+    if (useDevice !== 'wasm') plan.push({ dtype: 'fp32', device: 'wasm' });
     let usedDtype = null;
+    let usedDevice = useDevice;
     let lastErr = null;
-    for (const cand of candidates) {
+    for (const step of plan) {
       if (asrPipeline && asrPipeline.dispose) {
         try {
           await asrPipeline.dispose();
@@ -3069,20 +3085,22 @@ async function ensureModel() {
         asrPipeline = null;
       }
       try {
-        $('#modelStatus').textContent = `${spec.label} yükleniyor… (duyarlılık: ${dtypeLabel(cand)})`;
-        asrPipeline = await loadWith(cand);
-        usedDtype = cand;
+        $('#modelStatus').textContent =
+          `${spec.label} yükleniyor… (${step.device === 'webgpu' ? 'GPU' : 'CPU'} · ${dtypeLabel(step.dtype)})`;
+        asrPipeline = await loadWith(step.dtype, step.device);
+        usedDtype = step.dtype;
+        usedDevice = step.device;
         break;
       } catch (candErr) {
         lastErr = candErr;
-        console.warn('Dtype denemesi başarısız:', dtypeLabel(cand), candErr);
+        console.warn('Yükleme denemesi başarısız:', step.device, dtypeLabel(step.dtype), candErr);
       }
     }
-    if (!usedDtype) throw lastErr || new Error('Model hiçbir duyarlılık ayarıyla yüklenemedi.');
+    if (!usedDtype) throw lastErr || new Error('Model hiçbir ayarla yüklenemedi (GPU ve CPU denendi).');
     asrPipeline.__spec = spec;
     asrPipeline.__modelId = modelId;
     asrPipeline.__dtype = usedDtype;
-    asrPipeline.__device = useDevice;
+    asrPipeline.__device = usedDevice;
     loadedModelId = modelId;
     dtype = usedDtype;
     const bar = $('#modelLoadBar');
@@ -3096,7 +3114,7 @@ async function ensureModel() {
       (spec.warn
         ? 'Model hazır. Bu model hızlıdır ancak doğruluğu düşüktür; metni mutlaka kayıttan doğrulayın.'
         : 'Model hazır. Türkçe kaynak dili ve transkripsiyon görevi zorunlu olarak kullanılacak.') +
-      ` Çalışma birimi: ${asrDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'} · duyarlılık: ${dtypeLabel(dtype)}.`;
+      ` Çalışma birimi: ${usedDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'} · duyarlılık: ${dtypeLabel(usedDtype)}.`;
     showToast('Konuşma modeli hazır.');
     refreshStorage();
     return asrPipeline;

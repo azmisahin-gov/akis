@@ -530,3 +530,19 @@ başarısız olunca **tümü fp32**'ye düşüyordu. fp32 daha fazla bellek iste
   oturum `dispose()` edilir; bellek birikmez.
 - `dtypeFor` yerine `dtypeCandidates` kullanılır; testler buna göre güncellendi.
   Toplam birim testi 165 (tümü geçer).
+
+## v2.24 — İlerleme göstergesi, Tiny model, GPU→CPU geri dönüşü
+
+Kullanıcı geri bildirimi: yükleme ilerlemesi gerçekçi görünmüyor ("%71'de
+başlıyor, %80'e çıkıp duruyor"); ayrıca 16 GB RAM + 6 GB GPU'da orta model
+neden yüklenmiyor sorusu.
+
+- **İlerleme düzeltmesi:** eski kodda payda dosya sayısıydı; dosyalar indikçe
+  payda büyüdüğü için yüzde geriye düşüyordu. Artık **sabit beklenen dosya
+  sayısı** (7) ve **hiç azalmayan** yüzde kullanılır; aktif dosya adı gösterilir.
+- **Tiny model** eklendi (~75 MB) — en hızlı, en düşük doğruluk.
+- **GPU→CPU geri dönüşü:** GPU'da tüm dtype denemeleri başarısız olursa
+  (ör. bellek yetmez → `Aborted`) son olarak **CPU (WASM) fp32** denenir.
+  16 GB RAM'de model CPU'da çalışır. Böylece yükleme artık kilitlenmez.
+- Durum satırı gerçek kullanılan cihazı ve dtype'ı gösterir.
+- Model menüsünde 5 model: Tiny, Temel, Küçük, Orta, Large-v3-turbo.
