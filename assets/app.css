@@ -853,3 +853,32 @@ body.follow-on #view-audio .seg-item.is-active{box-shadow:inset 0 0 0 1px #dbe7f
 @media(max-width:1080px){
   #view-audio .seg-workspace{grid-template-columns:1fr}
 }
+
+/* ============================================================================
+   v2.41 — Scroll katmanı 3 -> 2; materyal listesi erişimi; durum şeridi
+   Kullanıcı: "audioDetail, seg-list ve seg-detail'de ayrı ayrı scroll var;
+   burada scroll'a niye gerek var? Segment listesinde olabilir."
+   ============================================================================ */
+/* Kural: TEK kaydırma = bölüm listesi (.seg-list).
+   .seg-detail paneli kaydırmaz; içeriği kadar uzar ve dış view kaydırır.
+   Böylece iç içe üç kaydırma çubuğu yerine tek çubuk kalır. */
+#view-audio #audioDetail{overflow:visible;min-height:0}
+#view-audio .seg-detail{overflow:visible;height:auto;min-height:0}
+#view-audio .seg-workspace{height:auto;align-items:start}
+/* Liste ekran yüksekliğine oturur ve kendi içinde kayar. */
+#view-audio .seg-list{height:clamp(340px,62vh,900px);max-height:none;overflow-y:auto}
+body.ws-mode #view-audio .seg-list{height:calc(100vh - 250px);min-height:320px}
+
+/* Çalışma modunda dış view kaymaz; sütunlar kendi içinde yönetilir. */
+body.ws-mode #view-audio>.detail-panel{overflow:hidden}
+body.ws-mode #view-audio #audioDetail{overflow:visible}
+
+/* Materyal listesi erişimi: çalışma modunda üst çubuktan açılır. */
+#workspaceBar .ws-list-btn{display:none}
+body.ws-mode #workspaceBar .ws-list-btn{display:inline-flex}
+
+/* Dar ekran: liste yüksekliği sabit kalmasın. */
+@media(max-width:1080px){
+  #view-audio .seg-list{height:auto;max-height:300px}
+  body.ws-mode #view-audio .seg-list{height:auto;max-height:280px}
+}

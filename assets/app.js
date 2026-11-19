@@ -415,6 +415,15 @@ function switchView(name) {
     setCaseDrawer(true);
     return;
   }
+  // Ses kayıtları açılırken: kayıt varsa doğrudan çalışma moduna gir. Uzman
+  // zaten tek kaydı dinleyip yazıyor; materyal şeridi sürekli gerekmiyor.
+  // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
+  if (name === 'audio') {
+    const c0 = currentCase();
+    if (c0 && (c0.materials || []).length && !workspaceDeclined && !document.body.classList.contains('ws-mode')) {
+      setWorkspace(true);
+    }
+  }
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   const labels = {
@@ -2361,6 +2370,12 @@ function handleSegKey(e, card, m) {
     return true;
   }
   // Böl / birleştir kısayolları: uzman kaydı dinlerken elleri klavyede kalır.
+  if ((e.key === 'l' || e.key === 'L') && !typing) {
+    // Kayıt listesini aç/kapat (çalışma modundan çıkar).
+    setWorkspace(!document.body.classList.contains('ws-mode'));
+    e.preventDefault();
+    return true;
+  }
   if ((e.key === 'f' || e.key === 'F') && !typing) {
     setFollow(!followState.on);
     showToast(followState.on ? 'Takip açık.' : 'Takip kapalı.');
@@ -2741,6 +2756,8 @@ function refreshPlayButtons() {
 // kayar ve metin canlı vurgulanır. Uzman hiç kaydırma yapmaz; yalnız dinler.
 // Uydurma zamanlama yoktur: vurgu gerçek oynatma konumundan hesaplanır.
 let followTimer = null;
+// Kullanıcı "listeye dön" dediyse bu oturumda otomatik çalışma moduna girme.
+let workspaceDeclined = false;
 // Takip modu durumu (dosya bazlı saklanır: case.followMode).
 const followState = { on: false };
 function setFollow(on) {
@@ -5642,7 +5659,15 @@ function setupEvents() {
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
 $('#workspaceBtn').addEventListener('click', () => setWorkspace(true));
-$('#workspaceBackBtn').addEventListener('click', () => setWorkspace(false));
+$('#wsListBtn').addEventListener('click', () => {
+  setWorkspace(false);
+  showToast('Kayıt listesi açık. Bir kayda tıklayınca çalışma moduna döner.');
+});
+$('#workspaceBackBtn').addEventListener('click', () => {
+  // Kullanıcı bilinçli olarak listeye döndü; bu oturumda tekrar otomatik girme.
+  workspaceDeclined = true;
+  setWorkspace(false);
+});
 $$('[data-ws-nav]').forEach((b) =>
   b.addEventListener('click', () => {
     const c = currentCase();
