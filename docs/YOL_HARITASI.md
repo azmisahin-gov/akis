@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.77.**
+yazılır. **Güncel sürüm: v2.81.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,59 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.81 — Çözümleme profilleri (tamamlandı)
+
+Kullanıcı şive, kıcırtı ve malzeme sesi gibi farklı çözümlemeler istedi. Bunlar
+**ayrı eğitilmiş model** gerektirir; depo öyle bir model içermez ve yapılmış gibi
+gösterilmez. Bunun yerine aynı modelin yönlendirilebilir ayarı profil olarak
+sunuldu (`ASR_PROFILES`): standart, şive/ağır aksan, gürültülü/kıcırtılı,
+telefon/dar bant. Dil Türkçe ve görev transkripsiyon **sabit** kalır. Seçim
+`akis.asrProfile` ile hatırlanır, rapora yazılmaz. Test: `birim-testleri.mjs`
+[13] (19 kontrol; dil kilidinin bozulmadığını da doğrular).
+
+### v2.80 — Hızlı onaya uygun filtresi + toplu onay (tamamlandı)
+
+Kullanıcı: "otomatik onaylayabileceğimiz, doğrulukları yüksek olanları
+belirleyelim". Model güven skoru vermediği için **uydurma doğruluk yüzdesi
+üretilmez**; ölçüt yalnız gözlemlenebilir işaretlere dayanır (`segQuickCheck`):
+anlamlı metin var mı, süre ≥1,2 sn mi, model tekrarı var mı, üst üste/anlaşılmaz
+işaretli mi, öncekiyle çakışıyor mu. Sol panelde **Hızlı onaya uygun** filtresi
+ve `✓ N hızlı onayla` toplu onay düğmesi eklendi. Toplu onay yalnız uygun
+bölümlere dokunur, geri alınabilir, delil günlüğüne yazılır; onay yetkisi
+kuralı (ikinci göz onaylayamaz) korunur. Test: `birim-testleri.mjs` [12].
+
+### v2.79 — Konuşmacı standardı: rol/cinsiyet sessizce kayboluyordu (tamamlandı)
+
+Kanıtlanmış **veri kaybı**: arayüz rol/cinsiyeti Türkçe etiket olarak yazıyordu
+(`Davacı`, `Kadın`), şema ASCII kod bekliyordu (`complainant`, `female`). Etiket
+kayda yazılınca `normalizeSpeaker` değeri `unspecified`'a düşürüyordu — her
+yenilemede bilirkişinin girdiği rol ve cinsiyet siliniyordu.
+
+Çözüm: standart konuşmacı kodu **S1, S2, S3…** (`assignSpeakerCodes`). Kod bir
+kez verilir, değişmez; silinen konuşmacının kodu yeniden kullanılır. Bölümdeki
+konuşmacı alanı serbest metin değil **listedit** (`S2 · Kiracı`); **＋** düğmesi
+yeni konuşmacı ekler ve sıradaki boş kodu verir. Seçenek `value`'su kod, görünen
+metin etikettir. Eski kayıtlar `normalizeSpeakerRole`/`normalizeSpeakerGender`
+göç tablolarıyla kurtarılır. Raporun üç çıktısı `segSpeakerCell` ile tek
+kaynaktan beslenir. Test: `sema-testi.mjs` [3b] (16 kontrol).
+
+### v2.78 — Dinlerken bölme çizgisi bozulmuyor + A–B döngü (tamamlandı)
+
+Kullanıcı: "dinlerken bölme çizgileri bozuluyor, tekrar düzeltmem gerekiyor"
+ve "bir aralığı takip ederek dinlesek anlayamıyoruz".
+
+İki gerçek hata:
+- `nudgeBoundary` başlangıcı kaydırınca **bitişi de sessizce** taşıyordu;
+  bölüm sıfır uzunlukta kalabiliyordu.
+- Dalgaya **düz tıklamak** "en yakın sınırı" taşıyordu. Uzman dinlemek için
+  tıkladığında bölme çizgisi bozuluyordu.
+
+Çözüm: karşı sınır artık sürüklenmez (en az 0,1 sn kalır, nedenini söyler).
+Düz tıklama yalnız **konuma gider**; sınırı taşımanın iki açık yolu var:
+sınırı sürüklemek ya da **Alt+tıkla**. Yeni **A–B döngüsü** eklendi: yalnız
+oynatmayı sarar, bölüm sınırlarına dokunmaz, kayda yazılmaz (oturumluk).
+Test: `birim-testleri.mjs` [11] (11 kontrol).
 
 ### v2.77 — Belge koruması, buton hiyerarşisi, takip modu (tamamlandı)
 

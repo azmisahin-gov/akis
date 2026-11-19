@@ -46,6 +46,10 @@ import {
   normalizeMaterial,
   normalizeSegment,
   normalizeMediumType,
+  normalizeSpeaker,
+  normalizeSpeakerRole,
+  normalizeSpeakerGender,
+  assignSpeakerCodes,
   normalizeQuestion,
   validateCase,
   validateMaterial,
@@ -147,6 +151,43 @@ console.log('\n[3] Kod ve etiket bütünlüğü');
   }
   ok('REPORT_TYPE dört tür', REPORT_TYPE.length === 4);
   ok('kodlar Türkçe metin değil (ASCII)', MATERIAL_STATUS.every((s) => /^[a-z]+$/.test(s)));
+}
+
+// --- 3b. Konuşmacı kodlama standardı ------------------------------------
+// v2.79: arayüz rol/cinsiyeti Türkçe ETİKET olarak yazıyordu; şema ASCII KOD
+// beklediği için değer yeniden yüklemede 'unspecified'a düşüyordu (sessiz veri
+// kaybı). Bu bölüm hem göçü hem standardı denetler.
+console.log('\n[3b] Konuşmacı kodlama standardı');
+{
+  eq('rol etiketi koda çevrildi', normalizeSpeakerRole('Davacı'), 'complainant');
+  eq('rol etiketi (davalı) koda çevrildi', normalizeSpeakerRole('Davalı'), 'defendant');
+  eq('cinsiyet etiketi koda çevrildi', normalizeSpeakerGender('Kadın'), 'female');
+  eq('cinsiyet etiketi (erkek) koda çevrildi', normalizeSpeakerGender('Erkek'), 'male');
+  eq('kod korunur', normalizeSpeakerRole('witness'), 'witness');
+  eq('bilinmeyen rol güvenli varsayılana düşer', normalizeSpeakerRole('saçma'), 'unspecified');
+  eq('boş rol varsayılana düşer', normalizeSpeakerRole(''), 'unspecified');
+
+  // Eski kayıt (etiket yazılmış) yüklenince DEĞER KAYBOLMAMALI.
+  const sp = normalizeSpeaker({ name: 'Kiracı', role: 'Davacı', gender: 'Kadın' });
+  eq('eski kayıt: rol kurtarıldı', sp.role, 'complainant');
+  eq('eski kayıt: cinsiyet kurtarıldı', sp.gender, 'female');
+
+  // Kodlar S1, S2… sırayla ve çakışmadan atanır.
+  const list = [{ name: 'A' }, { name: 'B' }, { code: 'S2', name: 'C' }];
+  assignSpeakerCodes(list);
+  eq('ilk konuşmacı S1', list[0].code, 'S1');
+  eq('var olan kod korunur', list[2].code, 'S2');
+  eq('çakışma atlanır', list[1].code, 'S3');
+
+  // Malzeme normalleştirmesinde kodlar atanmış olmalı.
+  const mm = normalizeMaterial({ id: 'm1', fileName: 'a.wav', speakers: [{ name: 'X' }, { name: 'Y' }] });
+  eq('malzemede kod atandı (1)', mm.speakers[0].code, 'S1');
+  eq('malzemede kod atandı (2)', mm.speakers[1].code, 'S2');
+
+  // Kod, etiketten bağımsız: etiket değişse de kod kalır.
+  const sp2 = normalizeSpeaker({ name: 'Yeni ad', code: 'S4', role: 'witness' });
+  eq('etiket değişse de kod kalır', sp2.code, 'S4');
+  eq('kod etiketten bağımsız', sp2.label, 'Yeni ad');
 }
 
 // --- 4. Normalize: v2 → v3 kayıpsız ------------------------------------

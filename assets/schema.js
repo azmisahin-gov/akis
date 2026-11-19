@@ -226,6 +226,9 @@ export function emptyQuestion(over = {}) {
 export function emptySpeaker(over = {}) {
   return {
     id: newId('sp'),
+    // Standart konuşmacı kodu: S1, S2, S3… Rapor ve bölüm listesi bunu
+    // kullanır. Serbest metin etiket (`label`) tanımlayıcı addır ("Kiracı").
+    code: '',
     label: '', // Uzmanın verdiği etiket ("Kiracı", "Ev sahibi")
     role: 'unspecified',
     gender: 'unspecified',
@@ -431,14 +434,74 @@ export function normalizeSegment(src = {}) {
   return out;
 }
 
+// v2.79: arayüz uzun süre Türkçe ETİKET yazdı ("Davacı", "Kadın") ama şema
+// ASCII KOD bekler ("complainant", "female"). Etiket kayda yazılınca
+// normalizeSpeaker onu tanımıyor ve değeri 'unspecified'a düşürüyordu — yani
+// bilirkişinin girdiği rol/cinsiyet SESSİZCE kayboluyordu. Aşağıdaki göç
+// tabloları eski kayıtları kurtarır; arayüz artık yalnız kod yazar.
+const SPEAKER_ROLE_ALIASES = {
+  'Belirtilmedi': 'unspecified',
+  'Davacı': 'complainant',
+  'Müşteki/Mağdur': 'complainant',
+  'Müşteki / Davacı': 'complainant',
+  'Davalı': 'defendant',
+  'Sanık': 'defendant',
+  'Şüpheli': 'defendant',
+  'Şüpheli / Davalı': 'defendant',
+  'Alacaklı': 'complainant',
+  'Borçlu': 'defendant',
+  'Tanık': 'witness',
+  'Bilirkişi': 'expert',
+  'Üçüncü kişi': 'other',
+  'Tercüman': 'other'
+};
+const SPEAKER_GENDER_ALIASES = {
+  'Belirtilmedi': 'unspecified',
+  'Kadın': 'female',
+  'Erkek': 'male',
+  'Belirsiz': 'uncertain'
+};
+export function normalizeSpeakerRole(v) {
+  const s = str(v).trim();
+  if (!s) return 'unspecified';
+  if (SPEAKER_ROLE.includes(s)) return s;
+  return SPEAKER_ROLE_ALIASES[s] || 'unspecified';
+}
+export function normalizeSpeakerGender(v) {
+  const s = str(v).trim();
+  if (!s) return 'unspecified';
+  if (SPEAKER_GENDER.includes(s)) return s;
+  return SPEAKER_GENDER_ALIASES[s] || 'unspecified';
+}
+// Standart konuşmacı kodu: S1, S2, S3… Var olan kod KORUNUR (rapor tutarlılığı
+// için kod bir kez verilince değişmez); kodu olmayan konuşmacıya en küçük BOŞ
+// kod verilir. Böylece silinen bir konuşmacının kodu yeniden kullanılır ve
+// raporda S1, S3 gibi boşluklar oluşmaz.
+export function assignSpeakerCodes(speakers) {
+  const used = new Set();
+  for (const sp of speakers || []) {
+    const c = str(sp.code).trim();
+    if (/^S\d+$/.test(c)) used.add(c);
+  }
+  let n = 1;
+  for (const sp of speakers || []) {
+    if (/^S\d+$/.test(str(sp.code).trim())) continue;
+    while (used.has('S' + n)) n += 1;
+    sp.code = 'S' + n;
+    used.add(sp.code);
+  }
+  return speakers || [];
+}
+
 export function normalizeSpeaker(src = {}) {
   const s = isObj(src) ? src : {};
   const out = {
     ...s,
     id: s.id || newId('sp'),
+    code: str(s.code),
     label: str(s.label || s.name),
-    role: pick(s.role, SPEAKER_ROLE, 'unspecified'),
-    gender: pick(s.gender, SPEAKER_GENDER, 'unspecified'),
+    role: normalizeSpeakerRole(s.role),
+    gender: normalizeSpeakerGender(s.gender),
     ageRange: str(s.ageRange),
     notes: str(s.notes),
     pitchHz: Number.isFinite(Number(s.pitchHz ?? s.pitch)) ? Number(s.pitchHz ?? s.pitch) : null,
@@ -452,7 +515,7 @@ export function normalizeMaterial(src = {}) {
   const m = isObj(src) ? src : {};
   const tech = isObj(m.tech) ? m.tech : {};
   const origin = isObj(m.origin) ? m.origin : {};
-  const speakers = (Array.isArray(m.speakers) ? m.speakers : []).map(normalizeSpeaker);
+  const speakers = assignSpeakerCodes((Array.isArray(m.speakers) ? m.speakers : []).map(normalizeSpeaker));
   const byLabel = new Map(speakers.map((s) => [s.label, s.id]));
   const segments = (Array.isArray(m.segments) ? m.segments : []).map((raw) => {
     const s = normalizeSegment(raw);

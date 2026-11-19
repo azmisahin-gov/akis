@@ -64,6 +64,9 @@ const EXPOSE = [
   'evaluateModelIntegrity', 'recommendModel', 'modelIdFromUrl',
   'parseAsrResult', 'asrWindows', 'looksNonTurkish', 'safeName',
   'dtypeCandidates', 'dtypeLabel', 'modelShortName', 'looksLikeGarbage',
+  'nudgeBoundary', 'loopRange', 'setLoopPoint', 'loopLabel',
+  'segQuickCheck', 'segCounts', 'segMatchesFilter', 'tcRange', 'fmtWer',
+  'asrProfile', 'asrProfileOptions', 'ASR_PROFILES',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -557,6 +560,144 @@ eq('hukuk soru kaynağı', T.questionsFallbackText(cHukuk).startsWith('Mahkemece
 eq('savcılık soru kaynağı', T.questionsFallbackText(cSav).startsWith('Cumhuriyet Başsavcılığınca'), true);
 eq('icra soru kaynağı', T.questionsFallbackText(cIcra).startsWith('İcra Müdürlüğünce'), true);
 eq('savcılıkta "mahkemece" GEÇMEZ', /mahkemece/i.test(T.questionsFallbackText(cSav)), false);
+
+// --- 11. Bölüm sınırı ve dinleme döngüsü ---------------------------------
+// v2.78: kullanıcı "dinlerken bölme çizgileri bozuluyor" dedi. İki gerçek hata
+// vardı: (a) nudge karşı sınırı sessizce sürüklüyordu, (b) dalgaya dinlemek
+// için tıklamak en yakın sınırı taşıyordu. Bu testler hatanın geri dönmesini
+// engeller.
+console.log('\n[11] Bölüm sınırı ve dinleme döngüsü');
+{
+  const m = { duration: 60, segments: [{ start: '00:00:10.000', end: '00:00:20.000', text: 'a' }] };
+  // Başlangıcı bitişe doğru sonuna kadar it: karşı sınır DEĞİŞMEMELİ.
+  T.nudgeBoundary(m, 0, 'start', 100);
+  eq('başlangıç itilince bitiş DEĞİŞMEZ', m.segments[0].end, '00:00:20.000');
+  eq('başlangıç bitişe 0,1 sn kalana kadar gelir', m.segments[0].start, '00:00:19.900');
+  eq('bölüm sıfır uzunlukta kalmaz', T.secondsFromTimecode(m.segments[0].end) > T.secondsFromTimecode(m.segments[0].start), true);
+
+  const m2 = { duration: 60, segments: [{ start: '00:00:10.000', end: '00:00:20.000', text: 'a' }] };
+  T.nudgeBoundary(m2, 0, 'end', -100);
+  eq('bitiş geri çekilince başlangıç DEĞİŞMEZ', m2.segments[0].start, '00:00:10.000');
+  eq('bitiş başlangıca 0,1 sn kalana kadar gelir', m2.segments[0].end, '00:00:10.100');
+
+  // Döngü: bölüm sınırlarına dokunmaz, oturumluk alanda yaşar.
+  const m3 = { duration: 60, segments: [{ start: '00:00:10.000', end: '00:00:20.000', text: 'a' }] };
+  eq('başlangıçta döngü yok', T.loopRange(m3), null);
+  T.setLoopPoint(m3, 'a', 12);
+  T.setLoopPoint(m3, 'b', 15);
+  eq('A–B kuruldu', !!T.loopRange(m3), true);
+  eq('döngü bölüm sınırını değiştirmez (başlangıç)', m3.segments[0].start, '00:00:10.000');
+  eq('döngü bölüm sınırını değiştirmez (bitiş)', m3.segments[0].end, '00:00:20.000');
+  eq('döngü etiketi A ve B gösterir', T.loopLabel(m3), 'A 00:00:12.000 → B 00:00:15.000');
+  // Ters sıra: B, A'nın gerisine ayarlanırsa geçersiz aralık kabul edilmez.
+  T.setLoopPoint(m3, 'b', 11);
+  eq('B, A gerisindeyse aralık geçersiz', T.loopRange(m3), null);
+}
+
+// --- 12. Hızlı onaya uygunluk ölçütü --------------------------------------
+// v2.80: kullanıcı "otomatik onaylanabilecek, doğruluğu yüksek olanları
+// işaretleyelim" dedi. Uydurma bir doğruluk yüzdesi ÜRETİLMEZ; yalnız
+// gözlemlenebilir işaretlere bakılır ve gerekçe metinle gösterilir.
+console.log('\n[12] Hızlı onaya uygunluk');
+{
+  const good = { start: '00:00:01.000', end: '00:00:04.000', text: 'Merhaba, depozito iadesi hakkında konuşmak istiyorum.' };
+  eq('normal bölüm uygun', T.segQuickCheck(good).ok, true);
+  eq('uygun bölümde gerekçe yok', T.segQuickCheck(good).reasons.length, 0);
+
+  const empty = { start: '00:00:01.000', end: '00:00:04.000', text: '' };
+  eq('metinsiz bölüm uygun DEĞİL', T.segQuickCheck(empty).ok, false);
+  eq('gerekçe: anlamlı metin yok', T.segQuickCheck(empty).reasons.includes('anlamlı metin yok'), true);
+
+  const dash = { start: '00:00:01.000', end: '00:00:04.000', text: '- - - - - - - - - - - - - - - - -' };
+  eq('dolgu metin uygun DEĞİL', T.segQuickCheck(dash).ok, false);
+
+  const short = { start: '00:00:01.000', end: '00:00:01.500', text: 'Evet.' };
+  eq('çok kısa bölüm uygun DEĞİL', T.segQuickCheck(short).ok, false);
+  eq('gerekçe: çok kısa bölüm', T.segQuickCheck(short).reasons.includes('çok kısa bölüm'), true);
+
+  const zero = { start: '00:00:05.000', end: '00:00:05.000', text: 'Evet, doğru.' };
+  eq('süre sıfır uygun DEĞİL', T.segQuickCheck(zero).ok, false);
+
+  // Tekrar ölçütü CÜMLE düzeyinde çalışır (detectRepetition). Bu yüzden test
+  // gerçek model tekrarını taklit eder: aynı cümle arka arkaya.
+  const rep = { start: '00:00:01.000', end: '00:00:12.000', text: 'Evet doğru. Evet doğru. Evet doğru. Evet doğru.' };
+  eq('model tekrarı uygun DEĞİL', T.segQuickCheck(rep).ok, false);
+  eq('gerekçe: model tekrarı', T.segQuickCheck(rep).reasons.includes('model tekrarı'), true);
+
+  const overlapObs = { start: '00:00:01.000', end: '00:00:04.000', text: 'Normal bir cümle.', obs: { overlap: true } };
+  eq('üst üste işaretli bölüm uygun DEĞİL', T.segQuickCheck(overlapObs).ok, false);
+
+  const prev = { start: '00:00:00.000', end: '00:00:05.000', text: 'önceki' };
+  const clash = { start: '00:00:03.000', end: '00:00:08.000', text: 'Normal bir cümle.' };
+  eq('öncekiyle çakışan bölüm uygun DEĞİL', T.segQuickCheck(clash, prev).ok, false);
+
+  // Filtre ve sayaç aynı ölçütü kullanmalı (arayüz ile liste ayrışmasın).
+  const m = {
+    segments: [
+      { start: '00:00:00.000', end: '00:00:03.000', text: 'Birinci normal cümle burada.', review: 'pending' },
+      { start: '00:00:03.000', end: '00:00:03.400', text: 'Kısa.', review: 'pending' },
+      { start: '00:00:04.000', end: '00:00:08.000', text: 'Onaylanmış cümle.', review: 'approved' }
+    ]
+  };
+  const counts = T.segCounts(m);
+  eq('sayaç: yalnız uygun ve bekleyen sayılır', counts.quick, 1);
+  eq('sayaç: onaylanmış hızlı sayılmaz', counts.approved, 1);
+  eq('filtre uygun bölümü seçer', T.segMatchesFilter(m.segments[0], 'quick'), true);
+  eq('filtre kısa bölümü seçmez', T.segMatchesFilter(m.segments[1], 'quick'), false);
+  eq('filtre onaylanmış bölümü seçmez', T.segMatchesFilter(m.segments[2], 'quick'), false);
+}
+
+// --- 13. Çözümleme profilleri ---------------------------------------------
+// v2.81: kullanıcı "şive, kıcırtı, malzeme sesi" gibi farklı çözümlemeler
+// istedi. Bunlar ayrı model ister; uydurulmaz. Profil yalnız dil ipucu ve
+// bağlam istemini değiştirir. Bu test, profilin SINIRINI de doğrular:
+// dil her zaman Türkçe kalır ve görev transkripsiyondur.
+console.log('\n[13] Çözümleme profilleri');
+{
+  eq('profil listesi dolu', T.ASR_PROFILES.length >= 2, true);
+  eq('bilinmeyen profil standarda düşer', T.asrProfile('yok').id, 'standard');
+  eq('standart profilde bağlam istemi yok', T.asrProfileOptions('standard')[0].prompt, undefined);
+
+  for (const p of T.ASR_PROFILES) {
+    const opts = T.asrProfileOptions(p.id);
+    eq(`profil ${p.id}: dil Türkçe kalır`, opts.every((o) => o.language === 'turkish'), true);
+    eq(`profil ${p.id}: görev transkripsiyon`, opts.every((o) => o.task === 'transcribe'), true);
+    eq(`profil ${p.id}: geri düşüş merdiveni var`, opts.length, 3);
+  }
+
+  // Şive profili ipucu ekler ama dil kilidini bozmaz.
+  const dia = T.asrProfileOptions('dialect');
+  eq('şive profili bağlam istemi taşır', typeof dia[0].prompt === 'string' && dia[0].prompt.length > 0, true);
+  eq('şive profili hâlâ Türkçe', dia[0].language, 'turkish');
+  // İlk deneme zaman damgası ve tekrar ayarı taşır.
+  eq('ilk deneme zaman damgası ister', dia[0].return_timestamps, true);
+  eq('ilk deneme tekrar cezası taşır', dia[0].repetition_penalty > 1, true);
+}
+
+
+// --- 14. Rapor zaman aralığı biçimi ---------------------------------------
+// v2.81: elle eklenen bölüm "00:00:00" (ms'siz) yazıldığı için raporda
+// "00:00:00 – 00:00:05.000" gibi tutarsız satır çıkıyordu. Depo kuralı:
+// zaman kodu HER ZAMAN milisaniye içerir.
+console.log('\n[14] Rapor zaman aralığı biçimi');
+{
+  eq('her iki uç ms içerir', T.tcRange('00:00:00', '00:00:05.000'), '00:00:00.000 – 00:00:05.000');
+  eq('zaten ms varsa korunur', T.tcRange('00:00:01.500', '00:00:03.250'), '00:00:01.500 – 00:00:03.250');
+  eq('tek uç boşsa tire', T.tcRange('', '00:00:05.000'), '— – 00:00:05.000');
+  eq('iki uç boşsa tek tire', T.tcRange('', ''), '—');
+}
+
+
+// --- 15. WER biçimi --------------------------------------------------------
+// v2.81: "%94.0" okunaksızdı; Türkçe ondalık ayırıcı virgüldür.
+console.log('\n[15] WER biçimi');
+{
+  eq('yüzde ve virgül', T.fmtWer(0.9403), '%94,0');
+  eq('tam sıfır hata', T.fmtWer(0), '%0,0');
+  eq('tam hata', T.fmtWer(1), '%100,0');
+  eq('sayı değilse tire', T.fmtWer(NaN), '—');
+  eq('nokta KULLANILMAZ', /\./.test(T.fmtWer(0.9403)), false);
+}
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

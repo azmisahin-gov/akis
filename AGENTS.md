@@ -255,6 +255,114 @@ girmez.
   bilgisayarında olur; dosya büyükse gönderim zorlaşır).
 - Aynı anda iki kişi aynı dosyada çalışamaz.
 
+## Aşama 6 — Dinleme güvenliği, konuşmacı standardı, hızlı onay, profiller (TAMAMLANDI, v2.78–v2.81)
+
+Kullanıcı tek oturumda dört konu açtı ve hepsi uygulandı. Aşağıdaki maddeler
+**değişmez kural** hâline geldi; bozulurlarsa testler kalır.
+
+### v2.78 — Dinlerken bölme çizgisi bozulmuyor
+
+İki gerçek hata vardı ve ikisi de "sessiz" davranıştı:
+
+1. `nudgeBoundary` başlangıcı kaydırınca **bitişi de** taşıyordu; bölüm sıfır
+   uzunlukta kalabiliyordu. Artık karşı sınır sürüklenmez, 0,1 sn boşluk
+   korunur ve nedenini söyler.
+2. Dalgaya **düz tıklamak** "en yakın sınırı" taşıyordu. Uzman dinlemek için
+   tıkladığında bölme çizgisi bozuluyordu. Artık:
+   - **düz tıklama** = yalnız konuma git (sınır taşımaz)
+   - **Alt+tıklama** = en yakın sınırı taşı
+   - **sürükleme** = sınırı taşı
+
+**A–B döngüsü** eklendi (`loopRange`/`setLoopPoint`/`loopLabel`): anlaşılmayan
+aralık tekrar tekrar dinlenir. Döngü **yalnız oynatmayı sarar**; `segment.start/
+end` değerlerine dokunmaz. `m.__loop` **oturumluktur** ve
+`stripDerivedFields` ile kayıttan/dışa aktarımdan atılır — şemaya yazılmaz.
+
+### v2.79 — Konuşmacı standardı ve sessiz veri kaybı
+
+**Kanıtlanmış veri kaybı:** arayüz rol/cinsiyeti Türkçe etiket olarak
+yazıyordu (`Davacı`, `Kadın`), şema ASCII kod bekliyordu (`complainant`,
+`female`). `normalizeSpeaker` etiketi tanımayıp `unspecified`'a düşürüyordu —
+her yenilemede bilirkişinin girdisi siliniyordu.
+
+- **Standart kod:** `S1`, `S2`, `S3`… (`assignSpeakerCodes`). Var olan kod
+  **korunur**; kodu olmayan en küçük **boş** kodu alır (silinen kişinin kodu
+  yeniden kullanılır, raporda boşluk olmaz).
+- **Bölümde konuşmacı seçimi listedir** (`spkSelectOptions`), serbest metin
+  değil. **＋** (`data-add-spk`) yeni konuşmacı ekler ve aktif bölüme atar.
+- Seçenek `value`'su **kod**, görünen metin **etiket**. Kayda kod yazılır,
+  rapora etiket basılır (`SPEAKER_ROLE_LABEL[...]`).
+- **Raporun üç çıktısı tek kaynaktan:** `segSpeakerCell(m, s)` → `S1 · Kiracı`.
+  HTML/DOCX/UDF ayrı ayrı biçimlendirmez.
+- Göç: `normalizeSpeakerRole` / `normalizeSpeakerGender` eski Türkçe
+  etiketleri koda çevirir. `sema-testi.mjs` [3b] bunu denetler.
+
+### v2.80 — Hızlı onaya uygun + toplu onay
+
+- **Uydurma doğruluk yüzdesi YOK.** Model güven skoru vermiyor. Ölçüt yalnız
+  **gözlemlenebilir** işaretlere dayanır (`segQuickCheck`): anlamlı metin var
+  mı, süre ≥ 1,2 sn mi, model tekrarı var mı, üst üste/anlaşılmaz işaretli mi,
+  öncekiyle çakışıyor mu. Gerekçeler metinle gösterilir.
+- Filtre (`quick`) ve sayaç (`segCounts.quick`) **aynı fonksiyonu** kullanır;
+  arayüz ile liste ayrışamaz.
+- `bulkApproveQuick`: yalnız uygun bölümleri onaylar, uygun olmayanlara
+  dokunmaz, `snapshotForUndo` + `logEvent` ile geri alınabilir ve kayıtlıdır.
+  **Onay yetkisi kuralı korunur:** `isSecondEyesEditor()` hem düğmeyi
+  gizler hem fonksiyonu reddeder.
+
+### v2.81 — Çözümleme profilleri (dürüst sınır)
+
+Kullanıcı şive/kıcırtı/malzeme sesi çözümlemesi istedi. Bunlar **ayrı eğitilmiş
+model** gerektirir; depo öyle bir model içermez. **Yapılmış gibi gösterilmez.**
+
+- `ASR_PROFILES`: standart · şive/ağır aksan · gürültülü/kıcırtılı ·
+  telefon/dar bant. Yalnız dil ipucu + bağlam istemi + tekrar cezası değişir.
+- **Dil her zaman `turkish`, görev her zaman `transcribe`** kalır; profil bunu
+  gevşetmez. `birim-testleri.mjs` [13] dil kilidini doğrular.
+- Seçim `akis.asrProfile` ile hatırlanır; **rapora yazılmaz**.
+- Yeni çözümleme türü eklerken: ayrı model gerekiyorsa **ekleme**; sınırı
+  belgele. Profil eklemek serbest, "şive tanıma" iddiası yasak.
+
+### Bu aşamanın korunan kuralları (testle)
+
+| Kural | Test |
+|---|---|
+| Karşı sınır sessizce sürüklenmez | `birim-testleri` [11] |
+| A–B döngüsü bölüm sınırına dokunmaz | `birim-testleri` [11] |
+| Rol/cinsiyet etiketi koda göçer, kaybolmaz | `sema-testi` [3b] |
+| S1/S2 kodu çakışmaz, etiketten bağımsız | `sema-testi` [3b] |
+| Hızlı onay ölçütü + sayaç tutarlı | `birim-testleri` [12] |
+| Profil dil kilidini bozmaz | `birim-testleri` [13] |
+| Rapor zaman aralığı tek biçim (ms) | `birim-testleri` [14] |
+| WER "%94,0" biçiminde | `birim-testleri` [15] |
+| JS'in aradığı kimlik HTML'de var | `surum-testi` [9] |
+| Yeni özellik belgede + yardımda anılır | `surum-testi` [7]/[8] |
+
+**Takip modu (v2.79'da düzeltildi):** `followTick` **aktif kaydın** kartını
+kullanır (önce ilk kartı alıyordu). `syncSegDetailInPlace` seçicileri
+`segDetailHtml` ile **aynı** olmalı (`.sd-head`, `.sd-times`, `.sd-meta`,
+`.sd-text`); panel v2.62'de yeniden yazıldığında seçiciler eskimişti ve sağ
+panel hiç güncellenmiyordu. Dalga (`attachSegWave`) bölümü **kapalı değişkenle**
+tutmaz; `m.__segWaveRebind` + `refreshSegWave` ile aktif bölümü izler.
+
+### DERS: sahte DOM yetmez, tarayıcıda da deneyin
+
+`tools/*.mjs` testleri `node:vm` içinde **sahte DOM** kullanır. Bu yüzden
+DOM kimliği ve seçici uyuşmazlıklarını **yakalayamaz**. v2.78–v2.81 arasında
+tam olarak bu sınıftan dört hata gerçek tarayıcıda bulundu:
+
+1. `renderUndoState()` `#undoState` arıyordu, düğme `#undoBtn` → geri alma
+   düğmesi **hiç etkinleşmedi**.
+2. Toplu onay düğmesi yalnız tam çizimde ekleniyordu → sayaç değişince
+   kayboluyordu.
+3. Elle eklenen bölüm, kaydı olmayan konuşmacıya bağlanıyordu.
+4. Elle eklenen bölüm `00:00:00` (ms'siz) yazıyordu → raporda tutarsız sütun.
+
+**Kural:** arayüz/DOM'a dokunan her değişiklikten sonra `bash tools/test.sh`
+yetmez; gerçek tarayıcıda o akış **tıklanarak** denenir. Kimlik ve seçici
+uyuşmazlığı için `surum-testi` [9] koruma sağlar, ama tam kapsam için
+tarayıcı denemesi zorunludur.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -403,7 +511,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.77.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.81.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

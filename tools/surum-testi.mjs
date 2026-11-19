@@ -102,7 +102,16 @@ const REQUIRED_TOPICS = [
   ['depolama / IndexedDB', /IndexedDB|depolama/i],
   ['metin geçmişi', /metin geçmişi|geçmiş \(N\)/i],
   ['dalga etkileşimi', /Shift\+sürükle|tekerlek/i],
-  ['model seçimi', /model seçimi|akis\.model/i]
+  ['model seçimi', /model seçimi|akis\.model/i],
+  // v2.78–v2.81 özellikleri. Bu satırlar olmadan yeni özellik belgeden
+  // sessizce düşebilir; kullanıcının asıl kaygısı buydu.
+  ['A–B dinleme döngüsü', /A–B dinleme döngüsü|🔁 Döngü/],
+  ['dinlerken sınır bozulmaz', /Alt\+tıkla/],
+  ['konuşmacı standardı (S1)', /S1, S2|standart konuşmacı kodu/i],
+  ['hızlı onaya uygun', /Hızlı onaya uygun/i],
+  ['toplu onay', /toplu onay|hızlı onayla/i],
+  ['çözümleme profili', /Çözümleme profilleri|Çözümleme profili/i],
+  ['profilin sınırı', /şive tanıma[\s\S]{0,200}yapmaz|kaynak ayrıştırma[\s\S]{0,120}yapmaz/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
@@ -114,11 +123,42 @@ const HELP_TOPICS = [
   ['geri alma / Ctrl+Z', /Ctrl\+Z/],
   ['bölme', /Bölme ve geri alma/],
   ['dalga kullanımı', /Shift\+sürükle/],
-  ['ekip çalışması', /Ekip çalışması/]
+  ['ekip çalışması', /Ekip çalışması/],
+  // v2.78–v2.81 yardım bölümleri.
+  ['A–B döngüsü', /A–B döngüsü/],
+  ['konuşmacı standardı', /Konuşmacı standardı/],
+  ['toplu onay', /toplu onay/],
+  ['çözümleme profili', /Çözümleme profili/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));
 }
+
+// 9) ARAYÜZ KİMLİK EŞLEŞMESİ: JS'in aradığı kimlik HTML'de olmalı.
+// v2.75–v2.81'de `renderUndoState` #undoState arıyordu ama düğmenin kimliği
+// #undoBtn idi. Sayaç hiç yazılmadı, düğme hep devre dışı kaldı; "Ctrl+Z ile
+// geri alınır" vaadi arayüzde çalışmıyordu. Testler sahte DOM kullandığı için
+// bunu yakalayamıyordu. Bu kontrol, JS'in zorunlu kimliklerinin HTML'de
+// bulunduğunu denetler.
+const REQUIRED_IDS = [
+  ['geri alma düğmesi', 'undoBtn'],
+  ['sürüm etiketi', 'appVersion'],
+  ['model seçici', 'modelSelect'],
+  ['çözümleme profili seçici', 'asrProfileSelect'],
+  ['ayarlar çekmecesi', 'settingsDrawer'],
+  ['dosya bilgileri çekmecesi', 'caseDrawer'],
+  ['yardım penceresi', 'helpDialog']
+];
+for (const [label, id] of REQUIRED_IDS) {
+  check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));
+}
+// renderUndoState yanlış kimliğe dönmesin: #undoBtn aranmalı.
+const undoFn = appJs.match(/function renderUndoState\(\)[\s\S]{0,700}?\n}/);
+check(
+  'renderUndoState doğru düğmeyi hedefliyor',
+  !!undoFn && /#undoBtn/.test(undoFn[0]),
+  undoFn ? '' : 'fonksiyon bulunamadı'
+);
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

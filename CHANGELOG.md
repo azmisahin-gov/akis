@@ -6,12 +6,165 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.77.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.81.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.81 — Çözümleme profilleri (dürüst sınırla)
+
+KULLANICI: "Şive olabilir, kıcırtı sesi olabilir, malzemenin sesi olabilir;
+bu tür farklı çözümleri de düşünebilirsin."
+
+### 1. Önce sınır: bunlar ayrı model ister
+
+Şive tanıma, kaynak ayrıştırma (konuşmayı müzikten ayırma) ve malzeme sesi
+sınıflandırma **ayrı eğitilmiş modeller** gerektirir. Bu depo öyle bir model
+içermiyor. Depo ilkesi gereği **yapılmış gibi gösterilmez**; böyle bir düğme
+konmadı ve rapora böyle bir yetenek yazılmaz.
+
+### 2. Yapılan: aynı modelin yönlendirilebilir ayarı
+
+`ASR_PROFILES` — dört profil:
+
+| Profil | Ne değişir |
+|---|---|
+| Standart Türkçe konuşma | yalnız temel ayarlar |
+| Şive / ağır aksan (ipucu) | bağlam istemi: "yerel şive ve ağır aksan içerebilir" |
+| Gürültülü / kıcırtılı kayıt (ipucu) | bağlam istemi + tekrar cezası |
+| Telefon / dar bant (ipucu) | bağlam istemi: "dar bantlı telefon görüşmesi" |
+
+Dil her zaman **Türkçe**, görev her zaman **transkripsiyon** kalır; profil bunu
+gevşetmez (test [13] bunu doğrular). Seçim `akis.asrProfile` ile hatırlanır.
+
+### 3. Arayüz
+
+Ayarlar çekmecesine **Çözümleme profili** seçicisi eklendi. Her seçeneğin
+ipucu, profilin ne YAPMADIĞINI de yazar ("şive tanıma modeli DEĞİLDİR").
+
+### 4. Tarayıcıda yakalanan dört ayrı hata (testler kaçırmıştı)
+
+Sahte DOM ile çalışan testler geçiyordu ama gerçek tarayıcıda dört hata vardı:
+
+1. **Geri alma hiç çalışmıyordu.** `renderUndoState()` `#undoState` arıyordu;
+   düğmenin kimliği `#undoBtn`. Eleman bulunamadığı için sayaç yazılmıyor,
+   düğme **hep devre dışı** kalıyordu. Yani "Ctrl+Z ile geri alınır" vaadi
+   arayüzde yürümüyordu.
+2. **Toplu onay düğmesi görünmüyordu.** Düğme yalnız tam çizimde ekleniyordu;
+   metin yazıp sayaç değişince yenilenmiyordu. `refreshSegChips()` artık
+   düğmeyi yerinde tazeler.
+3. **Elle eklenen bölüm "(kayıtlı değil)" konuşmacıya bağlanıyordu.** Konuşmacı
+   kaydı oluşturulmadan `speaker: 'Konuşmacı 1'` yazılıyordu.
+4. **Zaman kodu tutarsızdı.** Elle eklenen bölüm `00:00:00` (ms'siz), bitişi
+   `00:00:05.000` yazılıyor; rapor satırı "00:00:00 – 00:00:05.000" oluyordu.
+   Depo kuralı "zaman kodu HER ZAMAN ms içerir". `tcRange()` üç çıktıda da
+   tek biçim uygular.
+
+Ayrıca `fmtWer` "%94.0" yazıyordu; Türkçe ondalık ayırıcı virgüldür → "%94,0".
+
+### 5. Test
+
+- `birim-testleri.mjs` [13] profil (19 kontrol), [14] zaman aralığı biçimi,
+  [15] WER biçimi.
+- `surum-testi.mjs` [9]: JS'in zorunlu kimlikleri HTML'de var mı, `renderUndoState`
+  doğru düğmeyi mi hedefliyor. Bu kontrol olmadan 1. hata yine sessizce döner.
+- Toplam: 231 birim + 345 şema kontrolü, hepsi geçiyor.
+
+## v2.80 — Hızlı onaya uygun filtresi + toplu onay
+
+KULLANICI: "Otomatik onaylayabileceğimiz, doğrulukları yüksek olanları
+belirleyelim. Sol panelde filtre de var; böyle filtrelerimiz olsun."
+
+### 1. Neden "doğruluk yüzdesi" YOK
+
+Whisper modeli güven skoru vermiyor. Uydurma bir "%97 doğru" etiketi, bilirkişi
+raporunda savunulamayacak bir iddia olurdu. Bu yüzden ölçüt yalnız
+**gözlemlenebilir** işaretlere dayanır ve gerekçesi yazılır.
+
+### 2. `segQuickCheck` — uygunluk ölçütü
+
+Uygun sayılmama nedenleri (hepsi metinle gösterilir):
+- anlamlı metin yok (boş/dolgu çıktı)
+- süre geçersiz (0) veya çok kısa (< 1,2 sn) — sınır hatası olasılığı yüksek
+- model tekrarı işareti (cümle düzeyinde)
+- üst üste konuşma / anlaşılmaz gözlemi işaretlenmiş
+- önceki bölümle çakışan zaman aralığı
+
+### 3. Sol panelde filtre
+
+`SEG_FILTERS`'a **Hızlı onaya uygun** eklendi; sayaç (`segCounts.quick`) ve
+filtre aynı fonksiyonu kullanır, arayüz ile liste ayrışamaz.
+
+### 4. Toplu onay
+
+`✓ N hızlı onayla` düğmesi **yalnız** ölçütü geçen bölümleri onaylar.
+- Uygun olmayanlara **dokunmaz**; kaç bölümün onaylandığını söyler.
+- **Geri alınabilir** (Ctrl+Z) ve **delil günlüğüne** yazılır.
+- Onay yetkisi kuralı korunur: ikinci göz (yardımcı/gözlemci) düğmeyi görmez
+  ve fonksiyon da reddeder.
+- Düğme yoksa "uygun bölüm yok" — sessiz başarısızlık yok.
+
+### 5. Test
+
+`birim-testleri.mjs` [12]: 18 yeni kontrol (uygunluk, gerekçeler, filtre,
+sayaç tutarlılığı). Toplam 203 birim kontrolü geçiyor.
+
+## v2.79 — Konuşmacı standardı: rol/cinsiyet sessizce kayboluyordu
+
+KULLANICI: "Konuşmacıları nasıl kodlayalım, bir standardı olsun."
+
+### 1. GERÇEK VERİ KAYBI bulundu (kanıtlandı)
+
+Arayüz uzun süredir rol ve cinsiyeti **Türkçe etiket** olarak yazıyordu
+(`Davacı`, `Kadın`). Şema ise **ASCII kod** bekler (`complainant`, `female`).
+Etiket kayda yazılınca `normalizeSpeaker` onu tanımıyor ve değeri
+`unspecified`'a düşürüyordu:
+
+```
+yazılan:  { role: "Davacı", gender: "Kadın" }
+geri okunan: unspecified / unspecified     ← bilirkişinin girdiği kayboldu
+```
+
+Yani her yenilemede bilirkişinin yazdığı rol ve cinsiyet **sessizce siliniyordu**.
+
+### 2. Standart konuşmacı kodu: S1, S2, S3…
+
+- Her konuşmacı **değişmez kod** taşır; etiket değişse de kod kalır.
+- Kod bir kez verilir, silinen konuşmacının kodu yeniden kullanılır
+  (raporda `S1, S3` boşluğu oluşmaz).
+- Bölümdeki konuşmacı alanı **serbest metin değil listedir** (`S2 · Kiracı`).
+- **＋** düğmesi yeni konuşmacı ekler: sıradaki boş kodu alır ve o bölüme atanır.
+- Bölüm listesindeki rozet etiket yerine kodu gösterir (dar alan, okunur).
+- Raporun **üç çıktısı** (HTML/DOCX/UDF) tek kaynaktan beslenir
+  (`segSpeakerCell`); bir çıktıda kod, diğerinde etiket görünmez.
+
+### 3. Kod ≠ etiket kuralı tam uygulandı
+
+- Seçeneklerin `value` değeri **kod**, görünen metin **etiket**.
+- Kayda yalnız kod yazılır; rapora yalnız etiket basılır.
+- Eski kayıtlar `normalizeSpeakerRole` / `normalizeSpeakerGender` göç
+  tablolarıyla kurtarılır (`Davacı → complainant`, `Kadın → female`).
+
+### 4. Takip modu: üç ayrı gerçek hata
+
+Kullanıcı: "takip modunda metin görünüyor ama takip etmiyor, tam okunamıyor."
+
+- `followTick` **ilk** ses kartını alıyordu; birden fazla kayıtta yanlış
+  dosyanın konumu okunuyordu → artık **aktif kaydın** kartı kullanılır.
+- `syncSegDetailInPlace` **var olmayan seçiciler** kullanıyordu
+  (`.seg-detail-head`, `.seg-times`, `.seg-meta-row`, `.seg-text-wrap`).
+  Panel v2.62'de `.sd-head`, `.sd-times`, `.sd-meta`, `.sd-text` olduğu için
+  hiçbir alan eşleşmiyor, sağ panel eski bölümde kalıyordu → seçiciler düzeltildi.
+- Uzun metinde vurgu görünür alanın dışında kalıyordu → vurgu kutusu kendi
+  içinde kaydırılır.
+
+### 5. Test
+
+- `sema-testi.mjs` [3b]: rol/cinsiyet göçü, kod atama, çakışma, etiket
+  bağımsızlığı (16 yeni kontrol).
+- Toplam: 345 şema kontrolü + 186 birim kontrolü, hepsi geçiyor.
 
 ## v2.77 — Belge koruması, buton hiyerarşisi, takip modu düzeltmesi
 

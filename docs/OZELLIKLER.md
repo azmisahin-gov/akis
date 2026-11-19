@@ -1,6 +1,6 @@
-# Özellikler (v2.77 — mevcut durum)
+# Özellikler (v2.81 — mevcut durum)
 
-Bu belge, AKİS v2.77'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.81'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -24,9 +24,15 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 
 - **İki sütunlu bölüm detayı:** sol = dalga/zaman/konuşmacı/gözlem, sağ =
   metin (asıl iş, tam yükseklik), alt = onay + araçlar.
-- **Bölüm dalgası:** bölümün ±0,5 sn penceresi. **Sürükle** = B/S sınırı,
-  **Shift+sürükle** = görünümü kaydır (pan), **tekerlek** = zoom. Üç işlev
-  ayrıdır. İmleç zamanı üstte yazılır (`00:00:18.000`).
+- **Bölüm dalgası:** bölümün ±0,5 sn penceresi. **Sınırı sürükle** = B/S
+  sınırı, **Shift+sürükle** = görünümü kaydır (pan), **tekerlek** = zoom,
+  **düz tıkla** = yalnız konuma git, **Alt+tıkla** = en yakın sınırı taşı.
+  İmleç zamanı üstte yazılır (`00:00:18.000`).
+  v2.78'de düz tıklama sınırı **sessizce taşıyordu**; uzman dinlemek için
+  tıkladığında bölme çizgisi bozuluyordu. Artık tıklama sınırı taşımaz.
+- **A–B dinleme döngüsü (v2.78):** dalgada A ve B noktaları belirlenir,
+  **🔁 Döngü** ile aralık tekrar tekrar dinlenir. Döngü **yalnız oynatmayı
+  sarar**; bölüm sınırlarına dokunmaz ve kayda yazılmaz (oturumluktur).
 - **✂ Böl:** aktif bölümü imlecin olduğu yerden ikiye ayırır. **Metin yeniden
   çözümlenmez**; kesim noktasına göre paylaştırılır (kelime zamanlaması varsa
   tam, yoksa kelime sınırından tahmin). Bölünen iki bölüm de "Kontrol
@@ -38,6 +44,16 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   birleşir.
 - **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümleri toplar.
 - **Metin geçmişi:** bölüm başına son 10 sürüm (`geçmiş (N)` düğmesi).
+- **Hızlı onaya uygun filtresi (v2.80):** sol panelde **Hızlı onaya uygun**
+  sekmesi yalnız *gözlemlenebilir* ölçütü geçen bekleyen bölümleri listeler.
+  Uydurma bir doğruluk yüzdesi **yoktur**; dışlama nedenleri metinle yazılır:
+  anlamlı metin yok, süre geçersiz, çok kısa bölüm (<1,2 sn), model tekrarı,
+  üst üste konuşma / anlaşılmaz işareti, öncekiyle çakışan aralık.
+- **Toplu onay (v2.80):** `✓ N hızlı onayla` düğmesi **yalnız** bu ölçütü
+  geçen bölümleri onaylar; uygun olmayanlara dokunmaz. Geri alınabilir
+  (Ctrl+Z), delil günlüğüne yazılır. Onay yetkisi kuralı korunur: ikinci göz
+  (yardımcı/gözlemci) bu düğmeyi **görmez**. Toplu onay denetim yerine
+  geçmez; uzman listeyi yine de dinlemelidir.
 
 ## Geri alma (v2.75)
 
@@ -300,9 +316,21 @@ uzmanlık alanını gösterir.
 
 ## Konuşmacı yönetimi ve ses özellikleri
 
+- **Standart konuşmacı kodu (v2.79):** her konuşmacı **S1, S2, S3…** kodu taşır.
+  Kod bir kez verilir ve **değişmez**; etiket ("Kiracı", "Ev sahibi") sonradan
+  değişse bile aynı kişi raporda aynı kodla görünür. Silinen konuşmacının kodu
+  yeniden kullanılır; raporda `S1, S3` gibi boşluk oluşmaz.
+- **Bölümde konuşmacı seçimi listedir** (serbest metin değil): `S2 · Kiracı`.
+  Yeni kişi için bölüm detayındaki **＋** düğmesi kullanılır; yeni konuşmacı
+  sıradaki boş kodu alır ve o bölüme atanır.
 - Her konuşmacı için **rol** (davacı, davalı, müşteki, sanık, şüpheli, alacaklı,
   borçlu, tanık, bilirkişi…), **cinsiyet** (uzman beyanı), **yaş aralığı** ve
   **not** alanları. Bu bilgiler rapora "Konuşmacılar" tablosu olarak akar.
+- **Kod ≠ etiket (v2.79):** rol ve cinsiyet kayda **ASCII kod** olarak yazılır
+  (`complainant`, `female`), raporda **Türkçe etiket** görünür. v2.78 ve
+  öncesinde arayüz etiketi kaydediyordu; şema kodu beklediği için değer
+  yeniden yüklemede `Belirtilmedi`ye düşüyordu (sessiz veri kaybı). Eski
+  kayıtlar `normalizeSpeakerRole` / `normalizeSpeakerGender` ile kurtarılır.
 - **Perde (temel frekans) ölçümü:** otokorelasyon yöntemiyle gerçek DSP ölçümü.
   Her konuşmacının bölümlerinden örnekler alınır, ortanca perde hesaplanır ve
   kaba bir yönlendirme gösterilir (ör. "düşük perde, genellikle erkek").
@@ -313,6 +341,18 @@ uzmanlık alanını gösterir.
 - **Sınır:** uygulama konuşmacı kimliğini kendiliğinden tespit etmez. Etiketler
   ve öznitelikler uzman beyanına dayanır; perde değeri kayıt koşullarına bağlı
   bir tahmindir.
+
+## Çözümleme profilleri (v2.81)
+
+- **Ne yapar:** aynı konuşma modelinin **dil ipucu ve bağlam istemini** değiştirir
+  (standart · şive/ağır aksan · gürültülü/kıcırtılı · telefon/dar bant). Seçim
+  Ayarlar → *Çözümleme profili*'nde yapılır ve tarayıcıda hatırlanır.
+- **Ne YAPMAZ (dürüst sınır):** şive tanıma, kaynak ayrıştırma (konuşmayı
+  müzikten ayırma), malzeme sesi sınıflandırma veya konuşmacı kimlik tespiti
+  **yapmaz**. Bunlar ayrı eğitilmiş modeller gerektirir; bu depo öyle bir model
+  içermez ve yapılmış gibi göstermez.
+- **Rapora girmez:** profil yalnız çözümleme ayarıdır; rapor metnine veya
+  künyeye yazılmaz. Çıktı yine bilirkişinin doğrulamasına tabidir.
 
 ## Dijital delil güvenliği
 

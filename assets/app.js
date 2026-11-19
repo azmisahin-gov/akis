@@ -26,6 +26,9 @@ import {
   SPEAKER_ROLE,
   SPEAKER_GENDER,
   MEDIUM_TYPE,
+  normalizeSpeakerRole,
+  normalizeSpeakerGender,
+  assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
 } from './schema.js';
@@ -35,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.77';
+const APP_VERSION = '2.81';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -369,7 +372,11 @@ async function undoLast() {
   showToast(`Geri alındı: ${snap.label}`);
 }
 function renderUndoState() {
-  const el = $('#undoState');
+  // Düğmenin kimliği index.html'de #undoBtn'dir. v2.75–v2.81 arasında burada
+  // #undoState aranıyordu; eleman bulunamadığı için sayaç hiç yazılmıyor ve
+  // düğme hep DEVRE DIŞI kalıyordu. Yani "Ctrl+Z ile geri alınır" vaadi
+  // arayüzde çalışmıyordu (tarayıcıda yakalandı). İki kimlik de desteklenir.
+  const el = $('#undoBtn') || $('#undoState');
   if (!el) return;
   const n = undoStack.length;
   el.textContent = n ? `↶ ${n}` : '↶ 0';
@@ -515,6 +522,11 @@ function stripDerivedFields(state) {
     for (const m of c.materials || []) {
       if ('__peaks' in m) {
         delete m.__peaks;
+        cleaned = true;
+      }
+      // A–B dinleme döngüsü oturumluktur; kayda ve dışa aktarıma girmez.
+      if ('__loop' in m) {
+        delete m.__loop;
         cleaned = true;
       }
       // v2.70: yarıda kalmış çözümleme durumu kayda yazılmışsa temizle.
@@ -2066,7 +2078,9 @@ function computeWer(reference, hypothesis) {
   return { ratio, refCount: ref.length, hypCount: hyp.length, errors: dist };
 }
 function fmtWer(r) {
-  return Number.isFinite(r) ? `%${(r * 100).toFixed(1)}` : '—';
+  // Türkçe ondalık AYIRICI virgüldür. "%94.0" okunaksız; "%94,0" yazılır.
+  // Depo kuralı: biçimlendirme tek kaynaktan (bkz. fmtDb, fmtPct).
+  return Number.isFinite(r) ? `%${(r * 100).toFixed(1).replace('.', ',')}` : '—';
 }
 // Referans metni olan tüm kayıtlar için WER ölçer. Yalnızca gerçekten
 // çözümlenmiş bölümler kullanılır; çözümlenmemiş kayıt atlanır.
@@ -2280,21 +2294,6 @@ function closeAudioGraph(m) {
 // güçlü bir gösterge olabilir ama kesin değildir; arayüz bunu "ölçüm" olarak
 // sunar, "tespit" olarak değil. Aynı konuşmacıyı bulma yalnızca benzer perde
 // aralığına göre ÖNERİ üretir ve öneri olduğu açıkça yazılır.
-const SPEAKER_ROLES = [
-  'Belirtilmedi',
-  'Davacı',
-  'Davalı',
-  'Müşteki/Mağdur',
-  'Sanık',
-  'Şüpheli',
-  'Alacaklı',
-  'Borçlu',
-  'Tanık',
-  'Bilirkişi',
-  'Üçüncü kişi',
-  'Tercüman'
-];
-const SPEAKER_GENDERS = ['Belirtilmedi', 'Kadın', 'Erkek', 'Belirsiz'];
 // Perde aralığı ölçümüne göre kaba yönlendirme (tıbbi/kesin değil, kaba gösterge).
 function pitchHint(f0) {
   if (!f0) return '';
@@ -2305,7 +2304,8 @@ function pitchHint(f0) {
   return 'çok yüksek perde (genellikle kadın veya çocuk)';
 }
 // Segment listesindeki konuşmacı etiketlerinden konuşmacı kayıtlarını türetir.
-// Var olan profillerin nitelikleri korunur; yeni etiketler eklenir.
+// Var olan profillerin nitelikleri korunur; yeni etiketler eklenir. Standart
+// kod (S1, S2…) burada atanır; eksikse sıradaki boş kod verilir.
 function ensureSpeakers(m) {
   m.speakers = m.speakers || [];
   const byName = new Map(m.speakers.map((s) => [s.name, s]));
@@ -2315,9 +2315,10 @@ function ensureSpeakers(m) {
     if (!byName.has(name)) {
       const rec = {
         id: uid(),
+        code: '',
         name,
-        role: 'Belirtilmedi',
-        gender: 'Belirtilmedi',
+        role: 'unspecified',
+        gender: 'unspecified',
         ageRange: '',
         notes: '',
         pitch: null,
@@ -2327,6 +2328,7 @@ function ensureSpeakers(m) {
       byName.set(name, rec);
     }
   }
+  assignSpeakerCodes(m.speakers);
   return m.speakers;
 }
 function speakerByName(m, name) {
@@ -2548,8 +2550,13 @@ function suggestSpeakerMerges(m) {
   return groups.filter((g) => g.length > 1);
 }
 
-// Konuşmacı paneli: her konuşmacı için rol, cinsiyet, yaş aralığı, not ve
-// ölçülen perde. Bu bilgiler rapora "Konuşmacılar" tablosu olarak akar.
+// Konuşmacı paneli: her konuşmacı için standart kod, etiket, rol, cinsiyet,
+// yaş aralığı, not ve ölçülen perde. Bu bilgiler rapora "Konuşmacılar" tablosu
+// olarak akar.
+// KURAL (v2.79): seçeneklerin `value` değeri ASCII KOD'dur, görünen metin
+// Türkçe ETİKETTİR. v2.78 ve öncesinde value'ya etiket yazılıyordu; şema kodu
+// beklediği için kaydedilen rol/cinsiyet yeniden yüklemede 'unspecified'a
+// düşüyordu (sessiz veri kaybı).
 function speakersPanelHtml(m) {
   const sp = m.speakers || [];
   if (!sp.length)
@@ -2561,22 +2568,27 @@ function speakersPanelHtml(m) {
   const rows = sp
     .map((s) => {
       const segs = speakerSegments(m, s.name);
-      const roleOpts = SPEAKER_ROLES.map(
-        (r) => `<option value="${esc(r)}" ${s.role === r ? 'selected' : ''}>${esc(r)}</option>`
+      const roleOpts = SPEAKER_ROLE.map(
+        (code) =>
+          `<option value="${esc(code)}" ${normalizeSpeakerRole(s.role) === code ? 'selected' : ''}>${esc(SPEAKER_ROLE_LABEL[code] || code)}</option>`
       ).join('');
-      const genOpts = SPEAKER_GENDERS.map(
-        (r) => `<option value="${esc(r)}" ${s.gender === r ? 'selected' : ''}>${esc(r)}</option>`
+      const genOpts = SPEAKER_GENDER.map(
+        (code) =>
+          `<option value="${esc(code)}" ${normalizeSpeakerGender(s.gender) === code ? 'selected' : ''}>${esc(SPEAKER_GENDER_LABEL[code] || code)}</option>`
       ).join('');
       return `<div class="spk-card" data-spk-card="${esc(s.id)}">
       <div class="seg-row2">
-        <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}"></div>
-        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOpts}</select></div>
+        <div class="seg-field"><label>Standart kod</label><input data-spk="${esc(s.id)}" data-spk-key="code" value="${esc(s.code || '')}" placeholder="S1" title="Raporda ve bölüm listesinde bu kod görünür. Etiket değişse de aynı kişi aynı kodla kalır."></div>
+        <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"></div>
       </div>
       <div class="seg-row2">
+        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOpts}</select></div>
         <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender">${genOpts}</select></div>
-        <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"></div>
       </div>
-      <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"></div>
+        <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
+      </div>
       <small>${segs.length} bölüm · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
     </div>`;
     })
@@ -2601,6 +2613,7 @@ function renderSpeakersPanel(m) {
 const SEG_FILTERS = [
   ['all', 'Tümü'],
   ['pending', 'Bekleyen'],
+  ['quick', 'Hızlı onaya uygun'],
   ['approved', 'Onaylandı'],
   ['inaudible', 'Anlaşılmadı'],
   ['relisten', 'Yeniden dinlenecek']
@@ -2609,21 +2622,53 @@ const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 function segFilter(m) {
   return m.uiFilter || 'all';
 }
+// "Hızlı onaya uygun" ölçütü. Uydurma bir doğruluk yüzdesi DEĞİLDİR; model
+// güven skoru vermediği için yalnızca GÖZLENEBİLİR ve gerekçesi yazılabilir
+// işaretlere bakar. Uzman bu listeyi dinleyerek yine de kontrol eder; toplu
+// onay yalnız zaman kazandırır, denetim sorumluluğunu kaldırmaz.
+// Uygun sayılmama nedenleri (hepsi metinle gösterilir):
+//   • metin yok / dolgu (anlamlı konuşma yok)
+//   • süre geçersiz ya da çok kısa (< 1,2 sn) — sınır hatası olasılığı yüksek
+//   • model tekrarı işareti
+//   • üst üste konuşma / anlaşılmaz gözlemi
+//   • önceki bölümle çakışan zaman aralığı
+function segQuickCheck(s, prev) {
+  const reasons = [];
+  if (isHallucination(s.text)) reasons.push('anlamlı metin yok');
+  const d = segDurationSec(s);
+  if (d <= 0) reasons.push('süre geçersiz');
+  else if (d < 1.2) reasons.push('çok kısa bölüm');
+  if (segmentRepetitionFlag(s)) reasons.push('model tekrarı');
+  const o = s.obs || {};
+  if (o.overlap) reasons.push('üst üste konuşma işaretli');
+  if (o.inaudible) reasons.push('anlaşılmaz işaretli');
+  if (prev) {
+    const pb = secondsFromTimecode(prev.end);
+    const pa = secondsFromTimecode(prev.start);
+    if (pa < pb && secondsFromTimecode(s.start) < pb) reasons.push('öncekiyle çakışıyor');
+  }
+  return { ok: reasons.length === 0, reasons };
+}
 function segMatchesFilter(s, filter) {
   const r = segReview(s);
   if (filter === 'all') return true;
   if (filter === 'pending') return !isReviewed(s);
+  if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s).ok;
   return r === filter;
 }
 function segCounts(m) {
   const segs = m.segments || [];
-  const c = { all: segs.length, pending: 0, approved: 0, inaudible: 0, relisten: 0 };
-  for (const s of segs) {
+  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0 };
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
     const r = segReview(s);
     if (r === 'approved') c.approved++;
     else if (r === 'inaudible') c.inaudible++;
     else if (r === 'relisten') c.relisten++;
-    if (!isReviewed(s)) c.pending++;
+    if (!isReviewed(s)) {
+      c.pending++;
+      if (segQuickCheck(s, segs[i - 1]).ok) c.quick++;
+    }
   }
   return c;
 }
@@ -2685,9 +2730,10 @@ function segPriorityBadge(s, prev) {
 function segItemHtml(m, s, i, prev) {
   const rev = segReview(s);
   const halluc = isHallucination(s.text);
+  const spkRec = s.speaker ? speakerByName(m, s.speaker) : null;
   const spk =
     s.speaker && s.speaker !== 'Belirtilmedi'
-      ? `<span class="badge spk" title="Konuşmacı">${esc(s.speaker)}</span>`
+      ? `<span class="badge spk" title="Konuşmacı: ${esc(s.speaker)}">${esc(spkRec?.code ? spkRec.code : s.speaker)}</span>`
       : '';
   const state =
     rev === 'approved'
@@ -2783,6 +2829,21 @@ function proposalBandHtml(s, i) {
       <p class="sp-note">Öneri kabul edilene kadar rapora yansımaz ve bölüm onaylanmış sayılmaz.</p>
     </div>`;
 }
+// Bölümdeki konuşmacı seçimi. Serbest metin yerine standart liste: kod + etiket.
+// Böylece aynı kişi her bölümde aynı kodla görünür ve rapor tutarlı kalır.
+// Kayıtta olmayan eski bir etiket varsa kaybolmasın diye seçenek olarak eklenir.
+function spkSelectOptions(m, current) {
+  const list = (m.speakers || []).filter((sp) => sp.name);
+  const cur = (current || '').trim();
+  const known = list.some((sp) => sp.name === cur);
+  const opt = (val, label, sel) => `<option value="${esc(val)}" ${sel ? 'selected' : ''}>${esc(label)}</option>`;
+  const head = opt('', '— Konuşmacı seçilmedi —', !cur);
+  const body = list
+    .map((sp) => opt(sp.name, `${sp.code ? sp.code + ' · ' : ''}${sp.name}`, sp.name === cur))
+    .join('');
+  const legacy = cur && !known ? opt(cur, `${cur} (kayıtlı değil)`, true) : '';
+  return head + body + legacy;
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -2862,10 +2923,14 @@ function segDetailHtml(m) {
     <div class="sd-left">
       <div class="sd-wave">
         <div class="sd-wave-bar">
-          <span class="sd-wave-hint">Sınır: sürükle · Kaydır: Shift+sürükle · Zoom: tekerlek</span>
+          <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: en yakın sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
           <span class="sd-cursor-time" data-sd-cursor>—</span>
           <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
           <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+          <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) imlecin/oynatıcının olduğu ana ayarla">A</button>
+          <button class="seg-tool" data-loop-b title="Döngü bitişini (B) imlecin/oynatıcının olduğu ana ayarla">B</button>
+          <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez)">🔁 Döngü</button>
+          <span class="sd-loop-span" data-loop-span></span>
           <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
         </div>
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
@@ -2876,7 +2941,7 @@ function segDetailHtml(m) {
         <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
       </div>
       <div class="sd-meta">
-        <label class="sd-field"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
+        <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
         <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
       </div>
       <div class="sd-obs">${obsBtns}</div>
@@ -2926,7 +2991,18 @@ function refreshProposalBand(m, idx) {
 function attachSegWave(m, index) {
   const canvas = $(`#sdwave-${CSS.escape(m.id)}`);
   if (!canvas) return;
-  const s = (m.segments || [])[index];
+  // Takip modunda panel yeniden çizilmez; yalnız alanlar yerinde yazılır. Bu
+  // yüzden dalga, bölümü KAPALI değişkenle tutmamalı: aksi hâlde takip
+  // ilerledikçe sınır sürükleme eski bölümü düzenler ve "bölme çizgileri
+  // bozuldu" hatası doğar. Bölüm her erişimde aktif bölümden okunur.
+  let s = (m.segments || [])[index];
+  let index2 = index;
+  const activeIdx = () => (Number.isInteger(m.activeSeg) ? m.activeSeg : 0);
+  const rebind = () => {
+    index2 = activeIdx();
+    s = (m.segments || [])[index2];
+  };
+  m.__segWaveRebind = rebind;
   if (!s) return;
   const dur = Number(m.duration) || 0;
   const card = canvas.closest('.audio-card');
@@ -2934,14 +3010,16 @@ function attachSegWave(m, index) {
 
   // Görünüm penceresi (bölüm ±0,5 sn); bölüm başına saklanır.
   const view = () => {
-    if (m.__sdZoom && m.__sdZoom.index === index && m.__sdZoom.materialId === m.id) return m.__sdZoom;
+    if (m.__sdZoom && m.__sdZoom.index === index2 && m.__sdZoom.materialId === m.id) return m.__sdZoom;
     const a0 = Math.max(0, secondsFromTimecode(s.start) - 0.5);
     const b0 = Math.min(dur || secondsFromTimecode(s.end) + 0.5, secondsFromTimecode(s.end) + 0.5);
-    m.__sdZoom = { materialId: m.id, index, a: a0, b: Math.max(a0 + 0.05, b0) };
+    m.__sdZoom = { materialId: m.id, index: index2, a: a0, b: Math.max(a0 + 0.05, b0) };
     return m.__sdZoom;
   };
 
   const draw = () => {
+    rebind();
+    if (!s) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width,
       h = canvas.height;
@@ -3007,8 +3085,33 @@ function attachSegWave(m, index) {
       ctx.fillRect(x, 0, 1, h);
     }
 
+    // A–B döngü aralığı: yalnız görsel işaret; bölüm sınırlarına dokunmaz.
+    const L = loopRange(m);
+    if (L) {
+      const xa = Math.max(0, xs(L.a)),
+        xb = Math.min(w, xs(L.b));
+      if (xb > xa) {
+        ctx.fillStyle = L.on ? 'rgba(184,134,69,0.16)' : 'rgba(184,134,69,0.07)';
+        ctx.fillRect(xa, 0, xb - xa, h);
+        ctx.strokeStyle = L.on ? 'rgba(184,134,69,0.9)' : 'rgba(184,134,69,0.45)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(xa, 0);
+        ctx.lineTo(xa, h);
+        ctx.moveTo(xb, 0);
+        ctx.lineTo(xb, h);
+        ctx.stroke();
+      }
+    }
+
     const zs = canvas.closest('.sd-wave')?.querySelector('[data-sd-zoom-span]');
     if (zs) zs.textContent = `±${((v.b - v.a) / 2).toFixed(1).replace('.', ',')} sn`;
+    // Döngü etiketi ve düğme durumu her çizimde tazelenir.
+    const w2 = canvas.closest('.sd-wave');
+    const lsp = w2?.querySelector('[data-loop-span]');
+    if (lsp) lsp.textContent = loopLabel(m);
+    const ltg = w2?.querySelector('[data-loop-toggle]');
+    if (ltg) ltg.classList.toggle('on', !!(loopRange(m) || {}).on);
   };
 
   const hitTime = (ev) => {
@@ -3030,8 +3133,8 @@ function attachSegWave(m, index) {
   const syncFields = () => {
     const root = $(`#seg-detail-${CSS.escape(m.id)}`);
     if (!root) return;
-    const a = root.querySelector(`[data-seg="${index}"][data-key="start"]`);
-    const b = root.querySelector(`[data-seg="${index}"][data-key="end"]`);
+    const a = root.querySelector(`[data-seg="${index2}"][data-key="start"]`);
+    const b = root.querySelector(`[data-seg="${index2}"][data-key="end"]`);
     if (a) a.value = s.start || '';
     if (b) b.value = s.end || '';
     const d = root.querySelector('.sd-dur');
@@ -3041,7 +3144,7 @@ function attachSegWave(m, index) {
   const commit = (field) => {
     persist();
     syncFields();
-    updateSegListItem(m, index);
+    updateSegListItem(m, index2);
     draw();
   };
 
@@ -3067,21 +3170,31 @@ function attachSegWave(m, index) {
       canvas.style.cursor = 'ew-resize';
       return;
     }
-    // Ortaya tıklandı: hangi sınıra daha yakınsa onu taşı.
+    // Ortaya tıklandı: KONUMA GİT, sınırı TAŞIMA.
+    // v2.77 ve öncesinde ortaya tıklamak "en yakın sınırı" sessizce taşıyordu;
+    // uzman bir yeri dinlemek için tıkladığında bölüm sınırı bozuluyor, sonra
+    // elle düzeltmesi gerekiyordu (kullanıcı bildirimi: "dinlerken bölme
+    // çizgileri bozuluyor"). Artık sınırı taşımanın iki açık yolu var:
+    // sınırı sürüklemek, ya da Alt+tıkla ile en yakın sınırı taşımak.
     const st = secondsFromTimecode(s.start),
       en = secondsFromTimecode(s.end);
-    const field = Math.abs(t - st) <= Math.abs(t - en) ? 'start' : 'end';
-    const other = field === 'start' ? en : st;
-    // Sınırlar çakışmasın (en az 0,1 sn aralık).
-    if (field === 'start' && t >= other - 0.1) return;
-    if (field === 'end' && t <= other + 0.1) return;
-    s[field] = timecode(t);
-    commit(field);
-    showToast(`${field === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s[field]}`);
-    if (player && t >= st && t <= en) {
+    if (ev.altKey) {
+      const field = Math.abs(t - st) <= Math.abs(t - en) ? 'start' : 'end';
+      const other = field === 'start' ? en : st;
+      // Sınırlar çakışmasın (en az 0,1 sn aralık).
+      if (field === 'start' && t >= other - 0.1) return;
+      if (field === 'end' && t <= other + 0.1) return;
+      s[field] = timecode(t);
+      commit(field);
+      showToast(`${field === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s[field]}`);
+      return;
+    }
+    if (player) {
       try {
         player.currentTime = t;
       } catch (e) {}
+      draw();
+      showToast(`Konum: ${timecode(t)} — sınırı taşımak için sınırı sürükleyin veya Alt+tıklayın.`);
     }
   });
   canvas.addEventListener('pointermove', (ev) => {
@@ -3194,14 +3307,82 @@ function attachSegWave(m, index) {
       showToast('Bölme noktası bölümün içinde olmalı.');
       return;
     }
-    splitSegmentAt(m, index, target);
+    splitSegmentAt(m, index2, target);
+  });
+
+  // A–B döngüsü: sınırları DEĞİŞTİRMEZ. Uzman anlamadığı aralığı tekrar tekrar
+  // dinler. A/B imlecin (yoksa oynatıcının) bulunduğu ana ayarlanır.
+  const loopAt = () => (cursorT != null ? cursorT : player && Number.isFinite(player.currentTime) ? player.currentTime : null);
+  const paintLoop = () => {
+    const sp = waveWrap?.querySelector('[data-loop-span]');
+    if (sp) sp.textContent = loopLabel(m);
+    const tg = waveWrap?.querySelector('[data-loop-toggle]');
+    const L = loopRange(m);
+    if (tg) tg.classList.toggle('on', !!(L && L.on));
+  };
+  waveWrap?.querySelector('[data-loop-a]')?.addEventListener('click', () => {
+    const t = loopAt();
+    if (t == null) return showToast('A için dalgada bir noktaya tıklayın.');
+    setLoopPoint(m, 'a', t);
+    paintLoop();
+    draw();
+    showToast(`A: ${timecode(t)}`);
+  });
+  waveWrap?.querySelector('[data-loop-b]')?.addEventListener('click', () => {
+    const t = loopAt();
+    if (t == null) return showToast('B için dalgada bir noktaya tıklayın.');
+    setLoopPoint(m, 'b', t);
+    paintLoop();
+    draw();
+    showToast(`B: ${timecode(t)}`);
+  });
+  waveWrap?.querySelector('[data-loop-toggle]')?.addEventListener('click', () => {
+    const L = loopRange(m);
+    if (!L) return showToast('Önce A ve B noktalarını belirleyin.');
+    L.on = !L.on;
+    paintLoop();
+    draw();
+    if (L.on && player) {
+      // Döngü açıldığında aralığı hemen çal.
+      try {
+        player.currentTime = L.a;
+      } catch (e) {}
+      player.__segStop = player.__segStop || null;
+      ensureSegStopListener(player);
+      player.__segStop.stopAt = L.b;
+      player.__segStop.materialId = m.id;
+      player.__segStop.index = index2;
+      segPlayback = { materialId: m.id, index: index2, playing: true, atEnd: false };
+      player.play().catch(() => {});
+      refreshPlayButtons();
+      showToast(`Döngü açık: ${loopLabel(m)} — sınırlar değişmedi.`);
+    } else {
+      if (player && player.__segStop) player.__segStop.stopAt = null;
+      showToast('Döngü kapalı.');
+    }
   });
   if (player) {
     const ph = () => draw();
     player.addEventListener('timeupdate', ph);
     player.addEventListener('seeked', ph);
   }
+  // Takip modunda panel yeniden çizilmez; bölüm değişince dalganın yeni bölüme
+  // geçmesi için yeniden çizim dışarıdan çağrılabilir olmalı.
+  m.__segWaveRedraw = draw;
   draw();
+}
+function refreshSegWave(m, idx) {
+  m.__segWaveRebind?.();
+  m.__segWaveRedraw?.();
+}
+// Toplu onay düğmesi. Yalnız "hızlı onaya uygun" bölümleri onaylar; uygun
+// olmayanlara DOKUNMAZ. Onay yetkisi kuralı korunur: ikinci göz bu düğmeyi
+// görmez (onaylayamaz). Uzman onaylar; sorumluluk uygulamada değildir.
+function quickBulkBtn(counts, secondEyes) {
+  if (secondEyes) return '';
+  const n = counts.quick || 0;
+  if (!n) return '';
+  return `<button class="seg-tool bulk-approve" data-bulk-approve="1" title="Yalnız 'hızlı onaya uygun' ölçütünü geçen ${n} bölümü onaylar. Uygun olmayanlara dokunmaz. Onaydan önce liste bir kez dinlenmelidir; bu düğme denetim yerine geçmez.">✓ ${n} hızlı onayla</button>`;
 }
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
@@ -3234,7 +3415,7 @@ function renderSegments(m, card) {
       <div class="tb-filters">${chips}</div>
       <div class="tb-spacer"></div>
       <div class="tb-progress" title="${reviewed}/${segs.length} denetlendi"><div class="bar"><span style="width:${pct}%"></span></div><small>%${pct}</small></div>
-      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button></div>
+      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${quickBulkBtn(counts, isSecondEyesEditor())}</div>
     </div>
     <div id="term-panel-${esc(m.id)}" class="term-panel" hidden></div>
     <datalist id="spk-options-${esc(m.id)}">${spkOptions.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
@@ -3289,6 +3470,37 @@ function navSegment(m, dir) {
   setActiveSegment(m, list[pos]);
 }
 // En yüksek inceleme önceliğini taşıyan ve henüz onaylanmamış bölüme atlar.
+// Toplu onay: YALNIZ "hızlı onaya uygun" ölçütünü geçen bölümler. Uygun
+// olmayan bölümlere dokunulmaz ve sayısı bildirilir. Onay yetkisi korunur:
+// ikinci göz çağıramaz. İşlem geri alınabilir ve delil günlüğüne yazılır.
+function bulkApproveQuick(m) {
+  if (isSecondEyesEditor()) {
+    showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
+    return;
+  }
+  const segs = m.segments || [];
+  const targets = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    if (isReviewed(s)) continue;
+    if (segQuickCheck(s, segs[i - 1]).ok) targets.push(i);
+  }
+  if (!targets.length) {
+    showToast('Hızlı onaya uygun bölüm yok. Önce listeyi dinleyin.');
+    return;
+  }
+  snapshotForUndo(`${targets.length} bölüm hızlı onaylandı`);
+  for (const i of targets) {
+    segs[i].review = 'approved';
+    segs[i].checked = true;
+  }
+  logEvent(m, 'Toplu onay', `${targets.length} bölüm hızlı onaya uygun ölçütünü geçti ve onaylandı`);
+  persist();
+  renderSegments(m, $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card'));
+  renderOverview();
+  if ($('#view-report').classList.contains('active')) renderReport();
+  showToast(`${targets.length} bölüm onaylandı (uygun olmayanlara dokunulmadı). Ctrl+Z ile geri alınır.`);
+}
 function jumpToPriority(m) {
   const segs = m.segments || [];
   if (!segs.length) return;
@@ -3427,6 +3639,21 @@ function refreshSegChips(m) {
   if (lbl) lbl.textContent = `%${pct}`;
   const tip = root.querySelector('.tb-progress');
   if (tip) tip.title = `${reviewed}/${segs.length} denetlendi`;
+  // Toplu onay düğmesi sayaca bağlıdır: yazarken/onaylarken sayı değişir.
+  // Yalnız tam çizimde eklenirse kullanıcı düğmeyi hiç görmez (v2.80'de
+  // tarayıcıda yakalandı). Yerinde tazelenir.
+  const more = root.querySelector('.tb-more');
+  if (more) {
+    const want = quickBulkBtn(counts, isSecondEyesEditor());
+    let btn = more.querySelector('[data-bulk-approve]');
+    if (!want) {
+      if (btn) btn.remove();
+    } else if (!btn) {
+      more.insertAdjacentHTML('beforeend', want);
+    } else {
+      btn.outerHTML = want;
+    }
+  }
 }
 function focusSegmentRow(el) {
   const card = el.closest('.audio-card');
@@ -3586,9 +3813,26 @@ function nudgeBoundary(m, index, field, deltaSec) {
   let next = Math.max(0, cur + deltaSec);
   const dur = Number(m.duration) || 0;
   if (dur > 0) next = Math.min(next, dur);
+  // Karşı sınır SÜRÜKLENMEZ. v2.77 ve öncesinde başlangıç kaydırılınca bitiş de
+  // sessizce taşınıyor, bölüm sıfır uzunlukta kalıyordu; uzman bunu ancak
+  // dinlerken fark ediyordu. Artık karşı sınıra 0,1 sn kalınca durur ve nedenini
+  // söyler.
+  const other = secondsFromTimecode(field === 'start' ? s.end : s.start);
+  if (field === 'start' && next > other - 0.1) {
+    next = Math.max(0, other - 0.1);
+    if (Math.abs(next - cur) < 1e-6) {
+      showToast('Başlangıç bitişe dayandı. Önce bitişi ileri alın.');
+      return;
+    }
+  }
+  if (field === 'end' && next < other + 0.1) {
+    next = other + 0.1;
+    if (Math.abs(next - cur) < 1e-6) {
+      showToast('Bitiş başlangıca dayandı. Önce başlangıcı geri alın.');
+      return;
+    }
+  }
   s[field] = timecode(next);
-  if (field === 'start' && secondsFromTimecode(s.end) < next) s.end = s[field];
-  if (field === 'end' && secondsFromTimecode(s.start) > next) s.start = s[field];
   persist();
   // Girdi alanını yerinde güncelle; tam panel yeniden çizilmez.
   const root = $(`#segments-${CSS.escape(m.id)}`);
@@ -3830,6 +4074,27 @@ function zoomWaveBy(m, index, mode) {
 // başlar. Durdur düğmesi başa sarar. Bu durum tek bir nesnede tutulur; böylece
 // her çizimde doğru düğme metni gösterilebilir.
 let segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
+// A–B dinleme aralığı: uzman bir aralığı anlamadığında sınırları değiştirmeden
+// tekrar tekrar dinlemek ister. Bölme çizgilerini oynatmak zorunda kalmak
+// sınırları bozuyordu (kullanıcı bildirimi). Döngü yalnız OYNATMAYI sarar;
+// bölüm sınırlarına (start/end) dokunmaz. Oturumluktur, şemaya yazılmaz.
+function loopRange(m) {
+  const L = m && m.__loop;
+  if (!L || !Number.isFinite(L.a) || !Number.isFinite(L.b) || L.b <= L.a) return null;
+  return L;
+}
+function setLoopPoint(m, which, t) {
+  if (!m || !Number.isFinite(t)) return;
+  const L = (m.__loop = m.__loop || { on: false, a: null, b: null });
+  L[which] = Math.max(0, t);
+  if (which === 'a' && Number.isFinite(L.b) && L.b <= L.a + 0.05) L.b = null;
+  if (which === 'b' && Number.isFinite(L.a) && L.b <= L.a + 0.05) L.a = null;
+}
+function loopLabel(m) {
+  const L = loopRange(m);
+  if (!L) return '';
+  return `A ${timecode(L.a)} → B ${timecode(L.b)}`;
+}
 // Bölüm bitişinde durmayı sağlayan tek dinleyici. Önceki sürümde her çalma yeni
 // bir timeupdate dinleyicisi ekliyor, bazıları kaldırılmıyordu; bu da üst üste
 // durma çağrılarına yol açıyordu.
@@ -3843,6 +4108,15 @@ function ensureSegStopListener(player) {
       if (mm) renderKaraoke(mm, st.index);
     }
     if (st.stopAt != null && player.currentTime >= st.stopAt - 0.01) {
+      // A–B döngüsü açıksa durmak yerine A'ya sar ve çalmaya devam et.
+      const L = st.materialId ? loopRange(currentCase()?.materials.find((x) => x.id === st.materialId)) : null;
+      if (L && L.on) {
+        try {
+          player.currentTime = L.a;
+        } catch (e) {}
+        player.play().catch(() => {});
+        return;
+      }
       player.pause();
       st.stopAt = null;
       segPlayback.playing = false;
@@ -3927,7 +4201,10 @@ function followTick() {
   if (!m) return;
   const segs = m.segments || [];
   if (!segs.length) return;
-  const card = document.querySelector('.audio-card');
+  // Kart, AKTİF kaydın kartı olmalı. v2.77 ve öncesinde document.querySelector
+  // ilk ses kartını alıyordu; birden fazla kayıt varsa yanlış dosyanın konumu
+  // okunuyor ve takip hiç ilerlemiyordu (kullanıcı: "takip çalışmıyor").
+  const card = document.querySelector(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player = card && card.querySelector('audio');
   if (!player) return;
   if (player.paused) return; // duraklatınca takip bekler, konum korunur
@@ -3973,14 +4250,33 @@ function syncSegDetailInPlace(m, idx) {
   const q = (sel) => detail.querySelector(sel);
   const setVal = (sel, val) => { const el = q(sel); if (el && el.value !== val) el.value = val; };
   const setTxt = (sel, val) => { const el = q(sel); if (el && el.textContent !== val) el.textContent = val; };
-  setTxt('.seg-detail-head .idx', `Bölüm ${idx + 1} / ${segs.length}`);
-  const startEl = q('.seg-times .st-item:nth-child(1) .time-input');
-  if (startEl && startEl.value !== (s.start || '')) startEl.value = s.start || '';
-  const endEl = q('.seg-times .st-item:nth-child(2) .time-input');
-  if (endEl && endEl.value !== (s.end || '')) endEl.value = s.end || '';
-  setVal('.seg-meta-row .sm-item:nth-child(1) input', s.speaker || '');
-  setVal('.seg-text-wrap textarea', s.text || '');
-  const sel = q('.seg-meta-row .sm-item:nth-child(2) select');
+  // Seçiciler segDetailHtml() ile AYNI olmalı. v2.77 ve öncesinde burada
+  // .seg-detail-head / .seg-times / .seg-meta-row / .seg-text-wrap yazıyordu;
+  // panel v2.62'de .sd-head / .sd-times / .sd-meta / .sd-text olarak
+  // yeniden yazıldığı için hiçbir alan eşleşmiyordu. Sonuç: takip modunda
+  // bölüm listesi ilerliyor, sağ panel eski bölümde kalıyordu — kullanıcının
+  // "takip etmiyor" gözlemi buydu.
+  setTxt('.sd-head .sd-idx', `Bölüm ${idx + 1}`);
+  setTxt('.sd-head .sd-of', ` / ${segs.length}`);
+  const times = detail.querySelectorAll('.sd-times .sd-time input');
+  if (times[0] && times[0].value !== (s.start || '')) times[0].value = s.start || '';
+  if (times[1] && times[1].value !== (s.end || '')) times[1].value = s.end || '';
+  setTxt('.sd-times .sd-dur', fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))));
+  const meta = detail.querySelectorAll('.sd-meta .sd-field');
+  const spkSel = meta[0]?.querySelector('select');
+  if (spkSel) {
+    const want = s.speaker || '';
+    if (spkSel.value !== want) {
+      // Liste bölümün konuşmacısını içermiyorsa seçenek olarak ekle; aksi hâlde
+      // tarayıcı sessizce ilk seçeneği gösterir ve kullanıcı yanlış kişiyi görür.
+      if (want && ![...spkSel.options].some((o) => o.value === want)) {
+        spkSel.insertAdjacentHTML('beforeend', `<option value="${esc(want)}">${esc(want)} (kayıtlı değil)</option>`);
+      }
+      spkSel.value = want;
+    }
+  }
+  setVal('.sd-text textarea', s.text || '');
+  const sel = meta[1]?.querySelector('select');
   if (sel) {
     const rev = segReview(s);
     if (sel.value !== rev) sel.value = rev;
@@ -4018,6 +4314,23 @@ function syncSegDetailInPlace(m, idx) {
   });
   // Zoom dalgası yeni bölüme bağlanmalı.
   attachZoomWave(m, idx);
+  // Başlıktaki "Dinle" düğmesi ve dalga, yeni bölüme göre tazelenir.
+  const playBtn = detail.querySelector('[data-play-active]');
+  if (playBtn) {
+    const playing = segPlayback.materialId === m.id && segPlayback.index === idx && segPlayback.playing;
+    const label = playing ? '⏸ Duraklat' : '▶ Dinle';
+    if (playBtn.textContent.trim() !== label) playBtn.textContent = label;
+    playBtn.classList.toggle('on', playing);
+  }
+  const stopBtn = detail.querySelector('[data-stop-active]');
+  if (stopBtn) stopBtn.disabled = !(segPlayback.materialId === m.id);
+  const obs = s.obs || {};
+  detail.querySelectorAll('[data-obs]').forEach((el) => {
+    const key = el.dataset.obs.split('|')[1];
+    el.classList.toggle('on', !!obs[key]);
+  });
+  // Dalga yeniden çizilir: bölüm değişince görünüm penceresi de değişir.
+  if (typeof refreshSegWave === 'function') refreshSegWave(m, idx);
 }
 function followHighlight(m, idx) {
   const root = $(`#segments-${CSS.escape(m.id)}`);
@@ -4057,13 +4370,23 @@ function markTextFollow(m, idx, t) {
         return `<span class="${on ? 'on' : done ? 'done' : ''}">${esc(w.w)}</span>`;
       })
       .join(' ');
+    // Uzun metinde vurgu görünür alanın dışında kalıyordu; kullanıcı "takip
+    // tam okunamıyor" dedi. Yalnız vurgu kutusunun içi kaydırılır (sayfa değil).
+    const act = bar.querySelector('span.on');
+    if (act && bar.scrollHeight > bar.clientHeight) {
+      const bt = bar.getBoundingClientRect(),
+        at = act.getBoundingClientRect();
+      if (at.top < bt.top + 4 || at.bottom > bt.bottom - 4) {
+        bar.scrollTop += at.top - bt.top - bar.clientHeight / 3;
+      }
+    }
     return;
   }
   const a = secondsFromTimecode(s.start);
   const b = secondsFromTimecode(s.end);
   const ratio = b > a ? Math.max(0, Math.min(1, (t - a) / (b - a))) : 1;
   const chars = Math.floor(ratio * s.text.length);
-  bar.innerHTML = `<span class="done">${esc(s.text.slice(0, chars))}</span><span>${esc(s.text.slice(chars))}</span>`;
+  bar.innerHTML = `<span class="done">${esc(s.text.slice(0, chars))}</span><span class="on">${esc(s.text.slice(chars))}</span>`;
 }
 function followKaraoke(m, idx, t) {
   const box = $(`#karaoke-${CSS.escape(m.id)}`);
@@ -4189,6 +4512,9 @@ function playSegmentRange(card, m, s, index, { restart = false } = {}) {
   player.__segStop.index = index;
   segPlayback = { materialId: m.id, index, playing: true, atEnd: false };
   player.play().catch(() => {});
+  // "Dinle" ile bölüm çalınca takip otomatik açılır: kullanıcı metnin nerede
+  // okunduğunu görmek ister (v2.78).
+  if (!followState.on) setFollow(true);
   if (Number.isInteger(index)) {
     m.activeSeg = index;
     const root = $(`#segments-${CSS.escape(m.id)}`, card);
@@ -5183,13 +5509,9 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
   // Zaman damgası merdiveni: bazı Whisper ONNX modelleri `return_timestamps`
   // seçeneklerini desteklemez veya bozuk çıktı üretir. Sırayla denenir ve ilk
   // ANLAMLI sonuç kullanılır. Çöp çıktı hiçbir zaman kabul edilmez.
-  // Türkçe dil ve transkripsiyon görevi sabittir.
-  const base = { language: 'turkish', task: 'transcribe' };
-  const attempts = [
-    { ...base, return_timestamps: true, no_repeat_ngram_size: 3, repetition_penalty: 1.2 },
-    { ...base, return_timestamps: true },
-    { ...base }
-  ];
+  // Türkçe dil ve transkripsiyon görevi sabittir; profil yalnız bağlam istemi
+  // ve tekrar ayarlarını değiştirir (bkz. ASR_PROFILES).
+  const attempts = asrProfileOptions(savedProfilePref());
   for (const opts of attempts) {
     let result;
     try {
@@ -5201,6 +5523,72 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
     if (segs.length) return segs; // anlamlı sonuç
   }
   return [];
+}
+// ---- Çözümleme profilleri (v2.81) ---------------------------------------
+// Kullanıcı "şive, kıcırtı, malzeme sesi gibi farklı çözümlemeler" istedi.
+// DÜRÜST SINIR: bunlar ayrı eğitilmiş modeller ister ve bu depo öyle bir model
+// içermez. Yapılmış gibi gösterilmez. Bunun yerine, aynı modelin
+// yönlendirilebilir ayarlarını (dil ipucu, bağlam istemi, sıcaklık, tekrar
+// cezası) profil olarak sunuyoruz. Profil, çıktı kalitesini ETKİLER ama
+// "şive tanıma" veya "kaynak ayrıştırma" YAPMAZ; rapora da yazılmaz.
+const ASR_PROFILES = [
+  {
+    id: 'standard',
+    label: 'Standart Türkçe konuşma',
+    hint: 'Varsayılan. Net, gürültüsüz görüşme kayıtları.',
+    prompt: '',
+    language: 'turkish'
+  },
+  {
+    id: 'dialect',
+    label: 'Şive / ağır aksan (ipucu)',
+    hint: 'Yalnızca dil ipucu ve bağlam istemi ekler; şive tanıma modeli DEĞİLDİR.',
+    prompt: 'Konuşma Türkçedir; yerel şive ve ağır aksan içerebilir.',
+    language: 'turkish'
+  },
+  {
+    id: 'noisy',
+    label: 'Gürültülü / kıcırtılı kayıt (ipucu)',
+    hint: 'Bağlam istemi ve tekrar cezası ekler; kaynak ayrıştırma YAPMAZ.',
+    prompt: 'Kayıt gürültülü veya kıcırtılı olabilir; anlaşılan konuşmayı yaz.',
+    language: 'turkish'
+  },
+  {
+    id: 'telephone',
+    label: 'Telefon / dar bant (ipucu)',
+    hint: 'Dar bantlı telefon kaydı için bağlam istemi; bant genişliğini geri getirmez.',
+    prompt: 'Kayıt dar bantlı bir telefon görüşmesidir.',
+    language: 'turkish'
+  }
+];
+const ASR_PROFILE_KEY = 'akis.asrProfile';
+function asrProfile(id) {
+  return ASR_PROFILES.find((p) => p.id === id) || ASR_PROFILES[0];
+}
+function savedProfilePref() {
+  try {
+    const v = localStorage.getItem(ASR_PROFILE_KEY);
+    return ASR_PROFILES.some((p) => p.id === v) ? v : 'standard';
+  } catch (e) {
+    return 'standard';
+  }
+}
+function saveProfilePref(id) {
+  try {
+    localStorage.setItem(ASR_PROFILE_KEY, id);
+  } catch (e) {}
+}
+// Profil → model seçenekleri. Saf fonksiyon; test edilebilir.
+function asrProfileOptions(profileId) {
+  const p = asrProfile(profileId);
+  const base = { language: p.language, task: 'transcribe' };
+  if (p.prompt) base.prompt = p.prompt;
+  const attempts = [
+    { ...base, return_timestamps: true, no_repeat_ngram_size: 3, repetition_penalty: 1.2 },
+    { ...base, return_timestamps: true },
+    { ...base }
+  ];
+  return attempts;
 }
 // BÖLÜM ARALIĞINI YENİDEN ÇÖZÜMLE (v2.76)
 // Tek bir bölümün başlangıç–bitiş aralığını ses dosyasından kesip yalnız o
@@ -5258,7 +5646,23 @@ async function retranscribeSegment(materialId, index) {
     const found = await transcribeWindow(pipe, slice, a);
     const meaningful = found.filter((f) => !isHallucination(f.text));
     if (!meaningful.length) {
-      showToast('Model bu aralıkta anlamlı konuşma bulamadı. Metni elle girin veya aralığı genişletin.');
+      // Çıkmaz sokak bırakma: sessizliği ÖLÇ ve ne olduğunu somut söyle.
+      // Bu bir DSP ölçümüdür (ML değil); "konuşma yok" iddiası değil, sinyal
+      // düzeyi bilgisidir. Uzman ne yapacağını bilsin.
+      let hint = '';
+      try {
+        const stats = analyzeSilence(slice, sr, 0, slice.length / sr);
+        if (stats.ok) {
+          const pctSilent = Math.round(stats.ratio * 100);
+          hint =
+            pctSilent >= 80
+              ? ` Aralığın %${pctSilent}'i sessiz görünüyor — sınırlar boşluğa denk gelmiş olabilir.`
+              : ` Aralıkta ses var (%${pctSilent} sessiz) ama model konuşma çözemedi — modeli büyütmeyi veya "Gürültülü/kıcırtılı" profilini deneyin.`;
+        }
+      } catch (e) {}
+      showToast(
+        `Model bu aralıkta anlamlı konuşma bulamadı.${hint} Metni elle girin veya aralığı genişletin.`
+      );
       return;
     }
     const text = meaningful.map((f) => f.text).join(' ').replace(/\s+/g, ' ').trim();
@@ -5442,13 +5846,33 @@ function addManualSegment(id) {
     const pl = card0?.querySelector('audio');
     if (pl && Number.isFinite(pl.currentTime) && pl.currentTime > 0) start = timecode(pl.currentTime);
   }
-  start = start || '00:00:00'; // Yeni bölüme makul bir bitiş ver: oynatıcı konumundan 5 sn, kayıt sonunu aşmaz.
+  // Zaman kodu HER ZAMAN milisaniye içerir (depo kuralı). Eski '00:00:00'
+  // biçimi raporda "00:00:00 – 00:00:05.000" gibi tutarsız satır üretiyordu.
+  start = start || timecode(0);
   const stSec = secondsFromTimecode(start);
   const durSec = Number(m.duration) || 0;
   let endSec = stSec + 5;
   if (durSec > 0) endSec = Math.min(endSec, durSec);
   const end = timecode(endSec > stSec ? endSec : stSec);
   snapshotForUndo('elle bölüm eklendi');
+  // Konuşmacı kaydı yoksa oluştur; aksi hâlde bölüm, listede olmayan bir
+  // konuşmacıya bağlanır ve seçim kutusu "(kayıtlı değil)" gösterir.
+  ensureSpeakers(m);
+  const spk = (m.speakers || []).find((x) => x.name === 'Konuşmacı 1') || null;
+  if (!spk) {
+    m.speakers.push({
+      id: uid(),
+      code: '',
+      name: 'Konuşmacı 1',
+      role: 'unspecified',
+      gender: 'unspecified',
+      ageRange: '',
+      notes: '',
+      pitch: null,
+      pitchAt: null
+    });
+    assignSpeakerCodes(m.speakers);
+  }
   m.segments.push({
     id: newId('sg'),
     start,
@@ -5463,6 +5887,7 @@ function addManualSegment(id) {
   persist();
   const card = $(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');
   if (card) renderSegments(m, card);
+  renderSpeakersPanel(m);
   renderOverview();
 }
 function niceDate(d) {
@@ -5617,10 +6042,15 @@ function speakerRows(c) {
       const segs = (m.segments || []).filter((sg) => (sg.speaker || '') === sp.name);
       const dur = segs.length ? `${m.name}: ${segs.length} bölüm` : `${m.name}`;
       const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : ''].filter(Boolean).join(' · ');
+      // Standart kod (S1, S2…) raporda kimliği belirsizleştirmeden taşır;
+      // etiket değişse de aynı kişi aynı kodla görünür.
+      const code = sp.code ? `${sp.code} · ` : '';
+      // Rol ve cinsiyet KOD olarak saklanır; raporda Türkçe ETİKET görünür.
+      // Kod yazılırsa rapora "complainant" girer — kabul edilemez.
       out.push([
-        sp.name,
-        sp.role || 'Belirtilmedi',
-        sp.gender || 'Belirtilmedi',
+        `${code}${sp.name}`,
+        SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
+        SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
         sp.ageRange || '—',
         sp.pitch ? `${Math.round(sp.pitch)} Hz (${pitchHint(sp.pitch)})` : 'Ölçülmedi',
         `${dur}${note ? ' · ' + note : ''}`
@@ -5629,11 +6059,30 @@ function speakerRows(c) {
   }
   return out;
 }
+// Rapor tablosunda zaman aralığını TEK biçimde yazar. Bölüm sınırı elle
+// girilmiş eski kayıtta "00:00:00" (ms'siz) olabilir; yanında ".000" varsa
+// sütun tutarsız görünür. Bu yardımcı her iki ucu aynı biçime çeker.
+// Depo kuralı: zaman kodu HER ZAMAN milisaniye içerir.
+function tcRange(a, b) {
+  const dash = REPORT_TEXT.timeDash;
+  if (!a && !b) return dash;
+  const norm = (v) => (v == null || v === '' ? dash : timecode(secondsFromTimecode(v)));
+  return `${norm(a)} – ${norm(b)}`;
+}
 function segObsText(s) {
   const o = s.obs || {};
   const keys = Object.keys(o).filter((k) => o[k]);
   if (!keys.length) return '—';
   return keys.map((k) => REPORT_TEXT.obsLabels[k] || k).join(', ');
+}
+// Raporun ÜÇ çıktısı (HTML/DOCX/UDF) aynı hücreyi kullanır. Aksi hâlde aynı
+// bölüm bir çıktıda "S1 · Kiracı", diğerinde "Kiracı" görünür ve tutarlılık
+// testi haklı olarak kalır.
+function segSpeakerCell(m, s) {
+  const name = s.speaker || REPORT_TEXT.emptySpeaker;
+  if (!s.speaker) return name;
+  const rec = speakerByName(m, s.speaker);
+  return rec?.code ? `${rec.code} · ${name}` : name;
 }
 function chanModeText(m) {
   const mode = channelMode(m);
@@ -5831,7 +6280,7 @@ function renderReport() {
       if (m.languageWarning)
         html += `<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;
       if (m.segments?.length) {
-        html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(s.start || REPORT_TEXT.timeDash)} – ${esc(s.end || REPORT_TEXT.timeDash)}</td><td>${esc(s.speaker || REPORT_TEXT.emptySpeaker)}</td><td>${esc(s.text || '')}</td><td>${reviewLabel(s)}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
+        html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${reviewLabel(s)}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
       } else html += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
     }
   } else html += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -6041,8 +6490,8 @@ function docxXml(c) {
         [
           [...REPORT_TEXT.segmentHeadersObs],
           ...m.segments.map((s) => [
-            `${s.start || REPORT_TEXT.timeDash} – ${s.end || REPORT_TEXT.timeDash}`,
-            s.speaker || REPORT_TEXT.emptySpeaker,
+            tcRange(s.start, s.end),
+            segSpeakerCell(m, s),
             s.text || '',
             reviewLabel(s),
             segObsText(s)
@@ -6412,8 +6861,8 @@ async function makeUdf() {
         );
       if (m.segments?.length) {
         const segments = m.segments.map((seg) => [
-          `${seg.start || REPORT_TEXT.timeDash} – ${seg.end || REPORT_TEXT.timeDash}`,
-          seg.speaker || REPORT_TEXT.emptySpeaker,
+          tcRange(seg.start, seg.end),
+          segSpeakerCell(m, seg),
           seg.text || '',
           reviewLabel(seg),
           segObsText(seg)
@@ -7294,6 +7743,11 @@ function setupEvents() {
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
       if (m) jumpToPriority(m);
+    } else if (b.dataset.bulkApprove !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) bulkApproveQuick(m);
     } else if (b.dataset.paragraph !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -7384,6 +7838,35 @@ function setupEvents() {
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
       if (m) mergeSegmentWithNext(m, Number(b.dataset.mergeNext));
+    } else if (b.dataset.addSpk !== undefined) {
+      // Yeni konuşmacı: sıradaki standart kod verilir (S1, S2…). Uzman etiketi
+      // sonra yazar; kayıt anında kod hazır olur, rapor tutarlı kalır.
+      const m = c.materials.find((x) => x.id === b.dataset.addSpk);
+      if (!m) return;
+      ensureSpeakers(m);
+      const n = (m.speakers || []).length + 1;
+      const rec = {
+        id: uid(),
+        code: '',
+        name: `Konuşmacı ${n}`,
+        role: 'unspecified',
+        gender: 'unspecified',
+        ageRange: '',
+        notes: '',
+        pitch: null,
+        pitchAt: null
+      };
+      m.speakers.push(rec);
+      assignSpeakerCodes(m.speakers);
+      // Yeni konuşmacı aktif bölüme atanır: uzman genellikle bu niyetle ekler.
+      const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+      if (m.segments?.[idx]) m.segments[idx].speaker = rec.name;
+      persist();
+      renderSegDetail(m);
+      updateSegListItem(m, idx);
+      renderSpeakersPanel(m);
+      renderOverview();
+      showToast(`${rec.code} eklendi ve bu bölüme atandı. Etiketini konuşmacı panelinden yazın.`);
     } else if (b.dataset.spec !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.spec);
       if (mm) toggleSpectrogram(mm);
@@ -7604,7 +8087,13 @@ function setupEvents() {
       if (m) {
         const rec = (m.speakers || []).find((x) => x.id === el.dataset.spk);
         if (rec) {
-          rec[el.dataset.spkKey] = el.value;
+          const key = el.dataset.spkKey;
+          // Rol ve cinsiyet seçeneklerinin value'su ASCII KOD'dur; kayda kod
+          // yazılır, etiket yalnız görünür. Etiket yazılırsa şema onu tanımaz ve
+          // değer 'unspecified'a düşerdi (v2.78 ve öncesi sessiz veri kaybı).
+          if (key === 'role') rec.role = normalizeSpeakerRole(el.value);
+          else if (key === 'gender') rec.gender = normalizeSpeakerGender(el.value);
+          else rec[key] = el.value;
           persist();
           renderSpeakersPanel(m);
           renderOverview();
@@ -7641,6 +8130,20 @@ function setupEvents() {
       saveModelPref(modelSelectEl.value);
       updateModelBadge();
     });
+  // Çözümleme profili: aynı modelin yönlendirilebilir ayarı. Seçim hatırlanır;
+  // yeni çözümleme bu profille yapılır. Ayrı model DEĞİLDİR (bkz. ASR_PROFILES).
+  const profSel = $('#asrProfileSelect');
+  if (profSel) {
+    profSel.innerHTML = ASR_PROFILES.map(
+      (p) => `<option value="${esc(p.id)}" title="${esc(p.hint)}">${esc(p.label)}</option>`
+    ).join('');
+    profSel.value = savedProfilePref();
+    profSel.addEventListener('change', () => {
+      saveProfilePref(profSel.value);
+      const p = asrProfile(profSel.value);
+      showToast(`Çözümleme profili: ${p.label}. ${p.hint}`);
+    });
+  }
   $('#refreshStorageBtn').addEventListener('click', () => refreshStorage());
   $('#clearAllModelsBtn').addEventListener('click', () => clearModelCache());
   $('#storageList').addEventListener('click', async (e) => {
