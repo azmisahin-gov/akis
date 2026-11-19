@@ -882,3 +882,64 @@ body.ws-mode #workspaceBar .ws-list-btn{display:inline-flex}
   #view-audio .seg-list{height:auto;max-height:300px}
   body.ws-mode #view-audio .seg-list{height:auto;max-height:280px}
 }
+
+/* ============================================================================
+   v2.43 — Yükseklik zinciri (v2.42 hatası düzeltilerek)
+   v2.42 HATASI: `.segments-root{display:flex}` verilince içindeki
+   transcript-toolbar / filter chips / seg-progress / seg-workspace / kbd-hint
+   YAN YANA dizildi (eşit aralıklarla, bozuk görünüm). Sebep: flex varsayılan
+   yönü row.
+   DOĞRU: segments-root DİKEY kolon olmalı; yalnız seg-workspace esnemeli.
+   ============================================================================ */
+/* Zincir: dikey flex, min-height:0 ile yukarıdan aşağıya. */
+#view-audio.active{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#view-audio>.detail-panel{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  overflow:hidden;margin-top:0}
+#view-audio #audioDetail{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  overflow:hidden}
+#view-audio .audio-card{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  overflow:hidden}
+#view-audio .audio-content-zone{flex:1 1 auto;min-height:0;display:flex;
+  flex-direction:column;overflow:hidden}
+#view-audio .card-pane.on{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;
+  overflow:hidden}
+#view-audio .card-pane[data-pane="transcript"] .transcript-editor{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* KRİTİK: segments-root DİKEY kolon. Çocuklar alt alta dizilir. */
+#view-audio .card-pane[data-pane="transcript"] .segments-root{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+/* Sabit kalan üst parçalar */
+#view-audio .segments-root>.transcript-toolbar,
+#view-audio .segments-root>.seg-progress,
+#view-audio .segments-root>.kbd-hint{flex:0 0 auto}
+/* Yalnız çalışma alanı esner ve tam yüksekliği alır. */
+#view-audio .segments-root>.seg-workspace{
+  flex:1 1 auto;min-height:0;height:auto!important;
+  display:grid;grid-template-columns:minmax(300px,38%) minmax(0,1fr);
+  gap:10px;align-items:stretch;overflow:hidden}
+#view-audio .seg-list{height:100%!important;max-height:none!important;
+  min-height:0;overflow-y:auto;overscroll-behavior:contain}
+#view-audio .seg-detail{height:100%!important;min-height:0;overflow-y:auto;
+  overscroll-behavior:contain}
+/* Analiz / Kayıt sekmeleri tam yükseklikte kayar. */
+#view-audio .card-pane[data-pane="listen"],
+#view-audio .card-pane[data-pane="record"]{max-height:none!important;min-height:0;
+  overflow-y:auto;overscroll-behavior:contain}
+/* Dinleme şeridi: üstte ince sabit. */
+#view-audio .listen-strip{flex:0 0 auto;padding-bottom:7px;margin-bottom:6px;
+  border-bottom:1px solid #eef2f6}
+#view-audio .listen-strip .wave-canvas{height:52px}
+#view-audio .listen-strip .audio-player{height:32px}
+body.ws-mode #view-audio .listen-strip .wave-canvas{height:64px}
+body.ws-mode #view-audio .listen-strip .audio-player{height:36px}
+/* Dar ekran: tek sütun, sayfa normal kayar (flex zinciri bırakılır). */
+@media(max-width:1080px){
+  #view-audio.active,#view-audio>.detail-panel,#view-audio #audioDetail,
+  #view-audio .audio-card,#view-audio .audio-content-zone,
+  #view-audio .card-pane.on,#view-audio .transcript-editor,
+  #view-audio .segments-root{display:block;overflow:visible;min-height:0}
+  #view-audio .segments-root>.seg-workspace{display:grid;grid-template-columns:1fr;
+    height:auto!important;overflow:visible}
+  #view-audio .seg-list{height:auto!important;max-height:320px!important}
+  #view-audio .seg-detail{height:auto!important;overflow:visible}
+}
