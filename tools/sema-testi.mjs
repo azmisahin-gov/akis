@@ -337,6 +337,43 @@ console.log('\n[6b] Uygulama günlüğü gerçekten zincirli mi?');
   eq('göç girdi metnini korur', up.log[0].detail, 'x');
 }
 
+// --- 6c. v3 kod ≠ v2 kod (gerçek hata) --------------------------------
+// v2.58'e kadar bazı yerler v2 Türkçe kodlarını ('onaylandi',
+// 'anlasilmadi', 'yeniden') karşılaştırıyordu; şema ise v3 ASCII kodları
+// ('approved', 'inaudible', 'relisten') üretiyor. Sonuç: onaylanan bölüm
+// listede hep "Bekliyor" görünüyor, sayımlar 0 çıkıyordu. Kullanıcı
+// "değiştiriyorum ama değişmiyor" diyordu. Bu blok bunu denetler.
+console.log('\n[6c] v3 kod ≠ v2 kod (uygulama kodu)');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const app = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+
+  // segReview() daima v3 döndürür; karşılaştırmalar da v3 olmalı.
+  for (const v3 of ['approved', 'inaudible', 'relisten']) {
+    ok(`segReview '${v3}' üretiyor`, REVIEW_STATE.includes(v3));
+  }
+  // v2 kodları yalnız REVIEW_LEGACY göç tablosunda bulunmalı.
+  for (const v2 of ['onaylandi', 'anlasilmadi', 'yeniden']) {
+    const uses = [...app.matchAll(new RegExp(`===\\s*'${v2}'|!==\\s*'${v2}'`, 'g'))];
+    ok(`v2 kodu '${v2}' karşılaştırmada kullanılmıyor`, uses.length === 0, `${uses.length} kullanım`);
+  }
+  // Rozet üretimi doğru kodlarla eşleşmeli.
+  ok('onaylandı rozeti v3 kodla', /rev === 'approved'[\s\S]{0,80}badge done/.test(app));
+  ok('anlaşılmadı rozeti v3 kodla', /rev === 'inaudible'[\s\S]{0,80}badge warn/.test(app));
+  ok('yeniden rozeti v3 kodla', /rev === 'relisten'[\s\S]{0,80}badge again/.test(app));
+
+  // Davranış: onaylı bölüm sayımı doğru olmalı.
+  const m = emptyMaterial({ id: 'm1', fileName: 'a.wav', sha256: 'h' });
+  m.segments.push(emptySegment({ id: 's1', review: 'approved' }));
+  m.segments.push(emptySegment({ id: 's2', review: 'pending' }));
+  m.segments.push(emptySegment({ id: 's3', review: 'inaudible' }));
+  eq('approved sayımı', m.segments.filter((s) => s.review === 'approved').length, 1);
+  eq('inaudible sayımı', m.segments.filter((s) => s.review === 'inaudible').length, 1);
+}
+
 // --- 7. Birleştirme -----------------------------------------------------
 console.log('\n[7] Ortak çalışma birleştirmesi');
 {

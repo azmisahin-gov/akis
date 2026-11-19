@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.58.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.59.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.59 — Onay çalışıyordu ama ekranda görünmüyordu (kritik)
+
+KULLANICI: "Kontrol kısmında Onayla diyorum ya da Enter, değişmiyor. Hatta
+orada ne değiştirsem değişmiyor."
+
+### Bulunan gerçek hata
+
+Kod iki farklı kod sözlüğü kullanıyordu:
+
+```
+Şema (schema.js) üretiyor : approved | inaudible | relisten | pending
+Liste çizimi (app.js) arıyor: onaylandi | anlasilmadi | yeniden
+```
+
+`segReview()` daima **v3 ASCII** kod döndürüyor; `segItemHtml()` ise **v2
+Türkçe** kodla karşılaştırıyordu. Sonuç:
+
+- Onaylama **çalışıyordu** (veri doğru yazılıyordu)
+- Ama listedeki rozet **hep "Bekliyor"** görünüyordu
+- Sayaçlar ("Onaylandı 0") hiç artmıyordu
+- Kullanıcı "değişmiyor" sanıyordu
+
+Gerçek ölçüm (tarayıcıda): "Bekleyen 2 · Onaylandı 0" → Onayla → veri
+`approved` oldu ama rozet hâlâ "Bekliyor" ve sayaç hâlâ "Onaylandı 0".
+
+### Çözüm
+
+Altı karşılaştırma v3 koduna çevrildi:
+- `segItemHtml` rozetleri (`approved` / `inaudible` / `relisten`)
+- Öncelik filtresi (`approved` atlanır)
+- `inaudible` sayımları (2 yer)
+- `checked` bayrağı (2 yer)
+
+v2 kodları artık **yalnız** `REVIEW_LEGACY` göç tablosunda bulunuyor.
+
+### Ek düzeltme
+
+`approveActiveSegment()` bölüm yoksa sessizce dönüyordu; artık açıklayıcı
+uyarı gösteriyor.
+
+### Test
+
+`sema-testi.mjs` [6c] bloğu eklendi (220 → 231 kontrol): uygulama kodunda v2
+Türkçe kod karşılaştırması kalmadığı, rozetlerin v3 kodla eşleştiği ve
+sayımların doğru olduğu denetlenir.
 
 ## v2.58 — "Onayla" sessizce başarısız oluyordu
 

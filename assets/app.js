@@ -34,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.58';
+const APP_VERSION = '2.59';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2491,11 +2491,11 @@ function segItemHtml(m, s, i, prev) {
       ? `<span class="badge spk" title="Konuşmacı">${esc(s.speaker)}</span>`
       : '';
   const state =
-    rev === 'onaylandi'
+    rev === 'approved'
       ? '<span class="badge done">Onaylandı</span>'
-      : rev === 'anlasilmadi'
+      : rev === 'inaudible'
         ? '<span class="badge warn">Anlaşılmadı</span>'
-        : rev === 'yeniden'
+        : rev === 'relisten'
           ? '<span class="badge again">Yeniden</span>'
           : '<span class="badge">Bekliyor</span>';
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''}" data-seg-item="${i}" role="button" tabindex="0">
@@ -2745,7 +2745,7 @@ function jumpToPriority(m) {
   let best = -1,
     bestScore = 14;
   for (let i = 0; i < segs.length; i++) {
-    if (segReview(segs[i]) === 'onaylandi') continue;
+    if (segReview(segs[i]) === 'approved') continue;
     const p = segPriority(segs[i], segs[i - 1]);
     if (p.score > bestScore) {
       bestScore = p.score;
@@ -4862,7 +4862,7 @@ function reviewSummaryRows(c) {
   const mats = c.materials || [];
   const segs = mats.flatMap((m) => m.segments || []);
   const reviewed = segs.filter((s) => isReviewed(s)).length;
-  const inaudible = segs.filter((s) => segReview(s) === 'anlasilmadi').length;
+  const inaudible = segs.filter((s) => segReview(s) === 'inaudible').length;
   const blank = segs.filter((s) => isHallucination(s.text)).length;
   const observed = segs.filter((s) => s.obs && Object.keys(s.obs).some((k) => s.obs[k])).length;
   const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok).length;
@@ -4977,7 +4977,7 @@ function renderReport() {
     );
   if (allSegs.length && checked < allSegs.length)
     warnings.push(`${allSegs.length - checked} deşifre bölümü henüz uzman tarafından kontrol edilmedi.`);
-  const anlasilmadi = allSegs.filter((s) => segReview(s) === 'anlasilmadi').length;
+  const anlasilmadi = allSegs.filter((s) => segReview(s) === 'inaudible').length;
   if (anlasilmadi)
     warnings.push(`${anlasilmadi} bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir.`);
   if (materials.some((m) => m.languageWarning)) warnings.push(REPORT_TEXT.warnLanguage);
@@ -6357,7 +6357,7 @@ function setupEvents() {
         const s2 = m.segments[Number(ix)];
         if (s2) {
           s2.review = val;
-          s2.checked = val === 'onaylandi';
+          s2.checked = val === 'approved';
           persist();
           updateSegListItem(m, Number(ix));
           refreshSegChips(m);
@@ -6718,7 +6718,7 @@ function setupEvents() {
       return;
     }
     s.review = el.value;
-    s.checked = el.value === 'onaylandi';
+    s.checked = el.value === 'approved';
     el.dataset.state = el.value;
     persist();
     updateSegListItem(m, i);

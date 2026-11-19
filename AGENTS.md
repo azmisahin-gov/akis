@@ -205,6 +205,13 @@ değeri ASCII **kod** (`usb`), görünen metin Türkçe **etiket** olmalıdır;
 v2.56'da bu karıştı ve kayıt geçersiz oldu. Eski Türkçe değerler
 `normalizeMediumType()` ile koda çevrilir.
 
+**Kod ≠ etiket (v2.59 — kritik):** `segReview()` daima **v3 ASCII** kod döndürür
+(`approved`, `inaudible`, `relisten`, `pending`). Karşılaştırma **asla** v2
+Türkçe kodla (`onaylandi`, `anlasilmadi`, `yeniden`) yapılmaz; v2 kodları
+yalnız `REVIEW_LEGACY` göç tablosunda bulunur. v2.59 öncesinde `segItemHtml()`
+v2 kodla karşılaştırıyordu: onaylama veriyi doğru yazıyordu ama rozet hep
+"Bekliyor" görünüyor, sayaçlar artmıyordu. `sema-testi.mjs` [6c] bunu denetler.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -353,7 +360,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.58.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.59.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

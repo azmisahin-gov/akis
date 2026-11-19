@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.58.**
+yazılır. **Güncel sürüm: v2.59.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.59 — Onay çalışıyordu ama ekranda görünmüyordu (tamamlandı)
+
+Şema v3 ASCII kod üretiyordu (`approved`), liste çizimi v2 Türkçe kod arıyordu
+(`onaylandi`). Onaylama veriyi doğru yazıyordu ama rozet hep "Bekliyor"
+görünüyor, sayaçlar artmıyordu; kullanıcı "değişmiyor" sanıyordu. Altı
+karşılaştırma v3 koduna çevrildi. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.58 — "Onayla" sessizce başarısız oluyordu (tamamlandı)
 
