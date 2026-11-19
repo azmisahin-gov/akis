@@ -517,3 +517,16 @@ alıyordu. Bu bir yarış durumuydu.
 - **Hata ayrımı:** yükleme hatası ile çözümleme hatası arayüzde ayrı gösterilir;
   yükleme hatasında "modeli yeniden yükleyip tekrar deneyin" yönlendirmesi ve
   hata ayrıntısı verilir.
+
+## v2.23 — Bellek güvenli dtype geri dönüşü (Aborted düzeltmesi)
+
+v2.21'deki dtype geri dönüşü bellek açısından tersti: bileşen-bazlı dtype
+başarısız olunca **tümü fp32**'ye düşüyordu. fp32 daha fazla bellek ister;
+6 GB VRAM'de `Aborted()` (bellek taşması) ile sonuçlandı.
+
+- **Azalan bellek sırası:** `dtypeCandidates` artık bellek artmayacak sırayı
+  verir. WebGPU: (encoder fp16 + decoder fp32) → fp16. WASM: fp32.
+- **Denemeler arası serbest bırakma:** her başarısız denemeden önce önceki
+  oturum `dispose()` edilir; bellek birikmez.
+- `dtypeFor` yerine `dtypeCandidates` kullanılır; testler buna göre güncellendi.
+  Toplam birim testi 165 (tümü geçer).

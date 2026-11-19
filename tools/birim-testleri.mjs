@@ -52,7 +52,7 @@ const EXPOSE = [
   'buildProjectPack', 'validateProjectPack', 'matchAudioEntries',
   'evaluateModelIntegrity', 'recommendModel', 'modelIdFromUrl',
   'parseAsrResult', 'asrWindows', 'looksNonTurkish', 'safeName',
-  'dtypeFor', 'dtypeLabel', 'modelShortName', 'looksLikeGarbage',
+  'dtypeCandidates', 'dtypeLabel', 'modelShortName', 'looksLikeGarbage',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -324,13 +324,13 @@ console.log('\n[7g] Model yöneticisi');
   // Duyarlılık (dtype): kalite öncelikli ve BİLEŞEN BAZINDA. Decoder fp16
   // olursa onnx-community Whisper "- - - -" veya boş çıktı üretir; decoder
   // her zaman fp32 olmalı. Encoder WebGPU'da fp16 (hızlı), WASM'da fp32.
-  const wasmDtype = T.dtypeFor('onnx-community/whisper-medium-ONNX', 'wasm');
-  const gpuDtype = T.dtypeFor('onnx-community/whisper-medium-ONNX', 'webgpu');
-  eq('WASM encoder fp32', wasmDtype.encoder_model, 'fp32');
-  eq('WASM decoder fp32', wasmDtype.decoder_model_merged, 'fp32');
-  eq('WebGPU encoder fp16', gpuDtype.encoder_model, 'fp16');
-  eq('WebGPU decoder ASLA fp16 değil', gpuDtype.decoder_model_merged, 'fp32');
-  eq('dtype etiketi', T.dtypeLabel(gpuDtype), 'encoder fp16 / decoder fp32');
+  const wasmC = T.dtypeCandidates('wasm');
+  const gpuC = T.dtypeCandidates('webgpu');
+  eq('WASM tek aday fp32', wasmC, ['fp32']);
+  eq('WebGPU ilk aday bileşen bazlı', gpuC[0], { encoder_model: 'fp16', decoder_model_merged: 'fp32' });
+  eq('WebGPU ilk aday decoder ASLA fp16 değil', gpuC[0].decoder_model_merged, 'fp32');
+  eq('WebGPU yedek aday fp16', gpuC[1], 'fp16');
+  eq('dtype etiketi', T.dtypeLabel(gpuC[0]), 'encoder fp16 / decoder fp32');
   // Kısa model adları.
   eq('kısa ad (küçük)', T.modelShortName('onnx-community/whisper-small'), 'Küçük model');
   eq('kısa ad (orta)', T.modelShortName('onnx-community/whisper-medium-ONNX'), 'Orta model');

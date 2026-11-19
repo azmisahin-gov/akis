@@ -32,17 +32,21 @@ const ASR_MODELS = {
 };
 // Kullanılan sayısal duyarlılık (dtype) cihaza ve modele göre seçilir.
 // KRİTİK: onnx-community Whisper modellerinde decoder'ı fp16 çalıştırmak
-// BOZUKTUR; "- - - -" veya boş çıktı üretir. Encoder fp16 olabilir. Bu nedenle
-// dtype bileşen bazında verilir:
-//  - WebGPU: encoder fp16 (hızlı, doğru) + decoder fp32 (doğru)
-//  - WASM  : ikisi de fp32 (fp16 WASM'da güvenilmez)
+// BOZUKTUR; "- - - -" veya boş çıktı üretir. Encoder fp16 olabilir.
 // Kalite ve doğruluk her zaman önceliklidir; decoder'ı q4 gibi kuantize
 // etmiyoruz çünkü doğruluk düşer.
-function dtypeFor(modelId, device) {
+// Denenecek dtype adayları; KALİTE ÖNCELİKLİ ama bellek açısından güvenli sıra.
+// Önemli: başarısız denemeden sonra DAHA FAZLA bellek isteyen bir seçeneğe
+// geçmek yanlıştır (6 GB GPU'da Aborted/bellek taşması verir). Bu yüzden sıra
+// bellek bakımından artmayacak biçimde düzenlenir ve her deneme arasında
+// önceki oturum serbest bırakılır.
+//  - WebGPU: encoder fp16 + decoder fp32 (kaliteli, makul bellek), sonra fp16.
+//  - WASM  : fp32 (fp16 WASM'da güvenilmez).
+function dtypeCandidates(device) {
   if (device === 'webgpu') {
-    return { encoder_model: 'fp16', decoder_model_merged: 'fp32' };
+    return [{ encoder_model: 'fp16', decoder_model_merged: 'fp32' }, 'fp16'];
   }
-  return { encoder_model: 'fp32', decoder_model_merged: 'fp32' };
+  return ['fp32'];
 }
 // İnsan okunur özet (durum satırında gösterilir).
 function dtypeLabel(dtype) {
@@ -3005,7 +3009,8 @@ async function ensureModel() {
   modelLoading = true;
   modelLoadPromise = (async () => {
   const spec = ASR_MODELS[modelId] || ASR_MODELS[DEFAULT_ASR_MODEL];
-  let dtype = dtypeFor(modelId, asrDevice);
+  const candidates = dtypeCandidates(asrDevice);
+  let dtype = candidates[0];
   // Genel ilerleme: dosya bazlı yüzde yerine, tamamlanan dosya sayısına göre
   // yüzde hesaplanır. Böylece "%100 → %3" gibi zıplayan, anlaşılmaz görüntü
   // yerine tek ve tutarlı bir ilerleme çubuğu gösterilir.
@@ -3053,15 +3058,28 @@ async function ensureModel() {
           }
         }
       });
-    let usedDtype = dtype;
-    try {
-      asrPipeline = await loadWith(dtype);
-    } catch (firstErr) {
-      console.warn('İstenen dtype ile yüklenemedi; fp32 ile yeniden denenecek', firstErr);
-      $('#modelStatus').textContent = 'İstenen duyarlılıkla yüklenemedi; tam duyarlılık (fp32) ile yeniden deneniyor…';
-      usedDtype = { encoder_model: 'fp32', decoder_model_merged: 'fp32' };
-      asrPipeline = await loadWith(usedDtype);
+    // Dtype adayları sırayla denenir. Her başarısız denemeden önce önceki
+    // oturum serbest bırakılır ki bellek birikmesin (6 GB GPU'da önemli).
+    let usedDtype = null;
+    let lastErr = null;
+    for (const cand of candidates) {
+      if (asrPipeline && asrPipeline.dispose) {
+        try {
+          await asrPipeline.dispose();
+        } catch (e) {}
+        asrPipeline = null;
+      }
+      try {
+        $('#modelStatus').textContent = `${spec.label} yükleniyor… (duyarlılık: ${dtypeLabel(cand)})`;
+        asrPipeline = await loadWith(cand);
+        usedDtype = cand;
+        break;
+      } catch (candErr) {
+        lastErr = candErr;
+        console.warn('Dtype denemesi başarısız:', dtypeLabel(cand), candErr);
+      }
     }
+    if (!usedDtype) throw lastErr || new Error('Model hiçbir duyarlılık ayarıyla yüklenemedi.');
     asrPipeline.__spec = spec;
     asrPipeline.__modelId = modelId;
     asrPipeline.__dtype = usedDtype;
