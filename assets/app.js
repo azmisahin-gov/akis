@@ -581,6 +581,16 @@ function renderStatusBar() {
 function renderQuestions() {
   const c = currentCase();
   if (!c) return;
+  const qc = $('#qCount');
+  if (qc) qc.textContent = String(c.questions.length);
+  // Son kullanılan inceleme bölümünü geri yükle.
+  try {
+    const saved = localStorage.getItem('akis.qTab');
+    if (saved) {
+      const btn = $(`.split-item[data-qtab="${saved}"]`);
+      if (btn && !btn.classList.contains('on')) btn.click();
+    }
+  } catch (e) {}
   const root = $('#questionsList');
   root.innerHTML = '';
   if (!c.questions.length) {
@@ -4840,6 +4850,21 @@ function setupEvents() {
     if (e.target.dataset.q === undefined) readQuestionsForm();
   });
   $('#addQuestionBtn').addEventListener('click', addQuestion);
+  // İnceleme bölüm menüsü: yalnız görünürlük değişir, DOM yeniden çizilmez.
+  $$('.split-item[data-qtab]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.qtab;
+      $$('.split-item[data-qtab]').forEach((x) => {
+        const on = x.dataset.qtab === tab;
+        x.classList.toggle('on', on);
+        x.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      $$('.split-pane[data-qpane]').forEach((x) => x.classList.toggle('on', x.dataset.qpane === tab));
+      try {
+        localStorage.setItem('akis.qTab', tab);
+      } catch (e) {}
+    });
+  });
   $('#questionsList').addEventListener('click', (e) => {
     const b = e.target.closest('[data-remove-q]');
     if (!b) return;

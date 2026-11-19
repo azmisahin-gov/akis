@@ -604,3 +604,47 @@ html,body{height:100%;overflow:hidden}
 #view-audio .card-pane[data-pane="listen"],
 #view-audio .card-pane[data-pane="record"]{min-height:0}
 #view-audio .card-pane[data-pane="record"]{max-height:100%;overflow-y:auto}
+
+/* ============================================================================
+   v2.35 — İnceleme sayfası: sol bölüm menüsü + sağ içerik
+   Sorun: 3 bölüm tek uzun form hâlindeydi; sorular çoğaldıkça sayfa uzuyordu.
+   Çözüm: solda sabit bölüm menüsü, sağda yalnız aktif bölüm. Sağ taraf kendi
+   içinde kayar; bölüm menüsü hep görünür.
+   ============================================================================ */
+#view-questions.active{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+#view-questions .section-intro{flex:0 0 auto;margin-bottom:10px}
+.split-workspace{flex:1 1 auto;min-height:0;display:grid;
+  grid-template-columns:minmax(200px,260px) minmax(0,1fr);gap:12px;align-items:stretch}
+.split-nav{display:flex;flex-direction:column;gap:3px;border:1px solid var(--line);
+  border-radius:9px;background:#fff;padding:6px;overflow-y:auto;min-height:0}
+.split-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;
+  background:transparent;border-radius:7px;padding:9px 10px;cursor:pointer;color:#4a6278}
+.split-item:hover{background:#f4f8fb}
+.split-item.on{background:#eef4fa;box-shadow:inset 3px 0 var(--gold)}
+.split-no{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:6px;
+  background:#edf3f8;color:#315f91;font:700 9px Manrope}
+.split-item.on .split-no{background:var(--navy);color:#fff}
+.split-item>span:nth-child(2){min-width:0;flex:1}
+.split-item b{display:block;font-size:11px;color:#2c4055;line-height:1.3}
+.split-item small{display:block;font-size:9px;color:#93a0ad;margin-top:2px}
+.split-item.on b{color:var(--navy)}
+.split-n{background:#e8eff6;color:#4a6b8a;border-radius:9px;padding:0 5px;
+  font:700 8px/14px 'Segoe UI';flex:none}
+.split-body{border:1px solid var(--line);border-radius:9px;background:#fff;
+  padding:16px 18px;overflow-y:auto;min-height:0}
+.split-pane{display:none}
+.split-pane.on{display:block}
+.split-pane .field{margin-bottom:12px}
+.split-pane .field:last-child{margin-bottom:0}
+.split-pane textarea{min-height:auto}
+.split-pane-head{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  margin-bottom:10px;padding-bottom:9px;border-bottom:1px solid #eef2f6}
+.split-pane-head span{font-size:10px;color:#8392a1}
+@media(max-width:900px){
+  #view-questions.active{overflow:visible}
+  .split-workspace{grid-template-columns:1fr;gap:10px}
+  .split-nav{flex-direction:row;overflow-x:auto;padding:5px}
+  .split-item{width:auto;flex:none}
+  .split-item small{display:none}
+  .split-body{overflow:visible}
+}

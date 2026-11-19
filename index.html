@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142c4d">
   <title>AKİS | Adli Konuşma İnceleme Sistemi</title>
-  <link rel="stylesheet" href="assets/app.css?v=2.34">
+  <link rel="stylesheet" href="assets/app.css?v=2.35">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.34"></script>
+  <script type="module" src="assets/app.js?v=2.35"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -79,20 +79,28 @@
       </section>
 
       <section class="view" id="view-questions">
-        <div class="section-intro"><div><div class="eyebrow">03 / İNCELEME</div><h2>Görevlendirme soruları ve teknik değerlendirme</h2><p>Mahkemenin sorularını ve yalnızca gerçekten uygulanan inceleme işlemlerini kaydedin.</p></div><span class="subtle-pill">Uzman kontrolü gerekli</span></div>
-        <div class="panel form-panel">
-          <div class="form-section-title"><span>01</span><div><h3>Görevlendirme kapsamı</h3><p>Mahkemenin sizden hangi teknik konularda inceleme istediğini yazın.</p></div></div>
-          <label class="field"><span>Görevlendirme / inceleme talebi</span><textarea id="assignmentScope" rows="4" placeholder="Mahkeme ara kararında belirtilen inceleme kapsamını mümkün olduğunca aynen ve tarafsız biçimde yazın."></textarea></label>
-          <div class="form-divider"></div>
-          <div class="form-section-title"><span>02</span><div><h3>Cevaplanacak sorular</h3><p>Her soruya ayrı bir yanıt ekleyin. Cevapların dayandığı ses kaydı ve zaman aralığını belirtin.</p></div><button id="addQuestionBtn" class="button button-light button-small">＋ Soru ekle</button></div>
-          <div id="questionsList" class="questions-list"></div>
-          <div class="form-divider"></div>
-          <div class="form-section-title"><span>03</span><div><h3>Yöntem ve teknik değerlendirme</h3><p>Standart metin otomatik eklenir; yalnızca gerçekten yaptığınız işlemlere göre düzeltin.</p></div></div>
-          <label class="field"><span>İnceleme yöntemi</span><textarea id="methodText" rows="5"></textarea></label>
-          <label class="field"><span>Teknik değerlendirme ve sınırlılıklar</span><textarea id="limitationsText" rows="4" placeholder="Kayıt kalitesi, anlaşılabilirlik, arka plan sesleri, üst üste konuşma ve incelemenin sınırları."></textarea></label>
-          <label class="field"><span>Sonuç ve kanaat (bilirkişi tarafından yazılır)</span><textarea id="conclusionText" rows="5" placeholder="Yalnızca doğrulanmış teknik bulgulara dayanan, gerekçeli sonuç ve kanaatinizi yazın."></textarea></label>
-          <div class="notice-box"><b>Mesleki sınır</b><p>Uygulama hukuki değerlendirme veya kendiliğinden bilirkişi kanaati üretmez. Ses çözümleme çıktıları kontrol edilmeden kesin bulgu olarak rapora aktarılmamalıdır.</p></div>
-          <div class="form-actions"><span class="form-save-note">Değişiklikler otomatik kaydedilir.</span><button class="button button-primary" data-goto="report">Rapor önizlemesine geç →</button></div>
+        <div class="section-intro"><div><div class="eyebrow">03 / İNCELEME</div><h2>Görevlendirme soruları ve teknik değerlendirme</h2></div><span class="subtle-pill">Uzman kontrolü gerekli</span></div>
+        <div class="split-workspace">
+          <nav class="split-nav" role="tablist" aria-label="İnceleme bölümleri">
+            <button class="split-item on" data-qtab="scope" role="tab" aria-selected="true"><span class="split-no">01</span><span><b>Görevlendirme kapsamı</b><small>Mahkemenin talebi</small></span></button>
+            <button class="split-item" data-qtab="questions" role="tab" aria-selected="false"><span class="split-no">02</span><span><b>Cevaplanacak sorular</b><small>Teknik cevaplar</small></span><span class="split-n" id="qCount">0</span></button>
+            <button class="split-item" data-qtab="method" role="tab" aria-selected="false"><span class="split-no">03</span><span><b>Yöntem ve değerlendirme</b><small>Yöntem, sınırlılık, sonuç</small></span></button>
+          </nav>
+          <div class="split-body">
+            <div class="split-pane on" data-qpane="scope" role="tabpanel">
+              <label class="field"><span>Görevlendirme / inceleme talebi</span><textarea id="assignmentScope" rows="12" placeholder="Mahkeme ara kararında belirtilen inceleme kapsamını mümkün olduğunca aynen ve tarafsız biçimde yazın."></textarea></label>
+            </div>
+            <div class="split-pane" data-qpane="questions" role="tabpanel">
+              <div class="split-pane-head"><span>Her soruya ayrı yanıt; dayanak kaydı ve zaman aralığını belirtin.</span><button id="addQuestionBtn" class="button button-light button-small">＋ Soru ekle</button></div>
+              <div id="questionsList" class="questions-list"></div>
+            </div>
+            <div class="split-pane" data-qpane="method" role="tabpanel">
+              <label class="field"><span>İnceleme yöntemi</span><textarea id="methodText" rows="8"></textarea></label>
+              <label class="field"><span>Teknik değerlendirme ve sınırlılıklar</span><textarea id="limitationsText" rows="6" placeholder="Kayıt kalitesi, anlaşılabilirlik, arka plan sesleri, üst üste konuşma ve incelemenin sınırları."></textarea></label>
+              <label class="field"><span>Sonuç ve kanaat (bilirkişi tarafından yazılır)</span><textarea id="conclusionText" rows="6" placeholder="Yalnızca doğrulanmış teknik bulgulara dayanan, gerekçeli sonuç ve kanaatinizi yazın."></textarea></label>
+              <div class="notice-box"><b>Mesleki sınır</b><p>Uygulama hukuki değerlendirme veya kendiliğinden bilirkişi kanaati üretmez. Ses çözümleme çıktıları kontrol edilmeden kesin bulgu olarak rapora aktarılmamalıdır.</p></div>
+            </div>
+          </div>
         </div>
       </section>
 
