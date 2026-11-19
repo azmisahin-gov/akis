@@ -404,6 +404,28 @@ kullanılmaz; tüm mantık `assets/app.js` içindedir.
 - Sayfa yolları göreli olduğundan (`assets/…`, `templates/…`) dosyaları
   taşırken bu yolları bozmayın.
 
+### DERS: commit ≠ yayın — push edilmeden sürüm değişmez
+
+v2.78–v2.81 çalışması commit'lendi ama **push edilmedi**. Kullanıcı canlı
+sitede hâlâ v2.77 gördü ve haklı olarak "pushlandı mı?" diye sordu. Sebep:
+GitHub Pages yalnız **uzaktaki** `main` dalından yayın yapar; yerel commit
+hiçbir şeyi değiştirmez.
+
+**Kural — sürüm işi bitmiş sayılmaz, ta ki şunlar doğrulanana kadar:**
+
+1. `git push origin main`
+2. `git ls-remote origin refs/heads/main` → yerel `HEAD` ile **aynı** hash
+3. Pages derlemesi `built` olmalı ve `commit` bizimki olmalı:
+   `curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+     https://api.github.com/repos/azmisahin-gov/akis/pages/builds/latest`
+4. Canlı site gerçekten yeni sürümü sunmalı:
+   `curl -s https://azmisahin-gov.github.io/akis/assets/app.js | grep APP_VERSION`
+
+**Kullanıcı "hâlâ eski sürümü görüyorum" derse** ilk bakılacak üç şey:
+push edildi mi → Pages derlemesi bitti mi → tarayıcı önbelleği (sayfayı
+`?t=<tarih>` ile veya Ctrl+Shift+R ile aç). `?v=` parametreleri yalnız
+`assets/*` önbelleğini kırar, `index.html`'in kendisini kırmaz.
+
 ## Dosya düzeni
 
 - `index.html` — tek sayfa iskeleti.
