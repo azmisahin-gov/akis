@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.70.**
+yazılır. **Güncel sürüm: v2.71.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.71 — "Yeniden çözümle" tüm elle düzeltmeleri siliyordu (tamamlandı)
+
+`m.segments = collected` mevcut bölümlerin üzerine yazıyordu: elle düzeltmeler
+ve onaylar uyarısız siliniyordu. Artık elle düzeltme varsa onay sorulur, eski
+bölümler `previousSegments`'e saklanır ve "Önceki bölümleri geri yükle"
+düğmesiyle dönülebilir.
 
 ### v2.70 — Yarıda kalan çözümleme dosyaya yazılıyordu (tamamlandı)
 

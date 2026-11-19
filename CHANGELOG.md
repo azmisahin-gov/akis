@@ -6,12 +6,65 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.70.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.71.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.71 — "Yeniden çözümle" tüm elle düzeltmeleri siliyordu (kritik)
+
+KULLANICI: "Bu yeniden çözümle deyince ne oluyor?"
+
+### Ölçümle bulunan en büyük veri kaybı
+
+```js
+m.segments = collected;   // mevcut bölümlerin ÜZERİNE yazılır
+```
+
+Ölçüm:
+```
+ÖNCE (elle düzeltilmiş, onaylanmış):
+  "ELLE DÜZELTİLMİŞ METİN 1"  | Onaylandı | textRev: 3
+  "ELLE DÜZELTİLMİŞ METİN 2"  | Onaylandı | textRev: 2
+
+"Yeniden çözümle" sonrası:
+  "model çıktısı 1"  | Bekliyor
+  "model çıktısı 2"  | Bekliyor
+
+-> TÜM DÜZELTMELER KAYBOLDU, onaylar kayboldu
+-> Uyarı YOK, soru YOK, geri alma YOK
+```
+
+Kullanıcı yanlışlıkla basarsa saatlerce emek gider. Bu, bugünkü veri
+güvenliği çalışmasında gözden kaçmıştı.
+
+### Çözüm
+
+**1. Onay sorusu.** Elle düzeltilmiş veya onaylanmış bölüm varsa:
+
+> **Yeniden çözümleme mevcut düzeltmeleri siler**
+> Bu kayıtta N bölüm elle düzeltilmiş veya onaylanmış. Yeniden çözümleme bu
+> bölümlerin TAMAMINI siler ve modelin yeni çıktısıyla değiştirir. Eski hâli
+> geri dönebilmek için saklanacak. Devam edilsin mi?
+> [Vazgeç] [Devam et]
+
+**2. Geri dönüş kopyası.** Devam edilirse eski bölümler `previousSegments`
+alanında saklanır ve işlem günlüğüne yazılır.
+
+**3. "Önceki bölümleri geri yükle" düğmesi.** Kayıt bilgileri sekmesinde,
+yedek varsa görünür. Basınca onay sorar, sonra eski bölümleri geri getirir.
+
+### Akış
+
+```
+Elle düzeltme var mı?
+  EVET -> Onay sor -> Vazgeç: hiçbir şey olmaz
+                   -> Devam : eski bölümler saklanır, çözümleme başlar
+                              sonra "Önceki bölümleri geri yükle" ile dönülebilir
+  HAYIR -> Doğrudan çözümle (soru yok, gereksiz sürtünme yok)
+```
 
 ## v2.70 — Yarıda kalan çözümleme dosyaya yazılıyordu (donmuş %70)
 

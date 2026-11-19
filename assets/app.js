@@ -35,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.70';
+const APP_VERSION = '2.71';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1218,7 +1218,11 @@ function recordPanelHtml(m) {
     <div class="pane-sub"><span>SHA-256 özeti</span></div>
     <div class="sha-box">${esc(m.sha256 || 'Hesaplanmadı')}</div>
     ${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son doğrulama: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti' : 'özet farklı'}</div>` : ''}
-    <div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>`;
+    <div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button>${
+      m.previousSegments && (m.previousSegments.segments || []).length
+        ? `<button class="mini-button" data-restore-segments="${esc(m.id)}" title="Yeniden çözümleme öncesi bölümleri geri yükle">Önceki bölümleri geri yükle (${m.previousSegments.count})</button>`
+        : ''
+    }</div>`;
 }
 // Seçili kaydın detayını çizer ve oynatıcı/dalga formu/deşifreyi bağlar.
 async function renderMaterialDetail() {
@@ -4857,6 +4861,30 @@ async function transcribe(id) {
   const c = currentCase(),
     m = c.materials.find((x) => x.id === id);
   if (!m) return;
+  // Elle yapılmış düzeltme varsa yeniden çözümleme onları SİLER (m.segments
+  // üzerine yazılır). Bu, uyarısız yapılamaz. Kullanıcıya sorulur ve eski
+  // bölümler geri dönüş için saklanır.
+  const edited = (m.segments || []).filter((s) => (Number(s.textRev) || 0) > 0 || s.review !== 'pending');
+  if (edited.length) {
+    const devam = await askConfirm(
+      'Yeniden çözümleme mevcut düzeltmeleri siler',
+      `Bu kayıtta ${edited.length} bölüm elle düzeltilmiş veya onaylanmış. ` +
+        'Yeniden çözümleme bu bölümlerin TAMAMINI siler ve modelin yeni çıktısıyla değiştirir. ' +
+        'Düzeltmeler ve onaylar kaybolur. ' +
+        'Eski hâli geri dönebilmek için saklanacak (İşlem günlüğünde görünür). Devam edilsin mi?'
+    );
+    if (!devam) {
+      showToast('Yeniden çözümleme iptal edildi. Mevcut düzeltmeler korundu.');
+      return;
+    }
+    // Geri dönüş kopyası: eski bölümler kayda yazılır (yalnız son 1 kopya).
+    m.previousSegments = {
+      at: new Date().toISOString(),
+      count: (m.segments || []).length,
+      segments: JSON.parse(JSON.stringify(m.segments || []))
+    };
+    logEvent(m, 'Yeniden çözümleme öncesi yedek', `${edited.length} elle düzeltilmiş bölüm saklandı`);
+  }
   const blob = await getAudioBlob(c, m);
   if (!blob) {
     showToast('Ses dosyası yerel depoda bulunamadı. Yeniden ekleyin.');
@@ -6673,6 +6701,23 @@ function setupEvents() {
       showToast('Ses kaydı kaldırıldı.');
     } else if (b.dataset.verify) {
       await verifyIntegrity(b.dataset.verify);
+    } else if (b.dataset.restoreSegments) {
+      const m = c.materials.find((x) => x.id === b.dataset.restoreSegments);
+      if (!m || !m.previousSegments) return;
+      const ok = await askConfirm(
+        'Önceki bölümleri geri yükle',
+        `Şu anki ${(m.segments || []).length} bölüm, yeniden çözümleme öncesindeki ` +
+          `${m.previousSegments.count} bölümle değiştirilecek. Şu anki hâl kaybolur. Devam edilsin mi?`
+      );
+      if (!ok) return;
+      m.segments = JSON.parse(JSON.stringify(m.previousSegments.segments || []));
+      delete m.previousSegments;
+      m.activeSeg = 0;
+      logEvent(m, 'Önceki bölümler geri yüklendi', `${m.segments.length} bölüm`);
+      persist();
+      renderAudioList();
+      renderOverview();
+      showToast('Önceki bölümler geri yüklendi.');
     } else if (b.dataset.log) {
       const lm = c.materials.find((x) => x.id === b.dataset.log);
       if (lm) showEvidenceLog(lm);
