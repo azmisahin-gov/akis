@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#142c4d">
   <title>AKİS | Adli Konuşma İnceleme Sistemi</title>
-  <link rel="stylesheet" href="assets/app.css?v=2.36">
+  <link rel="stylesheet" href="assets/app.css?v=2.37">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.36"></script>
+  <script type="module" src="assets/app.js?v=2.37"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -73,9 +73,17 @@
 
 
       <section class="view" id="view-audio">
+        <div class="workspace-bar" id="workspaceBar" hidden>
+          <button class="mini-button" id="workspaceBackBtn">← Kayıt listesine dön</button>
+          <span class="ws-title" id="wsTitle">—</span>
+          <span class="ws-meta" id="wsMeta"></span>
+          <span class="ws-spacer"></span>
+          <button class="mini-button" data-ws-nav="-1" title="Önceki kayıt">‹ Önceki</button>
+          <button class="mini-button" data-ws-nav="1" title="Sonraki kayıt">Sonraki ›</button>
+        </div>
         <div class="upload-zone compact" id="dropZone"><span class="upload-icon">⇧</span><span class="upload-text">Ses kayıtlarını buraya bırakın veya</span><label class="button button-primary button-small upload-label">dosya seç<input type="file" id="audioInput" accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac,.aac" multiple hidden></label><small>WAV · MP3 · M4A · OGG · FLAC · AAC</small></div>
         <div class="panel"><div class="panel-heading"><div><div class="eyebrow">MATERYAL LİSTESİ</div><h3>Eklenen ses kayıtları<span class="info-i" tabindex="0" data-tip="Satıra tıklayınca detay altta açılır. Liste sabit yüksekliktedir; çok kayıtta sayfa uzamaz.">i</span></h3></div><span class="subtle-pill" id="audioListLabel">0 kayıt</span></div><div id="audioList" class="audio-list empty-list"><div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div></div></div>
-        <div class="panel detail-panel"><div class="panel-heading"><div><div class="eyebrow">SEÇİLİ KAYIT</div><h3 id="audioDetailTitle">Kayıt detayı</h3></div><span class="subtle-pill">Dinleme ve deşifre araçları</span></div><div id="audioDetail" class="audio-detail"></div></div>
+        <div class="panel detail-panel"><div class="panel-heading"><div><div class="eyebrow">SEÇİLİ KAYIT</div><h3 id="audioDetailTitle">Kayıt detayı</h3></div><span class="detail-head-actions"><span class="subtle-pill">Dinleme ve deşifre araçları</span><button class="mini-button" id="workspaceBtn" title="Çalışma modu: yalnız bu kayıt, tam ekran (W)">⛶ Çalışma modu</button></span></div><div id="audioDetail" class="audio-detail"></div></div>
       </section>
 
       <section class="view" id="view-questions">

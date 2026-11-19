@@ -695,3 +695,43 @@ html,body{height:100%;overflow:hidden}
 #view-audio>.detail-panel{padding:10px 12px}
 /* Deşifre alanı daha yüksek olsun */
 #view-audio .seg-workspace{height:clamp(320px,58vh,760px)}
+
+/* ============================================================================
+   v2.37 — Çalışma modu: seçili kayıt tam ekran
+   Asıl iş (deşifre/analiz) seçili kayıtta yapılıyor. Bu modda yükleme alanı,
+   kayıt şeridi ve panel başlığı gizlenir; tüm alan çalışma alanına kalır.
+   Kayıtlar arası geçiş üst çubuktan yapılır, moddan çıkmak gerekmez.
+   ============================================================================ */
+.workspace-bar{display:none}
+body.ws-mode .workspace-bar{display:flex;align-items:center;gap:10px;
+  padding:7px 10px;background:#fff;border:1px solid var(--line);border-radius:9px;
+  flex:0 0 auto}
+.ws-title{font:700 12px Manrope;color:var(--navy);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;max-width:38%}
+.ws-meta{font-size:10px;color:#8392a1;white-space:nowrap}
+.ws-spacer{flex:1}
+body.ws-mode .workspace-bar .mini-button:disabled{opacity:.4;cursor:default}
+
+/* Yükleme alanı ve kayıt şeridi gizlenir; detay tüm alanı kaplar. */
+body.ws-mode #view-audio>.upload-zone.compact,
+body.ws-mode #view-audio>.panel:not(.detail-panel){display:none!important}
+body.ws-mode #view-audio>.detail-panel{flex:1 1 auto;min-height:0;
+  display:flex;flex-direction:column;padding:0;border:0;box-shadow:none;background:transparent}
+body.ws-mode #view-audio>.detail-panel>.panel-heading{display:none}
+body.ws-mode #view-audio #audioDetail{flex:1 1 auto;min-height:0;overflow-y:auto;padding-right:2px}
+/* Çalışma modunda kart kenarlıkları sadeleşir, alan büyür. */
+body.ws-mode #view-audio .audio-card{border:0;padding:0;background:transparent}
+body.ws-mode #view-audio .card-tabs{margin-top:4px}
+body.ws-mode #view-audio .seg-workspace{height:calc(100vh - 210px);min-height:360px}
+body.ws-mode #view-audio .card-pane[data-pane="listen"] .wave-canvas{height:120px}
+body.ws-mode #view-audio .card-pane[data-pane="listen"] .audio-player{height:44px}
+
+/* Durum çubuğu çalışma modunda ince kalır (model/denetim görünür kalsın). */
+body.ws-mode .statusbar{height:26px;font-size:9px}
+
+/* Kısayol: W çalışma modunu açar/kapatır (metin alanında değilken). */
+@media(max-width:760px){
+  body.ws-mode #view-audio .seg-workspace{height:auto;min-height:0}
+  .ws-title{max-width:50%}
+  .ws-meta{display:none}
+}

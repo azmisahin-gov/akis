@@ -668,6 +668,7 @@ function setActiveMaterial(id) {
   persist();
   renderMaterialList();
   renderMaterialDetail();
+  updateWorkspaceBar();
 }
 // Kompakt kayıt satırı: sıra, dosya adı, süre/boyut, durum ve kontrol ilerlemesi.
 function materialRowHtml(m, i) {
@@ -2312,6 +2313,11 @@ function handleSegKey(e, card, m) {
     return true;
   }
   // Böl / birleştir kısayolları: uzman kaydı dinlerken elleri klavyede kalır.
+  if ((e.key === 'w' || e.key === 'W') && !typing) {
+    setWorkspace(!document.body.classList.contains('ws-mode'));
+    e.preventDefault();
+    return true;
+  }
   if ((e.key === 'b' || e.key === 'B') && !typing) {
     const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
     splitSegmentAtPlayer(m, idx);
@@ -4755,6 +4761,47 @@ async function loadSamples() {
 // Esc kısayolu bulunur.
 // Ayarlar çekmecesi: model, toplu çözümleme ve depolama burada durur. Çalışma
 // alanını kapatmadığı için uzman bağlamı kaybetmez.
+// Çalışma modu: seçili kayıt tam ekranı kaplar. Yükleme alanı ve kayıt şeridi
+// gizlenir; deşifre/analiz alanına mümkün olan en fazla yer kalır. Kayıtlar
+// arasında önceki/sonraki ile geçilir, böylece moddan çıkmak gerekmez.
+function setWorkspace(on) {
+  document.body.classList.toggle('ws-mode', on);
+  const bar = $('#workspaceBar');
+  if (bar) bar.hidden = !on;
+  if (on) {
+    switchView('audio');
+    updateWorkspaceBar();
+    try {
+      window.scrollTo(0, 0);
+    } catch (e) {}
+  }
+  // Gizliyken çizilmiş canvas'lar 0 genişlikte olur; mod açılınca yeniden çiz.
+  if (on) {
+    requestAnimationFrame(() => {
+      const m = activeMaterial();
+      if (!m) return;
+      const cv = document.querySelector('canvas.wave-canvas');
+      const pk = peakCache.get(m.id);
+      if (cv && pk) drawWave(cv, pk, m);
+    });
+  }
+}
+function updateWorkspaceBar() {
+  const c = currentCase();
+  const m = activeMaterial();
+  if (!c || !m) return;
+  const idx = (c.materials || []).indexOf(m);
+  const segs = m.segments || [];
+  const checked = segs.filter((s) => isReviewed(s)).length;
+  const t = $('#wsTitle');
+  if (t) t.textContent = `${idx + 1}. ${m.name}`;
+  const meta = $('#wsMeta');
+  if (meta) meta.textContent = `${fmtShort(m.duration || 0)} · ${segs.length} bölüm · ${checked} denetlendi`;
+  const prev = document.querySelector('[data-ws-nav="-1"]');
+  const next = document.querySelector('[data-ws-nav="1"]');
+  if (prev) prev.disabled = idx <= 0;
+  if (next) next.disabled = idx >= (c.materials || []).length - 1;
+}
 // Rapor tam ekran modu: kabuk gizlenir, yalnızca ince çubuk kalır.
 function setReportFull(on) {
   document.body.classList.toggle('report-full', on);
@@ -5420,6 +5467,21 @@ function setupEvents() {
   document.addEventListener('keydown', onGlobalSegKey);
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
+$('#workspaceBtn').addEventListener('click', () => setWorkspace(true));
+$('#workspaceBackBtn').addEventListener('click', () => setWorkspace(false));
+$$('[data-ws-nav]').forEach((b) =>
+  b.addEventListener('click', () => {
+    const c = currentCase();
+    if (!c) return;
+    const mats = c.materials || [];
+    const idx = mats.indexOf(activeMaterial());
+    const next = idx + Number(b.dataset.wsNav);
+    if (next >= 0 && next < mats.length) {
+      setActiveMaterial(mats[next].id);
+      updateWorkspaceBar();
+    }
+  })
+);
 $('#reportFullBtn').addEventListener('click', () => setReportFull(true));
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
@@ -5447,6 +5509,11 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
     // Tam ekran rapordan çık.
     if (document.body.classList.contains('report-full')) {
       setReportFull(false);
+      return;
+    }
+    // Çalışma modundan çık.
+    if (document.body.classList.contains('ws-mode')) {
+      setWorkspace(false);
       return;
     }
     // Önce açık çekmeceyi kapat, sonra odak modunu.
