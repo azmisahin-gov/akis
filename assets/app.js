@@ -2115,9 +2115,19 @@ function segDetailHtml(m) {
         <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
       </div>
     </div>
-    <div class="seg-bottom">
-      <div class="seg-obs"><span class="sb-lbl">Gözlem</span><button class="mini-button tiny ${s.obs && s.obs.noise ? 'on' : ''}" data-obs="${i}|noise" title="Arka plan gürültüsü">gürültü</button><button class="mini-button tiny ${s.obs && s.obs.overlap ? 'on' : ''}" data-obs="${i}|overlap" title="Üst üste konuşma">üst üste</button><button class="mini-button tiny ${s.obs && s.obs.inaudible ? 'on' : ''}" data-obs="${i}|inaudible" title="Anlaşılmaz bölüm">anlaşılmaz</button><button class="mini-button tiny ${s.obs && s.obs.music ? 'on' : ''}" data-obs="${i}|music" title="Müzik/ses efekti">müzik</button></div>
-      <div class="seg-ops">${hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş ${hist}</button>` : ''}<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik</button><button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">böl</button><button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">birleştir</button><button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button></div>
+    <div class="seg-obs-row">
+      <span class="sb-lbl">Gözlem işaretleri</span>
+      <button class="mini-button obs-btn ${s.obs && s.obs.noise ? 'on' : ''}" data-obs="${i}|noise" title="Arka plan gürültüsü">gürültü</button>
+      <button class="mini-button obs-btn ${s.obs && s.obs.overlap ? 'on' : ''}" data-obs="${i}|overlap" title="Üst üste konuşma">üst üste</button>
+      <button class="mini-button obs-btn ${s.obs && s.obs.inaudible ? 'on' : ''}" data-obs="${i}|inaudible" title="Anlaşılmaz bölüm">anlaşılmaz</button>
+      <button class="mini-button obs-btn ${s.obs && s.obs.music ? 'on' : ''}" data-obs="${i}|music" title="Müzik/ses efekti">müzik</button>
+    </div>
+    <div class="seg-ops-row">
+      ${hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : ''}
+      <button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>
+      <button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">buradan böl</button>
+      <button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>
+      <button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>
     </div>
     <div class="seg-actions">
       <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
@@ -2858,15 +2868,76 @@ function followTick() {
   followKaraoke(m, idx, t);
 }
 // Listede aktif bölümü işaretle ve görünür alana getir (yalnız liste kayar).
+// Takip sırasında sağ paneli GÜNCELLER ama baştan ÇİZMEZ.
+// Neden: renderSegDetail innerHTML'i sıfırlar → scroll sıfırlanır, düğme
+// metinleri eskir, panel kıpırdar (kullanıcı bildirimi: "sağ detay kıpırdıyor,
+// scroll çıkıyor, Dinle çalışıyor gibi görünüyor").
+// Yalnızca değişen alanlar (bölüm no, zamanlar, metin, konuşmacı, kontrol)
+// yerinde yazılır. Panel DOM'u korunur → kıpırdama yok.
+function syncSegDetailInPlace(m, idx) {
+  const detail = $(`#seg-detail-${CSS.escape(m.id)}`);
+  if (!detail) return;
+  const s = (m.segments || [])[idx];
+  if (!s) return;
+  const segs = m.segments || [];
+  const q = (sel) => detail.querySelector(sel);
+  const setVal = (sel, val) => { const el = q(sel); if (el && el.value !== val) el.value = val; };
+  const setTxt = (sel, val) => { const el = q(sel); if (el && el.textContent !== val) el.textContent = val; };
+  setTxt('.seg-detail-head .idx', `Bölüm ${idx + 1} / ${segs.length}`);
+  const startEl = q('.seg-times .st-item:nth-child(1) .time-input');
+  if (startEl && startEl.value !== (s.start || '')) startEl.value = s.start || '';
+  const endEl = q('.seg-times .st-item:nth-child(2) .time-input');
+  if (endEl && endEl.value !== (s.end || '')) endEl.value = s.end || '';
+  setVal('.seg-meta-row .sm-item:nth-child(1) input', s.speaker || '');
+  setVal('.seg-text-wrap textarea', s.text || '');
+  const sel = q('.seg-meta-row .sm-item:nth-child(2) select');
+  if (sel) {
+    const rev = segReview(s);
+    if (sel.value !== rev) sel.value = rev;
+    sel.dataset.state = rev;
+  }
+  // data-seg indeksleri yeni bölüme göre güncellenmeli (düzenleme doğru
+  // bölüme yazsın). Tüm data-seg taşıyan alanları yeniden işaretle.
+  detail.querySelectorAll('[data-seg]').forEach((el) => { el.dataset.seg = String(idx); });
+  detail.querySelectorAll('[data-nudge]').forEach((el) => {
+    const p = el.dataset.nudge.split('|');
+    el.dataset.nudge = `${idx}|${p[1]}|${p[2]}`;
+  });
+  detail.querySelectorAll('[data-quick-tag]').forEach((el) => {
+    const p = el.dataset.quickTag.split('|');
+    el.dataset.quickTag = `${idx}|${p[1]}`;
+  });
+  detail.querySelectorAll('[data-quick-clear]').forEach((el) => { el.dataset.quickClear = String(idx); });
+  detail.querySelectorAll('[data-obs]').forEach((el) => {
+    const p = el.dataset.obs.split('|');
+    el.dataset.obs = `${idx}|${p[1]}`;
+  });
+  ['data-history', 'data-silence', 'data-split-seg', 'data-merge-next', 'data-delete-seg', 'data-approve-seg'].forEach((k) => {
+    detail.querySelectorAll(`[${k}]`).forEach((el) => {
+      el.setAttribute(k, String(idx));
+    });
+  });
+  detail.querySelectorAll('[data-review-set]').forEach((el) => {
+    const p = el.dataset.reviewSet.split('|');
+    el.dataset.reviewSet = `${idx}|${p[1]}`;
+  });
+  // Gözlem düğmelerinin "on" durumu yeni bölüme göre.
+  detail.querySelectorAll('[data-obs]').forEach((el) => {
+    const key = el.dataset.obs.split('|')[1];
+    el.classList.toggle('on', !!(s.obs && s.obs[key]));
+  });
+  // Zoom dalgası yeni bölüme bağlanmalı.
+  attachZoomWave(m, idx);
+}
 function followHighlight(m, idx) {
   const root = $(`#segments-${CSS.escape(m.id)}`);
   if (!root) return;
   const items = root.querySelectorAll('.seg-item');
   items.forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === idx));
   scrollListToItem(root.querySelector('.seg-list'), root.querySelector(`.seg-item[data-seg-item="${idx}"]`));
-  // Sağ panel de yeni bölüme geçmeli; aksi hâlde sol liste ilerlerken sağ
-  // panel eski bölümde kalır (senkron kopukluğu).
-  renderSegDetail(m);
+  // Sağ panel yerinde güncellenir (yeniden çizilmez) → kıpırdama ve scroll
+  // sıfırlanması olmaz, düğme metinleri doğru kalır.
+  syncSegDetailInPlace(m, idx);
 }
 // Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
 function followKaraoke(m, idx, t) {
