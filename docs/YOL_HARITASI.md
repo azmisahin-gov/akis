@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.67.**
+yazılır. **Güncel sürüm: v2.68.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.68 — Yardımcı kendi yazdığını göremiyordu (tamamlandı)
+
+`applyTextEdit()` öneriyi `proposal`'a yazıyor, `text` değişmiyordu — doğru.
+Ama textarea `s.text` gösteriyordu: yardımcı yazıyor, panel yenilenince kendi
+yazdığını göremiyordu. "Hiçbir şey değişmiyor" hissi buydu. Artık ikinci göz
+textarea'da öneriyi görür. Ayrıca: aynı dosya açıkken İçe aktar onay sorar
+(kopya açacağını söyler), "Şu an çalışan" seçilince rol bildirilir
+(onaylayabilir / öneri verir).
 
 ### v2.67 — Ekip çalışması akışı Yardım ekranına yazıldı (tamamlandı)
 

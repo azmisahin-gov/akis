@@ -6,12 +6,54 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.67.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.68.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.68 — Yardımcı kendi yazdığını göremiyordu (veri kaybı hissi)
+
+KULLANICI: "Yardımcı düzeltir diyorsun ama onaylandı diyemiyor, düzeltim de
+demiyor. Bu adam nasıl takip edecek? Hiçbir şey değişmiyorsa onun ekranında.
+Veri kaybederiz gibi geliyor. Yanlışlıkla içe aktar da diyebilir."
+
+### Bulunan hata: yardımcı kendi yazdığını göremiyordu
+
+Ölçüm:
+```
+Yardımcı "düzeltilmiş metin" yazdı
+  -> s.proposal = "düzeltilmiş metin"    (kaydedildi)
+  -> textarea gösteriyor: "ham metin"    (ESKİ METİN)
+```
+
+`applyTextEdit()` öneriyi `proposal` alanına yazıyor, `text` değişmiyor —
+doğru. Ama **textarea `s.text` gösteriyordu**. Sonuç: yardımcı yazıyor, panel
+yenilenince (başka bölüme geçip dönünce) **kendi yazdığını göremiyordu**.
+"Hiçbir şey değişmiyor" hissi tam buydu. Veri kaybı değildi ama **görünmezdi**.
+
+**Çözüm:** İkinci göz rolündeyken textarea öneriyi gösterir; placeholder da
+"öneri olarak kaydedilir, ana metne girmez" der.
+
+### İkinci düzeltme: yanlışlıkla İçe aktar
+
+Kullanıcı "Birleştir" yerine "İçe aktar"a basabilir; bu yeni kopya açar ve
+öneriler o kopyada kalır. Aynı dosya zaten açıksa artık **onay sorulur**:
+
+> "Bu dosya zaten açık. İçe aktarma YENİ BİR KOPYA açar; birleştirme yapmaz.
+> Yardımcıdan gelen düzeltmeleri almak istiyorsanız 'Vazgeç' deyip
+> ⇄ Birleştir düğmesini kullanın."
+
+### Üçüncü düzeltme: yanlış rol seçimi
+
+Kullanıcı yardımcıyı yanlışlıkla "Bilirkişi" olarak eklerse o kişi onaylayabilir.
+Artık "Şu an bu bilgisayarda çalışan" seçilince rol bildirilir:
+
+> "Ayşe — Yardımcı: düzeltmeleri ÖNERİ olur, onaylayamaz."
+> "Ahmet — Bilirkişi: metni onaylayabilir."
+
+Böylece yanlış rol sessizce geçmez.
 
 ## v2.67 — Ekip çalışması akışı Yardım ekranına yazıldı
 

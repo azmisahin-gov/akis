@@ -26,7 +26,8 @@ import {
   SPEAKER_ROLE,
   SPEAKER_GENDER,
   MEDIUM_TYPE,
-  isSecondEyesRole
+  isSecondEyesRole,
+  canApproveRole
 } from './schema.js';
 
 const $ = (s, root = document) => root.querySelector(s);
@@ -34,7 +35,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.67';
+const APP_VERSION = '2.68';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2688,7 +2689,7 @@ function segDetailHtml(m) {
     <div class="sd-right">
       <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
       <div class="sd-text">
-        <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
+        <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
         <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
           ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
           <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
@@ -6201,6 +6202,24 @@ async function importProject(file) {
   const err = validateProjectPack(pack);
   if (err) throw new Error(err);
   const c = pack.case;
+  // Aynı dosya zaten açıksa kopya açmak veri karışıklığına yol açar.
+  // Kullanıcı "İçe aktar" ile "Birleştir"i karıştırabilir; burada durup sorarız.
+  const same = (appState.cases || []).find(
+    (x) => x.id === c.id || (x.fileNo && c.fileNo && x.fileNo === c.fileNo && x.court === c.court)
+  );
+  if (same) {
+    const devam = await askConfirm(
+      'Bu dosya zaten açık',
+      `"${c.fileNo || c.id}" numaralı dosya bu bilgisayarda zaten var. ` +
+        'İçe aktarma YENİ BİR KOPYA açar; birleştirme yapmaz. ' +
+        'Yardımcıdan gelen düzeltmeleri almak istiyorsanız "Vazgeç" deyip ⇄ Birleştir düğmesini kullanın. ' +
+        'Yine de ayrı bir kopya açmak istiyor musunuz?'
+    );
+    if (!devam) {
+      showToast('İçe aktarma iptal edildi. Yardımcı dosyası için ⇄ Birleştir kullanın.');
+      return;
+    }
+  }
   c.id = uid();
   c.materials = c.materials || [];
   const entryNames = Object.keys(zip.files);
@@ -6424,6 +6443,15 @@ function setupEvents() {
         c.lastEditedBy = el.value || '';
         persist();
         renderOverview();
+        // Seçilen kişinin rolü kullanıcıya açıkça söylenir: onaylayabilir mi?
+        const t = (c.team || []).find((x) => x.id === el.value);
+        if (t) {
+          showToast(
+            canApproveRole(t.role)
+              ? `${t.name || 'Seçilen kişi'} — ${TEAM_ROLE_LABEL[t.role]}: metni onaylayabilir.`
+              : `${t.name || 'Seçilen kişi'} — ${TEAM_ROLE_LABEL[t.role]}: düzeltmeleri ÖNERİ olur, onaylayamaz.`
+          );
+        }
       }
       return;
     }
