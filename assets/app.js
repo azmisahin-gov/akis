@@ -30,22 +30,17 @@ const ASR_MODELS = {
     warn: false
   }
 };
-// Kullanılan sayısal duyarlılık (dtype) cihaza ve modele göre seçilir.
-// KRİTİK: onnx-community Whisper modellerinde decoder'ı fp16 çalıştırmak
-// BOZUKTUR; "- - - -" veya boş çıktı üretir. Encoder fp16 olabilir.
-// Kalite ve doğruluk her zaman önceliklidir; decoder'ı q4 gibi kuantize
-// etmiyoruz çünkü doğruluk düşer.
-// Denenecek dtype adayları; KALİTE ÖNCELİKLİ ama bellek açısından güvenli sıra.
-// Önemli: başarısız denemeden sonra DAHA FAZLA bellek isteyen bir seçeneğe
-// geçmek yanlıştır (6 GB GPU'da Aborted/bellek taşması verir). Bu yüzden sıra
-// bellek bakımından artmayacak biçimde düzenlenir ve her deneme arasında
-// önceki oturum serbest bırakılır.
-//  - WebGPU: encoder fp16 + decoder fp32 (kaliteli, makul bellek), sonra fp16.
-//  - WASM  : fp32 (fp16 WASM'da güvenilmez).
+// Kullanılan sayısal duyarlılık (dtype) cihaza göre seçilir. Kalite öncelikli;
+// WebGPU'da fp16 doğru ve hızlıdır. Bellek yetmezse q4'e düşülür.
+// Denenecek dtype adayları. ÖNEMLİ DERS: bileşen-bazlı dtype nesnesi
+// ({encoder_model:..., decoder_model_merged:...}) orta modelde fp32 decoder
+// indirmeye zorlar (~1.4 GB ekstra) ve 6 GB VRAM'de Aborted()/bellek taşması
+// verir. Bu nedenle basit METİN dtype kullanılır; yükleme başarısız olursa
+// daha küçük (kuantize) seçeneğe düşülür. Sıra bellek bakımından artmaz.
+//  - WebGPU: fp16 (önerilen) → q4 (bellek yetersizse)
+//  - WASM  : fp32 (fp16/q8 WASM'da güvenilmez)
 function dtypeCandidates(device) {
-  if (device === 'webgpu') {
-    return [{ encoder_model: 'fp16', decoder_model_merged: 'fp32' }, 'fp16'];
-  }
+  if (device === 'webgpu') return ['fp16', 'q4'];
   return ['fp32'];
 }
 // İnsan okunur özet (durum satırında gösterilir).
@@ -3009,7 +3004,11 @@ async function ensureModel() {
   modelLoading = true;
   modelLoadPromise = (async () => {
   const spec = ASR_MODELS[modelId] || ASR_MODELS[DEFAULT_ASR_MODEL];
-  const candidates = dtypeCandidates(asrDevice);
+  // Kullanıcı "Çalışma birimi" seçimini yaptıysa onu kullan; "auto" ise
+  // algılanan cihaz. Böylece orta model GPU belleğine sığmazsa CPU seçilebilir.
+  const devSel = $('#modelDeviceSelect') ? $('#modelDeviceSelect').value : 'auto';
+  const useDevice = devSel === 'auto' ? asrDevice : devSel;
+  const candidates = dtypeCandidates(useDevice);
   let dtype = candidates[0];
   // Genel ilerleme: dosya bazlı yüzde yerine, tamamlanan dosya sayısına göre
   // yüzde hesaplanır. Böylece "%100 → %3" gibi zıplayan, anlaşılmaz görüntü
@@ -3047,7 +3046,7 @@ async function ensureModel() {
     // denenir. Böylece dtype seçimi yüklemeyi asla kırmaz.
     const loadWith = async (dt) =>
       pipeline('automatic-speech-recognition', modelId, {
-        device: asrDevice,
+        device: useDevice,
         dtype: dt,
         progress_callback: (p) => {
           if (p.status === 'progress' && p.file) {
@@ -3083,7 +3082,7 @@ async function ensureModel() {
     asrPipeline.__spec = spec;
     asrPipeline.__modelId = modelId;
     asrPipeline.__dtype = usedDtype;
-    asrPipeline.__device = asrDevice;
+    asrPipeline.__device = useDevice;
     loadedModelId = modelId;
     dtype = usedDtype;
     const bar = $('#modelLoadBar');

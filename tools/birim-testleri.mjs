@@ -321,16 +321,15 @@ console.log('\n[7g] Model yöneticisi');
   // Donanım önerisi.
   eq('WebGPU -> orta model', T.recommendModel('webgpu').id, 'onnx-community/whisper-medium-ONNX');
   eq('CPU -> küçük model', T.recommendModel('wasm').id, 'onnx-community/whisper-small');
-  // Duyarlılık (dtype): kalite öncelikli ve BİLEŞEN BAZINDA. Decoder fp16
-  // olursa onnx-community Whisper "- - - -" veya boş çıktı üretir; decoder
-  // her zaman fp32 olmalı. Encoder WebGPU'da fp16 (hızlı), WASM'da fp32.
+  // Duyarlılık (dtype): kalite öncelikli. WebGPU fp16, bellek yetmezse q4.
+  // WASM fp32. Bileşen-bazlı nesne KULLANILMAZ (fp32 decoder bellek taşırır).
   const wasmC = T.dtypeCandidates('wasm');
   const gpuC = T.dtypeCandidates('webgpu');
   eq('WASM tek aday fp32', wasmC, ['fp32']);
-  eq('WebGPU ilk aday bileşen bazlı', gpuC[0], { encoder_model: 'fp16', decoder_model_merged: 'fp32' });
-  eq('WebGPU ilk aday decoder ASLA fp16 değil', gpuC[0].decoder_model_merged, 'fp32');
-  eq('WebGPU yedek aday fp16', gpuC[1], 'fp16');
-  eq('dtype etiketi', T.dtypeLabel(gpuC[0]), 'encoder fp16 / decoder fp32');
+  // WebGPU: fp16 onerilir, bellek yetmezse q4'e duser (asla fp32'ye yukselmez).
+  eq('WebGPU ilk aday fp16', gpuC[0], 'fp16');
+  eq('WebGPU yedek aday q4 (daha kucuk)', gpuC[1], 'q4');
+  eq('dtype etiketi metin', T.dtypeLabel('fp16'), 'fp16');
   // Kısa model adları.
   eq('kısa ad (küçük)', T.modelShortName('onnx-community/whisper-small'), 'Küçük model');
   eq('kısa ad (orta)', T.modelShortName('onnx-community/whisper-medium-ONNX'), 'Orta model');
