@@ -979,3 +979,77 @@ body.ws-mode #view-audio .listen-strip .audio-player{height:36px}
 #view-audio .kbd-fold>summary::before{content:'▸ ';color:#315f91}
 #view-audio .kbd-fold[open]>summary::before{content:'▾ '}
 #view-audio .kbd-fold .kbd-hint{margin-top:4px}
+
+/* ============================================================================
+   v2.45 — seg-detail iç düzeni optimize edildi (scroll'a gerek kalmadan sığar)
+   Önce 20 blok üst üste: başlık, 3 ayrı not kutusu, 2 zaman alanı + 8 nudge
+   düğmesi, büyük zoom dalgası, konuşmacı, karaoke, metin, 2 sütun işlem,
+   gözlem kutusu, 3 aksiyon → dikey ~700px.
+   Şimdi: başlık+notlar tek satır, zamanlar 2 sütun kompakt, zoom ince,
+   konuşmacı+kontrol tek satır, metin esnek, gözlem+işlem tek satır, aksiyonlar.
+   ============================================================================ */
+#view-audio .seg-detail{display:flex;flex-direction:column;gap:7px;padding:10px 12px}
+#view-audio .seg-detail>*{flex:0 0 auto}
+
+/* 1) Başlık: ince. Ana Dinle düğmesi belirgin. */
+#view-audio .seg-detail-head{margin:0;padding-bottom:6px;gap:8px}
+#view-audio .seg-detail-head .idx{font-size:11px}
+#view-audio .play-main{background:var(--navy);color:#fff;font-weight:700;padding:5px 11px}
+#view-audio .play-main:hover{background:#1b3b63}
+#view-audio .play-main.on{background:#2c8062}
+
+/* 2) Notlar: tek satır çipler (3 ayrı kutu yerine). */
+#view-audio .seg-notes{display:flex;flex-wrap:wrap;gap:4px}
+#view-audio .sn{font:600 8.5px 'Segoe UI';padding:2px 7px;border-radius:10px;
+  background:#f2f6fa;color:#5a7089;border:1px solid #e2eaf2}
+#view-audio .sn.bad{background:#fdf0e4;border-color:#f0dfc3;color:#8a6320}
+#view-audio .sn.warn{background:#fdf3f3;border-color:#ecd9d9;color:#9c3f3f}
+#view-audio .sn.info{background:#eef4fb;border-color:#d6e4f2;color:#2f6f95}
+
+/* 3) Zamanlar: iki sütun, nudge düğmeleri satır içi kompakt. */
+#view-audio .seg-times{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#view-audio .st-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#view-audio .st-item>span:first-child{font:600 8.5px 'Segoe UI';letter-spacing:.3px;color:#7d8ea0}
+#view-audio .st-item .time-input{font:700 12px 'Consolas',monospace;text-align:center;
+  padding:5px;border:1px solid #e3e9ef;border-radius:6px;background:#fbfcfd}
+#view-audio .st-nudge{display:flex;gap:2px}
+#view-audio .st-nudge .nudge-btn{flex:1;padding:2px 0;font:600 9px 'Consolas',monospace;
+  border:1px solid #e3e9ef;background:#fff;border-radius:5px;color:#4a6278;cursor:pointer}
+#view-audio .st-nudge .nudge-btn:hover{background:#eef3f8;border-color:#cfdbe7}
+
+/* 4) Zoom dalgası: ince, araç çubuğuyla aynı satırda. */
+#view-audio .zoom-wave-wrap{margin:0;border-radius:7px}
+#view-audio .zoom-wave-wrap .zw-tools{padding:3px 7px;gap:3px;display:flex;align-items:center}
+#view-audio .zoom-wave-wrap .zw-tools .seg-tool{padding:2px 6px;font-size:9px;min-width:24px}
+#view-audio .zoom-wave-wrap .zw-span{margin-left:auto;font-size:8px;color:#93a0ad}
+#view-audio .zoom-wave{height:56px}
+body.ws-mode #view-audio .zoom-wave{height:64px}
+
+/* 5) Konuşmacı + kontrol: tek satır, iki sütun. */
+#view-audio .seg-meta-row{display:grid;grid-template-columns:1.4fr 1fr;gap:8px}
+#view-audio .sm-item{display:flex;flex-direction:column;gap:3px;min-width:0}
+#view-audio .sm-item>span{font:600 8.5px 'Segoe UI';letter-spacing:.3px;color:#7d8ea0}
+#view-audio .sm-item input,#view-audio .sm-item select{padding:5px 7px;font-size:11px;
+  border:1px solid #e3e9ef;border-radius:6px;background:#fff;color:#24384d;width:100%}
+
+/* 6) Metin alanı: kalan yüksekliği alır (esnek, minimum 72px). */
+#view-audio .seg-text-wrap{flex:1 1 auto!important;min-height:72px;display:flex;
+  flex-direction:column;gap:4px}
+#view-audio .seg-text-wrap textarea{flex:1 1 auto;min-height:72px;resize:none;
+  font-size:13px;line-height:1.55;padding:8px 9px;border:1px solid #e3e9ef;
+  border-radius:6px;background:#fff;color:#24384d;width:100%}
+#view-audio .seg-text-wrap .quick-insert{margin:0;gap:4px}
+#view-audio .seg-text-wrap .quick-tag{padding:2px 8px;font-size:9px}
+
+/* 7) Gözlem + işlemler: tek satır. */
+#view-audio .seg-bottom{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding-top:5px;border-top:1px solid #eef2f6}
+#view-audio .seg-obs{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+#view-audio .sb-lbl{font:600 8.5px 'Segoe UI';color:#7d8ea0;letter-spacing:.3px}
+#view-audio .seg-ops{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-left:auto}
+#view-audio .mini-button.tiny{padding:2px 7px;font-size:9px}
+
+/* 8) Aksiyonlar: tek satır, birincil belirgin. */
+#view-audio .seg-actions{margin:0;padding-top:6px;border-top:1px solid #eef2f6;gap:6px}
+#view-audio .seg-actions .mini-button.primary{padding:5px 12px;font-weight:700}
+#view-audio .karaoke{margin:0}

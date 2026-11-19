@@ -2076,60 +2076,51 @@ function segDetailHtml(m) {
   const pb = segPlayback.materialId === m.id && segPlayback.index === i ? segPlayback : null;
   const isPlaying = !!(pb && pb.playing);
   const canStop = !!pb;
+  const rep = segmentRepetitionFlag(s);
+  // Notlar TEK satırda toplanır; ayrı ayrı blok yer kaplamaz.
+  const notes = [];
+  if (halluc) notes.push('anlamlı metin yok');
+  if (rep) notes.push('model tekrarı olasılığı');
+  if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
+  const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
   return `<div class="seg-detail-head">
       <span class="idx">Bölüm ${i + 1} / ${segs.length}</span>
       <span class="nav">
         <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
         <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
-        <button class="seg-tool ${isPlaying ? 'on' : ''}" data-play-active="1" title="Dinle / duraklat (Boşluk)">${isPlaying ? '⏸ Duraklat' : '▶ Dinle'}</button>
-        <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹ Durdur</button>
+        <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸ Duraklat' : '▶ Dinle'}</button>
+        <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
       </span>
     </div>
-    ${halluc ? `<div class="halluc-note">Bu bölümde anlamlı metin yok. Kaydı dinleyip metni doldurun; boş bırakılamaz.</div>` : ''}
-    ${repetitionNoteHtml(s)}
-    ${silenceNoteHtml(s, i)}
-    ${pr.score >= 15 ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">İnceleme önceliği: ${esc(pr.reasons.join(', '))}</div>` : ''}
-    <div class="seg-row2">
-      <div class="seg-field"><label>Başlangıç</label><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}">
-        <div class="seg-boundary"><span class="lbl">Kaydır</span><button class="nudge-btn" data-nudge="${i}|start|-1">−1s</button><button class="nudge-btn" data-nudge="${i}|start|-0.1">−0,1s</button><button class="nudge-btn" data-nudge="${i}|start|0.1">+0,1s</button><button class="nudge-btn" data-nudge="${i}|start|1">+1s</button></div>
-      </div>
-      <div class="seg-field"><label>Bitiş</label><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}">
-        <div class="seg-boundary"><span class="lbl">Kaydır</span><button class="nudge-btn" data-nudge="${i}|end|-1">−1s</button><button class="nudge-btn" data-nudge="${i}|end|-0.1">−0,1s</button><button class="nudge-btn" data-nudge="${i}|end|0.1">+0,1s</button><button class="nudge-btn" data-nudge="${i}|end|1">+1s</button></div>
-      </div>
+    ${notes.length || silence ? `<div class="seg-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}${pr.score >= 15 ? `<span class="sn info" title="${esc(pr.reasons.join(', '))}">öncelik ${pr.score >= 40 ? 'yüksek' : pr.score >= 20 ? 'orta' : 'düşük'}</span>` : ''}</div>` : ''}
+    <div class="seg-times">
+      <label class="st-item"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}">
+        <span class="st-nudge"><button class="nudge-btn" data-nudge="${i}|start|-1" title="−1 sn">−1</button><button class="nudge-btn" data-nudge="${i}|start|-0.1" title="−0,1 sn">−.1</button><button class="nudge-btn" data-nudge="${i}|start|0.1" title="+0,1 sn">+.1</button><button class="nudge-btn" data-nudge="${i}|start|1" title="+1 sn">+1</button></span>
+      </label>
+      <label class="st-item"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}">
+        <span class="st-nudge"><button class="nudge-btn" data-nudge="${i}|end|-1" title="−1 sn">−1</button><button class="nudge-btn" data-nudge="${i}|end|-0.1" title="−0,1 sn">−.1</button><button class="nudge-btn" data-nudge="${i}|end|0.1" title="+0,1 sn">+.1</button><button class="nudge-btn" data-nudge="${i}|end|1" title="+1 sn">+1</button></span>
+      </label>
     </div>
-    <div class="zoom-wave-wrap"><div class="zw-head"><span>Yakınlaştırılmış dalga formu · yeşil/kırmızı sınırı sürükleyin, tekerlekle yakınlaştırın, boşluğa tıklayıp konuma gidin</span><span class="zw-span">±0,5 sn</span></div><div class="zw-tools"><button class="seg-tool" data-zw-play="1" title="Bölümü dinle / duraklat">▶</button><button class="seg-tool" data-zw-stop="1" title="Durdur">⏹</button><span class="zw-sep"></span><button class="seg-tool" data-zw-zoom="in" title="Yakınlaştır">＋</button><button class="seg-tool" data-zw-zoom="out" title="Uzaklaştır">−</button><button class="seg-tool" data-zw-zoom="fit" title="Bölüme sığdır">Sığdır</button></div><canvas class="zoom-wave" id="zoom-wave-${esc(m.id)}" width="900" height="72"></canvas></div>
-    <div class="seg-field"><label>Konuşmacı</label><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Örn. Kiracı, Ev sahibi, Konuşmacı 1"></div>
+    <div class="zoom-wave-wrap"><div class="zw-tools"><button class="seg-tool" data-zw-play="1" title="Bölümü dinle / duraklat">▶</button><button class="seg-tool" data-zw-stop="1" title="Durdur">⏹</button><span class="zw-sep"></span><button class="seg-tool" data-zw-zoom="in" title="Yakınlaştır">＋</button><button class="seg-tool" data-zw-zoom="out" title="Uzaklaştır">−</button><button class="seg-tool" data-zw-zoom="fit" title="Bölüme sığdır">Sığdır</button><span class="zw-span">±0,5 sn</span></div><canvas class="zoom-wave" id="zoom-wave-${esc(m.id)}" width="900" height="72"></canvas></div>
+    <div class="seg-meta-row">
+      <label class="sm-item"><span>Konuşmacı</span><input data-seg="${i}" data-key="speaker" list="spk-options-${esc(m.id)}" value="${esc(s.speaker || '')}" placeholder="Konuşmacı"></label>
+      <label class="sm-item"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+    </div>
     <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
-    <div class="seg-field"><label>Çözümlenen konuşma (düzeltilebilir)</label>
+    <div class="seg-text-wrap">
+      <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
       <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
         ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
         <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
       </div>
-      <textarea data-seg="${i}" data-key="text" placeholder="Kaydı dinleyerek metni doğrulayın ve düzeltin.">${esc(s.text || '')}</textarea>
     </div>
-    <div class="seg-row2">
-      <div class="seg-field"><label>Kontrol durumu</label><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></div>
-      <div class="seg-field"><label>Bölüm işlemleri</label>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          ${hist ? `<button class="mini-button" data-history="${i}">Geçmiş (${hist})</button>` : ''}
-          <button class="mini-button" data-silence="${i}" title="Bu bölümün sessizlik oranını ölç">Sessizlik ölç</button>
-          <button class="mini-button" data-split-seg="${i}">Buradan böl</button>
-          <button class="mini-button" data-merge-next="${i}">Sonrakiyle birleştir</button>
-          <button class="mini-button danger" data-delete-seg="${i}">Sil</button>
-        </div>
-      </div>
-    </div>
-    <div class="seg-field"><label>Gözlem işaretleri (rapora yansır)</label>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        <button class="mini-button ${s.obs && s.obs.noise ? 'on' : ''}" data-obs="${i}|noise">Arka plan gürültüsü</button>
-        <button class="mini-button ${s.obs && s.obs.overlap ? 'on' : ''}" data-obs="${i}|overlap">Üst üste konuşma</button>
-        <button class="mini-button ${s.obs && s.obs.inaudible ? 'on' : ''}" data-obs="${i}|inaudible">Anlaşılmaz bölüm</button>
-        <button class="mini-button ${s.obs && s.obs.music ? 'on' : ''}" data-obs="${i}|music">Müzik/ses efekti</button>
-      </div>
+    <div class="seg-bottom">
+      <div class="seg-obs"><span class="sb-lbl">Gözlem</span><button class="mini-button tiny ${s.obs && s.obs.noise ? 'on' : ''}" data-obs="${i}|noise" title="Arka plan gürültüsü">gürültü</button><button class="mini-button tiny ${s.obs && s.obs.overlap ? 'on' : ''}" data-obs="${i}|overlap" title="Üst üste konuşma">üst üste</button><button class="mini-button tiny ${s.obs && s.obs.inaudible ? 'on' : ''}" data-obs="${i}|inaudible" title="Anlaşılmaz bölüm">anlaşılmaz</button><button class="mini-button tiny ${s.obs && s.obs.music ? 'on' : ''}" data-obs="${i}|music" title="Müzik/ses efekti">müzik</button></div>
+      <div class="seg-ops">${hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş ${hist}</button>` : ''}<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik</button><button class="mini-button tiny" data-split-seg="${i}" title="Oynatıcı konumundan böl">böl</button><button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">birleştir</button><button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button></div>
     </div>
     <div class="seg-actions">
-      <button class="mini-button primary" data-approve-seg="${i}">✓ Onayla ve sonrakine geç (Enter)</button>
-      <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinlenecek</button>
+      <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
+      <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
       <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
     </div>`;
 }
