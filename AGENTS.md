@@ -212,6 +212,49 @@ yalnız `REVIEW_LEGACY` göç tablosunda bulunur. v2.59 öncesinde `segItemHtml(
 v2 kodla karşılaştırıyordu: onaylama veriyi doğru yazıyordu ama rozet hep
 "Bekliyor" görünüyor, sayaçlar artmıyordu. `sema-testi.mjs` [6c] bunu denetler.
 
+## Ekip çalışması — durum: TAMAM, ŞİMDİLİK KULLANILMIYOR (v2.68)
+
+Ekip çalışması (yardımcı / ikinci göz / öneri) özelliği **tamamlandı ve
+güvenceye alındı** (`v2.68` etiketi). Kullanıcı **şimdilik kullanmayacak**;
+sistem tek kişilik kullanım için hazır.
+
+### Neden kullanılmıyor (tasarım kararı, hata değil)
+
+Ekip çalışması **dosya gidiş-gelişi** ile yapılır: `.akis` dosyası dışa
+aktarılır, yardımcıya gönderilir, geri gelir, ⇄ Birleştir ile alınır.
+Canlı bağlantı, sunucu, eşzamanlı düzenleme **yoktur**. Bu, depo ilkesinin
+("sunucu yok") doğal sonucudur. Tek kişilik kullanımda bu sınır devreye
+girmez.
+
+### Kullanıcı bu özelliği açarsa ne yapmalı
+
+1. Yardım ekranındaki (?) **"Ekip çalışması (yardımcı / ikinci göz)"**
+   bölümü 9 adımlı akışı anlatır. Oradan başlayın.
+2. **İçe aktar** değil **⇄ Birleştir** kullanılır. İçe aktar kopya açar;
+   aynı dosya açıkken onay sorar (v2.68).
+3. Yardımcı kendini **Yardımcı** rolüyle eklemeli. Yanlış rolle eklenirse
+   onaylayabilir; "Şu an çalışan" seçilince rol bildirilir (v2.68).
+
+### v2.68 itibarıyla doğrulanmış olanlar
+
+| Konu | Durum |
+|---|---|
+| Bölüm metni önerisi (yardımcı yazar → bilirkişi kabul/red) | ✅ |
+| Yardımcı kendi önerisini görür (textarea) | ✅ v2.68 |
+| Onay yetkisi: yalnız owner/expert | ✅ v2.66 |
+| Gözlemci onaylayamaz | ✅ v2.66 |
+| Dosya alanları (parties/expert/assignment/report) birleşir | ✅ v2.65 |
+| Aynı dosya açıkken İçe aktar onay sorar | ✅ v2.68 |
+| Öneri rozeti + bant + Kabul/Reddet | ✅ v2.60 |
+| Yardım ekranında 9 adımlı akış | ✅ v2.67 |
+
+### Bilinen sınırlar (hata değil)
+
+- Canlı bağlantı yok; dosya el değiştirir.
+- Yardımcı sesi duymaz (paket ses içerir ama dinleme yardımcının
+  bilgisayarında olur; dosya büyükse gönderim zorlaşır).
+- Aynı anda iki kişi aynı dosyada çalışamaz.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
