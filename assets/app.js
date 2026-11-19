@@ -2127,7 +2127,10 @@ function segDetailHtml(m) {
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
   if (!root) return;
+  // Panel içi kaydırma konumu korunur; takip sırasında ekran zıplamaz.
+  const keepScroll = root.scrollTop;
   root.innerHTML = segDetailHtml(m);
+  root.scrollTop = keepScroll;
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
@@ -2169,6 +2172,15 @@ function renderSegments(m, card) {
 }
 // Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
 // ve sağ panel yenilenir. Kaydırma ve odak korunur.
+// Yalnızca bölüm listesini kaydırır; sayfa ve diğer paneller yerinde kalır.
+// scrollIntoView tüm üst öğeleri kaydırabildiği için elle hesaplanır.
+function scrollListToItem(list, el) {
+  if (!list || !el) return;
+  const lt = list.getBoundingClientRect();
+  const et = el.getBoundingClientRect();
+  if (et.top < lt.top) list.scrollTop -= lt.top - et.top;
+  else if (et.bottom > lt.bottom) list.scrollTop += et.bottom - lt.bottom;
+}
 function setActiveSegment(m, index, { scroll = true } = {}) {
   const segs = m.segments || [];
   if (!segs.length) return;
@@ -2178,10 +2190,7 @@ function setActiveSegment(m, index, { scroll = true } = {}) {
     root
       .querySelectorAll('.seg-item')
       .forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === m.activeSeg));
-    if (scroll) {
-      const el = root.querySelector(`.seg-item[data-seg-item="${m.activeSeg}"]`);
-      if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
-    }
+    if (scroll) scrollListToItem(root.querySelector('.seg-list'), root.querySelector(`.seg-item[data-seg-item="${m.activeSeg}"]`));
   }
   renderSegDetail(m);
 }
@@ -2805,11 +2814,10 @@ function followHighlight(m, idx) {
   if (!root) return;
   const items = root.querySelectorAll('.seg-item');
   items.forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === idx));
-  const el = root.querySelector(`.seg-item[data-seg-item="${idx}"]`);
-  if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest' });
-  // Sağ paneldeki metin alanı da aktif bölüme geçsin (yeniden çizmeden).
-  const detail = root.querySelector('.seg-detail');
-  if (detail) renderSegDetail(m);
+  scrollListToItem(root.querySelector('.seg-list'), root.querySelector(`.seg-item[data-seg-item="${idx}"]`));
+  // Sağ panel yeni bölüme geçer. Takip sırasında bu kaçınılmaz bir yeniden
+  // çizimdir; ancak panel içi kaydırma korunur ve sayfa kaymaz (renderSegDetail
+  // scrollTop'u geri yükler).
 }
 // Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
 function followKaraoke(m, idx, t) {
@@ -3464,15 +3472,19 @@ function pushSegmentHistory(s, prevText) {
   return true;
 }
 function timecode(seconds) {
-  if (seconds == null || !Number.isFinite(seconds)) return '00:00:00';
-  const s = Math.max(0, seconds);
-  const whole = Math.floor(s);
-  const ms = Math.round((s - whole) * 1000);
+  // Zaman kodu HER ZAMAN milisaniye içerir: "00:00:06.880".
+  // Tutarlılık kritik: bir bölüm "00:00:00" diğeri "00:00:06.880" yazarsa
+  // uzman sütunu okuyamaz. Eski "HH:MM:SS" biçimi hâlâ okunur.
+  if (seconds == null || !Number.isFinite(seconds)) return '00:00:00.000';
+  const total = Math.max(0, seconds);
+  let whole = Math.floor(total);
+  let ms = Math.round((total - whole) * 1000);
+  if (ms >= 1000) {
+    whole += 1;
+    ms -= 1000;
+  }
   const pad = (n, w = 2) => String(n).padStart(w, '0');
-  const base = `${pad(Math.floor(whole / 3600))}:${pad(Math.floor((whole % 3600) / 60))}:${pad(whole % 60)}`;
-  if (ms === 0) return base;
-  const carryMs = ms >= 1000 ? 0 : ms;
-  return `${base}.${pad(carryMs, 3)}`;
+  return `${pad(Math.floor(whole / 3600))}:${pad(Math.floor((whole % 3600) / 60))}:${pad(whole % 60)}.${pad(ms, 3)}`;
 }
 // Filler-only output ("(Konuşma)", "(Müzik - Jenerik)" and similar bracketed tokens)
 // is how Whisper reports hallucinated silence. Such a segment carries no transcript,

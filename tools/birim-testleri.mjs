@@ -145,9 +145,9 @@ eq('boş -> NE', T.trDative(''), "NE");
 
 // --- 6. Zaman kodu --------------------------------------------------------
 console.log('\n[6] Zaman kodu dönüşümü');
-eq('0 sn', T.timecode(0), '00:00:00');
-eq('65 sn', T.timecode(65), '00:01:05');
-eq('3661 sn', T.timecode(3661), '01:01:01');
+eq('0 sn', T.timecode(0), '00:00:00.000');
+eq('65 sn', T.timecode(65), '00:01:05.000');
+eq('3661 sn', T.timecode(3661), '01:01:01.000');
 eq('timecode -> sn', T.secondsFromTimecode('00:01:05'), 65);
 eq('bozuk giriş -> 0', T.secondsFromTimecode('abc'), 0);
 // Milisaniye hassasiyeti: 0,1 sn'lik sınır kaydırma ve "buradan böl" bu
@@ -161,7 +161,7 @@ near('0,1 sn gidiş-dönüş', T.secondsFromTimecode(T.timecode(5.1)), 5.1, 1e-9
   for (let i = 0; i < 5; i++) cur = T.secondsFromTimecode(T.timecode(cur + 0.1));
   near('5 x +0,1 sn birikimi', cur, 5.5, 1e-9);
 }
-eq('tam saniye kısa biçim', T.timecode(5), '00:00:05');
+eq('tam saniye de ms gösterir', T.timecode(5), '00:00:05.000');
 
 // --- 7. Dolgu tespiti -----------------------------------------------------
 console.log('\n[7] Dolgu/halüsinasyon tespiti');
@@ -351,16 +351,16 @@ console.log('\n[7h] Deşifre motoru');
   // Model çıktısı ayrıştırma: zaman ofseti uygulanır.
   const res = { chunks: [{ text: ' merhaba', timestamp: [1, 3] }] };
   const segs = T.parseAsrResult(res, 60, 30);
-  eq('ofset uygulandı', [segs[0].start, segs[0].end], ['00:01:01', '00:01:03']);
+  eq('ofset uygulandı', [segs[0].start, segs[0].end], ['00:01:01.000', '00:01:03.000']);
   eq('metin kırpıldı', segs[0].text, 'merhaba');
   // Kelime zamanları korunur (karaoke).
   const res2 = { chunks: [{ text: 'a b', timestamp: [0, 2], words: [{ word: 'a', start: 0, end: 1 }, { word: 'b', start: 1, end: 2 }] }] };
   const segs2 = T.parseAsrResult(res2, 0, 30);
   eq('kelime zamanları', segs2[0].words.length, 2);
-  eq('kelime başlangıcı', segs2[0].words[1].s, '00:00:01');
+  eq('kelime başlangıcı', segs2[0].words[1].s, '00:00:01.000');
   // Chunk yoksa metin fallback pencere süresini kullanır.
   const segs3 = T.parseAsrResult({ text: 'tek metin' }, 10, 5);
-  eq('fallback aralığı', [segs3[0].start, segs3[0].end], ['00:00:10', '00:00:15']);
+  eq('fallback aralığı', [segs3[0].start, segs3[0].end], ['00:00:10.000', '00:00:15.000']);
   // Boş çıktı -> bölüm yok.
   eq('boş çıktı', T.parseAsrResult({ chunks: [] }, 0, 30).length, 0);
   // Dil uyarısı: İngilizce işaretçiler + Türkçe karakter yok.
@@ -402,7 +402,7 @@ console.log('\n[7i] Çöp çıktı tespiti');
   // Bitiş zamanı gelmezse süre sıfır olmamalı.
   const res2 = { chunks: [{ text: 'Bitiş zamanı olmayan bölüm.', timestamp: [2] }] };
   const segs2 = T.parseAsrResult(res2, 0, 30);
-  eq('bitiş zamanı tamamlandı', segs2[0].end, '00:00:32');
+  eq('bitiş zamanı tamamlandı', segs2[0].end, '00:00:32.000');
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------
