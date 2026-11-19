@@ -713,7 +713,39 @@ function refreshMaterialRow(m) {
 // Seçili kaydın tam kartı (durum bölgesi + içerik bölgesi).
 function materialCardHtml(m) {
   const segs = m.segments || [];
-  return `<div class="audio-status-zone" id="status-zone-${esc(m.id)}">${audioStatusZoneHtml(m)}</div><div class="audio-content-zone"><div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Tıklayarak konuma gidin</div></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogram ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>Spektrogram (log frekans, 20 Hz – 8 kHz) · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div><audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio><div class="listen-tools"><label class="listen-filter-label"><span>Dinleme yardımcısı</span><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}<span class="info-i" tabindex="0" data-tip="Dinleme yardımcıları yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı ayırma) yapılmaz.">i</span></div><details class="config-fold" style="margin-top:10px"><summary>Kayıt kökeni ve teslim zinciri</summary><div class="panel"><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div><span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div></details><details class="config-fold" style="margin-top:10px"><summary>Konuşmacılar ve ses özellikleri</summary><div class="panel"><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div><span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div></details><div class="transcript-editor"><div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div><div class="segments-root" id="segments-${esc(m.id)}"></div>${m.referenceSegments?.length ? `<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map((s) => `<p><b>${timecode(s.start)}–${timecode(s.end)} · ${esc(s.speaker)}</b><br>${esc(s.text)}</p>`).join('')}</div></details>` : ''}</div></div>`;
+  // Kart üç sekmeye ayrılır. Uzmanın %90 zamanı deşifrede geçtiği için
+  // DEŞİFRE varsayılan sekmedir; analiz araçları ve kayıt bilgileri kendi
+  // sekmelerinde bol yer bulur. Tüm id/data-* işaretleri korunur; sekmeler
+  // yalnızca gösterimi değiştirir (DOM'da hepsi durur).
+  const tab = m.uiTab || 'transcript';
+  const tabBtn = (k, label, extra = '') =>
+    `<button class="card-tab ${tab === k ? 'on' : ''}" data-card-tab="${esc(m.id)}|${k}" role="tab" aria-selected="${tab === k}">${label}${extra}</button>`;
+  return `<div class="audio-status-zone" id="status-zone-${esc(m.id)}">${audioStatusZoneHtml(m)}</div>
+    <div class="card-tabs" role="tablist" aria-label="Kayıt çalışma alanı">
+      ${tabBtn('transcript', 'Deşifre', ` <span class="tab-n">${segs.length}</span>`)}
+      ${tabBtn('listen', 'Dinleme')}
+      ${tabBtn('record', 'Kayıt bilgileri')}
+    </div>
+    <div class="audio-content-zone">
+      <div class="card-pane ${tab === 'transcript' ? 'on' : ''}" data-pane="transcript" role="tabpanel">
+        <div class="transcript-editor">
+          <div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div>
+          <div class="segments-root" id="segments-${esc(m.id)}"></div>
+          ${m.referenceSegments?.length ? `<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map((x) => `<p><b>${timecode(x.start)}–${timecode(x.end)} · ${esc(x.speaker)}</b><br>${esc(x.text)}</p>`).join('')}</div></details>` : ''}
+        </div>
+      </div>
+      <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
+        <div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Tıklayarak konuma gidin</div></div>
+        <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
+        <div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogram ${m.spectrogramReviewed ? '✓' : ''}</button></div>
+        <div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>Spektrogram (log frekans, 20 Hz – 8 kHz) · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div>
+        <div class="listen-tools"><label class="listen-filter-label"><span>Dinleme yardımcısı</span><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}<span class="info-i" tabindex="0" data-tip="Dinleme yardımcıları yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı ayırma) yapılmaz.">i</span></div>
+      </div>
+      <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
+        <details class="config-fold" open><summary>Kayıt kökeni ve teslim zinciri</summary><div class="panel"><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div><span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div></details>
+        <details class="config-fold" open><summary>Konuşmacılar ve ses özellikleri</summary><div class="panel"><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div><span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div></details>
+      </div>
+    </div>`;
 }
 // Seçili kaydın detayını çizer ve oynatıcı/dalga formu/deşifreyi bağlar.
 async function renderMaterialDetail() {
@@ -4981,6 +5013,30 @@ function setupEvents() {
         const panel = $(`#term-panel-${CSS.escape(m.id)}`);
         if (panel && !panel.hidden) closeTermPanel(m);
         else renderTermPanel(m);
+      }
+    } else if (b.dataset.cardTab !== undefined) {
+      // Sekme değiştir: DOM yeniden çizilmez, yalnız görünürlük değişir.
+      const [id, tab] = b.dataset.cardTab.split('|');
+      const m = c.materials.find((x) => x.id === id);
+      if (m) {
+        m.uiTab = tab;
+        persist();
+        const card = b.closest('.audio-card');
+        if (card) {
+          card.querySelectorAll('[data-card-tab]').forEach((x) => {
+            const on = x.dataset.cardTab === b.dataset.cardTab;
+            x.classList.toggle('on', on);
+            x.setAttribute('aria-selected', on ? 'true' : 'false');
+          });
+          card.querySelectorAll('[data-pane]').forEach((x) => x.classList.toggle('on', x.dataset.pane === tab));
+          // Gizliyken çizilen canvas 0 genişlikte olur; sekme açılınca
+          // dalga formunu yeniden çiz ki doğru boyutta görünsün.
+          if (tab === 'listen') {
+            const cv = card.querySelector('canvas.wave-canvas');
+            const pk = peakCache.get(m.id);
+            if (cv && pk) requestAnimationFrame(() => drawWave(cv, pk, m));
+          }
+        }
       }
     } else if (b.dataset.techToggle !== undefined) {
       const id = b.dataset.techToggle;

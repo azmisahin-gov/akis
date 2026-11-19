@@ -572,3 +572,35 @@ html,body{height:100%;overflow:hidden}
 #view-audio .wave-wrap{margin-top:6px}
 #view-audio .audio-player{margin-top:6px;height:30px}
 #view-audio .transcript-editor{margin-top:8px;padding-top:8px}
+
+/* ============================================================================
+   v2.34 — Kayıt kartı sekmeleri (Deşifre · Dinleme · Kayıt bilgileri)
+   Sorun: tek kartta 13 blok üst üste; uzmanın %90 zamanı geçirdiği deşifre
+   alanı 12. sıradaydı. Artık deşifre varsayılan sekmede, açılışta görünür.
+   ============================================================================ */
+.card-tabs{display:flex;gap:2px;margin:0 0 10px;border-bottom:1px solid var(--line);
+  flex:0 0 auto}
+.card-tab{border:0;background:transparent;color:#6e8091;font:600 11px 'Segoe UI';
+  padding:8px 13px;cursor:pointer;border-bottom:2px solid transparent;
+  border-radius:6px 6px 0 0;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.card-tab:hover{background:#f4f8fb;color:var(--navy)}
+.card-tab.on{color:var(--navy);border-bottom-color:var(--gold);background:#f8fbfd}
+.card-tab .tab-n{background:#e8eff6;color:#4a6b8a;border-radius:9px;padding:0 5px;
+  font:700 8px/14px 'Segoe UI';min-width:14px;text-align:center}
+.card-tab.on .tab-n{background:var(--navy);color:#fff}
+.card-pane{display:none}
+.card-pane.on{display:block}
+/* Deşifre sekmesi: çalışma alanı ekrana göre ölçeklenir. */
+#view-audio .card-pane[data-pane="transcript"].on{display:flex;flex-direction:column;min-height:0}
+#view-audio .card-pane[data-pane="transcript"] .transcript-editor{
+  display:flex;flex-direction:column;min-height:0;border-top:0;margin-top:0;padding-top:0}
+/* Dinleme sekmesi: araçlara bol yer. */
+#view-audio .card-pane[data-pane="listen"] .wave-canvas{height:96px}
+#view-audio .card-pane[data-pane="listen"] .audio-player{height:40px;margin-top:10px}
+#view-audio .card-pane[data-pane="record"] .config-fold{margin-top:10px}
+#view-audio .card-pane[data-pane="record"] .config-fold:first-child{margin-top:0}
+/* Sekme içerikleri kendi içinde kayar; kart yüksekliği sabit kalır. */
+#view-audio .card-pane[data-pane="transcript"],
+#view-audio .card-pane[data-pane="listen"],
+#view-audio .card-pane[data-pane="record"]{min-height:0}
+#view-audio .card-pane[data-pane="record"]{max-height:100%;overflow-y:auto}
