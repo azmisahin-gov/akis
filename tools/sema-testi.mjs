@@ -60,7 +60,8 @@ import {
   speakerLabel,
   segmentById,
   newId,
-  isSecondEyesRole
+  isSecondEyesRole,
+  canApproveRole
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -788,6 +789,58 @@ console.log('\n[7h] Dosya alanları birleşmeye giriyor');
   r = mergeCases(mk('Ahmet', 'Dr. A', '2026-01-01'), mk('', '', '2026-02-01'));
   eq('boş gelen dolu değeri ezmez', r.merged.parties.plaintiff, 'Ahmet');
   eq('boş gelen bilirkişiyi ezmez', r.merged.expert.name, 'Dr. A');
+}
+
+// --- 7i. Gözlemci onaylayamaz (rol yetkisi) ---------------------------
+// v2.65'e kadar 'observer' (Gözlemci) ikinci göz sayılmıyordu: TAM YETKİLİYDİ
+// ve onaylayabiliyordu. Gözlemci sadece bakar; onayı adli belgede kabul
+// edilemez. Bu blok rol yetki tablosunu ve birleşme güvenlik ağını denetler.
+console.log('\n[7i] Gözlemci onaylayamaz');
+{
+  // Rol → yetki tablosu
+  ok('owner onaylayabilir', canApproveRole('owner') === true);
+  ok('expert onaylayabilir', canApproveRole('expert') === true);
+  ok('assistant onaylayamaz', canApproveRole('assistant') === false);
+  ok('reviewer onaylayamaz', canApproveRole('reviewer') === false);
+  ok('observer onaylayamaz', canApproveRole('observer') === false);
+
+  ok('observer ikinci göz', isSecondEyesRole('observer') === true);
+  ok('assistant ikinci göz', isSecondEyesRole('assistant') === true);
+  ok('reviewer ikinci göz', isSecondEyesRole('reviewer') === true);
+  ok('expert ikinci göz değil', isSecondEyesRole('expert') === false);
+  ok('owner ikinci göz değil', isSecondEyesRole('owner') === false);
+
+  // Onaylayan ve ikinci göz kümeleri ayrık olmalı (çakışma yok).
+  for (const r of ['owner', 'expert', 'assistant', 'reviewer', 'observer']) {
+    ok(`${r}: onay ve öneri aynı anda olmaz`, !(canApproveRole(r) && isSecondEyesRole(r)));
+  }
+
+  // Davranış: gözlemcinin onayı birleşmede reddedilir.
+  const mk = (role) => {
+    const c = emptyCase({ id: 'c1' });
+    c.team.push(emptyTeamMember({ id: 'tm1', name: 'Kisi', role }));
+    c.lastEditedBy = 'tm1';
+    c.materials.push(
+      emptyMaterial({
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [emptySegment({ id: 's1', text: 'x', review: 'approved', lastEditBy: 'tm1' })]
+      })
+    );
+    return c;
+  };
+  for (const role of ['assistant', 'reviewer', 'observer']) {
+    const c = mk(role);
+    const r = mergeCases(c, JSON.parse(JSON.stringify(c)));
+    eq(`${role} onayı reddedildi`, r.merged.materials[0].segments[0].review, 'pending');
+    ok(`${role} reddi bildirildi`, r.applied.some((a) => /onayı geçersiz/.test(a)));
+  }
+  for (const role of ['owner', 'expert']) {
+    const c = mk(role);
+    const r = mergeCases(c, JSON.parse(JSON.stringify(c)));
+    eq(`${role} onayı korundu`, r.merged.materials[0].segments[0].review, 'approved');
+  }
 }
 
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------

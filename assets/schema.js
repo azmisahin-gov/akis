@@ -158,8 +158,15 @@ export const TEAM_ROLE_LABEL = {
 // "İkinci göz" rolleri: metni düzeltir ama ONAY VEREMEZ. Kararı bilirkişi
 // verir. Bu rollerin düzeltmesi `proposal` (öneri) olarak saklanır; bilirkişi
 // kabul veya reddeder. Rapor bu yüzden hiçbir zaman "Onaylandı" yazmaz.
-export const SECOND_EYES_ROLES = ['assistant', 'reviewer'];
+// v2.66: 'observer' (Gözlemci) de eklendi. Gözlemci SADECE bakar; onay
+// vermesi adli belgede kabul edilemez. Düzeltmesi öneri olarak saklanır.
+export const SECOND_EYES_ROLES = ['assistant', 'reviewer', 'observer'];
 export const isSecondEyesRole = (role) => SECOND_EYES_ROLES.includes(role);
+
+// Onay yetkisi: yalnız dosya sorumlusu ve bilirkişi. Onay kararı hukuken
+// bilirkişinindir; uygulama bu yetkiyi başkasına vermez.
+export const APPROVER_ROLES = ['owner', 'expert'];
+export const canApproveRole = (role) => APPROVER_ROLES.includes(role);
 
 export const OBS_LABEL = {
   noise: 'arka plan gürültüsü',

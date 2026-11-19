@@ -6,12 +6,73 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.65.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.66.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.66 — Gözlemci onaylayabiliyordu (rol yetkisi hatası)
+
+KULLANICI: "Bu sürü rol kısmı var, burada bir şey ekleyecek miyim? Eklersem ne
+oluyor?" — ekran görüntüsünde **Gözlemci** seçiliydi.
+
+### Bulunan hata
+
+Rol yetki tablosu ölçüldü:
+
+```
+Dosya sorumlusu (owner)     -> TAM YETKİ
+Bilirkişi       (expert)    -> TAM YETKİ
+Yardımcı        (assistant) -> öneri verir
+Kontrol eden    (reviewer)  -> öneri verir
+Gözlemci        (observer)  -> TAM YETKİ   ← HATA
+```
+
+Gözlemci **onaylayabiliyordu**. Ölçüm:
+
+```
+Gözlemcinin onayı birleşmede: approved
+-> KABUL EDİLDİ  <-- HATA: gözlemci onaylamamalı
+```
+
+Gözlemci yalnızca bakmak için eklenen roldür. Onayı adli belgede kabul
+edilemez; "kontrol edilmiş" görünen bir metin gerçekte kimse tarafından
+doğrulanmamış olurdu.
+
+### Çözüm
+
+- `SECOND_EYES_ROLES`'a `observer` eklendi: düzeltmesi **öneri** olur,
+  onaylayamaz.
+- `APPROVER_ROLES = ['owner', 'expert']` ve `canApproveRole()` eklendi:
+  onay yetkisi açıkça tanımlı. İki küme **ayrık**; bir rol hem onaylayıp hem
+  öneri veremez.
+
+### Yetki tablosu (v2.66)
+
+| Rol | Öneri verir | Onaylar |
+|---|---|---|
+| Dosya sorumlusu | — | ✅ |
+| Bilirkişi | — | ✅ |
+| Yardımcı | ✅ | — |
+| Kontrol eden | ✅ | — |
+| Gözlemci | ✅ | — |
+
+### Doğrulama
+
+```
+assistant onayı reddedildi -> pending  ✅
+reviewer  onayı reddedildi -> pending  ✅
+observer  onayı reddedildi -> pending  ✅
+owner     onayı korundu    -> approved ✅
+expert    onayı korundu    -> approved ✅
+```
+
+### Test
+
+`sema-testi.mjs` [7i] bloğu eklendi (250 → 273 kontrol): rol tablosu,
+kümelerin ayrıklığı ve birleşme güvenlik ağı.
 
 ## v2.65 — Dosya bilgileri birleşmeye girmiyordu (10 alan kayboluyordu)
 

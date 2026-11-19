@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.65.**
+yazılır. **Güncel sürüm: v2.66.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.66 — Gözlemci onaylayabiliyordu (tamamlandı)
+
+Rol tablosu ölçüldü: `observer` (Gözlemci) ikinci göz sayılmıyordu, TAM
+YETKİLİYDİ. Ölçüm: gözlemcinin onayı birleşmede "approved" olarak kabul
+edildi. Gözlemci sadece bakar; onayı adli belgede kabul edilemez.
+`SECOND_EYES_ROLES`'a `observer` eklendi; `APPROVER_ROLES = [owner, expert]`
+ve `canApproveRole()` tanımlandı; iki küme ayrık. Test [7i]: 250 → 273.
 
 ### v2.65 — Dosya bilgileri birleşmeye girmiyordu (tamamlandı)
 
