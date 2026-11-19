@@ -18,19 +18,42 @@ const ASR_MODELS = {
     dtype: 'fp32',
     warn: true
   },
-  'onnx-community/whisper-small': { label: 'Küçük model – orta doğruluk (~485 MB)', dtype: 'fp16', warn: false },
+  'onnx-community/whisper-small': { label: 'Küçük model – orta doğruluk (~485 MB)', dtype: 'fp32', warn: false },
   'onnx-community/whisper-medium-ONNX': {
     label: 'Orta model – ölçülen en yüksek doğruluk (~1,5 GB)',
-    dtype: 'fp16',
+    dtype: 'fp32',
     warn: false
   },
   'onnx-community/whisper-large-v3-turbo': {
     label: 'Large-v3-turbo – ölçülmedi, çok ağır (~1,6 GB)',
-    dtype: 'fp16',
+    dtype: 'fp32',
     warn: false
   }
 };
+// Kullanılan sayısal duyarlılık (dtype) cihaza göre seçilir. Kalite ve doğruluk
+// her zaman önceliklidir: WASM (CPU) üzerinde fp16 güvenilir değildir ve bozuk
+// çıktı ("- - - -" gibi) üretebilir; bu nedenle WASM'da her zaman fp32 kullanılır.
+// WebGPU'da fp16 doğru sonuç verir ve belirgin biçimde hızlıdır.
+function dtypeFor(modelId, device) {
+  const spec = ASR_MODELS[modelId];
+  if (device === 'webgpu') return 'fp16';
+  return (spec && spec.dtype) || 'fp32';
+}
 const DEFAULT_ASR_MODEL = 'onnx-community/whisper-small';
+// Kısa model adları: yükleme durumunda ve kayıt kartlarında gösterilir.
+const MODEL_LOAD_LABELS = {
+  'onnx-community/whisper-base': 'Temel model',
+  'onnx-community/whisper-small': 'Küçük model',
+  'onnx-community/whisper-medium-ONNX': 'Orta model',
+  'onnx-community/whisper-large-v3-turbo': 'Large-v3-turbo modeli'
+};
+function modelShortName(id) {
+  if (!id) return '—';
+  return MODEL_LOAD_LABELS[id] || id.split('/').pop();
+}
+// Şu an bellekte yüklü model. Seçimden (dropdown) ayrıdır: kullanıcı seçim
+// değiştirse bile çözümleme yüklü modelle yapılır; arayüz bunu açıkça gösterir.
+let loadedModelId = null;
 // WebGPU is much faster but not universally available; fall back to WASM when absent.
 let asrDevice = 'wasm';
 async function detectDevice() {
@@ -560,7 +583,7 @@ function audioStatusZoneHtml(m) {
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
   const status = m.status || 'Bekliyor';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256 || 'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic ? '<span><b>Kurgusal sentetik kayıt</b></span>' : ''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec || '—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate ? esc(m.tech.sampleRate + ' Hz') : '—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth ? esc(m.tech.bitDepth + ' bit') : '—'}</b></span><span>Eklenme: <b>${esc(m.addedAt ? new Date(m.addedAt).toLocaleString('tr-TR') : '—')}</b></span></div>${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti (dosya değişmemiş)' : 'özet farklı (dosya değişmiş olabilir)'}</div>` : ''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta"><span>SHA-256: <b>${esc(m.sha256 || 'Hesaplanmadı')}</b></span><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic ? '<span><b>Kurgusal sentetik kayıt</b></span>' : ''}</div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec || '—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate ? esc(m.tech.sampleRate + ' Hz') : '—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth ? esc(m.tech.bitDepth + ' bit') : '—'}</b></span><span>Eklenme: <b>${esc(m.addedAt ? new Date(m.addedAt).toLocaleString('tr-TR') : '—')}</b></span></div>${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti (dosya değişmemiş)' : 'özet farklı (dosya değişmiş olabilir)'}</div>` : ''}${m.transcribedWithModel ? `<div class="audio-meta model-meta"><span>Çözümleyen model: <b>${esc(modelShortName(m.transcribedWithModel))}</b>${m.transcribedAt ? ` · ${esc(new Date(m.transcribedAt).toLocaleString('tr-TR'))}` : ''}</span></div>` : ''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -2963,8 +2986,28 @@ async function ensureModel() {
   if (modelLoading) throw new Error('Model yükleniyor. Lütfen bekleyin.');
   modelLoading = true;
   const spec = ASR_MODELS[modelId] || ASR_MODELS[DEFAULT_ASR_MODEL];
-  $('#modelStatus').textContent =
-    'Konuşma modeli ve gerekli çalışma dosyaları indiriliyor… İlk kullanımda dosya boyutu yüksek olabilir.';
+  const dtype = dtypeFor(modelId, asrDevice);
+  // Genel ilerleme: dosya bazlı yüzde yerine, tamamlanan dosya sayısına göre
+  // yüzde hesaplanır. Böylece "%100 → %3" gibi zıplayan, anlaşılmaz görüntü
+  // yerine tek ve tutarlı bir ilerleme çubuğu gösterilir.
+  const fileState = new Map();
+  const refreshLoadStatus = (activeFile) => {
+    const files = [...fileState.values()];
+    const done = files.filter((f) => f >= 100).length;
+    const total = files.length || 1;
+    const pct = Math.min(99, Math.round((done / total) * 100));
+    const label = MODEL_LOAD_LABELS[modelId] || modelId;
+    const active = activeFile ? ` · ${activeFile}` : '';
+    $('#modelStatus').innerHTML =
+      `<b>${esc(label)}</b> yükleniyor… genel ilerleme %${pct} (${done}/${files.length} dosya)${esc(active)}`;
+    const bar = $('#modelLoadBar');
+    if (bar) {
+      bar.hidden = false;
+      const fill = bar.querySelector('span');
+      if (fill) fill.style.width = pct + '%';
+    }
+  };
+  $('#modelStatus').textContent = `${spec.label} indiriliyor… İlk kullanımda dosya boyutu yüksek olabilir.`;
   $('#loadModelBtn').disabled = true;
   try {
     const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
@@ -2977,25 +3020,42 @@ async function ensureModel() {
     }
     asrPipeline = await pipeline('automatic-speech-recognition', modelId, {
       device: asrDevice,
-      dtype: spec.dtype,
+      dtype,
       progress_callback: (p) => {
-        if (p.status === 'progress')
-          $('#modelStatus').textContent = `Model indiriliyor: ${p.file || ''} ${Number(p.progress || 0).toFixed(0)}%`;
-        else if (p.status === 'ready') $('#modelStatus').textContent = 'Model hazır.';
+        if (p.status === 'progress' && p.file) {
+          fileState.set(p.file, Number(p.progress || 0));
+          refreshLoadStatus(p.file);
+        } else if (p.status === 'ready') {
+          $('#modelStatus').textContent = 'Model hazır.';
+        }
       }
     });
     asrPipeline.__spec = spec;
     asrPipeline.__modelId = modelId;
+    asrPipeline.__dtype = dtype;
+    asrPipeline.__device = asrDevice;
+    loadedModelId = modelId;
+    const bar = $('#modelLoadBar');
+    if (bar) {
+      bar.hidden = true;
+      const fill = bar.querySelector('span');
+      if (fill) fill.style.width = '0%';
+    }
+    updateModelBadge();
     $('#modelStatus').textContent =
       (spec.warn
         ? 'Model hazır. Bu model hızlıdır ancak doğruluğu düşüktür; metni mutlaka kayıttan doğrulayın.'
         : 'Model hazır. Türkçe kaynak dili ve transkripsiyon görevi zorunlu olarak kullanılacak.') +
-      ` Çalışma birimi: ${asrDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'}.`;
+      ` Çalışma birimi: ${asrDevice === 'webgpu' ? 'WebGPU' : 'WASM (CPU)'} · duyarlılık: ${dtype}.`;
     showToast('Konuşma modeli hazır.');
     refreshStorage();
     return asrPipeline;
   } catch (e) {
     asrPipeline = null;
+    loadedModelId = null;
+    updateModelBadge();
+    const bar = $('#modelLoadBar');
+    if (bar) bar.hidden = true;
     $('#modelStatus').textContent =
       `Model yüklenemedi: ${e.message}. İnternet bağlantısını ve tarayıcı izinlerini kontrol edin.`;
     throw e;
@@ -4995,6 +5055,8 @@ function setupEvents() {
     }
   });
   $('#loadModelBtn').addEventListener('click', () => ensureModel().catch((e) => showToast(e.message)));
+  const modelSelectEl = $('#modelSelect');
+  if (modelSelectEl) modelSelectEl.addEventListener('change', () => updateModelBadge());
   $('#refreshStorageBtn').addEventListener('click', () => refreshStorage());
   $('#clearAllModelsBtn').addEventListener('click', () => clearModelCache());
   $('#storageList').addEventListener('click', async (e) => {
@@ -5379,6 +5441,31 @@ function applyRecommendation() {
   if (sel) sel.value = rec.id;
   const el = $('#modelRecommendation');
   if (el) el.textContent = 'Öneri: ' + rec.why;
+  updateModelBadge();
+}
+// Yüklü model rozetini ve seçim-yükleme uyumunu gösterir. Kullanıcı dropdown'da
+// başka bir model seçip yüklemeden çözümlerse, hangi modelin gerçekten
+// kullanılacağı belirsiz kalırdı; bu rozet bunu netleştirir.
+function updateModelBadge() {
+  const badge = $('#loadedModelBadge');
+  if (!badge) return;
+  const selected = $('#modelSelect') ? $('#modelSelect').value : null;
+  if (!loadedModelId) {
+    badge.textContent = 'Yüklü model: yok — çözümleme için model yükleyin';
+    badge.classList.add('none');
+    badge.classList.remove('ok', 'mismatch');
+    return;
+  }
+  const loaded = modelShortName(loadedModelId);
+  if (selected && selected !== loadedModelId) {
+    badge.innerHTML = `Yüklü model: <b>${esc(loaded)}</b> · Seçili: <b>${esc(modelShortName(selected))}</b> — seçili modeli kullanmak için "Modeli yükle"ye basın.`;
+    badge.classList.add('mismatch');
+    badge.classList.remove('ok', 'none');
+  } else {
+    badge.innerHTML = `Yüklü model: <b>${esc(loaded)}</b> — çözümleme bu modelle yapılır.`;
+    badge.classList.add('ok');
+    badge.classList.remove('none', 'mismatch');
+  }
 }
 async function restoreAudioUrls() {
   const cList = appState.cases;

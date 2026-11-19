@@ -52,6 +52,7 @@ const EXPOSE = [
   'buildProjectPack', 'validateProjectPack', 'matchAudioEntries',
   'evaluateModelIntegrity', 'recommendModel', 'modelIdFromUrl',
   'parseAsrResult', 'asrWindows', 'looksNonTurkish', 'safeName',
+  'dtypeFor', 'modelShortName',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -320,6 +321,17 @@ console.log('\n[7g] Model yöneticisi');
   // Donanım önerisi.
   eq('WebGPU -> orta model', T.recommendModel('webgpu').id, 'onnx-community/whisper-medium-ONNX');
   eq('CPU -> küçük model', T.recommendModel('wasm').id, 'onnx-community/whisper-small');
+  // Duyarlılık (dtype): kalite öncelikli. WASM'da fp32 (fp16 bozuk çıktı üretir),
+  // WebGPU'da fp16 (doğru ve hızlı).
+  eq('WASM küçük -> fp32', T.dtypeFor('onnx-community/whisper-small', 'wasm'), 'fp32');
+  eq('WASM orta -> fp32', T.dtypeFor('onnx-community/whisper-medium-ONNX', 'wasm'), 'fp32');
+  eq('WebGPU küçük -> fp16', T.dtypeFor('onnx-community/whisper-small', 'webgpu'), 'fp16');
+  eq('WebGPU orta -> fp16', T.dtypeFor('onnx-community/whisper-medium-ONNX', 'webgpu'), 'fp16');
+  // Kısa model adları.
+  eq('kısa ad (küçük)', T.modelShortName('onnx-community/whisper-small'), 'Küçük model');
+  eq('kısa ad (orta)', T.modelShortName('onnx-community/whisper-medium-ONNX'), 'Orta model');
+  eq('bilinmeyen ad', T.modelShortName('a/b'), 'b');
+  eq('boş ad', T.modelShortName(null), '—');
 }
 
 // --- 7h. Deşifre motoru ---------------------------------------------------

@@ -28,7 +28,7 @@ Kullanım kolaylığını ve estetiği artırmak; masaüstü uygulaması hissini
 güçlendirmek. Değerlendirilecekler: kenar çubuğu yerine üst menü seçeneği,
 genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md` listesindeki mevcut özelliklerin **hiçbiri kaybolmamalı**.
 
-### Bilinen açık hatalar (önce düzeltilecek)
+### Bilinen açık hatalar
 
 1. **Model yükleme ilerlemesi okunaksız:** indirme yüzdesi/çubuk karışık
    görünüyor; hangi dosyanın yüklendiği ve genel ilerleme anlaşılmıyor.
@@ -43,6 +43,12 @@ genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md
 4. **Model seçimi kaydı etkilemiyor gibi:** modeli seçip "Modeli yükle"
    denmeden çözümleme eski modelle yapılıyor olabilir; seçim ile yükleme
    arasındaki ilişki netleştirilmeli.
+
+Yukarıdaki 1, 2 ve 4 numaralı maddeler v2.19'da giderildi (genel ilerleme,
+"Yüklü model" rozeti, kayıt başına "Çözümleyen model", seçim-yükleme uyarısı).
+Madde 3 için dtype cihaza göre ayarlandı (WASM fp32 / WebGPU fp16); ancak
+gerçek model indirilerek **uçtan uca doğrulanması gerekir** — bu doğrulama
+yapılana kadar açık kabul edilmelidir.
 
 ## Proje özeti
 

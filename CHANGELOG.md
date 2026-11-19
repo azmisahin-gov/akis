@@ -439,3 +439,24 @@ değişmedi.
   `looksNonTurkish` (dil uyarısı) ayrıldı; `transcribe` bu fonksiyonları
   kullanır. Pencere döngüsü artık aynı sınırları üretir.
 - Toplam birim testi 114'ten 145'e çıktı; tümü geçer.
+
+## v2.19 — Model seçimi, yükleme ve çıktı kalitesi düzeltmeleri
+
+Kullanıcının bildirdiği dört sorun giderildi.
+
+- **Duyarlılık (dtype) cihaza göre seçilir:** WASM (CPU) üzerinde fp16 güvenilir
+  değildir ve bozuk çıktı ("- - - -" gibi) üretebilir. Artık WASM'da her zaman
+  **fp32**, WebGPU'da **fp16** kullanılır (`dtypeFor`). Kalite ve doğruluk
+  önceliklidir. Not: bu, "- - - -" sorununun en olası nedenine yönelik bir
+  düzeltmedir; gerçek model indirilerek uçtan uca doğrulanmalıdır.
+- **Yükleme ilerlemesi okunabilir:** dosya bazlı zıplayan yüzde yerine,
+  tamamlanan dosya sayısına göre **genel ilerleme** ve ilerleme çubuğu
+  gösterilir; aktif dosya adı ve seçili model adı yazılır.
+- **Yüklü model görünür:** "Yüklü model: …" rozeti eklendi. Seçili model ile
+  yüklü model farklıysa "seçili modeli kullanmak için Modeli yükle'ye basın"
+  uyarısı çıkar. Böylece hangi modelin çözümleyeceği belirsiz kalmaz.
+- **Kayıt başına çözümleyen model:** her ses kartında "Çözümleyen model: …"
+  ve çözümleme tarihi gösterilir (rapor zaten modeli yazıyordu; arayüzde de
+  görünür hâle geldi).
+- Yeni saf fonksiyonlar `dtypeFor` ve `modelShortName`; birim testleriyle
+  doğrulanır. Toplam birim testi 153'e çıktı.
