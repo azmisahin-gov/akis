@@ -205,9 +205,22 @@ console.log('\n[Senaryo 4] belge yapısı');
 console.log('\n[Senaryo 5] kaynakta sabit kopya denetimi');
 {
   const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  // Biçimlendirmeye dayanıklı marker arama: sabit marker'lar boşluk farkına
+  // duyarsızdır. Böylece kaynak yeniden biçimlendirilse bile (ör. "(){ " →
+  // "() {") bu denetim sessizce boşa düşmez.
+  function findMarker(marker, from = 0) {
+    // Boşluklara ve süslü parantez öncesi boşluğa toleranslı desen: kaynak
+    // yeniden biçimlendirilse bile ("(){ " → "() {") marker bulunur.
+    const pattern = marker
+      .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\\\{/g, '\\s*\\{')
+      .replace(/ /g, '\\s+');
+    const m = new RegExp(pattern).exec(src.slice(from));
+    return m ? from + m.index : -1;
+  }
   function body(startMarker, endMarker) {
-    const i = src.indexOf(startMarker);
-    const j = src.indexOf(endMarker, i);
+    const i = findMarker(startMarker);
+    const j = i >= 0 ? findMarker(endMarker, i + startMarker.length) : -1;
     return i >= 0 && j > i ? src.slice(i, j) : '';
   }
   const renderers = {

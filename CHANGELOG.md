@@ -410,3 +410,15 @@ işaretlenir. Uydurma yoktur; yalnızca metindeki gerçek tekrar ölçülür.
 - Metin asla otomatik düzeltilmez; yalnızca uzmana hatırlatılır.
 - `detectRepetition` ve `segmentRepetitionFlag` saf fonksiyonlardır; birim
   testleriyle doğrulanır.
+
+## v2.15+ — Okunabilirlik (Faz 5)
+
+- `assets/app.js` Prettier ile biçimlendirildi (printWidth 120, 2 boşluk, tek
+  tırnak). Dosya ~1943 sıkışık satırdan ~5368 okunabilir satıra indi; davranış
+  değişmedi (tüm testler geçer). Biçimlendirme ayarları `.prettierrc.json`
+  dosyasında tutulur; tekrar biçimlendirmek için:
+  `npx prettier --config .prettierrc.json assets/app.js`
+- `tools/rapor-tutarlilik-testi.mjs` içindeki kaynak marker denetimi
+  biçimlendirmeye dayanıklı hâle getirildi (boşluk ve süslü parantez öncesi
+  boşluğa toleranslı). Böylece kaynak yeniden biçimlendirilse bile denetim
+  sessizce boşa düşmez.

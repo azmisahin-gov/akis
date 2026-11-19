@@ -56,9 +56,9 @@ yardımcıları, karaoke). Bunlar elle doğrulanmaktadır.
 
 ## 3. Diğer gözlemler (düşük öncelik)
 
-- `assets/app.js` tek dosyadır ve içerik çok uzun tek satırlar hâlinde
-  sıkıştırılmıştır; okunabilirlik ve diff kalitesi düşüktür. Biçimlendirme
-  davranışı değiştirmeden ayrı bir çalışmada yapılmalıdır.
+- `assets/app.js` Prettier ile biçimlendirildi (`.prettierrc.json`); dosya
+  artık okunabilir satırlar hâlinde. Yeniden biçimlendirmek için:
+  `npx prettier --config .prettierrc.json assets/app.js`. (Bu adım giderildi.)
 - UDF `content.xml` içine gömülen `CDATA` metninde görünmez `U+200B`
   (zero-width space) karakterleri satır kırma noktası olarak kullanılır. Uzun
   SHA-256 dizilerinde taşmayı önlemek için makuldür, ancak bu karakterler

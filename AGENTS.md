@@ -60,8 +60,10 @@ Rapor metinlerinin tek kaynaktan (`REPORT_TEXT`) gelmesi hedefine yönelik
 sapmalar giderildi; ayrıntı ve durum için
 [`docs/BILINEN_SORUNLAR.md`](docs/BILINEN_SORUNLAR.md) dosyasına bakın.
 
-Rapor metni sapmaları v2.0'da çözüldü. Kalan borç: `app.js` okunabilirliği ve
-deşifre/model/yedekleme akışlarının otomatik test kapsamı dışında olması.
+Rapor metni sapmaları v2.0'da çözüldü. `app.js` okunabilirliği Prettier ile
+biçimlendirilerek giderildi (`.prettierrc.json`; `npx prettier --config
+.prettierrc.json assets/app.js`). Kalan borç: deşifre/model/yedekleme
+akışlarının otomatik test kapsamı dışında olması.
 
 ## Doğrulama
 
