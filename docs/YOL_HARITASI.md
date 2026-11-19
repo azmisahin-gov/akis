@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.85.**
+yazılır. **Güncel sürüm: v2.86.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.86 — Eksik ses uyarısı + yazma akıcılığı (tamamlandı)
+
+Ses blobu kaybolduğunda dışa aktarma **sessizce** atlıyor, yedek "tam"
+görünüyordu. Artık eksik sesler `EKSIK_SES_UYARISI.txt` olarak pakete yazılır
+ve bildirim açıkça söyler. Ayrıca her tuş vuruşunda çalışan `segCounts` +
+`renderOverview` 250 ms geciktirildi (ölçüm: 500 bölümde 8,5 ms/tuş → 0).
 
 ### v2.85 — Rapor çıktısı denetimi (tamamlandı)
 

@@ -181,6 +181,11 @@ check('dışa aktarma TÜM dosyaları kapsıyor (arşiv)',
   /kind: 'archive'/.test(appJs) && /archive\.json/.test(appJs));
 check('arşivden geri yükleme var (importArchive)',
   /async function importArchive/.test(appJs) && /zip\.file\('archive\.json'\)/.test(appJs));
+// v2.86: eksik ses sessizce atlanmamalı (yedek "tam" görünüp ses olmayabilir).
+check('eksik ses yedeğe yazılıyor (EKSIK_SES_UYARISI)', /EKSIK_SES_UYARISI/.test(appJs));
+check('eksik ses kullanıcıya bildiriliyor', /bulunamadı ve pakete GİRMEDİ/.test(appJs));
+// v2.86: yazarken ağır yenileme geciktirilir (500 bölümde tuş başına 8,5 ms).
+check('yazma sırasında ağır iş geciktiriliyor', /function scheduleLightRefresh/.test(appJs));
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

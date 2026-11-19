@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.85.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.86.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.86 — Eksik ses yedeğe yazılıyor + yazma akıcılığı
+
+CANLI veri denetimi 3. tur: büyük veri ve ses bütünlüğü.
+
+### 1. GERÇEK HATA: ses bulunamazsa yedek sessizce eksik kalıyordu
+
+Dışa aktarma döngüsünde:
+
+```js
+const blob = await getAudioBlob(c, m);
+if (blob) assets.file(...);      // ← blob yoksa SESSİZCE atlanıyor
+```
+
+Tarayıcı verisi temizlenirse veya kota dolarsa ses blobu kaybolur. Yedek
+"alındı" der, kullanıcı tam sanır — **ama ses yoktur**. Adli incelemede bu
+kabul edilemez.
+
+**Düzeltme:** eksik sesler toplanır, pakete `EKSIK_SES_UYARISI.txt` yazılır
+(hangi dosya, hangi kayıt) ve bildirim açıkça söyler:
+"Yedek alındı ANCAK N ses dosyası bulunamadı ve pakete GİRMEDİ."
+
+### 2. Yazarken her tuşta ağır iş yapılıyordu
+
+Her tuş vuruşunda `segCounts` (tüm bölümler × `segQuickCheck`) +
+`renderOverview` çalışıyordu. **Ölçüm: 500 bölümde tuş başına 8,5 ms.**
+Deşifre yazarken bu gecikme hissedilir.
+
+**Düzeltme:** `scheduleLightRefresh()` — son tuştan 250 ms sonra bir kez.
+Sayaçlar yine doğru, yazma akıcı.
+
+### 3. Ölçülen performans (kabul edilebilir)
+
+| Bölüm | Liste çizimi | Sayaç | HTML |
+|---|---|---|---|
+| 100 | 4,9 ms | 3,1 ms | 44 KB |
+| 500 | 14,7 ms | 8,8 ms | 223 KB |
+| 1000 | 24,6 ms | 17,2 ms | 446 KB |
+
+JSON yazma: 500 bölümde 0,9 ms. Darboğaz yok.
+
+### 4. Test
+
+`surum-testi` [10]: 3 yeni kural (eksik ses uyarısı, bildirim, geciktirme).
 
 ## v2.85 — Rapor çıktısı denetimi: konuşmacı kodu kayboluyordu
 

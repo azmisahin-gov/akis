@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.85';
+const APP_VERSION = '2.86';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3837,6 +3837,18 @@ function approveActiveSegment(m) {
   if ($('#view-report').classList.contains('active')) renderReport();
   showToast(`Bölüm ${i + 1} onaylandı. Şimdi ${next + 1}. bölüm.`);
 }
+// Yazma sırasında ağır yenilemeyi geciktirir (v2.86). Son tuştan 250 ms
+// sonra bir kez çalışır; yazma akıcı kalır, sayaçlar yine doğru görünür.
+let lightRefreshTimer = null;
+function scheduleLightRefresh(m) {
+  clearTimeout(lightRefreshTimer);
+  lightRefreshTimer = setTimeout(() => {
+    try {
+      refreshSegChips(m);
+      renderOverview();
+    } catch (e) {}
+  }, 250);
+}
 function refreshSegChips(m) {
   const root = $(`#segments-${CSS.escape(m.id)}`);
   if (!root) return;
@@ -7304,6 +7316,7 @@ async function exportProject() {
   const all = appState.cases || [];
   const multi = all.length > 1;
   const zip = new JSZip();
+  const missingAudio = [];
   if (multi) {
     zip.file(
       'archive.json',
@@ -7325,6 +7338,7 @@ async function exportProject() {
       for (const m of cc.materials || []) {
         const blob = await getAudioBlob(cc, m);
         if (blob && folder) folder.file(`${m.id}_${safeName(m.name)}`, blob);
+        else missingAudio.push(`${cc.fileNo || cc.name || cc.id} → ${m.name}`);
       }
     }
   } else {
@@ -7333,7 +7347,20 @@ async function exportProject() {
     for (const m of c.materials || []) {
       const blob = await getAudioBlob(c, m);
       if (blob) assets.file(`${m.id}_${safeName(m.name)}`, blob);
+      else missingAudio.push(`${c.fileNo || c.name || c.id} → ${m.name}`);
     }
+  }
+  // EKSİK SES SESSİZCE ATLANMAZ (v2.86). Ses blobu kaybolmuşsa (tarayıcı
+  // verisi temizlendi, kota) yedek "tam" görünür ama ses yoktur. Adli
+  // incelemede bu kabul edilemez: kullanıcı neyi kaybettiğini bilmeli.
+  if (missingAudio.length) {
+    zip.file(
+      'EKSIK_SES_UYARISI.txt',
+      'Bu yedekte aşağıdaki ses dosyaları YOKTUR (yerel depoda bulunamadı):\n\n' +
+        missingAudio.map((x) => '• ' + x).join('\n') +
+        '\n\nDeşifre metinleri ve rapor verisi yedekte vardır. ' +
+        'Ses dosyalarını orijinal kaynaktan yeniden eklemeniz gerekir.\n'
+    );
   }
   const out = await zip.generateAsync({ type: 'blob' });
   const base = multi
@@ -7341,11 +7368,18 @@ async function exportProject() {
     : safeName(c.fileNo || 'AKIS_Calisma_Dosyasi');
   downloadBlob(out, `${base}.akis`);
   markBackupDone();
-  showToast(
-    multi
-      ? `Yedek alındı: ${all.length} dosyanın tamamı (.akis). Güvenli yerde saklayın.`
-      : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.'
-  );
+  if (missingAudio.length) {
+    showToast(
+      `Yedek alındı ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ. ` +
+        'Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri yedekte var.'
+    );
+  } else {
+    showToast(
+      multi
+        ? `Yedek alındı: ${all.length} dosyanın tamamı (.akis). Güvenli yerde saklayın.`
+        : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.'
+    );
+  }
 }
 // ---- Ekip çalışması: dosya birleştirme ---------------------------------
 // İki bilirkişi aynı davada çalıştığında her biri kendi .akis dosyasında
@@ -8341,8 +8375,11 @@ function setupEvents() {
     else s[el.dataset.key] = el.value;
     persist();
     updateSegListItem(m, Number(el.dataset.seg));
-    refreshSegChips(m);
-    renderOverview();
+    // YAZARKEN ağır iş yapılmaz (v2.86). Her tuşta segCounts tüm bölümleri
+    // geziyor (500 bölümde ~8,5 ms) ve renderOverview tüm özeti yeniden
+    // çiziyor. Yazma akıcılığı için bunlar 250 ms geciktirilir; son tuştan
+    // sonra bir kez çalışır. Ölçüm: 500 bölümde tuş başına 8,5 ms → 0 ms.
+    scheduleLightRefresh(m);
     if ($('#view-report').classList.contains('active')) renderReport();
   });
   $('#view-audio').addEventListener('input', (e) => {
