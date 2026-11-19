@@ -50,6 +50,10 @@ Madde 3 için dtype cihaza göre ayarlandı (WASM fp32 / WebGPU fp16); ancak
 gerçek model indirilerek **uçtan uca doğrulanması gerekir** — bu doğrulama
 yapılana kadar açık kabul edilmelidir.
 
+> v2.20 notu: Madde 3'ün gerçek kök nedeni dtype değil, `return_timestamps:
+> 'word'` idi (timestamp token sızıntısı). Düzeltildi; kullanıcı doğrulaması
+> bekleniyor.
+
 ## Proje özeti
 
 AKİS (Adli Konuşma İnceleme Sistemi), bilirkişiler için tarayıcıda çalışan bir

@@ -460,3 +460,26 @@ Kullanıcının bildirdiği dört sorun giderildi.
   görünür hâle geldi).
 - Yeni saf fonksiyonlar `dtypeFor` ve `modelShortName`; birim testleriyle
   doğrulanır. Toplam birim testi 153'e çıktı.
+
+## v2.20 — Timestamp token sızıntısı ("- - - -") giderildi
+
+Kullanıcının bildirdiği ciddi sorun: orta ve küçük modelde temiz bir Türkçe
+kayıt "- - - - - -" ve "< - < - < < <" gibi anlamsız çıktı üretiyor, bölümler
+`00:00:00–00:00:00` görünüyordu; turbo modeli etkilenmiyordu. Makinede WebGPU
+(RTX 3060) çalışıyordu, yani sorun dtype değildi.
+
+**Kök neden:** `return_timestamps: 'word'` bu Whisper ONNX modellerinde
+desteklenmiyor; model timestamp/özel token'larını metne döküyordu. Turbo farklı
+mimari kullandığı için etkilenmiyordu.
+
+Düzeltmeler:
+- **`return_timestamps: true`** (segment düzeyi) kullanılır; kelime düzeyi
+  kaldırıldı. Tekrar döngüsünü kırmak için `no_repeat_ngram_size: 3` ve
+  `repetition_penalty: 1.2` eklendi; parametre kabul edilmezse sade çağrıya düşer.
+- **`looksLikeGarbage`:** harf/rakam oranı ve jeton tekrarına göre çöp çıktıyı
+  tespit eder. Çöp bölümler `parseAsrResult`'ta atılır; deşifreye hiç girmez ve
+  `isHallucination` bunu da yakalar.
+- **Sıfır süre giderildi:** bitiş zamanı gelmezse pencere süresi kadar
+  tamamlanır; bölüm artık "00:00:00–00:00:00" olmaz.
+- Birim testleri gerçek hata desenleriyle eklendi (çizgi/açı/tırnak yığını çöp;
+  gerçek cümle temiz). Toplam birim testi 164'e çıktı.

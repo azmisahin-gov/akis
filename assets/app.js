@@ -3156,9 +3156,34 @@ function timecode(seconds) {
 // so it must never be presented as analysed speech.
 const HALLUCINATION_RE =
   /^[\s(]*[(\[]?\s*(konuşma|müzik|jenerik|kalabalık|nefes|alkış|sessizlik|tutaklar|beep|music|applause|silence|blank|no speech)[\s\S]*?[)\]]?\s*$/i;
+// Metnin gerçek konuşma olup olmadığını kaba ama güvenli biçimde denetler.
+// Whisper bazı modellerde timestamp/özel token'ları metne dökebilir; çıktı
+// "- - - -" veya "< - < - < < <" gibi anlamsız karakter yığınına dönüşür.
+// Böyle bir metin ASLA deşifre olarak sunulmamalıdır. Uydurma yoktur; yalnızca
+// harf/rakam oranı ve yineleme ölçülür.
+function looksLikeGarbage(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  const alnum = (t.match(/[\p{L}\p{N}]/gu) || []).length;
+  const ratio = alnum / t.length;
+  // Gerçek Türkçe metinde harf/rakam oranı ~0,7'nin üzerindedir. 0,35'in
+  // altındaki metin neredeyse tamamen noktalama/simgedir: çöp.
+  if (ratio < 0.35) return true;
+  // Aynı kısa jetonun baskın tekrarı (ör. "- " yüzlerce kez).
+  const tokens = t.split(/\s+/).filter(Boolean);
+  if (tokens.length >= 8) {
+    const counts = new Map();
+    for (const w of tokens) counts.set(w, (counts.get(w) || 0) + 1);
+    let top = 0;
+    for (const v of counts.values()) if (v > top) top = v;
+    if (top / tokens.length >= 0.6) return true;
+  }
+  return false;
+}
 function isHallucination(text) {
   const t = String(text || '').trim();
   if (!t) return true;
+  if (looksLikeGarbage(t)) return true;
   const stripped = t.replace(/[()\[\]\s.]/g, '');
   if (!stripped) return true;
   return HALLUCINATION_RE.test(t) && t.length < 60;
@@ -3265,12 +3290,18 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
   const out = [];
   if (chunks.length) {
     for (const x of chunks) {
+      const text = String(x.text || '').trim();
+      // Çöp çıktı (timestamp token sızıntısı) deşifreye hiç girmemeli.
+      if (looksLikeGarbage(text)) continue;
       const st = x.timestamp?.[0] ?? 0;
-      const en = x.timestamp?.[1] ?? x.timestamp?.[0] ?? 0;
+      let en = x.timestamp?.[1];
+      // Bitiş zamanı gelmezse (bazı ONNX modelleri) pencere sonuna kadar
+      // varsayılan bir süre ver; aksi halde bölüm "00:00:00–00:00:00" olur.
+      if (en == null || en <= st) en = st + (windowSeconds || 1);
       const seg = {
         start: timecode(offsetSeconds + st),
         end: timecode(offsetSeconds + en),
-        text: String(x.text || '').trim()
+        text
       };
       if (Array.isArray(x.words)) {
         seg.words = x.words.map((w) => ({
@@ -3282,21 +3313,35 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
       out.push(seg);
     }
   } else if (result && String(result.text || '').trim()) {
-    out.push({
-      start: timecode(offsetSeconds),
-      end: timecode(offsetSeconds + (windowSeconds || 0)),
-      text: String(result.text || '').trim()
-    });
+    const text = String(result.text || '').trim();
+    if (!looksLikeGarbage(text)) {
+      out.push({
+        start: timecode(offsetSeconds),
+        end: timecode(offsetSeconds + (windowSeconds || 0)),
+        text
+      });
+    }
   }
   return out;
 }
 async function transcribeWindow(pipe, window, offsetSeconds) {
-  // Kelime düzeyi zaman damgaları istenir: bunlar karaoke vurgulaması için
-  // kullanılır. Model kelime zamanı vermezse yalnızca bölüm aralığına düşülür.
+  // ÖNEMLİ: Whisper ONNX modellerinde `return_timestamps: 'word'` güvenilir
+  // değildir; model timestamp/özel token'larını metne dökerek "- - - -" veya
+  // "< - < -" gibi anlamsız çıktı üretebilir. Bu nedenle segment düzeyi
+  // (`true`) kullanılır. Tekrar döngüsünü kırmak için no_repeat_ngram_size ve
+  // repetition_penalty verilir. Türkçe dil ve transkripsiyon görevi sabittir.
+  const opts = {
+    language: 'turkish',
+    task: 'transcribe',
+    return_timestamps: true,
+    no_repeat_ngram_size: 3,
+    repetition_penalty: 1.2
+  };
   let result;
   try {
-    result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: 'word' });
+    result = await pipe(window, opts);
   } catch (e) {
+    // Bazı sürümler bu parametreleri kabul etmez; en sade çağrıya düş.
     result = await pipe(window, { language: 'turkish', task: 'transcribe', return_timestamps: true });
   }
   return parseAsrResult(result, offsetSeconds, window.length / 16000);

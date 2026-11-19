@@ -52,7 +52,7 @@ const EXPOSE = [
   'buildProjectPack', 'validateProjectPack', 'matchAudioEntries',
   'evaluateModelIntegrity', 'recommendModel', 'modelIdFromUrl',
   'parseAsrResult', 'asrWindows', 'looksNonTurkish', 'safeName',
-  'dtypeFor', 'modelShortName',
+  'dtypeFor', 'modelShortName', 'looksLikeGarbage',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -367,6 +367,39 @@ console.log('\n[7h] Deşifre motoru');
   // Dosya adı güvenliği.
   eq('güvenli ad', T.safeName('2026/214 E.'), '2026_214_E');
   eq('boş ad yedeği', T.safeName(''), 'AKIS_Raporu');
+}
+
+// --- 7i. Çöp çıktı tespiti (timestamp token sızıntısı) --------------------
+// Whisper ONNX modelleri bazen timestamp/özel token'ları metne dökerek
+// "- - - -" veya "< - < - < < <" gibi çöp üretir. Bu ASLA deşifre sayılmamalı.
+console.log('\n[7i] Çöp çıktı tespiti');
+{
+  // Gerçek hatadan alınan desenler.
+  const dashLine = '- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -';
+  const angleLine = '< - < - < - < - < - < - < < < < < < < < < < < < < < < < < < < < < < < < < < < < < <';
+  eq('çizgi yığını çöp', T.looksLikeGarbage(dashLine), true);
+  eq('açı yığını çöp', T.looksLikeGarbage(angleLine), true);
+  eq('tırnak yığını çöp', T.looksLikeGarbage('" - " - " " " " " " " " " " " " " " " " " "'), true);
+  // Gerçek Türkçe metin çöp değildir.
+  eq('gerçek cümle temiz', T.looksLikeGarbage('Merhaba, depozito iadesi hakkında konuşmak istiyorum.'), false);
+  eq('kısa gerçek metin temiz', T.looksLikeGarbage('Evet, doğru.'), false);
+  eq('boş metin çöp', T.looksLikeGarbage(''), true);
+  // Aynı kelimenin aşırı tekrarı çöp sayılır.
+  eq('kelime tekrarı çöp', T.looksLikeGarbage('tamam tamam tamam tamam tamam tamam tamam tamam'), true);
+  // isHallucination çöpü de yakalar.
+  eq('isHallucination çöpü yakalar', T.isHallucination(dashLine), true);
+  // parseAsrResult çöp bölümleri atar; süre sıfırlanmaz.
+  const res = { chunks: [
+    { text: dashLine, timestamp: [0, 0] },
+    { text: 'Gerçek bir konuşma cümlesi burada.', timestamp: [1, 5] }
+  ] };
+  const segs = T.parseAsrResult(res, 0, 30);
+  eq('çöp bölüm atıldı', segs.length, 1);
+  eq('kalan bölüm gerçek', segs[0].text, 'Gerçek bir konuşma cümlesi burada.');
+  // Bitiş zamanı gelmezse süre sıfır olmamalı.
+  const res2 = { chunks: [{ text: 'Bitiş zamanı olmayan bölüm.', timestamp: [2] }] };
+  const segs2 = T.parseAsrResult(res2, 0, 30);
+  eq('bitiş zamanı tamamlandı', segs2[0].end, '00:00:32');
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------
