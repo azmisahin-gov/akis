@@ -430,3 +430,47 @@ input::placeholder, textarea::placeholder {
   min-height: 32px;
 }
 .team-card .mini-button.tiny { justify-self: end; }
+
+/* --- R. Ekip çalışması: birleştirme diyaloğu ----------------------------- */
+.merge-dialog { width: min(720px, calc(100vw - 30px)); }
+.merge-intro { font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); margin: 0 0 var(--sp-3); }
+.merge-summary { display: grid; gap: var(--sp-1); margin-bottom: var(--sp-3); }
+.merge-pair {
+  display: flex; align-items: center; gap: var(--sp-3);
+  padding: var(--sp-3); margin-bottom: var(--sp-2);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md);
+}
+.merge-pair > div { flex: 1; min-width: 0; }
+.merge-pair small { display: block; font-size: var(--fs-2xs); color: var(--ink-3); }
+.merge-pair b { font-size: var(--fs-xs); color: var(--ink); word-break: break-word; }
+.merge-arrow { flex: none; color: var(--accent); font-size: var(--fs-lg); }
+.merge-row {
+  display: flex; justify-content: space-between; gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.merge-row span { font-size: var(--fs-2xs); color: var(--ink-2); }
+.merge-row b { font-size: var(--fs-xs); color: var(--ink); font-variant-numeric: tabular-nums; }
+.merge-row.warn { border-color: var(--gold); background: var(--gold-soft); }
+.merge-row.warn span, .merge-row.warn b { color: var(--gold); }
+.merge-ok {
+  padding: var(--sp-3); border-radius: var(--r-md);
+  background: var(--green-soft); border: 1px solid var(--green);
+  color: var(--green); font-size: var(--fs-xs);
+}
+.merge-h3 { font-size: var(--fs-sm); color: var(--gold); margin: var(--sp-3) 0 var(--sp-1); }
+.merge-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); margin: 0 0 var(--sp-2); }
+.merge-conflicts { max-height: 40vh; overflow-y: auto; }
+.merge-conflict {
+  border: 1px solid var(--gold); border-radius: var(--r-md);
+  margin-bottom: var(--sp-2); overflow: hidden; background: var(--surface);
+}
+.merge-conflict-head {
+  padding: var(--sp-2) var(--sp-3); background: var(--gold-soft);
+  color: var(--gold); font-size: var(--fs-2xs); font-weight: 700;
+}
+.merge-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
+.merge-cols > div { background: var(--surface); padding: var(--sp-2) var(--sp-3); }
+.merge-cols small { display: block; font-size: var(--fs-2xs); color: var(--ink-3); margin-bottom: 2px; }
+.merge-cols p { margin: 0; font-size: var(--fs-xs); color: var(--ink); line-height: var(--lh-body); }
+@media (max-width: 640px) { .merge-cols { grid-template-columns: 1fr; } }

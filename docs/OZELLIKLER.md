@@ -1,6 +1,6 @@
-# Özellikler (v2.51.1 — mevcut durum)
+# Özellikler (v2.52 — mevcut durum)
 
-Bu belge, AKİS v2.51.1'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.52'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -36,9 +36,15 @@ dosyayı kullanır.
   sonradan değişiklik ve silme tespit edilebilir.
 - **Genişletme güvenli:** bilinmeyen alan korunur, eksik alan varsayılanla
   tamamlanır; sıralama/taşıma veri bağını bozmaz.
-- **Ortak çalışma:** dosyaya **inceleme ekibi** eklenebilir (ad, görev, sicil,
-  kurum). Ekip bilgisi rapora girmez; iş bölümü içindir. İki kopya
-  birleştirilirken metin çakışması sessizce ezilmez, raporlanır.
+- **Ortak çalışma (dosya birleştirme):** iki bilirkişi aynı davada
+  çalıştığında her biri kendi `.akis` dosyasında ilerler. Üst bardaki
+  **⇄ Birleştir** düğmesi gönderilen paketi açar ve **önce ne değişeceğini
+  gösterir** (yeni kayıt, yeni bölüm, çakışan bölüm, doldurulacak cevap).
+  Birleştirme kimlik (id) ile yapılır; farklı metinler yan yana gösterilir ve
+  sessizce ezilmez. Sunucu, hesap veya internet gerekmez; dosya nasıl
+  gönderilirse gönderilsin çalışır.
+- **İnceleme ekibi:** dosyaya ad, görev, sicil ve kurumla ekip üyesi eklenir.
+  Ekip bilgisi rapora girmez; iş bölümü içindir.
 
 Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
 

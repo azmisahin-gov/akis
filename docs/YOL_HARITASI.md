@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.51.1.**
+yazılır. **Güncel sürüm: v2.52.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.52 — Ekip çalışması: dosya birleştirme (tamamlandı)
+
+İki bilirkişi aynı davada çalıştığında her biri kendi `.akis` dosyasında
+ilerler; dosyalar **⇄ Birleştir** ile birleştirilir. Kimlik (id) ile eşleşme,
+çakışma ekranı, işlem günlüğü. Sunucu/eşzamanlı düzenleme yok. Ayrıntı:
+`CHANGELOG.md`.
 
 ### v2.51 — v3 veri şeması (tamamlandı)
 

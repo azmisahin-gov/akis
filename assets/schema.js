@@ -786,6 +786,94 @@ export function mergeCases(mine, theirs) {
   return { merged, applied, conflicts };
 }
 
+// ---- 9b. Birleştirme önizlemesi ------------------------------------------
+// Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
+// şey değiştirmez; yalnız iki dosyayı karşılaştırıp özet çıkarır. Amaç:
+// "sessizce üzerine yazma" yerine "ne olacağını göster, sonra uygula".
+
+/**
+ * @returns {{
+ *   sameFile: boolean,
+ *   mineLabel: string, theirsLabel: string,
+ *   materials: {added:object[], same:object[], differ:object[]},
+ *   segments: {added:number, changed:object[], reviewAdvanced:number},
+ *   questions: {added:number, filled:number, conflicts:object[]},
+ *   team: {added:object[]},
+ *   conflicts: object[]
+ * }}
+ */
+export function compareCases(mine, theirs) {
+  const empty = {
+    sameFile: false,
+    mineLabel: '',
+    theirsLabel: '',
+    materials: { added: [], same: [], differ: [] },
+    segments: { added: 0, changed: [], reviewAdvanced: 0 },
+    questions: { added: 0, filled: 0, conflicts: [] },
+    team: { added: [] },
+    conflicts: []
+  };
+  if (!mine || !theirs) return empty;
+
+  const label = (c) => `${c.fileNo || '—'} · ${c.court || '—'}`;
+  const out = { ...empty, mineLabel: label(mine), theirsLabel: label(theirs) };
+  out.sameFile = mine.id === theirs.id;
+
+  const mineMats = new Map((mine.materials || []).map((m) => [m.id, m]));
+  for (const tm of theirs.materials || []) {
+    const mm = mineMats.get(tm.id);
+    if (!mm) {
+      out.materials.added.push({ id: tm.id, name: tm.fileName || tm.id, segments: (tm.segments || []).length });
+      continue;
+    }
+    // Aynı kayıt: bölüm düzeyinde karşılaştır.
+    const mineSegs = new Map((mm.segments || []).map((s) => [s.id, s]));
+    let matDiffer = false;
+    for (const ts of tm.segments || []) {
+      const ms = mineSegs.get(ts.id);
+      if (!ms) {
+        out.segments.added++;
+        matDiffer = true;
+        continue;
+      }
+      const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
+      if ((ms.text || '') !== (ts.text || '')) {
+        out.segments.changed.push({
+          materialId: mm.id,
+          materialName: mm.fileName || mm.id,
+          segmentId: ms.id,
+          mine: ms.text || '',
+          theirs: ts.text || ''
+        });
+        matDiffer = true;
+      }
+      if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) out.segments.reviewAdvanced++;
+    }
+    if (matDiffer) out.materials.differ.push({ id: mm.id, name: mm.fileName || mm.id });
+    else out.materials.same.push({ id: mm.id, name: mm.fileName || mm.id });
+  }
+
+  const mineQs = new Map((mine.questions || []).map((q) => [q.id, q]));
+  for (const tq of theirs.questions || []) {
+    const mq = mineQs.get(tq.id);
+    if (!mq) {
+      out.questions.added++;
+      continue;
+    }
+    if (!mq.answer && tq.answer) out.questions.filled++;
+    else if (mq.answer && tq.answer && mq.answer !== tq.answer)
+      out.questions.conflicts.push({ id: mq.id, question: mq.question || '', mine: mq.answer, theirs: tq.answer });
+  }
+
+  const mineTeam = new Set((mine.team || []).map((t) => t.id));
+  for (const tt of theirs.team || []) {
+    if (!mineTeam.has(tt.id)) out.team.added.push({ id: tt.id, name: tt.name || tt.id, role: tt.role });
+  }
+
+  out.conflicts = [...out.segments.changed, ...out.questions.conflicts];
+  return out;
+}
+
 function structuredCloneSafe(o) {
   if (typeof structuredClone === 'function') {
     try {

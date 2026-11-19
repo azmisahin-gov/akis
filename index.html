@@ -23,13 +23,13 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/tokens.css?v=2.51.1">
-  <link rel="stylesheet" href="assets/app.css?v=2.51.1">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.52">
+  <link rel="stylesheet" href="assets/app.css?v=2.52">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.51.1">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.52">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.51.1"></script>
+  <script type="module" src="assets/app.js?v=2.52"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -63,7 +63,7 @@
             <h1 id="pageTitle">Genel görünüm</h1>
           </div>
         </div>
-        <div class="top-actions"><span class="save-state" id="saveState">● Yerel kayıt açık</span><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn">İçe aktar</button><button class="button button-light" id="exportProjectBtn">Dışa aktar</button><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
+        <div class="top-actions"><span class="save-state" id="saveState">● Yerel kayıt açık</span><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn">İçe aktar</button><button class="button button-light" id="exportProjectBtn">Dışa aktar</button><button class="button button-light" id="mergeProjectBtn" title="Başka bir bilirkişinin gönderdiği .akis dosyasını bu dosyayla birleştir">⇄ Birleştir</button><input type="file" id="mergeProjectInput" accept=".akis,.mihenk,.zip" hidden><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
       </header>
 
       <section class="view active" id="view-overview">
@@ -226,6 +226,18 @@
   </aside>
   <dialog id="helpDialog" class="help-dialog"><div class="dialog-head"><div><div class="eyebrow">YARDIM</div><h2>Çalışma ve raporlama sınırları</h2></div><button id="closeHelp" class="icon-button">×</button></div><div class="dialog-body"><h3>Klavye kısayolları</h3><p><b>Boşluk</b> oynat/durdur · <b>↑</b> <b>↓</b> önceki/sonraki bölüm · <b>Enter</b> aktif bölümü onayla · <b>Y</b> aktif bölümü dinle · <b>B</b> bölümü oynatıcı konumundan böl · <b>M</b> sonrakiyle birleştir · <b>[</b> <b>]</b> oynatma hızı · <b>←</b> <b>→</b> 5 saniye geri/ileri · Metin alanındayken <b>Esc</b> ile alandan çık.</p><h3>Ses çözümleme</h3><p>Uygulama çok dilli bir konuşma tanıma modeli kullanır. Kaynak dil Türkçe ve görev konuşmayı metne dönüştürme olarak zorlanır. Bu ayar İngilizceye çeviri seçilmesini engeller; ancak yanlış kelime üretmeyeceğini garanti etmez.</p><h3>Gizlilik</h3><p>Ses içeriği tarayıcıda işlenir. Model dosyaları ilk kullanımda Hugging Face altyapısından indirilir. Dosyalar ve proje verisi tarayıcının yerel depolamasında tutulur. Kurumsal güvenlik politikanız gerektiriyorsa bu uygulamaya gerçek dosya yüklemeden önce ilgili birimden onay alın.</p><h3>Rapor çıktısı</h3><p>Bilirkişi Portalı için birincil çıktı UDF’dir. DOCX yalnızca yardımcı kopya olarak oluşturulabilir. UDF yapısı, uygulamaya eklenen boş UYAP belgesinin içerik yapısı ve sayfa ayarları esas alınarak oluşturulur. İlk kullanımda UYAP Doküman Editöründe açılış ve sayfa düzeni kontrolü yapılmalıdır. Uygulama e-imza üretmez ve portala gönderim yapmaz.</p><h3>Bilimsel sınırlılık</h3><p>Otomatik deşifre, ses kaydının uzman tarafından dinlenerek kontrol edilmesinin yerine geçmez. Konuşmacı kimliği, sesin gerçekliği, montaj olup olmadığı veya hukuki sorumluluk otomatik olarak tespit edilmez.</p></div></dialog>
   <dialog id="confirmDialog" class="help-dialog"><div class="dialog-head"><h2 id="confirmTitle">Onay</h2><button id="closeConfirm" class="icon-button">×</button></div><div class="dialog-body"><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="button button-light">Vazgeç</button><button id="confirmOk" class="button button-primary">Devam et</button></div></div></dialog>
+  <dialog id="mergeDialog" class="help-dialog merge-dialog">
+    <div class="dialog-head"><div><div class="eyebrow">EKİP ÇALIŞMASI</div><h2>Çalışma dosyalarını birleştir</h2></div><button id="closeMerge" class="icon-button" aria-label="Kapat">×</button></div>
+    <div class="dialog-body">
+      <p class="merge-intro">Gönderilen dosya ile bu dosya <b>kimlik (id) ile</b> karşılaştırılır. Hiçbir metin sessizce ezilmez; çakışan bölümler aşağıda gösterilir ve kararı siz verirsiniz.</p>
+      <div id="mergeSummary" class="merge-summary"></div>
+      <div id="mergeConflicts" class="merge-conflicts"></div>
+      <div class="dialog-actions">
+        <button id="mergeCancel" class="button button-light">Vazgeç</button>
+        <button id="mergeApply" class="button button-primary">Birleştirmeyi uygula</button>
+      </div>
+    </div>
+  </dialog>
   <div class="toast" id="toast"></div>
 </body>
 </html>

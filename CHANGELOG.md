@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.51.1.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.52.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.52 — Ekip çalışması: dosya birleştirme
+
+KULLANICI: "İki kişiyiz; bazen bir davaya iki bilirkişi atandığını gördüm.
+Hazırlık için yapacağız, zorunlu değil."
+
+### Model: dosya tabanlı birleştirme (sunucu yok)
+
+Her bilirkişi kendi `.akis` dosyasında ilerler; sonra dosyalar birleştirilir.
+Sunucu, hesap, e-posta entegrasyonu veya internet gerekmez. Dosya nasıl
+gönderilirse gönderilsin (ağ paylaşımı, USB, e-posta) çalışır.
+
+**Neden eşzamanlı (WebRTC) düzenleme değil:** Adli bilişimde asıl soru "bu
+metni kim doğruladı?"dır. Aynı bölümü iki kişi aynı anda yazarsa bu soru
+yanıtsız kalır. Ayrıca WebRTC'de kimlik doğrulama yoktur (sinyal MITM'e açık),
+çevrimiçi olma zorunludur ve TURN sunucusu gerekebilir. Dosya birleştirme bu
+sorunların hiçbirini taşımaz; bütünlük zaten SHA-256 ile kanıtlanır.
+
+### Ne eklendi
+
+- Üst barda **⇄ Birleştir** düğmesi: gönderilen `.akis` paketini açar.
+- **Karşılaştırma önizlemesi** (`compareCases`, saf fonksiyon): birleştirmeden
+  ÖNCE ne değişeceğini gösterir — yeni kayıt, değişen kayıt, yeni bölüm,
+  çakışan bölüm, doldurulacak cevap, eklenecek ekip üyesi.
+- **Çakışma ekranı:** farklı metinler yan yana gösterilir. Birleştirmede yerel
+  metin korunur; gelen metin kaybolmaz, işlem günlüğüne yazılır.
+- Birleştirme **kimlik (id) ile** yapılır: aynı bölüm iki tarafta da varsa
+  sessizce ezilmez.
+- Gelen paketteki ses dosyaları saklanır; aynı kayıt iki kez yazılmaz.
+- Sonuç `mergeLog`'a yazılır (kaynak, uygulanan değişiklik, çakışma sayısı).
+
+### Test
+
+`tools/sema-testi.mjs` [7b] bölümü eklendi (114 → 129 kontrol): önizlemenin
+doğru sayması, önizlemenin **hiçbir şeyi değiştirmemesi**, kendisiyle
+karşılaştırmada çakışma olmaması, boş girdinin çökertmemesi.
+
+Gerçek `.akis` paketleriyle uçtan uca doğrulandı: çakışan bölüm yerel metinle
+korundu, yeni kayıt ve bölüm eklendi, boş soru cevabı dolduruldu, ekip üyesi
+eklendi, `mergeLog` yazıldı.
+
+### Sınır (dürüstçe)
+
+Bu bir **eşzamanlı** çalışma değildir: iki kişi aynı anda aynı dosyada
+düzenlemez. Sırayla çalışırlar ve dosyaları birleştirirler. Aynı bölümü ikisi
+de düzenlerse çakışma ekranı çıkar ve kararı uzman verir.
 
 ## v2.51.1 — Şema tek geçerli yapı; yeni vaka akışı düzeltmesi
 

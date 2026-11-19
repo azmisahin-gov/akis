@@ -53,6 +53,7 @@ import {
   logEntry,
   verifyLogChain,
   mergeCases,
+  compareCases,
   speakerLabel,
   segmentById,
   newId
@@ -314,6 +315,58 @@ console.log('\n[7] Ortak çalışma birleştirmesi');
   // Kendi kendisiyle birleştirme veriyi bozmaz.
   const self = mergeCases(mine, structuredClone(mine));
   eq('kendiyle birleşme çakışma üretmez', self.conflicts.length, 0);
+}
+
+// --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
+// Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
+// şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.
+console.log('\n[7b] Birleştirme önizlemesi');
+{
+  const mine = emptyCase({ id: 'c1', court: 'A', fileNo: '1' });
+  mine.materials.push(
+    emptyMaterial({
+      id: 'm1',
+      fileName: 'a.wav',
+      sha256: 'h',
+      segments: [
+        emptySegment({ id: 's1', start: '00:00:00', end: '00:00:05', text: 'aynı metin' }),
+        emptySegment({ id: 's2', start: '00:00:05', end: '00:00:09', text: 'benim metnim' })
+      ]
+    })
+  );
+  mine.questions.push(emptyQuestion({ id: 'q1', question: 'S1?' }));
+
+  const theirs = structuredClone(mine);
+  // s1 aynı kalır, s2 metni değişir, yeni bölüm eklenir, yeni kayıt eklenir.
+  theirs.materials[0].segments[1].text = 'gelen metin';
+  theirs.materials[0].segments.push(emptySegment({ id: 's3', start: '00:00:09', end: '00:00:12', text: 'yeni' }));
+  theirs.materials.push(emptyMaterial({ id: 'm2', fileName: 'b.wav', sha256: 'h2' }));
+  theirs.questions[0].answer = 'Gelen cevap';
+  theirs.team.push(emptyTeamMember({ id: 'tm1', name: 'Ortak' }));
+
+  const cmp = compareCases(mine, theirs);
+  eq('yeni kayıt sayısı', cmp.materials.added.length, 1);
+  eq('değişen kayıt sayısı', cmp.materials.differ.length, 1);
+  eq('yeni bölüm sayısı', cmp.segments.added, 1);
+  eq('çakışan bölüm sayısı', cmp.segments.changed.length, 1);
+  eq('çakışan bölüm metni (benim)', cmp.segments.changed[0].mine, 'benim metnim');
+  eq('çakışan bölüm metni (gelen)', cmp.segments.changed[0].theirs, 'gelen metin');
+  eq('doldurulacak cevap', cmp.questions.filled, 1);
+  eq('eklenecek ekip üyesi', cmp.team.added.length, 1);
+  eq('toplam çakışma', cmp.conflicts.length, 1);
+
+  // Önizleme hiçbir şeyi değiştirmemeli.
+  eq('önizleme yerel veriyi değiştirmez', mine.materials[0].segments[1].text, 'benim metnim');
+  eq('önizleme gelen veriyi değiştirmez', theirs.materials[0].segments[1].text, 'gelen metin');
+
+  // Aynı dosya kendisiyle karşılaştırılınca çakışma olmamalı.
+  const self = compareCases(mine, structuredClone(mine));
+  eq('kendisiyle çakışma yok', self.conflicts.length, 0);
+  eq('kendisiyle yeni kayıt yok', self.materials.added.length, 0);
+  ok('aynı dosya işaretlenir', self.sameFile === true);
+
+  // Boş girdi çökertmez.
+  ok('boş girdi güvenli', compareCases(null, null).conflicts.length === 0);
 }
 
 // --- 8. Zaman biçimi ----------------------------------------------------

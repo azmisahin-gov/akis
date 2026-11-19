@@ -9,6 +9,7 @@ import {
   logEntry,
   verifyLogChain,
   mergeCases,
+  compareCases,
   speakerLabel,
   emptyTeamMember,
   CASE_STATUS_LABEL,
@@ -29,7 +30,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.51.1';
+const APP_VERSION = '2.52';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5496,6 +5497,126 @@ async function exportProject() {
   downloadBlob(out, `${safeName(c.fileNo || 'AKIS_Calisma_Dosyasi')}.akis`);
   showToast('AKİS çalışma dosyası dışa aktarıldı (.akis).');
 }
+// ---- Ekip çalışması: dosya birleştirme ---------------------------------
+// İki bilirkişi aynı davada çalıştığında her biri kendi .akis dosyasında
+// ilerler; sonra dosyalar birleştirilir. Birleştirme KİMLİK (id) ile yapılır:
+// aynı bölüm iki tarafta da varsa metin çakışması sessizce EZİLMEZ, kullanıcıya
+// gösterilir. Sunucu, hesap, internet gerekmez; dosya transferi yeterlidir.
+// Bütünlük: paket içindeki her ses dosyasının SHA-256 özeti taşınır.
+let pendingMerge = null; // { theirs, compare }
+
+// Gönderilen .akis paketini okur; dosyayı uygulamaya EKLEMEZ.
+async function readProjectPack(file) {
+  if (!window.JSZip) throw new Error('Paket açma bileşeni yüklenemedi. Sayfayı yenileyin.');
+  const zip = await JSZip.loadAsync(file);
+  const meta = zip.file('case.json');
+  if (!meta) throw new Error('Bu dosya bir AKİS çalışma paketi değil (case.json yok).');
+  const pack = JSON.parse(await meta.async('string'));
+  const err = validateProjectPack(pack);
+  if (err) throw new Error(err);
+  const theirs = normalizeCase(pack.case);
+  return { zip, theirs, entryNames: Object.keys(zip.files) };
+}
+
+// Karşılaştırmayı diyalogda gösterir. Hiçbir şey değiştirmez.
+function renderMergePreview(cmp) {
+  const sum = $('#mergeSummary');
+  const conf = $('#mergeConflicts');
+  if (!sum || !conf) return;
+  const row = (label, value, cls = '') =>
+    `<div class="merge-row ${cls}"><span>${esc(label)}</span><b>${esc(String(value))}</b></div>`;
+  const addedMat = cmp.materials.added.length;
+  const sameMat = cmp.materials.same.length;
+  const differMat = cmp.materials.differ.length;
+  sum.innerHTML = [
+    `<div class="merge-pair"><div><small>Bu dosya</small><b>${esc(cmp.mineLabel)}</b></div><div class="merge-arrow">⇄</div><div><small>Gönderilen</small><b>${esc(cmp.theirsLabel)}</b></div></div>`,
+    row('Yeni eklenecek kayıt', addedMat),
+    row('Değişecek kayıt', differMat),
+    row('Aynı kalan kayıt', sameMat),
+    row('Yeni eklenecek bölüm', cmp.segments.added),
+    row('Metni çakışan bölüm', cmp.segments.changed.length, cmp.segments.changed.length ? 'warn' : ''),
+    row('Kontrol durumu ilerleyen bölüm', cmp.segments.reviewAdvanced),
+    row('Doldurulacak soru cevabı', cmp.questions.filled),
+    row('Yeni soru', cmp.questions.added),
+    row('Ekibe eklenecek kişi', cmp.team.added.length)
+  ].join('');
+
+  if (!cmp.conflicts.length) {
+    conf.innerHTML =
+      '<div class="merge-ok">Çakışma yok. Birleştirme güvenle uygulanabilir.</div>';
+    return;
+  }
+  conf.innerHTML =
+    `<h3 class="merge-h3">Çakışan bölümler (${cmp.conflicts.length})</h3>` +
+    `<p class="merge-note">Aşağıdaki metinler iki tarafta farklı. Birleştirmede <b>bu dosyadaki metin korunur</b>; gelen metin kaybolmaz, işlem günlüğüne yazılır. Karşı tarafın metnini istiyorsanız önce bu dosyada düzeltin, sonra tekrar birleştirin.</p>` +
+    cmp.conflicts
+      .slice(0, 20)
+      .map(
+        (c) => `<div class="merge-conflict">
+        <div class="merge-conflict-head">${esc(c.materialName || '')} · bölüm ${esc((c.segmentId || '').slice(-6))}</div>
+        <div class="merge-cols"><div><small>Bu dosya</small><p>${esc(c.mine || '(boş)')}</p></div><div><small>Gelen</small><p>${esc(c.theirs || '(boş)')}</p></div></div>
+      </div>`
+      )
+      .join('') +
+    (cmp.conflicts.length > 20 ? `<p class="merge-note">… ve ${cmp.conflicts.length - 20} çakışma daha.</p>` : '');
+}
+
+async function startMerge(file) {
+  const { zip, theirs, entryNames } = await readProjectPack(file);
+  const mine = currentCase();
+  if (!mine) throw new Error('Önce bir çalışma dosyası açın.');
+  const cmp = compareCases(mine, theirs);
+  pendingMerge = { zip, theirs, cmp, entryNames };
+  renderMergePreview(cmp);
+  const dlg = $('#mergeDialog');
+  if (dlg && !dlg.open) dlg.showModal();
+}
+
+// Birleştirmeyi uygular: veriyi birleştirir, gelen ses dosyalarını saklar,
+// işlemi delil günlüğüne yazar.
+async function applyMerge() {
+  if (!pendingMerge) return;
+  const { zip, theirs, entryNames } = pendingMerge;
+  const mine = currentCase();
+  if (!mine) return;
+  const { merged, applied, conflicts } = mergeCases(mine, theirs);
+
+  // Gelen paketteki ses dosyalarını sakla (aynı kayıt id'si varsa zaten var).
+  const myKeys = new Set((mine.materials || []).map((m) => blobKey(mine, m)));
+  for (const { materialId, entry } of matchAudioEntries(entryNames, merged.materials || [])) {
+    const key = `${mine.id}::${materialId}`;
+    if (myKeys.has(key)) continue;
+    const blob = await zip.file(entry).async('blob');
+    const m = (merged.materials || []).find((x) => x.id === materialId);
+    await storeBlob(key, new Blob([blob], { type: m?.mimeType || 'audio/wav' }));
+  }
+
+  // Birleşmiş dosyayı yerel dosyanın yerine koy (id korunur).
+  merged.id = mine.id;
+  const idx = appState.cases.findIndex((c) => c.id === mine.id);
+  if (idx >= 0) appState.cases[idx] = merged;
+  merged.updatedAt = new Date().toISOString();
+  (merged.mergeLog = merged.mergeLog || []).push({
+    at: merged.updatedAt,
+    source: theirs.fileNo || theirs.id,
+    applied: applied.length,
+    conflicts: conflicts.length
+  });
+  persist();
+  pendingMerge = null;
+  const dlg = $('#mergeDialog');
+  if (dlg && dlg.open) dlg.close();
+  renderCaseSelect();
+  populateCaseForm();
+  populateQuestionsForm();
+  renderOverview();
+  await renderAudioList();
+  showToast(
+    `Birleştirildi: ${applied.length} değişiklik uygulandı` +
+      (conflicts.length ? `, ${conflicts.length} çakışma bu dosyadaki metinle korundu.` : '.')
+  );
+}
+
 async function importProject(file) {
   if (!window.JSZip) throw new Error('Çalışma paketi açma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
   const zip = await JSZip.loadAsync(file);
@@ -6320,6 +6441,34 @@ function setupEvents() {
   $('#downloadUdfBtn').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
   $('#exportProjectBtn').addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
   $('#importProjectBtn').addEventListener('click', () => $('#importProjectInput').click());
+  // Ekip çalışması: birleştirme düğmesi ve diyaloğu.
+  const mergeBtn = $('#mergeProjectBtn');
+  if (mergeBtn) mergeBtn.addEventListener('click', () => $('#mergeProjectInput').click());
+  const mergeInput = $('#mergeProjectInput');
+  if (mergeInput) {
+    mergeInput.addEventListener('change', async (e) => {
+      const f = e.target.files?.[0];
+      if (f) {
+        try {
+          await startMerge(f);
+        } catch (err) {
+          showToast(`Birleştirme açılamadı: ${err.message}`);
+        }
+      }
+      e.target.value = '';
+    });
+  }
+  const mergeApply = $('#mergeApply');
+  if (mergeApply) mergeApply.addEventListener('click', () => applyMerge().catch((e) => showToast(e.message)));
+  for (const id of ['mergeCancel', 'closeMerge']) {
+    const b = $(`#${id}`);
+    if (b)
+      b.addEventListener('click', () => {
+        pendingMerge = null;
+        const d = $('#mergeDialog');
+        if (d && d.open) d.close();
+      });
+  }
   $('#importProjectInput').addEventListener('change', async (e) => {
     const f = e.target.files?.[0];
     if (f) {
