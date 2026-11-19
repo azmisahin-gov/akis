@@ -636,7 +636,7 @@ function audioStatusZoneHtml(m) {
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
   const status = m.status || 'Bekliyor';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta compact-meta"><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic ? '<span><b>Kurgusal sentetik kayıt</b></span>' : ''}<span class="meta-spacer"></span><button class="mini-button tiny" data-tech-toggle="${esc(m.id)}" aria-expanded="false">Teknik bilgi</button></div><div class="tech-fold" id="tech-${esc(m.id)}" hidden><div class="audio-meta tech-meta"><span>SHA-256: <b class="sha">${esc(m.sha256 || 'Hesaplanmadı')}</b></span></div><div class="audio-meta tech-meta"><span>Codec: <b>${esc(m.tech?.codec || '—')}</b></span><span>Kanal: <b>${esc(fmtChannels(m.tech?.channels))}</b></span><span>Örnekleme: <b>${m.tech?.sampleRate ? esc(m.tech.sampleRate + ' Hz') : '—'}</b></span><span>Bit derinliği: <b>${m.tech?.bitDepth ? esc(m.tech.bitDepth + ' bit') : '—'}</b></span><span>Eklenme: <b>${esc(m.addedAt ? new Date(m.addedAt).toLocaleString('tr-TR') : '—')}</b></span></div></div>${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti (dosya değişmemiş)' : 'özet farklı (dosya değişmiş olabilir)'}</div>` : ''}${m.transcribedWithModel ? `<div class="audio-meta model-meta"><span>Çözümleyen model: <b>${esc(modelShortName(m.transcribedWithModel))}</b>${m.transcribedAt ? ` · ${esc(new Date(m.transcribedAt).toLocaleString('tr-TR'))}` : ''}</span></div>` : ''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal et</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div><div class="audio-meta compact-meta"><span>Durum: <b>${esc(status)}</b></span><span>Kontrol: <b>${checked}/${segs.length}</b></span>${m.synthetic ? '<span><b>Kurgusal sentetik kayıt</b></span>' : ''}${m.transcribedWithModel ? `<span class="model-inline">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}</div>${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son SHA-256 doğrulaması: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti (dosya değişmemiş)' : 'özet farklı (dosya değişmiş olabilir)'}</div>` : ''}${m.transcribedWithModel ? `<div class="audio-meta model-meta"><span>Çözümleyen model: <b>${esc(modelShortName(m.transcribedWithModel))}</b>${m.transcribedAt ? ` · ${esc(new Date(m.transcribedAt).toLocaleString('tr-TR'))}` : ''}</span></div>` : ''}<div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -724,21 +724,27 @@ function refreshMaterialRow(m) {
 // Seçili kaydın tam kartı (durum bölgesi + içerik bölgesi).
 function materialCardHtml(m) {
   const segs = m.segments || [];
-  // Kart üç sekmeye ayrılır. Uzmanın %90 zamanı deşifrede geçtiği için
-  // DEŞİFRE varsayılan sekmedir; analiz araçları ve kayıt bilgileri kendi
-  // sekmelerinde bol yer bulur. Tüm id/data-* işaretleri korunur; sekmeler
-  // yalnızca gösterimi değiştirir (DOM'da hepsi durur).
-  const tab = m.uiTab || 'transcript';
+  // Kart iki ana işe göre düzenlenir:
+  //  - DEŞİFRE (varsayılan): dinleme çubuğu (dalga formu + oynatıcı) ÜSTTE,
+  //    bölüm listesi + metin ALTTA. Böylece dinlerken metni aynı anda görür.
+  //  - ANALİZ: spektrogram, dinleme yardımcıları, kanal seçimi, köken,
+  //    konuşmacılar. Bunlar deşifre sırasında nadiren gerekir.
+  // Tüm id/data-* işaretleri korunur.
+  const tab = m.uiTab === 'record' ? 'record' : m.uiTab === 'listen' ? 'listen' : 'transcript';
   const tabBtn = (k, label, extra = '') =>
     `<button class="card-tab ${tab === k ? 'on' : ''}" data-card-tab="${esc(m.id)}|${k}" role="tab" aria-selected="${tab === k}">${label}${extra}</button>`;
   return `<div class="audio-status-zone" id="status-zone-${esc(m.id)}">${audioStatusZoneHtml(m)}</div>
     <div class="card-tabs" role="tablist" aria-label="Kayıt çalışma alanı">
       ${tabBtn('transcript', 'Deşifre', ` <span class="tab-n">${segs.length}</span>`)}
-      ${tabBtn('listen', 'Dinleme')}
+      ${tabBtn('listen', 'Analiz')}
       ${tabBtn('record', 'Kayıt bilgileri')}
     </div>
     <div class="audio-content-zone">
       <div class="card-pane ${tab === 'transcript' ? 'on' : ''}" data-pane="transcript" role="tabpanel">
+        <div class="listen-strip">
+          <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
+          <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
+        </div>
         <div class="transcript-editor">
           <div class="transcript-head"><b>Deşifre ve kontrol</b><small>${segs.length} bölüm · yalnızca "Onaylandı" ve "Anlaşılmadı" denetlenmiş sayılır</small></div>
           <div class="segments-root" id="segments-${esc(m.id)}"></div>
@@ -746,17 +752,35 @@ function materialCardHtml(m) {
         </div>
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
-        <div class="wave-wrap"><canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas><div class="wave-hint">Tıklayarak konuma gidin</div></div>
-        <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
-        <div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogram ${m.spectrogramReviewed ? '✓' : ''}</button></div>
-        <div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>Spektrogram (log frekans, 20 Hz – 8 kHz) · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div>
-        <div class="listen-tools"><label class="listen-filter-label"><span>Dinleme yardımcısı</span><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}<span class="info-i" tabindex="0" data-tip="Dinleme yardımcıları yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı ayırma) yapılmaz.">i</span></div>
+        <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
+        <div class="pane-section"><div class="pane-title">Dinleme yardımcısı<span class="info-i" tabindex="0" data-tip="Yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı ayırma) yapılmaz.">i</span></div><div class="listen-tools"><label class="listen-filter-label"><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div></div>
+        <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
+        <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div></div>
       </div>
       <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
-        <details class="config-fold" open><summary>Kayıt kökeni ve teslim zinciri</summary><div class="panel"><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div><span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div></details>
-        <details class="config-fold" open><summary>Konuşmacılar ve ses özellikleri</summary><div class="panel"><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div><span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div></details>
+        <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
       </div>
     </div>`;
+}
+// Kayıt bilgileri paneli: teknik envanter, doğrulama, işlem günlüğü.
+function recordPanelHtml(m) {
+  const rows = [
+    ['Dosya adı', m.name || '—'],
+    ['Biçim / boyut', `${m.type || '—'} · ${fmtSize(m.size)}`],
+    ['Süre', fmtShort(m.duration || 0)],
+    ['Codec', m.tech?.codec || '—'],
+    ['Kanal', fmtChannels(m.tech?.channels)],
+    ['Örnekleme', m.tech?.sampleRate ? `${m.tech.sampleRate} Hz` : '—'],
+    ['Bit derinliği', m.tech?.bitDepth ? `${m.tech.bitDepth} bit` : '—'],
+    ['Eklenme', m.addedAt ? new Date(m.addedAt).toLocaleString('tr-TR') : '—'],
+    ['Durum', m.status || 'Bekliyor'],
+    ['Çözümleyen model', m.transcribedWithModel ? `${modelShortName(m.transcribedWithModel)}${m.transcribedAt ? ' · ' + new Date(m.transcribedAt).toLocaleString('tr-TR') : ''}` : '—']
+  ];
+  return `<table class="record-table"><tbody>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table>
+    <div class="pane-sub"><span>SHA-256 özeti</span></div>
+    <div class="sha-box">${esc(m.sha256 || 'Hesaplanmadı')}</div>
+    ${m.lastVerify ? `<div class="warn-box ${m.lastVerify.ok ? 'verify-ok' : ''}">Son doğrulama: ${esc(new Date(m.lastVerify.at).toLocaleString('tr-TR'))} · ${m.lastVerify.ok ? 'özet eşleşti' : 'özet farklı'}</div>` : ''}
+    <div class="evidence-actions"><button class="mini-button" data-verify="${esc(m.id)}">SHA-256 doğrula</button><button class="mini-button" data-log="${esc(m.id)}">İşlem günlüğü</button></div>`;
 }
 // Seçili kaydın detayını çizer ve oynatıcı/dalga formu/deşifreyi bağlar.
 async function renderMaterialDetail() {
@@ -5102,12 +5126,11 @@ function setupEvents() {
           });
           card.querySelectorAll('[data-pane]').forEach((x) => x.classList.toggle('on', x.dataset.pane === tab));
           // Gizliyken çizilen canvas 0 genişlikte olur; sekme açılınca
-          // dalga formunu yeniden çiz ki doğru boyutta görünsün.
-          if (tab === 'listen') {
-            const cv = card.querySelector('canvas.wave-canvas');
-            const pk = peakCache.get(m.id);
-            if (cv && pk) requestAnimationFrame(() => drawWave(cv, pk, m));
-          }
+          // dalga formunu yeniden çiz ki doğru boyutta görünsün. Dalga formu
+          // artık Deşifre sekmesinde (dinlerken metni görmek için).
+          const cv = card.querySelector('canvas.wave-canvas');
+          const pk = peakCache.get(m.id);
+          if (cv && pk) requestAnimationFrame(() => drawWave(cv, pk, m));
         }
       }
     } else if (b.dataset.techToggle !== undefined) {

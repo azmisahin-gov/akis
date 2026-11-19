@@ -735,3 +735,56 @@ body.ws-mode .statusbar{height:26px;font-size:9px}
   .ws-title{max-width:50%}
   .ws-meta{display:none}
 }
+
+/* ============================================================================
+   v2.38 — Kart yeniden düzeni: dinleme çubuğu deşifre sekmesinde
+   Sorun: dalga formu "Dinleme" sekmesinde, metin "Deşifre" sekmesindeydi;
+   dinlerken metni göremiyordunuz. Ayrıca ölü alanlar ve gereksiz sıkışma
+   vardı.
+   Çözüm: Deşifre sekmesi = dinleme çubuğu (dalga+oynatıcı) ÜSTTE + metin ALTTA.
+   Analiz sekmesi = spektrogram, yardımcılar, köken, konuşmacılar.
+   Kayıt bilgileri = teknik envanter tablosu (SHA-256 dahil).
+   ============================================================================ */
+/* Deşifre sekmesi: dinleme çubuğu sabit üstte, metin alanı esnek. */
+#view-audio .card-pane[data-pane="transcript"].on{display:flex;flex-direction:column;
+  min-height:0;gap:8px}
+.listen-strip{flex:0 0 auto;display:flex;flex-direction:column;gap:5px}
+.listen-strip .wave-canvas{height:56px;width:100%;display:block;border:1px solid #e3e9ef;
+  border-radius:7px;background:#fbfcfd;cursor:crosshair;touch-action:none}
+.listen-strip .audio-player{width:100%;height:34px}
+#view-audio .card-pane[data-pane="transcript"] .transcript-editor{
+  flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border-top:0;margin:0;padding:0}
+#view-audio .card-pane[data-pane="transcript"] .transcript-head{margin-bottom:6px}
+#view-audio .card-pane[data-pane="transcript"] .segments-root{flex:1 1 auto;min-height:0}
+
+/* Analiz sekmesi: bölümlenmiş paneller, ölü alan yok. */
+.pane-section{border-bottom:1px solid #eef2f6;padding:10px 0}
+.pane-section:first-child{padding-top:0}
+.pane-section:last-child{border-bottom:0;padding-bottom:0}
+.pane-title{font:700 10px 'Segoe UI';letter-spacing:.4px;color:#5a7089;
+  margin-bottom:7px;display:flex;align-items:center}
+#view-audio .card-pane[data-pane="listen"]{max-height:100%;overflow-y:auto}
+#view-audio .card-pane[data-pane="listen"] .listen-tools{margin-top:0}
+#view-audio .card-pane[data-pane="listen"] .listen-filter-label span{display:none}
+#view-audio .card-pane[data-pane="listen"] .spec-wrap{margin-top:7px}
+
+/* Kayıt bilgileri sekmesi: iki sütunlu envanter tablosu. */
+#view-audio .card-pane[data-pane="record"]{max-height:100%;overflow-y:auto}
+.record-table{width:100%;border-collapse:collapse;font-size:10px}
+.record-table td{padding:5px 8px;border-bottom:1px solid #f0f4f8;vertical-align:top}
+.record-table td:first-child{width:34%;color:#7d8ea0;font-weight:600;white-space:nowrap}
+.record-table td:last-child{color:#2c4055}
+.pane-sub{font:700 9px 'Segoe UI';letter-spacing:.4px;color:#7d8ea0;margin:12px 0 5px}
+.sha-box{font:600 9px 'Consolas',monospace;color:#52677c;background:#f7fafc;
+  border:1px solid #e6eef5;border-radius:6px;padding:7px 9px;word-break:break-all;line-height:1.5}
+.model-inline{margin-left:auto;font-size:9px;color:#2c6b4f;font-weight:600}
+
+/* Ölü alanları kaldır: kart içi gereksiz boşluklar daraltıldı. */
+#view-audio .audio-card{padding:10px 12px}
+#view-audio .audio-card-top{gap:8px}
+#view-audio .audio-meta{padding-top:5px;margin-top:5px}
+#view-audio .card-tabs{margin:6px 0 8px}
+
+/* Çalışma modunda dinleme çubuğu daha büyük. */
+body.ws-mode #view-audio .listen-strip .wave-canvas{height:72px}
+body.ws-mode #view-audio .listen-strip .audio-player{height:38px}
