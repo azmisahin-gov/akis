@@ -505,3 +505,15 @@ Düzeltmeler:
   Large-v3-turbo denemesi ve elle giriş önerilir.
 - `dtypeLabel` ile durum satırında "encoder … / decoder …" gösterilir.
   Toplam birim testi 165'e çıktı.
+
+## v2.22 — Model yüklenirken çözümleme (yarış durumu) düzeltildi
+
+Kullanıcı model indirmesi sürerken (ör. %86, decoder dosyası) "Çözümle"ye
+bastığında "Çözümleme başarısız: Model yükleniyor. Lütfen bekleyin." hatası
+alıyordu. Bu bir yarış durumuydu.
+
+- **Bekleme:** yükleme sürerken gelen çözümleme isteği artık hata fırlatmaz;
+  aynı yükleme promise'ini bekler ve indirme bitince çözümlemeye devam eder.
+- **Hata ayrımı:** yükleme hatası ile çözümleme hatası arayüzde ayrı gösterilir;
+  yükleme hatasında "modeli yeniden yükleyip tekrar deneyin" yönlendirmesi ve
+  hata ayrıntısı verilir.

@@ -210,6 +210,7 @@ Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak ola
 let appState = { cases: [], activeCaseId: null };
 let asrPipeline = null;
 let modelLoading = false;
+let modelLoadPromise = null;
 const objectUrls = new Map();
 let dbPromise;
 
@@ -2994,8 +2995,15 @@ async function addAudioFiles(files, opts = {}) {
 async function ensureModel() {
   const modelId = $('#modelSelect').value;
   if (asrPipeline && asrPipeline.__modelId === modelId) return asrPipeline;
-  if (modelLoading) throw new Error('Model yükleniyor. Lütfen bekleyin.');
+  // Yarış durumu düzeltmesi: model zaten yükleniyorsa hata fırlatmak yerine
+  // aynı yüklemeyi BEKLE. Kullanıcı "Çözümle"ye indirme sürerken basarsa
+  // çözümleme, indirme bitince kendiliğinden başlar.
+  if (modelLoading) {
+    if (modelLoadPromise) return modelLoadPromise;
+    throw new Error('Model yükleniyor. Lütfen bekleyin.');
+  }
   modelLoading = true;
+  modelLoadPromise = (async () => {
   const spec = ASR_MODELS[modelId] || ASR_MODELS[DEFAULT_ASR_MODEL];
   let dtype = dtypeFor(modelId, asrDevice);
   // Genel ilerleme: dosya bazlı yüzde yerine, tamamlanan dosya sayısına göre
@@ -3087,6 +3095,12 @@ async function ensureModel() {
   } finally {
     modelLoading = false;
     $('#loadModelBtn').disabled = false;
+  }
+  })();
+  try {
+    return await modelLoadPromise;
+  } finally {
+    modelLoadPromise = null;
   }
 }
 async function decodeForAsr(blob) {
@@ -3464,11 +3478,18 @@ async function transcribe(id) {
     renderOverview();
     showToast(`${m.name} için çözümleme tamamlandı. Metin kontrol bekliyor.`);
   } catch (e) {
-    m.status = 'Çözümleme hatası';
+    // Yükleme hatası ile çözümleme hatasını ayır: kullanıcı ne olduğunu ve ne
+    // yapması gerektiğini anlasın.
+    const isLoad = /Model yüklenemedi|yükleniyor/i.test(String(e && e.message));
+    m.status = isLoad ? 'Model yüklenemedi' : 'Çözümleme hatası';
+    m.hallucinationWarning = isLoad
+      ? 'Model yüklenemedi. "Çözümleme ve model ayarları"ndan modeli yeniden yükleyip tekrar deneyin. Ayrıntı: ' +
+        String(e && e.message)
+      : 'Çözümleme sırasında hata oluştu: ' + String(e && e.message);
     delete m.progress;
     persist();
     refreshAudioStatusZone(m);
-    showToast(`Çözümleme başarısız: ${e.message}`);
+    showToast(`${m.name}: ${isLoad ? 'model yüklenemedi' : 'çözümleme başarısız'} — ${e.message}`);
   }
 }
 // A new manual segment starts where the previous one ended, or at the player's
