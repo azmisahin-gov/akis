@@ -394,3 +394,19 @@ eklendi. Uydurma yoktur; yalnızca metinde gerçekten geçen sözcükler karşı
   ("depozitin" içindeki "depozit" eşleşmez) ve metin geçmişine yazılır.
 - `contentWords`, `findTermInconsistencies` ve `applyTermForm` saf
   fonksiyonlardır; birim testleriyle doğrulanır.
+
+## v2.17 — Tekrar/dolgu tespiti (NLP katmanı)
+
+Whisper'ın bazen aynı cümleyi/ifadeyi arka arkaya veya bir bölüm boyunca
+tekrarlaması, gerçek konuşma değil model artefaktı olabilir. Bu durum
+işaretlenir. Uydurma yoktur; yalnızca metindeki gerçek tekrar ölçülür.
+
+- `detectRepetition`: ardışık yinelenen cümleleri ve bölüm içinde aşırı
+  tekrarlanan ifadeleri bulur (ör. "Evet. Evet. Evet." veya aynı cümlenin
+  bölümün %60'ından fazlasını kaplaması).
+- `segmentRepetitionFlag`: bölüm düzeyinde tekrar işareti; bölüm detayında
+  "Model tekrarı olasılığı… kaydı dinleyerek doğrulayın" notu gösterilir.
+- Rapor öncesi uyarılara "model tekrarı olasılığı olan bölüm" sayısı eklendi.
+- Metin asla otomatik düzeltilmez; yalnızca uzmana hatırlatılır.
+- `detectRepetition` ve `segmentRepetitionFlag` saf fonksiyonlardır; birim
+  testleriyle doğrulanır.

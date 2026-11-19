@@ -48,6 +48,7 @@ const EXPOSE = [
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
   'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
+  'detectRepetition', 'segmentRepetitionFlag',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
@@ -247,6 +248,27 @@ console.log('\n[7d] Terim yazım tutarlılığı');
   eq('metin güncellendi', m.segments[0].text, 'depozito iade');
   // "depozitin" içindeki "depozit" sözcük sınırıyla eşleşmemeli.
   eq('sözcük sınırı korunur', m.segments[1].text, 'depozitin bir kısmı');
+}
+
+// --- 7e. Tekrar/dolgu tespiti ---------------------------------------------
+// Whisper bazen aynı ifadeyi arka arkaya tekrarlar; bu gerçek konuşma değil
+// model artefaktı olabilir. Yalnızca metindeki gerçek tekrar ölçülür.
+console.log('\n[7e] Tekrar/dolgu tespiti');
+{
+  // Ardışık aynı cümle (3 kez) -> tekrar.
+  const r1 = T.detectRepetition('Evet. Evet. Evet.');
+  eq('ardışık tekrar bulundu', !!r1, true);
+  eq('ardışık sayı', r1.maxRun, 3);
+  // Normal cümle -> tekrar yok.
+  eq('normal metin -> tekrar yok', T.detectRepetition('Merhaba, depozito hakkında konuşmak istiyorum.'), null);
+  // Aynı ifade bölüm boyunca çok kez.
+  const r2 = T.detectRepetition('Teşekkürler. Teşekkürler. Teşekkürler. Teşekkürler.');
+  eq('aşırı yinelenen ifade', !!r2, true);
+  // Çok kısa metin değerlendirilmez.
+  eq('kısa metin atlanır', T.detectRepetition('Evet.'), null);
+  // Bölüm işareti yalnızca gerçek tekrarda.
+  eq('bölüm işareti', !!T.segmentRepetitionFlag({ text: 'Evet. Evet. Evet. Evet.' }), true);
+  eq('bölüm işareti yok', T.segmentRepetitionFlag({ text: 'Tek bir normal cümle yazılmış.' }), null);
 }
 
 // --- 8. Geçmiş sıkıştırma -------------------------------------------------

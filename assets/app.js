@@ -925,6 +925,16 @@ function updateSegListItem(m,i){
 }
 
 // ---- Detay (sağ panel) ----
+// Bölümde model tekrarı (aynı ifadenin yinelenmesi) varsa gösterilir. Uydurma
+// yoktur; yalnızca metindeki gerçek tekrar ölçülür.
+function repetitionNoteHtml(s){
+  const f=segmentRepetitionFlag(s);if(!f)return '';
+  const info=f.info;
+  const msg=info.maxRun>=3
+    ? `Aynı ifade ${info.maxRun} kez arka arkaya yinelenmiş görünüyor.`
+    : `Aynı ifade bölüm içinde ${info.topCount} kez geçiyor.`;
+  return `<div class="halluc-note">Model tekrarı olasılığı: ${esc(msg)} Kaydı dinleyerek doğrulayın; tekrar gerçek konuşma değilse düzeltin.</div>`;
+}
 // Ölçülmüş sessizlik sonucunu gösteren not. Yalnızca gerçekten ölçüldüyse
 // görünür; ölçüm yapılmadıysa hiçbir şey gösterilmez (uydurma yok).
 function silenceNoteHtml(s,i){
@@ -961,6 +971,7 @@ function segDetailHtml(m){
       </span>
     </div>
     ${halluc?`<div class="halluc-note">Bu bölümde anlamlı metin yok. Kaydı dinleyip metni doldurun; boş bırakılamaz.</div>`:''}
+    ${repetitionNoteHtml(s)}
     ${silenceNoteHtml(s,i)}
     ${pr.score>=15?`<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">İnceleme önceliği: ${esc(pr.reasons.join(', '))}</div>`:''}
     <div class="seg-row2">
@@ -1452,6 +1463,35 @@ function timecode(seconds){if(seconds==null||!Number.isFinite(seconds))return '0
 // so it must never be presented as analysed speech.
 const HALLUCINATION_RE=/^[\s(]*[(\[]?\s*(konuşma|müzik|jenerik|kalabalık|nefes|alkış|sessizlik|tutaklar|beep|music|applause|silence|blank|no speech)[\s\S]*?[)\]]?\s*$/i;
 function isHallucination(text){const t=String(text||'').trim();if(!t)return true;const stripped=t.replace(/[()\[\]\s.]/g,'');if(!stripped)return true;return HALLUCINATION_RE.test(t)&&t.length<60;}
+// ---- Tekrar tespiti (NLP katmanı) ----
+// Whisper bazen aynı cümleyi/ifadeyi arka arkaya tekrarlar veya aynı kısa
+// ifadeyi bir bölüm boyunca yineler. Bu, gerçek konuşma değil model artefaktı
+// olabilir; uzmanın bunu görmesi gerekir. Uydurma yoktur: yalnızca metindeki
+// gerçek tekrarlar ölçülür ve oranı raporlanır.
+// Bir metindeki ardışık yinelenen cümleleri ve aşırı tekrar eden ifadeleri bulur.
+function detectRepetition(text){
+  const t=String(text||'').trim();
+  if(t.length<12)return null;
+  // Cümlelere/parçalara ayır (nokta, soru, ünlem, satır sonu).
+  const parts=t.split(/[.!?…]+|\n+/).map(x=>x.trim()).filter(x=>x.length>=4);
+  // Ardışık aynı parçalar (ör. "Evet. Evet. Evet.").
+  let run=1,maxRun=1;
+  for(let i=1;i<parts.length;i++){if(parts[i].toLowerCase()===parts[i-1].toLowerCase()){run++;if(run>maxRun)maxRun=run;}else run=1;}
+  // Aynı kısa ifadenin tüm metinde aşırı yinelenmesi (ör. aynı cümle 4+ kez).
+  const counts=new Map();
+  for(const p of parts){const k=p.toLowerCase();counts.set(k,(counts.get(k)||0)+1);}
+  let topCount=0,topPart='';
+  for(const [k,v] of counts){if(v>topCount){topCount=v;topPart=k;}}
+  const repeated = maxRun>=3 || (parts.length>=4 && topCount>=4 && topCount/parts.length>=0.6);
+  if(!repeated)return null;
+  return {maxRun,topCount,topPart,parts:parts.length};
+}
+// Bölüm düzeyinde tekrar işareti. Yalnızca gerçek tekrar varsa üretilir.
+function segmentRepetitionFlag(s){
+  const r=detectRepetition(s&&s.text);
+  if(!r)return null;
+  return {level:r.maxRun>=4||r.topCount>=5?'high':'mid',info:r};
+}
 // Transcribe one decoded window. chunk_length_s is omitted because the caller
 // already sliced the audio, so the pipeline must not chunk it a second time.
 // Re-hash the stored blob and compare with the value captured on import. A
@@ -1621,6 +1661,8 @@ function renderReport(){
   if(materials.some(m=>m.hallucinationWarning))warnings.push(REPORT_TEXT.warnHallucination);
   const blankSegs=allSegs.filter(s=>isHallucination(s.text)).length;
   if(blankSegs)warnings.push(`${blankSegs} deşifre bölümünde anlamlı metin yok (dolgu/boş).`);
+  const repSegs=allSegs.filter(s=>segmentRepetitionFlag(s)).length;
+  if(repSegs)warnings.push(`${repSegs} deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın.`);
   const warning=$('#reportWarning');if(warnings.length){warning.classList.add('show');warning.innerHTML=`<b>${esc(REPORT_TEXT.warnPreReport)}</b> `+warnings.map(esc).join(' ');}else{warning.classList.remove('show');warning.innerHTML='';}
   const toc=REPORT_TEXT.sections;
   let html=`<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>UZMANLIK ALANI · 56.12</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court||REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court||'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;

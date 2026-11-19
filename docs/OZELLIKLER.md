@@ -131,6 +131,9 @@ tuşları bozulmaz.
   küçük yazım farkı olan sözcükleri bulur (ör. "depozito"/"depozit"). Öneri
   listesidir; uzman bir biçimi "esas al" seçerse diğerleri ona çevrilir (tam
   sözcük sınırında, metin geçmişine yazılarak).
+- **Tekrar tespiti:** Modelin aynı ifadeyi arka arkaya veya bölüm boyunca
+  tekrarladığı durumlar işaretlenir ("model tekrarı olasılığı"). Metin otomatik
+  düzeltilmez; yalnızca uzmana hatırlatılır.
 - **Paragraf oluştur:** ardışık ve aynı konuşmacıya ait bölümler tek paragrafta
   birleştirilir; konuşmacı değişince yeni paragraf başlar. Onaylanmamış bölüm
   paragrafta onaylı sayılmaz.
