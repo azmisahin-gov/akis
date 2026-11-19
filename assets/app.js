@@ -671,6 +671,9 @@ function setActiveMaterial(id) {
 }
 // Kompakt kayıt satırı: sıra, dosya adı, süre/boyut, durum ve kontrol ilerlemesi.
 function materialRowHtml(m, i) {
+  // Yatay şerit için kompakt "çip": numara, dosya adı, süre, durum, yüzde.
+  // Dikey liste 190px yer kaplıyordu ve deşifre alanını aşağı itiyordu;
+  // yatay şerit aynı bilgiyi ~60px yükseklikte verir.
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
   const pct = segs.length ? Math.round((checked / segs.length) * 100) : 0;
@@ -678,13 +681,10 @@ function materialRowHtml(m, i) {
   const active = !!(c && c.activeMaterialId === m.id);
   const status = m.status || 'Bekliyor';
   const stCls = /hata|boş|iptal/i.test(status) ? 'bad' : /Kontrol bekliyor|tamamlandı/i.test(status) ? 'good' : '';
-  const prog = typeof m.progress === 'number' ? `%${m.progress}` : segs.length ? `%${pct}` : '—';
-  return `<div class="material-row ${active ? 'is-active' : ''}" data-material-row="${esc(m.id)}" role="button" tabindex="0" aria-pressed="${active}">
-    <span class="mr-index">${i + 1}</span>
-    <span class="mr-name" title="${esc(m.name)}">${esc(m.name)}</span>
-    <span class="mr-meta">${fmtShort(m.duration || 0)} · ${fmtSize(m.size)}</span>
-    <span class="mr-status ${stCls}">${esc(status)}</span>
-    <span class="mr-progress">${segs.length ? `${checked}/${segs.length} · ${prog}` : prog}</span>
+  const short = status.length > 20 ? status.slice(0, 18) + '…' : status;
+  return `<div class="material-chip ${active ? 'is-active' : ''}" data-material-row="${esc(m.id)}" role="button" tabindex="0" aria-pressed="${active}" title="${esc(m.name)} — ${esc(status)}">
+    <span class="mc-top"><span class="mc-index">${i + 1}</span><span class="mc-name">${esc(m.name)}</span></span>
+    <span class="mc-bottom"><span class="mc-dur">${fmtShort(m.duration || 0)}</span><span class="mc-state ${stCls}">${esc(short)}</span>${segs.length ? `<span class="mc-pct">%${pct}</span>` : ''}</span>
   </div>`;
 }
 // Yalnızca kayıt listesini çizer. Kaydırma konumu korunur.

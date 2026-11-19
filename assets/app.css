@@ -648,3 +648,50 @@ html,body{height:100%;overflow:hidden}
   .split-item small{display:none}
   .split-body{overflow:visible}
 }
+
+/* ============================================================================
+   v2.36 — Ses sayfası: kayıt listesi yatay şerit oldu
+   Sorun: dikey kayıt listesi (190px) + panel başlıkları deşifre alanını
+   aşağı itiyordu; ses önizlemesinde sürekli kaydırma gerekiyordu.
+   Çözüm: kayıtlar yatay kaydırılan kompakt çipler; yükleme alanı ince;
+   panel başlıkları tek satıra indi. Deşifre alanı ekranın üst yarısında.
+   ============================================================================ */
+/* Üst bölge: yükleme + kayıt şeridi tek kompakt blok */
+#view-audio>.upload-zone.compact{padding:7px 12px;margin-bottom:0;border-radius:8px}
+#view-audio>.upload-zone.compact .upload-icon{width:24px;height:24px;font-size:13px;border-radius:7px}
+#view-audio>.upload-zone.compact .upload-text{font-size:11px}
+#view-audio>.panel:not(.detail-panel){padding:8px 10px;border-radius:8px}
+#view-audio>.panel:not(.detail-panel) .panel-heading{margin-bottom:6px}
+#view-audio>.panel:not(.detail-panel) .panel-heading h3{font-size:11px;margin:2px 0 0}
+#view-audio>.panel:not(.detail-panel) .eyebrow{font-size:8px}
+#view-audio>.panel:not(.detail-panel) .subtle-pill{padding:3px 7px;font-size:9px}
+
+/* Yatay kayıt şeridi */
+#audioList.audio-list{
+  display:flex;flex-wrap:nowrap;gap:7px;max-height:none;overflow-x:auto;overflow-y:hidden;
+  padding:2px 2px 6px;scroll-snap-type:x proximity}
+.material-chip{flex:0 0 auto;width:186px;border:1px solid #e6ebf0;border-radius:8px;
+  padding:6px 8px;background:#fff;cursor:pointer;scroll-snap-align:start;
+  display:flex;flex-direction:column;gap:3px}
+.material-chip:hover{border-color:#c9d8e6;background:#f8fbfd}
+.material-chip.is-active{border-color:#315f91;background:#eef4fa;box-shadow:inset 3px 0 #315f91}
+.mc-top{display:flex;align-items:center;gap:5px;min-width:0}
+.mc-index{width:16px;height:16px;flex:none;display:grid;place-items:center;border-radius:4px;
+  background:#edf3f8;color:#315f91;font:700 8px Manrope}
+.material-chip.is-active .mc-index{background:#315f91;color:#fff}
+.mc-name{font:600 10px 'Segoe UI';color:#2c4055;white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis;min-width:0}
+.mc-bottom{display:flex;align-items:center;gap:6px}
+.mc-dur{font:600 9px 'Consolas',monospace;color:#5a7089}
+.mc-state{font-size:8px;color:#8392a1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-state.good{color:#2c8062}
+.mc-state.bad{color:#b95252}
+.mc-pct{margin-left:auto;font:700 9px 'Segoe UI';color:#315f91}
+/* Seçili kayıt başlığı da tek satır */
+#view-audio .detail-panel>.panel-heading{margin-bottom:6px}
+#view-audio .detail-panel>.panel-heading h3{font-size:12px}
+#view-audio .detail-panel>.panel-heading .eyebrow{font-size:8px}
+#view-audio .detail-panel>.panel-heading .subtle-pill{padding:3px 7px;font-size:9px}
+#view-audio>.detail-panel{padding:10px 12px}
+/* Deşifre alanı daha yüksek olsun */
+#view-audio .seg-workspace{height:clamp(320px,58vh,760px)}
