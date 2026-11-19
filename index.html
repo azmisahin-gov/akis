@@ -23,13 +23,13 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/tokens.css?v=2.55">
-  <link rel="stylesheet" href="assets/app.css?v=2.55">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.56">
+  <link rel="stylesheet" href="assets/app.css?v=2.56">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.55">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.56">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.55"></script>
+  <script type="module" src="assets/app.js?v=2.56"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -226,6 +226,24 @@
   </aside>
   <dialog id="helpDialog" class="help-dialog"><div class="dialog-head"><div><div class="eyebrow">YARDIM</div><h2>Çalışma ve raporlama sınırları</h2></div><button id="closeHelp" class="icon-button">×</button></div><div class="dialog-body"><h3>Klavye kısayolları</h3><p><b>Boşluk</b> oynat/durdur · <b>↑</b> <b>↓</b> önceki/sonraki bölüm · <b>Enter</b> aktif bölümü onayla · <b>Y</b> aktif bölümü dinle · <b>B</b> bölümü oynatıcı konumundan böl · <b>M</b> sonrakiyle birleştir · <b>[</b> <b>]</b> oynatma hızı · <b>←</b> <b>→</b> 5 saniye geri/ileri · Metin alanındayken <b>Esc</b> ile alandan çık.</p><h3>Ses çözümleme</h3><p>Uygulama çok dilli bir konuşma tanıma modeli kullanır. Kaynak dil Türkçe ve görev konuşmayı metne dönüştürme olarak zorlanır. Bu ayar İngilizceye çeviri seçilmesini engeller; ancak yanlış kelime üretmeyeceğini garanti etmez.</p><h3>Gizlilik</h3><p>Ses içeriği tarayıcıda işlenir. Model dosyaları ilk kullanımda Hugging Face altyapısından indirilir. Dosyalar ve proje verisi tarayıcının yerel depolamasında tutulur. Kurumsal güvenlik politikanız gerektiriyorsa bu uygulamaya gerçek dosya yüklemeden önce ilgili birimden onay alın.</p><h3>Rapor çıktısı</h3><p>Bilirkişi Portalı için birincil çıktı UDF’dir. DOCX yalnızca yardımcı kopya olarak oluşturulabilir. UDF yapısı, uygulamaya eklenen boş UYAP belgesinin içerik yapısı ve sayfa ayarları esas alınarak oluşturulur. İlk kullanımda UYAP Doküman Editöründe açılış ve sayfa düzeni kontrolü yapılmalıdır. Uygulama e-imza üretmez ve portala gönderim yapmaz.</p><h3>Bilimsel sınırlılık</h3><p>Otomatik deşifre, ses kaydının uzman tarafından dinlenerek kontrol edilmesinin yerine geçmez. Konuşmacı kimliği, sesin gerçekliği, montaj olup olmadığı veya hukuki sorumluluk otomatik olarak tespit edilmez.</p></div></dialog>
   <dialog id="confirmDialog" class="help-dialog"><div class="dialog-head"><h2 id="confirmTitle">Onay</h2><button id="closeConfirm" class="icon-button">×</button></div><div class="dialog-body"><p id="confirmText"></p><div class="dialog-actions"><button id="confirmCancel" class="button button-light">Vazgeç</button><button id="confirmOk" class="button button-primary">Devam et</button></div></div></dialog>
+  <dialog id="intakeDialog" class="help-dialog intake-dialog">
+    <div class="dialog-head"><div><div class="eyebrow">DELİL TESLİM ALMA</div><h2>Bu kayıtlar nereden geldi?</h2></div><button id="closeIntake" class="icon-button" aria-label="Kapat">×</button></div>
+    <div class="dialog-body">
+      <p class="merge-intro">Eklenen <b id="intakeCount">0</b> dosya için teslim bilgisi. Bu bilgi raporda "Kayıt kökeni ve teslim zinciri" tablosuna yazılır. Uygulama ortamı kendiliğinden tespit etmez; bu bir uzman beyanıdır.</p>
+      <div class="form-grid two">
+        <label class="field"><span>Ortam türü *</span><select id="intakeMediumType"></select></label>
+        <label class="field"><span>Ortam etiketi / seri no</span><input id="intakeMediumLabel" placeholder="Örn. FLASH-2, SN:0A1B2C3D"></label>
+        <label class="field"><span>Teslim eden</span><input id="intakeDeliveredBy" placeholder="Ad soyad / birim"></label>
+        <label class="field"><span>Teslim tarihi</span><input id="intakeDeliveredAt" type="date"></label>
+        <label class="field span-2"><span>Kayıt cihazı / kayıt tarihi (varsa)</span><input id="intakeDeviceInfo" placeholder="Örn. cep telefonu, 12.03.2026 14:20"></label>
+      </div>
+      <p class="drawer-note">Aynı ortamdan gelen dosyalar aynı teslim bilgisini paylaşır. Yeni bir USB/CD gelirse yeni teslim alma açın.</p>
+      <div class="dialog-actions">
+        <button id="intakeSkip" class="button button-light">Sonra dolduracağım</button>
+        <button id="intakeOk" class="button button-primary">Kaydet ve ekle</button>
+      </div>
+    </div>
+  </dialog>
   <dialog id="mergeDialog" class="help-dialog merge-dialog">
     <div class="dialog-head"><div><div class="eyebrow">EKİP ÇALIŞMASI</div><h2>Çalışma dosyalarını birleştir</h2></div><button id="closeMerge" class="icon-button" aria-label="Kapat">×</button></div>
     <div class="dialog-body">

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.55.**
+yazılır. **Güncel sürüm: v2.56.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.56 — Delil zinciri gerçekten çalışıyor + teslim alma kaydı (tamamlandı)
+
+Belgeler "kurcalama tespit edilir" diyordu ama uygulama günlüğü elle
+`{at,event}` yazıyordu: `logEntry()` çağrısı 0, `verifyLogChain()` çağrısı 0,
+8 ham `m.log.push`, gerçek günlük **kırık**. Sekiz nokta `logEvent()`e
+bağlandı; girdiler `prevHash`+`hash`+`actor` taşıyor. Üç hâlli durum
+(`verified`/`legacy`/`broken`) ve eski kayıt göçü eklendi; eski kayıt "kırık"
+diye suçlanmıyor. Dosya eklemeden önce "Delil teslim alma" diyaloğu açılıyor.
+Ayrıntı: `CHANGELOG.md`.
 
 ### v2.55 — Kaynağı tanımsız düzenleme onaylı sayılmaz (tamamlandı)
 

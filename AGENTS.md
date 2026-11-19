@@ -189,6 +189,19 @@ Dışa aktarmadan önce `ensureEditorIdentity()` kimlik sorar. Önizleme
 (`compareCases`) birleştirmeyle AYNI kuralı kullanmalıdır; ayrışırsa kullanıcı
 yanlış bilgiyle karar verir.
 
+**Delil günlüğü tek yazma noktası (v2.56):** Günlük **yalnız** `logEvent(m,
+event, detail)` ile yazılır; o da `logEntry()` kullanır. Elle `m.log.push(...)`
+yazmayın — zincir kırılır ve `verifyLogChain()` kurcalamayı yakalayamaz.
+v2.55 ve öncesinde tam olarak bu hata vardı: belgeler kurcalama tespiti
+vaat ediyordu, kod onu yapmıyordu. `sema-testi.mjs` [6b] bunu denetler.
+Durum üç hâllidir: `verified` / `legacy` (hash'siz eski kayıt — "kırık" diye
+suçlanmaz) / `broken`. Eski kayıtlar açılışta `upgradeLogChain()` ile zincire
+bağlanır; girdi metni değiştirilmez.
+
+**Teslim alma (v2.56):** Dosya eklemeden önce `askIntake()` ortam bilgisi
+sorar. Tarayıcı USB seri no/etiket göremez (teknik sınır); bu bilgi **uzman
+beyanıdır**, otomatik tespit diye sunulmaz.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -337,7 +350,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.55.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.56.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

@@ -9,6 +9,8 @@ import {
   validateCase,
   logEntry,
   verifyLogChain,
+  logChainState,
+  upgradeLogChain,
   mergeCases,
   compareCases,
   speakerLabel,
@@ -32,7 +34,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.55';
+const APP_VERSION = '2.56';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -466,6 +468,9 @@ function loadState() {
         return nc;
       });
       stripDerivedFields(appState);
+      // Eski sürümler günlüğü hash'siz yazıyordu. Bu kayıtlar "kurcalanmış"
+      // sayılmamalı ama "doğrulandı" da denmemeli; zincire bağlanır.
+      upgradeAllLogChains(appState);
       if (compactAllHistories(appState)) persist();
     }
   } catch (e) {
@@ -1498,11 +1503,7 @@ async function toggleSpectrogram(m) {
   drawSpectrogram(canvas, spec, m);
   // Spektrogram incelendiği rapora yansıtılır (yalnızca gerçekten açıldıysa).
   m.spectrogramReviewed = { at: new Date().toISOString() };
-  (m.log = m.log || []).push({
-    at: m.spectrogramReviewed.at,
-    event: 'Spektrogram incelendi',
-    detail: `${spec.cols} zaman sütunu, ${spec.bins} frekans kutusu, FFT ${spec.fftSize}`
-  });
+  logEvent(m, 'Spektrogram incelendi', `${spec.cols} zaman sütunu, ${spec.bins} frekans kutusu, FFT ${spec.fftSize}`);
   persist();
   renderOverview();
   showToast('Spektrogram hazır.');
@@ -2220,11 +2221,7 @@ async function measureSpeakerPitch(m) {
     }
   }
   await ctx.close();
-  (m.log = m.log || []).push({
-    at: new Date().toISOString(),
-    event: 'Konuşmacı perde ölçümü',
-    detail: `${m.speakers.length} konuşmacı için perde tahmini hesaplandı`
-  });
+  logEvent(m, 'Konuşmacı perde ölçümü', `${m.speakers.length} konuşmacı için perde tahmini hesaplandı`);
   persist();
   renderSpeakersPanel(m); // Perde ölçümü tüm ses listesini yeniden çizmez; yalnızca konuşmacı paneli
   // güncellenir. Böylece sayfa yerinde kalır, kaydırma ve odak korunur.
@@ -2285,11 +2282,7 @@ async function measureLevels(m) {
     rolloff: rolloff || null,
     at: new Date().toISOString()
   };
-  (m.log = m.log || []).push({
-    at: m.levels.at,
-    event: 'Seviye ölçümü',
-    detail: `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}`
-  });
+  logEvent(m, 'Seviye ölçümü', `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}`);
   persist();
   renderAudioList();
   renderOverview();
@@ -2328,11 +2321,7 @@ async function measureSegmentSilence(m, index) {
     return;
   }
   s.silence = stats;
-  (m.log = m.log || []).push({
-    at: new Date().toISOString(),
-    event: 'Sessizlik ölçümü',
-    detail: `Bölüm ${index + 1}: %${Math.round(stats.ratio * 100)} sessiz (${stats.silentSec.toFixed(1)} sn)`
-  });
+  logEvent(m, 'Sessizlik ölçümü', `Bölüm ${index + 1}: %${Math.round(stats.ratio * 100)} sessiz (${stats.silentSec.toFixed(1)} sn)`);
   persist();
   renderSegDetail(m);
   updateSegListItem(m, index);
@@ -3862,14 +3851,71 @@ async function audioDuration(blob) {
     return 0;
   }
 }
+// Teslim alma: dosya eklemeden ÖNCE ortam bilgisi sorulur. Tarayıcı USB'nin
+// seri numarasını göremez (teknik sınır); bu bilgi uzman beyanıdır. Aynı
+// ortamdan gelen dosyalar tek beyanı paylaşır — bu, adli pratikteki
+// "delil teslim alındı" işlemidir, dosya sayısı kadar tekrarlanmaz.
+function intakeDialogHtml(fill) {
+  const sel = $('#intakeMediumType');
+  if (!sel) return;
+  sel.innerHTML = REPORT_TEXT.mediumTypes
+    .map((t) => `<option value="${esc(t)}" ${fill && fill.mediumType === t ? 'selected' : ''}>${esc(t)}</option>`)
+    .join('');
+}
+function askIntake(count) {
+  return new Promise((resolve) => {
+    const dlg = $('#intakeDialog');
+    if (!dlg) return resolve(null);
+    intakeDialogHtml();
+    $('#intakeCount').textContent = String(count);
+    $('#intakeMediumLabel').value = '';
+    $('#intakeDeliveredBy').value = '';
+    $('#intakeDeliveredAt').value = '';
+    $('#intakeDeviceInfo').value = '';
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      ['#intakeOk', '#intakeSkip', '#closeIntake'].forEach((s) => {
+        const el = $(s);
+        if (el) el.removeEventListener('click', handler);
+      });
+      if (dlg.open) dlg.close();
+      resolve(v);
+    };
+    const handler = (e) => {
+      const id = e.currentTarget.id;
+      if (id === 'intakeSkip') return finish(null);
+      finish({
+        mediumType: $('#intakeMediumType').value || 'Belirtilmedi',
+        mediumLabel: $('#intakeMediumLabel').value.trim(),
+        deliveredBy: $('#intakeDeliveredBy').value.trim(),
+        deliveredAt: $('#intakeDeliveredAt').value || '',
+        deviceInfo: $('#intakeDeviceInfo').value.trim()
+      });
+    };
+    ['#intakeOk', '#intakeSkip', '#closeIntake'].forEach((s) => {
+      const el = $(s);
+      if (el) el.addEventListener('click', handler);
+    });
+    dlg.addEventListener('close', () => finish(null), { once: true });
+    dlg.showModal();
+  });
+}
 async function addAudioFiles(files, opts = {}) {
   const c = currentCase();
   if (!c) return;
-  for (const file of files) {
-    if (!file.type.startsWith('audio/') && !/\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(file.name)) {
-      showToast(`${file.name}: ses dosyası değil, atlandı.`);
-      continue;
-    }
+  // Geçerli ses dosyalarını önce ayıkla; teslim bilgisi kaç dosya için
+  // sorulacağını bilmek gerekir.
+  const valid = files.filter(
+    (f) => f.type.startsWith('audio/') || /\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(f.name)
+  );
+  for (const f of files) if (!valid.includes(f)) showToast(`${f.name}: ses dosyası değil, atlandı.`);
+  if (!valid.length) return;
+  // Teslim bilgisi: yalnız kullanıcıdan gelen dosyalarda sorulur (test paketi
+  // hariç). "Sonra dolduracağım" denirse boş kalır; rapor "—" yazar.
+  const intake = opts.synthetic || opts.skipIntake ? null : await askIntake(valid.length);
+  for (const file of valid) {
     const id = uid();
     const tech = await audioTech(file);
     const m = {
@@ -3885,14 +3931,21 @@ async function addAudioFiles(files, opts = {}) {
       synthetic: !!opts.synthetic,
       addedAt: new Date().toISOString(),
       log: [],
-      origin: { mediumType: 'Belirtilmedi', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
+      origin: intake
+        ? { ...intake }
+        : { mediumType: 'Belirtilmedi', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
     };
     c.materials.push(m);
-    m.log.push({
-      at: m.addedAt,
-      event: 'Kayıt eklendi',
-      detail: `${file.name} · ${file.size} bayt · SHA-256 hesaplandı`
-    });
+    logEvent(m, 'Kayıt eklendi', `${file.name} · ${file.size} bayt · SHA-256 hesaplandı`);
+    if (intake) {
+      logEvent(
+        m,
+        'Teslim bilgisi girildi',
+        `${intake.mediumType}${intake.mediumLabel ? ' · ' + intake.mediumLabel : ''}${
+          intake.deliveredBy ? ' · teslim eden: ' + intake.deliveredBy : ''
+        }`
+      );
+    }
     await storeBlob(blobKey(c, m), file);
     const url = URL.createObjectURL(file);
     objectUrls.set(blobKey(c, m), url);
@@ -3900,7 +3953,11 @@ async function addAudioFiles(files, opts = {}) {
   persist();
   renderOverview();
   renderAudioList();
-  showToast(`${files.length} ses dosyası eklendi.`);
+  showToast(
+    intake
+      ? `${valid.length} ses dosyası teslim bilgisiyle eklendi.`
+      : `${valid.length} ses dosyası eklendi. Teslim bilgisi sonra doldurulabilir.`
+  );
 }
 async function ensureModel() {
   const modelId = $('#modelSelect').value;
@@ -4198,6 +4255,36 @@ function pushSegmentHistory(s, prevText) {
   markTextEdited(s);
   return true;
 }
+// ---- Delil günlüğü -------------------------------------------------------
+// TEK yazma noktası. Girdi her zaman logEntry() ile üretilir; böylece
+// prevHash + hash zinciri kurulur ve verifyLogChain() kurcalamayı yakalar.
+// Elle `m.log.push({at,event})` yazmak zinciri kırar (v2.56 öncesi böyleydi).
+function logEvent(m, event, detail) {
+  if (!m) return;
+  m.log = m.log || [];
+  const entry = logEntry(m.log, {
+    at: new Date().toISOString(),
+    actor: editorName() || 'bilinmiyor',
+    event,
+    detail
+  });
+  m.log.push(entry);
+  return entry;
+}
+// Eski (hash'siz) günlükleri zincire bağlar. Açılışta bir kez çağrılır.
+function upgradeAllLogChains(state) {
+  let total = 0;
+  for (const c of state.cases || []) {
+    for (const m of c.materials || []) {
+      const r = upgradeLogChain(m.log);
+      if (r.upgraded) {
+        m.log = r.log;
+        total += r.upgraded;
+      }
+    }
+  }
+  return total;
+}
 function timecode(seconds) {
   // Zaman kodu HER ZAMAN milisaniye içerir: "00:00:06.880".
   // Tutarlılık kritik: bir bölüm "00:00:00" diğeri "00:00:06.880" yazarsa
@@ -4323,11 +4410,7 @@ async function verifyIntegrity(id) {
   const now = await sha256(blob);
   const ok = now === m.sha256;
   m.lastVerify = { at: new Date().toISOString(), ok, hash: now };
-  (m.log = m.log || []).push({
-    at: m.lastVerify.at,
-    event: 'SHA-256 doğrulama',
-    detail: ok ? 'Özet eşleşti; dosya değişmemiş.' : `Özet farklı! Beklenen ${m.sha256}, bulunan ${now}`
-  });
+  logEvent(m, 'SHA-256 doğrulama', ok ? 'Özet eşleşti; dosya değişmemiş.' : `Özet farklı! Beklenen ${m.sha256}, bulunan ${now}`);
   persist();
   renderAudioList();
   showToast(ok ? 'SHA-256 doğrulandı; dosya değişmemiş.' : 'Uyarı: dosya özeti değişmiş görünüyor!');
@@ -4336,9 +4419,16 @@ function showEvidenceLog(m) {
   const existing = document.querySelector('.history-dialog');
   if (existing) existing.remove();
   const items = (m.log || []).slice().reverse();
+  const chain = logChainState(m.log);
+  const chainBox = {
+    verified: `<div class="chain-state ok"><b>Zincir doğrulandı</b><small>${m.log.length} girdi birbirine bağlı; sonradan değiştirilmiş girdi yok.</small></div>`,
+    legacy: `<div class="chain-state warn"><b>Zincir bu sürümden önce kurulmuş</b><small>${esc(chain.reason)}. Girdiler korunmuştur; bu andan sonraki işlemler zincire bağlanır.</small></div>`,
+    broken: `<div class="chain-state bad"><b>Zincir kırık</b><small>${esc(chain.brokenAt + 1)}. girdide ${esc(chain.reason)}. Bu, günlüğün sonradan değiştirildiğini gösterir.</small></div>`,
+    empty: ''
+  }[chain.state] || '';
   const dlg = document.createElement('div');
   dlg.className = 'history-dialog';
-  dlg.innerHTML = `<div class="history-inner"><div class="history-head"><b>${esc(m.name)} · delil işlem günlüğü</b><button class="mini-button" data-close-history>Kapat</button></div><div class="history-body">${items.length ? items.map((h) => `<div class="history-item"><small>${esc(new Date(h.at).toLocaleString('tr-TR'))} · ${esc(h.event)}</small><p>${esc(h.detail || '')}</p></div>`).join('') : '<p class="paper-muted">Bu kayıt için işlem günlüğü boş.</p>'}</div></div>`;
+  dlg.innerHTML = `<div class="history-inner"><div class="history-head"><b>${esc(m.name)} · delil işlem günlüğü</b><button class="mini-button" data-close-history>Kapat</button></div><div class="history-body">${chainBox}${items.length ? items.map((h) => `<div class="history-item"><small>${esc(new Date(h.at).toLocaleString('tr-TR'))} · ${esc(h.event)}${h.actor ? ' · ' + esc(h.actor) : ''}</small><p>${esc(h.detail || '')}</p></div>`).join('') : '<p class="paper-muted">Bu kayıt için işlem günlüğü boş.</p>'}</div></div>`;
   document.body.appendChild(dlg);
   dlg.addEventListener('click', (e) => {
     if (e.target === dlg || e.target.dataset.closeHistory !== undefined) dlg.remove();
@@ -4490,11 +4580,7 @@ async function transcribe(id) {
     delete m.progress;
     m.transcribedAt = new Date().toISOString();
     m.transcribedWithModel = (asrPipeline && asrPipeline.__modelId) || null;
-    (m.log = m.log || []).push({
-      at: m.transcribedAt,
-      event: 'Çözümleme tamamlandı',
-      detail: `${meaningful.length} anlamlı bölüm, ${fillerCount || 0} dolgu bölümü`
-    });
+    logEvent(m, 'Çözümleme tamamlandı', `${meaningful.length} anlamlı bölüm, ${fillerCount || 0} dolgu bölümü`);
     const text = meaningful.map((s) => s.text).join(' ');
     if (looksNonTurkish(text)) {
       m.languageWarning = 'Çıktı Türkçe dışı görünebilir; kaydı dinleyerek kontrol edin.';
@@ -5861,11 +5947,7 @@ async function loadSamples() {
           log: []
         };
         c.materials.push(m);
-        m.log.push({
-          at: m.addedAt,
-          event: 'Kayıt eklendi',
-          detail: `${sm.name} · ${blob.size} bayt · SHA-256 hesaplandı (test paketi)`
-        });
+        logEvent(m, 'Kayıt eklendi', `${sm.name} · ${blob.size} bayt · SHA-256 hesaplandı (test paketi)`);
         await storeBlob(blobKey(c, m), blob);
       }
       appState.cases.push(c);

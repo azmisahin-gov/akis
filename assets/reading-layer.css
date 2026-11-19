@@ -496,3 +496,13 @@ input::placeholder, textarea::placeholder {
 .sp-note { margin: var(--sp-2) 0 0; font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); }
 @media (max-width: 640px) { .sp-diff { grid-template-columns: 1fr; } }
 .merge-reason { margin: 0; padding: var(--sp-1) var(--sp-3); background: var(--gold-soft); color: var(--ink-2); font-size: var(--fs-2xs); line-height: var(--lh-body); border-bottom: 1px solid var(--line); }
+.chain-state { border-radius: var(--r-md); padding: var(--sp-2) var(--sp-3); margin-bottom: var(--sp-2); border: 1px solid var(--line-2); }
+.chain-state b { display: block; font-size: var(--fs-xs); margin-bottom: 2px; }
+.chain-state small { font-size: var(--fs-2xs); color: var(--ink-2); line-height: var(--lh-body); }
+.chain-state.ok { background: var(--green-soft); border-color: var(--green); }
+.chain-state.ok b { color: var(--green); }
+.chain-state.warn { background: var(--gold-soft); border-color: var(--gold); }
+.chain-state.warn b { color: var(--gold); }
+.chain-state.bad { background: var(--gold-soft); border-color: var(--gold); }
+.chain-state.bad b { color: var(--gold); }
+.intake-dialog { width: min(640px, calc(100vw - 30px)); }

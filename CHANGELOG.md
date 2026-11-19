@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.55.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.56.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.56 — Delil zinciri gerçekten çalışıyor + teslim alma kaydı
+
+KULLANICI: "USB'yi gösterip eklemiyoruz, sadece dosya ekliyoruz. Delil teslim
+alma izi yanlış mı?" ve "delil zinciri var mı, güvenli mi?"
+
+### Bulunan gerçek hata: zincir kırıktı
+
+`AGENTS.md` şunu iddia ediyordu:
+
+> "her günlük girdisi `logEntry()` ile üretilir (`prevHash`+`hash`). Elle
+> `{at,event}` yazmayın; zincir kırılır ve `verifyLogChain()` hata verir."
+
+Ölçüm (v2.55):
+
+```
+logEntry() çağrısı:       0
+verifyLogChain() çağrısı: 0
+Elle m.log.push:          8 yer
+Gerçek günlük doğrulaması: KIRIK (hash uyuşmuyor)
+```
+
+Yani işlem günlüğü görünüyordu ama **kurcalama tespiti çalışmıyordu**.
+Testler geçiyordu çünkü test `logEntry`'yi kendisi doğru çağırıyor, uygulamanın
+onu kullanmadığını sınamıyordu. Adli belgede iddia edilen bir güvence
+gerçekte yoktu.
+
+### Çözüm
+
+- **Tek yazma noktası:** `logEvent(m, event, detail)`. Sekiz ham `m.log.push`
+  çağrısının hepsi buna bağlandı; girdiler `logEntry()` ile üretiliyor
+  (`prevHash` + `hash` + `actor`).
+- **Üç hâlli durum (`logChainState`):** `verified` / `legacy` / `broken` /
+  `empty`. Eski (hash'siz) kayıtlar "kurcalanmış" diye **suçlanmaz**; ama
+  "doğrulandı" da denmez. Yanlış suçlama adli belgede kabul edilemez.
+- **Eski kayıt göçü (`upgradeLogChain`):** açılışta hash'siz günlükler zincire
+  bağlanır. Girdi metinleri **değiştirilmez**; yalnız `prevHash`/`hash` eklenir.
+- **Günlük diyaloğunda durum kutusu:** kullanıcı zincirin doğrulanıp
+  doğrulanmadığını, kırıksa kaçıncı girdide olduğunu görür.
+- **Girdilerde `actor`:** kimin yaptığı yazılır (seçili ekip üyesi).
+
+### Teslim alma kaydı
+
+Dosya eklemeden **önce** "Delil teslim alma" diyaloğu açılır: ortam türü
+(USB/CD/DVD…), ortam etiketi/seri no, teslim eden, teslim tarihi, kayıt
+cihazı. Aynı ortamdan gelen dosyalar **tek beyanı** paylaşır — adli pratikte
+"delil teslim alındı" işlemidir, dosya sayısı kadar tekrarlanmaz. Yeni USB
+gelirse yeni teslim alma açılır. "Sonra dolduracağım" denebilir.
+
+**Teknik sınır (dürüst not):** tarayıcı USB'nin seri numarasını, etiketini
+veya sürücü harfini **göremez**. Bu bir izin sorunu değil, tarayıcı güvenlik
+sınırıdır; WebUSB API'si de yalnız USB *aygıtlarına* erişir, dosya sistemi
+üzerinden gelen bir klasörün hangi ortamda olduğunu söylemez. Bu yüzden ortam
+bilgisi **uzman beyanıdır** ve öyle etiketlenir. Otomatik alınabilecekler
+(dosya adı, boyut, SHA-256, eklenme zamanı) zaten otomatik alınır.
+
+### Test
+
+`sema-testi.mjs` [6b] bloğu eklendi (179 → 192 kontrol): uygulamada elle
+günlük yazımı kalmadığı, `logEvent`'in `logEntry` kullandığı, açılışta göçün
+çalıştığı, üretilen günlüğün doğrulandığı, kurcalamanın yakalandığı, eski
+kaydın "legacy" (kırık değil) sayıldığı ve göçün girdi metnini koruduğu.
 
 ## v2.55 — Kaynağı tanımsız düzenleme onaylı sayılmaz
 

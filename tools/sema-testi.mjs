@@ -52,6 +52,8 @@ import {
   chainHash,
   logEntry,
   verifyLogChain,
+  logChainState,
+  upgradeLogChain,
   mergeCases,
   compareCases,
   speakerLabel,
@@ -277,6 +279,61 @@ console.log('\n[6] Delil günlüğü zinciri');
   // Aynı içerik aynı hash üretir (deterministik).
   eq('hash deterministik', chainHash('abc'), chainHash('abc'));
   ok('farklı içerik farklı hash', chainHash('abc') !== chainHash('abd'));
+}
+
+// --- 6b. Uygulamanın ÜRETTİĞİ günlük doğrulanabilir mi? ---------------
+// v2.55'e kadar testler logEntry()'yi KENDİSİ doğru çağırıyordu; bu yüzden
+// testler geçiyordu ama uygulama günlüğü elle `{at,event}` yazıyordu ve
+// zincir kırıktı. Belgeler "kurcalama tespit edilir" diyordu, gerçekte
+// edilmiyordu. Bu blok, uygulama kodunun kendisini denetler: günlük yazan
+// her yer logEvent()/logEntry() üzerinden geçmeli.
+console.log('\n[6b] Uygulama günlüğü gerçekten zincirli mi?');
+{
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const url = await import('node:url');
+  const ROOT = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), '..');
+  const app = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+
+  // Elle günlük yazımı kalmamalı. İzin verilen tek yer logEvent() gövdesi.
+  // Yorum satırları sayılmaz (kuralı açıklayan örnek metin olabilir).
+  const codeLines = app
+    .split('\n')
+    .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
+    .join('\n');
+  const rawPushes = [...codeLines.matchAll(/m\.log\s*=\s*m\.log\s*\|\|\s*\[\]\)\.push\(|m\.log\.push\(/g)];
+  ok('uygulamada elle günlük yazımı yok', rawPushes.length <= 1, `${rawPushes.length} eşleşme`);
+  ok('logEvent tek yazma noktası', /function logEvent\(m, event, detail\)/.test(app));
+  ok('logEvent logEntry kullanıyor', /logEvent[\s\S]{0,400}logEntry\(/.test(app));
+  ok('açılışta eski zincirler bağlanıyor', /upgradeAllLogChains\(appState\)/.test(app));
+
+  // Davranış: logEvent ile üretilen günlük doğrulanabilir olmalı.
+  const log = [];
+  const push = (ev, dt) =>
+    log.push(logEntry(log, { at: `t${log.length}`, actor: 'Bilirkişi', event: ev, detail: dt }));
+  push('Kayıt eklendi', 'a.wav');
+  push('Çözümleme tamamlandı', '10 bölüm');
+  push('Seviye ölçümü', 'tepe -3.2 dBFS');
+  eq('uygulama tarzı günlük doğrulandı', logChainState(log).state, 'verified');
+  ok('her girdi hash taşıyor', log.every((e) => /^[0-9a-f]{8}$/.test(e.hash || '')));
+  ok('her girdi aktör taşıyor', log.every((e) => !!e.actor));
+
+  // Kurcalama yakalanmalı.
+  const t = JSON.parse(JSON.stringify(log));
+  t[1].detail = 'DEĞİŞTİRİLDİ';
+  eq('kurcalama kırık olarak bildirildi', logChainState(t).state, 'broken');
+
+  // Eski (hash'siz) kayıt: "legacy" olmalı, "broken" değil. Yanlış suçlama
+  // adli belgede kabul edilemez.
+  const legacy = [{ at: 't1', event: 'Kayıt eklendi', detail: 'x' }];
+  eq('eski kayıt legacy sayıldı', logChainState(legacy).state, 'legacy');
+  ok('legacy kırık diye suçlanmıyor', logChainState(legacy).state !== 'broken');
+
+  // Göç: eski kayıt zincire bağlanınca doğrulanabilir olmalı.
+  const up = upgradeLogChain(legacy);
+  eq('göç bir girdiyi bağladı', up.upgraded, 1);
+  eq('göç sonrası doğrulanır', logChainState(up.log).state, 'verified');
+  eq('göç girdi metnini korur', up.log[0].detail, 'x');
 }
 
 // --- 7. Birleştirme -----------------------------------------------------

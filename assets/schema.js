@@ -708,6 +708,65 @@ export function verifyLogChain(log) {
   return { ok: true, brokenAt: -1, reason: '' };
 }
 
+/**
+ * Günlüğün durumunu üç hâlde bildirir. Eski kayıtlarda günlük `logEntry()`
+ * olmadan yazılmıştı (hash yok). Bunları "kurcalanmış" diye suçlamak yanlış
+ * olur; ama "doğrulandı" demek de yanlış olur. Üçüncü hâl bu boşluğu kapatır.
+ * @returns {{state:'verified'|'legacy'|'broken'|'empty', brokenAt:number, reason:string, legacyCount:number}}
+ */
+export function logChainState(log) {
+  if (!Array.isArray(log) || !log.length)
+    return { state: 'empty', brokenAt: -1, reason: 'günlük boş', legacyCount: 0 };
+  const legacyCount = log.filter((e) => !(e && e.hash)).length;
+  if (legacyCount) {
+    // Hash'siz girdi varsa zincir kurulamaz. Bu eski kayıttır; kurcalama
+    // iddiası değildir. Karışık durum (bir kısmı hash'li) da "legacy" sayılır.
+    return {
+      state: 'legacy',
+      brokenAt: -1,
+      reason: `${legacyCount} girdi hash taşımıyor (bu sürümden önce yazılmış)`,
+      legacyCount
+    };
+  }
+  const v = verifyLogChain(log);
+  return v.ok
+    ? { state: 'verified', brokenAt: -1, reason: '', legacyCount: 0 }
+    : { state: 'broken', brokenAt: v.brokenAt, reason: v.reason, legacyCount: 0 };
+}
+
+/**
+ * Eski günlüğü zincire bağlar. Girdiler DEĞİŞTİRİLMEZ; yalnız prevHash/hash
+ * eklenir. Böylece eski kayıt "legacy" kalmaz, doğrulanabilir olur. Girdi
+ * metni aynen korunduğu için içerik iddiası bozulmaz; yalnız "bu andan sonra
+ * kurcalanmadı" garantisi başlar.
+ */
+export function upgradeLogChain(log) {
+  if (!Array.isArray(log)) return { log: [], upgraded: 0 };
+  const out = [];
+  let upgraded = 0;
+  for (const e of log) {
+    if (!isObj(e)) continue;
+    if (e.hash && e.prevHash !== undefined) {
+      out.push(e);
+      continue;
+    }
+    const prev = out.length ? out[out.length - 1].hash || '' : '';
+    const base = {
+      at: str(e.at),
+      actor: str(e.actor),
+      event: str(e.event),
+      detail: str(e.detail),
+      prevHash: prev
+    };
+    out.push({
+      ...base,
+      hash: chainHash(`${base.at}|${base.actor}|${base.event}|${base.detail}|${base.prevHash}`)
+    });
+    upgraded++;
+  }
+  return { log: out, upgraded };
+}
+
 // ---- 9. Birleştirme (ortak çalışma) --------------------------------------
 // İki dosya kopyası birleştirilirken hangi tarafın kazandığı ve neyin
 // çakıştığı açıkça raporlanır. Sessizce üzerine yazmak YOK.
