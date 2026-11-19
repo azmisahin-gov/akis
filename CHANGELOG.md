@@ -6,12 +6,93 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.52.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.53.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.53 — Yardımcı düzeltmesi birleştirmede korunuyor (kritik düzeltme)
+
+KULLANICI: "Bilirkişi kendi bilgisayarında gerekli tüm davaları oluşturmuş,
+çözümlemesini de yapmış; ama tüm işleri kendi tamamlayamıyor. Yardımcısı başka
+bilgisayardan metin kontrolü yapacak, belki başka alanları da düzeltecek."
+
+### Bulunan gerçek hata
+
+`mergeCases()` metin çakışmasında **her zaman yerel metni** koruyordu. Sonuç:
+yardımcının düzelttiği metin birleştirmede **sessizce kayboluyordu**. Kontrol
+durumu (onay) korunuyordu ama metin eski hâline dönüyordu — yani "onaylandı"
+damgası **yanlış metne** vuruluyordu. Ölçümle doğrulandı (düzeltmeden önce):
+
+```
+A: "merhaba dünya" (taslak)   B: "Merhaba dünya." (düzeltilmiş + onaylı)
+birleştirme sonucu: "merhaba dünya"  ← B'nin düzeltmesi KAYBOLDU
+```
+
+İkinci ve daha temel hata: deşifre bölümleri **kimliksiz** üretiliyordu
+(`parseAsrResult` yalnız `{start, end, text}` döndürüyordu). Kimlik ilk yeniden
+yüklemede rastgele atandığı için iki bilgisayarda **ayrı kimlikler** oluşuyor,
+birleştirme bölümleri hiç eşleştiremiyordu. Bu yüzden düzeltme, çakışma
+mantığı düzeltilse bile uygulanamazdı.
+
+### Çözüm
+
+**1. Kimlik üretim anında verilir.** `parseAsrResult`, elle bölüm ekleme, ikiye
+bölme ve paragraf oluşturma artık `newId('sg')` ile kimlik üretir. Böylece
+`.akis` paketi gidiş-dönüşünde kimlik korunur ve iki taraf aynı bölümü görür.
+İkiye bölmede iki parçaya **ayrı** kimlik verilir (eskiden aynı kimlik iki
+parçaya kopyalanıyordu).
+
+**2. Düzenleme işareti (`textRev`).** Bir metne insan eli değdiğinde bölümün
+`textRev` alanı 1 olur. Birleştirmede metinler farklıysa:
+
+| Durum | Sonuç |
+|---|---|
+| Yalnız gelen taraf düzenlemiş | Gelen metin alınır (yardımcı düzeltmesi korunur) |
+| Yalnız yerel taraf düzenlemiş | Yerel metin korunur, gelen metin geçmişe yazılır |
+| İki taraf da düzenlemiş | **Sessiz seçim yok**; çakışma olarak bilirkişiye bildirilir |
+| İkisi de dokunmamış, metin farklı | **Sessiz seçim yok**; çakışma olarak bildirilir |
+
+Ölçüt sayacın **büyüklüğü değil, sıfırdan farklı olmasıdır**. Böylece çok yazan
+taraf haksız yere kazanmaz. Kaybeden metin silinmez; bölümün metin geçmişine
+(`history`) yazılır ve geçmiş düğmesinden görülebilir.
+
+Neden duvar saati değil: iki bilgisayarın saati kayabilir; işaret kaymaz.
+
+**3. Onay metne bağlıdır.** Metin değiştiğinde kontrol durumu gelen taraftan
+alınır; eski onay yeni metne taşınmaz. "Onaylandı" damgası hiçbir zaman
+onaylanmamış bir metnin üstünde kalmaz.
+
+**4. Yeniden çözümleme korunuyor.** Kayıt yeniden çözümlenmişse ve yerelde elle
+düzeltilmiş bölüm varsa, birleştirme bunu **sessizce ezmez**: çakışma bildirir
+ve bölümleri çoğaltmaz (kimlikler tutmadığı için her bölüm "yeni" sanılırdı).
+
+**5. Yardımcı yalnız metni değil, diğer alanları da düzeltebilir.** Rapor
+metinleri (yöntem, sınırlılık, sonuç), görevlendirme metinleri, dosya alanları
+ve soru cevapları da birleştirmeye girer. Boş alan her zaman doldurulur; iki
+dolu farklı değerde gelen dosya daha yeniyse o alınır, değilse çakışma
+bildirilir.
+
+**6. Önizleme birleştirmeyle aynı kararı verir.** `compareCases()` artık
+otomatik çözülecek ile gerçek çakışmayı ayırır; diyalogda "Otomatik alınacak"
+satırları görünür.
+
+### Yan düzeltmeler
+
+- Yinelenen `focusin`/`focusout` dinleyicileri kaldırıldı (metin geçmişi iki kez
+  yazılıyordu).
+- `compactHistory()` artık `actor` alanını da koruyor.
+- `__editSnapshot` gibi oturum içi geçici alanlar kayda ve dışa aktarıma
+  girmiyor.
+
+### Test
+
+`tools/sema-testi.mjs` [7c] ve [7d] blokları eklendi (129 → 153 kontrol):
+yardımcı düzeltmesinin korunması, onayın doğru metne taşınması, iki taraflı
+düzenlemede sessiz seçim yapılmaması, önizleme uyumu, yeniden çözümlemede
+çoğalma olmaması ve kimliğin paket gidiş-dönüşünde korunması.
 
 ## v2.52 — Ekip çalışması: dosya birleştirme
 

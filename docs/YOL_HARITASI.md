@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.52.**
+yazılır. **Güncel sürüm: v2.53.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,22 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.53 — Yardımcı düzeltmesi birleştirmede korunuyor (tamamlandı)
+
+Gerçek kullanım senaryosu: bilirkişi kendi bilgisayarında çözümlemeyi yapar,
+işi bitmez; yardımcısı **başka bilgisayardan** metni kontrol edip düzeltir.
+İki hata bulundu ve giderildi:
+
+1. `mergeCases()` metin çakışmasında her zaman yerel metni tutuyordu; yardımcının
+   düzeltmesi sessizce kayboluyor, "onaylandı" damgası yanlış metne vuruluyordu.
+2. Deşifre bölümleri kimliksiz üretiliyordu; iki bilgisayarda ayrı kimlikler
+   oluştuğu için birleştirme bölümleri hiç eşleştiremiyordu.
+
+Çözüm: kimlik üretim anında verilir; metne insan eli değdiğinde `textRev`
+işareti konur. Birleştirmede yalnız bir taraf düzenlemişse o taraf alınır; iki
+taraf da düzenlemişse **sessiz seçim yapılmaz**, çakışma bilirkişiye bildirilir.
+Kaybeden metin geçmişe yazılır. Onay metne bağlıdır. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.52 — Ekip çalışması: dosya birleştirme (tamamlandı)
 

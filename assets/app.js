@@ -3,6 +3,7 @@
 // içe aktarır; şema kuralı tek yerde yaşar.
 import {
   SCHEMA_VERSION,
+  newId,
   normalizeCase,
   normalizeMaterial,
   validateCase,
@@ -30,7 +31,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.52';
+const APP_VERSION = '2.53';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -427,9 +428,9 @@ function compactHistory(hist) {
     const prev = out[out.length - 1];
     const isPrefix = prev && (t.startsWith(prev.text) || prev.text.startsWith(t));
     if (isPrefix) continue; // aynı oturumun ara adımı; oturum başı korunur
-    out.push({ text: t, at: h.at });
+    out.push({ text: t, at: h.at, actor: h.actor || '' });
   }
-  return out.length ? out : [{ text: '', at: hist[hist.length - 1].at }];
+  return out.length ? out : [{ text: '', at: hist[hist.length - 1].at, actor: hist[hist.length - 1].actor || '' }];
 }
 function compactAllHistories(state) {
   let changed = false;
@@ -1793,8 +1794,9 @@ function applyTermForm(m, from, to) {
       return p1 + to;
     });
     if (next !== s.text) {
-      pushSegmentHistory(s);
-      s.text = next;
+      const prev = s.text;
+      setSegmentText(s, next);
+      pushSegmentHistory(s, prev);
     }
   }
   return changed;
@@ -3587,8 +3589,8 @@ function splitSegmentAtPlayer(m, index) {
     showToast('Bölmek için oynatıcıyı bölümün ortasına getirin.');
     return;
   }
-  const left = { ...s, end: timecode(cut), history: [] };
-  const right = { ...s, start: timecode(cut), history: [] };
+  const left = { ...s, id: newId('sg'), end: timecode(cut), history: [] };
+  const right = { ...s, id: newId('sg'), start: timecode(cut), history: [] };
   segs.splice(index, 1, left, right);
   m.activeSeg = index;
   segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
@@ -3609,7 +3611,12 @@ function mergeSegmentWithNext(m, index) {
     return;
   }
   s.end = n.end;
-  if ((n.text || '').trim()) s.text = (s.text || '') + (s.text ? ' ' : '') + n.text;
+  if ((n.text || '').trim()) {
+    const prev = s.text;
+    const joined = (s.text || '') + (s.text ? ' ' : '') + n.text;
+    setSegmentText(s, joined);
+    pushSegmentHistory(s, prev);
+  }
   s.review = 'pending';
   segs.splice(index + 1, 1);
   m.activeSeg = index;
@@ -3655,10 +3662,16 @@ function paragraphize(m) {
       return o;
     }, null);
     merged.push({
+      // Paragraf yeni bir bölümdür: kimliği yeni olmalı, yoksa iki bilgisayarda
+      // aynı kimlik iki farklı metni gösterir.
+      id: newId('sg'),
       start: first.start,
       end: last.end,
       speaker: first.speaker || '',
       text,
+      // Paragrafa giren bölümlerden biri elle düzenlenmişse birleşik metin de
+      // "elle düzenlenmiş" sayılır; kaynağı otomatik metin olsa bile.
+      textRev: g.segs.some((s) => (Number(s.textRev) || 0) > 0) ? 1 : 0,
       checked: !anyUnreviewed,
       review: anyUnreviewed ? 'pending' : segReview(first),
       history: [],
@@ -4067,12 +4080,37 @@ function reviewLabel(s) {
 function snapshotSegmentText(s) {
   s.__editSnapshot = s.text || '';
 }
+// Metin geçmişine kimin yazdığını yazmak için: dosyada "son düzenleyen" olarak
+// işaretlenmiş ekip üyesinin adı. Tanımsızsa boş kalır (uydurma kimlik yok).
+function editorName() {
+  const c = currentCase();
+  if (!c || !c.lastEditedBy) return '';
+  const t = (c.team || []).find((x) => x.id === c.lastEditedBy);
+  return t ? t.name || '' : '';
+}
+// Bölüm metnini yazar; sayaç artırmaz (sayaç düzenleme oturumu başına bir kez
+// markTextEdited ile işaretlenir, bkz. aşağısı).
+function setSegmentText(s, next) {
+  const v = next == null ? '' : String(next);
+  if ((s.text || '') === v) return false;
+  s.text = v;
+  return true;
+}
+// "Bu metne insan eli değdi" işareti. Birleştirmede iki tarafın metni
+// farklıysa: yalnız bir taraf düzenlemişse o taraf alınır; ikisi de düzenlemişse
+// otomatik seçim YAPILMAZ, çakışma olarak bilirkişiye bildirilir. Ölçüt sayacın
+// büyüklüğü değil, sıfırdan farklı olmasıdır; bu yüzden çok yazan taraf haksız
+// yere kazanamaz.
+function markTextEdited(s) {
+  if ((Number(s.textRev) || 0) === 0) s.textRev = 1;
+}
 function pushSegmentHistory(s, prevText) {
   if (!s.history) s.history = [];
   const prev = prevText ?? s.__editSnapshot ?? '';
   if (prev === (s.text || '')) return false;
-  s.history.push({ text: prev, at: new Date().toISOString() });
+  s.history.push({ text: prev, at: new Date().toISOString(), actor: editorName() });
   if (s.history.length > 20) s.history.shift();
+  markTextEdited(s);
   return true;
 }
 function timecode(seconds) {
@@ -4238,6 +4276,10 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
       // varsayılan bir süre ver; aksi halde bölüm "00:00:00–00:00:00" olur.
       if (en == null || en <= st) en = st + (windowSeconds || 1);
       const seg = {
+        // Kimlik burada, üretim anında verilir. Sonradan verilirse iki
+        // bilgisayarda AYRI kimlikler oluşur ve birleştirme bölümleri
+        // eşleştiremez (yardımcının düzeltmesi "yeni bölüm" sanılır).
+        id: newId('sg'),
         start: timecode(offsetSeconds + st),
         end: timecode(offsetSeconds + en),
         text
@@ -4255,6 +4297,7 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
     const text = String(result.text || '').trim();
     if (!looksLikeGarbage(text)) {
       out.push({
+        id: newId('sg'),
         start: timecode(offsetSeconds),
         end: timecode(offsetSeconds + (windowSeconds || 0)),
         text
@@ -4416,7 +4459,16 @@ function addManualSegment(id) {
   let endSec = stSec + 5;
   if (durSec > 0) endSec = Math.min(endSec, durSec);
   const end = timecode(endSec > stSec ? endSec : stSec);
-  m.segments.push({ start, end, speaker: 'Konuşmacı 1', text: '', checked: false });
+  m.segments.push({
+    id: newId('sg'),
+    start,
+    end,
+    speaker: 'Konuşmacı 1',
+    text: '',
+    checked: false,
+    review: 'pending',
+    textRev: 0
+  });
   m.activeSeg = m.segments.length - 1;
   persist();
   const card = $(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');
@@ -5535,9 +5587,14 @@ function renderMergePreview(cmp) {
     row('Aynı kalan kayıt', sameMat),
     row('Yeni eklenecek bölüm', cmp.segments.added),
     row('Metni çakışan bölüm', cmp.segments.changed.length, cmp.segments.changed.length ? 'warn' : ''),
+    row('Otomatik alınacak bölüm metni', cmp.segments.autoResolved),
     row('Kontrol durumu ilerleyen bölüm', cmp.segments.reviewAdvanced),
     row('Doldurulacak soru cevabı', cmp.questions.filled),
+    row('Otomatik alınacak soru cevabı', cmp.questions.autoResolved),
     row('Yeni soru', cmp.questions.added),
+    row('Doldurulacak dosya alanı', cmp.caseFields.filled.length),
+    row('Otomatik alınacak dosya alanı', cmp.caseFields.autoResolved.length),
+    row('Çakışan dosya alanı', cmp.caseFields.conflicts.length, cmp.caseFields.conflicts.length ? 'warn' : ''),
     row('Ekibe eklenecek kişi', cmp.team.added.length)
   ].join('');
 
@@ -5547,16 +5604,22 @@ function renderMergePreview(cmp) {
     return;
   }
   conf.innerHTML =
-    `<h3 class="merge-h3">Çakışan bölümler (${cmp.conflicts.length})</h3>` +
-    `<p class="merge-note">Aşağıdaki metinler iki tarafta farklı. Birleştirmede <b>bu dosyadaki metin korunur</b>; gelen metin kaybolmaz, işlem günlüğüne yazılır. Karşı tarafın metnini istiyorsanız önce bu dosyada düzeltin, sonra tekrar birleştirin.</p>` +
+    `<h3 class="merge-h3">Çakışan metinler (${cmp.conflicts.length})</h3>` +
+    `<p class="merge-note">Aşağıdaki metinler iki tarafta da <b>elle düzenlenmiş</b> ya da farkın kaynağı bilinmiyor. Birleştirmede <b>bu dosyadaki metin korunur</b>; gelen metin kaybolmaz, işlem günlüğüne ve metin geçmişine yazılır. Karşı tarafın metnini istiyorsanız önce bu dosyada düzeltin, sonra tekrar birleştirin.</p>` +
     cmp.conflicts
       .slice(0, 20)
-      .map(
-        (c) => `<div class="merge-conflict">
-        <div class="merge-conflict-head">${esc(c.materialName || '')} · bölüm ${esc((c.segmentId || '').slice(-6))}</div>
+      .map((c) => {
+        const head =
+          c.kind === 'question-answer'
+            ? `Soru cevabı · ${(c.questionId || '').slice(-6)}`
+            : c.kind === 'case-field'
+              ? `Dosya alanı · ${c.field || ''}`
+              : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+        return `<div class="merge-conflict">
+        <div class="merge-conflict-head">${esc(head)}</div>
         <div class="merge-cols"><div><small>Bu dosya</small><p>${esc(c.mine || '(boş)')}</p></div><div><small>Gelen</small><p>${esc(c.theirs || '(boş)')}</p></div></div>
-      </div>`
-      )
+      </div>`;
+      })
       .join('') +
     (cmp.conflicts.length > 20 ? `<p class="merge-note">… ve ${cmp.conflicts.length - 20} çakışma daha.</p>` : '');
 }
@@ -5613,7 +5676,7 @@ async function applyMerge() {
   await renderAudioList();
   showToast(
     `Birleştirildi: ${applied.length} değişiklik uygulandı` +
-      (conflicts.length ? `, ${conflicts.length} çakışma bu dosyadaki metinle korundu.` : '.')
+      (conflicts.length ? `, ${conflicts.length} çakışma bu dosyadaki metinle korundu (gelen metin geçmişe yazıldı).` : '.')
   );
 }
 
@@ -5873,7 +5936,11 @@ function setupEvents() {
     if (t.dataset.q !== undefined) {
       const c = currentCase(),
         q = c.questions[Number(t.dataset.q)];
-      if (q) q[t.dataset.k] = t.value;
+      if (q) {
+        q[t.dataset.k] = t.value;
+        // Cevap düzenlemesi ayrı sayılır; birleştirmede "kim dokundu" buna dayanır.
+        if (t.dataset.k === 'answer' && t.value.trim()) q.answerRev = 1;
+      }
       persist();
     } else readQuestionsForm();
   });
@@ -6217,7 +6284,9 @@ function setupEvents() {
       const s = m.segments[Number(ix)];
       if (!s) return;
       const cur = (s.text || '').trim();
-      s.text = cur ? cur + ' ' + text : text;
+      const prev = s.text;
+      setSegmentText(s, cur ? cur + ' ' + text : text);
+      pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
       updateSegListItem(m, Number(ix));
@@ -6230,7 +6299,9 @@ function setupEvents() {
       const ix = Number(clear.dataset.quickClear);
       const s = m.segments[ix];
       if (!s) return;
-      s.text = '';
+      const prev = s.text;
+      setSegmentText(s, '');
+      pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
       updateSegListItem(m, ix);
@@ -6274,8 +6345,9 @@ function setupEvents() {
     const m = currentCase().materials.find((x) => x.id === id);
     const s = m?.segments[Number(el.dataset.seg)];
     if (!s) return;
-    if (el.dataset.key === 'text') s.text = el.value;
-    else if (el.dataset.key === 'speaker') s.speaker = el.value;
+    if (el.dataset.key === 'text') {
+      if (setSegmentText(s, el.value)) markTextEdited(s);
+    } else if (el.dataset.key === 'speaker') s.speaker = el.value;
     else s[el.dataset.key] = el.value;
     persist();
     updateSegListItem(m, Number(el.dataset.seg));
@@ -6372,32 +6444,6 @@ function setupEvents() {
     refreshSegChips(m);
     renderOverview();
     if ($('#view-report').classList.contains('active')) renderReport();
-  });
-  $('#view-audio').addEventListener('focusin', (e) => {
-    const el = e.target;
-    if (!el.dataset || el.dataset.key !== 'text') return;
-    const card = el.closest('.audio-card');
-    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
-    const m = currentCase().materials.find((x) => x.id === id);
-    const s = m?.segments[Number(el.dataset.seg)];
-    if (s) snapshotSegmentText(s);
-  });
-  $('#view-audio').addEventListener('focusout', (e) => {
-    const el = e.target;
-    if (!el.dataset || el.dataset.key !== 'text') return;
-    const card = el.closest('.audio-card');
-    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
-    const m = currentCase().materials.find((x) => x.id === id);
-    const i = Number(el.dataset.seg);
-    const s = m?.segments[i];
-    if (!s) return;
-    if (pushSegmentHistory(s)) persist(); // Odak aynı detay panelinde kaldıysa paneli yeniden çizmeyiz; yoksa odak kaybolur.
-    const rt = e.relatedTarget;
-    const samePane = rt && rt.closest && rt.closest('.seg-detail');
-    if (!samePane) {
-      updateSegListItem(m, i);
-      if ($('#view-report').classList.contains('active')) renderReport();
-    }
   });
   $('#loadModelBtn').addEventListener('click', () => ensureModel().catch((e) => showToast(e.message)));
   const modelSelectEl = $('#modelSelect');

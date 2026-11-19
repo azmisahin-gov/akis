@@ -317,6 +317,140 @@ console.log('\n[7] Ortak çalışma birleştirmesi');
   eq('kendiyle birleşme çakışma üretmez', self.conflicts.length, 0);
 }
 
+// --- 7c. Yardımcı düzeltmesi birleştirmede korunuyor ---------------------
+// Gerçek senaryo: bilirkişi kendi bilgisayarında çözümlemeyi yapar, işi
+// bitmez. Yardımcısı BAŞKA bilgisayarda metni düzeltir. Eski kod çakışmada
+// her zaman yerel metni tutuyordu; yardımcının düzeltmesi sessizce kayboluyor,
+// üstüne "onaylandı" damgası yanlış metne vuruluyordu. Adli belgede kabul
+// edilemez. Bu blok o hatanın geri gelmesini engeller.
+console.log('\n[7c] Yardımcı düzeltmesi birleştirmede korunuyor');
+{
+  const mk = (textRev, text, review) => {
+    const c = emptyCase({ id: 'c1', fileNo: '1' });
+    c.materials.push(
+      emptyMaterial({
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [emptySegment({ id: 's1', start: '00:00:00', end: '00:00:05', text, review, textRev })]
+      })
+    );
+    return c;
+  };
+
+  // (a) Yalnız yardımcı düzenlemiş: düzeltme ve onay birlikte gelmeli.
+  let r = mergeCases(mk(0, 'merhaba dünya', 'pending'), mk(1, 'Merhaba dünya.', 'approved'));
+  let seg = r.merged.materials[0].segments[0];
+  eq('yardımcı düzeltmesi korundu', seg.text, 'Merhaba dünya.');
+  eq('yardımcının onayı korundu', seg.review, 'approved');
+  eq('düzeltme çakışma sayılmadı', r.conflicts.length, 0);
+  ok('kaybolan yerel metin geçmişe yazıldı', (seg.history || []).some((h) => h.text === 'merhaba dünya'));
+
+  // (b) Yalnız yerel taraf düzenlemiş: yerel metin korunur, gelen geçmişe girer.
+  r = mergeCases(mk(1, 'yerel düzeltme', 'approved'), mk(0, 'ham metin', 'pending'));
+  seg = r.merged.materials[0].segments[0];
+  eq('yerel düzeltme korundu', seg.text, 'yerel düzeltme');
+  ok('gelen metin geçmişe yazıldı', (seg.history || []).some((h) => h.text === 'ham metin'));
+
+  // (c) İki taraf da düzenlemiş: sessizce seçilmez, çakışma bildirilir.
+  r = mergeCases(mk(1, 'yerel metin', 'approved'), mk(1, 'gelen metin', 'approved'));
+  eq('iki taraf da düzenlediyse metin değişmez', r.merged.materials[0].segments[0].text, 'yerel metin');
+  eq('iki taraflı düzenleme çakışma olarak raporlandı', r.conflicts.length, 1);
+  ok('çakışma gerekçesi taşıyor', /iki taraf da/.test(r.conflicts[0].reason || ''));
+
+  // (d) Kimse düzenlememiş ama metin farklı: yine sessiz seçim yok.
+  r = mergeCases(mk(0, 'a', 'pending'), mk(0, 'b', 'pending'));
+  eq('kaynaksız fark çakışma olarak raporlandı', r.conflicts.length, 1);
+
+  // (e) Önizleme birleştirmeyle aynı kararı vermeli.
+  const cmp = compareCases(mk(0, 'merhaba dünya', 'pending'), mk(1, 'Merhaba dünya.', 'approved'));
+  eq('önizleme otomatik çözüleni çakışma saymaz', cmp.conflicts.length, 0);
+  eq('önizleme otomatik çözümü sayar', cmp.segments.autoResolved, 1);
+  const cmp2 = compareCases(mk(1, 'yerel', 'approved'), mk(1, 'gelen', 'approved'));
+  eq('önizleme iki taraflı düzenlemeyi çakışma sayar', cmp2.conflicts.length, 1);
+
+  // (f) Soru cevabında aynı mantık.
+  const q1 = emptyCase({ id: 'c1' });
+  q1.questions.push(emptyQuestion({ id: 'q1', question: 'S?', answer: '', answerRev: 0 }));
+  const q2 = structuredClone(q1);
+  q2.questions[0].answer = 'Yardımcının cevabı';
+  q2.questions[0].answerRev = 1;
+  const qr = mergeCases(q1, q2);
+  eq('yardımcının soru cevabı alındı', qr.merged.questions[0].answer, 'Yardımcının cevabı');
+  eq('soru cevabı çakışma sayılmadı', qr.conflicts.length, 0);
+  // (g) Yeniden çözümleme: elle düzeltme sessizce silinmez, bölüm çoğalmaz.
+  const rm = emptyCase({ id: 'c1' });
+  rm.materials.push(
+    emptyMaterial({
+      id: 'm1',
+      fileName: 'a.wav',
+      sha256: 'h',
+      transcribedAt: '2026-01-01T00:00:00Z',
+      segments: [emptySegment({ id: 's1', start: '00:00:00', end: '00:00:05', text: 'elle düzeltilmiş', textRev: 1 })]
+    })
+  );
+  const rt = emptyCase({ id: 'c1' });
+  rt.materials.push(
+    emptyMaterial({
+      id: 'm1',
+      fileName: 'a.wav',
+      sha256: 'h',
+      transcribedAt: '2026-01-02T00:00:00Z',
+      segments: [emptySegment({ id: 's9', start: '00:00:00', end: '00:00:05', text: 'yeni çözümleme' })]
+    })
+  );
+  const rr = mergeCases(rm, rt);
+  eq('yeniden çözümlemede elle düzeltme korundu', rr.merged.materials[0].segments[0].text, 'elle düzeltilmiş');
+  eq('yeniden çözümlemede bölüm çoğalmadı', rr.merged.materials[0].segments.length, 1);
+  ok('yeniden çözümleme çakışma olarak bildirildi', rr.conflicts.some((c) => c.kind === 'material-retranscribed'));
+}
+
+// --- 7d. Uçtan uca: dışa aktar → içe aktar → düzelt → birleştir --------
+// Kimlikler üretim anında verilmezse iki bilgisayarda AYRI kimlikler oluşur ve
+// birleştirme bölümleri hiç eşleştiremez (her bölüm "yeni bölüm" sanılır).
+// Bu blok, kimliğin paket gidiş-dönüşünde korunduğunu doğrular.
+console.log('\n[7d] Uçtan uca: dışa aktar → içe aktar → düzelt → birleştir');
+{
+  // Deşifre çıktısı gibi kimlikli bölümler (parseAsrResult artık id veriyor).
+  const raw = {
+    schemaVersion: 3,
+    id: 'c1',
+    court: 'A',
+    fileNo: '1',
+    materials: [
+      {
+        id: 'm1',
+        fileName: 'a.wav',
+        sha256: 'h',
+        segments: [
+          { id: 'sg_aaa', start: '00:00:00', end: '00:00:05', text: 'merhaba dünya', review: 'pending', textRev: 0 },
+          { id: 'sg_bbb', start: '00:00:05', end: '00:00:09', text: 'ikinci cümle', review: 'pending', textRev: 0 }
+        ]
+      }
+    ]
+  };
+  // Paket gidiş-dönüşü (JSON) iki ayrı bilgisayarı temsil eder.
+  const expert = normalizeCase(JSON.parse(JSON.stringify(raw)));
+  const helper = normalizeCase(JSON.parse(JSON.stringify(raw)));
+  eq(
+    'kimlikler paket gidiş-dönüşünde korunuyor',
+    expert.materials[0].segments.map((s) => s.id),
+    helper.materials[0].segments.map((s) => s.id)
+  );
+
+  // Yardımcı yalnız ikinci bölümün metnini düzeltir ve onaylar.
+  helper.materials[0].segments[1].text = 'İkinci cümle.';
+  helper.materials[0].segments[1].textRev = 1;
+  helper.materials[0].segments[1].review = 'approved';
+
+  const r = mergeCases(expert, helper);
+  eq('yardımcının düzeltmesi birleşmede korundu', r.merged.materials[0].segments[1].text, 'İkinci cümle.');
+  eq('onay düzeltilmiş metne taşındı', r.merged.materials[0].segments[1].review, 'approved');
+  eq('dokunulmamış bölüm değişmedi', r.merged.materials[0].segments[0].text, 'merhaba dünya');
+  eq('bölüm sayısı artmadı (kimlik eşleşti)', r.merged.materials[0].segments.length, 2);
+  eq('yanlış eşleşme çakışması yok', r.conflicts.length, 0);
+}
+
 // --- 7b. Birleştirme önizlemesi (compareCases) --------------------------
 // Kullanıcı birleştirmeden ÖNCE ne değişeceğini görmeli. Bu fonksiyon hiçbir
 // şey değiştirmez; yalnız karşılaştırır. Yanlış özet = yanlış karar.

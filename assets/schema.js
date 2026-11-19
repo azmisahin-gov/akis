@@ -187,6 +187,8 @@ export function emptyQuestion(over = {}) {
     no: '', // Görevlendirme yazısındaki numara (varsa)
     question: '',
     answer: '',
+    // Cevap düzenleme sayacı; bölümdeki textRev ile aynı mantık.
+    answerRev: 0,
     // Dayanak artık serbest metin değil: bölümlere işaret eder.
     evidence: [], // [{ materialId, segmentId, note }]
     basisNote: '', // Serbest açıklama (delil işaretine ek)
@@ -218,6 +220,10 @@ export function emptySegment(over = {}) {
     end: '',
     speakerId: '', // speakers[].id — ad değil
     text: '',
+    // Metin düzenleme sayacı. Birleştirmede hangi tarafın metninin daha yeni
+    // olduğunu belirler. Duvar saati değil sayaç kullanılır: iki bilgisayarın
+    // saati kayabilir, sayaç kaymaz.
+    textRev: 0,
     review: 'pending',
     obs: { noise: false, overlap: false, inaudible: false, music: false },
     history: [], // [{ text, at, actor }]
@@ -364,6 +370,7 @@ export function normalizeSegment(src = {}) {
     end: str(s.end),
     speakerId: str(s.speakerId),
     text: str(s.text),
+    textRev: Math.max(0, Math.floor(Number(s.textRev) || 0)),
     review: pick(s.review, REVIEW_STATE, 'pending'),
     obs: Object.fromEntries(OBS_KEYS.map((k) => [k, !!obs[k]])),
     history: Array.isArray(s.history)
@@ -374,6 +381,8 @@ export function normalizeSegment(src = {}) {
   };
   // v2 kalıntısı: `checked: true` → approved.
   if (!s.review && s.checked === true) out.review = 'approved';
+  // Oturum içi geçici alanlar (__editSnapshot vb.) kayda ve dışa aktarıma girmez.
+  for (const k of Object.keys(out)) if (k.startsWith('__')) delete out[k];
   // v2 kalıntısı: `speaker` (ad) → konuşmacı listesinde eşleşen id.
   if (!out.speakerId && typeof s.speaker === 'string') out._legacySpeaker = s.speaker;
   return out;
@@ -464,6 +473,7 @@ export function normalizeQuestion(src = {}) {
     no: str(q.no),
     question: str(q.question),
     answer: str(q.answer),
+    answerRev: Math.max(0, Math.floor(Number(q.answerRev) || 0)),
     evidence,
     // v2: `basis` serbest metindi → basisNote'a taşınır, kaybolmaz.
     basisNote: str(q.basisNote || q.basis),
@@ -681,6 +691,29 @@ export function verifyLogChain(log) {
 // İki dosya kopyası birleştirilirken hangi tarafın kazandığı ve neyin
 // çakıştığı açıkça raporlanır. Sessizce üzerine yazmak YOK.
 
+/** Bölüm metin geçmişine bir sürüm ekler (kaybolan metin burada saklanır). */
+function pushSegHistory(s, text, actor, at) {
+  if (!text) return;
+  if (!Array.isArray(s.history)) s.history = [];
+  s.history.push({ text, at: at || new Date().toISOString(), actor: actor || '' });
+}
+
+/** Üst düzey metin alanı: boşsa doldur, ikisi de doluysa çakışma bildir. */
+function mergeTextField(merged, mine, theirs, newer, key, applied, conflicts, label) {
+  const mv = mine[key] || '';
+  const tv = theirs[key] || '';
+  if (!tv || tv === mv) return;
+  if (!mv) {
+    merged[key] = tv;
+    applied.push(`${label}: boş alan dolduruldu`);
+  } else if (newer) {
+    merged[key] = tv;
+    applied.push(`${label}: gelen sürüm alındı (daha yeni)`);
+  } else {
+    conflicts.push({ kind: 'case-field', field: key, mine: mv, theirs: tv });
+  }
+}
+
 /**
  * @param {object} mine  Yerel dosya (v3)
  * @param {object} theirs Gelen dosya (v3)
@@ -692,18 +725,30 @@ export function mergeCases(mine, theirs) {
   if (!mine || !theirs) return { merged: mine || theirs, applied, conflicts };
   const merged = structuredCloneSafe(mine);
 
-  // Üst düzey skaler alanlar: gelen daha yeniyse onun değeri alınır.
+  // Üst düzey skaler alanlar: boş alan her zaman doldurulur (veri kaybı yok);
+  // ikisi de doluysa gelen dosya daha yeniyse onun değeri alınır, aksi hâlde
+  // sessizce seçmek yerine çakışma olarak raporlanır.
   const newer = (theirs.updatedAt || '') > (mine.updatedAt || '');
-  if (newer) {
-    for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) {
-      if ((theirs[k] || '') !== (mine[k] || '') && (theirs[k] || '')) {
-        merged[k] = theirs[k];
-        applied.push(`${k}: gelen sürüm alındı`);
-      }
-    }
+  for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) {
+    mergeTextField(merged, mine, theirs, newer, k, applied, conflicts, k);
   }
 
-  // Bölümler: id ile eşleşen kayıtlarda METİN çakışması ayrıca raporlanır.
+  // Rapor ve görevlendirme metinleri: yardımcı bu alanları da düzeltebilir.
+  merged.report = merged.report || {};
+  merged.assignment = merged.assignment || {};
+  for (const [group, keys] of [
+    ['report', ['methodText', 'limitationsText', 'conclusionText']],
+    ['assignment', ['scope', 'body']]
+  ]) {
+    const mg = mine[group] || {};
+    const tg = theirs[group] || {};
+    merged[group] = merged[group] || {};
+    for (const k of keys) mergeTextField(merged[group], mg, tg, newer, k, applied, conflicts, `${group}.${k}`);
+  }
+
+  // Bölümler: id ile eşleşen kayıtlarda metin, düzenleme sayacıyla (textRev)
+  // çözülür. Sayaç yüksek olan taraf daha yeni düzenlemedir ve kazanır; kaybeden
+  // metin silinmez, geçmişe yazılır. Sayaçlar eşitse gerçek çakışma bildirilir.
   const myMats = new Map((merged.materials || []).map((m) => [m.id, m]));
   for (const tm of theirs.materials || []) {
     const mm = myMats.get(tm.id);
@@ -712,34 +757,72 @@ export function mergeCases(mine, theirs) {
       applied.push(`kayıt eklendi: ${tm.fileName || tm.id}`);
       continue;
     }
-    // Kayıt düzeyi: durum ve ölçüm gelen tarafta daha yeniyse alınır.
+    const myEdits = (mm.segments || []).filter((s) => (Number(s.textRev) || 0) > 0).length;
     if ((tm.transcribedAt || '') > (mm.transcribedAt || '')) {
-      mm.status = tm.status;
-      mm.segments = tm.segments;
-      mm.transcribedWithModel = tm.transcribedWithModel;
-      mm.transcribedAt = tm.transcribedAt;
-      applied.push(`kayıt çözümlemesi güncellendi: ${tm.fileName || tm.id}`);
-    } else {
-      // Bölüm bazında birleştir.
-      const mySegs = new Map((mm.segments || []).map((s) => [s.id, s]));
-      for (const ts of tm.segments || []) {
-        const ms = mySegs.get(ts.id);
-        if (!ms) {
-          mm.segments.push(ts);
-          applied.push(`bölüm eklendi: ${ts.id}`);
-          continue;
-        }
-        if ((ms.text || '') !== (ts.text || '')) {
-          // İkisi de değişmişse çakışma; kullanıcı karar verir.
+      if (myEdits) {
+        // Yeniden çözümleme bölüm kimliklerini baştan üretir; elle yapılmış
+        // düzeltmeleri sessizce silmek adli belgede kabul edilemez. Bölüm
+        // birleştirmesine de girilmez: kimlikler tutmadığı için her bölüm
+        // "yeni" sanılır ve içerik çoğalırdı.
+        conflicts.push({
+          kind: 'material-retranscribed',
+          materialId: mm.id,
+          materialName: mm.fileName || mm.id,
+          mine: `${myEdits} elle düzeltilmiş bölüm`,
+          theirs: `yeni çözümleme: ${tm.transcribedAt}`
+        });
+        continue;
+      } else {
+        mm.status = tm.status;
+        mm.segments = tm.segments;
+        mm.transcribedWithModel = tm.transcribedWithModel;
+        mm.transcribedAt = tm.transcribedAt;
+        applied.push(`kayıt çözümlemesi güncellendi: ${tm.fileName || tm.id}`);
+        continue;
+      }
+    }
+    // Bölüm bazında birleştir.
+    const mySegs = new Map((mm.segments || []).map((s) => [s.id, s]));
+    for (const ts of tm.segments || []) {
+      const ms = mySegs.get(ts.id);
+      if (!ms) {
+        mm.segments.push(ts);
+        applied.push(`bölüm eklendi: ${ts.id}`);
+        continue;
+      }
+      const mt = ms.text || '';
+      const tt = ts.text || '';
+      if (mt !== tt) {
+        const touchedMine = (Number(ms.textRev) || 0) > 0;
+        const touchedTheirs = (Number(ts.textRev) || 0) > 0;
+        if (!touchedMine && touchedTheirs) {
+          // Yalnız gelen taraf düzenlemiş (yardımcı düzeltmesi): alınır.
+          pushSegHistory(ms, mt, 'birleştirme: yerel sürüm');
+          ms.text = tt;
+          ms.textRev = Number(ts.textRev) || 1;
+          // Onay metne bağlıdır: metin değiştiyse gelen tarafın kontrol durumu
+          // gelir; eski onay yeni metne taşınmaz.
+          ms.review = ts.review;
+          applied.push(`bölüm metni gelen sürümden alındı (gelen taraf düzenlemiş): ${ms.id}`);
+        } else if (touchedMine && !touchedTheirs) {
+          // Yalnız yerel taraf düzenlemiş: korunur, gelen metin geçmişe yazılır.
+          pushSegHistory(ms, tt, 'birleştirme: gelen sürüm');
+          applied.push(`bölüm metni yerel sürümde korundu (yerel taraf düzenlemiş): ${ms.id}`);
+        } else {
+          // İki taraf da düzenlemiş ya da ikisi de dokunmamış: sessizce seçmek
+          // adli belgede kabul edilemez. Kararı bilirkişi verir.
           conflicts.push({
             kind: 'segment-text',
             materialId: mm.id,
             segmentId: ms.id,
-            mine: ms.text || '',
-            theirs: ts.text || ''
+            mine: mt,
+            theirs: tt,
+            reason: touchedMine && touchedTheirs ? 'iki taraf da düzenlemiş' : 'metin farklı, düzenleme kaydı yok'
           });
         }
-        // Kontrol durumu ilerlemiş olanı al (pending < relisten < approved/inaudible).
+      } else {
+        // Metin aynı: yalnız kontrol durumu ilerleyebilir
+        // (pending < relisten < inaudible/approved).
         const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
         if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) {
           ms.review = ts.review;
@@ -749,19 +832,36 @@ export function mergeCases(mine, theirs) {
     }
   }
 
-  // Sorular: id ile eşleşir; cevap boşsa gelen doldurur.
+  // Sorular: id ile eşleşir; cevap düzenleme sayacıyla (answerRev) çözülür.
   const myQs = new Map((merged.questions || []).map((q) => [q.id, q]));
   for (const tq of theirs.questions || []) {
     const mq = myQs.get(tq.id);
     if (!mq) {
       merged.questions.push(tq);
       applied.push(`soru eklendi: ${tq.id}`);
-    } else if (!mq.answer && tq.answer) {
-      mq.answer = tq.answer;
+      continue;
+    }
+    const ma = mq.answer || '';
+    const ta = tq.answer || '';
+    if (!ta || ta === ma) continue;
+    if (!ma) {
+      mq.answer = ta;
+      mq.answerRev = Number(tq.answerRev) || 1;
       mq.answeredBy = tq.answeredBy || '';
-      applied.push(`soru cevabı alındı: ${tq.id}`);
-    } else if (mq.answer && tq.answer && mq.answer !== tq.answer) {
-      conflicts.push({ kind: 'question-answer', questionId: mq.id, mine: mq.answer, theirs: tq.answer });
+      applied.push(`soru cevabı dolduruldu: ${mq.id}`);
+      continue;
+    }
+    const touchedMine = (Number(mq.answerRev) || 0) > 0;
+    const touchedTheirs = (Number(tq.answerRev) || 0) > 0;
+    if (!touchedMine && touchedTheirs) {
+      mq.answer = ta;
+      mq.answerRev = Number(tq.answerRev) || 1;
+      mq.answeredBy = tq.answeredBy || mq.answeredBy;
+      applied.push(`soru cevabı gelen sürümden alındı (gelen taraf düzenlemiş): ${mq.id}`);
+    } else if (touchedMine && !touchedTheirs) {
+      applied.push(`soru cevabı yerel sürümde korundu (yerel taraf düzenlemiş): ${mq.id}`);
+    } else {
+      conflicts.push({ kind: 'question-answer', questionId: mq.id, mine: ma, theirs: ta });
     }
   }
 
@@ -808,8 +908,9 @@ export function compareCases(mine, theirs) {
     mineLabel: '',
     theirsLabel: '',
     materials: { added: [], same: [], differ: [] },
-    segments: { added: 0, changed: [], reviewAdvanced: 0 },
-    questions: { added: 0, filled: 0, conflicts: [] },
+    segments: { added: 0, changed: [], reviewAdvanced: 0, autoResolved: 0 },
+    questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
+    caseFields: { filled: [], autoResolved: [], conflicts: [] },
     team: { added: [] },
     conflicts: []
   };
@@ -818,6 +919,29 @@ export function compareCases(mine, theirs) {
   const label = (c) => `${c.fileNo || '—'} · ${c.court || '—'}`;
   const out = { ...empty, mineLabel: label(mine), theirsLabel: label(theirs) };
   out.sameFile = mine.id === theirs.id;
+  const newer = (theirs.updatedAt || '') > (mine.updatedAt || '');
+
+  // Üst düzey metin alanları: önizleme, birleştirmenin gerçekte ne yapacağını
+  // göstermeli. Boş alan dolar; iki dolu farklı değer, gelen daha yeniyse
+  // otomatik çözülür, değilse çakışma sayılır.
+  const cmpField = (group, key, labelText) => {
+    const mg = group ? mine[group] || {} : mine;
+    const tg = group ? theirs[group] || {} : theirs;
+    const mv = mg[key] || '';
+    const tv = tg[key] || '';
+    if (!tv || tv === mv) return;
+    const item = { field: labelText, mine: mv, theirs: tv };
+    if (!mv) out.caseFields.filled.push(item);
+    else if (newer) out.caseFields.autoResolved.push(item);
+    else out.caseFields.conflicts.push(item);
+  };
+  for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
+  for (const [g, keys] of [
+    ['report', ['methodText', 'limitationsText', 'conclusionText']],
+    ['assignment', ['scope', 'body']]
+  ]) {
+    for (const k of keys) cmpField(g, k, `${g}.${k}`);
+  }
 
   const mineMats = new Map((mine.materials || []).map((m) => [m.id, m]));
   for (const tm of theirs.materials || []) {
@@ -838,14 +962,22 @@ export function compareCases(mine, theirs) {
       }
       const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
       if ((ms.text || '') !== (ts.text || '')) {
-        out.segments.changed.push({
-          materialId: mm.id,
-          materialName: mm.fileName || mm.id,
-          segmentId: ms.id,
-          mine: ms.text || '',
-          theirs: ts.text || ''
-        });
         matDiffer = true;
+        const touchedMine = (Number(ms.textRev) || 0) > 0;
+        const touchedTheirs = (Number(ts.textRev) || 0) > 0;
+        if (touchedMine === touchedTheirs) {
+          // İki taraf da düzenlemiş ya da ikisi de dokunmamış: gerçek çakışma.
+          out.segments.changed.push({
+            materialId: mm.id,
+            materialName: mm.fileName || mm.id,
+            segmentId: ms.id,
+            mine: ms.text || '',
+            theirs: ts.text || ''
+          });
+        } else {
+          // Yalnız bir taraf düzenlemiş: birleştirme o tarafı alır (otomatik).
+          out.segments.autoResolved++;
+        }
       }
       if ((rank[ts.review] ?? 0) > (rank[ms.review] ?? 0)) out.segments.reviewAdvanced++;
     }
@@ -860,9 +992,13 @@ export function compareCases(mine, theirs) {
       out.questions.added++;
       continue;
     }
-    if (!mq.answer && tq.answer) out.questions.filled++;
-    else if (mq.answer && tq.answer && mq.answer !== tq.answer)
-      out.questions.conflicts.push({ id: mq.id, question: mq.question || '', mine: mq.answer, theirs: tq.answer });
+    const ma = mq.answer || '';
+    const ta = tq.answer || '';
+    if (!ta || ta === ma) continue;
+    if (!ma) out.questions.filled++;
+    else if (((Number(mq.answerRev) || 0) > 0) === ((Number(tq.answerRev) || 0) > 0))
+      out.questions.conflicts.push({ id: mq.id, question: mq.question || '', mine: ma, theirs: ta });
+    else out.questions.autoResolved++;
   }
 
   const mineTeam = new Set((mine.team || []).map((t) => t.id));
@@ -870,7 +1006,7 @@ export function compareCases(mine, theirs) {
     if (!mineTeam.has(tt.id)) out.team.added.push({ id: tt.id, name: tt.name || tt.id, role: tt.role });
   }
 
-  out.conflicts = [...out.segments.changed, ...out.questions.conflicts];
+  out.conflicts = [...out.segments.changed, ...out.questions.conflicts, ...out.caseFields.conflicts];
   return out;
 }
 

@@ -158,6 +158,20 @@ korunur.
 **Birleştirme:** `mergeCases(mine, theirs)` — id ile eşleştirir, metin
 çakışmasını sessizce EZMEZ, `conflicts[]` olarak raporlar.
 
+**Kimlik üretim anında verilir (v2.53):** `parseAsrResult`, elle bölüm ekleme,
+ikiye bölme ve paragraf oluşturma bölüme `newId('sg')` verir. Kimlik sonradan
+(normalleştirmede) atanırsa iki bilgisayarda AYRI kimlikler oluşur ve
+birleştirme bölümleri hiç eşleştiremez — her bölüm "yeni bölüm" sanılır.
+
+**Metin düzenleme işareti `textRev` (v2.53):** Bir metne insan eli değdiğinde
+`textRev` 1 olur. Birleştirmede metinler farklıysa yalnız bir taraf düzenlemişse
+o taraf alınır; iki taraf da düzenlemişse **sessiz seçim yapılmaz**, çakışma
+bildirilir. Ölçüt sayacın büyüklüğü değil, sıfırdan farklı olmasıdır (çok yazan
+haksız yere kazanmasın). Kaybeden metin `history`'ye yazılır. Onay metne
+bağlıdır: metin değişince kontrol durumu gelen taraftan alınır. Bölüm metnini
+`setSegmentText()` ile yazın ve `pushSegmentHistory()` çağırın; doğrudan
+`s.text = ...` ataması işareti atlar ve düzeltme birleştirmede kaybolur.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -306,7 +320,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.52.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.53.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
