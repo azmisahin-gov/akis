@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.31.**
+yazılır. **Güncel sürüm: v2.49.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.49 — Rapor bilirkişi adına, seviye ölçümü, sürüm disiplini (tamamlandı)
+
+Rapor çıktılarından uygulama kimliği çıkarıldı (alt bilgi, yöntem metni, UDF
+tablo adları); kapak ve Word üst bilgisi dosyada girilen uzmanlık alanını
+gösteriyor. Ses seviyesi/kırpılma ölçümü (`analyzeLevels`) eklendi ve üç rapor
+oluşturucusuna tek kaynaktan bağlandı; ölçülmemiş kayıt tabloya girmiyor.
+v2.32–v2.48 sürüm kayması giderildi ve `tools/surum-testi.mjs` ile kalıcı
+denetime bağlandı. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.0 — Rapor metni tutarlılığı (tamamlandı)
 
@@ -77,10 +86,12 @@ Hepsi deterministik; uydurma skor üretilmez.
 Yedekleme, model yöneticisi ve deşifre motoru karar mantığı saf fonksiyonlara
 ayrılıp otomatik teste bağlandı.
 
-### v2.27–v2.31 — Arayüz yenilemesi (tamamlandı)
+### v2.27–v2.48 — Arayüz yenilemesi (tamamlandı)
 
 Dar ray + üst bar + durum çubuğu; ayarlar ve dosya bilgileri sağ çekmecede;
-uzun açıklamalar ⓘ ipucunda; rapor tam ekran modu. Ayrıntı: `CHANGELOG.md`.
+uzun açıklamalar ⓘ ipucunda; rapor tam ekran modu; kayıt kartı sekmeleri,
+çalışma modu, tek kaydırma katmanı, ana oynat şeridi ve dinleme yardımcısının
+şeride taşınması. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.19–v2.26 — Model ve çözümleme düzeltmeleri (tamamlandı)
 

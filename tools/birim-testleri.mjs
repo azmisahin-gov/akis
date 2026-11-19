@@ -47,6 +47,8 @@ const EXPOSE = [
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
   'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
+  'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
+  'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
   'detectRepetition', 'segmentRepetitionFlag',
   'buildProjectPack', 'validateProjectPack', 'matchAudioEntries',
@@ -225,6 +227,112 @@ console.log('\n[7c] Sessizlik ölçümü');
   const stats = T.analyzeSilence(quiet, sr, 0, 3);
   eq('boş metin + sessiz -> işaret', !!T.segmentSilenceFlag(stats, '', T.isHallucination), true);
   eq('anlamlı metin + sessiz -> işaret yok', T.segmentSilenceFlag(stats, 'merhaba dünya', T.isHallucination), null);
+}
+
+// --- 7c-2. Seviye ölçümü ---------------------------------------------------
+// Tepe/RMS, tepe kırpılma, gürültü tabanı ve SNR ölçümü bilinen sinyallerle
+// sınanır. Bu değerler rapora "Seviye ölçümü" tablosu olarak girdiği için
+// yanlış hesaplanmaları doğrudan raporu bozar.
+console.log('\n[7c-2] Seviye ölçümü');
+{
+  const sr = 16000;
+  // 1 sn, 0.5 genlikli sinüs: tepe 0.5 -> -6.02 dBFS, RMS 0.3536 -> -9.03 dBFS.
+  const n = sr;
+  const s = new Float32Array(n);
+  for (let i = 0; i < n; i++) s[i] = 0.5 * Math.sin((2 * Math.PI * 200 * i) / sr);
+  const lv = T.analyzeLevels(s, sr);
+  eq('ölçüm geçerli', lv.ok, true);
+  near('tepe 0,5', lv.peak, 0.5, 0.01);
+  near('tepe dBFS ~ -6,0', lv.peakDb, -6.02, 0.15);
+  near('RMS ~ 0,354', lv.rms, 0.3536, 0.01);
+  near('RMS dBFS ~ -9,0', lv.rmsDb, -9.03, 0.15);
+  eq('kırpılma yok', lv.clippedSamples, 0);
+  eq('kırpılma oranı 0', lv.clippedRatio, 0);
+
+  // Tam ölçekli kare dalga: örneklerin yarısı kırpılmış sayılmalı.
+  const clip = new Float32Array(n);
+  for (let i = 0; i < n; i++) clip[i] = i < n / 2 ? 1 : -1;
+  const lv2 = T.analyzeLevels(clip, sr);
+  eq('kırpılma sayıldı', lv2.clippedSamples > n * 0.4, true);
+  eq('kırpılma oranı > %40', lv2.clippedRatio > 0.4, true);
+  near('tam ölçek tepe 0 dBFS', lv2.peakDb, 0, 0.01);
+
+  // Tek tükürük örneği kırpılma sayılmamalı (en az 3 ardışık örnek kuralı).
+  const spike = new Float32Array(sr).fill(0.1);
+  spike[100] = 1;
+  eq('tek örnek kırpılma sayılmaz', T.analyzeLevels(spike, sr).clippedSamples, 0);
+
+  // Gürültü tabanı ve SNR: sessiz zemin + yüksek düzey karışımı.
+  const mix = new Float32Array(sr * 2);
+  for (let i = 0; i < mix.length; i++) {
+    const t = i / sr;
+    mix[i] = t < 1 ? 0.002 * Math.sin((2 * Math.PI * 100 * i) / sr) : 0.5 * Math.sin((2 * Math.PI * 300 * i) / sr);
+  }
+  const lv3 = T.analyzeLevels(mix, sr);
+  eq('SNR ölçüldü', Number.isFinite(lv3.snrDb), true);
+  eq('SNR pozitif', lv3.snrDb > 10, true);
+  eq('gürültü tabanı konuşmadan düşük', lv3.noiseFloor < lv3.speechLevel, true);
+
+  // Boş kayıt ölçülemez.
+  eq('boş kayıt', T.analyzeLevels(new Float32Array(0), sr).ok, false);
+
+  // Sayısal sessizlik: gürültü tabanı tam 0 -> SNR sonsuz, "ölçülemedi" değil.
+  const gated = new Float32Array(sr);
+  for (let i = 0; i < sr / 2; i++) gated[i] = 0; // ilk yarı tam sessiz
+  for (let i = sr / 2; i < sr; i++) gated[i] = 0.4 * Math.sin((2 * Math.PI * 200 * i) / sr);
+  const lvG = T.analyzeLevels(gated, sr);
+  eq('sayısal sessizlikte SNR sonsuz', lvG.snrDb, Infinity);
+  eq('sonsuz SNR metni', T.snrText(Infinity), 'sonsuz (sayısal sessizlik)');
+  eq('ölçülemeyen SNR metni', T.snrText(null), 'ölçülemedi');
+  eq('normal SNR metni', T.snrText(42.06), '42,1 dB');
+  // Negatif sıfır yazılmaz: 0'a yuvarlanan değer "0,0" olur.
+  eq('negatif sıfır gösterilmez', T.fmtDb(-0.04), '0,0');
+  eq('küçük negatif korunur', T.fmtDb(-0.6), '-0,6');
+  // Gürültü tabanı tam sıfır -> sayısal sessizlik, "ölçülemedi" değil.
+  eq('sıfır gürültü tabanı', T.floorText(0), 'sessizlik (0)');
+  eq('normal gürültü tabanı', T.floorText(0.0005), '-66,0 dBFS');
+  eq('ölçülemeyen gürültü tabanı', T.floorText(NaN), 'ölçülemedi');
+}
+
+// --- 7c-3. Stereo ve bant genişliği --------------------------------------
+console.log('\n[7c-3] Stereo ve bant genişliği');
+{
+  const sr = 16000;
+  const n = sr;
+  // Aynı sinyal iki kanalda: korelasyon +1, denge 0 dB.
+  const a = new Float32Array(n), b = new Float32Array(n);
+  for (let i = 0; i < n; i++) { a[i] = 0.4 * Math.sin((2 * Math.PI * 200 * i) / sr); b[i] = a[i]; }
+  const st = T.analyzeStereo(a, b, sr);
+  eq('stereo ölçüm geçerli', st.ok, true);
+  near('korelasyon +1', st.correlation, 1, 0.01);
+  near('denge 0 dB', st.balanceDb, 0, 0.05);
+  near('DC ~0', st.dcOffsetL, 0, 0.01);
+
+  // Ters işaretli kanal: korelasyon -1.
+  const c2 = new Float32Array(n);
+  for (let i = 0; i < n; i++) c2[i] = -a[i];
+  near('ters faz korelasyon -1', T.analyzeStereo(a, c2, sr).correlation, -1, 0.01);
+
+  // Sağ kanal yarı genlikte: denge ~ +6 dB (sol daha yüksek).
+  const half = new Float32Array(n);
+  for (let i = 0; i < n; i++) half[i] = 0.2 * Math.sin((2 * Math.PI * 200 * i) / sr);
+  near('yarı genlik denge ~6 dB', T.analyzeStereo(a, half, sr).balanceDb, 6.02, 0.3);
+
+  // DC kayması doğru okunur.
+  const dc = new Float32Array(n).fill(0.05);
+  near('DC kayması 0,05', T.analyzeStereo(dc, dc, sr).dcOffsetL, 0.05, 1e-6);
+
+  eq('boş stereo', T.analyzeStereo(new Float32Array(0), new Float32Array(0), sr).ok, false);
+
+  // Bant genişliği: 300 Hz sinüs -> rolloff 300 Hz civarında olmalı.
+  const tone = new Float32Array(n);
+  for (let i = 0; i < n; i++) tone[i] = 0.5 * Math.sin((2 * Math.PI * 300 * i) / sr);
+  const ro = T.spectralRolloff(tone, sr);
+  eq('rolloff ölçüldü', !!ro, true);
+  eq('rolloff 300 Hz civarı', Math.abs(ro.rolloffHz - 300) < 120, true);
+  eq('Nyquist 8000', ro.nyquistHz, 8000);
+  // Çok kısa sinyal ölçülemez.
+  eq('kısa sinyal -> null', T.spectralRolloff(new Float32Array(100), sr), null);
 }
 
 // --- 7d. Terim yazım tutarlılığı ------------------------------------------

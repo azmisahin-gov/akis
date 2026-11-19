@@ -14,6 +14,10 @@ echo "### Rapor tutarlılık testi ###"
 node tools/rapor-tutarlilik-testi.mjs || fail=1
 
 echo
+echo "### Sürüm tutarlılık testi ###"
+node tools/surum-testi.mjs || fail=1
+
+echo
 if [ "$fail" -eq 0 ]; then
   echo "== TÜM TESTLER GEÇTİ =="
 else

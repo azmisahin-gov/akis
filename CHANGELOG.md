@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.31.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.49.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.49 — Rapor bilirkişi adına: uygulama kimliği çıktıdan çıkarıldı, seviye ölçümü eklendi
+
+Rapor, bilirkişinin bilimsel aracıyla ürettiği bir belgedir; belgenin kendisi
+bilirkişi adına yazılır ve aracın varlığından söz etmez. Bu sürüm o ilkeyi
+çıktının her yerinde uygular ve 56.12 uzmanlık alanının gerektirdiği eksik
+ölçümü (ses seviyesi) tamamlar.
+
+### Rapor metinlerinden uygulama kimliği çıkarıldı
+
+- Rapor alt bilgisindeki "AKİS çalışma çıktısı" ifadesi kaldırıldı; alt
+  bilgi yalnızca dosya numarası ve rapor tarihini taşır.
+- Yöntem metnindeki "uygulama depolamasında tutulur" ve "tarayıcı belleğine
+  alınarak işlenir" ifadeleri, aracın adını anmayan teknik anlatımla
+  değiştirildi (dosya baytları değiştirilmeden saklanır, SHA-256 hesaplanır,
+  çözümleme çalışma kopyası üzerinde yürütülür).
+- Konuşmacı ve köken girişlerindeki "uygulama … tespit etmez" kalıbı
+  "kendiliğinden tespit edilmemiştir" biçimine çevrildi; sınır beyanı korunur,
+  özne bilirkişi olur.
+- UDF tablo adlarındaki "AkisTable" öneki "Tablo" olarak nötrleştirildi.
+- Kapak üst satırı ve Word üst bilgisi artık sabit "56.12" yerine dosyada
+  girilen uzmanlık alanı kodunu gösterir (`expertFieldShort`).
+
+### Ses seviyesi ve kırpılma ölçümü (yeni araç)
+
+- `analyzeLevels`: tepe ve RMS düzeyi (dBFS), tepe kırpılma oranı (en az üç
+  ardışık tam ölçek örneği kuralıyla), gürültü tabanı ve sinyal/gürültü oranı.
+  Saf fonksiyon; birim testleriyle sınanır.
+- Analiz sekmesine "Seviye ölçümü" paneli ve ölçüm düğmesi eklendi; sonuç
+  kayda bağlanır ve işlem günlüğüne yazılır.
+- Rapor: "Ses seviyesi ve kırpılma ölçümü" bölümü HTML, DOCX ve UDF
+  çıktılarında aynı tek kaynaktan (`levelRowsForCase`) üretilir. Ölçüm
+  yapılmamış kayıt tabloya **girmez**; yapılmayan ölçüm rapora yazılmaz.
+- İnceleme özetine "Seviyesi ölçülen kayıt" satırı eklendi.
+
+### Dinleme yardımcısı düzeltmesi (v2.48 devamı)
+
+- Filtre açıkken kart yeniden çizildiğinde ses grafiği yeni oynatıcıya
+  bağlanmıyordu: arayüz "filtre açık" gösterirken ses özgün hâliyle çalıyordu.
+  Artık kalıcı filtre her çizimde yeniden uygulanır (gürültü kapısı dahil).
+- Dinleme filtresi seçimine erişilebilir ad eklendi (`aria-label`).
+- Taşıma sırasında düşen mesleki sınır cümlesi ("Kaynak ayrıştırma …
+  yapılmaz") geri getirildi.
+- Analiz sekmesinde kalan ölü CSS kuralları ve yanlış kalan yorumlar
+  temizlendi.
+
+### Sürüm disiplini
+
+- v2.32–v2.48 arasında `APP_VERSION` 2.31'de kalmış, yalnız `?v=` parametresi
+  artmıştı. Sürüm tek kaynaktan yeniden hizalandı: `APP_VERSION`,
+  `CHANGELOG`, `YOL_HARITASI`, README, OZELLIKLER ve AGENTS aynı numarayı
+  gösterir.
+- `tools/surum-testi.mjs` eklendi: sürüm bir yerde artırılıp başka yerde
+  unutulursa test kalır. `tools/test.sh` artık üç betiği çalıştırır.
 
 ## v1 — Yayımlanmış sürüm
 

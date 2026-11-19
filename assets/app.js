@@ -3,7 +3,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.31';
+const APP_VERSION = '2.49';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -107,6 +107,8 @@ const REPORT_TEXT = {
     'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.',
   defaultExpert: 'BİLİRKİŞİ',
   defaultField: '56.12',
+  toplineField: 'UZMANLIK ALANI · ',
+  expertFieldHeading: 'UZMANLIK ALANI',
   defaultInventoryIntro: 'İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.',
   noMaterials: 'İncelemeye sunulan ses kaydı bulunmamaktadır.',
   codecFallback: 'Ses dosyası',
@@ -121,7 +123,7 @@ const REPORT_TEXT = {
   inventoryHeaders: ['DOSYA ADI', 'BİÇİM / BOYUT', 'SÜRE', 'KANAL / ÖRNEKLEME', 'SHA-256 ÖZETİ'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   speakerIntro:
-    'Kayıtta konuşan kişiler, uzmanın verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler uzman beyanına dayanır; uygulama konuşmacı kimliğini kendiliğinden tespit etmez. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
   obsLabels: {
     noise: 'arka plan gürültüsü',
@@ -136,9 +138,14 @@ const REPORT_TEXT = {
     'Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümleme çıktısının referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm yalnızca referans metni bulunan kayıtlar için yapılabilir; gerçek dosyalarda referans metni genellikle bulunmaz.',
   werHeaders: ['KAYIT', 'MODEL', 'REFERANS KELİME', 'ÇIKTI KELİME', 'HATA', 'WER'],
   werNoRows: ['Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir).', '', '', '', '', ''],
+  levelHeading: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ',
+  levelIntro:
+    'Aşağıdaki değerler, kayıtların örneklerinden hesaplanan elektro-akustik ölçümlerdir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu ölçümler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.',
+  levelHeaders: ['KAYIT', 'TEPE (dBFS)', 'RMS (dBFS)', 'TEPE KIRPILMA', 'GÜRÜLTÜ TABANI', 'SİNYAL / GÜRÜLTÜ', 'EK ÖLÇÜMLER'],
+  rsLevel: 'Seviyesi ölçülen kayıt',
   originHeading: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ',
   originIntro:
-    'Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler uzman beyanına ve teslim tutanağına dayanır; uygulama ortamı kendiliğinden tespit etmez.',
+    'Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler bilirkişi beyanına ve teslim tutanağına dayanır; ortam türü kendiliğinden tespit edilmemiştir.',
   originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'KAYIT CİHAZI / TARİHİ'],
   originEmpty: '—',
   mediumTypes: [
@@ -200,7 +207,13 @@ const QUICK_TAGS = [
   { label: '[üst üste]', text: '[üst üste konuşma]', hint: 'İki veya daha fazla konuşma çakışıyor.' },
   { label: '[müzik/ses]', text: '[müzik/ses efekti]', hint: 'Müzik veya ses efekti; konuşma değil.' }
 ];
-const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden uygulama depolamasında tutulur. Otomatik çözümleme için ses verisi tarayıcı belleğine alınarak işlenir; kaynak ses dosyası üzerinde düzenleme yapılmaz.
+// Eski sürümlerin varsayılan yöntem metni (iki paragraf). Kayıtlı dosyalarda
+// aracın kendisini anan ifadeler kalmasın diye birebir karşılaştırmayla
+// değiştirilir; bilirkişinin kendi yazdığı metne dokunulmaz.
+const LEGACY_DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden uygulama depolamasında tutulur. Otomatik çözümleme için ses verisi tarayıcı belleğine alınarak işlenir; kaynak ses dosyası üzerinde düzenleme yapılmaz.
+
+Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
+const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
 
 Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
 let appState = { cases: [], activeCaseId: null };
@@ -288,6 +301,21 @@ function stripDerivedFields(state) {
     for (const m of c.materials || []) {
       if ('__peaks' in m) {
         delete m.__peaks;
+        cleaned = true;
+      }
+    }
+    // Eski yöntem metni aracın kendisini anıyordu; kayıtlı dosyalarda da
+    // rapora sızmasın diye yeni metne çevrilir. Yalnız eski varsayılanla
+    // birebir aynıysa değiştirilir; bilirkişinin yazdığı metne dokunulmaz.
+    if (c.methodText === LEGACY_DEFAULT_METHOD) {
+      c.methodText = DEFAULT_METHOD;
+      cleaned = true;
+    }
+    for (const m of c.materials || []) {
+      // Eski şemayla üretilmiş ölçüm gösterilmez; bilirkişi düğmeye basınca
+      // yeniden hesaplanır. Yapılmamış ölçüm yapılmış gibi görünmemeli.
+      if (m.levels && m.levels.ok && m.levels.schema !== LEVELS_SCHEMA) {
+        delete m.levels;
         cleaned = true;
       }
     }
@@ -740,8 +768,9 @@ function materialCardHtml(m) {
   // Kart iki ana işe göre düzenlenir:
   //  - DEŞİFRE (varsayılan): dinleme çubuğu (dalga formu + oynatıcı) ÜSTTE,
   //    bölüm listesi + metin ALTTA. Böylece dinlerken metni aynı anda görür.
-  //  - ANALİZ: spektrogram, dinleme yardımcıları, kanal seçimi, köken,
-  //    konuşmacılar. Bunlar deşifre sırasında nadiren gerekir.
+  //  - ANALİZ: spektrogram, seviye ölçümü, köken, konuşmacılar. Bunlar
+  //    deşifre sırasında nadiren gerekir. Dinleme yardımcısı ve kanal seçimi
+  //    ise her zaman görünür olmaları gerektiği için dinleme şeridindedir.
   // Tüm id/data-* işaretleri korunur.
   const tab = m.uiTab === 'record' ? 'record' : m.uiTab === 'listen' ? 'listen' : 'transcript';
   const tabBtn = (k, label, extra = '') =>
@@ -760,7 +789,7 @@ function materialCardHtml(m) {
             <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}"></audio>
             <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">Takip</button>
           </div>
-          <div class="listen-tools"><label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez."><select data-listen-filter="${esc(m.id)}">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
+          <div class="listen-tools"><label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz."><select data-listen-filter="${esc(m.id)}" aria-label="Dinleme yardımcısı">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
           <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu"></canvas>
         </div>
         <div class="transcript-editor">
@@ -771,6 +800,7 @@ function materialCardHtml(m) {
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
+        <div class="pane-section"><div class="pane-title">Seviye ölçümü<span class="info-i" tabindex="0" data-tip="Tepe ve RMS düzeyi, tepe kırpılma oranı, gürültü tabanı ve sinyal/gürültü oranı kaydın örneklerinden hesaplanır. Ölçüm yapılmadan rapora yazılmaz.">i</span></div><div id="level-panel-${esc(m.id)}">${levelPanelHtml(m)}</div><div class="evidence-actions"><button class="mini-button" data-measure-levels="${esc(m.id)}">Seviye ölçümü yap</button></div></div>
         <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
         <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div></div>
       </div>
@@ -778,6 +808,131 @@ function materialCardHtml(m) {
         <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
       </div>
     </div>`;
+}
+// Ondalık ayırıcı Türkçe biçimdedir; rapor ve arayüz aynı yardımcıyı kullanır.
+function fmtDb(x) {
+  if (!Number.isFinite(x)) return '—';
+  const t = x.toFixed(1);
+  // "-0,0" yazmak yanıltıcıdır; sıfıra yuvarlanan değerin işareti atılır.
+  return (Number(t) === 0 ? (0).toFixed(1) : t).replace('.', ',');
+}
+function fmtPct(x) {
+  return Number.isFinite(x) ? (x * 100).toFixed(3).replace('.', ',') : '—';
+}
+// Gürültü tabanı metni. Girdi LİNEER genliktir; dBFS'e burada çevrilir.
+// Tam sıfır sayısal sessizliktir, "ölçülemedi" değil.
+function floorText(linear) {
+  if (!Number.isFinite(linear)) return 'ölçülemedi';
+  if (linear <= 0) return 'sessizlik (0)';
+  return `${fmtDb(20 * Math.log10(linear))} dBFS`;
+}
+// SNR metni: ölçülemedi / sonsuz (sayısal sessizlik) / dB değeri.
+function snrText(x) {
+  if (x == null) return 'ölçülemedi';
+  if (!Number.isFinite(x)) return 'sonsuz (sayısal sessizlik)';
+  return `${fmtDb(x)} dB`;
+}
+// Stereo kayıtlarda kanal dengesi, faz ilişkisi ve DC kayması. Bunlar
+// montaj/format dönüşümü izlerini değerlendirmede kullanılan ölçülebilir
+// büyüklüklerdir; hiçbiri "montaj var/yok" iddiası üretmez, yalnızca ölçüm
+// sunar. Saf fonksiyon; birim testiyle sınanır.
+function analyzeStereo(left, right, sampleRate) {
+  const n = Math.min(left.length, right.length);
+  if (!n) return { ok: false, reason: 'boş kayıt' };
+  let sumL = 0,
+    sumR = 0,
+    sqL = 0,
+    sqR = 0,
+    prod = 0;
+  for (let i = 0; i < n; i++) {
+    const l = left[i],
+      r = right[i];
+    sumL += l;
+    sumR += r;
+    sqL += l * l;
+    sqR += r * r;
+    prod += l * r;
+  }
+  const meanL = sumL / n,
+    meanR = sumR / n;
+  const rmsL = Math.sqrt(sqL / n),
+    rmsR = Math.sqrt(sqR / n);
+  const db = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity);
+  // Pearson korelasyonu: +1 aynı faz, 0 ilgisiz, -1 ters faz.
+  const cov = prod / n - meanL * meanR;
+  const sdL = Math.sqrt(Math.max(0, sqL / n - meanL * meanL));
+  const sdR = Math.sqrt(Math.max(0, sqR / n - meanR * meanR));
+  const correlation = sdL > 0 && sdR > 0 ? cov / (sdL * sdR) : null;
+  return {
+    ok: true,
+    sampleCount: n,
+    dcOffsetL: meanL,
+    dcOffsetR: meanR,
+    rmsL,
+    rmsR,
+    rmsLdb: db(rmsL),
+    rmsRdb: db(rmsR),
+    balanceDb: rmsL > 0 && rmsR > 0 ? db(rmsL) - db(rmsR) : null,
+    correlation,
+    durationSec: n / (sampleRate || 16000)
+  };
+}
+// Etkin bant genişliği: ortalama güç spektrumunda toplam enerjinin verilen
+// yüzdesinin altında kaldığı üst frekans. Kaydın bant sınırlaması (yeniden
+// kodlama, telefon bandı, düşük örnekleme) hakkında ölçülebilir bilgi verir.
+// Saf fonksiyon: örnek dizisi, örnekleme frekansı, yüzde (varsayılan %95).
+function spectralRolloff(samples, sampleRate, percentile = 0.95, fftSize = 1024) {
+  const sr = sampleRate || 16000;
+  const n = samples.length;
+  if (n < fftSize) return null;
+  const frames = Math.min(32, Math.max(1, Math.floor(n / fftSize)));
+  const step = Math.floor((n - fftSize) / Math.max(1, frames));
+  const re = new Float32Array(fftSize),
+    im = new Float32Array(fftSize);
+  const hann = new Float32Array(fftSize);
+  for (let i = 0; i < fftSize; i++) hann[i] = 0.5 - 0.5 * Math.cos((2 * Math.PI * i) / (fftSize - 1));
+  const bins = fftSize >> 1;
+  const acc = new Float64Array(bins);
+  for (let f = 0; f < frames; f++) {
+    const start = f * step;
+    for (let i = 0; i < fftSize; i++) {
+      const idx = start + i;
+      re[i] = (idx < n ? samples[idx] : 0) * hann[i];
+      im[i] = 0;
+    }
+    const mag = fftMagnitude(re, im);
+    for (let b = 0; b < bins; b++) acc[b] += mag[b] * mag[b];
+  }
+  let total = 0;
+  for (let b = 0; b < bins; b++) total += acc[b];
+  if (!(total > 0)) return null;
+  let cum = 0;
+  for (let b = 0; b < bins; b++) {
+    cum += acc[b];
+    if (cum >= total * percentile) {
+      // Nyquist = sr/2, bins fftSize/2 noktasına yayılır.
+      return { rolloffHz: (b / bins) * (sr / 2), nyquistHz: sr / 2, percentile, frames };
+    }
+  }
+  return { rolloffHz: sr / 2, nyquistHz: sr / 2, percentile, frames };
+}
+// Seviye ölçümü paneli: ölçülmemişse ne yapılacağını söyler, ölçülmüşse
+// değerleri tek biçimde gösterir. Rapor metniyle aynı kaynaktan beslenir.
+function levelPanelHtml(m) {
+  const lv = m.levels;
+  if (!lv || !lv.ok || lv.schema !== LEVELS_SCHEMA) return '<div class="seg-empty-note">Seviye ölçümü yapılmadı. Düğmeye basıldığında kaydın örneklerinden hesaplanır.</div>';
+  return `<table class="record-table"><tbody>
+    <tr><td>Tepe düzeyi</td><td>${fmtDb(lv.peakDb)} dBFS</td></tr>
+    <tr><td>RMS düzeyi</td><td>${fmtDb(lv.rmsDb)} dBFS</td></tr>
+    <tr><td>Tepe kırpılma</td><td>%${fmtPct(lv.clippedRatio)} (${lv.clippedSamples} örnek)</td></tr>
+    <tr><td>Gürültü tabanı</td><td>${floorText(lv.noiseFloor)}</td></tr>
+    <tr><td>Sinyal/gürültü oranı</td><td>${snrText(lv.snrDb)}</td></tr>
+    ${lv.rolloff ? `<tr><td>Etkin bant genişliği (P95)</td><td>${fmtDb(lv.rolloff.rolloffHz)} Hz · Nyquist ${fmtDb(lv.rolloff.nyquistHz)} Hz · ${fmtDb(lv.analysisRate)} Hz örnekleme</td></tr>` : ''}
+    ${lv.stereo ? `<tr><td>Kanal dengesi (L−R)</td><td>${lv.stereo.balanceDb == null ? 'ölçülemedi' : fmtDb(lv.stereo.balanceDb) + ' dB'}</td></tr>
+    <tr><td>Kanallar arası korelasyon</td><td>${lv.stereo.correlation == null ? 'ölçülemedi' : lv.stereo.correlation.toFixed(3).replace('.', ',')}</td></tr>
+    <tr><td>DC kayması (L / R)</td><td>${lv.stereo.dcOffsetL.toFixed(5).replace('.', ',')} / ${lv.stereo.dcOffsetR.toFixed(5).replace('.', ',')}</td></tr>` : ''}
+    <tr><td>Ölçüm zamanı</td><td>${lv.at ? new Date(lv.at).toLocaleString('tr-TR') : '—'}</td></tr>
+  </tbody></table>`;
 }
 // Kayıt bilgileri paneli: teknik envanter, doğrulama, işlem günlüğü.
 function recordPanelHtml(m) {
@@ -837,10 +992,16 @@ async function renderMaterialDetail() {
     });
     if (m.tech?.channels === 2 && channelMode(m) !== 'both') ensureAudioGraph(m, player);
   }
-  // Dinleme filtresi açıksa şeritte görsel geri bildirim (yeniden çizimde korunur).
-  const lf = card.querySelector('[data-listen-filter]');
-  if (lf && lf.value !== 'off') {
-    const lb = lf.closest('.listen-filter-label');
+  // Kalıcı dinleme filtresi yeniden uygulanır. Kart her çizimde yeni bir
+  // <audio> düğümü kurduğu için eski grafik oynatıcıya bağlı kalır; filtre
+  // yalnızca gösterge olarak kalırsa ses özgün hâliyle çalar ve arayüz
+  // "filtre açık" diyerek yanlış bilgi verir.
+  if (url && listenFilter(m) !== 'off' && player) {
+    ensureAudioGraph(m, player).then((g) => {
+      if (g) runNoiseGate(m);
+    });
+    // Şeritte görsel geri bildirim: altın kenar + kalın yazı.
+    const lb = card.querySelector('.listen-filter-label');
     if (lb) lb.classList.add('filter-on');
   }
   attachWave(card, m, url);
@@ -1197,9 +1358,76 @@ function segmentSilenceFlag(stats, text, isHallucinationFn) {
   return null;
 }
 
+// ---- Seviye ölçümü (elektro-akustik ölçüm katmanı) ----
+// Aşağıdaki ölçümler kaydın kendisinden hesaplanır; hiçbiri tahmin değildir ve
+// hiçbiri rapora yazılmadan önce bilirkişinin tetiklemesini bekler. Ölçüm
+// yapılmamışsa rapora satır yazılmaz.
+// Tepe (peak) ve RMS genliği, tepe kırpılma oranı, gürültü tabanı ve sinyal-
+// gürültü oranı. Saf fonksiyon: Float32 örnek dizisi + örnekleme frekansı.
+// Kırpılma, ardışık örneklerin tam ölçek sınırına dayanmasıyla ölçülür; tek
+// tükürük örneği kırpılma sayılmaz (en az 3 ardışık örnek gerekir).
+function analyzeLevels(samples, sampleRate, opts = {}) {
+  const n = samples.length;
+  if (!n) return { ok: false, reason: 'boş kayıt' };
+  const clipThreshold = opts.clipThreshold ?? 0.999;
+  const clipRun = Math.max(2, opts.clipRun ?? 3);
+  let peak = 0,
+    sumSq = 0,
+    clipped = 0,
+    run = 0;
+  for (let i = 0; i < n; i++) {
+    const v = samples[i];
+    const a = v < 0 ? -v : v;
+    if (a > peak) peak = a;
+    sumSq += v * v;
+    if (a >= clipThreshold) {
+      run++;
+      if (run === clipRun) clipped += clipRun;
+      else if (run > clipRun) clipped++;
+    } else run = 0;
+  }
+  const rms = Math.sqrt(sumSq / n);
+  const db = (x) => (x > 0 ? 20 * Math.log10(x) : -Infinity);
+  // Gürültü tabanı ve konuşma düzeyi, kısa pencerelerin RMS dağılımından
+  // okunur: alt %10 gürültü zemini, üst %10 konuşma düzeyi kabul edilir.
+  const win = Math.max(1, Math.round((sampleRate || 16000) * 0.02));
+  const frames = [];
+  for (let p = 0; p + win <= n; p += win) {
+    let s = 0;
+    for (let i = p; i < p + win; i++) s += samples[i] * samples[i];
+    frames.push(Math.sqrt(s / win));
+  }
+  frames.sort((a, b) => a - b);
+  const pick = (q) => (frames.length ? frames[Math.min(frames.length - 1, Math.max(0, Math.round(q * (frames.length - 1))))] : 0);
+  const noiseFloor = pick(0.1);
+  const speechLevel = pick(0.9);
+  // Gürültü tabanı tam sıfırsa kayıt sessiz aralıklarda sayısal sessizlik
+  // içeriyor demektir; oran sonsuzdur, "ölçülemedi" değil.
+  const snrDb =
+    speechLevel <= 0
+      ? null
+      : noiseFloor > 0
+        ? (speechLevel > noiseFloor ? db(speechLevel) - db(noiseFloor) : 0)
+        : Infinity;
+  return {
+    ok: true,
+    durationSec: n / (sampleRate || 16000),
+    sampleCount: n,
+    peak,
+    peakDb: db(peak),
+    rms,
+    rmsDb: db(rms),
+    clippedSamples: clipped,
+    clippedRatio: clipped / n,
+    noiseFloor,
+    noiseFloorDb: db(noiseFloor),
+    speechLevel,
+    speechLevelDb: db(speechLevel),
+    snrDb
+  };
+}
 function attachWave(card, m, url) {
   const canvas = card.querySelector('canvas.wave-canvas');
-  if (!canvas) return;
   const player = card.querySelector('audio');
   if (!player) return;
   const paint = () => {
@@ -1452,6 +1680,10 @@ function measureWerForCase(c) {
 // gürültüsünü veya bir kanaldaki konuşmayı ayırt etmesine yardımcı olur.
 // Web Audio grafiği: source -> splitter -> (gainL, gainR) -> merger -> çıkış.
 // Kanal modu gain değerleriyle ayarlanır; oynatma konumu ve hız korunur.
+// Seviye ölçümü şeması. Ölçüm alanları değiştiğinde artırılır; eski kayıtlar
+// geçersiz sayılıp yeniden ölçülür. Böylece arayüz eski kodla üretilmiş,
+// eksik ya da çelişkili değerleri göstermez.
+const LEVELS_SCHEMA = 2;
 const audioGraphs = new Map(); // m.id -> {ctx, player, gainL, gainR, merger, hp, lp, gate, gateGain}
 const CHANNEL_MODES = [
   ['both', 'Stereo (her iki kanal)'],
@@ -1465,8 +1697,8 @@ const CHANNEL_MODES = [
 //    bandı). Uğultuyu ve tiz hışırtıyı azaltır, konuşmayı öne çıkarır.
 //  - "Uğultu kes": 80 Hz yüksek geçiren; masa/trafik uğultusunu keser.
 //  - "Gürültü kapısı": sessiz aralıklarda kazancı düşürür.
-// Bu filtreler yalnızca DİNLEMEYİ kolaylaştırır; kaydı değiştirmez ve rapora
-// yalnızca gerçekten açıldıysa "dinleme yardımcısı" olarak yazılır.
+// Bu filtreler yalnızca DİNLEMEYİ kolaylaştırır ve kaydı değiştirmez. Oturum
+// ayarıdır: rapora yazılmaz, çünkü ölçülen bir bulgu değildir.
 const LISTEN_FILTERS = [
   ['off', 'Kapalı (özgün ses)'],
   ['voice', 'Konuşma odağı (300 Hz – 3,4 kHz)'],
@@ -1789,6 +2021,71 @@ async function measureSpeakerPitch(m) {
   renderSpeakersPanel(m); // Perde ölçümü tüm ses listesini yeniden çizmez; yalnızca konuşmacı paneli
   // güncellenir. Böylece sayfa yerinde kalır, kaydırma ve odak korunur.
   showToast('Konuşmacı perde ölçümü tamamlandı.');
+}
+// Kaydın tamamı için seviye ölçümü: tepe/RMS, tepe kırpılma, gürültü tabanı ve
+// sinyal/gürültü oranı. Sonuç kayda bağlanır ve rapora "Seviye ölçümü" satırı
+// olarak yalnızca gerçekten ölçüldüyse yazılır.
+async function measureLevels(m) {
+  const c = currentCase();
+  const blob = await getAudioBlob(c, m);
+  if (!blob) {
+    showToast('Ses dosyası bulunamadı.');
+    return;
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  // Ölçüm, dosyanın kendi örnekleme hızında yapılır. Aksi hâlde tarayıcı
+  // 48 kHz'e yeniden örnekler ve bant genişliği dosyanın gerçek üst sınırından
+  // yüksek görünür; bu da rapora yanlış bir "geniş bant" izlenimi yazdırır.
+  const nativeRate = Number(m.tech?.sampleRate) || 0;
+  let ctx;
+  try {
+    ctx = nativeRate ? new AC({ sampleRate: nativeRate }) : new AC();
+  } catch (e) {
+    ctx = new AC();
+  }
+  let audio;
+  try {
+    audio = await ctx.decodeAudioData(await blob.arrayBuffer());
+  } catch (e) {
+    await ctx.close();
+    showToast('Ses çözümlenemedi.');
+    return;
+  }
+  // Kanallar örnek düzeyinde birleştirilir; kanal dengesi ayrı ölçülür.
+  const chCount = audio.numberOfChannels;
+  const len = audio.length;
+  const mono = new Float32Array(len);
+  for (let ch = 0; ch < chCount; ch++) {
+    const d = audio.getChannelData(ch);
+    for (let i = 0; i < len; i++) mono[i] += d[i] / chCount;
+  }
+  const lv = analyzeLevels(mono, audio.sampleRate);
+  // Stereo ise kanal dengesi, faz ilişkisi ve DC kayması da ölçülür.
+  const stereo = chCount === 2 ? analyzeStereo(audio.getChannelData(0), audio.getChannelData(1), audio.sampleRate) : null;
+  const rolloff = spectralRolloff(mono, audio.sampleRate);
+  await ctx.close();
+  if (!lv.ok) {
+    showToast('Ölçüm yapılamadı: kayıt boş görünüyor.');
+    return;
+  }
+  m.levels = {
+    ...lv,
+    schema: LEVELS_SCHEMA,
+    channels: chCount,
+    analysisRate: audio.sampleRate,
+    stereo: stereo && stereo.ok ? stereo : null,
+    rolloff: rolloff || null,
+    at: new Date().toISOString()
+  };
+  (m.log = m.log || []).push({
+    at: m.levels.at,
+    event: 'Seviye ölçümü',
+    detail: `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}`
+  });
+  persist();
+  renderAudioList();
+  renderOverview();
+  showToast('Seviye ölçümü tamamlandı.');
 }
 // Seçili bölümün sessizlik oranını ölçer. Ses dosyası çözülür, aralık RMS
 // tabanlı analyzeSilence ile incelenir ve sonuç bölüme bağlanır. Ölçüm
@@ -4116,6 +4413,30 @@ function chanModeText(m) {
   if (m.tech?.channels !== 2) return '—';
   return mode === 'left' ? 'Yalnız sol kanal' : mode === 'right' ? 'Yalnız sağ kanal' : 'Stereo (her iki kanal)';
 }
+// Seviye ölçümü tablosunun satırları. Yalnızca gerçekten ölçülmüş kayıtlar
+// girer; ölçülmemiş kayıt için satır üretilmez (yapılmayan ölçüm rapora
+// yazılmaz). Üç oluşturucu da bu tek kaynaktan beslenir.
+function levelRowsForCase(c) {
+  return (c.materials || [])
+    .filter((m) => m.levels && m.levels.ok && m.levels.schema === LEVELS_SCHEMA)
+    .map((m) => {
+      const lv = m.levels;
+      const extra = [];
+      if (lv.rolloff) extra.push(`bant P95: ${fmtDb(lv.rolloff.rolloffHz)} Hz`);
+      if (lv.stereo && lv.stereo.balanceDb != null) extra.push(`denge: ${fmtDb(lv.stereo.balanceDb)} dB`);
+      if (lv.stereo && lv.stereo.correlation != null)
+        extra.push(`korelasyon: ${lv.stereo.correlation.toFixed(3).replace('.', ',')}`);
+      return [
+        m.name,
+        fmtDb(lv.peakDb),
+        fmtDb(lv.rmsDb),
+        `%${fmtPct(lv.clippedRatio)}`,
+        floorText(lv.noiseFloor),
+        snrText(lv.snrDb),
+        extra.join(' · ') || '—'
+      ];
+    });
+}
 // İnceleme özeti: raporda ne yapıldığını ve ne kaldığını sayısal olarak
 // gösterir. Her satır yalnızca gerçek veriden üretilir; tahmin içermez.
 function reviewSummaryRows(c) {
@@ -4133,6 +4454,7 @@ function reviewSummaryRows(c) {
     0
   );
   const pitched = mats.reduce((n, m) => n + (m.speakers || []).filter((s) => s.pitch).length, 0);
+  const levelMeasured = mats.filter((m) => m.levels && m.levels.ok && m.levels.schema === LEVELS_SCHEMA).length;
   // Köken belgelenmiş sayılır: ortam türü 'Belirtilmedi' dışında bir değer ve
   // en az bir teslim bilgisi (eden veya tarih) girilmişse.
   const originFilled = mats.filter((m) => {
@@ -4159,6 +4481,7 @@ function reviewSummaryRows(c) {
     [REPORT_TEXT.rsChannel, chan],
     [REPORT_TEXT.rsSpeaker, speakers],
     [REPORT_TEXT.rsPitch, pitched],
+    [REPORT_TEXT.rsLevel, levelMeasured],
     [REPORT_TEXT.rsOriginMedium, originMedium],
     [REPORT_TEXT.rsOriginFilled, originFilled],
     [REPORT_TEXT.rsWerMeasured, werMeasured]
@@ -4181,6 +4504,13 @@ function reportTypeSpec(t) {
 function reportTypeLabel(t) {
   return reportTypeSpec(t).label;
 }
+// Raporun üst satırı ve belge üst bilgisi, dosyada girilen uzmanlık alanını
+// gösterir. Alan boşsa yalnızca kod yazılır; uydurma bir açıklama eklenmez.
+function expertFieldShort(c) {
+  const raw = String((c && c.expertField) || '').trim() || REPORT_TEXT.defaultField;
+  const code = raw.match(/^\d+(?:\.\d+)*/);
+  return code ? code[0] : raw;
+}
 function reportRows(c) {
   const spec = reportTypeSpec(c.reportType);
   const r = spec.roles;
@@ -4198,7 +4528,7 @@ function reportRows(c) {
     ['KEŞİF / İNCELEME TARİHİ', niceDate(c.inspectionDate)],
     ['RAPOR TARİHİ', niceDate(c.reportDate)],
     ['BİLİRKİŞİ ADI SOYADI', c.expertName],
-    ['UZMANLIK ALANI', c.expertField],
+    [REPORT_TEXT.expertFieldHeading, c.expertField],
     ['BİLİRKİŞİ SİCİL NO', c.registryNo]
   ].filter((x) => x[1] && x[1] !== '—');
 }
@@ -4231,7 +4561,7 @@ function renderReport() {
     warning.innerHTML = '';
   }
   const toc = REPORT_TEXT.sections;
-  let html = `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>UZMANLIK ALANI · 56.12</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;
+  let html = `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;
   if (c.synthetic) html += `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>`;
   html += `<table class="paper-table cover-fields"><tbody>${reportRows(c)
     .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
@@ -4278,8 +4608,12 @@ function renderReport() {
   if (werRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.werHeading)}</h3><p>${esc(REPORT_TEXT.werIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.werHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${werRows.map((r) => `<tr><td>${esc(r.material)}</td><td>${esc(r.model || '—')}</td><td>${r.refCount}</td><td>${r.hypCount}</td><td>${r.errors}</td><td>${esc(fmtWer(r.ratio))}</td></tr>`).join('')}</tbody></table></div>`;
   }
+  const levelRows = levelRowsForCase(c);
+  if (levelRows.length) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.levelHeading)}</h3><p>${esc(REPORT_TEXT.levelIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.levelHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${levelRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
-  html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>AKİS çalışma çıktısı · ${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
+  html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   $('#reportPreview').innerHTML = html;
   $('#reportStatus').innerHTML =
     `<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
@@ -4516,13 +4850,22 @@ function docxXml(c) {
       { widths: [1800, 2200, 1200, 1200, 900, 700], header: true }
     );
   }
+  const dLevel = levelRowsForCase(c);
+  if (dLevel.length) {
+    body += headingXml(REPORT_TEXT.levelHeading);
+    body += wP(REPORT_TEXT.levelIntro);
+    body += wTable([[...REPORT_TEXT.levelHeaders], ...dLevel], {
+      widths: [1500, 800, 800, 900, 1000, 1000, 1900],
+      header: true
+    });
+  }
   body += headingXml(REPORT_TEXT.reviewSummaryHeading);
   body += wP(REPORT_TEXT.reviewSummaryIntro);
   body += wTable(
     reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
     { widths: [6000, 3000], header: false, shadeFirstCol: true }
   );
-  body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || '56.12', { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
+  body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
   const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
@@ -4554,7 +4897,7 @@ async function makeDocx() {
   );
   w.file(
     'header1.xml',
-    `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun('BİLİRKİŞİ RAPORU  |  UZMANLIK ALANI 56.12', { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
+    `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`BİLİRKİŞİ RAPORU  |  ${REPORT_TEXT.toplineField}${expertFieldShort(c)}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
   );
   w.file(
     'footer1.xml',
@@ -4697,7 +5040,7 @@ async function makeUdf() {
         return `<row rowName="r${++serial}" rowType="dataRow">${cells}</row>`;
       })
       .join('');
-    return `<table tableName="AkisTable${serial}" columnCount="${colCount}" columnSpans="${safeWidths.join(',')}" border="borderCell" borderColor="${colors.line}" borderWidth="0.3">${rowXml}</table>`;
+    return `<table tableName="Tablo${serial}" columnCount="${colCount}" columnSpans="${safeWidths.join(',')}" border="borderCell" borderColor="${colors.line}" borderWidth="0.3">${rowXml}</table>`;
   }
   const el = [];
   el.push(paragraph('T.C.', { size: 16, bold: true, color: 'navy', align: 1, after: 4 }));
@@ -4887,6 +5230,12 @@ async function makeUdf() {
         { header: true }
       )
     );
+  }
+  const uLevel = levelRowsForCase(c);
+  if (uLevel.length) {
+    el.push(h(REPORT_TEXT.levelHeading));
+    el.push(paragraph(REPORT_TEXT.levelIntro, { size: 10 }));
+    el.push(table([[...REPORT_TEXT.levelHeaders], ...uLevel], [110, 70, 70, 80, 80, 80], { header: true }));
   }
   el.push(h(REPORT_TEXT.reviewSummaryHeading));
   el.push(paragraph(REPORT_TEXT.reviewSummaryIntro, { size: 10 }));
@@ -5461,6 +5810,9 @@ function setupEvents() {
     } else if (b.dataset.measurePitch !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.measurePitch);
       if (mm) measureSpeakerPitch(mm);
+    } else if (b.dataset.measureLevels !== undefined) {
+      const mm = c.materials.find((x) => x.id === b.dataset.measureLevels);
+      if (mm) measureLevels(mm);
     } else if (b.dataset.obs !== undefined) {
       const card = b.closest('.audio-card');
       const [ix, key] = b.dataset.obs.split('|');

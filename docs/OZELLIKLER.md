@@ -1,6 +1,6 @@
-# Özellikler (v2.31 — mevcut durum)
+# Özellikler (v2.49 — mevcut durum)
 
-Bu belge, AKİS v2.31'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS v2.49'da **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -157,12 +157,44 @@ tuşları bozulmaz.
 - **Karaoke vurgulama:** çalma sırasında o an konuşulan kelime vurgulanır. Model
   kelime zamanı verirse gerçek zamanlama, yoksa bölüm aralığı kullanılır.
 - **Dinleme yardımcıları (DSP):** konuşma odağı (300 Hz – 3,4 kHz), uğultu kes
-  (80 Hz üstü) ve gürültü kapısı. Yalnızca dinlemeyi kolaylaştırır; kaydı
-  değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz.
+  (80 Hz üstü) ve gürültü kapısı. Oynatıcı şeridinde, deşifre sekmesinde her
+  zaman görünür; filtre açıksa şerit bunu gösterir ve filtre sayfa
+  yenilendikten sonra da ses üzerinde etkili olur. Yalnızca dinlemeyi
+  kolaylaştırır; kaydı değiştirmez. Oturum ayarıdır, rapora yazılmaz. Kaynak
+  ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz.
 - **Denetim ilerlemesi** çubuğu ve durum renkleri.
 - **Kaydırma koruması:** liste yeniden kurulurken sayfanın ve panelin kaydırma
   konumu korunur; işlem sırasında ekran zıplamaz.
 - Uzun kayıtta liste paneli kayar, sağ panel sabit kalır.
+
+## Ölçüm katmanı (elektro-akustik)
+
+Her ölçüm kaydın örneklerinden hesaplanır; hiçbiri tahmin değildir ve hiçbiri
+bilirkişi tetiklemeden çalışmaz. Ölçüm yapılmamışsa rapora satır yazılmaz.
+
+- **Seviye ölçümü:** tepe ve RMS düzeyi (dBFS), tepe kırpılma oranı, gürültü
+  tabanı ve sinyal/gürültü oranı. Ölçüm dosyanın kendi örnekleme hızında
+  yapılır. Analiz sekmesindeki "Seviye ölçümü yap" düğmesi tetikler.
+- **Stereo ölçümü (iki kanallı kayıtta):** kanal dengesi (L−R dB), kanallar
+  arası korelasyon (ters faz −1'e yaklaşır) ve DC kayması.
+- **Etkin bant genişliği:** ortalama güç spektrumunda toplam enerjinin %95'ini
+  kapsayan üst frekans (P95). Yeniden kodlama, telefon bandı veya düşük
+  örnekleme izlerini değerlendirmede ölçülebilir dayanak verir.
+- **Sessizlik oranı:** bölüm bazında, kaydın kendi gürültü zeminine göre
+  uyarlanan eşikle ölçülür.
+- **Konuşmacı perdesi:** otokorelasyonla temel frekans tahmini (tahmindir;
+  kimlik tespiti değildir).
+- **WER:** yalnızca referans metni bulunan kayıtlarda kelime hata oranı.
+
+Bu ölçümler rapora "Ses seviyesi ve kırpılma ölçümü" bölümü olarak girer;
+HTML, DOCX ve UDF çıktıları aynı tek kaynaktan beslenir.
+
+## Çıktı ilkesi
+
+Üretilen her belge bilirkişi adına yazılır. Raporun hiçbir yerinde uygulamanın
+adı, sürümü veya varlığı anılmaz; uygulama yalnızca bilirkişinin kullandığı
+bilimsel araçtır. Kapak üst satırı ve Word üst bilgisi, dosyada girilen
+uzmanlık alanını gösterir.
 
 ## Masaüstü uygulaması hissi
 

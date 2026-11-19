@@ -764,8 +764,6 @@ body.ws-mode .statusbar{height:26px;font-size:9px}
 .pane-title{font:700 10px 'Segoe UI';letter-spacing:.4px;color:#5a7089;
   margin-bottom:7px;display:flex;align-items:center}
 #view-audio .card-pane[data-pane="listen"]{max-height:100%;overflow-y:auto}
-#view-audio .card-pane[data-pane="listen"] .listen-tools{margin-top:0}
-#view-audio .card-pane[data-pane="listen"] .listen-filter-label span{display:none}
 #view-audio .card-pane[data-pane="listen"] .spec-wrap{margin-top:7px}
 
 /* Kayıt bilgileri sekmesi: iki sütunlu envanter tablosu. */

@@ -45,7 +45,7 @@ const JSZip = (await import(path.join(ROOT, 'assets/vendor/jszip.min.js'))).defa
 let code = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8')
   .replace(/^init\(\);\s*$/m, '');
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
-  + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES };\n`;
+  + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
 
 const downloads = [];
 const sandbox = {
@@ -70,7 +70,7 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
-const { setCase, makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES } = sandbox.__api;
+const { setCase, makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
 
 // --- Çıktı metinlerini çıkar ----------------------------------------------
 function htmlText(c) {
@@ -278,6 +278,49 @@ console.log('\n[Senaryo 8] kayıt kökeni');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('köken başlığı', REPORT_TEXT.originHeading, H, U, D);
   checkShared('ortam etiketi değeri', 'FLASH-1', H, U, D);
+}
+
+// Senaryo 9: seviye ölçümü — yalnızca ölçülmüş kayıt rapora girer.
+console.log('\n[Senaryo 9] seviye ölçümü');
+{
+  // Ölçüm yapılmamışsa bölüm hiç görünmemeli (yapılmayan ölçüm yazılmaz).
+  const c0 = withMaterial();
+  const H0 = htmlText(c0), U0 = await udfText(c0), D0 = await docxText(c0);
+  check(
+    'ölçüm yokken seviye bölümü yok',
+    !H0.includes(REPORT_TEXT.levelHeading) && !U0.includes(REPORT_TEXT.levelHeading) && !D0.includes(REPORT_TEXT.levelHeading)
+  );
+
+  const c = withMaterial();
+  c.materials[0].levels = {
+    ok: true, schema: LEVELS_SCHEMA, peakDb: -3.2, rmsDb: -18.4, clippedRatio: 0.0004,
+    clippedSamples: 4, noiseFloorDb: -61.5, noiseFloor: 0.00084, snrDb: 43.1,
+    at: '2026-02-01T10:00:00.000Z'
+  };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('seviye başlığı', REPORT_TEXT.levelHeading, H, U, D);
+  checkShared('tepe düzeyi değeri', '-3,2', H, U, D);
+  checkShared('RMS düzeyi değeri', '-18,4', H, U, D);
+  checkShared('SNR değeri', '43,1 dB', H, U, D);
+  checkShared('inceleme özeti seviye satırı', REPORT_TEXT.rsLevel, H, U, D);
+}
+
+// Senaryo 10: rapor bilirkişi adına yazılır; uygulamanın adı geçmez.
+console.log('\n[Senaryo 10] çıktıda uygulama kimliği yok');
+{
+  const c = withMaterial({ levels: undefined });
+  c.materials[0].levels = { ok: true, schema: LEVELS_SCHEMA, peakDb: -3, rmsDb: -18, clippedRatio: 0, clippedSamples: 0, noiseFloorDb: -60, noiseFloor: 0.001, snrDb: 40 };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`${name} çıktısında "AKİS" geçmez`, !/AKİS/i.test(text));
+    check(`${name} çıktısında "uygulama" geçmez`, !/uygulama/i.test(text));
+    check(`${name} çıktısında "tarayıcı" geçmez`, !/tarayıcı/i.test(text));
+  }
+  // UDF iç XML'inde de araç markası kalmamalı (tablo adları dahil).
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uz = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uz.file('content.xml').async('string');
+  check('UDF XML içinde "Akis" geçmez', !/Akis/i.test(ux));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

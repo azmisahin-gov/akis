@@ -38,7 +38,48 @@ Yeni arayüz mimarisi:
 Dikkat: `id`/`data-*` işaretleri deşifre/model/rapor mantığının dayanağıdır;
 çekmeceye taşırken bunlar korunmalıdır.
 
-### Bilinen açık hatalar
+### Aşama 3 — Rapor bilirkişi adına, ölçüm katmanı (TAMAMLANDI, v2.49)
+
+**Çıktı ilkesi (değişmez):** Üretilen her belge bilirkişi adına yazılır.
+Uygulamanın adı, sürümü veya varlığı rapora **girmez**; belge yalnızca
+bilirkişinin kullandığı bilimsel araçların ürünüdür. Bu ilke
+`tools/rapor-tutarlilik-testi.mjs` Senaryo 10 ile otomatik denetlenir:
+HTML, DOCX ve UDF çıktılarında "AKİS", "uygulama", "tarayıcı" geçemez.
+
+- Rapor alt bilgisi yalnızca dosya numarası + rapor tarihi taşır.
+- Yöntem metni (`DEFAULT_METHOD`) araç adı anmaz; SHA-256 ve çalışma kopyası
+  üzerinden teknik anlatım yapar. Eski kayıtlı metin `LEGACY_DEFAULT_METHOD`
+  ile birebir eşleşiyorsa `stripDerivedFields` içinde yenisine çevrilir.
+- Kapak üst satırı ve Word üst bilgisi sabit "56.12" yerine
+  `expertFieldShort(c)` ile dosyada girilen alan kodunu gösterir.
+- UDF tablo adları nötrdür (`Tablo1`, `Tablo2` …); araç markası taşımaz.
+
+**Ölçüm katmanı:** 56.12 alanının gerektirdiği ölçümler saf fonksiyonlarla
+hesaplanır ve yalnızca bilirkişi tetiklediğinde çalışır:
+
+| Fonksiyon | Ne ölçer | Rapora girer mi |
+|---|---|---|
+| `analyzeLevels` | tepe/RMS dBFS, tepe kırpılma, gürültü tabanı, SNR | Evet (ölçüldüyse) |
+| `analyzeStereo` | kanal dengesi, kanallar arası korelasyon, DC kayması | Evet (stereo ise) |
+| `spectralRolloff` | etkin bant genişliği (P95) | Evet (ölçüldüyse) |
+| `analyzeSilence` | sessizlik oranı (bölüm bazında) | Evet (ölçüldüyse) |
+| `detectPitchHz` | temel frekans tahmini (konuşmacı) | Evet (ölçüldüyse) |
+| `computeWer` | kelime hata oranı (referans varsa) | Evet (ölçüldüyse) |
+
+Kurallar:
+- Ölçüm yapılmamışsa rapora **satır yazılmaz** (`levelRowsForCase` yalnız
+  `schema === LEVELS_SCHEMA` ve `ok` olanları alır).
+- Ölçüm şeması `LEVELS_SCHEMA` sabitiyle sürümlenir. Alanlar değişirse sabit
+  artırılır; eski kayıtlar `stripDerivedFields` ile atılır ve yeniden ölçülür.
+  Böylece arayüz eski kodla üretilmiş eksik/çelişkili değeri göstermez.
+- Ölçüm **dosyanın kendi örnekleme hızında** yapılır
+  (`new AudioContext({sampleRate: m.tech.sampleRate})`); aksi hâlde tarayıcı
+  48 kHz'e yeniden örnekler ve bant genişliği yanlışlıkla yüksek görünür.
+- Biçimlendirme tek kaynaktan: `fmtDb`, `fmtPct`, `snrText`, `floorText`.
+  Negatif sıfır ("-0,0") yazılmaz; gürültü tabanı tam 0 ise "sessizlik (0)"
+  yazılır ve SNR "sonsuz (sayısal sessizlik)" olur — "ölçülemedi" değil.
+
+## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
 giderildi ve kullanıcı tarafından uçtan uca doğrulandı (Tiny → Large-v3-turbo
@@ -95,8 +136,17 @@ kullanılmaz; tüm mantık `assets/app.js` içindedir.
 - DOCX ve UDF üretimi korunur.
 - Orijinal ses dosyaları değiştirilmez.
 - Kontrol edilmeyen deşifre, kontrol edilmiş gibi gösterilmez.
-- Yapılmayan inceleme rapora yazılmaz.
+- Yapılmayan inceleme rapora yazılmaz; ölçülmemiş büyüklük tabloya girmez.
 - E-imza üretilmez, UYAP'a belge gönderilmez.
+- **Rapor bilirkişi adına yazılır.** Çıktıda uygulamanın adı, sürümü veya
+  varlığı anılmaz; uygulama yalnızca bilirkişinin kullandığı bilimsel araçtır.
+  Hukuki/mesleki çerçeve: [`docs/BILIRKISILIK_CERCEVESI.md`](docs/BILIRKISILIK_CERCEVESI.md).
+- Mevzuat atfı, madde numarası ve uzmanlık alanı künyesi **doğrulanmadan
+  rapora yazılmaz**; uygulama uydurma künye üretmez.
+- Raporun işi hukuki değerlendirme değildir; uygulama bilirkişi kanaati
+  üretmez, yalnızca ölçülebilir teknik bulguyu ve sınırını sunar.
+- Ağır makine öğrenmesi gerektiren işler (kaynak ayrıştırma, konuşmacı kimlik
+  tespiti, montaj tespiti) yapılmış gibi gösterilmez.
 
 ## Bilinen önemli borç (v2'de çözülecek)
 
@@ -119,11 +169,16 @@ Tüm testleri tek komutla çalıştırın:
 bash tools/test.sh
 ```
 
-Bu komut iki betiği çalıştırır:
+Bu komut üç betiği çalıştırır:
 - `tools/birim-testleri.mjs` — hesaplama fonksiyonları (WER, FFT, perde,
   Türkçe yönelme eki, ms hassasiyetli zaman kodu, dolgu tespiti, geçmiş
   sıkıştırma, kontrol durumu, paragraf oluşturma, mercie özel ifadeler).
-- `tools/rapor-tutarlilik-testi.mjs` — rapor oluşturucuları (HTML/DOCX/UDF).
+- `tools/rapor-tutarlilik-testi.mjs` — rapor oluşturucuları (HTML/DOCX/UDF);
+  ayrıca seviye ölçümü bölümünün yalnız ölçülmüş kayıtlarla dolduğunu ve
+  çıktılarda uygulama kimliği bulunmadığını denetler.
+- `tools/surum-testi.mjs` — `APP_VERSION`, `index.html` `?v=`, CHANGELOG,
+  YOL_HARITASI, README, OZELLIKLER ve AGENTS sürümlerinin aynı olduğunu
+  denetler. Sürüm bir yerde artırılıp başka yerde unutulursa test kalır.
 
 Betik, `assets/app.js`'i Node.js `vm` içinde sahte bir DOM ile yükler; üç rapor
 oluşturucuyu (`renderReport`, `makeDocx`, `makeUdf`) aynı veriyle çalıştırır ve
@@ -131,7 +186,9 @@ metinleri karşılaştırır. Ayrıca kaynakta `REPORT_TEXT` değerlerinin sabit
 kopyası kalıp kalmadığını denetler. Çıkış kodu 0 = tüm kontroller geçti.
 
 Rapor dışı akışlar (deşifre motoru, model yöneticisi, yedekleme, dalga formu
-etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
+etkileşimi, dinleme yardımcıları, karaoke, seviye/stereo/bant ölçümünün
+tarayıcıya bağlı dış kabuğu) elle doğrulanır. Ölçümün **hesabı** saf
+fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ### Deşifre alanında dikkat edilecekler
 
@@ -163,7 +220,7 @@ etkileşimi, dinleme yardımcıları, karaoke) elle doğrulanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.31.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.49.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
