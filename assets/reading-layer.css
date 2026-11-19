@@ -804,3 +804,33 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
   #view-audio .sd-right { order: 1; }
   #view-audio .seg-list { max-height: 40vh; }
 }
+
+/* ============================================================================
+   v2.64 — SOL LİSTE KAYDIRMASI (kritik)
+   app.css:918  `#view-audio .seg-list{max-height:none!important}`  kuralı
+   v2.63'teki max-height:62vh'yi eziyordu. Ölçüm: 200 bölümde liste 6816px
+   uzuyor, SCROLL YOK. 200+ bölümlü kayıtta sayfa kullanılamaz hâle gelir.
+   Çözüm: !important ile sabitle.
+   ============================================================================ */
+#view-audio .seg-list {
+  height: auto !important;
+  max-height: 62vh !important;
+  min-height: 240px;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+body.ws-mode #view-audio .seg-list {
+  max-height: calc(100vh - 260px) !important;
+  min-height: 320px;
+}
+/* Sol sütun da kendi içinde kayabilir (uzun bölüm metni). */
+#view-audio .seg-detail {
+  max-height: 78vh !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+}
+/* Dar ekran: liste daha kısa, metin önce. */
+@media (max-width: 900px) {
+  #view-audio .seg-list { max-height: 42vh !important; }
+  #view-audio .seg-detail { max-height: none !important; overflow: visible !important; }
+}

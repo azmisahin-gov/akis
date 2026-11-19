@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.63.**
+yazılır. **Güncel sürüm: v2.64.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.64 — Sol liste kaydırması geri geldi (tamamlandı)
+
+`app.css:918` kuralı `max-height:none!important` taşıyordu; v2.63'teki
+`max-height:62vh` onu ezemedi. Ölçüm: 200 bölümde liste 6816px uzuyor,
+SCROLL YOK. `!important` ile sabitlendi: görünen 670px, içerik 6814px,
+scroll ÇALIŞIYOR. Sağ detay da 78vh ile kendi içinde kayar.
 
 ### v2.63 — Panel iki sütuna bölündü; sabit yükseklik kaldırıldı (tamamlandı)
 

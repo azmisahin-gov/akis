@@ -6,12 +6,63 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.63.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.64.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.64 — Sol liste kaydırması geri geldi (200+ bölüm)
+
+KULLANICI: "Sağ panel iş görür ama sol panelin scroll'unu kaldırmışsın. Orada
+scroll olmak zorunda çünkü 200'den fazla kayıt olabilir."
+
+### Ölçümle kanıtlanan hata
+
+200 bölümlü bir listeyle ölçüldü:
+
+```
+ÖNCE:
+  görünen yükseklik : 6816px      ← liste sayfayı sonsuz uzatıyor
+  SCROLL VAR MI     : HAYIR
+  max-height        : none
+```
+
+**Sebep:** `app.css` satır 918:
+
+```css
+#view-audio .seg-list { height:100%!important; max-height:none!important; }
+```
+
+Bu kural `!important` taşıyordu; v2.63'te eklediğim `max-height: 62vh` onu
+ezemedi. Liste 200 bölümde 6816px uzayarak sayfayı kullanılamaz hâle
+getiriyordu.
+
+### Çözüm
+
+`!important` ile sabitlendi (`reading-layer.css` sonuna v2.64 bloğu):
+
+```css
+#view-audio .seg-list {
+  height: auto !important;
+  max-height: 62vh !important;
+  overflow-y: auto !important;
+}
+```
+
+### Ölçümle doğrulandı
+
+```
+SONRA:
+  görünen yükseklik : 670px       ← 62vh
+  içerik yüksekliği : 6814px
+  SCROLL VAR MI     : EVET
+  kaydırma testi    : scrollTop=500 ÇALIŞIYOR
+```
+
+Ayrıca sağ detay paneli de `max-height: 78vh` ile kendi içinde kayar (uzun
+bölüm metni sayfayı uzatmaz).
 
 ## v2.63 — Panel iki sütuna bölündü; sabit yükseklik kaldırıldı (kök neden)
 
