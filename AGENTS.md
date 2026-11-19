@@ -2,23 +2,47 @@
 
 Bu dosya, AKİS deposunda çalışan ajanlar için kalıcı bağlam sağlar.
 
-## Sıradaki çalışma: arayüz tasarımı
+## Sıradaki çalışma: sürümleme ve arayüz tasarımı
 
-Bir sonraki oturumun konusu **arayüz tasarımı**. Başlamadan önce okuyun:
+Tamamlanan v2 çalışmalarından (deşifre deneyimi, master–detail, NLP ölçümleri,
+app.js biçimlendirme, akış test kapsamı) sonra iki büyük iş planlanmıştır.
+Öncelik sırası aşağıda.
 
-- `docs/OZELLIKLER.md` — mevcut (çalışan) özelliklerin tam listesi. Arayüz
-  yenilenirken bu özelliklerin **hiçbiri kaybolmamalı**.
-- `docs/MIMARI.md` — dosya düzeni, veri akışı, GitHub Pages yayın akışı.
-- `docs/YOL_HARITASI.md` — v2.9 "Yeni AKİS PRO arayüzü" maddesi.
+### Aşama 1 — Sürümleme ve depo organizasyonu (öncelikli)
 
-Arayüz çalışmasında korunacaklar:
+Şu an sürüm numarası belirsiz: arayüzde hâlâ "v1" yazıyor ama CHANGELOG v2.x
+çalışmalarını içeriyor. Yapılacaklar:
 
-- `index.html` + `assets/app.js` + `assets/app.css` üçlüsü; Python/Node yok.
-- GitHub Pages `main` kökünden yayın; göreli yollar (`assets/…`) bozulmamalı.
-- Üç rapor çıktısı (HTML önizleme, DOCX, UDF) aynı `REPORT_TEXT` kaynağından
-  beslenmeli. Arayüz değişince `bash tools/test.sh` çalıştırılmalı.
-- İki panelli deşifre çalışma alanı ve tüm araçlar (kanal, spektrogram, sınır
-  araçları, köken, konuşmacı) korunmalı.
+- Mevcut durumu tam bir depo denetimiyle çıkar; hangi sürümde, hangi
+  özelliklerin çalıştığını netleştir.
+- Tek ve tutarlı bir sürüm şeması belirle ve uygula (arayüzdeki sürüm etiketi,
+  CHANGELOG, README, YOL_HARITASI hepsi aynı numarayı göstersin).
+- Bundan sonraki her çalışma yeni bir sürüm numarasıyla yapılsın; her
+  güncellemede sürüm görünür biçimde artsın.
+- Tüm belgeleri (README, OZELLIKLER, MIMARI, YOL_HARITASI, BILINEN_SORUNLAR,
+  KAYNAK, CHANGELOG) yeni sürüme göre düzenle.
+
+### Aşama 2 — Arayüz tasarımı (sonra)
+
+Kullanım kolaylığını ve estetiği artırmak; masaüstü uygulaması hissini
+güçlendirmek. Değerlendirilecekler: kenar çubuğu yerine üst menü seçeneği,
+genel görsel dil, boşluk/hizalama, klavye ile tam gezinme. `docs/OZELLIKLER.md` listesindeki mevcut özelliklerin **hiçbiri kaybolmamalı**.
+
+### Bilinen açık hatalar (önce düzeltilecek)
+
+1. **Model yükleme ilerlemesi okunaksız:** indirme yüzdesi/çubuk karışık
+   görünüyor; hangi dosyanın yüklendiği ve genel ilerleme anlaşılmıyor.
+2. **Seçili model görünmüyor:** hangi modelin seçili olduğu ve hangi kaydın
+   hangi modelle çözümlendiği arayüzde belli değil. Her kayıt için kullanılan
+   model gösterilmeli.
+3. **Orta/temel model çıktısı bozuk:** temiz bir kayıtta orta model
+   "- - - - - -" gibi çizgiler üretiyor; küçük model "konuşma tespit edemedi"
+   diyor; large/turbo çalışıyor. Model seçimi ve dtype/kuantizasyon ayarları
+   gözden geçirilmeli (bkz. CHANGELOG: int8 WASM'da yüklenmiyor, q8 uzun
+   kayıtta dolgu üretiyor).
+4. **Model seçimi kaydı etkilemiyor gibi:** modeli seçip "Modeli yükle"
+   denmeden çözümleme eski modelle yapılıyor olabilir; seçim ile yükleme
+   arasındaki ilişki netleştirilmeli.
 
 ## Proje özeti
 
