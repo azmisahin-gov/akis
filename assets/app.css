@@ -393,3 +393,28 @@ body.focus-mode .main-area{padding:0 22px}
 #caseDrawer .form-grid{grid-template-columns:1fr}
 #caseDrawer .span-2{grid-column:auto}
 #caseDrawer .form-actions{display:none}
+
+/* ============================================================================
+   v2.30 — Metin temizliği: uzun açıklamalar ⓘ ipucuna taşınır.
+   Kural: kritik uyarılar (mesleki sınır, "kontrol edilmedi", dolgu/çöp) GÖRÜNÜR
+   kalır; yalnızca "nasıl çalışır" türü açıklamalar ipucuna iner.
+   ============================================================================ */
+.info-i{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;
+  border:1px solid #c3d2e0;background:#f4f8fb;color:#5c7b99;font:700 9px/1 'Segoe UI';
+  cursor:help;vertical-align:middle;margin-left:4px;position:relative;flex:none}
+.info-i:hover{background:#e6eff8;border-color:#9fbcd8;color:var(--navy)}
+.info-i:focus-visible{outline:2px solid #7292b4;outline-offset:1px}
+/* İpucu balonu: :hover ve :focus ile açılır; JS gerekmez. */
+.info-i[data-tip]{position:relative}
+.info-i[data-tip]:hover::after,.info-i[data-tip]:focus::after{content:attr(data-tip);
+  position:absolute;left:50%;top:calc(100% + 7px);transform:translateX(-50%);
+  width:max-content;max-width:280px;white-space:normal;text-align:left;
+  background:#142c4d;color:#eef4fa;font:400 10px/1.55 'Segoe UI';
+  padding:8px 10px;border-radius:7px;box-shadow:0 8px 22px rgba(17,41,68,.24);z-index:70}
+.info-i[data-tip]:hover::before,.info-i[data-tip]:focus::before{content:'';position:absolute;
+  left:50%;top:calc(100% + 2px);transform:translateX(-50%) rotate(45deg);
+  width:8px;height:8px;background:#142c4d;z-index:71}
+/* Uzun açıklama paragrafları ipucuna taşındığı için gizli tutulur. */
+.storage-note,.queue-copy,.listen-note,.wave-hint{display:none!important}
+/* Model tanıtım paragrafı: çekmecede kısa tutulur. */
+.model-copy p{display:none}
