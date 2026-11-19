@@ -406,3 +406,27 @@ input::placeholder, textarea::placeholder {
   }
   body { background: #fff; color: #000; }
 }
+
+/* --- Q. Ekip paneli (v3 ortak çalışma) ----------------------------------- */
+.team-list { display: grid; gap: var(--sp-2); }
+.team-card {
+  display: grid;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+.team-card .seg-field { display: flex; flex-direction: column; gap: var(--sp-1); }
+.team-card .seg-field > span { font-size: var(--fs-2xs); color: var(--ink-3); font-weight: 600; }
+.team-card .seg-field input,
+.team-card .seg-field select {
+  background: var(--select-bg);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  padding: var(--sp-2);
+  min-height: 32px;
+}
+.team-card .mini-button.tiny { justify-self: end; }

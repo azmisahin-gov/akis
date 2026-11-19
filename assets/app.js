@@ -1,9 +1,35 @@
+// v3 veri şeması: doğrulama, normalleştirme, delil zinciri ve birleştirme
+// saf fonksiyonları ayrı dosyada (test edilebilir). Uygulama yalnız buradan
+// içe aktarır; şema kuralı tek yerde yaşar.
+import {
+  SCHEMA_VERSION,
+  normalizeCase,
+  normalizeMaterial,
+  validateCase,
+  logEntry,
+  verifyLogChain,
+  mergeCases,
+  speakerLabel,
+  emptyTeamMember,
+  CASE_STATUS_LABEL,
+  STATUS_LABEL,
+  REVIEW_LABEL,
+  SPEAKER_ROLE_LABEL,
+  SPEAKER_GENDER_LABEL,
+  MEDIUM_TYPE_LABEL,
+  TEAM_ROLE_LABEL,
+  TEAM_ROLE,
+  SPEAKER_ROLE,
+  SPEAKER_GENDER,
+  MEDIUM_TYPE
+} from './schema.js';
+
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.50';
+const APP_VERSION = '2.51';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -254,6 +280,8 @@ function currentCase() {
 }
 function persist() {
   try {
+    // Düz alan (v2 uyumluluk) üzerinden yapılan yazmaları iç içe yapıya aktar.
+    for (const c of appState.cases || []) syncCaseMirrors(c);
     localStorage.setItem(STORE_KEY, JSON.stringify(appState));
     $('#saveState').textContent = '● Yerel kayıt güncellendi';
   } catch (e) {
@@ -262,35 +290,97 @@ function persist() {
   }
 }
 function freshCase() {
-  return {
+  const now = new Date().toISOString();
+  const c = {
+    // --- v3 şeması (bkz. assets/schema.js) ---
+    schemaVersion: 3,
+    schemaName: 'akis.case',
     id: uid(),
-    name: 'Yeni inceleme dosyası',
+    createdAt: now,
+    updatedAt: now,
+    status: 'draft',
     reportType: 'hukuk',
     court: '',
     fileNo: '',
-    assignmentDate: '',
-    dueDate: '',
-    assignmentDurationDays: '',
-    plaintiff: '',
-    plaintiffCounsel: '',
-    defendant: '',
-    defendantCounsel: '',
     subject: '',
     caseDate: '',
     inspectionDate: '',
-    expertName: '',
-    registryNo: '',
-    expertField: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi',
-    reportDate: dateToday(),
-    assignmentScope: '',
+    parties: { plaintiff: '', plaintiffCounsel: '', defendant: '', defendantCounsel: '' },
+    assignment: { date: '', dueDate: '', durationDays: '', scope: '', body: '' },
+    expert: { name: '', registryNo: '', field: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi' },
+    team: [],
+    report: {
+      date: dateToday(),
+      methodText: DEFAULT_METHOD,
+      limitationsText: '',
+      conclusionText: ''
+    },
     questions: [],
-    methodText: DEFAULT_METHOD,
-    limitationsText: '',
-    conclusionText: '',
     materials: [],
-    synthetic: false,
-    createdAt: new Date().toISOString()
+    shared: false,
+    lastEditedBy: '',
+    mergeLog: [],
+    // --- v2 uyumluluk: düz alanlar. Depolamada asıl veri yukarıdaki iç içe
+    // yapıdadır; bu erişimciler okuma/yazmayı iki yapıya da yansıtır. Yeni
+    // kod iç içe alanı kullanmalı; bunlar yalnız eski çağrılar içindir.
+    synthetic: false
   };
+  syncCaseMirrors(c);
+  return c;
+}
+// v3 iç içe alanlar ile v2 düz alanları aynı değere bağlar. Hangi taraftan
+// yazılırsa yazılsın ikisi tutarlı kalır; böylece 168 düz alan erişimini
+// tek tek değiştirmek gerekmez ve veri iki biçimde ayrışmaz.
+const CASE_MIRROR = [
+  ['plaintiff', 'parties', 'plaintiff'],
+  ['plaintiffCounsel', 'parties', 'plaintiffCounsel'],
+  ['defendant', 'parties', 'defendant'],
+  ['defendantCounsel', 'parties', 'defendantCounsel'],
+  ['assignmentDate', 'assignment', 'date'],
+  ['dueDate', 'assignment', 'dueDate'],
+  ['assignmentDurationDays', 'assignment', 'durationDays'],
+  ['assignmentScope', 'assignment', 'scope'],
+  ['expertName', 'expert', 'name'],
+  ['registryNo', 'expert', 'registryNo'],
+  ['expertField', 'expert', 'field'],
+  ['reportDate', 'report', 'date'],
+  ['methodText', 'report', 'methodText'],
+  ['limitationsText', 'report', 'limitationsText'],
+  ['conclusionText', 'report', 'conclusionText']
+];
+function syncCaseMirrors(c) {
+  if (!c) return c;
+  for (const [flat, group, key] of CASE_MIRROR) {
+    if (!c[group] || typeof c[group] !== 'object') c[group] = {};
+    // Düz alan varsa iç içe yapıya, yoksa iç içeden düze kopyala.
+    if (c[flat] !== undefined && c[flat] !== '' && c[flat] !== null) c[group][key] = c[flat];
+    else c[flat] = c[group][key] || '';
+  }
+  c.name = c.name || c.fileNo || 'Yeni inceleme dosyası';
+  return c;
+}
+// Düz alan okuma/yazma erişimcisi: `c.parties.plaintiff` ile `c.plaintiff`
+// her zaman aynı değeri verir. Nesne üzerinde tanımlayıcı ile kurulur ki
+// mevcut `c.plaintiff = ...` yazımları da çalışsın.
+function defineCaseMirrors(c) {
+  for (const [flat, group, key] of CASE_MIRROR) {
+    if (Object.prototype.hasOwnProperty.call(c, flat) && Object.getOwnPropertyDescriptor(c, flat)?.get) continue;
+    if (!c[group] || typeof c[group] !== 'object') c[group] = {};
+    const value = c[flat] !== undefined && c[flat] !== '' ? c[flat] : c[group][key] || '';
+    c[group][key] = value;
+    Object.defineProperty(c, flat, {
+      get() {
+        return this[group] ? this[group][key] : '';
+      },
+      set(v) {
+        if (!this[group]) this[group] = {};
+        this[group][key] = v;
+      },
+      configurable: true,
+      enumerable: false
+    });
+  }
+  return c;
 }
 // Older builds persisted derived waveform peaks inside each material, which
 // inflated localStorage by ~32 KB per recording. Drop them on load so existing
@@ -362,6 +452,15 @@ function loadState() {
     if (raw) {
       appState = JSON.parse(raw);
       if (!Array.isArray(appState.cases)) throw 0;
+      // v3: her dosya şemaya göre normalleştirilir (eksik alan tamamlanır,
+      // eski düz alanlar iç içe yapıya taşınır) ve düz alan erişimcileri
+      // yeniden kurulur — JSON tanımlayıcıları taşımaz.
+      appState.cases = appState.cases.map((c) => {
+        const nc = normalizeCase(c);
+        syncCaseMirrors(nc);
+        defineCaseMirrors(nc);
+        return nc;
+      });
       stripDerivedFields(appState);
       if (compactAllHistories(appState)) persist();
     }
@@ -506,6 +605,59 @@ function populateCaseForm() {
     if (el) el.value = c[k] ?? '';
   }
   applyRoleLabels(c.reportType);
+  renderTeam();
+}
+// ---- Ekip (ortak çalışma) ----------------------------------------------
+// Ekip, aynı dosyada çalışan bilirkişi/yardımcıları tanımlar. Rapora GİRMEZ;
+// amaç iş bölümü, cevap atfı ve birleştirmede kimin ne yaptığını bilmektir.
+function renderTeam() {
+  const c = currentCase();
+  const host = $('#teamList');
+  if (!c || !host) return;
+  const team = c.team || [];
+  if (!team.length) {
+    host.innerHTML = '<div class="seg-empty-note">Henüz ekip üyesi yok. Tek başınıza çalışıyorsanız bu bölümü boş bırakabilirsiniz.</div>';
+    return;
+  }
+  const roleOpts = (sel) =>
+    TEAM_ROLE.map((r) => `<option value="${esc(r)}" ${sel === r ? 'selected' : ''}>${esc(TEAM_ROLE_LABEL[r])}</option>`).join('');
+  host.innerHTML = team
+    .map(
+      (t, i) => `<div class="team-card" data-team-card="${esc(t.id)}">
+      <div class="seg-row2">
+        <label class="seg-field"><span>Ad soyad</span><input data-team="${esc(t.id)}" data-team-key="name" value="${esc(t.name || '')}" placeholder="Ad Soyad"></label>
+        <label class="seg-field"><span>Görev</span><select data-team="${esc(t.id)}" data-team-key="role">${roleOpts(t.role)}</select></label>
+      </div>
+      <div class="seg-row2">
+        <label class="seg-field"><span>Sicil no</span><input data-team="${esc(t.id)}" data-team-key="registryNo" value="${esc(t.registryNo || '')}" placeholder="Bilirkişi sicil no"></label>
+        <label class="seg-field"><span>Kurum</span><input data-team="${esc(t.id)}" data-team-key="institution" value="${esc(t.institution || '')}" placeholder="Birim / kurum"></label>
+      </div>
+      <button class="mini-button tiny danger" data-team-remove="${esc(t.id)}" type="button">ekipten çıkar</button>
+    </div>`
+    )
+    .join('');
+}
+function addTeamMember() {
+  const c = currentCase();
+  if (!c) return;
+  c.team = c.team || [];
+  c.team.push(emptyTeamMember({ role: c.team.length ? 'assistant' : 'expert' }));
+  persist();
+  renderTeam();
+}
+function updateTeamMember(id, key, value) {
+  const c = currentCase();
+  const t = (c?.team || []).find((x) => x.id === id);
+  if (!t) return;
+  t[key] = value;
+  persist();
+}
+function removeTeamMember(id) {
+  const c = currentCase();
+  if (!c?.team) return;
+  c.team = c.team.filter((x) => x.id !== id);
+  persist();
+  renderTeam();
 }
 function applyRoleLabels(type) {
   const spec = reportTypeSpec(type);
@@ -669,15 +821,31 @@ async function getAudioBlob(c, m) {
 // çözümleme sırasında sık güncellenir; içerik bölgesi (oynatıcı, dalga formu,
 // deşifre) yalnızca gerçekten değişince yeniden kurulur. Böylece uzun
 // kayıtta sayfa sıçramaz.
+// Kayıt durumu artık KOD ile tutulur (pending | transcribing | review | ...).
+// Türkçe metin yalnız arayüzde türetilir. Eski kayıtlarda durum metin olarak
+// duruyorsa okuma sırasında koda çevrilir; böylece v2 verisi çökertmez.
+// Etiketler tek kaynaktan (assets/schema.js) gelir; burada yalnız v2 metin →
+// kod eşlemesi tutulur (eski kayıtları okumak için).
+const MATERIAL_STATUS_LEGACY = Object.fromEntries(
+  Object.entries(STATUS_LABEL).map(([code, label]) => [label, code])
+);
+function materialStatus(m) {
+  const raw = m?.status || 'pending';
+  return STATUS_LABEL[raw] ? raw : MATERIAL_STATUS_LEGACY[raw] || 'pending';
+}
+function materialStatusLabel(m) {
+  return STATUS_LABEL[materialStatus(m)];
+}
 function audioStatusZoneHtml(m) {
   // Durum şeridi TEK satır: dosya + durum + kontrol + model + eylemler.
   // Tekrar eden bilgiler (SHA-256, codec, köken, doğrulama, günlük) artık
   // "Kayıt bilgileri" sekmesinde; burada ölü alan bırakılmaz.
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
-  const status = m.status || 'Bekliyor';
-  const stCls = /hata|boş|iptal/i.test(status) ? 'bad' : /Kontrol bekliyor|tamamlandı/i.test(status) ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${m.status === 'Çözümleme sürüyor' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && !m.lastVerify.ok ? `<div class="warn-box">Son SHA-256 doğrulaması farklı: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  const status = materialStatusLabel(m);
+  const stCode = materialStatus(m);
+  const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && !m.lastVerify.ok ? `<div class="warn-box">Son SHA-256 doğrulaması farklı: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -721,8 +889,9 @@ function materialRowHtml(m, i) {
   const pct = segs.length ? Math.round((checked / segs.length) * 100) : 0;
   const c = currentCase();
   const active = !!(c && c.activeMaterialId === m.id);
-  const status = m.status || 'Bekliyor';
-  const stCls = /hata|boş|iptal/i.test(status) ? 'bad' : /Kontrol bekliyor|tamamlandı/i.test(status) ? 'good' : '';
+  const status = materialStatusLabel(m);
+  const stCode = materialStatus(m);
+  const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
   const short = status.length > 20 ? status.slice(0, 18) + '…' : status;
   return `<div class="material-chip ${active ? 'is-active' : ''}" data-material-row="${esc(m.id)}" role="button" tabindex="0" aria-pressed="${active}" title="${esc(m.name)} — ${esc(status)}">
     <span class="mc-top"><span class="mc-index">${i + 1}</span><span class="mc-name">${esc(m.name)}</span></span>
@@ -945,7 +1114,7 @@ function recordPanelHtml(m) {
     ['Örnekleme', m.tech?.sampleRate ? `${m.tech.sampleRate} Hz` : '—'],
     ['Bit derinliği', m.tech?.bitDepth ? `${m.tech.bitDepth} bit` : '—'],
     ['Eklenme', m.addedAt ? new Date(m.addedAt).toLocaleString('tr-TR') : '—'],
-    ['Durum', m.status || 'Bekliyor'],
+    ['Durum', materialStatusLabel(m)],
     ['Çözümleyen model', m.transcribedWithModel ? `${modelShortName(m.transcribedWithModel)}${m.transcribedAt ? ' · ' + new Date(m.transcribedAt).toLocaleString('tr-TR') : ''}` : '—']
   ];
   return `<table class="record-table"><tbody>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table>
@@ -2201,12 +2370,13 @@ function renderSpeakersPanel(m) {
 //  2) Liste bir kez kurulur; metin değişikliği yalnızca ilgili öğeyi günceller.
 //  3) Model güven skoru vermediği için uydurma skor üretilmez; bunun yerine
 //     şeffaf, gerekçeli bir "inceleme önceliği" hesaplanır (bkz. segPriority).
+// Filtre anahtarları v3 kontrol kodlarıyla aynıdır; Türkçe yalnız etikettir.
 const SEG_FILTERS = [
   ['all', 'Tümü'],
   ['pending', 'Bekleyen'],
-  ['onaylandi', 'Onaylandı'],
-  ['anlasilmadi', 'Anlaşılmadı'],
-  ['yeniden', 'Yeniden dinlenecek']
+  ['approved', 'Onaylandı'],
+  ['inaudible', 'Anlaşılmadı'],
+  ['relisten', 'Yeniden dinlenecek']
 ];
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 function segFilter(m) {
@@ -2220,12 +2390,12 @@ function segMatchesFilter(s, filter) {
 }
 function segCounts(m) {
   const segs = m.segments || [];
-  const c = { all: segs.length, pending: 0, onaylandi: 0, anlasilmadi: 0, yeniden: 0 };
+  const c = { all: segs.length, pending: 0, approved: 0, inaudible: 0, relisten: 0 };
   for (const s of segs) {
     const r = segReview(s);
-    if (r === 'onaylandi') c.onaylandi++;
-    else if (r === 'anlasilmadi') c.anlasilmadi++;
-    else if (r === 'yeniden') c.yeniden++;
+    if (r === 'approved') c.approved++;
+    else if (r === 'inaudible') c.inaudible++;
+    else if (r === 'relisten') c.relisten++;
     if (!isReviewed(s)) c.pending++;
   }
   return c;
@@ -2455,14 +2625,14 @@ function renderSegments(m, card) {
   if (!root) return;
   const segs = m.segments || [];
   const counts = segCounts(m);
-  const reviewed = counts.onaylandi + counts.anlasilmadi;
+  const reviewed = counts.approved + counts.inaudible;
   const pct = segs.length ? Math.round((reviewed / segs.length) * 100) : 0;
   const filter = segFilter(m);
   const chips = SEG_FILTERS.map(
     ([k, label]) =>
       `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
   ).join('');
-  const spkOptions = [...new Set(segs.map((s) => s.speaker).filter((x) => x && x !== 'Belirtilmedi'))];
+  const spkOptions = (m.speakers || []).map((sp) => sp.label).filter(Boolean);
   root.innerHTML = `<div class="transcript-toolbar compact-bar">
       <div class="group"><span>Hız</span>${PLAYBACK_SPEEDS.map((sp) => `<button class="seg-tool speed-tool ${(m.playbackRate || 1) === sp ? 'on' : ''}" data-seg-speed="${sp}">${sp}×</button>`).join('')}</div>
       <div class="tb-sep"></div>
@@ -2606,8 +2776,7 @@ function approveActiveSegment(m) {
   const i = m.activeSeg;
   const s = segs[i];
   if (!s) return;
-  s.review = 'onaylandi';
-  s.checked = true;
+  s.review = 'approved';
   persist();
   renderOverview();
   const root = $(`#segments-${CSS.escape(m.id)}`);
@@ -2632,7 +2801,7 @@ function refreshSegChips(m) {
   if (!root) return;
   const counts = segCounts(m);
   const segs = m.segments || [];
-  const reviewed = counts.onaylandi + counts.anlasilmadi;
+  const reviewed = counts.approved + counts.inaudible;
   const pct = segs.length ? Math.round((reviewed / segs.length) * 100) : 0;
   root.querySelectorAll('[data-seg-filter]').forEach((ch) => {
     const k = ch.dataset.segFilter;
@@ -3439,8 +3608,7 @@ function mergeSegmentWithNext(m, index) {
   }
   s.end = n.end;
   if ((n.text || '').trim()) s.text = (s.text || '') + (s.text ? ' ' : '') + n.text;
-  s.review = 'bekliyor';
-  s.checked = false;
+  s.review = 'pending';
   segs.splice(index + 1, 1);
   m.activeSeg = index;
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
@@ -3490,7 +3658,7 @@ function paragraphize(m) {
       speaker: first.speaker || '',
       text,
       checked: !anyUnreviewed,
-      review: anyUnreviewed ? 'bekliyor' : segReview(first),
+      review: anyUnreviewed ? 'pending' : segReview(first),
       history: [],
       obs: obs || undefined,
       words: g.segs.flatMap((s) => s.words || [])
@@ -3641,7 +3809,7 @@ async function addAudioFiles(files, opts = {}) {
       sha256: await sha256(file),
       tech,
       segments: [],
-      status: 'İnceleme bekliyor',
+      status: 'pending',
       synthetic: !!opts.synthetic,
       addedAt: new Date().toISOString(),
       log: [],
@@ -3863,19 +4031,30 @@ function asrWindows(totalSamples, sampleRate = 16000, windowSeconds = ASR_WINDOW
 // existing MİHENK/AKİS records keep their meaning. Only onaylandi and anlasilmadi
 // count as reviewed: "yeniden" means the expert still has to listen again, and
 // must never be reported as verified.
+// Bölüm kontrol durumu. v3 kanonik kodları: pending | approved | inaudible |
+// relisten. v2'nin Türkçe anahtarları (onaylandi, bekliyor, anlasilmadi,
+// yeniden) okuma sırasında çevrilir; böylece eski kayıtlar çökertmez ve tüm
+// okuma noktaları tek yerden geçer.
 const REVIEW_STATES = {
-  onaylandi: { label: 'Onaylandı', cls: 'good' },
-  bekliyor: { label: 'Kontrol bekliyor', cls: '' },
-  anlasilmadi: { label: 'Anlaşılmadı', cls: 'warn' },
-  yeniden: { label: 'Yeniden dinlenecek', cls: 'warn' }
+  approved: { label: 'Onaylandı', cls: 'good' },
+  pending: { label: 'Kontrol bekliyor', cls: '' },
+  inaudible: { label: 'Anlaşılmadı', cls: 'warn' },
+  relisten: { label: 'Yeniden dinlenecek', cls: 'warn' }
+};
+// v2 anahtar → v3 kod. Okuma sırasında uygulanır; yazma her zaman v3 yazar.
+const REVIEW_LEGACY = {
+  onaylandi: 'approved',
+  bekliyor: 'pending',
+  anlasilmadi: 'inaudible',
+  yeniden: 'relisten'
 };
 function segReview(s) {
-  if (s.review && REVIEW_STATES[s.review]) return s.review;
-  return s.checked ? 'onaylandi' : 'bekliyor';
+  const raw = s.review || (s.checked ? 'approved' : 'pending');
+  return REVIEW_STATES[raw] ? raw : REVIEW_LEGACY[raw] || 'pending';
 }
 function isReviewed(s) {
   const r = segReview(s);
-  return r === 'onaylandi' || r === 'anlasilmadi';
+  return r === 'approved' || r === 'inaudible';
 }
 function reviewLabel(s) {
   return REVIEW_STATES[segReview(s)].label;
@@ -4116,7 +4295,7 @@ async function transcribe(id) {
   }
   try {
     const pipe = await ensureModel();
-    m.status = 'Çözümleme sürüyor';
+    m.status = 'transcribing';
     m.hallucinationWarning = null;
     m.progress = 0;
     persist();
@@ -4128,7 +4307,7 @@ async function transcribe(id) {
       const { offset, end, startSeconds } = win;
       if (m.cancelRequested) {
         m.cancelRequested = false;
-        m.status = collected.length ? 'Kısmen çözümlendi (iptal edildi)' : 'İptal edildi';
+        m.status = collected.length ? 'partial' : 'cancelled';
         delete m.progress;
         persist();
         refreshAudioStatusZone(m);
@@ -4148,7 +4327,7 @@ async function transcribe(id) {
       if (windowError) {
         m.failedWindows = (m.failedWindows || 0) + 1;
       } else {
-        for (const f of found) collected.push({ ...f, speaker: 'Belirtilmedi', checked: false });
+        for (const f of found) collected.push({ ...f, speaker: '', review: 'pending' });
       }
       m.progress = Math.min(100, Math.round((end / total) * 100));
       persist();
@@ -4164,10 +4343,10 @@ async function transcribe(id) {
     }
     delete m.failedWindows;
     if (!collected.length) {
-      m.status = 'Çözümleme sonucu boş';
+      m.status = 'empty';
       m.hallucinationWarning = 'Model bu kayıtta konuşma tespit edemedi. Kaydı elle dinleyip bölümleri kendiniz girin.';
     } else if (!meaningful.length) {
-      m.status = 'Çözümleme sonucu boş';
+      m.status = 'empty';
       m.hallucinationWarning =
         'Model bu kayıtta anlamlı konuşma metni üretemedi (çıktı yalnızca anlamsız simge/token içeriyordu ve ayıklandı). ' +
         'Sonuç rapora aktarılmamalıdır. Denenebilecekler: (1) "Çözümleme ve model ayarları"nda Large-v3-turbo modelini seçip yükleyin; ' +
@@ -4176,7 +4355,7 @@ async function transcribe(id) {
       if (fillerCount) {
         m.hallucinationWarning = `${fillerCount} bölümde anlamlı metin yerine dolgu ifadesi üretildi; bu bölümler uzman tarafından dinlenerek doldurulmalıdır.`;
       }
-      m.status = 'Kontrol bekliyor';
+      m.status = 'review';
     }
     delete m.progress;
     m.transcribedAt = new Date().toISOString();
@@ -4200,7 +4379,10 @@ async function transcribe(id) {
     // Yükleme hatası ile çözümleme hatasını ayır: kullanıcı ne olduğunu ve ne
     // yapması gerektiğini anlasın.
     const isLoad = /Model yüklenemedi|yükleniyor/i.test(String(e && e.message));
-    m.status = isLoad ? 'Model yüklenemedi' : 'Çözümleme hatası';
+    // Model yükleme hatası da bir çözümleme hatasıdır; ayrım statusNote'ta
+    // ve uyarı metninde tutulur (kullanıcı ne yapacağını görsün).
+    m.status = 'error';
+    m.statusNote = isLoad ? 'model-yuklenemedi' : 'cozumleme-hatasi';
     m.hallucinationWarning = isLoad
       ? 'Model yüklenemedi. "Çözümleme ve model ayarları"ndan modeli yeniden yükleyip tekrar deneyin. Ayrıntı: ' +
         String(e && e.message)
@@ -5372,7 +5554,7 @@ async function loadSamples() {
           sha256: await sha256(blob),
           tech,
           segments: [],
-          status: 'İnceleme bekliyor',
+          status: 'pending',
           synthetic: true,
           referenceSegments: sm.referenceSegments || [],
           addedAt: new Date().toISOString(),
@@ -5395,6 +5577,7 @@ async function loadSamples() {
     populateCaseForm();
     populateQuestionsForm();
     renderOverview();
+    await renderAudioList();
     showToast('4 kurgusal dosya ve 10 sentetik ses kaydı yüklendi.');
   } catch (e) {
     showToast(`Test paketi yüklenemedi: ${e.message}`);
@@ -5531,6 +5714,26 @@ function setupEvents() {
   });
   $('#caseDrawer').addEventListener('input', readCaseForm);
   $('#caseDrawer').addEventListener('change', readCaseForm);
+  // Ekip alanları: yazma/kaldırma. Delegasyon kullanılır çünkü panel yeniden
+  // çizildiğinde düğümler tazelenir.
+  $('#caseDrawer').addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.dataset && el.dataset.team !== undefined) {
+      updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
+    }
+  });
+  $('#caseDrawer').addEventListener('change', (e) => {
+    const el = e.target;
+    if (el.dataset && el.dataset.team !== undefined) {
+      updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
+    }
+  });
+  $('#caseDrawer').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-team-remove]');
+    if (b) removeTeamMember(b.dataset.teamRemove);
+  });
+  const addTeamBtn = $('#addTeamBtn');
+  if (addTeamBtn) addTeamBtn.addEventListener('click', addTeamMember);
   // Görünüm seçenekleri: panel her yeniden çizildiğinde düğümler tazelenir,
   // bu yüzden dinleyici kapsayıcıya (delegasyon) bağlanır.
   const appearanceHost = $('#appearanceHost');
@@ -6104,7 +6307,7 @@ function setupEvents() {
     const c = currentCase();
     if (!c) return;
     for (const m of c.materials || []) {
-      if (m.status === 'Çözümleme hatası') m.status = 'İnceleme bekliyor';
+      if (materialStatus(m) === 'error') m.status = 'pending';
     }
     persist();
     renderQueue();
@@ -6219,9 +6422,9 @@ let queueRunning = false;
 function queuePending() {
   return (currentCase()?.materials || []).filter(
     (m) =>
-      m.status !== 'Kontrol bekliyor' &&
-      m.status !== 'Çözümleme sonucu boş' &&
-      m.status !== 'Kısmen çözümlendi (iptal edildi)'
+      materialStatus(m) !== 'review' &&
+      materialStatus(m) !== 'empty' &&
+      materialStatus(m) !== 'partial'
   );
 }
 function renderQueue() {
@@ -6230,15 +6433,15 @@ function renderQueue() {
   const mats = c.materials || [];
   const root = $('#queueList');
   if (!root) return;
-  const done = mats.filter((m) => m.status === 'Kontrol bekliyor').length;
-  const failed = mats.filter((m) => m.status === 'Çözümleme hatası').length;
+  const done = mats.filter((m) => materialStatus(m) === 'review').length;
+  const failed = mats.filter((m) => materialStatus(m) === 'error').length;
   $('#queueLabel').textContent = mats.length ? `${done}/${mats.length} tamamlandı` : 'Kuyruk boş';
   $('#retryFailedBtn').hidden = failed === 0;
   root.innerHTML = mats.length
     ? mats
         .map(
           (m, i) =>
-            `<div class="queue-item"><span class="queue-index">${i + 1}</span><span class="queue-name">${esc(m.name)}</span><span class="queue-state ${m.status === 'Çözümleme hatası' ? 'bad' : m.status === 'Kontrol bekliyor' ? 'good' : ''}">${esc(m.status || 'Bekliyor')}</span>${typeof m.progress === 'number' ? `<span class="queue-pct">%${m.progress}</span>` : ''}</div>`
+            `<div class="queue-item"><span class="queue-index">${i + 1}</span><span class="queue-name">${esc(m.name)}</span><span class="queue-state ${materialStatus(m) === 'error' ? 'bad' : materialStatus(m) === 'review' ? 'good' : ''}">${esc(materialStatusLabel(m))}</span>${typeof m.progress === 'number' ? `<span class="queue-pct">%${m.progress}</span>` : ''}</div>`
         )
         .join('')
     : '<div class="empty-state" style="padding:14px"><span>Ses kaydı eklenince kuyruk burada görünür.</span></div>';

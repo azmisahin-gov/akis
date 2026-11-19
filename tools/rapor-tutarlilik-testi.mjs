@@ -42,13 +42,26 @@ const localStorageStub = {
 
 const JSZip = (await import(path.join(ROOT, 'assets/vendor/jszip.min.js'))).default;
 
-let code = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8')
+// app.js artık ES modülü: `import ... from './schema.js'`. Bu betik onu vm
+// içinde çalıştırdığı için import bloğu, aynı adları sandbox global'inden alan
+// bir atama bloğuna çevrilir. Böylece testler GERÇEK şemayı kullanır (kopya
+// değil); şema ayrıca tools/sema-testi.mjs ile ayrıntılı sınanır.
+const __inlineImports = (src) =>
+  src.replace(/^import\s+\{([\s\S]*?)\}\s+from\s+'[^']+';\s*$/m, function (_m, names) {
+    const list = names.split(',').map(function (n) { return n.trim(); }).filter(Boolean);
+    return 'const { ' + list.join(', ') + ' } = globalThis.__schema;';
+  });
+let code = __inlineImports(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8'))
   .replace(/^init\(\);\s*$/m, '');
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
   + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
 
 const downloads = [];
+// Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
+// okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
+import * as __schemaMod from '../assets/schema.js';
 const sandbox = {
+  __schema: __schemaMod,
   console, document: documentStub, localStorage: localStorageStub,
   window: {}, navigator: {},
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
@@ -64,6 +77,7 @@ const sandbox = {
   },
 };
 sandbox.window = sandbox;
+sandbox.__schema = __schemaMod;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });

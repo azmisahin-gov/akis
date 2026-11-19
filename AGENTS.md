@@ -118,6 +118,46 @@ Tercih `localStorage`'da (`akis.theme`, `akis.density`, `akis.fontscale`).
 Dikkat: tema değişince rapor önizlemesi yeniden çizilmez — kâğıt tokenları
 temadan bağımsız olduğu için gerek yok. UDF/DOCX çıktısı hiç etkilenmez.
 
+### Aşama 5 — v3 veri şeması (TAMAMLANDI, v2.51)
+
+**Neden:** v2 şemasında bölüm ve sorunun kimliği yoktu; her şey dizi indeksiyle
+adreslenirdi. Durum Türkçe metinle karşılaştırılıyordu. Konuşmacı bölümde AD
+ile tutuluyordu. Delil günlüğü serbest metindi. Sürüm alanı yoktu.
+
+**Mimari:** `assets/schema.js` — tarayıcıya bağımlı olmayan saf fonksiyonlar.
+Üretim ve test AYNI dosyayı kullanır (test kopya tanım yapmaz; sandbox'a
+`__schema` olarak enjekte edilir).
+
+**Değişmez şema kuralları:**
+
+1. **Kimlik:** dosya, kayıt, bölüm, soru, konuşmacı, ekip üyesi `id` taşır.
+   Referans id ile: `segment.speakerId`, `question.evidence[].segmentId`.
+   Yeni referans eklerken AD veya İNDEKS kullanmayın.
+2. **Kod ≠ etiket:** durum/rol/cinsiyet/ortam kodları ASCII sabit
+   (`pending`, `approved`, `inaudible`, `relisten`…). Türkçe metin
+   `STATUS_LABEL` / `REVIEW_LABEL` gibi tek yerden türetilir. Karşılaştırma
+   **daima kodla**: `materialStatus(m) === 'review'`, asla
+   `m.status === 'Kontrol bekliyor'`.
+3. **Kalıcı ≠ geçici:** `uiTab`, `activeSeg`, `progress`, `playbackRate`
+   oturumluktur; şemaya eklenmez.
+4. **Delil:** her günlük girdisi `logEntry()` ile üretilir (`prevHash`+`hash`).
+   Elle `{at,event}` yazmayın; zincir kırılır ve `verifyLogChain()` hata verir.
+5. **Genişletme:** bilinmeyen alan korunur; `normalizeCase()` eksik alanı
+   varsayılanla tamamlar. Yeni alan eklerken `emptyCase`/`emptyMaterial`/
+   `emptySegment` varsayılanını da güncelleyin.
+
+**v2 uyumluluğu:** `normalizeCase()` eski kaydı okur (düz alan → iç içe,
+`checked` → `approved`, ad → `speakerId`, `basis` → `basisNote`).
+`segReview()` v2 Türkçe anahtarlarını tanır. 168 düz alan erişimi için
+`defineCaseMirrors()` saydam eşleme kurar (`c.plaintiff` ↔ `c.parties.plaintiff`).
+
+**Ekip:** `case.team[]` — ad, görev, sicil, kurum. **Rapora girmez**; iş
+bölümü ve birleştirme atfı içindir. "Rapor bilirkişi adına yazılır" ilkesi
+korunur.
+
+**Birleştirme:** `mergeCases(mine, theirs)` — id ile eşleştirir, metin
+çakışmasını sessizce EZMEZ, `conflicts[]` olarak raporlar.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -218,6 +258,9 @@ Bu komut üç betiği çalıştırır:
 - `tools/surum-testi.mjs` — `APP_VERSION`, dört `?v=` parametresi, CHANGELOG,
   YOL_HARITASI, README, OZELLIKLER ve AGENTS sürümlerinin aynı olduğunu
   denetler. Sürüm bir yerde artırılıp başka yerde unutulursa test kalır.
+- `tools/sema-testi.mjs` — v3 şeması: kimlik benzersizliği, kod↔etiket
+  bütünlüğü, v2→v3 göçü kayıpsızlığı, doğrulayıcı, delil zinciri kurcalama
+  tespiti, birleştirme çakışma raporlaması, zaman biçimi (87 kontrol).
 - `tools/tasarim-testi.mjs` — üç temanın kontrast oranlarını WCAG ile yeniden
   hesaplar, punto alt sınırını (≥11px), ham hex yasağını, stil yükleme sırasını,
   tema bütünlüğünü ve erişilebilirlik ipuçlarını denetler. Tasarım kararı
@@ -263,7 +306,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.50.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.51.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

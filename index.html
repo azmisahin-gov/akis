@@ -23,13 +23,13 @@
       }
     })();
   </script>
-  <link rel="stylesheet" href="assets/tokens.css?v=2.50">
-  <link rel="stylesheet" href="assets/app.css?v=2.50">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.51">
+  <link rel="stylesheet" href="assets/app.css?v=2.51">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.50">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.51">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.50"></script>
+  <script type="module" src="assets/app.js?v=2.51"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -215,6 +215,13 @@
             <label class="field span-2"><span>Uzmanlık alanı</span><input id="expertField" value="56.12 – Ses kayıtlarının metin hâline dönüştürülmesi"></label>
             <label class="field"><span>Rapor tarihi</span><input id="reportDate" type="date"></label>
           </div>
+          <div class="form-divider"></div>
+          <div class="form-section-title"><span>04</span><div><h3>İnceleme ekibi</h3><p>Aynı dosyada birden fazla bilirkişi çalışacaksa buraya ekleyin. Rapor yalnızca imza sahibi adına yazılır; ekip iç iş bölümü içindir.</p></div></div>
+          <div id="teamList" class="team-list"></div>
+          <div class="evidence-actions">
+            <button class="mini-button" id="addTeamBtn" type="button">＋ Ekip üyesi ekle</button>
+          </div>
+          <p class="drawer-note">Ekip bilgisi yalnız bu çalışma dosyasında saklanır; rapora ve UDF/DOCX çıktısına girmez.</p>
     </div>
   </aside>
   <dialog id="helpDialog" class="help-dialog"><div class="dialog-head"><div><div class="eyebrow">YARDIM</div><h2>Çalışma ve raporlama sınırları</h2></div><button id="closeHelp" class="icon-button">×</button></div><div class="dialog-body"><h3>Klavye kısayolları</h3><p><b>Boşluk</b> oynat/durdur · <b>↑</b> <b>↓</b> önceki/sonraki bölüm · <b>Enter</b> aktif bölümü onayla · <b>Y</b> aktif bölümü dinle · <b>B</b> bölümü oynatıcı konumundan böl · <b>M</b> sonrakiyle birleştir · <b>[</b> <b>]</b> oynatma hızı · <b>←</b> <b>→</b> 5 saniye geri/ileri · Metin alanındayken <b>Esc</b> ile alandan çık.</p><h3>Ses çözümleme</h3><p>Uygulama çok dilli bir konuşma tanıma modeli kullanır. Kaynak dil Türkçe ve görev konuşmayı metne dönüştürme olarak zorlanır. Bu ayar İngilizceye çeviri seçilmesini engeller; ancak yanlış kelime üretmeyeceğini garanti etmez.</p><h3>Gizlilik</h3><p>Ses içeriği tarayıcıda işlenir. Model dosyaları ilk kullanımda Hugging Face altyapısından indirilir. Dosyalar ve proje verisi tarayıcının yerel depolamasında tutulur. Kurumsal güvenlik politikanız gerektiriyorsa bu uygulamaya gerçek dosya yüklemeden önce ilgili birimden onay alın.</p><h3>Rapor çıktısı</h3><p>Bilirkişi Portalı için birincil çıktı UDF’dir. DOCX yalnızca yardımcı kopya olarak oluşturulabilir. UDF yapısı, uygulamaya eklenen boş UYAP belgesinin içerik yapısı ve sayfa ayarları esas alınarak oluşturulur. İlk kullanımda UYAP Doküman Editöründe açılış ve sayfa düzeni kontrolü yapılmalıdır. Uygulama e-imza üretmez ve portala gönderim yapmaz.</p><h3>Bilimsel sınırlılık</h3><p>Otomatik deşifre, ses kaydının uzman tarafından dinlenerek kontrol edilmesinin yerine geçmez. Konuşmacı kimliği, sesin gerçekliği, montaj olup olmadığı veya hukuki sorumluluk otomatik olarak tespit edilmez.</p></div></dialog>

@@ -22,6 +22,10 @@ echo "### Tasarım tutarlılık testi ###"
 node tools/tasarim-testi.mjs || fail=1
 
 echo
+echo "### Veri şeması testi ###"
+node tools/sema-testi.mjs || fail=1
+
+echo
 if [ "$fail" -eq 0 ]; then
   echo "== TÜM TESTLER GEÇTİ =="
 else

@@ -6,12 +6,81 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.50.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.51.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.51 — v3 veri şeması: kimlik, kod, delil zinciri, ekip
+
+KULLANICI: "Kullandığımız veri yapısını ciddi bir şekilde gözden geçir. Sıfırdan
+başlıyoruz, eski verileri kullanmayacağız. Şemamız doğru mu, düzenli mi, daha
+sonra genişletmek istesek sıkıntı olur mu?" + "Yeni vaka oluştururken düzenli
+bir şekilde oluşturabilelim, gerektiğinde ortak başka bilirkişilerle de
+çalışabilelim."
+
+### Ölçülen sorunlar (v2 şeması)
+
+| Sorun | Sonuç |
+|---|---|
+| Bölüm ve sorunun kimliği yoktu; dizi indeksiyle adreslenirdi | Sıralama değişince kayıt yanlış bölüme bağlanır |
+| Kalıcı veri ile oturumluk veri karışıktı (`progress`, `uiTab`, `activeSeg`) | Gereksiz şişme, yeniden yüklemede garip durum |
+| Durum Türkçe metinle karşılaştırılıyordu (`m.status === 'Çözümleme sürüyor'`) | Metin değişince mantık sessizce bozulur |
+| Konuşmacı bölümde AD ile tutuluyordu | Ad değişince bağ kopar |
+| Delil günlüğü serbest metindi | "Sonradan değiştirilmiş" iddiası ölçülemez |
+| Sürüm alanı yoktu | Genişletmede göç yolu bilinmez |
+
+### Yeni mimari: `assets/schema.js`
+
+Şema ayrı dosyada, tarayıcıya bağımlı olmayan **saf fonksiyonlar**. Böylece
+hem üretimde hem testte aynı kod çalışır (kopya yok).
+
+- **Kimlik:** her dosya/kayıt/bölüm/soru/konuşmacı/ekip üyesi `id` taşır.
+  Referanslar id ile kurulur: `segment.speakerId`, `question.evidence[]`.
+- **Kod ≠ etiket:** durum/rol/cinsiyet/ortam kodları ASCII sabit
+  (`pending`, `approved`, `inaudible`…); Türkçe metin `STATUS_LABEL` gibi tek
+  yerden türetilir. Kod değişmez, etiket serbestçe değişir.
+- **İç içe yapı:** `parties{}`, `assignment{}`, `expert{}`, `report{}`.
+  v2'nin 168 düz alan erişimi için saydam eşleme (`defineCaseMirrors`)
+  kuruldu: `c.plaintiff` ↔ `c.parties.plaintiff` her zaman aynı değeri verir.
+- **Delil zinciri:** her günlük girdisi `prevHash` + `hash` taşır.
+  `verifyLogChain()` kurcalamayı ve girdi silinmesini tespit eder.
+- **Birleştirme:** `mergeCases()` iki kopyayı id ile birleştirir; metin
+  çakışmasını **sessizce ezmez**, raporlar.
+- **Genişletme:** bilinmeyen alan korunur; `normalizeCase()` eksik alanı
+  varsayılanla tamamlar, çökertmez.
+
+### Ekip (ortak çalışma)
+
+Dosya çekmecesine "04 — İnceleme ekibi" bölümü eklendi: ad, görev (dosya
+sorumlusu / bilirkişi / yardımcı / kontrol eden / gözlemci), sicil, kurum.
+Ekip bilgisi **rapora ve UDF/DOCX çıktısına girmez**; iş bölümü ve birleştirme
+atfı içindir. Bu, "rapor bilirkişi adına yazılır" ilkesini bozmaz.
+
+### Göç ve uyumluluk
+
+Eski veri kullanılmayacak olsa da şema **çökertmez**: `normalizeCase()` v2
+kaydını okur (düz alan → iç içe, `checked` → `approved`, ad → `speakerId`,
+`basis` → `basisNote`) ve kayıpsız v3'e çevirir. `segReview()` v2 Türkçe
+anahtarlarını da tanır.
+
+### Düzeltilen gerçek hatalar (tarayıcıda bulundu)
+
+- Kayıt bilgilerinde "Durum" ham kod (`pending`) gösteriyordu → etiket.
+- Örnek veri yüklendikten sonra materyal listesi tazelenmiyordu (istatistik
+  3 kayıt, liste 0 kayıt) → `await renderAudioList()`.
+
+### Test
+
+`tools/sema-testi.mjs` eklendi: **87 kontrol**. Boş varlıklar, kimlik
+benzersizliği, kod↔etiket bütünlüğü, v2→v3 göçü kayıpsızlığı, doğrulayıcının
+gerçek hataları yakalaması, delil zinciri kurcalama tespiti, birleştirme
+çakışma raporlaması, zaman biçimi.
+
+Testler artık şemayı **kopyalamıyor**, gerçek `schema.js`'i sandbox'a enjekte
+ediyor. Toplam: 175 birim + 87 şema + rapor tutarlılığı + sürüm + tasarım.
 
 ## v2.50 — Okuma katmanı: tema, tipografi, kontrast
 

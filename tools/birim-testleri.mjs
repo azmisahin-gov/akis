@@ -38,7 +38,16 @@ const documentStub = {
 };
 const localStorageStub = { _d: {}, getItem(k) { return this._d[k] ?? null; }, setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
 
-let code = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8')
+// app.js artık ES modülü: `import ... from './schema.js'`. Bu betik onu vm
+// içinde çalıştırdığı için import bloğu, aynı adları sandbox global'inden alan
+// bir atama bloğuna çevrilir. Böylece testler GERÇEK şemayı kullanır (kopya
+// değil); şema ayrıca tools/sema-testi.mjs ile ayrıntılı sınanır.
+const __inlineImports = (src) =>
+  src.replace(/^import\s+\{([\s\S]*?)\}\s+from\s+'[^']+';\s*$/m, function (_m, names) {
+    const list = names.split(',').map(function (n) { return n.trim(); }).filter(Boolean);
+    return 'const { ' + list.join(', ') + ' } = globalThis.__schema;';
+  });
+let code = __inlineImports(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8'))
   .replace(/^init\(\);\s*$/m, '');
 const EXPOSE = [
   'computeWer', 'editDistance', 'normalizeForWer', 'werWords',
@@ -58,7 +67,11 @@ const EXPOSE = [
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 
+// Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
+// okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
+import * as __schemaMod from '../assets/schema.js';
 const sandbox = {
+  __schema: __schemaMod,
   console, document: documentStub, localStorage: localStorageStub, window: {}, navigator: {},
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
   URL: { createObjectURL: () => 'blob:x', revokeObjectURL: noop },
@@ -69,6 +82,7 @@ const sandbox = {
 };
 sandbox.CSS = { escape: (s) => String(s) };
 sandbox.window = sandbox;
+sandbox.__schema = __schemaMod;
 sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });
@@ -522,11 +536,19 @@ eq('tek kayıt değişmez', T.compactHistory(mk(['tek'])).length, 1);
 
 // --- 9. Kontrol durumu ----------------------------------------------------
 console.log('\n[9] Kontrol durumu');
-eq('eski "checked" -> onaylandi', T.segReview({ checked: true }), 'onaylandi');
-eq('yeni kayıt -> bekliyor', T.segReview({}), 'bekliyor');
-eq('onaylandi denetlenmiş sayılır', T.isReviewed({ review: 'onaylandi' }), true);
-eq('yeniden denetlenmiş SAYILMAZ', T.isReviewed({ review: 'yeniden' }), false);
-eq('bekliyor denetlenmiş SAYILMAZ', T.isReviewed({ review: 'bekliyor' }), false);
+// v3 kanonik kodlar: pending | approved | inaudible | relisten.
+// v2 Türkçe anahtarları okuma sırasında çevrilir (göç güvencesi).
+eq('eski "checked" -> approved', T.segReview({ checked: true }), 'approved');
+eq('yeni kayıt -> pending', T.segReview({}), 'pending');
+eq('approved denetlenmiş sayılır', T.isReviewed({ review: 'approved' }), true);
+eq('inaudible denetlenmiş sayılır', T.isReviewed({ review: 'inaudible' }), true);
+eq('relisten denetlenmiş SAYILMAZ', T.isReviewed({ review: 'relisten' }), false);
+eq('pending denetlenmiş SAYILMAZ', T.isReviewed({ review: 'pending' }), false);
+eq('v2 onaylandi -> approved', T.segReview({ review: 'onaylandi' }), 'approved');
+eq('v2 anlasilmadi -> inaudible', T.segReview({ review: 'anlasilmadi' }), 'inaudible');
+eq('v2 yeniden -> relisten', T.segReview({ review: 'yeniden' }), 'relisten');
+eq('v2 bekliyor -> pending', T.segReview({ review: 'bekliyor' }), 'pending');
+eq('bilinmeyen kod -> pending', T.segReview({ review: 'saçma' }), 'pending');
 
 // --- 10. Mercie özel ifadeler --------------------------------------------
 console.log('\n[10] Mercie özel ifadeler');

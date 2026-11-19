@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.50.**
+yazılır. **Güncel sürüm: v2.51.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,19 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.51 — v3 veri şeması (tamamlandı)
+
+Kimlikli, kod tabanlı, sürümlü şema (`assets/schema.js`): bölüm/soru/konuşmacı
+id ile; durum kodları ASCII sabit, Türkçe yalnız etiket; iç içe `parties/
+assignment/expert/report`; delil günlüğünde `prevHash`+`hash` zinciri; id ile
+çakışma raporlayan birleştirme. Dosya çekmecesine "İnceleme ekibi" bölümü
+eklendi (rapora girmez). 87 şema testi. Ayrıntı: `CHANGELOG.md`.
+
+### v2.50 — Okuma katmanı (tamamlandı)
+
+Üç tema (açık/koyu/sepya), yoğunluk ve yazı boyutu; token tabanlı tipografi ve
+kontrast (WCAG AA); rapor kâğıdı temadan bağımsız. Ayrıntı: `CHANGELOG.md`.
 
 ### v2.49 — Rapor bilirkişi adına, seviye ölçümü, sürüm disiplini (tamamlandı)
 
