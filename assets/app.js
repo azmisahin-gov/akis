@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.93';
+const APP_VERSION = '2.94';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7689,6 +7689,7 @@ function renderMergePreview(cmp) {
     `<div class="merge-pair"><div><small>Bu dosya</small><b>${esc(cmp.mineLabel)}</b></div><div class="merge-arrow">⇄</div><div><small>Gönderilen</small><b>${esc(cmp.theirsLabel)}</b></div></div>`,
     row('Yeni eklenecek kayıt', addedMat),
     row('Değişecek kayıt', differMat),
+    row('Alınacak kayıt bilgisi (ölçüm/konuşmacı/köken)', (cmp.materials.fields || []).length),
     row('Aynı kalan kayıt', sameMat),
     row('Yeni eklenecek bölüm', cmp.segments.added),
     row('Metni çakışan bölüm', cmp.segments.changed.length, cmp.segments.changed.length ? 'warn' : ''),
@@ -7766,6 +7767,11 @@ async function applyMerge() {
 
   // Birleşmiş dosyayı yerel dosyanın yerine koy (id korunur).
   merged.id = mine.id;
+  // Birleştirme sonucu yeni bir nesnedir; düz alan erişimcileri (CASE_MIRROR)
+  // yoktur. Yeniden kurulmazsa rapor `c.plaintiff` gibi düz alanları BOŞ
+  // okur (v2.94).
+  syncCaseMirrors(merged);
+  defineCaseMirrors(merged);
   const idx = appState.cases.findIndex((c) => c.id === mine.id);
   if (idx >= 0) appState.cases[idx] = merged;
   merged.updatedAt = new Date().toISOString();
@@ -9542,6 +9548,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.94': {
+    title: 'Dosya birleştirmede ölçüm ve konuşmacı bilgileri artık kaybolmuyor',
+    body:
+      'İki dosyayı birleştirdiğinizde, aynı ses kaydına ait seviye ölçümleri, ' +
+      'konuşmacılar, köken/teslim bilgisi, referans metni ve delil günlüğü hiç ' +
+      'aktarılmıyordu — üstelik "çakışma yok" deniyordu. Artık bu bilgiler karşı ' +
+      'taraf doldurmuşsa gelir; birleştirme öncesi kaç bilginin alınacağı yazar. ' +
+      'İki tarafta farklı değer varsa sessizce seçilmez, çakışma olarak gösterilir ' +
+      've bu dosyadaki değer korunur.'
+  },
   '2.93': {
     title: 'Gerçek cümleler artık "boş/dolgu" sayılmıyor',
     body:

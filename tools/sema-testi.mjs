@@ -1235,6 +1235,142 @@ console.log('\n[7b] Birleştirme önizlemesi');
   ok('boş girdi güvenli', compareCases(null, null).conflicts.length === 0);
 }
 
+// --- 7k. Kayıt düzeyi alanlar birleşmeye giriyor mu? (v2.94) -------------
+// GERÇEK HATA: mergeCases aynı id'li kayıtta yalnız `segments` ve birkaç
+// durum alanını işliyordu. Şu alanlar gelen dosyada DOLU olsa bile hiç
+// aktarılmıyordu:
+//   speakers, levels, origin, spectrogramReviewed, expectedText,
+//   sha256, tech, log
+// Üstelik hiçbiri için ÇAKIŞMA bildirilmiyordu → tam sessiz veri kaybı.
+// Ölçüm: 8 alan kayboluyor, r.conflicts.length = 0, r.applied = [].
+// KURAL: boş alan doldurulur; iki taraf da dolu ve farklıysa çakışma
+// bildirilir (sessizce ezme yok). Teknik/dosya kimliği (sha256, tech)
+// değişmez gerçeklerdir; çakışırsa bildirilir, ezilmez.
+console.log('\n[7k] Kayıt düzeyi alanlar birleşmeye giriyor');
+{
+  const mkMat = () => {
+    const m = emptyMaterial({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(emptySegment({ id: 's1', text: 'metin' }));
+    return m;
+  };
+
+  // (a) Gelen dosyada kayıt düzeyi veriler DOLU, yerelde BOŞ → hepsi gelmeli.
+  {
+    const mine = emptyCase({ id: 'c1' });
+    mine.materials.push(mkMat());
+    const theirs = emptyCase({ id: 'c1' });
+    const tm = mkMat();
+    tm.speakers.push(emptySpeaker({ id: 'sp2', code: 'S2', label: 'Tanık', role: 'witness' }));
+    tm.levels = { ok: true, schema: 3, peakDb: -3.2, rmsDb: -18.4, clippedRatio: 0, noiseFloor: 0.001, snrDb: 41, at: '2026-01-02T00:00:00Z' };
+    tm.origin = { mediumType: 'usb', mediumLabel: 'FLASH-2', deliveredBy: 'Kolluk', deliveredAt: '2026-01-01', deviceInfo: '' };
+    tm.spectrogramReviewed = { at: '2026-01-02T00:00:00Z' };
+    tm.expectedText = 'referans metin';
+    tm.sha256 = 'abc123';
+    tm.tech = { codec: 'PCM', channels: 2, sampleRate: 16000, bitDepth: 16 };
+    tm.log = [{ at: '2026-01-02T00:00:00Z', event: 'Seviye ölçümü', detail: 'x', prevHash: '', hash: 'aa' }];
+    theirs.materials.push(tm);
+
+    const r = mergeCases(mine, theirs);
+    const out = r.merged.materials[0];
+    eq('konuşmacılar geldi', (out.speakers || []).map((x) => x.code + ':' + x.label), ['S2:Tanık']);
+    ok('seviye ölçümü geldi', !!(out.levels && out.levels.peakDb === -3.2), JSON.stringify(out.levels));
+    eq('köken ortam türü geldi', out.origin && out.origin.mediumType, 'usb');
+    eq('köken teslim eden geldi', out.origin && out.origin.deliveredBy, 'Kolluk');
+    ok('spektrogram incelemesi geldi', !!out.spectrogramReviewed, JSON.stringify(out.spectrogramReviewed));
+    eq('referans metni geldi', out.expectedText, 'referans metin');
+    eq('SHA-256 geldi', out.sha256, 'abc123');
+    eq('teknik bilgi (kanal) geldi', out.tech && out.tech.channels, 2);
+    eq('delil günlüğü geldi', (out.log || []).length, 1);
+    eq('uygulanan değişiklik bildirildi', r.applied.length > 0, true);
+  }
+
+  // (b) İki tarafta da DOLU ve FARKLI → sessizce ezilmez, çakışma bildirilir.
+  {
+    const mine = emptyCase({ id: 'c1' });
+    const mm = mkMat();
+    mm.expectedText = 'yerel referans';
+    mm.origin = { mediumType: 'cd', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' };
+    mine.materials.push(mm);
+    const theirs = emptyCase({ id: 'c1' });
+    const tm = mkMat();
+    tm.expectedText = 'gelen referans';
+    tm.origin = { mediumType: 'usb', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' };
+    theirs.materials.push(tm);
+
+    const r = mergeCases(mine, theirs);
+    const out = r.merged.materials[0];
+    eq('yerel referans korunur (sessiz ezme yok)', out.expectedText, 'yerel referans');
+    eq('yerel köken korunur', out.origin.mediumType, 'cd');
+    ok('referans çakışması bildirildi', r.conflicts.some((c) => c.kind === 'material-field' && c.field === 'expectedText'));
+    ok('köken çakışması bildirildi', r.conflicts.some((c) => c.kind === 'material-field' && String(c.field).includes('mediumType')));
+  }
+
+  // (c) Konuşmacı listeleri id ile birleşir; aynı kişi çoğalmaz.
+  {
+    const mine = emptyCase({ id: 'c1' });
+    const mm = mkMat();
+    mm.speakers.push(emptySpeaker({ id: 'sp1', code: 'S1', label: 'Davacı' }));
+    mine.materials.push(mm);
+    const theirs = emptyCase({ id: 'c1' });
+    const tm = mkMat();
+    tm.speakers.push(emptySpeaker({ id: 'sp1', code: 'S1', label: 'Davacı' }));
+    tm.speakers.push(emptySpeaker({ id: 'sp2', code: 'S2', label: 'Tanık' }));
+    theirs.materials.push(tm);
+
+    const r = mergeCases(mine, theirs);
+    const codes = (r.merged.materials[0].speakers || []).map((x) => x.code);
+    eq('aynı konuşmacı çoğalmaz', codes.filter((c) => c === 'S1').length, 1);
+    eq('yeni konuşmacı eklendi', codes.includes('S2'), true);
+    eq('kodlar benzersiz', new Set(codes).size, codes.length);
+  }
+
+  // (d) Teknik kimlik çakışırsa EZİLMEZ, bildirilir (delil bütünlüğü).
+  {
+    const mine = emptyCase({ id: 'c1' });
+    const mm = mkMat();
+    mm.sha256 = 'aaa';
+    mine.materials.push(mm);
+    const theirs = emptyCase({ id: 'c1' });
+    const tm = mkMat();
+    tm.sha256 = 'bbb';
+    theirs.materials.push(tm);
+
+    const r = mergeCases(mine, theirs);
+    eq('SHA-256 sessizce değişmez', r.merged.materials[0].sha256, 'aaa');
+    ok('SHA-256 çakışması bildirildi', r.conflicts.some((c) => c.kind === 'material-field' && c.field === 'sha256'));
+  }
+
+  // (e) ÖNİZLEME birleştirmeyle AYNI kuralı kullanmalı. Aksi hâlde kullanıcı
+  // "değişecek kayıt yok" görüp birleştiriyor, sonra kayıt verisi değişiyor.
+  {
+    const mine = emptyCase({ id: 'c1' });
+    mine.materials.push(mkMat());
+    const theirs = emptyCase({ id: 'c1' });
+    const tm = mkMat();
+    tm.expectedText = 'gelen referans';
+    tm.speakers.push(emptySpeaker({ id: 'sp2', code: 'S2', label: 'Tanık' }));
+    tm.levels = { ok: true, schema: 3, peakDb: -3.2, at: '2026-01-02T00:00:00Z' };
+    theirs.materials.push(tm);
+
+    const cmp = compareCases(mine, theirs);
+    const merged = mergeCases(mine, theirs).merged;
+    // Birleştirme gerçekten değiştiriyor mu?
+    ok('birleştirme referansı doldurur', merged.materials[0].expectedText === 'gelen referans');
+    // Önizleme bunu "değişecek kayıt" olarak göstermeli.
+    ok(
+      'önizleme değişecek kaydı gösterir',
+      cmp.materials.differ.some((x) => x.id === 'm1'),
+      JSON.stringify(cmp.materials.differ)
+    );
+    // Önizleme, kayıt düzeyi alanları da raporlamalı.
+    ok(
+      'önizleme kayıt alanı değişikliğini sayar',
+      (cmp.materials.fields || []).some((f) => String(f.field).includes('expectedText') || String(f.field).includes('levels')),
+      JSON.stringify(cmp.materials.fields || [])
+    );
+  }
+}
+
 // --- 8. Zaman biçimi ----------------------------------------------------
 console.log('\n[8] Zaman biçimi ve aralık');
 {

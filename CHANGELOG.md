@@ -6,12 +6,87 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.93.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.94.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.94 — Birleştirmede kayıt bilgileri sessizce kayboluyordu
+
+CANLI VERİ. İki dosya birleştirildiğinde, aynı kaydın (ses dosyasının) **kayıt
+düzeyi bilgileri hiç aktarılmıyordu** ve hiçbir çakışma bildirilmiyordu.
+
+### GERÇEK HATA
+
+`mergeCases()` aynı `id`'li kayıtta yalnız bölümleri ve birkaç durum alanını
+işliyordu. Şu alanlar gelen dosyada **dolu olsa bile** hiç aktarılmıyordu:
+
+| Alan | Ne kayboluyordu |
+|---|---|
+| `speakers` | Konuşmacı listesi (S2 · Tanık) |
+| `levels` | Seviye ölçümü (tepe/RMS/kırpılma) |
+| `origin` | Köken/teslim zinciri (ortam, teslim eden, tarih) |
+| `spectrogramReviewed` | Spektrogram inceleme kaydı |
+| `expectedText` | WER referans metni |
+| `sha256` | Dosya özeti (delil bütünlüğü) |
+| `tech` | Codec/kanal/örnekleme/bit derinliği |
+| `log` | Delil işlem günlüğü |
+
+Ölçüm: **8 alan kayboluyor, `conflicts.length = 0`, `applied = []`.** Yani
+kullanıcı "çakışma yok, güvenle birleştir" görüyor, sonra ölçümler ve
+konuşmacılar sessizce siliniyordu.
+
+Ek olarak `applyMerge()` sonucu yeni bir nesne kuruyor ama `defineCaseMirrors`
+çağırmıyordu; bu yüzden birleştirme sonrası `c.plaintiff` gibi düz alanlar
+boş okunuyordu.
+
+### Çözüm
+
+`mergeMaterialFields()` ve `diffMaterialFields()` eklendi — **tek kaynak**,
+hem birleştirme hem önizleme aynı kuralı kullanır:
+
+- Yerel alan **boşsa** gelen değer alınır (veri kaybı yok).
+- İki taraf da **dolu ve farklıysa** sessiz seçim YAPILMAZ; yerel korunur ve
+  `material-field` çakışması bildirilir. Bu `sha256`/`tech` için de geçerli
+  (delil bütünlüğü: dosya özeti sessizce değişmez).
+- Şema varsayılanları (`mediumType: 'unspecified'`, `tech.channels: 0`) "boş"
+  sayılır; gerçek değer varsa doldurulur.
+- Konuşmacılar `id` ile birleşir; `assignSpeakerCodes` ile kodlar
+  benzersizleştirilir (aynı kişi çoğalmaz).
+- Delil günlüğü girdileri zincire **eklenir** (hash ile yinelenmez).
+- Önizleme artık "Alınacak kayıt bilgisi (ölçüm/konuşmacı/köken): N" satırını
+  gösterir ve "Değişecek kayıt" sayısı gerçeği yansıtır.
+- `applyMerge()` birleştirme sonrası `syncCaseMirrors` + `defineCaseMirrors`
+  çağırır.
+
+**Ölçüm (gerçek Chromium, ⇄ Birleştir UI akışı):**
+
+```
+ÖNCE   önizleme: "Değişecek kayıt 0"   birleşme sonrası: 8 alan BOŞ
+SONRA  önizleme: "Değişecek kayıt 1 | Alınacak kayıt bilgisi 14"
+       birleşme sonrası: S2:Tanık · levels VAR · ortam usb · teslim Kolluk
+                         spektrogram VAR · referans "referans metin"
+                         sha abc123 · kanal 2 · log 1 girdi
+```
+
+### KULLANICI NE GÖRECEK
+
+- Birleştirme artık **ölçümleri, konuşmacıları, köken/teslim bilgisini,
+  referans metnini ve delil günlüğünü** karşı taraf doldurmuşsa getirir.
+- Birleştirme öncesi ekranda **kaç kayıt bilgisinin alınacağı** yazar; sürpriz
+  olmaz.
+- İki tarafta **farklı** değer varsa sessizce biri seçilmez; çakışma olarak
+  listelenir ve **bu dosyadaki değer korunur**.
+- Dosya özeti (SHA-256) birleştirmeyle **sessizce değişmez**.
+
+### Testle korunur
+
+`sema-testi` [7k] (21 kontrol): 8 alanın hepsi doldurulur, çakışma bildirilir,
+konuşmacı çoğalmaz, SHA-256 sessizce değişmez, önizleme birleştirmeyle aynı
+sonucu gösterir. Test düzeltme yokken **kaldı** (`378 geçti, 14 kaldı`),
+düzeltmeden sonra geçti (`395 geçti, 0 kaldı`).
 
 ## v2.93 — Gerçek cümleler "dolgu" sayılıyordu
 

@@ -929,6 +929,210 @@ function mergeTextField(merged, mine, theirs, newer, key, applied, conflicts, la
   }
 }
 
+// Şema VARSAYILANLARI da "boş" sayılır: yeni bir kayıtta mediumType
+// 'unspecified', tech.channels 0'dır. Bunlar bilgi taşımaz; gelen dosyada
+// gerçek değer varsa doldurulmalıdır (aksi hâlde alan hiç gelmez).
+// TEK KAYNAK: birleştirme ve önizleme aynı kuralı kullanır.
+function isBlankValue(v) {
+  return (
+    v == null ||
+    v === '' ||
+    v === 'unspecified' ||
+    v === 0 ||
+    (Array.isArray(v) && !v.length) ||
+    (isObj(v) && !Object.keys(v).length)
+  );
+}
+
+/**
+ * İki kayıt kopyası arasındaki KAYIT DÜZEYİ farkları listeler — v2.94.
+ * Önizleme (`compareCases`) ve birleştirme (`mergeMaterialFields`) aynı
+ * kümeyi görmelidir; ayrışırlarsa kullanıcı yanlış bilgiyle karar verir.
+ * Dönüş: [{field, mine, theirs}] — yalnız gerçekten doldurulacak/çakışanlar.
+ */
+function diffMaterialFields(mm, tm) {
+  const out = [];
+  const consider = (field, mv, tv) => {
+    if (isBlankValue(tv) || tv === mv) return;
+    out.push({ field, mine: isBlankValue(mv) ? '' : mv, theirs: tv });
+  };
+  for (const key of ['expectedText', 'sha256', 'statusNote', 'transcribedWithModel', 'transcribedAt']) {
+    consider(key, mm[key], tm[key]);
+  }
+  if (isObj(tm.tech)) for (const k of Object.keys(tm.tech)) consider(`tech.${k}`, mm.tech && mm.tech[k], tm.tech[k]);
+  if (isObj(tm.origin)) for (const k of Object.keys(tm.origin)) consider(`origin.${k}`, mm.origin && mm.origin[k], tm.origin[k]);
+  if (isObj(tm.levels) && !isObj(mm.levels)) consider('levels', null, tm.levels);
+  if (isObj(tm.levels) && isObj(mm.levels) && JSON.stringify(mm.levels) !== JSON.stringify(tm.levels)) {
+    out.push({ field: 'levels', mine: `tepe ${mm.levels.peakDb}`, theirs: `tepe ${tm.levels.peakDb}` });
+  }
+  if (isObj(tm.spectrogramReviewed) && !isObj(mm.spectrogramReviewed)) consider('spectrogramReviewed', null, tm.spectrogramReviewed);
+  // Konuşmacı: yalnız YENİ id'ler fark sayılır (mevcutlar çoğalmaz).
+  if (Array.isArray(tm.speakers) && tm.speakers.length) {
+    const mineIds = new Set((mm.speakers || []).map((s) => s.id));
+    const fresh = tm.speakers.filter((s) => !mineIds.has(s.id));
+    if (fresh.length) out.push({ field: 'speakers', mine: `${(mm.speakers || []).length} kişi`, theirs: `+${fresh.length} kişi` });
+  }
+  // Delil günlüğü: yalnız yeni hash'ler.
+  if (Array.isArray(tm.log) && tm.log.length) {
+    const have = new Set((mm.log || []).map((e) => e.hash).filter(Boolean));
+    const fresh = tm.log.filter((e) => !e.hash || !have.has(e.hash));
+    if (fresh.length) out.push({ field: 'log', mine: `${(mm.log || []).length} girdi`, theirs: `+${fresh.length} girdi` });
+  }
+  return out;
+}
+
+/**
+ * Kayıt (material) düzeyinde birleştirme — v2.94.
+ *
+ * NEDEN: `mergeCases` yalnız bölüm ve birkaç durum alanını işliyordu. Aynı
+ * kayıt iki dosyada bulunduğunda `speakers`, `levels`, `origin`,
+ * `spectrogramReviewed`, `expectedText`, `sha256`, `tech` ve `log` alanları
+ * gelen dosyada DOLU olsa bile hiç aktarılmıyor, üstelik çakışma da
+ * bildirilmiyordu — sessiz veri kaybı (ölçüm: 8 alan kayboluyor, 0 çakışma).
+ *
+ * KURAL
+ *  - Yerel alan boşsa gelen değer alınır (veri kaybı yok).
+ *  - İki taraf da dolu ve aynıysa dokunulmaz.
+ *  - İki taraf da dolu ve FARKLIysa sessiz seçim YAPILMAZ; yerel korunur ve
+ *    `material-field` çakışması bildirilir. Bu, `sha256`/`tech` gibi değişmez
+ *    dosya gerçekleri için de geçerlidir (delil bütünlüğü).
+ *  - Konuşmacı listesi id ile birleşir; kodlar `assignSpeakerCodes` ile
+ *    benzersizleştirilir (aynı kişi iki makinede ayrı id ile eklenmişse
+ *    çoğalmaz).
+ */
+function mergeMaterialFields(mm, tm, applied, conflicts) {
+  const name = mm.fileName || mm.id;
+  // Şema VARSAYILANLARI da "boş" sayılır: yeni bir kayıtta mediumType
+  // 'unspecified', tech.channels 0'dır. Bunlar bilgi taşımaz; gelen dosyada
+  // gerçek değer varsa doldurulmalıdır (aksi hâlde alan hiç gelmez).
+  const isEmpty = (v) =>
+    v == null ||
+    v === '' ||
+    v === 'unspecified' ||
+    v === 0 ||
+    (Array.isArray(v) && !v.length) ||
+    (isObj(v) && !Object.keys(v).length);
+
+  // Basit skaler alanlar.
+  for (const key of ['expectedText', 'sha256', 'statusNote', 'transcribedWithModel', 'transcribedAt']) {
+    const mv = mm[key];
+    const tv = tm[key];
+    if (isEmpty(tv) || tv === mv) continue;
+    if (isEmpty(mv)) {
+      mm[key] = tv;
+      applied.push(`kayıt alanı dolduruldu: ${name}.${key}`);
+    } else {
+      conflicts.push({
+        kind: 'material-field',
+        materialId: mm.id,
+        materialName: name,
+        field: key,
+        mine: mv,
+        theirs: tv
+      });
+    }
+  }
+
+  // Teknik envanter: dosyanın kendi gerçeği; alan alan doldur, farkı bildir.
+  if (isObj(tm.tech)) {
+    mm.tech = mm.tech || {};
+    for (const key of Object.keys(tm.tech)) {
+      const mv = mm.tech[key];
+      const tv = tm.tech[key];
+      if (isEmpty(tv) || tv === mv) continue;
+      if (isEmpty(mv)) {
+        mm.tech[key] = tv;
+        applied.push(`teknik bilgi dolduruldu: ${name}.tech.${key}`);
+      } else {
+        conflicts.push({
+          kind: 'material-field',
+          materialId: mm.id,
+          materialName: name,
+          field: `tech.${key}`,
+          mine: mv,
+          theirs: tv
+        });
+      }
+    }
+  }
+
+  // Köken / teslim zinciri (uzman beyanı): alan alan birleştir.
+  if (isObj(tm.origin)) {
+    mm.origin = mm.origin || {};
+    for (const key of Object.keys(tm.origin)) {
+      const mv = mm.origin[key];
+      const tv = tm.origin[key];
+      if (isEmpty(tv) || tv === mv) continue;
+      if (isEmpty(mv)) {
+        mm.origin[key] = tv;
+        applied.push(`köken bilgisi dolduruldu: ${name}.origin.${key}`);
+      } else {
+        conflicts.push({
+          kind: 'material-field',
+          materialId: mm.id,
+          materialName: name,
+          field: `origin.${key}`,
+          mine: mv,
+          theirs: tv
+        });
+      }
+    }
+  }
+
+  // Ölçüm: yalnız bir tarafta varsa alınır; ikisi de varsa farkı bildir.
+  if (isObj(tm.levels)) {
+    if (!isObj(mm.levels)) {
+      mm.levels = tm.levels;
+      applied.push(`seviye ölçümü gelen dosyadan alındı: ${name}`);
+    } else if (JSON.stringify(mm.levels) !== JSON.stringify(tm.levels)) {
+      conflicts.push({
+        kind: 'material-field',
+        materialId: mm.id,
+        materialName: name,
+        field: 'levels',
+        mine: `tepe ${mm.levels.peakDb}`,
+        theirs: `tepe ${tm.levels.peakDb}`
+      });
+    }
+  }
+
+  // Spektrogram incelemesi: zaman damgası; biri boşsa doldur.
+  if (isObj(tm.spectrogramReviewed) && !isObj(mm.spectrogramReviewed)) {
+    mm.spectrogramReviewed = tm.spectrogramReviewed;
+    applied.push(`spektrogram incelemesi gelen dosyadan alındı: ${name}`);
+  }
+
+  // Konuşmacılar: id ile birleştir; aynı kişi çoğalmaz.
+  if (Array.isArray(tm.speakers) && tm.speakers.length) {
+    mm.speakers = mm.speakers || [];
+    const byId = new Map(mm.speakers.map((s) => [s.id, s]));
+    let added = 0;
+    for (const sp of tm.speakers) {
+      if (!byId.has(sp.id)) {
+        mm.speakers.push(sp);
+        byId.set(sp.id, sp);
+        added++;
+      }
+    }
+    if (added) applied.push(`konuşmacı eklendi: ${name} (+${added})`);
+    // Kod çakışması olmasın: iki makinede ayrı id ile eklenen kişiler
+    // aynı kodu almış olabilir.
+    assignSpeakerCodes(mm.speakers);
+  }
+
+  // Delil günlüğü: yerel korunur; gelen dosyanın girdileri zincire EKLENİR
+  // (kaybolmaz). Aynı hash zaten varsa yinelenmez.
+  if (Array.isArray(tm.log) && tm.log.length) {
+    mm.log = mm.log || [];
+    const have = new Set(mm.log.map((e) => e.hash).filter(Boolean));
+    const fresh = tm.log.filter((e) => !e.hash || !have.has(e.hash));
+    if (fresh.length) {
+      mm.log.push(...fresh);
+      applied.push(`delil günlüğü girdisi eklendi: ${name} (+${fresh.length})`);
+    }
+  }
+}
+
 /**
  * @param {object} mine  Yerel dosya (v3)
  * @param {object} theirs Gelen dosya (v3)
@@ -999,6 +1203,11 @@ export function mergeCases(mine, theirs) {
         continue;
       }
     }
+    // KAYIT DÜZEYİ ALANLAR (v2.94). Öncesinde bunlar hiç birleştirilmiyordu:
+    // gelen dosyada dolu olsa bile sessizce kayboluyor, çakışma da
+    // bildirilmiyordu. Kural: boş alan doldurulur; iki taraf da dolu ve
+    // farklıysa ÇAKIŞMA bildirilir (sessizce ezme yok).
+    mergeMaterialFields(mm, tm, applied, conflicts);
     // Bölüm bazında birleştir.
     const mySegs = new Map((mm.segments || []).map((s) => [s.id, s]));
     // Gelen dosyanın ekip listesi: bir düzenlemenin KİME ait olduğunu çözmek
@@ -1185,7 +1394,7 @@ export function compareCases(mine, theirs) {
     sameFile: false,
     mineLabel: '',
     theirsLabel: '',
-    materials: { added: [], same: [], differ: [] },
+    materials: { added: [], same: [], differ: [], fields: [] },
     segments: { added: 0, changed: [], reviewAdvanced: 0, autoResolved: 0, proposals: 0 },
     questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
     caseFields: { filled: [], autoResolved: [], conflicts: [] },
@@ -1232,9 +1441,15 @@ export function compareCases(mine, theirs) {
       out.materials.added.push({ id: tm.id, name: tm.fileName || tm.id, segments: (tm.segments || []).length });
       continue;
     }
-    // Aynı kayıt: bölüm düzeyinde karşılaştır.
-    const mineSegs = new Map((mm.segments || []).map((s) => [s.id, s]));
+    // Aynı kayıt: KAYIT DÜZEYİ alanlar (v2.94) + bölüm düzeyi karşılaştır.
+    // Önizleme, birleştirmenin gerçekte ne yapacağını göstermeli; kayıt
+    // düzeyi alanlar atlanırsa "değişecek kayıt yok" deyip veri değiştirirdi.
     let matDiffer = false;
+    for (const f of diffMaterialFields(mm, tm)) {
+      out.materials.fields.push({ materialId: mm.id, materialName: mm.fileName || mm.id, field: f.field, mine: f.mine, theirs: f.theirs });
+      matDiffer = true;
+    }
+    const mineSegs = new Map((mm.segments || []).map((s) => [s.id, s]));
     for (const ts of tm.segments || []) {
       const ms = mineSegs.get(ts.id);
       if (!ms) {
