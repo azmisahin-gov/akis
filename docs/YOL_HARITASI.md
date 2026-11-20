@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.87.**
+yazılır. **Güncel sürüm: v2.88.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -27,6 +27,13 @@ bakın.
 
 ## v2 — Sıradaki çalışma
 
+### v2.88 — Onay metne bağlı değildi (tamamlandı, canlı veri)
+
+Adli bütünlük hatası: onaylanmış bir bölümün metni tamamen değiştirilse bile
+rozet "Onaylandı" kalıyor ve kontrol edilmemiş metin rapora onaylı giriyordu.
+`setSegmentText()` tek darboğazında düzeltildi; onay düşünce kullanıcı anında
+bilgilendirilir. `birim-testleri` [20] korur.
+
 ### v2.87 — Kayıt tamamen duruyordu (tamamlandı, canlı veri)
 
 Bilirkişi "yaptığım tüm değişiklikleri kaybettim, uyarıyı görmedim" dedi.
@@ -44,7 +51,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | Sıra | Konu | Durum |
 |---|---|---|
 | 1 | Kayıt tamamen duruyordu + uyarı görünmüyordu | **v2.87 tamamlandı** |
-| 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | bekliyor |
+| 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | **v2.88 tamamlandı** |
 | 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | bekliyor |
 | 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | bekliyor |
 | 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | bekliyor |

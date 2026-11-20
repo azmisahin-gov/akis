@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.87';
+const APP_VERSION = '2.88';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5533,6 +5533,15 @@ function reviewLabel(s) {
 // geçmişe eklenir. Böylece geçmiş gerçek önceki sürümleri gösterir, tuş tuş dolmaz.
 function snapshotSegmentText(s) {
   s.__editSnapshot = s.text || '';
+  s.__reviewSnapshot = segReview(s);
+  delete s.__reviewDropped;
+}
+// Metin düzenlemesi bir ONAYI düşürdü mü? (v2.88)
+// Bayrak `setSegmentText()` içinde kurulur; bu yüzden `focusin` çalışmasa bile
+// (programatik yazma, yapıştırma, odak hiç girmediyse) düşüş KAÇMAZ. Bildirim
+// odak kaybında bir kez yapılır (her tuşta gürültü olmaz).
+function approvalDroppedByEdit(s) {
+  return !!s.__reviewDropped;
 }
 // Metin geçmişine kimin yazdığını yazmak için: dosyada "son düzenleyen" olarak
 // işaretlenmiş ekip üyesinin adı. Tanımsızsa boş kalır (uydurma kimlik yok).
@@ -5550,12 +5559,24 @@ function isSecondEyesEditor() {
   const t = (c.team || []).find((x) => x.id === c.lastEditedBy);
   return !!t && isSecondEyesRole(t.role);
 }
-// Bölüm metnini yazar; sayaç artırmaz (sayaç düzenleme oturumu başına bir kez
-// markTextEdited ile işaretlenir, bkz. aşağısı).
+// Bölüm metnini yazar. TEK darboğaz: bütün metin yazma yolları buradan geçer.
+// KURAL (v2.88): onay METNE bağlıdır. Metin gerçekten değiştiyse kontrol
+// durumu "Kontrol bekliyor"a düşer. Aksi hâlde onaylanmış bir bölümün metni
+// tamamen değiştirilse bile rozet "Onaylandı" kalıyordu ve kontrol edilmemiş
+// metin rapora onaylı olarak giriyordu (adli bütünlük ihlali).
+// Sayaç artırmaz: sayaç düzenleme oturumu başına bir kez markTextEdited ile
+// işaretlenir (bkz. aşağısı).
 function setSegmentText(s, next) {
   const v = next == null ? '' : String(next);
   if ((s.text || '') === v) return false;
+  const wasDecision = segReview(s) !== 'pending';
   s.text = v;
+  // Metin değişti → insan kararı geçersiz. "Anlaşılmadı"/"Yeniden dinlenecek"
+  // de düşer: metin değiştiyse bölüm yeniden dinlenip kontrol edilmelidir.
+  s.review = 'pending';
+  // Düşüş bayrağı BURADA kurulur (odak olayına bağlı değil): programatik
+  // yazma veya yapıştırmada da kullanıcı bilgilendirilir.
+  if (wasDecision) s.__reviewDropped = true;
   return true;
 }
 // "Bu metne insan eli değdi" işareti. Birleştirmede iki tarafın metni
@@ -8459,6 +8480,17 @@ function setupEvents() {
       // Panel yeniden çizilmez (odak kaybolmasın) ama öneri bandı yerinde
       // güncellenir. Aksi hâlde yazdığı metin kaybolmuş gibi görünür.
       if (wasProposal && isSecondEyesEditor()) refreshProposalBand(m, Number(el.dataset.seg));
+      // ONAY DÜŞTÜYSE SÖYLE (v2.88) — BİR KEZ. Bayrak setSegmentText içinde
+      // kurulur; burada gösterilip silinir, böylece her tuşta gürültü olmaz
+      // ve odak olayına bağlı kalmadan (yapıştırma, programatik yazma dahil)
+      // kullanıcı mutlaka bilgilendirilir.
+      if (approvalDroppedByEdit(s)) {
+        delete s.__reviewDropped;
+        showToast(
+          `Bölüm ${Number(el.dataset.seg) + 1}: metin değiştiği için kontrol durumu ` +
+            '"Kontrol bekliyor"a döndü. Metni dinleyip yeniden onaylayın.'
+        );
+      }
     } else if (el.dataset.key === 'speaker') s.speaker = el.value;
     else s[el.dataset.key] = el.value;
     persist();
@@ -9346,6 +9378,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.88': {
+    title: 'Onay artık metne bağlı — metni değiştirirseniz yeniden onaylayın',
+    body:
+      'Önceki sürümde onayladığınız bir bölümün metnini değiştirdiğinizde onay ' +
+      'duruyordu; yani kontrol etmediğiniz yeni metin rapora "Onaylandı" olarak ' +
+      'girebiliyordu. Artık metin değişince bölüm otomatik olarak "Kontrol ' +
+      'bekliyor"a döner ve ekranda neden döndüğünü söyleyen bir uyarı çıkar. ' +
+      'Değişikliği dinleyip yeniden onaylamanız gerekir. Aynı metni yeniden ' +
+      'yazarsanız onayınız korunur.'
+  },
   '2.87': {
     title: 'Kayıt sorunu giderildi — çalışmanız artık kaydediliyor',
     body:

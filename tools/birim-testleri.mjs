@@ -77,14 +77,20 @@ const EXPOSE = [
   'fmtBytesShort',
   'asrProfile', 'asrProfileOptions', 'ASR_PROFILES',
   'sanitizeForStorage', 'showSaveFailureBanner', 'hideSaveFailureBanner',
-  'VERSION_NOTICES', 'maybeShowVersionNotice',
+  'VERSION_NOTICES', 'maybeShowVersionNotice', 'APP_VERSION',
+  'setSegmentText', 'applyTextEdit', 'reviewLabel', 'emptySegmentForTest',
+  'snapshotSegmentText', 'approvalDroppedByEdit',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
 // varsayılan üreticisi. Üretim kodunda bunlar yok; yalnız testte kullanılır.
 code += `\n;globalThis.__t.el = (s) => document.querySelector(s);
 globalThis.__t.emptyMaterialForTest = (o) => globalThis.__schema.emptyMaterial(o);
-globalThis.__t.emptyCaseForTest = (o) => globalThis.__schema.emptyCase(o);\nglobalThis.__t.store = localStorage;\n`;
+globalThis.__t.emptyCaseForTest = (o) => globalThis.__schema.emptyCase(o);
+globalThis.__t.emptySegmentForTest = (o) => globalThis.__schema.emptySegment(o);
+globalThis.__t.setAppState = (s) => { appState = s; };
+globalThis.__t.store = localStorage;
+`;
 
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
 // okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
@@ -804,18 +810,23 @@ console.log('\n[18] Kayıt hatası görünürlüğü');
 console.log('\n[19] Sürüm notu (kullanıcı haberdar edilir)');
 {
   eq('VERSION_NOTICES tanımlı', typeof T.VERSION_NOTICES, 'object');
-  eq('2.87 için not var', !!(T.VERSION_NOTICES && T.VERSION_NOTICES['2.87']), true);
-  const note = (T.VERSION_NOTICES && T.VERSION_NOTICES['2.87']) || {};
-  eq('not kayıt kaybını anlatır', /kayd/i.test(String(note.title || '')), true);
+  // Not, SÜRÜMDEN BAĞIMSIZ sınanır: her sürümde yeni bir anahtar eklenir ve
+  // testin elle güncellenmesi gerekmez. Güncel sürümün notu MUTLAKA olmalı.
+  const ver = T.APP_VERSION;
+  eq('güncel sürüm için not var', !!(T.VERSION_NOTICES && T.VERSION_NOTICES[ver]), true);
+  eq('2.87 notu korunuyor', !!(T.VERSION_NOTICES && T.VERSION_NOTICES['2.87']), true);
+  const note = (T.VERSION_NOTICES && T.VERSION_NOTICES[ver]) || {};
+  eq('notun başlığı var', String(note.title || '').length > 10, true);
+  eq('notun gövdesi var', String(note.body || '').length > 40, true);
 
   eq('maybeShowVersionNotice tanımlı', typeof T.maybeShowVersionNotice, 'function');
   if (typeof T.maybeShowVersionNotice === 'function') {
     // Uygulamanın kullandığı depolama (sandbox) üzerinden sına.
     const store = T.store;
-    store.removeItem('akis.seenNotice.2.87');
+    store.removeItem(`akis.seenNotice.${ver}`);
     const first = T.maybeShowVersionNotice();
     eq('ilk açılışta gösterilir', first, true);
-    eq('görüldü olarak işaretlendi', store.getItem('akis.seenNotice.2.87'), '1');
+    eq('görüldü olarak işaretlendi', store.getItem(`akis.seenNotice.${ver}`), '1');
     // İkinci açılış: tekrar gösterilmez.
     const second = T.maybeShowVersionNotice();
     eq('ikinci açılışta tekrarlamaz', second, false);
@@ -823,8 +834,98 @@ console.log('\n[19] Sürüm notu (kullanıcı haberdar edilir)');
     const notice = T.el('#versionNotice');
     eq('şerit görünür', notice.hidden, false);
     const t = String(notice.innerHTML).toLocaleLowerCase('tr-TR');
-    eq('şerit kayıt sorununu anlatır', t.includes('kayded'), true);
-    eq('şerit yedek önerir', t.includes('dışa aktar'), true);
+    // Şerit metni güncel sürümün notunu taşımalı (sürüme özel metin değişebilir).
+    eq('şerit güncel not başlığını taşır', t.includes(String(note.title).toLocaleLowerCase('tr-TR').slice(0, 20)), true);
+  }
+}
+
+// --- 20. Onay metne BAĞLI olmalı (v2.88 — adli bütünlük) ----------------
+// GERÇEK HATA: `setSegmentText()` yalnız metni yazıyor, kontrol durumuna
+// dokunmuyordu. Onaylanmış bir bölümün metni TAMAMEN değiştirilse bile rozet
+// "Onaylandı" kalıyordu (gerçek tarayıcıda ölçüldü: boş bölüm onayla →
+// "st-approved", metni değiştir → hâlâ "st-approved", sayaç "Onaylandı 1").
+// Bu, depo ilkesinin doğrudan ihlali: "Kontrol edilmeyen deşifre, kontrol
+// edilmiş gibi gösterilmez." Onay daima metne bağlıdır.
+console.log('\n[20] Onay metne bağlı (metin değişince onay düşer)');
+{
+  const mkCase = () => {
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    const s = T.emptySegmentForTest({
+      id: 's1',
+      start: '00:00:00.000',
+      end: '00:00:05.000',
+      text: 'onaylanmış metin',
+      review: 'approved'
+    });
+    m.segments.push(s);
+    c.materials.push(m);
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    return { c, m, s };
+  };
+
+  // 1) Doğrudan metin yazımı (tek darboğaz: setSegmentText) onayı düşürmeli.
+  {
+    const { s } = mkCase();
+    const changed = T.setSegmentText(s, 'TAMAMEN FARKLI BİR METİN');
+    eq('metin yazıldı', changed, true);
+    eq('onay düştü', T.segReview(s), 'pending');
+    eq('onaylı sayılmıyor', T.isReviewed(s), false);
+    eq('rapor etiketi "Kontrol bekliyor"', T.reviewLabel(s), 'Kontrol bekliyor');
+  }
+
+  // 2) Gerçek düzenleme yolu (applyTextEdit) da aynı sonucu vermeli.
+  {
+    const { s } = mkCase();
+    T.applyTextEdit(s, 'BAŞKA BİR METİN');
+    eq('applyTextEdit sonrası onay düştü', T.segReview(s), 'pending');
+  }
+
+  // 3) Metin DEĞİŞMEDİYSE onay korunur (gereksiz düşürme yok).
+  {
+    const { s } = mkCase();
+    const changed = T.setSegmentText(s, 'onaylanmış metin');
+    eq('aynı metin değişiklik sayılmaz', changed, false);
+    eq('aynı metinde onay korunur', T.segReview(s), 'approved');
+  }
+
+  // 4) Onaysız bölümde durum zaten pending; "Anlaşılmadı" gibi insan kararı
+  //    metin değişince korunmamalı (metin değişti = yeniden bakılmalı).
+  {
+    const { s } = mkCase();
+    s.review = 'inaudible';
+    T.setSegmentText(s, 'yeni metin');
+    eq('"Anlaşılmadı" da düşer (metin değişti)', T.segReview(s), 'pending');
+  }
+
+  // 5) Yeniden dinleme işareti de metne bağlıdır.
+  {
+    const { s } = mkCase();
+    s.review = 'relisten';
+    T.setSegmentText(s, 'başka metin');
+    eq('"Yeniden dinlenecek" düşer', T.segReview(s), 'pending');
+  }
+
+  // 6) SESSİZ düşüş yasak: onay düştüyse kullanıcı bilgilendirilmeli.
+  //    Her tuşta uyarı gürültü olur; bu yüzden düşüş bir kez, odak kaybında
+  //    bildirilir. Saf yardımcı test edilebilir olmalı.
+  eq('approvalDroppedByEdit tanımlı', typeof T.approvalDroppedByEdit, 'function');
+  if (typeof T.approvalDroppedByEdit === 'function') {
+    const { s } = mkCase();
+    T.snapshotSegmentText(s);
+    T.setSegmentText(s, 'yeni metin');
+    eq('onay düşüşü algılanır', T.approvalDroppedByEdit(s), true);
+    // Aynı metin yazılırsa düşüş yok.
+    const b = mkCase().s;
+    T.snapshotSegmentText(b);
+    T.setSegmentText(b, 'onaylanmış metin');
+    eq('değişmeyen metinde düşüş bildirilmez', T.approvalDroppedByEdit(b), false);
+    // Onaysız bölümde düşüş bildirilmez (zaten pending).
+    const c2 = mkCase().s;
+    c2.review = 'pending';
+    T.snapshotSegmentText(c2);
+    T.setSegmentText(c2, 'başka');
+    eq('zaten bekleyen bölümde bildirim yok', T.approvalDroppedByEdit(c2), false);
   }
 }
 

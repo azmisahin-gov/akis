@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.87.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.88.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.88 — Onay metne bağlı değildi (kontrol edilmemiş metin onaylı görünüyordu)
+
+CANLI VERİ. Bu, adli bütünlüğün temel kuralını bozan bir hataydı: **onay
+metne bağlı değildi.**
+
+### GERÇEK HATA
+
+`setSegmentText()` yalnız metni yazıyor, kontrol durumuna hiç dokunmuyordu.
+Yani onaylanmış bir bölümün metni **tamamen değiştirilse bile** rozet
+"Onaylandı" kalıyor, sayaçlar "Onaylandı 1" gösteriyor ve o metin rapora
+**onaylanmış** olarak giriyordu.
+
+Depo ilkesi bunun tersini söylüyor: *"Kontrol edilmeyen deşifre, kontrol
+edilmiş gibi gösterilmez."* AGENTS.md'deki "onay metne bağlıdır" kuralı yalnız
+birleştirmede (`mergeCases`) uygulanıyordu; editörde uygulanmıyordu.
+
+**Ölçüm (gerçek Chromium):**
+
+```
+ÖNCE   boş bölümü onayla        → "st-approved"
+       metni TAMAMEN değiştir   → "st-approved"        ← değişmedi
+       sayaçlar                 → "Onaylandı 1"
+SONRA  metni değiştir           → "st-pending"
+       sayaçlar                 → "Bekleyen 1 | Onaylandı 0"
+       kullanıcı uyarısı        → "Bölüm 1: metin değiştiği için kontrol durumu
+                                   'Kontrol bekliyor'a döndü. Metni dinleyip
+                                   yeniden onaylayın."
+       sayfa yenilendi          → onay gerçekten düşmüş (kalıcı)
+```
+
+### Çözüm
+
+`setSegmentText()` — bütün metin yazma yollarının geçtiği **tek darboğaz** —
+artık metin gerçekten değiştiyse `review = 'pending'` yapar. Bu üç durumu da
+kapsar: "Onaylandı", "Anlaşılmadı", "Yeniden dinlenecek" (metin değiştiyse
+bölüm yeniden dinlenmelidir).
+
+Metin **değişmediyse** onay korunur: aynı metni yeniden yazmak onayı düşürmez.
+
+### Sessiz düşüş yok
+
+Onay düştüğünde kullanıcı **anında** bilgilendirilir (toast). Düşüş bayrağı
+`setSegmentText()` içinde kurulduğu için yapıştırma, programatik yazma veya
+odak olayı çalışmadığı durumlarda da bildirim kaçmaz. Her tuşta tekrar
+etmez (bayrak bir kez gösterilip silinir).
+
+### KULLANICI NE GÖRECEK
+
+- Onayladığınız bir bölümün metnini değiştirirseniz rozet **"Kontrol
+  bekliyor"a döner** ve ekranın altında neden döndüğünü söyleyen bir uyarı
+  çıkar. Değişikliği dinleyip yeniden onaylamanız gerekir.
+- Onaylı bölüm sayacı ve rapor etiketi bu değişikliği **anında** yansıtır;
+  rapora artık kontrol edilmemiş metin "Onaylandı" olarak girmez.
+- Aynı metni yeniden yazarsanız (değişiklik yoksa) onayınız korunur.
+
+### Testle korunur
+
+`birim-testleri` [20] (13 kontrol): metin değişince onay düşer, "Anlaşılmadı"
+ve "Yeniden dinlenecek" de düşer, aynı metinde onay korunur, düşüş bayrağı
+odak olayından bağımsız çalışır. Test düzeltme yokken **kaldı**
+(`262 geçti, 6 kaldı`), düzeltmeden sonra geçti (`272 geçti, 0 kaldı`).
 
 ## v2.87 — Kayıt tamamen duruyordu (canlı veride iş kaybı)
 
