@@ -1027,6 +1027,49 @@ bozulmadı" demek değildir.
 daha kısa olup `overflow:hidden` ile kırpmasıdır**. Test ölçütü buna göre
 yazılmalı (v2.120'deki "vh yasak" ifadesi yanlış ölçüttü).
 
+### Aşama 10t — Onayın sahibi: birleştirmede onay aktarımı (TAMAMLANDI, v2.122)
+
+**KURAL: onayı KİMİN verdiği kaydedilir; kaynağı doğrulanamayan onay
+aktarılmaz ve SESSİZCE düşürülmez.**
+
+**Ölçülen hata (v2.121, canlı veri):** Bilirkişi A dosyayı onaylayıp dışa
+aktardı; yardımcı B **⇄ Birleştir** yaptı; onaylı bölümler "Kontrol bekliyor"
+göründü. `mergeCases` dört senaryoda ölçüldü:
+
+| Senaryo | Sonuç | Bildirim |
+|---|---|---|
+| Metne dokunmadan onay (`lastEditBy` boş) | approved → **pending** | **yok** |
+| Metni düzenleyip onay | korunur | — |
+| Tek kişilik dosya (ekip boş) | korunur | — |
+| Yardımcı onayı | pending (doğru) | **yok** |
+
+Kök neden: onay yalnız `review` yazıyordu; birleştirme "kim onayladı" sorusunu
+`lastEditBy` (metin düzenleyen) ile tahmin ediyordu. Dinleyip onaylayan
+bilirkişi metne dokunmaz → onay sahipsiz → düşer. Önizleme de "Çakışma yok"
+diyordu.
+
+**Değişmez kurallar:**
+
+1. Kontrol kararı **yalnız** `setSegReview(s, code)` ile yazılır. İnsan kararı
+   (`approved`/`inaudible`/`relisten`/`ambiguous`) `reviewedBy` + `reviewedAt`
+   yazar; `pending` ve `machine` atfı temizler. Doğrudan `s.review = ...`
+   yazmayın.
+2. Birleştirme atfı `reviewedBy` → (eski kayıt) `lastEditBy` sırasıyla çözer
+   (`approvalTransfer`). Ekip listesi boşsa eski davranış korunur.
+3. Aktarılamayan onay **bildirilir** (`approval-not-attributed`): önizleme satırı
+   + çakışma + sonuç bildirimi. Sessiz düşürme yasak.
+4. Metin gelen taraftan alınınca `lastEditBy`/`reviewedBy` birlikte taşınır;
+   aksi hâlde sonraki birleştirmede ikinci göz koruması yanlış çalışır.
+5. İçe aktarma/geri yükleme `lastEditedBy` alanını **temizler**; kimlik bu
+   bilgisayara aittir. Devralınırsa onaylar yanlış kişiye yazılır ve "ikinci göz
+   onaylayamaz" kuralı sessizce delinebilir.
+6. Önizleme (`compareCases`) birleştirmeyle AYNI `approvalTransfer()` kararını
+   kullanır; ayrışırsa kullanıcı yanlış bilgiyle karar verir.
+
+**DERS:** "Onay" tek bir alan (`review`) sanıldığında kimin verdiği kaybolur.
+Metin düzenleyen ≠ onaylayan. Aynı alanı iki soru için kullanmak (kim yazdı /
+kim onayladı) canlı veride onay kaybı üretti.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1200,7 +1243,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.121.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.122.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1354,7 +1397,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.121)
+## Yeni oturuma devir notu (v2.122)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1362,17 +1405,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.121** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **688 birim + 398 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = **`832f21b`** (yerel = uzak = Pages commit) |
-| Pages | `built` · commit `832f21b` |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.121'`, `version.json` = 2.121 |
+| Sürüm | **v2.122** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **717 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = push sonrası bu notun altındaki commit (yerel = uzak) |
+| Pages | `built` · aynı commit |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.122'`, `version.json` = 2.122 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.121 turunda ne yapıldı (20 sürüm)
+### v2.102–v2.122 turunda ne yapıldı (21 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **688**.
+Test sayısı 441 → **717**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1396,8 +1439,9 @@ Test sayısı 441 → **688**.
 | v2.119 | Takip iki moda ayrıldı; karaoke kutusu kaldırıldı | `birim` [45] |
 | v2.120 | Liste yüksekliği kabı aşıyordu (137px kırpılıyordu) | `tasarim` [2d] |
 | v2.121 | Sağ panel kaydırma çubuğu; spektrogram dalganın yerine | `tasarim` [2d]/[2e] |
+| **v2.122** | **Birleştirmede onay kaybı** (onayın sahibi yoktu; sessiz düşüyordu) | `birim` [46] · `sema` [7f] |
 
-### v2.117–v2.121'de öğrenilen üç kritik ders
+### v2.117–v2.122'de öğrenilen dört kritik ders
 
 1. **`?v=` tek dosyayı kırar, import zincirini KIRMAZ.** `app.js` içindeki
    `import './schema.js'` sürümsüzdü; tarayıcı eski `schema.js`'i kullandı →
@@ -1410,6 +1454,10 @@ Test sayısı 441 → **688**.
    düzeldi ama sağ panel 351px'e sıkışıp kaydırma çubuğu çıktı. Kural:
    kap yükseklik dayatmaz (`height:auto`), **tek kaydırma** (`.seg-list`),
    `overflow:hidden` ile çocuk kırpılmaz.
+4. **Onayı veren ≠ metni yazan.** Birleştirme "kim onayladı" sorusunu
+   `lastEditBy` ile tahmin ederse, dinleyip onaylayan bilirkişinin onayı
+   sahipsiz kalır ve sessizce düşer. Ayrı alan (`reviewedBy`) şart; ayrıca
+   düşürme **bildirilir**. `birim` [46].
 
 ### Sürüm gönderme — 6 yer birlikte (test zorunlu kılar)
 
@@ -1462,8 +1510,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (688 + 398 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (717 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.121 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.122 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.

@@ -845,11 +845,32 @@ console.log('\n[7f] Kaynağı tanımsız düzenleme onaylı sayılmaz');
   r = mergeCases(mine, theirs);
   eq('tanımsız onay kontrol bekliyora çekildi', r.merged.materials[0].segments[0].review, 'pending');
   eq('tanımsız onay metni alındı', r.merged.materials[0].segments[0].text, 'tanımsız düzenleme');
-  ok('tanımsız onay çakışma olarak bildirildi', r.conflicts.some((c) => c.kind === 'unattributed-approval'));
+  ok('tanımsız onay çakışma olarak bildirildi', r.conflicts.some((c) => c.kind === 'approval-not-attributed'));
 
   // (d) Önizleme aynı kararı vermeli (yalan söylememeli).
   const cmp = compareCases(mine, theirs);
-  ok('önizleme tanımsız onayı gösterir', cmp.conflicts.some((c) => c.kind === 'unattributed-approval'));
+  ok('önizleme tanımsız onayı gösterir', cmp.conflicts.some((c) => c.kind === 'approval-not-attributed'));
+
+  // (d2) v2.122: Metin AYNI, bilirkişi metne dokunmadan onayladı. Onay
+  //      `reviewedBy` ile aktarılır. Öncesinde `lastEditBy` boş olduğu için
+  //      onay sessizce "bekliyor"a düşüyordu (canlı veride yaşandı).
+  mine = mk(); theirs = mk();
+  theirs.team.push(emptyTeamMember({ id: 'tm1', name: 'Bilirkişi', role: 'expert' }));
+  theirs.materials[0].segments[0].review = 'approved';
+  theirs.materials[0].segments[0].reviewedBy = 'tm1';
+  theirs.materials[0].segments[0].reviewedAt = '2026-11-20T11:00:00Z';
+  r = mergeCases(mine, theirs);
+  eq('metne dokunmadan onay aktarılır', r.merged.materials[0].segments[0].review, 'approved');
+  eq('metne dokunmadan onay: çakışma yok', r.conflicts.length, 0);
+  eq('onaylayan kişi taşınır', r.merged.materials[0].segments[0].reviewedBy, 'tm1');
+  const cmp2 = compareCases(mine, theirs);
+  eq('önizleme onay ilerlemesini sayar', cmp2.segments.reviewAdvanced, 1);
+
+  // (d3) `reviewedBy` normalleştirmede korunur (kayıt yeniden yüklenince
+  //      atıf kaybolmamalı).
+  const ns = normalizeSegment({ reviewedBy: 'tm1', reviewedAt: '2026-11-20T11:00:00Z' });
+  eq('normalizeSegment reviewedBy korur', ns.reviewedBy, 'tm1');
+  eq('normalizeSegment reviewedAt korur', ns.reviewedAt, '2026-11-20T11:00:00Z');
 
   // (e) Ekip dolu, ikinci göz metni yazmış (bozuk kayıt): öneriye dönüşür.
   mine = mk(); theirs = mk();
@@ -1122,7 +1143,7 @@ console.log('\n[11] Bölme: metin paylaştırma');
 
   // (d) Uygulama kodu: bölme metni paylaştırıyor mu?
   ok('splitSegmentAt metin paylaştırıyor', /function splitSegmentAt\(m, index, cut\)[\s\S]{0,900}splitSegmentText\(s, cut\)/.test(src));
-  ok('bölünen bölümler pending olur', /left\.review = 'pending'[\s\S]{0,80}right\.review = 'pending'/.test(src));
+  ok('bölünen bölümler pending olur', /setSegReview\(left, 'pending'\)[\s\S]{0,80}setSegReview\(right, 'pending'\)/.test(src));
   ok('dalga üzerinde böl düğmesi var', /data-sd-split/.test(src));
   ok('imleç zamanı gösteriliyor', /data-sd-cursor/.test(src));
 }
@@ -1202,7 +1223,7 @@ console.log('\n[13] Bölüm aralığını yeniden çözümle');
   ok('onay soruyor (metin varsa)', /askConfirm\([\s\S]{0,200}yeniden[\s\S]{0,100}çözümlenecek/.test(app));
   ok('geri alınabilir', /retranscribeSegment[\s\S]{0,2500}snapshotForUndo/.test(app));
   ok('eski metin geçmişe yazılıyor', /pushSegmentHistory\(s, oldText\)/.test(app));
-  ok('yeni metin pending olur', /s\.review = 'pending';/.test(app));
+  ok('yeni metin pending olur', /setSegReview\(s, 'pending'\);/.test(app));
   ok('işlem günlüğüne yazılıyor', /Bölüm yeniden çözümlendi/.test(app));
   ok('düğme var', /data-retranscribe-seg/.test(app));
   ok('düğme tıklaması bağlı', /dataset\.retranscribeSeg[\s\S]{0,300}retranscribeSegment/.test(app));

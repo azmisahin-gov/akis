@@ -56,6 +56,7 @@ const __inlineImports = (src) =>
     return 'const { ' + list.join(', ') + ' } = globalThis.__schema;';
   });
 let code = __inlineImports(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8'))
+  .replace(/^init\(\)\.catch\([\s\S]*?\);\s*$/m, '')
   .replace(/^init\(\);\s*$/m, '');
 const EXPOSE = [
   'computeWer', 'editDistance', 'normalizeForWer', 'werWords',
@@ -103,6 +104,7 @@ const EXPOSE = [
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex',
   'FOLLOW_MODES', 'followShouldAutoStart',
+  'setSegReview',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -114,6 +116,7 @@ globalThis.__t.emptySegmentForTest = (o) => globalThis.__schema.emptySegment(o);
 globalThis.__t.setAppState = (s) => { appState = s; };
 globalThis.__t.store = localStorage;
 globalThis.__t.mergeCasesForTest = (a, b) => globalThis.__schema.mergeCases(a, b);
+globalThis.__t.compareCasesForTest = (a, b) => globalThis.__schema.compareCases(a, b);
 `;
 
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -2358,6 +2361,123 @@ console.log('\n== [45] Takip: kullanıcı açmadıkça açılmaz');
   // Bilinmeyen değer → güvenli (başlamaz).
   eq('bilinmeyen değer → BAŞLAMAZ', T.followShouldAutoStart({ autoFollow: 'belki' }), false);
   eq('null → BAŞLAMAZ', T.followShouldAutoStart(null), false);
+}
+
+// --- 46. Onayın sahibi: birleştirmede onay aktarımı (v2.122) --------------
+// CANLI VERİ. Bilirkişi: "bilirkişinin onayladığı şeyler bekliyor olarak
+// görünüyor". Senaryo: bilgisayar A dışa aktar → bilgisayar B içe aktar →
+// A'da düzenle+onayla → dışa aktar → B'de ⇄ Birleştir → onaylar "bekliyor".
+// ÖLÇÜM (v2.121): onaylama yalnız `review` yazıyordu; birleştirme "kim
+// onayladı" sorusunu `lastEditBy` (metin düzenleyen) ile tahmin ediyordu.
+// Dinleyip onaylayan bilirkişi metne dokunmadığı için onay "kaynaksız"
+// sayılıp `pending`e düşürülüyor, üstelik HİÇ bildirilmiyordu.
+console.log('\n== [46] Onayın sahibi (birleştirmede onay aktarımı)');
+{
+  const team = () => [
+    { id: 't1', name: 'Bilirkişi', role: 'expert' },
+    { id: 't2', name: 'Yardımcı', role: 'assistant' }
+  ];
+  const mk = (segOver = {}, opts = {}) => {
+    const c = T.emptyCaseForTest({ id: 'c1', fileNo: '2024/1' });
+    c.team = opts.noTeam ? [] : team();
+    c.updatedAt = '2026-11-20T10:00:00Z';
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    const s = T.emptySegmentForTest({ id: 'sg1', start: '00:00:00.000', end: '00:00:01.000', text: 'merhaba' });
+    Object.assign(s, segOver);
+    m.segments.push(s);
+    c.materials.push(m);
+    return c;
+  };
+  const newer = (segOver, opts) => {
+    const c = mk(segOver, opts);
+    c.updatedAt = '2026-11-20T11:00:00Z';
+    return c;
+  };
+  const segOf = (r) => r.merged.materials[0].segments[0];
+
+  // 1) Şema: atıf alanları tanımlı ve normalleştirmede korunur.
+  const empty = T.emptySegmentForTest({});
+  eq('emptySegment reviewedBy taşır', empty.reviewedBy, '');
+  eq('emptySegment reviewedAt taşır', empty.reviewedAt, '');
+
+  // 2) Tek yazma noktası: onay kimin verdiğini kaydeder, "bekliyor" temizler.
+  eq('setSegReview tanımlı', typeof T.setSegReview, 'function');
+  if (typeof T.setSegReview === 'function') {
+    const c = mk();
+    c.lastEditedBy = 't1';
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    const s = c.materials[0].segments[0];
+    T.setSegReview(s, 'approved');
+    eq('onay kodu yazıldı', T.segReview(s), 'approved');
+    eq('onaylayan kişi yazıldı', s.reviewedBy, 't1');
+    eq('onay zamanı yazıldı', typeof s.reviewedAt === 'string' && s.reviewedAt.length > 0, true);
+    eq('checked uyumlu', s.checked, true);
+    T.setSegReview(s, 'pending');
+    eq('bekliyor atfı temizler', s.reviewedBy, '');
+    eq('bekliyor checked kapatır', s.checked, false);
+    // Eski Türkçe kod yazılmaz; koda çevrilir.
+    T.setSegReview(s, 'yeniden');
+    eq('eski kod normalize edilir', T.segReview(s), 'relisten');
+    eq('saklanan değer kod', s.review, 'relisten');
+  }
+
+  // 3) A) Bilirkişi metne dokunmadan onayladı → onay AKTARILIR.
+  {
+    const r = T.mergeCasesForTest(mk(), newer({ review: 'approved', reviewedBy: 't1', reviewedAt: '2026-11-20T11:00:00Z' }));
+    eq('A) düzenlemeden onay aktarılır', segOf(r).review, 'approved');
+    eq('A) onaylayan taşınır', segOf(r).reviewedBy, 't1');
+    eq('A) çakışma yok', r.conflicts.length, 0);
+  }
+
+  // 4) A2) Kaynağı belirsiz onay (eski kayıt) → kabul edilmez ama SESSİZ DEĞİL.
+  {
+    const r = T.mergeCasesForTest(mk(), newer({ review: 'approved' }));
+    eq('A2) kaynaksız onay kabul edilmez', segOf(r).review, 'pending');
+    eq('A2) sessiz değil: çakışma bildirilir', r.conflicts.length, 1);
+    eq('A2) çakışma türü', (r.conflicts[0] || {}).kind || '', 'approval-not-attributed');
+  }
+
+  // 5) B) İkinci göz (yardımcı) onayı aktarılmaz ve bildirilir.
+  {
+    const r = T.mergeCasesForTest(mk(), newer({ review: 'approved', reviewedBy: 't2' }));
+    eq('B) ikinci göz onayı aktarılmaz', segOf(r).review, 'pending');
+    eq('B) çakışma bildirilir', r.conflicts.map((c) => c.kind).includes('approval-not-attributed'), true);
+  }
+
+  // 6) C) Tek kişilik dosya (ekip listesi boş): eski davranış korunur.
+  {
+    const r = T.mergeCasesForTest(mk({}, { noTeam: true }), newer({ review: 'approved' }, { noTeam: true }));
+    eq('C) tek kişilik dosyada onay aktarılır', segOf(r).review, 'approved');
+  }
+
+  // 7) D) Gelen metin alınınca düzenleyen kimliği ve onay atfı birlikte taşınır.
+  {
+    const r = T.mergeCasesForTest(
+      mk(),
+      newer({ text: 'merhaba dünya', textRev: 1, lastEditBy: 't1', review: 'approved', reviewedBy: 't1', reviewedAt: '2026-11-20T11:00:00Z' })
+    );
+    eq('D) metin alındı', segOf(r).text, 'merhaba dünya');
+    eq('D) düzenleyen kimliği taşındı', segOf(r).lastEditBy, 't1');
+    eq('D) onay korundu', segOf(r).review, 'approved');
+    eq('D) onaylayan taşındı', segOf(r).reviewedBy, 't1');
+  }
+
+  // 8) E) Önizleme birleştirmeyle AYNI kararı verir (yalan söylemez).
+  {
+    const mine = mk();
+    const theirs = newer({ review: 'approved' });
+    const cmp = T.compareCasesForTest(mine, theirs);
+    eq('E) önizleme aktarılmayan onayı sayar', cmp.segments.approvalsRejected, 1);
+    eq('E) önizleme çakışmayı listeler', cmp.conflicts.some((c) => c.kind === 'approval-not-attributed'), true);
+    eq('E) önizleme ilerleme saymaz', cmp.segments.reviewAdvanced, 0);
+  }
+
+  // 9) F) Geçerli onayda önizleme ilerlemeyi gösterir.
+  {
+    const cmp = T.compareCasesForTest(mk(), newer({ review: 'approved', reviewedBy: 't1' }));
+    eq('F) önizleme ilerlemeyi sayar', cmp.segments.reviewAdvanced, 1);
+    eq('F) önizleme reddi saymaz', cmp.segments.approvalsRejected || 0, 0);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

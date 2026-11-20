@@ -6,12 +6,67 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.121.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.122.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.122 — Birleştirmede bilirkişi onayları aktarılıyor
+
+CANLI VERİ. Bilirkişi: *"bilirkişinin onayladığı şeyler bekliyor olarak
+görünüyor"*. Senaryo: A bilgisayarı dışa aktar → B bilgisayarı içe aktar →
+A'da düzenle+onayla → dışa aktar → B'de **⇄ Birleştir** → onaylı bölümler
+"Kontrol bekliyor" görünüyor.
+
+### ÖLÇÜM (v2.121)
+
+`mergeCases` dört senaryoda çalıştırıldı:
+
+| Senaryo | Sonuç | Bildirim |
+|---|---|---|
+| Metne dokunmadan onay (`lastEditBy` boş) | `approved` → **`pending`** | **yok** (sessiz) |
+| Metni düzenleyip onay | `approved` korunur | — |
+| Tek kişilik dosya (ekip listesi boş) | korunur | — |
+| Yardımcı onayı | `pending` (doğru) | **yok** (sessiz) |
+
+Kök neden: onaylama yalnız `review` yazıyordu; birleştirme "kim onayladı"
+sorusunu `lastEditBy` (metin düzenleyen) ile tahmin ediyordu. Dinleyip
+onaylayan bilirkişi metne dokunmadığı için onay "kaynaksız" sayılıp
+düşürülüyordu — üstelik önizleme "Çakışma yok" diyordu.
+
+### DÜZELTME
+
+- `segment.reviewedBy` + `reviewedAt` (şema). `setSegReview()` tek yazma
+  noktası: insan kararı (`approved/inaudible/relisten/ambiguous`) kimin
+  verdiğini yazar, "bekliyor" atfı temizler. `machine` atıf taşımaz.
+- Birleştirme atfı `reviewedBy` → (eski kayıt) `lastEditBy` sırasıyla çözer;
+  ekip listesi boşsa eski davranış korunur.
+- **Sessiz düşürme yasak:** aktarılamayan onay `approval-not-attributed` olarak
+  bildirilir; önizlemede "Aktarılmayan onay" satırı, sonuç bildiriminde
+  "N onay aktarılamadı" yazar.
+- Gelen metin alınınca `lastEditBy`/`reviewedBy` birlikte taşınır.
+- `İçe aktar` ve arşivden geri yükleme sonrası `lastEditedBy` temizlenir;
+  kullanıcıdan kendini seçmesi istenir (devralınan kimlik, onayları yanlış
+  kişiye yazardı).
+- Eski Türkçe kontrol kodları (`yeniden`, `anlasilmadi`) düğme yolunda da koda
+  çevrilir; saklanan değer artık daima ASCII kod.
+
+### KULLANICI NE GÖRECEK
+
+- Bilirkişi başka bilgisayarda onayladıysa, birleştirmeden sonra o bölümler
+  **"Onaylandı"** görünür; yeniden onaylamanız gerekmez.
+- Onay aktarılamıyorsa (ör. onayı veren kişi ekipte tanımlı değilse) uygulama
+  **susmaz**: birleştirme ekranında satır + neden, sonuçta "N onay aktarılamadı".
+- İçe aktarılan dosyada "Şu an bu bilgisayarda çalışan" **boş gelir**; kendinizi
+  seçin. Böylece verdiğiniz onaylar doğru kişiye yazılır.
+
+### Koruyan testler
+
+`birim-testleri` [46] (29 kontrol) ve `sema-testi` [7f] (d2/d3). Gerçek
+Chromium: içe aktar → onayla → birleştir (onay aktarıldı, rozet "Onaylandı");
+kaynaksız onay (önizleme 1, sonuç "1 onay aktarılamadı", rozet "Bekliyor").
 
 ## v2.121 — Sağ panelde kaydırma çubuğu; spektrogram dalganın yerine
 

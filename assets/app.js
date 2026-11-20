@@ -20,6 +20,7 @@ import {
   REVIEW_LABEL,
   REVIEW_LEGACY,
   REVIEW_STATE,
+  normalizeReviewState,
   REVIEW_HINT,
   REVIEW_TONE,
   AMBIGUOUS_REVIEW,
@@ -37,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.121';
+} from './schema.js?v=2.122';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.121';
+const APP_VERSION = '2.122';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4409,8 +4410,7 @@ function bulkApproveQuick(m) {
     // BİLİRKİŞİ ONAYI DEĞİL (v2.106): `approved` yazmak, dinlenmemiş metni
     // raporda "Onaylandı" göstermek olurdu. `machine` = "otomatik çözümlendi,
     // dinlenmeli". Bilirkişi dinleyip onaylayınca `approved` olur.
-    segs[i].review = 'machine';
-    segs[i].checked = false;
+    setSegReview(segs[i], 'machine');
   }
   logEvent(
     m,
@@ -4524,7 +4524,9 @@ function approveActiveSegment(m) {
     showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
     return;
   }
-  s.review = 'approved';
+  // Onayı KİMİN verdiği kaydedilir (v2.122): birleştirmede onay ancak sahibi
+  // biliniyorsa aktarılır.
+  setSegReview(s, 'approved');
   persist();
   renderOverview();
   const root = $(`#segments-${CSS.escape(m.id)}`);
@@ -5750,8 +5752,8 @@ function splitSegmentAt(m, index, cut) {
   left.asrText = asrParts ? asrParts.leftText : '';
   right.asrText = asrParts ? asrParts.rightText : '';
   // Yeni bölümler doğrulanmamıştır; metin değiştiği için onay düşer.
-  left.review = 'pending';
-  right.review = 'pending';
+  setSegReview(left, 'pending');
+  setSegReview(right, 'pending');
   left.textRev = 0;
   right.textRev = 0;
   segs.splice(index, 1, left, right);
@@ -5784,7 +5786,7 @@ function mergeSegmentWithNext(m, index) {
     applyTextEdit(s, (s.text || '') + (s.text ? ' ' : '') + n.text);
     pushSegmentHistory(s, prev);
   }
-  s.review = 'pending';
+  setSegReview(s, 'pending');
   segs.splice(index + 1, 1);
   m.activeSeg = index;
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
@@ -6345,6 +6347,26 @@ function segReview(s) {
   const raw = s.review || (s.checked ? 'approved' : 'pending');
   return REVIEW_STATES[raw] ? raw : REVIEW_LEGACY[raw] || 'pending';
 }
+// Kontrol kararını YAZAN TEK NOKTA (v2.122). Onayı KİMİN verdiği burada
+// kaydedilir; birleştirmede onay ancak sahibi biliniyorsa aktarılır. Dinleyip
+// onaylayan bilirkişi metne dokunmaz, bu yüzden `lastEditBy` yeterli değildir.
+// `machine` (otomatik işaretleme) insan kararı değildir; atıf taşımaz.
+const HUMAN_REVIEW_CODES = ['approved', 'inaudible', 'relisten', 'ambiguous'];
+function setSegReview(s, code) {
+  const next = normalizeReviewState(code);
+  const prev = segReview(s);
+  s.review = next;
+  s.checked = next === 'approved';
+  if (HUMAN_REVIEW_CODES.includes(next)) {
+    const c = currentCase();
+    s.reviewedBy = (c && c.lastEditedBy) || '';
+    s.reviewedAt = new Date().toISOString();
+  } else {
+    s.reviewedBy = '';
+    s.reviewedAt = '';
+  }
+  return prev !== next;
+}
 function isReviewed(s) {
   const r = segReview(s);
   return r === 'approved' || r === 'inaudible';
@@ -6416,7 +6438,7 @@ function setSegmentText(s, next) {
   s.text = v;
   // Metin değişti → insan kararı geçersiz. "Anlaşılmadı"/"Yeniden dinlenecek"
   // de düşer: metin değiştiyse bölüm yeniden dinlenip kontrol edilmelidir.
-  s.review = 'pending';
+  setSegReview(s, 'pending');
   // Düşüş bayrağı BURADA kurulur (odak olayına bağlı değil): programatik
   // yazma veya yapıştırmada da kullanıcı bilgilendirilir.
   if (wasDecision) s.__reviewDropped = true;
@@ -6920,7 +6942,7 @@ async function retranscribeSegment(materialId, index) {
     s.asrModel = (asrPipeline && asrPipeline.__modelId) || s.asrModel || '';
     s.asrAt = new Date().toISOString();
     s.textRev = 0;
-    s.review = 'pending';
+    setSegReview(s, 'pending');
     s.words = meaningful.flatMap((f) => f.words || []);
     logEvent(m, 'Bölüm yeniden çözümlendi', `Bölüm ${index + 1}: ${s.start}–${s.end} · ${meaningful.length} parça`);
     persist();
@@ -8782,6 +8804,16 @@ function renderMergePreview(cmp) {
     row('Otomatik alınacak bölüm metni', cmp.segments.autoResolved),
     row('Alınacak ikinci göz önerisi', cmp.segments.proposals),
     row('Kontrol durumu ilerleyen bölüm', cmp.segments.reviewAdvanced),
+    row(
+      'Aktarılmayan onay (kaynağı doğrulanamadı)',
+      cmp.segments.approvalsRejected || 0,
+      cmp.segments.approvalsRejected ? 'warn' : ''
+    ),
+    row(
+      'Metin değiştiği için düşen onay',
+      cmp.segments.approvalsDropped || 0,
+      cmp.segments.approvalsDropped ? 'warn' : ''
+    ),
     row('Doldurulacak soru cevabı', cmp.questions.filled),
     row('Otomatik alınacak soru cevabı', cmp.questions.autoResolved),
     row('Yeni soru', cmp.questions.added),
@@ -8797,8 +8829,8 @@ function renderMergePreview(cmp) {
     return;
   }
   conf.innerHTML =
-    `<h3 class="merge-h3">Çakışan metinler (${cmp.conflicts.length})</h3>` +
-    `<p class="merge-note">Aşağıdaki metinler iki tarafta da <b>elle düzenlenmiş</b> ya da farkın kaynağı bilinmiyor. Birleştirmede <b>bu dosyadaki metin korunur</b>; gelen metin kaybolmaz, işlem günlüğüne ve metin geçmişine yazılır. Karşı tarafın metnini istiyorsanız önce bu dosyada düzeltin, sonra tekrar birleştirin.</p>` +
+    `<h3 class="merge-h3">Çakışmalar (${cmp.conflicts.length})</h3>` +
+    `<p class="merge-note">Metin çakışmalarında <b>bu dosyadaki metin korunur</b>; gelen metin kaybolmaz, işlem günlüğüne ve metin geçmişine yazılır. <b>Aktarılmayan onay</b> kaynağı doğrulanamadığı için kabul edilmez; o bölüm <b>kontrol bekliyor</b> olur. Karşı tarafın metnini istiyorsanız önce bu dosyada düzeltin, sonra tekrar birleştirin.</p>` +
     cmp.conflicts
       .slice(0, 20)
       .map((c) => {
@@ -8807,8 +8839,8 @@ function renderMergePreview(cmp) {
             ? `Soru cevabı · ${(c.questionId || '').slice(-6)}`
             : c.kind === 'case-field'
               ? `Dosya alanı · ${c.field || ''}`
-              : c.kind === 'unattributed-approval'
-                ? `Kaynağı tanımsız düzenleme · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
+              : c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
+                ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
                 : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
@@ -8881,10 +8913,21 @@ async function applyMerge() {
   populateQuestionsForm();
   renderOverview();
   await renderAudioList();
-  showToast(
-    `Birleştirildi: ${applied.length} değişiklik uygulandı` +
-      (conflicts.length ? `, ${conflicts.length} çakışma bu dosyadaki metinle korundu (gelen metin geçmişe yazıldı).` : '.')
-  );
+  // Çakışma türleri AYRI anlatılır: metin çakışmasında yerel metin korunur,
+  // aktarılmayan onayda ise bölüm kontrol bekliyor olur. Tek cümlede
+  // birleştirmek kullanıcıyı yanıltıyordu (v2.122).
+  const approvalConflicts = conflicts.filter(
+    (c) => c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
+  ).length;
+  const textConflicts = conflicts.length - approvalConflicts;
+  const parts = [`Birleştirildi: ${applied.length} değişiklik uygulandı.`];
+  if (textConflicts) {
+    parts.push(`${textConflicts} metin çakışmasında bu dosyadaki metin korundu (gelen metin geçmişe yazıldı).`);
+  }
+  if (approvalConflicts) {
+    parts.push(`${approvalConflicts} onay aktarılamadı: kaynağı doğrulanamadı, o bölümler kontrol bekliyor.`);
+  }
+  showToast(parts.join(' '));
 }
 
 // ÇOK DOSYALI ARŞİV GERİ YÜKLEME (v2.84). Dışa aktarma artık tüm dosyaları
@@ -8922,11 +8965,15 @@ async function importArchive(zip, arch) {
   snapshotForUndo('arşivden geri yükleme');
   let added = 0;
   const missingAudio = [];
+  let identityNeeded = false;
   for (const raw of fresh) {
     try {
       const c = normalizeCase(raw);
       const sourceId = c.id;
       c.id = uid();
+      // Kimlik bu bilgisayara ait değildir (v2.122): onay atfı yanlış olmasın.
+      c.lastEditedBy = '';
+      if ((c.team || []).length) identityNeeded = true;
       c.materials = c.materials || [];
       const hits = matchAudioEntries(Object.keys(zip.files), c.materials, sourceId);
       const found = new Set(hits.map((h) => h.materialId));
@@ -8969,7 +9016,12 @@ async function importArchive(zip, arch) {
         (missingAudio.length > 3 ? '…' : '')
     );
   } else {
-    showToast(`${added} dosya arşivden geri yüklendi.`);
+    showToast(
+      `${added} dosya arşivden geri yüklendi.` +
+        (identityNeeded
+          ? ' Dosya bilgileri → "Şu an bu bilgisayarda çalışan" alanından kendinizi seçin.'
+          : '')
+    );
   }
 }
 async function importProject(file) {
@@ -9006,6 +9058,10 @@ async function importProject(file) {
     }
   }
   c.id = uid();
+  // Kimlik bu bilgisayara AİT DEĞİLDİR (v2.122). Devralınırsa bu makinede
+  // verilen onaylar yanlış kişiye yazılır ve "ikinci göz onaylayamaz" kuralı
+  // sessizce delinebilir. Kullanıcı kendini seçmeli.
+  c.lastEditedBy = '';
   c.materials = c.materials || [];
   const entryNames = Object.keys(zip.files);
   for (const { materialId, entry } of matchAudioEntries(entryNames, c.materials)) {
@@ -9028,7 +9084,12 @@ async function importProject(file) {
   renderOverview();
   await renderAudioList();
   switchView('overview');
-  showToast('Çalışma dosyası içe aktarıldı.');
+  showToast(
+    'Çalışma dosyası içe aktarıldı.' +
+      ((c.team || []).length
+        ? ' Bu dosya başka bilgisayardan geldi: Dosya bilgileri → "Şu an bu bilgisayarda çalışan" alanından kendinizi seçin.'
+        : '')
+  );
 }
 async function loadSamples() {
   if (appState.cases.some((c) => c.sampleKey)) {
@@ -9454,7 +9515,7 @@ function setupEvents() {
       s2.proposal = null;
       pushSegmentHistory(s2, prev);
       // Onay metne bağlıdır: kabul edilen metin yeniden kontrol ister.
-      s2.review = 'pending';
+      setSegReview(s2, 'pending');
       persist();
       renderSegments(m, card);
       renderOverview();
@@ -9484,8 +9545,8 @@ function setupEvents() {
         const [ix, val] = b.dataset.reviewSet.split('|');
         const s2 = m.segments[Number(ix)];
         if (s2) {
-          s2.review = val;
-          s2.checked = val === 'approved';
+          // Eski Türkçe kodlar burada koda çevrilir; atıf da yazılır (v2.122).
+          setSegReview(s2, val);
           persist();
           updateSegListItem(m, Number(ix));
           refreshSegChips(m);
@@ -10014,8 +10075,7 @@ function setupEvents() {
       el.value = segReview(s);
       return;
     }
-    s.review = el.value;
-    s.checked = el.value === 'approved';
+    setSegReview(s, el.value);
     el.dataset.state = el.value;
     persist();
     updateSegListItem(m, i);
@@ -11093,6 +11153,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.122': {
+    title: 'Birleştirmede bilirkişi onayları artık aktarılıyor',
+    body:
+      'Dosya başka bilgisayarda onaylanıp size geri geldiğinde, onaylı bölümler ' +
+      'birleştirmeden sonra "Kontrol bekliyor" görünüyordu. Nedeni: onayın KİM ' +
+      'tarafından verildiği kaydedilmiyordu; uygulama yalnız metni düzenleyen kişiye ' +
+      'bakıyordu. Dinleyip onaylayan bilirkişi metne dokunmadığı için onay sahipsiz ' +
+      'sayılıp sessizce düşürülüyordu. Artık onayı veren kişi kaydedilir ve ' +
+      'birleştirmede aktarılır. Aktarılamayan onay (kaynağı ekipte tanımlı değilse) ' +
+      'artık sessizce kaybolmaz: birleştirme ekranında ve sonuç bildiriminde ' +
+      '"N onay aktarılamadı" diye yazar. Ayrıca içe aktarılan dosyada "Şu an bu ' +
+      'bilgisayarda çalışan" alanı temizlenir; kendinizi seçmeniz istenir.'
+  },
   '2.121': {
     title: 'Sağ paneldeki kaydırma çubuğu kaldırıldı; spektrogram dalganın yerine geçiyor',
     body:

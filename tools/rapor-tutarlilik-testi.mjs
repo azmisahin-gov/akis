@@ -52,6 +52,7 @@ const __inlineImports = (src) =>
     return 'const { ' + list.join(', ') + ' } = globalThis.__schema;';
   });
 let code = __inlineImports(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8'))
+  .replace(/^init\(\)\.catch\([\s\S]*?\);\s*$/m, '')
   .replace(/^init\(\);\s*$/m, '');
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
   + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;

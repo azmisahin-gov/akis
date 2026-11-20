@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.121.**
+yazılır. **Güncel sürüm: v2.122.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.122 — Birleştirmede onaylar aktarılıyor (tamamlandı)
+
+Onaylama yalnız `review` yazıyordu; birleştirme "kim onayladı" sorusunu
+`lastEditBy` (metin düzenleyen) ile tahmin ediyordu. Dinleyip onaylayan
+bilirkişi metne dokunmadığı için onay "kaynaksız" sayılıp **sessizce**
+`pending`e düşürülüyordu. Artık `reviewedBy`/`reviewedAt` kaydedilir, tek yazma
+noktası `setSegReview()`'dir ve aktarılamayan onay **bildirilir**
+(`approval-not-attributed`). İçe aktarmada devralınan kimlik temizlenir.
+`birim-testleri` [46], `sema-testi` [7f].
 
 ### v2.121 — Sağ panel kaydırma çubuğu + spektrogram geçişi (tamamlandı)
 
