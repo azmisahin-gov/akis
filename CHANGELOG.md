@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.137.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.138.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.138 — CSS borcu: ölçüm ve nöbetçi (görünür değişiklik yok)
+
+DENETİM. Stil katmanı yama üstüne yama birikmişti. Bu sürüm **davranışı
+değiştirmez**; borcu ölçer, belgeler ve artışını engeller.
+
+### ÖLÇÜM (v2.138)
+
+| Ölçüm | Değer |
+|---|---|
+| app.css kural | 980 |
+| reading-layer kural | 691 |
+| `!important` | 26 + 63 |
+| `.main-area` tanımı | 14 |
+| Ölü bildirim (reading-layer içi) | 97 |
+| Ölü bildirim (app.css → layer) | 494 |
+
+### NEDEN TEMİZLİK YAYINLANMADI
+
+Otomatik silme denendi; kanıt olarak "son değer haritası"nın değişmediği
+gösterilecekti. Kendi ayrıştırıcımız kaldırma sonrası yapıyı bozdu (4.284 →
+26.494 anahtar). Dış paket yasak. **Kanıtsız 500 bildirim silinmedi** —
+bu, deponun tekrar eden "bir düzeltme başka paneli bozar" hatasını üretirdi.
+
+### NÖBETÇİ
+
+`tasarim-testi` **[8]**: `!important` 26/63, ölü bildirim 97/494,
+`.main-area` 14 eşiklerini aşan değişiklik testi **kırar**.
+Kanıt: tek bir `!important` eklendi → KALDI; geri alındı → geçti.
+
+### KULLANICI NE GÖRECEK
+
+- **Görünür değişiklik yok.** Ekran, davranış, çıktı aynı.
+- Kazanç: bundan sonraki düzeltmelerde "başka panel bozuldu" riskini azaltan
+  bir ölçüm ve nöbetçi var.
+
+Ayrıntı: [`docs/CSS_BORCU.md`](docs/CSS_BORCU.md).
 
 ## v2.137 — Rapor kâğıdı dar ekranda kırpılmıyor
 

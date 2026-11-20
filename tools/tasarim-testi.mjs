@@ -600,5 +600,100 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
   check('toplu onay düğmesi yeşil ailede', /\[data-bulk-approve\][^{]*\{[^}]*var\(--green\)/.test(rl));
 }
 
+// --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
+// NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
+// !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
+// temizlik DENENDİ ve YAYINLANMADI: kendi ayrıştırıcımızla üretilen kanıt
+// (son değer haritası) tutmadı; kanıtsız 500 bildirim silmek "bir düzeltme
+// başka paneli bozar" sınıfını üretir. Bu bölüm borcu ÖLÇER ve ARTIRAN
+// değişikliği durdurur. Ayrıntı: docs/CSS_BORCU.md.
+console.log('\n[8] CSS borcu (nöbetçi)');
+{
+  const appCss = read('assets/app.css');
+  const layerCss = read('assets/reading-layer.css');
+
+  function rulesOf(css) {
+    const src = css.replace(/\/\*[\s\S]*?\*\//g, (m) => ' '.repeat(m.length));
+    const rules = [];
+    const media = [];
+    const matchBrace = (open, end) => {
+      let d = 1, j = open + 1;
+      while (j < end) {
+        if (src[j] === '{') d++;
+        else if (src[j] === '}') { d--; if (!d) return j; }
+        j++;
+      }
+      return end;
+    };
+    const walk = (start, end) => {
+      let k = start, from = start;
+      while (k < end) {
+        if (src[k] === '{') {
+          const prelude = src.slice(from, k).trim();
+          const close = matchBrace(k, end);
+          if (/^@(-webkit-)?keyframes\b/i.test(prelude)) { k = close + 1; from = k; continue; }
+          if (prelude.startsWith('@')) {
+            if (/^@media\b/i.test(prelude)) media.push(prelude);
+            walk(k + 1, close);
+            if (/^@media\b/i.test(prelude)) media.pop();
+          } else {
+            const decls = src.slice(k + 1, close).split(';').map((d) => d.trim()).filter(Boolean).map((d) => {
+              const c = d.indexOf(':');
+              return c < 0 ? null : { prop: d.slice(0, c).trim().toLowerCase(), important: /!important/i.test(d) };
+            }).filter(Boolean);
+            for (const sel of prelude.split(',')) rules.push({ selector: sel.trim().replace(/\s+/g, ' '), media: media.join(' && '), decls });
+          }
+          k = close + 1; from = k; continue;
+        }
+        k++;
+      }
+    };
+    walk(0, src.length);
+    return rules;
+  }
+
+  function deadCount(rules) {
+    const last = new Map();
+    let dead = 0;
+    for (const r of rules) {
+      for (const d of r.decls) {
+        const key = r.selector + '|' + d.prop;
+        const prev = last.get(key);
+        if (prev && (r.media === '' || r.media === prev.media) && (!prev.important || d.important)) dead++;
+        last.set(key, { media: r.media, important: d.important });
+      }
+    }
+    return dead;
+  }
+
+  const appRules = rulesOf(appCss);
+  const layerRules = rulesOf(layerCss);
+  const layerUncond = new Map();
+  for (const r of layerRules) {
+    if (r.media) continue;
+    for (const d of r.decls) layerUncond.set(r.selector + '|' + d.prop, d);
+  }
+  let cross = 0;
+  for (const r of appRules) {
+    for (const d of r.decls) {
+      const later = layerUncond.get(r.selector + '|' + d.prop);
+      if (later && (!d.important || later.important)) cross++;
+    }
+  }
+  const impApp = (appCss.match(/!important/g) || []).length;
+  const impLayer = (layerCss.match(/!important/g) || []).length;
+  const mainArea = (appCss.match(/\.main-area\s*\{/g) || []).length + (layerCss.match(/\.main-area\s*\{/g) || []).length;
+  console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} · .main-area ${mainArea}`);
+  console.log(`  ölü bildirim: reading-layer içi ${deadCount(layerRules)} · app.css→layer ${cross}`);
+
+  // Nöbetçi eşikleri (v2.138 ölçümü: 26/63/97/494/14). Borç ARTARSA test
+  // kalır; temizlik yapılırsa eşik DÜŞÜRÜLÜR.
+  check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
+  check('reading-layer !important sayısı artmadı (<=63)', impLayer <= 63, String(impLayer));
+  check('reading-layer içi ölü bildirim artmadı (<=97)', deadCount(layerRules) <= 97, String(deadCount(layerRules)));
+  check('app.css→reading-layer ölü bildirim artmadı (<=494)', cross <= 494, String(cross));
+  check('.main-area tanımı artmadı (<=14)', mainArea <= 14, String(mainArea));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

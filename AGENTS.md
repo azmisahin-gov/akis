@@ -1460,6 +1460,27 @@ ya sar (`overflow-wrap`) ya da görünür kaydırma.
 
 **Koruyan test:** `tasarim-testi` [2m] (2 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10aj — CSS borcu: ölçüm ve nöbetçi (TAMAMLANDI, v2.138)
+
+**KURAL: CSS borcu ÖLÇÜLÜR ve ARTIRILAMAZ; kanıtsız temizlik yapılmaz.**
+
+**Ölçüm (v2.138):** app.css 980 kural · reading-layer 691 kural ·
+`!important` 26+63 · `.main-area` 14 tanım · ölü bildirim 97 (layer içi) +
+494 (app.css → layer). Ayrıntı: `docs/CSS_BORCU.md`.
+
+**Otomatik temizlik DENENDİ, YAYINLANMADI:** aynı seçici+özellik için sonraki
+tanım kazanıyorsa öncekini silmek ve "son değer haritası değişmedi" kanıtını
+göstermek planlandı. Kendi ayrıştırıcımız kaldırma sonrası yapıyı bozdu
+(harita 4.284 → 26.494). Dış paket (PostCSS) yasak. Kanıtsız 500 bildirim
+silinmedi; bu tam olarak deponun "bir düzeltme başka paneli bozar" sınıfıdır.
+
+**Nöbetçi:** `tasarim-testi` [8] eşikleri (26/63/97/494/14) aşan değişiklikte
+KALIR. Kanıt: tek `!important` eklendi → KALDI (64 > 63); geri alındı → geçti.
+
+**DERS:** "Silinebilir görünüyor" ≠ "silinemez olduğu kanıtlandı". Minify CSS'te
+konum tabanlı otomatik düzenleme, kanıt üretmiyorsa yapılmaz. Borç önce
+ölçülür, nöbetçiyle sabitlenir; temizlik küçük ve kanıtlı adımlarla yapılır.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1633,7 +1654,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.137.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.138.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1795,7 +1816,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.137** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.138** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1845,6 +1866,7 @@ Test sayısı 441 → **782**.
 | **v2.135** | **Kritik uyarılar ekran okuyucuya duyurulur** (aria-live yoktu) | `birim` [53] |
 | **v2.136** | **Sekme simgesi** (favicon 404) | `tasarim` [4b] |
 | **v2.137** | **Rapor kâğıdı dar ekranda kırpılıyordu** (760 px'te 26 px) | `tasarim` [2m] |
+| **v2.138** | **CSS borcu ölçümü + nöbetçi** (temizlik kanıt tutmadığı için yayınlanmadı) | `tasarim` [8] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

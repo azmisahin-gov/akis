@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.137.**
+yazılır. **Güncel sürüm: v2.138.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.138 — CSS borcu: ölçüm ve nöbetçi (tamamlandı)
+
+Borç ölçüldü (980/691 kural, 26+63 !important, 97/494 ölü bildirim) ve
+belgelendi. Otomatik temizlik kanıt tutmadığı için YAYINLANMADI. Nöbetçi:
+`tasarim` [8]. Ayrıntı: `docs/CSS_BORCU.md`.
 
 ### v2.137 — Rapor kâğıdı dar ekranda kırpılmıyor (tamamlandı)
 
