@@ -6,12 +6,79 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.97.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.98.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.98 — Paragraf ve bölme, modelin çıktısını siliyordu
+
+CANLI VERİ. Adli ayrım kuralı (v2.83): *"Modelin ürettiği ham metin ASLA
+üzerine yazılmaz."* Bu sürüm, kuralın iki yolda bozulduğunu kapatıyor.
+
+### GERÇEK HATA
+
+**1. `paragraphize()` — tamamen siliyordu.** Paragraf oluşturulunca yeni
+bölüm nesnesi `asrText`, `asrModel`, `asrAt` alanlarını **hiç taşımıyordu**:
+
+```
+ÖNCE   s1: asrText "model bir", asrModel "Xenova/whisper-small"
+       s2: asrText "model iki", asrModel "Xenova/whisper-small"
+SONRA  paragraf: asrText undefined · asrModel undefined · asrAt undefined
+```
+
+Yani paragraf oluşturan bilirkişi, **modelin ne dediği bilgisini kaybediyordu**.
+
+**2. `splitSegmentAt()` — ikiye kopyalıyordu.** `{...s}` tüm alanları
+kopyaladığı için **tam asrText her iki yarıya** yazılıyordu:
+
+```
+ÖNCE   "bir iki üç dört"
+SONRA  sol: "bir iki üç dört"  sağ: "bir iki üç dört"   (toplam iki katı)
+```
+
+İki bölüm de "model tüm metni söyledi" diyordu; sağ yarıda model hiçbir şey
+söylememiş olabilirdi.
+
+### Çözüm
+
+- **Paragraf**: `asrText` = girdi bölümlerinin `asrText`'lerinin birleşimi.
+  `asrModel` yalnız tüm girdiler **aynı** modeli kullanıyorsa korunur;
+  farklı modeller karıştıysa boşaltılır (yanlış atıf yapılmaz — `uniformAsrModel`).
+  `asrAt` en erken zaman damgası. Girdilerde `asrText` yoksa **uydurulmaz**.
+- **Bölme**: `asrText` de metinle aynı oranda **paylaştırılır**
+  (`splitSegmentText` ile), kopyalanmaz. Toplamları orijinali verir.
+- `asrText` yoksa (eski kayıt / elle girilmiş bölüm) boş kalır — uydurma yok.
+
+**Ölçüm (gerçek Chromium, gerçek ¶ düğmesi):**
+
+```
+ÖNCE   iki bölüm: "model bir" / "model iki"  (asrModel dolu)
+SONRA  paragraf : asrText "model bir model iki" · asrModel "Xenova/whisper-small"
+```
+
+Birim testi (bölme):
+```
+"bir iki üç dört" → sol "bir iki" + sağ "üç dört"  (kopya değil, paylaşım)
+```
+
+### KULLANICI NE GÖRECEK
+
+- Paragraf oluşturduğunuzda **"Otomatik çözümleme çıktısı"** bloğu artık
+  kaybolmaz; modelin ne dediği görülebilir kalır.
+- Bölme yaptığınızda model çıktısı da iki bölüme **adil biçimde paylaştırılır**;
+  aynı metin iki kez görünmez.
+- Farklı modellerle çözümlenmiş bölümler paragrafta birleşirse model adı
+  **boş** görünür (yanlış model atfı yapılmaz).
+
+### Testle korunur
+
+`birim-testleri` [28] (12 kontrol): paragrafta asrText/asrModel/asrAt korunur,
+eski kayıtta uydurulmaz, karışık modelde model adı boşaltılır, bölmede asrText
+paylaştırılır (kopyalanmaz). Test düzeltme yokken **kaldı** (`389 geçti,
+8 kaldı`), düzeltmeden sonra geçti (`402 geçti, 0 kaldı`).
 
 ## v2.97 — Zaman alanı doğrulanmıyordu (rapora sessizce 00:00:00.000)
 

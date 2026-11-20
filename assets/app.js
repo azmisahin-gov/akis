@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.97';
+const APP_VERSION = '2.98';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5185,6 +5185,13 @@ function splitSegmentAt(m, index, cut) {
   const right = { ...s, id: newId('sg'), start: timecode(cut), history: [], words: parts.rightWords };
   left.text = parts.leftText;
   right.text = parts.rightText;
+  // ADLİ AYRIM (v2.98): `{...s}` TAM asrText'i iki yarıya kopyalıyordu; oysa
+  // modelin çıktısı da metinle aynı oranda paylaştırılmalıdır. Aksi hâlde iki
+  // bölüm de "model tüm metni söyledi" der ve adli ayrım bozulur.
+  // Otomatik çıktı yoksa uydurulmaz (boş kalır).
+  const asrParts = s.asrText ? splitSegmentText({ ...s, text: s.asrText, words: s.words || [] }, cut) : null;
+  left.asrText = asrParts ? asrParts.leftText : '';
+  right.asrText = asrParts ? asrParts.rightText : '';
   // Yeni bölümler doğrulanmamıştır; metin değiştiği için onay düşer.
   left.review = 'pending';
   right.review = 'pending';
@@ -5235,6 +5242,12 @@ function mergeSegmentWithNext(m, index) {
 // kişilerin sözleri karışmaz. Hiçbir metin uydurulmaz; yalnızca mevcut bölümler
 // birleştirilir. Onaylanmamış bölümler paragrafa katıldığında kontrol durumu
 // "bekliyor"a döner ki doğrulanmamış içerik onaylı sayılmasın.
+// Paragrafa giren bölümlerin model kimliği TEKSE onu döndürür; farklı
+// modeller karıştıysa boş string döner (yanlış atıf yapılmaz — v2.98).
+function uniformAsrModel(segs) {
+  const models = [...new Set((segs || []).map((s) => String(s.asrModel || '').trim()).filter(Boolean))];
+  return models.length === 1 ? models[0] : '';
+}
 function paragraphize(m) {
   const segs = m.segments || [];
   if (segs.length < 2) {
@@ -5273,6 +5286,16 @@ function paragraphize(m) {
       end: last.end,
       speaker: first.speaker || '',
       text,
+      // ADLİ AYRIM (v2.98): modelin ürettiği ham metin KORUNUR. Paragrafın
+      // otomatik çıktısı, girdi bölümlerinin asrText'lerinin birleşimidir.
+      // Öncesinde bu alanlar hiç taşınmıyor, paragraf oluşturan bilirkişi
+      // "model ne dedi" bilgisini kaybediyordu (v2.83 kuralı bozuluyordu).
+      // Girdilerde asrText yoksa UYDURULMAZ (boş kalır).
+      asrText: g.segs.map((s) => String(s.asrText || '').trim()).filter(Boolean).join(' '),
+      // Model kimliği: hepsi aynıysa korunur; farklı modeller karıştıysa
+      // boşaltılır (yanlış atıf yapmamak için).
+      asrModel: uniformAsrModel(g.segs),
+      asrAt: g.segs.map((s) => s.asrAt || '').filter(Boolean).sort()[0] || '',
       // Paragrafa giren bölümlerden biri elle düzenlenmişse birleşik metin de
       // "elle düzenlenmiş" sayılır; kaynağı otomatik metin olsa bile.
       textRev: g.segs.some((s) => (Number(s.textRev) || 0) > 0) ? 1 : 0,
@@ -9717,6 +9740,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.98': {
+    title: 'Paragraf ve bölme, modelin çıktısını artık silmiyor',
+    body:
+      'Adli ayrım kuralı gereği modelin ürettiği ham metin hiçbir işlemde ' +
+      'silinmemelidir. Paragraf oluşturduğunuzda modelin çıktısı tamamen ' +
+      'kayboluyordu; bölme yaptığınızda ise aynı metin iki yarıya kopyalanıyordu ' +
+      '(iki bölüm de "model tüm metni söyledi" diyordu). Artık paragrafta model ' +
+      'çıktısı birleştirilir, bölmede adil biçimde paylaştırılır. Farklı ' +
+      'modeller karışırsa model adı boş bırakılır (yanlış atıf yapılmaz).'
+  },
   '2.97': {
     title: 'Zaman alanları artık doğrulanıyor',
     body:

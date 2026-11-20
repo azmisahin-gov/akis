@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.97.**
+yazılır. **Güncel sürüm: v2.98.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.98 — Paragraf/bölme model çıktısını silmiyor (tamamlandı, canlı veri)
+
+`paragraphize` yeni bölüm nesnesine asrText/asrModel/asrAt alanlarını hiç
+taşımıyordu (tam kayıp). `splitSegmentAt` ise `{...s}` ile TAM asrText'i iki
+yarıya kopyalıyordu (iki bölüm de "model tüm metni söyledi"). Artık paragrafta
+birleştirilir, bölmede paylaştırılır; farklı modeller karışırsa model adı
+boşaltılır. `birim-testleri` [28] korur.
 
 ### v2.97 — Zaman alanı doğrulanır (tamamlandı, canlı veri)
 
@@ -135,7 +143,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 10 | Önizleme ile birleştirme farklı alan kümesi kullanıyor | bekliyor |
 | 11 | SHA-256 hesaplanamazsa "doğrulandı" deniyor | **v2.96 tamamlandı** |
 | 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | **v2.97 tamamlandı** |
-| 13 | `paragraphize` asrText/asrModel'i siliyor | bekliyor |
+| 13 | `paragraphize` asrText/asrModel'i siliyor | **v2.98 tamamlandı** |
 | 14 | Hızlı onay sayacı ile filtresi ayrışıyor | bekliyor |
 | 15 | Türkçe büyük İ terim tutarlılığını bozuyor | bekliyor |
 

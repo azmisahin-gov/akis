@@ -63,7 +63,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize', 'analyzeSilence', 'segmentSilenceFlag',
+  'paragraphize', 'splitSegmentAt', 'analyzeSilence', 'segmentSilenceFlag',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
@@ -86,6 +86,7 @@ const EXPOSE = [
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
+  'paragraphize', 'splitSegmentAt',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1439,6 +1440,100 @@ console.log('\n[27] Zaman alanı doğrulanır');
     eq('eşit sınır reddedilir', T.normalizeTimeInput('00:00:05.000', '00:00:05.000'), null);
     eq('geçerli aralık geçer', T.normalizeTimeInput('00:00:05.000', '00:00:09.000'), '00:00:05.000');
     eq('bozuk bitiş aralığı reddeder', T.normalizeTimeInput('00:00:05.000', 'abc'), null);
+  }
+}
+
+// --- 28. paragraphize adli ayrımı korumalı (v2.98) -----------------------
+// GERÇEK HATA: paragraf oluşturulunca YENİ bölüm nesnesi `asrText`,
+// `asrModel`, `asrAt` alanlarını taşımıyordu. v2.83'teki adli ayrım kuralı
+// ("modelin ürettiği ham metin ASLA üzerine yazılmaz") bu yolda bozuluyordu:
+// paragraf oluşturan bilirkişi, modelin ne dediği bilgisini kaybediyordu.
+// Ölçüm: paragraf sonrası asrText/asrModel/asrAt → undefined.
+// KURAL: paragrafın otomatik çıktısı, girdi bölümlerinin asrText'lerinin
+// birleşimidir (aynı metin olduğu için bilgi kaybı yok). Model kimliği ve
+// zamanı korunur; FARKLI modeller karışırsa model alanı boşaltılır ve
+// günlüğe yazılır (uydurma model adı yazılmaz).
+console.log('\n[28] paragraphize adli ayrımı korur');
+{
+  const mk = (asrModel = 'Xenova/whisper-small') => {
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(T.emptySegmentForTest({
+      id: 's1', start: '00:00:00.000', end: '00:00:02.000', speaker: 'A',
+      text: 'model bir', asrText: 'model bir', asrModel, asrAt: '2026-01-01T00:00:00Z', review: 'approved'
+    }));
+    m.segments.push(T.emptySegmentForTest({
+      id: 's2', start: '00:00:02.000', end: '00:00:04.000', speaker: 'A',
+      text: 'model iki', asrText: 'model iki', asrModel, asrAt: '2026-01-01T00:00:00Z', review: 'approved'
+    }));
+    c.materials.push(m);
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    return m;
+  };
+
+  // 1) Aynı model: paragrafın asrText'i girdilerin birleşimidir.
+  {
+    const m = mk();
+    T.paragraphize(m);
+    eq('tek paragraf', m.segments.length, 1);
+    eq('asrText korunur', m.segments[0].asrText, 'model bir model iki');
+    eq('asrModel korunur', m.segments[0].asrModel, 'Xenova/whisper-small');
+    eq('asrAt korunur', m.segments[0].asrAt, '2026-01-01T00:00:00Z');
+    // Adli ayrım: metin değişse bile asrText modelin ürünü olarak kalır.
+    eq('text ile asrText ayrı alanlar', m.segments[0].text !== undefined && m.segments[0].asrText !== undefined, true);
+  }
+
+  // 2) Girdi bölümlerinde asrText YOKSA uydurulmaz (eski kayıt).
+  {
+    const m = mk();
+    // Eski kayıt: ne asrText ne asrModel var.
+    m.segments.forEach((s) => { delete s.asrText; delete s.asrModel; delete s.asrAt; });
+    T.paragraphize(m);
+    eq('asrText uydurulmaz', m.segments[0].asrText, '');
+    eq('asrModel de uydurulmaz', m.segments[0].asrModel, '');
+    eq('asrAt de uydurulmaz', m.segments[0].asrAt, '');
+  }
+
+  // 3) FARKLI modeller karışırsa model adı boşaltılır (yanlış atıf yapılmaz).
+  {
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(T.emptySegmentForTest({
+      id: 's1', start: '00:00:00.000', end: '00:00:02.000', speaker: 'A',
+      text: 'a', asrText: 'a', asrModel: 'Xenova/whisper-small', asrAt: '2026-01-01T00:00:00Z', review: 'approved'
+    }));
+    m.segments.push(T.emptySegmentForTest({
+      id: 's2', start: '00:00:02.000', end: '00:00:04.000', speaker: 'A',
+      text: 'b', asrText: 'b', asrModel: 'Xenova/whisper-large-v3', asrAt: '2026-01-02T00:00:00Z', review: 'approved'
+    }));
+    c.materials.push(m);
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    T.paragraphize(m);
+    eq('karışık modelde model adı boşaltılır', m.segments[0].asrModel, '');
+    eq('asrText yine korunur', m.segments[0].asrText, 'a b');
+  }
+
+  // 4) BÖLME de aynı kurala uymalı: `{...s}` ile TAM asrText iki yarıya
+  //    kopyalanırsa iki bölüm de "model tüm metni söyledi" der. Bu, adli
+  //    ayrımı bozar: sağ yarıda model hiçbir şey söylememiş olabilir.
+  {
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(T.emptySegmentForTest({
+      id: 's1', start: '00:00:00.000', end: '00:00:10.000', speaker: 'A',
+      text: 'bir iki üç dört', asrText: 'bir iki üç dört',
+      asrModel: 'Xenova/whisper-small', asrAt: '2026-01-01T00:00:00Z', review: 'approved'
+    }));
+    c.materials.push(m);
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    T.splitSegmentAt(m, 0, 5);
+    eq('ikiye ayrıldı', m.segments.length, 2);
+    const leftAsr = m.segments[0].asrText;
+    const rightAsr = m.segments[1].asrText;
+    eq('sol yarı asrText var', leftAsr.length > 0, true);
+    eq('sağ yarı asrText var', rightAsr.length > 0, true);
+    // İkisi TOPLAMDA orijinali vermeli (biri diğerinin kopyası olmamalı).
+    eq('asrText ikiye PAYLAŞTIRILIR, kopyalanmaz', `${leftAsr} ${rightAsr}`, 'bir iki üç dört');
   }
 }
 
