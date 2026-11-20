@@ -798,6 +798,40 @@ kayıt kartı `head-check` ipucu aynı metni kullanır.
 **DERS:** Bir sayı kullanıcıyı şaşırtıyorsa eksik olan sayı değil AÇIKLAMADIR.
 Sayıyı değiştirmeden önce "neden böyle" sorusunu cevapla.
 
+
+### Aşama 10m — Belirsiz okuma + bölüm spektrogramı (TAMAMLANDI, v2.115)
+
+**ADLİ AYRIM (yeni, değişmez):**
+| Durum | Etiket | Anlamı |
+|---|---|---|
+| Ses anlaşılmıyor | `inaudible` → "Anlaşılmadı" | teknik yetersizlik |
+| Ses duyuldu, iki okuma mümkün | `ambiguous` → "Belirsiz okuma" | "geldi" / "kaldı" |
+| Bilirkişi karar verdi | `approved` → "Onaylandı" | seçilen okuma |
+
+**KURALLAR:**
+1. `ambiguous` onay DEĞİLDİR: `isReviewed` false → sayaçta eksik görünür.
+2. `ambiguousReportText(s)` TEK KAYNAK: iki okuma + seçim; seçim yoksa
+   "seçilmedi". **Belirsizlik raporda gizlenmez** (adli dürüstlük).
+3. Alanlar: `s.reading1`, `s.reading2`, `s.chosen`.
+4. Spektrogram: dalga zaman/ritim, spektrogram frekans. **İkisi birlikte**;
+   biri diğerinin yerine geçmez. `computeSpectrogram(blob, cols, fft, {startSec,
+   endSec})` yalnız bölüm aralığını hesaplar.
+5. Bölüm değişince eski spektrogram gizlenir.
+
+**BULUNAN YAN HATA (kritik):** rapor hücreleri `reviewLabel(s)` çağırıyordu;
+`reviewCellText(s)` hiç kullanılmıyordu. Bu yüzden `machine` ve `ambiguous`
+için özel metin rapora GİRMİYORDU. Düzeltildi: her iki rapor yolu (HTML satırı
+ve DOCX/UDF) `reviewCellText` kullanır. **Yeni bir durum eklerken rapor
+yollarının `reviewCellText` çağırdığını doğrulayın.**
+
+**DERS:** İki benzer fonksiyon (`reviewLabel` / `reviewCellText`) varsa biri
+ölü koddur. Çağrı yerlerini grep'le doğrula; "fonksiyon var" ≠ "fonksiyon
+kullanılıyor".
+
+**Ölçüm (v2.115, gerçek Chromium):** panel iki okuma + seçim; rozet "Belirsiz";
+rapor `Belirsiz okuma — Belirsiz: "geldi" / "kaldı" (seçilen: geldi)`;
+spektrogram `drawn=true`.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -971,7 +1005,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.114.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.115.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1129,7 +1163,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.114` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.115` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

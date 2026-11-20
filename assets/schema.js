@@ -52,13 +52,20 @@ export const MATERIAL_STATUS = [
 // "kontrol edildi" sayılmaz. Amaç: toplu onayın ürettiği durum ile bilirkişinin
 // dinleyerek verdiği onayı ayırmak (adli ayrım). Ekranda kısa etiket
 // ("Çözümlendi"), ayrıntı ipucunda taşınır.
-export const REVIEW_STATE = ['pending', 'machine', 'approved', 'inaudible', 'relisten'];
+// `ambiguous` (v2.115): ses DUYULDU ama BİRDEN FAZLA okuma mümkün.
+// `inaudible`'den farkı: orada ses anlaşılmıyor; burada ses anlaşılıyor ama
+// iki farklı kelime/cümle duyulabiliyor. Adli açıdan ayrı tutulur ve raporda
+// belirsizlik GİZLENMEZ: her iki okuma yazılır, bilirkişinin seçimi belirtilir.
+export const REVIEW_STATE = ['pending', 'machine', 'approved', 'inaudible', 'relisten', 'ambiguous'];
 
 /** Bilirkişinin DİNLEYEREK verdiği onaylar (rapora "Onaylandı" girer). */
 export const HUMAN_APPROVED = ['approved'];
 
 /** Makine işaretlemesi: onay değil, "dinlenmeyi bekliyor" işaretidir. */
 export const MACHINE_REVIEW = 'machine';
+
+/** Belirsiz okuma: iki (veya daha çok) okuma mümkün; onay değildir. */
+export const AMBIGUOUS_REVIEW = 'ambiguous';
 
 /**
  * v2 Türkçe kontrol kodları → v3 ASCII kodlar.
@@ -135,7 +142,8 @@ export const REVIEW_LABEL = {
   machine: 'Çözümlendi', // KISA etiket; ayrıntı REVIEW_HINT'te
   approved: 'Onaylandı',
   inaudible: 'Anlaşılmadı',
-  relisten: 'Yeniden dinlenecek'
+  relisten: 'Yeniden dinlenecek',
+  ambiguous: 'Belirsiz okuma' // KISA etiket; iki okuma detayda
 };
 
 /** Uzun açıklama: ipucu (title/aria) için. Ekranda gösterilmez. */
@@ -146,7 +154,11 @@ export const REVIEW_HINT = {
     'olarak girmez; ses kaydı dinlenmesi ve onaylanması gerekir.',
   approved: 'Bilirkişi dinleyerek onayladı. Rapora "Onaylandı" olarak girer.',
   inaudible: 'Dinlendi, anlaşılmadı. Rapora bu şekilde işlenir.',
-  relisten: 'Dinlendi, yeniden dinlenmesi gerekiyor.'
+  relisten: 'Dinlendi, yeniden dinlenmesi gerekiyor.',
+  ambiguous:
+    'Ses duyuldu ancak BİRDEN FAZLA okuma mümkün (ör. "geldi" / "kaldı"). ' +
+    'Bilirkişi onayı sayılmaz. İki okumayı yazın ve hangisini seçtiğinizi belirtin; ' +
+    'rapora belirsizlik AÇIKÇA yazılır.'
 };
 
 /** Rozet rengi (tema token'ı app.css'te): makine onayı "başarı" değildir. */
@@ -155,7 +167,8 @@ export const REVIEW_TONE = {
   machine: 'info',
   approved: 'good',
   inaudible: 'warn',
-  relisten: 'warn'
+  relisten: 'warn',
+  ambiguous: 'warn' // onay yeşili DEĞİL: belirsizlik görünür olmalı
 };
 
 export const SPEAKER_ROLE_LABEL = {

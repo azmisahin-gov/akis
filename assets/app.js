@@ -22,6 +22,7 @@ import {
   REVIEW_STATE,
   REVIEW_HINT,
   REVIEW_TONE,
+  AMBIGUOUS_REVIEW,
   isHumanApprovedReview,
   SPEAKER_ROLE_LABEL,
   SPEAKER_GENDER_LABEL,
@@ -43,7 +44,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.114';
+const APP_VERSION = '2.115';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1954,7 +1955,9 @@ function fftMagnitude(re, im) {
 }
 // Kaydın tamamı için spektrogram hesaplar. cols zaman sütunu sayısıdır; her
 // sütunda bins frekans kutusu vardır. Değerler dB'dir. Hann penceresi kullanılır.
-async function computeSpectrogram(blob, cols, fftSize = 512) {
+// `opts.startSec/endSec` (v2.115): yalnız bir ARALIK hesaplanır (bölüm
+// spektrogramı için). Verilmezse tüm kayıt hesaplanır (eski davranış).
+async function computeSpectrogram(blob, cols, fftSize = 512, opts = {}) {
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
   let buf;
@@ -1964,12 +1967,16 @@ async function computeSpectrogram(blob, cols, fftSize = 512) {
     await ctx.close();
     return null;
   }
-  const ch = buf.numberOfChannels,
-    len = buf.length;
+  const ch = buf.numberOfChannels;
+  const sr0 = buf.sampleRate;
+  const from = Number.isFinite(opts.startSec) ? Math.max(0, Math.floor(opts.startSec * sr0)) : 0;
+  const toRaw = Number.isFinite(opts.endSec) ? Math.ceil(opts.endSec * sr0) : buf.length;
+  const to = Math.max(from + 1, Math.min(buf.length, toRaw));
+  const len = to - from;
   const data = new Float32Array(len);
   for (let c = 0; c < ch; c++) {
     const d = buf.getChannelData(c);
-    for (let i = 0; i < len; i++) data[i] += d[i] / ch;
+    for (let i = 0; i < len; i++) data[i] += d[from + i] / ch;
   }
   await ctx.close();
   const bins = fftSize >> 1;
@@ -1996,7 +2003,17 @@ async function computeSpectrogram(blob, cols, fftSize = 512) {
       if (db < minDb) minDb = db;
     }
   }
-  return { cols, bins, data: out, minDb, maxDb, fftSize, sampleRate: buf.sampleRate, duration: buf.duration };
+  return {
+    cols,
+    bins,
+    data: out,
+    minDb,
+    maxDb,
+    fftSize,
+    sampleRate: sr0,
+    duration: len / sr0,
+    startSec: from / sr0
+  };
 }
 // dB değerini renge çevirir (koyu lacivert -> mavi -> sarı -> beyaz).
 function specColor(t) {
@@ -3265,6 +3282,25 @@ function quickApproveTargets(m) {
   }
   return out;
 }
+// BELİRSİZ OKUMA (v2.115). Ses duyuldu ama birden fazla okuma mümkün.
+// `inaudible`'den FARKI: orada ses anlaşılmıyor; burada ses anlaşılıyor ama
+// iki farklı kelime/cümle duyulabiliyor. Adli kural: belirsizlik GİZLENMEZ.
+// Her iki okuma saklanır ve rapora yazılır; bilirkişi seçimini belirtir.
+function ambiguousReadings(s) {
+  if (!s) return [];
+  return [s.reading1, s.reading2]
+    .map((v) => String(v == null ? '' : v).trim())
+    .filter(Boolean);
+}
+// Rapor hücresi: "Belirsiz: 'a' / 'b' (seçilen: a)" gibi.
+// Seçim yoksa "seçilmedi" yazar — uydurma yok.
+function ambiguousReportText(s) {
+  const list = ambiguousReadings(s);
+  if (!list.length) return 'Belirsiz okuma (okuma girilmedi)';
+  const quoted = list.map((v) => `"${v}"`).join(' / ');
+  const chosen = String((s && s.chosen) || '').trim();
+  return `Belirsiz: ${quoted} (seçilen: ${chosen || 'seçilmedi'})`;
+}
 // "%100 OLMAZ" SORUSUNUN CEVABI (v2.114).
 // Sayaç `isReviewed()` kullanır: yalnız `approved` ve `inaudible` sayılır.
 // `relisten` (yeniden dinlenecek), `machine` (otomatik çözümlendi) ve `pending`
@@ -3272,7 +3308,7 @@ function quickApproveTargets(m) {
 // AÇIKLAMAYDI: kullanıcı hangi bölümlerin eksik olduğunu göremiyordu.
 function pendingBreakdown(segments) {
   const segs = Array.isArray(segments) ? segments : [];
-  const out = { total: 0, pending: 0, relisten: 0, machine: 0, approved: 0, inaudible: 0 };
+  const out = { total: 0, pending: 0, relisten: 0, machine: 0, ambiguous: 0, approved: 0, inaudible: 0 };
   for (const s of segs) {
     const r = segReview(s);
     if (r === 'approved') out.approved++;
@@ -3282,6 +3318,9 @@ function pendingBreakdown(segments) {
       out.total++;
     } else if (r === 'machine') {
       out.machine++;
+      out.total++;
+    } else if (r === 'ambiguous') {
+      out.ambiguous++;
       out.total++;
     } else {
       out.pending++;
@@ -3299,6 +3338,7 @@ function pendingSummaryText(segments) {
   if (b.pending) parts.push(`${b.pending} kontrol bekliyor`);
   if (b.relisten) parts.push(`${b.relisten} yeniden dinlenecek`);
   if (b.machine) parts.push(`${b.machine} çözümlendi`);
+  if (b.ambiguous) parts.push(`${b.ambiguous} belirsiz okuma`);
   return `${b.total} bölüm eksik: ${parts.join(' · ')}`;
 }
 function segMatchesFilter(s, filter, prev) {
@@ -3414,6 +3454,29 @@ function segPriorityBadge(s, prev) {
 }
 
 // ---- Liste (sol panel) ----
+// BELİRSİZ OKUMA PANELİ (v2.115). Yalnız gerektiğinde görünür:
+// kontrol "Belirsiz okuma" ise veya okuma girilmişse. İki okuma + seçim.
+function ambiguousPanelHtml(s, i) {
+  const r1 = esc(s.reading1 || '');
+  const r2 = esc(s.reading2 || '');
+  const chosen = String(s.chosen || '');
+  const opt = (v, label) => `<option value="${esc(v)}" ${chosen === v ? 'selected' : ''}>${esc(label)}</option>`;
+  return `<div class="sd-ambiguous" data-ambiguous="${i}">
+    <div class="sd-amb-head"><b>Belirsiz okuma</b>
+      <span class="sd-amb-note" title="Ses duyuldu ama birden fazla okuma mümkün. İki okumayı yazın; rapora belirsizlik AÇIKÇA yazılır ve seçiminiz belirtilir.">iki okuma · rapora yazılır</span></div>
+    <div class="sd-amb-fields">
+      <label class="sd-amb-field"><span>1. okuma</span><input data-amb="reading1" data-seg="${i}" value="${r1}" placeholder="ör. geldi"></label>
+      <label class="sd-amb-field"><span>2. okuma</span><input data-amb="reading2" data-seg="${i}" value="${r2}" placeholder="ör. kaldı"></label>
+      <label class="sd-amb-field"><span>Seçilen</span>
+        <select data-amb="chosen" data-seg="${i}">
+          ${opt('', '— seçilmedi —')}
+          ${s.reading1 ? opt(s.reading1, '1. okuma') : ''}
+          ${s.reading2 ? opt(s.reading2, '2. okuma') : ''}
+        </select>
+      </label>
+    </div>
+  </div>`;
+}
 function segItemHtml(m, s, i, prev) {
   const rev = segReview(s);
   const halluc = isHallucination(s.text);
@@ -3430,7 +3493,9 @@ function segItemHtml(m, s, i, prev) {
     approved: ['done', 'Onaylandı'],
     machine: ['auto', 'Çözümlendi'],
     inaudible: ['warn', 'Anlaşılmadı'],
-    relisten: ['again', 'Yeniden']
+    relisten: ['again', 'Yeniden'],
+    // BELİRSİZ OKUMA (v2.115): kısa etiket, onay yeşili DEĞİL.
+    ambiguous: ['amb', 'Belirsiz']
   };
   const [bCls, bTxt] = badgeFor[rev] || ['', 'Bekliyor'];
   const state = `<span class="badge ${bCls}" title="${esc(reviewHintText(s))}">${esc(bTxt)}</span>`;
@@ -3647,6 +3712,11 @@ function segDetailHtml(m) {
           </div>
         </div>
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
+        <div class="sd-spec-bar">
+          <button class="seg-tool" data-seg-spec="${esc(m.id)}" title="Bu bölümün spektrogramını göster/gizle. Patlamalı sessizler (p/t/k) ve gürültü içinde konuşma burada daha okunur.">▤ Spektrogram</button>
+          <span class="sd-spec-note" hidden>Frekans ekseni 20 Hz – 8 kHz (log) · bölüm aralığı</span>
+        </div>
+        <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="96" aria-label="Bölüm spektrogramı" hidden></canvas>
       </div>
       <div class="sd-times">
         <label class="sd-time"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
@@ -3656,6 +3726,7 @@ function segDetailHtml(m) {
       <div class="sd-meta">
         <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
         <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+        ${rev === 'ambiguous' || s.reading1 || s.reading2 ? ambiguousPanelHtml(s, i) : ''}
         <span class="sd-field sd-profile" title="${esc(
           'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
             'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
@@ -3707,6 +3778,80 @@ function refreshProposalBand(m, idx) {
 //   • Ortaya tıkla → en yakın sınıra at (hangisi yakınsa)
 //   • Tekerlek → imlecin altındaki an sabit kalacak şekilde yakınlaştır
 //   • Sınır dışı hafif karartılır; konum çizgisi canlı güncellenir
+// BÖLÜM SPEKTROGRAMI (v2.115). Dalga zaman/ritim içindir; spektrogram
+// frekans içeriğini gösterir. Patlamalı sessizler (p/t/k), sürtünmeli sesler
+// (s/ş/f) ve gürültü içinde konuşma spektrogramda daha okunur. Bu yüzden
+// İKİSİ BİRLİKTE sunulur (biri diğerinin yerine geçmez).
+async function showSegmentSpectrogram(m, index) {
+  const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
+  const s = (m.segments || [])[index];
+  if (!canvas || !s) return;
+  // Aç/kapa: zaten açıksa gizle.
+  if (!canvas.hidden) {
+    canvas.hidden = true;
+    const note = canvas.parentElement?.querySelector('.sd-spec-note');
+    if (note) note.hidden = true;
+    return;
+  }
+  const c = currentCase();
+  const blob = await getAudioBlob(c, m);
+  if (!blob) {
+    showToast('Ses dosyası bulunamadı; spektrogram çizilemedi.');
+    return;
+  }
+  const a = secondsFromTimecode(s.start);
+  const b = secondsFromTimecode(s.end);
+  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
+    showToast('Bölümün zaman aralığı geçersiz; spektrogram çizilemedi.');
+    return;
+  }
+  // Yalnız BÖLÜM ARALIĞI hesaplanır (tüm kayıt değil): hızlı ve ilgili.
+  const spec = await computeSpectrogram(blob, Math.max(400, canvas.width), 512, { startSec: a, endSec: b });
+  if (!spec) {
+    showToast('Spektrogram hesaplanamadı (ses çözülemedi).');
+    return;
+  }
+  canvas.hidden = false;
+  const note = canvas.parentElement?.querySelector('.sd-spec-note');
+  if (note) note.hidden = false;
+  drawSegmentSpectrogram(canvas, spec);
+  // Spektrogram "incelendi" bilgisi raporda görünür (yalnız gerçekten açıldıysa).
+  if (!m.spectrogramReviewed) {
+    m.spectrogramReviewed = { at: new Date().toISOString() };
+    logEvent(m, 'Spektrogram incelendi', `Bölüm ${index + 1}: ${s.start}–${s.end}`);
+    persist();
+    renderOverview();
+  }
+}
+// Bölüm spektrogramı: yalnız görüntü (sınır çizgisi yok, eksen etiketi var).
+function drawSegmentSpectrogram(canvas, spec) {
+  const ctx = canvas.getContext('2d');
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = '#0b1a2e';
+  ctx.fillRect(0, 0, w, h);
+  const { cols, bins, data, minDb, maxDb } = spec;
+  const range = maxDb - minDb || 1;
+  const nyq = spec.sampleRate / 2;
+  const fMax = Math.min(8000, nyq);
+  for (let y = 0; y < h; y++) {
+    const frac = 1 - y / h;
+    const f = 20 * Math.pow(fMax / 20, frac);
+    const bin = Math.max(0, Math.min(bins - 1, Math.round((f / nyq) * bins)));
+    for (let x = 0; x < w; x++) {
+      const col = Math.min(cols - 1, Math.floor((x / w) * cols));
+      ctx.fillStyle = specColor((data[col * bins + bin] - minDb) / range);
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
+  // Eksen etiketleri (okunur, küçük)
+  ctx.fillStyle = 'rgba(255,255,255,.55)';
+  ctx.font = '9px Segoe UI';
+  ctx.fillText('8k', 3, 10);
+  ctx.fillText('1k', 3, h * 0.62);
+  ctx.fillText('20', 3, h - 3);
+}
 function attachSegWave(m, index) {
   const canvas = $(`#sdwave-${CSS.escape(m.id)}`);
   if (!canvas) return;
@@ -5125,6 +5270,13 @@ function syncSegDetailInPlace(m, idx) {
       spkSel.value = want;
     }
   }
+  // Bölüm değişince eski bölümün spektrogramı KALMAZ (yanlış izlenim olur).
+  const specCanvas = detail.querySelector('.sd-spec-canvas');
+  if (specCanvas && !specCanvas.hidden) {
+    specCanvas.hidden = true;
+    const note = detail.querySelector('.sd-spec-note');
+    if (note) note.hidden = true;
+  }
   setVal('.sd-text textarea', s.text || '');
   const sel = meta[1]?.querySelector('select');
   if (sel) {
@@ -6112,9 +6264,13 @@ function isHumanApproved(s) {
 function reviewLabel(s) {
   return REVIEW_STATES[segReview(s)].label;
 }
-// Rapor hücresi: ekranda ve raporda AYNI kısa etiket. "Onaylandı" yalnız
-// bilirkişi onayında yazılır; `machine` → "Çözümlendi".
+// Rapor hücresi. "Onaylandı" yalnız bilirkişi onayında yazılır;
+// `machine` → "Çözümlendi". `ambiguous` → "Belirsiz okuma" + İKİ OKUMA
+// (v2.115): adli kural gereği belirsizlik rapora GİZLENMEDEN yazılır.
 function reviewCellText(s) {
+  if (segReview(s) === AMBIGUOUS_REVIEW) {
+    return `${reviewLabel(s)} — ${ambiguousReportText(s)}`;
+  }
   return reviewLabel(s);
 }
 // İpucu (tooltip): uzun açıklama ekrana değil ipucuna yazılır (kullanıcı isteği).
@@ -7378,7 +7534,7 @@ function renderReport() {
       if (m.languageWarning)
         html += `<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;
       if (m.segments?.length) {
-        html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${reviewLabel(s)}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
+        html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${esc(reviewCellText(s))}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
       } else html += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
     }
   } else html += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -7591,7 +7747,7 @@ function docxXml(c) {
             tcRange(s.start, s.end),
             segSpeakerCell(m, s),
             s.text || '',
-            reviewLabel(s),
+            reviewCellText(s),
             segObsText(s)
           ])
         ],
@@ -9350,6 +9506,13 @@ function setupEvents() {
           showToast(changed ? `${changed} yazım "${form}" biçimine çevrildi.` : 'Değiştirilecek yazım bulunamadı.');
         }
       }
+    } else if (b.dataset.segSpec !== undefined) {
+      // BÖLÜM SPEKTROGRAMI (v2.115): aç/kapa. Dalga + spektrogram birlikte.
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      const idx = Number.isInteger(m?.activeSeg) ? m.activeSeg : 0;
+      if (m) showSegmentSpectrogram(m, idx);
     } else if (b.dataset.silence !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -9515,6 +9678,18 @@ function setupEvents() {
   // Zaman alanı doğrulaması (v2.97). Geçerliyse kanonik biçim yazılır;
   // geçersizse kayda DOKUNULMAZ, alan eski değerine döner ve neden
   // reddedildiği söylenir. Sessiz sıfırlama yok.
+  $('#view-audio').addEventListener('change', (e) => {
+    const el = e.target;
+    if (!el.dataset || !el.dataset.amb) return;
+    const card = el.closest('.audio-card');
+    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+    const m = currentCase().materials.find((x) => x.id === id);
+    const s2 = m?.segments[Number(el.dataset.seg)];
+    if (!s2) return;
+    s2[el.dataset.amb] = el.value;
+    persist();
+    if ($('#view-report').classList.contains('active')) renderReport();
+  });
   $('#view-audio').addEventListener('focusout', (e) => {
     const el = e.target;
     if (!el.dataset || (el.dataset.key !== 'start' && el.dataset.key !== 'end')) return;
@@ -9579,6 +9754,30 @@ function setupEvents() {
   $('#view-audio').addEventListener('input', (e) => {
     const el = e.target;
     if (el.dataset.seg === undefined) return;
+    // BELİRSİZ OKUMA alanları (v2.115): iki okuma + seçim.
+    if (el.dataset.amb) {
+      const card = el.closest('.audio-card');
+      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = currentCase().materials.find((x) => x.id === id);
+      const s2 = m?.segments[Number(el.dataset.seg)];
+      if (!s2) return;
+      s2[el.dataset.amb] = el.value;
+      // Seçim listesi okumalar değişince tazelenmeli; panel yeniden çizilmez
+      // (odak kaybolmasın) ama seçenekler yerinde güncellenir.
+      if (el.dataset.amb !== 'chosen') {
+        const sel = el.closest('.sd-ambiguous')?.querySelector('[data-amb="chosen"]');
+        if (sel) {
+          const cur = sel.value;
+          const opt = (v, label) => `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(label)}</option>`;
+          sel.innerHTML =
+            opt('', '— seçilmedi —') +
+            (s2.reading1 ? opt(s2.reading1, '1. okuma') : '') +
+            (s2.reading2 ? opt(s2.reading2, '2. okuma') : '');
+        }
+      }
+      persist();
+      return;
+    }
     const card = el.closest('.audio-card');
     const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
     const m = currentCase().materials.find((x) => x.id === id);
@@ -10798,6 +10997,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.115': {
+    title: 'Belirsiz okuma etiketi ve bölüm spektrogramı',
+    body:
+      'Ses duyulduğu hâlde iki farklı okuma mümkünse (ör. "geldi" / "kaldı") artık ' +
+      'bunun için ayrı bir etiket var: "Belirsiz okuma". "Anlaşılmadı"dan farkı: orada ' +
+      'ses anlaşılmıyor, burada ses anlaşılıyor ama iki kelime duyulabiliyor. Bölüm ' +
+      'panelinde iki okuma alanı ve "seçilen" listesi çıkar. Rapor, belirsizliği ' +
+      'GİZLEMEZ: her iki okumayı ve sizin seçiminizi yazar (adli dürüstlük). Ayrıca ' +
+      'bölüm panelinde artık "Spektrogram" düğmesi var: dalganın altında frekans ' +
+      'görünümü açılır (patlamalı sessizler p/t/k ve gürültü içinde konuşma burada ' +
+      'daha okunur). Dalga ile spektrogram birlikte kullanılır; biri diğerinin yerine ' +
+      'geçmez.'
+  },
   '2.114': {
     title: '“Neden %100 olmuyor?” sorusu artık cevaplı',
     body:

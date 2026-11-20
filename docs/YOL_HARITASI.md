@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.114.**
+yazılır. **Güncel sürüm: v2.115.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.115 — Belirsiz okuma + bölüm spektrogramı (tamamlandı, canlı veri)
+
+"Anlaşılmadı" (ses anlaşılmıyor) ile "Belirsiz okuma" (ses duyuldu, iki okuma
+mümkün) ayrıldı; `ambiguous` onay sayılmaz. İki okuma + seçim saklanır ve
+rapora GİZLENMEDEN yazılır. Bölüm panelinde spektrogram (dalga + frekans).
+Bulunan yan hata: rapor `reviewLabel()` çağırıyordu, `reviewCellText()` hiç
+kullanılmıyordu → düzeltildi. `birim-testleri` [43].
 
 ### v2.114 — "%100 olmuyor" açıklaması (tamamlandı, canlı veri)
 

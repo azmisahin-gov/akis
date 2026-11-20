@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.114.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.115.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.115 — Belirsiz okuma etiketi + bölüm spektrogramı
+
+CANLI VERİ. Bilirkişi: *"uzman aynı kelimeyi farklı olarak yorumluyor: onaylamalı
+mı, anlaşılmadı olarak mı etiketlemeli, yoksa farklı bir etiket mi? Mahkemeye
+sunarken burayı nasıl ele almalıyız?"* ve *"o segmente sadece wav gösteriyoruz
+ama acaba spektrogram koymak daha mı iyi olur?"*
+
+### ADLİ AYRIM (yeni)
+
+| Durum | Etiket | Anlamı |
+|---|---|---|
+| Ses anlaşılmıyor | **Anlaşılmadı** | teknik yetersizlik |
+| Ses duyuldu, iki okuma mümkün | **Belirsiz okuma** | "geldi" / "kaldı" |
+| Bilirkişi karar verdi | **Onaylandı** | seçilen okuma |
+
+"Belirsiz okuma" **onay değildir** (`isReviewed` false) → sayaçta eksik görünür.
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm panelinde **iki okuma alanı** + **seçilen** listesi
+- Rozette kısa etiket **"Belirsiz"** (onay yeşili değil)
+- **Rapor belirsizliği GİZLEMEZ**:
+  `Belirsiz okuma — Belirsiz: "geldi" / "kaldı" (seçilen: geldi)`
+- Seçim yapılmadıysa raporda **"seçilmedi"** yazar (uydurma yok)
+- **Bölüm spektrogramı**: dalganın altında frekans görünümü (aç/kapa)
+
+### DEĞİŞMEZ KURALLAR
+
+1. `ambiguous` **onay değildir**: `isReviewed()` false, `isHumanApproved()` false.
+2. `ambiguousReportText(s)` — TEK KAYNAK: iki okuma + seçim. Seçim yoksa
+   "seçilmedi". **Belirsizlik gizlenmez.**
+3. Rapor hücreleri `reviewCellText()` kullanır — **`reviewLabel()` DEĞİL**.
+   (v2.115'te bulundu: rapor `reviewLabel` çağırıyordu, `reviewCellText` hiç
+   kullanılmıyordu → iki okuma rapora girmiyordu.)
+4. Spektrogram: dalga **zaman/ritim**, spektrogram **frekans** içindir; biri
+   diğerinin yerine geçmez. Bölüm aralığı hesaplanır (tüm kayıt değil).
+5. Bölüm değişince eski bölümün spektrogramı **gizlenir** (yanlış izlenim olmaz).
+
+### DOĞRULAMA (gerçek Chromium + gerçek WAV)
+
+```
+Panel   : reading1=geldi · reading2=kaldı · chosen=geldi · kontrol=ambiguous
+Rozet   : "Belirsiz"                       (eski: "Bekliyor")
+Rapor   : Belirsiz okuma — Belirsiz: "geldi" / "kaldı" (seçilen: geldi)
+Spektro : hidden=false · drawn=true (piksel dolu)
+```
+
+`birim-testleri` **[43]** — 19 kontrol.
 
 ## v2.114 — "%100 olmuyor" sorusunun cevabı görünür oldu
 

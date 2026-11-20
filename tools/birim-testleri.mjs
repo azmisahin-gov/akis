@@ -100,6 +100,7 @@ const EXPOSE = [
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
+  'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2250,6 +2251,44 @@ console.log('\n== [42] %100 olmama sebebi görünür');
   const one = T.pendingSummaryText([mk('y', 'relisten')]);
   eq('tekil: "1 bölüm"', /1 bölüm/.test(one), true);
   eq('tekil: "bölümler" DEĞİL', /1 bölümler/.test(one), false);
+}
+
+// --- 43. Belirsiz okuma: ses duyuldu ama iki okuma mümkün (v2.115) --------
+// CANLI VERİ. Bilirkişi: "uzman aynı kelimeyi farklı olarak yorumluyor: onaylamalı
+// mı, anlaşılmadı olarak mı etiketlemeli, yoksa farklı bir etiket mi? Mahkemeye
+// sunarken burayı nasıl ele almalıyız?"
+// ADLİ AYRIM: "Anlaşılmadı" = ses duyulmadı/anlaşılmadı (teknik yetersizlik).
+// "Belirsiz okuma" = ses DUYULDU ama birden fazla okuma mümkün. İkisi AYRI
+// şeylerdir; raporda ayrı görünmeli. Belirsizlik GİZLENMEZ: her iki okuma yazılır.
+console.log('\n== [43] Belirsiz okuma (iki okuma mümkün)');
+{
+  eq('AMBIGUOUS_REVIEW tanımlı', T.AMBIGUOUS_REVIEW, 'ambiguous');
+  eq('REVIEW_STATE ambiguous içeriyor', __schemaMod.REVIEW_STATE.includes('ambiguous'), true);
+  eq('etiketi kısa', __schemaMod.REVIEW_LABEL.ambiguous, 'Belirsiz okuma');
+  eq('ipucu iki okumadan söz eder', /BİRDEN FAZLA|iki okuma/i.test(__schemaMod.REVIEW_HINT.ambiguous), true);
+  eq('rengi onaydan farklı', __schemaMod.REVIEW_TONE.ambiguous !== 'good', true);
+  eq('normalize ambiguous korur', __schemaMod.normalizeReviewState('ambiguous'), 'ambiguous');
+  eq('isReviewed(ambiguous) FALSE (kontrol edilmedi)', T.isReviewed({ review: 'ambiguous' }), false);
+  eq('isHumanApproved(ambiguous) FALSE', T.isHumanApproved({ review: 'ambiguous' }), false);
+  eq('pendingBreakdown ambiguous sayar', T.pendingBreakdown([{ review: 'ambiguous' }]).ambiguous, 1);
+  eq('ambiguous toplamda eksik sayılır', T.pendingBreakdown([{ review: 'ambiguous' }]).total, 1);
+
+  // İKİ OKUMA: saklanır, boş olan yazılmaz.
+  const s1 = { review: 'ambiguous', reading1: 'geldi', reading2: 'kaldı', chosen: 'geldi' };
+  eq('iki okuma okunur', T.ambiguousReadings(s1), ['geldi', 'kaldı']);
+  eq('tek okuma varsa tek eleman', T.ambiguousReadings({ reading1: 'geldi' }), ['geldi']);
+  eq('boş okuma atlanır', T.ambiguousReadings({ reading1: '  ', reading2: 'kaldı' }), ['kaldı']);
+  eq('okuma yoksa boş dizi', T.ambiguousReadings({}), []);
+
+  // RAPOR METNİ: iki okuma AÇIKÇA yazılır, seçim belirtilir.
+  const t = T.ambiguousReportText(s1);
+  eq('rapor iki okumayı yazar', /geldi/.test(t) && /kaldı/.test(t), true);
+  eq('rapor seçimi belirtir', /seçilen|tercih/i.test(t), true);
+  eq('rapor belirsizliği gizlemez', /belirsiz/i.test(t), true);
+  // Seçim yoksa "seçilmedi" der (uydurma yok).
+  eq('seçim yoksa açıkça söyler', /seçilmedi/i.test(T.ambiguousReportText({ reading1: 'a', reading2: 'b' })), true);
+  // Tek okuma varsa da yazar.
+  eq('tek okumada da metin var', T.ambiguousReportText({ reading1: 'geldi' }).length > 0, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -1200,3 +1200,47 @@ body.ws-mode #view-audio .seg-list {
 }
 .sb-pending:hover, .sb-pending:focus-visible { color: var(--ink); }
 .sb-pending[hidden] { display: none; }
+
+/* --- O. v2.115 — Belirsiz okuma paneli ---------------------------------- */
+.sd-ambiguous {
+  border: 1px solid var(--line-2);
+  border-left: 3px solid var(--warn, #b88645);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  padding: var(--sp-2) var(--sp-3);
+  margin: var(--sp-2) 0;
+  grid-column: 1 / -1;
+}
+.sd-amb-head { display: flex; align-items: baseline; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+.sd-amb-head b { font-size: var(--fs-xs); color: var(--ink); }
+.sd-amb-note { font-size: var(--fs-2xs); color: var(--ink-3); }
+.sd-amb-fields { display: grid; grid-template-columns: 1fr 1fr auto; gap: var(--sp-2); }
+.sd-amb-field { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sd-amb-field > span { font-size: var(--fs-2xs); color: var(--ink-3); }
+.sd-amb-field input, .sd-amb-field select {
+  font-size: var(--fs-xs); padding: 4px 6px;
+  border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  background: var(--surface); color: var(--ink); min-width: 0;
+}
+@media (max-width: 700px) { .sd-amb-fields { grid-template-columns: 1fr; } }
+
+/* --- P. v2.115 — Bölüm spektrogramı ------------------------------------- */
+.sd-spec-bar {
+  display: flex; align-items: center; gap: var(--sp-2);
+  margin: var(--sp-1) 0 var(--sp-2);
+}
+.sd-spec-note { font-size: var(--fs-2xs); color: var(--ink-3); }
+.sd-spec-canvas {
+  width: 100%; height: 96px; display: block;
+  border-radius: var(--r-sm); border: 1px solid var(--line-2);
+  margin-bottom: var(--sp-2);
+}
+.sd-spec-canvas[hidden] { display: none; }
+
+/* Belirsiz okuma rozeti: onay yeşili DEĞİL, dikkat çeker ama "hata" da değil. */
+#view-audio .badge.amb {
+  background: var(--surface-2);
+  border: 1px solid var(--warn-line, #e6cf9e);
+  color: var(--warn-ink, #8a6320);
+  font-weight: 600;
+}
