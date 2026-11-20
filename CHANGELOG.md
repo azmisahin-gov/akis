@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.117.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.118.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.118 — Sürüm güncellemesi artık kendiliğinden geliyor
+
+CANLI VERİ. Bilirkişi: *"bu tarz önbellek sorunlarından kurtulmak için…
+bir push attıktan sonra… düşün ki bir sürü kullanıcı var, hepsine tuşa bas
+diyemeyiz. Ne yapabiliriz?"*
+
+### ÖLÇÜM (v2.117)
+
+```
+GitHub Pages  index.html : cache-control: max-age=600
+              assets/*   : cache-control: max-age=600
+```
+
+GitHub Pages **her dosyaya** 10 dakika önbellek veriyor. Push sonrası kullanıcı
+10 dakika **eski `index.html`** görür; o dosyadaki `?v=` de eski kalır → yeni
+sürüm hiç gelmez. "Ctrl+Shift+R bas" ölçeklenmez.
+
+### ÇÖZÜM: kendini güncelleyen sayfa
+
+1. `version.json` — tek satır: `{"version":"2.118"}`. `no-store` ile istenir,
+   yani **her zaman günceldir** (önbelleğe takılmaz).
+2. `index.html` içinde küçük bir denetleyici: **dakikada bir** (ve sekmeye geri
+   dönüldüğünde) `version.json` okur.
+3. Sürüm farklıysa:
+   - **Boştaysa** (yazmıyor, çözümlemiyor, oynatmıyor) → **kendini yeniler**
+     (`?t=<zaman>` ile, önbelleği kırarak). Kullanıcı hiçbir şey yapmaz.
+   - **Çalışıyorsa** → çalışmayı **bölmez**; ekran altında
+     **"Yeni sürüm hazır — Şimdi yenile"** bildirimi çıkar.
+
+### GÜVENLİK KURALI (iş kaybı yok)
+
+`window.__akisIdle()` **yalnız** şu durumlarda `true`:
+- bekleyen kayıt yok (`persistPending` false),
+- toplu çözümleme yok (`queueRunning` false),
+- çözümleme süren kayıt yok (`transcribing` yok),
+- ses çalmıyor,
+- odakta metin alanı yok (yazmıyor),
+- açık diyalog yok.
+
+Aksi hâlde **yenileme yapılmaz**. Bilinmeyen durumda temkinli davranır (`false`).
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+version.json          : {"ok":true,"version":"2.117"}     ✅ no-store
+__akisIdle() boşta    : true                              ✅
+yazarken              : false (activeTag INPUT)            ✅ yenileme yok
+banner                : display=flex, "Şimdi yenile" var   ✅
+```
+
+`surum-testi` **2c** — 7 kontrol: `version.json` var/geçerli/`APP_VERSION` ile
+aynı; `index.html` denetleyici taşır; `RUNNING` sürümü doğru; yenileme `?t=`
+ile önbelleği kırar; `app.js` `__akisIdle` kancası tanımlar.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `version.json` **`APP_VERSION` ile aynı** olmalı (test zorunlu kılar).
+2. `index.html` içindeki `RUNNING` sabiti de aynı olmalı.
+3. Yenileme **yalnız** `__akisIdle() === true` iken yapılır.
+4. Yenileme URL'i **`?t=<zaman>`** taşır (HTML önbelleğini kırar).
+5. `version.json` isteği **`cache: 'no-store'`** olmalı.
 
 ## v2.117 — ACİL: canlı site açılmıyordu (önbellek uyuşmazlığı)
 

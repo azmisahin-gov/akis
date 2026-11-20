@@ -37,14 +37,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.117';
+} from './schema.js?v=2.118';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.117';
+const APP_VERSION = '2.118';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -302,6 +302,29 @@ function currentCase() {
 // kota çok geniş ve dolduğunda da sessiz kayıp olmuyor.
 let storageFullWarned = false;
 let persistTimer = null;
+// BOŞTA MI? — kendini güncelleme için GÜVENLİK KANCASI (v2.118).
+// index.html yeni sürüm gördüğünde sayfayı yenilemek ister. Ama kullanıcı
+// YAZARKEN veya ÇÖZÜMLERKEN yenilemek iş kaybettirir. Bu fonksiyon "şu an
+// yenilemek güvenli mi" sorusunu yanıtlar; yalnız true ise yenilenir.
+// Kural: bekleyen yazma yok + çözümleme yok + oynatma yok + metin odağı yok.
+window.__akisIdle = function () {
+  try {
+    if (persistPending) return false; // kaydedilmemiş değişiklik var
+    if (typeof queueRunning !== 'undefined' && queueRunning) return false; // toplu çözümleme
+    const mats = (currentCase()?.materials) || [];
+    if (mats.some((m) => materialStatus(m) === 'transcribing')) return false; // çözümleme sürüyor
+    if (typeof segPlayback !== 'undefined' && segPlayback && segPlayback.playing) return false; // ses çalıyor
+    if (document.querySelector('audio:not([paused])')) return false;
+    const el = document.activeElement;
+    const tag = (el && el.tagName ? el.tagName : '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea' || tag === 'select' || (el && el.isContentEditable)) return false; // yazıyor
+    // Açık diyalog varsa (onay/ birleştirme) yenileme YAPMA.
+    if (document.querySelector('dialog[open]')) return false;
+    return true;
+  } catch (e) {
+    return false; // bilinmiyorsa temkinli davran
+  }
+};
 let persistPending = false;
 let persistChain = Promise.resolve();
 // Dava verisini değiştiren HER yazma `updatedAt`'i tazeler (v2.95).
@@ -11033,6 +11056,17 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.118': {
+    title: 'Yeni sürüm kendiliğinden geliyor — tuşa basmanız gerekmiyor',
+    body:
+      'Önceden yeni sürüm çıktığında tarayıcı eski sayfayı önbellekten göstermeye ' +
+      'devam ediyordu; siz Ctrl+Shift+R basmadan güncelleme gelmiyordu. Artık uygulama ' +
+      'kendi sürümünü dakikada bir denetler: yeni sürüm varsa ve o anda bir işlem ' +
+      'yapmıyorsanız (yazmıyorsanız, çözümleme/oynatma yoksa) KENDİSİNİ yeniler. ' +
+      'Çalışırken yakalarsa çalışmanızı bölmez; ekranın altında "Yeni sürüm hazır" ' +
+      'bildirimi çıkar ve işiniz bitince "Şimdi yenile"ye basarsınız. Yani artık ' +
+      'sürüm güncellemesi için bir şey yapmanız gerekmiyor.'
+  },
   '2.117': {
     title: 'Acil düzeltme: uygulama açılmıyordu',
     body:

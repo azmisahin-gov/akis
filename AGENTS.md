@@ -895,6 +895,34 @@ kullanın ve `surum-testi`'ye kontrol ekleyin.
 tek dosyaya verilirse diğerleri eski kalır. "Yerelde çalışıyor" bu sınıf hatayı
 YAKALAMAZ — yalnız temiz önbellekli canlı ortam gösterir.
 
+
+### Aşama 10p — Kendini güncelleyen sayfa (TAMAMLANDI, v2.118)
+
+**SORUN:** GitHub Pages **her dosyaya** `cache-control: max-age=600` verir —
+`index.html` dâhil. Push sonrası kullanıcı 10 dk eski sayfayı görür; oradaki
+`?v=` de eski kalır. "Ctrl+Shift+R bas" çok kullanıcıda ölçeklenmez.
+
+**ÇÖZÜM:**
+1. `version.json` (`{"version":"X.Y"}`) — `cache:'no-store'` ile istenir.
+2. `index.html` denetleyici: **60 sn** + `visibilitychange` (sekmeye dönüş).
+3. Fark varsa: `__akisIdle() === true` ise `location.replace(?t=<zaman>)`;
+   değilse **"Yeni sürüm hazır"** banner + "Şimdi yenile".
+
+**GÜVENLİK (`window.__akisIdle`, app.js):** `false` döner eğer
+`persistPending` · `queueRunning` · `transcribing` · ses çalıyor · odakta
+metin alanı · açık `<dialog>`. Bilinmeyen durumda `false` (temkinli).
+
+**Sürümü artırırken 4 yer birlikte:**
+`APP_VERSION` · `import './schema.js?v='` · `index.html` `RUNNING` + `?v=` ·
+`version.json`. `surum-testi` 2b/2c bunu zorunlu kılar.
+
+**Ölçüm (v2.118):** `version.json` okundu; `__akisIdle()` boşta `true`,
+yazarken `false`; banner `display:flex`.
+
+**DERS:** Önbelleği "kullanıcıya kırdırma" çözüm değildir. Sürüm bilgisini
+önbelleksiz bir uçtan oku ve sayfayı kendine yenilet — ama **iş kaybettirmeden**
+(boşta değilse yenileme yok).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1068,7 +1096,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.117.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.118.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1226,7 +1254,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.117` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.118` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

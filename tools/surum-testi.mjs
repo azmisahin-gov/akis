@@ -72,6 +72,42 @@ if (importMatch) {
   }
 }
 
+// 2c) KENDİ KENDİNE GÜNCELLEME (v2.118): version.json + bootstrap.
+// NEDEN: GitHub Pages HER dosyaya `cache-control: max-age=600` verir —
+// `index.html` dâhil. Push sonrası kullanıcı 10 dk ESKİ index.html görür;
+// o dosyadaki `?v=` de eski kalır. Kullanıcıya "Ctrl+Shift+R bas" dedirtmek
+// ölçeklenmez (çok kullanıcı var). Çözüm: sayfa kendi sürümünü periyodik
+// olarak `version.json` ile karşılaştırır ve gerekirse KENDİSİ yenilenir.
+const versionJsonPath = path.join(ROOT, 'version.json');
+check('version.json var', fs.existsSync(versionJsonPath));
+if (fs.existsSync(versionJsonPath)) {
+  let vj = null;
+  try {
+    vj = JSON.parse(fs.readFileSync(versionJsonPath, 'utf8'));
+  } catch (e) {}
+  check('version.json geçerli JSON', !!vj, vj ? '' : 'okunamadı');
+  check('version.json sürümü APP_VERSION ile aynı', vj && String(vj.version) === version, vj ? `version.json=${vj.version} · APP_VERSION=${version}` : '');
+}
+// index.html bootstrap: RUNNING sabiti + version.json okuma + yenileme
+check(
+  'index.html güncelleme denetimi taşıyor (version.json)',
+  /version\.json/.test(indexHtml)
+);
+check(
+  'index.html bootstrap sürümü APP_VERSION ile aynı',
+  new RegExp(`var RUNNING = '${version.replace(/\./g, '\\.')}'`).test(indexHtml),
+  ''
+);
+check(
+  'index.html yenileme önbelleği kırıyor (location.replace + ?t=)',
+  /location\.replace/.test(indexHtml) && /set\(\s*'t'/.test(indexHtml)
+);
+// app.js: güvenli yenileme kancası (yazarken/çözümlerken yenileme YOK)
+check(
+  'app.js güvenli yenileme kancası tanımlıyor (__akisIdle)',
+  /__akisIdle\s*=/.test(appSrc)
+);
+
 // 3) Önbellek parametreleri güncel sürümü göstermeli.
 const cacheParams = [...indexHtml.matchAll(/assets\/(app\.js|app\.css|tokens\.css|reading-layer\.css)\?v=([0-9.]+)/g)];
 check('index.html içinde dört ?v= parametresi var', cacheParams.length === 4, `${cacheParams.length} bulundu`);

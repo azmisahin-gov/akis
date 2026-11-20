@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.117.**
+yazılır. **Güncel sürüm: v2.118.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.118 — Kendini güncelleyen sayfa (tamamlandı, canlı veri)
+
+GitHub Pages her dosyaya `max-age=600` verir; push sonrası kullanıcı eski
+`index.html` görür. `version.json` (`no-store`) + dakikalık denetim eklendi:
+yeni sürüm varsa ve kullanıcı boştaysa sayfa **kendini yeniler**; çalışıyorsa
+"Yeni sürüm hazır" bildirimi çıkar. `__akisIdle()` iş kaybını önler.
+`surum-testi` 2c korur.
 
 ### v2.117 — ACİL: canlı site açılmıyordu (tamamlandı)
 
