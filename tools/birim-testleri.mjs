@@ -99,7 +99,7 @@ const EXPOSE = [
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'loopStopTarget', 'LOOP_KEYS',
-  'nextScrollTop',
+  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2204,6 +2204,52 @@ console.log('\n== [41] Bölüm listesi kaydırma (son öğe görünmeli)');
     st = T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 580 - st, itemBottom: 640 - st, scrollTop: st, maxScroll: 3227 });
   }
   eq('kaydırma idempotent (birikmez)', st, 40);
+}
+
+// --- 42. "%100 olmuyor" — eksik bölümler görünür olmalı (v2.114) ----------
+// CANLI VERİ. Bilirkişi: "tüm onaylarımızı yaptıktan sonra yine de bazıları
+// %100 olmuyor. Acaba gözden kaçırdığımız bir şey mi var?"
+// ÖLÇÜM (v2.113, 97 approved + 2 relisten + 1 machine): sayaç 97/100 = %97.
+// Eksik 3 bölüm KASTEN sayılmıyor (relisten ve machine "kontrol edildi"
+// değildir) — kural doğru. HATA: kullanıcı HANGİ 3 bölümün eksik olduğunu
+// göremiyordu. Sayı doğru, açıklama yoktu.
+console.log('\n== [42] %100 olmama sebebi görünür');
+{
+  eq('pendingBreakdown tanımlı', typeof T.pendingBreakdown, 'function');
+  eq('pendingSummaryText tanımlı', typeof T.pendingSummaryText, 'function');
+
+  const mk = (id, review) => ({ id, review, text: 'metin', start: '00:00:01.000', end: '00:00:03.000' });
+  const segs = [
+    mk('a', 'approved'), mk('b', 'approved'),
+    mk('c', 'relisten'), mk('d', 'relisten'),
+    mk('e', 'machine'),
+    mk('f', 'pending')
+  ];
+  const b = T.pendingBreakdown(segs);
+  // 4 bölüm "kontrol edilmedi": 2 relisten + 1 machine + 1 pending
+  eq('eksik toplam', b.total, 4);
+  eq('relisten sayısı', b.relisten, 2);
+  eq('machine sayısı', b.machine, 1);
+  eq('pending sayısı', b.pending, 1);
+  eq('onaylı sayısı', b.approved, 2);
+  // Hepsi onaylıysa eksik yok.
+  eq('hepsi onaylı → eksik 0', T.pendingBreakdown([mk('x', 'approved')]).total, 0);
+  // Boş liste güvenli.
+  eq('boş liste → eksik 0', T.pendingBreakdown([]).total, 0);
+  eq('null güvenli', T.pendingBreakdown(null).total, 0);
+
+  // ÖZET METNİ: kullanıcı neyin eksik olduğunu TEK satırda görmeli.
+  const txt = T.pendingSummaryText(segs);
+  eq('özet toplamı söyler', /4/.test(txt), true);
+  eq('özet "yeniden dinlenecek" der', /yeniden dinlenecek/i.test(txt), true);
+  eq('özet "çözümlendi" der', /çözümlendi/i.test(txt), true);
+  eq('özet "kontrol bekliyor" der', /kontrol bekliyor/i.test(txt), true);
+  // Eksik yoksa metin boş (gürültü yapmaz).
+  eq('eksik yoksa özet boş', T.pendingSummaryText([mk('x', 'approved')]), '');
+  // Sayı 1 ise tekil dil ("1 bölüm"), çoğul değil.
+  const one = T.pendingSummaryText([mk('y', 'relisten')]);
+  eq('tekil: "1 bölüm"', /1 bölüm/.test(one), true);
+  eq('tekil: "bölümler" DEĞİL', /1 bölümler/.test(one), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

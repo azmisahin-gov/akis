@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.113.**
+yazılır. **Güncel sürüm: v2.114.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.114 — "%100 olmuyor" açıklaması (tamamlandı, canlı veri)
+
+Sayaç 97/100 gösteriyordu; eksik 3 bölüm (2 relisten + 1 machine) kasten
+sayılmıyordu ama HANGİ bölümler olduğu görünmüyordu. `pendingBreakdown()` +
+`pendingSummaryText()` eklendi; durum çubuğu ve kayıt kartı ipucu aynı metni
+kullanır, tıklayınca yalnız eksikler listelenir. `birim-testleri` [42].
 
 ### v2.113 — Bölüm listesi kaydırması (tamamlandı, canlı veri)
 

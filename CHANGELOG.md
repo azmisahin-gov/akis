@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.113.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.114.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.114 — "%100 olmuyor" sorusunun cevabı görünür oldu
+
+CANLI VERİ. Bilirkişi: *"çalışma alanımızdaki bir davadaki bir sese girip tüm
+onaylarımızı yaptıktan sonra yine de bazıları %100 olmuyor. Acaba gözden
+kaçırdığımız bir şey mi var?"*
+
+### ÖLÇÜM (v2.113)
+
+```
+97 approved + 2 relisten + 1 machine  →  sayaç 97/100 = %97
+```
+
+**Sayı DOĞRU.** Kural: yalnız `approved` (Onaylandı) ve `inaudible`
+(Anlaşılmadı) "kontrol edildi" sayılır. `relisten` (Yeniden dinlenecek) ve
+`machine` (Çözümlendi) **kasten** sayılmaz — ikisi de yeniden bakılması
+gereken bölümlerdir.
+
+**HATA: kullanıcı hangi bölümlerin eksik olduğunu GÖREMİYORDU.** Sayı doğru,
+açıklama yoktu. Sessiz sayı = sessiz hata.
+
+### KULLANICI NE GÖRECEK
+
+- Durum çubuğunda: **"· 3 bölüm eksik: 2 yeniden dinlenecek · 1 çözümlendi"**
+- Kayıt kartındaki `2/5` sayısının **üzerine gelince** aynı açıklama (ipucu)
+- Açıklamaya **tıklayınca** yalnız eksik bölümler listelenir (filtre `pending`)
+- Eksik yoksa açıklama **görünmez** (gürültü yapmaz)
+
+### DEĞİŞMEZ KURALLAR
+
+1. `isReviewed()` = `approved` veya `inaudible`. `machine` **değildir** (v2.106).
+2. `pendingBreakdown(segs)` — TEK KAYNAK: toplam/pending/relisten/machine/
+   approved/inaudible sayıları. Sayaç, filtre ve toplu onay aynı tabloyu kullanır.
+3. `pendingSummaryText(segs)` — TEK KAYNAK metin; eksik yoksa `''`.
+4. Türkçe tekil/çoğul: "1 bölüm" (bölümler değil).
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+Durum çubuğu : "%40" + "· 3 bölüm eksik: 2 yeniden dinlenecek · 1 çözümlendi"
+Kayıt kartı  : "2/5" + aynı açıklama (title)
+Tıklayınca   : 3 bölüm listelendi (5 değil) + toast
+```
+
+`birim-testleri` **[42]** — 17 kontrol.
 
 ## v2.113 — Bölüm listesinde son bölüm görünmüyordu
 

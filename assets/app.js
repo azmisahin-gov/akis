@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.113';
+const APP_VERSION = '2.114';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1370,6 +1370,19 @@ function renderStatusBar() {
   set('#sbAudio', String(mats.length));
   set('#sbSegments', String(segs.length));
   set('#sbChecked', `%${pct}`);
+  // EKSİK DÖKÜMÜ (v2.114): "%100 olmuyor" sorusunun cevabı.
+  // Sayı doğru; kullanıcı HANGİ bölümlerin eksik olduğunu görmeli.
+  const pend = $('#sbPending');
+  if (pend) {
+    const b = pendingBreakdown(segs);
+    const txt = pendingSummaryText(segs);
+    pend.hidden = !txt;
+    pend.textContent = txt ? `· ${txt}` : '';
+    pend.title = txt
+      ? 'Bu bölümler "kontrol edildi" sayılmaz. Tıklayın: yalnız eksikleri listeleyin.'
+      : '';
+    pend.dataset.pendingCount = String(b.total);
+  }
   const modelEl = $('#sbModel');
   if (modelEl) {
     if (loadedModelId) {
@@ -1459,7 +1472,7 @@ function audioStatusZoneHtml(m) {
   const status = materialStatusLabel(m);
   const stCode = materialStatus(m);
   const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check" title="${esc(pendingSummaryText(segs) || 'Tüm bölümler kontrol edildi.')}">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -3251,6 +3264,42 @@ function quickApproveTargets(m) {
     if (segQuickCheck(s, segs[i - 1]).ok) out.push(i);
   }
   return out;
+}
+// "%100 OLMAZ" SORUSUNUN CEVABI (v2.114).
+// Sayaç `isReviewed()` kullanır: yalnız `approved` ve `inaudible` sayılır.
+// `relisten` (yeniden dinlenecek), `machine` (otomatik çözümlendi) ve `pending`
+// KASTEN sayılmaz — bunlar kontrol edilmiş değildir. Kural doğru; eksik olan
+// AÇIKLAMAYDI: kullanıcı hangi bölümlerin eksik olduğunu göremiyordu.
+function pendingBreakdown(segments) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const out = { total: 0, pending: 0, relisten: 0, machine: 0, approved: 0, inaudible: 0 };
+  for (const s of segs) {
+    const r = segReview(s);
+    if (r === 'approved') out.approved++;
+    else if (r === 'inaudible') out.inaudible++;
+    else if (r === 'relisten') {
+      out.relisten++;
+      out.total++;
+    } else if (r === 'machine') {
+      out.machine++;
+      out.total++;
+    } else {
+      out.pending++;
+      out.total++;
+    }
+  }
+  return out;
+}
+// Tek satırlık açıklama. Eksik yoksa BOŞ döner (gürültü yapmaz).
+// Örnek: "3 bölüm eksik: 2 yeniden dinlenecek · 1 çözümlendi"
+function pendingSummaryText(segments) {
+  const b = pendingBreakdown(segments);
+  if (!b.total) return '';
+  const parts = [];
+  if (b.pending) parts.push(`${b.pending} kontrol bekliyor`);
+  if (b.relisten) parts.push(`${b.relisten} yeniden dinlenecek`);
+  if (b.machine) parts.push(`${b.machine} çözümlendi`);
+  return `${b.total} bölüm eksik: ${parts.join(' · ')}`;
 }
 function segMatchesFilter(s, filter, prev) {
   const r = segReview(s);
@@ -9884,6 +9933,16 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
   $('#closeVersion')?.addEventListener('click', () => $('#versionDialog')?.close());
 
   // --- Arşiv (v2.107) ---------------------------------------------------
+  // Eksik dökümüne tıklayınca yalnız kontrol edilmemiş bölümler listelenir.
+  $('#sbPending')?.addEventListener('click', () => {
+    const m = activeMaterial();
+    if (!m) return;
+    m.uiFilter = 'pending';
+    renderSegments(m, $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card'));
+    renderStatusBar();
+    switchView('audio');
+    showToast('Yalnız kontrol edilmemiş bölümler gösteriliyor.');
+  });
   $('#archiveBtn')?.addEventListener('click', () => {
     renderArchiveList();
     const d = $('#archiveDialog');
@@ -10739,6 +10798,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.114': {
+    title: '“Neden %100 olmuyor?” sorusu artık cevaplı',
+    body:
+      'Tüm onayları verdiğinizde sayaç %100 olmuyorsa artık NEDEN olduğunu ' +
+      'görürsünüz: durum çubuğunda "3 bölüm eksik: 2 yeniden dinlenecek · ' +
+      '1 çözümlendi" gibi bir açıklama çıkar. Üzerine tıklayınca yalnız eksik ' +
+      'bölümler listelenir. Kayıt kartındaki "2/5" sayısının üzerine gelince de ' +
+      'aynı açıklama görünür. Kural değişmedi: "Onaylandı" ve "Anlaşılmadı" ' +
+      'kontrol edilmiş sayılır; "Yeniden dinlenecek" ve "Çözümlendi" sayılmaz.'
+  },
   '2.113': {
     title: 'Bölüm listesinde son bölüm artık görünüyor',
     body:

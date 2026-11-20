@@ -775,6 +775,29 @@ maxScroll})` — mutlak hesap + `[0,maxScroll]` kırpma + idempotent.
 dedi. Sayı farklı ama hata gerçekti; **algıyı değil ölçümü esas al, ama
 kullanıcı gözlemini küçümseme.**
 
+
+### Aşama 10l — "%100 olmuyor" açıklaması (TAMAMLANDI, v2.114)
+
+**KURAL: sayı doğruysa da AÇIKLAMA zorunlu.** "97/100" gösterip nedenini
+söylememek sessiz hatadır.
+
+**Ölçüm (v2.113):** 97 approved + 2 relisten + 1 machine → %97. Kural doğru
+(yalnız approved/inaudible sayılır) ama kullanıcı hangi 3 bölüm olduğunu
+göremiyordu.
+
+**Fonksiyonlar (tek kaynak):**
+- `pendingBreakdown(segs)` → `{total, pending, relisten, machine, approved, inaudible}`
+- `pendingSummaryText(segs)` → `"3 bölüm eksik: 2 yeniden dinlenecek · 1 çözümlendi"`;
+  eksik yoksa `''`. Türkçe tekil: "1 bölüm".
+
+**Arayüz:** durum çubuğu (`#sbPending`, tıklanabilir → filtre `pending`) ve
+kayıt kartı `head-check` ipucu aynı metni kullanır.
+
+**Ölçüm (v2.114):** "%40" + açıklama; tıklayınca 5 değil **3** bölüm listelendi.
+
+**DERS:** Bir sayı kullanıcıyı şaşırtıyorsa eksik olan sayı değil AÇIKLAMADIR.
+Sayıyı değiştirmeden önce "neden böyle" sorusunu cevapla.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -948,7 +971,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.113.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.114.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1106,7 +1129,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.113` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.114` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

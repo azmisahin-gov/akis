@@ -1187,3 +1187,16 @@ body.ws-mode #view-audio .seg-list {
 .sd-profile { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .sd-profile > span { font-size: var(--fs-2xs); color: var(--ink-3); }
 .sd-profile > b { font-size: var(--fs-xs); color: var(--ink-2); font-weight: 600; }
+
+/* --- N. v2.114 — Eksik bölüm dökümü (durum çubuğu) ---------------------- */
+.sb-pending {
+  border: 0;
+  background: none;
+  padding: 0 0 0 4px;
+  font: inherit;
+  color: var(--ink-3);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.sb-pending:hover, .sb-pending:focus-visible { color: var(--ink); }
+.sb-pending[hidden] { display: none; }
