@@ -6,12 +6,69 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.99.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.100.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.100 — Türkçe büyük İ terim tutarlılığını bozuyordu
+
+CANLI VERİ. "İ" ile başlayan kelimeler terim tutarlılık panelinde yanlış
+yazıma dönüşüyordu.
+
+### GERÇEK HATA
+
+`contentWords()` düz `toLowerCase()` kullanıyordu:
+
+```js
+const raw = String(text || '').toLowerCase()   // ← yerel ayardan bağımsız
+```
+
+Türkçe'de büyük `İ` düz küçültüldüğünde **`i` + birleşik nokta (U+0307)**
+olur. Ardından gelen `\p{L}` dışı sayılan birleşik işaret atılır ve kelime
+`stanbul`a dönüşür. Ölçüm:
+
+```
+İstanbul  →  toLowerCase: "i̇stanbul"  (birleşik nokta)
+         →  contentWords: "stanbul"    ← parçalandı
+istanbul →  "istanbul"
+eşleşme: YOK
+```
+
+`normalizeForWer()` doğru yapıyordu (`toLocaleLowerCase('tr-TR')`), ama
+`contentWords()` yapmıyordu — **tek kaynak kuralı ihlali**.
+
+### Çözüm
+
+`trLowerCase(v)` — **tek kaynak**: `toLocaleLowerCase('tr-TR')`.
+`normalizeForWer` ve `contentWords` artık bunu kullanır. Türkçe metin
+küçültmesi gereken her yer bu yardımcıyı çağırmalıdır.
+
+**Ölçüm (gerçek Chromium, terim paneli):**
+
+```
+ÖNCE   "İstanbul" → "stanbul"; "istanbul" ile eşleşmiyor → küme YOK
+SONRA  "istanbul ×2 · istambul ×1"   (İstanbul + istanbul aynı kelime)
+       "istanbul" esas al / "istambul" esas al  ← gerçek yazım farkı yakalanıyor
+```
+
+### KULLANICI NE GÖRECEK
+
+- **"İ" ile başlayan kelimeler artık doğru tanınır**; terim tutarlılık paneli
+  "İstanbul" ile "istanbul"u **aynı kelime** sayar (yanlış "yazım farkı"
+  uyarısı vermez).
+- Gerçek yazım farkları ("İstambul" gibi) **hâlâ yakalanır**.
+- Metin aramasında ve WER ölçümünde de aynı Türkçe küçültme kullanılır
+  (tutarlılık).
+
+### Testle korunur
+
+`birim-testleri` [30] (10 kontrol): `trLowerCase` doğru küçültür, birleşik
+nokta bırakmaz, `İstanbul == istanbul`, aynı yazım küme oluşturmaz, gerçek
+yazım farkı bulunur. Test düzeltme yokken **kaldı** (`410 geçti, 4 kaldı`),
+düzeltmeden sonra geçti (`419 geçti, 0 kaldı`).
 
 ## v2.99 — Hızlı onay sayacı ile filtresi ayrışıyordu
 

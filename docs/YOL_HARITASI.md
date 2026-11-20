@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.99.**
+yazılır. **Güncel sürüm: v2.100.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.100 — Türkçe büyük İ terim tutarlılığını bozuyordu (tamamlandı, canlı veri)
+
+`contentWords` düz `toLowerCase()` kullanıyordu; Türkçe `İ` → `i` + birleşik
+nokta olup kelime "stanbul"a parçalanıyordu. "İstanbul" ile "istanbul"
+eşleşmiyordu. `trLowerCase()` tek kaynak yapıldı; `normalizeForWer` ve
+`contentWords` onu kullanır. `birim-testleri` [30] korur.
 
 ### v2.99 — Hızlı onay sayacı = filtresi (tamamlandı, canlı veri)
 
@@ -152,7 +159,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | **v2.97 tamamlandı** |
 | 13 | `paragraphize` asrText/asrModel'i siliyor | **v2.98 tamamlandı** |
 | 14 | Hızlı onay sayacı ile filtresi ayrışıyor | **v2.99 tamamlandı** |
-| 15 | Türkçe büyük İ terim tutarlılığını bozuyor | bekliyor |
+| 15 | Türkçe büyük İ terim tutarlılığını bozuyor | **v2.100 tamamlandı** |
 
 ### v2.86 — Eksik ses uyarısı + yazma akıcılığı (tamamlandı)
 

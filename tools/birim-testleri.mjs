@@ -63,7 +63,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'analyzeSilence', 'segmentSilenceFlag',
+  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase', 'analyzeSilence', 'segmentSilenceFlag',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
@@ -86,7 +86,7 @@ const EXPOSE = [
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
-  'paragraphize', 'splitSegmentAt', 'quickApproveTargets',
+  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1582,6 +1582,47 @@ console.log('\n[29] Hızlı onay sayacı = filtresi');
   const okFiltered = ok.segments.filter((s, i) => T.segMatchesFilter(s, 'quick', ok.segments[i - 1]));
   eq('çakışmasız: sayaç = filtre', okCounts.quick, okFiltered.length);
   eq('çakışmasız: ikisi de 2', okCounts.quick, 2);
+}
+
+// --- 30. Türkçe büyük İ terim tutarlılığını bozmamalı (v2.100) ---------
+// GERÇEK HATA: `contentWords()` düz `toLowerCase()` kullanıyordu. Türkçe'de
+// büyük `İ` düz küçültüldüğünde `i` + BİRLEŞİK NOKTA (U+0307) olur; sonra
+// `\p{L}` dışı sayılan birleşik işaret atılır ve kelime `stanbul`a dönüşür.
+// Sonuç: "İstanbul" ile "istanbul" hiç eşleşmez ve "İ" ile başlayan terimler
+// yanlış yazıma dönüşür. `normalizeForWer` doğru yapıyordu
+// (`toLocaleLowerCase('tr-TR')`), `contentWords` yapmıyordu — tek kaynak
+// kurulı ihlali. Ölçüm: contentWords("İstanbul istanbul") -> ["stanbul","istanbul"].
+// KURAL: Türkçe metin küçültme TEK YERDEN (`trLowerCase`) yapılır.
+console.log('\n[30] Türkçe büyük İ terim tutarlılığı');
+{
+  eq('trLowerCase tanımlı', typeof T.trLowerCase, 'function');
+  if (typeof T.trLowerCase === 'function') {
+    eq('İstanbul küçültme', T.trLowerCase('İstanbul'), 'istanbul');
+    eq('İzmir küçültme', T.trLowerCase('İzmir'), 'izmir');
+    eq('I küçültme (noktasız)', T.trLowerCase('IŞIK'), 'ışık');
+    eq('İ birleşik nokta bırakmaz', /[\u0307]/.test(T.trLowerCase('İstanbul')), false);
+  }
+
+  // Gerçek senaryo: aynı terimin büyük/küçük yazımı AYNI sayılmalı.
+  {
+    const w1 = T.contentWords('İstanbul');
+    const w2 = T.contentWords('istanbul');
+    eq('İstanbul -> tek kelime', w1.length, 1);
+    eq('İstanbul == istanbul', w1[0], w2[0]);
+    eq('kelime parçalanmaz (stanbul değil)', w1[0], 'istanbul');
+  }
+
+  // Terim tutarlılık: "İstanbul" ve "istanbul" ARTIK AYNI kelimedir, bu
+  // yüzden küme OLUŞMAMALI (yanlış pozitif verilmemeli).
+  {
+    const groups = T.findTermInconsistencies(['İstanbul istanbul İstanbul']);
+    eq('aynı yazım küme oluşturmaz', groups.length, 0);
+  }
+  // Gerçek yazım farkı (İstambul) yakalanmalı — kural bozulmadı.
+  {
+    const groups = T.findTermInconsistencies(['İstanbul İstambul İstanbul']);
+    eq('gerçek yazım farkı bulunur', groups.length > 0, true);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.99';
+const APP_VERSION = '2.100';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2329,9 +2329,16 @@ function attachWave(card, m, url) {
 // Türkçe metni karşılaştırmaya hazırlar: küçük harf, noktalama atılır,
 // sayılar olduğu gibi korunur, fazla boşluklar teklenir. Aynı normalizasyon
 // hem referansa hem çıktıya uygulanır; yoksa ölçüm yanıltıcı olur.
+// Türkçe küçük harfe çevirme — TEK KAYNAK (v2.100).
+// Düz `toLowerCase()` Türkçe büyük `İ` harfini `i` + BİRLEŞİK NOKTA (U+0307)
+// yapar; sonra `\p{L}` dışı sayılan birleşik işaret atılır ve kelime
+// "stanbul"a dönüşür. `toLocaleLowerCase('tr-TR')` doğru sonucu verir.
+// Türkçe metin küçültmesi gereken HER yer bunu kullanmalıdır.
+function trLowerCase(v) {
+  return String(v == null ? '' : v).toLocaleLowerCase('tr-TR');
+}
 function normalizeForWer(text) {
-  return String(text || '')
-    .toLocaleLowerCase('tr-TR')
+  return trLowerCase(text)
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -2395,8 +2402,9 @@ const TR_STOPWORDS = new Set([
 // Metinden anlamlı sözcükleri çıkarır (küçük harfe indirir, noktalama atar,
 // kısa ve işlev sözcüklerini eler). Sayı içeren jetonlar korunur.
 function contentWords(text) {
-  const raw = String(text || '')
-    .toLowerCase()
+  // trLowerCase: Türkçe büyük İ doğru küçülür (v2.100). Düz toLowerCase
+  // "İstanbul"u "stanbul"a parçalıyordu; "istanbul" ile hiç eşleşmiyordu.
+  const raw = trLowerCase(text)
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
     .split(/\s+/);
   const out = [];
@@ -9753,6 +9761,15 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.100': {
+    title: 'Türkçe "İ" ile başlayan kelimeler artık doğru tanınıyor',
+    body:
+      'Terim tutarlılık paneli, büyük "İ" ile başlayan kelimeleri yanlış ' +
+      'küçültüyordu: "İstanbul" → "stanbul" oluyor ve "istanbul" ile hiç ' +
+      'eşleşmiyordu. Bu yüzden aynı terimin büyük/küçük yazımı iki ayrı kelime ' +
+      'gibi görünüyordu. Artık Türkçe küçültme tek yerden yapılır; "İstanbul" ve ' +
+      '"istanbul" aynı kelime sayılır, gerçek yazım farkları yine yakalanır.'
+  },
   '2.99': {
     title: 'Hızlı onay sayısı artık listeyle aynı',
     body:
