@@ -1477,7 +1477,9 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
 
   // 2) app.js şemayı import ediyor (kopya tanım yapmıyor).
   const app = read('assets/app.js');
-  ok('app.js şemayı import ediyor', /from '\.\/schema\.js'/.test(app));
+  // Sürüm parametresi (?v=) serbest: v2.117'de önbellek uyuşmazlığını önlemek
+  // için import sürümlendi. Test yazımı değil BAĞI sınar.
+  ok('app.js şemayı import ediyor', /from '\.\/schema\.js(\?v=[0-9.]+)?'/.test(app));
   ok('app.js normalizeCase kullanıyor', /normalizeCase\(/.test(app));
   // v2'nin tek-dosya anlatımı kodda kalmamalı: yerel emptyCase tanımı yok.
   ok('app.js içinde ikinci bir şema tanımı yok', !/^function emptyCase\(/m.test(app));

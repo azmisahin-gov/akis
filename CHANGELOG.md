@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.116.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.117.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.117 — ACİL: canlı site açılmıyordu (önbellek uyuşmazlığı)
+
+CANLI VERİ. Bilirkişi bildirdi:
+
+```
+Uncaught SyntaxError: The requested module './schema.js' does not provide
+an export named 'AMBIGUOUS_REVIEW' (at app.js?v=2.116:25:3)
+```
+
+Uygulama **hiç açılmıyordu**. En yüksek öncelikli hata sınıfı.
+
+### KÖK NEDEN (ölçüldü)
+
+```
+index.html : <script src="assets/app.js?v=2.116">    ← sürümlü
+assets/app.js:40:  } from './schema.js';              ← SÜRÜMSÜZ
+GitHub Pages: cache-control: max-age=600              ← 10 dakika önbellek
+```
+
+`?v=` **yalnız** `index.html`'deki `<script>` etiketini kırar. `app.js`
+**içindeki** `import` sürümsüz olduğu için tarayıcı **eski** `schema.js`'i
+önbellekten kullandı. `app.js` yeni (`AMBIGUOUS_REVIEW` istiyor), `schema.js`
+eski (o export yok) → modül yüklenemedi → uygulama açılmadı.
+
+**Bu hata v2.115'te de vardı**, ama o sürümde `schema.js` değişmediği için
+önbellek uyuşmazlığı görünmedi. v2.116'da `schema.js`'e `ambiguous` eklenince
+ortaya çıktı.
+
+### DÜZELTME
+
+```js
+} from './schema.js?v=2.117';   // artık sürümlü
+```
+
+### KORUYAN TEST (yeni, zorunlu)
+
+`surum-testi` **2b**: `app.js` içindeki `schema.js` import'u `?v=` taşımak
+**zorunda** ve bu sürüm `APP_VERSION` ile **aynı** olmalı. Test, düzeltme
+yokken **KALDI** (kanıtlandı), düzeltmeyle geçti.
+
+### DEĞİŞMEZ KURAL
+
+**Sürümlenen her modül, import eden dosya tarafından da sürümlenmelidir.**
+`?v=` bir dosyaya verildiğinde onun **tüm import zinciri** de sürümlenmelidir;
+aksi hâlde tarayıcı karışık sürüm yükler. Bu, ES modüllerinde sessiz bir
+"versiyon uyuşmazlığı" sınıfıdır ve yalnız canlıda görünür.
 
 ## v2.116 — Takip modu: metin titriyordu, aynı metin üç yerde
 

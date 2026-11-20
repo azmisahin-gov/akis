@@ -37,14 +37,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js';
+} from './schema.js?v=2.117';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.116';
+const APP_VERSION = '2.117';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11033,6 +11033,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.117': {
+    title: 'Acil düzeltme: uygulama açılmıyordu',
+    body:
+      'v2.116’da uygulama canlı sitede hiç açılmadı; ekranda "Uncaught SyntaxError" ' +
+      'hatası vardı. Sebep: ana dosya sürüm numarasıyla yükleniyordu ama içindeki ' +
+      'yardımcı dosya (schema.js) sürümsüz yükleniyordu. Tarayıcı eski yardımcı dosyayı ' +
+      'önbellekten kullanınca yeni özellikler bulunamadı ve uygulama durdu. Artık iki ' +
+      'dosya da aynı sürüm numarasıyla yüklenir; bu tür uyuşmazlık bir daha olamaz. ' +
+      'Bir de önlem eklendi: sürüm kontrol testi bu hatayı otomatik yakalar.'
+  },
   '2.116': {
     title: 'Takip modu: metin artık titremiyor, tek alan',
     body:

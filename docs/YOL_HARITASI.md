@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.116.**
+yazılır. **Güncel sürüm: v2.117.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.117 — ACİL: canlı site açılmıyordu (tamamlandı)
+
+`app.js` içindeki `import './schema.js'` sürümsüzdü; `index.html` ise
+`app.js?v=` ile sürümlüyordu. GitHub Pages `max-age=600` verdiği için tarayıcı
+eski `schema.js`'i kullandı → `AMBIGUOUS_REVIEW` bulunamadı → uygulama açılmadı.
+Import artık `?v=APP_VERSION` taşır; `surum-testi` 2b bunu zorunlu kılar.
 
 ### v2.116 — Takip modu: titreme + yinelenen alan (tamamlandı, canlı veri)
 

@@ -858,6 +858,43 @@ metin titriyordu. Aynı metin **3 yerde** gösteriliyordu (`.karaoke`,
 **DERS:** `innerHTML` döngü içinde = titreme + performans kaybı + kullanıcı
 okuyamaz. Sınıf değişimi her zaman tercih edilir.
 
+
+### Aşama 10o — ACİL: canlı site açılmıyordu (TAMAMLANDI, v2.117)
+
+**HATA:** `Uncaught SyntaxError: The requested module './schema.js' does not
+provide an export named 'AMBIGUOUS_REVIEW'` → uygulama HİÇ açılmadı.
+
+**KÖK NEDEN (ölçüldü):**
+```
+index.html     : <script src="assets/app.js?v=2.116">   ← sürümlü
+assets/app.js  : } from './schema.js';                   ← SÜRÜMSÜZ
+GitHub Pages   : cache-control: max-age=600
+```
+`?v=` yalnız `<script>` etiketini kırar; **iç `import`'u kırmaz**. Tarayıcı eski
+`schema.js`'i önbellekten kullandı → yeni export yok → modül yüklenemedi.
+
+**NEDEN v2.115'te görünmedi:** o sürümde `schema.js` değişmemişti; uyuşmazlık
+zararsızdı. v2.116'da `schema.js`'e `ambiguous` eklenince patladı.
+
+**DÜZELTME:** `from './schema.js?v=2.117'` — import artık sürümlü.
+
+**KORUYAN TEST:** `surum-testi` **2b** — import `?v=` taşımak ZORUNDA ve
+`APP_VERSION` ile aynı olmalı. Düzeltme yokken KALDI (kanıtlandı).
+
+**DEĞİŞMEZ KURAL:** `?v=` verilen bir modülün **tüm import zinciri** de
+sürümlenmelidir. Aksi hâlde tarayıcı karışık sürüm yükler ve bu hata YALNIZ
+canlıda görünür (yerelde önbellek yok).
+
+**YENİ MODÜL EKLERKEN:** `import ... from './x.js?v=${APP_VERSION}'` biçimini
+kullanın ve `surum-testi`'ye kontrol ekleyin.
+
+**Ölçüm (v2.117):** uygulama açıldı, `#appVersion=v2.117`, JS hatası 0,
+`schema.js?v=2.117` → `hasAmbiguous: true`.
+
+**DERS:** Tarayıcıda ES modülleri ayrı ayrı önbelleklenir. Sürüm parametresi
+tek dosyaya verilirse diğerleri eski kalır. "Yerelde çalışıyor" bu sınıf hatayı
+YAKALAMAZ — yalnız temiz önbellekli canlı ortam gösterir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1031,7 +1068,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.116.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.117.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1189,7 +1226,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.116` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.117` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

@@ -47,6 +47,31 @@ check(
   staticLabel ? `başlangıç metni: "${staticLabel[1].trim()}"` : ''
 );
 
+// 2b) KRİTİK (v2.117): app.js içindeki `import './schema.js'` SÜRÜMSÜZ olamaz.
+// NEDEN: v2.116'da canlı site AÇILMADI —
+//   Uncaught SyntaxError: The requested module './schema.js' does not provide
+//   an export named 'AMBIGUOUS_REVIEW'
+// Sebep: index.html `app.js?v=2.116` yükler ama app.js içindeki import
+// `from './schema.js'` SÜRÜMSÜZDÜ. `?v=` yalnız script etiketini kırar;
+// iç import'u KIRMAZ. GitHub Pages `cache-control: max-age=600` verdiği için
+// tarayıcı ESKİ schema.js'i kullandı → yeni export bulunamadı.
+// KURAL: modül import'ları `?v=${APP_VERSION}` taşır (ya da hiç ?v= yoksa
+// schema.js'in önbelleklenmesi engellenmelidir). Test bunu ZORUNLU kılar.
+const appSrc = read('assets/app.js');
+const importMatch = appSrc.match(/from\s+'\.\/schema\.js([^']*)'/);
+check('app.js schema.js import satırı bulundu', !!importMatch, importMatch ? importMatch[0] : 'bulunamadı');
+if (importMatch) {
+  const q = importMatch[1];
+  check(
+    'schema.js import SÜRÜMLÜ (?v=) — önbellek uyuşmazlığı olmaz',
+    /^\?v=[0-9.]+$/.test(q),
+    q ? `import "${q}"` : 'sürüm parametresi YOK (canlı site açılmaz)'
+  );
+  if (/^\?v=/.test(q)) {
+    check('schema.js import sürümü APP_VERSION ile aynı', q === `?v=${version}`, `import "${q}" · APP_VERSION=${version}`);
+  }
+}
+
 // 3) Önbellek parametreleri güncel sürümü göstermeli.
 const cacheParams = [...indexHtml.matchAll(/assets\/(app\.js|app\.css|tokens\.css|reading-layer\.css)\?v=([0-9.]+)/g)];
 check('index.html içinde dört ?v= parametresi var', cacheParams.length === 4, `${cacheParams.length} bulundu`);
