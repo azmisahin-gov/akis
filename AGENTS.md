@@ -1424,6 +1424,19 @@ erişilebilirlik nitelikleri test edilemiyordu.
 
 **Koruyan test:** `birim-testleri` [53] (14) + `tasarim-testi` [6] (2).
 
+### Aşama 10ah — Sekme simgesi (TAMAMLANDI, v2.136)
+
+**KURAL: kök `favicon.ico` bulunur; `index.html` SVG simgeyi bağlar.**
+
+Tarayıcı her açılışta `/favicon.ico` istiyor, **404** dönüyordu; sekmede boş
+simge görünüyordu. `assets/favicon.svg` (lacivert zemin + altın "A") ve kök
+`favicon.ico` (32×32) eklendi; `index.html` iki bağlantı taşır.
+
+**Ölçüm (v2.136, gerçek Chromium):** `favicon.svg` 200, `favicon.ico` 200,
+sunucu günlüğünde 404: **0**.
+
+**Koruyan test:** `tasarim-testi` [4b] (3 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1597,7 +1610,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.135.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.136.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1759,7 +1772,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.135** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.136** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1807,6 +1820,7 @@ Test sayısı 441 → **782**.
 | **v2.133** | **Durum çubuğu yazıları kesilmiyor** (≤1100 px'te 6/6 öğe kırpılıyordu) | `tasarim` [2l] |
 | **v2.134** | **İlk açılışta hayalet kayıt** (boş çalışma alanı yazılıyordu) | `birim` [52] |
 | **v2.135** | **Kritik uyarılar ekran okuyucuya duyurulur** (aria-live yoktu) | `birim` [53] |
+| **v2.136** | **Sekme simgesi** (favicon 404) | `tasarim` [4b] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

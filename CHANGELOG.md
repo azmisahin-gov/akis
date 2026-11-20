@@ -6,12 +6,31 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.135.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.136.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.136 — Sekme simgesi (favicon)
+
+DENETİM. Tarayıcı her açılışta `/favicon.ico` istiyor, **404** dönüyordu;
+sekmede kırık/boş simge görünüyordu.
+
+### DÜZELTME
+
+- `assets/favicon.svg` — raylı marka ile aynı dil (lacivert zemin, altın "A").
+- `favicon.ico` (32×32, 4.286 bayt) — tarayıcının varsayılan isteği için.
+- `index.html`: `<link rel="icon" type="image/svg+xml">` + `rel="alternate icon"`.
+
+### KULLANICI NE GÖRECEK
+
+- Sekmede uygulamanın simgesi görünür.
+- Konsolda `favicon 404` uyarısı kalmaz (ölçüldü: 0).
+
+Koruyan test: `tasarim-testi` [4b] (3 kontrol) — düzeltme yokken **KALDI**.
+Gerçek Chromium: `favicon.svg` 200, `favicon.ico` 200, sunucu günlüğünde 404: 0.
 
 ## v2.135 — Kritik uyarılar ekran okuyucuya duyuruluyor
 

@@ -507,6 +507,21 @@ check('reading-layer.css bağlı', iLayer > -1);
 check('tokens.css app.css ten önce', iTokens > -1 && iApp > -1 && iTokens < iApp);
 check('okuma katmanı en sonda (yamaları ezer)', iLayer > iApp);
 
+// --- 4b. Simge (favicon) -------------------------------------------------
+// Denetim (v2.135): tarayıcı /favicon.ico istiyor, 404 dönüyordu. Simge
+// tanımlanmamışsa sekmede kırık/boş simge görünür.
+console.log('\n[4b] Simge (favicon)');
+{
+  const iconLink = html.match(/<link[^>]+rel="icon"[^>]*>/);
+  check('index.html simge bağlantısı taşıyor', !!iconLink);
+  const href = iconLink && (iconLink[0].match(/href="([^"]+)"/) || [])[1];
+  check('simge dosyası var', !!href && fs.existsSync(path.join(ROOT, href)), href || 'href yok');
+  check(
+    'kök favicon.ico da var (tarayıcı varsayılan isteği)',
+    fs.existsSync(path.join(ROOT, 'favicon.ico'))
+  );
+}
+
 // --- 5. Tema bütünlüğü ---------------------------------------------------
 console.log('\n[5] Tema bütünlüğü');
 for (const name of ['light', 'dark', 'sepia']) {

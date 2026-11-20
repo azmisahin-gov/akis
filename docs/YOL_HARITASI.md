@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.135.**
+yazılır. **Güncel sürüm: v2.136.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.136 — Sekme simgesi (tamamlandı)
+
+`/favicon.ico` 404 dönüyordu. SVG + ICO simge eklendi; 404 sayısı 0.
+`tasarim` [4b].
 
 ### v2.135 — Kritik uyarılar ekran okuyucuya duyuruluyor (tamamlandı)
 

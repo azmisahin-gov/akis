@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.135';
+} from './schema.js?v=2.136';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.135';
+const APP_VERSION = '2.136';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11658,6 +11658,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.136': {
+    title: 'Sekme simgesi eklendi',
+    body:
+      'Tarayıcı sekmesinde artık uygulamanın simgesi görünür; konsoldaki ' +
+      'favicon 404 uyarısı bitti. Görünüm ve işlev değişmedi.'
+  },
   '2.135': {
     title: 'Kritik uyarılar ekran okuyucuya da duyuruluyor',
     body:
