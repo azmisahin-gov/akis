@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.124.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.125.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.125 — Takip şeridi sabit: cümle penceresi
+
+CANLI VERİ. Bilirkişi: *"sd-follow sürekli yüksekliği değiştiği için yazıyı
+düzgün takip edemiyorum."*
+
+### ÖLÇÜM (v2.124)
+
+| Ölçüm | 1440 px | 1280 px | 1100 px |
+|---|---|---|---|
+| Kutu yüksekliği | 120 (tavan) | 120 | 120 |
+| İçerik yüksekliği | 202 | 239 | 314 |
+| 60 kelime → satır | 10 | 12 | 15 |
+| Kaydırma sıçraması | 2 × 74 px | 2 × 74 px | 3 × 74 px |
+| `span.on` (kalın+dolgu) | 0 kelime kaydı | 0 | **8 kelime kaydı** |
+
+Üç sorun: (1) kutu içeriğe göre uzayıp kısalıyordu, (2) iç kaydırma 5 satır
+birden atlıyordu, (3) aktif kelime kalın+dolgu ile satır sonlarını
+kaydırıyordu.
+
+### DÜZELTME
+
+- **Sabit 2 satır** (`height`, `overflow:hidden`); iç çubuk yok.
+- **O anki cümle** gösterilir (`karaokeSentences`): sınır = bitiş noktalaması
+  veya ≥0,4 sn sessizlik. Cümle değişince içerik bir kez yenilenir.
+- **Metrik sabit vurgu**: yalnız arka plan + ince çerçeve; kalın/dolgu yok.
+- **Bir satır** ilerleme: aktif kelime alttan çıkınca ikinci satıra, üstten
+  çıkınca ilk satıra gelir; konum mutlak hesaplanır.
+- ASR `words` yalnız kelime veriyorsa aralara **boşluk** konur (yoksa metin
+  tek kelime gibi taşıyordu).
+
+### KULLANICI NE GÖRECEK
+
+- Takip şeridi **hep aynı yükseklikte**; göz aynı yerde kalır.
+- Uzun cümlede metin **birer satır** kayar (5 satır atlamaz).
+- Aktif kelime vurgulanırken **satır sonları oynamaz**.
+- Cümle bitince şerit yeni cümleye geçer; yükseklik değişmez.
+
+### Koruyan testler
+
+`birim` [47] (cümle bölme/aktif cümle), `tasarim` [2f] (sabit yükseklik,
+metrik sabit vurgu). Gerçek Chromium (1440/1100/900): yükseklik **48 px sabit**,
+reflow **0 kelime**, en büyük kaydırma **18 px (1 satır)**.
 
 ## v2.124 — "Tüm dosyalar" seçimi paket adında görünüyor
 

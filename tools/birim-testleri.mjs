@@ -105,6 +105,7 @@ const EXPOSE = [
   'karaokeSegments', 'karaokeActiveIndex',
   'FOLLOW_MODES', 'followShouldAutoStart',
   'setSegReview',
+  'karaokeSentences', 'activeSentenceIndex',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2507,6 +2508,54 @@ console.log('\n== [46] Onayın sahibi (birleştirmede onay aktarımı)');
     const cmp = T.compareCasesForTest(mk(), newer({ review: 'approved', reviewedBy: 't1' }));
     eq('F) önizleme ilerlemeyi sayar', cmp.segments.reviewAdvanced, 1);
     eq('F) önizleme reddi saymaz', cmp.segments.approvalsRejected || 0, 0);
+  }
+}
+
+// --- 47. Takip şeridi: sabit 2 satırlık cümle penceresi (v2.125) ----------
+// CANLI VERİ. Bilirkişi: "sd-follow sürekli yüksekliği değiştiği için yazıyı
+// düzgün takip edemiyorum". ÖLÇÜM (v2.124): kutu 120px tavanlıydı ama içerik
+// 202–314px; kod 74px'lik (~5 satır) sıçramalarla kaydırıyordu. Ayrıca aktif
+// kelime kalın+dolgu ile satır sonlarını kaydırabiliyordu (1100px'te 8 kelime).
+// ÇÖZÜM: sabit 2 satırlık pencere + O ANKİ CÜMLE; vurgu yalnız arka plan.
+console.log('\n== [47] Takip şeridi: cümle penceresi');
+{
+  eq('karaokeSentences tanımlı', typeof T.karaokeSentences, 'function');
+  eq('activeSentenceIndex tanımlı', typeof T.activeSentenceIndex, 'function');
+  if (typeof T.karaokeSentences === 'function') {
+    const sp = { w: ' ', s: NaN, e: NaN };
+    // Noktalama cümleyi böler; boşluk parçaları aralığa DAHİL kalır.
+    const segs = [
+      { w: 'Merhaba', s: 0, e: 0.4 }, sp, { w: 'dünya.', s: 0.5, e: 0.9 }, sp,
+      { w: 'Nasılsın', s: 1.0, e: 1.4 }, sp, { w: 'İyiyim', s: 1.5, e: 1.9 }
+    ];
+    const r = T.karaokeSentences(segs);
+    eq('noktalama cümle böler', r.length, 2);
+    eq('1. cümle başlangıcı', r[0].from, 0);
+    eq('1. cümle sonu', r[0].to, 2);
+    eq('2. cümle başlangıcı', r[1].from, 4);
+    eq('2. cümle sonu', r[1].to, 6);
+    eq('kelime 0 → 1. cümle', T.activeSentenceIndex(r, 0), 0);
+    eq('kelime 5 → 2. cümle', T.activeSentenceIndex(r, 5), 1);
+    eq('aktif yoksa -1', T.activeSentenceIndex(r, -1), -1);
+
+    // ≥0,4 sn sessizlik de cümle böler (noktalama olmasa bile).
+    const gap = [
+      { w: 'bir', s: 0, e: 0.3 }, sp, { w: 'iki', s: 0.35, e: 0.6 }, sp,
+      { w: 'üç', s: 1.2, e: 1.5 }
+    ];
+    eq('boşluk (≥0,4 sn) cümle böler', T.karaokeSentences(gap).length, 2);
+    // Kısa boşluk bölmez.
+    const near = [
+      { w: 'bir', s: 0, e: 0.3 }, sp, { w: 'iki', s: 0.5, e: 0.8 }
+    ];
+    eq('kısa boşluk bölmez', T.karaokeSentences(near).length, 1);
+    // Noktalama yok, boşluk yok → tek cümle.
+    eq('tek cümle', T.karaokeSentences([{ w: 'a', s: 0, e: 0.2 }, sp, { w: 'b', s: 0.25, e: 0.4 }]).length, 1);
+    // Kapanış tırnağı noktalamayı bozmaz.
+    eq('tırnaklı bitiş böler', T.karaokeSentences([
+      { w: '“geldi.”', s: 0, e: 0.4 }, sp, { w: 'Sonra', s: 0.5, e: 0.9 }
+    ]).length, 2);
+    eq('boş girdi → []', T.karaokeSentences([]).length, 0);
   }
 }
 

@@ -321,6 +321,25 @@ console.log('\n[2e] Sağ panel kendi içinde kaymıyor');
   );
 }
 
+// --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
+// ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
+// (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
+// kaydırabiliyordu. Kural: sabit yükseklik, iç çubuk yok, vurgu yalnız arka plan.
+console.log('\n[2f] Takip şeridi sabit ve vurgu metrik değiştirmiyor');
+{
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+  const follow = [...base.matchAll(/#view-audio \.sd-follow\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('takip şeridi sabit yükseklik taşır', /(^|;)\s*height:\s*[^;]+/.test(follow), follow.trim().slice(0, 80));
+  check('takip şeridi 120px tavanına dönmedi', !/max-height:\s*120px/.test(follow));
+  check('takip şeridi iç kaydırma çubuğu göstermez', /overflow:\s*hidden/.test(follow), follow.trim().slice(0, 80));
+  const on = [...base.matchAll(/#view-audio \.sd-follow span\.on\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('aktif kelime kalınlaştırmıyor (metrik sabit)', !/font-weight/.test(on), on.trim().slice(0, 80));
+  check('aktif kelime dolgu eklemiyor (metrik sabit)', !/(^|;)\s*padding/.test(on), on.trim().slice(0, 80));
+  check('aktif kelime arka planla vurgulanıyor', /background/.test(on));
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');

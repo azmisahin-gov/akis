@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.124';
+} from './schema.js?v=2.125';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.124';
+const APP_VERSION = '2.125';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5467,6 +5467,43 @@ function karaokeActiveIndex(segments, t) {
   }
   return -1;
 }
+// CÜMLE SINIRI (v2.125): takip şeridi SABİT 2 satırlık pencerede o anki
+// cümleyi gösterir. Sınır: bitiş noktalaması VEYA kelimeler arası ≥0,4 sn
+// sessizlik. Kelime zamanı yoksa yalnız noktalama; hiçbiri yoksa tek cümle.
+const SENTENCE_GAP = 0.4;
+const SENTENCE_END = /[.!?…;:]["'”’)]?$/;
+
+/** Karaoke parçalarını cümle aralıklarına böler (indeksler `segs` içindedir). */
+function karaokeSentences(segs) {
+  const list = Array.isArray(segs) ? segs : [];
+  const wordIdx = [];
+  for (let i = 0; i < list.length; i++) if (Number.isFinite(list[i].s)) wordIdx.push(i);
+  if (!wordIdx.length) return [];
+  const ranges = [];
+  let start = 0;
+  for (let k = 1; k < wordIdx.length; k++) {
+    const prev = list[wordIdx[k - 1]];
+    const cur = list[wordIdx[k]];
+    const gap = cur.s - prev.e;
+    const ends = SENTENCE_END.test(String(prev.w || '').trim());
+    if (ends || (Number.isFinite(gap) && gap >= SENTENCE_GAP)) {
+      ranges.push({ from: wordIdx[start], to: wordIdx[k - 1] });
+      start = k;
+    }
+  }
+  ranges.push({ from: wordIdx[start], to: wordIdx[wordIdx.length - 1] });
+  return ranges;
+}
+
+/** Aktif kelime hangi cümlede? Bulunamazsa -1. */
+function activeSentenceIndex(ranges, activeIdx) {
+  if (!Array.isArray(ranges) || activeIdx < 0) return -1;
+  for (let i = 0; i < ranges.length; i++) {
+    if (activeIdx >= ranges[i].from && activeIdx <= ranges[i].to) return i;
+  }
+  return -1;
+}
+
 function markTextFollow(m, idx, t) {
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
   if (!wrap) return;
@@ -5475,23 +5512,36 @@ function markTextFollow(m, idx, t) {
   if (!followState.liveHighlight) {
     wrap.querySelector('.sd-follow')?.remove();
     delete wrap.__karaokeKey;
+    delete wrap.__followSentence;
     return;
   }
   const s = (m.segments || [])[idx];
   if (!s || !s.text || isHallucination(s.text)) {
     wrap.querySelector('.sd-follow')?.remove();
     delete wrap.__karaokeKey;
+    delete wrap.__followSentence;
     return;
   }
   const segs = karaokeSegments(s);
   if (!segs.length) {
     wrap.querySelector('.sd-follow')?.remove();
     delete wrap.__karaokeKey;
+    delete wrap.__followSentence;
     return;
   }
-  // ANAHTAR: bölüm + metin. Metin değişmedikçe DOM YENİDEN YAZILMAZ.
+  // SABİT PENCERE (v2.125): yalnız O ANKİ CÜMLE gösterilir. Kutu yüksekliği
+  // metne göre değişmez; içerik 2 satıra sığmazsa SATIR SATIR kayar (5 satır
+  // atlama yok). Aktif kelime yalnız arka planla vurgulanır → satır kaymaz.
+  const ranges = karaokeSentences(segs);
+  const active = karaokeActiveIndex(segs, t);
+  let si = activeSentenceIndex(ranges, active);
+  if (si < 0) {
+    si = Number.isInteger(wrap.__followSentence) && ranges[wrap.__followSentence] ? wrap.__followSentence : 0;
+  }
+  const range = ranges[si] || { from: 0, to: segs.length - 1 };
+  // ANAHTAR: bölüm + cümle + metin. Değişmedikçe DOM YENİDEN YAZILMAZ.
   // v2.115'te her tick'te innerHTML yazılıyordu → titreme (25 değişiklik/3sn).
-  const key = `${idx}|${s.text}|${segs.length}`;
+  const key = `${idx}|${si}|${s.text}`;
   let bar = wrap.querySelector('.sd-follow');
   if (!bar) {
     bar = document.createElement('div');
@@ -5499,14 +5549,27 @@ function markTextFollow(m, idx, t) {
     wrap.insertBefore(bar, wrap.firstChild);
   }
   if (wrap.__karaokeKey !== key) {
+    // Kelime listesi boşluk parçası taşımıyorsa (ASR `words` yalnız kelimeleri
+    // verir) kelimeler arasına boşluk KONUR; aksi hâlde metin tek kelime gibi
+    // taşar ve satır kırılmaz (v2.125 ölçümü: 30 kelime 2 satıra sığmıyordu).
+    const hasSpaces = segs.some((x) => !x.w.trim());
+    let firstWord = true;
     bar.innerHTML = segs
-      .map((x, i) => (x.w.trim() ? `<span data-k="${i}">${esc(x.w)}</span>` : esc(x.w)))
+      .slice(range.from, range.to + 1)
+      .map((x, k) => {
+        const gi = range.from + k;
+        if (!x.w.trim()) return esc(x.w);
+        const lead = !hasSpaces && !firstWord ? ' ' : '';
+        firstWord = false;
+        return `${lead}<span data-k="${gi}">${esc(x.w)}</span>`;
+      })
       .join('');
     wrap.__karaokeKey = key;
+    wrap.__followSentence = si;
     bar.__active = -2;
+    bar.scrollTop = 0;
   }
   // Yalnız SINIF değişir: aktif parça `on`, öncekiler `done`. DOM sabit → titreme yok.
-  const active = karaokeActiveIndex(segs, t);
   if (bar.__active !== active) {
     const spans = bar.querySelectorAll('span[data-k]');
     spans.forEach((el) => {
@@ -5515,13 +5578,19 @@ function markTextFollow(m, idx, t) {
       el.classList.toggle('done', active >= 0 ? i < active : false);
     });
     bar.__active = active;
-    // Uzun metinde vurgu görünür alan dışında kalmasın: yalnız kutunun içi kayar.
+    // 2 satırlık sabit pencere: aktif kelime görünür alanın dışına çıkarsa
+    // SATIR SATIR kaydır. Aşağı çıkınca kelime İKİNCİ satıra gelir (bir satır
+    // ilerler); yukarı çıkınca ilk satıra gelir. Konum MUTLAK hesaplanır.
     const act = bar.querySelector('span.on');
-    if (act && bar.scrollHeight > bar.clientHeight) {
-      const bt = bar.getBoundingClientRect(),
-        at = act.getBoundingClientRect();
-      if (at.top < bt.top + 4 || at.bottom > bt.bottom - 4) {
-        bar.scrollTop += at.top - bt.top - bar.clientHeight / 3;
+    if (act && bar.scrollHeight > bar.clientHeight + 1) {
+      const bt = bar.getBoundingClientRect();
+      const at = act.getBoundingClientRect();
+      if (at.top < bt.top + 1 || at.bottom > bt.bottom - 1) {
+        const lh = Math.max(1, parseFloat(getComputedStyle(bar).lineHeight) || 16);
+        const lineTop = Math.floor((at.top - bt.top + bar.scrollTop) / lh) * lh;
+        const target = at.top < bt.top + 1 ? lineTop : lineTop - lh;
+        const max = Math.max(0, bar.scrollHeight - bar.clientHeight);
+        bar.scrollTop = Math.max(0, Math.min(target, max));
       }
     }
   }
@@ -11171,6 +11240,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.125': {
+    title: 'Takip şeridi artık sabit: yazı kaymıyor',
+    body:
+      'Canlı metin vurgusu (G) artık SABİT iki satırlık bir şeritte O ANKİ ' +
+      'CÜMLEYİ gösterir. Önce kutu içeriğe göre uzayıp kısalıyor ve uzun metinde ' +
+      '5 satır birden atlıyordu; şimdi yükseklik hiç değişmiyor, cümle iki satıra ' +
+      'sığmazsa birer satır kayıyor. Aktif kelime yalnız arka planla işaretlenir; ' +
+      'kalınlaştırma satır sonlarını kaydırmıyor. Böylece göz hep aynı yerde kalır.'
+  },
   '2.124': {
     title: '"Tüm dosyalar" seçimi artık paket adında görünüyor',
     body:

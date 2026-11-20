@@ -1130,6 +1130,30 @@ dalını `plan.scope === 'all'` ile seçer. Paket BİÇİMİ (`case.json` /
 değişince sessizce yanlış etiket üretir. Etiket doğrudan kullanıcı kararından
 (`scope`) türetilmeli.
 
+### Aşama 10w — Takip şeridi: sabit pencere (TAMAMLANDI, v2.125)
+
+**KURAL: takip şeridi SABİT yükseklikte ve O ANKİ CÜMLEYİ gösterir; vurgu
+metriği DEĞİŞTİRMEZ.**
+
+**Ölçülen hata (v2.124):** kutu `max-height:120px` idi; içerik 202–314px,
+iç kaydırma 74px (~5 satır) sıçrıyordu; `span.on` kalın+dolgu 1100px'te 8
+kelimeyi başka satıra taşıyordu.
+
+**Değişmez kurallar:**
+
+1. `.sd-follow` yüksekliği sabittir (`height`, `overflow:hidden`); içerik
+   değişse de kutu değişmez.
+2. Yalnız o anki cümle gösterilir (`karaokeSentences`): sınır noktalama veya
+   ≥0,4 sn sessizlik. Cümle değişince DOM bir kez yenilenir.
+3. Aktif kelime yalnız arka plan/çerçeve ile vurgulanır; `font-weight` veya
+   `padding` DEĞİŞTİRİLMEZ (satır sonları kayar).
+4. Kaydırma birer satırdır; konum mutlak hesaplanır (`scrollTop +=` yok).
+5. ASR `words` yalnız kelime veriyorsa aralara boşluk konur.
+
+**DERS:** Bir "vurgu" yalnız renk değildir; kalınlık/dolgu değişirse metin
+yeniden akar ve göz kaybedilir. Takip, gözün sabit bir noktada kalmasını
+gerektirir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1303,7 +1327,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.124.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.125.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1457,7 +1481,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.124)
+## Yeni oturuma devir notu (v2.125)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1465,17 +1489,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.124** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **727 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = kod commit `ae489a6` (bu devir notu ayrı bir belge commit'idir) |
-| Pages | `built` · kod commit `ae489a6` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.124'`, `version.json` = 2.124 |
+| Sürüm | **v2.125** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **742 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = v2.125 kod commit'i (push sonrası bu notta yazılır) |
+| Pages | `built` · aynı kod commit'i |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.125'`, `version.json` = 2.125 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.124 turunda ne yapıldı (23 sürüm)
+### v2.102–v2.125 turunda ne yapıldı (24 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **727**.
+Test sayısı 441 → **742**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1502,6 +1526,7 @@ Test sayısı 441 → **727**.
 | **v2.122** | **Birleştirmede onay kaybı** (onayın sahibi yoktu; sessiz düşüyordu) | `birim` [46] · `sema` [7f] |
 | **v2.123** | **Terim birliği + paket adı** (dışa/içe aktar → paket) | `birim` [38] · `surum` [11] |
 | **v2.124** | **"Tüm dosyalar" seçimi adda görünmüyordu** (ad dosya sayısına bağlıydı) | `birim` [38] |
+| **v2.125** | **Takip şeridi sabit + cümle penceresi** (5 satır atlama, reflow) | `birim` [47] · `tasarim` [2f] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1572,8 +1597,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (727 + 404 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (742 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.124 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.125 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.

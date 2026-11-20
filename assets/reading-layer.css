@@ -991,17 +991,21 @@ body.ws-mode #view-audio .seg-list {
    Kullanıcı: "Takip modunda metin görünüyor ama takip etmiyor."
    Artık sağ paneldeki metnin ÜSTÜNDE canlı okunan kısım vurgulanır. */
 #view-audio .sd-follow {
-  font-size: var(--fs-xs); line-height: var(--lh-body);
-  padding: var(--sp-2); margin-bottom: var(--sp-2);
+  /* SABİT 2 SATIR (v2.125): yükseklik içerikle değişmez, iç çubuk yok.
+     Cümle 2 satırdan uzunsa yalnız programatik olarak SATIR SATIR kayar. */
+  font-size: var(--fs-xs); line-height: 1.5;
+  padding: 6px 8px; margin-bottom: var(--sp-2);
+  height: calc(2 * 1.5em + 12px);
   background: var(--accent-soft); border: 1px solid var(--accent);
   border-radius: var(--r-sm); color: var(--ink-2);
-  max-height: 120px; overflow-y: auto;
+  overflow: hidden;
 }
 #view-audio .sd-follow span { border-radius: 3px; padding: 0 1px; transition: background .1s; }
 #view-audio .sd-follow span.done { color: var(--ink-3); }
 #view-audio .sd-follow span.on {
+  /* Metrik DEĞİŞMEZ: kalın/dolgu yok (satır sonları kaymasın). */
   background: var(--gold); color: var(--paper-ink, #1a2029);
-  font-weight: 700; padding: 0 3px;
+  box-shadow: 0 0 0 2px var(--gold);
 }
 
 /* --- v2.82 — Yerleşim düzeltmeleri ---------------------------------------
