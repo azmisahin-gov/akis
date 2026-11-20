@@ -33,6 +33,11 @@
   --lh-body: 1.55;
   --lh-loose: 1.7;
 
+  /* Spektrogram kaplaması temadan BAĞIMSIZ koyu yüzeydir (tuval üstünde
+     okunması gerekir). Ham hex yalnız burada tanımlanır. */
+  --overlay-surface: rgba(11, 26, 46, .8);
+  --overlay-ink: #fff;
+
   /* Satır uzunluğu: deşifre metni okunurken göz yorulmasın. */
   --measure: 74ch;
 

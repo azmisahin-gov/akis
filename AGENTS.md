@@ -1154,6 +1154,31 @@ kelimeyi başka satıra taşıyordu.
 yeniden akar ve göz kaybedilir. Takip, gözün sabit bir noktada kalmasını
 gerektirir.
 
+### Aşama 10x — Spektrogram analiz yüzeyi (TAMAMLANDI, v2.126)
+
+**KURAL: spektrogram yalnız GÖRÜNTÜ değildir; üzerinde çalışılır. Zaman ve
+frekans eşlemesi SAF fonksiyonlardır.**
+
+**Ölçülen hata (v2.125):** tuval 900 px iken ekranda 323 px (2,8× küçültme);
+88 px yükseklik; tıklama oynatıcıyı oynatmıyordu; `tabIndex = -1`.
+
+**Değişmez kurallar:**
+
+1. Spektrogram açıkken `.sd-body` tek sütun (`spec-mode`); tuval tam genişlik
+   ve 200 px. Dalga gizlenir.
+2. Etkileşim: tıkla = konuma git · sürükle = A–B (döngü açılır) · Alt+tıkla =
+   en yakın sınır · fare = zaman/frekans okuması.
+3. İmleç ve A–B **ayrı kaplama tuvalinde**; spektrogram her harekette yeniden
+   hesaplanmaz/çizilmez.
+4. Eşleme saf fonksiyonlarla: `specTimeAt`, `specHzAt` (log ölçek),
+   `specNearestBoundary`. Test edilir (`birim` [48]).
+5. Bölüm değişince spektrogram kapanır (`closeSegmentSpectrogram`), dalga döner.
+6. Okuma kutusu temadan bağımsız koyu yüzeydir (`--overlay-ink/surface`).
+
+**DERS:** "Gösteren" bir tuval, "üzerinde çalışılan" bir araç değildir. Analiz
+için koordinat→zaman/frekans eşlemesi ve kaplama katmanı şart; aksi hâlde
+kullanıcı resme bakar ama hiçbir şey yapamaz.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1327,7 +1352,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.125.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.126.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1481,7 +1506,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.125)
+## Yeni oturuma devir notu (v2.126)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1489,17 +1514,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.125** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **742 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = v2.125 kod commit'i (push sonrası bu notta yazılır) |
+| Sürüm | **v2.126** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **754 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = v2.126 kod commit'i (push sonrası bu notta yazılır) |
 | Pages | `built` · aynı kod commit'i |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.125'`, `version.json` = 2.125 |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.126'`, `version.json` = 2.126 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.125 turunda ne yapıldı (24 sürüm)
+### v2.102–v2.126 turunda ne yapıldı (25 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **742**.
+Test sayısı 441 → **754**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1527,6 +1552,7 @@ Test sayısı 441 → **742**.
 | **v2.123** | **Terim birliği + paket adı** (dışa/içe aktar → paket) | `birim` [38] · `surum` [11] |
 | **v2.124** | **"Tüm dosyalar" seçimi adda görünmüyordu** (ad dosya sayısına bağlıydı) | `birim` [38] |
 | **v2.125** | **Takip şeridi sabit + cümle penceresi** (5 satır atlama, reflow) | `birim` [47] · `tasarim` [2f] |
+| **v2.126** | **Spektrogram tam genişlik + etkileşim** (tıkla/sürükle/Alt/okuma) | `birim` [48] · `tasarim` [2g] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1597,8 +1623,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (742 + 404 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (754 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.125 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.126 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.

@@ -340,6 +340,29 @@ console.log('\n[2f] Takip şeridi sabit ve vurgu metrik değiştirmiyor');
   check('aktif kelime arka planla vurgulanıyor', /background/.test(on));
 }
 
+// --- 2g. Spektrogram: tam genişlik + etkileşim katmanı (v2.126) -----------
+console.log('\n[2g] Spektrogram tam genişlik ve etkileşim katmanı');
+{
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+  const spec = [...base.matchAll(/\.sd-spec-canvas\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('spektrogram yüksekliği 200px', /height:\s*200px/.test(spec), spec.trim().slice(0, 80));
+  check('spektrogram tam genişlik', /width:\s*100%/.test(spec));
+  check('spektrogram imleci crosshair', /cursor:\s*crosshair/.test(spec));
+  check(
+    'spec-mode gövdeyi tek sütuna alır',
+    /\.sd-body\.spec-mode\s*\{[^}]*grid-template-columns:\s*1fr/.test(base)
+  );
+  const ov = [...base.matchAll(/\.sd-spec-overlay\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check(
+    'kaplama mutlak ve tıklamayı engellemez',
+    /position:\s*absolute/.test(ov) && /pointer-events:\s*none/.test(ov),
+    ov.trim().slice(0, 80)
+  );
+  check('zaman/frekans okuma kutusu var', /\.sd-spec-readout\s*\{/.test(base));
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');

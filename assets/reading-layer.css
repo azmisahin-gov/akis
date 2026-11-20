@@ -1243,16 +1243,35 @@ body.ws-mode #view-audio .seg-list {
 }
 @media (max-width: 700px) { .sd-amb-fields { grid-template-columns: 1fr; } }
 
-/* --- P. v2.115 / v2.121 — Bölüm spektrogramı -----------------------------
-   v2.121: dalga ve spektrogram AYNI alanda geçişir (biri açılınca diğeri
-   kapanır). Böylece panel UZAMAZ ve sağ panelde kaydırma çubuğu çıkmaz.
-   Yükseklik dalga ile aynı (88px) → geçişte zıplama olmaz. */
+/* --- P. v2.115 / v2.121 / v2.126 — Bölüm spektrogramı --------------------
+   v2.121: dalga ve spektrogram AYNI alanda geçişir.
+   v2.126: spektrogram TAM GENİŞLİK analiz yüzeyidir (200px); üzerinde
+   tıkla/sürükle/Alt+tıkla çalışır. İmleç ve A–B ayrı katmanda çizilir. */
+#view-audio .sd-canvas-wrap { position: relative; }
 .sd-spec-canvas {
-  width: 100%; height: 88px; display: block;
+  width: 100%; height: 200px; display: block;
   border-radius: var(--r-sm); border: 1px solid var(--line-2);
+  cursor: crosshair; touch-action: none;
 }
 .sd-spec-canvas[hidden] { display: none; }
 .sd-wave-canvas[hidden] { display: none; }
+.sd-spec-overlay {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none;
+}
+.sd-spec-overlay[hidden] { display: none; }
+.sd-spec-readout {
+  position: absolute; top: 6px; right: 8px;
+  font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
+  color: var(--overlay-ink); background: var(--overlay-surface);
+  padding: 2px 7px; border-radius: 5px; pointer-events: none;
+}
+.sd-spec-readout[hidden] { display: none; }
+/* TAM GENİŞLİK: spektrogram açıkken gövde tek sütun olur; spektrogram detayın
+   tüm genişliğini kullanır, metin alta iner. Kap yükseklik dayatmaz. */
+#view-audio .sd-body.spec-mode { grid-template-columns: 1fr; }
+#view-audio .sd-body.spec-mode .sd-left { order: 1; }
+#view-audio .sd-body.spec-mode .sd-right { order: 2; }
 /* Spektrogram düğmesi açıkken görsel durum */
 .seg-tool.on { background: var(--accent); color: var(--ink-inv); border-color: var(--accent); }
 

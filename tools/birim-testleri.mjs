@@ -106,6 +106,7 @@ const EXPOSE = [
   'FOLLOW_MODES', 'followShouldAutoStart',
   'setSegReview',
   'karaokeSentences', 'activeSentenceIndex',
+  'specTimeAt', 'specHzAt', 'specNearestBoundary',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2557,6 +2558,26 @@ console.log('\n== [47] Takip şeridi: cümle penceresi');
     ]).length, 2);
     eq('boş girdi → []', T.karaokeSentences([]).length, 0);
   }
+}
+
+// --- 48. Spektrogram: zaman/frekans/sınır eşlemesi (v2.126) --------------
+// CANLI VERİ. Bilirkişi: "spektrogram üzerinde herhangi bir işlem yapamıyorum;
+// burası analiz için çok işlevsel olabilir." Tıklama/sürükleme için tuvâl
+// koordinatını zamana ve frekansa çeviren saf fonksiyonlar gerekir.
+console.log('\n== [48] Spektrogram: zaman/frekans/sınır');
+{
+  eq('sol kenar = bölüm başı', T.specTimeAt(0, 100, 10, 20), 10);
+  eq('sağ kenar = bölüm sonu', T.specTimeAt(100, 100, 10, 20), 20);
+  eq('orta = orta', T.specTimeAt(50, 100, 10, 20), 15);
+  eq('dışı kırpılır (sol)', T.specTimeAt(-20, 100, 10, 20), 10);
+  eq('dışı kırpılır (sağ)', T.specTimeAt(140, 100, 10, 20), 20);
+  near('tepe = 8 kHz', T.specHzAt(0, 200, 48000), 8000, 1);
+  near('taban = 20 Hz', T.specHzAt(200, 200, 48000), 20, 0.5);
+  near('orta = 400 Hz (log ölçek)', T.specHzAt(100, 200, 48000), 400, 1);
+  near('8k örneklemede tepe = 4k', T.specHzAt(0, 200, 8000), 4000, 1);
+  eq('yakın sınır başlangıç', T.specNearestBoundary(9, 10, 20), 'start');
+  eq('yakın sınır bitiş', T.specNearestBoundary(16, 10, 20), 'end');
+  eq('tam orta → başlangıç', T.specNearestBoundary(15, 10, 20), 'start');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

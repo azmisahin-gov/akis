@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.125.**
+yazılır. **Güncel sürüm: v2.126.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.126 — Spektrogram: tam genişlik + etkileşim (tamamlandı)
+
+Spektrogram açıkken gövde tek sütun; tuval 773 px / 200 px. Tıkla = konuma git,
+sürükle = A–B (döngü açılır), Alt+tıkla = sınır, fare = zaman/frekans okuması.
+İmleç/A–B ayrı kaplamada. `birim` [48], `tasarim` [2g].
 
 ### v2.125 — Takip şeridi sabit: cümle penceresi (tamamlandı)
 

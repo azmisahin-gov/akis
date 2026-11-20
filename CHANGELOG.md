@@ -6,12 +6,51 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.125.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.126.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.126 — Spektrogram: tam genişlik analiz yüzeyi
+
+CANLI VERİ. Bilirkişi: *"spektrograma basınca … herhangi bir işlem
+yapamıyorum … burası analiz için çok işlevsel olabilir … wave yerine sadece
+spektrogram mı gösterseydik ama üzerinde yine işlem yapabilmeliyiz."*
+
+### ÖLÇÜM (v2.125)
+
+| Ölçüm | Sonuç |
+|---|---|
+| İç tuval / ekranda | 900 px → **323 px** (2,8× yatay küçültme) |
+| Yükseklik | 88 px |
+| Tıklama | oynatıcı konumu **değişmiyor** |
+| Klavye odağı | `tabIndex = -1` |
+
+### DÜZELTME
+
+- **Tam genişlik**: spektrogram açıkken gövde tek sütun (`spec-mode`); tuval
+  **773 px** (detay 801), yükseklik **200 px**. Dalga gizlenir.
+- **Etkileşim**: tıkla = konuma git · sürükle = A–B seç (döngü açılır) ·
+  Alt+tıkla = en yakın sınırı taşı · fare = zaman/frekans okuması.
+- **Kaplama katmanı**: imleç ve A–B ayrı tuvalde çizilir; spektrogram her
+  harekette YENİDEN HESAPLANMAZ.
+- **Okuma**: `00:00:01.000 · 1,8 kHz` (log ölçek, örnekleme hızından).
+- Bölüm değişince dalgaya döner; kapatınca dalga geri gelir.
+
+### KULLANICI NE GÖRECEK
+
+- Spektrogram artık **geniş ve büyük**; ayrıntı kaybolmuyor.
+- Üzerinde **tıklayıp dinleyebilir**, zor aralığı **sürükleyip A–B döngüsüne**
+  alabilir, sınırı **Alt+tıkla** ile taşıyabilirsiniz.
+- Fareyi gezdirince **zaman ve frekans** yazar.
+
+### Koruyan testler
+
+`birim` [48] (zaman/frekans/sınır eşlemesi), `tasarim` [2g] (tam genişlik,
+200 px, kaplama). Gerçek Chromium: genişlik **773 px**, tıkla → `currentTime
+1.5`, sürükle → `A 0.6 → B 1.2`, Alt+tıkla → `end 1.8`.
 
 ## v2.125 — Takip şeridi sabit: cümle penceresi
 
