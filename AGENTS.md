@@ -1539,8 +1539,8 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 |---|---|
 | Sürüm | **v2.127** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **761 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = v2.127 kod commit'i (push sonrası bu notta yazılır) |
-| Pages | `built` · aynı kod commit'i |
+| Uzak dal | `main` = kod commit `636bd77` (bu devir notu ayrı bir belge commit'idir) |
+| Pages | `built` · kod commit `636bd77` (canlı doğrulandı) |
 | Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.127'`, `version.json` = 2.127 |
 | Açık konu | **Yok** |
 
