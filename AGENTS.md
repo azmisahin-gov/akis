@@ -695,6 +695,34 @@ Kullanıcı tek dosya sandı. Dosya adında **saat yoktu** → aynı gün üzeri
 Kapsam **açık seçim** olmalı; ayrıca her düğmenin `title`'ı olmalı (masaüstü
 uygulaması beklentisi).
 
+
+### Aşama 10i — Çözümleme profili: kayıt başına sabit + görünür (v2.111)
+
+**KURAL: profil çözümleme BAŞINDA bir kez sabitlenir.** `transcribeWindow()`
+kendi başına `localStorage` okumaz.
+
+**Ölçülen hata (v2.110):** `transcribeWindow()` her pencerede
+`savedProfilePref()` çağırıyordu. Uzun çözümleme sürerken profil değişirse aynı
+kaydın bölümleri **farklı profille** çözümlenirdi. Ayrıca kayıtta profil
+saklanmıyor, ekranda yazmıyordu.
+
+**Değişmez kurallar:**
+1. `transcribe()` → `const runProfile = savedProfilePref()` (bir kez) →
+   `transcribeWindow(pipe, window, offset, runProfile)`.
+2. `material.transcribedWithProfile` kayda yazılır.
+3. Bölüm yeniden çözümlemesi kendi `segProfile`'ını sabitler.
+4. `PROFILE_LOCK = {language:'turkish', task:'transcribe'}` — profil gevşetmez.
+5. Profil RAPORA yazılmaz (`REPORT_TEXT`'te "profil" geçmez).
+6. Ekranda KISA etiket (`profileRunLabel`), uzun açıklama ipucunda.
+
+**Ölçüm (v2.111, gerçek Chromium):** kayıt kartı "Şive/aksan" + ipucu; bölüm
+paneli "Profil: Şive/aksan"; model rozeti yanında; raporda profil adı YOK.
+
+**Test dersi (tekrar):** `sema-testi` `transcribeWindow(pipe, slice, a)` imzasını
+birebir arıyordu, imza değişince kırıldı. İmza testi **davranışa** çevrildi
+(`transcribeWindow(\s*pipe,\s*slice,\s*a\b`). Bu ders ikinci kez yaşandı;
+yeni test yazarken imza değil DAVRANIŞ sınanmalı.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -868,7 +896,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.110.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.111.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1026,7 +1054,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.110` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.111` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

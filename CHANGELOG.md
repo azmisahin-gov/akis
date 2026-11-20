@@ -6,12 +6,60 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.110.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.111.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.111 — Çözümleme profili kayıt başına sabitlenir ve görünür
+
+CANLI VERİ. Bilirkişi: *"tek çözümlemelerde bir bölüme gelip çözümle dediğimde
+hangi profili kullanıyor, en son seçtiğim profil mi, ondan emin olamadım."*
+
+### ÖLÇÜM (v2.110)
+
+```
+transcribeWindow() içinde:  const attempts = asrProfileOptions(savedProfilePref());
+transcribe() döngüsü:       for (const win of asrWindows(total)) { ... transcribeWindow(...) }
+```
+
+Yani **her pencere ayrı ayrı** `localStorage`'dan profil okuyordu. Uzun bir
+çözümleme sürerken kullanıcı profili değiştirirse aynı kaydın farklı bölümleri
+**farklı profille** çözümlenirdi. Ayrıca kayıtta hangi profilin kullanıldığı
+saklanmıyordu (`transcribedWithModel` var, profil yok) ve bölüm panelinde
+hiçbir yerde yazmıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Kayıt kartında** kısa rozet: `Standart` · `Şive/aksan` · `Gürültülü` · `Telefon`
+- **Bölüm panelinde** "Profil" alanı (aynı kısa etiket)
+- Üzerine gelince **ne anlama geldiği** yazar (uzun açıklama ipucunda)
+- **Profil adı rapora yazılmaz** (yalnız çözümleme ayarıdır)
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Profil çözümleme BAŞINDA bir kez sabitlenir.** `transcribe()` içinde
+   `runProfile` alınır, `transcribeWindow(pipe, window, offset, runProfile)`'a
+   geçirilir. `transcribeWindow` kendi başına `localStorage` OKUMAZ (yalnız
+   parametre verilmezse geriye dönük uyum için okur).
+2. Kayda yazılır: `material.transcribedWithProfile`.
+3. Bölüm yeniden çözümlemesi de **kendi** profilini sabitler (`segProfile`).
+4. **Dil kilidi değişmez**: `PROFILE_LOCK = { language: 'turkish', task: 'transcribe' }`.
+   Profil bunu gevşetmez (test: 4 profil × 2 kontrol).
+5. Profil RAPORA yazılmaz (`REPORT_TEXT` içinde "profil" geçmez).
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+Kayıt kartı rozeti   : "Şive/aksan" + ipucu            ✅
+Bölüm paneli "Profil": "Şive/aksan" + ipucu            ✅
+Model rozeti         : "Küçük model" (yanında)          ✅
+Raporda profil adı   : YOK  (hasSive=false, hasProfil=false) ✅
+```
+
+`birim-testleri` **[39]** — 22 kontrol.
 
 ## v2.110 — "Dışa aktar" sessizce TÜM dosyaları alıyordu
 

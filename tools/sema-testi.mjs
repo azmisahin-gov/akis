@@ -1185,7 +1185,12 @@ console.log('\n[13] Bölüm aralığını yeniden çözümle');
   ok('retranscribeSegment var', /async function retranscribeSegment\(materialId, index\)/.test(app));
   ok('zaman aralığı doğrulanıyor', /secondsFromTimecode\(s\.start\)[\s\S]{0,300}secondsFromTimecode\(s\.end\)/.test(app));
   ok('ses aralığa kırpılıyor (subarray)', /audio\.subarray\(from, to\)/.test(app));
-  ok('yalnız o aralık modele veriliyor', /transcribeWindow\(pipe, slice, a\)/.test(app));
+  // İmza birebir aranmaz (v2.111'de profil parametresi eklendi). Davranış
+  // sınanır: yalnız KESİLEN dilim modele verilir.
+  ok(
+    'yalnız o aralık modele veriliyor',
+    /transcribeWindow\(\s*pipe,\s*slice,\s*a\b/.test(app)
+  );
   // Sınır imzaya bağlanmaz: `transcribe(id)` v2.103'te `transcribe(id, opts)`
   // oldu. İmzayı birebir aramak testi kırılgan yapar ve gerçek davranışı değil
   // yazımı sınar.

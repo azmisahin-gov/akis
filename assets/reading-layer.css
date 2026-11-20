@@ -1171,3 +1171,19 @@ body.ws-mode #view-audio .seg-list {
 .scope-choice input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
 .scope-body b { display: block; font-size: var(--fs-sm); color: var(--ink); }
 .scope-body small { display: block; font-size: var(--fs-xs); color: var(--ink-3); margin-top: 2px; }
+
+/* --- M. v2.111 — Çözümleme profili rozeti --------------------------------
+   Kullanıcı "hangi profille çözümlendi" sorusunu ekranda görmeli; ayrıntı
+   ipucunda. Liste kalabalıklaşmasın diye KISA etiket kullanılır. */
+.head-profile {
+  font-size: var(--fs-2xs);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.sd-profile { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.sd-profile > span { font-size: var(--fs-2xs); color: var(--ink-3); }
+.sd-profile > b { font-size: var(--fs-xs); color: var(--ink-2); font-weight: 600; }

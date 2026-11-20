@@ -97,6 +97,7 @@ const EXPOSE = [
   'canArchiveCase', 'caseShortId', 'caseDisplayName',
   'casesForStorage', 'isEmptyWorkspace',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
+  'profileRunLabel', 'profileById', 'PROFILE_LOCK',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2085,6 +2086,48 @@ console.log('\n[38] Dışa aktarma kapsamı ve dosya adı');
   const later = new Date('2026-11-20T16:46:00');
   eq('farklı dakika farklı ad', T.backupFileName({ kind: 'single', cases: [A] }, fixed) !==
     T.backupFileName({ kind: 'single', cases: [A] }, later), true);
+}
+
+// --- 39. Çözümleme profili: kayıt başına sabitlenir ve görünür (v2.111) ---
+// CANLI VERİ. Bilirkişi: "tek çözümlemelerde bir bölüme gelip çözümle dediğimde
+// hangi profili kullanıyor, en son seçtiğim profil mi, ondan emin olamadım."
+// ÖLÇÜM (v2.110): `transcribeWindow()` HER PENCEREDE `savedProfilePref()`
+// okuyordu. Uzun bir çözümleme sürerken kullanıcı profili değiştirirse aynı
+// kaydın farklı bölümleri FARKLI profille çözümlenirdi. Ayrıca kayıtta hangi
+// profilin kullanıldığı saklanmıyordu ve bölüm panelinde yazmıyordu.
+console.log('\n[39] Çözümleme profili: kayıt başına sabit + görünür');
+{
+  eq('profileRunLabel tanımlı', typeof T.profileRunLabel, 'function');
+  eq('profileById tanımlı', typeof T.profileById, 'function');
+
+  // 1) Profil kimliği → kısa etiket (ekranda uzun metin olmaz).
+  eq('standart profil etiketi', T.profileRunLabel('standard'), 'Standart');
+  eq('şive profili etiketi', T.profileRunLabel('dialect'), 'Şive/aksan');
+  eq('gürültü profili etiketi', T.profileRunLabel('noisy'), 'Gürültülü');
+  eq('telefon profili etiketi', T.profileRunLabel('telephone'), 'Telefon');
+  // 2) Bilinmeyen/boş profil güvenli davranır (uydurma etiket yok).
+  eq('bilinmeyen profil → Standart', T.profileRunLabel('zzz'), 'Standart');
+  eq('boş profil → Standart', T.profileRunLabel(''), 'Standart');
+  eq('null → Standart', T.profileRunLabel(null), 'Standart');
+
+  // 3) profileById: bilinmeyen kimlik standart profile düşer.
+  eq('profileById standard', T.profileById('standard').id, 'standard');
+  eq('profileById bilinmeyen → standard', T.profileById('yok').id, 'standard');
+
+  // 4) DİL KİLİDİ: profil ne olursa olsun dil Türkçe, görev transcribe.
+  eq('dil kilidi tanımlı', T.PROFILE_LOCK.language, 'turkish');
+  eq('görev kilidi transcribe', T.PROFILE_LOCK.task, 'transcribe');
+  for (const id of ['standard', 'dialect', 'noisy', 'telephone']) {
+    const opts = T.asrProfileOptions(id);
+    eq(`${id}: dil Türkçe kalır`, opts.every((o) => o.language === 'turkish'), true);
+    eq(`${id}: görev transcribe kalır`, opts.every((o) => o.task === 'transcribe'), true);
+  }
+
+  // 5) Profil RAPORA yazılmaz. Sürüm notu (VERSION_NOTICES) kullanıcıya gösterilen
+  // arayüz metnidir, rapor değil; bu yüzden yalnız RAPOR metinleri sınanır.
+  const reportText = JSON.stringify(T.REPORT_TEXT || {});
+  eq('rapor metinlerinde "Şive/aksan" etiketi yok', /Şive\/aksan/.test(reportText), false);
+  eq('rapor metinlerinde "profil" kelimesi yok', /profil/i.test(reportText), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

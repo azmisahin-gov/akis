@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.110.**
+yazılır. **Güncel sürüm: v2.111.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.111 — Çözümleme profili kayıt başına sabit (tamamlandı, canlı veri)
+
+`transcribeWindow()` her pencerede `savedProfilePref()` okuyordu: uzun çözümleme
+sürerken profil değişirse aynı kaydın bölümleri farklı profille çözümlenirdi.
+Profil artık çözümleme başında sabitlenir, `material.transcribedWithProfile`'a
+yazılır ve kayıt kartı + bölüm panelinde kısa rozetle görünür. Dil kilidi
+(`PROFILE_LOCK`) korunur; profil rapora yazılmaz. `birim-testleri` [39] +
+gerçek Chromium korur.
 
 ### v2.110 — Dışa aktarma kapsamı ve dosya adı (tamamlandı, canlı veri)
 

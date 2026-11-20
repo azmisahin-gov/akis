@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.110';
+const APP_VERSION = '2.111';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1459,7 +1459,7 @@ function audioStatusZoneHtml(m) {
   const status = materialStatusLabel(m);
   const stCode = materialStatus(m);
   const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -3607,6 +3607,11 @@ function segDetailHtml(m) {
       <div class="sd-meta">
         <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
         <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+        <span class="sd-field sd-profile" title="${esc(
+          'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
+            'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
+            'Bir sonraki çözümleme, Ayarlar\'daki güncel profili kullanır.'
+        )}"><span>Profil</span><b>${esc(m.transcribedWithProfile ? profileRunLabel(m.transcribedWithProfile) : 'Henüz çözümlenmedi')}</b></span>
       </div>
       <div class="sd-obs">${obsBtns}</div>
     </div>
@@ -6310,13 +6315,18 @@ function parseAsrResult(result, offsetSeconds, windowSeconds) {
   }
   return out;
 }
-async function transcribeWindow(pipe, window, offsetSeconds) {
+// `profileId` ÇAĞIRAN tarafından verilir (v2.111). NEDEN: v2.110 ve öncesinde
+// bu fonksiyon HER PENCEREDE `savedProfilePref()` okuyordu. Uzun bir çözümleme
+// sürerken kullanıcı profili değiştirirse aynı kaydın farklı bölümleri FARKLI
+// profille çözümlenirdi — kayıt kendi içinde tutarsız olurdu. Profil artık
+// çözümleme BAŞINDA bir kez sabitlenir ve kayda yazılır.
+async function transcribeWindow(pipe, window, offsetSeconds, profileId) {
   // Zaman damgası merdiveni: bazı Whisper ONNX modelleri `return_timestamps`
   // seçeneklerini desteklemez veya bozuk çıktı üretir. Sırayla denenir ve ilk
   // ANLAMLI sonuç kullanılır. Çöp çıktı hiçbir zaman kabul edilmez.
   // Türkçe dil ve transkripsiyon görevi sabittir; profil yalnız bağlam istemi
-  // ve tekrar ayarlarını değiştirir (bkz. ASR_PROFILES).
-  const attempts = asrProfileOptions(savedProfilePref());
+  // ve tekrar ayarlarını değiştirir (bkz. ASR_PROFILES / PROFILE_LOCK).
+  const attempts = asrProfileOptions(profileId || savedProfilePref());
   for (const opts of attempts) {
     let result;
     try {
@@ -6339,6 +6349,7 @@ async function transcribeWindow(pipe, window, offsetSeconds) {
 const ASR_PROFILES = [
   {
     id: 'standard',
+    short: 'Standart',
     label: 'Standart Türkçe konuşma',
     hint: 'Varsayılan. Net, gürültüsüz görüşme kayıtları.',
     prompt: '',
@@ -6346,6 +6357,7 @@ const ASR_PROFILES = [
   },
   {
     id: 'dialect',
+    short: 'Şive/aksan',
     label: 'Şive / ağır aksan (ipucu)',
     hint: 'Yalnızca dil ipucu ve bağlam istemi ekler; şive tanıma modeli DEĞİLDİR.',
     prompt: 'Konuşma Türkçedir; yerel şive ve ağır aksan içerebilir.',
@@ -6353,6 +6365,7 @@ const ASR_PROFILES = [
   },
   {
     id: 'noisy',
+    short: 'Gürültülü',
     label: 'Gürültülü / kıcırtılı kayıt (ipucu)',
     hint: 'Bağlam istemi ve tekrar cezası ekler; kaynak ayrıştırma YAPMAZ.',
     prompt: 'Kayıt gürültülü veya kıcırtılı olabilir; anlaşılan konuşmayı yaz.',
@@ -6360,6 +6373,7 @@ const ASR_PROFILES = [
   },
   {
     id: 'telephone',
+    short: 'Telefon',
     label: 'Telefon / dar bant (ipucu)',
     hint: 'Dar bantlı telefon kaydı için bağlam istemi; bant genişliğini geri getirmez.',
     prompt: 'Kayıt dar bantlı bir telefon görüşmesidir.',
@@ -6367,8 +6381,19 @@ const ASR_PROFILES = [
   }
 ];
 const ASR_PROFILE_KEY = 'akis.asrProfile';
+// DİL KİLİDİ (değişmez): profil yalnız ipucu/bağlam değiştirir. Kaynak dil
+// Türkçe ve görev transkripsiyon HER ZAMAN sabittir; profil bunu gevşetmez.
+const PROFILE_LOCK = Object.freeze({ language: 'turkish', task: 'transcribe' });
 function asrProfile(id) {
   return ASR_PROFILES.find((p) => p.id === id) || ASR_PROFILES[0];
+}
+// Tek kaynak: profil kimliği → ASR_PROFILES kaydı. Bilinmeyen kimlik standart.
+function profileById(id) {
+  return asrProfile(id);
+}
+// Ekranda gösterilecek KISA etiket. Uzun açıklama `hint` alanında (ipucu).
+function profileRunLabel(id) {
+  return asrProfile(id).short || 'Standart';
 }
 function savedProfilePref() {
   try {
@@ -6448,7 +6473,9 @@ async function retranscribeSegment(materialId, index) {
       showToast('Aralık ses dosyasının dışında. Sınırları kontrol edin.');
       return;
     }
-    const found = await transcribeWindow(pipe, slice, a);
+    // Bölüm yeniden çözümlemesi de kendi profilini sabitler (v2.111).
+    const segProfile = savedProfilePref();
+    const found = await transcribeWindow(pipe, slice, a, segProfile);
     const meaningful = found.filter((f) => !isHallucination(f.text));
     if (!meaningful.length) {
       // Çıkmaz sokak bırakma: sessizliği ÖLÇ ve ne olduğunu somut söyle.
@@ -6623,6 +6650,9 @@ async function transcribe(id, opts = {}) {
     showToast('Ses dosyası yerel depoda bulunamadı. Yeniden ekleyin.');
     return;
   }
+  // PROFİLİ BURADA SABİTLE (v2.111): çözümleme sürerken seçim değişse bile bu
+  // kayıt baştan sona AYNI profille çözümlenir. Kayda yazılır; ekranda görünür.
+  const runProfile = savedProfilePref();
   try {
     const pipe = await ensureModel();
     m.status = 'transcribing';
@@ -6649,7 +6679,7 @@ async function transcribe(id, opts = {}) {
       let found = [];
       let windowError = null;
       try {
-        found = await transcribeWindow(pipe, window, startSeconds);
+        found = await transcribeWindow(pipe, window, startSeconds, runProfile);
       } catch (err) {
         windowError = err;
         console.warn('Pencere çözümlenemedi', offset, err);
@@ -6699,6 +6729,9 @@ async function transcribe(id, opts = {}) {
     delete m.progress;
     m.transcribedAt = new Date().toISOString();
     m.transcribedWithModel = (asrPipeline && asrPipeline.__modelId) || null;
+    // Hangi çözümleme profili kullanıldı (v2.111). RAPORA YAZILMAZ; yalnız
+    // "bu kayıt hangi ayarla çözümlendi" sorusunu yanıtlar.
+    m.transcribedWithProfile = runProfile;
     logEvent(m, 'Çözümleme tamamlandı', `${meaningful.length} anlamlı bölüm, ${fillerCount || 0} dolgu bölümü`);
     const text = meaningful.map((s) => s.text).join(' ');
     if (looksNonTurkish(text)) {
@@ -10592,6 +10625,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.111': {
+    title: 'Hangi çözümleme profiliyle çözümlendiği artık görünüyor',
+    body:
+      'Bir kaydı çözümlediğinizde hangi profilin kullanıldığı belirsizdi; "en son ' +
+      'seçtiğim mi?" diye emin olamıyordunuz. Artık kayıt kartında ve bölüm panelinde ' +
+      'kısa bir rozet var: Standart · Şive/aksan · Gürültülü · Telefon. Üzerine ' +
+      'gelince ne anlama geldiği yazar. Ayrıca daha önemli bir hata düzeltildi: uzun ' +
+      'bir çözümleme sürerken profili değiştirirseniz aynı kaydın farklı bölümleri ' +
+      'FARKLI profille çözümlenebiliyordu. Artık profil çözümleme başında bir kez ' +
+      'sabitlenir; kayıt baştan sona aynı profille çözümlenir. Profil adı RAPORA ' +
+      'yazılmaz (yalnız çözümleme ayarıdır).'
+  },
   '2.110': {
     title: 'Yedek artık neyi aktardığınızı soruyor',
     body:
