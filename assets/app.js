@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.129';
+} from './schema.js?v=2.130';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.129';
+const APP_VERSION = '2.130';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3535,7 +3535,7 @@ function segItemHtml(m, s, i, prev) {
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time">${esc(s.start || '—')}</span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
-    <span class="seg-badges">${spk}${propBadge}${segPriorityBadge(s, prev)}${state}</span>
+    <span class="seg-badges">${state}${propBadge}${spk}${segPriorityBadge(s, prev)}</span>
   </div>`;
 }
 function segListHtml(m) {
@@ -11589,6 +11589,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.130': {
+    title: 'Bölüm listesinde onay durumu artık görünüyor',
+    body:
+      'Liste satırındaki rozet alanı sabit 96 pikseldi ve taşan kısım gizleniyordu. ' +
+      'Durum rozeti en sonda olduğu için "Bekliyor / Onaylandı / Çözümlendi" HİÇ ' +
+      'görünmüyordu; satırda yalnız "Öncelik" rozeti vardı. Artık durum rozeti ilk ' +
+      'sırada ve her zaman görünür. Rozetler sığmazsa alt satıra sarar, hiçbiri ' +
+      'kesilmez. Dar ekranda rozetler metnin altına iner; metin sütunu daralmaz.'
+  },
   '2.129': {
     title: 'Ses görünümü artık taşmıyor: tek kaydırma',
     body:

@@ -1393,3 +1393,26 @@ body.ws-mode .workspace-bar {
 @media (max-width: 900px) {
   #view-audio .seg-list { height: auto !important; max-height: none !important; }
 }
+
+/* ============================================================================
+   v2.130 — BÖLÜM ROZETİ: DURUM HER ZAMAN GÖRÜNÜR.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.129, 60 bölüm, 1440×900):
+     #view-audio .seg-badges { max-width:96px; overflow:hidden }
+     rozet sağ kenarları 591 ve 656 · kap sağ kenarı 582
+     → durum rozeti ("Bekliyor" / "Onaylandı") HİÇ görünmüyordu; satırda yalnız
+       "Öncelik: Düşü…" vardı. Bilirkişi listede onay durumunu göremiyordu.
+   KURAL: rozet kutusu sabit genişliğe kilitlenmez; sığmayan rozet SARAR.
+   Dar ekranda rozetler metnin ALTINA iner; metin sütunu ezilmez.
+   ============================================================================ */
+#view-audio .seg-badges {
+  max-width: none;
+  overflow: visible;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 2px;
+}
+@media (max-width: 1200px) {
+  #view-audio .seg-item { grid-template-columns: 20px 84px minmax(0, 1fr); }
+  #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
+}

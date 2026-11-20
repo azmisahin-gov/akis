@@ -1258,6 +1258,36 @@ ama `.seg-list` 612 px → liste kabı taşıyor. `kbd-fold` (y817) ve `.sd-acti
 alt içerik **sessizce** kaybolur. "Sayfa kaymıyor" belirtisi, iç kaydırma
 kaplarının yanlış hesaplandığını gösterir; tek kaydırma en dayanıklı çözümdür.
 
+### Aşama 10ab — Bölüm rozeti görünürlüğü (TAMAMLANDI, v2.130)
+
+**KURAL: listede durum rozeti HER ZAMAN görünür; rozet kutusu sabit genişliğe
+kilitlenmez, sığmayan rozet SARAR.**
+
+**Ölçülen hata (v2.129, 60 bölüm):** `#view-audio .seg-badges` kuralı
+`max-width:96px; overflow:hidden` idi. Rozet sırası konuşmacı → öneri → öncelik
+→ **durum** olduğu için, kap dolunca **en önemli bilgi ilk kesilen** oldu:
+rozet sağ kenarları 591 ve 656, kap sağ kenarı 582 → "Bekliyor / Onaylandı /
+Çözümlendi" **hiç görünmüyordu**; satırda yalnız "Öncelik: Düşü…" vardı.
+Bilirkişi listede onay durumunu göremiyordu (ekran görüntüsüyle doğrulandı).
+
+**Düzeltme:**
+1. `segItemHtml` → durum rozeti **ilk sırada** (`${state}${propBadge}${spk}${prio}`).
+   Kırpılacaksa en önemsiz kırpılsın.
+2. `reading-layer.css` → `#view-audio .seg-badges { max-width:none;
+   overflow:visible; flex-wrap:wrap; justify-content:flex-end }`.
+3. `@media (max-width:1200px)` → rozetler `grid-column:3` ile metnin **altına**
+   iner; metin sütunu ezilmez.
+
+**Ölçüm (v2.130, gerçek Chromium):** 1440 → satır 37 px, metin 181, rozet 170;
+1280 → 37/120/170; 1200 → 59/267/267 (alt satır); 900 → 59/181/181.
+Durum rozeti **her genişlikte görünür**, kesilen rozet **0**.
+
+**DERS:** `max-width` + `overflow:hidden` bir rozet şeridinde "sessiz kesme"dir.
+Sıra da önemlidir: en önemli bilgi **sona** yazılırsa ilk kesilen o olur.
+Kırpma kararı verilecekse sıralama bilinçli seçilmeli; tercih **sarmaktır**.
+
+**Koruyan test:** `tasarim-testi` [2j] (5 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1431,7 +1461,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.129.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.130.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1593,7 +1623,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.129** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.130** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1635,6 +1665,7 @@ Test sayısı 441 → **782**.
 | **v2.127** | **Yerleşim: metin listeye bitişik + kontroller yanında** | `birim` [49] · `tasarim` [2h] |
 | **v2.128** | **Katmanlı analiz kutusu** (dalga+spek aynı yerde, 3 mod) | `birim` [50] · `tasarim` [2g] |
 | **v2.129** | **Ses görünümü tek kaydırma** (taşma, kısayol/araç görünmüyordu) | `tasarim` [2i] |
+| **v2.130** | **Bölüm rozeti: durum her zaman görünür** (96 px kapta kırpılıyordu) | `tasarim` [2j] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.129.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.130.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.130 — Bölüm listesinde onay durumu artık görünüyor
+
+DENETİM. v2.129 sonrası gerçek veriyle (60 bölüm, 1440×900) yapılan tarayıcı
+ölçümü, bölüm listesinde **durum rozetinin hiç görünmediğini** ortaya çıkardı.
+
+### ÖLÇÜM (v2.129, 60 bölüm)
+
+| Ölçüm | Sonuç |
+|---|---|
+| `#view-audio .seg-badges` | `max-width: 96px; overflow: hidden` |
+| Rozet sağ kenarları | **591** ve **656** |
+| Kap sağ kenarı | **582** |
+| Görünen | yalnız "Öncelik: Düşü…" |
+| Görünmeyen | **"Bekliyor / Onaylandı / Çözümlendi"** |
+
+Rozet sırası konuşmacı → öneri → öncelik → **durum** idi. Sabit 96 px'lik kap
+dolunca **en önemli bilgi (durum) ilk kesilen** oldu.
+
+### DÜZELTME
+
+- Durum rozeti **ilk sıraya** alındı (`segItemHtml`).
+- Rozet kutusu sabit genişliğe kilitlenmiyor: `max-width: none`,
+  `overflow: visible`, `flex-wrap: wrap`. Sığmayan rozet **sarar**, kesilmez.
+- ≤1200 px'te rozetler **metnin altına** iner; metin sütunu daralmıyor.
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm listesinde her satırda **onay durumu** (Bekliyor / Onaylandı /
+  Çözümlendi / Anlaşılmadı / Yeniden / Belirsiz) artık **görünüyor**.
+- Rozetler kesilmiyor; sığmazsa alt satıra geçiyor. Dar ekranda satır biraz
+  uzuyor, bilgi eksilmiyor.
+
+### ÖLÇÜM (v2.130, gerçek Chromium)
+
+| Genişlik | Satır | Metin | Rozetler | Durum görünür |
+|---|---|---|---|---|
+| 1440 | 37 px | 181 px | 170 px | ✅ |
+| 1280 | 37 px | 120 px | 170 px | ✅ |
+| 1200 | 59 px | 267 px | 267 px (alt satır) | ✅ |
+| 1100 | 59 px | 229 px | 229 px (alt satır) | ✅ |
+| 900 | 59 px | 181 px | 181 px (alt satır) | ✅ |
+| 760 | 59 px | 181 px | 181 px (alt satır) | ✅ |
+
+Kesilen rozet: **0** (önce: durum rozeti hiç görünmüyordu).
+
+Koruyan test: `tasarim-testi` [2j] (5 kontrol) — düzeltme yokken **KALDI**.
 
 ## v2.129 — Ses görünümü: tek kaydırma, taşma yok
 

@@ -399,6 +399,39 @@ console.log('\n[2i] Ses görünümü: tek kaydırma (v2.129)');
   check('çalışma modunda üst bar yapışkan', /body\.ws-mode \.workspace-bar\s*\{[^}]*position:\s*sticky/.test(base));
 }
 
+// --- 2j. Bölüm rozeti: durum HER ZAMAN görünür (v2.130) ---------------------
+// ÖLÇÜM (v2.129): `#view-audio .seg-badges{max-width:96px;overflow:hidden}`.
+// Durum rozeti DOM'da EN SONDA olduğu için hiç görünmüyordu (sağ kenar 656 >
+// kap 582). Satırda yalnız "Öncelik: Düşü…" görünüyordu; bilirkişi onay
+// durumunu listede göremiyordu.
+console.log('\n[2j] Bölüm rozeti: durum her zaman görünür (v2.130)');
+{
+  const rl = read('assets/reading-layer.css');
+  const appJs = read('assets/app.js');
+  const badgeRules = [...rl.matchAll(/#view-audio \.seg-badges[^{]*\{[^}]*\}/g)].map((m) => m[0]);
+  // Kötü kural `app.css`te (max-width:96px + overflow:hidden). Okuma katmanı
+  // onu AÇIKÇA ezmeli; "kural yok" yeterli değil (eski katman hâlâ yürürlükte).
+  check(
+    'rozet kabi sabit dar değil (max-width: none ile ezilir)',
+    badgeRules.some((r) => /max-width:\s*none/.test(r))
+  );
+  check(
+    'rozet kabi taşmayı gizlemiyor (overflow: visible ile ezilir)',
+    badgeRules.some((r) => /overflow:\s*visible/.test(r))
+  );
+  check('rozetler sığmazsa sarar (flex-wrap: wrap)', badgeRules.some((r) => /flex-wrap:\s*wrap/.test(r)));
+
+  const inner = (appJs.match(/<span class="seg-badges">([^`]*)<\/span>/) || [])[1] || '';
+  check(
+    'durum rozeti ilk sırada (kırpılacaksa en önemsiz kırpılsın)',
+    inner.includes('${state}') && inner.indexOf('${state}') < inner.indexOf('${spk}')
+  );
+  check(
+    'dar ekranda rozetler metnin altına iner',
+    /@media[^{]*max-width:\s*1200px[\s\S]{0,400}grid-column:\s*3/.test(rl)
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
