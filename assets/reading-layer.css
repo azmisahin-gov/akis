@@ -667,10 +667,13 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
 
 /* 1) Başlık */
 #view-audio .sd-head {
-  display: flex; align-items: center; justify-content: space-between;
+  /* KONTROLLER SOLDA (v2.127): oynat/ok düğmeleri segment listesinin yanında
+     kalsın. Önce `space-between` ile sağa yaslıydı; listeden 699 px uzaktaydı. */
+  display: flex; align-items: center; justify-content: flex-start;
   gap: var(--sp-2); padding-bottom: var(--sp-2);
   border-bottom: 1px solid var(--line); flex-wrap: wrap;
 }
+#view-audio .sd-nav { margin-left: var(--sp-2); }
 #view-audio .sd-idx { font-weight: 700; font-size: var(--fs-sm); color: var(--ink); }
 #view-audio .sd-idx .sd-of { font-weight: 400; color: var(--ink-3); }
 #view-audio .sd-nav { display: flex; gap: 4px; flex-wrap: wrap; }
@@ -815,13 +818,18 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
 #view-audio .seg-list { height: auto !important; max-height: 68vh; overflow-y: auto; }
 #view-audio .seg-detail { height: auto !important; overflow: visible !important; }
 
-/* İki sütun gövde */
+/* İki sütun gövde — METİN SOLDA (v2.127): metin, segment listesine BİTİŞİK
+   olur; teknik kolon (dalga/zaman/konuşmacı) sağa geçer. Ölçüm: liste→metin
+   boşluğu 361 px → ~10 px. `order` ile görsel sıra değişir; DOM okunabilirliği
+   metin önce olacak şekilde korunur. */
 #view-audio .sd-body {
   display: grid;
-  grid-template-columns: minmax(280px, 42%) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 42%);
   gap: var(--sp-3);
   align-items: stretch;
 }
+#view-audio .sd-right { order: 1; }
+#view-audio .sd-left { order: 2; }
 #view-audio .sd-left {
   display: flex; flex-direction: column; gap: var(--sp-2); min-width: 0;
 }

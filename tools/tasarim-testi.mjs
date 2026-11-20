@@ -363,6 +363,22 @@ console.log('\n[2g] Spektrogram tam genişlik ve etkileşim katmanı');
   check('zaman/frekans okuma kutusu var', /\.sd-spec-readout\s*\{/.test(base));
 }
 
+// --- 2h. Yerleşim: metin listeye bitişik, kontroller solda (v2.127) -------
+// ÖLÇÜM (v2.126, 1440px): liste sağ 591, metin sol 952 → 361 px boşluk;
+// oynat düğmesi x 1290 → listeden 699 px. Metin SOLA, kontroller SOLA.
+console.log('\n[2h] Yerleşim: metin listeye bitişik, kontroller solda');
+{
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+  const body = [...base.matchAll(/#view-audio \.sd-body\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('gövde metin sütunuyla başlar (1fr önce)', /grid-template-columns:\s*minmax\(0,\s*1fr\)\s+minmax\(280px,\s*42%\)/.test(body), body.trim().slice(0, 100));
+  check('metin sütunu görsel olarak solda (order 1)', /#view-audio \.sd-right\s*\{[^}]*order:\s*1/.test(base));
+  check('teknik sütun görsel olarak sağda (order 2)', /#view-audio \.sd-left\s*\{[^}]*order:\s*2/.test(base));
+  const head = [...base.matchAll(/#view-audio \.sd-head\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('başlık kontrolleri sola yaslar', /justify-content:\s*flex-start/.test(head), head.trim().slice(0, 80));
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');

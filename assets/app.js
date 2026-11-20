@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.126';
+} from './schema.js?v=2.127';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.126';
+const APP_VERSION = '2.127';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4662,11 +4662,16 @@ function jumpToPriority(m) {
   showToast(`Öncelikli bölüme gidildi: ${best + 1}. bölüm.`);
 }
 function playActiveSegment(m) {
-  const s = m.segments?.[m.activeSeg];
+  // GÖRÜNEN bölüm ile oynatılan bölüm AYNI olmalı (v2.127). Detay ilk bölümü
+  // gösterirken `activeSeg` tanımsız olabiliyordu; "▶ Dinle" sessizce hiçbir
+  // şey yapmıyordu (ölçüldü). Artık varsayılan 0 ve `activeSeg` yazılır.
+  const idx = activeSegIndex(m);
+  const s = (m.segments || [])[idx];
   if (!s) return;
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   if (!card) return;
-  playSegmentRange(card, m, s, m.activeSeg);
+  m.activeSeg = idx;
+  playSegmentRange(card, m, s, idx);
 }
 // ANA oynat: tüm kaydı kesintisiz çalar; bölümler takip moduyla ilerler.
 // Tek bölümü çalmak isteyen uzman bölüm başlığındaki "▶ Dinle"yi kullanır
@@ -6645,6 +6650,13 @@ function setSegReview(s, code) {
 function isReviewed(s) {
   const r = segReview(s);
   return r === 'approved' || r === 'inaudible';
+}
+// GÖRÜNEN bölüm indeksi (v2.127). `activeSeg` tanımsızsa detay 0. bölümü
+// gösterir; oynatma/onay da aynı bölümü kullanmalıdır.
+function activeSegIndex(m) {
+  const segs = (m && m.segments) || [];
+  const i = Number.isInteger(m && m.activeSeg) ? m.activeSeg : 0;
+  return segs[i] ? i : 0;
 }
 // BİLİRKİŞİ ONAYI (dinleyerek). `machine` buraya GİRMEZ: rapor "Onaylandı"
 // basmadan önce bu sorulur. Adli ayrım: makine işaretlemesi onay değildir.
@@ -11446,6 +11458,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.127': {
+    title: 'Yazı listeye bitişik, oynat/ok düğmeleri yanında',
+    body:
+      'Bölüm detayında METİN artık segment listesine BİTİŞİK (solda); dalga, ' +
+      'zaman ve konuşmacı alanları sağa geçti. Oynat ve ok düğmeleri sağa ' +
+      'yaslıydı (listeden ~700 px); artık başlığın solunda (~190 px). Ayrıca ' +
+      'bir bölümü listeden seçmeden "▶ Dinle"ye basınca hiçbir şey olmuyordu; ' +
+      'artık görünen bölümü çalar.'
+  },
   '2.126': {
     title: 'Spektrogram artık tam genişlikte ve etkileşimli',
     body:

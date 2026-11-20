@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.126.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.127.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.127 — Yerleşim: yazı listeye bitişik, kontroller yanında
+
+CANLI VERİ. Bilirkişi: *"bölüm yazan yer detaydaki player ve ok tuşları sağda
+kalmış ama segment listesi solda biraz git gel uzak oluyor…"*
+
+### ÖLÇÜM (v2.126, 1440 px)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Liste sağ kenarı → metin sol | **361 px** |
+| Liste → oynat düğmesi | **699 px** |
+| 1280 / 1100 px | 600 / 488 px |
+
+Ayrıca: detay ilk bölümü gösterirken `activeSeg` tanımsızdı; **bölüm seçmeden
+"▶ Dinle" hiçbir şey yapmıyordu** (`paused:true`, `segStop:false`).
+
+### DÜZELTME
+
+- Gövde sütunları görsel olarak ters: **metin solda**, teknik (dalga/zaman/
+  konuşmacı) sağda. `order` ile; DOM okunabilirliği metin önce.
+- Başlık `justify-content: flex-start`: oynat/ok düğmeleri **solda**.
+- `activeSegIndex(m)`: tanımsız/aralık dışı `activeSeg` → 0; `playActiveSegment`
+  bunu kullanır ve `activeSeg`'i yazar.
+
+### ÖLÇÜM (v2.127, gerçek Chromium)
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Liste → metin | 361 px | **23 px** |
+| Liste → oynat | 699 px | **186 px** |
+| 1280 / 1100 / 900 px | 600/488/348 | **186 / 186 / 186** |
+| Yatay taşma | — | **0 px** |
+| Bölüm seçmeden oynat | çalmıyor | **çalıyor** (`t 0.81`) |
+
+### KULLANICI NE GÖRECEK
+
+- Yazı alanı liste ile aynı hizada; göz gidiş-gelişi kısalıyor.
+- Oynat/ok düğmeleri metnin hemen yanında.
+- Bölüm seçmeden "▶ Dinle" görünen bölümü çalar.
+
+### Koruyan testler
+
+`birim` [49] (`activeSegIndex`), `tasarim` [2h] (sütun sırası, başlık).
+Gerçek Chromium: 1440/1280/1100/900 ölçümleri.
 
 ## v2.126 — Spektrogram: tam genişlik analiz yüzeyi
 

@@ -107,6 +107,7 @@ const EXPOSE = [
   'setSegReview',
   'karaokeSentences', 'activeSentenceIndex',
   'specTimeAt', 'specHzAt', 'specNearestBoundary',
+  'activeSegIndex',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2578,6 +2579,22 @@ console.log('\n== [48] Spektrogram: zaman/frekans/sınır');
   eq('yakın sınır başlangıç', T.specNearestBoundary(9, 10, 20), 'start');
   eq('yakın sınır bitiş', T.specNearestBoundary(16, 10, 20), 'end');
   eq('tam orta → başlangıç', T.specNearestBoundary(15, 10, 20), 'start');
+}
+
+// --- 49. Görünen bölüm = oynatılan bölüm (v2.127) ------------------------
+// CANLI VERİ (ölçüm): detay ilk bölümü gösterirken `activeSeg` tanımsızdı;
+// "▶ Dinle" hiçbir şey yapmıyordu (paused:true, segStop:false). Kural: detay
+// hangi bölümü gösteriyorsa oynatma/onay da onu kullanır.
+console.log('\n== [49] Görünen bölüm = oynatılan bölüm');
+{
+  eq('activeSegIndex tanımlı', typeof T.activeSegIndex, 'function');
+  const m = { segments: [{ id: 'a' }, { id: 'b' }] };
+  eq('tanımsız activeSeg → 0', T.activeSegIndex(m), 0);
+  eq('geçerli activeSeg korunur', T.activeSegIndex({ ...m, activeSeg: 1 }), 1);
+  eq('aralık dışı → 0', T.activeSegIndex({ ...m, activeSeg: 9 }), 0);
+  eq('negatif → 0', T.activeSegIndex({ ...m, activeSeg: -3 }), 0);
+  eq('bölüm yok → 0', T.activeSegIndex({ segments: [] }), 0);
+  eq('m null → 0', T.activeSegIndex(null), 0);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

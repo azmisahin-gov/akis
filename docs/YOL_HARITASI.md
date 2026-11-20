@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.126.**
+yazılır. **Güncel sürüm: v2.127.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.127 — Yerleşim: metin listeye bitişik, kontroller yanında (tamamlandı)
+
+Gövde sütunları ters: metin solda (liste→metin **361 → 23 px**), teknik sağda.
+Başlık kontrolleri solda (liste→oynat **699 → 186 px**). `activeSegIndex`:
+seçmeden "▶ Dinle" görünen bölümü çalar. `birim` [49], `tasarim` [2h].
 
 ### v2.126 — Spektrogram: tam genişlik + etkileşim (tamamlandı)
 
