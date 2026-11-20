@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.91';
+const APP_VERSION = '2.92';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -744,6 +744,14 @@ function stripDerivedFields(state) {
       if (m.levels && m.levels.ok && m.levels.schema !== LEVELS_SCHEMA) {
         delete m.levels;
         cleaned = true;
+      }
+      // Aynı kural sessizlik ölçümü için (v2.92): eski ölçüm yalnız kanal 0'ı
+      // okuyordu; konuşma sağ kanalda ise "tamamen sessiz" diyordu. Geçersiz.
+      for (const sg of m.segments || []) {
+        if (sg.silence && sg.silence.ok && sg.silence.schema !== SILENCE_SCHEMA) {
+          delete sg.silence;
+          cleaned = true;
+        }
       }
     }
   }
@@ -2187,6 +2195,41 @@ function analyzeChannelLevels(channels, sampleRate) {
     snrDb: m.snrDb
   };
 }
+// EN YÜKSEK ENERJİLİ KANAL (v2.92).
+// GERÇEK HATA (öncesi): sessizlik ve perde ölçümleri yalnız `getChannelData(0)`
+// kullanıyordu. Stereo kayıtta konuşma sağ kanalda ise sessizlik "oran 1,0 →
+// yüksek" çıkıyor, perde ölçülemiyordu. Uzman "bu bölüm sessiz" uyarısı alıp
+// metni [sessizlik] diye işaretliyordu — yanlış.
+// Kural: ölçüm en yüksek enerjili kanaldan yapılır; hangi kanal olduğu
+// yazılır. Eşitlikte ilk kanal (sol) seçilir — kararlı ve öngörülebilir.
+// Girdi: Float32Array[] kanallar. Dönüş: {index, channel (1 tabanlı), rms}.
+function pickActiveChannel(channels) {
+  const chs = (channels || []).filter((c) => c && c.length);
+  if (!chs.length) return { index: 0, channel: 1, rms: 0 };
+  let bestIdx = 0;
+  let bestRms = -1;
+  for (let i = 0; i < chs.length; i++) {
+    const d = chs[i];
+    let sum = 0;
+    for (let j = 0; j < d.length; j++) sum += d[j] * d[j];
+    const rms = Math.sqrt(sum / d.length);
+    if (rms > bestRms) {
+      bestRms = rms;
+      bestIdx = i;
+    }
+  }
+  return { index: bestIdx, channel: bestIdx + 1, rms: Math.max(0, bestRms) };
+}
+// Kanal farkındalı sessizlik ölçümü: en yüksek enerjili kanal üzerinden
+// `analyzeSilence` çağırır ve hangi kanaldan ölçüldüğünü ekler.
+function analyzeSilenceChannelAware(channels, sampleRate, startSec, endSec, opts = {}) {
+  const chs = (channels || []).filter((c) => c && c.length);
+  if (!chs.length) return { ok: false, reason: 'boş kayıt' };
+  const pick = pickActiveChannel(chs);
+  const stats = analyzeSilence(chs[pick.index], sampleRate, startSec, endSec, opts);
+  if (!stats || !stats.ok) return stats || { ok: false, reason: 'ölçüm yapılamadı' };
+  return { ...stats, channel: pick.channel, channels: chs.length, channelRms: pick.rms };
+}
 function attachWave(card, m, url) {
   const canvas = card.querySelector('canvas.wave-canvas');
   const player = card.querySelector('audio');
@@ -2470,6 +2513,9 @@ function werMeasuredCount(c) {
 // geçersiz sayılıp yeniden ölçülür. Böylece arayüz eski kodla üretilmiş,
 // eksik ya da çelişkili değerleri göstermez.
 const LEVELS_SCHEMA = 3;
+// Sessizlik ölçümü şeması (v2.92): 1 = yalnız kanal 0'dan (hatalı),
+// 2 = en yüksek enerjili kanaldan. Eski kayıtlar atılır, yeniden ölçülür.
+const SILENCE_SCHEMA = 2;
 const audioGraphs = new Map(); // m.id -> {ctx, player, gainL, gainR, merger, hp, lp, gate, gateGain}
 const CHANNEL_MODES = [
   ['both', 'Stereo (her iki kanal)'],
@@ -2761,7 +2807,12 @@ async function measureSpeakerPitch(m) {
     return;
   }
   const sr = audio.sampleRate;
-  const ch = audio.getChannelData(0);
+  // TÜM kanallar (v2.92). Öncesinde yalnız kanal 0 okunuyordu; konuşma sağ
+  // kanalda ise perde "ölçülemedi" çıkıyordu. Her bölüm için en yüksek
+  // enerjili kanal seçilir.
+  const chCount = audio.numberOfChannels;
+  const channels = [];
+  for (let ch = 0; ch < chCount; ch++) channels.push(audio.getChannelData(ch));
   ensureSpeakers(m);
   for (const sp of m.speakers) {
     const segs = speakerSegments(m, sp.name).slice(0, 12);
@@ -2771,8 +2822,12 @@ async function measureSpeakerPitch(m) {
       const en = secondsFromTimecode(sg.end);
       // Süresi olmayan bölümde de ölçüm yapılabilir: başlangıçtan pencere alınır.
       const mid = en > st ? Math.floor(((st + en) / 2) * sr) : Math.floor(st * sr) + Math.floor(sr * 0.2);
-      const win = ch.subarray(Math.max(0, mid - Math.floor(sr * 0.2)), Math.min(ch.length, mid + Math.floor(sr * 0.2)));
-      const f = detectPitchHz(win, sr);
+      const a = Math.max(0, mid - Math.floor(sr * 0.2));
+      const b = Math.min(channels[0].length, mid + Math.floor(sr * 0.2));
+      // Bölüm aralığındaki en yüksek enerjili kanal (konuşma tek kanalda olabilir).
+      const segChannels = channels.map((c) => c.subarray(a, b));
+      const pick = pickActiveChannel(segChannels);
+      const f = detectPitchHz(segChannels[pick.index], sr);
       if (f) vals.push(f);
     }
     if (vals.length) {
@@ -2886,17 +2941,23 @@ async function measureSegmentSilence(m, index) {
     return;
   }
   const sr = audio.sampleRate;
-  const data = audio.getChannelData(0);
+  // TÜM kanallar (v2.92). Öncesinde yalnız kanal 0 okunuyordu; konuşma sağ
+  // kanalda ise bölüm "tamamen sessiz" sanılıyordu.
+  const chCount = audio.numberOfChannels;
+  const channels = [];
+  for (let ch = 0; ch < chCount; ch++) channels.push(audio.getChannelData(ch));
   const st = secondsFromTimecode(s.start);
   const en = secondsFromTimecode(s.end);
-  const stats = analyzeSilence(data, sr, st, en);
+  const stats = analyzeSilenceChannelAware(channels, sr, st, en);
   await ctx.close();
   if (!stats.ok) {
     showToast('Ölçüm için geçerli bir zaman aralığı gerekir.');
     return;
   }
-  s.silence = stats;
-  logEvent(m, 'Sessizlik ölçümü', `Bölüm ${index + 1}: %${Math.round(stats.ratio * 100)} sessiz (${stats.silentSec.toFixed(1)} sn)`);
+  s.silence = { ...stats, schema: SILENCE_SCHEMA };
+  // Hangi kanaldan ölçüldüğü günlüğe yazılır (v2.92): sonradan denetlenebilir.
+  const chNote = stats.channels > 1 ? ` · kanal ${stats.channel}` : '';
+  logEvent(m, 'Sessizlik ölçümü', `Bölüm ${index + 1}: %${Math.round(stats.ratio * 100)} sessiz (${stats.silentSec.toFixed(1)} sn)${chNote}`);
   persist();
   renderSegDetail(m);
   updateSegListItem(m, index);
@@ -3173,7 +3234,8 @@ function repetitionNoteHtml(s) {
 // görünür; ölçüm yapılmadıysa hiçbir şey gösterilmez (uydurma yok).
 function silenceNoteHtml(s, i) {
   const st = s.silence;
-  if (!st || !st.ok) return '';
+  // Eski şemalı (kanal 0) ölçüm gösterilmez (v2.92).
+  if (!st || !st.ok || st.schema !== SILENCE_SCHEMA) return '';
   const pct = Math.round(st.ratio * 100);
   const lvl = st.ratio >= 0.8 ? 'yüksek' : st.ratio >= 0.55 ? 'orta' : 'düşük';
   const cls = st.ratio >= 0.55 ? '' : ' style="background:#f4f8fb;border-color:#d6e4f2;color:#2f6f95"';
@@ -3258,7 +3320,7 @@ function segDetailHtml(m) {
   if (halluc) notes.push('anlamlı metin yok');
   if (rep) notes.push('model tekrarı olasılığı');
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
-  const silence = s.silence && s.silence.ok ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
+  const silence = s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
 
   const obsBtns = [
     ['noise', 'gürültü', 'Arka plan gürültüsü'],
@@ -6571,7 +6633,7 @@ function reviewSummaryRows(c) {
   const inaudible = segs.filter((s) => segReview(s) === 'inaudible').length;
   const blank = segs.filter((s) => isHallucination(s.text)).length;
   const observed = segs.filter((s) => s.obs && Object.keys(s.obs).some((k) => s.obs[k])).length;
-  const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok).length;
+  const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA).length;
   const spec = mats.filter((m) => m.spectrogramReviewed).length;
   const chan = mats.filter((m) => m.tech?.channels === 2 && channelMode(m) !== 'both').length;
   const speakers = mats.reduce(
@@ -9468,6 +9530,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.92': {
+    title: 'Sessizlik ve perde ölçümü düzeltildi (stereo kayıtlar)',
+    body:
+      'Bu ölçümler yalnız sol kanalı okuyordu. Konuşma sağ kanalda ise bölüm ' +
+      '"tamamen sessiz" sanılıyor, size "bu bölüm sessiz" uyarısı veriliyordu; ' +
+      'perde de ölçülemiyordu. Artık en yüksek sesin olduğu kanal kullanılır ve ' +
+      'hangi kanaldan ölçüldüğü yazılır. Eski sessizlik ölçümleri geçersiz sayıldı: ' +
+      'bölüm detayındaki "Sessizlik ölç" düğmesiyle yeniden ölçün. Yeniden ' +
+      'ölçülmemiş değer gösterilmez.'
+  },
   '2.91': {
     title: 'Ses seviyesi ve kırpılma ölçümü düzeltildi (stereo kayıtlar)',
     body:

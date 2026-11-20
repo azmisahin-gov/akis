@@ -82,6 +82,7 @@ const EXPOSE = [
   'snapshotSegmentText', 'approvalDroppedByEdit',
   'measureWerForCase', 'werMeasuredCount',
   'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
+  'pickActiveChannel', 'analyzeSilenceChannelAware', 'segmentSilenceFlag', 'SILENCE_SCHEMA',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1134,6 +1135,74 @@ console.log('\n[22] Seviye/kırpılma kanal kanal ölçülür');
     const rows = T.levelRowsForCase(c);
     eq('mono satırı üretildi', rows.length, 1);
     eq('mono kayıtta kanal numarası yazılmaz', /kanal\s*\d/i.test(rows[0].join(' | ')), false);
+  }
+}
+
+// --- 23. Sessizlik/perde ölçümü TÜM kanalları görmeli (v2.92) ------------
+// GERÇEK HATA: `measureSegmentSilence` ve `measureSpeakerPitch` yalnız
+// `getChannelData(0)` kullanıyordu. Stereo kayıtta konuşma sağ kanalda ise:
+//   • sessizlik ölçümü  → "oran 1,0 → yüksek" (bölüm büyük ölçüde sessiz!)
+//   • perde ölçümü      → null ("ölçülemedi")
+// Gerçek: sol kanal sessiz, sağ kanalda konuşma var. Uzman "bu bölüm sessiz"
+// uyarısı alır ve metni [sessizlik] diye işaretler — yanlış.
+// Kural: ölçüm, kanalların EN YÜKSEK ENERJİLİSİ üzerinden yapılır ve hangi
+// kanal olduğu yazılır. Böylece tek kanalda konuşma varsa kaçmaz.
+console.log('\n[23] Sessizlik/perde tüm kanalları görür');
+{
+  const sr = 16000;
+  const n = sr * 3;
+  const mkCh = (fn) => { const a = new Float32Array(n); for (let i = 0; i < n; i++) a[i] = fn(i); return a; };
+  const silent = mkCh(() => 0);
+  const speech = mkCh((i) => 0.3 * Math.sin((2 * Math.PI * 220 * i) / sr));
+
+  eq('pickActiveChannel tanımlı', typeof T.pickActiveChannel, 'function');
+
+  if (typeof T.pickActiveChannel === 'function') {
+    // 1) Sol sessiz, sağ konuşma → sağ kanal seçilmeli.
+    {
+      const pick = T.pickActiveChannel([silent, speech]);
+      eq('konuşan kanal seçilir', pick.index, 1);
+      eq('kanal numarası 1 tabanlı', pick.channel, 2);
+      eq('enerji bildirilir', pick.rms > 0.1, true);
+    }
+    // 2) Sol konuşma, sağ sessiz → sol seçilmeli.
+    {
+      const pick = T.pickActiveChannel([speech, silent]);
+      eq('sol kanal seçilir', pick.index, 0);
+      eq('kanal numarası 1', pick.channel, 1);
+    }
+    // 3) Mono → tek kanal, kanal numarası 1.
+    {
+      const pick = T.pickActiveChannel([speech]);
+      eq('mono kanal seçilir', pick.index, 0);
+      eq('mono kanal numarası', pick.channel, 1);
+    }
+    // 4) İki kanal da sessiz → yine de bir kanal döner (indeks 0), çökmez.
+    {
+      const pick = T.pickActiveChannel([silent, silent]);
+      eq('tamamen sessizde çökmez', typeof pick.index, 'number');
+      eq('tamamen sessizde enerji 0', pick.rms, 0);
+    }
+  }
+
+  // 5) Gerçek senaryo: yalnız SAĞ kanalda konuşma → sessizlik YÜKSEK ÇIKMAMALI.
+  if (typeof T.analyzeSilenceChannelAware === 'function') {
+    const st = T.analyzeSilenceChannelAware([silent, speech], sr, 0, 3);
+    eq('sessizlik oranı düşük', st.ratio < 0.2, true);
+    eq('ölçülen kanal bildirilir', st.channel, 2);
+    eq('sessizlik uyarısı ÜRETİLMEZ', T.segmentSilenceFlag(st, '', (x) => !x), null);
+  } else {
+    eq('analyzeSilenceChannelAware tanımlı', false, true);
+  }
+
+  // 6) ESKİ sessizlik ölçümü (kanal 0'dan) geçersiz sayılmalı. Aksi hâlde
+  //    "kanal 0 sessiz" sonucu ekranda/raporda kalır ve düzeltme görünmez.
+  eq('SILENCE_SCHEMA tanımlı', typeof T.SILENCE_SCHEMA, 'number');
+  if (typeof T.SILENCE_SCHEMA === 'number') {
+    eq('sessizlik ölçümü şeması 2', T.SILENCE_SCHEMA, 2);
+    // Yeni ölçüm şemayı taşımalı (yoksa her yüklemede atılır).
+    const fresh = T.analyzeSilenceChannelAware([speech], sr, 0, 3);
+    eq('yeni ölçüm şemasız üretilmez (çağıran ekler)', 'schema' in fresh, false);
   }
 }
 

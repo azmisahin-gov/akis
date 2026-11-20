@@ -6,12 +6,76 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.91.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.92.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.92 — Sessizlik ve perde ölçümü yalnız sol kanalı okuyordu
+
+CANLI VERİ. Stereo kayıtta konuşma sağ kanalda ise uygulama bölümü **"tamamen
+sessiz"** sanıyordu.
+
+### GERÇEK HATA
+
+`measureSegmentSilence()` ve `measureSpeakerPitch()` yalnız birinci kanalı
+okuyordu:
+
+```js
+const data = audio.getChannelData(0);   // sessizlik
+const ch = audio.getChannelData(0);     // perde
+```
+
+Stereo kayıtta konuşma sağ kanalda ise:
+
+| Ölçüm | Gerçek | Kanal 0'dan |
+|---|---|---|
+| Sessizlik oranı | 0,0 | **1,0 → "yüksek"** |
+| Perde | 180 Hz | **null → "ölçülemedi"** |
+
+Sonucu adli açıdan ağırdı: uzman **"bu bölüm büyük ölçüde sessiz"** uyarısı
+alıyor, metni `[sessizlik]` diye işaretliyordu — oysa konuşma vardı. Perde
+ölçülemediği için konuşmacı karşılaştırması da yapılamıyordu.
+
+### Çözüm
+
+- `pickActiveChannel()` — kanalların **en yüksek enerjilisini** seçer,
+  kanal numarasını (1 tabanlı) döndürür. Eşitlikte sol kanal (kararlı).
+- `analyzeSilenceChannelAware()` — sessizlik ölçümünü seçilen kanaldan yapar
+  ve hangi kanal olduğunu sonuca yazar.
+- `measureSegmentSilence()` ve `measureSpeakerPitch()` artık **tüm kanalları**
+  okur; perde için her bölümün kendi en yüksek enerjili kanalı seçilir.
+- `SILENCE_SCHEMA = 2`: eski (kanal 0) ölçümler `stripDerivedFields` ile
+  atılır; gösterim noktaları (bölüm notu, liste etiketi, özet sayacı) şema
+  kontrolünden geçer. Ölçülmemiş değer ekranda/raporda görünmez.
+
+**Ölçüm (gerçek Chromium, üretilen dosya: sol kanal TAMAMEN sessiz, sağ
+kanalda 180 Hz konuşma, sağ RMS 0,16):**
+
+```
+ÖNCE   sessizlik oranı 1,0 → "yüksek" uyarısı · perde null
+SONRA  sessizlik oranı 0,42 · kanal 2 · şema 2 · uyarı GÖSTERİLMEDİ
+       perde 180 Hz (gerçek 180 Hz) · 1 örnek
+```
+
+### KULLANICI NE GÖRECEK
+
+- Tek kanalda konuşma olan stereo kayıtlarda bölüm artık **"sessiz" diye
+  işaretlenmez**; yanlış `[sessizlik]` notu verilmez.
+- **Perde ölçümü artık çalışır** (konuşan kanal bulunur), konuşmacı
+  karşılaştırması yapılabilir.
+- Hangi kanaldan ölçüldüğü delil günlüğüne yazılır.
+- Eski sessizlik ölçümleri geçersiz sayıldı; bölüm detayındaki **Sessizlik
+  ölç** düğmesiyle yeniden ölçün. Yeniden ölçülmemiş değer gösterilmez.
+
+### Testle korunur
+
+`birim-testleri` [23] (16 kontrol): en yüksek enerjili kanal seçilir (sol/sağ/
+mono/sessiz), yalnız sağ kanalda konuşma varsa sessizlik **yüksek çıkmaz**,
+sessizlik uyarısı üretilmez, şema 2'dir. Test düzeltme yokken **kaldı**
+(`299 geçti, 2 kaldı`), düzeltmeden sonra geçti (`315 geçti, 0 kaldı`).
 
 ## v2.91 — Seviye ve kırpılma ölçümü mono karışımdan yapılıyordu
 

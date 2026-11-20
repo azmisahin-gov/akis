@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.91.**
+yazılır. **Güncel sürüm: v2.92.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.92 — Sessizlik/perde tüm kanalları görür (tamamlandı, canlı veri)
+
+`measureSegmentSilence` ve `measureSpeakerPitch` yalnız `getChannelData(0)`
+okuyordu. Konuşma sağ kanalda ise bölüm "tamamen sessiz" sanılıyor (oran 1,0)
+ve perde ölçülemiyordu. `pickActiveChannel()` + `analyzeSilenceChannelAware()`
+eklendi: en yüksek enerjili kanal kullanılır, kanal numarası yazılır.
+`SILENCE_SCHEMA = 2`; eski ölçümler atılır. `birim-testleri` [23] korur.
 
 ### v2.91 — Seviye/kırpılma kanal kanal ölçülür (tamamlandı, canlı veri)
 
@@ -80,7 +88,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | **v2.89 tamamlandı** |
 | 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | **v2.90 tamamlandı** |
 | 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | **v2.91 tamamlandı** |
-| 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | bekliyor |
+| 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | **v2.92 tamamlandı** |
 | 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | bekliyor |
 | 8 | Birleştirmede kayıt düzeyi alanlar sessizce düşüyor | bekliyor |
 | 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | bekliyor |
