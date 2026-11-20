@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.109';
+const APP_VERSION = '2.110';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7954,6 +7954,42 @@ function isEmptyWorkspace(cases) {
   return casesForStorage(cases).length === 0;
 }
 
+// ---- Dışa aktarma kapsamı (v2.110) --------------------------------------
+// KULLANICI KAFASI KARIŞMASIN: "Dışa aktar" artık NE aktarılacağını SORAR.
+// v2.109 ve öncesinde düğme sessizce "hepsi"ne dönüşüyordu: 3 dosya varken
+// tek dosya sanıp basan kullanıcı 3 dosyalık paket indiriyordu (ölçüldü).
+const EXPORT_SCOPE = ['current', 'all'];
+// `scope`: 'current' (yalnız aktif dosya) veya 'all' (tüm dosyalar).
+// Arşivli dosyalar 'all' kapsamına GİRER: yedekte kaybolmamalı.
+function exportPlanFor(cases, activeCaseId, scope) {
+  const all = Array.isArray(cases) ? cases : [];
+  const keepAll = all.filter((c) => !isEmptyCase(c));
+  if (scope === 'current') {
+    const cur = keepAll.find((c) => c.id === activeCaseId);
+    const list = cur ? [cur] : [];
+    return { kind: list.length ? 'single' : 'none', cases: list, skipped: all.length - list.length };
+  }
+  const kind = keepAll.length === 0 ? 'none' : keepAll.length === 1 ? 'single' : 'archive';
+  return { kind, cases: keepAll, skipped: all.length - keepAll.length };
+}
+// Dosya adı: TARİH + SAAT taşır (v2.110). Aynı gün iki yedek alınırsa üzerine
+// yazılmaz. Eğik çizgi gibi dosya sisteminde sorun çıkaran karakterler temizlenir.
+function backupFileName(plan, when) {
+  // `instanceof Date` farklı çalışma bağlamlarında (test sandbox'ı, iframe)
+  // güvenilmez; geçerli bir Date benzeri mi diye davranıştan anlaşılır.
+  const d = when && typeof when.getTime === 'function' && Number.isFinite(when.getTime()) ? when : new Date();
+  const p2 = (n) => String(n).padStart(2, '0');
+  const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}`;
+  const list = (plan && plan.cases) || [];
+  if (!list.length) return `AKIS_YEDEK_bos_${stamp}.akis`;
+  if (plan.kind === 'single') {
+    const c = list[0];
+    const base = String(c.fileNo || c.name || 'Dosya').trim() || 'Dosya';
+    return `AKIS_${safeName(base)}_${stamp}.akis`;
+  }
+  return `AKIS_TUM_${list.length}dosya_${stamp}.akis`;
+}
+
 // Arşiv paketinden, bu bilgisayardaki dosyayla eşleşen kaydı seçer.
 // Eşleşme sırası: kimlik (id) → dosya numarası + mahkeme. Bulunamazsa
 // `case: null` ve NEDENİNİ söyleyen metin döner; "uyumsuz" demek yetmez,
@@ -8118,9 +8154,30 @@ async function ensureEditorIdentity() {
       'Şimdi doldurmak ister misiniz? (Vazgeç derseniz yine de dışa aktarılır.)'
   );
 }
-async function exportProject() {
+// `scope`: 'current' | 'all'. Verilmezse KULLANICIYA SORULUR (v2.110).
+// NEDEN: v2.109'da düğme sessizce "hepsi"ne dönüşüyordu; tek dosya sanıp basan
+// kullanıcı 3 dosyalık paket indiriyordu (ölçüldü).
+async function exportProject(scope) {
   const c = currentCase();
   if (!c) return;
+  const real = (appState.cases || []).filter((x) => !isEmptyCase(x));
+  if (!real.length) {
+    showToast(
+      'Yedek alınacak dosya yok: dosya numarası, mahkeme, taraf veya ses kaydı yok. ' +
+        'Önce bir dosyaya bilgi girin veya ses kaydı ekleyin.'
+    );
+    return;
+  }
+  if (!EXPORT_SCOPE.includes(scope)) {
+    // Aktif dosya boşsa "bu dosya" seçeneği sunulamaz.
+    const curEmpty = isEmptyCase(c);
+    const pick = await askExportScope({
+      currentName: curEmpty ? '' : caseDisplayName(c),
+      total: real.length
+    });
+    if (!pick) return; // kullanıcı vazgeçti
+    scope = pick;
+  }
   // Kimliği belirsiz paylaşım sonradan çözülemez; doğru anda sorulur.
   if (!(await ensureEditorIdentity())) {
     setCaseDrawer(true);
@@ -8133,11 +8190,12 @@ async function exportProject() {
   // BOŞ DOSYA PAKETE GİRMEZ (v2.102): uygulamanın kendiliğinden açtığı, hiç
   // kullanıcı verisi taşımayan dosya "dosya" değildir. Girerse yeni tarayıcıda
   // "2 dosya" görünür ve geri yükleme sonrası sahte kayıt birikir.
-  const plan = buildExportPlan(appState.cases || []);
+  const plan = exportPlanFor(appState.cases || [], appState.activeCaseId, scope);
   if (plan.kind === 'none') {
     showToast(
-      'Yedek alınacak dosya yok: çalışma alanındaki dosyalar boş (dosya numarası, mahkeme, taraf, ses kaydı yok). ' +
-        'Önce bir dosyaya bilgi girin veya ses kaydı ekleyin.'
+      scope === 'current'
+        ? 'Bu dosya boş (dosya numarası, mahkeme, taraf veya ses kaydı yok). Önce bilgi girin.'
+        : 'Yedek alınacak dosya yok: dosyalar boş (dosya numarası, mahkeme, taraf, ses kaydı yok).'
     );
     return;
   }
@@ -8198,10 +8256,9 @@ async function exportProject() {
     );
   }
   const out = await zip.generateAsync({ type: 'blob' });
-  const base = multi
-    ? `AKIS_Yedek_${all.length}_dosya_${new Date().toISOString().slice(0, 10)}`
-    : safeName(all[0].fileNo || 'AKIS_Calisma_Dosyasi');
-  downloadBlob(out, `${base}.akis`);
+  // Dosya adı TARİH + SAAT taşır: aynı gün iki yedek üzerine yazmaz (v2.110).
+  const fileName = backupFileName(plan, new Date());
+  downloadBlob(out, fileName);
   markBackupDone();
   if (missingAudio.length) {
     showToast(
@@ -8212,8 +8269,9 @@ async function exportProject() {
   } else {
     showToast(
       (multi
-        ? `Yedek alındı: ${all.length} dosyanın tamamı (.akis). Güvenli yerde saklayın.`
-        : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.') +
+        ? `Yedek alındı: TÜM dosyalar (${all.length} dosya) → ${fileName}`
+        : `Yedek alındı: yalnız "${caseDisplayName(all[0])}" → ${fileName}`) +
+        ' — güvenli yerde saklayın.' +
         skippedNote
     );
   }
@@ -9828,6 +9886,42 @@ function askConfirm(title, text) {
     dlg.showModal();
   });
 }
+// Dışa aktarma kapsamı sorar (v2.110). Kullanıcı TEK dosya mı TÜM dosyalar mı
+// aktaracağını görür; sessizce "hepsi"ne dönüşmez.
+function askExportScope({ currentName, total }) {
+  return new Promise((resolve) => {
+    const dlg = $('#exportScopeDialog');
+    const curLabel = $('#scopeCurrentLabel');
+    const curInput = $('#scopeCurrent');
+    const allInput = $('#scopeAll');
+    $('#scopeCurrentName').textContent = currentName || '';
+    $('#scopeAllName').textContent = `${total} dosya + ses kayıtları`;
+    // Aktif dosya boşsa "yalnız bu dosya" sunulamaz: seçilemez ve açıklanır.
+    const canCurrent = !!currentName;
+    curInput.disabled = !canCurrent;
+    curLabel.classList.toggle('is-disabled', !canCurrent);
+    curLabel.title = canCurrent ? '' : 'Aktif dosya boş: önce bilgi girin.';
+    if (!canCurrent) allInput.checked = true;
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      $('#exportScopeOk').removeEventListener('click', onOk);
+      $('#exportScopeCancel').removeEventListener('click', onCancel);
+      $('#closeExportScope').removeEventListener('click', onCancel);
+      if (dlg.open) dlg.close();
+      resolve(v);
+    };
+    const onOk = () => finish(curInput.checked && canCurrent ? 'current' : 'all');
+    const onCancel = () => finish(null);
+    $('#exportScopeOk').addEventListener('click', onOk);
+    $('#exportScopeCancel').addEventListener('click', onCancel);
+    $('#closeExportScope').addEventListener('click', onCancel);
+    dlg.addEventListener('close', () => finish(null), { once: true });
+    dlg.showModal();
+  });
+}
+
 // Dosya numarasını ELLE yazdıran onay (v2.107). Kazara tıklama imkânsız olsun:
 // kalıcı silme ses kaydını da siler ve Ctrl+Z sesi geri getirmez.
 function askTypedConfirm({ title, text, phrase, okLabel }) {
@@ -10498,6 +10592,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.110': {
+    title: 'Yedek artık neyi aktardığınızı soruyor',
+    body:
+      'Eskiden "Dışa aktar" sessizce TÜM dosyaları paketliyordu; tek dosya sanıp ' +
+      'basıyordunuz, hepsi iniyordu ve bunu söyleyen hiçbir şey yoktu. Artık basınca ' +
+      'sorulur: "Yalnız bu dosya" (adıyla görünür) veya "Tüm dosyalar" (kaç dosya ' +
+      'olduğu yazar). Paket adına TARİH ve SAAT eklenir ' +
+      '(AKIS_2024-A_2026-11-20_16-55.akis), böylece aynı gün iki yedek birbirinin ' +
+      'üzerine yazmaz. Arşivlenmiş dosyalar da yedeğe dâhildir. Ayrıca düğmelerin ' +
+      'üzerine gelince ne yaptıkları yazar: Dışa aktar (yedek oluştur), İçe aktar ' +
+      '(paketi EKLE, kopya açar), ⇄ Birleştir (paketi bu dosyayla BİRLEŞTİR). ' +
+      'Yardım ekranına terim sözlüğü eklendi.'
+  },
   '2.109': {
     title: 'İlk açılış artık gerçekten boş',
     body:

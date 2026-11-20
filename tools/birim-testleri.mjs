@@ -96,6 +96,7 @@ const EXPOSE = [
   'deleteConfirmPhrase', 'deleteConfirmMatches', 'canDeleteCase',
   'canArchiveCase', 'caseShortId', 'caseDisplayName',
   'casesForStorage', 'isEmptyWorkspace',
+  'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2023,6 +2024,67 @@ console.log('\n[37] Boş çalışma alanı kayda yazılmaz');
 
   // 5) Boş taslak "dosya gibi" GÖRÜNMEZ: seçicide değil, "Yeni dosya" olarak.
   eq('boş taslak için görünen ad', T.caseDisplayName(fresh), 'Yeni inceleme dosyası #' + T.caseShortId(fresh));
+}
+
+// --- 38. Dışa aktarma kapsamı ve dosya adı (v2.110) ----------------------
+// CANLI VERİ. Bilirkişi: "dışa aktar derken bu çalışma alanını mı dışa
+// aktarıyoruz yoksa tüm çalışmalarımızı mı? netleştirelim... çıkan dosyalar
+// alındığı andaki zaman bilgileri ile alırsa iyi olur."
+// ÖLÇÜM (v2.109, 3 dosya varken AKTİF=2024/A): "Dışa aktar" düğmesinin ipucu
+// YOKTU ve 3 dosyanın HEPSİ indi (AKIS_Yedek_3_dosya_2026-11-20.akis).
+// Kullanıcı tek dosya sandı, hepsi gitti. Dosya adında SAAT de yoktu.
+console.log('\n[38] Dışa aktarma kapsamı ve dosya adı');
+{
+  const real = (id, no) => ({ id, fileNo: no, court: 'Mahkeme', materials: [{ id: 'm' + id, segments: [] }] });
+  const A = real('cA', '2024/A');
+  const B = real('cB', '2024/B');
+  const C = real('cC', '2024/C');
+
+  // 1) KAPSAM AÇIK: 'current' = yalnız aktif dosya, 'all' = hepsi.
+  eq('EXPORT_SCOPE tanımlı', Array.isArray(T.EXPORT_SCOPE), true);
+  eq('iki kapsam var', T.EXPORT_SCOPE.length, 2);
+
+  const onlyA = T.exportPlanFor([A, B, C], 'cA', 'current');
+  eq('current: yalnız aktif dosya', onlyA.cases.length, 1);
+  eq('current: doğru dosya', onlyA.cases[0].id, 'cA');
+  eq('current: paket biçimi tekil', onlyA.kind, 'single');
+
+  const allPlan = T.exportPlanFor([A, B, C], 'cA', 'all');
+  eq('all: hepsi', allPlan.cases.length, 3);
+  eq('all: paket biçimi arşiv', allPlan.kind, 'archive');
+
+  // 2) Aktif dosya boşsa 'current' seçilemez → güvenli davranış.
+  const blank = { id: 'cZ', materials: [], fileNo: '' };
+  const noCurrent = T.exportPlanFor([blank, A], 'cZ', 'current');
+  eq('aktif dosya boşsa current boş döner', noCurrent.cases.length, 0);
+  eq('aktif dosya boşsa biçim none', noCurrent.kind, 'none');
+  // Ama 'all' gerçek dosyayı bulur.
+  eq('all: boş taslak atlanır', T.exportPlanFor([blank, A], 'cZ', 'all').cases.length, 1);
+
+  // 3) Arşivli dosya 'all' kapsamına GİRER (yedekte kaybolmaz).
+  const arch = { ...B, status: 'archived' };
+  eq('all: arşivli dosya da girer', T.exportPlanFor([A, arch], 'cA', 'all').cases.length, 2);
+
+  // 4) DOSYA ADI: zaman (tarih + saat) taşır, güvenli karakter, .akis.
+  const fixed = new Date('2026-11-20T16:45:00');
+  const single = T.backupFileName({ kind: 'single', cases: [A] }, fixed);
+  eq('tek dosya adı .akis ile biter', /\.akis$/.test(single), true);
+  eq('tek dosya adı tarih içerir', /2026-11-20/.test(single), true);
+  eq('tek dosya adı SAAT içerir', /16-45/.test(single), true);
+  // safeName dosya sistemine uygun hale getirir: '2024/A' → '2024_A'.
+  eq('tek dosya adı dosya numarasını taşır', /2024_A/.test(single), true);
+  eq('tek dosya adı eğik çizgi içermez', single.includes('/'), false);
+
+  const allName = T.backupFileName({ kind: 'archive', cases: [A, B, C] }, fixed);
+  eq('tümü adı dosya sayısını söyler', /3dosya/.test(allName), true);
+  eq('tümü adı tarih+saat içerir', /2026-11-20_16-45/.test(allName), true);
+  eq('tümü adı TUM içerir', /TUM/.test(allName), true);
+  eq('tümü adı .akis ile biter', /\.akis$/.test(allName), true);
+
+  // 5) İki farklı zaman → iki farklı ad (üzerine yazma yok).
+  const later = new Date('2026-11-20T16:46:00');
+  eq('farklı dakika farklı ad', T.backupFileName({ kind: 'single', cases: [A] }, fixed) !==
+    T.backupFileName({ kind: 'single', cases: [A] }, later), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -1152,3 +1152,22 @@ body.ws-mode #view-audio .seg-list {
 .archive-main b { display: block; font-size: var(--fs-sm); color: var(--ink); }
 .archive-main small { display: block; font-size: var(--fs-2xs); color: var(--ink-3); margin-top: 2px; }
 .archive-actions { display: flex; gap: var(--sp-2); flex: none; }
+
+/* --- L. v2.110 — Yedek kapsamı diyaloğu ----------------------------------
+   Masaüstü uygulaması hissi: iki net seçenek, büyük hedef alanı, açık dil. */
+.scope-dialog { width: min(560px, calc(100vw - 24px)); }
+.scope-intro, .scope-note { font-size: var(--fs-xs); color: var(--ink-2); line-height: var(--lh-body); }
+.scope-note { color: var(--ink-3); margin-top: var(--sp-2); }
+.scope-choices { display: grid; gap: var(--sp-2); margin: var(--sp-3) 0; }
+.scope-choice {
+  display: flex; align-items: flex-start; gap: var(--sp-3);
+  border: 1px solid var(--line-2); border-radius: var(--r-md);
+  padding: var(--sp-3); cursor: pointer; background: var(--surface);
+  transition: border-color .12s ease, background .12s ease;
+}
+.scope-choice:hover { border-color: var(--accent); }
+.scope-choice:has(input:checked) { border-color: var(--accent); background: var(--surface-2); }
+.scope-choice.is-disabled { opacity: .55; cursor: not-allowed; }
+.scope-choice input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.scope-body b { display: block; font-size: var(--fs-sm); color: var(--ink); }
+.scope-body small { display: block; font-size: var(--fs-xs); color: var(--ink-3); margin-top: 2px; }

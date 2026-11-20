@@ -6,12 +6,89 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.109.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.110.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.110 — "Dışa aktar" sessizce TÜM dosyaları alıyordu
+
+CANLI VERİ. Bilirkişi: *"dışa aktar derken bu çalışma alanını mı dışa aktarıyoruz
+yoksa tüm çalışmalarımızı mı? netleştirelim… çıkan dosyalar alındığı andaki
+zaman bilgileri ile alırsa iyi olur… terim karmaşası da var."*
+
+### ÖLÇÜM (v2.109, 3 dosya varken AKTİF = 2024/A)
+
+```
+Düğme : "Dışa aktar"     ← ne yapacağı yazmıyor
+İpucu : (title YOK)      ← fareyle üzerine gelince bile açıklama yok
+Sonuç : AKIS_Yedek_3_dosya_2026-11-20.akis   ← 3 dosyanın HEPSİ indi
+```
+
+Yani **tek dosya yedeklemek isteyen kullanıcı 3 dosyalık paket alıyordu** ve
+bunu söyleyen hiçbir şey yoktu. Dosya adında **saat de yoktu**: aynı gün iki
+yedek birbirinin üzerine yazılıyordu.
+
+### KULLANICI NE GÖRECEK
+
+**1. Dışa aktar artık sorar**
+```
+Neyi dışa aktaracaksınız?
+ ○ Yalnız bu dosya      2024/A
+ ● Tüm dosyalar         3 dosya + ses kayıtları
+```
+Aktif dosya boşsa "yalnız bu dosya" **seçilemez** (açıklaması görünür).
+
+**2. Dosya adı tarih + saat taşır**
+```
+AKIS_2024-A_2026-11-20_16-55.akis      (tek dosya)
+AKIS_TUM_3dosya_2026-11-20_16-56.akis  (tümü)
+```
+
+**3. Düğmelerin üzerine gelince ne yaptıkları yazar**
+- **Dışa aktar** → yedek paketi oluştur
+- **İçe aktar** → paketi EKLE (kopya açar, birleştirmez)
+- **⇄ Birleştir** → paketi bu dosyayla BİRLEŞTİR
+
+**4. Yardım ekranına terim sözlüğü** (Dosya / Yedek paketi / Dışa aktar /
+İçe aktar / Birleştir / Arşivle).
+
+### TERİM SÖZLÜĞÜ (tek anlam, tek terim)
+
+| Terim | Anlamı |
+|---|---|
+| **Dosya** | Tek dava / çalışma alanı |
+| **Yedek paketi (.akis)** | Bir veya daha fazla dosya + ses kayıtları |
+| **Dışa aktar** | Paket oluştur (yedek al) |
+| **İçe aktar** | Paketi ekle (kopya açar) |
+| **Birleştir** | Paketi mevcut dosyayla birleştir |
+| **Arşivle** | Dosyayı gizle (silmez) |
+
+"Arşiv" kelimesi **paket** anlamında kullanılmıyor (yalnız arşivlenmiş dosyalar
+için); iki anlam karışıklığı bitti.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `exportPlanFor(cases, activeId, scope)` — kapsam **açık** parametredir;
+   sessiz varsayılan yok. `'current'` yalnız aktif dosya, `'all'` hepsi.
+2. Arşivli dosyalar `'all'` kapsamına **girer** (yedekte kaybolmaz).
+3. `backupFileName(plan, when)` — tarih **ve saat**; aynı gün üzerine yazmaz.
+4. Aktif dosya boşsa `'current'` kapsamı `none` döner (sessizce tümüne dönmez).
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+1) "Dışa aktar" → diyalog açıldı: "Neyi dışa aktaracaksınız?"
+   "Yalnız bu dosya 2024/A" · "Tüm dosyalar 3 dosya + ses kayıtları"
+2) "Yalnız bu dosya" → AKIS_2024_A_2026-11-20_16-55.akis
+   paket: case.json var, archive.json YOK · içindeki dosya = 2024/A  ✅
+3) "Tüm dosyalar"    → AKIS_TUM_3dosya_2026-11-20_16-56.akis        ✅
+   2 ayrı dosya adı (saat farkı) → üzerine yazma yok                 ✅
+```
+
+`birim-testleri` **[38]** — 22 kontrol.
 
 ## v2.109 — İlk açılış artık gerçekten boş (boş taslak kaydedilmiyordu)
 

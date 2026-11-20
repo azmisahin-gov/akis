@@ -660,6 +660,41 @@ JS hatası 0.
 geçici nesne ile kullanıcının verisi ayrı şeylerdir. Ayrıca düzeltmeyi
 denemeden "kaldır" demek çökertiyor — **her düzeltme ölçülür.**
 
+
+### Aşama 10h — Dışa aktarma kapsamı ve terimler (TAMAMLANDI, v2.110)
+
+**KURAL: "Dışa aktar" neyi aktaracağını SORAR. Sessiz varsayılan yok.**
+
+**Ölçülen hata (v2.109, 3 dosya varken aktif=2024/A):** düğmenin `title`'ı yoktu
+ve basınca **3 dosyanın hepsi** indi (`AKIS_Yedek_3_dosya_2026-11-20.akis`).
+Kullanıcı tek dosya sandı. Dosya adında **saat yoktu** → aynı gün üzerine yazma.
+
+**Terim sözlüğü (tek anlam, tek terim):**
+
+| Terim | Anlamı |
+|---|---|
+| Dosya | Tek dava / çalışma alanı |
+| Yedek paketi (.akis) | 1+ dosya + ses kayıtları |
+| Dışa aktar | Paket oluştur |
+| İçe aktar | Paket ekle (kopya açar) |
+| Birleştir | Paketi mevcut dosyayla birleştir |
+| Arşivle | Gizle (silmez) |
+
+"Arşiv" kelimesi **paket** anlamında kullanılmaz (yalnız arşivlenmiş dosyalar).
+
+**Fonksiyonlar:**
+- `EXPORT_SCOPE = ['current','all']`
+- `exportPlanFor(cases, activeId, scope)` — `current` yalnız aktif dosya;
+  `all` hepsi (arşivliler dâhil). Aktif boşsa `current` → `none` (tümüne dönmez).
+- `backupFileName(plan, when)` — tarih **+ saat**; `safeName` ile dosya sistemi
+  güvenli.
+- `askExportScope()` — iki seçenekli diyalog; aktif dosya boşsa "yalnız bu dosya"
+  devre dışı ve nedeni görünür.
+
+**DERS:** Bir düğme birden fazla işi sessizce yapıyorsa kullanıcı yanılır.
+Kapsam **açık seçim** olmalı; ayrıca her düğmenin `title`'ı olmalı (masaüstü
+uygulaması beklentisi).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -833,7 +868,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.109.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.110.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -991,7 +1026,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.109` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.110` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

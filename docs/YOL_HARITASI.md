@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.109.**
+yazılır. **Güncel sürüm: v2.110.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.110 — Dışa aktarma kapsamı ve dosya adı (tamamlandı, canlı veri)
+
+"Dışa aktar" sessizce TÜM dosyaları paketliyordu (3 dosya varken tek dosya sanan
+kullanıcı 3 dosya indirdi); dosya adında saat yoktu. Artık kapsam SORULUR
+(`exportPlanFor`), ad tarih+saat taşır (`backupFileName`), düğmelerin ipucu var,
+yardımda terim sözlüğü. `birim-testleri` [38] + gerçek Chromium korur.
 
 ### v2.109 — İlk açılış gerçekten boş (tamamlandı, canlı veri)
 
