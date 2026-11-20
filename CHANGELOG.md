@@ -6,12 +6,86 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.88.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.89.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.89 — Eski dosyalardaki onaylar yüklenirken siliniyordu
+
+CANLI VERİ. Bu, sessiz veri kaybının en sinsi türüydü: dosya **açılır
+açılmaz** bilirkişinin onayları siliniyordu ve hiçbir uyarı çıkmıyordu.
+
+### GERÇEK HATA
+
+v2 dosyalarında kontrol durumu Türkçe kodla saklanıyordu: `onaylandi`,
+`anlasilmadi`, `yeniden`, `bekliyor`. Şema v3'e geçtiğinde ASCII kodlar
+(`approved`, `inaudible`, `relisten`, `pending`) kullanılmaya başlandı.
+
+`normalizeSegment()` şunu yapıyordu:
+
+```js
+review: pick(s.review, REVIEW_STATE, 'pending')
+```
+
+`pick()` yalnız v3 kodlarını tanıyor; `'onaylandi'` tanınmadığı için
+**sessizce `'pending'`e düşüyordu**. Yani:
+
+- Bilirkişi 400 bölümü tek tek dinleyip onaylamış,
+- dosyayı kapatmış,
+- ertesi gün açmış,
+- **tüm onaylar "Kontrol bekliyor" olmuş** — hiçbir uyarı yok.
+
+`segReview()` (app.js) v2 kodlarını tanıyordu, ama değer oraya ulaşmadan
+`normalizeCase` onu çoktan ezmiş oluyordu. Bu yüzden mevcut `sema-testi`
+(yalnız `segReview`'u sınıyordu) **yeşil kalıyordu**.
+
+**Ölçüm:**
+
+```
+ÖNCE   normalizeCase({review:'onaylandi'})   → 'pending'   ← KAYIP
+       normalizeCase({review:'anlasilmadi'}) → 'pending'   ← KAYIP
+       normalizeCase({review:'yeniden'})     → 'pending'   ← KAYIP
+SONRA  normalizeCase({review:'onaylandi'})   → 'approved'
+       normalizeCase({review:'anlasilmadi'}) → 'inaudible'
+       normalizeCase({review:'yeniden'})     → 'relisten'
+```
+
+Gerçek tarayıcıda uçtan uca doğrulandı: depoya v2 biçiminde 4 bölümlü bir
+dosya yazıldı, sayfa yenilendi (uygulama göçü çalıştırdı):
+
+```
+yükleme sonrası: approved · inaudible · relisten · pending   (hepsi korundu)
+ekran sayaçları: Onaylandı 1 | Anlaşılmadı 1 | Yeniden dinlenecek 1 | Bekleyen 2
+```
+
+### Çözüm
+
+- `assets/schema.js` → `REVIEW_LEGACY` tablosu ve `normalizeReviewState()`
+  **tek kaynak** olarak eklendi.
+- `normalizeSegment()` artık `normalizeReviewState()` kullanıyor.
+- `app.js` içindeki **kopya** `REVIEW_LEGACY` tablosu kaldırıldı; şemadan
+  içe aktarılıyor. Kopya kalsaydı iki tablo zamanla ayrışır ve aynı hata
+  tekrar ederdi.
+
+### KULLANICI NE GÖRECEK
+
+- Eski (v2) dosyalarınızı açtığınızda **onaylarınız artık korunur**.
+  "Onaylandı" olarak işaretlediğiniz bölümler "Onaylandı" kalır.
+- Onay sayaçları ve rapor etiketleri dosyayı ilk açtığınızda doğru görünür;
+  onları yeniden onaylamanız gerekmez.
+- Daha önce bu sürümle açılmış bir dosyada onaylar bir kez kaybolmuşsa o
+  kayıp geri getirilemez (dosyada artık `pending` yazıyor). Elinizde eski bir
+  yedek varsa onu açtığınızda onaylar korunur.
+
+### Testle korunur
+
+`sema-testi` [4b] (12 kontrol): dört v2 kodu doğru v3 koduna çevrilir, dört
+v3 kodu aynen korunur, bilinmeyen değer uydurulmaz (güvenli `pending`),
+göç sonrası sayaçlar doğrudur. Test düzeltme yokken **kaldı**
+(`367 geçti, 6 kaldı`), düzeltmeden sonra geçti (`373 geçti, 0 kaldı`).
 
 ## v2.88 — Onay metne bağlı değildi (kontrol edilmemiş metin onaylı görünüyordu)
 

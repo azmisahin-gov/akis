@@ -18,6 +18,7 @@ import {
   CASE_STATUS_LABEL,
   STATUS_LABEL,
   REVIEW_LABEL,
+  REVIEW_LEGACY,
   SPEAKER_ROLE_LABEL,
   SPEAKER_GENDER_LABEL,
   MEDIUM_TYPE_LABEL,
@@ -38,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.88';
+const APP_VERSION = '2.89';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5510,13 +5511,9 @@ const REVIEW_STATES = {
   inaudible: { label: 'Anlaşılmadı', cls: 'warn' },
   relisten: { label: 'Yeniden dinlenecek', cls: 'warn' }
 };
-// v2 anahtar → v3 kod. Okuma sırasında uygulanır; yazma her zaman v3 yazar.
-const REVIEW_LEGACY = {
-  onaylandi: 'approved',
-  bekliyor: 'pending',
-  anlasilmadi: 'inaudible',
-  yeniden: 'relisten'
-};
+// v2 anahtar → v3 kod. TEK KAYNAK: `assets/schema.js` (REVIEW_LEGACY).
+// Burada kopya tablo TUTULMAZ: kopya ayrışırsa v2 dosyalarındaki onaylar
+// sessizce kaybolur (v2.89'da tam olarak bu yaşandı).
 function segReview(s) {
   const raw = s.review || (s.checked ? 'approved' : 'pending');
   return REVIEW_STATES[raw] ? raw : REVIEW_LEGACY[raw] || 'pending';
@@ -9378,6 +9375,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.89': {
+    title: 'Eski dosyalarınızdaki onaylar artık silinmiyor',
+    body:
+      'Önceki sürümde, eski (v2) biçimindeki bir dosyayı açtığınızda onayladığınız ' +
+      'bölümler sessizce "Kontrol bekliyor"a dönüyordu; dosya açılır açılmaz ' +
+      'onaylarınız kayboluyordu. Artık eski dosyalar açıldığında onaylar korunur ve ' +
+      'sayaçlar doğru görünür. Daha önce bu sürümle açılıp onayları silinmiş bir ' +
+      'dosyanın kaybı geri getirilemez; elinizde eski bir yedek varsa onu açtığınızda ' +
+      'onaylar korunur.'
+  },
   '2.88': {
     title: 'Onay artık metne bağlı — metni değiştirirseniz yeniden onaylayın',
     body:

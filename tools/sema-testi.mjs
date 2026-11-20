@@ -322,6 +322,62 @@ console.log('\n[4] v2 verisi v3\'e dönüşümü');
   ok('göç sonrası dosya geçerli', v.ok, v.errors.join('; '));
 }
 
+// --- 4b. v2 onay kodları göçte KAYBOLMAZ (v2.89 — sessiz veri kaybı) -----
+// GERÇEK HATA: v2 dosyalarında kontrol durumu Türkçe kodla saklanıyordu
+// ('onaylandi', 'anlasilmadi', 'yeniden', 'bekliyor'). `normalizeCase` bu
+// değerleri `pick(s.review, REVIEW_STATE, 'pending')` ile okuyordu; tanınmayan
+// değer sessizce 'pending'e düşüyordu. Yani bilirkişinin aylarca süren onay
+// emeği, dosya bir kez açılıp kaydedildiğinde SİLİNİYORDU.
+// `segReview()` v2 kodlarını tanıyordu ama değer oraya ulaşmadan
+// `normalizeCase` onu ezmiş oluyordu. Bu yüzden eski test (yalnız segReview'u
+// sınıyordu) yeşil kalıyordu.
+console.log('\n[4b] v2 onay kodları göçte korunur');
+{
+  const legacyCases = [
+    ['onaylandi', 'approved'],
+    ['anlasilmadi', 'inaudible'],
+    ['yeniden', 'relisten'],
+    ['bekliyor', 'pending']
+  ];
+  for (const [v2, v3] of legacyCases) {
+    const c = normalizeCase({
+      id: 'old',
+      materials: [{ id: 'm1', segments: [{ id: 's1', text: 'x', review: v2 }] }]
+    });
+    eq(`v2 '${v2}' → '${v3}'`, c.materials[0].segments[0].review, v3);
+  }
+  // v3 kodları da aynen korunur (göç geriye dönük bozmaz).
+  for (const v3 of ['approved', 'inaudible', 'relisten', 'pending']) {
+    const c = normalizeCase({
+      id: 'old',
+      materials: [{ id: 'm1', segments: [{ id: 's1', text: 'x', review: v3 }] }]
+    });
+    eq(`v3 '${v3}' korunur`, c.materials[0].segments[0].review, v3);
+  }
+  // Bilinmeyen değer uydurulmaz; güvenli varsayılan 'pending'.
+  const bad = normalizeCase({
+    id: 'old',
+    materials: [{ id: 'm1', segments: [{ id: 's1', text: 'x', review: 'tamamen-uydurma' }] }]
+  });
+  eq('bilinmeyen değer pending olur', bad.materials[0].segments[0].review, 'pending');
+  // Onaylı bölüm sayımı göç sonrası doğru olmalı (kullanıcı bunu görür).
+  const mixed = normalizeCase({
+    id: 'old',
+    materials: [{
+      id: 'm1',
+      segments: [
+        { id: 's1', text: 'a', review: 'onaylandi' },
+        { id: 's2', text: 'b', review: 'anlasilmadi' },
+        { id: 's3', text: 'c', review: 'yeniden' }
+      ]
+    }]
+  });
+  const segs = mixed.materials[0].segments;
+  eq('göç sonrası onaylı sayısı', segs.filter((s) => s.review === 'approved').length, 1);
+  eq('göç sonrası anlaşılmadı sayısı', segs.filter((s) => s.review === 'inaudible').length, 1);
+  eq('göç sonrası yeniden dinle sayısı', segs.filter((s) => s.review === 'relisten').length, 1);
+}
+
 // --- 5. Doğrulayıcı gerçek hataları yakalar -----------------------------
 console.log('\n[5] Doğrulayıcı');
 {

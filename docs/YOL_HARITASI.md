@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.88.**
+yazılır. **Güncel sürüm: v2.89.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.89 — Eski dosyalardaki onaylar yüklenirken siliniyordu (tamamlandı, canlı veri)
+
+v2 dosyalarında kontrol durumu Türkçe kodla saklanıyordu ('onaylandi' vb.);
+`normalizeSegment` bunları `pick()` ile okuyup tanımadığı için sessizce
+'pending'e düşürüyordu. Dosya açılır açılmaz bilirkişinin onayları siliniyordu.
+`REVIEW_LEGACY` + `normalizeReviewState()` şemaya tek kaynak olarak eklendi;
+app.js'teki kopya tablo kaldırıldı. `sema-testi` [4b] korur.
 
 ### v2.88 — Onay metne bağlı değildi (tamamlandı, canlı veri)
 
@@ -52,7 +60,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 |---|---|---|
 | 1 | Kayıt tamamen duruyordu + uyarı görünmüyordu | **v2.87 tamamlandı** |
 | 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | **v2.88 tamamlandı** |
-| 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | bekliyor |
+| 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | **v2.89 tamamlandı** |
 | 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | bekliyor |
 | 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | bekliyor |
 | 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | bekliyor |

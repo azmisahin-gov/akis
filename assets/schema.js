@@ -49,6 +49,27 @@ export const MATERIAL_STATUS = [
 /** Bölüm kontrol durumu. */
 export const REVIEW_STATE = ['pending', 'approved', 'inaudible', 'relisten'];
 
+/**
+ * v2 Türkçe kontrol kodları → v3 ASCII kodlar.
+ * TEK KAYNAK: göç burada yapılır. `normalizeSegment` ve `segReview` (app.js)
+ * aynı tabloyu kullanır; ikisi ayrışırsa v2 dosyalarındaki onaylar sessizce
+ * kaybolur (v2.89'da yaşandı: bilirkişinin onayları yüklemede siliniyordu).
+ */
+export const REVIEW_LEGACY = {
+  onaylandi: 'approved',
+  bekliyor: 'pending',
+  anlasilmadi: 'inaudible',
+  yeniden: 'relisten'
+};
+
+/** Herhangi bir kontrol değerini v3 koduna çevirir; bilinmeyen → pending. */
+export function normalizeReviewState(v) {
+  const s = str(v).trim();
+  if (!s) return 'pending';
+  if (REVIEW_STATE.includes(s)) return s;
+  return REVIEW_LEGACY[s] || 'pending';
+}
+
 /** Konuşmacı rolü. */
 export const SPEAKER_ROLE = ['unspecified', 'complainant', 'defendant', 'witness', 'expert', 'other'];
 
@@ -429,7 +450,10 @@ export function normalizeSegment(src = {}) {
         }
       : null,
     lastEditBy: str(s.lastEditBy),
-    review: pick(s.review, REVIEW_STATE, 'pending'),
+    // v2 Türkçe kodları BURADA çevrilir (v2.89). Öncesinde `pick(...)` ile
+    // okunuyordu ve tanınmayan değer sessizce 'pending'e düşüyordu; yani v2
+    // dosyasındaki onaylar dosya açılır açılmaz SİLİNİYORDU.
+    review: normalizeReviewState(s.review),
     obs: Object.fromEntries(OBS_KEYS.map((k) => [k, !!obs[k]])),
     history: Array.isArray(s.history)
       ? s.history.filter(isObj).map((h) => ({ text: str(h.text), at: str(h.at), actor: str(h.actor) }))
