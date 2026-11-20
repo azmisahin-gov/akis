@@ -84,6 +84,7 @@ const EXPOSE = [
   'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
   'pickActiveChannel', 'analyzeSilenceChannelAware', 'segmentSilenceFlag', 'SILENCE_SCHEMA',
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
+  'isSha256Hex', 'verifyHashState', 'sha256',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1344,6 +1345,50 @@ console.log('\n[25] updatedAt düzenlemede tazelenir');
       T.persist({ touch: false });
       eq('yükleme damgayı tazelemez', c.updatedAt, '2020-01-01T00:00:00.000Z');
     }
+  }
+}
+
+// --- 26. SHA-256 doğrulaması ÜÇ hâlli olmalı (v2.96) ---------------------
+// GERÇEK HATA: `sha256()` hesaplayamadığında bir METİN döndürüyordu:
+//   'Hesaplanamadı (tarayıcı güvenlik kısıtı)'
+// `verifyIntegrity()` ise `now === m.sha256` karşılaştırması yapıyordu.
+// Eski sürüm bu metni özet olarak KAYDETTİĞİ için iki metin eşit çıkıyor ve
+// uygulama "SHA-256 doğrulandı; dosya değişmemiş" diyordu. Güvenli olmayan
+// bağlamda (ör. LAN IP üzerinden http://) `crypto.subtle` yoktur; orada HER
+// doğrulama sahte "eşleşti" veriyordu. Bu, adli raporda en ağır iddia türü.
+// KURAL: özet hesaplanamıyorsa null döner ve doğrulama "ölçülemedi" der —
+// "doğrulandı" ASLA denmez. Üç hâl: verified / unavailable / mismatch.
+console.log('\n[26] SHA-256 doğrulaması üç hâlli');
+{
+  eq('isSha256Hex tanımlı', typeof T.isSha256Hex, 'function');
+  eq('verifyHashState tanımlı', typeof T.verifyHashState, 'function');
+
+  if (typeof T.isSha256Hex === 'function') {
+    eq('geçerli özet tanınır', T.isSha256Hex('a'.repeat(64)), true);
+    eq('kısa metin özet değil', T.isSha256Hex('abc'), false);
+    eq('hata metni özet değil', T.isSha256Hex('Hesaplanamadı (tarayıcı güvenlik kısıtı)'), false);
+    eq('boş özet değil', T.isSha256Hex(''), false);
+    eq('64 karakter ama hex değil', T.isSha256Hex('z'.repeat(64)), false);
+  }
+
+  if (typeof T.verifyHashState === 'function') {
+    const h = 'b'.repeat(64);
+    // 1) İki geçerli özet eşitse → verified.
+    eq('eşleşen özet verified', T.verifyHashState(h, h), 'verified');
+    // 2) İki geçerli özet farklıysa → mismatch.
+    eq('farklı özet mismatch', T.verifyHashState('c'.repeat(64), h), 'mismatch');
+    // 3) Hesaplanamadıysa (null) → unavailable, ASLA verified değil.
+    eq('hesaplanamayan özet unavailable', T.verifyHashState(null, h), 'unavailable');
+    // 4) Kayıtlı özet geçersizse (eski sürümün metni) → unavailable.
+    eq('eski hata metni unavailable', T.verifyHashState(h, 'Hesaplanamadı (tarayıcı güvenlik kısıtı)'), 'unavailable');
+    // 5) İkisi de yoksa → unavailable.
+    eq('ikisi de yoksa unavailable', T.verifyHashState(null, null), 'unavailable');
+    // 6) İki hata metni YAN YANA GELSE BİLE verified OLMAZ.
+    eq(
+      'iki hata metni verified sayılmaz',
+      T.verifyHashState('Hesaplanamadı (tarayıcı güvenlik kısıtı)', 'Hesaplanamadı (tarayıcı güvenlik kısıtı)'),
+      'unavailable'
+    );
   }
 }
 

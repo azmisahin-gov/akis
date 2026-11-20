@@ -6,12 +6,83 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.95.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.96.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.96 — SHA-256 doğrulaması sahte "eşleşti" verebiliyordu
+
+CANLI VERİ. Adli raporda en ağır iddia "dosya değişmemiş" iddiasıdır. Bu
+sürüm, o iddianın yanlış verilebildiği bir hatayı kapatıyor.
+
+### GERÇEK HATA
+
+`sha256()` hesaplayamadığında bir **metin** döndürüyordu:
+
+```js
+return 'Hesaplanamadı (tarayıcı güvenlik kısıtı)';
+```
+
+`verifyIntegrity()` ise `now === m.sha256` karşılaştırması yapıyordu. Eski
+sürüm bu metni **özet olarak kaydettiği** için iki metin eşit çıkıyor ve
+uygulama şunu diyordu:
+
+> **"SHA-256 doğrulandı; dosya değişmemiş."**
+
+`crypto.subtle` yalnız **güvenli bağlamda** (https, localhost, file://) vardır.
+Yerel sunucuya LAN IP'si üzerinden `http://192.168.x.x:8787` ile girildiğinde
+`crypto.subtle` **yoktur** — yani o kurulumda **her doğrulama sahte "eşleşti"
+veriyordu**.
+
+Ölçüm:
+
+```
+kayıtlı özet   : "Hesaplanamadı (tarayıcı güvenlik kısıtı)"
+bulunan        : "Hesaplanamadı (tarayıcı güvenlik kısıtı)"
+now === stored : true   ← "doğrulandı" der
+```
+
+### Çözüm
+
+- `sha256()` hesaplayamazsa **`null`** döner (metin değil).
+- `isSha256Hex(v)` — yalnız 64 küçük harf hex geçerlidir. Eski sürümün
+  kaydettiği hata metni bu kontrolü geçemez.
+- `verifyHashState(now, stored)` — **üç hâl**:
+  - `verified` — iki geçerli özet eşit
+  - `mismatch` — iki geçerli özet farklı (dosya değişmiş)
+  - `unavailable` — özet hesaplanamadı/geçersiz → **doğrulanamadı**
+- `unavailable` **asla** `verified` sayılmaz; ölçülemeyen bir şey doğrulanmış
+  gösterilemez.
+- Arayüz üç hâli ayırır: "doğrulandı" / "FARKLI: dosya değişmiş olabilir" /
+  "YAPILAMADI: özet hesaplanamıyor (güvenli bağlantı gerekir)".
+
+**Ölçüm (gerçek Chromium, `crypto.subtle` kaldırılmış):**
+
+```
+TOAST   : "SHA-256 DOĞRULANAMADI: bu tarayıcıda özet hesaplanamıyor
+           (güvenli bağlantı gerekir). Dosya değişmemiş sayılmaz."
+lastVerify: { ok: false, state: "unavailable" }
+Günlük  : "Doğrulanamadı: özet bu tarayıcıda hesaplanamadı (güvenli bağlam gerekir)."
+Uyarı   : "Son SHA-256 doğrulaması YAPILAMADI: ... Dosya doğrulanmış sayılmaz."
+```
+
+### KULLANICI NE GÖRECEK
+
+- Doğrulama **gerçekten yapılamıyorsa** artık "doğrulandı" demez; açıkça
+  "doğrulanamadı" der ve **neden** olduğunu söyler (güvenli bağlantı gerekir).
+- "Dosya değişmiş olabilir" uyarısı yalnız **gerçekten farklı** özetlerde
+  çıkar; hesaplanamadığında bu yanıltıcı suçlama görünmez.
+- LAN IP'si üzerinden `http://` ile çalıştırıyorsanız SHA-256 doğrulaması
+  yapılamaz; bunun için `https` veya `localhost` kullanın.
+
+### Testle korunur
+
+`birim-testleri` [26] (15 kontrol): geçerli/geçersiz özet ayrımı, üç hâl,
+"iki hata metni yan yana gelse bile verified olmaz". Test düzeltme yokken
+**kaldı** (`353 geçti, 2 kaldı`), düzeltmeden sonra geçti (`366 geçti, 0 kaldı`).
 
 ## v2.95 — "Daha yeni kazanır" kuralı çalışmıyordu (updatedAt bayatlıyordu)
 

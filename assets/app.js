@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.95';
+const APP_VERSION = '2.96';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1417,7 +1417,7 @@ function audioStatusZoneHtml(m) {
   const status = materialStatusLabel(m);
   const stCode = materialStatus(m);
   const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && !m.lastVerify.ok ? `<div class="warn-box">Son SHA-256 doğrulaması farklı: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -5303,14 +5303,36 @@ function showSegmentHistory(m, index, anchor) {
     if (e.target === dlg || e.target.dataset.closeHistory !== undefined) dlg.remove();
   });
 }
+// SHA-256 özeti. Hesaplanamazsa `null` döner (v2.96).
+// ÖNCESİ: hata durumunda bir METİN döndürüyordu
+// ('Hesaplanamadı (tarayıcı güvenlik kısıtı)'). Bu metin özet olarak kaydedildiği
+// için `now === m.sha256` karşılaştırması eşit çıkıyor ve uygulama sahte
+// "doğrulandı" diyordu. Güvenli olmayan bağlamda (http:// LAN IP) her doğrulama
+// böyleydi. Artık "hesaplanamadı" ile "hesaplandı" ayırt edilir.
 async function sha256(blob) {
   try {
+    if (!crypto || !crypto.subtle || !crypto.subtle.digest) return null;
     const buf = await blob.arrayBuffer();
     const hash = await crypto.subtle.digest('SHA-256', buf);
     return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('');
   } catch (e) {
-    return 'Hesaplanamadı (tarayıcı güvenlik kısıtı)';
+    return null;
   }
+}
+// Geçerli bir SHA-256 özeti mi? (64 küçük harf hex). Eski sürümlerin kaydettiği
+// hata METNİ bu kontrolü geçemez; böylece "hesaplanamadı" özet sanılmaz.
+function isSha256Hex(v) {
+  return typeof v === 'string' && /^[0-9a-f]{64}$/.test(v);
+}
+// İki özeti karşılaştırır; ÜÇ hâl döner (v2.96):
+//   'verified'    → iki geçerli özet eşit; dosya değişmemiş
+//   'mismatch'    → iki geçerli özet FARKLI; dosya değişmiş
+//   'unavailable' → özet(ler) hesaplanamadı/geçersiz; DOĞRULANAMADI
+// "unavailable" ASLA "verified" sayılmaz: ölçülemeyen bir şey doğrulanmış
+// gösterilemez.
+function verifyHashState(nowHash, storedHash) {
+  if (!isSha256Hex(nowHash) || !isSha256Hex(storedHash)) return 'unavailable';
+  return nowHash === storedHash ? 'verified' : 'mismatch';
 }
 // Technical inventory for the evidence record. The browser can only expose
 // container-level facts (codec, channel count, sample rate, bit depth); these are
@@ -5461,7 +5483,11 @@ async function addAudioFiles(files, opts = {}) {
         : { mediumType: 'unspecified', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
     };
     c.materials.push(m);
-    logEvent(m, 'Kayıt eklendi', `${file.name} · ${file.size} bayt · SHA-256 hesaplandı`);
+    logEvent(
+      m,
+      'Kayıt eklendi',
+      `${file.name} · ${file.size} bayt · ${m.sha256 ? 'SHA-256 hesaplandı' : 'SHA-256 HESAPLANAMADI (güvenli bağlantı gerekir)'}`
+    );
     if (intake) {
       logEvent(
         m,
@@ -5964,12 +5990,34 @@ async function verifyIntegrity(id) {
     return;
   }
   const now = await sha256(blob);
-  const ok = now === m.sha256;
-  m.lastVerify = { at: new Date().toISOString(), ok, hash: now };
-  logEvent(m, 'SHA-256 doğrulama', ok ? 'Özet eşleşti; dosya değişmemiş.' : `Özet farklı! Beklenen ${m.sha256}, bulunan ${now}`);
+  // ÜÇ HÂL (v2.96): "hesaplanamadı" ASLA "doğrulandı" sayılmaz.
+  const state = verifyHashState(now, m.sha256);
+  m.lastVerify = {
+    at: new Date().toISOString(),
+    ok: state === 'verified',
+    state,
+    hash: now || ''
+  };
+  if (state === 'verified') {
+    logEvent(m, 'SHA-256 doğrulama', 'Özet eşleşti; dosya değişmemiş.');
+  } else if (state === 'mismatch') {
+    logEvent(m, 'SHA-256 doğrulama', `Özet farklı! Beklenen ${m.sha256}, bulunan ${now}`);
+  } else {
+    logEvent(
+      m,
+      'SHA-256 doğrulama',
+      `Doğrulanamadı: özet ${now ? 'kayıtlı özet geçersiz' : 'bu tarayıcıda hesaplanamadı'} (güvenli bağlam gerekir).`
+    );
+  }
   persist();
   renderAudioList();
-  showToast(ok ? 'SHA-256 doğrulandı; dosya değişmemiş.' : 'Uyarı: dosya özeti değişmiş görünüyor!');
+  if (state === 'verified') showToast('SHA-256 doğrulandı; dosya değişmemiş.');
+  else if (state === 'mismatch') showToast('Uyarı: dosya özeti değişmiş görünüyor!');
+  else
+    showToast(
+      'SHA-256 DOĞRULANAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). ' +
+        'Dosya değişmemiş sayılmaz.'
+    );
 }
 function showEvidenceLog(m) {
   const existing = document.querySelector('.history-dialog');
@@ -9582,6 +9630,17 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.96': {
+    title: 'SHA-256 doğrulaması artık sahte "eşleşti" demiyor',
+    body:
+      'Dosya özeti (SHA-256) hesaplanamadığında uygulama bunu "doğrulandı" ' +
+      'sayabiliyordu. Bu özellikle LAN IP üzerinden http:// ile çalışırken ' +
+      'oluyordu (tarayıcı güvenli bağlantı olmadan özet hesaplamaz). Artık böyle ' +
+      'bir durumda "DOĞRULANAMADI" der ve nedenini söyler; dosya değişmiş sayılmaz ' +
+      'ama doğrulanmış da sayılmaz. "Dosya değişmiş olabilir" uyarısı yalnız ' +
+      'özetler gerçekten farklıysa çıkar. SHA-256 doğrulaması için https veya ' +
+      'localhost kullanın.'
+  },
   '2.95': {
     title: 'Dosya birleştirmede "eski dosya" yanlış belirleniyordu',
     body:
