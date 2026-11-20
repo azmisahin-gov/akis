@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.96';
+const APP_VERSION = '2.97';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3153,6 +3153,42 @@ function secondsFromTimecode(t) {
   if (p.length === 3) return Number(p[0]) * 3600 + Number(p[1]) * 60 + Number(p[2]);
   if (p.length === 2) return Number(p[0]) * 60 + Number(p[1]);
   return Number(p[0]) || 0;
+}
+// KATI zaman kodu çözücü (v2.97). `secondsFromTimecode` çözemezse 0 döner —
+// 0 ise GEÇERLİ bir andır (kaydın başlangıcı). Bu yüzden "bozuk girdi" ile
+// "gerçekten 0" ayırt edilemiyordu ve raporda sessizce `00:00:00.000` yazılıyordu.
+// Bu fonksiyon geçersiz girdide `null` döner.
+// Kabul edilen biçim: [S:]DD:SS[(.|,)mmm] — Türkçe ondalık virgül de geçerli.
+// Sınırlar: dakika/saniye 0–59, ms en fazla 3 hane. Negatif reddedilir.
+function parseTimecodeStrict(t) {
+  const s = String(t == null ? '' : t).trim();
+  if (!s) return null;
+  // Virgül → nokta (Türkçe ondalık ayırıcı). Yalnız SON virgülü çevir.
+  const norm = s.replace(/,(\d{1,3})$/, '.$1');
+  const m = norm.match(/^(\d{1,3}):([0-5]\d):([0-5]\d)(?:\.(\d{1,3}))?$/);
+  if (m) {
+    const ms = m[4] ? Number(`0.${m[4]}`) : 0;
+    return Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]) + ms;
+  }
+  // "DD:SS[.mmm]" biçimi de kabul edilir (saatsiz).
+  const m2 = norm.match(/^([0-5]?\d):([0-5]\d)(?:\.(\d{1,3}))?$/);
+  if (m2) {
+    const ms = m2[3] ? Number(`0.${m2[3]}`) : 0;
+    return Number(m2[1]) * 60 + Number(m2[2]) + ms;
+  }
+  return null;
+}
+// Girdi alanından gelen değeri doğrular ve KANONİK biçime çevirir (v2.97).
+// Dönüş: kanonik "HH:MM:SS.mmm" ya da null (reddedildi).
+// `end` verilirse aralık da denetlenir: end > start olmalı.
+function normalizeTimeInput(value, end) {
+  const sec = parseTimecodeStrict(value);
+  if (sec == null) return null;
+  if (end !== undefined) {
+    const endSec = parseTimecodeStrict(end);
+    if (endSec == null || endSec <= sec) return null;
+  }
+  return timecode(sec);
 }
 function segDurationSec(s) {
   const a = secondsFromTimecode(s.start),
@@ -8700,6 +8736,52 @@ function setupEvents() {
       if (s) snapshotSegmentText(s);
     }
   });
+  // Zaman alanı doğrulaması (v2.97). Geçerliyse kanonik biçim yazılır;
+  // geçersizse kayda DOKUNULMAZ, alan eski değerine döner ve neden
+  // reddedildiği söylenir. Sessiz sıfırlama yok.
+  $('#view-audio').addEventListener('focusout', (e) => {
+    const el = e.target;
+    if (!el.dataset || (el.dataset.key !== 'start' && el.dataset.key !== 'end')) return;
+    const card = el.closest('.audio-card');
+    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+    const m = currentCase().materials.find((x) => x.id === id);
+    const idx = Number(el.dataset.seg);
+    const s = m?.segments[idx];
+    if (!s) return;
+    const key = el.dataset.key;
+    const raw = el.value;
+    // Aralık denetimi: başlangıç yazılıyorsa bitiş, bitiş yazılıyorsa
+    // başlangıç referanstır. `normalizeTimeInput(value, end)` imzası
+    // "value + end" bekler; biz her iki durumu tek çağrıya indirgeriz.
+    const otherKey = key === 'start' ? 'end' : 'start';
+    const other = s[otherKey] || '';
+    let canon;
+    if (key === 'start') {
+      canon = normalizeTimeInput(raw, other);
+    } else {
+      // Bitiş için: (başlangıç, yeni bitiş) çiftini doğrula, bitişi döndür.
+      const startCanon = parseTimecodeStrict(other);
+      const endCanon = parseTimecodeStrict(raw);
+      canon =
+        startCanon != null && endCanon != null && endCanon > startCanon ? timecode(endCanon) : null;
+    }
+    if (canon == null) {
+      // Reddedildi: alanı eski değere döndür, kayda dokunma.
+      el.value = s[key] || '';
+      showToast(
+        `Bölüm ${idx + 1}: "${raw}" geçerli bir zaman kodu değil. ` +
+          'Biçim: SS:DD:ss.mmm (ör. 00:01:23.450). Bitiş, başlangıçtan sonra olmalı. Değer değiştirilmedi.'
+      );
+      return;
+    }
+    if (s[key] === canon) return;
+    s[key] = canon;
+    el.value = canon;
+    persist();
+    updateSegListItem(m, idx);
+    scheduleLightRefresh(m);
+    if ($('#view-report').classList.contains('active')) renderReport();
+  });
   $('#view-audio').addEventListener('focusout', (e) => {
     const el = e.target;
     if (!el.dataset || el.dataset.key !== 'text') return;
@@ -8744,7 +8826,12 @@ function setupEvents() {
         );
       }
     } else if (el.dataset.key === 'speaker') s.speaker = el.value;
-    else s[el.dataset.key] = el.value;
+    else if (el.dataset.key === 'start' || el.dataset.key === 'end') {
+      // ZAMAN ALANI (v2.97): yazarken kayda YAZILMAZ. Yarım yazılmış
+      // "00:00:0" gibi değer kayda girerse rapor bozulur. Odak kaybında
+      // doğrulanır (aşağıdaki focusout); geçersizse reddedilir ve söylenir.
+      return;
+    } else s[el.dataset.key] = el.value;
     persist();
     updateSegListItem(m, Number(el.dataset.seg));
     // YAZARKEN ağır iş yapılmaz (v2.86). Her tuşta segCounts tüm bölümleri
@@ -9630,6 +9717,15 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.97': {
+    title: 'Zaman alanları artık doğrulanıyor',
+    body:
+      'Başlangıç/bitiş alanlarına geçersiz bir değer yazıldığında (harf, 99 saniye, ' +
+      'ters aralık) bu değer sessizce kaydediliyor ve raporda "00:00:00.000" olarak ' +
+      'görünüyordu. Artık geçersiz değer KAYDEDİLMEZ: alan eski değerine döner ve ' +
+      'neden kabul edilmediği söylenir. Türkçe ondalık virgülle de yazabilirsiniz ' +
+      '(00:00:05,250 → 00:00:05.250).'
+  },
   '2.96': {
     title: 'SHA-256 doğrulaması artık sahte "eşleşti" demiyor',
     body:

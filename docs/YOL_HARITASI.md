@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.96.**
+yazılır. **Güncel sürüm: v2.97.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.97 — Zaman alanı doğrulanır (tamamlandı, canlı veri)
+
+Zaman alanları hiç doğrulanmıyordu. `secondsFromTimecode` çözemeyince 0
+döndüğü için "bozuk girdi" ile "gerçek 0" ayırt edilemiyordu; raporda sessizce
+`00:00:00.000` yazılıyordu (Türkçe virgül, 99 saniye, harf, ters aralık).
+`parseTimecodeStrict()` + `normalizeTimeInput()` eklendi; geçersiz değer
+REDDEDİLİR ve kullanıcıya söylenir. `birim-testleri` [27] korur.
 
 ### v2.96 — SHA-256 doğrulaması sahte "eşleşti" verebiliyordu (tamamlandı, canlı veri)
 
@@ -126,7 +134,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | **v2.95 tamamlandı** |
 | 10 | Önizleme ile birleştirme farklı alan kümesi kullanıyor | bekliyor |
 | 11 | SHA-256 hesaplanamazsa "doğrulandı" deniyor | **v2.96 tamamlandı** |
-| 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | bekliyor |
+| 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | **v2.97 tamamlandı** |
 | 13 | `paragraphize` asrText/asrModel'i siliyor | bekliyor |
 | 14 | Hızlı onay sayacı ile filtresi ayrışıyor | bekliyor |
 | 15 | Türkçe büyük İ terim tutarlılığını bozuyor | bekliyor |

@@ -6,12 +6,78 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.96.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.97.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.97 — Zaman alanı doğrulanmıyordu (rapora sessizce 00:00:00.000)
+
+CANLI VERİ. Bölüm detayındaki başlangıç/bitiş alanları **hiç doğrulanmıyordu**;
+yazılan değer olduğu gibi kayda giriyordu.
+
+### GERÇEK HATA
+
+`input` dinleyicisi değeri doğrudan yazıyordu:
+
+```js
+else s[el.dataset.key] = el.value;
+```
+
+`secondsFromTimecode()` çözemeyince **0** döndürür; 0 ise geçerli bir andır
+(kaydın başlangıcı). Bu yüzden "bozuk girdi" ile "gerçekten 0" ayırt
+edilemiyordu. Ölçülen sonuçlar:
+
+| Girilen | Raporda | Süre |
+|---|---|---|
+| `00:00:05,100` (Türkçe virgül) | **`00:00:00.000`** | 0 |
+| `00:00:09.000 – 00:00:05.000` (ters) | `00:00:09.000 – 00:00:05.000` | 0 |
+| `00:00:99.000` | **`00:01:39.000`** (sessizce taşıyor) | 0 |
+| `abc` | **`00:00:00.000`** | 10 |
+
+Türkçe klavyede ondalık virgül yazmak çok olası; sonuç raporda sessizce
+`00:00:00.000` satırı oluyordu. `validateSegment()` bu biçimleri **yakalıyordu**
+ama hiçbir yerde **çağrılmıyordu**.
+
+### Çözüm
+
+- `parseTimecodeStrict(t)` — katı çözücü; geçersizde **`null`** döner (0 değil).
+  Türkçe ondalık virgül kabul edilir. Sınırlar: dakika/saniye 0–59, ms ≤ 3 hane,
+  negatif reddedilir.
+- `normalizeTimeInput(value, end)` — geçerliyse **kanonik** `HH:MM:SS.mmm`
+  döndürür; aralık denetimi (`end > start`) yapar; aksi hâlde `null`.
+- **Yazarken kayda yazılmaz**: yarım yazılmış `00:00:0` gibi değer kayda
+  girerse rapor bozulur. Doğrulama **odak kaybında** yapılır.
+- Geçersiz değer **reddedilir**: kayda dokunulmaz, alan eski değerine döner ve
+  kullanıcıya neden reddedildiği söylenir (biçim örneğiyle). Sessiz sıfırlama yok.
+
+**Ölçüm (gerçek Chromium, gerçek giriş alanı):**
+
+```
+A) "00:00:05,250" (Türkçe virgül) → kabul · kayıt: 00:00:05.250
+B) "00:00:99.000"                 → REDDEDİLDİ · kayıt değişmedi
+   uyarı: 'Bölüm 1: "00:00:99.000" geçerli bir zaman kodu değil.
+           Biçim: SS:DD:ss.mmm (ör. 00:01:23.450). Bitiş, başlangıçtan
+           sonra olmalı. Değer değiştirilmedi.'
+C) "00:00:20.000" (bitiş 10 sn → ters aralık) → REDDEDİLDİ · kayıt değişmedi
+```
+
+### KULLANICI NE GÖRECEK
+
+- Zaman alanına **Türkçe ondalık virgülle** de yazabilirsiniz
+  (`00:00:05,250`); uygulama bunu `00:00:05.250` biçimine çevirir.
+- Geçersiz bir değer yazarsanız (harf, 99 saniye, ters aralık) değer
+  **kaydedilmez**; alan eski değerine döner ve neden kabul edilmediği söylenir.
+- Rapora artık **sessizce `00:00:00.000`** yazılmaz.
+
+### Testle korunur
+
+`birim-testleri` [27] (22 kontrol): geçerli biçimler, virgül kabulü, geçersiz
+biçimlerin `null` dönmesi, kanonikleştirme, ters/eşit aralık reddi. Test
+düzeltme yokken **kaldı** (`366 geçti, 2 kaldı`), düzeltmeden sonra geçti
+(`388 geçti, 0 kaldı`).
 
 ## v2.96 — SHA-256 doğrulaması sahte "eşleşti" verebiliyordu
 

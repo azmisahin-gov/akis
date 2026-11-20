@@ -85,6 +85,7 @@ const EXPOSE = [
   'pickActiveChannel', 'analyzeSilenceChannelAware', 'segmentSilenceFlag', 'SILENCE_SCHEMA',
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
+  'parseTimecodeStrict', 'normalizeTimeInput',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1389,6 +1390,55 @@ console.log('\n[26] SHA-256 doğrulaması üç hâlli');
       T.verifyHashState('Hesaplanamadı (tarayıcı güvenlik kısıtı)', 'Hesaplanamadı (tarayıcı güvenlik kısıtı)'),
       'unavailable'
     );
+  }
+}
+
+// --- 27. Zaman alanı doğrulanmalı (v2.97) --------------------------------
+// GERÇEK HATA: bölüm detayındaki zaman alanları (`input` dinleyicisi) HİÇ
+// doğrulanmıyordu; yazılan değer olduğu gibi kayda giriyordu.
+// `secondsFromTimecode()` çözemeyince 0 döndürüyor, `tcRange()` de 0'ı
+// `00:00:00.000` diye yazıyor. Ölçülen sonuçlar:
+//   "00:00:05,100" (Türkçe virgül) → raporda "00:00:00.000"  (sessiz sıfır!)
+//   "00:00:09.000 – 00:00:05.000"  → ters aralık, süre 0, sessiz
+//   "00:00:99.000"                 → "00:01:39.000" (sessizce taşıyor)
+//   "abc"                          → "00:00:00.000"
+// `validateSegment()` bunları YAKALIYOR ama hiçbir yerde çağrılmıyordu.
+// KURAL: yazılan zaman ya geçerli bir zaman kodudur ya da kayda GİRMEZ.
+// Kullanıcıya neden kabul edilmediği söylenir; sessiz sıfırlama yok.
+console.log('\n[27] Zaman alanı doğrulanır');
+{
+  eq('parseTimecodeStrict tanımlı', typeof T.parseTimecodeStrict, 'function');
+  eq('normalizeTimeInput tanımlı', typeof T.normalizeTimeInput, 'function');
+
+  if (typeof T.parseTimecodeStrict === 'function') {
+    // 1) Geçerli biçimler.
+    eq('noktalı ms', T.parseTimecodeStrict('00:00:05.100'), 5.1);
+    eq('noktasız', T.parseTimecodeStrict('00:00:05'), 5);
+    eq('saatli', T.parseTimecodeStrict('01:02:03.500'), 3723.5);
+    eq('tek hane saat', T.parseTimecodeStrict('0:00:05'), 5);
+    // 2) Türkçe ondalık virgül KABUL EDİLİR (kullanıcı böyle yazıyor).
+    eq('virgüllü ms', T.parseTimecodeStrict('00:00:05,100'), 5.1);
+    eq('virgüllü saatli', T.parseTimecodeStrict('01:02:03,5'), 3723.5);
+    // 3) Geçersiz biçimler null döner (0 DEĞİL — 0 geçerli bir andır!).
+    eq('harf null', T.parseTimecodeStrict('abc'), null);
+    eq('boş null', T.parseTimecodeStrict(''), null);
+    eq('99 saniye null', T.parseTimecodeStrict('00:00:99.000'), null);
+    eq('99 dakika null', T.parseTimecodeStrict('00:99:00.000'), null);
+    eq('fazla hane null', T.parseTimecodeStrict('00:00:05.1234'), null);
+    eq('negatif null', T.parseTimecodeStrict('-00:00:05'), null);
+  }
+
+  if (typeof T.normalizeTimeInput === 'function') {
+    // 4) normalizeTimeInput: geçerliyse KANONİK biçim, değilse null.
+    eq('virgül kanonikleşir', T.normalizeTimeInput('00:00:05,100'), '00:00:05.100');
+    eq('ms eklenir', T.normalizeTimeInput('00:00:05'), '00:00:05.000');
+    eq('geçersiz null', T.normalizeTimeInput('abc'), null);
+    eq('99 saniye null', T.normalizeTimeInput('00:00:99.000'), null);
+    // 5) Ters aralık reddedilir: end < start.
+    eq('ters aralık reddedilir', T.normalizeTimeInput('00:00:09.000', '00:00:05.000'), null);
+    eq('eşit sınır reddedilir', T.normalizeTimeInput('00:00:05.000', '00:00:05.000'), null);
+    eq('geçerli aralık geçer', T.normalizeTimeInput('00:00:05.000', '00:00:09.000'), '00:00:05.000');
+    eq('bozuk bitiş aralığı reddeder', T.normalizeTimeInput('00:00:05.000', 'abc'), null);
   }
 }
 
