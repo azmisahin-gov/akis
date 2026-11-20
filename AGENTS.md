@@ -1407,8 +1407,8 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 |---|---|
 | Sürüm | **v2.122** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **717 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = push sonrası bu notun altındaki commit (yerel = uzak) |
-| Pages | `built` · aynı commit |
+| Uzak dal | `main` = kod commit `a53b570` (bu devir notu ayrı bir belge commit'idir) |
+| Pages | `built` · kod commit `a53b570` (canlı doğrulandı) |
 | Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.122'`, `version.json` = 2.122 |
 | Açık konu | **Yok** |
 
