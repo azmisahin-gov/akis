@@ -991,6 +991,42 @@ bir kabın çocuğunu kesiyorsa bu bir hatadır, "tasarım" değil.
 **Ölçüm (v2.120):** `listH=351 · parentH=351 · overflow=visible · kırpılan=0`;
 sona kaydırınca `lastFullyVisible: true`.
 
+
+### Aşama 10s — Yerleşim: tek kaydırma + spektrogram geçişi (TAMAMLANDI, v2.121)
+
+**ÖLÇÜLEN HATA (v2.120 yan etkisi):** `.seg-workspace { height:100% }` sağ
+detayı 351px'e sıkıştırdı; içerik 496px → **sağ panelde ayrı kaydırma çubuğu**.
+Kullanıcı: *"sağ taraftaki segment detay kısmına kaydırma çubuğu gelmiş"*.
+
+**DOĞRU YERLEŞİM (değişmez):**
+```css
+.seg-workspace { height: auto !important; align-items: start; overflow: visible; }
+.seg-list      { height: auto; max-height: 68vh; overflow-y: auto; }
+.seg-detail    { max-height: none; overflow: visible; }   /* iç kaydırma YOK */
+```
+- Kap **yükseklik dayatmaz** → çocuklar içeriği kadar uzar.
+- **Tek kaydırma**: yalnız `.seg-list`. Sağ panel kendi içinde kaymaz.
+- `overflow:hidden` ile çocuk kırpılmaz (v2.120 dersi).
+
+**SPEKTROGRAM (v2.121):** Düğme **dalga araç çubuğunda** (Böl'ün yanında).
+Basınca **aynı alanda** dalga ↔ spektrogram geçişi (biri gizlenir). Aynı
+yükseklik (88px) → zıplama yok, panel uzamaz. Bölümün **kendi aralığı** çizilir.
+Bölüm değişince görünüm **dalgaya döner**.
+
+**KORUYAN TEST:** `tasarim-testi` [2d] (3) + [2e] (2).
+
+**Ölçüm (v2.121, gerçek Chromium):** 82 bölüm → liste kayar, son bölüm tam
+görünür; detay `hasScroll=false`; spektrogram `drawn=true`, panel 598px.
+
+**DERS (ikinci kez):** Bir yerleşim hatasını düzeltirken (`height:100%`) başka
+bir bölgeyi sıkıştırmamak gerekir. **Her iki paneli de ölç**: `scrollHeight >
+clientHeight` her iki yönde kontrol edilmeli. "Liste düzeldi" demek "detay
+bozulmadı" demek değildir.
+
+**DERS:** `max-height: Nvh` kendi başına suçlu değildir; suçlu olan **kabın
+daha kısa olup `overflow:hidden` ile kırpmasıdır**. Test ölçütü buna göre
+yazılmalı (v2.120'deki "vh yasak" ifadesi yanlış ölçüttü).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1164,7 +1200,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.120.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.121.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1322,7 +1358,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.120` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.121` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

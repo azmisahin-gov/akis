@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.120.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.121.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.121 — Sağ panelde kaydırma çubuğu; spektrogram dalganın yerine
+
+CANLI VERİ. Bilirkişi: *"bu sefer sağ taraftaki segment detay kısmına kaydırma
+çubuğu gelmiş, o neden geldi? … spektrogram düğmesini belki böl düğmesinin
+yanına koyabilirsin… wav yerine spektrogramı koyabilir misin… bizim için detay
+çok önemli, orası."*
+
+### ÖLÇÜM (v2.120 — önceki sürümün yan etkisi)
+
+```
+.seg-detail : height 351px · scrollHeight 496px  → TAŞIYOR
+```
+
+v2.120'de liste kırpılmasını düzeltirken `.seg-workspace { height:100% }`
+verilmişti. Bu, sağ detay panelini 351px'e sıkıştırdı; içeriği 496px olduğu
+için **ayrı bir kaydırma çubuğu** çıktı. Ayrıca spektrogram ayrı satırdaydı ve
+açılınca paneli daha da uzatıyordu.
+
+### DÜZELTME
+
+**1. Doğru yerleşim mimarisi**
+
+```css
+.seg-workspace { height: auto !important; align-items: start; overflow: visible; }
+.seg-list      { height: auto; max-height: 68vh; overflow-y: auto; }
+.seg-detail    { max-height: none; overflow: visible; }   /* iç kaydırma YOK */
+```
+
+Kap **yükseklik dayatmaz**; sütunlar içeriği kadar uzar. Kaydırma **yalnız**
+soldaki bölüm listesinde (tek kaydırma kuralı).
+
+**2. Spektrogram: düğme araç çubuğunda, görünüm aynı alanda**
+
+- `▤ Spektrogram` düğmesi **dalga araç çubuğuna** taşındı (Böl'ün yanına)
+- Basınca **dalga ↔ spektrogram** geçişi: biri gizlenir, diğeri görünür
+- **Aynı alan** (88px) → panel uzamaz, zıplama yok
+- Bölüm sınırları korunur; **bölümün kendi aralığının** spektrogramı çizilir
+- Düğme açıkken görsel durum (`on`) gösterilir
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Kap yükseklik dayatmaz** (`height:auto`); çocuk içeriği kadar uzar.
+2. **`overflow:hidden` ile çocuk kırpılmaz**; kaydırma kullanılır.
+3. **Tek kaydırma**: yalnız `.seg-list`. Sağ panel kendi içinde kaymaz.
+4. **Dalga ve spektrogram aynı alanda geçişir** (biri açılınca diğeri kapanır).
+5. Bölüm değişince görünüm **dalgaya döner** (eski bölümün spektrogramı kalmaz).
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2d]** (3 kontrol) + **[2e]** (2 kontrol):
+- liste kendi içinde kayabiliyor, `height:100%` ile kaba bağlanmıyor
+- `seg-workspace` `overflow:hidden` ile kırpmıyor
+- `seg-detail` kendi içinde kaydırmıyor, yüksekliği sabitlenmiyor
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+82 bölüm  : listHasScroll=true · sona kaydır → lastFullyVisible=true
+DETAY     : hasScroll=FALSE (önce TRUE) · h=510 · scrollH=508
+Spektrogram: waveHidden=true · specHidden=false · drawn=true · panel 598px
+Geri dalga: waveHidden=false · specHidden=true · btnOn=false
+```
 
 ## v2.120 — Bölüm listesinin altı sessizce kesiliyordu
 

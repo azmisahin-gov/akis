@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.120.**
+yazılır. **Güncel sürüm: v2.121.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.121 — Sağ panel kaydırma çubuğu + spektrogram geçişi (tamamlandı)
+
+v2.120'de `.seg-workspace{height:100%}` sağ detayı 351px'e sıkıştırdı; içerik
+496px olduğu için ayrı kaydırma çubuğu çıktı. Artık kap yükseklik dayatmaz
+(`height:auto`, `overflow:visible`); kaydırma yalnız `.seg-list`'te.
+Spektrogram düğmesi dalga araç çubuğunda ve **aynı alanda** dalga↔spektrogram
+geçişi yapar. `tasarim-testi` [2d]/[2e].
 
 ### v2.120 — Bölüm listesinin altı kesilmiyordu (tamamlandı)
 

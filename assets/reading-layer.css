@@ -548,7 +548,7 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
 #view-audio .segments-root { min-height: 0; flex: 1 1 auto; }
 #view-audio .seg-workspace { min-height: 0; overflow: visible; }
 #view-audio .seg-list { overflow-y: auto; overscroll-behavior: contain; }
-#view-audio .seg-detail { overflow-y: auto; overscroll-behavior: contain; }
+#view-audio .seg-detail { overflow: visible; }
 .badge.prop { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
 .seg-item.has-proposal { border-left: 3px solid var(--gold); }
 
@@ -564,8 +564,7 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
   gap: var(--sp-2);
   height: auto !important;
   min-height: 0;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
+  overflow: visible !important;
   padding: var(--sp-3);
 }
 #view-audio .seg-detail > * { flex: 0 0 auto; }
@@ -661,8 +660,7 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
   gap: var(--sp-2);
   height: auto !important;
   min-height: 0;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
+  overflow: visible !important;
   padding: var(--sp-3);
 }
 #view-audio .seg-detail > * { flex: 0 0 auto; }
@@ -801,15 +799,20 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
    ekranda taşıyordu. Bu yüzden panel "bir türlü olmuyor"du.
    ============================================================================ */
 #view-audio .seg-workspace {
-  /* v2.120: çocuğu KIRPMA. Liste kendi içinde kayar; kap yalnız yerleşim
-     sağlar. `overflow:hidden` burada listenin altını sessizce kesiyordu. */
-  height: 100% !important;
+  /* v2.121 — DOĞRU MİMARİ: kap YÜKSEKLİK DAYATMAZ.
+     - `height:auto` → iki sütun içeriği kadar uzar; DETAY tam görünür.
+     - `overflow:visible` → çocuk SESSİZCE kırpılmaz (v2.120 dersi).
+     - `align-items:start` → sütunlar birbirini esnetmez; liste kendi
+       yüksekliğini kendi sınırıyla yönetir (iç kaydırma).
+     v2.120'de `height:100%` verilince detay 351px'e sıkışıp TAŞIYORDU
+     (ölçüm: kutu 351px, içerik 496px). */
+  height: auto !important;
   max-height: none !important;
   min-height: 0 !important;
-  align-items: stretch !important;
+  align-items: start !important;
   overflow: visible !important;
 }
-#view-audio .seg-list { height: 100% !important; max-height: none; overflow-y: auto; }
+#view-audio .seg-list { height: auto !important; max-height: 68vh; overflow-y: auto; }
 #view-audio .seg-detail { height: auto !important; overflow: visible !important; }
 
 /* İki sütun gövde */
@@ -857,28 +860,30 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
    uzuyor, SCROLL YOK. 200+ bölümlü kayıtta sayfa kullanılamaz hâle gelir.
    Çözüm: !important ile sabitle.
    ============================================================================ */
-/* v2.120 — LİSTE KABINA UYAR (62vh KALDIRILDI).
-   ÖLÇÜM: `.seg-list` 497px (62vh) ama saran `.seg-workspace` 360px ve
-   `overflow:hidden` → listenin alt 137px'i (≈3,8 bölüm) SESSİZCE kırpılıyordu.
-   Kullanıcı "82 kayıt var, 78'ini görüyorum" dedi. Kural: liste yüksekliği
-   KABINDAN türetilir; viewport tabanlı sabit yükseklik kullanılmaz. */
+/* v2.121 — LİSTE KENDİ İÇİNDE KAYAR.
+   v2.120'de kırpılma, KABIN `overflow:hidden` olmasındandı (kap 360px,
+   liste 497px). Kap artık kırpmıyor (`overflow:visible`) ve yükseklik
+   dayatmıyor. Liste kendi sınırıyla kayar: 200 bölümde sayfa uzamaz,
+   ama alt bölümler KESİLMEZ (kaydırınca görünür). */
 #view-audio .seg-list {
-  height: 100% !important;
-  max-height: none !important;
-  min-height: 0 !important;
+  height: auto !important;
+  max-height: 68vh !important;
+  min-height: 240px !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
 }
 body.ws-mode #view-audio .seg-list {
-  height: 100% !important;
-  max-height: none !important;
-  min-height: 0 !important;
+  max-height: calc(100vh - 240px) !important;
+  min-height: 320px !important;
 }
 /* Sol sütun da kendi içinde kayabilir (uzun bölüm metni). */
 #view-audio .seg-detail {
-  max-height: 78vh !important;
-  overflow-y: auto !important;
-  overscroll-behavior: contain;
+  /* v2.121: PANEL İÇİNDE KAYDIRMA YOK. v2.120'de `.seg-workspace{height:100%}`
+     verilince panel 351px'e indi ama içeriği 547px → sağ panelde kaydırma
+     çubuğu çıktı (canlı veri: "detay kısmına kaydırma çubuğu gelmiş").
+     Kural: detay içeriği kadar uzar; tek kaydırma dışta (.seg-list/sayfa). */
+  max-height: none !important;
+  overflow: visible !important;
 }
 /* Dar ekran: liste daha kısa, metin önce. */
 @media (max-width: 900px) {
@@ -1234,18 +1239,18 @@ body.ws-mode #view-audio .seg-list {
 }
 @media (max-width: 700px) { .sd-amb-fields { grid-template-columns: 1fr; } }
 
-/* --- P. v2.115 — Bölüm spektrogramı ------------------------------------- */
-.sd-spec-bar {
-  display: flex; align-items: center; gap: var(--sp-2);
-  margin: var(--sp-1) 0 var(--sp-2);
-}
-.sd-spec-note { font-size: var(--fs-2xs); color: var(--ink-3); }
+/* --- P. v2.115 / v2.121 — Bölüm spektrogramı -----------------------------
+   v2.121: dalga ve spektrogram AYNI alanda geçişir (biri açılınca diğeri
+   kapanır). Böylece panel UZAMAZ ve sağ panelde kaydırma çubuğu çıkmaz.
+   Yükseklik dalga ile aynı (88px) → geçişte zıplama olmaz. */
 .sd-spec-canvas {
-  width: 100%; height: 96px; display: block;
+  width: 100%; height: 88px; display: block;
   border-radius: var(--r-sm); border: 1px solid var(--line-2);
-  margin-bottom: var(--sp-2);
 }
 .sd-spec-canvas[hidden] { display: none; }
+.sd-wave-canvas[hidden] { display: none; }
+/* Spektrogram düğmesi açıkken görsel durum */
+.seg-tool.on { background: var(--accent); color: var(--ink-inv); border-color: var(--accent); }
 
 /* Belirsiz okuma rozeti: onay yeşili DEĞİL, dikkat çeker ama "hata" da değil. */
 #view-audio .badge.amb {

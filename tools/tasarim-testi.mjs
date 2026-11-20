@@ -267,15 +267,23 @@ console.log('\n[2d] Liste yüksekliği kabı aşmıyor');
   const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
   const base = stripMedia(stripComments(layer));
 
-  // `.seg-list` kuralı `max-height: Nvh` gibi VIEWPORT tabanlı sabit
-  // yükseklik TANIMLAMAMALI; kabı doldurmalı.
+  // v2.121 — GERÇEK KURAL (v2.120'deki ifade yanlıştı):
+  // `max-height: Nvh` KENDİ BAŞINA zararsızdır; zararlı olan, KABIN daha kısa
+  // olup `overflow:hidden` ile çocuğu kırpmasıdır. Bu yüzden ölçüt:
+  // (a) liste kendi içinde kayabilmeli (overflow-y auto/scroll),
+  // (b) kabı KIRPMAMALI (seg-workspace overflow:hidden yasak),
+  // (c) sabit `height:100%` ile kaba bağlanmamalı (kap kısalırsa taşar).
   const listRules = [...base.matchAll(/#view-audio \.seg-list\s*\{([^}]*)\}/g)].map((m) => m[1]);
   const allList = listRules.join(';');
-  const vhMax = /max-height:\s*[0-9.]+vh/.test(allList);
   check(
-    'seg-list viewport tabanlı sabit yükseklik KULLANMIYOR (kabı doldurur)',
-    !vhMax,
-    vhMax ? 'max-height: <n>vh bulundu → kabı aşabilir ve kırpılır' : ''
+    'seg-list kendi içinde kayabiliyor (overflow-y auto/scroll)',
+    /overflow-y:\s*(auto|scroll)/.test(allList),
+    allList.trim().slice(0, 70)
+  );
+  check(
+    'seg-list sabit height:100% ile kaba bağlanmıyor (kap kısalırsa taşar)',
+    !/height:\s*100%/.test(allList),
+    /height:\s*100%/.test(allList) ? 'height:100% → kap kısalınca taşma/kırpılma' : ''
   );
   // `.seg-workspace` çocuğu kırpmamalı: ya görünür ya kaydırmalı.
   const wsRules = [...base.matchAll(/#view-audio \.seg-workspace\s*\{([^}]*)\}/g)].map((m) => m[1]);
@@ -284,6 +292,32 @@ console.log('\n[2d] Liste yüksekliği kabı aşmıyor');
     'seg-workspace sessizce kırpmıyor (overflow hidden yok)',
     !/overflow:\s*hidden/.test(allWs),
     /overflow:\s*hidden/.test(allWs) ? 'overflow:hidden → çocuk sessizce kesilir' : ''
+  );
+}
+
+// --- 2e. Sağ panel (bölüm detayı) kendi içinde kaymaz (v2.121) -----------
+// GERÇEK HATA (v2.120 yan etkisi): `.seg-workspace { height:100% }` verilince
+// `.seg-detail` 351px'e indi ama içeriği 547px → SAĞ PANELDE KAYDIRMA ÇUBUĞU
+// çıktı. Kullanıcı: "sağ taraftaki segment detay kısmına kaydırma çubuğu gelmiş,
+// o neden geldi? ... detay çok önemli, orası."
+// KURAL: detay paneli kendi içinde kaydırmaz; içeriği kadar uzar ve
+// dıştaki tek kaydırma (.seg-list veya sayfa) kullanılır.
+console.log('\n[2e] Sağ panel kendi içinde kaymıyor');
+{
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+  const detailRules = [...base.matchAll(/#view-audio \.seg-detail\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  const allDetail = detailRules.join(';');
+  check(
+    'seg-detail kendi içinde kaydırmıyor (overflow-y auto/scroll yok)',
+    !/overflow-y:\s*(auto|scroll)/.test(allDetail),
+    /overflow-y:\s*(auto|scroll)/.test(allDetail) ? 'overflow-y: auto → panel içinde ayrı çubuk' : ''
+  );
+  check(
+    'seg-detail yüksekliği sabitlenmiyor (içeriği kadar uzar)',
+    !/height:\s*(100%|[0-9.]+px)\s*(!important)?/.test(allDetail.replace(/min-height[^;]*;/g, '')),
+    allDetail.trim().slice(0, 80)
   );
 }
 

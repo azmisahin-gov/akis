@@ -37,14 +37,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.120';
+} from './schema.js?v=2.121';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.120';
+const APP_VERSION = '2.121';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3733,14 +3733,13 @@ function segDetailHtml(m) {
             <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">🔁 Döngü</button>
             <span class="sd-loop-span" data-loop-span></span>
             <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
+            <button class="seg-tool" data-seg-spec="${esc(m.id)}" title="Görünüm: dalga formu ↔ spektrogram. Spektrogram frekans içeriğini gösterir (p/t/k patlamaları, gürültü içinde konuşma daha okunur). Aynı alanda geçiş yapar; sınırlar korunur.">▤ Spektrogram</button>
           </div>
         </div>
+        <!-- TEK GÖRÜNÜM ALANI (v2.121): dalga ve spektrogram AYNI kutuda geçişir.
+             Böylece düğme dalga araç çubuğunda kalır ve sağ panel uzamaz. -->
         <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
-        <div class="sd-spec-bar">
-          <button class="seg-tool" data-seg-spec="${esc(m.id)}" title="Bu bölümün spektrogramını göster/gizle. Patlamalı sessizler (p/t/k) ve gürültü içinde konuşma burada daha okunur.">▤ Spektrogram</button>
-          <span class="sd-spec-note" hidden>Frekans ekseni 20 Hz – 8 kHz (log) · bölüm aralığı</span>
-        </div>
-        <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="96" aria-label="Bölüm spektrogramı" hidden></canvas>
+        <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="88" aria-label="Bölüm spektrogramı" hidden></canvas>
       </div>
       <div class="sd-times">
         <label class="sd-time"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
@@ -3808,13 +3807,17 @@ function refreshProposalBand(m, idx) {
 // İKİSİ BİRLİKTE sunulur (biri diğerinin yerine geçmez).
 async function showSegmentSpectrogram(m, index) {
   const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
+  const wave = $(`#sdwave-${CSS.escape(m.id)}`);
   const s = (m.segments || [])[index];
   if (!canvas || !s) return;
-  // Aç/kapa: zaten açıksa gizle.
+  // AÇ/KAPA = GÖRÜNÜM GEÇİŞİ (v2.121). Dalga ve spektrogram AYNI alanda
+  // geçişir: biri açılınca diğeri kapanır. Böylece panel uzamaz, düğme dalga
+  // araç çubuğunda kalır ve sağ panelde kaydırma çubuğu çıkmaz.
   if (!canvas.hidden) {
     canvas.hidden = true;
-    const note = canvas.parentElement?.querySelector('.sd-spec-note');
-    if (note) note.hidden = true;
+    if (wave) wave.hidden = false;
+    const btn = $(`[data-seg-spec="${CSS.escape(m.id)}"]`);
+    if (btn) btn.classList.remove('on');
     return;
   }
   const c = currentCase();
@@ -3836,8 +3839,9 @@ async function showSegmentSpectrogram(m, index) {
     return;
   }
   canvas.hidden = false;
-  const note = canvas.parentElement?.querySelector('.sd-spec-note');
-  if (note) note.hidden = false;
+  if (wave) wave.hidden = true; // aynı alanda geçiş: dalga gizlenir
+  const btnOn = $(`[data-seg-spec="${CSS.escape(m.id)}"]`);
+  if (btnOn) btnOn.classList.add('on');
   drawSegmentSpectrogram(canvas, spec);
   // Spektrogram "incelendi" bilgisi raporda görünür (yalnız gerçekten açıldıysa).
   if (!m.spectrogramReviewed) {
@@ -5334,12 +5338,14 @@ function syncSegDetailInPlace(m, idx) {
       spkSel.value = want;
     }
   }
-  // Bölüm değişince eski bölümün spektrogramı KALMAZ (yanlış izlenim olur).
+  // Bölüm değişince GÖRÜNÜM DALGAYA DÖNER (v2.121): eski bölümün spektrogramı
+  // kalırsa yanlış izlenim olur. Dalga tekrar görünür, spektrogram gizlenir.
   const specCanvas = detail.querySelector('.sd-spec-canvas');
   if (specCanvas && !specCanvas.hidden) {
     specCanvas.hidden = true;
-    const note = detail.querySelector('.sd-spec-note');
-    if (note) note.hidden = true;
+    const wv = detail.querySelector('.sd-wave-canvas');
+    if (wv) wv.hidden = false;
+    detail.querySelectorAll('[data-seg-spec]').forEach((b) => b.classList.remove('on'));
   }
   setVal('.sd-text textarea', s.text || '');
   const sel = meta[1]?.querySelector('select');
@@ -11087,6 +11093,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.121': {
+    title: 'Sağ paneldeki kaydırma çubuğu kaldırıldı; spektrogram dalganın yerine geçiyor',
+    body:
+      'Önceki sürümde listenin altı kesilmesin derken sağ detay paneli sıkıştı ve ' +
+      'orada ayrı bir kaydırma çubuğu çıktı. Artık detay paneli içeriği kadar uzar; ' +
+      'kaydırma yalnız soldaki bölüm listesinde. Spektrogram düğmesi dalga araç ' +
+      'çubuğuna taşındı ve artık AYNI alanda geçiş yapıyor: dalga ↔ spektrogram. ' +
+      'Böylece panel uzamıyor, sınırlar korunuyor ve bölümün kendi aralığının ' +
+      'spektrogramı gösteriliyor.'
+  },
   '2.120': {
     title: 'Bölüm listesinin altı kesilmiyor',
     body:
