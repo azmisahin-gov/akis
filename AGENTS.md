@@ -955,6 +955,42 @@ Varsayılan kapalı. Ana oynat/Dinle takibi açmaz.
 bilemez. Modları AYIR ve varsayılanı KAPALI tut. Ayrıca aynı veriyi iki yerde
 gösteren ikinci kutu, güncellenmediğinde "bozuk" görünür — tek kaynak kullan.
 
+
+### Aşama 10r — Liste yüksekliği kabı aşıyordu (TAMAMLANDI, v2.120)
+
+**BELİRTİ:** 82 bölüm var, kullanıcı 78'i görüyor; 79 yarım.
+
+**ÖLÇÜM (gerçek Chromium):**
+```
+.seg-list       : 497px  (max-height: 62vh)
+.seg-workspace  : 360px  overflow: hidden   ← KIRPAN
+Kırpılan        : 137px ≈ 3,8 bölüm
+```
+
+**KÖK NEDEN:** v2.64'te "200 bölümde scroll yok" hatası için
+`max-height: 62vh !important` eklenmişti. Ama saran `.seg-workspace` daha
+kısaydı ve `overflow:hidden` olduğu için liste **sessizce kırpılıyordu**.
+v2.113 `scrollTop` hesabını düzeltmişti; bu AYRI bir katmandı (görünürlük).
+
+**DÜZELTME:** `seg-list { height:100% !important; max-height:none !important }`
+ve `seg-workspace { overflow: visible !important; height: 100% !important }`.
+
+**DEĞİŞMEZ KURALLAR:**
+1. Liste yüksekliği **KABINDAN** türetilir; `vh` tabanlı sabit yükseklik
+   kullanılmaz (kap daha kısaysa kırpılır).
+2. `overflow:hidden` ile çocuk kırpılmaz → kaydırma kullanılır (görünür).
+3. Dar ekran `@media` kısa liste makuldür; test bunu ayrı tutar.
+
+**KORUYAN TEST:** `tasarim-testi` [2d] — yorumlar ve `@media` blokları
+çıkarılarak denetlenir (yanlış pozitif önlenir).
+
+**DERS:** `!important` ile verilen yükseklik, KAP yüksekliğiyle uyuşmuyorsa
+sessiz kırpma üretir. Yükseklik verirken KABI da hesaba kat; `overflow:hidden`
+bir kabın çocuğunu kesiyorsa bu bir hatadır, "tasarım" değil.
+
+**Ölçüm (v2.120):** `listH=351 · parentH=351 · overflow=visible · kırpılan=0`;
+sona kaydırınca `lastFullyVisible: true`.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1128,7 +1164,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.119.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.120.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1286,7 +1322,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.119` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.120` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

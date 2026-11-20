@@ -546,7 +546,7 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
 #view-audio .card-pane.on[data-pane="transcript"] { display: flex; flex-direction: column; min-height: 0; }
 #view-audio .transcript-editor { display: flex; flex-direction: column; min-height: 0; }
 #view-audio .segments-root { min-height: 0; flex: 1 1 auto; }
-#view-audio .seg-workspace { min-height: 0; overflow: hidden; }
+#view-audio .seg-workspace { min-height: 0; overflow: visible; }
 #view-audio .seg-list { overflow-y: auto; overscroll-behavior: contain; }
 #view-audio .seg-detail { overflow-y: auto; overscroll-behavior: contain; }
 .badge.prop { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
@@ -801,11 +801,15 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
    ekranda taşıyordu. Bu yüzden panel "bir türlü olmuyor"du.
    ============================================================================ */
 #view-audio .seg-workspace {
-  height: auto !important;
+  /* v2.120: çocuğu KIRPMA. Liste kendi içinde kayar; kap yalnız yerleşim
+     sağlar. `overflow:hidden` burada listenin altını sessizce kesiyordu. */
+  height: 100% !important;
   max-height: none !important;
-  align-items: start !important;
+  min-height: 0 !important;
+  align-items: stretch !important;
+  overflow: visible !important;
 }
-#view-audio .seg-list { height: auto !important; max-height: 62vh; overflow-y: auto; }
+#view-audio .seg-list { height: 100% !important; max-height: none; overflow-y: auto; }
 #view-audio .seg-detail { height: auto !important; overflow: visible !important; }
 
 /* İki sütun gövde */
@@ -843,7 +847,7 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
   #view-audio .sd-body { grid-template-columns: 1fr; }
   #view-audio .sd-left { order: 2; }
   #view-audio .sd-right { order: 1; }
-  #view-audio .seg-list { max-height: 40vh; }
+  #view-audio .seg-list { height: auto !important; max-height: 40vh !important; }
 }
 
 /* ============================================================================
@@ -853,16 +857,22 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
    uzuyor, SCROLL YOK. 200+ bölümlü kayıtta sayfa kullanılamaz hâle gelir.
    Çözüm: !important ile sabitle.
    ============================================================================ */
+/* v2.120 — LİSTE KABINA UYAR (62vh KALDIRILDI).
+   ÖLÇÜM: `.seg-list` 497px (62vh) ama saran `.seg-workspace` 360px ve
+   `overflow:hidden` → listenin alt 137px'i (≈3,8 bölüm) SESSİZCE kırpılıyordu.
+   Kullanıcı "82 kayıt var, 78'ini görüyorum" dedi. Kural: liste yüksekliği
+   KABINDAN türetilir; viewport tabanlı sabit yükseklik kullanılmaz. */
 #view-audio .seg-list {
-  height: auto !important;
-  max-height: 62vh !important;
-  min-height: 240px;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
 }
 body.ws-mode #view-audio .seg-list {
-  max-height: calc(100vh - 260px) !important;
-  min-height: 320px;
+  height: 100% !important;
+  max-height: none !important;
+  min-height: 0 !important;
 }
 /* Sol sütun da kendi içinde kayabilir (uzun bölüm metni). */
 #view-audio .seg-detail {
@@ -872,7 +882,7 @@ body.ws-mode #view-audio .seg-list {
 }
 /* Dar ekran: liste daha kısa, metin önce. */
 @media (max-width: 900px) {
-  #view-audio .seg-list { max-height: 42vh !important; }
+  #view-audio .seg-list { height: auto !important; max-height: 42vh !important; }
   #view-audio .seg-detail { max-height: none !important; overflow: visible !important; }
 }
 

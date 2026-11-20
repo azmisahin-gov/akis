@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.119.**
+yazılır. **Güncel sürüm: v2.120.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.120 — Bölüm listesinin altı kesilmiyordu (tamamlandı)
+
+`.seg-list` 497px (62vh) ama saran `.seg-workspace` 360px + `overflow:hidden`
+→ alt 137px (≈4 bölüm) sessizce kırpılıyordu. Artık liste kabına uyar
+(`height:100%`), kap kırpmaz (`overflow:visible`). `tasarim-testi` [2d].
 
 ### v2.119 — Takip iki özelliğe ayrıldı; karaoke kaldırıldı (tamamlandı)
 

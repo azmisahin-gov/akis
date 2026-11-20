@@ -6,12 +6,68 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.119.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.120.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.120 — Bölüm listesinin altı sessizce kesiliyordu
+
+CANLI VERİ. Bilirkişi: *"segment listesinde şu an 82 kayıt var ama ben listede
+78'inci kayda kadar görebiliyorum; 79'un yarısını görüyorum."* — Ölçüm doğruladı.
+
+### ÖLÇÜM (v2.119, gerçek Chromium, 82 bölüm)
+
+```
+.seg-list       : height 497px   (max-height: 62vh)
+.seg-workspace  : height 360px   overflow: hidden   ← KIRPAN
+Kırpılan        : 137px ≈ 3,8 bölüm
+```
+
+Liste **497px** istiyor, kabı **360px** ve `overflow:hidden` → alt **137px**
+sessizce kesiliyor. Kullanıcının "78'i görüyorum, 79 yarım" tespiti birebir.
+
+### KÖK NEDEN
+
+`reading-layer.css`'te `#view-audio .seg-list { max-height: 62vh !important }`
+vardı (v2.64'te "200 bölümde scroll yok" hatasını düzeltmek için eklenmişti).
+Ama `.seg-list`'i saran `.seg-workspace` **daha kısaydı** ve `overflow:hidden`
+olduğu için liste kabından taşınca **sessizce kırpılıyordu**. v2.113'te
+`scrollTop` hesabı düzeltildi ama görünürlük sorunu ayrı bir katmandaydı.
+
+### DÜZELTME
+
+```css
+#view-audio .seg-list { height: 100% !important; max-height: none !important; }
+#view-audio .seg-workspace { overflow: visible !important; height: 100% !important; }
+```
+
+Liste artık **kabına uyar**; viewport tabanlı sabit yükseklik kullanmaz.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Liste yüksekliği KABINDAN türetilir**, viewport'tan (`vh`) değil.
+   `vh` tabanlı sabit yükseklik, kap daha kısaysa sessizce kırpılır.
+2. **`overflow:hidden` ile çocuk kırpılmaz.** Kırpma gerekiyorsa kaydırma
+   kullanılır (kullanıcı görebilir). Sessiz kesme yasak.
+3. Dar ekran (`@media`) kısa liste **makuldür** (dikey alan yok); test bunu
+   ayrı tutar.
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2d]** — 2 kontrol: (a) `seg-list` `vh` tabanlı sabit
+yükseklik kullanmıyor, (b) `seg-workspace` `overflow:hidden` ile kırpmıyor.
+Yorumlar ve `@media` blokları test dışında tutulur (yanlış pozitif önlenir).
+
+### DOĞRULAMA (gerçek Chromium, 82 bölüm)
+
+```
+ÖNCE : listH=497 · parentH=360 · parentOverflow=hidden · kırpılan=137px
+SONRA: listH=351 · parentH=351 · parentOverflow=visible · kırpılan=0
+Sona kaydır → lastFullyVisible: true · overflowPx: -15 (15px pay)
+```
 
 ## v2.119 — Takip iki ayrı özellik; karaoke kutusu kaldırıldı
 

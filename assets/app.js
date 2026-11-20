@@ -37,14 +37,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.119';
+} from './schema.js?v=2.120';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.119';
+const APP_VERSION = '2.120';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11087,6 +11087,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.120': {
+    title: 'Bölüm listesinin altı kesilmiyor',
+    body:
+      'Uzun listelerde (ör. 82 bölüm) listenin alt birkaç bölümü görünmüyordu; ' +
+      'kaydırma çubuğu sona gelse bile son bölümlere ulaşılamıyordu. Ölçüm: liste ' +
+      '497px yüksekliğindeydi ama onu saran alan yalnız 360px idi ve fazlası ' +
+      'sessizce kesiliyordu (yaklaşık 4 bölüm). Artık liste, saran alanın tam ' +
+      'yüksekliğini kullanır; kaydırdığınızda son bölüm de tam görünür.'
+  },
   '2.119': {
     title: 'Takip iki ayrı özelliğe ayrıldı; karaoke kutusu kaldırıldı',
     body:

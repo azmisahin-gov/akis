@@ -247,6 +247,46 @@ console.log('\n[2c] Başlık sessizce kesilmez (üst bar yerleşimi)');
   );
 }
 
+// --- 2d. Liste yüksekliği kabı AŞMAZ (v2.120) ---------------------------
+// GERÇEK HATA: 82 bölümlü kayıtta kullanıcı "78'e kadar görüyorum, 79 yarım"
+// dedi. ÖLÇÜM (gerçek Chromium):
+//   .seg-list      : height 497px  (max-height: 62vh)
+//   .seg-workspace : height 360px  overflow: hidden   ← KIRPAN
+//   Fark 137px ≈ 3,8 bölüm kırpılıyordu.
+// KÖK NEDEN: reading-layer.css'te `.seg-list{max-height:62vh !important}`
+// vardı; ama onu SARAN `.seg-workspace` daha kısaydı ve `overflow:hidden`
+// olduğu için listenin altı sessizce KESİLİYORDU.
+// KURAL: liste yüksekliği kabına uyar (`height:100%`), kaptan uzun olamaz.
+// Kırpma kararı kullanıcıya görünür olmalı (kaydırma), sessiz kesme yasak.
+console.log('\n[2d] Liste yüksekliği kabı aşmıyor');
+{
+  // Yorumları çıkar: yorum metninde geçen "overflow:hidden" yanlış pozitif verir.
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  // @media bloklarını çıkar: dar ekranda listenin kısa olması MAKULDÜR
+  // (dikey alan yok). Kural yalnız MASAÜSTÜ yerleşimi için geçerlidir.
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+
+  // `.seg-list` kuralı `max-height: Nvh` gibi VIEWPORT tabanlı sabit
+  // yükseklik TANIMLAMAMALI; kabı doldurmalı.
+  const listRules = [...base.matchAll(/#view-audio \.seg-list\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  const allList = listRules.join(';');
+  const vhMax = /max-height:\s*[0-9.]+vh/.test(allList);
+  check(
+    'seg-list viewport tabanlı sabit yükseklik KULLANMIYOR (kabı doldurur)',
+    !vhMax,
+    vhMax ? 'max-height: <n>vh bulundu → kabı aşabilir ve kırpılır' : ''
+  );
+  // `.seg-workspace` çocuğu kırpmamalı: ya görünür ya kaydırmalı.
+  const wsRules = [...base.matchAll(/#view-audio \.seg-workspace\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  const allWs = wsRules.join(';');
+  check(
+    'seg-workspace sessizce kırpmıyor (overflow hidden yok)',
+    !/overflow:\s*hidden/.test(allWs),
+    /overflow:\s*hidden/.test(allWs) ? 'overflow:hidden → çocuk sessizce kesilir' : ''
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
