@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.128';
+} from './schema.js?v=2.129';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.128';
+const APP_VERSION = '2.129';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11589,6 +11589,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.129': {
+    title: 'Ses görünümü artık taşmıyor: tek kaydırma',
+    body:
+      'Çalışma modu kapalıyken alt içerik (onay/araçlar, klavye kısayolları, ' +
+      '29–36. bölümler) sayfadan taşıyor ve görünmüyordu. Artık kaydırma YALNIZ ' +
+      'ana alanda: liste içeriği kadar uzuyor, klavye kısayolları listenin ' +
+      'ALTINDA kalıyor, tüm bölümler ve araçlar erişilebilir. Çalışma modunda ' +
+      'üst bar (önceki/sonraki kayıt) yapışkan kalır.'
+  },
   '2.128': {
     title: 'Analiz kutusu: dalga + spektrogram aynı yerde',
     body:

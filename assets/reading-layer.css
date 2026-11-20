@@ -1324,3 +1324,72 @@ body.ws-mode #view-audio .seg-list {
 .update-banner .sb-body { min-width: 0; }
 .update-banner b { display: block; font-size: var(--fs-sm); color: var(--ink); }
 .update-banner small { display: block; font-size: var(--fs-xs); color: var(--ink-2); margin-top: 2px; line-height: var(--lh-body); }
+
+/* ============================================================================
+   v2.129 — TEK KAYDIRMA: ANA ALAN (.main-area). İç içe kaydırma YOK.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.128, 36 bölüm, 1440×900):
+     html/body overflow:hidden · .main-area overflow:hidden
+     #audioDetail overflow:visible · .seg-list 612px > .seg-workspace 285px
+     → liste kabı taşıyor; kbd-fold ve .sd-actions listenin ÜSTÜNE biniyor;
+       alt içerik hiç erişilemiyor (sayfa kaymıyor).
+   KURAL: kaydırma YALNIZ .main-area'da. Ses görünümü, detay paneli, kart,
+   çalışma alanı ve liste İÇERİĞİ KADAR UZAR; hiçbiri kendi içinde kaymaz.
+   Böylece 36 bölümün tamamı, onay/araçlar ve klavye kısayolları erişilebilir.
+   ============================================================================ */
+.main-area {
+  height: 100vh;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  padding-bottom: 18px;
+}
+#view-audio,
+#view-audio.active { overflow: visible !important; }
+#view-audio > .detail-panel {
+  flex: 0 0 auto !important;
+  min-height: 0;
+  overflow: visible !important;
+}
+#view-audio #audioDetail {
+  flex: 0 0 auto !important;
+  min-height: 0;
+  overflow: visible !important;
+}
+#view-audio .audio-card { flex: 0 0 auto; }
+#view-audio .seg-workspace {
+  height: auto !important;
+  min-height: 0 !important;
+  align-items: start;
+  overflow: visible !important;
+}
+#view-audio .seg-list {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+}
+body.ws-mode #view-audio > .detail-panel,
+body.ws-mode #view-audio #audioDetail {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+body.ws-mode #view-audio .seg-workspace,
+body.ws-mode #view-audio .seg-list {
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+}
+/* Çalışma modunda üst bar görünür kalsın (önceki/sonraki kayıt). */
+body.ws-mode .workspace-bar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--surface, #fff);
+}
+@media (max-width: 1080px) {
+  #view-audio .seg-list { height: auto !important; max-height: none !important; }
+  body.ws-mode #view-audio .seg-list { height: auto !important; max-height: none !important; }
+}
+@media (max-width: 900px) {
+  #view-audio .seg-list { height: auto !important; max-height: none !important; }
+}

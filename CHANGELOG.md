@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.128.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.129.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.129 — Ses görünümü: tek kaydırma, taşma yok
+
+CANLI VERİ. Bilirkişi: *"çalışma modunu kapattığımızda aşağıda yer alan her şey
+sayfadan taşıyor ve hiçbir şey görünmüyor… 36 öğe var ama 28'ini görüyorum…
+onayla/yeniden dinle görünmüyor."*
+
+### ÖLÇÜM (v2.128, 36 bölüm, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| `html/body` overflow | **hidden** (sayfa kaymıyor) |
+| `.main-area` overflow | **hidden** |
+| `#audioDetail` | `overflow: visible` |
+| `.seg-workspace` / `.seg-list` | **285 px / 612 px** (liste kabı taşıyor) |
+| kbd-fold / `.sd-actions` | listenin **ÜSTÜNE** (y817 / y1038) |
+| Son erişilebilen öğe | 28–29 (ws kapalı), 32–33 (ws açık) |
+
+Kök neden: sabit `100vh` kabuk + iç içe kaydırma + listenin `max-height: 68vh`
+değerinin kabı aşması. Alt içerik ne sayfa ne panel tarafından
+kaydırılabiliyordu.
+
+### DÜZELTME
+
+- Kaydırma **yalnız `.main-area`**'da (`overflow-y: auto`).
+- `#view-audio`, `.detail-panel`, `#audioDetail`, `.audio-card`,
+  `.seg-workspace`, `.seg-list`: **içeriği kadar uzar**; hiçbiri kendi içinde
+  kaymaz (iç içe kaydırma yok).
+- `.seg-list` `height/max-height` kaldırıldı (`auto/none/visible`).
+- Çalışma modunda üst bar **yapışkan** (önceki/sonraki kayıt görünür).
+- v2.128 analiz kutusu korunur.
+
+### ÖLÇÜM (v2.129, gerçek Chromium)
+
+| Ölçüm | Kapalı | Açık |
+|---|---|---|
+| main scroll / client | **1922 / 900** | **1720 / 900** |
+| Son öğe (alt) | y805–841 | y825–861 |
+| kbd-fold | y861–880 (**altında**) | y881–900 (**altında**) |
+| `.sd-actions` | y16–54 (**görünür**) | y37–75 (**görünür**) |
+| İç kaydırma (detay) | yok (1597=1597) | yok (1587=1587) |
+
+### KULLANICI NE GÖRECEK
+
+- 36 bölümün **tamamı** kaydırılarak görülür; son öğe ile klavye kısayolları
+  **üst üste binmez**.
+- **Onayla / Yeniden dinle / Anlaşılmadı** ve alt araçlar görünür.
+- Çalışma modu açık/kapalı fark etmez.
+
+### Koruyan testler
+
+`tasarim` [2i] (ana alan kaydırır, iç içe kaydırma yok, yapışkan üst bar).
+Gerçek Chromium: 36 bölümle iki modda da son öğe + araçlar + kısayollar
+erişilebilir.
 
 ## v2.128 — Katmanlı analiz kutusu (dalga + spektrogram aynı yerde)
 

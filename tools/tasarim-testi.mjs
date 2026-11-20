@@ -381,6 +381,24 @@ console.log('\n[2h] Yerleşim: metin listeye bitişik, kontroller solda');
   check('başlık kontrolleri sola yaslar', /justify-content:\s*flex-start/.test(head), head.trim().slice(0, 80));
 }
 
+// --- 2i. Ses görünümü: tek kaydırma, iç içe kaydırma yok (v2.129) ---------
+// ÖLÇÜM (v2.128): html/body overflow:hidden + #audioDetail visible +
+// .seg-list 612px > .seg-workspace 285px → liste kabı taşıyor, kbd-fold ve
+// .sd-actions listenin üstüne biniyor, alt içerik erişilemiyordu.
+console.log('\n[2i] Ses görünümü: tek kaydırma (v2.129)');
+{
+  const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
+  const base = stripMedia(stripComments(layer));
+  check('ana alan kaydırılır', /\.main-area\s*\{[^}]*overflow-y:\s*auto\s*!important/.test(base));
+  check('detay paneli iç kaydırma yapmaz', /#view-audio #audioDetail\s*\{[^}]*overflow:\s*visible\s*!important/.test(base));
+  check(
+    'liste iç kaydırma yapmaz',
+    /#view-audio \.seg-list\s*\{[^}]*height:\s*auto\s*!important[^}]*max-height:\s*none\s*!important[^}]*overflow:\s*visible\s*!important/.test(base)
+  );
+  check('çalışma modunda üst bar yapışkan', /body\.ws-mode \.workspace-bar\s*\{[^}]*position:\s*sticky/.test(base));
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');

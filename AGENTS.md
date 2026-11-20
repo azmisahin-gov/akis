@@ -1231,6 +1231,33 @@ Profesyonel araçlar (Praat/Audacity/RX) ortak zaman eksenini ve sabit yüksekli
 korur; görünüm değişince panel zıplamaz. Kullanıcı "altında açılması tasarımı
 bozdu" dediğinde sorun estetik değil, **yerleşim sözleşmesi**dir.
 
+### Aşama 10aa — Ses görünümü: tek kaydırma (TAMAMLANDI, v2.129)
+
+**KURAL: kaydırma YALNIZ `.main-area`'da. Ses görünümü, detay paneli, kart,
+çalışma alanı ve liste İÇERİĞİ KADAR UZAR; hiçbiri kendi içinde kaymaz.**
+
+**Ölçülen hata (v2.128, 36 bölüm, 1440×900):** `html/body` ve `.main-area`
+`overflow: hidden`; `#audioDetail` `overflow: visible`; `.seg-workspace` 285 px
+ama `.seg-list` 612 px → liste kabı taşıyor. `kbd-fold` (y817) ve `.sd-actions`
+(y1038) listenin ÜSTÜNE biniyor; son erişilebilen öğe 28–29 (ws kapalı),
+32–33 (ws açık). Alt içerik ne sayfa ne panel tarafından kaydırılabiliyordu.
+
+**Değişmez kurallar:**
+
+1. Tek kaydırma: `.main-area { overflow-y: auto }`. İç içe kaydırma yok.
+2. `#view-audio`, `.detail-panel`, `#audioDetail`, `.audio-card`,
+   `.seg-workspace`, `.seg-list`: `height:auto`, `max-height:none`,
+   `overflow:visible`. Liste "kendi içinde kayar" kuralı **kaldırıldı**;
+   kaydırma ana alanda.
+3. Çalışma modunda `.workspace-bar` yapışkan (`position: sticky; top: 0`).
+4. v2.128 katmanlı analiz kutusu (sabit 160 px) korunur.
+5. Bir kapta `overflow: hidden` varsa çocuğun taşması **sessiz kesme**dir;
+   ölçüt `scrollHeight > clientHeight` + son öğenin `getBoundingClientRect()`.
+
+**DERS:** Sabit `100vh` kabuk + `overflow:hidden` + iç `max-height` birleşince
+alt içerik **sessizce** kaybolur. "Sayfa kaymıyor" belirtisi, iç kaydırma
+kaplarının yanlış hesaplandığını gösterir; tek kaydırma en dayanıklı çözümdür.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1404,7 +1431,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.128.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.129.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1558,7 +1585,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.128)
+## Yeni oturuma devir notu (v2.129)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1566,14 +1593,14 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.128** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.129** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `941a700` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `941a700` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.128'`, `version.json` = 2.128 |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.129'`, `version.json` = 2.129 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.128 turunda ne yapıldı (27 sürüm)
+### v2.102–v2.129 turunda ne yapıldı (28 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
 Test sayısı 441 → **782**.
@@ -1607,6 +1634,7 @@ Test sayısı 441 → **782**.
 | **v2.126** | **Spektrogram tam genişlik + etkileşim** (tıkla/sürükle/Alt/okuma) | `birim` [48] · `tasarim` [2g] |
 | **v2.127** | **Yerleşim: metin listeye bitişik + kontroller yanında** | `birim` [49] · `tasarim` [2h] |
 | **v2.128** | **Katmanlı analiz kutusu** (dalga+spek aynı yerde, 3 mod) | `birim` [50] · `tasarim` [2g] |
+| **v2.129** | **Ses görünümü tek kaydırma** (taşma, kısayol/araç görünmüyordu) | `tasarim` [2i] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1679,6 +1707,6 @@ ve `APP_VERSION`** doğru mu.
 
 1. `bash tools/test.sh` → tümü yeşil mi (782 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.128 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.129 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
