@@ -1206,5 +1206,72 @@ console.log('\n[23] Sessizlik/perde tüm kanalları görür');
   }
 }
 
+// --- 24. isHallucination gerçek cümleyi dolgu saymamalı (v2.93) ----------
+// GERÇEK HATA: HALLUCINATION_RE "bu kelimeyle BAŞLAYAN ve 60 karakterden
+// kısa her metin"i yakalıyordu (`[\s\S]*?` her şeyi kabul ediyordu).
+// Ölçülen yanlış pozitifler:
+//   "Konuşma sırasında bağırdı"      → dolgu sayılıyordu
+//   "Müzik çalıyordu ama konuşma vardı" → dolgu
+//   "Nefes alıyor"                   → dolgu
+//   "Kalabalık içinde konuşuyor"     → dolgu
+//   "Sessizlik oldu sonra devam etti"→ dolgu
+// Sonucu: gerçek deşifre "anlamlı metin yok" sayılıyor; çözümlemede bu kalıba
+// uyan bölümler çöpe atılıyor (meaningful = filter(!isHallucination)) ve kayıt
+// "sonuç rapora aktarılmamalıdır" uyarısı alabiliyor.
+// KURAL: yalnız TAM eşleşme (isteğe bağlı parantez içi) dolgu sayılır.
+// Whisper'ın dolgu çıktısı "(Konuşma)", "[Müzik]" gibi KISA ve YALNIZ etiket
+// olan metindir; cümle değildir.
+console.log('\n[24] isHallucination yalnız tam dolgu etiketini yakalar');
+{
+  // 1) Gerçek cümleler dolgu SAYILMAMALI (yanlış pozitif).
+  const realSentences = [
+    'Konuşma sırasında bağırdı',
+    'Müzik çalıyordu ama konuşma vardı',
+    'Sessizlik oldu sonra devam etti',
+    'Nefes alıyor',
+    'Kalabalık içinde konuşuyor',
+    'Müzik eşliğinde söyledi',
+    'Konuşma odasında bekledim',
+    'Alkış sesleri duyuldu',
+    'Merhaba, depozito hakkında konuşmak istiyorum.'
+  ];
+  for (const t of realSentences) {
+    eq(`gerçek cümle dolgu DEĞİL: "${t.slice(0, 30)}"`, T.isHallucination(t), false);
+  }
+
+  // 2) Whisper'ın gerçek dolgu çıktıları dolgu SAYILMALI (doğru pozitif).
+  const fillers = [
+    '(Konuşma)',
+    '(Müzik - Jenerik)',
+    '[Müzik]',
+    'Konuşma',
+    'Müzik',
+    'Sessizlik',
+    '(konuşma)',
+    'Müzik.',
+    '  ( Müzik )  ',
+    '(alkış)',
+    'no speech',
+    'Music'
+  ];
+  for (const t of fillers) {
+    eq(`dolgu etiketi yakalanır: "${t}"`, T.isHallucination(t), true);
+  }
+
+  // 3) Boş/çöp metin davranışı korunur.
+  eq('boş metin dolgu', T.isHallucination(''), true);
+  eq('yalnız boşluk dolgu', T.isHallucination('   '), true);
+  eq('çöp token dolgu', T.isHallucination('- - - -'), true);
+  eq('yalnız noktalama dolgu', T.isHallucination('...'), true);
+
+  // 4) Uzun metin ASLA dolgu sayılmaz (60 karakter sınırı artık gerekmiyor
+  //    ama uzun metnin etiket olmadığı açıktır).
+  const long = '(Konuşma) ' + 'bu cümle devam ediyor ve uzun bir metin oluşturuyor.';
+  eq('etiketle başlayan uzun cümle dolgu değil', T.isHallucination(long), false);
+
+  // 5) Tırnak içinde geçen etiket kelimesi dolgu değildir.
+  eq('cümle içinde "müzik" geçmesi dolgu değil', T.isHallucination('Müzik kutusu çalındı'), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

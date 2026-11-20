@@ -6,12 +6,86 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.92.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.93.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.93 — Gerçek cümleler "dolgu" sayılıyordu
+
+CANLI VERİ. Uygulama, bir kelimeyle **başlayan** her metni dolgu (halüsinasyon)
+sayıyordu; bu yüzden gerçek deşifre cümleleri çöpe atılıyordu.
+
+### GERÇEK HATA
+
+Dolgu tespiti deseni şuydu:
+
+```js
+/^[\s(]*[(\[]?\s*(konuşma|müzik|nefes|sessizlik|…)[\s\S]*?[)\]]?\s*$/i
+```
+
+`[\s\S]*?` **her şeyi** kabul ediyordu. Yani "bu kelimeyle başlayan ve 60
+karakterden kısa her metin" dolgu sayılıyordu. Ölçülen yanlış pozitifler:
+
+```
+"Konuşma sırasında bağırdı"        → dolgu
+"Müzik çalıyordu ama konuşma vardı"→ dolgu
+"Nefes alıyor"                     → dolgu
+"Kalabalık içinde konuşuyor"       → dolgu
+"Sessizlik oldu sonra devam etti"  → dolgu
+"Müzik kutusu çalındı"             → dolgu
+```
+
+Sonucu ağırdı: `isHallucination` şu yerlerde kullanılır —
+çözümlemede `meaningful = filter(!isHallucination)`, hızlı onay ölçütü,
+"anlamlı metin içermeyen bölüm" sayacı, rapor uyarısı, karaoke. Yani bu
+cümleler **deşifreden çöpe atılıyor**, kayıt "sonuç rapora aktarılmamalıdır"
+uyarısı alabiliyordu.
+
+### Çözüm
+
+Desen **tam eşleşme** olacak şekilde daraltıldı: isteğe bağlı parantez +
+etiket + isteğe bağlı tireyle ayrılmış ikinci etiket + noktalama.
+
+```js
+const FILLER_WORD = '(konuşma|müzik|jenerik|…|no speech|background noise)';
+const HALLUCINATION_RE = new RegExp(
+  '^[\\s(\\[]*' + FILLER_WORD + '(?:\\s*[-–—]\\s*' + FILLER_WORD + ')*[\\s)\\].,;:!?]*$', 'i'
+);
+```
+
+Whisper'ın dolgu çıktısı `(Konuşma)`, `[Müzik]`, `(Müzik - Jenerik)` gibi
+**kısa ve yalnız etiket olan** metindir; cümle değildir. Doğru pozitifler
+korunur, yanlış pozitifler ortadan kalkar.
+
+**Ölçüm (gerçek Chromium, 4 bölümlü kayıt: 3 gerçek cümle + 1 gerçek etiket):**
+
+```
+ÖNCE   4 bölümün TAMAMI "boş/anlamlı metin yok"
+SONRA  yalnız 1 bölüm ((Konuşma)) "boş"; 3 gerçek cümle normal bölüm
+       sayaçlar: Tümü 4 | Bekleyen 4 | Hızlı onaya uygun 3
+       rapor deşifre tablosu: 4 satır (hiçbiri atılmadı)
+```
+
+### KULLANICI NE GÖRECEK
+
+- "Konuşma…", "Müzik…", "Nefes…" gibi kelimelerle başlayan **gerçek
+  cümleler artık dolgu sayılmaz**; deşifrede kalır, rapora girer.
+- Hızlı onay ve "anlamlı metin içermeyen bölüm" sayacı bu cümleleri doğru
+  sayar.
+- Gerçek Whisper dolgu etiketleri (`(Konuşma)`, `[Müzik]`) **hâlâ** dolgu
+  sayılır; rapora konuşma olarak girmez.
+- Çözümleme sırasında "anlamlı konuşma bulunamadı" yanlış uyarısı artık
+  verilmez.
+
+### Testle korunur
+
+`birim-testleri` [24] (27 kontrol): 9 gerçek cümle dolgu **değil**, 12 dolgu
+etiketi dolgu **evet**, boş/çöp davranışı korunur, etiketle başlayan uzun
+cümle dolgu değil. Test düzeltme yokken **kaldı** (`333 geçti, 9 kaldı`),
+düzeltmeden sonra geçti (`342 geçti, 0 kaldı`).
 
 ## v2.92 — Sessizlik ve perde ölçümü yalnız sol kanalı okuyordu
 

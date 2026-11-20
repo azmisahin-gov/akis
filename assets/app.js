@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.92';
+const APP_VERSION = '2.93';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5813,8 +5813,20 @@ function timecode(seconds) {
 // Filler-only output ("(Konuşma)", "(Müzik - Jenerik)" and similar bracketed tokens)
 // is how Whisper reports hallucinated silence. Such a segment carries no transcript,
 // so it must never be presented as analysed speech.
-const HALLUCINATION_RE =
-  /^[\s(]*[(\[]?\s*(konuşma|müzik|jenerik|kalabalık|nefes|alkış|sessizlik|tutaklar|beep|music|applause|silence|blank|no speech)[\s\S]*?[)\]]?\s*$/i;
+// Whisper, sessizliği "(Konuşma)", "(Müzik - Jenerik)", "[Müzik]" gibi KISA
+// etiketlerle bildirir. Bu etiketler deşifre değildir; rapora konuşma olarak
+// girmemelidir.
+// DÜZELTME (v2.93): eski desen `[\s\S]*?` ile "bu kelimeyle BAŞLAYAN her
+// metni" yakalıyordu. "Konuşma sırasında bağırdı", "Nefes alıyor",
+// "Müzik kutusu çalındı" gibi GERÇEK cümleler dolgu sayılıyor, çözümlemede
+// çöpe atılıyordu. Artık yalnız TAM eşleşme: isteğe bağlı açılış/kapanış
+// parantezi + etiket + isteğe bağlı tireyle ayrılmış ikinci etiket + nokta.
+const FILLER_WORD =
+  '(konuşma|müzik|jenerik|kalabalık|nefes|alkış|sessizlik|tutaklar|beep|music|applause|silence|blank|no speech|background noise)';
+const HALLUCINATION_RE = new RegExp(
+  '^[\\s(\\[]*' + FILLER_WORD + '(?:\\s*[-–—]\\s*' + FILLER_WORD + ')*[\\s)\\].,;:!?]*$',
+  'i'
+);
 // Metnin gerçek konuşma olup olmadığını kaba ama güvenli biçimde denetler.
 // Whisper bazı modellerde timestamp/özel token'ları metne dökebilir; çıktı
 // "- - - -" veya "< - < - < < <" gibi anlamsız karakter yığınına dönüşür.
@@ -9530,6 +9542,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.93': {
+    title: 'Gerçek cümleler artık "boş/dolgu" sayılmıyor',
+    body:
+      'Uygulama, "konuşma", "müzik", "nefes" gibi bir kelimeyle BAŞLAYAN her metni ' +
+      'dolgu (boş) sayıyordu. Bu yüzden "Konuşma sırasında bağırdı", "Nefes alıyor", ' +
+      '"Müzik kutusu çalındı" gibi gerçek cümleler deşifreden çöpe atılabiliyor, ' +
+      'kayıt "anlamlı konuşma bulunamadı" uyarısı alabiliyordu. Artık yalnız gerçek ' +
+      'dolgu etiketleri ((Konuşma), [Müzik] gibi) dolgu sayılır; cümleler korunur. ' +
+      'Etkilenmiş kayıtlarınızı yeniden çözümlemeniz önerilir.'
+  },
   '2.92': {
     title: 'Sessizlik ve perde ölçümü düzeltildi (stereo kayıtlar)',
     body:

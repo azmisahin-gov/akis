@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.92.**
+yazılır. **Güncel sürüm: v2.93.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.93 — Gerçek cümleler "dolgu" sayılıyordu (tamamlandı, canlı veri)
+
+Dolgu deseni `[\s\S]*?` ile "etiket kelimesiyle BAŞLAYAN her metni"
+yakalıyordu: "Konuşma sırasında bağırdı", "Nefes alıyor", "Müzik kutusu
+çalındı" gibi gerçek cümleler dolgu sayılıp deşifreden çöpe atılıyordu.
+Desen tam eşleşmeye daraltıldı. `birim-testleri` [24] korur.
 
 ### v2.92 — Sessizlik/perde tüm kanalları görür (tamamlandı, canlı veri)
 
@@ -89,7 +96,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | **v2.90 tamamlandı** |
 | 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | **v2.91 tamamlandı** |
 | 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | **v2.92 tamamlandı** |
-| 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | bekliyor |
+| 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | **v2.93 tamamlandı** |
 | 8 | Birleştirmede kayıt düzeyi alanlar sessizce düşüyor | bekliyor |
 | 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | bekliyor |
 | 10 | Önizleme ile birleştirme farklı alan kümesi kullanıyor | bekliyor |
