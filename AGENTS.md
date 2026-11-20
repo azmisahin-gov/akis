@@ -832,6 +832,32 @@ kullanılıyor".
 rapor `Belirsiz okuma — Belirsiz: "geldi" / "kaldı" (seçilen: geldi)`;
 spektrogram `drawn=true`.
 
+
+### Aşama 10n — Takip modu: titreme + yinelenen alan (TAMAMLANDI, v2.116)
+
+**KURAL: döngü içinde `innerHTML` YAZILMAZ.** DOM bir kez çizilir; her tick'te
+yalnız **sınıf** (`on`/`done`) değişir.
+
+**Ölçülen hata (v2.115, MutationObserver):** `markTextFollow` ve `followKaraoke`
+her 120 ms'de `innerHTML` yazıyordu → **3 saniyede 25 DOM değişikliği** →
+metin titriyordu. Aynı metin **3 yerde** gösteriliyordu (`.karaoke`,
+`.sd-follow`, `textarea`).
+
+**Fonksiyonlar (tek kaynak):**
+- `karaokeSegments(s)` → `[{w, s, e}]`. Kelime zamanı varsa kelime; yoksa metin
+  parçaları (oransal). **Boşluk parçaları korunur** (`w` boşluk, `s/e` NaN).
+- `karaokeActiveIndex(segs, t)` → aktif indeks veya `-1`.
+- `markTextFollow`: `__karaokeKey` (idx|metin|parça sayısı) değişmedikçe DOM'a
+  dokunmaz; `bar.__active` değişince yalnız sınıf güncellenir.
+
+**Değişmez:** takip metni **tek yerde**. İkinci kutu (`.karaoke`) gizli ve boş.
+
+**Ölçüm (v2.116):** DOM değişikliği 25 → **0**; `.karaoke` hidden+boş;
+`.sd-follow` metin + sınıf vurgusu; textarea ayrı.
+
+**DERS:** `innerHTML` döngü içinde = titreme + performans kaybı + kullanıcı
+okuyamaz. Sınıf değişimi her zaman tercih edilir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1005,7 +1031,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.115.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.116.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1163,7 +1189,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.115` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.116` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

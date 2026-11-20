@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.115.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.116.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.116 — Takip modu: metin titriyordu, aynı metin üç yerde
+
+CANLI VERİ. Bilirkişi: *"sağ detayda metnini karaoke dediğimiz bir bölüm var…
+o sırada metni işlem yaparken metin titriyor, o hareket ederse takip edemeyiz…
+yani orada neden iki tane alan koyduk bilemiyorum."*
+
+### ÖLÇÜM (v2.115, gerçek Chromium + MutationObserver)
+
+```
+3 saniyedeki DOM değişikliği : 25   (saniyede ~8 kez metin baştan yazılıyor)
+Metin alanı sayısı           : 3    (.karaoke + .sd-follow + textarea)
+  .karaoke   : "Bu bölümde uzun bir metin var…"
+  .sd-follow : "Bu bölümde uzun bir metin var…"   ← AYNI METİN
+```
+
+### KÖK NEDEN
+
+`markTextFollow` **her 120 ms'de** `bar.innerHTML = …` yazıyordu. `followKaraoke`
+de aynısını **ikinci bir kutuya** yapıyordu. İki ayrı yer, aynı metni, saniyede
+8 kez baştan yazınca **titreme** kaçınılmazdı.
+
+### KULLANICI NE GÖRECEK
+
+- Takip açıkken metin **titremiyor**; yalnız okunan kelime vurgulanıyor.
+- **Tek takip alanı** (`.sd-follow`). "Karaoke" kutusu kaldırıldı (gizli).
+- Düzenleme alanı ayrı ve sabit: yazarken metin kaymıyor.
+- Uzun metinde vurgu görünür alanda kalır (yalnız kutu içi kayar).
+
+### DEĞİŞMEZ KURALLAR
+
+1. `karaokeSegments(s)` — TEK KAYNAK: kelime zamanı varsa kelime, yoksa metin
+   parçaları (oransal). Boşluk parçaları korunur (kelimeler bitişik yazılmaz).
+2. `karaokeActiveIndex(segs, t)` — TEK KAYNAK: zaman → aktif indeks, `-1` yok.
+3. **DOM bir kez çizilir**; her tick'te yalnız `on`/`done` **sınıfı** değişir.
+   `innerHTML` döngü içinde YAZILMAZ (titreme yasak).
+4. Takip metni **tek yerde** gösterilir. İkinci bir kutu açmak yasak.
+5. Metin/bölüm değişince anahtar (`__karaokeKey`) değişir → yeniden çizilir.
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+3 saniyedeki DOM değişikliği : 25 → 0      ✅ (titreme bitti)
+.karaoke  : hidden=true, içi boş            ✅ (ikinci alan kaldırıldı)
+.sd-follow: metin var, sınıf ile vurgu      ✅
+textarea  : ayrı, sabit                     ✅
+```
+
+`birim-testleri` **[44]** — 16 kontrol.
 
 ## v2.115 — Belirsiz okuma etiketi + bölüm spektrogramı
 

@@ -101,6 +101,7 @@ const EXPOSE = [
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
+  'karaokeSegments', 'karaokeActiveIndex',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2289,6 +2290,48 @@ console.log('\n== [43] Belirsiz okuma (iki okuma mümkün)');
   eq('seçim yoksa açıkça söyler', /seçilmedi/i.test(T.ambiguousReportText({ reading1: 'a', reading2: 'b' })), true);
   // Tek okuma varsa da yazar.
   eq('tek okumada da metin var', T.ambiguousReportText({ reading1: 'geldi' }).length > 0, true);
+}
+
+// --- 44. Takip: karaoke yeniden yazılmaz, kelime vurgulanır (v2.116) -----
+// CANLI VERİ. Bilirkişi: "sağ detay penceresinde de play butonu var o buton ayrı
+// player. bir de detayda segmentin metnini karaoke dediğimiz bir bölüm var...
+// o sırada metni işlem yaparken metin titriyor o hareket ederse takip edemeyiz
+// ... yani orada neden iki tane alan koyduk bilemiyorum."
+// ÖLÇÜM (v2.115): markTextFollow HER 120ms'de bar.innerHTML'i baştan yazıyordu
+// → 3 saniyede 25 DOM değişikliği → titreme. Ayrıca karaoke + sd-follow +
+// textarea aynı metni ÜÇ kez gösteriyordu.
+console.log('\n== [44] Takip: karaoke titremesi');
+{
+  eq('karaokeSegments tanımlı', typeof T.karaokeSegments, 'function');
+  eq('karaokeActiveIndex tanımlı', typeof T.karaokeActiveIndex, 'function');
+
+  const words = [
+    { w: 'Merhaba', s: '00:00:01.000', e: '00:00:01.500' },
+    { w: 'dünya', s: '00:00:01.500', e: '00:00:02.000' },
+    { w: 'nasılsın', s: '00:00:02.000', e: '00:00:02.800' }
+  ];
+  const segs = T.karaokeSegments({ words, text: 'Merhaba dünya nasılsın' });
+  eq('kelime varsa kelime bölünür', segs.length, 3);
+  eq('ilk kelime metni', segs[0].w, 'Merhaba');
+  eq('kelime zamanı korunur', segs[1].s, 1.5);
+  eq('kelime bitişi korunur', segs[2].e, 2.8);
+
+  // Kelime yoksa METİN bölünür (oransal) — ama yine de SABİT parça sayısı.
+  const noWords = T.karaokeSegments({ text: 'Merhaba dünya nasılsın', start: '00:00:01.000', end: '00:00:04.000' });
+  eq('kelime yoksa metin bölünür', noWords.length > 0, true);
+  eq('bölünen parçalar metni korur', noWords.map((x) => x.w).join(' ').replace(/\s+/g, ' ').trim(), 'Merhaba dünya nasılsın');
+
+  // AKTİF indeks: zaman ilerledikçe DEĞİŞİR, DOM yeniden yazılmaz.
+  eq('t=1.2 → 0. kelime', T.karaokeActiveIndex(segs, 1.2), 0);
+  eq('t=1.6 → 1. kelime', T.karaokeActiveIndex(segs, 1.6), 1);
+  eq('t=2.5 → 2. kelime', T.karaokeActiveIndex(segs, 2.5), 2);
+  eq('t=0.5 (öncesi) → -1', T.karaokeActiveIndex(segs, 0.5), -1);
+  eq('t=9.0 (sonrası) → -1', T.karaokeActiveIndex(segs, 9), -1);
+  eq('boş dizi → -1', T.karaokeActiveIndex([], 1), -1);
+  eq('null → -1', T.karaokeActiveIndex(null, 1), -1);
+
+  // IDEMPOTENT: aynı zaman için aynı indeks (titreme yok).
+  eq('aynı zaman → aynı indeks', T.karaokeActiveIndex(segs, 1.6), T.karaokeActiveIndex(segs, 1.6));
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

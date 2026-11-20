@@ -44,7 +44,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.115';
+const APP_VERSION = '2.116';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5347,33 +5347,96 @@ function followHighlight(m, idx) {
 // Konuşulan yeri canlı vurgula: kelime zamanı varsa kelime, yoksa bölüm metni.
 // Sağ paneldeki metin alanının üstünde "şu an okunan" vurgusunu gösterir.
 // Kelime zamanlaması varsa kelime kelime, yoksa oransal ilerleme.
+// KARAOKE — SABİT PARÇALAR + SINIF DEĞİŞİMİ (v2.116).
+// NEDEN: v2.115 ve öncesinde `markTextFollow` HER 120ms'de `bar.innerHTML`
+// yazıyordu → 3 saniyede 25 DOM değişikliği → METİN TİTRİYORDU. Kullanıcı
+// okurken metin kayıyordu. Kural: parçalar BİR KEZ çizilir, her tick'te yalnız
+// `on`/`done` SINIFI değişir (DOM yapısı korunur, titreme olmaz).
+// Parçalar: kelime zamanı varsa kelime, yoksa metin parçaları (oransal).
+function karaokeSegments(s) {
+  if (!s) return [];
+  const words = Array.isArray(s.words) && s.words.length ? s.words : null;
+  if (words) {
+    return words
+      .map((w) => ({
+        w: String(w.w || ''),
+        s: secondsFromTimecode(w.s),
+        e: secondsFromTimecode(w.e)
+      }))
+      .filter((x) => x.w);
+  }
+  const text = String(s.text || '').trim();
+  if (!text) return [];
+  const a = secondsFromTimecode(s.start);
+  const b = secondsFromTimecode(s.end);
+  const span = b > a ? b - a : 0;
+  // Kelime sınırlarından böl (boşluk korunur): sabit sayıda parça.
+  const parts = text.split(/(\s+)/).filter((p) => p.length);
+  const visible = parts.filter((p) => p.trim());
+  const step = visible.length ? span / visible.length : 0;
+  let k = 0;
+  return parts.map((p) => {
+    const isWord = !!p.trim();
+    const idx = isWord ? k++ : -1;
+    return {
+      w: p,
+      s: isWord ? a + idx * step : NaN,
+      e: isWord ? a + (idx + 1) * step : NaN
+    };
+  });
+}
+// Zaman → aktif parça indeksi. -1: hiçbiri (bölüm dışı veya boşluk).
+function karaokeActiveIndex(segments, t) {
+  const list = Array.isArray(segments) ? segments : [];
+  for (let i = 0; i < list.length; i++) {
+    const x = list[i];
+    if (!Number.isFinite(x.s) || !Number.isFinite(x.e)) continue;
+    if (t >= x.s && t < x.e + 0.001) return i;
+  }
+  return -1;
+}
 function markTextFollow(m, idx, t) {
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
   if (!wrap) return;
-  let bar = wrap.querySelector('.sd-follow');
   const s = (m.segments || [])[idx];
   if (!s || !s.text || isHallucination(s.text)) {
-    if (bar) bar.remove();
+    wrap.querySelector('.sd-follow')?.remove();
+    delete wrap.__karaokeKey;
     return;
   }
+  const segs = karaokeSegments(s);
+  if (!segs.length) {
+    wrap.querySelector('.sd-follow')?.remove();
+    delete wrap.__karaokeKey;
+    return;
+  }
+  // ANAHTAR: bölüm + metin. Metin değişmedikçe DOM YENİDEN YAZILMAZ.
+  // v2.115'te her tick'te innerHTML yazılıyordu → titreme (25 değişiklik/3sn).
+  const key = `${idx}|${s.text}|${segs.length}`;
+  let bar = wrap.querySelector('.sd-follow');
   if (!bar) {
     bar = document.createElement('div');
     bar.className = 'sd-follow';
     wrap.insertBefore(bar, wrap.firstChild);
   }
-  const words = s.words && s.words.length ? s.words : null;
-  if (words) {
-    bar.innerHTML = words
-      .map((w) => {
-        const wa = secondsFromTimecode(w.s);
-        const wb = secondsFromTimecode(w.e);
-        const on = t >= wa && t < wb + 0.001;
-        const done = t >= wb;
-        return `<span class="${on ? 'on' : done ? 'done' : ''}">${esc(w.w)}</span>`;
-      })
-      .join(' ');
-    // Uzun metinde vurgu görünür alanın dışında kalıyordu; kullanıcı "takip
-    // tam okunamıyor" dedi. Yalnız vurgu kutusunun içi kaydırılır (sayfa değil).
+  if (wrap.__karaokeKey !== key) {
+    bar.innerHTML = segs
+      .map((x, i) => (x.w.trim() ? `<span data-k="${i}">${esc(x.w)}</span>` : esc(x.w)))
+      .join('');
+    wrap.__karaokeKey = key;
+    bar.__active = -2;
+  }
+  // Yalnız SINIF değişir: aktif parça `on`, öncekiler `done`. DOM sabit → titreme yok.
+  const active = karaokeActiveIndex(segs, t);
+  if (bar.__active !== active) {
+    const spans = bar.querySelectorAll('span[data-k]');
+    spans.forEach((el) => {
+      const i = Number(el.dataset.k);
+      el.classList.toggle('on', i === active);
+      el.classList.toggle('done', active >= 0 ? i < active : false);
+    });
+    bar.__active = active;
+    // Uzun metinde vurgu görünür alan dışında kalmasın: yalnız kutunun içi kayar.
     const act = bar.querySelector('span.on');
     if (act && bar.scrollHeight > bar.clientHeight) {
       const bt = bar.getBoundingClientRect(),
@@ -5382,51 +5445,24 @@ function markTextFollow(m, idx, t) {
         bar.scrollTop += at.top - bt.top - bar.clientHeight / 3;
       }
     }
-    return;
   }
-  const a = secondsFromTimecode(s.start);
-  const b = secondsFromTimecode(s.end);
-  const ratio = b > a ? Math.max(0, Math.min(1, (t - a) / (b - a))) : 1;
-  const chars = Math.floor(ratio * s.text.length);
-  bar.innerHTML = `<span class="done">${esc(s.text.slice(0, chars))}</span><span class="on">${esc(s.text.slice(chars))}</span>`;
 }
+// TAKİP ALT YAZISI — TEK ALAN (v2.116).
+// NEDEN: v2.115 ve öncesinde aynı metin ÜÇ yerde gösteriliyordu:
+//   1) `.karaoke` kutusu (innerHTML her tick yeniden yazılıyordu → TİTREME)
+//   2) `.sd-follow` şeridi (aynı metin, ikinci kez)
+//   3) `.sd-text textarea` (düzenlenebilir asıl metin)
+// Kullanıcı haklıydı: "neden iki tane alan koyduk bilemiyorum". Artık karaoke
+// kutusu KULLANILMAZ (gizli kalır); takip yalnız `.sd-follow` ile yapılır.
+// Bu, `markTextFollow`'un sınıf-tabanlı (titremesiz) yoludur.
 function followKaraoke(m, idx, t) {
   const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  // Karaoke kutusu YOKSA sağ paneldeki metin alanına canlı vurgu yapılır.
-  // Kullanıcı "takip modunda metin görünüyor ama takip etmiyor" dedi: kutu
-  // yalnız bir yerde çiziliyordu. Artık iki yer de beslenir.
-  if (!box) {
-    markTextFollow(m, idx, t);
-    return;
+  // Karaoke kutusu varsa gizle: aynı metni ikinci kez göstermenin anlamı yok.
+  if (box) {
+    if (!box.hidden) box.hidden = true;
+    box.innerHTML = '';
   }
-  box.hidden = false;
   markTextFollow(m, idx, t);
-  const s = m.segments[idx];
-  if (!s || !s.text || isHallucination(s.text)) {
-    box.hidden = true;
-    return;
-  }
-  const words = s.words && s.words.length ? s.words : null;
-  if (!words) {
-    // Kelime zamanı yok: bölüm aralığına göre okunma oranını göster.
-    const a = secondsFromTimecode(s.start);
-    const b = secondsFromTimecode(s.end);
-    const ratio = b > a ? Math.max(0, Math.min(1, (t - a) / (b - a))) : 1;
-    const chars = Math.floor(ratio * s.text.length);
-    box.hidden = false;
-    box.innerHTML = `<span class="kk-done">${esc(s.text.slice(0, chars))}</span><span class="kk-rest">${esc(s.text.slice(chars))}</span>`;
-    return;
-  }
-  box.hidden = false;
-  box.innerHTML = words
-    .map((w) => {
-      const wa = secondsFromTimecode(w.s);
-      const wb = secondsFromTimecode(w.e);
-      const on = t >= wa && t < wb + 0.001;
-      const done = t >= wb;
-      return `<span class="${on ? 'on' : done ? 'done' : ''}">${esc(w.w)}</span>`;
-    })
-    .join(' ');
 }
 // Karaoke vurgulaması: çalma sırasında o an konuşulan kelime (kelime zamanı
 // varsa) ya da bölüm metni vurgulanır. Kelime zamanı yoksa bölüm aralığına göre
@@ -10997,6 +11033,17 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.116': {
+    title: 'Takip modu: metin artık titremiyor, tek alan',
+    body:
+      'Takip açıkken okuduğunuz metin sürekli titriyordu; takip etmek imkânsızlaşıyordu. ' +
+      'Sebep: metin saniyede ~8 kez baştan yazılıyordu. Artık metin bir kez çizilir, ' +
+      'yalnız okunan kelime vurgulanır — titreme YOK. Ayrıca aynı metin üç yerde ' +
+      'gösteriliyordu (biri "karaoke" kutusu, biri takip şeridi, biri düzenleme alanı); ' +
+      'artık iki: takip şeridi (okunanı gösterir) ve düzenleme alanı (sizin metniniz). ' +
+      'Uzun metinde vurgu görünür alanda kalır. Takip açıkken sol liste otomatik ' +
+      'ilerler; siz yalnız okunanı izlersiniz.'
+  },
   '2.115': {
     title: 'Belirsiz okuma etiketi ve bölüm spektrogramı',
     body:

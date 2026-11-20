@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.115.**
+yazılır. **Güncel sürüm: v2.116.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.116 — Takip modu: titreme + yinelenen alan (tamamlandı, canlı veri)
+
+`markTextFollow` ve `followKaraoke` her 120 ms'de `innerHTML` yazıyordu: 3 saniyede
+25 DOM değişikliği → metin titriyordu. Aynı metin 3 yerde gösteriliyordu. Artık
+`karaokeSegments`/`karaokeActiveIndex` ile **bir kez** çizilir, yalnız sınıf
+değişir (0 değişiklik/3sn); takip **tek alan**. `birim-testleri` [44].
 
 ### v2.115 — Belirsiz okuma + bölüm spektrogramı (tamamlandı, canlı veri)
 
