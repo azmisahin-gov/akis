@@ -90,6 +90,7 @@ const EXPOSE = [
   'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText',
   'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
+  'reprocessPlan', 'queueReprocessSummary',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1759,6 +1760,71 @@ console.log('\n[32] Paket sözleşmesi (boş dosya, arşiv, kopya)');
     eq('eşleşen girdi doğru', hit[0] && hit[0].entry, 'audio/c2/m9_ses.wav');
     eq('başka dosyanın sesi bu dosyaya bağlanmaz', T.matchAudioEntries(names, [{ id: 'm1', name: 'a.wav' }], 'c2').length, 0);
     eq('dosya klasörü verilmezse eski davranış korunur', T.matchAudioEntries(['audio/m1_a.wav'], [{ id: 'm1' }]).length, 1);
+  }
+}
+
+// --- 33. Yeniden çözümleme: onay ve geri alma ZORUNLU (v2.103) ------------
+// CANLI VERİ: bilirkişi "yanlışlıkla tümünü çözümle diyebiliyoruz" dedi.
+// ÖLÇÜM (v2.102): modelin ürettiği ama HİÇ dokunulmamış 2 bölüm varken
+// `transcribe()` çağrısı askConfirm=0, snapshotForUndo=0 yapıyordu; bölümler
+// sormadan siliniyor ve Ctrl+Z geri getirmiyordu. Yalnız "elle düzeltilmiş"
+// bölüm sayısı (edited.length) koruma tetikliyordu; modelin emeği korumasızdı.
+console.log('\n[33] Yeniden çözümleme koruması (onay + geri alma)');
+{
+  eq('reprocessPlan tanımlı', typeof T.reprocessPlan, 'function');
+
+  if (typeof T.reprocessPlan === 'function') {
+    // Hiç bölüm yok: ilk çözümleme, soru sorulmaz.
+    eq('boş kayıtta soru sorulmaz', T.reprocessPlan([]).ask, false);
+    eq('boş kayıtta geri alma kaydı gerekmez', T.reprocessPlan([]).snapshot, false);
+
+    // Model çıktısı var, HİÇ dokunulmamış: SORULMALI + GERİ ALINABİLMELİ.
+    const untouched = [
+      { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', text: 'model metni 1', review: 'pending', textRev: 0 },
+      { id: 'sg2', start: '00:00:05.000', end: '00:00:10.000', text: 'model metni 2', review: 'pending', textRev: 0 }
+    ];
+    const p1 = T.reprocessPlan(untouched);
+    eq('dokunulmamış model çıktısı varken SORULUR', p1.ask, true);
+    eq('dokunulmamış model çıktısı varken GERİ ALINIR', p1.snapshot, true);
+    eq('kaç bölümün değişeceği bildirilir', p1.segmentCount, 2);
+    eq('dokunulmamış bölüm sayısı ayrı raporlanır', p1.untouched, 2);
+    eq('elle düzeltilmiş bölüm sayısı', p1.edited, 0);
+
+    // Elle düzeltilmiş + onaylanmış: aynı koruma, ayrı gerekçe.
+    const mixed = [
+      { id: 'sg1', text: 'düzeltilmiş', review: 'pending', textRev: 2 },
+      { id: 'sg2', text: 'onaylı', review: 'approved', textRev: 0 },
+      { id: 'sg3', text: 'dokunulmamış', review: 'pending', textRev: 0 }
+    ];
+    const p2 = T.reprocessPlan(mixed);
+    eq('karma kayıtta da SORULUR', p2.ask, true);
+    eq('karma kayıtta da GERİ ALINIR', p2.snapshot, true);
+    eq('elle düzeltilmiş sayısı', p2.edited, 1);
+    eq('onaylanmış sayısı', p2.approved, 1);
+    eq('dokunulmamış sayısı', p2.untouched, 1);
+    eq('toplam değişecek bölüm', p2.segmentCount, 3);
+
+    // Metni boş bölüm (model hiçbir şey üretmedi): yine de üzerine yazılır,
+    // ama kaybedilecek metin yok. Yine de sorulur — kullanıcı bilmeli.
+    const blank = [{ id: 'sg1', text: '', review: 'pending', textRev: 0 }];
+    eq('metinsiz bölümde de SORULUR', T.reprocessPlan(blank).ask, true);
+    eq('metinsiz bölüm "dokunulmamış" sayılmaz', T.reprocessPlan(blank).untouched, 0);
+  }
+
+  // TOPLU (kuyruk) YOLU: kayıt başına diyalog yerine TEK özet soru.
+  eq('queueReprocessSummary tanımlı', typeof T.queueReprocessSummary, 'function');
+  if (typeof T.queueReprocessSummary === 'function') {
+    eq('kuyrukta bölüm yoksa sorulmaz', T.queueReprocessSummary([{ segments: [] }]).ask, false);
+    const s1 = T.queueReprocessSummary([
+      { segments: [{ id: 'a', text: 'model', review: 'pending', textRev: 0 }] },
+      { segments: [{ id: 'b', text: 'elle', review: 'pending', textRev: 3 }] },
+      { segments: [] }
+    ]);
+    eq('kuyrukta metin varsa SORULUR', s1.ask, true);
+    eq('kuyrukta kaç kayıtta bölüm var', s1.withSegments, 2);
+    eq('kuyrukta toplam bölüm sayısı', s1.totalSegments, 2);
+    eq('kuyrukta elle düzeltilmiş sayısı', s1.edited, 1);
+    eq('kuyrukta dokunulmamış sayısı', s1.untouched, 1);
   }
 }
 

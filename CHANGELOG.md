@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.102.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.103.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.103 — Yeniden çözümleme veriyi sormadan siliyordu (geri alınamaz)
+
+CANLI VERİ. Bilirkişi: *"bazen yanlışlıkla tümünü çözümle diyebiliyoruz… her
+anlamda sağlam ve geri dönebilmeliyiz."* Haklıydı.
+
+### ÖLÇÜM (v2.102)
+
+Model çıktısı olan ama **hiç dokunulmamış** 2 bölüm varken `transcribe()`
+çağrıldı:
+
+```
+askConfirm çağrısı      : 0   → SORMUYOR
+snapshotForUndo çağrısı : 0   → GERİ ALINAMAZ (Ctrl+Z yok)
+previousSegments kaydı  : YOK → kayıt içi yedek yok
+```
+
+Sebep: koruma `edited.length` (elle düzeltilmiş **veya** onaylanmış bölüm)
+koşuluna bağlıydı. Modelin ürettiği ama kimsenin dokunmadığı metin bu koşula
+girmediği için **sessizce** siliniyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **"Yeniden çözümle" / "Tüm kayıtları çözümle" artık her zaman sorar** —
+  kayıtta bölüm varsa. Soruda kaç bölümün değişeceği ve kaçının elle
+  düzeltilmiş / onaylanmış / henüz kontrol edilmemiş olduğu yazılır.
+- **"Vazgeç" derseniz hiçbir şey silinmez.**
+- Onaylarsanız eski bölümler saklanır ve **Ctrl+Z** ile geri alınabilir.
+- **Toplu çözümlemede** kayıt başına ayrı diyalog yerine **tek soru** çıkar
+  (kaç kayıtta kaç bölüm etkilenecek).
+
+### KURAL (değişmez)
+
+`reprocessPlan(segments)` → mevcut bölüm varsa `ask: true, snapshot: true`.
+Sayıma dayalı dar koşul **tam olarak bu hatayı üretmişti**; koşul genişletilmek
+yerine tek ve açıklanabilir kural konuldu: *bölüm varsa üzerine yazılacak
+demektir, sor ve geri alma kaydı al.* Metni boş bölümler de emektir (elle
+yerleştirilmiş zaman sınırları kaybolur), bu yüzden onlar da soruya dahildir.
+
+### DOĞRULAMA
+
+- `birim-testleri` **[33]** — 21 kontrol (tek kayıt + toplu yol).
+- **Gerçek Chromium**: uygulamanın kendi deposuna (IndexedDB) bölümlü kayıt
+  yazıldı, sayfa yenilendi, gerçek UI'dan "Yeniden çözümle" tıklandı →
+  onay diyaloğu **çıktı**, "Vazgeç" sonrası 2 bölüm **korundu**.
+- `bash tools/test.sh` → 490 birim + 396 şema + rapor/sürüm/tasarım.
 
 ## v2.102 — Yedek, geri yükleme ve birleştirme: sahte kayıt ve kopya birikmesi
 

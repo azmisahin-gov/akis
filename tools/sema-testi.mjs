@@ -1173,7 +1173,14 @@ console.log('\n[13] Bölüm aralığını yeniden çözümle');
   ok('zaman aralığı doğrulanıyor', /secondsFromTimecode\(s\.start\)[\s\S]{0,300}secondsFromTimecode\(s\.end\)/.test(app));
   ok('ses aralığa kırpılıyor (subarray)', /audio\.subarray\(from, to\)/.test(app));
   ok('yalnız o aralık modele veriliyor', /transcribeWindow\(pipe, slice, a\)/.test(app));
-  ok('diğer bölümlere dokunmuyor', /s\.text = text;/.test(app) && !/m\.segments = /.test(app.slice(app.indexOf('async function retranscribeSegment'), app.indexOf('async function transcribe(id)'))));
+  // Sınır imzaya bağlanmaz: `transcribe(id)` v2.103'te `transcribe(id, opts)`
+  // oldu. İmzayı birebir aramak testi kırılgan yapar ve gerçek davranışı değil
+  // yazımı sınar.
+  const segStart = app.indexOf('async function retranscribeSegment');
+  const segEnd = app.indexOf('async function transcribe(');
+  const segBody = segStart >= 0 && segEnd > segStart ? app.slice(segStart, segEnd) : '';
+  ok('yeniden çözümleme gövdesi bulundu', segBody.length > 500);
+  ok('diğer bölümlere dokunmuyor', /s\.text = text;/.test(segBody) && !/m\.segments\s*=/.test(segBody));
   ok('onay soruyor (metin varsa)', /askConfirm\([\s\S]{0,200}yeniden[\s\S]{0,100}çözümlenecek/.test(app));
   ok('geri alınabilir', /retranscribeSegment[\s\S]{0,2500}snapshotForUndo/.test(app));
   ok('eski metin geçmişe yazılıyor', /pushSegmentHistory\(s, oldText\)/.test(app));

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.102.**
+yazılır. **Güncel sürüm: v2.103.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.103 — Yeniden çözümleme koruması (tamamlandı, canlı veri)
+
+`transcribe()` mevcut bölümlerin üzerine yazar; v2.102'de koruma yalnız "elle
+düzeltilmiş/onaylanmış" bölüme bağlıydı ve modelin dokunulmamış metni
+SORULMADAN, GERİ ALINAMADAN siliniyordu (ölçüm: askConfirm=0, snapshot=0).
+`reprocessPlan()` tek kural kurar: bölüm varsa sor + snapshot al.
+`queueReprocessSummary()` toplu yolda tek soru üretir. `birim-testleri` [33]
+ve gerçek Chromium akışı korur.
 
 ### v2.102 — Yedek, geri yükleme ve birleştirme sözleşmesi (tamamlandı, canlı veri)
 

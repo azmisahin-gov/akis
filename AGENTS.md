@@ -480,6 +480,40 @@ ayrı yamamak yerine **ortak sözleşme** aranmalı. Ölçüm sırası: `freshCa
 `exportProject` paket içeriği → `readProjectPack` → `importArchive` sonrası
 `appState.cases.length`. Dördü de aynı betikle ölçüldü.
 
+
+### Aşama 10b — Yeniden çözümleme koruması (TAMAMLANDI, v2.103)
+
+**KURAL: `transcribe()` mevcut bölümlerin üzerine yazar → bölüm varsa HER ZAMAN
+sor ve geri alma kaydı al.**
+
+v2.102'de koruma `edited.length` koşuluna bağlıydı: *elle düzeltilmiş veya
+onaylanmış* bölüm yoksa hiçbir uyarı çıkmıyordu. Modelin ürettiği ama henüz
+kontrol edilmemiş metin sessizce siliniyordu. Ölçüm (2 dokunulmamış bölüm):
+
+```
+askConfirm=0 · snapshotForUndo=0 · previousSegments=YOK
+```
+
+Düzeltme:
+- `reprocessPlan(segments)` — saf karar. `ask = segs.length > 0`.
+  `edited` / `approved` / `untouched` yalnız **gerekçe metni** için sayılır,
+  karar sayıma bağlı DEĞİLDİR. (Dar sayım koşulu tam olarak bu hatayı üretti.)
+- `queueReprocessSummary(materials)` — toplu yolda tek soru.
+- `transcribe(id, {confirmed})` — `confirmed` yalnız kuyruktan gelir; geri alma
+  kaydı (`snapshotForUndo` + `previousSegments`) her durumda alınır.
+
+**Neden metni boş bölüm de soruya dahil:** elle yerleştirilmiş zaman sınırları
+emektir ve yeniden çözümlemede kaybolur.
+
+**Koruyan test:** `birim-testleri` [33] (21 kontrol). Ayrıca gerçek Chromium:
+IndexedDB'ye bölümlü kayıt yaz → yenile → UI'dan "Yeniden çözümle" tıkla →
+onay diyaloğu çıkar → "Vazgeç" → 2 bölüm korunur.
+
+**Test yazım dersi:** `sema-testi` [13] `transcribe(id)` imzasını birebir
+arıyordu ve imza `transcribe(id, opts)` olunca kırıldı. Test **davranışı**
+sınarlamalı, yazımı değil; sınır artık `async function transcribe(` ile
+bulunuyor.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -653,7 +687,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.102.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.103.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -811,7 +845,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.102` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.103` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

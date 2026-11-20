@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.102';
+const APP_VERSION = '2.103';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -6432,25 +6432,100 @@ async function retranscribeSegment(materialId, index) {
     }
   }
 }
-async function transcribe(id) {
+// YENİDEN ÇÖZÜMLEME KORUMASI — saf karar fonksiyonu (v2.103).
+// NEDEN: `transcribe()` mevcut bölümlerin ÜZERİNE yazar. v2.102'de koruma
+// yalnız "elle düzeltilmiş/onaylanmış" bölüm varsa devreye giriyordu; modelin
+// ürettiği ama henüz kimsenin dokunmadığı bölümler SORULMADAN ve GERİ
+// ALINAMADAN siliniyordu. Bilirkişi "yanlışlıkla tümünü çözümle" dediğinde
+// işi kayboluyordu (canlı veri).
+// KURAL: mevcut bölüm varsa üzerine yazılacak demektir → her zaman sor ve geri
+// alma kaydı al. Sayıma dayalı dar bir koşul (ör. "yalnız düzeltilmiş varsa")
+// tam olarak v2.102'deki hatayı üretti; koşulu geniş tutmak yerine tek ve
+// açıklanabilir kural kullanılır. Metni boş bölümler bile EMEKTİR: elle
+// yerleştirilmiş zaman sınırları yeniden çözümlemede kaybolur.
+function reprocessPlan(segments) {
+  const segs = Array.isArray(segments) ? segments : [];
+  let edited = 0;
+  let approved = 0;
+  let untouched = 0;
+  for (const s of segs) {
+    const rev = Number(s && s.textRev) || 0;
+    const hasText = String((s && s.text) || '').trim().length > 0;
+    if (rev > 0) edited++;
+    else if (s && s.review === 'approved') approved++;
+    else if (hasText) untouched++;
+  }
+  // Hiç bölüm yoksa ilk çözümlemedir; kaybedilecek bir şey yoktur.
+  const ask = segs.length > 0;
+  return {
+    ask,
+    snapshot: ask,
+    segmentCount: segs.length,
+    edited,
+    approved,
+    untouched
+  };
+}
+// Kuyruk (toplu çözümleme) için toplu özet. Kayıt başına diyalog açmak
+// kullanıcıyı yorar; tek soru, kaç kayıtta kaç bölümün silineceğini söyler.
+function queueReprocessSummary(materials) {
+  const list = Array.isArray(materials) ? materials : [];
+  let withSegments = 0;
+  let edited = 0;
+  let approved = 0;
+  let untouched = 0;
+  let totalSegments = 0;
+  for (const m of list) {
+    const p = reprocessPlan(m && m.segments);
+    if (p.segmentCount > 0) withSegments++;
+    edited += p.edited;
+    approved += p.approved;
+    untouched += p.untouched;
+    totalSegments += p.segmentCount;
+  }
+  return {
+    materials: list.length,
+    withSegments,
+    edited,
+    approved,
+    untouched,
+    totalSegments,
+    ask: withSegments > 0
+  };
+}
+async function transcribe(id, opts = {}) {
   const c = currentCase(),
     m = c.materials.find((x) => x.id === id);
   if (!m) return;
   // Elle yapılmış düzeltme varsa yeniden çözümleme onları SİLER (m.segments
   // üzerine yazılır). Bu, uyarısız yapılamaz. Kullanıcıya sorulur ve eski
   // bölümler geri dönüş için saklanır.
-  const edited = (m.segments || []).filter((s) => (Number(s.textRev) || 0) > 0 || s.review !== 'pending');
-  if (edited.length) {
-    const devam = await askConfirm(
-      'Yeniden çözümleme mevcut düzeltmeleri siler',
-      `Bu kayıtta ${edited.length} bölüm elle düzeltilmiş veya onaylanmış. ` +
-        'Yeniden çözümleme bu bölümlerin TAMAMINI siler ve modelin yeni çıktısıyla değiştirir. ' +
-        'Düzeltmeler ve onaylar kaybolur. ' +
-        'Eski hâli geri dönebilmek için saklanacak (İşlem günlüğünde görünür). Devam edilsin mi?'
-    );
-    if (!devam) {
-      showToast('Yeniden çözümleme iptal edildi. Mevcut düzeltmeler korundu.');
-      return;
+  // v2.103: koruma ARTIK YALNIZ "elle düzeltilmiş" bölüme bağlı değil. Modelin
+  // ürettiği, henüz kimsenin dokunmadığı metin de kaybedilebilir; bu yüzden
+  // kaybedilecek metin varsa her durumda sorulur ve geri alma kaydı alınır.
+  // `opts.confirmed` yalnız toplu çözümlemeden gelir: kullanıcı tek soruda
+  // TÜM kayıtlar için onay vermiştir. Geri alma kaydı yine alınır.
+  const plan = reprocessPlan(m.segments);
+  if (plan.ask) {
+    const why = [
+      plan.edited ? `${plan.edited} bölüm elle düzeltilmiş` : '',
+      plan.approved ? `${plan.approved} bölüm onaylanmış` : '',
+      plan.untouched ? `${plan.untouched} bölümde model metni var (henüz kontrol edilmedi)` : ''
+    ]
+      .filter(Boolean)
+      .join(', ');
+    if (!opts.confirmed) {
+      const devam = await askConfirm(
+        'Yeniden çözümleme mevcut metni siler',
+        `Bu kayıtta ${plan.segmentCount} bölüm var: ${why}. ` +
+          'Yeniden çözümleme bölümlerin TAMAMINI siler ve modelin yeni çıktısıyla değiştirir. ' +
+          'Düzeltmeler ve onaylar kaybolur. ' +
+          'Eski hâli geri dönebilmek için saklanacak (Ctrl+Z ve İşlem günlüğü). Devam edilsin mi?'
+      );
+      if (!devam) {
+        showToast('Yeniden çözümleme iptal edildi. Mevcut metin korundu.');
+        return;
+      }
     }
     snapshotForUndo('yeniden çözümleme');
     // Geri dönüş kopyası: eski bölümler kayda yazılır (yalnız son 1 kopya).
@@ -6472,7 +6547,11 @@ async function transcribe(id) {
         history: []
       }))
     };
-    logEvent(m, 'Yeniden çözümleme öncesi yedek', `${edited.length} elle düzeltilmiş bölüm saklandı`);
+    logEvent(
+      m,
+      'Yeniden çözümleme öncesi yedek',
+      `${plan.segmentCount} bölüm saklandı (${why})`
+    );
   }
   const blob = await getAudioBlob(c, m);
   if (!blob) {
@@ -9496,6 +9575,33 @@ async function runQueue() {
     showToast('Çözümlenecek kayıt yok.');
     return;
   }
+  // TOPLU ÇÖZÜMLEME KORUMASI (v2.103). Kullanıcı "yanlışlıkla tümünü çözümle"
+  // diyebiliyor; kuyrukta metni olan bir kayıt varsa üzerine yazılır. Kayıt
+  // başına ayrı diyalog açmak yerine TEK soru sorulur ve kaç kayıtta kaç
+  // bölümün silineceği yazılır. Geri alma kaydı her kayıt için yine alınır.
+  const summary = queueReprocessSummary(pending);
+  let confirmed = false;
+  if (summary.ask) {
+    const why = [
+      summary.edited ? `${summary.edited} bölüm elle düzeltilmiş` : '',
+      summary.approved ? `${summary.approved} bölüm onaylanmış` : '',
+      summary.untouched ? `${summary.untouched} bölümde model metni var (henüz kontrol edilmedi)` : ''
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const devam = await askConfirm(
+      'Toplu çözümleme mevcut metinlerin üzerine yazar',
+      `${pending.length} kayıt çözümlenecek. Bunlardan ${summary.withSegments} kayıtta toplam ` +
+        `${summary.totalSegments} bölüm var: ${why}. ` +
+        'Bu bölümlerin TAMAMI silinip modelin yeni çıktısıyla değiştirilecek. ' +
+        'Düzeltmeler ve onaylar kaybolur. Eski hâller Ctrl+Z ile geri alınabilir. Devam edilsin mi?'
+    );
+    if (!devam) {
+      showToast('Toplu çözümleme iptal edildi. Mevcut metinler korundu.');
+      return;
+    }
+    confirmed = true;
+  }
   queueRunning = true;
   c.queueCancel = false;
   $('#startQueueBtn').disabled = true;
@@ -9505,7 +9611,7 @@ async function runQueue() {
   for (const m of pending) {
     if (c.queueCancel) break;
     try {
-      await transcribe(m.id);
+      await transcribe(m.id, { confirmed });
     } catch (e) {}
     done++;
     queueUpdateProgress(done, pending.length, Date.now() - t0);
@@ -10011,6 +10117,18 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.103': {
+    title: 'Yeniden çözümleme artık veriyi sormadan silmiyor',
+    body:
+      'Bir kaydı yeniden çözümlediğinizde (tek kayıt veya "Tüm kayıtları çözümle") ' +
+      'mevcut bölümlerin üzerine yazılır. Önceki sürümde bu yalnız elle ' +
+      'düzeltilmiş bölüm varsa soruluyordu; modelin ürettiği, henüz kontrol ' +
+      'etmediğiniz metin SORULMADAN siliniyordu ve Ctrl+Z geri getirmiyordu. ' +
+      'Artık kayıtta bölüm varsa her zaman sorulur: kaç bölümün değişeceği ve ' +
+      'kaçının elle düzeltilmiş/onaylanmış olduğu yazılır. "Vazgeç" derseniz ' +
+      'hiçbir şey silinmez. Onaylarsanız eski hâl saklanır ve Ctrl+Z ile geri ' +
+      'alınabilir. Toplu çözümlemede kayıt başına ayrı soru yerine TEK soru çıkar.'
+  },
   '2.102': {
     title: 'Yedek, geri yükleme ve birleştirme düzeltildi',
     body:
