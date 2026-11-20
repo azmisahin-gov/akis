@@ -574,6 +574,35 @@ elle onaylandı → "Onaylandı" (1 `done`), raporda `onayCount = 1`.
 bilirkişi doğrulaması). Aynı sözcüğü iki anlamda kullanmak adli belgede
 yanıltıcıdır; durum kodları ayrılmalı.
 
+
+### Aşama 10e — Arşivleme ve iki aşamalı silme (TAMAMLANDI, v2.107)
+
+**KURAL: arşiv veri silmez; silme iki aşamalıdır.**
+
+**Ölçülen risk:** `snapshotForUndo` yalnız `appState.cases` kopyalar; ses
+IndexedDB'de ayrı ve `deleteBlob` KALICI. Ctrl+Z metni getirir, **sesi
+getirmez**. Bu yüzden silme tek tıkla yapılamaz.
+
+**Akış:**
+1. **Arşivle** (`archiveCase`): `status='archived'` + `archivedAt` + `auditLog`.
+   Veri ve ses DURUR; yedeğe girmeye devam eder. `visibleCases()` seçiciden
+   gizler. Üst barda "Arşiv (N)" düğmesi.
+2. **Geri al** (`unarchiveCase`): `status='draft'`, `archivedAt` silinir.
+3. **Kalıcı sil** (`purgeCaseById`): yalnız `canDeleteCase` (arşivli) iken.
+   (a) `askConfirm` — sesin de silineceğini söyler; (b) `askTypedConfirm` —
+   `deleteConfirmPhrase` (dosya no) ELLE yazılır. Sonra `deleteBlob` ile ses
+   kalıcı silinir.
+
+**Değişmez kurallar:**
+- Son görünür dosya arşivlenirse **yeni boş çalışma alanı** açılır; seçici boş
+  kalmaz (boş seçici "verim gitti" izlenimi verir).
+- Arşivli dosyalar `buildExportPlan` içinde **kalır** (yedek eksik olmaz).
+- Silinen dosyanın sesi geri gelmez; kullanıcıya açıkça söylenir.
+
+**Koruyan test:** `birim-testleri` [35] (24 kontrol) + gerçek Chromium
+kırılganlık testi: A silindi → **B'nin sesi korundu** (`cB::mcB`), A'nın sesi
+(`cA::mcA`) gitti. "Doğru dosyayı mı siliyor" sorusunun cevabı ölçümle verildi.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -747,7 +776,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.106.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.107.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -905,7 +934,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.106` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.107` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

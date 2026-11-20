@@ -6,12 +6,67 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.106.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.107.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.107 — Arşivleme ve (isteğe bağlı) kalıcı silme
+
+CANLI VERİ. Bilirkişi: *"çalışma alanlarının karışmasını istemiyorum… illa
+silmek istiyorsa arşivden silebilir… hepsini yapalım… güzel bir kırılganlık
+testi olur."*
+
+### ÖLÇÜLEN RİSK (önce)
+
+`snapshotForUndo` yalnız `appState.cases` kopyalar (satır 464). Ses IndexedDB'de
+**ayrı** durur ve `deleteBlob` **kalıcıdır**. Yani "yanlışlıkla sildim" →
+**Ctrl+Z metni getirir, sesi GETİRMEZ.** Adli kayıtta ses asıl delildir. Bu
+yüzden silme tek tıkla yapılamaz.
+
+### KULLANICI NE GÖRECEK
+
+**Arşivle (güvenli, ana yol)**
+- Dosya bilgileri çekmecesi → **Bu dosyayı arşivle**
+- Dosya listeden gizlenir; **verisi ve ses kayıtları SİLİNMEZ**
+- Üst barda **Arşiv (N)** düğmesi: aç, geri al
+- Arşivdeki dosyalar **yedeğe dâhil** (kaybolmaz)
+
+**Kalıcı sil (isteğe bağlı, iki aşamalı)**
+- Arşiv → **Kalıcı sil**
+- **1. onay:** *"1 ses kaydı ve tüm veri silinecek. Ctrl+Z geri getirmez."*
+- **2. onay:** dosya numarasını **elle yaz** (`2024/A`). Yanlış yazarsan düğme
+  kapalı kalır, silme yapılmaz.
+- Silmede **ses blobları da** IndexedDB'den silinir.
+
+### DEĞİŞMEZ KURALLAR
+
+1. Arşiv **veri silmez**; yalnız gizler. Yedeğe girmeye devam eder.
+2. Silme **yalnız arşivli** dosyada (iki bilinçli adım).
+3. Silme **iki onay** ister; ikincisi dosya numarasını elle yazdırır.
+4. Son görünür dosya arşivlenirse **yeni boş çalışma alanı** açılır (seçici boş
+   kalmaz; boş seçici "verim gitti" izlenimi verirdi).
+5. Silinen dosyanın sesi **geri gelmez**; bu kullanıcıya açıkça söylenir.
+
+### DOĞRULAMA (gerçek Chromium — kırılganlık testi)
+
+Seed: `2024/A` + `2024/B`, sesler `cA::mcA` + `cB::mcB`.
+
+```
+Başlangıç : seçici [2024/A, 2024/B] · Arşiv (0) devre dışı
+Arşivle A : seçici [2024/B] · Arşiv (1) · "verisi ve sesleri SİLİNMEDİ"
+Panel     : 1 satır · Geri al + Kalıcı sil var
+Geri al   : seçici [2024/A, 2024/B] · panel boş
+Sil (A)   : 1. onay çıktı · yanlış yazımda düğme KAPALI
+            "2024/A" yazılınca düğme açıldı
+Sonuç     : dosyalar [2024/B] · sesler [cB::mcB]
+            → A'nın sesi silindi, B'nin sesi KORUNDU (doğru dosya!)
+```
+
+`birim-testleri` **[35]** — 24 kontrol (arşiv durumu, görünürlük, yedek kapsamı,
+onay ifadesi, arşivsiz dosyanın silinememesi).
 
 ## v2.106 — Otomatik onay ile bilirkişi onayı aynı görünüyordu (adli ayrım)
 

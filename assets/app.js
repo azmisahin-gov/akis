@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.106';
+const APP_VERSION = '2.107';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1123,12 +1123,30 @@ function switchView(name) {
 }
 function renderCaseSelect() {
   const sel = $('#caseSelect');
-  sel.innerHTML = appState.cases
+  // ARŞİVLİ DOSYALAR SEÇİCİDE GÖRÜNMEZ (v2.107): çalışma alanı sade kalır.
+  // Verileri SİLİNMEZ; "Arşiv (N)" düğmesinden geri alınır.
+  const shown = visibleCases(appState.cases);
+  // Aktif dosya arşivlenmişse seçici boş görünmesin: ilk görünür dosyaya geç.
+  if (shown.length && !shown.some((c) => c.id === appState.activeCaseId)) {
+    appState.activeCaseId = shown[0].id;
+  }
+  sel.innerHTML = shown
     .map(
       (c) =>
         `<option value="${esc(c.id)}" ${c.id === appState.activeCaseId ? 'selected' : ''}>${esc(c.name || c.fileNo || 'Yeni inceleme')}</option>`
     )
     .join('');
+  const archivedCount = (appState.cases || []).filter(isArchivedCase).length;
+  const btn = $('#archiveBtn');
+  if (btn) {
+    btn.textContent = `Arşiv (${archivedCount})`;
+    btn.classList.toggle('has-items', archivedCount > 0);
+    btn.disabled = archivedCount === 0;
+    btn.title =
+      archivedCount === 0
+        ? 'Arşivde dosya yok. Arşivlenen dosyalar burada saklanır; verileri silinmez.'
+        : `Arşivde ${archivedCount} dosya var. Aç, geri al veya (iki onayla) kalıcı sil.`;
+  }
 }
 const CASE_FIELDS = [
   'reportType',
@@ -7945,7 +7963,52 @@ function dropEmptyCases(cases) {
   return { cases: keep, dropped: all.length - keep.length };
 }
 
-// ---- Yedek takibi -------------------------------------------------------
+// ---- Arşivleme ve silme (v2.107) ----------------------------------------
+// KURAL: arşivleme VERİ SİLMEZ. Dosya seçiciden gizlenir, verisi ve sesi
+// durur, yedeğe girmeye devam eder. Silme yalnız ARŞİVLİ dosyada mümkündür ve
+// iki aşamalı onay ister: (1) sesin de silineceğini söyleyen onay, (2) dosya
+// numarasını elle yazma.
+// NEDEN bu kadar sıkı: `snapshotForUndo` yalnız `appState.cases` kopyalar; ses
+// IndexedDB'de ayrı durur ve `deleteBlob` KALICIDIR. Ctrl+Z metni getirir,
+// sesi getirmez. Adli kayıtta ses asıl delildir.
+function isArchivedCase(c) {
+  return !!c && c.status === 'archived';
+}
+// Dosya seçicide görünecek dosyalar: arşivliler gizlenir.
+function visibleCases(cases) {
+  return (Array.isArray(cases) ? cases : []).filter((c) => !isArchivedCase(c));
+}
+function archiveCase(c) {
+  const at = new Date().toISOString();
+  const log = Array.isArray(c.auditLog) ? c.auditLog.slice() : [];
+  log.push({ at, event: 'arşivlendi', by: c.lastEditedBy || '' });
+  return { ...c, status: 'archived', archivedAt: at, auditLog: log };
+}
+function unarchiveCase(c) {
+  const at = new Date().toISOString();
+  const log = Array.isArray(c.auditLog) ? c.auditLog.slice() : [];
+  log.push({ at, event: 'arşivden çıkarıldı', by: c.lastEditedBy || '' });
+  const next = { ...c, status: 'draft', auditLog: log };
+  delete next.archivedAt;
+  return next;
+}
+// Silme onayı için yazılması gereken ifade (dosya numarası, yoksa kimlik).
+function deleteConfirmPhrase(c) {
+  const v = String((c && (c.fileNo || c.id)) || '').trim();
+  return v;
+}
+function deleteConfirmMatches(c, typed) {
+  const want = deleteConfirmPhrase(c);
+  const got = String(typed == null ? '' : typed).trim();
+  if (!want || !got) return false;
+  return want === got;
+}
+// Silme yalnız arşivli dosyada. Arşivsiz dosya önce arşivlenmelidir: böylece
+// "yanlış dosyayı sildim" iki ayrı, bilinçli adım gerektirir.
+function canDeleteCase(c) {
+  return isArchivedCase(c);
+}
+
 // Veri tarayıcıda (localStorage + IndexedDB) durur. Tarayıcı verisi silinirse
 // her şey gider. Bu yüzden son yedeğin ne zaman alındığı izlenir ve uzun süre
 // yedek alınmadıysa kullanıcı uyarılır.
@@ -9567,6 +9630,21 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
     });
   }
   $('#closeVersion')?.addEventListener('click', () => $('#versionDialog')?.close());
+
+  // --- Arşiv (v2.107) ---------------------------------------------------
+  $('#archiveBtn')?.addEventListener('click', () => {
+    renderArchiveList();
+    const d = $('#archiveDialog');
+    if (d && !d.open) d.showModal();
+  });
+  $('#closeArchive')?.addEventListener('click', () => $('#archiveDialog')?.close());
+  $('#archiveCaseBtn')?.addEventListener('click', () => archiveCurrentCase().catch((e) => showToast(e.message)));
+  $('#archiveList')?.addEventListener('click', async (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    if (b.dataset.unarchive) await unarchiveById(b.dataset.unarchive);
+    else if (b.dataset.purge) await purgeCaseById(b.dataset.purge);
+  });
   $('#confirmCancel').addEventListener('click', () => $('#confirmDialog').close());
   $('#closeConfirm').addEventListener('click', () => $('#confirmDialog').close());
   $('#confirmOk').addEventListener('click', () => $('#confirmDialog').close());
@@ -9702,6 +9780,171 @@ function askConfirm(title, text) {
     dlg.addEventListener('close', () => finish(false), { once: true });
     dlg.showModal();
   });
+}
+// Dosya numarasını ELLE yazdıran onay (v2.107). Kazara tıklama imkânsız olsun:
+// kalıcı silme ses kaydını da siler ve Ctrl+Z sesi geri getirmez.
+function askTypedConfirm({ title, text, phrase, okLabel }) {
+  return new Promise((resolve) => {
+    const dlg = $('#typeConfirmDialog');
+    $('#typeConfirmTitle').textContent = title || 'Son onay';
+    $('#typeConfirmText').innerHTML = text || '';
+    const input = $('#typeConfirmInput');
+    const ok = $('#typeConfirmOk');
+    const err = $('#typeConfirmError');
+    input.value = '';
+    ok.disabled = true;
+    ok.textContent = okLabel || 'Kalıcı sil';
+    if (err) err.hidden = true;
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      input.removeEventListener('input', onInput);
+      ok.removeEventListener('click', onOk);
+      $('#typeConfirmCancel').removeEventListener('click', onCancel);
+      $('#closeTypeConfirm').removeEventListener('click', onCancel);
+      if (dlg.open) dlg.close();
+      resolve(v);
+    };
+    const onInput = () => {
+      const okNow = deleteConfirmMatches({ fileNo: phrase, id: phrase }, input.value);
+      ok.disabled = !okNow;
+      if (err) err.hidden = okNow || !input.value.trim();
+    };
+    const onOk = () => finish(true);
+    const onCancel = () => finish(false);
+    input.addEventListener('input', onInput);
+    ok.addEventListener('click', onOk);
+    $('#typeConfirmCancel').addEventListener('click', onCancel);
+    $('#closeTypeConfirm').addEventListener('click', onCancel);
+    dlg.addEventListener('close', () => finish(false), { once: true });
+    dlg.showModal();
+    setTimeout(() => input.focus(), 30);
+  });
+}
+
+// --- Arşiv (v2.107) -------------------------------------------------------
+// ARŞİV VERİ SİLMEZ. Dosya seçiciden gizlenir; verisi ve sesi durur; yedeğe
+// girmeye devam eder. Geri alınabilir. Kalıcı silme ayrı ve iki aşamalıdır.
+function renderArchiveList() {
+  const host = $('#archiveList');
+  if (!host) return;
+  const archived = (appState.cases || []).filter(isArchivedCase);
+  if (!archived.length) {
+    host.innerHTML =
+      '<p class="drawer-note">Arşivde dosya yok. Bir dosyayı arşivlemek için Dosya bilgileri çekmecesindeki <b>Bu dosyayı arşivle</b> düğmesini kullanın.</p>';
+    return;
+  }
+  host.innerHTML =
+    '<p class="drawer-note">Arşivlenen dosyalar burada durur; <b>verileri ve ses kayıtları silinmez</b>. ' +
+    'Yedeğe dâhil edilirler. İsterseniz geri alabilir veya iki onayla kalıcı silebilirsiniz.</p>' +
+    archived
+      .map(
+        (c) => `<div class="archive-row">
+        <div class="archive-main"><b>${esc(c.fileNo || c.name || c.id)}</b>
+          <small>${esc(c.court || '—')} · ${(c.materials || []).length} kayıt · ` +
+          `arşiv: ${esc(c.archivedAt ? new Date(c.archivedAt).toLocaleString('tr-TR') : '—')}</small></div>
+        <div class="archive-actions">
+          <button class="mini-button" data-unarchive="${esc(c.id)}">↩ Geri al</button>
+          <button class="mini-button danger" data-purge="${esc(c.id)}">Kalıcı sil</button>
+        </div></div>`
+      )
+      .join('');
+}
+async function archiveCurrentCase() {
+  const c = currentCase();
+  if (!c) return;
+  if (isArchivedCase(c)) return showToast('Bu dosya zaten arşivde.');
+  if ((appState.cases || []).filter((x) => !isArchivedCase(x)).length <= 1) {
+    const ok = await askConfirm(
+      'Son görünür dosyayı arşivliyorsunuz',
+      `"${c.fileNo || c.name || 'Adsız'}" arşivlenecek ve çalışma alanında görünür dosya kalmayacak. ` +
+        'Yeni bir dosya açılır. Arşivdeki dosya SİLİNMEZ; Arşiv düğmesinden geri alabilirsiniz. Devam edilsin mi?'
+    );
+    if (!ok) return;
+  }
+  const idx = appState.cases.findIndex((x) => x.id === c.id);
+  if (idx < 0) return;
+  snapshotForUndo('dosya arşivlendi');
+  appState.cases[idx] = archiveCase(appState.cases[idx]);
+  // Görünür dosya kalmadıysa yeni bir çalışma alanı aç: seçici BOŞ KALMAZ
+  // (boş seçici "verim gitti" izlenimi verir; oysa dosya arşivde duruyor).
+  if (!visibleCases(appState.cases).length) {
+    const fresh = freshCase();
+    appState.cases.push(fresh);
+    appState.activeCaseId = fresh.id;
+  }
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  renderOverview();
+  await renderAudioList();
+  showToast(
+    `"${c.fileNo || c.name || 'Dosya'}" arşivlendi. Verisi ve sesleri SİLİNMEDİ. ` +
+      'Geri almak için üst bardaki "Arşiv" düğmesini kullanın.'
+  );
+}
+async function unarchiveById(id) {
+  const idx = (appState.cases || []).findIndex((x) => x.id === id);
+  if (idx < 0) return;
+  snapshotForUndo('dosya arşivden çıkarıldı');
+  appState.cases[idx] = unarchiveCase(appState.cases[idx]);
+  appState.activeCaseId = appState.cases[idx].id;
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  renderOverview();
+  await renderAudioList();
+  renderArchiveList();
+  showToast(`"${appState.cases[idx].fileNo || appState.cases[idx].name || 'Dosya'}" arşivden çıkarıldı.`);
+}
+// KALICI SİLME: iki aşamalı. (1) sesin de silineceğini söyleyen onay,
+// (2) dosya numarasını elle yazma. Ses IndexedDB'den KALICI silinir; Ctrl+Z
+// sesi geri getirmez (ölçüldü: snapshotForUndo yalnız appState.cases kopyalar).
+async function purgeCaseById(id) {
+  const c = (appState.cases || []).find((x) => x.id === id);
+  if (!c) return;
+  if (!canDeleteCase(c)) {
+    showToast('Yalnız arşivlenmiş dosya kalıcı silinebilir. Önce arşivleyin.');
+    return;
+  }
+  const phrase = deleteConfirmPhrase(c);
+  const mats = (c.materials || []).length;
+  const ok1 = await askConfirm(
+    'KALICI SİLME — geri alınamaz',
+    `"${phrase}" kalıcı olarak silinecek. ${mats} ses kaydı ve tüm deşifre/rapor verisi ` +
+      'bu tarayıcıdan SİLİNİR. Ctrl+Z bu dosyayı geri getirmez; ses dosyaları da gider. ' +
+      'Tek kurtarma yolu daha önce aldığınız .akis yedeğidir. Devam edilsin mi?'
+  );
+  if (!ok1) return showToast('Kalıcı silme iptal edildi. Dosya arşivde duruyor.');
+  const ok2 = await askTypedConfirm({
+    title: 'Son onay: kalıcı silme',
+    text:
+      `Son adım. Silinecek dosya: <b>${esc(phrase)}</b> · ${mats} kayıt.<br>` +
+      '<b>Ses dosyaları da silinecek.</b> Bu işlem geri alınamaz.',
+    phrase,
+    okLabel: 'Kalıcı sil'
+  });
+  if (!ok2) return showToast('Kalıcı silme iptal edildi. Dosya arşivde duruyor.');
+  snapshotForUndo('dosya kalıcı silindi');
+  // Ses bloblarını KALICI sil (deleteBlob geri dönüşü yoktur).
+  for (const m of c.materials || []) {
+    try {
+      await deleteBlob(blobKey(c, m));
+    } catch (e) {}
+  }
+  appState.cases = (appState.cases || []).filter((x) => x.id !== id);
+  if (appState.activeCaseId === id) appState.activeCaseId = (visibleCases(appState.cases)[0] || appState.cases[0] || {}).id || null;
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  renderOverview();
+  await renderAudioList();
+  renderArchiveList();
+  showToast(
+    `"${phrase}" KALICI SİLİNDİ (${mats} kayıt). Ses dosyaları da silindi. ` +
+      'Ctrl+Z yalnız kaydı geri getirir; SES GERİ GELMEZ — yedekten yükleyin.'
+  );
 }
 const MODEL_CACHE = 'transformers-cache';
 function modelIdFromUrl(u) {
@@ -10198,6 +10441,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.107': {
+    title: 'Dosya arşivleme ve (isteğe bağlı) kalıcı silme',
+    body:
+      'Çalışma alanı artık düzenli kalabilir. Dosya bilgileri çekmecesindeki ' +
+      '"Bu dosyayı arşivle" ile bir dosya listeden gizlenir; VERİSİ VE SES ' +
+      'KAYITLARI SİLİNMEZ. Üst bardaki "Arşiv (N)" düğmesinden istediğiniz zaman ' +
+      'geri alabilirsiniz; arşivdeki dosyalar yedeğe de dâhil edilir. ' +
+      'Gerçekten silmek isterseniz: Arşiv → Kalıcı sil. Silme iki onay ister: ' +
+      'önce ses kayıtlarının da silineceğini söyleyen uyarı, sonra dosya ' +
+      'numarasını ELLE yazmanız. Yanlış yazarsanız silme yapılmaz. ' +
+      'DİKKAT: kalıcı silinen dosyanın sesi Ctrl+Z ile GERİ GELMEZ; tek kurtarma ' +
+      'yolu daha önce aldığınız .akis yedeğidir.'
+  },
   '2.106': {
     title: 'Otomatik onay artık "Onaylandı" sayılmıyor',
     body:

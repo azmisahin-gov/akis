@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.106.**
+yazılır. **Güncel sürüm: v2.107.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.107 — Arşivleme ve iki aşamalı silme (tamamlandı, canlı veri)
+
+`snapshotForUndo` sesi kopyalamıyor; `deleteBlob` kalıcı → Ctrl+Z sesi
+getirmez. Bu yüzden arşiv (veri silmez, gizler, yedeğe girer) ana yol; silme
+yalnız arşivden ve iki onayla (ses uyarısı + dosya numarasını elle yazma).
+Gerçek Chromium'da doğrulandı: A silindi, B'nin sesi korundu.
 
 ### v2.106 — Otomatik onay ≠ bilirkişi onayı (tamamlandı, canlı veri)
 

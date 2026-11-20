@@ -92,6 +92,8 @@ const EXPOSE = [
   'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
   'reprocessPlan', 'queueReprocessSummary',
   'isHumanApproved', 'reviewCellText', 'reviewHintText',
+  'isArchivedCase', 'visibleCases', 'archiveCase', 'unarchiveCase',
+  'deleteConfirmPhrase', 'deleteConfirmMatches', 'canDeleteCase',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1872,6 +1874,63 @@ console.log('\n[34] Otomatik onay ile bilirkişi onayı ayrı');
   eq('REVIEW_LABEL machine tanımlı', typeof __schemaMod.REVIEW_LABEL.machine, 'string');
   eq('normalizeReviewState machine korur', __schemaMod.normalizeReviewState('machine'), 'machine');
   eq('bilinmeyen kod pending olur', __schemaMod.normalizeReviewState('zzz'), 'pending');
+}
+
+// --- 35. Arşivleme ve silme (v2.107) -------------------------------------
+// CANLI VERİ. Bilirkişi: "çalışma alanlarının karışmasını istemiyorum... illa
+// silmek istiyorsa arşivden silebilir... hepsini yapalım".
+// ÖLÇÜLEN RİSK: `snapshotForUndo` yalnız `appState.cases` kopyalar; ses
+// IndexedDB'de AYRI durur ve `deleteBlob` kalıcıdır. Yani Ctrl+Z metni getirir,
+// SESİ GETİRMEZ. Bu yüzden silme iki aşamalı onay ister ve sesin de gideceğini
+// AÇIKÇA söylemek zorundadır.
+console.log('\n[35] Arşivleme ve silme');
+{
+  const real = (id, fileNo) => ({ id, fileNo, court: 'Mahkeme', materials: [{ id: 'm' + id, segments: [] }] });
+  const a = real('c1', '2024/1');
+  const b = real('c2', '2024/2');
+
+  // 1) Arşiv durumu: yalnız status==='archived' arşivlidir.
+  eq('status archived → arşivli', T.isArchivedCase({ status: 'archived' }), true);
+  eq('status draft → arşivli DEĞİL', T.isArchivedCase({ status: 'draft' }), false);
+  eq('status yok → arşivli DEĞİL', T.isArchivedCase({}), false);
+  eq('null güvenli', T.isArchivedCase(null), false);
+
+  // 2) Seçicide yalnız arşivsiz dosyalar görünür.
+  const list = [{ ...a, status: 'draft' }, { ...b, status: 'archived' }];
+  eq('görünür dosya sayısı', T.visibleCases(list).length, 1);
+  eq('görünen dosya arşivsiz olan', T.visibleCases(list)[0].id, 'c1');
+
+  // 3) Arşivleme: durum değişir, VERİ SİLİNMEZ.
+  const src = { ...real('c3', '2024/3'), status: 'draft' };
+  const arch = T.archiveCase(src);
+  eq('arşivlenen dosya archived olur', arch.status, 'archived');
+  eq('arşivlenen dosyanın kayıtları DURUR', arch.materials.length, 1);
+  eq('arşivlenen dosyanın numarası DURUR', arch.fileNo, '2024/3');
+  eq('arşiv zamanı yazılır', typeof arch.archivedAt, 'string');
+  eq('arşivleme günlüğe yazılır', Array.isArray(arch.auditLog) && arch.auditLog.length, 1);
+
+  // 4) Geri alma: arşivden çıkarma veriyi korur.
+  const back = T.unarchiveCase(arch);
+  eq('arşivden çıkan dosya draft olur', back.status, 'draft');
+  eq('arşivden çıkan dosyanın kayıtları DURUR', back.materials.length, 1);
+  eq('arşivden çıkarma günlüğe yazılır', back.auditLog.length, 2);
+
+  // 5) SİLME ONAYI: dosya numarası elle yazılmalı (kazara tıklama imkânsız).
+  eq('onay ifadesi dosya numarasını ister', T.deleteConfirmPhrase({ fileNo: '2024/7' }), '2024/7');
+  eq('dosya numarası yoksa id kullanılır', T.deleteConfirmPhrase({ id: 'c9' }), 'c9');
+  eq('doğru yazım kabul', T.deleteConfirmMatches({ fileNo: '2024/7' }, '2024/7'), true);
+  eq('boşluklar kırpılır', T.deleteConfirmMatches({ fileNo: '2024/7' }, '  2024/7  '), true);
+  eq('yanlış yazım reddedilir', T.deleteConfirmMatches({ fileNo: '2024/7' }, '2024/8'), false);
+  eq('boş yazım reddedilir', T.deleteConfirmMatches({ fileNo: '2024/7' }, ''), false);
+
+  // 6) Silme YALNIZ arşivli dosyada: arşivsiz dosya silinemez (iki aşama).
+  eq('arşivli dosya silinebilir', T.canDeleteCase({ status: 'archived' }), true);
+  eq('arşivsiz dosya silinemez (önce arşivle)', T.canDeleteCase({ status: 'draft' }), false);
+
+  // 7) Yedek arşivli dosyaları KAPSAR: arşiv "kayıp" demek değildir.
+  const plan = T.buildExportPlan([{ ...real('c4', '2024/4'), status: 'archived' }]);
+  eq('arşivli dosya yedeğe GİRER', plan.cases.length, 1);
+  eq('yedek biçimi tekil', plan.kind, 'single');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
