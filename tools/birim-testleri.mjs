@@ -2109,6 +2109,21 @@ console.log('\n[38] Paket oluşturma kapsamı ve adı');
   const later = new Date('2026-11-20T16:46:00');
   eq('farklı dakika farklı ad', T.backupFileName({ kind: 'single', cases: [A] }, fixed) !==
     T.backupFileName({ kind: 'single', cases: [A] }, later), true);
+
+  // 6) AD, KULLANICININ SEÇİMİNİ söyler (v2.124). Tek dosya varken "Tüm
+  //    dosyalar" seçilirse ad "Tam" demeli; aksi hâlde iki seçim aynı adı
+  //    üretir ve hangisinin alındığı sonradan anlaşılmaz (canlı veride
+  //    bildirildi: "tüm dosyaları seçtim ama tam paket diye gelmedi").
+  const allOne = T.exportPlanFor([A], 'cA', 'all');
+  eq('tek dosyada TÜM seçimi kapsamı taşır', allOne.scope, 'all');
+  eq('tek dosyada TÜM adı "Tam" der',
+    /^AKIS_Paket_Tam_1dosya_/.test(T.backupFileName(allOne, fixed)), true);
+  const curOne = T.exportPlanFor([A], 'cA', 'current');
+  eq('tek dosyada "yalnız bu" kapsamı taşır', curOne.scope, 'current');
+  eq('tek dosyada "yalnız bu" adı dosya numarasını taşır',
+    /^AKIS_Paket_2024-A_/.test(T.backupFileName(curOne, fixed)), true);
+  eq('iki seçim FARKLI ad üretir',
+    T.backupFileName(allOne, fixed) !== T.backupFileName(curOne, fixed), true);
 }
 
 // --- 39. Çözümleme profili: kayıt başına sabitlenir ve görünür (v2.111) ---

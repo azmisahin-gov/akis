@@ -1111,6 +1111,25 @@ numarasındaki `/` → `-`.
 söylemeli. "Yedek" sözcüğü hem paketi hem geri dönüş kopyasını anlatıyordu;
 ikinci anlam kaldırıldı.
 
+### Aşama 10v — Paket adı seçimi söyler (TAMAMLANDI, v2.124)
+
+**KURAL: paket adı kullanıcının SEÇİMİNİ söyler, dosya SAYISINI değil.**
+
+**Ölçülen hata (v2.123):** `backupFileName` "Tam" etiketini
+`kind === 'archive'` koşuluna bağlamıştı; `kind` ise dosya sayısından
+geliyordu. Tek dosya varken "Tüm dosyalar" seçilse bile `kind='single'`
+olduğu için ad `AKIS_Paket_2024-108_…` çıkıyordu. İki seçim aynı adı
+üretiyordu; hangisinin alındığı anlaşılmıyordu.
+
+**Düzeltme:** `exportPlanFor` seçimi (`scope`) taşır; `backupFileName` "Tam"
+dalını `plan.scope === 'all'` ile seçer. Paket BİÇİMİ (`case.json` /
+`archive.json`) dosya sayısına bağlı kalır. Bildirim de seçimi söyler
+("TÜM dosyalar (1 dosya)").
+
+**DERS:** Bir etiketi türetilmiş bir alandan (`kind`) okumak, o alanın anlamı
+değişince sessizce yanlış etiket üretir. Etiket doğrudan kullanıcı kararından
+(`scope`) türetilmeli.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1284,7 +1303,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.123.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.124.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1438,7 +1457,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.123)
+## Yeni oturuma devir notu (v2.124)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1446,17 +1465,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.123** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **722 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = kod commit `b2388b5` (bu devir notu ayrı bir belge commit'idir) |
-| Pages | `built` · kod commit `b2388b5` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.123'`, `version.json` = 2.123 |
+| Sürüm | **v2.124** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **727 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = v2.124 kod commit'i (push sonrası bu notta yazılır) |
+| Pages | `built` · aynı kod commit'i |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.124'`, `version.json` = 2.124 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.123 turunda ne yapıldı (22 sürüm)
+### v2.102–v2.124 turunda ne yapıldı (23 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **722**.
+Test sayısı 441 → **727**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1482,6 +1501,7 @@ Test sayısı 441 → **722**.
 | v2.121 | Sağ panel kaydırma çubuğu; spektrogram dalganın yerine | `tasarim` [2d]/[2e] |
 | **v2.122** | **Birleştirmede onay kaybı** (onayın sahibi yoktu; sessiz düşüyordu) | `birim` [46] · `sema` [7f] |
 | **v2.123** | **Terim birliği + paket adı** (dışa/içe aktar → paket) | `birim` [38] · `surum` [11] |
+| **v2.124** | **"Tüm dosyalar" seçimi adda görünmüyordu** (ad dosya sayısına bağlıydı) | `birim` [38] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1552,8 +1572,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (722 + 404 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (727 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.123 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.124 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.

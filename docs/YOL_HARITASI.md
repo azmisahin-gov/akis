@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.123.**
+yazılır. **Güncel sürüm: v2.124.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.124 — "Tüm dosyalar" seçimi paket adında (tamamlandı)
+
+Ad, seçime göre yazılır (dosya sayısına göre değil): tek dosya + "Tüm
+dosyalar" → `AKIS_Paket_Tam_1dosya_…`; "Yalnız bu dosya" →
+`AKIS_Paket_2024-108_…`. Paket biçimi değişmedi. `birim` [38].
 
 ### v2.123 — Terim birliği ve paket adı (tamamlandı)
 

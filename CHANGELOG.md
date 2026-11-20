@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.123.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.124.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.124 — "Tüm dosyalar" seçimi paket adında görünüyor
+
+CANLI VERİ. Bilirkişi: *"tüm dosyalar'ı seçim yaptığında tam paket diye
+gelmedi, yani senin gösterdiğin formatta değil."*
+
+### ÖLÇÜM (v2.123)
+
+| Seçim | Ad |
+|---|---|
+| 1 dosya · Tüm dosyalar | `AKIS_Paket_2024-108_2026-11-20_16-45.akis` |
+| 2 dosya · Tüm dosyalar | `AKIS_Paket_Tam_2dosya_2026-11-20_16-45.akis` |
+| 1 dosya · Yalnız bu dosya | `AKIS_Paket_2024-108_2026-11-20_16-45.akis` |
+
+Ad, kullanıcının **seçimine** değil dosya **sayısına** göre belirleniyordu.
+Tek dosya varken iki seçim **aynı adı** üretiyordu: hangisinin alındığı
+sonradan anlaşılmıyordu ve "tam paket" beklentisi boşa çıkıyordu.
+
+### DÜZELTME
+
+- `exportPlanFor` seçimi (`scope`) taşır; `backupFileName` adı **seçime** göre
+  yazar. Paket **biçimi** (`case.json` / `archive.json`) değişmedi; o dosya
+  sayısına bağlıdır.
+- Tek dosya + **Tüm dosyalar** → `AKIS_Paket_Tam_1dosya_…`
+- Tek dosya + **Yalnız bu dosya** → `AKIS_Paket_2024-108_…`
+- Sonuç bildirimi de seçimi söyler: "TÜM dosyalar (1 dosya)" / "yalnız …".
+
+### KULLANICI NE GÖRECEK
+
+- "Tüm dosyalar" dediyseniz paket adı **Tam** der; "Yalnız bu dosya" dediyseniz
+  dosya numarasını taşır. Tek dosyada bile iki seçim **farklı ad** üretir.
+- Hangi paketi aldığınız adından anlaşılır; karışma olmaz.
+
+### Koruyan test
+
+`birim` [38] (5 yeni kontrol) + gerçek Chromium: tek dosya, iki seçim,
+indirilen adlar ve bildirim metni ölçüldü.
 
 ## v2.123 — Terim birliği ve paket adı
 

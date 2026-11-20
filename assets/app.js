@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.123';
+} from './schema.js?v=2.124';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.123';
+const APP_VERSION = '2.124';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8428,20 +8428,29 @@ function isEmptyWorkspace(cases) {
 const EXPORT_SCOPE = ['current', 'all'];
 // `scope`: 'current' (yalnız aktif dosya) veya 'all' (tüm dosyalar).
 // Arşivli dosyalar 'all' kapsamına GİRER: yedekte kaybolmamalı.
+// Dönen `scope` ADI belirler (v2.124): tek dosya varken "tüm dosyalar"
+// seçilirse paket "Tam" adıyla iner. `kind` ise paket BİÇİMİNİ belirler
+// (case.json / archive.json) ve dosya sayısına bağlıdır.
 function exportPlanFor(cases, activeCaseId, scope) {
   const all = Array.isArray(cases) ? cases : [];
   const keepAll = all.filter((c) => !isEmptyCase(c));
   if (scope === 'current') {
     const cur = keepAll.find((c) => c.id === activeCaseId);
     const list = cur ? [cur] : [];
-    return { kind: list.length ? 'single' : 'none', cases: list, skipped: all.length - list.length };
+    return {
+      kind: list.length ? 'single' : 'none',
+      scope: 'current',
+      cases: list,
+      skipped: all.length - list.length
+    };
   }
   const kind = keepAll.length === 0 ? 'none' : keepAll.length === 1 ? 'single' : 'archive';
-  return { kind, cases: keepAll, skipped: all.length - keepAll.length };
+  return { kind, scope: 'all', cases: keepAll, skipped: all.length - keepAll.length };
 }
-// Dosya adı PAKET olduğunu, hangi dosya olduğunu ve ZAMANI söyler (v2.123).
-// Aynı gün iki paket birbirinin üzerine yazmaz. Eğik çizgi dosya sisteminde
-// sorun çıkardığı için dosya numarasında '-' kullanılır: 2024/108 → 2024-108.
+// Dosya adı PAKET olduğunu, KAPSAMI (yalnız bu dosya / tam), hangi dosya
+// olduğunu ve ZAMANI söyler (v2.123/v2.124). Aynı gün iki paket birbirinin
+// üzerine yazmaz. Eğik çizgi dosya sisteminde sorun çıkardığı için dosya
+// numarasında '-' kullanılır: 2024/108 → 2024-108.
 function backupFileName(plan, when) {
   // `instanceof Date` farklı çalışma bağlamlarında (test sandbox'ı, iframe)
   // güvenilmez; geçerli bir Date benzeri mi diye davranıştan anlaşılır.
@@ -8450,12 +8459,15 @@ function backupFileName(plan, when) {
   const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}`;
   const list = (plan && plan.cases) || [];
   if (!list.length) return `AKIS_Paket_bos_${stamp}.akis`;
-  if (plan.kind === 'single') {
-    const c = list[0];
-    const base = String(c.fileNo || c.name || 'Dosya').trim().replace(/[\\/]+/g, '-') || 'Dosya';
-    return `AKIS_Paket_${safeName(base)}_${stamp}.akis`;
+  // KAPSAM seçimi adda görünür. Tek dosya varken "tüm dosyalar" seçilirse
+  // "Tam" yazar; aksi hâlde iki seçim aynı adı üretir ve hangisinin alındığı
+  // sonradan anlaşılmaz (v2.124'te canlı veride bildirildi).
+  if (plan.scope === 'all' || plan.kind === 'archive') {
+    return `AKIS_Paket_Tam_${list.length}dosya_${stamp}.akis`;
   }
-  return `AKIS_Paket_Tam_${list.length}dosya_${stamp}.akis`;
+  const c = list[0];
+  const base = String(c.fileNo || c.name || 'Dosya').trim().replace(/[\\/]+/g, '-') || 'Dosya';
+  return `AKIS_Paket_${safeName(base)}_${stamp}.akis`;
 }
 
 // Arşiv paketinden, bu bilgisayardaki dosyayla eşleşen kaydı seçer.
@@ -8736,7 +8748,7 @@ async function exportProject(scope) {
     );
   } else {
     showToast(
-      (multi
+      (plan.scope === 'all'
         ? `Paket oluşturuldu: TÜM dosyalar (${all.length} dosya) → ${fileName}`
         : `Paket oluşturuldu: yalnız "${caseDisplayName(all[0])}" → ${fileName}`) +
         ' — güvenli yerde saklayın.' +
@@ -11159,6 +11171,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.124': {
+    title: '"Tüm dosyalar" seçimi artık paket adında görünüyor',
+    body:
+      'Tek dosyanız olsa bile "Tüm dosyalar" seçtiğinizde paket ' +
+      '"AKIS_Paket_Tam_1dosya_..." adıyla iner; "Yalnız bu dosya" seçtiğinizde ' +
+      'dosya numarasıyla iner (ör. "AKIS_Paket_2024-108_..."). Önceden ad, ' +
+      'seçiminize değil dosya sayısına göre belirleniyordu; tek dosya varken iki ' +
+      'seçim aynı adı üretiyor ve hangisini aldığınız anlaşılmıyordu. Artık iki ' +
+      'seçim her zaman farklı ad üretir ve bildirim de seçimi söyler.'
+  },
   '2.123': {
     title: 'Terimler sadeleşti: Paket oluştur, Paketten yükle',
     body:
