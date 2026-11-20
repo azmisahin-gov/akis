@@ -1354,28 +1354,116 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.101)
+## Yeni oturuma devir notu (v2.121)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.121` (`assets/app.js` → `APP_VERSION`).
-- **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
-- **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
-- **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,
-  önce kıran test (düzeltme yokken KALDI), sonra düzeltme, gerçek tarayıcı,
-  push + hash + Pages + canlı doğrulama, kullanıcıyı 3 yerden haberdar et.
-- **Kullanıcı arada başka taleplerle gelebilir** (soru sorabilir, başka bir
-  özellik isteyebilir). Bu, disiplini **bozmaz**: soru sorulduğunda yalnız
-  cevap verilir (kod değişmez); değişiklik istenirse yukarıdaki akış aynen
-  uygulanır ve yine **tek sürüm** gönderilir.
-- **Sürüm artırma üç yerde birlikte:** `APP_VERSION` + `CHANGELOG.md` başlığı +
-  `docs/YOL_HARITASI.md`. Ayrıca `index.html` `?v=` parametreleri, `README.md`,
-  `docs/OZELLIKLER.md`, `AGENTS.md` sürüm satırı.
-- **Her sürümde kullanıcı bilgilendirmesi üç yerde:**
-  1. `VERSION_NOTICES['x.y']` (açılışta bir kez; `akis.seenNotice.*`)
-  2. `index.html` yardım ekranı → "Son değişiklikler (vX.Y)"
-  3. `CHANGELOG.md` → "KULLANICI NE GÖRECEK"
-- **Tarayıcı doğrulaması:** `/usr/bin/chromium` + CDP (headless). Modül
-  kapsamı nedeniyle uygulama fonksiyonları `window`'da değildir; **gerçek UI
-  akışını** tıklayın (düğme/dosya girişi), `evaluate` ile iç fonksiyon
-  çağırmayın. Geçici dosyalar iş bitince silinir (depoya girmez).
+### Durum tablosu
+
+| | |
+|---|---|
+| Sürüm | **v2.121** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **688 birim + 398 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = **`832f21b`** (yerel = uzak = Pages commit) |
+| Pages | `built` · commit `832f21b` |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.121'`, `version.json` = 2.121 |
+| Açık konu | **Yok** |
+
+### v2.102–v2.121 turunda ne yapıldı (20 sürüm)
+
+Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
+Test sayısı 441 → **688**.
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.102 | Boş dosya yedeğe girmiyor; arşiv birleştirilebiliyor; kopya birikmiyor | `birim` [32] |
+| v2.103 | Yeniden çözümleme onaysız/geri alınamaz silme | `birim` [33] |
+| v2.104 | Punto kaçakları (7px sürüm etiketi), sürüm geçmişi | `tasarim` [2b] |
+| v2.105 | Üst bar başlığı sessizce kesiliyordu | `tasarim` [2c] |
+| v2.106 | Otomatik onay ≠ bilirkişi onayı (`machine`/Çözümlendi) | `birim` [34] |
+| v2.107 | Arşivleme + iki aşamalı kalıcı silme | `birim` [35] |
+| v2.108 | Arşivde boş dosya birikmesi, görünmeyen kimlik | `birim` [36] |
+| v2.109 | İlk açılış gerçekten boş (boş taslak kaydedilmiyordu) | `birim` [37] |
+| v2.110 | Dışa aktarma kapsamı soruluyor; ad tarih+saat | `birim` [38] |
+| v2.111 | Profil kayıt başına sabit + görünür | `birim` [39] |
+| v2.112 | A–B döngüsü (3 hata: Dinle öldürüyordu, tuş yok, gösterge yok) | `birim` [40] |
+| v2.113 | Liste kaydırma `scrollTop +=` birikmesi | `birim` [41] |
+| v2.114 | "%100 olmuyor" açıklaması (`pendingBreakdown`) | `birim` [42] |
+| v2.115 | Belirsiz okuma (`ambiguous`) + bölüm spektrogramı | `birim` [43] |
+| v2.116 | Karaoke titremesi (25 DOM değişikliği → 0) | `birim` [44] |
+| **v2.117** | **ACİL:** canlı site açılmıyordu (`schema.js` import sürümsüz) | `surum` [2b] |
+| **v2.118** | **Kendini güncelleyen sayfa** (`version.json`, `__akisIdle`) | `surum` [2c] |
+| v2.119 | Takip iki moda ayrıldı; karaoke kutusu kaldırıldı | `birim` [45] |
+| v2.120 | Liste yüksekliği kabı aşıyordu (137px kırpılıyordu) | `tasarim` [2d] |
+| v2.121 | Sağ panel kaydırma çubuğu; spektrogram dalganın yerine | `tasarim` [2d]/[2e] |
+
+### v2.117–v2.121'de öğrenilen üç kritik ders
+
+1. **`?v=` tek dosyayı kırar, import zincirini KIRMAZ.** `app.js` içindeki
+   `import './schema.js'` sürümsüzdü; tarayıcı eski `schema.js`'i kullandı →
+   `AMBIGUOUS_REVIEW` bulunamadı → **canlı site açılmadı**. Artık import
+   `?v=${APP_VERSION}` taşır; `surum-testi` [2b] zorunlu kılar.
+2. **Önbelleği kullanıcıya kırdırma.** GitHub Pages her dosyaya `max-age=600`
+   verir. `version.json` (`no-store`) + dakikalık denetim + `__akisIdle()`
+   ile sayfa **kendini yeniler** (çalışırken değil). `surum-testi` [2c].
+3. **Yerleşim düzeltmesi BAŞKA paneli bozar.** `height:100%` verince liste
+   düzeldi ama sağ panel 351px'e sıkışıp kaydırma çubuğu çıktı. Kural:
+   kap yükseklik dayatmaz (`height:auto`), **tek kaydırma** (`.seg-list`),
+   `overflow:hidden` ile çocuk kırpılmaz.
+
+### Sürüm gönderme — 6 yer birlikte (test zorunlu kılar)
+
+1. `assets/app.js` → `APP_VERSION`
+2. `assets/app.js` → `import ... from './schema.js?v=X.Y'` (AYNI sürüm)
+3. `index.html` → `var RUNNING = 'X.Y'` + dört `?v=X.Y`
+4. `version.json` → `{"version":"X.Y"}`
+5. `CHANGELOG.md` başlığı + `docs/YOL_HARITASI.md` başlığı
+6. `README.md`, `docs/OZELLIKLER.md`, `AGENTS.md` sürüm satırları
+
+Sonra: `bash tools/test.sh` → commit (Türkçe) → **push** → `git ls-remote`
+hash eşit mi → Pages `built` + commit bizimki mi → **canlı `version.json`
+ve `APP_VERSION`** doğru mu.
+
+### Kullanıcı bilgilendirmesi — 3 yer (her sürümde)
+
+1. `VERSION_NOTICES['x.y']` (açılışta bir kez, `akis.seenNotice.*`)
+2. `index.html` yardım → "Son değişiklikler (vX.Y)"
+3. `CHANGELOG.md` → "KULLANICI NE GÖRECEK"
+
+### Kullanıcı tercihleri (bu turdan çıkan, değişmez)
+
+- **Ekran etiketleri KISA**; ayrıntı **ipucunda** (`title`). Liste kalabalık olmaz.
+- **Mimari:** tarayıcıda çalışsa da **masaüstü uygulaması gibi** hissettirmeli.
+- **Tek düğme iki iş yapmaz.** Ör. takip: `Otomatik geçiş (F)` ve
+  `Canlı vurgu (G)` ayrı; varsayılan **kapalı**.
+- **Kırpma yasak:** sığmayan öğe kesilmez; **sarar** veya **kaydırır** (görünür).
+- **Aynı veri tek yerde** gösterilir (karaoke + sd-follow ikilemi kaldırıldı).
+- **Ölçülemeyen iddia yok:** "düzeltildi" demek için önce/sonra ölçümü verilir.
+
+### Tarayıcı doğrulaması (zorunlu — sahte DOM yetmez)
+
+- `/usr/bin/chromium` + CDP (headless). Gerekli bayraklar:
+  `--autoplay-policy=no-user-gesture-required` (ses testleri için).
+- Uygulama fonksiyonları `window`'da **değil** (modül kapsamı). **Gerçek UI'ı
+  tıklayın**; `evaluate` ile iç fonksiyon çağırmayın.
+- Veri tohumlama: IndexedDB `mihenk-pro-assets` → `state` anahtarı
+  `mihenk.pro.cases.v1`; ses `audio` store'unda `<dosyaId>::<kayıtId>`.
+- Ölçüm ölçütleri: `scrollHeight > clientHeight` (kırpma/taşma),
+  `getBoundingClientRect().bottom` (gerçek görünürlük),
+  `MutationObserver` (titreme), `getComputedStyle` (punto/kırpma).
+- Geçici dosyalar (`/tmp/*.mjs`) iş bitince **silinir**.
+
+### Bilinen dürüst sınırlar (hata değil)
+
+- Perde oktav hatası **düzeltilmiyor**, `detectPitchAmbiguity()` ile bildiriliyor.
+- Kaynak ayrıştırma, konuşmacı kimlik tespiti, montaj tespiti **yapılmaz**.
+- `date`/`fs`/`vm` sandbox farkı: `instanceof Date` güvenilmez; davranıştan anla.
+- Ölçüm şemaları: `LEVELS_SCHEMA` (3), `SILENCE_SCHEMA` (2).
+
+### Yeni oturumda ilk adımlar
+
+1. `bash tools/test.sh` → tümü yeşil mi (688 + 398 + diğerleri)
+2. `git log --oneline -3` ve `git status --short` → temiz mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.121 mi
+4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
+   Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
