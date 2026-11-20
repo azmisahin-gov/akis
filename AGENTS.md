@@ -632,6 +632,34 @@ arşivlendi → panelde `2024/108`; silme onayı `2024/108` istedi.
 veri için `c.id`. İkisini karıştırmak kullanıcıyı çıkmaza sokar (görünmeyen
 değeri yazmasını istemek gibi).
 
+
+### Aşama 10g — İlk açılış gerçekten boş (TAMAMLANDI, v2.109)
+
+**KURAL: boş taslak KAYDA YAZILMAZ.** Bellekte tutulur (arayüz gerekli),
+diske yazılmaz.
+
+**Ölçülen hata (v2.108, tam boş profil):** IndexedDB'de 1 kayıt vardı
+(`{fileNo:"", name:"Yeni inceleme dosyası", mats:0}`). Yeni tarayıcıda/sekmede
+"zaten dosya var" görünüyordu.
+
+**Ölçülen YANLIŞ çözüm:** "dosya oluşturmayı kaldır" → `TypeError: Cannot read
+properties of null (reading 'reportDate')`. Nesne bellekte **gerekli**.
+
+**Doğru çözüm:**
+- `casesForStorage(cases)` → yalnız `isEmptyCase` olmayan dosyalar.
+  `persistNow` ve `flushPersist` bunu kullanır.
+- `isEmptyWorkspace(cases)` → kayda yazılacak dosya yok mu?
+- Seçicide boş taslak **"— Yeni dosya —"** olarak görünür (dosya adı değil).
+- Durum çubuğu: "Henüz dosya yok — bilgi girin veya içe aktarın".
+
+**Uçtan uca ölçüm (gerçek Chromium):** boş tarayıcı → `DEPO []`; yeni sekme →
+hayalet yok; veri gir → `DEPO [{"no":"2024/109"}]`; yenile → veri korundu;
+JS hatası 0.
+
+**DERS:** "bellekte gerekli" ≠ "diske yazılmalı". Arayüzün ihtiyaç duyduğu
+geçici nesne ile kullanıcının verisi ayrı şeylerdir. Ayrıca düzeltmeyi
+denemeden "kaldır" demek çökertiyor — **her düzeltme ölçülür.**
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -805,7 +833,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.108.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.109.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -963,7 +991,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.108` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.109` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

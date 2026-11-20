@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.108.**
+yazılır. **Güncel sürüm: v2.109.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.109 — İlk açılış gerçekten boş (tamamlandı, canlı veri)
+
+Boş kurulumda oluşturulan taslak dosya KAYDA YAZILIYORDU; yeni tarayıcıda
+"zaten dosya var" görünüyordu. Arayüz `currentCase()`'e bağlı olduğu için nesne
+bellekte gerekli (kaldırınca `reportDate` hatası — ölçüldü). Çözüm:
+`casesForStorage()` yalnız gerçek dosyaları yazar; seçicide "— Yeni dosya —".
+`birim-testleri` [37] + uçtan uca Chromium korur.
 
 ### v2.108 — Arşivde boş dosya birikmesi ve görünmeyen kimlik (tamamlandı)
 

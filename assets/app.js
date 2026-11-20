@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.108';
+const APP_VERSION = '2.109';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -339,7 +339,10 @@ async function persistNow() {
     // durur. IndexedDB yazarken structuredClone yapar ve FONKSİYON
     // kopyalayamaz → işlem DataCloneError ile iptal olur, hiçbir şey yazılmaz.
     // Canlı veride yaşandı: bölüme tıklayan bilirkişinin tüm işi kayboldu.
-    const payload = sanitizeForStorage(appState);
+    // BOŞ TASLAK KAYDA YAZILMAZ (v2.109): yalnız veri taşıyan dosyalar yazılır.
+    // Böylece yeni tarayıcıda "zaten dosya var" yanılgısı oluşmaz.
+    const toStore = { ...appState, cases: casesForStorage(appState.cases) };
+    const payload = sanitizeForStorage(toStore);
     const db = await dbOpen();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STATE_STORE, 'readwrite');
@@ -587,7 +590,8 @@ function flushPersist() {
   try {
     // Küçük kurtarma kopyası: dava verisinin yalnız metin kısmı, ses hariç.
     // Boyut riski nedeniyle yalnız bekleyen durum varsa ve sığıyorsa yazılır.
-    const snapshot = { at: new Date().toISOString(), cases: appState.cases };
+    // Kurtarma kopyası da boş taslağı taşımaz (v2.109).
+    const snapshot = { at: new Date().toISOString(), cases: casesForStorage(appState.cases) };
     const json = JSON.stringify(snapshot);
     if (json.length < 4.5 * 1024 * 1024) localStorage.setItem('akis.lastSnapshot', json);
   } catch (e) {}
@@ -1131,10 +1135,12 @@ function renderCaseSelect() {
     appState.activeCaseId = shown[0].id;
   }
   sel.innerHTML = shown
-    .map(
-      (c) =>
-        `<option value="${esc(c.id)}" ${c.id === appState.activeCaseId ? 'selected' : ''}>${esc(caseDisplayName(c))}</option>`
-    )
+    .map((c) => {
+      // BOŞ TASLAK "dosya" gibi görünmez (v2.109): kayda yazılmadığı için
+      // zaten dosya değildir. Kullanıcı "ilk açılış boş" görür.
+      const label = isEmptyCase(c) ? '— Yeni dosya —' : caseDisplayName(c);
+      return `<option value="${esc(c.id)}" ${c.id === appState.activeCaseId ? 'selected' : ''}>${esc(label)}</option>`;
+    })
     .join('');
   const archivedCount = (appState.cases || []).filter(isArchivedCase).length;
   const btn = $('#archiveBtn');
@@ -1356,7 +1362,11 @@ function renderStatusBar() {
     const el = $(sel);
     if (el) el.textContent = val;
   };
-  set('#sbCase', [c.fileNo, c.court].filter(Boolean).join(' · ') || 'Yeni inceleme dosyası');
+  set(
+    '#sbCase',
+    [c.fileNo, c.court].filter(Boolean).join(' · ') ||
+      (isEmptyCase(c) ? 'Henüz dosya yok — bilgi girin veya içe aktarın' : 'Yeni inceleme dosyası')
+  );
   set('#sbAudio', String(mats.length));
   set('#sbSegments', String(segs.length));
   set('#sbChecked', `%${pct}`);
@@ -7930,6 +7940,20 @@ function buildExportPlan(cases) {
   const kind = keep.length === 0 ? 'none' : keep.length === 1 ? 'single' : 'archive';
   return { kind, cases: keep, skipped };
 }
+// BOŞ ÇALIŞMA ALANI KAYDA YAZILMAZ (v2.109).
+// NEDEN: uygulama boş kurulumda çalışabilmek için bellekte boş bir taslak dosya
+// tutar (arayüz currentCase()'e bağlı; nesne olmadan çöküyor — ölçüldü). Ama bu
+// taslak KULLANICI VERİSİ DEĞİLDİR: kayda yazılırsa yeni tarayıcıda "zaten bir
+// dosya var" görünür (canlı veride yaşandı: "ilk açtığımız boş olmalı ama değil").
+// Kural: kayda ve arşive yalnız VERİ TAŞIYAN dosyalar girer.
+function casesForStorage(cases) {
+  return (Array.isArray(cases) ? cases : []).filter((c) => !isEmptyCase(c));
+}
+// Çalışma alanı "boş" mu? Yalnız boş taslak(lar) varsa evet.
+function isEmptyWorkspace(cases) {
+  return casesForStorage(cases).length === 0;
+}
+
 // Arşiv paketinden, bu bilgisayardaki dosyayla eşleşen kaydı seçer.
 // Eşleşme sırası: kimlik (id) → dosya numarası + mahkeme. Bulunamazsa
 // `case: null` ve NEDENİNİ söyleyen metin döner; "uyumsuz" demek yetmez,
@@ -10474,6 +10498,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.109': {
+    title: 'İlk açılış artık gerçekten boş',
+    body:
+      'Uygulama boş bir tarayıcıda açıldığında kendiliğinden bir "Yeni inceleme ' +
+      'dosyası" oluşturup KAYDEDİYORDU. Bu yüzden ilk açılış boş görünmüyor, ' +
+      'yeni sekmede de sahte bir dosya varmış gibi duruyordu. Artık çalışma alanı ' +
+      'gerçekten boş: seçicide "— Yeni dosya —" yazar, alt durum çubuğu "Henüz dosya ' +
+      'yok — bilgi girin veya içe aktarın" der ve BOŞ TASLAK KAYDA YAZILMAZ. ' +
+      'Bir bilgi yazdığınız veya ses eklediğiniz anda dosya gerçek olur ve ' +
+      'kaydedilir; sayfayı yenilediğinizde durur. Yedek, arşiv ve silme yalnız ' +
+      'gerçek dosyalarla çalışır.'
+  },
   '2.108': {
     title: 'Arşiv/silme: boş dosya ve görünmeyen kimlik düzeltildi',
     body:

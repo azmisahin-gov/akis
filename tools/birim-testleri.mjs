@@ -95,6 +95,7 @@ const EXPOSE = [
   'isArchivedCase', 'visibleCases', 'archiveCase', 'unarchiveCase',
   'deleteConfirmPhrase', 'deleteConfirmMatches', 'canDeleteCase',
   'canArchiveCase', 'caseShortId', 'caseDisplayName',
+  'casesForStorage', 'isEmptyWorkspace',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1982,6 +1983,46 @@ console.log('\n[36] Arşiv/silme: boş dosya ve görünmeyen kimlik');
 
   // 5) Dosya no varsa onay ifadesi yalnız dosya numarasıdır (kısa, tanıdık).
   eq('dosya no varsa onay ifadesi o', T.deleteConfirmPhrase({ id: 'zzz', fileNo: '2024/7' }), '2024/7');
+}
+
+// --- 37. Boş çalışma alanı KAYDA YAZILMAZ (v2.109) -----------------------
+// CANLI VERİ. Bilirkişi: "boş bir tarayıcı açtım, içinde hiçbir şey yoktu ama
+// bana otomatikmen yeni çalışma sayfası varmış gibi getirdi. İlk açtığımız boş
+// olmalı ama değil?"
+// ÖLÇÜM (v2.108, tam boş profil): IndexedDB'de 1 kayıt vardı:
+//   { fileNo:"", name:"Yeni inceleme dosyası", mats:0 }
+// Arayüz currentCase()'e bağlı olduğu için dosya nesnesi BELLEKTE gerekli
+// (kaldırınca `reportDate` hatasıyla çöküyor — ölçüldü). Ama BOŞ çalışma alanı
+// "dosya" değildir: KAYDA YAZILMAZ ve yedek/arşiv/silme ona dokunmaz.
+console.log('\n[37] Boş çalışma alanı kayda yazılmaz');
+{
+  eq('casesForStorage tanımlı', typeof T.casesForStorage, 'function');
+  eq('isEmptyWorkspace tanımlı', typeof T.isEmptyWorkspace, 'function');
+
+  const fresh = T.freshCase();
+  // 1) Yalnız boş taslak varsa kayda YAZILACAK DOSYA YOKTUR.
+  eq('yalnız boş taslak → kayıt boş', T.casesForStorage([fresh]).length, 0);
+  eq('yalnız boş taslak → çalışma alanı boş', T.isEmptyWorkspace([fresh]), true);
+
+  // 2) Gerçek dosya varsa o yazılır.
+  const real = { ...T.freshCase(), fileNo: '2024/1', materials: [{ id: 'm', segments: [] }] };
+  eq('gerçek dosya kayda yazılır', T.casesForStorage([real]).length, 1);
+  eq('boş taslak gerçek dosyayla birlikte yazılmaz', T.casesForStorage([fresh, real]).length, 1);
+  eq('çalışma alanı boş DEĞİL', T.isEmptyWorkspace([fresh, real]), false);
+
+  // 3) Arşivli dosya da "gerçek" sayılır (kaybolmaz).
+  const archived = { ...real, id: 'x2', status: 'archived' };
+  eq('arşivli dosya kayda yazılır', T.casesForStorage([archived]).length, 1);
+  eq('arşivli dosya çalışma alanını dolu yapar', T.isEmptyWorkspace([fresh, archived]), false);
+
+  // 4) Tamamen boş liste.
+  eq('boş liste → kayıt boş', T.casesForStorage([]).length, 0);
+  eq('boş liste → çalışma alanı boş', T.isEmptyWorkspace([]), true);
+  eq('null güvenli', T.casesForStorage(null).length, 0);
+  eq('null çalışma alanı boş', T.isEmptyWorkspace(null), true);
+
+  // 5) Boş taslak "dosya gibi" GÖRÜNMEZ: seçicide değil, "Yeni dosya" olarak.
+  eq('boş taslak için görünen ad', T.caseDisplayName(fresh), 'Yeni inceleme dosyası #' + T.caseShortId(fresh));
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

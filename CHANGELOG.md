@@ -6,12 +6,70 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.108.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.109.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.109 — İlk açılış artık gerçekten boş (boş taslak kaydedilmiyordu)
+
+CANLI VERİ. Bilirkişi: *"boş bir tarayıcı açtım, içinde hiçbir şey yoktu ama bana
+otomatikmen yeni çalışma sayfası varmış gibi getirdi. İlk açtığımız boş olmalı
+ama değil?"* — Haklıydı.
+
+### ÖLÇÜM (v2.108, tam boş profil)
+
+```
+localStorage: yalnız "akis.seenNotice.2.108"
+IndexedDB   : 1 kayıt → { fileNo:"", name:"Yeni inceleme dosyası", mats:0 }
+Seçici      : "Yeni inceleme dosyası #r1a4wb"
+```
+
+Uygulama, arayüz `currentCase()`'e bağlı olduğu için **bellekte** boş bir taslak
+tutuyordu (bu gerekli). Hata: bu taslağı **kayda da yazıyordu.** Sonuç: yeni
+tarayıcıda/sekmende "zaten bir dosya var" yanılgısı.
+
+### ÖLÇÜLEN YANLIŞ ÇÖZÜM
+
+"Boş kurulumda dosya oluşturmayı tamamen kaldır" denendi:
+
+```
+TypeError: Cannot read properties of null (reading 'reportDate')
+```
+
+Yani nesne bellekte **gerekli**. Doğru çözüm: nesne kalsın, **kayda yazılmasın.**
+
+### KULLANICI NE GÖRECEK
+
+- İlk açılışta seçicide **"— Yeni dosya —"** yazar (dosya adı değil).
+- Alt durum çubuğu: **"Henüz dosya yok — bilgi girin veya içe aktarın"**.
+- Yeni sekmede **hayalet dosya yok**.
+- Bir bilgi yazdığınız veya ses eklediğiniz anda dosya **gerçek** olur ve
+  kaydedilir; yenilemede durur.
+- Yedek, arşiv ve silme yalnız **gerçek** dosyalarla çalışır.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `casesForStorage(cases)` → yalnız `isEmptyCase` olmayan dosyalar. `persistNow`
+   ve `flushPersist` (kurtarma kopyası) bunu kullanır.
+2. `isEmptyWorkspace(cases)` → `casesForStorage(...).length === 0`.
+3. Boş taslak **seçicide "— Yeni dosya —"** olarak görünür, dosya adıyla değil.
+4. Arayüz `currentCase()` null'a dayanmaz; bellek nesnesi korunur (ölçüldü:
+   kaldırılırsa `reportDate` hatası).
+
+### DOĞRULAMA (uçtan uca, gerçek Chromium)
+
+```
+1) TAM BOŞ tarayıcı  → seçici ["— Yeni dosya —"] · DEPO []      ✅
+2) Yeni sekme        → ["— Yeni dosya —"] (hayalet yok)          ✅
+3) Veri gir          → DEPO [{"no":"2024/109"}]                  ✅
+4) Yenile            → seçici ["2024/109"] · veri korundu        ✅
+   JS hatası: 0
+```
+
+`birim-testleri` **[37]** — 14 kontrol.
 
 ## v2.108 — Arşiv/silme: boş dosya birikmesi ve görünmeyen kimlik
 
