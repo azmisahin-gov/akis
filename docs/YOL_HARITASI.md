@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.132.**
+yazılır. **Güncel sürüm: v2.133.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.133 — Durum çubuğu yazıları kesilmiyor (tamamlandı)
+
+≤1100 px'te durum çubuğundaki 6 öğenin 6'sı ellipsis ile kırpılıyordu. Çubuk
+artık sarar ve içerikle büyür; kayıt başlığında tam ad ipucu olarak durur.
+`tasarim` [2l].
 
 ### v2.132 — Kurtarma kopyasında sessiz dosya düşmesi (tamamlandı)
 

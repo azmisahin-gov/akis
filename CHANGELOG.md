@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.132.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.133.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.133 — Durum çubuğu yazıları kesilmiyor
+
+DENETİM. Durum çubuğu öğeleri `white-space:nowrap; overflow:hidden;
+text-overflow:ellipsis` ile kırpılıyordu. 1440 px'te sığıyor, **1100 px ve
+altında 6 öğenin 6'sı** da kesiliyordu.
+
+### ÖLÇÜM (v2.132, 60 bölüm)
+
+| Öğe | 1440 px | 1100 px |
+|---|---|---|
+| Dosya · mahkeme | 273/273 | **241/273** |
+| 1 kayıt | 38/38 | **34/38** |
+| 60 bölüm | 53/53 | **47/53** |
+| Denetim + eksik özeti | 280/280 | **248/280** |
+| Model | 102/102 | **90/102** |
+| Bilimsel sınır notu | 246/246 | **217/246** |
+
+### DÜZELTME
+
+- ≤1200 px'te `.statusbar` → `flex-wrap: wrap`, `height: auto`,
+  `min-height: var(--status-h)`, satır aralığı 2 px.
+- `.statusbar .sb-item` → `white-space: normal`, `overflow: visible`,
+  `text-overflow: clip`. Öğe kesilmez; gerekirse **sarar**.
+- Çalışma modundaki kayıt başlığı (`#wsTitle`) tek satır kalır ama **tam ad
+  `title` ipucunda** durur (dosya adı tanımlayıcıdır; kart başlığında da tam
+  görünür).
+
+### KULLANICI NE GÖRECEK
+
+- Küçük ekranda dosya/mahkeme, "30 bölüm eksik…" ve model bilgisi **tam**
+  okunur; "…" ile kesilmez.
+- Durum çubuğu gerekirse iki satıra çıkar (26 → 34 px). Listenin altında
+  olduğu için hiçbir satırı örtmez.
+
+### ÖLÇÜM (v2.133, gerçek Chromium)
+
+| Genişlik | Çubuk | Kesilen öğe | Örtülen satır | Yatay taşma |
+|---|---|---|---|---|
+| 1440 | 26 px | 0 | 0 | yok |
+| 1100 | 34 px | 0 | 0 | yok |
+| 1000 | 34 px | 0 | 0 | yok |
+| 900 | 34 px | 0 | 0 | yok |
+| 760 | 34 px | 0 | 0 | yok |
+| 600 | 34 px | 0 | 0 | yok |
+
+Koruyan test: `tasarim-testi` [2l] (4 kontrol) — düzeltme yokken **KALDI**.
 
 ## v2.132 — Kurtarma kopyasında sessiz dosya düşmesi kapatıldı
 

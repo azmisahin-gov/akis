@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.132';
+} from './schema.js?v=2.133';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.132';
+const APP_VERSION = '2.133';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -9635,7 +9635,11 @@ function updateWorkspaceBar() {
   const segs = m.segments || [];
   const checked = segs.filter((s) => isReviewed(s)).length;
   const t = $('#wsTitle');
-  if (t) t.textContent = `${idx + 1}. ${m.name}`;
+  if (t) {
+    t.textContent = `${idx + 1}. ${m.name}`;
+    // Dar ekranda başlık tek satırda kısalır; tam ad ipucunda kalır (v2.133).
+    t.title = `${idx + 1}. ${m.name}`;
+  }
   const meta = $('#wsMeta');
   if (meta) meta.textContent = `${fmtShort(m.duration || 0)} · ${segs.length} bölüm · ${checked} denetlendi`;
   const prev = document.querySelector('[data-ws-nav="-1"]');
@@ -11612,6 +11616,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.133': {
+    title: 'Durum çubuğu yazıları artık kesilmiyor',
+    body:
+      'Dar ekranda (1100 piksel ve altı) durum çubuğundaki dosya/mahkeme, eksik ' +
+      'bölüm özeti ve model bilgisi kesiliyordu; 6 öğenin 6\'sı da "…" ile ' +
+      'kısalıyordu. Artık çubuk sığmayan öğeyi alt satıra indirir ve yüksekliği ' +
+      'içerikle büyür: hiçbir yazı kesilmez. Çalışma modundaki kayıt başlığında ' +
+      'tam ad fareyle üzerine gelince görünür.'
+  },
   '2.132': {
     title: 'Kurtarma kopyasından geri yüklemede dosya kaybı artık bildirilir',
     body:

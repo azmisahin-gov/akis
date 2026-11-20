@@ -1415,6 +1415,23 @@ body.ws-mode .workspace-bar {
 @media (max-width: 1200px) {
   #view-audio .seg-item { grid-template-columns: 20px 84px minmax(0, 1fr); }
   #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
+
+  /* v2.133 — DURUM ÇUBUĞU KESMEZ: sığmayan öğe alt satıra iner.
+     ÖLÇÜM (v2.132): 1100 px'te 6/6 öğe kırpılıyordu (sbCase 241/273,
+     sbCheckWrap 248/280). Çubuk içerikle büyür; ellipsis kaldırılır. */
+  .statusbar {
+    height: auto;
+    min-height: var(--status-h);
+    flex-wrap: wrap;
+    row-gap: 2px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .statusbar .sb-item {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
 }
 
 /* ============================================================================

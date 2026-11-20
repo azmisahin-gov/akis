@@ -1344,6 +1344,34 @@ kaybı" sınıfının tipik kaynağıdır. Yeni bir yükleme/aktarma yolu eklerk
 
 **Koruyan test:** `birim-testleri` [51] (10 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10ae — Durum çubuğu kesmez (TAMAMLANDI, v2.133)
+
+**KURAL: durum çubuğu öğesi `text-overflow: ellipsis` ile KESİLMEZ; sığmayan
+öğe alt satıra iner, çubuk yüksekliği içerikle büyür.**
+
+**Ölçülen hata (v2.132, 60 bölüm):** `.sb-item{white-space:nowrap;
+overflow:hidden;text-overflow:ellipsis}`. 1440 px'te 6 öğe sığıyor; **1100 px'te
+6'sı da** kırpılıyordu (sbCase 241/273, sbCheckWrap 248/280, model 90/102…).
+900 px'te ayrıca çalışma çubuğu başlığı (`#wsTitle`) kırpılıyordu ve **tam ad
+hiçbir yerde yoktu** (ipucu yok).
+
+**Düzeltme:**
+1. ≤1200 px: `.statusbar { height:auto; min-height:var(--status-h);
+   flex-wrap:wrap; row-gap:2px }`.
+2. `.statusbar .sb-item { white-space:normal; overflow:visible;
+   text-overflow:clip }` — kesme yok, sarma var.
+3. `#wsTitle.title` = tam ad (dosya adı tanımlayıcıdır; kart başlığında da tam
+   görünür). Başlık tek satır kalır, çubuk yapışkan olduğu için büyümez.
+
+**Ölçüm (v2.133, gerçek Chromium):** 1440 → 26 px / kesilen 0; 1100–600 →
+34 px / kesilen 0; örtülen satır 0; yatay taşma yok.
+
+**DERS:** "Kesme" ölçütü `scrollWidth > clientWidth` + `overflow` görünür
+değilse kesme vardır. Bir bilgi çubuğunda ellipsis "tasarım" değil sessiz bilgi
+kaybıdır; çubuk sarabilir çünkü içerik akışında ve sayfayı uzatmak zararsız.
+
+**Koruyan test:** `tasarim-testi` [2l] (4 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1517,7 +1545,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.132.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.133.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1679,7 +1707,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.132** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.133** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1724,6 +1752,7 @@ Test sayısı 441 → **782**.
 | **v2.130** | **Bölüm rozeti: durum her zaman görünür** (96 px kapta kırpılıyordu) | `tasarim` [2j] |
 | **v2.131** | **Görünüm kutusu içerikle büyür** (yapışkan bar 635 px sonra bırakıyordu; durum çubuğu tıklamayı yutuyordu) | `tasarim` [2k] |
 | **v2.132** | **Kurtarma kopyasında sessiz düşme** (bozuk dosya bildirilmiyordu) | `birim` [51] |
+| **v2.133** | **Durum çubuğu yazıları kesilmiyor** (≤1100 px'te 6/6 öğe kırpılıyordu) | `tasarim` [2l] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

@@ -454,6 +454,32 @@ console.log('\n[2k] Görünüm kutusu içerikle büyür (v2.131)');
   check('ses görünümü iç kaydırma yapmaz', /#view-audio\.active\s*\{[^}]*overflow:\s*visible/.test(rl));
 }
 
+// --- 2l. Durum çubuğu kesmez (v2.133) --------------------------------------
+// ÖLÇÜM (v2.132, 60 bölüm):
+//   1440 px'te tüm öğeler sığıyor (273+38+53+280+102+246).
+//   1100 px'te 6 öğenin 6'sı da kırpılıyor (ör. sbCase 241/273,
+//   sbCheckWrap 248/280); 900 px'te 5 öğe + çalışma çubuğu başlığı.
+// KURAL: durum çubuğu öğesi ellipsis ile KESİLMEZ; sığmayan öğe alt satıra
+// iner (bar yüksekliği içerikle büyür). Çalışma çubuğu başlığı tek satır
+// kalabilir ama tam ad `title` ipucunda bulunmalıdır.
+console.log('\n[2l] Durum çubuğu kesmez (v2.133)');
+{
+  const rl = read('assets/reading-layer.css');
+  const appJs = read('assets/app.js');
+  const i = rl.indexOf('@media (max-width: 1200px)');
+  const window1200 = i >= 0 ? rl.slice(i, i + 1200) : '';
+  check('dar ekranda durum çubuğu sarar (flex-wrap)', /\.statusbar\s*\{[^}]*flex-wrap:\s*wrap/.test(window1200));
+  check('durum çubuğu yüksekliği içerikle büyür', /\.statusbar\s*\{[^}]*height:\s*auto/.test(window1200));
+  check(
+    'durum çubuğu öğeleri kesilmez (normal + visible + clip)',
+    /\.statusbar \.sb-item\s*\{[^}]*white-space:\s*normal[^}]*overflow:\s*visible[^}]*text-overflow:\s*clip/.test(window1200)
+  );
+  check(
+    'çalışma çubuğu başlığı tam adı ipucunda taşır',
+    /const t = \$\('#wsTitle'\);[\s\S]{0,200}\.title\s*=/.test(appJs)
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
