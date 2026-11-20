@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.94';
+const APP_VERSION = '2.95';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -297,7 +297,31 @@ function currentCase() {
 // kota çok geniş ve dolduğunda da sessiz kayıp olmuyor.
 let storageFullWarned = false;
 let persistTimer = null;
+let persistPending = false;
 let persistChain = Promise.resolve();
+// Dava verisini değiştiren HER yazma `updatedAt`'i tazeler (v2.95).
+// NEDEN: `mergeCases`/`compareCases` "gelen daha yeniyse onun değeri alınır"
+// kuralını `updatedAt` ile uygular. Öncesinde yalnız `freshCase` ve
+// `applyMerge` yazıyordu; normal düzenleme tazelemediği için aylar önce
+// oluşturulmuş ama BUGÜN düzenlenmiş bir dosya "eski" sayılıp alan
+// çakışmalarında sessizce eziliyordu.
+// Kural: damga GERİ ÇEKİLMEZ (saat kayması/aynı ms) — en büyük değer korunur.
+function touchCaseUpdated(c) {
+  if (!c) return false;
+  const now = new Date().toISOString();
+  if (!c.updatedAt || now > c.updatedAt) {
+    c.updatedAt = now;
+    return true;
+  }
+  return false;
+}
+// Tek yazma kapısı: veriyi değiştiren her yol buradan geçer. `persist()`i
+// doğrudan çağıran yerler bu yardımcıyı kullanmalıdır (aksi hâlde `updatedAt`
+// bayatlar ve birleştirme yanlış karar verir).
+function saveCaseNow(c) {
+  touchCaseUpdated(c || currentCase());
+  persist();
+}
 async function persistNow() {
   for (const c of appState.cases || []) syncCaseMirrors(c);
   // ÇOKLU SEKME KORUMASI (v2.84): iki sekmede aynı veri açıksa son yazan
@@ -526,8 +550,17 @@ function tabWriteGuard() {
 // ANCAK gecikme, sayfa kapanırken son değişikliklerin kaybolmasına yol
 // açıyordu (v2.84 öncesi: beforeunload yoktu). Kullanıcı yazıp hemen sekmeyi
 // kapatırsa son 400 ms giderdi. Artık kapanışta bekleyen yazma ZORLANIR.
-let persistPending = false;
-function persist() {
+//
+// v2.95: `updatedAt` tazeleme TEK KAPIDAN yapılır. Dava verisini değiştiren
+// her yol persist() çağırır; damga burada tazelenir. Böylece 72 çağrı yerini
+// tek tek düzeltmek (ve birini unutmak) gerekmez.
+// Yükleme/göç yolu `persist({ touch: false })` kullanır: dosya AÇMAK düzenleme
+// değildir; tazelenirse her açılışta dosya "en yeni" görünüp birleştirmede
+// haksız kazanır.
+function persist(opts = {}) {
+  if (opts.touch !== false) {
+    for (const c of appState.cases || []) touchCaseUpdated(c);
+  }
   persistPending = true;
   clearTimeout(persistTimer);
   persistTimer = setTimeout(() => {
@@ -905,7 +938,7 @@ async function loadState() {
     // Eski sürümler günlüğü hash'siz yazıyordu. Bu kayıtlar "kurcalanmış"
     // sayılmamalı ama "doğrulandı" da denmemeli; zincire bağlanır.
     upgradeAllLogChains(appState);
-    if (compactAllHistories(appState)) persist();
+    if (compactAllHistories(appState)) persist({ touch: false });
   } catch (e) {
     // Bakım hatası veriyi silmemeli: yalnız atlanır ve bildirilir.
     console.error('Yükleme sonrası bakım hatası:', e);
@@ -917,7 +950,8 @@ async function loadState() {
   }
   if (!currentCase()) appState.activeCaseId = appState.cases[0].id;
   clearLastSnapshot();
-  persist();
+  // Dosya AÇMAK düzenleme değildir; `updatedAt` tazelenmez (v2.95).
+  persist({ touch: false });
 }
 // Son durum kurtarma kopyasını okur (flushPersist yazar). Bozuksa null.
 function readLastSnapshot() {
@@ -9548,6 +9582,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.95': {
+    title: 'Dosya birleştirmede "eski dosya" yanlış belirleniyordu',
+    body:
+      'Birleştirmede "karşı dosya daha yeniyse onun değeri alınır" kuralı var. Ama ' +
+      'bir dosyanın son düzenleme zamanı hiç güncellenmiyordu; yalnız ilk ' +
+      'oluşturulduğu tarih kalıyordu. Bu yüzden aylarca düzenlediğiniz bir dosya ' +
+      '"en eski" görünüp karşı taraftan gelen değer tarafından sessizce ' +
+      'ezilebiliyordu. Artık her düzenleme zamanı tazeler; bir dosyayı yalnız ' +
+      'açmak ise onu "yeni" göstermez.'
+  },
   '2.94': {
     title: 'Dosya birleştirmede ölçüm ve konuşmacı bilgileri artık kaybolmuyor',
     body:

@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.94.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.95.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.95 — "Daha yeni kazanır" kuralı çalışmıyordu (updatedAt bayatlıyordu)
+
+CANLI VERİ. Birleştirmede "gelen dosya daha yeniyse onun değeri alınır" kuralı
+vardı; ama bu kuralın dayandığı `updatedAt` alanı **hiç tazelenmiyordu**.
+
+### GERÇEK HATA
+
+`updatedAt` yalnız iki yerde yazılıyordu: `freshCase()` (dosya oluşturma) ve
+`applyMerge()` (birleştirme). **Normal düzenleme** — metin yazmak, kapak
+alanını değiştirmek, ölçüm yapmak — damgayı hiç tazelemiyordu.
+
+`mergeCases`/`compareCases` ise karar verirken `updatedAt`'i karşılaştırıyor:
+
+```js
+const newer = (theirs.updatedAt || '') > (mine.updatedAt || '');
+```
+
+Ölçülen sonuç:
+
+```
+Yerel dosya: 2020-01-01'de oluşturuldu, BUGÜN düzenlendi → updatedAt hâlâ 2020
+Gelen dosya: 2025-01-01 tarihli
+Birleştirme: court = "GELEN" (gelen ezdi)   ·   çakışma bildirilmedi
+```
+
+Yani bilirkişi bir dosyayı aylarca düzenlese bile, o dosya "en eski" görünüp
+karşı taraftan gelen değer tarafından **sessizce eziliyordu**.
+
+### Çözüm
+
+- `touchCaseUpdated(c)` — damgayı `now`a çeker; **asla geri çekmez** (saat
+  kayması / aynı milisaniye durumunda en büyük değer korunur).
+- `persist()` — **72 yazma noktasının tamamı buradan geçer** — artık damgayı
+  tazeler. Böylece çağrı yerlerini tek tek değiştirmek (ve birini unutmak)
+  gerekmez.
+- Yükleme/göç yolu `persist({ touch: false })` kullanır: **dosya açmak
+  düzenleme değildir**. Aksi hâlde her açılışta dosya "en yeni" görünür ve
+  birleştirmede haksız kazanırdı.
+- `saveCaseNow(c)` — veri değiştiren yollar için tek kapı yardımcısı.
+
+**Ölçüm (gerçek Chromium):**
+
+```
+Açılış    → updatedAt 2020-01-01  (korundu; açmak düzenleme sayılmadı)
+Düzenleme → updatedAt 2026-11-20T12:26:48.021Z  (tazelendi)
+Yenileme  → updatedAt 2026-11-20T12:26:48.021Z  (korundu)
+```
+
+### KULLANICI NE GÖRECEK
+
+- Bugün düzenlediğiniz dosya, birleştirmede artık **"eski" sayılmaz**;
+  karşı taraftan gelen değer onu sessizce ezmez.
+- Gerçekten daha yeni olan dosya **yine kazanır** (kural bozulmadı).
+- Bir dosyayı yalnız **açmak** onu "yeni" göstermez; bu yüzden eski bir
+  dosyayı açıp kapatmanız birleştirme sonucunu değiştirmez.
+
+### Testle korunur
+
+`birim-testleri` [25] (11 kontrol): damga ilerler, geri çekilmez, `persist()`
+tazeler, `persist({touch:false})` tazelemez, bugün düzenlenen dosya birleştirmede
+korunur, gerçekten yeni olan kazanır. Test düzeltme yokken **kaldı**
+(`342 geçti, 2 kaldı`), düzeltmeden sonra geçti (`353 geçti, 0 kaldı`).
 
 ## v2.94 — Birleştirmede kayıt bilgileri sessizce kayboluyordu
 

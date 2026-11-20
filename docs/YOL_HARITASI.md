@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.94.**
+yazılır. **Güncel sürüm: v2.95.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.95 — updatedAt tazelenir (tamamlandı, canlı veri)
+
+`updatedAt` yalnız dosya oluşturma ve birleştirmede yazılıyordu; normal
+düzenleme tazelemiyordu. Birleştirme "daha yeni kazanır" kuralını bu alanla
+uyguladığı için bugün düzenlenmiş bir dosya "eski" sayılıp sessizce
+eziliyordu. `touchCaseUpdated()` + `persist()` tek kapı; yükleme yolu
+`persist({touch:false})`. `birim-testleri` [25] korur.
 
 ### v2.94 — Birleştirmede kayıt bilgileri kayboluyordu (tamamlandı, canlı veri)
 
@@ -107,7 +115,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | **v2.92 tamamlandı** |
 | 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | **v2.93 tamamlandı** |
 | 8 | Birleştirmede kayıt düzeyi alanlar sessizce düşüyor | **v2.94 tamamlandı** |
-| 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | bekliyor |
+| 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | **v2.95 tamamlandı** |
 | 10 | Önizleme ile birleştirme farklı alan kümesi kullanıyor | bekliyor |
 | 11 | SHA-256 hesaplanamazsa "doğrulandı" deniyor | bekliyor |
 | 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | bekliyor |

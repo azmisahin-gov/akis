@@ -83,6 +83,7 @@ const EXPOSE = [
   'measureWerForCase', 'werMeasuredCount',
   'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
   'pickActiveChannel', 'analyzeSilenceChannelAware', 'segmentSilenceFlag', 'SILENCE_SCHEMA',
+  'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -93,6 +94,7 @@ globalThis.__t.emptyCaseForTest = (o) => globalThis.__schema.emptyCase(o);
 globalThis.__t.emptySegmentForTest = (o) => globalThis.__schema.emptySegment(o);
 globalThis.__t.setAppState = (s) => { appState = s; };
 globalThis.__t.store = localStorage;
+globalThis.__t.mergeCasesForTest = (a, b) => globalThis.__schema.mergeCases(a, b);
 `;
 
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -1271,6 +1273,78 @@ console.log('\n[24] isHallucination yalnız tam dolgu etiketini yakalar');
 
   // 5) Tırnak içinde geçen etiket kelimesi dolgu değildir.
   eq('cümle içinde "müzik" geçmesi dolgu değil', T.isHallucination('Müzik kutusu çalındı'), false);
+}
+
+// --- 25. updatedAt düzenlemede tazelenmeli (v2.95) -----------------------
+// GERÇEK HATA: `updatedAt` yalnız `freshCase()` ve `applyMerge()` içinde
+// yazılıyordu; NORMAL düzenleme (metin, kapak alanı, ölçüm…) hiç tazelemiyordu.
+// `mergeCases`/`compareCases` ise "gelen daha yeniyse onun değeri alınır"
+// kuralını `updatedAt` ile uygular. Sonuç: aylar önce oluşturulmuş ama BUGÜN
+// düzenlenmiş bir dosya "eski" sayılıp alan çakışmalarında sessizce eziliyordu
+// (ölçüldü: çakışma 0, gelen değer uygulandı).
+// KURAL: dava verisini değiştiren her yazma `updatedAt`'i tazeler. Böylece
+// "daha yeni kazanır" ölçütü gerçekten çalışır.
+console.log('\n[25] updatedAt düzenlemede tazelenir');
+{
+  eq('touchCaseUpdated tanımlı', typeof T.touchCaseUpdated, 'function');
+  eq('saveCaseNow tanımlı', typeof T.saveCaseNow, 'function');
+
+  if (typeof T.touchCaseUpdated === 'function') {
+    // 1) Dokunma zaman damgasını ilerletir.
+    {
+      const c = T.emptyCaseForTest({ id: 'c1', updatedAt: '2020-01-01T00:00:00.000Z' });
+      const changed = T.touchCaseUpdated(c);
+      eq('değişiklik bildirildi', changed, true);
+      eq('zaman damgası ilerledi', c.updatedAt > '2020-01-01T00:00:00.000Z', true);
+      eq('geçerli ISO biçimi', /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(c.updatedAt), true);
+    }
+
+    // 2) Aynı milisaniye içinde ikinci dokunma damgayı GERİ ÇEKMEZ.
+    {
+      const c = T.emptyCaseForTest({ id: 'c1', updatedAt: '2099-01-01T00:00:00.000Z' });
+      T.touchCaseUpdated(c);
+      eq('damga geri çekilmez', c.updatedAt >= '2099-01-01T00:00:00.000Z', true);
+    }
+
+    // 3) GERÇEK SENARYO: bugün düzenlenen dosya birleştirmede ezilmemeli.
+    {
+      const mine = T.emptyCaseForTest({ id: 'c1', court: 'YEREL', updatedAt: '2020-01-01T00:00:00.000Z' });
+      const theirs = T.emptyCaseForTest({ id: 'c1', court: 'GELEN', updatedAt: '2025-01-01T00:00:00.000Z' });
+      // Kullanıcı yerel dosyayı "şimdi" düzenledi.
+      T.touchCaseUpdated(mine);
+      const r = T.mergeCasesForTest(mine, theirs);
+      eq('bugün düzenlenen yerel değer korunur', r.merged.court, 'YEREL');
+      eq('sessiz ezme yok', r.applied.some((a) => /gelen sürüm alındı/.test(a)), false);
+    }
+
+    // 4) Gelen gerçekten daha yeniyse yine de kazanır (kural bozulmaz).
+    {
+      const mine = T.emptyCaseForTest({ id: 'c1', court: 'YEREL', updatedAt: '2020-01-01T00:00:00.000Z' });
+      const theirs = T.emptyCaseForTest({ id: 'c1', court: 'GELEN', updatedAt: '2099-01-01T00:00:00.000Z' });
+      const r = T.mergeCasesForTest(mine, theirs);
+      eq('gelen gerçekten yeniyse kazanır', r.merged.court, 'GELEN');
+    }
+
+    // 5) persist() — 72 yazma noktasının hepsi buradan geçer — tazelemeli.
+    //    Aksi hâlde düzinelerce çağrı yerini tek tek düzeltmek gerekir ve
+    //    biri unutulur; damga yine bayatlar.
+    {
+      const c = T.emptyCaseForTest({ id: 'c1', updatedAt: '2020-01-01T00:00:00.000Z' });
+      T.setAppState({ cases: [c], activeCaseId: 'c1' });
+      T.persist();
+      eq('persist() damgayı tazeler', c.updatedAt > '2020-01-01T00:00:00.000Z', true);
+    }
+
+    // 6) YÜKLEME yolu damgayı tazelememeli: dosya açmak "düzenleme" değildir,
+    //    aksi hâlde her açılışta dosya "en yeni" görünür ve birleştirmede
+    //    haksız kazanır.
+    {
+      const c = T.emptyCaseForTest({ id: 'c1', updatedAt: '2020-01-01T00:00:00.000Z' });
+      T.setAppState({ cases: [c], activeCaseId: 'c1' });
+      T.persist({ touch: false });
+      eq('yükleme damgayı tazelemez', c.updatedAt, '2020-01-01T00:00:00.000Z');
+    }
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
