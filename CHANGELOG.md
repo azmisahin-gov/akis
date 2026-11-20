@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.103.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.104.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.104 — "Hiçbir metin 11px altında olamaz" kuralı ekranda tutmuyordu
+
+CANLI VERİ. Bilirkişi: *"sen versiyon yaptıkça sol barda yazdığımız versiyon
+bilgisi okunaklı değil."* Haklıydı; ölçüm daha kötüsünü gösterdi.
+
+### ÖLÇÜM (v2.103, gerçek Chromium)
+
+```
+SÜRÜM ETİKETİ: font-size = 7px   ("AKİS • v2.103 • Yerel sürüm")
+11px altı görünür metin: 11 (Genel görünüm) · 15 (Ses) · 14 (İnceleme) · 14 (Rapor)
+  7px  .version        ×1
+  8px  .eyebrow, .split-n
+  9px  .info-i (×5-6), .split-no
+ 10px  .subtle-pill
+```
+
+Yani v2.50'de konulan **"hiçbir metin 11px'in altında olamaz"** kuralı ekranda
+TUTMUYORDU. Sebep: `tasarim-testi` yalnız `reading-layer.css`'e bakıyordu;
+`app.css`'teki 154 küçük punto tanımının bir kısmını katman ezmiyordu ve test
+bunu göremedi.
+
+### KULLANICI NE GÖRECEK
+
+- Sol alttaki sürüm yazısı artık **yalnız "v2.104"** yazar ve **okunaklıdır**
+  (7px → 11px). "AKİS • Yerel sürüm" kalabalığı kaldırıldı.
+- **Sürüm yazısına tıklayınca SÜRÜM GEÇMİŞİ açılır**: her sürümde sizin için ne
+  değiştiği sade dille listelenir (tek kaynak: `VERSION_NOTICES`).
+- Ekranın her yerinde **11px altı yazı kalmadı**: bölüm numaraları (8→11), bilgi
+  simgeleri (9→11), küçük etiketler (10→11), zaman alanları (9,5→11), deşifre
+  metni (10,5→14, satır aralığı 1,7).
+- Metinler büyüdüğü için **hiçbir yazı kesilmedi**; 5 görünümde ölçüldü.
+
+### DÜZELTME
+
+1. `app.css`: 116 `font-size` + 38 `font` kısayolu 11px tabanına çekildi
+   (kaynak temizlendi; kaçakları tek tek yamamak yerine kök düzeltildi).
+2. `reading-layer.css`: kaçak seçiciler için açık ezme kuralları + sürüm etiketi
+   stili (tıklanabilir, odak halkası, tema token'ı).
+3. `index.html`: sürüm etiketi `<div>` → `<button>` (erişilebilir, klavyeyle
+   açılır); `#versionDialog` geçmiş diyaloğu.
+4. `app.js`: `versionHistoryEntries()` + `renderVersionHistory()` —
+   `VERSION_NOTICES`'ten türetilir, ikinci liste tutulmaz.
+
+### TEST DÜZELTMESİ (test de hatalıydı)
+
+`tasarim-testi` [2b] eklendi: *app.css'teki her 11px altı kural, okuma
+katmanınca eziliyor mu?* İlk sürümü **yanlış negatif** verdi (`.notice-box b`
+seçicisi jenerik `b` kuralıyla "kapsandı" sanıldı; 10px metin ekranda kaldı).
+Eşleştirme katılaştırıldı: tam seçici ya da seçicinin **tüm** sınıf/id
+bileşenlerini taşıyan kural. Jenerik etiket tek başına kapsam sayılmaz.
+
+### AYRI KONU (bu sürüme dahil değil)
+
+`H1#pageTitle` ("Genel görünüm") `overflow:hidden` altında 164>95 px kesiliyor.
+**v2.103'te de aynıydı** (ölçüldü, bu değişiklikten gelmiyor); ayrı bir sürümde
+ele alınacak.
+
+### DOĞRULAMA
+
+- `bash tools/test.sh` → 490 birim + 396 şema + rapor/sürüm/**tasarım**.
+- Gerçek Chromium, 5 görünüm: **11px altı = 0**, sürüm etiketi 11px ve kesiksiz,
+  sürüm geçmişi açılıyor (17 sürüm satırı).
 
 ## v2.103 — Yeniden çözümleme veriyi sormadan siliyordu (geri alınamaz)
 

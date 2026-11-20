@@ -1026,3 +1026,62 @@ body.ws-mode #view-audio .seg-list {
 #view-audio .sd-text .asr-body { padding: 0 var(--sp-3) var(--sp-2); }
 #view-audio .sd-text .asr-body p { margin: 0 0 var(--sp-2); line-height: var(--lh-body); }
 #view-audio .sd-text .asr-note { font-size: var(--fs-2xs); color: var(--ink-3); }
+
+/* --- H. v2.104 — Punto kaçakları: app.css'te 11px altı kalan seçiciler -----
+   NEDEN: "Hiçbir metin 11px altında olamaz" kuralı v2.103'e kadar EKRANDA
+   tutmuyordu. app.css'te 19 seçici 8–10,5px tanımlıyor ve bu katman onları
+   ezmiyordu. Gerçek tarayıcıda ölçüldü: sürüm etiketi 7px, .eyebrow 8px,
+   .split-n 8px, .info-i 9px, .subtle-pill 10px. Tasarım testi yalnız bu
+   dosyaya baktığı için kaçağı göremedi; artık [2b] denetimi var.
+   KURAL: app.css'e yeni bir küçük punto yazarsanız buraya ezmesini de yazın. */
+.review-select,
+.seg-time,
+.seg-field > label,
+.kbd-hint kbd,
+.seg-boundary .lbl,
+.split-no,
+.split-n,
+.mc-index,
+.mc-name,
+.mc-dur,
+.mc-pct,
+.pane-title,
+.pane-sub,
+.sha-box,
+#view-audio .seg-time,
+#view-audio .seg-text,
+#view-audio .listen-strip .chan-select .lbl,
+.info-i,
+.subtle-pill,
+.eyebrow {
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+}
+/* .eyebrow ALL CAPS etiket: punto taban ama harf aralığı korunur. */
+.eyebrow, .top-title .eyebrow { font-size: var(--fs-2xs); letter-spacing: .6px; }
+/* Metin alanı: en çok bakılan yer (14px, satır aralığı 1.7 kuralı). */
+#view-audio .seg-text { font-size: var(--fs-sm); line-height: 1.7; }
+
+/* Sürüm etiketi: okunaklı ve TEK bilgi (yalnız sürüm). Tıklanınca geçmiş. */
+.rail .version {
+  font-size: var(--fs-2xs);
+  line-height: 1.4;
+  color: var(--rail-ink-dim);
+  padding: var(--sp-1) 0 0;
+  letter-spacing: 0;
+  text-align: center;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+}
+.rail .version:hover, .rail .version:focus-visible {
+  color: var(--rail-ink);
+  text-decoration: underline;
+  outline: none;
+}
+
+/* Sürüm geçmişi satırları (diyalog içinde) */
+.ver-row { margin: 0 0 var(--sp-3); }
+.ver-row h3 { margin: 0 0 var(--sp-1); }
+.ver-row p { margin: 0; color: var(--ink-2); font-size: var(--fs-xs); line-height: var(--lh-body); }

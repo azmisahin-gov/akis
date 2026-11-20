@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.103';
+const APP_VERSION = '2.104';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -9518,6 +9518,16 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
   });
   $('#helpBtn').addEventListener('click', () => $('#helpDialog').showModal());
   $('#closeHelp').addEventListener('click', () => $('#helpDialog').close());
+  // Sürüm etiketine tıklayınca geçmiş: hangi sürümde ne değişti (kullanıcı dili).
+  const verBtn = $('#appVersion');
+  if (verBtn) {
+    verBtn.addEventListener('click', () => {
+      renderVersionHistory();
+      const d = $('#versionDialog');
+      if (d && !d.open) d.showModal();
+    });
+  }
+  $('#closeVersion')?.addEventListener('click', () => $('#versionDialog')?.close());
   $('#confirmCancel').addEventListener('click', () => $('#confirmDialog').close());
   $('#closeConfirm').addEventListener('click', () => $('#confirmDialog').close());
   $('#confirmOk').addEventListener('click', () => $('#confirmDialog').close());
@@ -10116,7 +10126,45 @@ function renderAppearancePanel() {
 // görmelidir. Kural: bir not her sürümde BİR KEZ gösterilir
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
+// SÜRÜM GEÇMİŞİ (v2.104). Kullanıcı sürüm etiketine tıklayınca ne değiştiğini
+// görmek ister. TEK KAYNAK: VERSION_NOTICES (yeni sürümde oraya not eklenir;
+// geçmiş kendiliğinden güncellenir, ikinci bir liste tutulmaz).
+function versionHistoryEntries() {
+  return Object.keys(VERSION_NOTICES)
+    .map((k) => ({ version: k, ...VERSION_NOTICES[k] }))
+    .sort((a, b) => {
+      const pa = String(a.version).split('.').map(Number);
+      const pb = String(b.version).split('.').map(Number);
+      return pb[0] - pa[0] || pb[1] - pa[1];
+    });
+}
+function renderVersionHistory() {
+  const host = $('#versionHistoryList');
+  if (!host) return;
+  const rows = versionHistoryEntries();
+  host.innerHTML =
+    `<p class="drawer-note">Uygulamanın sürüm numarası: <b>v${esc(APP_VERSION)}</b>. ` +
+    'Aşağıda her sürümde <b>kullanıcı olarak ne değiştiği</b> yazar (teknik ayrıntı için CHANGELOG).</p>' +
+    rows
+      .map(
+        (r) =>
+          `<div class="ver-row"><h3>v${esc(r.version)} — ${esc(r.title || '')}</h3>` +
+          `<p>${esc(r.body || '')}</p></div>`
+      )
+      .join('');
+}
 const VERSION_NOTICES = {
+  '2.104': {
+    title: 'Sürüm bilgisi okunaklı; küçük yazılar büyütüldü',
+    body:
+      'Sol alttaki sürüm yazısı 7 punto ile çiziliyordu ve okunamıyordu; ayrıca ' +
+      '"AKİS • Yerel sürüm" kalabalığı taşıyordu. Artık yalnız "v2.104" yazar ve ' +
+      'okunaklı puntodadır. Üzerine tıklarsanız SÜRÜM GEÇMİŞİ açılır: her sürümde ' +
+      'sizin için ne değiştiği sade dille listelenir. Ayrıca ekranın her yerinde ' +
+      '11 puntonun altında yazı kalmadı (ölçüldü: sürüm etiketi 7→11, bölüm ' +
+      'numaraları 8→11, bilgi simgeleri 9→11, küçük etiketler 10→11). Metinler ' +
+      'büyüdüğü için hiçbir yazı kesilmedi; kesilme olmadığı tarayıcıda ölçüldü.'
+  },
   '2.103': {
     title: 'Yeniden çözümleme artık veriyi sormadan silmiyor',
     body:
@@ -10321,9 +10369,11 @@ function maybeShowVersionNotice() {
 }
 
 async function init() {
-  // Sürüm etiketini tek kaynaktan (APP_VERSION) yaz.
+  // Sürüm etiketi: YALNIZ sürüm numarası, okunaklı punto (v2.104).
+  // Neden: eski etiket "AKİS • v2.103 • Yerel sürüm" idi ve 7px puntoyla
+  // çiziliyordu; bilirkişi okuyamıyordu. Ayrıntı ve geçmiş artık tıklamada.
   const verEl = $('#appVersion');
-  if (verEl) verEl.textContent = `AKİS • v${APP_VERSION} • Yerel sürüm`;
+  if (verEl) verEl.textContent = `v${APP_VERSION}`;
   // Görünüm tercihini uygula (index.html'deki satır içi betik ilk boyamayı
   // zaten yaptı; burada yalnız paneli çizip durumu tazeliyoruz).
   applyTheme();

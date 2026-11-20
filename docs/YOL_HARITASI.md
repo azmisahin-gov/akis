@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.103.**
+yazılır. **Güncel sürüm: v2.104.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.104 — Punto kaçakları ve okunaklı sürüm etiketi (tamamlandı, canlı veri)
+
+"Hiçbir metin 11px altında olamaz" kuralı ekranda tutmuyordu: sürüm etiketi 7px,
+`.eyebrow` 8px, `.split-n` 8px, `.info-i` 9px, `.subtle-pill` 10px. Sebep:
+`tasarim-testi` yalnız `reading-layer.css`'e bakıyordu; `app.css`'teki 154 küçük
+tanımın bir kısmı ezilmiyordu. Düzeltme kökten: app.css 11px tabanına çekildi
+(116 `font-size` + 38 `font` kısayolu) + kaçak seçiciler için açık ezme.
+Sürüm etiketi yalnız "v2.104" yazar, tıklanınca `VERSION_NOTICES`'ten üretilen
+**sürüm geçmişi** açılır. `tasarim-testi` [2b] kaçağı artık yakalar (katı
+eşleştirme; jenerik etiket kapsam sayılmaz).
 
 ### v2.103 — Yeniden çözümleme koruması (tamamlandı, canlı veri)
 

@@ -142,6 +142,60 @@ check(
   !/data-fontscale='small'/.test(tokens)
 );
 
+// --- 2b. app.css punto kaçakları (v2.104) --------------------------------
+// GERÇEK HATA: v2.103'e kadar bu bölüm yalnız `reading-layer.css`'e bakıyordu.
+// Oysa app.css'te 11px altı punto tanımlayan 19 seçici reading-layer
+// tarafından EZİLMİYORDU; gerçek tarayıcıda ölçüldü: sürüm etiketi 7px,
+// .eyebrow 8px, .split-n 8px, .info-i 9px, .subtle-pill 10px… Yani "hiçbir
+// metin 11px altında olamaz" kuralı ekranda TUTMUYORDU; test bunu göremediği
+// için sessizce geçiyordu.
+// KURAL: app.css'te tanımlanan her küçük punto, reading-layer'da karşılık
+// bulan bir ezme kuralına sahip olmalı. Aksi hâlde son kullanıcı küçük punto görür.
+console.log('\n[2b] app.css punto kaçakları (okuma katmanı eziyor mu)');
+{
+  const appRules = [...appCss.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+  const layerSelectors = new Set();
+  for (const r of [...layer.matchAll(/([^{}]+)\{([^{}]*)\}/g)]) {
+    for (const s of r[1].split(',')) layerSelectors.add(s.trim().replace(/\s+/g, ' '));
+  }
+  // Eşleştirme KATI olmalı. v2.104'te gevşek eşleştirme (son bileşen yeter)
+  // yanlış negatif verdi: `.notice-box b` seçicisi, okuma katmanındaki herhangi
+  // bir `b` kuralıyla "kapsandı" sanıldı ve 10px metin ekranda kaldı.
+  // Kural: okuma katmanında ya TAM seçici bulunmalı, ya da seçicinin TÜM
+  // sınıf/id bileşenlerini taşıyan bir kural (ör. `.notice-box p`) olmalı.
+  // Jenerik etiket (`b`, `span`, `small`) tek başına kapsam sayılmaz.
+  const classesOf = (sel) => (sel.match(/[.#][\w-]+/g) || []);
+  const covered = (sel) => {
+    if (layerSelectors.has(sel)) return true;
+    const mine = classesOf(sel);
+    if (!mine.length) return false; // düz etiket: tam eşleşme yoksa kapsanmış sayılmaz
+    for (const ls of layerSelectors) {
+      const theirs = classesOf(ls);
+      if (mine.every((c) => theirs.includes(c))) return true;
+    }
+    return false;
+  };
+  const leaks = [];
+  for (const r of appRules) {
+    const decl = r[2];
+    const sizes = [...decl.matchAll(/font-size:\s*([0-9.]+)px/g)].map((m) => Number(m[1]));
+    const sh = [...decl.matchAll(/font:\s*[^;]*?([0-9.]+)px/g)].map((m) => Number(m[1]));
+    if (![...sizes, ...sh].some((v) => v < 11)) continue;
+    for (const raw of r[1].split(',')) {
+      const sel = raw.trim().replace(/\s+/g, ' ');
+      // Yorum/artık CSS parçalarını atla (seçici gibi görünmeyenler).
+      if (!/^[.#\[a-zA-Z*:]/.test(sel) || sel.includes('/*')) continue;
+      if (!covered(sel)) leaks.push(sel);
+    }
+  }
+  const unique = [...new Set(leaks)];
+  check(
+    `app.css'teki 11px altı kural okuma katmanınca eziliyor (kaçak yok)`,
+    unique.length === 0,
+    unique.length ? `${unique.length} kaçak: ${unique.slice(0, 8).join(', ')}${unique.length > 8 ? '…' : ''}` : ''
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
