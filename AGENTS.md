@@ -1398,6 +1398,32 @@ Filtre yalnız gövdeyi boşaltır; yazma yine olur. Ayrıca silme senaryosunda
 
 **Koruyan test:** `birim-testleri` [52] (8 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10ag — Kritik uyarılar ekran okuyucuya duyurulur (TAMAMLANDI, v2.135)
+
+**KURAL: veri kaybı riski taşıyan uyarı `role=alert` (assertive); normal bilgi
+`role=status` (polite). Görsel uyarı yeterli değildir.**
+
+**Ölçülen hata (v2.134):** sayfada **aria-live bölgesi 0**. `#toast` ve
+"KAYDEDİLMİYOR" şeridi rol taşımıyordu; ekran okuyucu kullanan bilirkişi veri
+kaybı riskini duymuyordu.
+
+**Düzeltme:**
+1. `showToast(msg, urgent)` → `role=status|alert`, `aria-live=polite|assertive`,
+   `aria-atomic=true`.
+2. `showLoadFailure` ve `reportLoadFailures` `urgent=true`.
+3. Kayıt hatası + depolama şeritleri `role=alert/assertive` (her çağrıda).
+4. `#toast`, `#versionNotice` HTML'de de canlı bölge.
+
+**Ölçüm (v2.135, CDP erişilebilirlik ağacı):** `#toast` → role `status`,
+`live=polite`, `atomic=true`; `#versionNotice` aynı. JS hatası 0.
+
+**DERS:** "Uyarı görünür" demek "uyarı duyulur" demek değildir. Ekran okuyucu
+için `aria-live` şart; kritik uyarıda `assertive`, gürültü yapmamak için
+normalde `polite`. Sahte DOM'a `setAttribute/getAttribute` eklendi; aksi hâlde
+erişilebilirlik nitelikleri test edilemiyordu.
+
+**Koruyan test:** `birim-testleri` [53] (14) + `tasarim-testi` [6] (2).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1571,7 +1597,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.134.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.135.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1733,7 +1759,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.134** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.135** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1780,6 +1806,7 @@ Test sayısı 441 → **782**.
 | **v2.132** | **Kurtarma kopyasında sessiz düşme** (bozuk dosya bildirilmiyordu) | `birim` [51] |
 | **v2.133** | **Durum çubuğu yazıları kesilmiyor** (≤1100 px'te 6/6 öğe kırpılıyordu) | `tasarim` [2l] |
 | **v2.134** | **İlk açılışta hayalet kayıt** (boş çalışma alanı yazılıyordu) | `birim` [52] |
+| **v2.135** | **Kritik uyarılar ekran okuyucuya duyurulur** (aria-live yoktu) | `birim` [53] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

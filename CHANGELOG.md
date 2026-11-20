@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.134.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.135.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.135 — Kritik uyarılar ekran okuyucuya duyuruluyor
+
+DENETİM. Görsel uyarılar yerindeydi ama işitme/ekran okuyucu tarafı boştu:
+sayfada **aria-live bölgesi 0**'dı. `#toast` ve "KAYDEDİLMİYOR" şeridi
+`role`/`aria-live` taşımıyordu.
+
+### ÖLÇÜM (v2.134, erişilebilirlik ağacı)
+
+| Öğe | Önce | Sonra |
+|---|---|---|
+| `#toast` | rol yok | **status · live=polite · atomic** |
+| `#versionNotice` | rol yok | **status · live=polite** |
+| Kayıt hatası şeridi | rol yok | **alert · live=assertive** |
+| Depolama şeridi | rol yok | **alert · live=assertive** |
+
+### DÜZELTME
+
+- `showToast(msg, urgent)`: normal bildirim `role=status/aria-live=polite`;
+  kritik bildirim `role=alert/aria-live=assertive`.
+- Kritik yollar (kayıt okunamadı, dosya atlandı) `urgent=true` ile çağırır.
+- Kayıt hatası ve depolama şeritleri `role=alert` + `aria-live=assertive`
+  (her çağrıda tazelenir).
+- `#toast` ve `#versionNotice` HTML'de de canlı bölge olarak tanımlı; JS
+  çalışmadan önce de doğru.
+
+### KULLANICI NE GÖRECEK
+
+- Görsel olarak hiçbir şey değişmedi.
+- Ekran okuyucu kullanan bilirkişi, veri kaybı riskini **duyar** (kesintili);
+  sıradan bilgiler (ör. "2 dosya geri yüklendi") bekleyen işi bölmez.
+
+Koruyan test: `birim-testleri` [53] (14 kontrol) + `tasarim-testi` [6]
+(2 canlı bölge kontrolü) — düzeltme yokken **KALDI**.
+Gerçek Chromium: erişilebilirlik ağacında `role=status`, `live=polite`,
+`atomic=true` doğrulandı; JS hatası 0.
 
 ## v2.134 — İlk açılışta hayalet kayıt oluşmuyor
 

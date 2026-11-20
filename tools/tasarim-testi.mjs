@@ -528,6 +528,9 @@ check('hareket azaltma tercihi destekleniyor', /prefers-reduced-motion/.test(tok
 check('yüksek karşıtlık tercihi destekleniyor', /prefers-contrast/.test(tokens));
 check('odak halkası tanımlı', /--focus-ring/.test(tokens) && /:focus-visible/.test(layer));
 check('tema seçenekleri radiogroup', /role="radiogroup"/.test(js) && /aria-checked/.test(js));
+// v2.135 — canlı bölgeler: bildirim ve sürüm notu ekran okuyucuya duyurulur.
+check('bildirim (toast) canlı bölge', /id="toast"[^>]*role="status"[^>]*aria-live="polite"/.test(html));
+check('sürüm notu canlı bölge', /id="versionNotice"[^>]*role="status"[^>]*aria-live="polite"/.test(html));
 // Uyarılar yalnız renkle anlatılmamalı: metin + kenarlık da var.
 check('uyarı kutuları kenarlık + metin taşıyor', /\.warn-box[\s\S]{0,200}border:/.test(layer));
 

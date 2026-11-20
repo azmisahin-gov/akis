@@ -24,7 +24,10 @@ const els = new Map();
 function makeEl(sel) {
   return {
     sel, value: '', textContent: '', innerHTML: '', hidden: false, disabled: false,
-    dataset: {}, style: {},
+    dataset: {}, style: {}, attrs: {},
+    setAttribute(k, v) { this.attrs[k] = String(v); },
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attrs, k) ? this.attrs[k] : null; },
+    removeAttribute(k) { delete this.attrs[k]; },
     classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
     addEventListener: noop, removeEventListener: noop,
     querySelector: () => null, querySelectorAll: () => [], closest: () => null,
@@ -110,6 +113,7 @@ const EXPOSE = [
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
   'normalizeRescueCases', 'persistPayloadFor',
+  'showToast', 'showSaveFailureBanner', 'showStorageBanner',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2700,6 +2704,47 @@ console.log('\n== [52] Boş çalışma alanı kayda yazılmaz');
     /casesForStorage\(appState\.cases\)[\s\S]{0,400}removeItem\('akis\.lastSnapshot'\)/.test(src),
     true
   );
+}
+
+
+console.log('\n== [53] Kritik uyarılar ekran okuyucuya duyurulur');
+{
+  // v2.134 ve öncesinde #toast ile "KAYDEDİLMİYOR" şeridinde role/aria-live
+  // yoktu (sayfada aria-live bölgesi 0). Görsel uyarı vardı, işitme/ekran
+  // okuyucu tarafı boştu. Kritik uyarı assertive, normal bilgi polite olmalı.
+  const toast = T.showToast;
+  eq('showToast tanımlı', typeof toast, 'function');
+  if (typeof toast === 'function') {
+    const el = T.el('#toast');
+    toast('normal bilgi');
+    eq('normal toast role=status', el.getAttribute('role'), 'status');
+    eq('normal toast polite', el.getAttribute('aria-live'), 'polite');
+    toast('kritik uyarı', true);
+    eq('kritik toast role=alert', el.getAttribute('role'), 'alert');
+    eq('kritik toast assertive', el.getAttribute('aria-live'), 'assertive');
+  }
+
+  eq('showSaveFailureBanner tanımlı', typeof T.showSaveFailureBanner, 'function');
+  if (typeof T.showSaveFailureBanner === 'function') {
+    T.showSaveFailureBanner(new Error('test'));
+    const b = T.el('#saveFailureBanner');
+    eq('kayıt hatası şeridi role=alert', b.getAttribute('role'), 'alert');
+    eq('kayıt hatası şeridi assertive', b.getAttribute('aria-live'), 'assertive');
+    eq('şerit metni kaybı söylüyor', /KAYDEDİLMİYOR/.test(b.innerHTML), true);
+  }
+
+  eq('showStorageBanner tanımlı', typeof T.showStorageBanner, 'function');
+  if (typeof T.showStorageBanner === 'function') {
+    T.showStorageBanner();
+    const b = T.el('#storageBanner');
+    eq('depolama şeridi role=alert', b.getAttribute('role'), 'alert');
+    eq('depolama şeridi assertive', b.getAttribute('aria-live'), 'assertive');
+  }
+
+  // Yükleme hatası ve atlanan dosya bildirimi kritik: assertive olmalı.
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('yükleme hatası kritik toast kullanır', /showLoadFailure[\s\S]{0,400}showToast\([\s\S]{0,300}true\s*\)/.test(src), true);
+  eq('atlanan dosya bildirimi kritik toast kullanır', /function reportLoadFailures[\s\S]{0,1200}showToast\([\s\S]{0,300}true\s*\)/.test(src), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

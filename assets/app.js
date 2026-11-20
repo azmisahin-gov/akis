@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.134';
+} from './schema.js?v=2.135';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.134';
+const APP_VERSION = '2.135';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -464,6 +464,9 @@ function showSaveFailureBanner(err) {
     document.body.appendChild(el);
   }
   el.className = 'storage-banner save-failure';
+  // Ekran okuyucu bu şeridi kesintili duyurur: veri kaybı riski var (v2.135).
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'assertive');
   // İçerik HER çağrıda tazelenir: bayat/boş şerit kalırsa kullanıcı uyarıyı
   // görmez. Dinleyiciler bir kez bağlanır (yinelenen bağlama olmasın).
   el.innerHTML =
@@ -666,6 +669,9 @@ function showStorageBanner() {
     $('#storageBannerExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
     $('#storageBannerClose')?.addEventListener('click', hideStorageBanner);
   }
+  // Ekran okuyucu kesintili duyurur: yeni değişiklikler kaydedilmiyor (v2.135).
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'assertive');
   el.hidden = false;
 }
 function hideStorageBanner() {
@@ -1064,7 +1070,8 @@ function showLoadFailure(err, kind) {
     el.classList.add('danger');
   }
   showToast(
-    `Kayıt okunamadı (${kind}). Hiçbir şey silinmedi. Sayfayı yenilemeyin; önce Paket oluşturmayı deneyin.`
+    `Kayıt okunamadı (${kind}). Hiçbir şey silinmedi. Sayfayı yenilemeyin; önce Paket oluşturmayı deneyin.`,
+    true
   );
   console.error('loadState hatası:', err);
 }
@@ -1089,7 +1096,8 @@ function reportLoadFailures(failed, stored) {
   }
   showToast(
     `${failed.length} dosya okunamadı ve atlandı; diğer dosyalarınız korundu. ` +
-      'Ham kayıt kurtarma alanında tutuldu. Lütfen paket oluşturun.'
+      'Ham kayıt kurtarma alanında tutuldu. Lütfen paket oluşturun.',
+    true
   );
   console.error('Yüklenemeyen dosyalar:', failed.map((f) => f.error));
 }
@@ -1149,9 +1157,15 @@ async function deleteBlob(key) {
 function blobKey(c, m) {
   return `${c.id}::${m.id}`;
 }
-function showToast(msg) {
+// `urgent` = kritik uyarı (kayıt okunamadı, dosya atlandı, yazma hatası):
+// ekran okuyucu bekleyen işi kesip okur (role=alert, assertive). Normal bilgi
+// polite kalır; kullanıcıyı sürekli bölmez (v2.135).
+function showToast(msg, urgent) {
   const el = $('#toast');
   el.textContent = msg;
+  el.setAttribute('role', urgent ? 'alert' : 'status');
+  el.setAttribute('aria-live', urgent ? 'assertive' : 'polite');
+  el.setAttribute('aria-atomic', 'true');
   el.classList.add('show');
   clearTimeout(showToast.t);
   showToast.t = setTimeout(() => el.classList.remove('show'), 3400);
@@ -11644,6 +11658,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.135': {
+    title: 'Kritik uyarılar ekran okuyucuya da duyuruluyor',
+    body:
+      'Kayıt yapılamadığında çıkan "KAYDEDİLMİYOR" şeridi, depolama uyarısı ve ' +
+      'kritik bildirimler artık ekran okuyucu tarafından kesintili okunur. Normal ' +
+      'bilgiler bekleyen işi bölmeden duyurulur. Görsel uyarılar değişmedi.'
+  },
   '2.134': {
     title: 'İlk açılışta hayalet kayıt oluşmuyor',
     body:
