@@ -603,6 +603,35 @@ getirmez**. Bu yüzden silme tek tıkla yapılamaz.
 kırılganlık testi: A silindi → **B'nin sesi korundu** (`cB::mcB`), A'nın sesi
 (`cA::mcA`) gitti. "Doğru dosyayı mı siliyor" sorusunun cevabı ölçümle verildi.
 
+
+### Aşama 10f — Arşiv: boş dosya ve görünmeyen kimlik (TAMAMLANDI, v2.108)
+
+**KURAL: kullanıcı GÖREMEDİĞİ bir şeyi yazamaz.** Onay ifadesi, ekranda görünen
+addır; ham kimlik (`mwp6t1x5-fdist0v`) asla yazdırılmaz.
+
+**Ölçülen üç hata (v2.107):**
+1. Boş dosya (0 kayıt, dosya no yok) arşivlenebiliyordu.
+2. Her arşivlemede yeni boş dosya açıldığı için arşiv "Yeni inceleme dosyası" ile
+   doluyordu; aynı adlı kayıtlar ayırt edilemiyordu.
+3. Silme onayı ekranda HİÇ görünmeyen ham kimliği yazdırıyordu.
+
+**Düzeltme (saf fonksiyonlar, `birim-testleri` [36] korur):**
+- `canArchiveCase(c)` → `!isArchivedCase(c) && !isEmptyCase(c)`
+- `caseShortId(c)` → kimliğin son 6 karakteri (okunabilir, yazılabilir)
+- `caseDisplayName(c)` → dosya no varsa o; yoksa `ad #kısaKimlik`
+- `deleteConfirmPhrase(c)` = `caseDisplayName(c)`
+
+**Kullanım kuralı:** dosya adı gösteren HER yer `caseDisplayName()` kullanır
+(seçici, arşiv paneli, toast, onay diyaloğu). Ham `c.id` gösterme.
+
+**Ölçüm (v2.108, gerçek Chromium):** boş dosyada arşivle → engellendi
+("Arşivlenecek veri bulunmuyor"); 4 kez bas → **Arşiv (0)**; dolu dosya
+arşivlendi → panelde `2024/108`; silme onayı `2024/108` istedi.
+
+**DERS:** "kimlik" ile "görünen ad" ayrı şeylerdir. Ekran için `caseDisplayName`,
+veri için `c.id`. İkisini karıştırmak kullanıcıyı çıkmaza sokar (görünmeyen
+değeri yazmasını istemek gibi).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -776,7 +805,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.107.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.108.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -934,7 +963,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.107` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.108` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

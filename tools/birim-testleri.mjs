@@ -94,6 +94,7 @@ const EXPOSE = [
   'isHumanApproved', 'reviewCellText', 'reviewHintText',
   'isArchivedCase', 'visibleCases', 'archiveCase', 'unarchiveCase',
   'deleteConfirmPhrase', 'deleteConfirmMatches', 'canDeleteCase',
+  'canArchiveCase', 'caseShortId', 'caseDisplayName',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1917,7 +1918,9 @@ console.log('\n[35] Arşivleme ve silme');
 
   // 5) SİLME ONAYI: dosya numarası elle yazılmalı (kazara tıklama imkânsız).
   eq('onay ifadesi dosya numarasını ister', T.deleteConfirmPhrase({ fileNo: '2024/7' }), '2024/7');
-  eq('dosya numarası yoksa id kullanılır', T.deleteConfirmPhrase({ id: 'c9' }), 'c9');
+  // v2.108: dosya numarası yoksa GÖRÜNEN ad kullanılır (ham id değil).
+  // Eski beklenti 'c9' idi; kullanıcı ham kimliği ekranda göremez.
+  eq('dosya numarası yoksa görünen ad kullanılır', T.deleteConfirmPhrase({ id: 'c9' }), 'Yeni inceleme dosyası #c9');
   eq('doğru yazım kabul', T.deleteConfirmMatches({ fileNo: '2024/7' }, '2024/7'), true);
   eq('boşluklar kırpılır', T.deleteConfirmMatches({ fileNo: '2024/7' }, '  2024/7  '), true);
   eq('yanlış yazım reddedilir', T.deleteConfirmMatches({ fileNo: '2024/7' }, '2024/8'), false);
@@ -1931,6 +1934,54 @@ console.log('\n[35] Arşivleme ve silme');
   const plan = T.buildExportPlan([{ ...real('c4', '2024/4'), status: 'archived' }]);
   eq('arşivli dosya yedeğe GİRER', plan.cases.length, 1);
   eq('yedek biçimi tekil', plan.kind, 'single');
+}
+
+// --- 36. Arşiv/silme: boş dosya ve görünmeyen kimlik (v2.108) -------------
+// CANLI VERİ. Bilirkişi denedi: "her şeyi arşive aldım, aynı butona tekrar
+// bastım tekrar arşivlendi, arşivde iki tane var... silerken bana kendi
+// atadığı numarayı sordu... bu id'leri ekranda görmüyoruz."
+// ÖLÇÜM (v2.107): boş dosya (0 kayıt, dosya no yok) arşivlenebiliyordu; her
+// arşivlemede yeni boş dosya açıldığı için arşiv "Yeni inceleme dosyası" ile
+// doluyordu; silme onayı ekranda GÖRÜNMEYEN ham kimliği (mwp6t1x5-fdist0v)
+// yazdırıyordu.
+console.log('\n[36] Arşiv/silme: boş dosya ve görünmeyen kimlik');
+{
+  // 1) BOŞ dosya arşivlenemez: kaybedilecek veri yok, arşivi kirletir.
+  const blank = { id: 'abc123def456', status: 'draft', materials: [], fileNo: '', court: '' };
+  eq('boş dosya arşivlenemez', T.canArchiveCase(blank), false);
+  const filled = { id: 'x', status: 'draft', materials: [{ id: 'm', segments: [] }], fileNo: '2024/1' };
+  eq('veri taşıyan dosya arşivlenebilir', T.canArchiveCase(filled), true);
+  eq('arşivdeki dosya tekrar arşivlenmez', T.canArchiveCase({ ...filled, status: 'archived' }), false);
+
+  // 2) KISA KİMLİK: ekranda gösterilebilir, yazılabilir (ham uuid değil).
+  eq('kısa kimlik son 6 karakter', T.caseShortId({ id: 'mwp6t1x5-fdist0v' }), 'dist0v');
+  eq('kısa kimlik kısa id ile çalışır', T.caseShortId({ id: 'abc123' }), 'abc123');
+  eq('kimlik yoksa boş', T.caseShortId({}), '');
+  eq('null güvenli', T.caseShortId(null), '');
+
+  // 3) GÖRÜNEN AD: dosya no varsa o; yoksa ad + kısa kimlik (ayırt edilebilir).
+  eq('dosya no varsa yalnız o', T.caseDisplayName({ id: 'x1y2z3', fileNo: '2024/9' }), '2024/9');
+  eq(
+    'dosya no yoksa ad + kısa kimlik',
+    T.caseDisplayName({ id: 'mwp6t1x5-fdist0v', name: 'Yeni inceleme dosyası', fileNo: '' }),
+    'Yeni inceleme dosyası #dist0v'
+  );
+  eq(
+    'aynı adlı iki dosya ayırt edilir',
+    T.caseDisplayName({ id: 'aaaaaaaa-111111', name: 'Yeni inceleme dosyası' }) !==
+      T.caseDisplayName({ id: 'bbbbbbbb-222222', name: 'Yeni inceleme dosyası' }),
+    true
+  );
+
+  // 4) SİLME ONAYI: ekranda GÖRÜNEN ifade istenir (ham uuid değil).
+  const c = { id: 'mwp6t1x5-fdist0v', name: 'Yeni inceleme dosyası', fileNo: '' };
+  eq('silme onayı görünen adı ister', T.deleteConfirmPhrase(c), 'Yeni inceleme dosyası #dist0v');
+  eq('onay ifadesi ham uuid İÇERMEZ', /mwp6t1x5/.test(T.deleteConfirmPhrase(c)), false);
+  eq('görünen ad yazılınca eşleşir', T.deleteConfirmMatches(c, 'Yeni inceleme dosyası #dist0v'), true);
+  eq('ham uuid yazılınca EŞLEŞMEZ', T.deleteConfirmMatches(c, 'mwp6t1x5-fdist0v'), false);
+
+  // 5) Dosya no varsa onay ifadesi yalnız dosya numarasıdır (kısa, tanıdık).
+  eq('dosya no varsa onay ifadesi o', T.deleteConfirmPhrase({ id: 'zzz', fileNo: '2024/7' }), '2024/7');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

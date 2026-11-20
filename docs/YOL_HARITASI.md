@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.107.**
+yazılır. **Güncel sürüm: v2.108.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.108 — Arşivde boş dosya birikmesi ve görünmeyen kimlik (tamamlandı)
+
+Boş dosya arşivlenebiliyordu (her basışta yeni boş kayıt); silme onayı ekranda
+görünmeyen ham kimliği yazdırıyordu. `canArchiveCase`, `caseShortId`,
+`caseDisplayName` eklendi; seçici/arşiv/bildirimler görünen adı kullanır.
+`birim-testleri` [36] + gerçek Chromium korur.
 
 ### v2.107 — Arşivleme ve iki aşamalı silme (tamamlandı, canlı veri)
 

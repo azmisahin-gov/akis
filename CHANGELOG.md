@@ -6,12 +6,53 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.107.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.108.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.108 — Arşiv/silme: boş dosya birikmesi ve görünmeyen kimlik
+
+CANLI VERİ. Bilirkişi v2.107'yi denedi ve üç hata bildirdi: *"her şeyi arşive
+aldım… aynı butona tekrar bastım tekrar arşivlendi, arşivde iki tane var…
+silerken bana kendi atadığı numarayı sordu… bu id'leri ekranda görmüyoruz."*
+
+### ÖLÇÜM (v2.107, gerçek Chromium) — üçü de DOĞRULANDI
+
+```
+1) Boş dosyada "Arşivle"  → Arşiv (1)   [0 kayıt, dosya no boş — yine de girdi]
+2) Aynı butona tekrar bas → Arşiv (2)   [ikisi de "Yeni inceleme dosyası · 0 kayıt"]
+3) Silme 2. onay metni    → "mwp6t1x5-fdist0v"  [ekranda HİÇ görünmeyen ham kimlik]
+```
+
+### KULLANICI NE GÖRECEK
+
+- **Boş çalışma alanı arşivlenmez:** *"Arşivlenecek veri bulunmuyor"* denir.
+  Artık her basışta yeni boş dosya arşive girmez.
+- **Dosyalar ayırt edilir:** dosya numarası yoksa adın yanında **kısa kimlik**
+  görünür → `Yeni inceleme dosyası #39tuib`.
+- **Kalıcı silmede EKRANDA GÖRDÜĞÜNÜZ ad sorulur** (`2024/108` veya
+  `Yeni inceleme dosyası #39tuib`). Ham kimlik yazdırılmaz — görünmeyen bir şeyi
+  yazmak imkânsızdı.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `canArchiveCase(c)` → arşivli değil **ve** `isEmptyCase` değil.
+2. `caseDisplayName(c)` → dosya no varsa o; yoksa `ad #kısaKimlik`. Seçici,
+   arşiv paneli ve tüm bildirimler **bunu** kullanır.
+3. `deleteConfirmPhrase(c)` = `caseDisplayName(c)` — **ekranda görünen** ifade.
+4. `caseShortId(c)` = kimliğin son 6 karakteri (okunabilir, yazılabilir).
+5. Yeni bir yerde dosya adı gösterilecekse `caseDisplayName()` kullanın; ham
+   `c.id` göstermeyin.
+
+### DOĞRULAMA
+
+- `birim-testleri` **[36]** — 15 kontrol (boş dosya, kısa kimlik, görünen ad,
+  onay ifadesi ham uuid içermez).
+- **Gerçek Chromium:** boş dosyada arşivle → engellendi; 4 kez bas → Arşiv (0);
+  dolu dosya arşivlendi → panelde `2024/108`; silme onayı `2024/108` istedi.
 
 ## v2.107 — Arşivleme ve (isteğe bağlı) kalıcı silme
 

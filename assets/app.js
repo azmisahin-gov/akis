@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.107';
+const APP_VERSION = '2.108';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1133,7 +1133,7 @@ function renderCaseSelect() {
   sel.innerHTML = shown
     .map(
       (c) =>
-        `<option value="${esc(c.id)}" ${c.id === appState.activeCaseId ? 'selected' : ''}>${esc(c.name || c.fileNo || 'Yeni inceleme')}</option>`
+        `<option value="${esc(c.id)}" ${c.id === appState.activeCaseId ? 'selected' : ''}>${esc(caseDisplayName(c))}</option>`
     )
     .join('');
   const archivedCount = (appState.cases || []).filter(isArchivedCase).length;
@@ -7992,10 +7992,33 @@ function unarchiveCase(c) {
   delete next.archivedAt;
   return next;
 }
-// Silme onayı için yazılması gereken ifade (dosya numarası, yoksa kimlik).
+// KISA KİMLİK (v2.108): ham kimlik (`mwp6t1x5-fdist0v`) ekranda görünmez ve
+// yazdırılamaz — bilirkişi onu okuyamaz. Görünen ad ve onay ifadesi bu kısa
+// son 6 karakteri kullanır; böylece aynı adlı iki dosya da ayırt edilir.
+function caseShortId(c) {
+  const id = String((c && c.id) || '');
+  if (!id) return '';
+  return id.length > 6 ? id.slice(-6) : id;
+}
+// Ekranda görünen dosya adı. Dosya numarası varsa yalnız o; yoksa ad + kısa
+// kimlik (aynı adlı iki dosya birbirinden ayrılabilsin).
+function caseDisplayName(c) {
+  if (!c) return '';
+  const no = String(c.fileNo || '').trim();
+  if (no) return no;
+  const nm = String(c.name || '').trim() || 'Yeni inceleme dosyası';
+  const short = caseShortId(c);
+  return short ? `${nm} #${short}` : nm;
+}
+// Boş dosya arşivlenmez: kaybedilecek veri yoktur, arşivi kirletir ve kullanıcı
+// "iki tane aynı dosya var" görür (canlı veride yaşandı).
+function canArchiveCase(c) {
+  return !!c && !isArchivedCase(c) && !isEmptyCase(c);
+}
+// Silme onayı için yazılması gereken ifade: EKRANDA GÖRÜNEN ad.
+// v2.107'de ham kimlik isteniyordu; kullanıcı göremediği bir şeyi yazamaz.
 function deleteConfirmPhrase(c) {
-  const v = String((c && (c.fileNo || c.id)) || '').trim();
-  return v;
+  return caseDisplayName(c);
 }
 function deleteConfirmMatches(c, typed) {
   const want = deleteConfirmPhrase(c);
@@ -9841,7 +9864,7 @@ function renderArchiveList() {
     archived
       .map(
         (c) => `<div class="archive-row">
-        <div class="archive-main"><b>${esc(c.fileNo || c.name || c.id)}</b>
+        <div class="archive-main"><b>${esc(caseDisplayName(c))}</b>
           <small>${esc(c.court || '—')} · ${(c.materials || []).length} kayıt · ` +
           `arşiv: ${esc(c.archivedAt ? new Date(c.archivedAt).toLocaleString('tr-TR') : '—')}</small></div>
         <div class="archive-actions">
@@ -9855,10 +9878,20 @@ async function archiveCurrentCase() {
   const c = currentCase();
   if (!c) return;
   if (isArchivedCase(c)) return showToast('Bu dosya zaten arşivde.');
+  // BOŞ DOSYA ARŞİVLENMEZ (v2.108): 0 kayıt + dosya no yok → arşivi kirletir.
+  // Canlı veride her basışta yeni boş dosya arşivlendi ("iki tane aynı").
+  if (!canArchiveCase(c)) {
+    showToast(
+      'Boş çalışma alanı arşivlenmez: dosya numarası, mahkeme, taraf veya ses kaydı yok. ' +
+        'Arşivlenecek veri bulunmuyor.'
+    );
+    return;
+  }
+  const nm = caseDisplayName(c);
   if ((appState.cases || []).filter((x) => !isArchivedCase(x)).length <= 1) {
     const ok = await askConfirm(
       'Son görünür dosyayı arşivliyorsunuz',
-      `"${c.fileNo || c.name || 'Adsız'}" arşivlenecek ve çalışma alanında görünür dosya kalmayacak. ` +
+      `"${nm}" arşivlenecek ve çalışma alanında görünür dosya kalmayacak. ` +
         'Yeni bir dosya açılır. Arşivdeki dosya SİLİNMEZ; Arşiv düğmesinden geri alabilirsiniz. Devam edilsin mi?'
     );
     if (!ok) return;
@@ -9880,7 +9913,7 @@ async function archiveCurrentCase() {
   renderOverview();
   await renderAudioList();
   showToast(
-    `"${c.fileNo || c.name || 'Dosya'}" arşivlendi. Verisi ve sesleri SİLİNMEDİ. ` +
+    `"${nm}" arşivlendi. Verisi ve sesleri SİLİNMEDİ. ` +
       'Geri almak için üst bardaki "Arşiv" düğmesini kullanın.'
   );
 }
@@ -9896,7 +9929,7 @@ async function unarchiveById(id) {
   renderOverview();
   await renderAudioList();
   renderArchiveList();
-  showToast(`"${appState.cases[idx].fileNo || appState.cases[idx].name || 'Dosya'}" arşivden çıkarıldı.`);
+  showToast(`"${caseDisplayName(appState.cases[idx])}" arşivden çıkarıldı.`);
 }
 // KALICI SİLME: iki aşamalı. (1) sesin de silineceğini söyleyen onay,
 // (2) dosya numarasını elle yazma. Ses IndexedDB'den KALICI silinir; Ctrl+Z
@@ -10441,6 +10474,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.108': {
+    title: 'Arşiv/silme: boş dosya ve görünmeyen kimlik düzeltildi',
+    body:
+      'Denemede fark edilen üç hata giderildi. (1) BOŞ çalışma alanı artık ' +
+      'arşivlenmez: dosya numarası, mahkeme, taraf veya ses kaydı yoksa "arşivlenecek ' +
+      'veri yok" denir. Önceki sürümde her basışta yeni bir boş dosya arşive giriyor, ' +
+      'arşivde aynı adlı kayıtlar birikiyordu. (2) Dosya adları artık ayırt edilir: ' +
+      'dosya numarası yoksa adın yanında KISA bir kimlik görünür ' +
+      '("Yeni inceleme dosyası #39tuib"). (3) Kalıcı silmede artık EKRANDA GÖRDÜĞÜNÜZ ' +
+      'ad sorulur; önceki sürümde ekranda hiç görünmeyen ham bir kimlik ' +
+      '(mwp6t1x5-fdist0v gibi) yazmanız isteniyordu — bu imkânsızdı. Kısa kimlik ' +
+      'yanlışlıkla başka dosyayı silmeyi de önler.'
+  },
   '2.107': {
     title: 'Dosya arşivleme ve (isteğe bağlı) kalıcı silme',
     body:
