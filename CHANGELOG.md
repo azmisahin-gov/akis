@@ -6,12 +6,86 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.100.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.101.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.101 — Perde tahmininde oktav hatası (dürüst sınır)
+
+CANLI VERİ. Perde ölçümü, temel frekans zayıf olduğunda perdeyi **iki katına**
+çıkarabiliyordu; rapor bu yanlış değeri "genellikle kadın" ipucuyla birlikte
+basıyordu.
+
+### GERÇEK HATA
+
+`detectPitchHz` yalnız "en yüksek normalize otokorelasyon" gecikmesini
+alıyordu. Temel frekans (H1) zayıf, 2. harmonik (H2) güçlü olduğunda
+algoritma H2'nin periyodunu bulur ve perdeyi iki katına çıkarır. Ölçüm:
+
+```
+zayıf temel (H1=0,05 · H2=1,0), gerçek 120 Hz → 238,8 Hz   (2× hata)
+```
+
+Rapor bunu `pitchHint` ile birlikte bastığı için yanıltıcı bir **cinsiyet
+ipucu** da üretiyordu.
+
+### NEDEN "DÜZELTME" DEĞİL, "BİLDİRİM"
+
+Klasik oktav düzeltmesi (gecikmenin katlarına bakmak) **denendi ve ölçüldü**:
+normal sesleri de bozdu.
+
+```
+mult=2 ratio=0.95 → 6/9 doğru · HATA: normal 210→105, normal 250→125
+```
+
+Sebep: her periyodik sinyal 2×lag'de de tepe verir. Otokorelasyondan hangi
+tepenin gerçek temel olduğunu güvenilir biçimde ayırmak mümkün değildir.
+**Yanlış sayıyı "düzeltmek" yerine belirsizliği tespit edip bildiriyoruz.**
+
+### Çözüm
+
+- `detectPitchAmbiguity(samples, sr, measuredHz)` — Goertzel ile ölçülen
+  frekansın **yarısında** anlamlı enerji olup olmadığına bakar. Normal seslerde
+  f/2'de enerji pratikte yoktur (ölçüldü: −250 dB); oktav hatasında vardır
+  (ölçüldü: −22 dB). Eşik −30 dB.
+- Ölçüm sırasında her bölüm için belirsizlik hesaplanır;
+  `speaker.pitchAmbiguous` ve `speaker.pitchOctaveHz` kaydedilir.
+- `pitchCellText(sp)` — raporun "ÖLÇÜLEN PERDE" hücresi **tek kaynak**.
+  Belirsizse tek bir kesin sayı **iddia etmez**; olası aralık + uyarı yazar ve
+  **cinsiyet ipucu vermez**.
+
+**Ölçüm (gerçek Chromium, üretilen zayıf-temel dosyası):**
+
+```
+ÖNCE   "240 Hz (yüksek perde (genellikle kadın))"   ← yanıltıcı
+SONRA  "oktav belirsiz: ≈120–240 Hz (tek sayı iddia edilmez)"
+```
+
+### KULLANICI NE GÖRECEK
+
+- Perde ölçümü oktav yukarıda olabilecekse rapor **"oktav belirsiz"** yazar ve
+  olası aralığı gösterir. Tek bir yanlış sayı ve ona bağlı cinsiyet ipucu
+  verilmez.
+- Perde güvenilir biçimde ölçüldüyse (temel güçlü) davranış değişmez:
+  "120 Hz (düşük perde (genellikle erkek))".
+- Ölçüm yapılmadıysa "Ölçülmedi" yazılır (uydurma yok).
+
+### Bilinen sınır (dürüstçe)
+
+Otokorelasyon tabanlı perde tahmini, temel frekans çok zayıf olduğunda oktav
+hatası yapabilir. Bu sürüm hatayı **düzeltmiyor**, **bildiriyor**. Kesin perde
+için daha ağır bir yöntem (ör. YIN, SWIPE) gerekir; bu depo öyle bir model
+içermez ve yapılmış gibi göstermez.
+
+### Testle korunur
+
+`birim-testleri` [31] (18 kontrol): normal sesler doğru ve belirsiz değil,
+zayıf temelde belirsizlik tespit edilir ve oktav adayı doğru, H1 güçlüyken
+belirsizlik yok, rapor hücresi belirsizde cinsiyet ipucu vermez. Test
+düzeltme yokken **kaldı**, düzeltmeden sonra geçti (`441 geçti, 0 kaldı`).
 
 ## v2.100 — Türkçe büyük İ terim tutarlılığını bozuyordu
 

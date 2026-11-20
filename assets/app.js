@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.100';
+const APP_VERSION = '2.101';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2747,6 +2747,20 @@ function closeAudioGraph(m) {
 // sunar, "tespit" olarak değil. Aynı konuşmacıyı bulma yalnızca benzer perde
 // aralığına göre ÖNERİ üretir ve öneri olduğu açıkça yazılır.
 // Perde aralığı ölçümüne göre kaba yönlendirme (tıbbi/kesin değil, kaba gösterge).
+// Rapor "ÖLÇÜLEN PERDE" hücresi — TEK KAYNAK (v2.101).
+// Oktav belirsizse TEK bir kesin sayı yazılmaz: otokorelasyon, temel frekans
+// zayıfken 2. harmoniğin periyodunu bulabilir ve perdeyi iki katına çıkarır.
+// Bu durumda olası aralık + uyarı yazılır; "genellikle kadın/erkek" gibi
+// cinsiyet ipucu tek sayıya bağlanmaz (yanıltıcı olur).
+function pitchCellText(sp) {
+  const hz = sp && sp.pitch;
+  if (!hz) return 'Ölçülmedi';
+  if (sp.pitchAmbiguous) {
+    const low = sp.pitchOctaveHz || hz / 2;
+    return `oktav belirsiz: ≈${Math.round(low)}–${Math.round(hz)} Hz (tek sayı iddia edilmez)`;
+  }
+  return `${Math.round(hz)} Hz (${pitchHint(hz)})`;
+}
 function pitchHint(f0) {
   if (!f0) return '';
   if (f0 < 95) return 'çok düşük perde (genellikle yetişkin erkek)';
@@ -2828,6 +2842,46 @@ function detectPitchHz(samples, sampleRate) {
   if (bestLag < 0 || bestNorm < 0.3) return null; // yeterli periyodiklik yok
   return sampleRate / bestLag;
 }
+// OKTAV BELİRSİZLİĞİ (v2.101).
+// Otokorelasyon, temel frekans (H1) zayıf ve 2. harmonik (H2) güçlü olduğunda
+// H2'nin periyodunu bulur ve perdeyi İKİ KATINA çıkarır (ölçüldü: gerçek
+// 120 Hz → 238,8 Hz). Bunu otokorelasyondan ayırmak GÜVENİLİR biçimde mümkün
+// değildir: her periyodik sinyal 2×lag'de de tepe verir. "Düzeltme" denemesi
+// normal sesleri de bozdu (ölçüldü: 210 Hz → 105 Hz).
+// DÜRÜST ÇÖZÜM: belirsizliği TESPİT ET ve BİLDİR. Spektrumda H1 bileşeni
+// H2'den belirgin biçimde zayıfsa (≥ 10 dB), ölçülen perde oktav yukarıda
+// olabilir; rapor bunu "oktav belirsiz" diye yazar ve tek bir kesin sayı
+// iddia etmez. Uydurma yok, ölçülemeyen kesinlik iddia edilmez.
+function detectPitchAmbiguity(samples, sampleRate, measuredHz) {
+  if (!measuredHz) return { ambiguous: false, octaveHz: null };
+  const N = Math.min(samples.length, Math.floor(sampleRate * 0.4));
+  if (N < sampleRate * 0.05) return { ambiguous: false, octaveHz: null };
+  // Basit Goertzel: f ve 2f'deki enerji oranı.
+  const power = (freq) => {
+    const w = (2 * Math.PI * freq) / sampleRate;
+    const c = 2 * Math.cos(w);
+    let s1 = 0,
+      s2 = 0;
+    for (let i = 0; i < N; i++) {
+      const s0 = samples[i] + c * s1 - s2;
+      s2 = s1;
+      s1 = s0;
+    }
+    return s1 * s1 + s2 * s2 - c * s1 * s2;
+  };
+  const fHalf = measuredHz / 2; // oktav aşağısı
+  if (fHalf < 70) return { ambiguous: false, octaveHz: null };
+  const pMeas = power(measuredHz);
+  const pHalf = power(fHalf);
+  if (!(pMeas > 0)) return { ambiguous: false, octaveHz: null };
+  // Ölçülen frekansın YARISINDA anlamlı enerji varsa, gerçek temel o olabilir:
+  // ölçülen aslında 2. harmoniktir (oktav yukarıda). Eşik −30 dB: bu kadar
+  // zayıf bir bileşen bile "yarım frekansta enerji var" demektir; normal
+  // seslerde f/2'de enerji pratikte YOKTUR (ölçüldü: −250 dB civarı).
+  const ratioDb = 10 * Math.log10(Math.max(pHalf, 1e-20) / pMeas);
+  const ambiguous = ratioDb > -30;
+  return { ambiguous, octaveHz: ambiguous ? fHalf : null, ratioDb };
+}
 // Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
 // birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
 // yapılır ve kayda bağlı saklanır.
@@ -2870,15 +2924,28 @@ async function measureSpeakerPitch(m) {
       const segChannels = channels.map((c) => c.subarray(a, b));
       const pick = pickActiveChannel(segChannels);
       const f = detectPitchHz(segChannels[pick.index], sr);
-      if (f) vals.push(f);
+      if (f) {
+        // Oktav belirsizliğini de ölç (v2.101): rapora tek bir kesin sayı
+        // yazmadan önce "oktav yukarıda olabilir mi" bilinmeli.
+        const amb = detectPitchAmbiguity(segChannels[pick.index], sr, f);
+        vals.push({ hz: f, ambiguous: !!(amb && amb.ambiguous), octaveHz: (amb && amb.octaveHz) || null });
+      }
     }
     if (vals.length) {
-      vals.sort((a, b) => a - b);
-      sp.pitch = vals[Math.floor(vals.length / 2)];
+      // Medyan: perde tahminleri arasında en dayanıklı özet.
+      vals.sort((a, b) => a.hz - b.hz);
+      const med = vals[Math.floor(vals.length / 2)];
+      sp.pitch = med.hz;
       sp.pitchSamples = vals.length;
+      // Oktav belirsizse raporda tek sayı iddia edilmez (v2.101).
+      const ambCount = vals.filter((v) => v.ambiguous).length;
+      sp.pitchAmbiguous = ambCount > 0;
+      sp.pitchOctaveHz = med.octaveHz;
       sp.pitchAt = new Date().toISOString();
     } else {
       sp.pitch = null;
+      sp.pitchAmbiguous = false;
+      sp.pitchOctaveHz = null;
       sp.pitchAt = new Date().toISOString();
     }
   }
@@ -6731,7 +6798,7 @@ function speakerRows(c) {
         SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
         SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
         sp.ageRange || '—',
-        sp.pitch ? `${Math.round(sp.pitch)} Hz (${pitchHint(sp.pitch)})` : 'Ölçülmedi',
+        pitchCellText(sp),
         `${dur}${note ? ' · ' + note : ''}`
       ]);
     }
@@ -9761,6 +9828,16 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.101': {
+    title: 'Perde ölçümü: yanıltıcı tek sayı yerine "oktav belirsiz" uyarısı',
+    body:
+      'Konuşmacı perdesi, temel frekans zayıf olduğunda iki katına çıkabiliyordu ' +
+      '(ör. gerçek 120 Hz iken 240 Hz) ve rapor bu değere "genellikle kadın" gibi ' +
+      'bir cinsiyet ipucu ekliyordu. Bu hatayı güvenilir biçimde düzeltmek mümkün ' +
+      'değil (denendi, normal sesleri de bozdu). Artık böyle bir durumda rapor tek ' +
+      'bir kesin sayı iddia etmez: "oktav belirsiz: ≈120–240 Hz" yazar ve cinsiyet ' +
+      'ipucu vermez. Perde güvenilir ölçüldüyse davranış değişmez.'
+  },
   '2.100': {
     title: 'Türkçe "İ" ile başlayan kelimeler artık doğru tanınıyor',
     body:

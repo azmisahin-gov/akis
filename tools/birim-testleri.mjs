@@ -63,7 +63,8 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase', 'analyzeSilence', 'segmentSilenceFlag',
+  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
+  'detectPitchAmbiguity', 'pitchCellText', 'analyzeSilence', 'segmentSilenceFlag',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
@@ -87,6 +88,7 @@ const EXPOSE = [
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
   'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
+  'detectPitchAmbiguity', 'pitchCellText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1622,6 +1624,85 @@ console.log('\n[30] Türkçe büyük İ terim tutarlılığı');
   {
     const groups = T.findTermInconsistencies(['İstanbul İstambul İstanbul']);
     eq('gerçek yazım farkı bulunur', groups.length > 0, true);
+  }
+}
+
+// --- 31. Perde tahmininde oktav belirsizliği (v2.101) -------------------
+// GERÇEK HATA: `detectPitchHz` yalnız "en yüksek normalize otokorelasyon"
+// gecikmesini alıyordu. Temel frekans (H1) zayıf, 2. harmonik (H2) güçlü
+// olduğunda algoritma H2'nin periyodunu buluyor ve perdeyi İKİ KATINA
+// çıkarıyor. Ölçüm: zayıf temel (H1=0,05 · H2=1,0), gerçek 120 Hz → 239 Hz.
+// Rapor bu değeri `pitchHint` ile birlikte ("genellikle kadın") bastığı için
+// yanıltıcı bir cinsiyet ipucu da üretiyordu.
+//
+// NEDEN DÜZELTME DEĞİL, BİLDİRİM: Otokorelasyonda "oktav düzeltmesi" her
+// periyodik sinyal 2×lag'de de tepe verdiği için güvenilir değildir. Denendi
+// ve ÖLÇÜLDÜ: normal sesleri bozdu (210 Hz → 105 Hz). Bu yüzden yanlış sayıyı
+// "düzeltmek" yerine BELİRSİZLİĞİ TESPİT EDİP BİLDİRİYORUZ. Rapor tek bir
+// kesin sayı iddia etmez; "oktav belirsiz, olası aralık" yazar.
+console.log('\n[31] Perde tahmininde oktav belirsizliği');
+{
+  const sr = 16000;
+  const synth = (f0, amps, dur = 0.4) => {
+    const n = Math.floor(sr * dur);
+    const x = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / sr;
+      let v = 0;
+      amps.forEach((a, k) => { v += a * Math.sin(2 * Math.PI * f0 * (k + 1) * t + k * 0.7); });
+      x[i] = v;
+    }
+    return x;
+  };
+  const near = (got, want) => got != null && Math.abs(got - want) / want < 0.08;
+
+  eq('detectPitchAmbiguity tanımlı', typeof T.detectPitchAmbiguity, 'function');
+
+  // 1) Normal sesler doğru ölçülür ve belirsiz SAYILMAZ (yanlış alarm yok).
+  for (const [f0, amps] of [[120, [1.0, 0.5, 0.3, 0.2]], [210, [1.0, 0.4, 0.2]], [100, [1.0, 0.6, 0.3]], [250, [1.0, 0.3]]]) {
+    const x = synth(f0, amps);
+    const hz = T.detectPitchHz(x, sr);
+    eq(`normal ${f0} Hz doğru ölçülür`, near(hz, f0), true);
+    const amb = T.detectPitchAmbiguity(x, sr, hz);
+    eq(`normal ${f0} Hz belirsiz SAYILMAZ`, amb.ambiguous, false);
+  }
+
+  // 2) ZAYIF TEMEL: ölçüm oktav yukarıda; belirsizlik TESPİT EDİLİR.
+  {
+    const x = synth(120, [0.05, 1.0]);
+    const hz = T.detectPitchHz(x, sr);
+    // Ölçüm gerçekten 2× hatalı (bu, bilinen sınır; belgelemesi bu testte).
+    eq('zayıf temelde ölçüm 2× hatalı (bilinen sınır)', near(hz, 240), true);
+    const amb = T.detectPitchAmbiguity(x, sr, hz);
+    eq('oktav belirsizliği TESPİT EDİLİR', amb.ambiguous, true);
+    eq('oktav aşağı adayı doğru (≈120)', near(amb.octaveHz, 120), true);
+  }
+
+  // 3) H1 güçlü olduğunda belirsizlik YOK (yanlış alarm yok).
+  {
+    const x = synth(90, [0.2, 1.0, 0.3, 0.2]);
+    const hz = T.detectPitchHz(x, sr);
+    eq('H2 baskın 90 Hz doğru', near(hz, 90), true);
+    eq('H1 yeterince güçlü → belirsiz değil', T.detectPitchAmbiguity(x, sr, hz).ambiguous, false);
+  }
+
+  // 4) Sessizlikte null döner (uydurma yok).
+  eq('sessizlik null', T.detectPitchHz(new Float32Array(sr * 0.4), sr), null);
+
+  // 5) RAPOR: belirsiz perde TEK bir kesin sayı olarak yazılmaz (v2.101).
+  //    Aksi hâlde yanıltıcı "genellikle kadın" ipucu rapora girer.
+  eq('pitchCellText tanımlı', typeof T.pitchCellText, 'function');
+  if (typeof T.pitchCellText === 'function') {
+    // Belirsiz değil → normal biçim.
+    eq('belirsiz olmayan perde', T.pitchCellText({ pitch: 120, pitchAmbiguous: false }), '120 Hz (düşük perde (genellikle erkek))');
+    // Belirsiz → olası aralık + uyarı; CİNSİYET İPUCU YOK (yanıltıcı olur).
+    const amb = T.pitchCellText({ pitch: 240, pitchAmbiguous: true, pitchOctaveHz: 120 });
+    eq('belirsiz perde aralık verir', /120/.test(amb) && /240/.test(amb), true);
+    eq('belirsiz perde uyarı taşır', /oktav/i.test(amb), true);
+    eq('belirsiz perde cinsiyet ipucu VERMEZ', /kadın|erkek/i.test(amb), false);
+    eq('belirsiz perde tek kesin sayı iddia etmez', /belirsiz/i.test(amb), true);
+    // Ölçülmemiş → "Ölçülmedi".
+    eq('ölçülmemiş perde', T.pitchCellText({ pitch: null }), 'Ölçülmedi');
   }
 }
 

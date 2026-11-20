@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.100.**
+yazılır. **Güncel sürüm: v2.101.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.101 — Perde oktav belirsizliği bildirilir (tamamlandı, canlı veri)
+
+Zayıf temelde otokorelasyon perdeyi 2 katına çıkarıyordu (120 → 239 Hz) ve
+rapor "genellikle kadın" diyordu. Klasik oktav düzeltmesi denendi ve normal
+sesleri bozdu (210 → 105). Bu yüzden düzeltme değil BİLDİRİM yapılır:
+`detectPitchAmbiguity()` f/2'de enerji arar; `pitchCellText()` belirsizse
+aralık yazar, cinsiyet ipucu vermez. `birim-testleri` [31] korur.
 
 ### v2.100 — Türkçe büyük İ terim tutarlılığını bozuyordu (tamamlandı, canlı veri)
 
