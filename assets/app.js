@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.98';
+const APP_VERSION = '2.99';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3118,11 +3118,28 @@ function segQuickCheck(s, prev) {
   }
   return { ok: reasons.length === 0, reasons };
 }
-function segMatchesFilter(s, filter) {
+// HIZLI ONAYA UYGUN BÖLÜMLER — TEK KAYNAK (v2.99).
+// Sayaç (`segCounts`), filtre (`segMatchesFilter`) ve toplu onay
+// (`bulkApproveQuick`) AYNI listeyi kullanmalıdır. Öncesinde sayaç
+// `segQuickCheck(s, prev)` (çakışma dahil) çağırırken filtre `segQuickCheck(s)`
+// (prev yok) çağırıyordu: sayaç 1 derken filtre 2 listeliyor, kullanıcı
+// listelediği bölümün toplu onayda atlandığını görüyordu.
+// Dönüş: uygun bölümlerin DİZİ İNDEKSLERİ.
+function quickApproveTargets(m) {
+  const segs = (m && m.segments) || [];
+  const out = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    if (isReviewed(s)) continue;
+    if (segQuickCheck(s, segs[i - 1]).ok) out.push(i);
+  }
+  return out;
+}
+function segMatchesFilter(s, filter, prev) {
   const r = segReview(s);
   if (filter === 'all') return true;
   if (filter === 'pending') return !isReviewed(s);
-  if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s).ok;
+  if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s, prev).ok;
   return r === filter;
 }
 function segCounts(m) {
@@ -3134,11 +3151,10 @@ function segCounts(m) {
     if (r === 'approved') c.approved++;
     else if (r === 'inaudible') c.inaudible++;
     else if (r === 'relisten') c.relisten++;
-    if (!isReviewed(s)) {
-      c.pending++;
-      if (segQuickCheck(s, segs[i - 1]).ok) c.quick++;
-    }
+    if (!isReviewed(s)) c.pending++;
   }
+  // Hızlı onay sayısı TEK KAYNAKTAN gelir (filtre ve toplu onayla aynı).
+  c.quick = quickApproveTargets(m).length;
   return c;
 }
 // İnceleme önceliği: hangi bölümün önce dinlenmesi gerektiğini gösteren şeffaf
@@ -3264,7 +3280,8 @@ function segListHtml(m) {
   const segs = m.segments || [];
   if (!segs.length) return '<div class="seg-empty-note">Henüz bölüm yok. "Çözümle" veya "＋ Bölüm" ile başlayın.</div>';
   const filter = segFilter(m);
-  const rows = segs.map((s, i) => ({ s, i })).filter((x) => segMatchesFilter(x.s, filter));
+  // `prev` geçilir: 'quick' filtresi sayaçla AYNI ölçütü kullanmalı (v2.99).
+  const rows = segs.map((s, i) => ({ s, i })).filter((x) => segMatchesFilter(x.s, filter, segs[x.i - 1]));
   if (!rows.length) return '<div class="seg-empty-note">Bu filtreye uyan bölüm yok.</div>';
   return rows.map(({ s, i }) => segItemHtml(m, s, i, segs[i - 1])).join('');
 }
@@ -3985,7 +4002,7 @@ function navSegment(m, dir) {
   const segs = m.segments || [];
   if (!segs.length) return;
   const filter = segFilter(m);
-  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter));
+  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter, segs[i - 1]));
   const list = order.length ? order : segs.map((s, i) => i);
   const cur = Number.isInteger(m.activeSeg) ? m.activeSeg : list[0];
   let pos = list.indexOf(cur);
@@ -4006,12 +4023,8 @@ function bulkApproveQuick(m) {
     return;
   }
   const segs = m.segments || [];
-  const targets = [];
-  for (let i = 0; i < segs.length; i++) {
-    const s = segs[i];
-    if (isReviewed(s)) continue;
-    if (segQuickCheck(s, segs[i - 1]).ok) targets.push(i);
-  }
+  // TEK KAYNAK (v2.99): sayaç ve filtre ile aynı liste.
+  const targets = quickApproveTargets(m);
   if (!targets.length) {
     showToast('Hızlı onaya uygun bölüm yok. Önce listeyi dinleyin.');
     return;
@@ -9740,6 +9753,15 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.99': {
+    title: 'Hızlı onay sayısı artık listeyle aynı',
+    body:
+      '"Hızlı onaya uygun" sayısı ile filtreye geçince listelenen bölüm sayısı ' +
+      'farklıydı: sayaç 1 derken liste 2 bölüm gösteriyordu. Çünkü sayaç ' +
+      '"önceki bölümle çakışma" denetimini yapıyor, liste yapmıyordu. Artık ' +
+      'sayaç, liste ve toplu onay düğmesi aynı ölçütü kullanır; listelediğiniz ' +
+      'bölüm toplu onayda atlanmaz.'
+  },
   '2.98': {
     title: 'Paragraf ve bölme, modelin çıktısını artık silmiyor',
     body:

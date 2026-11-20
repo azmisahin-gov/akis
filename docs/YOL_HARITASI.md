@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.98.**
+yazılır. **Güncel sürüm: v2.99.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.99 — Hızlı onay sayacı = filtresi (tamamlandı, canlı veri)
+
+`segCounts` hızlı onayı `segQuickCheck(s, prev)` ile (çakışma dahil) sayarken
+`segMatchesFilter` `segQuickCheck(s)` (prev yok) çağırıyordu: sayaç 1, filtre
+listesi 2. `quickApproveTargets()` tek kaynak yapıldı; sayaç, filtre ve toplu
+onay aynı listeyi kullanır. `birim-testleri` [29] korur.
 
 ### v2.98 — Paragraf/bölme model çıktısını silmiyor (tamamlandı, canlı veri)
 
@@ -144,7 +151,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 11 | SHA-256 hesaplanamazsa "doğrulandı" deniyor | **v2.96 tamamlandı** |
 | 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | **v2.97 tamamlandı** |
 | 13 | `paragraphize` asrText/asrModel'i siliyor | **v2.98 tamamlandı** |
-| 14 | Hızlı onay sayacı ile filtresi ayrışıyor | bekliyor |
+| 14 | Hızlı onay sayacı ile filtresi ayrışıyor | **v2.99 tamamlandı** |
 | 15 | Türkçe büyük İ terim tutarlılığını bozuyor | bekliyor |
 
 ### v2.86 — Eksik ses uyarısı + yazma akıcılığı (tamamlandı)

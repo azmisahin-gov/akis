@@ -6,12 +6,76 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.98.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.99.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.99 — Hızlı onay sayacı ile filtresi ayrışıyordu
+
+CANLI VERİ. "Hızlı onaya uygun" göstergesi üç yerde farklı sayı veriyordu:
+sayaç çipi, filtre listesi ve toplu onay düğmesi.
+
+### GERÇEK HATA
+
+`segCounts()` hızlı onay sayısını **önceki bölümü de vererek** hesaplıyordu:
+
+```js
+if (segQuickCheck(s, segs[i - 1]).ok) c.quick++;    // çakışma denetimi DAHİL
+```
+
+Ama filtre fonksiyonu **prev geçmiyordu**:
+
+```js
+if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s).ok;   // prev YOK
+```
+
+`segQuickCheck` "öncekiyle çakışıyor" denetimini yalnız `prev` verildiğinde
+yapar. Ölçüm:
+
+```
+sayaç (çip)      : 1
+filtre listesi   : 2      ← çakışan bölüm de listeleniyor
+toplu onay hedefi: 1
+```
+
+Kullanıcı "Hızlı onaya uygun 2" filtresine geçip listelenen bölümü görüyor,
+ama toplu onay ona **dokunmuyordu**. AGENTS.md kuralı: *"Filtre ve sayaç aynı
+fonksiyonu kullanır; arayüz ile liste ayrışamaz."*
+
+### Çözüm
+
+`quickApproveTargets(m)` — **tek kaynak**: uygun bölümlerin indekslerini
+döndürür (prev dahil). Üç tüketici de bunu kullanır:
+
+- `segCounts().quick` → `quickApproveTargets(m).length`
+- `segMatchesFilter(s, 'quick', prev)` → prev parametresi eklendi; liste
+  `segs[i-1]` geçer (hem `segListHtml` hem `navSegment`)
+- `bulkApproveQuick()` → `quickApproveTargets(m)`
+
+**Ölçüm (gerçek Chromium, çakışan iki bölüm):**
+
+```
+ÖNCE   sayaç "Hızlı onaya uygun 1"  ·  filtre listesi 2  ·  düğme "✓ 1"
+SONRA  sayaç "Hızlı onaya uygun 1"  ·  filtre listesi 1  ·  düğme "✓ 1 hızlı onayla"
+       onay sonrası: Onaylandı 1 · Bekleyen 1  (tutarlı)
+```
+
+### KULLANICI NE GÖRECEK
+
+- "Hızlı onaya uygun" sayısı ile filtreye geçince **listelenen bölüm sayısı
+  artık aynı**.
+- Toplu onay düğmesindeki sayı da aynı; listelediğiniz bölüm atlanmaz.
+- Öncekiyle çakışan bölümler hızlı onaya uygun **sayılmaz** (yanlış onay riski
+  yok) ve bu, üç yerde tutarlı gösterilir.
+
+### Testle korunur
+
+`birim-testleri` [29] (7 kontrol): çakışan bölüm uygun değil, sayaç = filtre =
+toplu onay hedefi, çakışmasız durumda ikisi de 2. Test düzeltme yokken
+**kaldı** (`sayaç 2, filtre 1`), düzeltmeden sonra geçti (`409 geçti, 0 kaldı`).
 
 ## v2.98 — Paragraf ve bölme, modelin çıktısını siliyordu
 

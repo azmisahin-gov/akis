@@ -63,7 +63,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize', 'splitSegmentAt', 'analyzeSilence', 'segmentSilenceFlag',
+  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'analyzeSilence', 'segmentSilenceFlag',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
@@ -86,7 +86,7 @@ const EXPOSE = [
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
-  'paragraphize', 'splitSegmentAt',
+  'paragraphize', 'splitSegmentAt', 'quickApproveTargets',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1535,6 +1535,53 @@ console.log('\n[28] paragraphize adli ayrımı korur');
     // İkisi TOPLAMDA orijinali vermeli (biri diğerinin kopyası olmamalı).
     eq('asrText ikiye PAYLAŞTIRILIR, kopyalanmaz', `${leftAsr} ${rightAsr}`, 'bir iki üç dört');
   }
+}
+
+// --- 29. Hızlı onay sayacı ile filtresi AYNI ölçütü kullanmalı (v2.99) ---
+// GERÇEK HATA: `segCounts()` hızlı onay sayısını `segQuickCheck(s, segs[i-1])`
+// ile hesaplıyordu (önceki bölümle çakışma denetimi DAHİL), ama
+// `segMatchesFilter(s, 'quick')` `segQuickCheck(s)` çağırıyordu (prev YOK).
+// Sonuç: sayaç 1 derken filtre 2 bölüm listeliyordu. Kullanıcı "Hızlı onaya
+// uygun 2" filtresine geçip listelenen bölümü görüyor, ama toplu onay ona
+// dokunmuyordu. AGENTS.md kuralı: "Filtre ve sayaç aynı fonksiyonu kullanır;
+// arayüz ile liste ayrışamaz."
+// Ölçüm: sayaç 1 · filtre listesi 2 · 2. bölüm prev ile
+// {"ok":false,"reasons":["öncekiyle çakışıyor"]}, prev yok {"ok":true}.
+console.log('\n[29] Hızlı onay sayacı = filtresi');
+{
+  const m = {
+    segments: [
+      { start: '00:00:00.000', end: '00:00:10.000', text: 'birinci bölüm metni', review: 'pending' },
+      { start: '00:00:05.000', end: '00:00:20.000', text: 'ikinci bölüm metni', review: 'pending' }
+    ]
+  };
+  // 2. bölüm öncekiyle çakışıyor → hızlı onaya UYGUN DEĞİL.
+  eq('çakışan bölüm uygun değil (prev ile)', T.segQuickCheck(m.segments[1], m.segments[0]).ok, false);
+
+  // Sayaç ve filtre aynı sonucu vermeli.
+  const counts = T.segCounts(m);
+  const filtered = m.segments.filter((s, i) => T.segMatchesFilter(s, 'quick', m.segments[i - 1]));
+  eq('sayaç ile filtre aynı sayıyı verir', counts.quick, filtered.length);
+  eq('beklenen değer 1 (yalnız 1. bölüm uygun)', counts.quick, 1);
+
+  // Filtre de "öncekiyle çakışma" yı görmeli → liste tek bölüm.
+  eq('filtre çakışan bölümü listelemez', filtered.length, 1);
+
+  // Bulk approve da aynı kümeyi onaylamalı.
+  const targets = T.quickApproveTargets(m);
+  eq('toplu onay hedefi = sayaç', targets.length, counts.quick);
+
+  // Çakışma yoksa hepsi uygun olmalı (kural bozulmadı).
+  const ok = {
+    segments: [
+      { start: '00:00:00.000', end: '00:00:05.000', text: 'birinci bölüm metni', review: 'pending' },
+      { start: '00:00:05.000', end: '00:00:10.000', text: 'ikinci bölüm metni', review: 'pending' }
+    ]
+  };
+  const okCounts = T.segCounts(ok);
+  const okFiltered = ok.segments.filter((s, i) => T.segMatchesFilter(s, 'quick', ok.segments[i - 1]));
+  eq('çakışmasız: sayaç = filtre', okCounts.quick, okFiltered.length);
+  eq('çakışmasız: ikisi de 2', okCounts.quick, 2);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
