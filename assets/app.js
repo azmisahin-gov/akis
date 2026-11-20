@@ -37,14 +37,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.118';
+} from './schema.js?v=2.119';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.118';
+const APP_VERSION = '2.119';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1607,7 +1607,8 @@ function materialCardHtml(m) {
           <div class="listen-row">
             <button class="main-play" data-main-play="${esc(m.id)}" title="Kaydın tamamını çal / duraklat (Boşluk)">▶ Çal</button>
             <span class="play-time" id="ptime-${esc(m.id)}">0:00 / 0:00</span>
-            <button class="mini-button follow-btn" data-follow-toggle="${esc(m.id)}" title="Çalarken bölümleri otomatik izle (F)">Takip</button>
+            <button class="mini-button follow-btn" data-follow-mode="autoAdvance" title="Çalarken sol listede BİR SONRAKİ bölüme otomatik geç (F). Varsayılan: kapalı.">Otomatik geçiş</button>
+            <button class="mini-button follow-btn" data-follow-mode="liveHighlight" title="Sağ panelde okunan kelimeyi canlı vurgula (G). Varsayılan: kapalı.">Canlı vurgu</button>
             <label class="listen-filter-label" title="Dinleme yardımcısı yalnızca dinlemeyi kolaylaştırır; kaydı değiştirmez. Kaynak ayrıştırma (yalnız konuşmayı müzikten ayırma) yapılmaz."><select data-listen-filter="${esc(m.id)}" aria-label="Dinleme yardımcısı">${LISTEN_FILTERS.map(([k, lbl]) => `<option value="${k}" ${listenFilter(m) === k ? 'selected' : ''}>${esc(lbl)}</option>`).join('')}</select></label>${m.tech?.channels === 2 ? `<div class="chan-select" role="group" aria-label="Kanal seçimi"><span class="lbl">Kanal:</span>${CHANNEL_MODES.map(([k, lbl]) => `<button class="seg-tool ${channelMode(m) === k ? 'on' : ''}" data-chan="${esc(m.id)}|${k}" title="${esc(lbl)}">${k === 'both' ? 'Stereo' : k === 'left' ? 'Sol' : 'Sağ'}</button>`).join('')}</div>` : ''}</div>
           <canvas class="wave-canvas" id="wave-${esc(m.id)}" width="1200" height="96" aria-label="Ses dalga formu — tıklayarak konuma gidin"></canvas>
           <audio class="audio-player" controls preload="none" id="player-${esc(m.id)}" aria-hidden="true"></audio>
@@ -3759,7 +3760,7 @@ function segDetailHtml(m) {
       <div class="sd-obs">${obsBtns}</div>
     </div>
     <div class="sd-right">
-      <div class="karaoke" id="karaoke-${esc(m.id)}" aria-live="polite" hidden></div>
+      ${'' /* karaoke kutusu kaldırıldı (v2.119): tek görsel alan .sd-follow */}
       <div class="sd-text">
         ${asrCompareHtml(m, s, i)}
         <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
@@ -4475,10 +4476,9 @@ function playWholeRecording(m) {
     player.__segStop.index = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
   }
   segPlayback = { materialId: m.id, index: Number.isInteger(m.activeSeg) ? m.activeSeg : 0, playing: true, atEnd: false };
-  // Takip kapalıysa otomatik aç: film gibi izleme ana oynatın amacıdır.
-  // Bölüm dinlerken takip otomatik açılır: kullanıcı "Dinle"ye bastığında
-  // metnin nerede okunduğunu görmek ister.
-  if (!followState.on) setFollow(true);
+  // OTOMATİK AÇMA YOK (v2.119): kullanıcı takibi açmadıysa açılmaz.
+  // Önceden burada `setFollow(true)` vardı; kullanıcı ana oynata basınca
+  // istemediği hâlde takip açılıyordu (canlı veri bildirimi).
   player.play().catch(() => {});
   refreshPlayButtons();
 }
@@ -4661,9 +4661,17 @@ function handleSegKey(e, card, m) {
     e.preventDefault();
     return true;
   }
+  // F = otomatik bölüm geçişi, G = canlı metin vurgusu (v2.119).
+  // İkisi ayrı; kullanıcı yalnız istediğini açar.
   if ((e.key === 'f' || e.key === 'F') && !typing) {
-    setFollow(!followState.on);
-    showToast(followState.on ? 'Takip açık.' : 'Takip kapalı.');
+    setFollow(!followState.autoAdvance, 'autoAdvance');
+    showToast(followState.autoAdvance ? 'Otomatik bölüm geçişi açık.' : 'Otomatik bölüm geçişi kapalı.');
+    e.preventDefault();
+    return true;
+  }
+  if ((e.key === 'g' || e.key === 'G') && !typing) {
+    setFollow(!followState.liveHighlight, 'liveHighlight');
+    showToast(followState.liveHighlight ? 'Canlı metin vurgusu açık.' : 'Canlı metin vurgusu kapalı.');
     e.preventDefault();
     return true;
   }
@@ -5182,25 +5190,56 @@ function refreshPlayButtons() {
 let followTimer = null;
 // Kullanıcı "listeye dön" dediyse bu oturumda otomatik çalışma moduna girme.
 let workspaceDeclined = false;
+// TAKİP MODU — İKİ AYRI KAVRAM (v2.119).
+// Kullanıcı haklıydı: tek düğme iki işi birden yapıyordu ve isimleri karışıyordu.
+//   autoAdvance   : çalarken sol listede BİR SONRAKİ bölüme otomatik geçiş
+//   liveHighlight : sağ panelde okunan kelimenin CANLI vurgusu
+// İkisi bağımsız açılabilir. Varsayılan: İKİSİ DE KAPALI.
+const FOLLOW_MODES = ['autoAdvance', 'liveHighlight'];
+// Otomatik başlatma YALNIZ kullanıcı açıkça açtıysa (tercih true).
+// `followState` her zaman false başlar; tercih ayrı saklanır.
+function followShouldAutoStart(pref) {
+  return !!(pref && pref.autoFollow === true);
+}
 // Takip modu durumu (dosya bazlı saklanır: case.followMode).
-const followState = { on: false };
-function setFollow(on) {
-  followState.on = !!on;
+const followState = { on: false, autoAdvance: false, liveHighlight: false };
+// `setFollow(on, mode)` — v2.119: iki bağımsız mod.
+// mode verilmezse eski davranış (ikisi birden) korunur (geriye dönük).
+function setFollow(on, mode) {
+  if (mode && FOLLOW_MODES.includes(mode)) {
+    followState[mode] = !!on;
+  } else {
+    followState.autoAdvance = !!on;
+    followState.liveHighlight = !!on;
+  }
+  followState.on = !!(followState.autoAdvance || followState.liveHighlight);
   document.body.classList.toggle('follow-on', followState.on);
   const c = currentCase();
   if (c) {
     c.followMode = followState.on;
     persist();
   }
+  // KULLANICI TERCİHİ HATIRLANIR: açtıysa bir sonraki açılışta da açılır.
+  // (Yalnız kullanıcı EYLEMİYLE açıldığında yazılır; otomatik açma yok.)
+  try {
+    localStorage.setItem('akis.followPref', JSON.stringify({ autoFollow: followState.on }));
+  } catch (e) {}
   refreshFollowButtons();
-  if (followState.on) startFollow(); else stopFollow();
+  // Takip zamanlayıcısı yalnız "otomatik geçiş" için gerekir; canlı vurgu
+  // oynatma olaylarıyla (timeupdate) zaten besleniyor.
+  if (followState.autoAdvance) startFollow();
+  else stopFollow();
 }
 function refreshFollowButtons() {
-  document.querySelectorAll('[data-follow-toggle]').forEach((b) => {
-    b.classList.toggle('on', followState.on);
-    b.textContent = followState.on ? '⏸ Takibi bırak' : '▶ Takip et';
-    b.title = followState.on ? 'Otomatik takibi durdur' : 'Çalarken bölümleri otomatik izle (F)';
+  // İKİ AYRI DÜĞME (v2.119): her mod kendi durumunu gösterir.
+  document.querySelectorAll('[data-follow-mode]').forEach((b) => {
+    const mode = b.dataset.followMode;
+    const on = !!followState[mode];
+    b.classList.toggle('on', on);
+    const base = mode === 'autoAdvance' ? 'Otomatik geçiş' : 'Canlı vurgu';
+    b.textContent = (on ? '⏸ ' : '') + base;
   });
+  document.body.classList.toggle('follow-on', !!(followState.autoAdvance || followState.liveHighlight));
 }
 function startFollow() {
   stopFollow();
@@ -5214,7 +5253,9 @@ function stopFollow() {
 }
 // Oynatma konumuna göre aktif bölümü seç, listeyi kaydır, metni vurgula.
 function followTick() {
-  if (!followState.on) return;
+  // Yalnız "otomatik bölüm geçişi" modu bu zamanlayıcıyı kullanır (v2.119).
+  // Canlı vurgu oynatma olaylarıyla beslenir; listede gezinmez.
+  if (!followState.autoAdvance) return;
   const m = activeMaterial();
   if (!m) return;
   const segs = m.segments || [];
@@ -5421,6 +5462,13 @@ function karaokeActiveIndex(segments, t) {
 function markTextFollow(m, idx, t) {
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
   if (!wrap) return;
+  // CANLI VURGU KAPALIYSA ÇİZME (v2.119): kullanıcı istemediyse metin vurgusu
+  // görünmez. Takip şeridi de temizlenir.
+  if (!followState.liveHighlight) {
+    wrap.querySelector('.sd-follow')?.remove();
+    delete wrap.__karaokeKey;
+    return;
+  }
   const s = (m.segments || [])[idx];
   if (!s || !s.text || isHallucination(s.text)) {
     wrap.querySelector('.sd-follow')?.remove();
@@ -5490,42 +5538,24 @@ function followKaraoke(m, idx, t) {
 // Karaoke vurgulaması: çalma sırasında o an konuşulan kelime (kelime zamanı
 // varsa) ya da bölüm metni vurgulanır. Kelime zamanı yoksa bölüm aralığına göre
 // tüm metin "okunuyor" olarak işaretlenir; uydurma zamanlama yapılmaz.
+// KARAOKE KUTUSU KALDIRILDI (v2.119).
+// NEDEN: v2.118'de bu fonksiyon HER `timeupdate`'te `box.innerHTML` yazıyordu.
+// Aynı metin iki yerde (karaoke + sd-follow) gösteriliyor, karaoke olan
+// sürekli yeniden yazıldığı için BOZULUYORDU ("sabit değil" — canlı veri).
+// Tek görsel alan `.sd-follow`dur ve sınıf-tabanlı çalışır (v2.116).
+// Bu fonksiyon artık yalnız delege eder; karaoke kutusu DOM'da tutulmaz.
 function renderKaraoke(m, index) {
   const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  if (!box) return;
-  const s = (m.segments || [])[index];
-  if (!s || !s.text || isHallucination(s.text)) {
-    box.hidden = true;
-    box.innerHTML = '';
-    return;
+  if (box) {
+    // Kalıntı kutu varsa temizle ve gizle (eski DOM/önbellek).
+    if (!box.hidden) box.hidden = true;
+    if (box.innerHTML) box.innerHTML = '';
   }
-  const card = box.closest('.audio-card');
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player = card?.querySelector('audio');
-  const now = player ? player.currentTime : null;
-  const playing = segPlayback.materialId === m.id && segPlayback.index === index && segPlayback.playing;
-  if (!playing || now == null) {
-    box.hidden = true;
-    box.innerHTML = '';
-    return;
-  }
-  const words =
-    s.words && s.words.length
-      ? s.words
-      : String(s.text)
-          .split(/\s+/)
-          .map((w) => ({ w, s: null, e: null }));
-  box.hidden = false;
-  box.innerHTML = words
-    .map((w) => {
-      let active = false;
-      if (w.s != null) {
-        const a = secondsFromTimecode(w.s),
-          b = secondsFromTimecode(w.e);
-        active = now >= a && now < b + 0.001;
-      }
-      return `<span class="${active ? 'on' : ''}">${esc(w.w)}</span>`;
-    })
-    .join(' ');
+  const now = player && Number.isFinite(player.currentTime) ? player.currentTime : null;
+  if (now == null) return;
+  markTextFollow(m, index, now);
 }
 function hideKaraoke(m) {
   const box = $(`#karaoke-${CSS.escape(m.id)}`);
@@ -5574,9 +5604,7 @@ function playSegmentRange(card, m, s, index, { restart = false } = {}) {
   player.__segStop.index = index;
   segPlayback = { materialId: m.id, index, playing: true, atEnd: false };
   player.play().catch(() => {});
-  // "Dinle" ile bölüm çalınca takip otomatik açılır: kullanıcı metnin nerede
-  // okunduğunu görmek ister (v2.78).
-  if (!followState.on) setFollow(true);
+  // OTOMATİK AÇMA YOK (v2.119): "Dinle" de takibi kendiliğinden açmaz.
   if (Number.isInteger(index)) {
     m.activeSeg = index;
     const root = $(`#segments-${CSS.escape(m.id)}`, card);
@@ -9512,9 +9540,12 @@ function setupEvents() {
     } else if (b.dataset.mainPlay !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.mainPlay);
       if (mm) playWholeRecording(mm);
-    } else if (b.dataset.followToggle !== undefined) {
-      setFollow(!followState.on);
-      showToast(followState.on ? 'Takip açık: bölümler otomatik ilerleyecek.' : 'Takip kapalı.');
+    } else if (b.dataset.followMode !== undefined) {
+      // İKİ AYRI MOD (v2.119)
+      const mode = b.dataset.followMode;
+      setFollow(!followState[mode], mode);
+      const label = mode === 'autoAdvance' ? 'Otomatik bölüm geçişi' : 'Canlı metin vurgusu';
+      showToast(followState[mode] ? `${label} açık.` : `${label} kapalı.`);
     } else if (b.dataset.cardTab !== undefined) {
       // Sekme değiştir: DOM yeniden çizilmez, yalnız görünürlük değişir.
       const [id, tab] = b.dataset.cardTab.split('|');
@@ -11056,6 +11087,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.119': {
+    title: 'Takip iki ayrı özelliğe ayrıldı; karaoke kutusu kaldırıldı',
+    body:
+      'Önceden ana oynata bastığınızda takip KENDİLİĞİNDEN açılıyordu; siz ' +
+      'açmadığınız hâlde metin vurgusu ve liste geçişi devreye giriyordu. Artık ' +
+      'varsayılan KAPALI: açmak için "Otomatik geçiş" (F) ve "Canlı vurgu" (G) ' +
+      'düğmelerini kendiniz kullanırsınız; açtıysanız hatırlanır. Ayrıca aynı metin ' +
+      'iki yerde gösteriliyordu ve üstteki "karaoke" kutusu sürekli yeniden yazıldığı ' +
+      'için BOZULUYORDU. O kutu tamamen kaldırıldı; metin vurgusu tek yerde ve sabit.'
+  },
   '2.118': {
     title: 'Yeni sürüm kendiliğinden geliyor — tuşa basmanız gerekmiyor',
     body:
@@ -11452,6 +11493,12 @@ async function init() {
   renderQueue();
   try {
     if (localStorage.getItem('akis.focusMode') === '1') setFocusMode(true);
+    // TAKİP TERCİHİ (v2.119): yalnız kullanıcı DAHA ÖNCE açıkça açtıysa açılır.
+    // Otomatik açma yok; varsayılan KAPALI.
+    try {
+      const pref = JSON.parse(localStorage.getItem('akis.followPref') || '{}');
+      if (followShouldAutoStart(pref)) setFollow(true);
+    } catch (e) {}
   } catch (e) {}
   $('#reportDate').value = currentCase().reportDate || dateToday();
   detectDevice().then((ok) => {

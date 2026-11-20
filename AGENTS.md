@@ -923,6 +923,38 @@ yazarken `false`; banner `display:flex`.
 önbelleksiz bir uçtan oku ve sayfayı kendine yenilet — ama **iş kaybettirmeden**
 (boşta değilse yenileme yok).
 
+
+### Aşama 10q — Takip iki özelliğe ayrıldı; karaoke kaldırıldı (TAMAMLANDI, v2.119)
+
+**ÖLÇÜLEN ÜÇ HATA (v2.118):**
+1. Ana oynat/Dinle takibi **kendiliğinden açıyordu**:
+   `if (!followState.on) setFollow(true)` — **2 yerde**.
+2. Aynı metin **iki yerde** gösteriliyordu: `.karaoke` + `.sd-follow`.
+3. `.karaoke` **her `timeupdate`'te** `innerHTML` yazıyordu → bozuluyordu.
+
+**KULLANICI KARARI (değişmez):** Takip **kullanıcı açmadıkça AÇILMAZ**.
+Varsayılan kapalı. Ana oynat/Dinle takibi açmaz.
+
+**İKİ AYRI MOD (tek düğme iki işi yapıyordu):**
+| Mod | Kısayol | İş |
+|---|---|---|
+| `autoAdvance` | `F` | Çalarken sol listede bir sonraki bölüme geç |
+| `liveHighlight` | `G` | Sağ panelde okunan kelimeyi vurgula |
+
+**Kurallar:**
+1. `followState = { on, autoAdvance, liveHighlight }` — üçü de **false** başlar.
+2. `followShouldAutoStart(pref)` → yalnız `pref.autoFollow === true`. Bilinmeyen
+   değerde **false** (temkinli). Tercih `akis.followPref`'te saklanır.
+3. `setFollow(on, mode)` — mod verilirse yalnız o; verilmezse ikisi (geriye uyum).
+4. `followTick` yalnız `autoAdvance` iken; `markTextFollow` yalnız
+   `liveHighlight` iken çizer (kapalıysa `.sd-follow` kaldırılır).
+5. **Karaoke kutusu YOK.** `renderKaraoke` `innerHTML` yazmaz; `markTextFollow`'a
+   delege eder. Tek görsel alan `.sd-follow` (sınıf-tabanlı, sabit).
+
+**DERS:** Bir düğme iki farklı işi yapıyorsa kullanıcı hangisini açtığını
+bilemez. Modları AYIR ve varsayılanı KAPALI tut. Ayrıca aynı veriyi iki yerde
+gösteren ikinci kutu, güncellenmediğinde "bozuk" görünür — tek kaynak kullan.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1096,7 +1128,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.118.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.119.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1254,7 +1286,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.118` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.119` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

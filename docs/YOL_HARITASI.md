@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.118.**
+yazılır. **Güncel sürüm: v2.119.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.119 — Takip iki özelliğe ayrıldı; karaoke kaldırıldı (tamamlandı)
+
+Ana oynat/Dinle takibi kendiliğinden açıyordu (2 yer). Aynı metin `.karaoke` ve
+`.sd-follow` olmak üzere iki yerde gösteriliyor, karaoke her `timeupdate`'te
+yeniden yazıldığı için bozuluyordu. Artık: varsayılan kapalı; **Otomatik geçiş (F)**
+ve **Canlı vurgu (G)** ayrı düğmeler; karaoke kutusu tamamen kaldırıldı.
+`birim-testleri` [45].
 
 ### v2.118 — Kendini güncelleyen sayfa (tamamlandı, canlı veri)
 

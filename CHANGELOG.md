@@ -6,12 +6,65 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.118.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.119.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.119 — Takip iki ayrı özellik; karaoke kutusu kaldırıldı
+
+CANLI VERİ. Bilirkişi: *"başlarken ana play'a bastığım otomatikmen takip modu
+çalışıyor ancak ben açmadıysam açılmamalı… takip modu açıldığında iki durum
+olacak… ikinci konu karaoke… sürekli güncellediği için bozuluyor… orayı tam bir
+düzenlememiz gerekiyor."*
+
+### ÖLÇÜLEN ÜÇ HATA (v2.118)
+
+| # | Hata | Kanıt |
+|---|---|---|
+| 1 | Ana oynat/Dinle takibi **kendiliğinden açıyordu** | `if (!followState.on) setFollow(true)` — **2 yerde** (4481, 5579) |
+| 2 | Aynı metin **iki yerde** gösteriliyordu | `.karaoke` + `.sd-follow` |
+| 3 | `.karaoke` **her `timeupdate`'te** `innerHTML` yazıyordu → bozuluyordu | `renderKaraoke` (satır 5126) |
+
+### KULLANICI NE GÖRECEK
+
+**1. Takip varsayılan KAPALI.** Ana oynata/Dinle'ye basmak takibi **açmaz**.
+
+**2. İki ayrı özellik, iki ayrı düğme:**
+| Düğme | Kısayol | Ne yapar |
+|---|---|---|
+| **Otomatik geçiş** | `F` | Çalarken sol listede bir sonraki bölüme geçer |
+| **Canlı vurgu** | `G` | Sağ panelde okunan kelimeyi vurgular |
+
+İkisi bağımsız. Açtığınız hatırlanır (`akis.followPref`), ama **varsayılan kapalı**.
+
+**3. Karaoke kutusu tamamen kaldırıldı.** Tek görsel alan `.sd-follow` ve
+sınıf-tabanlı (DOM yeniden yazılmaz) → **bozulma imkânsız**.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `followState = { on, autoAdvance, liveHighlight }` — üçü de **false** başlar.
+2. `followShouldAutoStart(pref)` → yalnız `pref.autoFollow === true` ise `true`.
+   Bilinmeyen/eksik değerde **false** (temkinli).
+3. `setFollow(on, mode)` — `mode` verilirse yalnız o mod; verilmezse ikisi.
+4. `followTick` yalnız `followState.autoAdvance` iken çalışır (liste gezinmesi).
+5. `markTextFollow` yalnız `followState.liveHighlight` iken çizer; kapalıysa
+   `.sd-follow` **kaldırılır** (kalıntı görünmez).
+6. `renderKaraoke` artık `innerHTML` **yazmaz**; `markTextFollow`'a delege eder.
+   `.karaoke` div'i markup'tan **kaldırıldı**.
+
+### DOĞRULAMA (gerçek Chromium)
+
+```
+1) Başlangıç : iki düğme de on=false · follow-on YOK · karaoke 0
+2) Ana play  : followOn=false (KENDİLİĞİNDEN AÇILMIYOR)   ✅
+3) Karaoke   : document.querySelectorAll('.karaoke').length === 0  ✅
+4) Canlı vurgu aç → .sd-follow oluştu · pref kaydedildi   ✅
+```
+
+`birim-testleri` **[45]** — 10 kontrol.
 
 ## v2.118 — Sürüm güncellemesi artık kendiliğinden geliyor
 

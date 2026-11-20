@@ -102,6 +102,7 @@ const EXPOSE = [
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex',
+  'FOLLOW_MODES', 'followShouldAutoStart',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2332,6 +2333,31 @@ console.log('\n== [44] Takip: karaoke titremesi');
 
   // IDEMPOTENT: aynı zaman için aynı indeks (titreme yok).
   eq('aynı zaman → aynı indeks', T.karaokeActiveIndex(segs, 1.6), T.karaokeActiveIndex(segs, 1.6));
+}
+
+// --- 45. Takip: kullanıcı açmadıkça AÇILMAZ + iki kavram ayrı (v2.119) ----
+// CANLI VERİ. Bilirkişi: "başlarken ana play'a bastığım otomatikmen takip modu
+// çalışıyor ancak ben açmadıysam açılmamalı. Aynı şey sağ paneldeki player
+// için de geçerli. Takip modu açıldığında iki durum olacak: ana player'a
+// basmışsa otomatikmen bir sonraki segmente kendi geçmesi gerekiyor."
+// ÖLÇÜM (v2.118): `if (!followState.on) setFollow(true)` İKİ yerde
+// (ana oynat + bölüm dinle) → kullanıcı açmadığı hâlde takip açılıyordu.
+console.log('\n== [45] Takip: kullanıcı açmadıkça açılmaz');
+{
+  eq('FOLLOW_MODES tanımlı', Array.isArray(T.FOLLOW_MODES), true);
+  eq('iki kavram ayrı', T.FOLLOW_MODES.length, 2);
+  eq('otomatik bölüm geçişi kodu', T.FOLLOW_MODES.includes('autoAdvance'), true);
+  eq('canlı metin vurgusu kodu', T.FOLLOW_MODES.includes('liveHighlight'), true);
+
+  eq('followShouldAutoStart tanımlı', typeof T.followShouldAutoStart, 'function');
+  // KULLANICI AÇMADIYSA: hiçbir durumda otomatik başlamaz.
+  eq('tercih yok → otomatik BAŞLAMAZ', T.followShouldAutoStart({}), false);
+  eq('tercih false → BAŞLAMAZ', T.followShouldAutoStart({ autoFollow: false }), false);
+  // Kullanıcı AÇIKÇA açtıysa hatırlanır.
+  eq('tercih true → başlar', T.followShouldAutoStart({ autoFollow: true }), true);
+  // Bilinmeyen değer → güvenli (başlamaz).
+  eq('bilinmeyen değer → BAŞLAMAZ', T.followShouldAutoStart({ autoFollow: 'belki' }), false);
+  eq('null → BAŞLAMAZ', T.followShouldAutoStart(null), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
