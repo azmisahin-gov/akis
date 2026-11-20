@@ -47,7 +47,18 @@ export const MATERIAL_STATUS = [
 ];
 
 /** Bölüm kontrol durumu. */
-export const REVIEW_STATE = ['pending', 'approved', 'inaudible', 'relisten'];
+// KONTROL DURUMLARI. `machine` (v2.106): makinenin "hızlı onaya uygun"
+// işaretlemesi. BİLİRKİŞİ ONAYI DEĞİLDİR: rapora "Onaylandı" olarak girmez,
+// "kontrol edildi" sayılmaz. Amaç: toplu onayın ürettiği durum ile bilirkişinin
+// dinleyerek verdiği onayı ayırmak (adli ayrım). Ekranda kısa etiket
+// ("Çözümlendi"), ayrıntı ipucunda taşınır.
+export const REVIEW_STATE = ['pending', 'machine', 'approved', 'inaudible', 'relisten'];
+
+/** Bilirkişinin DİNLEYEREK verdiği onaylar (rapora "Onaylandı" girer). */
+export const HUMAN_APPROVED = ['approved'];
+
+/** Makine işaretlemesi: onay değil, "dinlenmeyi bekliyor" işaretidir. */
+export const MACHINE_REVIEW = 'machine';
 
 /**
  * v2 Türkçe kontrol kodları → v3 ASCII kodlar.
@@ -121,9 +132,30 @@ export const CASE_STATUS_LABEL = {
 
 export const REVIEW_LABEL = {
   pending: 'Kontrol bekliyor',
+  machine: 'Çözümlendi', // KISA etiket; ayrıntı REVIEW_HINT'te
   approved: 'Onaylandı',
   inaudible: 'Anlaşılmadı',
   relisten: 'Yeniden dinlenecek'
+};
+
+/** Uzun açıklama: ipucu (title/aria) için. Ekranda gösterilmez. */
+export const REVIEW_HINT = {
+  pending: 'Henüz dinlenmedi. Metni ses kaydıyla karşılaştırıp onaylayın.',
+  machine:
+    'Otomatik çözümleme işareti — BİLİRKİŞİ ONAYI SAYILMAZ. Rapora onaylı ' +
+    'olarak girmez; ses kaydı dinlenmesi ve onaylanması gerekir.',
+  approved: 'Bilirkişi dinleyerek onayladı. Rapora "Onaylandı" olarak girer.',
+  inaudible: 'Dinlendi, anlaşılmadı. Rapora bu şekilde işlenir.',
+  relisten: 'Dinlendi, yeniden dinlenmesi gerekiyor.'
+};
+
+/** Rozet rengi (tema token'ı app.css'te): makine onayı "başarı" değildir. */
+export const REVIEW_TONE = {
+  pending: 'none',
+  machine: 'info',
+  approved: 'good',
+  inaudible: 'warn',
+  relisten: 'warn'
 };
 
 export const SPEAKER_ROLE_LABEL = {
@@ -1294,7 +1326,10 @@ export function mergeCases(mine, theirs) {
         // (pending < relisten < inaudible/approved). Tanımsız ya da ikinci göz
         // kaynaklı onay kabul edilmez; aksi hâlde kimse metin yazmadan yalnız
         // onay vererek metni "onaylı" yapabilirdi.
-        const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
+        // rank: hangi kontrol durumu daha "ileri". `machine` (otomatik
+        // işaretleme) pending ile AYNI seviyededir: bilirkişi onayı değildir,
+        // bu yüzden gelen `approved` onu geçebilmelidir (0 < 2).
+        const rank = { pending: 0, machine: 0, relisten: 1, inaudible: 2, approved: 2 };
         const incoming = ts.review === 'approved' && (tUnattributed || tSecondEyes) ? 'pending' : ts.review;
         if ((rank[incoming] ?? 0) > (rank[ms.review] ?? 0)) {
           ms.review = incoming;
@@ -1466,7 +1501,7 @@ export function compareCases(mine, theirs) {
       const tEditor = ts.lastEditBy ? theirTeam.get(ts.lastEditBy) : null;
       const tUnattributed = teamKnown && !tEditor;
       const tSecondEyes = !!tEditor && isSecondEyesRole(tEditor.role);
-      const rank = { pending: 0, relisten: 1, inaudible: 2, approved: 2 };
+      const rank = { pending: 0, machine: 0, relisten: 1, inaudible: 2, approved: 2 };
       if ((ms.text || '') !== (ts.text || '')) {
         matDiffer = true;
         const touchedMine = (Number(ms.textRev) || 0) > 0;
@@ -1573,4 +1608,14 @@ export function statusLabel(status) {
 
 export function reviewLabel(code) {
   return REVIEW_LABEL[code] || code || '';
+}
+
+/** İpucu (tooltip) metni. Ekranı kalabalıklaştırmadan ayrıntı verir. */
+export function reviewHint(code) {
+  return REVIEW_HINT[code] || '';
+}
+
+/** Bu kontrol kodu bilirkişinin DİNLEYEREK verdiği onay mı? */
+export function isHumanApprovedReview(code) {
+  return HUMAN_APPROVED.includes(code);
 }

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.105.**
+yazılır. **Güncel sürüm: v2.106.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.106 — Otomatik onay ≠ bilirkişi onayı (tamamlandı, canlı veri)
+
+`bulkApproveQuick` `approved` yazıyordu; rapor "Onaylandı" basıyordu. Artık
+`machine` durumu var: ekranda ve raporda **"Çözümlendi"**, gri rozet, ipucunda
+"bilirkişi onayı sayılmaz". `isReviewed()` false → sayaç onu saymaz.
+Bilirkişi dinleyip onaylayınca `approved` olur. Etiket/ipucu/renk tek kaynak
+(`schema.js`). `birim-testleri` [34] + gerçek Chromium korur.
 
 ### v2.105 — Üst bar başlığı kesilmiyor (tamamlandı, canlı veri)
 

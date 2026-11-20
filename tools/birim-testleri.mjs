@@ -91,6 +91,7 @@ const EXPOSE = [
   'detectPitchAmbiguity', 'pitchCellText',
   'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
   'reprocessPlan', 'queueReprocessSummary',
+  'isHumanApproved', 'reviewCellText', 'reviewHintText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1826,6 +1827,51 @@ console.log('\n[33] Yeniden çözümleme koruması (onay + geri alma)');
     eq('kuyrukta elle düzeltilmiş sayısı', s1.edited, 1);
     eq('kuyrukta dokunulmamış sayısı', s1.untouched, 1);
   }
+}
+
+// --- 34. Otomatik onay ≠ bilirkişi onayı (v2.106) -------------------------
+// CANLI VERİ. Bilirkişi: "otomatik onay yap dediğimizde onaylandı yazıyor ama
+// yine de biz tekrar kontrol ediyoruz... orada başka bir kontrol etiketi
+// olabilir, mesela çözümlendi gibi."
+// ÖLÇÜM (v2.105): `bulkApproveQuick` bölüme `review='approved'` yazıyordu ve
+// rapor `reviewLabel()` ile "Onaylandı" basıyordu. Yani MAKİNE kararı ile
+// BİLİRKİŞİ onayı raporda AYNI görünüyordu. Adli açıdan yanlış: "Onaylandı"
+// yazan bir bölümü bilirkişi dinlemiş olmalıdır.
+console.log('\n[34] Otomatik onay ile bilirkişi onayı ayrı');
+{
+  // 1) Kısa etiket (kullanıcı isteği): ekranda uzun metin olmaz.
+  eq('otomatik onay etiketi KISA', T.reviewLabel({ review: 'machine' }), 'Çözümlendi');
+  eq('bilirkişi onayı etiketi', T.reviewLabel({ review: 'approved' }), 'Onaylandı');
+  // 2) Ayrıntı ipucunda (tooltip) taşınır; ekranı kalabalıklaştırmaz.
+  const hint = T.reviewHintText({ review: 'machine' });
+  eq('otomatik onayın ipucu var', /otomatik/i.test(hint), true);
+  eq('ipucu dinlenmesi gerektiğini söyler', /dinlen/i.test(hint), true);
+  eq('ipucu "onaylandı" DEMEZ', /onaylandı/i.test(hint), false);
+
+  // 3) isReviewed: dinlenmesi gereken bölüm "kontrol edildi" sayılmaz.
+  eq('otomatik onay KONTROL EDİLMİŞ sayılmaz', T.isReviewed({ review: 'machine' }), false);
+  eq('bilirkişi onayı kontrol edilmiş sayılır', T.isReviewed({ review: 'approved' }), true);
+  eq('anlaşılmadı kontrol edilmiş sayılır', T.isReviewed({ review: 'inaudible' }), true);
+
+  // 4) İnsan onayı ayrı sorulur (rapor "Onaylandı" basmak için).
+  eq('machine insan onayı DEĞİL', T.isHumanApproved({ review: 'machine' }), false);
+  eq('approved insan onayı', T.isHumanApproved({ review: 'approved' }), true);
+
+  // 5) RAPOR hücresi: makine onayı "Onaylandı" olarak yazılmaz.
+  eq('raporda otomatik onay "Onaylandı" değil', T.reviewCellText({ review: 'machine' }), 'Çözümlendi');
+  eq('raporda insan onayı "Onaylandı"', T.reviewCellText({ review: 'approved' }), 'Onaylandı');
+
+  // 6) Hızlı onay hedefi: machine bölüm hâlâ "bekliyor" sayılır (tekrar denenebilir).
+  const m = { segments: [{ id: 'a', start: '00:00:01.000', end: '00:00:04.000',
+    text: 'Anlamlı bir cümle burada.', review: 'machine', textRev: 0 }] };
+  eq('otomatik onaylı bölüm hâlâ bekleyen sayılır', T.segCounts(m).pending, 1);
+  eq('otomatik onaylı bölüm hızlı onaya uygun kalır', T.quickApproveTargets(m).length, 1);
+
+  // 7) Şema: kod tanımlı, etiketi var, göç tablosunda değil.
+  eq('REVIEW_STATE machine içeriyor', __schemaMod.REVIEW_STATE.includes('machine'), true);
+  eq('REVIEW_LABEL machine tanımlı', typeof __schemaMod.REVIEW_LABEL.machine, 'string');
+  eq('normalizeReviewState machine korur', __schemaMod.normalizeReviewState('machine'), 'machine');
+  eq('bilinmeyen kod pending olur', __schemaMod.normalizeReviewState('zzz'), 'pending');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

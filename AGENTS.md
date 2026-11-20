@@ -544,6 +544,36 @@ kırpma** gösterdi. Kırpma kaldırıldı, `tasarim-testi` [2c] bunu da denetli
 `overflow` görünür değilse kesme vardır. Ve kendi eklediğin `max-width` +
 `ellipsis` de aynı hatayı üretir — düzeltmeyi de ölç.
 
+
+### Aşama 10d — Otomatik onay ≠ bilirkişi onayı (TAMAMLANDI, v2.106)
+
+**KURAL: makinenin "uygun" işareti bilirkişi onayı DEĞİLDİR.** Rapora
+"Onaylandı" yalnız `approved` (dinleyerek onay) için yazılır.
+
+**Ölçüm (v2.105):** `bulkApproveQuick` → `review='approved'`; rapor
+`reviewLabel()` → **"Onaylandı"**. Makine kararı ile insan onayı ayrışmıyordu.
+
+**Yeni durum: `machine` ("Çözümlendi")**
+- `REVIEW_STATE` + `REVIEW_LABEL` + `REVIEW_HINT` + `REVIEW_TONE` dördü birlikte
+  tanımlanır (`assets/schema.js`). Etiket/ipucu/renk TEK KAYNAK; app.js kopya
+  metin tutmaz.
+- `isReviewed({review:'machine'})` → **false** (kontrol sayacı saymaz).
+- `isHumanApproved()` → yalnız `approved`.
+- Birleştirme `rank`: `machine: 0` (= `pending`), `approved: 2` → gelen onay
+  makine işaretini geçer.
+- Rozet: kısa etiket + `title` ipucu + `auto` sınıfı (yeşil DEĞİL).
+
+**Kullanıcı tasarım kuralı:** etiket KISA, ayrıntı İPUCUNDA. Segment listesi
+kalabalıklaşmaz; yeni etiket eklenince karışmaz.
+
+**Ölçüm (v2.106, gerçek Chromium):** 3 bölüm → "✓ 3 hızlı onayla" →
+"Çözümlendi" ×3 (`auto`), sayaç **0/3**, raporda "Onaylandı" yok. Sonra 1 bölüm
+elle onaylandı → "Onaylandı" (1 `done`), raporda `onayCount = 1`.
+
+**DERS:** "onay" kelimesi iki farklı şeyi anlatıyordu (makine uygunluğu,
+bilirkişi doğrulaması). Aynı sözcüğü iki anlamda kullanmak adli belgede
+yanıltıcıdır; durum kodları ayrılmalı.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -717,7 +747,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.105.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.106.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -875,7 +905,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.105` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.106` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

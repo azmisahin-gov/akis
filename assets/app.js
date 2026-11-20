@@ -19,6 +19,10 @@ import {
   STATUS_LABEL,
   REVIEW_LABEL,
   REVIEW_LEGACY,
+  REVIEW_STATE,
+  REVIEW_HINT,
+  REVIEW_TONE,
+  isHumanApprovedReview,
   SPEAKER_ROLE_LABEL,
   SPEAKER_GENDER_LABEL,
   MEDIUM_TYPE_LABEL,
@@ -39,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.105';
+const APP_VERSION = '2.106';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3341,14 +3345,18 @@ function segItemHtml(m, s, i, prev) {
     s.speaker && s.speaker !== 'Belirtilmedi'
       ? `<span class="badge spk" title="Konuşmacı: ${esc(s.speaker)}">${esc(spkRec?.code ? spkRec.code : s.speaker)}</span>`
       : '';
-  const state =
-    rev === 'approved'
-      ? '<span class="badge done">Onaylandı</span>'
-      : rev === 'inaudible'
-        ? '<span class="badge warn">Anlaşılmadı</span>'
-        : rev === 'relisten'
-          ? '<span class="badge again">Yeniden</span>'
-          : '<span class="badge">Bekliyor</span>';
+  // KISA etiket + İPUCU (v2.106). Liste sade kalmalı: uzun açıklama rozetin
+  // içine değil `title` ipucuna yazılır. `machine` = otomatik çözümlendi,
+  // BİLİRKİŞİ ONAYI DEĞİL; bu yüzden "Onaylandı" değil "Çözümlendi" ve
+  // farklı renk (info) kullanır. Tek kaynak: schema.js etiketleri.
+  const badgeFor = {
+    approved: ['done', 'Onaylandı'],
+    machine: ['auto', 'Çözümlendi'],
+    inaudible: ['warn', 'Anlaşılmadı'],
+    relisten: ['again', 'Yeniden']
+  };
+  const [bCls, bTxt] = badgeFor[rev] || ['', 'Bekliyor'];
+  const state = `<span class="badge ${bCls}" title="${esc(reviewHintText(s))}">${esc(bTxt)}</span>`;
   // Öneri varsa listede görünmeli; yoksa bilirkişi hangi bölümde bekleyen
   // öneri olduğunu ancak tek tek gezinerek bulabilir.
   const propBadge = s.proposal
@@ -4114,17 +4122,27 @@ function bulkApproveQuick(m) {
     showToast('Hızlı onaya uygun bölüm yok. Önce listeyi dinleyin.');
     return;
   }
-  snapshotForUndo(`${targets.length} bölüm hızlı onaylandı`);
+  snapshotForUndo(`${targets.length} bölüm otomatik çözümlendi olarak işaretlendi`);
   for (const i of targets) {
-    segs[i].review = 'approved';
-    segs[i].checked = true;
+    // BİLİRKİŞİ ONAYI DEĞİL (v2.106): `approved` yazmak, dinlenmemiş metni
+    // raporda "Onaylandı" göstermek olurdu. `machine` = "otomatik çözümlendi,
+    // dinlenmeli". Bilirkişi dinleyip onaylayınca `approved` olur.
+    segs[i].review = 'machine';
+    segs[i].checked = false;
   }
-  logEvent(m, 'Toplu onay', `${targets.length} bölüm hızlı onaya uygun ölçütünü geçti ve onaylandı`);
+  logEvent(
+    m,
+    'Toplu otomatik işaretleme',
+    `${targets.length} bölüm "otomatik çözümlendi" olarak işaretlendi (bilirkişi onayı değil)`
+  );
   persist();
   renderSegments(m, $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card'));
   renderOverview();
   if ($('#view-report').classList.contains('active')) renderReport();
-  showToast(`${targets.length} bölüm onaylandı (uygun olmayanlara dokunulmadı). Ctrl+Z ile geri alınır.`);
+  showToast(
+    `${targets.length} bölüm "Çözümlendi" olarak işaretlendi — BUNLAR ONAYLANMADI. ` +
+      'Rapora "Onaylandı" yazılması için dinleyip onaylamanız gerekir. Ctrl+Z ile geri alınır.'
+  );
 }
 function jumpToPriority(m) {
   const segs = m.segments || [];
@@ -5872,12 +5890,13 @@ function asrWindows(totalSamples, sampleRate = 16000, windowSeconds = ASR_WINDOW
 // relisten. v2'nin Türkçe anahtarları (onaylandi, bekliyor, anlasilmadi,
 // yeniden) okuma sırasında çevrilir; böylece eski kayıtlar çökertmez ve tüm
 // okuma noktaları tek yerden geçer.
-const REVIEW_STATES = {
-  approved: { label: 'Onaylandı', cls: 'good' },
-  pending: { label: 'Kontrol bekliyor', cls: '' },
-  inaudible: { label: 'Anlaşılmadı', cls: 'warn' },
-  relisten: { label: 'Yeniden dinlenecek', cls: 'warn' }
-};
+// Etiketler TEK KAYNAKTAN gelir (schema.js → REVIEW_LABEL/REVIEW_HINT/REVIEW_TONE).
+// Burada kopya metin TUTULMAZ: kopya ayrışırsa rapor ile ekran farklı şey söyler.
+// `machine` (v2.106): otomatik çözümleme işareti. BİLİRKİŞİ ONAYI DEĞİLDİR;
+// raporda "Onaylandı" yazmaz, "kontrol edildi" sayılmaz.
+const REVIEW_STATES = Object.fromEntries(
+  REVIEW_STATE.map((k) => [k, { label: REVIEW_LABEL[k], cls: REVIEW_TONE[k] === 'none' ? '' : REVIEW_TONE[k], hint: REVIEW_HINT[k] }])
+);
 // v2 anahtar → v3 kod. TEK KAYNAK: `assets/schema.js` (REVIEW_LEGACY).
 // Burada kopya tablo TUTULMAZ: kopya ayrışırsa v2 dosyalarındaki onaylar
 // sessizce kaybolur (v2.89'da tam olarak bu yaşandı).
@@ -5889,8 +5908,23 @@ function isReviewed(s) {
   const r = segReview(s);
   return r === 'approved' || r === 'inaudible';
 }
+// BİLİRKİŞİ ONAYI (dinleyerek). `machine` buraya GİRMEZ: rapor "Onaylandı"
+// basmadan önce bu sorulur. Adli ayrım: makine işaretlemesi onay değildir.
+function isHumanApproved(s) {
+  return isHumanApprovedReview(segReview(s));
+}
 function reviewLabel(s) {
   return REVIEW_STATES[segReview(s)].label;
+}
+// Rapor hücresi: ekranda ve raporda AYNI kısa etiket. "Onaylandı" yalnız
+// bilirkişi onayında yazılır; `machine` → "Çözümlendi".
+function reviewCellText(s) {
+  return reviewLabel(s);
+}
+// İpucu (tooltip): uzun açıklama ekrana değil ipucuna yazılır (kullanıcı isteği).
+function reviewHintText(s) {
+  const r = segReview(s);
+  return REVIEW_STATES[r] ? REVIEW_STATES[r].hint || '' : '';
 }
 // Metin geçmişi, her tuş vuruşunda değil düzenleme oturumu başına bir kez tutulur.
 // Focus anında metnin anlık görüntüsü saklanır, blur anında gerçekten değiştiyse
@@ -10164,6 +10198,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.106': {
+    title: 'Otomatik onay artık "Onaylandı" sayılmıyor',
+    body:
+      'Toplu "hızlı onayla" işlemi bölümleri eskiden doğrudan "Onaylandı" yapıyordu. ' +
+      'Bu yanıltıcıydı: makine sizin yerinize onaylamış oluyordu ve rapor da ' +
+      '"Onaylandı" yazıyordu. Artık toplu işlem bölümleri "Çözümlendi" olarak ' +
+      'işaretler (gri rozet) — bu BİLİRKİŞİ ONAYI DEĞİLDİR. Raporda da "Çözümlendi" ' +
+      'yazar, "Onaylandı" değil. Dinleyip onayladığınız bölümler yeşil "Onaylandı" ' +
+      'olur ve rapora öyle girer. Rozetin üzerine gelince ne anlama geldiği yazar; ' +
+      'liste kalabalıklaşmaz. Kontrol sayacı (x/y) da doğru: otomatik işaretlenen ' +
+      'bölümler "kontrol edildi" sayılmaz.'
+  },
   '2.105': {
     title: 'Üst bar başlığı artık kesilmiyor',
     body:

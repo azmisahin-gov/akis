@@ -522,10 +522,23 @@ console.log('\n[6c] v3 kod ≠ v2 kod (uygulama kodu)');
     const uses = [...app.matchAll(new RegExp(`===\\s*'${v2}'|!==\\s*'${v2}'`, 'g'))];
     ok(`v2 kodu '${v2}' karşılaştırmada kullanılmıyor`, uses.length === 0, `${uses.length} kullanım`);
   }
-  // Rozet üretimi doğru kodlarla eşleşmeli.
-  ok('onaylandı rozeti v3 kodla', /rev === 'approved'[\s\S]{0,80}badge done/.test(app));
-  ok('anlaşılmadı rozeti v3 kodla', /rev === 'inaudible'[\s\S]{0,80}badge warn/.test(app));
-  ok('yeniden rozeti v3 kodla', /rev === 'relisten'[\s\S]{0,80}badge again/.test(app));
+  // Rozet üretimi doğru kodlarla eşleşmeli. v2.106'da rozet metinleri TEK
+  // KAYNAKTAN (schema.js) gelir; bu yüzden test yazımı değil DAVRANIŞI sınar:
+  // her kodun kendi rozet sınıfı ve etiketi olmalı.
+  for (const [code, cls, label] of [
+    ['approved', 'done', 'Onaylandı'],
+    ['machine', 'auto', 'Çözümlendi'],
+    ['inaudible', 'warn', 'Anlaşılmadı'],
+    ['relisten', 'again', 'Yeniden']
+  ]) {
+    const re = new RegExp(`'?${code}'?\\s*:\\s*\\[\\s*'${cls}'\\s*,\\s*'${label}'`);
+    ok(`${label} rozeti doğru sınıf/etiketle`, re.test(app), `${code} → ${cls}/${label}`);
+  }
+  // Otomatik çözümleme, onayla AYNI rozeti KULLANMAMALI (adli ayrım).
+  ok(
+    'otomatik çözümleme rozeti onaydan farklı sınıf',
+    !/'machine':\s*\['done'/.test(app) && /machine:\s*\['auto'/.test(app)
+  );
 
   // Davranış: onaylı bölüm sayımı doğru olmalı.
   const m = emptyMaterial({ id: 'm1', fileName: 'a.wav', sha256: 'h' });

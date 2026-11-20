@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.105.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.106.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.106 — Otomatik onay ile bilirkişi onayı aynı görünüyordu (adli ayrım)
+
+CANLI VERİ. Bilirkişi: *"otomatik onay yap dediğimizde onaylandı yazıyor ama
+yine de biz tekrar kontrol ediyoruz… orada başka bir kontrol etiketi olabilir,
+mesela 'çözümlendi' gibi."*
+
+### ÖLÇÜM (v2.105)
+
+`bulkApproveQuick` bölüme `review = 'approved'` yazıyordu; rapor
+`reviewLabel()` ile **"Onaylandı"** basıyordu. Yani makinenin "uygun" işareti ile
+bilirkişinin dinleyerek verdiği onay **ayırt edilemiyordu**. Rapor "Onaylandı"
+diyorsa o bölüm dinlenmiş olmalıdır; dinlenmemiş metni onaylı göstermek adli
+belgede kabul edilemez.
+
+### KULLANICI NE GÖRECEK
+
+- Toplu **hızlı onayla** artık bölümleri **"Çözümlendi"** olarak işaretler
+  (gri rozet). **Bu bilirkişi onayı değildir.**
+- Raporda da **"Çözümlendi"** yazar; **"Onaylandı" yazmaz**.
+- Dinleyip onayladığınız bölüm yeşil **"Onaylandı"** olur ve rapora öyle girer.
+- Rozetin üzerine gelince ne anlama geldiği yazar (uzun açıklama **ipucunda**,
+  ekranda değil — segment listesi sade kalır).
+- Kontrol sayacı (x/y) otomatik işaretlenen bölümleri **saymaz**: onlar henüz
+  kontrol edilmedi.
+- Toplu işlemden sonra uyarı çıkar: *"BUNLAR ONAYLANMADI… dinleyip
+  onaylamanız gerekir."*
+
+### TASARIM KARARI (kullanıcı isteği)
+
+Etiketler **kısa** tutulur; ayrıntı ipucuna taşınır. Böylece segment listesi
+kalabalıklaşmaz ve yeni etiket eklendiğinde karışmaz. Etiket/ipucu/renk
+**tek kaynaktan** (`assets/schema.js` → `REVIEW_LABEL`, `REVIEW_HINT`,
+`REVIEW_TONE`) gelir; ekran ve rapor ayrışamaz.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `machine` **onay değildir**: `isReviewed()` false, `isHumanApproved()` false.
+2. Rapora "Onaylandı" yalnız `approved` için yazılır.
+3. Birleştirmede `machine` = `pending` seviyesi (0); gelen `approved` onu geçer.
+4. Rozet rengi onayla aynı olamaz (yeşil "Onaylandı" ≠ gri "Çözümlendi").
+5. Yeni kontrol durumu eklerken: `REVIEW_STATE` + `REVIEW_LABEL` + `REVIEW_HINT`
+   + `REVIEW_TONE` dördü birlikte tanımlanır.
+
+### DOĞRULAMA
+
+- `birim-testleri` **[34]** — 18 kontrol (etiket, ipucu, sayım, rapor hücresi).
+- `sema-testi` — rozet sınıf/etiket eşleşmesi davranışa çevrildi.
+- **Gerçek Chromium**: 3 bölüm → "✓ 3 hızlı onayla" → rozetler
+  **"Çözümlendi"** (3 `auto`, 0 `done`), sayaç **0/3**, rapor "Onaylandı" **yok**.
+  Sonra tek bölüm elle onaylandı → **"Onaylandı"** (1 `done`, 2 `auto`),
+  raporda `onayCount = 1`. Makine→insan geçişi çalışıyor.
 
 ## v2.105 — Üst bar başlığı sessizce kesiliyordu
 

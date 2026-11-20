@@ -1127,3 +1127,14 @@ body.ws-mode #view-audio .seg-list {
 .topbar { gap: 10px; }
 .top-actions { gap: 6px; }
 .top-actions .button { padding: 6px 9px; }
+
+/* --- J. v2.106 — Otomatik çözümleme rozeti -------------------------------
+   `machine` durumu BİLİRKİŞİ ONAYI DEĞİLDİR. "Onaylandı" ile aynı yeşili
+   kullanmamalı; aksi hâlde ekranda onaylanmış gibi görünür (adli ayrım).
+   Kısa etiket + ipucu; liste kalabalıklaşmaz. */
+#view-audio .badge.auto {
+  background: var(--surface-2);
+  border: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font-weight: 600;
+}
