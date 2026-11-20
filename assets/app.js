@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.90';
+const APP_VERSION = '2.91';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1620,10 +1620,12 @@ function spectralRolloff(samples, sampleRate, percentile = 0.95, fftSize = 1024)
 function levelPanelHtml(m) {
   const lv = m.levels;
   if (!lv || !lv.ok || lv.schema !== LEVELS_SCHEMA) return '<div class="seg-empty-note">Seviye ölçümü yapılmadı. Düğmeye basıldığında kaydın örneklerinden hesaplanır.</div>';
+  // Hangi kanaldan ölçüldüğü gösterilir (v2.91). Mono kayıtta yazılmaz.
+  const chNote = (n) => (lv.channels > 1 && n ? ` <small class="muted">(kanal ${n})</small>` : '');
   return `<table class="record-table"><tbody>
-    <tr><td>Tepe düzeyi</td><td>${fmtDb(lv.peakDb)} dBFS</td></tr>
+    <tr><td>Tepe düzeyi</td><td>${fmtDb(lv.peakDb)} dBFS${chNote(lv.peakChannel)}</td></tr>
     <tr><td>RMS düzeyi</td><td>${fmtDb(lv.rmsDb)} dBFS</td></tr>
-    <tr><td>Tepe kırpılma</td><td>%${fmtPct(lv.clippedRatio)} (${lv.clippedSamples} örnek)</td></tr>
+    <tr><td>Tepe kırpılma</td><td>%${fmtPct(lv.clippedRatio)} (${lv.clippedSamples} örnek)${chNote(lv.clippedSamples > 0 ? lv.clipChannel : 0)}</td></tr>
     <tr><td>Gürültü tabanı</td><td>${floorText(lv.noiseFloor)}</td></tr>
     <tr><td>Sinyal/gürültü oranı</td><td>${snrText(lv.snrDb)}</td></tr>
     ${lv.rolloff ? `<tr><td>Etkin bant genişliği (P95)</td><td>${fmtDb(lv.rolloff.rolloffHz)} Hz · Nyquist ${fmtDb(lv.rolloff.nyquistHz)} Hz · ${fmtDb(lv.analysisRate)} Hz örnekleme</td></tr>` : ''}
@@ -2125,6 +2127,66 @@ function analyzeLevels(samples, sampleRate, opts = {}) {
     snrDb
   };
 }
+// KANAL KANAL seviye ölçümü (v2.91).
+// GERÇEK HATA (öncesi): tüm kanallar ortalamayla tek "mono"ya indiriliyordu.
+// Ses yalnız bir kanalda ise tepe yarıya düşüyor (−6 dB), tek kanaldaki
+// kırpılma tamamen kayboluyor, ters fazda tepe sıfır görünüyordu. "Tepe" ve
+// "kırpılma" 56.12 alanının çekirdek ölçümleridir; mono ortalama bunları
+// sistematik olarak yanlış gösteriyordu.
+// KURAL: tepe ve kırpılma EN KÖTÜ kanaldan raporlanır ve hangi kanal olduğu
+// yazılır. Gürültü tabanı/SNR için kanalların ortalaması (mono) kullanılır —
+// bu, gürültünün kanallar arasında dağılımı için doğru ölçüdür ve raporda
+// böyle belirtilir. Girdi: kanal dizisi (Float32Array[]) + örnekleme hızı.
+function analyzeChannelLevels(channels, sampleRate) {
+  const chs = (channels || []).filter((c) => c && c.length);
+  if (!chs.length) return { ok: false, reason: 'boş kayıt' };
+  const sr = sampleRate || 16000;
+  const len = Math.min(...chs.map((c) => c.length));
+  // Kanal bazında tepe ve kırpılma; en kötü kanal raporlanır.
+  let peak = -1,
+    peakDb = -Infinity,
+    peakChannel = 0;
+  let clippedSamples = 0,
+    clipChannel = 0;
+  chs.forEach((data, idx) => {
+    const r = analyzeLevels(data.subarray(0, len), sr);
+    if (!r.ok) return;
+    if (r.peak > peak) {
+      peak = r.peak;
+      peakDb = r.peakDb;
+      peakChannel = idx + 1; // 1 tabanlı: kanal numarası kullanıcıya böyle yazılır
+    }
+    if (r.clippedSamples > clippedSamples) {
+      clippedSamples = r.clippedSamples;
+      clipChannel = idx + 1;
+    }
+  });
+  // Gürültü tabanı / SNR / RMS: kanalların ortalaması (mono karışım).
+  const mono = new Float32Array(len);
+  for (const data of chs) for (let i = 0; i < len; i++) mono[i] += data[i] / chs.length;
+  const m = analyzeLevels(mono, sr);
+  return {
+    ok: true,
+    durationSec: len / sr,
+    sampleCount: len,
+    channels: chs.length,
+    // En kötü kanaldan gelen ölçümler (raporda bunlar yazılır).
+    peak: Math.max(0, peak),
+    peakDb,
+    peakChannel,
+    clippedSamples,
+    clippedRatio: len ? clippedSamples / len : 0,
+    clipChannel,
+    // Mono karışımdan gelen ölçümler.
+    rms: m.rms,
+    rmsDb: m.rmsDb,
+    noiseFloor: m.noiseFloor,
+    noiseFloorDb: m.noiseFloorDb,
+    speechLevel: m.speechLevel,
+    speechLevelDb: m.speechLevelDb,
+    snrDb: m.snrDb
+  };
+}
 function attachWave(card, m, url) {
   const canvas = card.querySelector('canvas.wave-canvas');
   const player = card.querySelector('audio');
@@ -2407,7 +2469,7 @@ function werMeasuredCount(c) {
 // Seviye ölçümü şeması. Ölçüm alanları değiştiğinde artırılır; eski kayıtlar
 // geçersiz sayılıp yeniden ölçülür. Böylece arayüz eski kodla üretilmiş,
 // eksik ya da çelişkili değerleri göstermez.
-const LEVELS_SCHEMA = 2;
+const LEVELS_SCHEMA = 3;
 const audioGraphs = new Map(); // m.id -> {ctx, player, gainL, gainR, merger, hp, lp, gate, gateGain}
 const CHANNEL_MODES = [
   ['both', 'Stereo (her iki kanal)'],
@@ -2759,17 +2821,24 @@ async function measureLevels(m) {
     showToast('Ses çözümlenemedi.');
     return;
   }
-  // Kanallar örnek düzeyinde birleştirilir; kanal dengesi ayrı ölçülür.
+  // KANAL KANAL ölçüm (v2.91). Öncesinde tüm kanallar ortalamayla tek
+  // "mono"ya indiriliyordu; ses yalnız bir kanalda ise tepe −6 dB düşük,
+  // tek kanaldaki kırpılma tamamen görünmez oluyordu. Artık tepe ve kırpılma
+  // en kötü kanaldan raporlanır; gürültü tabanı/SNR mono karışımdan.
   const chCount = audio.numberOfChannels;
-  const len = audio.length;
-  const mono = new Float32Array(len);
-  for (let ch = 0; ch < chCount; ch++) {
-    const d = audio.getChannelData(ch);
-    for (let i = 0; i < len; i++) mono[i] += d[i] / chCount;
-  }
-  const lv = analyzeLevels(mono, audio.sampleRate);
+  const channels = [];
+  for (let ch = 0; ch < chCount; ch++) channels.push(audio.getChannelData(ch));
+  const lv = analyzeChannelLevels(channels, audio.sampleRate);
   // Stereo ise kanal dengesi, faz ilişkisi ve DC kayması da ölçülür.
   const stereo = chCount === 2 ? analyzeStereo(audio.getChannelData(0), audio.getChannelData(1), audio.sampleRate) : null;
+  // Etkin bant genişliği tüm spektrumun ölçüsüdür; mono karışım burada
+  // doğrudur (bant sınırlaması kanallardan bağımsızdır).
+  const lenAll = audio.length;
+  const mono = new Float32Array(lenAll);
+  for (let ch = 0; ch < chCount; ch++) {
+    const d = audio.getChannelData(ch);
+    for (let i = 0; i < lenAll; i++) mono[i] += d[i] / chCount;
+  }
   const rolloff = spectralRolloff(mono, audio.sampleRate);
   await ctx.close();
   if (!lv.ok) {
@@ -2785,7 +2854,10 @@ async function measureLevels(m) {
     rolloff: rolloff || null,
     at: new Date().toISOString()
   };
-  logEvent(m, 'Seviye ölçümü', `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}`);
+  // Günlüğe hangi kanaldan ölçüldüğü de yazılır: sonradan denetlenebilir olsun.
+  const chInfo = lv.channels > 1 ? ` · tepe kanal ${lv.peakChannel}` : '';
+  const clipInfo = lv.clippedSamples > 0 ? ` (kanal ${lv.clipChannel})` : '';
+  logEvent(m, 'Seviye ölçümü', `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}${clipInfo}${chInfo}`);
   persist();
   renderAudioList();
   renderOverview();
@@ -6469,6 +6541,12 @@ function levelRowsForCase(c) {
     .map((m) => {
       const lv = m.levels;
       const extra = [];
+      // HANGİ KANALDAN ölçüldüğü yazılır (v2.91): iki kanal çok farklıysa
+      // "tepe" değerinin hangi kanala ait olduğu kritik bilgidir. Mono
+      // kayıtta kanal numarası yazılmaz (yanıltıcı olur).
+      if (lv.channels > 1 && lv.peakChannel) extra.push(`tepe kanal ${lv.peakChannel}`);
+      if (lv.channels > 1 && lv.clippedSamples > 0 && lv.clipChannel)
+        extra.push(`kırpılma kanal ${lv.clipChannel}`);
       if (lv.rolloff) extra.push(`bant P95: ${fmtDb(lv.rolloff.rolloffHz)} Hz`);
       if (lv.stereo && lv.stereo.balanceDb != null) extra.push(`denge: ${fmtDb(lv.stereo.balanceDb)} dB`);
       if (lv.stereo && lv.stereo.correlation != null)
@@ -9390,6 +9468,17 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.91': {
+    title: 'Ses seviyesi ve kırpılma ölçümü düzeltildi (stereo kayıtlar)',
+    body:
+      'Ölçüm, iki kanalı ortalamayla tek sese indiriyordu. Bu yüzden ses yalnız bir ' +
+      'kanalda ise tepe düzeyi olduğundan düşük görünüyor, tek kanaldaki kırpılma ise ' +
+      'tamamen görünmüyordu — kırpılmış bir kayıt "kırpılma yok" diye rapora ' +
+      'girebiliyordu. Artık tepe ve kırpılma kanalların EN KÖTÜSÜNDEN ölçülür ve ' +
+      'hangi kanal olduğu yazılır. Önceki sürümlerle yapılmış seviye ölçümleri ' +
+      'geçersiz sayıldı; kaydı açıp "Seviye ölç" düğmesine basarak yeniden ölçün. ' +
+      'Yeniden ölçülmemiş kayıtlar raporun seviye tablosuna girmez.'
+  },
   '2.90': {
     title: 'Rapordaki "çözümleme doğruluğu" (WER) tablosu düzeltildi',
     body:

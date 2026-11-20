@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.90.**
+yazılır. **Güncel sürüm: v2.91.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.91 — Seviye/kırpılma kanal kanal ölçülür (tamamlandı, canlı veri)
+
+`measureLevels` tüm kanalları ortalamayla mono'ya indiriyordu. Ses tek kanalda
+ise tepe −6 dB düşük, tek kanaldaki kırpılma tamamen görünmez, ters fazda tepe
+sıfır oluyordu. `analyzeChannelLevels()` eklendi: tepe/kırpılma en kötü
+kanaldan (hangi kanal olduğu yazılarak), gürültü/SNR/bant mono karışımdan.
+Ölçüm şeması 2 → 3. `birim-testleri` [22] korur.
 
 ### v2.90 — WER ters çalışıyordu (tamamlandı, canlı veri)
 
@@ -71,7 +79,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | **v2.88 tamamlandı** |
 | 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | **v2.89 tamamlandı** |
 | 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | **v2.90 tamamlandı** |
-| 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | bekliyor |
+| 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | **v2.91 tamamlandı** |
 | 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | bekliyor |
 | 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | bekliyor |
 | 8 | Birleştirmede kayıt düzeyi alanlar sessizce düşüyor | bekliyor |

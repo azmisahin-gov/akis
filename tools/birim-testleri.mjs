@@ -81,6 +81,7 @@ const EXPOSE = [
   'setSegmentText', 'applyTextEdit', 'reviewLabel', 'emptySegmentForTest',
   'snapshotSegmentText', 'approvalDroppedByEdit',
   'measureWerForCase', 'werMeasuredCount',
+  'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1029,6 +1030,110 @@ console.log('\n[21] WER modelin çıktısını ölçer');
     const summaryCount = T.werMeasuredCount(c);
     eq('tabloda 1 satır', rows.length, 1);
     eq('özet sayacı tabloyla aynı', summaryCount, rows.length);
+  }
+}
+
+// --- 22. Seviye/kırpılma KANAL KANAL ölçülmeli (v2.91) -------------------
+// GERÇEK HATA: `measureLevels` tüm kanalları ortalamayla tek "mono"ya
+// indiriyor, sonra ölçüyordu. Ölçüm sonuçları:
+//   • ses yalnız SOL kanalda, tepe 0,9 (−0,92 dBFS) → rapor −6,94 dBFS
+//   • kırpılma yalnız SOL kanalda 500 örnek         → rapor 0 kırpık örnek
+//   • ters faz stereo (L = −R)                      → tepe 0 → "—"
+// "Tepe düzeyi" ve "tepe kırpılma" 56.12 alanının çekirdek ölçümleridir;
+// mono ortalama bunları sistematik olarak DÜŞÜK gösterir. Kırpılmış bir kanal
+// rapora "kırpılma yok" olarak girebiliyordu.
+// Kural: tepe ve kırpılma EN KÖTÜ kanaldan raporlanır; hangi kanal olduğu
+// yazılır. Mono karışım yalnız gürültü tabanı/SNR için kullanılır.
+console.log('\n[22] Seviye/kırpılma kanal kanal ölçülür');
+{
+  const sr = 16000;
+  const len = sr; // 1 sn
+  const mkCh = (fn) => {
+    const a = new Float32Array(len);
+    for (let i = 0; i < len; i++) a[i] = fn(i);
+    return a;
+  };
+
+  eq('analyzeChannelLevels tanımlı', typeof T.analyzeChannelLevels, 'function');
+
+  if (typeof T.analyzeChannelLevels === 'function') {
+    // 1) Ses yalnız sol kanalda → tepe kanalın gerçek tepesine eşit olmalı.
+    {
+      const L = mkCh((i) => 0.9 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const R = mkCh(() => 0);
+      const res = T.analyzeChannelLevels([L, R], sr);
+      eq('tepe doğru kanaldan ölçülür', T.fmtDb(res.peakDb), T.fmtDb(20 * Math.log10(0.9)));
+      eq('tepe kanalı bildirilir', res.peakChannel, 1); // 1 = sol
+    }
+
+    // 2) Kırpılma yalnız sol kanalda → rapor 0 DEĞİL.
+    {
+      const L = mkCh((i) => (i < 500 ? 1.0 : 0.5 * Math.sin((2 * Math.PI * 500 * i) / sr)));
+      const R = mkCh((i) => 0.5 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const res = T.analyzeChannelLevels([L, R], sr);
+      eq('kırpık örnek sayısı kanaldan gelir', res.clippedSamples, 500);
+      eq('kırpılma kanalı bildirilir', res.clipChannel, 1);
+    }
+
+    // 3) Ters faz stereo → tepe 0 olmamalı.
+    {
+      const L = mkCh((i) => 0.9 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const R = mkCh((i) => -0.9 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const res = T.analyzeChannelLevels([L, R], sr);
+      eq('ters fazda tepe kaybolmaz', T.fmtDb(res.peakDb), T.fmtDb(20 * Math.log10(0.9)));
+    }
+
+    // 4) Mono kayıt tek kanal olarak ölçülür (davranış korunur).
+    {
+      const M = mkCh((i) => 0.5 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const res = T.analyzeChannelLevels([M], sr);
+      eq('mono tepe', T.fmtDb(res.peakDb), T.fmtDb(20 * Math.log10(0.5)));
+      eq('mono kırpılma yok', res.clippedSamples, 0);
+    }
+
+    // 5) Gürültü tabanı/SNR için mono karışım da döner (ayrı alan).
+    {
+      const L = mkCh((i) => 0.4 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const R = mkCh((i) => 0.4 * Math.sin((2 * Math.PI * 500 * i) / sr));
+      const res = T.analyzeChannelLevels([L, R], sr);
+      eq('gürültü tabanı ölçüldü', Number.isFinite(res.noiseFloor), true);
+      eq('kanal sayısı bildirilir', res.channels, 2);
+    }
+
+    // 6) Ölçüm şeması yükseltilmeli: eski kayıtlar yeniden ölçülmeli.
+    eq('ölçüm şeması 3', T.LEVELS_SCHEMA, 3);
+  }
+
+  // 7) HANGİ KANALDAN ölçüldüğü rapora yazılmalı (dürüstlük). Aksi hâlde
+  //    okuyucu "tepe −0,9 dBFS" değerinin hangi kanala ait olduğunu bilmez;
+  //    iki kanal birbirinden çok farklıysa bu bilgi kritiktir.
+  {
+    const L = mkCh((i) => 0.9 * Math.sin((2 * Math.PI * 500 * i) / sr));
+    const R = mkCh((i) => 0.1 * Math.sin((2 * Math.PI * 500 * i) / sr));
+    const lv = T.analyzeChannelLevels([L, R], sr);
+    const c = {
+      materials: [{
+        id: 'm1',
+        name: 'stereo.wav',
+        levels: { ...lv, ok: true, schema: T.LEVELS_SCHEMA, analysisRate: sr, at: new Date().toISOString() }
+      }]
+    };
+    const rows = T.levelRowsForCase(c);
+    eq('satır üretildi', rows.length, 1);
+    const joined = rows[0].join(' | ');
+    eq('hangi kanaldan ölçüldüğü yazılır', /kanal\s*1|sol/i.test(joined), true);
+  }
+
+  // 8) Mono kayıtta "kanal" bilgisi yanıltıcı olmamalı (tek kanal).
+  {
+    const M = mkCh((i) => 0.5 * Math.sin((2 * Math.PI * 500 * i) / sr));
+    const lv = T.analyzeChannelLevels([M], sr);
+    const c = {
+      materials: [{ id: 'm', name: 'mono.wav', levels: { ...lv, ok: true, schema: T.LEVELS_SCHEMA, analysisRate: sr } }]
+    };
+    const rows = T.levelRowsForCase(c);
+    eq('mono satırı üretildi', rows.length, 1);
+    eq('mono kayıtta kanal numarası yazılmaz', /kanal\s*\d/i.test(rows[0].join(' | ')), false);
   }
 }
 

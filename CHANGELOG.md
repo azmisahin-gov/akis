@@ -6,12 +6,85 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.90.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.91.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.91 — Seviye ve kırpılma ölçümü mono karışımdan yapılıyordu
+
+CANLI VERİ. 56.12 alanının **çekirdek ölçümü** yanlıştı: tepe düzeyi ve tepe
+kırpılma.
+
+### GERÇEK HATA
+
+`measureLevels()` tüm kanalları ortalamayla tek bir "mono"ya indiriyor, sonra
+ölçüyordu:
+
+```js
+for (let ch = 0; ch < chCount; ch++) {
+  const d = audio.getChannelData(ch);
+  for (let i = 0; i < len; i++) mono[i] += d[i] / chCount;   // ← ortalama
+}
+const lv = analyzeLevels(mono, audio.sampleRate);
+```
+
+Stereo bir kayıtta bu üç şekilde yanlış sonuç verir:
+
+| Senaryo | Gerçek | Mono karışımdan |
+|---|---|---|
+| Ses yalnız sol kanalda, tepe 0,9 | −0,92 dBFS | **−6,94 dBFS** (yarıya düşer) |
+| Kırpılma yalnız sol kanalda, 500 örnek | 500 kırpık | **0 kırpık** (tamamen kaybolur) |
+| Ters faz stereo (L = −R) | −0,92 dBFS | **tepe 0 → "—"** |
+
+Yani **kırpılmış bir kanal rapora "kırpılma yok" olarak girebiliyordu.** Bu,
+"sesin bozulup bozulmadığı" sorusunun cevabını doğrudan etkiler.
+
+### Çözüm
+
+`analyzeChannelLevels()` eklendi:
+
+- **Tepe** ve **kırpılma** → **en kötü kanaldan** raporlanır, hangi kanal
+  olduğu yazılır (`tepe kanal 1`, `kırpılma kanal 2`).
+- **Gürültü tabanı / SNR / RMS** → mono karışımdan (gürültünün kanallar
+  arasında dağılımı için doğru ölçü).
+- **Bant genişliği** → mono karışımdan (bant sınırlaması kanaldan bağımsız).
+- Ölçüm şeması **2 → 3** yükseltildi: eski kayıtlar `stripDerivedFields` ile
+  atılır ve yeniden ölçülür (eksik/çelişkili değer gösterilmez).
+
+Kanal bilgisi **üç yerde** görünür: arayüz paneli, rapor tablosu ve delil
+günlüğü. Mono kayıtta kanal numarası **yazılmaz** (yanıltıcı olur).
+
+**Ölçüm (gerçek Chromium, stereo test dosyası: sol tepe 0,9 + 300 kırpık
+örnek, sağ 0,1 → 20 dB fark):**
+
+```
+ÖNCE (mono)   tepe −6,0 dBFS   kırpılma 0 örnek
+SONRA         tepe  0,0 dBFS   kırpılma 300 örnek · tepe kanal 1 · kırpılma kanal 1
+panel:  "Tepe düzeyi 0,0 dBFS (kanal 1)"
+rapor:  "tepe kanal 1 · kırpılma kanal 1 · denge: 19,1 dB · korelasyon: 0,992"
+```
+
+### KULLANICI NE GÖRECEK
+
+- Stereo kayıtlarda **tepe düzeyi artık doğru** (kanallardan birinde yüksek
+  ses varsa görünür).
+- **Tek kanaldaki kırpılma artık raporlanır**; "kırpılma yok" yanlış güveni
+  ortadan kalkar.
+- Hangi kanaldan ölçüldüğü **yazılır**, böylece rapor okunurken değerin hangi
+  kanala ait olduğu bilinir.
+- Eski ölçümler otomatik geçersiz sayılır; kaydı yeniden ölçmeniz istenir
+  (ölçüm düğmesi). Önceden ölçülmüş değerler rapora **girmez**.
+
+### Testle korunur
+
+`birim-testleri` [22] (13 kontrol): tepe doğru kanaldan, kırpılma doğru
+kanaldan, ters fazda tepe kaybolmaz, mono davranışı korunur, gürültü tabanı
+mono karışımdan, şema 3, kanal bilgisi rapora yazılır, mono kayıtta kanal
+numarası yazılmaz. Test düzeltme yokken **kaldı** (`284 geçti, 1 kaldı`),
+düzeltmeden sonra geçti (`299 geçti, 0 kaldı`).
 
 ## v2.90 — WER ters çalışıyordu: rapor yanlış "doğruluk" gösteriyordu
 
