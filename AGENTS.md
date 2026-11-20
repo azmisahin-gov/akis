@@ -441,6 +441,9 @@ Test: `surum-testi` [10] (8 kural), `sema-testi` [3d] (6 kontrol).
 giderildi ve kullanıcı tarafından uçtan uca doğrulandı (Tiny → Large-v3-turbo
 arası tüm modeller yüklendi ve çözümledi; gerçek Türkçe çıktı alındı).
 
+2026-11-20: canlı veri denetimi **v2.87–v2.101** arasında 15 konuda
+tamamlandı; hepsi kapatıldı (aşağıda).
+
 Kapanan maddeler ve sürümleri:
 
 1. Model yükleme ilerlemesi okunaksız → **v2.24/v2.26** (sabit payda,
@@ -698,3 +701,89 @@ Rapor ve arayüz yalnız ölçülmüş/doğrulanmış değeri gösterir. Ölçü
 satır yazılmaz; ölçüm yapılamadıysa "ölçülemedi" yazılır, uydurma değer
 yazılmaz. Bu, hata düzeltmeleri için de geçerlidir: "düzeltildi" demek için
 önce/sonra ölçümü gösterilir.
+
+## Aşama 9 — Canlı veri doğruluk turu (TAMAMLANDI, v2.87–v2.101)
+
+Bilirkişi "yaptığım tüm değişiklikleri kaybettim, uyarıyı görmedim" dedi.
+Buradan başlayan 15 konuluk denetim **her sürümde kıran test → düzeltme →
+gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → **441**.
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.87 | Kayıt tamamen duruyordu (DataCloneError) + uyarı görünmüyordu | `birim` [17][18][19] |
+| v2.88 | Onay metne bağlı değildi (metin değişse de "Onaylandı") | `birim` [20] |
+| v2.89 | v2 onay kodları yüklemede sessizce `pending`'e düşüyordu | `sema` [4b] |
+| v2.90 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyordu (TERS) | `birim` [21] + `rapor` 7b |
+| v2.91 | Seviye/kırpılma mono karışımdan (kırpılma görünmüyordu) | `birim` [22] |
+| v2.92 | Sessizlik/perde yalnız kanal 0'ı okuyordu | `birim` [23] |
+| v2.93 | Gerçek cümleler "dolgu" sayılıyordu (deşifre çöpe atılıyordu) | `birim` [24] |
+| v2.94 | Birleştirmede kayıt düzeyi 8 alan sessizce düşüyordu | `sema` [7k] |
+| v2.95 | `updatedAt` hiç tazelenmiyordu (yenilik ölçütü ölü) | `birim` [25] |
+| v2.96 | SHA-256 hesaplanamazsa sahte "doğrulandı" deniyordu | `birim` [26] |
+| v2.97 | Zaman alanı doğrulanmıyordu (`00:00:05,100` → `00:00:00.000`) | `birim` [27] |
+| v2.98 | Paragraf/bölme model çıktısını siliyordu (`asrText`) | `birim` [28] |
+| v2.99 | Hızlı onay sayacı ile filtresi ayrışıyordu | `birim` [29] |
+| v2.100 | Türkçe büyük İ terim tutarlılığını bozuyordu | `birim` [30] |
+| v2.101 | Perde oktav hatası → artık **bildirilir** (düzeltilmez) | `birim` [31] |
+
+### Bu turdan çıkan değişmez teknik kurallar
+
+- **Kayda giden her kopya klonlanabilir olmalı.** `sanitizeForStorage()`
+  `__` alanlarını ve fonksiyonları atar; `persistNow`/dışa aktarma onu
+  kullanır. Malzemeye fonksiyon yazmak (`m.__x = fn`) kaydı bozar.
+- **Her yazma hatası GÖRÜNÜR.** `showSaveFailureBanner()`; küçük durum yazısı
+  yeterli değil.
+- **Onay metne bağlıdır.** `setSegmentText()` metin değişince `review`ı
+  `pending`e çeker; `__reviewDropped` bayrağı kullanıcıyı bir kez uyarır.
+- **Göç tablosu TEK KAYNAK.** `REVIEW_LEGACY` + `normalizeReviewState()` yalnız
+  `schema.js`'te; `app.js` kopya tutmaz.
+- **Ölçüm doğru girdiyi ölçer.** WER → `asrText`; tepe/kırpılma → en kötü
+  kanal; sessizlik/perde → en yüksek enerjili kanal; Türkçe küçültme →
+  `trLowerCase()`.
+- **Ölçüm şemaları sürümlenir.** `LEVELS_SCHEMA` (3), `SILENCE_SCHEMA` (2);
+  eski kayıtlar `stripDerivedFields` ile atılır, yeniden ölçülür.
+- **Birleştirme sessizce ezmez.** `mergeMaterialFields()` +
+  `diffMaterialFields()` tek kural; önizleme = birleştirme.
+- **`updatedAt` her düzenlemede tazelenir** (`persist()` tek kapı); dosya
+  AÇMAK tazelemez (`persist({touch:false})`).
+- **Doğrulama üç hâlli.** `verifyHashState()` → `verified` / `mismatch` /
+  `unavailable`; "hesaplanamadı" asla "doğrulandı" değildir.
+- **Zaman girdisi katı.** `parseTimecodeStrict()` geçersizde `null` (0 değil);
+  Türkçe virgül kabul; geçersiz değer kayda girmez.
+- **Adli ayrım her yolda korunur.** Paragraf `asrText`i birleştirir, bölme
+  paylaştırır; farklı modeller karışırsa model adı boşaltılır.
+- **Tek kaynak ilkesi.** Sayaç/filtre/toplu onay `quickApproveTargets()`;
+  perde hücresi `pitchCellText()`; rapor satırları `levelRowsForCase()`.
+
+### Dürüst sınır olarak bırakılanlar (hata değil)
+
+- Perde: otokorelasyon oktav hatası **düzeltilmiyor**, `detectPitchAmbiguity()`
+  ile **bildiriliyor**. Kesin perde için YIN/SWIPE gerekir; depo böyle bir
+  model içermiyor ve yapılmış gibi göstermiyor.
+- `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
+
+## Yeni oturuma devir notu (v2.101)
+
+Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
+
+- **Güncel sürüm:** `v2.101` (`assets/app.js` → `APP_VERSION`).
+- **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
+- **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
+- **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,
+  önce kıran test (düzeltme yokken KALDI), sonra düzeltme, gerçek tarayıcı,
+  push + hash + Pages + canlı doğrulama, kullanıcıyı 3 yerden haberdar et.
+- **Kullanıcı arada başka taleplerle gelebilir** (soru sorabilir, başka bir
+  özellik isteyebilir). Bu, disiplini **bozmaz**: soru sorulduğunda yalnız
+  cevap verilir (kod değişmez); değişiklik istenirse yukarıdaki akış aynen
+  uygulanır ve yine **tek sürüm** gönderilir.
+- **Sürüm artırma üç yerde birlikte:** `APP_VERSION` + `CHANGELOG.md` başlığı +
+  `docs/YOL_HARITASI.md`. Ayrıca `index.html` `?v=` parametreleri, `README.md`,
+  `docs/OZELLIKLER.md`, `AGENTS.md` sürüm satırı.
+- **Her sürümde kullanıcı bilgilendirmesi üç yerde:**
+  1. `VERSION_NOTICES['x.y']` (açılışta bir kez; `akis.seenNotice.*`)
+  2. `index.html` yardım ekranı → "Son değişiklikler (vX.Y)"
+  3. `CHANGELOG.md` → "KULLANICI NE GÖRECEK"
+- **Tarayıcı doğrulaması:** `/usr/bin/chromium` + CDP (headless). Modül
+  kapsamı nedeniyle uygulama fonksiyonları `window`'da değildir; **gerçek UI
+  akışını** tıklayın (düğme/dosya girişi), `evaluate` ile iç fonksiyon
+  çağırmayın. Geçici dosyalar iş bitince silinir (depoya girmez).
