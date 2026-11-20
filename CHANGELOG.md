@@ -6,12 +6,52 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.130.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.131.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.131 — Görünüm kutusu içerikle büyür (yapışkan üst bar, taşmayan durum çubuğu)
+
+DENETİM. v2.129'un "çalışma modunda üst bar yapışkan" vaadi **yalnız ilk 635
+pikselde** geçerliydi; durum çubuğu ise bölüm satırlarının üstüne biniyordu.
+
+### ÖLÇÜM (v2.130, 60 bölüm, 1440×900)
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| `#view-audio` kutusu / içerik | **635 / 2582 px** | **2592 / 2592 px** |
+| `flex` | `1 1 auto` | `0 0 auto` |
+| Çalışma çubuğu `top` (scroll 700) | **−42** | **0** |
+| Çalışma çubuğu `top` (scroll 1200 / 1900 / 2400) | −542 / −1242 / −1245 | **0 / 0 / 0** |
+| Durum çubuğu konumu | 713–739 (listenin ÜSTÜNDE) | 2670 (listenin ALTINDA) |
+| Örtülen bölüm satırı | **2** | **0** |
+| Durum çubuğunda tıklama | `elementFromPoint` → `.sb-item` (yutuluyor) | örtüşme yok |
+
+Kök neden: görünüm kutusu `flex: 1 1 auto` ile 635 px'e sabitleniyor, içerik
+taşıyordu. Yapışkan çocuk, kutusunun bittiği yerde bırakıyor; durum çubuğu da
+kutunun bittiği yerde içeriğin üstüne biniyordu.
+
+### DÜZELTME
+
+- `#view-audio.active { flex: 0 0 auto }` — kutu içeriği kadar uzar.
+- Kaydırma yine **tek yerde** (`.main-area`, v2.129 kuralı korunur).
+- Durum çubuğu artık listenin **altında**; hiçbir satırın üstüne binmez,
+  tıklamayı yutmaz.
+
+### KULLANICI NE GÖRECEK
+
+- Çalışma modunda **önceki/sonraki kayıt** düğmeleri listenin **sonuna kadar**
+  üstte kalır; kaybolmaz.
+- Liste satırlarının üstüne hiçbir çubuk binmez; tıklamalar hedefe gider.
+- Durum çubuğu listenin altına taşındı; sayfa sonuna gelince görünür. Kayıt ve
+  depolama durumu üst barda okunmaya devam eder.
+
+Koruyan test: `tasarim-testi` [2k] — düzeltme yokken **KALDI**.
+Gerçek Chromium: 1440/1280/1200/1100/900/760 → son bölüm ve kısayollar görünür,
+yatay taşma yok, JS hatası 0.
 
 ## v2.130 — Bölüm listesinde onay durumu artık görünüyor
 

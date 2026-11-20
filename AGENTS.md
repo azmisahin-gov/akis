@@ -1288,6 +1288,31 @@ Kırpma kararı verilecekse sıralama bilinçli seçilmeli; tercih **sarmaktır*
 
 **Koruyan test:** `tasarim-testi` [2j] (5 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10ac — Görünüm kutusu içerikle büyür (TAMAMLANDI, v2.131)
+
+**KURAL: görünüm kutusu yükseklik DAYATMAZ (`flex: 0 0 auto`). Yapışkan çubuk
+kutusunun bittiği yerde bırakır; durum çubuğu da kutunun bittiği yerde içeriğin
+üstüne biner.**
+
+**Ölçülen hata (v2.130, 60 bölüm, 1440×900):** `#view-audio` kutusu **635 px**,
+içerik **2582 px**, `flex: 1 1 auto`. Sonuçlar:
+1. Çalışma modundaki üst bar (önceki/sonraki kayıt) **635 px sonra** bırakıyordu
+   (scroll 700'de `top: −42`); v2.129'un "yapışkan" vaadi ilk ekranla sınırlıydı.
+2. Durum çubuğu 713–739'da **içeriğin üstüne** biniyordu; 2 bölüm satırını
+   örtüyor, `elementFromPoint` `.sb-item` döndürüyordu → tıklama yutuluyordu.
+
+**Düzeltme:** `#view-audio.active { flex: 0 0 auto }`. Kaydırma `.main-area`'da
+kalır (v2.129). Kutu 2592 = içerik; çubuk 600–2400 arası `top: 0`; durum çubuğu
+2670'te (listenin altında), örtülen satır **0**.
+
+**DERS:** `flex: 1 1 auto` + `min-height: 0` verilen bir kutu, içeriği taşıyorsa
+`position: sticky` çocuklarını **kutunun yüksekliğiyle** sınırlar. "Tek kaydırma"
+çözümü, kaydırılan kabı büyütmeyi de kapsamalı; yoksa çubuk yarı yolda bırakır ve
+alt çubuk içeriğin üstüne biner. Ölçüt: `scrollTop` artarken çubuğun `top` değeri
+**0 kalıyor mu**, durum çubuğunun örtüğü satır **kaç**.
+
+**Koruyan test:** `tasarim-testi` [2k] — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1461,7 +1486,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.130.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.131.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1623,7 +1648,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.130** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.131** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1666,6 +1691,7 @@ Test sayısı 441 → **782**.
 | **v2.128** | **Katmanlı analiz kutusu** (dalga+spek aynı yerde, 3 mod) | `birim` [50] · `tasarim` [2g] |
 | **v2.129** | **Ses görünümü tek kaydırma** (taşma, kısayol/araç görünmüyordu) | `tasarim` [2i] |
 | **v2.130** | **Bölüm rozeti: durum her zaman görünür** (96 px kapta kırpılıyordu) | `tasarim` [2j] |
+| **v2.131** | **Görünüm kutusu içerikle büyür** (yapışkan bar 635 px sonra bırakıyordu; durum çubuğu tıklamayı yutuyordu) | `tasarim` [2k] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

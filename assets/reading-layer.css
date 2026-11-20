@@ -1416,3 +1416,19 @@ body.ws-mode .workspace-bar {
   #view-audio .seg-item { grid-template-columns: 20px 84px minmax(0, 1fr); }
   #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
 }
+
+/* ============================================================================
+   v2.131 — GÖRÜNÜM KUTUSU İÇERİKLE BÜYÜR.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.130, 60 bölüm, 1440×900):
+     #view-audio kutusu 635 px · içerik 2582 px · flex: 1 1 auto
+     → yapışkan çalışma çubuğu 635 px sonra bırakıyor (scroll 700'de top −42)
+     → durum çubuğu içeriğin ÜSTÜNE biniyor (2 satır), tıklamayı yutuyor
+       (elementFromPoint → .sb-item) ve aşağı kaydırınca tamamen kayboluyor.
+   KURAL: görünüm kutusu yükseklik DAYATMAZ; içeriği kadar uzar. Kaydırma
+   .main-area'da kalır (v2.129), çubuk tüm listeyi kapsar, durum çubuğu
+   içeriğin ALTINDA kalır — hiçbir satırın üstüne binmez.
+   ============================================================================ */
+#view-audio.active {
+  flex: 0 0 auto;
+}

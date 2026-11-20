@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.130';
+} from './schema.js?v=2.131';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.130';
+const APP_VERSION = '2.131';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11589,6 +11589,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.131': {
+    title: 'Çalışma modunda üst bar artık hep görünür',
+    body:
+      'Uzun bir listede çalışma modundaki üst bar (önceki/sonraki kayıt) ilk ekrandan ' +
+      'sonra kayboluyordu; durum çubuğu da bölüm satırlarının üstüne binip tıklamayı ' +
+      'yutuyordu. Artık görünüm kutusu içeriği kadar uzuyor: üst bar liste boyunca ' +
+      'yapışkan kalıyor, durum çubuğu listenin altına iniyor ve hiçbir satırın üstüne ' +
+      'binmiyor. Kaydırma yine tek yerde (ana alan).'
+  },
   '2.130': {
     title: 'Bölüm listesinde onay durumu artık görünüyor',
     body:

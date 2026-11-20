@@ -432,6 +432,28 @@ console.log('\n[2j] Bölüm rozeti: durum her zaman görünür (v2.130)');
   );
 }
 
+// --- 2k. Görünüm kutusu içerikle büyür (v2.131) ----------------------------
+// ÖLÇÜM (v2.130, 60 bölüm, 1440×900):
+//   #view-audio kutusu 635 px · içerik 2582 px · flex: 1 1 auto
+//   → yapışkan çalışma çubuğu 635 px sonra bırakıyor (scroll 700'de top −42)
+//   → durum çubuğu içeriğin ÜSTÜNE biniyor (2 satır) ve tıklamayı yutuyor
+//     (elementFromPoint → .sb-item)
+// KURAL: görünüm kutusu yükseklik dayatmaz; içeriği kadar uzar. Kaydırma
+// .main-area'da kalır, çubuk tüm listeyi kapsar, durum çubuğu içeriğin ALTINDA.
+console.log('\n[2k] Görünüm kutusu içerikle büyür (v2.131)');
+{
+  const rl = read('assets/reading-layer.css');
+  check(
+    'ses görünümü kutusu içerikle büyür (flex: 0 0 auto)',
+    /#view-audio\.active\s*\{[^}]*flex:\s*0\s+0\s+auto/.test(rl)
+  );
+  check(
+    'çalışma modunda çalışma alanı yükseklik dayatmaz',
+    /body\.ws-mode #view-audio \.seg-workspace[^{]*\{[^}]*height:\s*auto\s*!important/.test(rl)
+  );
+  check('ses görünümü iç kaydırma yapmaz', /#view-audio\.active\s*\{[^}]*overflow:\s*visible/.test(rl));
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
