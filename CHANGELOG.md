@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.111.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.112.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.112 — A–B döngüsü üç yerden bozuktu
+
+CANLI VERİ. Bilirkişi: *"A–B aralığı dinleme diye bir özelliğimiz var ama onu tam
+kullanamadık, yada tuşlar yanlış, emin değilim."* — Haklıydı; üç ayrı hata vardı.
+
+### ÖLÇÜM (v2.111)
+
+```
+1) playSegmentRange():  loopRange/__loop eşleşmesi = 0
+   → her "▶ Dinle" çağrısı stopAt = bölüm sonu yazar → DÖNGÜ ÖLÜR
+2) handleSegKey:        'b' tuşu → splitSegmentAtPlayer (BÖLME)
+   → A–B için hiç kısayol yok
+3) paintLoop():         yalnız draw() içinde çalışıyor
+   → klavyeden A/B basılınca ekranda geri bildirim yok
+```
+
+Ayrıca yazdığım ilk düzeltmede `handleSegKey` kapsamında **olmayan** `player`
+değişkenini kullandım; tuşlar sessizce hiçbir şey yapmadı. Doğrusu
+`card.querySelector('audio')`.
+
+### KULLANICI NE GÖRECEK
+
+- **"▶ Dinle" artık döngüyü öldürmüyor**: döngü açıksa B'de sarıp tekrar çalar.
+- **Kısayollar**: `A` = başlangıç, `B` = bitiş, `K` = döngü aç/kapa.
+  **Bölme `S` tuşuna taşındı** (eski `B`).
+- **Anında geri bildirim**: A/B basınca aralık yazısı (`A 00:00:01.000 → B 00:00:03.000`)
+  ve düğme durumu güncellenir.
+- Düğme ipuçlarında kısayol yazar.
+
+### DEĞİŞMEZ KURALLAR
+
+1. `loopStopTarget(m, segmentEnd)` — **TEK KAYNAK**: döngü açık ve geçerliyse
+   durma noktası **B**'dir; bölüm sonu değil. `playSegmentRange` ve ana oynat
+   (2 yol) bunu kullanır.
+2. `toggleLoop(m, player, index)` — **TEK KAYNAK**: 🔁 düğmesi ve `K` tuşu aynı
+   fonksiyonu çağırır.
+3. `paintLoopIndicators(m)` — gösterge `draw()`'a bağımlı değil; DOM'dan tazelenir.
+4. `LOOP_KEYS = {a:'a', b:'b', toggle:'k'}`; bölme `S`.
+5. Döngü **şemaya yazılmaz** (`m.__loop` oturumluktur, `stripDerivedFields` atar);
+   bölüm sınırlarına (`start`/`end`) dokunmaz.
+
+### DOĞRULAMA (gerçek Chromium, gerçek WAV)
+
+```
+1) Düğmeler: A / B / 🔁 var; ipuçlarında kısayollar          ✅
+2) A (t=1.0) + B (t=3.0) tuşları → "A 00:00:01.000 → B 00:00:03.000"  ✅
+3) K → döngü açık, toast doğru                                ✅
+4) "▶ Dinle" → stillOn = true (ESKİ HATA: false), curTime 2.51 < 3.0  ✅
+```
+
+`birim-testleri` **[40]** — 12 kontrol.
 
 ## v2.111 — Çözümleme profili kayıt başına sabitlenir ve görünür
 

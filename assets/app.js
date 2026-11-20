@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.111';
+const APP_VERSION = '2.112';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3590,9 +3590,9 @@ function segDetailHtml(m) {
           <div class="sd-wave-tools">
             <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
             <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
-            <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) imlecin/oynatıcının olduğu ana ayarla">A</button>
-            <button class="seg-tool" data-loop-b title="Döngü bitişini (B) imlecin/oynatıcının olduğu ana ayarla">B</button>
-            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez)">🔁 Döngü</button>
+            <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) oynatıcının olduğu ana ayarla (kısayol: A)">A</button>
+            <button class="seg-tool" data-loop-b title="Döngü bitişini (B) oynatıcının olduğu ana ayarla (kısayol: B)">B</button>
+            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">🔁 Döngü</button>
             <span class="sd-loop-span" data-loop-span></span>
             <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
           </div>
@@ -3996,6 +3996,7 @@ function attachSegWave(m, index) {
     setLoopPoint(m, 'a', t);
     paintLoop();
     draw();
+    paintLoopIndicators(m);
     showToast(`A: ${timecode(t)}`);
   });
   waveWrap?.querySelector('[data-loop-b]')?.addEventListener('click', () => {
@@ -4004,32 +4005,13 @@ function attachSegWave(m, index) {
     setLoopPoint(m, 'b', t);
     paintLoop();
     draw();
+    paintLoopIndicators(m);
     showToast(`B: ${timecode(t)}`);
   });
   waveWrap?.querySelector('[data-loop-toggle]')?.addEventListener('click', () => {
-    const L = loopRange(m);
-    if (!L) return showToast('Önce A ve B noktalarını belirleyin.');
-    L.on = !L.on;
+    toggleLoop(m, player, index2);
     paintLoop();
     draw();
-    if (L.on && player) {
-      // Döngü açıldığında aralığı hemen çal.
-      try {
-        player.currentTime = L.a;
-      } catch (e) {}
-      player.__segStop = player.__segStop || null;
-      ensureSegStopListener(player);
-      player.__segStop.stopAt = L.b;
-      player.__segStop.materialId = m.id;
-      player.__segStop.index = index2;
-      segPlayback = { materialId: m.id, index: index2, playing: true, atEnd: false };
-      player.play().catch(() => {});
-      refreshPlayButtons();
-      showToast(`Döngü açık: ${loopLabel(m)} — sınırlar değişmedi.`);
-    } else {
-      if (player && player.__segStop) player.__segStop.stopAt = null;
-      showToast('Döngü kapalı.');
-    }
   });
   if (player) {
     const ph = () => draw();
@@ -4041,9 +4023,28 @@ function attachSegWave(m, index) {
   m.__segWaveRedraw = draw;
   draw();
 }
+// DÖNGÜ GÖSTERGESİ — TEK KAYNAK (v2.112).
+// NEDEN: v2.111'de etiket ve düğme durumu yalnız `draw()` içinde tazeleniyordu.
+// Klavyeden A/B/K basıldığında dalga yeniden çizilmezse (veya `__segWaveRedraw`
+// bağlı değilse) kullanıcı hiçbir geri bildirim görmüyordu — "tuşlar çalışmıyor"
+// izlenimi. Artık gösterge ayrı ve doğrudan DOM'dan tazelenir.
+function paintLoopIndicators(m) {
+  if (!m) return;
+  const id = CSS.escape(m.id);
+  const root = document.getElementById(`seg-detail-${id}`) || document;
+  const spans = root.querySelectorAll('[data-loop-span]');
+  const label = loopLabel(m);
+  const isOn = !!(loopRange(m) || {}).on;
+  spans.forEach((el) => {
+    el.textContent = label;
+    el.classList.toggle('on', isOn);
+  });
+  root.querySelectorAll('[data-loop-toggle]').forEach((el) => el.classList.toggle('on', isOn));
+}
 function refreshSegWave(m, idx) {
   m.__segWaveRebind?.();
   m.__segWaveRedraw?.();
+  paintLoopIndicators(m);
 }
 // Toplu onay düğmesi. Yalnız "hızlı onaya uygun" bölümleri onaylar; uygun
 // olmayanlara DOKUNMAZ. Onay yetkisi kuralı korunur: ikinci göz bu düğmeyi
@@ -4223,9 +4224,10 @@ function playWholeRecording(m) {
     refreshPlayButtons();
     return;
   }
-  // Bitiş sınırı YOK: kayıt sonuna kadar çalar.
+  // Döngü AÇIKSA kayıt sonuna kadar değil, B'de durur (v2.112).
+  // Döngü kapalıysa bitiş sınırı YOK: kayıt sonuna kadar çalar.
   if (player.__segStop) {
-    player.__segStop.stopAt = null;
+    player.__segStop.stopAt = loopStopTarget(m, null);
     player.__segStop.materialId = m.id;
     player.__segStop.index = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
   }
@@ -4427,7 +4429,50 @@ function handleSegKey(e, card, m) {
     e.preventDefault();
     return true;
   }
-  if ((e.key === 'b' || e.key === 'B') && !typing) {
+  // A–B DÖNGÜSÜ KISAYOLLARI (v2.112). Önceden A–B için hiç kısayol yoktu ve
+  // `B` tuşu bölmeye bağlıydı; kullanıcı "tuşlar yanlış" dedi. Artık:
+  //   A = döngü başlangıcı, B = döngü bitişi, K = döngü aç/kapa
+  // Bölme kısayolu `S` tuşuna taşındı (Split).
+  // Oynatıcı `card` içindedir; `handleSegKey` kapsamında hazır bir `player`
+  // değişkeni YOKTUR (v2.112'de bu yüzden tuşlar sessizce çalışmıyordu).
+  const lp = card?.querySelector('audio') || null;
+  const loopIdx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+  if ((e.key === LOOP_KEYS.a || e.key === LOOP_KEYS.a.toUpperCase()) && !typing) {
+    const t = lp && Number.isFinite(lp.currentTime) ? lp.currentTime : null;
+    if (t == null) {
+      showToast('A için önce kaydı oynatın veya dalgada bir noktaya tıklayın.');
+      return false;
+    }
+    setLoopPoint(m, 'a', t);
+    refreshSegWave(m, loopIdx);
+    showToast(`A: ${timecode(t)} — B'yi belirlemek için B tuşuna basın.`);
+    e.preventDefault();
+    return true;
+  }
+  if ((e.key === LOOP_KEYS.b || e.key === LOOP_KEYS.b.toUpperCase()) && !typing) {
+    const t = lp && Number.isFinite(lp.currentTime) ? lp.currentTime : null;
+    if (t == null) {
+      showToast('B için önce kaydı oynatın veya dalgada bir noktaya tıklayın.');
+      return false;
+    }
+    setLoopPoint(m, 'b', t);
+    refreshSegWave(m, loopIdx);
+    const L = loopRange(m);
+    showToast(
+      L
+        ? `B: ${timecode(t)} — A–B hazır (${loopLabel(m)}). K ile döngüyü açın.`
+        : 'B: başlangıçtan sonra olmalı. Önce A noktasını belirleyin.'
+    );
+    e.preventDefault();
+    return true;
+  }
+  if ((e.key === LOOP_KEYS.toggle || e.key === LOOP_KEYS.toggle.toUpperCase()) && !typing) {
+    toggleLoop(m, lp, loopIdx);
+    e.preventDefault();
+    return true;
+  }
+  // Bölme: S tuşu (eski B tuşu A–B'ye ayrıldı).
+  if ((e.key === 's' || e.key === 'S') && !typing) {
     const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
     splitSegmentAtPlayer(m, idx);
     e.preventDefault();
@@ -4782,6 +4827,48 @@ function loopLabel(m) {
   const L = loopRange(m);
   if (!L) return '';
   return `A ${timecode(L.a)} → B ${timecode(L.b)}`;
+}
+// TEK KAYNAK: bir oynatma yolunun DURMA noktası (v2.112).
+// NEDEN: v2.111'de `playSegmentRange()` ve ana oynat döngüyü hiç kontrol
+// etmiyordu; her "▶ Dinle" çağrısı `stopAt = bölüm sonu` yazıp döngüyü
+// SESSİZCE öldürüyordu (canlı veri: "tam kullanamadık").
+// Kural: döngü AÇIK ve geçerliyse durma noktası B'dir; bölüm sonu değil.
+// Bölüm sonu yoksa (ana oynat) yine B'de durur — döngü sınır koyar.
+function loopStopTarget(m, segmentEnd) {
+  const L = loopRange(m);
+  if (L && L.on) return L.b;
+  return Number.isFinite(segmentEnd) ? segmentEnd : null;
+}
+// A–B klavye kısayolları (v2.112). `B` tuşu bölmeye bağlıydı; A–B için hiç
+// kısayol yoktu. Artık: A = başlangıç, B = bitiş, K = döngü aç/kapa.
+const LOOP_KEYS = Object.freeze({ a: 'a', b: 'b', toggle: 'k' });
+// Döngü aç/kapa — TEK KAYNAK (v2.112). Hem 🔁 düğmesi hem K tuşu bunu çağırır;
+// iki ayrı kopya mantık ayrışmasın (v2.99'daki sayaç/filtre dersinin tekrarı).
+function toggleLoop(m, player, index) {
+  const L = loopRange(m);
+  if (!L) {
+    showToast('Önce A ve B noktalarını belirleyin (A ve B tuşları).');
+    return false;
+  }
+  L.on = !L.on;
+  if (L.on && player) {
+    try {
+      player.currentTime = L.a;
+    } catch (e) {}
+    ensureSegStopListener(player);
+    player.__segStop.stopAt = L.b;
+    player.__segStop.materialId = m.id;
+    player.__segStop.index = index;
+    segPlayback = { materialId: m.id, index, playing: true, atEnd: false };
+    player.play().catch(() => {});
+    refreshPlayButtons();
+    showToast(`Döngü açık: ${loopLabel(m)} — bölüm sınırları değişmedi. K ile kapatın.`);
+  } else {
+    if (player && player.__segStop) player.__segStop.stopAt = null;
+    showToast('Döngü kapalı.');
+  }
+  refreshSegWave(m, Number.isInteger(index) ? index : 0);
+  return L.on;
 }
 // Bölüm bitişinde durmayı sağlayan tek dinleyici. Önceki sürümde her çalma yeni
 // bir timeupdate dinleyicisi ekliyor, bazıları kaldırılmıyordu; bu da üst üste
@@ -5183,8 +5270,8 @@ function playSegmentRange(card, m, s, index, { restart = false } = {}) {
     player.currentTime > start + 0.05 &&
     player.currentTime < end - 0.05
   ) {
-    // Duraklatılmış konumdan devam et.
-    player.__segStop.stopAt = end;
+    // Duraklatılmış konumdan devam et. Döngü açıksa B'de dur (v2.112).
+    player.__segStop.stopAt = loopStopTarget(m, end);
     player.__segStop.materialId = m.id;
     player.__segStop.index = index;
     segPlayback.playing = true;
@@ -5195,7 +5282,8 @@ function playSegmentRange(card, m, s, index, { restart = false } = {}) {
   try {
     player.currentTime = start;
   } catch (e) {}
-  player.__segStop.stopAt = end > start ? end : null;
+  // DÖNGÜ KORUNUR (v2.112): açıksa durma noktası B'dir, bölüm sonu değil.
+  player.__segStop.stopAt = loopStopTarget(m, end > start ? end : null);
   player.__segStop.materialId = m.id;
   player.__segStop.index = index;
   segPlayback = { materialId: m.id, index, playing: true, atEnd: false };
@@ -10625,6 +10713,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.112': {
+    title: 'A–B döngüsü artık gerçekten çalışıyor',
+    body:
+      'A–B aralığı dinleme üç yerden bozuktu ve bu yüzden "tam kullanamadık" ' +
+      'hissi doğuyordu. (1) "▶ Dinle" düğmesine her bastığınızda döngü sessizce ' +
+      'kapanıyordu; artık açık kaldığı sürece B noktasında sarıp tekrar çalar. ' +
+      '(2) A–B için hiç klavye kısayolu yoktu, B tuşu bölmeye bağlıydı. Artık: ' +
+      'A = başlangıç, B = bitiş, K = döngü aç/kapa; bölme S tuşunda. (3) Tuşlarla ' +
+      'A/B belirlediğinizde ekranda hiçbir geri bildirim görünmüyordu; artık ' +
+      'aralık yazısı ve düğme durumu anında güncellenir. Düğmelerin üzerine ' +
+      'gelince kısayolları da yazar.'
+  },
   '2.111': {
     title: 'Hangi çözümleme profiliyle çözümlendiği artık görünüyor',
     body:

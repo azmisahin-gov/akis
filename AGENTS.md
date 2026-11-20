@@ -723,6 +723,36 @@ birebir arıyordu, imza değişince kırıldı. İmza testi **davranışa** çev
 (`transcribeWindow(\s*pipe,\s*slice,\s*a\b`). Bu ders ikinci kez yaşandı;
 yeni test yazarken imza değil DAVRANIŞ sınanmalı.
 
+
+### Aşama 10j — A–B döngüsü onarıldı (TAMAMLANDI, v2.112)
+
+**KURAL: `loopStopTarget(m, segmentEnd)` TEK KAYNAK.** Döngü açık ve geçerliyse
+durma noktası **B**'dir; bölüm sonu değil.
+
+**Ölçülen üç hata (v2.111):**
+1. `playSegmentRange()` `loopRange`'ı hiç çağırmıyordu → her "▶ Dinle" `stopAt =
+   bölüm sonu` yazıp döngüyü **sessizce öldürüyordu**.
+2. A–B için klavye kısayolu yoktu; `B` tuşu **bölmeye** bağlıydı.
+3. Gösterge yalnız `draw()` içinde tazeleniyordu → tuşla A/B basınca geri
+   bildirim yoktu ("tuşlar çalışmıyor" izlenimi).
+
+**Kendi hatam (kayda geçti):** ilk düzeltmede `handleSegKey` kapsamında
+**olmayan** `player` değişkenini kullandım; tuşlar sessizce hiçbir şey yapmadı.
+Doğrusu `card.querySelector('audio')`. **Ders: kapsamda var mı diye bakmadan
+değişken kullanma; sessiz ReferenceError/catch yutması fark edilmez.**
+
+**Fonksiyonlar:**
+- `loopStopTarget(m, segmentEnd)` — 2 oynatma yolu (bölüm, ana oynat) kullanır.
+- `toggleLoop(m, player, index)` — 🔁 düğmesi ve `K` tuşu **aynı** fonksiyon.
+- `paintLoopIndicators(m)` — `draw()`'dan bağımsız DOM tazeleme.
+- `LOOP_KEYS = {a:'a', b:'b', toggle:'k'}`; bölme **S**.
+
+**Değişmez:** döngü şemaya yazılmaz (`m.__loop` oturumluk); bölüm
+`start`/`end`'ine dokunmaz.
+
+**Ölçüm (v2.112, gerçek WAV + Chromium):** A(1.0)+B(3.0) → etiket doğru;
+K → açık; "▶ Dinle" → `stillOn=true` (eski: false), `curTime 2.51 < 3.0`.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -896,7 +926,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.111.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.112.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1054,7 +1084,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.111` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.112` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

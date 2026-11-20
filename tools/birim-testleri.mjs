@@ -98,6 +98,7 @@ const EXPOSE = [
   'casesForStorage', 'isEmptyWorkspace',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
+  'loopStopTarget', 'LOOP_KEYS',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2128,6 +2129,40 @@ console.log('\n[39] Çözümleme profili: kayıt başına sabit + görünür');
   const reportText = JSON.stringify(T.REPORT_TEXT || {});
   eq('rapor metinlerinde "Şive/aksan" etiketi yok', /Şive\/aksan/.test(reportText), false);
   eq('rapor metinlerinde "profil" kelimesi yok', /profil/i.test(reportText), false);
+}
+
+// --- 40. A–B döngüsü: oynatma yollarında korunur (v2.112) -----------------
+// CANLI VERİ. Bilirkişi: "A–B aralığı dinleme diye bir özelliğimiz var ama onu
+// tam kullanamadık, yada tuşlar yanlış, emin değilim."
+// ÖLÇÜM (v2.111):
+//   1) `playSegmentRange()` döngüyü HİÇ kontrol etmiyor (0 eşleşme); her
+//      "▶ Dinle" çağrısında `stopAt = end` yazar → döngü ölür.
+//   2) A–B için klavye kısayolu YOK; `B` tuşu bölmeye bağlı.
+//   3) Döngü açıkken ana oynat `stopAt = null` yapar → döngü durur.
+console.log('\n[40] A–B döngüsü: oynatma yollarında korunur');
+{
+  eq('loopStopTarget tanımlı', typeof T.loopStopTarget, 'function');
+  eq('LOOP_KEYS tanımlı', typeof T.LOOP_KEYS, 'object');
+
+  // 1) Döngü AÇIKSA durma noktası B'dir (bölüm sonu DEĞİL).
+  const m = { __loop: { on: true, a: 10, b: 15 } };
+  eq('döngü açık → durma noktası B', T.loopStopTarget(m, 30), 15);
+  // 2) Döngü KAPALIYSA bölüm sonu kullanılır.
+  eq('döngü kapalı → bölüm sonu', T.loopStopTarget({ __loop: { on: false, a: 10, b: 15 } }, 30), 30);
+  // 3) Döngü hiç kurulmamışsa bölüm sonu.
+  eq('döngü yok → bölüm sonu', T.loopStopTarget({}, 30), 30);
+  eq('null → bölüm sonu', T.loopStopTarget(null, 30), 30);
+  // 4) Geçersiz döngü (b <= a) dikkate alınmaz.
+  eq('geçersiz döngü → bölüm sonu', T.loopStopTarget({ __loop: { on: true, a: 15, b: 10 } }, 30), 30);
+  // 5) Bölüm sonu yoksa (ana oynat) döngü yine de sınır koyar.
+  eq('bölüm sonu yok + döngü açık → B', T.loopStopTarget(m, null), 15);
+  eq('bölüm sonu yok + döngü yok → null', T.loopStopTarget({}, null), null);
+
+  // 6) KLAVYE: A–B tuşları tanımlı ve ÇAKIŞMIYOR.
+  eq('A tuşu var', T.LOOP_KEYS.a, 'a');
+  eq('B tuşu A–B bitişi (bölme değil)', T.LOOP_KEYS.b, 'b');
+  eq('döngü aç/kapa tuşu var', T.LOOP_KEYS.toggle, 'k');
+  eq('A ve B farklı tuşlar', T.LOOP_KEYS.a !== T.LOOP_KEYS.b, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

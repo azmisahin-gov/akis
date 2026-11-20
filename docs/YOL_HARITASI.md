@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.111.**
+yazılır. **Güncel sürüm: v2.112.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.112 — A–B döngüsü onarıldı (tamamlandı, canlı veri)
+
+Üç hata: (1) `playSegmentRange` döngüyü hiç kontrol etmiyordu → "▶ Dinle" döngüyü
+öldürüyordu; (2) A–B kısayolu yoktu, `B` bölmeye bağlıydı; (3) gösterge yalnız
+`draw()` içinde tazeleniyordu. `loopStopTarget` (tek kaynak), `toggleLoop`
+(düğme+tuş aynı), `paintLoopIndicators` (draw'dan bağımsız) eklendi. Kısayollar
+A/B/K; bölme S. `birim-testleri` [40] + gerçek WAV ile Chromium korur.
 
 ### v2.111 — Çözümleme profili kayıt başına sabit (tamamlandı, canlı veri)
 
