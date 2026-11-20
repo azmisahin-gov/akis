@@ -109,6 +109,7 @@ const EXPOSE = [
   'specTimeAt', 'specHzAt', 'specNearestBoundary',
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
+  'normalizeRescueCases',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2635,6 +2636,41 @@ console.log('\n== [50] Analiz kutusu: modlar ve ortak zaman ekseni');
   m.__sdZoom = { materialId: 'm1', index: 0, a: 2, b: 3 };
   eq('zoom penceresi kullanılır', T.analysisView(m, 0).a, 2);
   eq('bölüm yoksa null', T.analysisView({ segments: [] }, 0), null);
+}
+
+
+console.log('\n== [51] Kurtarma kopyası: bozuk dosya sessizce atlanmaz');
+{
+  // Ana yükleme yolu bozuk dosyayı reportLoadFailures ile bildirir. Kurtarma
+  // kopyası yolu ise `catch (e) {}` ile SESSİZCE atlıyordu (v2.131 ve öncesi):
+  // kullanıcı "2 dosya geri yüklendi" görüyor, üçüncünün kaybolduğunu
+  // bilmiyordu. İki yol aynı sözleşmeyi kullanmalı.
+  const N = T.normalizeRescueCases;
+  eq('normalizeRescueCases tanımlı', typeof N, 'function');
+  if (typeof N === 'function') {
+    const good = (id, no) => ({ id, fileNo: no, name: 'Dosya ' + no, materials: [] });
+    const boom = new Proxy({}, {
+      get() { throw new Error('bozuk kayıt'); },
+      ownKeys() { throw new Error('bozuk kayıt'); }
+    });
+    const r = N([good('a', '2026/1'), boom, good('b', '2026/2')]);
+    eq('sağlam dosyalar korunur', r.cases.length, 2);
+    eq('bozuk dosya failed listesine girer', r.failed.length, 1);
+    eq('bozuk dosyanın hatası saklanır', !!r.failed[0].error, true);
+
+    const empty = N([]);
+    eq('boş liste: dosya yok', empty.cases.length, 0);
+    eq('boş liste: hata yok', empty.failed.length, 0);
+    const none = N(null);
+    eq('dizi olmayan girdi: dosya yok', none.cases.length, 0);
+  }
+
+  // Kaynak sözleşmesi: kurtarma dalı sessiz catch kullanmamalı ve bildirmeli.
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('kurtarma dalı normalizeRescueCases kullanıyor', /normalizeRescueCases\(rescue\.cases\)/.test(src), true);
+  eq('kurtarma dalı reportLoadFailures çağırıyor', /normalizeRescueCases[\s\S]{0,400}reportLoadFailures\(failed/.test(src), true);
+  const rescueBlock = (src.match(/const rescue = readLastSnapshot\(\);[\s\S]*?Gerçekten boş kurulum/) || [''])[0];
+  eq('kurtarma dalında sessiz catch yok', rescueBlock.length > 0 && !/catch \(e\) \{\}/.test(rescueBlock), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

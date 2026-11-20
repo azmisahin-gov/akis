@@ -6,12 +6,50 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.131.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.132.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.132 — Kurtarma kopyasında sessiz dosya düşmesi kapatıldı
+
+DENETİM. İki yükleme yolu **ayrı sözleşme** kullanıyordu:
+
+| Yol | Bozuk dosya davranışı |
+|---|---|
+| Ana yükleme (`loadState`) | `failed` listesi + `reportLoadFailures` (v2.84) |
+| Kurtarma kopyası (depo boşken) | **`catch (e) {}` — sessiz atlama** |
+
+Kurtarma kopyasında 3 dosya varken biri okunamazsa ekran **"2 dosya geri
+yüklendi"** diyor, üçüncünün kaybolduğunu söylemiyordu.
+
+### DÜZELTME
+
+- `normalizeRescueCases(rawCases)` — saf fonksiyon; dosyaları **ayrı**
+  normalleştirir, `{ cases, failed }` döndürür.
+- Kurtarma dalı artık `failed` varsa `reportLoadFailures` çağırır: durum
+  çubuğu + bildirim + ham kayıt (`akis.rescue.failedCases`). Kopya **silinmez**.
+- Kimlik okuması da korunur (`raw.id` fırlatırsa boş kalır, bildirim yine olur).
+
+### KULLANICI NE GÖRECEK
+
+- Kurtarma kopyasından geri yüklemede bir dosya okunamazsa **kaç dosyanın
+  atlandığı** yazılır; "her şey geri geldi" izlenimi oluşmaz.
+- Ham kayıt kurtarma alanında tutulur; kopya korunur (elle kurtarma mümkün).
+
+### DÜRÜST SINIR
+
+Bu yol, geçerli JSON verisiyle **yeniden üretilemez**: `normalizeCase`
+savunmacı yazıldığı için sıradan bozuk alanları tolere eder. Test, fırlatan bir
+kayıt (Proxy) ile sözleşmeyi sınar; tarayıcıda ise normal akış doğrulandı
+(2 dosyalık kopya → soru → geri yükleme → bildirim). Yani kapatılan şey
+**kanıtlanmış bir sessiz kayıp sınıfı**, sık görülen bir hata değil.
+
+Koruyan test: `birim-testleri` [51] (10 kontrol) — düzeltme yokken **KALDI**.
+Gerçek Chromium: kurtarma sorusu çıktı, 2 dosya geri yüklendi, bildirim
+göründü, kopya korundu, JS hatası 0.
 
 ## v2.131 — Görünüm kutusu içerikle büyür (yapışkan üst bar, taşmayan durum çubuğu)
 

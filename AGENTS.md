@@ -1313,6 +1313,37 @@ alt çubuk içeriğin üstüne biner. Ölçüt: `scrollTop` artarken çubuğun `
 
 **Koruyan test:** `tasarim-testi` [2k] — düzeltme yokken KALDI.
 
+### Aşama 10ad — Kurtarma kopyasında sessiz düşme kapatıldı (TAMAMLANDI, v2.132)
+
+**KURAL: aynı işi yapan iki yükleme yolu AYNI sözleşmeyi kullanır. Bozuk dosya
+hiçbir yolda sessizce atlanmaz.**
+
+**Ölçülen ayrışma (v2.131):**
+| Yol | Bozuk dosya |
+|---|---|
+| Ana yükleme (`loadState`) | `failed` + `reportLoadFailures` (v2.84) |
+| Kurtarma kopyası (depo boşken) | **`catch (e) {}`** |
+
+Kurtarma kopyasında 3 dosya varken biri okunamazsa ekran "2 dosya geri
+yüklendi" diyor, üçüncünün kaybolduğunu söylemiyordu.
+
+**Düzeltme:** `normalizeRescueCases(rawCases)` → `{ cases, failed }`; kurtarma
+dalı `failed.length` ise `reportLoadFailures(failed, { cases: rescue.cases })`
+çağırır. Kopya **silinmez** (elle kurtarma mümkün). `raw.id` okuması da
+fırlatabilir → güvenli okunur, bildirim yine yapılır.
+
+**DÜRÜST SINIR:** Geçerli JSON ile yeniden üretilemez; `normalizeCase`
+savunmacıdır. Test, fırlatan kayıt (Proxy) ile sözleşmeyi sınar. Tarayıcıda
+normal akış doğrulandı: boş depo + 2 dosyalık kopya → soru → geri yükleme →
+"2 dosya kurtarma kopyasından geri yüklendi" → kopya korundu, JS hatası 0.
+
+**DERS:** Aynı veriyi okuyan iki yol varsa hata davranışları da aynı olmalı.
+Bir yol `failed` listesi tutarken diğerinin boş `catch` kullanması, "sessiz veri
+kaybı" sınıfının tipik kaynağıdır. Yeni bir yükleme/aktarma yolu eklerken
+`reportLoadFailures` sözleşmesine bağlanın.
+
+**Koruyan test:** `birim-testleri` [51] (10 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1486,7 +1517,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.131.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.132.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1648,7 +1679,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.131** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.132** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1692,6 +1723,7 @@ Test sayısı 441 → **782**.
 | **v2.129** | **Ses görünümü tek kaydırma** (taşma, kısayol/araç görünmüyordu) | `tasarim` [2i] |
 | **v2.130** | **Bölüm rozeti: durum her zaman görünür** (96 px kapta kırpılıyordu) | `tasarim` [2j] |
 | **v2.131** | **Görünüm kutusu içerikle büyür** (yapışkan bar 635 px sonra bırakıyordu; durum çubuğu tıklamayı yutuyordu) | `tasarim` [2k] |
+| **v2.132** | **Kurtarma kopyasında sessiz düşme** (bozuk dosya bildirilmiyordu) | `birim` [51] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

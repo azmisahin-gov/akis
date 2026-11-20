@@ -1,4 +1,4 @@
-# Özellikler (v2.131 — mevcut durum)
+# Özellikler (v2.132 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -197,6 +197,9 @@ tuşları bozulmaz.
   - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
+- **Kurtarma kopyası dürüsttür (v2.132):** depo boşken kurtarma kopyasından
+  geri yüklemede okunamayan dosya sessizce atlanmaz; kaç dosyanın atlandığı
+  bildirilir, ham kayıt kurtarma alanında tutulur, kopya silinmez.
 - **Tek kaydırma, büyüyen görünüm kutusu (v2.131):** ses görünümü içeriği
   kadar uzar; kaydırma yalnız ana alanda. Çalışma modunda üst bar
   (önceki/sonraki kayıt) liste boyunca yapışkan kalır; durum çubuğu listenin

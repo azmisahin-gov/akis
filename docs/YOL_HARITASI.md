@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.131.**
+yazılır. **Güncel sürüm: v2.132.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.132 — Kurtarma kopyasında sessiz dosya düşmesi (tamamlandı)
+
+Kurtarma kopyasından geri yüklemede bozuk dosya `catch (e) {}` ile sessizce
+atlanıyordu. Artık `normalizeRescueCases` + `reportLoadFailures`; kopya korunur.
+`birim` [51].
 
 ### v2.131 — Görünüm kutusu içerikle büyür (tamamlandı)
 

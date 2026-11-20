@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.131';
+} from './schema.js?v=2.132';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.131';
+const APP_VERSION = '2.132';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -891,6 +891,34 @@ async function readStoredState() {
   }
   return { state: null, migrated: false };
 }
+// Kurtarma kopyasındaki dosyaları AYRI normalleştirir. Ana yükleme yoluyla
+// aynı sözleşme (v2.132): bozuk dosya SESSİZCE atlanmaz, `failed` listesine
+// girer ve `reportLoadFailures` ile bildirilir. v2.131 ve öncesinde bu yol
+// `catch (e) {}` kullanıyordu: kullanıcı "2 dosya geri yüklendi" görüyor,
+// üçüncünün kaybolduğunu bilmiyordu.
+function normalizeRescueCases(rawCases) {
+  const ok = [];
+  const failed = [];
+  for (const raw of Array.isArray(rawCases) ? rawCases : []) {
+    try {
+      const nc = normalizeCase(raw);
+      syncCaseMirrors(nc);
+      defineCaseMirrors(nc);
+      ok.push(nc);
+    } catch (e) {
+      // `raw.id` okuması da fırlatabilir (bozuk kayıt); kimlik okunamazsa boş
+      // kalır, bildirim yine yapılır.
+      let id = '';
+      try {
+        id = (raw && raw.id) || '';
+      } catch (err) {
+        id = '';
+      }
+      failed.push({ id, error: e });
+    }
+  }
+  return { cases: ok, failed };
+}
 async function loadState() {
   let stored = null;
   let migrated = false;
@@ -916,15 +944,10 @@ async function loadState() {
           'Bu kopya geri yüklensin mi? "Vazgeç" derseniz boş yeni dosyayla başlanır ve kopya korunur.'
       );
       if (ok) {
-        const cases = [];
-        for (const raw of rescue.cases) {
-          try {
-            const nc = normalizeCase(raw);
-            syncCaseMirrors(nc);
-            defineCaseMirrors(nc);
-            cases.push(nc);
-          } catch (e) {}
-        }
+        const { cases, failed } = normalizeRescueCases(rescue.cases);
+        // Bozuk dosya sessizce atlanmaz (v2.132). Ham kayıt kurtarma alanına
+        // konur; kopya SİLİNMEZ (kullanıcı elle kurtarabilir).
+        if (failed.length) reportLoadFailures(failed, { cases: rescue.cases });
         if (cases.length) {
           appState = { cases, activeCaseId: cases[0].id };
           persist();
@@ -11589,6 +11612,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.132': {
+    title: 'Kurtarma kopyasından geri yüklemede dosya kaybı artık bildirilir',
+    body:
+      'Depo boşken kurtarma kopyasından geri yükleme yapılırsa, okunamayan bir dosya ' +
+      'sessizce atlanıyordu: ekran yalnız "2 dosya geri yüklendi" diyor, üçüncünün ' +
+      'kaybolduğunu söylemiyordu. Artık kaç dosyanın okunamadığı bildirilir, ham kayıt ' +
+      'kurtarma alanında tutulur ve kopya silinmez. Ana yükleme yoluyla aynı kural.'
+  },
   '2.131': {
     title: 'Çalışma modunda üst bar artık hep görünür',
     body:
