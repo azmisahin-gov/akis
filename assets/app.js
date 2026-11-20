@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.133';
+} from './schema.js?v=2.134';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.133';
+const APP_VERSION = '2.134';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -366,15 +366,27 @@ async function persistNow() {
     // Canlı veride yaşandı: bölüme tıklayan bilirkişinin tüm işi kayboldu.
     // BOŞ TASLAK KAYDA YAZILMAZ (v2.109): yalnız veri taşıyan dosyalar yazılır.
     // Böylece yeni tarayıcıda "zaten dosya var" yanılgısı oluşmaz.
-    const toStore = { ...appState, cases: casesForStorage(appState.cases) };
-    const payload = sanitizeForStorage(toStore);
+    const payload = persistPayloadFor(appState);
     const db = await dbOpen();
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(STATE_STORE, 'readwrite');
-      tx.objectStore(STATE_STORE).put({ key: STORE_KEY, value: payload });
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
+    if (!payload) {
+      // Yazacak kullanıcı verisi yok: boş kayıt YAZILMAZ (v2.109/v2.134),
+      // varsa eski kayıt SİLİNİR. Aksi hâlde ilk açılışta hayalet kayıt
+      // oluşur ya da silinen dosyalar yeniden yüklenir.
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(STATE_STORE, 'readwrite');
+        tx.objectStore(STATE_STORE).delete(STORE_KEY);
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    } else {
+      const clean = sanitizeForStorage(payload);
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(STATE_STORE, 'readwrite');
+        tx.objectStore(STATE_STORE).put({ key: STORE_KEY, value: clean });
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+      });
+    }
     // Kısa metin (v2.105): uzun hâli üst barda başlığı sıkıştırıyordu.
     // KRİTİK durum metinleri (KAYDEDİLMİYOR, DEPOLAMA DOLU, KAYIT OKUNAMADI)
     // KISALTILMAZ: onlar kullanıcının görmesi gereken uyarılardır.
@@ -616,9 +628,15 @@ function flushPersist() {
     // Küçük kurtarma kopyası: dava verisinin yalnız metin kısmı, ses hariç.
     // Boyut riski nedeniyle yalnız bekleyen durum varsa ve sığıyorsa yazılır.
     // Kurtarma kopyası da boş taslağı taşımaz (v2.109).
-    const snapshot = { at: new Date().toISOString(), cases: casesForStorage(appState.cases) };
-    const json = JSON.stringify(snapshot);
-    if (json.length < 4.5 * 1024 * 1024) localStorage.setItem('akis.lastSnapshot', json);
+    const cases = casesForStorage(appState.cases);
+    if (!cases.length) {
+      // Yazacak veri yok: bayat kopya kalırsa silinen dosyalar geri gelir.
+      localStorage.removeItem('akis.lastSnapshot');
+    } else {
+      const snapshot = { at: new Date().toISOString(), cases };
+      const json = JSON.stringify(snapshot);
+      if (json.length < 4.5 * 1024 * 1024) localStorage.setItem('akis.lastSnapshot', json);
+    }
   } catch (e) {}
   persistChain = persistChain.then(persistNow, persistNow);
 }
@@ -8852,6 +8870,16 @@ function buildExportPlan(cases) {
 function casesForStorage(cases) {
   return (Array.isArray(cases) ? cases : []).filter((c) => !isEmptyCase(c));
 }
+// Yazılacak kayıt gövdesi. Kullanıcı verisi taşıyan dosya yoksa `null`:
+// boş taslak KAYDA YAZILMAZ (v2.109/v2.134). `persistNow` bu durumda kaydı
+// SİLER; yalnız yazmayı atlamak, silinen veriyi diskte bırakıp yeniden
+// yüklenmesine yol açardı.
+function persistPayloadFor(state) {
+  if (!state) return null;
+  const cases = casesForStorage(state.cases);
+  if (!cases.length) return null;
+  return { ...state, cases };
+}
 // Çalışma alanı "boş" mu? Yalnız boş taslak(lar) varsa evet.
 function isEmptyWorkspace(cases) {
   return casesForStorage(cases).length === 0;
@@ -11616,6 +11644,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.134': {
+    title: 'İlk açılışta hayalet kayıt oluşmuyor',
+    body:
+      'Boş çalışma alanı artık kayda yazılmıyor: yeni tarayıcıda veya yeni sekmede ' +
+      '"zaten dosya var" görünmez. Bir bilgi yazdığınız anda dosya gerçek olur ve ' +
+      'kaydedilir. Ayrıca tüm veri silinirse eski kayıt diskte bırakılmaz; silinen ' +
+      'dosyalar yeniden yüklenmez.'
+  },
   '2.133': {
     title: 'Durum çubuğu yazıları artık kesilmiyor',
     body:

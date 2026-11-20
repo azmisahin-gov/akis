@@ -1372,6 +1372,32 @@ kaybıdır; çubuk sarabilir çünkü içerik akışında ve sayfayı uzatmak za
 
 **Koruyan test:** `tasarim-testi` [2l] (4 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10af — Boş çalışma alanı kayda yazılmaz (TAMAMLANDI, v2.134)
+
+**KURAL: yazacak kullanıcı verisi yoksa kayıt YAZILMAZ, varsa SİLİNİR.**
+Yalnız "yazmayı atlamak" yetmez: eski kayıt diskte kalırsa silinen dosyalar
+yeniden yüklenir.
+
+**Ölçülen hata (v2.133, temiz profil):** `casesForStorage` boş dosyayı eliyordu
+ama `persistNow` yine de `{cases: []}` yazıyordu → IndexedDB'de **1 kayıt**.
+Ayrıca tüm dosyalar silinince boş kayıt yazmak eski kaydı diskte bırakıyordu
+(veri geri gelmesi riski).
+
+**Düzeltme:**
+1. `persistPayloadFor(state)` — kullanıcı verisi yoksa `null`.
+2. `persistNow`: `null` ise `delete(STORE_KEY)`.
+3. `flushPersist`: boşsa `localStorage.removeItem('akis.lastSnapshot')`.
+
+**Ölçüm (v2.134, gerçek Chromium):** ilk açılış **0 kayıt** (önce 1), seçici
+"— Yeni dosya —"; `2026/999` yazılınca 1 kayıt; yenilemede korunur; anlık kopya
+boş açılışta `null`.
+
+**DERS:** "Boş veriyi filtrele" ile "boş veriyi yazma" aynı şey değildir.
+Filtre yalnız gövdeyi boşaltır; yazma yine olur. Ayrıca silme senaryosunda
+"yazmayı atla" yanlış çözümdür: kayıt silinmeli, yoksa veri dirilir.
+
+**Koruyan test:** `birim-testleri` [52] (8 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1545,7 +1571,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.133.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.134.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1707,7 +1733,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.133** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.134** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1753,6 +1779,7 @@ Test sayısı 441 → **782**.
 | **v2.131** | **Görünüm kutusu içerikle büyür** (yapışkan bar 635 px sonra bırakıyordu; durum çubuğu tıklamayı yutuyordu) | `tasarim` [2k] |
 | **v2.132** | **Kurtarma kopyasında sessiz düşme** (bozuk dosya bildirilmiyordu) | `birim` [51] |
 | **v2.133** | **Durum çubuğu yazıları kesilmiyor** (≤1100 px'te 6/6 öğe kırpılıyordu) | `tasarim` [2l] |
+| **v2.134** | **İlk açılışta hayalet kayıt** (boş çalışma alanı yazılıyordu) | `birim` [52] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

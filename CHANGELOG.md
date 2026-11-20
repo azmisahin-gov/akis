@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.133.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.134.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.134 — İlk açılışta hayalet kayıt oluşmuyor
+
+DENETİM. v2.109 "boş taslak kayda yazılmaz" diyordu ve `casesForStorage` boş
+dosyayı eliyordu; ancak `persistNow` **yine de** `{cases: []}` kaydını yazıyordu.
+
+### ÖLÇÜM (v2.133, temiz profil)
+
+| Adım | IndexedDB `state` |
+|---|---|
+| İlk açılış | **1 kayıt**, `cases: []` |
+| Yeni sekme | aynı kayıt görünüyor (hayalet) |
+
+Ayrıca aynı hata bir **veri geri gelmesi** riski taşıyordu: tüm dosyalar
+silinirse boş kayıt yazmak eski kaydı diskte bırakır → silinen dosyalar
+yeniden yüklenir.
+
+### DÜZELTME
+
+- `persistPayloadFor(state)` — yazılacak gövde; kullanıcı verisi yoksa `null`.
+- `persistNow`: gövde `null` ise **yazmaz, kaydı SİLER**. Böylece hem ilk
+  açılışta hayalet oluşmaz hem silinen veri geri gelmez.
+- `flushPersist`: boş çalışma alanında anlık kopyayı **siler**
+  (`akis.lastSnapshot`); bayat kopya kalmaz.
+
+### KULLANICI NE GÖRECEK
+
+- Yeni tarayıcıda/sekmede **"zaten dosya var" görünmez**; seçici
+  "— Yeni dosya —" der.
+- Bir bilgi yazdığınız anda dosya gerçek olur ve kaydedilir.
+- Tüm dosyaları silerseniz, sayfayı yenilediğinizde **geri gelmez**.
+
+### ÖLÇÜM (v2.134, gerçek Chromium, temiz profil)
+
+| Adım | `state` kaydı | Seçici |
+|---|---|---|
+| İlk açılış | **0** | — Yeni dosya — |
+| Yeniden yükleme | **0** | — Yeni dosya — |
+| `2026/999` yazıldı | **1** (`2026/999`) | 2026/999 |
+| Yeniden yükleme | **1** (`2026/999`) | 2026/999 |
+
+Anlık kopya: boş açılışta `null`. JS hatası 0.
+
+Koruyan test: `birim-testleri` [52] (8 kontrol) — düzeltme yokken **KALDI**.
 
 ## v2.133 — Durum çubuğu yazıları kesilmiyor
 

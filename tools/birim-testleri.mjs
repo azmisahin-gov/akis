@@ -109,7 +109,7 @@ const EXPOSE = [
   'specTimeAt', 'specHzAt', 'specNearestBoundary',
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
-  'normalizeRescueCases',
+  'normalizeRescueCases', 'persistPayloadFor',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2671,6 +2671,35 @@ console.log('\n== [51] Kurtarma kopyası: bozuk dosya sessizce atlanmaz');
   eq('kurtarma dalı reportLoadFailures çağırıyor', /normalizeRescueCases[\s\S]{0,400}reportLoadFailures\(failed/.test(src), true);
   const rescueBlock = (src.match(/const rescue = readLastSnapshot\(\);[\s\S]*?Gerçekten boş kurulum/) || [''])[0];
   eq('kurtarma dalında sessiz catch yok', rescueBlock.length > 0 && !/catch \(e\) \{\}/.test(rescueBlock), true);
+}
+
+
+console.log('\n== [52] Boş çalışma alanı kayda yazılmaz');
+{
+  // v2.109 "boş taslak kayda yazılmaz" diyordu ama persistNow yine de
+  // {cases: []} kaydı yazıyordu: yeni tarayıcıda 1 kayıt görünüyordu. Ayrıca
+  // tüm veri silinirse boş kayıt yazmak eski kaydı DİSKTE BIRAKIR → silinen
+  // veri yeniden yüklenir. Doğru davranış: yazacak veri yoksa kaydı SİL.
+  const P = T.persistPayloadFor;
+  eq('persistPayloadFor tanımlı', typeof P, 'function');
+  if (typeof P === 'function') {
+    const empty = T.emptyCaseForTest ? T.emptyCaseForTest() : { id: 'e' };
+    eq('boş taslak → null', P({ cases: [empty], activeCaseId: empty.id }), null);
+    eq('hiç dosya yok → null', P({ cases: [] }), null);
+    eq('null durum → null', P(null), null);
+    const real = { ...empty, fileNo: '2026/999', court: 'Mahkeme' };
+    const p = P({ cases: [empty, real], activeCaseId: real.id });
+    eq('gerçek dosya yazılır', p && p.cases.length, 1);
+    eq('boş taslak yazılmaz', p && p.cases[0].fileNo, '2026/999');
+  }
+
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('persistNow boşken kaydı SİLER', /persistPayloadFor\(appState\)[\s\S]{0,700}delete\(STORE_KEY\)/.test(src), true);
+  eq(
+    'flushPersist boşken anlık kopyayı siler',
+    /casesForStorage\(appState\.cases\)[\s\S]{0,400}removeItem\('akis\.lastSnapshot'\)/.test(src),
+    true
+  );
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
