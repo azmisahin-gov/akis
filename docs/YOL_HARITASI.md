@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.104.**
+yazılır. **Güncel sürüm: v2.105.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.105 — Üst bar başlığı kesilmiyor (tamamlandı, canlı veri)
+
+`#pageTitle` 5 görünümün hepsinde kırpılıyordu (211px içerik / 95px kutu);
+`.top-actions` flex:none ile 922px yer kaplıyordu ve `overflow:hidden` yazıyı
+sessizce kesiyordu. Düzeltme: üst bar `flex-wrap:wrap`, `.top-title` sıkışmaz,
+başlıkta kırpma yok, durum yazıları kısa (uyarı yazıları DEĞİL). Ölçüm: 1280px+
+tek satır (60px), altında sarar. `tasarim-testi` [2c] korur.
 
 ### v2.104 — Punto kaçakları ve okunaklı sürüm etiketi (tamamlandı, canlı veri)
 

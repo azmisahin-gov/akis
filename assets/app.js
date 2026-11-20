@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.104';
+const APP_VERSION = '2.105';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -343,7 +343,10 @@ async function persistNow() {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
-    $('#saveState').textContent = '● Yerel kayıt güncellendi';
+    // Kısa metin (v2.105): uzun hâli üst barda başlığı sıkıştırıyordu.
+    // KRİTİK durum metinleri (KAYDEDİLMİYOR, DEPOLAMA DOLU, KAYIT OKUNAMADI)
+    // KISALTILMAZ: onlar kullanıcının görmesi gereken uyarılardır.
+    $('#saveState').textContent = '● Kayıt güncel';
     $('#saveState').classList.remove('danger');
     hideSaveFailureBanner();
     if (storageFullWarned) {
@@ -7930,11 +7933,13 @@ function lastBackupAt() {
 }
 function backupState() {
   const at = lastBackupAt();
-  if (!at || Number.isNaN(at.getTime())) return { level: 'none', text: 'Hiç yedek alınmadı' };
+  // Kısa görünen metinler (v2.105): uzun hâlleri üst barda başlığı sıkıştırıyordu.
+  // Tam açıklama `title` ipucunda ve Ayarlar → yedek bölümünde.
+  if (!at || Number.isNaN(at.getTime())) return { level: 'none', text: 'Yedek yok' };
   const days = Math.floor((Date.now() - at.getTime()) / 86400000);
   const d = at.toLocaleDateString('tr-TR');
-  if (days >= BACKUP_WARN_DAYS) return { level: 'stale', days, text: `Son yedek ${d} (${days} gün önce)` };
-  return { level: 'ok', days, text: `Son yedek ${d}` };
+  if (days >= BACKUP_WARN_DAYS) return { level: 'stale', days, text: `Yedek ${days} gün önce` };
+  return { level: 'ok', days, text: `Yedek ${d}` };
 }
 function renderBackupState() {
   const el = $('#backupState');
@@ -9769,7 +9774,9 @@ function renderUsage() {
       el.title = 'Tarayıcı depolama kotası okunamadı. Veriler yine kaydedilir.';
       return;
     }
-    el.textContent = `Dava verisi: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · Kota: bilinmiyor`;
+    // KISA görünen metin (v2.105): uzun etiket üst barda başlığı eziyordu.
+    // Tam ayrıntı `title` ipucunda; görünen metin tek satırda kalmalı.
+    el.textContent = `Dava: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · kota bilinmiyor`;
     el.className = 'usage-state';
     el.title =
       'Tarayıcı bu ortamda kota bilgisi vermiyor (gizli mod olabilir).\n' +
@@ -9778,7 +9785,10 @@ function renderUsage() {
     return;
   }
   const pct = Math.min(100, Math.round((usage / quota) * 100));
-  el.textContent = `Dava verisi: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · Kota: ${fmtBytesShort(quota)} (%${pct})`;
+  // KISA görünen metin (v2.105): "Dava verisi: … · Model: … · Kota: … (%n)"
+  // 302px yer kaplıyordu ve üst barda başlığı sıkıştırıyordu. Yüzde, dolu olma
+  // oranını tek başına anlatır; tam sayılar title ipucunda.
+  el.textContent = `Dava: ${fmtBytesShort(dataBytes)} · Model: ${fmtBytesShort(modelBytes)} · %${pct} dolu`;
   el.className = 'usage-state' + (pct >= 90 ? ' danger' : pct >= 70 ? ' warn' : '');
   el.title =
     `Dava verisi (ses + deşifre + rapor): ${fmtBytesShort(dataBytes)}\n` +
@@ -10154,6 +10164,17 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.105': {
+    title: 'Üst bar başlığı artık kesilmiyor',
+    body:
+      'Ekranın üstündeki sayfa başlığı ("Genel görünüm", "İnceleme ve sorular"…) ' +
+      'sağdaki düğmeler yer kapladığı için yarısı görünmüyordu; üstelik hiçbir ' +
+      'uyarı çıkmıyordu. Artık başlık tam görünür. Sığmadığında üst bar alt satıra ' +
+      'SARAR — yani düğmeler aşağı iner, yazı kesilmez. Bu davranış görünürdür; ' +
+      'sessizce kırpılan yazı olmaz. Durum yazıları da kısaltıldı ("Kayıt güncel", ' +
+      '"Yedek yok"); ayrıntı hâlâ fareyle üzerine gelince görünür. UYARI yazıları ' +
+      '("KAYDEDİLMİYOR — yedek alın!", "DEPOLAMA DOLU") kısaltılmadı.'
+  },
   '2.104': {
     title: 'Sürüm bilgisi okunaklı; küçük yazılar büyütüldü',
     body:

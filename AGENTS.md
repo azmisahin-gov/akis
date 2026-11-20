@@ -514,6 +514,36 @@ arıyordu ve imza `transcribe(id, opts)` olunca kırıldı. Test **davranışı*
 sınarlamalı, yazımı değil; sınır artık `async function transcribe(` ile
 bulunuyor.
 
+
+### Aşama 10c — Üst bar sessiz kesme (TAMAMLANDI, v2.105)
+
+**KURAL: sığmayan öğe kesilmez, SARAR.** `overflow:hidden` + `text-overflow:
+ellipsis` bir metin kutusunda, o metin gerçekten kısalıyorsa "sessiz kesme"dir
+ve yasaktır.
+
+**Ölçüm (v2.104):** `#pageTitle` 5 görünümün hepsinde kırpılıyordu
+("İnceleme ve sorular" 211px içerik / 95px kutu). Sebep: `.top-actions`
+`flex:none` ile 922px yer kaplıyordu (depolama göstergesi tek başına 304px).
+Hiçbir uyarı yoktu.
+
+**Düzeltme:**
+- `.topbar { flex-wrap: wrap }`, `.top-left`/`.top-title { flex: 0 0 auto }`
+- `.top-title h1 { overflow: visible; text-overflow: clip }`
+- Durum yazıları kısaltıldı (`● Kayıt güncel`, `Yedek yok`, `Dava: … · %n dolu`)
+- **UYARI yazıları kısaltılmaz** (`KAYDEDİLMİYOR`, `DEPOLAMA DOLU`,
+  `KAYIT OKUNAMADI`). Yer kazanmak için uyarı küçültmek yasak.
+
+**Kendi kuralımı ihlal ettim:** ilk denemede `#usageState`'e
+`max-width: 22ch` + `text-overflow: ellipsis` verdim; ölçüm **201px → 152px
+kırpma** gösterdi. Kırpma kaldırıldı, `tasarim-testi` [2c] bunu da denetliyor.
+
+**Ölçüm (v2.105):** 1280px+ tek satır (60px), 1100–900px sarar (92px),
+760–600px sarar (125px). 5 görünümde **kesilen metin: 0**.
+
+**DERS:** "kesme" ölçütü yalnız `scrollWidth > clientWidth` değildir;
+`overflow` görünür değilse kesme vardır. Ve kendi eklediğin `max-width` +
+`ellipsis` de aynı hatayı üretir — düzeltmeyi de ölç.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -687,7 +717,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.104.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.105.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -845,7 +875,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.104` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.105` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

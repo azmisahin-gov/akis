@@ -6,12 +6,70 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.104.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.105.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.105 — Üst bar başlığı sessizce kesiliyordu
+
+CANLI VERİ. v2.104'te tespit edilip **ayrı konu** olarak not edilen hata.
+
+### ÖLÇÜM (v2.104, gerçek Chromium)
+
+`#pageTitle` beş görünümün **hepsinde** kesiliyordu:
+
+```
+Genel görünüm        164px içerik / 95px kutu
+Ses kayıtları        133px / 95px
+İnceleme ve sorular  211px / 95px   ← yarısı görünmüyor
+Rapor oluştur         146px / 95px
+```
+
+Sebep ölçüldü: `.top-actions` `flex:none` ile **922px** yer kaplıyordu
+(depolama göstergesi tek başına 304px), `.top-title`'e 95px kalıyordu ve
+`overflow:hidden` + `text-overflow:ellipsis` yazıyı **sessizce** kırpıyordu.
+Hiçbir uyarı yoktu — AGENTS.md'nin "sığmayan öğe sessizce kesilmez" kuralının
+tam ihlali.
+
+### KULLANICI NE GÖRECEK
+
+- **Sayfa başlığı artık tam görünür** ("İnceleme ve sorular" dâhil).
+- Sığmadığında üst bar **alt satıra sarar** — düğmeler aşağı iner, yazı
+  kesilmez. Sarma **görünür** bir davranıştır; sessiz kırpma değildir.
+- Durum yazıları kısaltıldı: "● Yerel kayıt güncellendi" → **"● Kayıt güncel"**,
+  "Hiç yedek alınmadı" → **"Yedek yok"**, "Dava verisi: … · Model: … · Kota: …"
+  → **"Dava: … · Model: … · %n dolu"**. Ayrıntı fareyle üzerine gelince görünür.
+- **UYARI yazıları kısaltılmadı**: "KAYDEDİLMİYOR — yedek alın!",
+  "DEPOLAMA DOLU — yedek alın!", "KAYIT OKUNAMADI" aynen duruyor. Kullanıcının
+  görmesi gereken uyarı, yer kazanmak için kısaltılamaz.
+
+### ÖLÇÜM (v2.105, sonra)
+
+| Genişlik | Üst bar | Başlık kesik |
+|---|---|---|
+| 1280px ve üzeri (5 görünüm) | 60px (değişmedi) | **hayır** |
+| 1100–900px | 92px (sarar) | hayır |
+| 760–600px | 125px (sarar) | hayır |
+
+5 görünümde **kesilen metin: 0**.
+
+### KENDİ KURALIMI İHLAL ETTİM (düzeltildi)
+
+İlk denemede depolama göstergesine `max-width: 22ch` + `text-overflow:
+ellipsis` verdim. Ölçüm: **201px metin 152px'e kırpıldı** — yani "sessiz kesme"
+yasağını kendi düzeltmem ihlal ediyordu. Kırpma kaldırıldı; metin tek satır
+kalır, sığmazsa üst bar sarar. `tasarim-testi` [2c] artık bunu da denetler
+(*"depolama göstergesi kırpılmıyor: max-width/text-overflow yok"*).
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2c]** — 5 kontrol: üst bar `flex-wrap:wrap`, `.top-title`
+sıkışmaz, başlıkta `overflow:hidden` yok, depolama göstergesi tek satır,
+depolama göstergesi kırpılmıyor. Asıl kanıt gerçek tarayıcı ölçümüdür
+(`scrollWidth <= clientWidth`).
 
 ## v2.104 — "Hiçbir metin 11px altında olamaz" kuralı ekranda tutmuyordu
 

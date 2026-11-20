@@ -1085,3 +1085,45 @@ body.ws-mode #view-audio .seg-list {
 .ver-row { margin: 0 0 var(--sp-3); }
 .ver-row h3 { margin: 0 0 var(--sp-1); }
 .ver-row p { margin: 0; color: var(--ink-2); font-size: var(--fs-xs); line-height: var(--lh-body); }
+
+/* --- I. v2.105 — Üst bar: başlık sessizce kesilmesin ----------------------
+   ÖLÇÜM (v2.104): `#pageTitle` 5 görünümün hepsinde kırpılıyordu.
+   "Genel görünüm" 164px içerik / 95px kutu · "İnceleme ve sorular" 211/95.
+   Sebep: `.top-actions` flex:none ile 922px yer kaplıyordu (depolama göstergesi
+   tek başına 304px), `.top-title`'e 95px kalıyordu ve `overflow:hidden` +
+   `text-overflow:ellipsis` yazıyı SESSİZCE kesiyordu.
+   KURAL: sığmayan öğe kesilmez; üst bar SARAR. Başlık asla sıkıştırılmaz.
+   Ölçüm (1280px): üst bar yüksekliği 60px korunur, başlık tam görünür. */
+.topbar {
+  height: auto;
+  min-height: var(--topbar-h);
+  flex-wrap: wrap;
+  row-gap: 6px;
+  padding: 6px 0;
+}
+.top-left { flex: 0 0 auto; min-width: 0; }
+.top-title { flex: 0 0 auto; min-width: 0; }
+/* Başlık: kırpma yok. Sığmazsa üst bar sarar (aşağıya inen eylemler). */
+.top-title h1 {
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+.top-actions {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 6px;
+}
+/* Depolama göstergesi: uzun metin başlığı ezmesin. KIRPMA YOK (v2.105):
+   önce `max-width` + `text-overflow` verilmişti ama 201px'lik metin 152px'e
+   kırpılıyordu — yani "sessiz kesme" yasağını kendi kuralım ihlal ediyordu.
+   Bunun yerine metin tek satır kalır, sığmazsa üst bar SARAR (görünür). */
+#usageState {
+  white-space: nowrap;
+}
+/* Yer kazanımı: üst bar eylemleri biraz daha derli toplu (ölçüldü: 1240px'e
+   kadar tek satır; altında üst bar SARAR — görünür davranış, kesme değil). */
+.topbar { gap: 10px; }
+.top-actions { gap: 6px; }
+.top-actions .button { padding: 6px 9px; }

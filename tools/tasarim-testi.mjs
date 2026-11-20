@@ -196,6 +196,57 @@ console.log('\n[2b] app.css punto kaçakları (okuma katmanı eziyor mu)');
   );
 }
 
+// --- 2c. Başlık sessizce kesilmez (v2.105) ------------------------------
+// GERÇEK HATA: `#pageTitle` 5 görünümün hepsinde kesiliyordu (ölçüldü):
+//   "Genel görünüm" 164px içerik / 95px kutu · "İnceleme ve sorular" 211/95
+// Sebep: `.top-actions` `flex:none` ile 922px yer kaplıyor, `.top-title`'e
+// 95px kalıyor ve `overflow:hidden` + `text-overflow:ellipsis` yazıyı
+// SESSİZCE kırpıyordu. AGENTS.md kuralı: sığmayan öğe sessizce kesilmez.
+// Bu test yapısal güvence verir; asıl kanıt tarayıcı ölçümüdür
+// (scrollWidth <= clientWidth).
+console.log('\n[2c] Başlık sessizce kesilmez (üst bar yerleşimi)');
+{
+  // Üst bar sarmalı (wrap) olmalı: sığmayan eylem alt satıra geçer.
+  const topbarRule = [...appCss.matchAll(/\.topbar\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  const layerTopbar = [...layer.matchAll(/\.topbar\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  const both = topbarRule + ';' + layerTopbar;
+  check(
+    'üst bar sarmalı (flex-wrap: wrap) — sığmayan eylem kesilmez',
+    /flex-wrap:\s*wrap/.test(both),
+    /flex-wrap:\s*wrap/.test(both) ? '' : 'üst bar tek satıra zorlanıyor; başlık ezilir'
+  );
+  // Başlık kabı esnemeli; sabit genişlikte kalmamalı.
+  const titleRule = [...layer.matchAll(/\.top-title\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check(
+    '.top-title esnemez (flex: 0 0 auto) — başlık sıkıştırılmaz',
+    /flex:\s*0\s+0\s+auto/.test(titleRule) || /flex:\s*none/.test(titleRule),
+    titleRule.trim().slice(0, 60)
+  );
+  // Başlıkta kırpma yerine görünür kalsın.
+  const h1Rules = [...layer.matchAll(/([^{}]*#?pageTitle[^{}]*|\.top-title h1[^{}]*)\{([^}]*)\}/g)];
+  const h1Decl = h1Rules.map((m) => m[2]).join(';');
+  check(
+    'başlık overflow:hidden ile kırpılmıyor',
+    !/overflow:\s*hidden/.test(h1Decl) || /overflow:\s*visible/.test(h1Decl),
+    h1Decl.trim().slice(0, 70)
+  );
+  // Depolama göstergesi tek satırda kalmalı (304px'lik metin başlığı eziyordu).
+  const usageRule = [...layer.matchAll(/#usageState[^{}]*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check(
+    'depolama göstergesi tek satır (nowrap)',
+    /white-space:\s*nowrap/.test(usageRule),
+    usageRule.trim().slice(0, 60)
+  );
+  // KENDİ KURALIMI İHLAL ETMEYİN: `max-width` + `text-overflow: ellipsis`
+  // birleşimi metni KIRPAR (v2.105'te 201px → 152px). Üst bar sarabildiği için
+  // kırpmaya gerek yok. Kırpma, "sessiz kesme" yasağının ihlalidir.
+  check(
+    'depolama göstergesi kırpılmıyor (max-width/text-overflow yok)',
+    !/max-width/.test(usageRule) && !/text-overflow/.test(usageRule),
+    usageRule.trim().slice(0, 60)
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');
