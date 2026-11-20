@@ -43,7 +43,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.112';
+const APP_VERSION = '2.113';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4105,12 +4105,38 @@ function renderSegments(m, card) {
 // ve sağ panel yenilenir. Kaydırma ve odak korunur.
 // Yalnızca bölüm listesini kaydırır; sayfa ve diğer paneller yerinde kalır.
 // scrollIntoView tüm üst öğeleri kaydırabildiği için elle hesaplanır.
+// Kaydırma hedefi — SAF FONKSİYON (v2.113).
+// NEDEN: v2.112 ve öncesinde `list.scrollTop += et.bottom - lt.bottom` yazılıydı.
+// `scrollTop` TAM SAYIYA yuvarlanır; artımlı eklemede hata BİRİKİR ve uzun
+// listelerde (100 bölüm) son öğe görünür alana oturmaz. Ölçüm: scrollTop=3184,
+// maxScroll=3227 → son öğe 28px görünmüyordu ("3 kayıt görünmüyor").
+// Kural: hedef MUTLAK olarak hesaplanır, [0, maxScroll] aralığına kırpılır ve
+// idempotenttir (aynı öğe için tekrar çağrılırsa sonuç değişmez).
+function nextScrollTop({ listTop, listBottom, itemTop, itemBottom, scrollTop, maxScroll }) {
+  const cur = Number.isFinite(scrollTop) ? scrollTop : 0;
+  let next = cur;
+  if (Number.isFinite(itemTop) && itemTop < listTop) {
+    next = cur - (listTop - itemTop); // yukarı taşıyor
+  } else if (Number.isFinite(itemBottom) && itemBottom > listBottom) {
+    next = cur + (itemBottom - listBottom); // aşağı taşıyor
+  }
+  if (!Number.isFinite(maxScroll)) return Math.max(0, next);
+  return Math.max(0, Math.min(maxScroll, next));
+}
 function scrollListToItem(list, el) {
   if (!list || !el) return;
   const lt = list.getBoundingClientRect();
   const et = el.getBoundingClientRect();
-  if (et.top < lt.top) list.scrollTop -= lt.top - et.top;
-  else if (et.bottom > lt.bottom) list.scrollTop += et.bottom - lt.bottom;
+  const next = nextScrollTop({
+    listTop: lt.top,
+    listBottom: lt.bottom,
+    itemTop: et.top,
+    itemBottom: et.bottom,
+    scrollTop: list.scrollTop,
+    maxScroll: list.scrollHeight - list.clientHeight
+  });
+  // Yuvarlama farkı birikmesin: mutlak değer yazılır (artımlı ekleme YOK).
+  if (Math.abs(next - list.scrollTop) >= 0.5) list.scrollTop = next;
 }
 function setActiveSegment(m, index, { scroll = true } = {}) {
   const segs = m.segments || [];
@@ -10713,6 +10739,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.113': {
+    title: 'Bölüm listesinde son bölüm artık görünüyor',
+    body:
+      'Uzun listelerde (ör. 100 bölüm) sona kaydırdığınızda son birkaç bölüm ' +
+      'görünmüyordu. Sebep: kaydırma konumu her adımda "biraz daha" eklenerek ' +
+      'hesaplanıyordu ve yuvarlama hatası birikiyordu (ölçüm: 43px eksik kalıyordu). ' +
+      'Artık konum tek seferde ve kesin hesaplanır; listenin sonuna geldiğinizde ' +
+      'son bölüm tam görünür. Takip modu da son bölüme kadar sorunsuz izler.'
+  },
   '2.112': {
     title: 'A–B döngüsü artık gerçekten çalışıyor',
     body:

@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.112.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.113.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.113 — Bölüm listesinde son bölüm görünmüyordu
+
+CANLI VERİ. Bilirkişi: *"100 kayıt varsa scroll ile sona geldiğimizde yaklaşık
+3 kayıt görünmüyor. Sanırım yükseklik hesaplama hatamız var."* — Ölçüm doğruladı.
+
+### ÖLÇÜM (v2.112, gerçek Chromium, 100 bölüm)
+
+```
+Son öğeye gidince:  scrollTop = 3184 · maxScroll = 3227
+                    → 43px eksik · son öğe 28px GÖRÜNMÜYOR
+Takip modunda:      activeOverflowPx = 28 (taşıyor)
+```
+
+### KÖK NEDEN
+
+```js
+list.scrollTop += et.bottom - lt.bottom;   // ARTIMLI ekleme
+```
+
+`scrollTop` tarayıcıda **tam sayıya yuvarlanır**. Artımlı eklemede yuvarlama
+hatası her adımda **birikir**; uzun listede son öğe görünür alana oturmaz.
+
+### DÜZELTME
+
+`nextScrollTop({...})` — saf fonksiyon:
+- hedef **mutlak** hesaplanır (`cur ± taşma`), artımlı ekleme yok,
+- `[0, maxScroll]` aralığına **kırpılır** (son öğe dibe oturur),
+- **idempotent**: aynı öğe için tekrar çağrılırsa sonuç değişmez.
+
+### DOĞRULAMA (gerçek Chromium, 100 bölüm, takip modu)
+
+```
+Takip açık + sona çal → activeIdx = 100 · activeOverflowPx = 0
+                        scrollTop = 3212 / maxScroll = 3227
+→ Son bölüm TAM GÖRÜNÜR (eski: 28px taşıyordu)  ✅
+```
+
+`birim-testleri` **[41]** — 8 kontrol (mutlak hesap, kırpma, idempotentlik).
+
+### NOT: kullanıcı gözlemi haklıydı ama "3 kayıt" değil
+
+Ölçüm **1 öğenin 28px'i** görünmüyor dedi; kullanıcı 3 kayıt olarak algıladı.
+Algı farkı: kaydırma çubuğu dibe dayanmış görünüyor ama içerik oturmamış.
+Sayı farklı olsa da **hata gerçekti ve düzeltildi**.
 
 ## v2.112 — A–B döngüsü üç yerden bozuktu
 

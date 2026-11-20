@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.112.**
+yazılır. **Güncel sürüm: v2.113.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.113 — Bölüm listesi kaydırması (tamamlandı, canlı veri)
+
+`scrollListToItem` artımlı ekleme yapıyordu (`scrollTop += ...`); `scrollTop`
+tam sayıya yuvarlandığı için hata birikiyor ve 100 bölümde son öğe 28px
+görünmüyordu. `nextScrollTop()` mutlak hesap + kırpma + idempotentlik.
+`birim-testleri` [41] + gerçek Chromium (takip modunda 100. bölüm tam görünür).
 
 ### v2.112 — A–B döngüsü onarıldı (tamamlandı, canlı veri)
 

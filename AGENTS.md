@@ -753,6 +753,28 @@ değişken kullanma; sessiz ReferenceError/catch yutması fark edilmez.**
 **Ölçüm (v2.112, gerçek WAV + Chromium):** A(1.0)+B(3.0) → etiket doğru;
 K → açık; "▶ Dinle" → `stillOn=true` (eski: false), `curTime 2.51 < 3.0`.
 
+
+### Aşama 10k — Bölüm listesi kaydırması (TAMAMLANDI, v2.113)
+
+**KURAL: kaydırma hedefi MUTLAK hesaplanır; `scrollTop +=` ile artımlı ekleme
+YAPILMAZ.** `scrollTop` tam sayıya yuvarlanır → hata birikir.
+
+**Ölçülen hata (v2.112, 100 bölüm):** `scrollTop=3184`, `maxScroll=3227` →
+43px eksik, son öğe 28px görünmüyor. Takip modunda `activeOverflowPx=28`.
+
+**Düzeltme:** `nextScrollTop({listTop,listBottom,itemTop,itemBottom,scrollTop,
+maxScroll})` — mutlak hesap + `[0,maxScroll]` kırpma + idempotent.
+
+**Ölçüm (v2.113):** takip modunda 100. bölüm → `activeOverflowPx=0`.
+
+**DERS (ölçüm yöntemi):** `scrollHeight`/`clientHeight` doğru görünse bile
+`getBoundingClientRect().bottom` karşılaştırması gerçek görünürlüğü verir.
+"Kaydırma çubuğu dipte" ≠ "içerik oturdu".
+
+**DERS (kullanıcı algısı):** kullanıcı "3 kayıt" dedi, ölçüm 1 öğenin 28px'i
+dedi. Sayı farklı ama hata gerçekti; **algıyı değil ölçümü esas al, ama
+kullanıcı gözlemini küçümseme.**
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -926,7 +948,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.112.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.113.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1084,7 +1106,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.112` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.113` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

@@ -99,6 +99,7 @@ const EXPOSE = [
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'loopStopTarget', 'LOOP_KEYS',
+  'nextScrollTop',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2163,6 +2164,46 @@ console.log('\n[40] A–B döngüsü: oynatma yollarında korunur');
   eq('B tuşu A–B bitişi (bölme değil)', T.LOOP_KEYS.b, 'b');
   eq('döngü aç/kapa tuşu var', T.LOOP_KEYS.toggle, 'k');
   eq('A ve B farklı tuşlar', T.LOOP_KEYS.a !== T.LOOP_KEYS.b, true);
+}
+
+// --- 41. Bölüm listesi kaydırma: son bölüm görünmeli (v2.113) -------------
+// CANLI VERİ. Bilirkişi: "100 kayıt varsa scroll ile sona geldiğimizde yaklaşık
+// 3 kayıt görünmüyor. Sanırım yükseklik hesaplama hatamız var."
+// ÖLÇÜM (v2.112, gerçek Chromium, 100 bölüm): son öğeye tıklayınca
+//   scrollTop = 3184 · maxScroll = 3227 · son öğe 28px GÖRÜNMÜYOR
+// KÖK NEDEN: `scrollListToItem` artımlı ekleme yapıyor:
+//   list.scrollTop += et.bottom - lt.bottom;
+// `scrollTop` tam sayıya yuvarlanır; artımlı eklemede hata BİRİKİR ve son
+// öğe görünür alana tam oturmaz.
+console.log('\n== [41] Bölüm listesi kaydırma (son öğe görünmeli)');
+{
+  eq('nextScrollTop tanımlı', typeof T.nextScrollTop, 'function');
+
+  // Geometri: liste 100..600 arası görünür, öğe 580..640 (altı taşıyor).
+  const geo = { listTop: 100, listBottom: 600, itemTop: 580, itemBottom: 640, scrollTop: 0, maxScroll: 3227 };
+  const next = T.nextScrollTop(geo);
+  // Doğru davranış: öğenin altı görünür alana oturur → 40px kaydır.
+  eq('altı taşan öğe için tam kaydırma', next, 40);
+
+  // Öğe yukarıdaysa yukarı kaydır.
+  eq('üstü taşan öğe', T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 40, itemBottom: 90, scrollTop: 300, maxScroll: 3227 }), 240);
+  // Öğe tamamen görünüyorsa DEĞİŞMEZ (gereksiz zıplama yok).
+  eq('görünen öğe → değişmez', T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 200, itemBottom: 260, scrollTop: 150, maxScroll: 3227 }), 150);
+  // SON ÖĞE: hedef maxScroll'u AŞAMAZ (kırpılır, ama en azından dibe oturur).
+  eq('son öğe → maxScroll sınırı', T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 580, itemBottom: 640, scrollTop: 3200, maxScroll: 3227 }), 3227);
+  // Negatif olamaz.
+  eq('negatif olmaz', T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 40, itemBottom: 90, scrollTop: 10, maxScroll: 3227 }), 0);
+  // maxScroll yoksa (kaydırma gerekmiyorsa) güvenli.
+  eq('maxScroll yok → güvenli', T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 200, itemBottom: 260, scrollTop: 0 }), 0);
+
+  // ARTIMLI HATA BİRİKMESİ: aynı öğeye üst üste 3 kez "kaydır" denirse
+  // sonuç DEĞİŞMEMELİ (idempotent). Eski kod her çağrıda biraz daha ekliyordu.
+  let st = 0;
+  for (let i = 0; i < 3; i++) {
+    // st kadar kayınca öğe de o kadar yukarı gider (gerçek DOM davranışı).
+    st = T.nextScrollTop({ listTop: 100, listBottom: 600, itemTop: 580 - st, itemBottom: 640 - st, scrollTop: st, maxScroll: 3227 });
+  }
+  eq('kaydırma idempotent (birikmez)', st, 40);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
