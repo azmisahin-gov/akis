@@ -1251,23 +1251,38 @@ body.ws-mode #view-audio .seg-list {
 }
 @media (max-width: 700px) { .sd-amb-fields { grid-template-columns: 1fr; } }
 
-/* --- P. v2.115 / v2.121 / v2.126 — Bölüm spektrogramı --------------------
-   v2.121: dalga ve spektrogram AYNI alanda geçişir.
-   v2.126: spektrogram TAM GENİŞLİK analiz yüzeyidir (200px); üzerinde
-   tıkla/sürükle/Alt+tıkla çalışır. İmleç ve A–B ayrı katmanda çizilir. */
-#view-audio .sd-canvas-wrap { position: relative; }
-.sd-spec-canvas {
-  width: 100%; height: 200px; display: block;
-  border-radius: var(--r-sm); border: 1px solid var(--line-2);
-  cursor: crosshair; touch-action: none;
+/* --- P. v2.115 / v2.121 / v2.128 — KATMANLI ANALİZ KUTUSU --------------
+   Dalga ve spektrogram AYNI kutuda, AYNI zaman ekseninde katmanlanır
+   (Praat/Audacity/RX düzeni). Kutu yüksekliği SABİT 160px: mod değişince
+   yerleşim zıplamaz, metin kaymaz. Çizgiler (sınır/oynatma/A–B/imleç) en
+   üst katmanda, spektrogramın ÜSTÜNDE çizilir. */
+#view-audio .sd-canvas-wrap {
+  position: relative;
+  height: 160px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
 }
-.sd-spec-canvas[hidden] { display: none; }
-.sd-wave-canvas[hidden] { display: none; }
+#view-audio .sd-wave-canvas,
+#view-audio .sd-spec-canvas {
+  position: absolute; left: 0; width: 100%; display: block;
+}
+#view-audio .sd-canvas-wrap.mode-wave .sd-wave-canvas { top: 0; height: 160px; }
+#view-audio .sd-canvas-wrap.mode-wave .sd-spec-canvas,
+#view-audio .sd-canvas-wrap.mode-wave .sd-spec-overlay,
+#view-audio .sd-canvas-wrap.mode-wave .sd-spec-readout { display: none; }
+#view-audio .sd-canvas-wrap.mode-spec .sd-spec-canvas { top: 0; height: 160px; }
+#view-audio .sd-canvas-wrap.mode-spec .sd-wave-canvas { display: none; }
+#view-audio .sd-canvas-wrap.mode-both .sd-wave-canvas { top: 0; height: 48px; }
+#view-audio .sd-canvas-wrap.mode-both .sd-spec-canvas { top: 48px; height: 112px; }
+#view-audio .sd-canvas-wrap.mode-both .sd-spec-overlay { top: 48px; height: 112px; }
+#view-audio .sd-canvas-wrap.mode-both .sd-spec-readout { top: 54px; }
+.sd-spec-canvas { cursor: crosshair; touch-action: none; }
 .sd-spec-overlay {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  pointer-events: none;
+  position: absolute; left: 0; width: 100%; pointer-events: none;
 }
 .sd-spec-overlay[hidden] { display: none; }
+.sd-spec-canvas[hidden] { display: none; }
+.sd-wave-canvas[hidden] { display: none; }
 .sd-spec-readout {
   position: absolute; top: 6px; right: 8px;
   font-size: var(--fs-xs); font-variant-numeric: tabular-nums;
@@ -1275,11 +1290,7 @@ body.ws-mode #view-audio .seg-list {
   padding: 2px 7px; border-radius: 5px; pointer-events: none;
 }
 .sd-spec-readout[hidden] { display: none; }
-/* TAM GENİŞLİK: spektrogram açıkken gövde tek sütun olur; spektrogram detayın
-   tüm genişliğini kullanır, metin alta iner. Kap yükseklik dayatmaz. */
-#view-audio .sd-body.spec-mode { grid-template-columns: 1fr; }
-#view-audio .sd-body.spec-mode .sd-left { order: 1; }
-#view-audio .sd-body.spec-mode .sd-right { order: 2; }
+
 /* Spektrogram düğmesi açıkken görsel durum */
 .seg-tool.on { background: var(--accent); color: var(--ink-inv); border-color: var(--accent); }
 

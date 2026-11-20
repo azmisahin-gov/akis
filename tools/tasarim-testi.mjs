@@ -340,27 +340,29 @@ console.log('\n[2f] Takip şeridi sabit ve vurgu metrik değiştirmiyor');
   check('aktif kelime arka planla vurgulanıyor', /background/.test(on));
 }
 
-// --- 2g. Spektrogram: tam genişlik + etkileşim katmanı (v2.126) -----------
-console.log('\n[2g] Spektrogram tam genişlik ve etkileşim katmanı');
+// --- 2g. Analiz kutusu: katmanlı, sabit yükseklik (v2.128) ----------------
+// KURAL: dalga + spektrogram AYNI kutuda; kutu 160px SABİT; mod değişince
+// yerleşim zıplamaz. Tam genişlik-altı düzen (v2.126) GERİ GELMEMELİ.
+console.log('\n[2g] Analiz kutusu: katmanlı, sabit yükseklik');
 {
   const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
   const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
   const base = stripMedia(stripComments(layer));
-  const spec = [...base.matchAll(/\.sd-spec-canvas\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
-  check('spektrogram yüksekliği 200px', /height:\s*200px/.test(spec), spec.trim().slice(0, 80));
-  check('spektrogram tam genişlik', /width:\s*100%/.test(spec));
-  check('spektrogram imleci crosshair', /cursor:\s*crosshair/.test(spec));
+  const wrap = [...base.matchAll(/#view-audio \.sd-canvas-wrap\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('analiz kutusu sabit 160px', /height:\s*160px/.test(wrap), wrap.trim().slice(0, 80));
+  check('analiz kutusu konumlandırma kabı', /position:\s*relative/.test(wrap));
+  check('mode-wave: dalga 160px', /\.mode-wave \.sd-wave-canvas\s*\{[^}]*height:\s*160px/.test(base));
+  check('mode-spec: spek 160px', /\.mode-spec \.sd-spec-canvas\s*\{[^}]*height:\s*160px/.test(base));
+  check('mode-both: dalga 48px', /\.mode-both \.sd-wave-canvas\s*\{[^}]*height:\s*48px/.test(base));
+  check('mode-both: spek 112px', /\.mode-both \.sd-spec-canvas\s*\{[^}]*height:\s*112px/.test(base));
+  check('mode-both: spek dalganın altında (top 48)', /\.mode-both \.sd-spec-canvas\s*\{[^}]*top:\s*48px/.test(base));
   check(
-    'spec-mode gövdeyi tek sütuna alır',
-    /\.sd-body\.spec-mode\s*\{[^}]*grid-template-columns:\s*1fr/.test(base)
+    'kaplama spek ile aynı yerde',
+    /\.mode-both \.sd-spec-overlay\s*\{[^}]*top:\s*48px[^}]*height:\s*112px/.test(base)
   );
-  const ov = [...base.matchAll(/\.sd-spec-overlay\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
-  check(
-    'kaplama mutlak ve tıklamayı engellemez',
-    /position:\s*absolute/.test(ov) && /pointer-events:\s*none/.test(ov),
-    ov.trim().slice(0, 80)
-  );
-  check('zaman/frekans okuma kutusu var', /\.sd-spec-readout\s*\{/.test(base));
+  check('kaplama tıklamayı engellemez', /\.sd-spec-overlay\s*\{[^}]*pointer-events:\s*none/.test(base));
+  check('spek tuvali mutlak (aynı kutuda)', /\.sd-spec-canvas\s*\{[^}]*position:\s*absolute/.test(base));
+  check('tam genişlik-altı düzen GERİ GELMEDİ', !/\.sd-body\.spec-mode/.test(base));
 }
 
 // --- 2h. Yerleşim: metin listeye bitişik, kontroller solda (v2.127) -------

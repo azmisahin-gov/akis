@@ -1202,6 +1202,35 @@ Ayrıca detay ilk bölümü gösterirken `activeSeg` tanımsızdı; "▶ Dinle" 
 Aynı ekranda iki farklı iş (listeden seç, metne yaz) arasındaki mesafe
 azaltılınca kullanıcı hızlanır.
 
+### Aşama 10z — Katmanlı analiz kutusu (TAMAMLANDI, v2.128)
+
+**KURAL: dalga ve spektrogram AYNI kutuda, AYNI zaman ekseninde, SABİT
+yükseklikte katmanlanır. Altına ayrı blok açmak yasaktır.**
+
+**Ölçülen hata (v2.127):** v2.126'da spektrogram tam genişlikte **alt bloğa**
+açılıyordu; gövde tek sütuna düşüyor, metin aşağı kayıyordu. Ayrıca dalga
+(bölüm ±0,5 sn) ve spek (yalnız bölüm aralığı) **farklı zaman pencereleri**
+kullanıyordu; çizgiler hizalanmıyordu.
+
+**Değişmez kurallar:**
+
+1. Tek kutu (`sd-canvas-wrap`), sabit **160 px**. Mod değişince yerleşim
+   zıplamaz; metin kaymaz.
+2. Üç mod: `wave` (160), `spec` (160), `both` (48+112). Varsayılan `both`;
+   tercih `localStorage`'da, **kayda yazılmaz**.
+3. **Ortak zaman ekseni**: `analysisView(m,index)` tek kaynak. Dalga, spek ve
+   kaplama aynı `[a,b]` penceresini kullanır. Zoom/kaydırma `zoomAnalysisAt`
+   ile ikisini birlikte günceller; spek yeniden hesaplanır (250 ms debounce).
+4. **Katman sırası**: spek (alt) → dalga (üst) → sınır/oynatma/A–B/imleç
+   (kaplama, en üst). Çizgiler spektrogramın ÜSTÜNDE.
+5. Spek her harekette yeniden çizilmez; imleç/A–B kaplamada.
+6. Bölüm değişince mod KORUNUR; spek yeni bölüm için yeniden hesaplanır.
+
+**DERS:** "Aynı veriyi göstermek" ile "aynı kutuda katmanlamak" farklıdır.
+Profesyonel araçlar (Praat/Audacity/RX) ortak zaman eksenini ve sabit yüksekliği
+korur; görünüm değişince panel zıplamaz. Kullanıcı "altında açılması tasarımı
+bozdu" dediğinde sorun estetik değil, **yerleşim sözleşmesi**dir.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1375,7 +1404,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.127.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.128.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1529,7 +1558,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.127)
+## Yeni oturuma devir notu (v2.128)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1537,17 +1566,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.127** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **761 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Sürüm | **v2.128** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `636bd77` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `636bd77` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.127'`, `version.json` = 2.127 |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.128'`, `version.json` = 2.128 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.127 turunda ne yapıldı (26 sürüm)
+### v2.102–v2.128 turunda ne yapıldı (27 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **761**.
+Test sayısı 441 → **782**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1577,6 +1606,7 @@ Test sayısı 441 → **761**.
 | **v2.125** | **Takip şeridi sabit + cümle penceresi** (5 satır atlama, reflow) | `birim` [47] · `tasarim` [2f] |
 | **v2.126** | **Spektrogram tam genişlik + etkileşim** (tıkla/sürükle/Alt/okuma) | `birim` [48] · `tasarim` [2g] |
 | **v2.127** | **Yerleşim: metin listeye bitişik + kontroller yanında** | `birim` [49] · `tasarim` [2h] |
+| **v2.128** | **Katmanlı analiz kutusu** (dalga+spek aynı yerde, 3 mod) | `birim` [50] · `tasarim` [2g] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1647,8 +1677,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (761 + 404 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (782 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.127 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.128 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.127';
+} from './schema.js?v=2.128';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.127';
+const APP_VERSION = '2.128';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1834,6 +1834,8 @@ async function renderMaterialDetail() {
   }
   attachWave(card, m, url);
   renderSegments(m, card);
+  // Kart DOM'a eklendikten SONRA uygula: ölçü doğru, spektrogram görünür olsun.
+  setAnalysisMode(m, analysisMode);
   ensureSpeakers(m);
   renderSpeakersPanel(m);
   // Takip durumu dosya bazlı saklanır; sayfa yenilenince korunur.
@@ -3734,14 +3736,18 @@ function segDetailHtml(m) {
             <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">🔁 Döngü</button>
             <span class="sd-loop-span" data-loop-span></span>
             <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
-            <button class="seg-tool" data-seg-spec="${esc(m.id)}" title="Görünüm: dalga formu ↔ spektrogram. Spektrogram frekans içeriğini gösterir (p/t/k patlamaları, gürültü içinde konuşma daha okunur). Aynı alanda geçiş yapar; sınırlar korunur.">▤ Spektrogram</button>
+            <span class="sd-view-modes" role="group" aria-label="Analiz görünümü">
+              <button class="seg-tool" data-analysis-mode="wave" title="Yalnız dalga: zaman, ritim, kırpılma ve sınır düzenleme">Dalga</button>
+              <button class="seg-tool" data-analysis-mode="spec" data-seg-spec="${esc(m.id)}" title="Yalnız spektrogram: frekans içeriği (p/t/k, sürtünmeli sesler, gürültü)">Spek</button>
+              <button class="seg-tool" data-analysis-mode="both" title="Dalga + spektrogram: aynı zaman ekseninde, katmanlı (profesyonel araçların standardı)">İkisi</button>
+            </span>
           </div>
         </div>
         <!-- TEK GÖRÜNÜM ALANI (v2.121): dalga ve spektrogram AYNI kutuda geçişir.
              Böylece düğme dalga araç çubuğunda kalır ve sağ panel uzamaz. -->
-        <div class="sd-canvas-wrap">
-          <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="88" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
-          <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="200" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
+        <div class="sd-canvas-wrap mode-both" id="sdwrap-${esc(m.id)}">
+          <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="48" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
+          <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="112" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
           <canvas class="sd-spec-overlay" id="sdspecov-${esc(m.id)}" aria-hidden="true" hidden></canvas>
           <span class="sd-spec-readout" id="sdspecread-${esc(m.id)}" hidden></span>
         </div>
@@ -3832,91 +3838,230 @@ function specNearestBoundary(t, start, end) {
   return Math.abs(t - start) <= Math.abs(t - end) ? 'start' : 'end';
 }
 
-function closeSegmentSpectrogram(m) {
-  const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
-  const wave = $(`#sdwave-${CSS.escape(m.id)}`);
-  const overlay = $(`#sdspecov-${CSS.escape(m.id)}`);
-  const readout = $(`#sdspecread-${CSS.escape(m.id)}`);
-  if (canvas) canvas.hidden = true;
-  if (overlay) {
-    overlay.hidden = true;
-    const ctx = overlay.getContext('2d');
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
+// ---- ANALİZ GÖRÜNÜMÜ (v2.128) -------------------------------------------
+// Profesyonel araçlarda (Praat, Audacity, RX) dalga ve spektrogram AYNI zaman
+// ekseninde, AYNI kutuda katmanlanır. Kutu yüksekliği SABİTTİR; mod değişince
+// yerleşim zıplamaz. Çizgiler (sınır, oynatma, A–B, imleç) en üst katmandadır.
+const ANALYSIS_MODES = ['wave', 'spec', 'both'];
+const ANALYSIS_PANE_H = 160;
+const ANALYSIS_MODE_KEY = 'akis.analysisMode';
+function normalizeAnalysisMode(v) {
+  return ANALYSIS_MODES.includes(v) ? v : 'both';
+}
+// Mod → katman yükseklikleri (px). wave+spec = pane; specTop = wave.
+function analysisLayout(mode) {
+  const m = normalizeAnalysisMode(mode);
+  if (m === 'wave') return { mode: m, pane: ANALYSIS_PANE_H, wave: ANALYSIS_PANE_H, spec: 0, specTop: 0 };
+  if (m === 'spec') return { mode: m, pane: ANALYSIS_PANE_H, wave: 0, spec: ANALYSIS_PANE_H, specTop: 0 };
+  return { mode: m, pane: ANALYSIS_PANE_H, wave: 48, spec: 112, specTop: 48 };
+}
+// ORTAK GÖRÜNÜR PENCERE: dalga ve spektrogram aynı [a,b] aralığını çizer.
+// Bölüm ±0,5 sn (kayıt sınırlarına kırpılır); zoom varsa o pencere.
+function analysisView(m, index) {
+  const s = (m && m.segments && m.segments[index]) || null;
+  if (!s) return null;
+  if (m.__sdZoom && m.__sdZoom.materialId === m.id && m.__sdZoom.index === index) {
+    return { a: m.__sdZoom.a, b: m.__sdZoom.b };
   }
+  const dur = Number(m.duration) || 0;
+  const a0 = Math.max(0, secondsFromTimecode(s.start) - 0.5);
+  const b0 = Math.min(dur || secondsFromTimecode(s.end) + 0.5, secondsFromTimecode(s.end) + 0.5);
+  const v = { materialId: m.id, index, a: a0, b: Math.max(a0 + 0.05, b0) };
+  m.__sdZoom = v;
+  return v;
+}
+// Zoom: dalga ve spektrogram AYNI pencereyi kullanır; ikisi birlikte güncellenir.
+function zoomAnalysisAt(m, index, ratio, factor) {
+  const v = analysisView(m, index);
+  if (!v) return;
+  const dur = Number(m.duration) || 0;
+  const t = v.a + Math.max(0, Math.min(1, ratio)) * (v.b - v.a);
+  const span = Math.max(0.05, Math.min(dur || 3600, (v.b - v.a) * factor));
+  let a = t - Math.max(0, Math.min(1, ratio)) * span;
+  let b = a + span;
+  if (a < 0) {
+    a = 0;
+    b = span;
+  }
+  if (dur && b > dur) {
+    b = dur;
+    a = Math.max(0, dur - span);
+  }
+  m.__sdZoom = { materialId: m.id, index, a, b };
+  refreshSegWave(m, index);
+  scheduleSpecRefresh(m, index);
+}
+let analysisMode = (() => {
+  try {
+    return normalizeAnalysisMode(localStorage.getItem(ANALYSIS_MODE_KEY));
+  } catch (e) {
+    return 'both';
+  }
+})();
+
+function fitCanvas(cv) {
+  if (!cv) return null;
+  const r = cv.getBoundingClientRect();
+  const w = Math.max(200, Math.round(r.width || 0));
+  const h = Math.max(40, Math.round(r.height || 0));
+  if (cv.width !== w) cv.width = w;
+  if (cv.height !== h) cv.height = h;
+  return { w, h };
+}
+
+function setAnalysisMode(m, mode) {
+  const next = normalizeAnalysisMode(mode);
+  analysisMode = next;
+  try {
+    localStorage.setItem(ANALYSIS_MODE_KEY, next);
+  } catch (e) {}
+  const wrap = $(`#sdwrap-${CSS.escape(m.id)}`);
+  if (!wrap) return;
+  wrap.classList.remove('mode-wave', 'mode-spec', 'mode-both');
+  wrap.classList.add(`mode-${next}`);
+  const L = analysisLayout(next);
+  const wave = wrap.querySelector('.sd-wave-canvas');
+  const spec = wrap.querySelector('.sd-spec-canvas');
+  const overlay = wrap.querySelector('.sd-spec-overlay');
+  const readout = wrap.querySelector('.sd-spec-readout');
+  if (wave) wave.hidden = L.wave === 0;
+  if (spec) spec.hidden = L.spec === 0;
+  if (overlay) overlay.hidden = L.spec === 0;
   if (readout) {
     readout.hidden = true;
     readout.textContent = '';
   }
-  if (wave) wave.hidden = false;
-  const body = canvas?.closest('.sd-body');
-  if (body) body.classList.remove('spec-mode');
-  const btn = $(`[data-seg-spec="${CSS.escape(m.id)}"]`);
-  if (btn) btn.classList.remove('on');
+  document.querySelectorAll('[data-analysis-mode]').forEach((b) => {
+    b.classList.toggle('on', b.dataset.analysisMode === next);
+  });
+  const idx = activeSegIndex(m);
+  if (L.wave) {
+    fitCanvas(wave);
+    refreshSegWave(m, idx);
+  }
+  if (L.spec) refreshSegmentSpectrogram(m, idx, { force: true }).catch(() => {});
 }
 
-async function showSegmentSpectrogram(m, index, opts = {}) {
+// Zoom/kaydırma sonrası spektrogramı yeniden hesapla (kısa gecikmeyle).
+function scheduleSpecRefresh(m, index) {
+  if (analysisMode === 'wave') return;
+  clearTimeout(m.__specTimer);
+  m.__specTimer = setTimeout(() => {
+    refreshSegmentSpectrogram(m, index, { force: true }).catch(() => {});
+  }, 250);
+}
+
+// KAPLAMA KATMANI: sınırlar, oynatma, A–B, imleç. Spektrogramın ÜSTÜNDE.
+function paintSpecOverlay(m, index, ev) {
   const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
-  const wave = $(`#sdwave-${CSS.escape(m.id)}`);
+  const overlay = $(`#sdspecov-${CSS.escape(m.id)}`);
+  const readout = $(`#sdspecread-${CSS.escape(m.id)}`);
+  if (!canvas || !overlay || canvas.hidden) return;
+  const ctx = overlay.getContext('2d');
+  const w = overlay.width;
+  const h = overlay.height;
+  ctx.clearRect(0, 0, w, h);
+  const v = canvas.__specView || analysisView(m, index);
+  if (!v) return;
+  const span = Math.max(0.001, v.b - v.a);
+  const xOf = (t) => ((t - v.a) / span) * w;
+  const L = loopRange(m);
+  if (L) {
+    const xa = Math.max(0, Math.min(w, xOf(L.a)));
+    const xb = Math.max(0, Math.min(w, xOf(L.b)));
+    if (xb > xa) {
+      ctx.fillStyle = L.on ? 'rgba(184,134,69,.22)' : 'rgba(184,134,69,.10)';
+      ctx.fillRect(xa, 0, xb - xa, h);
+      ctx.fillStyle = 'rgba(230,190,120,.95)';
+      ctx.fillRect(xa, 0, 1, h);
+      ctx.fillRect(xb - 1, 0, 1, h);
+    }
+  }
+  const s = (m.segments || [])[index] || {};
+  const st = secondsFromTimecode(s.start);
+  const en = secondsFromTimecode(s.end);
+  if (Number.isFinite(st)) {
+    ctx.fillStyle = 'rgba(44,128,98,.95)';
+    ctx.fillRect(xOf(st) - 1, 0, 3, h);
+  }
+  if (Number.isFinite(en)) {
+    ctx.fillStyle = 'rgba(138,99,32,.95)';
+    ctx.fillRect(xOf(en) - 1, 0, 3, h);
+  }
+  const p = canvas.closest('.audio-card')?.querySelector('audio') || document.querySelector('audio');
+  if (p && Number.isFinite(p.currentTime) && p.currentTime >= v.a && p.currentTime <= v.b) {
+    ctx.fillStyle = 'rgba(255,255,255,.85)';
+    ctx.fillRect(xOf(p.currentTime), 0, 1, h);
+  }
+  if (!ev) {
+    if (readout) readout.hidden = true;
+    return;
+  }
+  const r = canvas.getBoundingClientRect();
+  const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
+  const y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
+  const sx = w / Math.max(1, r.width);
+  const sy = h / Math.max(1, r.height);
+  ctx.strokeStyle = 'rgba(255,255,255,.75)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x * sx, 0);
+  ctx.lineTo(x * sx, h);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, y * sy);
+  ctx.lineTo(w, y * sy);
+  ctx.stroke();
+  if (readout) {
+    const t = specTimeAt(x, r.width, v.a, v.b);
+    const hz = specHzAt(y, r.height, canvas.__specSampleRate || 48000);
+    const hzText = hz >= 1000 ? `${(hz / 1000).toFixed(1).replace('.', ',')} kHz` : `${Math.round(hz)} Hz`;
+    readout.textContent = `${timecode(t)} · ${hzText}`;
+    readout.hidden = false;
+  }
+}
+
+// Spektrogramı ORTAK GÖRÜNÜR PENCERE için hesapla ve çiz. Mod 'wave' ise atla.
+async function refreshSegmentSpectrogram(m, index, opts = {}) {
+  if (analysisMode === 'wave' && !opts.force) return;
+  const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
   const overlay = $(`#sdspecov-${CSS.escape(m.id)}`);
   const readout = $(`#sdspecread-${CSS.escape(m.id)}`);
   const s = (m.segments || [])[index];
   if (!canvas || !s) return;
-  // AÇ/KAPA = GÖRÜNÜM GEÇİŞİ (v2.121) + TAM GENİŞLİK (v2.126).
-  if (!opts.force && !canvas.hidden) {
-    closeSegmentSpectrogram(m);
-    refreshSegWave(m, Number.isInteger(m.activeSeg) ? m.activeSeg : 0);
-    return;
-  }
+  const v = analysisView(m, index);
+  if (!v) return;
+  const a = v.a;
+  const b = v.b;
+  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) return;
   const c = currentCase();
   const blob = await getAudioBlob(c, m);
   if (!blob) {
     showToast('Ses dosyası bulunamadı; spektrogram çizilemedi.');
     return;
   }
-  const a = secondsFromTimecode(s.start);
-  const b = secondsFromTimecode(s.end);
-  if (!(Number.isFinite(a) && Number.isFinite(b) && b > a)) {
-    showToast('Bölümün zaman aralığı geçersiz; spektrogram çizilemedi.');
-    return;
-  }
-  // YERLEŞİM ÖNCE (v2.126): tam genişlik moduna geç ki ölçü doğru olsun.
-  // Dalga gizlenir; spektrogram detayın TÜM genişliğini kullanır (200 px).
-  const body = canvas.closest('.sd-body');
-  if (body) body.classList.add('spec-mode');
-  canvas.hidden = false;
-  if (wave) wave.hidden = true;
+  const fit = fitCanvas(canvas);
+  if (!fit) return;
   if (overlay) {
-    overlay.hidden = false;
-    overlay.width = 10;
-    overlay.height = 10;
+    overlay.width = canvas.width;
+    overlay.height = canvas.height;
   }
   if (readout) {
     readout.hidden = true;
     readout.textContent = '';
   }
-  const rect = canvas.getBoundingClientRect();
-  const cw = Math.max(400, Math.min(1200, Math.round(rect.width || 800)));
-  const ch = Math.max(120, Math.round(rect.height || 200));
-  canvas.width = cw;
-  canvas.height = ch;
-  if (overlay) {
-    overlay.width = cw;
-    overlay.height = ch;
-    const octx = overlay.getContext('2d');
-    octx.clearRect(0, 0, cw, ch);
-  }
-  // Yalnız BÖLÜM ARALIĞI hesaplanır (tüm kayıt değil): hızlı ve ilgili.
-  const spec = await computeSpectrogram(blob, cw, 512, { startSec: a, endSec: b });
+  const seq = (m.__specSeq = (m.__specSeq || 0) + 1);
+  const spec = await computeSpectrogram(blob, Math.max(400, Math.min(1200, canvas.width)), 512, { startSec: a, endSec: b });
+  if (seq !== m.__specSeq) return; // daha yeni bir istek var
   if (!spec) {
     showToast('Spektrogram hesaplanamadı (ses çözülemedi).');
     return;
   }
   drawSegmentSpectrogram(canvas, spec);
   canvas.__specSampleRate = spec.sampleRate;
+  canvas.__specView = { a, b };
   attachSegmentSpectrogram(m, index);
-  const btnOn = $(`[data-seg-spec="${CSS.escape(m.id)}"]`);
-  if (btnOn) btnOn.classList.add('on');
-  // Spektrogram "incelendi" bilgisi raporda görünür (yalnız gerçekten açıldıysa).
+  paintSpecOverlay(m, index, null);
   if (!m.spectrogramReviewed) {
     m.spectrogramReviewed = { at: new Date().toISOString() };
     logEvent(m, 'Spektrogram incelendi', `Bölüm ${index + 1}: ${s.start}–${s.end}`);
@@ -3931,94 +4076,73 @@ async function showSegmentSpectrogram(m, index, opts = {}) {
 function attachSegmentSpectrogram(m, index) {
   const canvas = $(`#sdspec-${CSS.escape(m.id)}`);
   const overlay = $(`#sdspecov-${CSS.escape(m.id)}`);
-  const readout = $(`#sdspecread-${CSS.escape(m.id)}`);
   if (!canvas || !overlay) return;
   canvas.__specIndex = index;
   if (canvas.__specBound) return;
   canvas.__specBound = true;
   let drag = null;
+  let pan = null;
   const seg = () => (m.segments || [])[Number.isInteger(m.activeSeg) ? m.activeSeg : 0];
   const player = () => canvas.closest('.audio-card')?.querySelector('audio') || document.querySelector('audio');
-  const bounds = () => {
-    const s = seg() || {};
-    return { a: secondsFromTimecode(s.start), b: secondsFromTimecode(s.end) };
-  };
+  const view = () => canvas.__specView || analysisView(m, index);
   const timeAt = (ev) => {
     const r = canvas.getBoundingClientRect();
-    const { a, b } = bounds();
-    return specTimeAt(ev.clientX - r.left, r.width, a, b);
-  };
-  const paint = (ev) => {
-    const ctx = overlay.getContext('2d');
-    const w = overlay.width;
-    const h = overlay.height;
-    ctx.clearRect(0, 0, w, h);
-    const { a, b } = bounds();
-    const span = Math.max(0.001, b - a);
-    const L = loopRange(m);
-    if (L) {
-      const xa = Math.max(0, Math.min(1, (L.a - a) / span)) * w;
-      const xb = Math.max(0, Math.min(1, (L.b - a) / span)) * w;
-      if (xb > xa) {
-        ctx.fillStyle = L.on ? 'rgba(184,134,69,.22)' : 'rgba(184,134,69,.10)';
-        ctx.fillRect(xa, 0, xb - xa, h);
-        ctx.fillStyle = 'rgba(230,190,120,.95)';
-        ctx.fillRect(xa, 0, 1, h);
-        ctx.fillRect(xb - 1, 0, 1, h);
-      }
-    }
-    if (!ev) {
-      if (readout) readout.hidden = true;
-      return;
-    }
-    const r = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(r.width, ev.clientX - r.left));
-    const y = Math.max(0, Math.min(r.height, ev.clientY - r.top));
-    const sx = w / Math.max(1, r.width);
-    const sy = h / Math.max(1, r.height);
-    ctx.strokeStyle = 'rgba(255,255,255,.75)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x * sx, 0);
-    ctx.lineTo(x * sx, h);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, y * sy);
-    ctx.lineTo(w, y * sy);
-    ctx.stroke();
-    if (readout) {
-      const t = specTimeAt(x, r.width, a, b);
-      const hz = specHzAt(y, r.height, canvas.__specSampleRate || 48000);
-      const hzText = hz >= 1000 ? `${(hz / 1000).toFixed(1).replace('.', ',')} kHz` : `${Math.round(hz)} Hz`;
-      readout.textContent = `${timecode(t)} · ${hzText}`;
-      readout.hidden = false;
-    }
+    const v = view();
+    return specTimeAt(ev.clientX - r.left, r.width, v.a, v.b);
   };
   canvas.addEventListener('pointermove', (ev) => {
-    if (!drag) paint(ev);
+    if (pan) {
+      const r = canvas.getBoundingClientRect();
+      const span = pan.b - pan.a;
+      const dt = ((pan.x - ev.clientX) / Math.max(1, r.width)) * span;
+      const dur = Number(m.duration) || 0;
+      let a = pan.a + dt;
+      let b = pan.b + dt;
+      if (a < 0) {
+        b -= a;
+        a = 0;
+      }
+      if (dur && b > dur) {
+        a -= b - dur;
+        b = dur;
+      }
+      m.__sdZoom = { materialId: m.id, index, a: Math.max(0, a), b: Math.min(dur || b, b) };
+      refreshSegWave(m, index);
+      scheduleSpecRefresh(m, index);
+      return;
+    }
+    if (!drag) paintSpecOverlay(m, index, ev);
   });
   canvas.addEventListener('pointerleave', () => {
-    if (!drag) paint(null);
+    if (!drag) paintSpecOverlay(m, index, null);
   });
   canvas.addEventListener('pointerdown', (ev) => {
     if (ev.button !== 0) return;
     ev.preventDefault();
+    if (ev.shiftKey) {
+      const v = view();
+      pan = { x: ev.clientX, a: v.a, b: v.b };
+      canvas.setPointerCapture?.(ev.pointerId);
+      return;
+    }
     const t = timeAt(ev);
-    const { a, b } = bounds();
+    const s0 = seg() || {};
+    const st = secondsFromTimecode(s0.start);
+    const en = secondsFromTimecode(s0.end);
     if (ev.altKey) {
-      const field = specNearestBoundary(t, a, b);
-      const other = field === 'start' ? b : a;
+      const field = specNearestBoundary(t, st, en);
+      const other = field === 'start' ? en : st;
       if (field === 'start' && t >= other - 0.1) return;
       if (field === 'end' && t <= other + 0.1) return;
-      const s = seg();
-      s[field] = timecode(t);
+      s0[field] = timecode(t);
       persist();
       const root = $(`#seg-detail-${CSS.escape(m.id)}`);
       const inp = root?.querySelector(`[data-seg="${index}"][data-key="${field}"]`);
-      if (inp) inp.value = s[field];
+      if (inp) inp.value = s0[field];
       updateSegListItem(m, index);
-      showToast(`${field === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s[field]}`);
-      showSegmentSpectrogram(m, index, { force: true }).catch(() => {});
+      showToast(`${field === 'start' ? 'Başlangıç' : 'Bitiş'}: ${s0[field]}`);
+      m.__sdZoom = null; // sınır değişti: görünür pencere yeniden hesaplanır
+      refreshSegmentSpectrogram(m, index, { force: true }).catch(() => {});
       return;
     }
     drag = { start: t, moved: false };
@@ -4029,14 +4153,16 @@ function attachSegmentSpectrogram(m, index) {
     const t = timeAt(ev);
     if (Math.abs(t - drag.start) > 0.03) drag.moved = true;
     if (drag.moved) {
-      const lo = Math.min(drag.start, t);
-      const hi = Math.max(drag.start, t);
-      setLoopPoint(m, 'a', lo);
-      setLoopPoint(m, 'b', hi);
-      paint(ev);
+      setLoopPoint(m, 'a', Math.min(drag.start, t));
+      setLoopPoint(m, 'b', Math.max(drag.start, t));
+      paintSpecOverlay(m, index, ev);
     }
   });
   const endDrag = (ev) => {
+    if (pan) {
+      pan = null;
+      return;
+    }
     if (!drag) return;
     const moved = drag.moved;
     const startT = drag.start;
@@ -4049,7 +4175,7 @@ function attachSegmentSpectrogram(m, index) {
         } catch (e) {}
       }
       showToast(`Konum: ${timecode(startT)}`);
-      paint(null);
+      paintSpecOverlay(m, index, null);
       return;
     }
     const L = loopRange(m);
@@ -4058,11 +4184,22 @@ function attachSegmentSpectrogram(m, index) {
       paintLoopIndicators(m);
       showToast(`A–B döngüsü açık: ${loopLabel(m)} (K ile kapat)`);
     }
-    paint(ev);
+    paintSpecOverlay(m, index, ev);
   };
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener(
+    'wheel',
+    (ev) => {
+      ev.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (ev.clientX - r.left) / Math.max(1, r.width)));
+      zoomAnalysisAt(m, index, ratio, ev.deltaY < 0 ? 0.8 : 1.25);
+    },
+    { passive: false }
+  );
 }
+
 // Bölüm spektrogramı: yalnız görüntü (sınır çizgisi yok, eksen etiketi var).
 function drawSegmentSpectrogram(canvas, spec) {
   const ctx = canvas.getContext('2d');
@@ -4112,18 +4249,13 @@ function attachSegWave(m, index) {
   const card = canvas.closest('.audio-card');
   const player = card?.querySelector('audio');
 
-  // Görünüm penceresi (bölüm ±0,5 sn); bölüm başına saklanır.
-  const view = () => {
-    if (m.__sdZoom && m.__sdZoom.index === index2 && m.__sdZoom.materialId === m.id) return m.__sdZoom;
-    const a0 = Math.max(0, secondsFromTimecode(s.start) - 0.5);
-    const b0 = Math.min(dur || secondsFromTimecode(s.end) + 0.5, secondsFromTimecode(s.end) + 0.5);
-    m.__sdZoom = { materialId: m.id, index: index2, a: a0, b: Math.max(a0 + 0.05, b0) };
-    return m.__sdZoom;
-  };
+  // Görünüm penceresi: dalga ve spektrogram AYNI aralığı kullanır (v2.128).
+  const view = () => analysisView(m, index2);
 
   const draw = () => {
     rebind();
     if (!s) return;
+    fitCanvas(canvas);
     const ctx = canvas.getContext('2d');
     const w = canvas.width,
       h = canvas.height;
@@ -4322,6 +4454,7 @@ function attachSegWave(m, index) {
       v.a = Math.max(0, a);
       v.b = Math.min(dur || b, b);
       draw();
+      scheduleSpecRefresh(m, index2);
       return;
     }
     const { t } = hitTime(ev);
@@ -4356,29 +4489,15 @@ function attachSegWave(m, index) {
     'wheel',
     (ev) => {
       ev.preventDefault();
-      const { t, ratio } = hitTime(ev);
-      const v = view();
-      const factor = ev.deltaY < 0 ? 0.8 : 1.25;
-      let span = Math.max(0.05, Math.min(dur || 3600, (v.b - v.a) * factor));
-      let a = t - ratio * span,
-        b = a + span;
-      if (a < 0) {
-        a = 0;
-        b = span;
-      }
-      if (dur && b > dur) {
-        b = dur;
-        a = Math.max(0, dur - span);
-      }
-      v.a = a;
-      v.b = b;
-      draw();
+      const { ratio } = hitTime(ev);
+      zoomAnalysisAt(m, index2, ratio, ev.deltaY < 0 ? 0.8 : 1.25);
     },
     { passive: false }
   );
   const fit = () => {
     m.__sdZoom = null;
     draw();
+    scheduleSpecRefresh(m, index2);
   };
   const waveWrap = canvas.closest('.sd-wave');
   waveWrap?.querySelector('[data-sd-zoom="fit"]')?.addEventListener('click', fit);
@@ -4498,8 +4617,11 @@ function renderSegDetail(m) {
   root.scrollTop = keepScroll;
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
-  const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+  const idx = activeSegIndex(m);
   attachSegWave(m, idx);
+  // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
+  // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
+  setAnalysisMode(m, analysisMode);
 }
 function renderSegments(m, card) {
   const root = $(`#segments-${CSS.escape(m.id)}`, card || document);
@@ -5353,7 +5475,10 @@ function ensureSegStopListener(player) {
     if (!st) return;
     if (st.materialId) {
       const mm = currentCase()?.materials.find((x) => x.id === st.materialId);
-      if (mm) renderKaraoke(mm, st.index);
+      if (mm) {
+        renderKaraoke(mm, st.index);
+        paintSpecOverlay(mm, st.index, null);
+      }
     }
     if (st.stopAt != null && player.currentTime >= st.stopAt - 0.01) {
       // A–B döngüsü açıksa durmak yerine A'ya sar ve çalmaya devam et.
@@ -5558,8 +5683,9 @@ function syncSegDetailInPlace(m, idx) {
   }
   // Bölüm değişince GÖRÜNÜM DALGAYA DÖNER (v2.121): eski bölümün spektrogramı
   // kalırsa yanlış izlenim olur. Dalga tekrar görünür, spektrogram gizlenir.
-  const specCanvas = detail.querySelector('.sd-spec-canvas');
-  if (specCanvas && !specCanvas.hidden) closeSegmentSpectrogram(m);
+  // Bölüm değişince analiz görünümü KORUNUR; spektrogram yeni bölüm için
+  // yeniden hesaplanır (v2.128). Dalga ve spek aynı kutuda kalır.
+  setAnalysisMode(m, analysisMode);
   setVal('.sd-text textarea', s.text || '');
   const sel = meta[1]?.querySelector('select');
   if (sel) {
@@ -9963,13 +10089,18 @@ function setupEvents() {
           showToast(changed ? `${changed} yazım "${form}" biçimine çevrildi.` : 'Değiştirilecek yazım bulunamadı.');
         }
       }
-    } else if (b.dataset.segSpec !== undefined) {
-      // BÖLÜM SPEKTROGRAMI (v2.115): aç/kapa. Dalga + spektrogram birlikte.
+    } else if (b.dataset.analysisMode !== undefined) {
+      // ANALİZ GÖRÜNÜMÜ (v2.128): Dalga / Spek / İkisi. Aynı kutu, sabit yükseklik.
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
-      const idx = Number.isInteger(m?.activeSeg) ? m.activeSeg : 0;
-      if (m) showSegmentSpectrogram(m, idx);
+      if (m) setAnalysisMode(m, b.dataset.analysisMode);
+    } else if (b.dataset.segSpec !== undefined) {
+      // Eski yol (uyumluluk): yalnız spektrogram moduna geç.
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) setAnalysisMode(m, 'spec');
     } else if (b.dataset.silence !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -11458,6 +11589,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.128': {
+    title: 'Analiz kutusu: dalga + spektrogram aynı yerde',
+    body:
+      'Spektrogram artık dalganın ALTINA açılmıyor; AYNI kutuda, aynı zaman ' +
+      'ekseninde katmanlanıyor. Üç mod var: Dalga (160 px), Spek (160 px), ' +
+      'İkisi (48 px dalga + 112 px spektrogram). Kutu yüksekliği sabit; metin ' +
+      'kaymıyor. Sınır, oynatma, A–B ve imleç çizgileri spektrogramın ÜSTÜNDE. ' +
+      'Zoom/kaydırma iki katmanı birlikte günceller; spektrogram yeniden ' +
+      'hesaplanır. v2.126’daki "altında tam genişlik" düzeni geri alındı.'
+  },
   '2.127': {
     title: 'Yazı listeye bitişik, oynat/ok düğmeleri yanında',
     body:

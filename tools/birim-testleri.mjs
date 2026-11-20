@@ -108,6 +108,7 @@ const EXPOSE = [
   'karaokeSentences', 'activeSentenceIndex',
   'specTimeAt', 'specHzAt', 'specNearestBoundary',
   'activeSegIndex',
+  'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2595,6 +2596,45 @@ console.log('\n== [49] Görünen bölüm = oynatılan bölüm');
   eq('negatif → 0', T.activeSegIndex({ ...m, activeSeg: -3 }), 0);
   eq('bölüm yok → 0', T.activeSegIndex({ segments: [] }), 0);
   eq('m null → 0', T.activeSegIndex(null), 0);
+}
+
+// --- 50. Analiz kutusu: mod düzeni ve ortak zaman ekseni (v2.128) --------
+// KURAL: dalga ve spektrogram AYNI kutuda, AYNI zaman ekseninde katmanlanır;
+// kutu yüksekliği SABİTTİR (mod değişince yerleşim zıplamaz).
+console.log('\n== [50] Analiz kutusu: modlar ve ortak zaman ekseni');
+{
+  eq('ANALYSIS_MODES', T.ANALYSIS_MODES, ['wave', 'spec', 'both']);
+  eq('kutu yüksekliği 160', T.ANALYSIS_PANE_H, 160);
+  eq('bilinmeyen mod → both', T.normalizeAnalysisMode('x'), 'both');
+  eq('null → both', T.normalizeAnalysisMode(null), 'both');
+  eq('wave korunur', T.normalizeAnalysisMode('wave'), 'wave');
+  eq('spec korunur', T.normalizeAnalysisMode('spec'), 'spec');
+
+  const Lw = T.analysisLayout('wave');
+  eq('wave: dalga 160', Lw.wave, 160);
+  eq('wave: spek 0', Lw.spec, 0);
+  eq('wave: kutu 160', Lw.pane, 160);
+  const Ls = T.analysisLayout('spec');
+  eq('spec: dalga 0', Ls.wave, 0);
+  eq('spec: spek 160', Ls.spec, 160);
+  const Lb = T.analysisLayout('both');
+  eq('both: dalga 48', Lb.wave, 48);
+  eq('both: spek 112', Lb.spec, 112);
+  eq('both: spek üstü 48', Lb.specTop, 48);
+  eq('both: toplam kutu 160', Lb.wave + Lb.spec, 160);
+
+  // Ortak görünür pencere: bölüm ±0,5 sn, kayıt sınırına kırpılır.
+  const m = { id: 'm1', duration: 10, segments: [{ start: '00:00:02.000', end: '00:00:04.000' }] };
+  const v = T.analysisView(m, 0);
+  near('görünür pencere başı', v.a, 1.5, 1e-9);
+  near('görünür pencere sonu', v.b, 4.5, 1e-9);
+  const m2 = { id: 'm2', duration: 3, segments: [{ start: '00:00:00.000', end: '00:00:02.900' }] };
+  const v2 = T.analysisView(m2, 0);
+  eq('başlangıç 0’a kırpılır', v2.a, 0);
+  eq('bitiş kayıt sonuna kırpılır', v2.b, 3);
+  m.__sdZoom = { materialId: 'm1', index: 0, a: 2, b: 3 };
+  eq('zoom penceresi kullanılır', T.analysisView(m, 0).a, 2);
+  eq('bölüm yoksa null', T.analysisView({ segments: [] }, 0), null);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

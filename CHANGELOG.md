@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.127.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.128.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.128 — Katmanlı analiz kutusu (dalga + spektrogram aynı yerde)
+
+CANLI VERİ. Bilirkişi: *"spektrogram kısmı olmamış… wave ile aynı yerde
+durmalı… altında açılması gereksiz yer kaplamış, tasarımı da bozmuş…
+profesyoneller nasıl kullanıyorsa öyle olsun."*
+
+### ÖLÇÜM (v2.127)
+
+- Spektrogram **alt blokta**, tam genişlik; gövde tek sütuna düşüyor, **metin
+  aşağı kayıyor**.
+- Dalga ve spektrogram **farklı zaman pencereleri** kullanıyordu (dalga
+  bölüm ±0,5 sn, spek yalnız bölüm aralığı) → çizgiler hizalanmıyordu.
+
+### DÜZELTME — profesyonel araç düzeni (Praat / Audacity / RX)
+
+- **AYNI kutu**, sabit **160 px**; mod değişince yerleşim zıplamaz.
+- Üç mod: **Dalga** (160 px) · **Spek** (160 px) · **İkisi** (48 px dalga +
+  112 px spek). Varsayılan **İkisi**; tercih oturumda hatırlanır, kayda yazılmaz.
+- **Ortak zaman ekseni** (`analysisView`): iki katman aynı `[a,b]` penceresini
+  çizer; zoom/kaydırma ikisini birlikte günceller, spektrogram yeniden hesaplanır.
+- **Kaplama katmanı**: S/B sınırları, oynatma çizgisi, A–B aralığı ve imleç
+  spektrogramın **ÜSTÜNDE**; her harekette spektrogram yeniden çizilmez.
+- Etkileşim iki katmanda da: tıkla = konuma git · sürükle = A–B · Alt+tıkla =
+  sınır · tekerlek = zoom · Shift+sürükle = kaydır.
+- v2.126’daki **tam genişlik-altı düzen geri alındı**.
+
+### ÖLÇÜM (v2.128, gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Kutu yüksekliği (üç mod) | **160 px sabit** |
+| Metin kayması (mod değişimi) | **0 px** |
+| Dalga/spek aynı x ve genişlik | **evet** |
+| Tıkla (%50) | **3,0 sn** |
+| Sürükle | **A 2,403 → B 3,601** |
+| Zoom (tekerlek) | **1,5–4,5 → 1,8–4,2** |
+
+### KULLANICI NE GÖRECEK
+
+- Spektrogram **dalganın yerinde**; altına açılmıyor, yer kaplamıyor.
+- **İkisi** ile dalga + spek birlikte; **Spek** ile yalnız spektrogram.
+- Çizgiler spektrogramın üstünde; zoom iki katmanı birlikte büyütür.
+
+### Koruyan testler
+
+`birim` [50] (mod düzeni, ortak pencere), `tasarim` [2g] (sabit 160 px, mode
+sınıfları, kaplama). Gerçek Chromium: mod geçişlerinde metin kayması 0, zoom
+ile ortak pencere daralıyor.
 
 ## v2.127 — Yerleşim: yazı listeye bitişik, kontroller yanında
 

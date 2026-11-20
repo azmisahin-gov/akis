@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.127.**
+yazılır. **Güncel sürüm: v2.128.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.128 — Katmanlı analiz kutusu (tamamlandı)
+
+Dalga + spektrogram **aynı kutuda**, sabit 160 px; üç mod (Dalga/Spek/İkisi).
+Ortak zaman ekseni; zoom ikisini birlikte günceller. Çizgiler spektrogramın
+üstünde. v2.126’nın alt-tam-genişlik düzeni geri alındı. `birim` [50],
+`tasarim` [2g].
 
 ### v2.127 — Yerleşim: metin listeye bitişik, kontroller yanında (tamamlandı)
 
