@@ -435,6 +435,51 @@ bulundu ve düzeltildi. **Bu kurallar bozulursa veri kaybı olur.**
 
 Test: `surum-testi` [10] (8 kural), `sema-testi` [3d] (6 kontrol).
 
+
+## Aşama 10 — Paket sözleşmesi: yedek/geri yükleme/birleştirme (TAMAMLANDI, v2.102)
+
+**Belirti (canlı veri):** Yedek başka bir bilgisayarda boş tarayıcıda açıldı →
+ekran "2 dosya" dedi; içe aktarma sonrası çalışma alanında **3 kayıt** oluştu;
+"⇄ Birleştir" **"uyumsuz"** hatası verdi.
+
+**Tek kök:** *Boş çalışma alanı "dosya" sayılıyordu.* Uygulama boş kurulumda
+çalışabilmek için kendiliğinden boş bir dosya açar; bu dosya kullanıcı verisi
+değildir. v2.101'de yedeğe, arşive ve geri yüklemeye giriyordu. Ayrıca yedek
+(`archive.json`) ile birleştirme (`case.json`) paketleri **ayrı kurallarla**
+okunuyordu; aynı biçimde üretilen paket birleştirmede reddediliyordu.
+
+### Değişmez kural: paket = kullanıcı verisi taşıyan dosyalar
+
+| Fonksiyon | Görev |
+|---|---|
+| `isEmptyCase(c)` | Kullanıcı verisi yoksa `true`. Varsayılan uzmanlık alanı, yöntem metni ve tarih **veri sayılmaz**. |
+| `buildExportPlan(cases)` | `none` / `single` / `archive`. Boş dosyalar `skipped` ile **bildirilir**, sessizce atılmaz. |
+| `selectCaseFromArchive(arch, mine)` | id → dosya no + mahkeme. Bulunamazsa NEDEN söylenir; "uyumsuz" demek yetmez. |
+| `dropEmptyCases(cases)` | Yalnız boş kayıtları düşürür. Açılışta, içe aktarma sonrası ve yeni dosya açarken kullanılır. |
+| `matchAudioEntries(names, mats, caseId)` | Arşivde sesler `audio/<dosyaId>/` altındadır; `caseId` verilmezse yanlış dosyanın sesi bağlanabilir. |
+
+**Kural:** Yeni bir paket okuyan/yazan yol eklerken bu beş fonksiyondan geçin.
+İki paket biçimi (tekil/arşiv) **aynı** kuralı kullanmalıdır; ayrışırsa kullanıcı
+"uyumsuz" hatası görür.
+
+**Sessiz hata yasak:** Arşivden geri yüklemede ses bulunamazsa hangi kayıt
+olduğu söylenir (dışa aktarmada `EKSIK_SES_UYARISI.txt` zaten vardı; içeri
+alırken yoktu).
+
+**Yan alan hatası (düzeltildi):** `applyMerge` MIME için `m?.mimeType` okuyordu;
+öyle bir alan yok. Gerçek alan `m.type`. Alan adı uydurmayın — şemaya bakın.
+
+**Koruyan test:** `birim-testleri` [32] (26 kontrol) + gerçek `JSZip` ile uçtan
+uca ölçüm (yedek üret → oku → arşiv birleştir → boş tarayıcıya geri yükle →
+ikinci kez yükle).
+
+### DERS: belirti sayısı ≠ hata sayısı
+
+Üç belirti (2 dosya / 3 kayıt / uyumsuz) tek kökten geliyordu. Belirtileri ayrı
+ayrı yamamak yerine **ortak sözleşme** aranmalı. Ölçüm sırası: `freshCase()` →
+`exportProject` paket içeriği → `readProjectPack` → `importArchive` sonrası
+`appState.cases.length`. Dördü de aynı betikle ölçüldü.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -608,7 +653,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.101.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.102.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -766,7 +811,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
-- **Güncel sürüm:** `v2.101` (`assets/app.js` → `APP_VERSION`).
+- **Güncel sürüm:** `v2.102` (`assets/app.js` → `APP_VERSION`).
 - **Tüm testler:** `bash tools/test.sh` → 441 + 395 + diğerleri, **hepsi geçer**.
 - **Uzak dal:** `main` = `803c353` (yerel = uzak = Pages commit).
 - **Açık konu yok.** Yeni konu gelirse aynı disiplin: **tek konu = tek sürüm**,

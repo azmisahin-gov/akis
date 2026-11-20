@@ -89,6 +89,7 @@ const EXPOSE = [
   'parseTimecodeStrict', 'normalizeTimeInput',
   'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText',
+  'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -1703,6 +1704,61 @@ console.log('\n[31] Perde tahmininde oktav belirsizliği');
     eq('belirsiz perde tek kesin sayı iddia etmez', /belirsiz/i.test(amb), true);
     // Ölçülmemiş → "Ölçülmedi".
     eq('ölçülmemiş perde', T.pitchCellText({ pitch: null }), 'Ölçülmedi');
+  }
+}
+
+// --- 32. Paket sözleşmesi: boş çalışma alanı dosya değildir (v2.102) -----
+// Canlı veride yaşandı: yeni bir tarayıcıda uygulama kendiliğinden BOŞ bir
+// dosya açıyor. Bu dosya yedeğe giriyor, arşive yazılıyor ve geri yüklenince
+// "toplamda üç kayıt" oluşuyordu. Ayrıca "⇄ Birleştir" arşiv paketini
+// reddediyordu ("case.json yok") — kullanıcının gördüğü "uyumsuz" hatası.
+console.log('\n[32] Paket sözleşmesi (boş dosya, arşiv, kopya)');
+{
+  const need = ['isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'matchAudioEntries'];
+  for (const n of need) eq(`${n} tanımlı`, typeof T[n], 'function');
+
+  if (need.every((n) => typeof T[n] === 'function')) {
+    const fresh = T.freshCase();
+
+    eq('boş çalışma alanı "dosya değil" sayılır', T.isEmptyCase(fresh), true);
+    eq('dosya numarası girilmiş alan dosyadır', T.isEmptyCase({ ...fresh, fileNo: '2024/123' }), false);
+    eq('mahkeme girilmiş alan dosyadır', T.isEmptyCase({ ...fresh, court: 'İstanbul 1. Asliye Hukuk' }), false);
+    eq('taraf girilmiş alan dosyadır', T.isEmptyCase({ ...fresh, parties: { plaintiff: 'Ahmet Y.' } }), false);
+    eq('soru girilmiş alan dosyadır', T.isEmptyCase({ ...fresh, questions: [{ id: 'q1', question: 'Soru?' }] }), false);
+    eq('ses kaydı olan alan dosyadır', T.isEmptyCase({ ...fresh, materials: [{ id: 'm1', segments: [] }] }), false);
+
+    const real1 = { ...fresh, id: 'c1', fileNo: '2024/1', materials: [{ id: 'm1', segments: [] }] };
+    const real2 = { ...fresh, id: 'c2', fileNo: '2024/2', materials: [{ id: 'm2', segments: [] }] };
+
+    const plan1 = T.buildExportPlan([fresh, real1]);
+    eq('tek gerçek dosya → tekil paket (case.json)', plan1.kind, 'single');
+    eq('boş dosya pakete GİRMEZ', plan1.cases.length, 1);
+    eq('paket gerçek dosyayı taşır', plan1.cases[0].id, 'c1');
+
+    const plan2 = T.buildExportPlan([fresh, real1, real2]);
+    eq('iki gerçek dosya → arşiv paketi', plan2.kind, 'archive');
+    eq('arşivde boş dosya yok', plan2.cases.length, 2);
+
+    const plan0 = T.buildExportPlan([fresh]);
+    eq('yalnız boş dosya varsa yedek alınmaz', plan0.kind, 'none');
+    eq('yedek alınmayınca dosya listesi boş', plan0.cases.length, 0);
+
+    const arch = { schema: 'mihenk.project.v1', kind: 'archive', cases: [real1, real2] };
+    const pickById = T.selectCaseFromArchive(arch, { id: 'c2', fileNo: '', court: '' });
+    eq('arşivden birleştirilecek dosya id ile bulunur', pickById.case && pickById.case.id, 'c2');
+    eq('id eşleşince gerekçe boş', pickById.reason, '');
+    const pickByNo = T.selectCaseFromArchive(arch, { id: 'yok', fileNo: '2024/1', court: '' });
+    eq('arşivden dosya, dosya numarasıyla bulunur', pickByNo.case && pickByNo.case.id, 'c1');
+    const pickNone = T.selectCaseFromArchive(arch, { id: 'yok', fileNo: '9999/9', court: '' });
+    eq('eşleşme yoksa dosya seçilmez', pickNone.case, null);
+    eq('eşleşme yoksa NEDEN söylenir (uyumsuz demek yetmez)', /2024\/1/.test(pickNone.reason), true);
+
+    const names = ['audio/c2/m9_ses.wav', 'audio/c2/', 'audio/c1/m1_a.wav'];
+    const hit = T.matchAudioEntries(names, [{ id: 'm9', name: 'ses.wav' }], 'c2');
+    eq('arşivdeki ses, dosya klasörüyle eşleşir', hit.length, 1);
+    eq('eşleşen girdi doğru', hit[0] && hit[0].entry, 'audio/c2/m9_ses.wav');
+    eq('başka dosyanın sesi bu dosyaya bağlanmaz', T.matchAudioEntries(names, [{ id: 'm1', name: 'a.wav' }], 'c2').length, 0);
+    eq('dosya klasörü verilmezse eski davranış korunur', T.matchAudioEntries(['audio/m1_a.wav'], [{ id: 'm1' }]).length, 1);
   }
 }
 

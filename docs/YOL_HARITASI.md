@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.101.**
+yazılır. **Güncel sürüm: v2.102.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.102 — Yedek, geri yükleme ve birleştirme sözleşmesi (tamamlandı, canlı veri)
+
+Yedek başka bilgisayarda "2 dosya" diyordu, geri yükleme sonrası 3 kayıt
+oluşuyordu ve ⇄ Birleştir arşiv paketini "uyumsuz" diye reddediyordu. Tek kök:
+**boş çalışma alanı "dosya" sayılıyordu** ve iki paket biçimi (yedek/birleştirme)
+ayrı kurallarla okunuyordu. `isEmptyCase`, `buildExportPlan`,
+`selectCaseFromArchive`, `dropEmptyCases`, `matchAudioEntries` tek sözleşmeyi
+kurar; `birim-testleri` [32] ve gerçek JSZip uçtan uca ölçümü korur.
 
 ### v2.101 — Perde oktav belirsizliği bildirilir (tamamlandı, canlı veri)
 

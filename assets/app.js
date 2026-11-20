@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.101';
+const APP_VERSION = '2.102';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -942,6 +942,13 @@ async function loadState() {
   } catch (e) {
     // Bakım hatası veriyi silmemeli: yalnız atlanır ve bildirilir.
     console.error('Yükleme sonrası bakım hatası:', e);
+  }
+  // BOŞ DOSYA TEMİZLİĞİ (v2.102): eski sürümlerde geri yükleme "boş dosya +
+  // gelen dosyalar" bırakıyordu. Veri taşımayan kayıtlar açılışta düşürülür;
+  // kaybedilecek veri yoktur ve seçicide sahte "dosya" görünmez.
+  if (appState.cases.length) {
+    const cleaned = dropEmptyCases(appState.cases);
+    if (cleaned.dropped) appState.cases = cleaned.cases;
   }
   if (!appState.cases.length) {
     const c = freshCase();
@@ -7730,18 +7737,98 @@ function validateProjectPack(pack) {
   if (!pack.case || typeof pack.case !== 'object') return 'Çalışma paketinde dosya verisi yok.';
   return null;
 }
-// Paket içindeki ses girdilerini materyallere eşler. Girdi adı `${m.id}_...`
-// biçimindedir; bu eşleme saf ve test edilebilirdir.
-function matchAudioEntries(entryNames, materials) {
+// Paket içindeki ses girdilerini materyallere eşler. Girdi adı
+// `${m.id}_...` (tekil paket) veya `audio/<dosyaId>/${m.id}_...` (arşiv)
+// biçimindedir. `caseId` verilirse YALNIZ o dosyanın klasörü aranır; aksi
+// hâlde başka dosyanın sesi yanlış dosyaya bağlanabilirdi.
+function matchAudioEntries(entryNames, materials, caseId) {
   const dirs = new Set(entryNames.filter((n) => n.endsWith('/')));
+  const prefixBase = caseId ? `audio/${caseId}/` : 'audio/';
   const out = [];
   for (const m of materials || []) {
-    const prefix = `audio/${m.id}_`;
+    const prefix = `${prefixBase}${m.id}_`;
     const entry = entryNames.find((path) => path.startsWith(prefix) && !dirs.has(path));
     if (entry) out.push({ materialId: m.id, entry });
   }
   return out;
 }
+// ---- Paket sözleşmesi (v2.102) ------------------------------------------
+// KURAL: çalışma alanı (dosya) KULLANICI VERİSİ taşıyorsa dosyadır.
+// Uygulama boş kurulumda çalışabilmek için kendiliğinden boş bir dosya açar;
+// bu dosya kullanıcı verisi DEĞİLDİR. v2.101 ve öncesinde yedeğe, arşive ve
+// geri yüklemeye giriyordu: yeni tarayıcıda "2 dosya" görünüyor, geri yükleme
+// sonrası "3 kayıt" oluşuyordu (canlı veride yaşandı).
+// Boş sayılan alanlar `freshCase()` varsayılanlarıdır (uzmanlık alanı metni,
+// varsayılan yöntem metni, tarih); bunlar kullanıcı girdisi değildir.
+function isEmptyCase(c) {
+  if (!c || typeof c !== 'object') return true;
+  if ((c.materials || []).length) return false;
+  if ((c.team || []).length) return false;
+  if ((c.questions || []).some((q) => String(q?.question || '').trim() || String(q?.answer || '').trim())) return false;
+  const filled = [
+    c.court,
+    c.fileNo,
+    c.subject,
+    c.caseDate,
+    c.inspectionDate,
+    c.parties?.plaintiff,
+    c.parties?.plaintiffCounsel,
+    c.parties?.defendant,
+    c.parties?.defendantCounsel,
+    c.assignment?.date,
+    c.assignment?.dueDate,
+    c.assignment?.scope,
+    c.assignment?.body,
+    c.expert?.name,
+    c.expert?.registryNo,
+    c.report?.conclusionText,
+    c.report?.limitationsText,
+    c.lastEditedBy
+  ];
+  return !filled.some((v) => String(v == null ? '' : v).trim());
+}
+// Yedeğe girecek dosyaları belirler. Boş dosyalar sessizce atılmaz;
+// `skipped` ile bildirilir (sessiz hata yasak).
+function buildExportPlan(cases) {
+  const all = Array.isArray(cases) ? cases : [];
+  const keep = all.filter((c) => !isEmptyCase(c));
+  const skipped = all.filter((c) => isEmptyCase(c));
+  const kind = keep.length === 0 ? 'none' : keep.length === 1 ? 'single' : 'archive';
+  return { kind, cases: keep, skipped };
+}
+// Arşiv paketinden, bu bilgisayardaki dosyayla eşleşen kaydı seçer.
+// Eşleşme sırası: kimlik (id) → dosya numarası + mahkeme. Bulunamazsa
+// `case: null` ve NEDENİNİ söyleyen metin döner; "uyumsuz" demek yetmez,
+// kullanıcı hangi dosyanın pakette olduğunu görmeli.
+function selectCaseFromArchive(arch, mine) {
+  const list = Array.isArray(arch?.cases) ? arch.cases : [];
+  if (!list.length) return { case: null, reason: 'Pakette hiç dosya yok.' };
+  const byId = mine?.id ? list.find((c) => c && c.id === mine.id) : null;
+  if (byId) return { case: byId, reason: '' };
+  const byNo =
+    mine?.fileNo
+      ? list.find((c) => c && c.fileNo === mine.fileNo && (c.court || '') === (mine.court || ''))
+      : null;
+  if (byNo) return { case: byNo, reason: '' };
+  if (list.length === 1) return { case: list[0], reason: '' };
+  const names = list.map((c) => c.fileNo || c.name || c.id).join(', ');
+  return {
+    case: null,
+    reason:
+      `Pakette ${list.length} dosya var: ${names}. ` +
+      'Bu dosya (aynı dosya numarası ve mahkeme) pakette bulunamadı. ' +
+      'Birleştirmek istediğiniz dosyayı çalışma alanında açın, sonra tekrar deneyin.'
+  };
+}
+// Kullanıcı verisi taşımayan dosyaları çalışma alanından çıkarır. Yalnız
+// `isEmptyCase` DOĞRU olan kayıtlar silinir: bunlarda kaybedilecek veri yoktur.
+// Geri yükleme sonrası "boş dosya + gelen dosyalar" kalabalığını önler.
+function dropEmptyCases(cases) {
+  const all = Array.isArray(cases) ? cases : [];
+  const keep = all.filter((c) => !isEmptyCase(c));
+  return { cases: keep, dropped: all.length - keep.length };
+}
+
 // ---- Yedek takibi -------------------------------------------------------
 // Veri tarayıcıda (localStorage + IndexedDB) durur. Tarayıcı verisi silinirse
 // her şey gider. Bu yüzden son yedeğin ne zaman alındığı izlenir ve uzun süre
@@ -7815,8 +7902,23 @@ async function exportProject() {
   // YEDEK KAPSAMI (v2.84): v2.83 ve öncesinde YALNIZ aktif dosya paketlenir,
   // ekran yine de "bu bir yedektir" derdi. Birden fazla dosya varsa diğerleri
   // sessizce yedek dışı kalıyordu (kanıtlandı). Artık TÜM dosyalar paketlenir.
-  const all = appState.cases || [];
-  const multi = all.length > 1;
+  // BOŞ DOSYA PAKETE GİRMEZ (v2.102): uygulamanın kendiliğinden açtığı, hiç
+  // kullanıcı verisi taşımayan dosya "dosya" değildir. Girerse yeni tarayıcıda
+  // "2 dosya" görünür ve geri yükleme sonrası sahte kayıt birikir.
+  const plan = buildExportPlan(appState.cases || []);
+  if (plan.kind === 'none') {
+    showToast(
+      'Yedek alınacak dosya yok: çalışma alanındaki dosyalar boş (dosya numarası, mahkeme, taraf, ses kaydı yok). ' +
+        'Önce bir dosyaya bilgi girin veya ses kaydı ekleyin.'
+    );
+    return;
+  }
+  const all = plan.cases;
+  const multi = plan.kind === 'archive';
+  // Boş dosyalar sessizce atlanmaz: kullanıcı neyin pakete girmediğini bilir.
+  const skippedNote = plan.skipped.length
+    ? ` ${plan.skipped.length} boş çalışma alanı (veri içermiyor) yedeğe alınmadı.`
+    : '';
   const zip = new JSZip();
   const missingAudio = [];
   if (multi) {
@@ -7827,7 +7929,7 @@ async function exportProject() {
           schema: PROJECT_SCHEMA,
           exportedAt: new Date().toISOString(),
           kind: 'archive',
-          activeCaseId: c.id,
+          activeCaseId: all.some((x) => x.id === c.id) ? c.id : all[0].id,
           cases: all
         },
         null,
@@ -7844,12 +7946,15 @@ async function exportProject() {
       }
     }
   } else {
-    zip.file('case.json', JSON.stringify(buildProjectPack(c), null, 2));
+    // Tek dosyalı paket: paketlenen dosya aktif dosya olmayabilir (aktif dosya
+    // boşsa elenmiştir). Paket DAİMA paketlenen dosyayı taşır.
+    const only = all[0];
+    zip.file('case.json', JSON.stringify(buildProjectPack(only), null, 2));
     const assets = zip.folder('audio');
-    for (const m of c.materials || []) {
-      const blob = await getAudioBlob(c, m);
+    for (const m of only.materials || []) {
+      const blob = await getAudioBlob(only, m);
       if (blob) assets.file(`${m.id}_${safeName(m.name)}`, blob);
-      else missingAudio.push(`${c.fileNo || c.name || c.id} → ${m.name}`);
+      else missingAudio.push(`${only.fileNo || only.name || only.id} → ${m.name}`);
     }
   }
   // EKSİK SES SESSİZCE ATLANMAZ (v2.86). Ses blobu kaybolmuşsa (tarayıcı
@@ -7867,19 +7972,21 @@ async function exportProject() {
   const out = await zip.generateAsync({ type: 'blob' });
   const base = multi
     ? `AKIS_Yedek_${all.length}_dosya_${new Date().toISOString().slice(0, 10)}`
-    : safeName(c.fileNo || 'AKIS_Calisma_Dosyasi');
+    : safeName(all[0].fileNo || 'AKIS_Calisma_Dosyasi');
   downloadBlob(out, `${base}.akis`);
   markBackupDone();
   if (missingAudio.length) {
     showToast(
-      `Yedek alındı ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ. ` +
-        'Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri yedekte var.'
+      `Yedek alındı ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ.` +
+        ' Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri yedekte var.' +
+        skippedNote
     );
   } else {
     showToast(
-      multi
+      (multi
         ? `Yedek alındı: ${all.length} dosyanın tamamı (.akis). Güvenli yerde saklayın.`
-        : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.'
+        : 'AKİS çalışma dosyası dışa aktarıldı (.akis). Bu bir yedektir; güvenli yerde saklayın.') +
+        skippedNote
     );
   }
 }
@@ -7892,16 +7999,35 @@ async function exportProject() {
 let pendingMerge = null; // { theirs, compare }
 
 // Gönderilen .akis paketini okur; dosyayı uygulamaya EKLEMEZ.
+// İKİ PAKET BİÇİMİ DE KABUL EDİLİR (v2.102): tekil (`case.json`) ve arşiv
+// (`archive.json`). v2.101'de arşiv paketi "Bu dosya bir AKİS çalışma paketi
+// değil (case.json yok)" diye REDDEDİLİYORDU — yedek ile birleştirme paketi
+// aynı biçimde üretildiği için kullanıcı "uyumsuz" hatası görüyordu.
+// Arşivde birden çok dosya varsa, bu bilgisayardaki dosyayla eşleşen seçilir.
 async function readProjectPack(file) {
   if (!window.JSZip) throw new Error('Paket açma bileşeni yüklenemedi. Sayfayı yenileyin.');
   const zip = await JSZip.loadAsync(file);
+  const archMeta = zip.file('archive.json');
+  if (archMeta) {
+    const arch = JSON.parse(await archMeta.async('string'));
+    if (arch && arch.schema !== PROJECT_SCHEMA) throw new Error('Arşiv paketi sürümü tanınmadı.');
+    const list = Array.isArray(arch?.cases) ? arch.cases : [];
+    if (!list.length) throw new Error('Arşiv paketinde hiç dosya yok.');
+    const mine = currentCase();
+    const pick = selectCaseFromArchive(arch, mine);
+    if (!pick.case) throw new Error(pick.reason);
+    const theirs = normalizeCase(pick.case);
+    // Arşivde ses girdileri dosya klasörü altındadır.
+    const entryNames = Object.keys(zip.files);
+    return { zip, theirs, entryNames, archiveCount: list.length };
+  }
   const meta = zip.file('case.json');
-  if (!meta) throw new Error('Bu dosya bir AKİS çalışma paketi değil (case.json yok).');
+  if (!meta) throw new Error('Bu dosya bir AKİS çalışma paketi değil (ne case.json ne archive.json var).');
   const pack = JSON.parse(await meta.async('string'));
   const err = validateProjectPack(pack);
   if (err) throw new Error(err);
   const theirs = normalizeCase(pack.case);
-  return { zip, theirs, entryNames: Object.keys(zip.files) };
+  return { zip, theirs, entryNames: Object.keys(zip.files), archiveCount: 1 };
 }
 
 // Karşılaştırmayı diyalogda gösterir. Hiçbir şey değiştirmez.
@@ -7985,13 +8111,18 @@ async function applyMerge() {
   const { merged, applied, conflicts } = mergeCases(mine, theirs);
 
   // Gelen paketteki ses dosyalarını sakla (aynı kayıt id'si varsa zaten var).
+  // Paket arşivse sesler `audio/<GELEN dosyaId>/` altındadır; klasör, birleşmiş
+  // dosyanın id'si DEĞİL, paketteki kaydın id'sidir. Bu yüzden gelen dosyanın
+  // kimliği verilir. MIME alanı `m.type`tır (`mimeType` diye bir alan yok —
+  // v2.101'de yanlış okunuyordu, ses blobu daima audio/wav etiketiyle yazıldı).
   const myKeys = new Set((mine.materials || []).map((m) => blobKey(mine, m)));
-  for (const { materialId, entry } of matchAudioEntries(entryNames, merged.materials || [])) {
+  const audioCaseId = theirs.id;
+  for (const { materialId, entry } of matchAudioEntries(entryNames, merged.materials || [], audioCaseId)) {
     const key = `${mine.id}::${materialId}`;
     if (myKeys.has(key)) continue;
     const blob = await zip.file(entry).async('blob');
     const m = (merged.materials || []).find((x) => x.id === materialId);
-    await storeBlob(key, new Blob([blob], { type: m?.mimeType || 'audio/wav' }));
+    await storeBlob(key, new Blob([blob], { type: m?.type || 'audio/wav' }));
   }
 
   // Birleşmiş dosyayı yerel dosyanın yerine koy (id korunur).
@@ -8027,30 +8158,56 @@ async function applyMerge() {
 
 // ÇOK DOSYALI ARŞİV GERİ YÜKLEME (v2.84). Dışa aktarma artık tüm dosyaları
 // tek pakete koyar; bu yol olmadan o yedek işe yaramazdı.
+// v2.102: (a) boş dosyalar geri yüklenmez, (b) bu bilgisayarda zaten olan
+// dosya KOPYA olarak eklenmez, (c) sesi bulunamayan dosya sessizce atlanmaz.
 async function importArchive(zip, arch) {
-  const list = Array.isArray(arch.cases) ? arch.cases : [];
-  if (!list.length) throw new Error('Arşivde dosya yok.');
+  const rawList = Array.isArray(arch.cases) ? arch.cases : [];
+  if (!rawList.length) throw new Error('Arşivde dosya yok.');
+  // Boş dosyalar (hiç kullanıcı verisi taşımayan) geri yüklenmez: yedekte
+  // zaten olmamalı; eski yedeklerde kalmış olabilir.
+  const list = rawList.filter((raw) => !isEmptyCase(raw));
+  const emptySkipped = rawList.length - list.length;
+  if (!list.length) throw new Error('Arşivdeki dosyaların hepsi boş (veri içermiyor). Geri yükleme yapılmadı.');
+  // Bu bilgisayarda zaten olan dosyalar: kopya açmak veri karışıklığı yaratır.
+  const existing = appState.cases || [];
+  const dup = list.filter((raw) =>
+    existing.some((x) => x.id === raw.id || (x.fileNo && raw.fileNo && x.fileNo === raw.fileNo && (x.court || '') === (raw.court || '')))
+  );
+  const fresh = list.filter((raw) => !dup.includes(raw));
+  const dupNote = dup.length ? ` Bu bilgisayarda zaten bulunan ${dup.length} dosya KOPYA olarak eklenmedi.` : '';
+  if (!fresh.length) {
+    showToast(`Paketteki ${list.length} dosya bu bilgisayarda zaten var. Kopya eklenmedi.${dupNote}`);
+    return;
+  }
   const ok = await askConfirm(
     'Arşivden geri yükleme',
-    `Pakette ${list.length} dosya var. Bunlar bu bilgisayara EKLENİR; ` +
-      'mevcut dosyalarınız silinmez. Devam edilsin mi?'
+    `Pakette ${list.length} dosya var. Bunlardan ${fresh.length} tanesi bu bilgisayara EKLENİR; ` +
+      'mevcut dosyalarınız silinmez.' +
+      dupNote +
+      (emptySkipped ? ` Paketteki ${emptySkipped} boş kayıt (veri içermiyor) atlandı.` : '') +
+      ' Devam edilsin mi?'
   );
   if (!ok) return;
   snapshotForUndo('arşivden geri yükleme');
   let added = 0;
-  for (const raw of list) {
+  const missingAudio = [];
+  for (const raw of fresh) {
     try {
       const c = normalizeCase(raw);
+      const sourceId = c.id;
       c.id = uid();
       c.materials = c.materials || [];
+      const hits = matchAudioEntries(Object.keys(zip.files), c.materials, sourceId);
+      const found = new Set(hits.map((h) => h.materialId));
+      for (const { materialId, entry } of hits) {
+        const m = c.materials.find((x) => x.id === materialId);
+        const blob = await zip.file(entry).async('blob');
+        await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: m?.type || 'audio/wav' }));
+      }
+      // Sesi bulunamayan kayıt sessizce atlanmaz (dışa aktarmada uyarı vardı,
+      // içeri alırken yoktu — v2.102'de kapatıldı).
       for (const m of c.materials) {
-        const entry = Object.keys(zip.files).find((n) =>
-          n.startsWith(`audio/${raw.id}/${m.id}_`)
-        );
-        if (entry) {
-          const blob = await zip.file(entry).async('blob');
-          await storeBlob(`${c.id}::${m.id}`, new Blob([blob], { type: m.type || 'audio/wav' }));
-        }
+        if (!found.has(m.id)) missingAudio.push(`${c.fileNo || c.name || c.id} → ${m.name}`);
       }
       c.name = c.name || c.fileNo || 'Geri yüklenen dosya';
       appState.cases.push(c);
@@ -8061,6 +8218,12 @@ async function importArchive(zip, arch) {
   }
   if (!added) throw new Error('Arşivdeki dosyaların hiçbiri yüklenemedi.');
   appState.activeCaseId = appState.cases[appState.cases.length - added].id;
+  // Geri yükleme sonrası "boş dosya + gelen dosyalar" kalabalığı OLUŞMAZ:
+  // veri taşımayan kayıtlar düşürülür (kaybedilecek veri yoktur) ve aktif
+  // dosya gelen dosyaya çekilir. v2.101'de boş dosya kalıyor, ekran
+  // "toplamda üç kayıt" gösteriyordu.
+  appState.cases = dropEmptyCases(appState.cases).cases;
+  if (!currentCase()) appState.activeCaseId = appState.cases[0].id;
   persist();
   renderCaseSelect();
   populateCaseForm();
@@ -8068,7 +8231,15 @@ async function importArchive(zip, arch) {
   renderOverview();
   await renderAudioList();
   switchView('overview');
-  showToast(`${added} dosya arşivden geri yüklendi.`);
+  if (missingAudio.length) {
+    showToast(
+      `${added} dosya geri yüklendi ANCAK ${missingAudio.length} ses kaydı pakette bulunamadı. ` +
+        `Deşifre metinleri geldi; sesi orijinal kaynaktan yeniden ekleyin: ${missingAudio.slice(0, 3).join(', ')}` +
+        (missingAudio.length > 3 ? '…' : '')
+    );
+  } else {
+    showToast(`${added} dosya arşivden geri yüklendi.`);
+  }
 }
 async function importProject(file) {
   if (!window.JSZip) throw new Error('Çalışma paketi açma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
@@ -8116,6 +8287,9 @@ async function importProject(file) {
   snapshotForUndo('çalışma dosyası içe aktarıldı');
   appState.cases.push(c);
   appState.activeCaseId = c.id;
+  // Boş çalışma alanı (veri içermiyor) yeni dosyanın yanında bırakılmaz.
+  appState.cases = dropEmptyCases(appState.cases).cases;
+  if (!currentCase()) appState.activeCaseId = appState.cases[0].id;
   persist();
   renderCaseSelect();
   populateCaseForm();
@@ -8298,6 +8472,15 @@ function setupEvents() {
   });
   $('#newCaseBtn').addEventListener('click', () => {
     const c = freshCase();
+    // Zaten boş bir çalışma alanı varsa yenisini eklemek "hayalet dosya"
+    // biriktirir (seçicide birden çok adsız kayıt). Boş kayıt yeni dosyayla
+    // DEĞİŞTİRİLİR; veri taşıyan kayıtlara dokunulmaz.
+    const cur = currentCase();
+    const replaced = cur && isEmptyCase(cur);
+    if (replaced) {
+      const i = appState.cases.findIndex((x) => x.id === cur.id);
+      if (i >= 0) appState.cases.splice(i, 1);
+    }
     appState.cases.push(c);
     appState.activeCaseId = c.id;
     persist();
@@ -9828,6 +10011,18 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.102': {
+    title: 'Yedek, geri yükleme ve birleştirme düzeltildi',
+    body:
+      'Yedeği başka bir bilgisayarda açtığınızda boş çalışma alanı da pakete ' +
+      'giriyordu: ekran "2 dosya" diyor, içe aktarma sonrası çalışma alanında ' +
+      '"3 kayıt" oluşuyordu. Artık boş çalışma alanı (dosya numarası, mahkeme, ' +
+      'taraf ve ses kaydı olmayan kayıt) yedeğe GİRMEZ; geri yükleme sonrası ' +
+      'boş kayıt düşürülür ve aynı dosya ikinci kez eklenirse kopya açılmaz. ' +
+      '⇄ Birleştir, çok dosyalı yedek paketini de kabul eder (önceki sürümde ' +
+      '"bu bir çalışma paketi değil" hatası alıyordunuz). Arşivden geri ' +
+      'yüklemede bir ses dosyası bulunamazsa artık hangi kayıt olduğu söylenir.'
+  },
   '2.101': {
     title: 'Perde ölçümü: yanıltıcı tek sayı yerine "oktav belirsiz" uyarısı',
     body:

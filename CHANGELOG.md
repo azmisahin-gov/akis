@@ -6,12 +6,67 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.101.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.102.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.102 — Yedek, geri yükleme ve birleştirme: sahte kayıt ve kopya birikmesi
+
+CANLI VERİ. Bilirkişi yedeği başka bir bilgisayarda boş bir tarayıcıda açtı:
+ekran "**iki paket**" dedi, içe aktarma sonrası çalışma alanında **üç kayıt**
+oluştu ve "⇄ Birleştir" **"uyumsuz"** hatası verdi. Üç belirtinin de tek kökü
+vardı ve üçü de ölçümle doğrulandı.
+
+### KULLANICI NE GÖRECEK
+
+- **Yeni bilgisayarda "2 dosya" görmeyeceksiniz.** Boş çalışma alanı yedeğe girmez.
+- **Geri yükleme sonrası sahte kayıt birikmez.** Boş dosya düşürülür; aynı dosya
+  ikinci kez içe aktarılırsa kopya açılmaz, "bu dosya zaten var" denir.
+- **⇄ Birleştir artık çok dosyalı yedeği kabul eder.** Önceki sürümde aynı yedek
+  paketini birleştirmeye verdiğinizde "bu bir çalışma paketi değil" hatası
+  alıyordunuz; artık paketteki doğru dosya (dosya numarası + mahkeme ile)
+  bulunur ve birleştirilir.
+- **Sesi bulunamayan kayıt sessizce atlanmaz.** Arşivden geri yüklemede bir ses
+  dosyası pakette yoksa hangi kayıt olduğu söylenir.
+
+### ÖLÇÜLEN HATALAR
+
+| Belirti | Ölçüm (v2.101) |
+|---|---|
+| Boş çalışma alanı "dosya" sayılıyor | `freshCase()` → 0 kayıt, boş dosya no, `draft` |
+| Boş dosya yedeğe giriyor | 2 dosyada `archive.json` içinde `BOS-DOSYA[0 kayıt]` |
+| Arşiv birleştirilemiyor | `readProjectPack` yalnız `case.json` arıyor → hata |
+| İçe aktarma sonrası 3 kayıt | boş dosya + 2 gelen dosya, temizlik yok |
+| İkinci aktarımda kopya | `importArchive` yinelenen denetimi yapmıyor |
+| Birleştirmede yanlış MIME alanı | `m?.mimeType` okunuyor; gerçek alan `m.type` |
+| Arşivde ses yanlış klasörde aranıyor | `audio/<kayıtId>` aranıyor; doğrusu `audio/<dosyaId>/` |
+
+### DÜZELTME (tek sözleşme)
+
+Yeni saf fonksiyonlar (`birim-testleri` [32] korur):
+
+- `isEmptyCase(c)` — kullanıcı verisi yoksa dosya değildir (varsayılan uzmanlık
+  alanı ve yöntem metni veri sayılmaz).
+- `buildExportPlan(cases)` — `none` / `single` / `archive`; boş dosyalar
+  `skipped` olarak **bildirilir**, sessizce atılmaz.
+- `selectCaseFromArchive(arch, mine)` — id → dosya no + mahkeme; bulunamazsa
+  NEDEN söylenir ("uyumsuz" demek yetmez).
+- `dropEmptyCases(cases)` — yalnız boş kayıtlar düşürülür.
+- `matchAudioEntries(names, mats, caseId)` — arşivde doğru klasör.
+
+`exportProject`, `importProject`, `importArchive`, `readProjectPack`,
+`applyMerge`, `loadState` ve "yeni dosya" düğmesi bu fonksiyonları kullanır.
+
+### DOĞRULAMA
+
+- `bash tools/test.sh` → 467 birim (26 yeni) + 395 şema + rapor/sürüm/tasarım.
+- Gerçek `JSZip` ile uçtan uca: yedek üret → yeniden oku → arşiv birleştir →
+  boş tarayıcıya geri yükle → ikinci kez yükle. Sonuç: boş dosya pakette yok,
+  birleştirme kabul, geri yükleme sonrası **2 kayıt** (3 değil), ikinci aktarım
+  kopya eklemedi.
 
 ## v2.101 — Perde tahmininde oktav hatası (dürüst sınır)
 
