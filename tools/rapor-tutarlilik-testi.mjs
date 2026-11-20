@@ -279,9 +279,24 @@ console.log('\n[Senaryo 7] WER ölçümü');
   const c = withMaterial();
   c.materials[0].expectedText = 'merhaba dünya bu bir test';
   c.materials[0].segments[0].text = 'merhaba dünya bu bir test';
+  // v2.90: WER MODELİN çıktısını ölçer (asrText). Test verisi de gerçek
+  // kayıt gibi olmalı: model çıktısı saklanmış olmalı, yoksa satır yazılmaz.
+  c.materials[0].segments[0].asrText = 'merhaba dünya bu bir test';
   c.materials[0].transcribedWithModel = 'onnx-community/whisper-small';
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('WER başlığı', REPORT_TEXT.werHeading, H, U, D);
+}
+
+// Senaryo 7b: model çıktısı yoksa WER satırı YAZILMAZ (uydurma yok)
+console.log('\n[Senaryo 7b] WER: model çıktısı yoksa satır yok');
+{
+  const c = withMaterial();
+  c.materials[0].expectedText = 'merhaba dünya bu bir test';
+  c.materials[0].segments[0].text = 'merhaba dünya bu bir test';
+  delete c.materials[0].segments[0].asrText; // eski kayıt: model çıktısı yok
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  const missing = [H, U, D].some((t) => String(t).includes(REPORT_TEXT.werHeading));
+  check('model çıktısı yokken WER tablosu basılmaz', !missing);
 }
 
 // Senaryo 8: kayıt kökeni tablosu rapora yansıyor mu

@@ -39,7 +39,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.89';
+const APP_VERSION = '2.90';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -172,7 +172,7 @@ const REPORT_TEXT = {
   spectrogramLabel: 'Spektrogram incelendi',
   werHeading: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
   werIntro:
-    'Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümleme çıktısının referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm yalnızca referans metni bulunan kayıtlar için yapılabilir; gerçek dosyalarda referans metni genellikle bulunmaz.',
+    'Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümlemenin ÜRETTİĞİ HAM ÇIKTININ (bilirkişi düzeltmesinden ÖNCEKİ hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni DEĞİL modelin kendi çıktısını ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. Model çıktısı saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.',
   werHeaders: ['KAYIT', 'MODEL', 'REFERANS KELİME', 'ÇIKTI KELİME', 'HATA', 'WER'],
   werNoRows: ['Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir).', '', '', '', '', ''],
   levelHeading: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ',
@@ -2370,17 +2370,33 @@ function fmtWer(r) {
 }
 // Referans metni olan tüm kayıtlar için WER ölçer. Yalnızca gerçekten
 // çözümlenmiş bölümler kullanılır; çözümlenmemiş kayıt atlanır.
+// WER: MODELİN çıktısını ölçer (v2.90).
+// GERÇEK HATA (öncesi): hipotez olarak `s.text` (bilirkişinin düzelttiği metin)
+// kullanılıyordu; modelin ham çıktısı `s.asrText`'te duruyor ama ölçüme
+// girmiyordu. Sonuç: ölçüm TERS çalışıyordu — model %100 hatalı, bilirkişi
+// metni referansa eşit → rapor "%0 WER"; model mükemmel, bilirkişi metni
+// bozuk → "%100 WER". Raporda "çözümleme doğruluğu" diye sunulan tablo,
+// modelin değil bilirkişinin referansa ne kadar yaklaştığını ölçüyordu.
+// KURAL: hipotez YALNIZ asrText'ten gelir (modelin ürünü). asrText yoksa
+// (eski kayıt) satır YAZILMAZ — uydurma yapılmaz.
 function measureWerForCase(c) {
   const out = [];
   for (const m of c.materials || []) {
     const ref = m.expectedText || (m.referenceSegments || []).map((s) => s.text || '').join(' ');
     if (!ref || !String(ref).trim()) continue;
-    const hyp = (m.segments || []).map((s) => s.text || '').join(' ');
-    if (!hyp.trim()) continue;
-    const r = computeWer(ref, hyp);
+    // Yalnız model çıktısı olan bölümler hipoteze girer.
+    const asrParts = (m.segments || []).map((s) => String(s.asrText || '').trim()).filter(Boolean);
+    if (!asrParts.length) continue;
+    const r = computeWer(ref, asrParts.join(' '));
     out.push({ material: m.name, model: m.transcribedWithModel || null, ...r });
   }
   return out;
+}
+
+// WER ölçülebilen kayıt sayısı. TABLO ile ÖZET SAYACI aynı ölçütü kullanmalı;
+// aksi hâlde "WER ölçümü yapılan kayıt: 1" yazarken tabloda 0 satır olur.
+function werMeasuredCount(c) {
+  return measureWerForCase(c).length;
 }
 
 // ==== Kanal seçimi (stereo kayıtlarda) ====
@@ -6495,10 +6511,9 @@ function reviewSummaryRows(c) {
   const originMedium = mats.filter(
     (m) => m.origin && m.origin.mediumType && m.origin.mediumType !== 'unspecified'
   ).length;
-  const werMeasured = mats.filter((m) => {
-    const ref = m.expectedText || (m.referenceSegments || []).map((s) => s.text || '').join(' ');
-    return ref && String(ref).trim() && (m.segments || []).some((s) => String(s.text || '').trim());
-  }).length;
+  // Özet sayacı TABLO ile aynı kaynaktan gelir (v2.90): ikisi ayrışırsa
+  // "WER ölçümü yapılan kayıt: 1" yazarken tabloda 0 satır görünür.
+  const werMeasured = werMeasuredCount(c);
   return [
     [REPORT_TEXT.rsMaterials, mats.length],
     [REPORT_TEXT.rsSegments, segs.length],
@@ -9375,6 +9390,17 @@ function renderAppearancePanel() {
 // (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
 // ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
 const VERSION_NOTICES = {
+  '2.90': {
+    title: 'Rapordaki "çözümleme doğruluğu" (WER) tablosu düzeltildi',
+    body:
+      'Bu tablo, modelin ürettiği metni ölçmesi gerekirken sizin düzelttiğiniz ' +
+      'metni ölçüyordu. Sonuç ters çıkıyordu: model kötüyken "%0 hata", model çok ' +
+      'iyiyken "%100 hata" gibi görünebiliyordu. Artık yalnız modelin HAM çıktısı ' +
+      'ölçülür; sizin düzeltmeleriniz oranı değiştirmez. Model çıktısı saklanmamış ' +
+      'eski kayıtlar bu tabloya girmez (uydurma oran gösterilmez). Daha önce ' +
+      'üretilmiş raporlardaki WER değerleri güvenilir değildir; yeni sürümle ' +
+      'yeniden üretin.'
+  },
   '2.89': {
     title: 'Eski dosyalarınızdaki onaylar artık silinmiyor',
     body:

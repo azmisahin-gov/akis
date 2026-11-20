@@ -6,12 +6,77 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.89.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.90.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.90 — WER ters çalışıyordu: rapor yanlış "doğruluk" gösteriyordu
+
+CANLI VERİ. Rapordaki "ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)" tablosu, ölçmesi
+gereken şeyin **tam tersini** ölçüyordu.
+
+### GERÇEK HATA
+
+`measureWerForCase()` hipotez (modelin çıktısı) olarak `s.text` kullanıyordu.
+Ama `s.text` **bilirkişinin düzelttiği** metindir; modelin ham çıktısı
+`s.asrText`'te durur (v2.83'te bu ayrım için eklenmişti). Modelin çıktısı
+ölçüme **hiç girmiyordu**.
+
+Sonuç, ölçümle kanıtlandı:
+
+```
+model %100 hatalı, bilirkişi metni referansa EŞİT  → rapor "%0,0 WER"
+model MÜKEMMEL,    bilirkişi metni bozuk          → rapor "%100,0 WER"
+```
+
+Yani tablo modelin doğruluğunu değil, **bilirkişinin referansa ne kadar
+yaklaştığını** ölçüyordu. Bilirkişi metni düzelttikçe "çözümleme doğruluğu"
+yükseliyor görünüyordu — bu, tablonun adıyla ve rapor metniyle çelişiyordu.
+Rapor metni "otomatik çözümleme çıktısının referansla karşılaştırılması"
+diyordu; bu iddia **yanlıştı**.
+
+### Çözüm
+
+- Hipotez artık **yalnız `asrText`**'ten gelir (modelin ürünü).
+- `asrText` yoksa (eski kayıt veya elle girilmiş bölüm) satır **yazılmaz** —
+  uydurma ölçüm üretilmez.
+- Rapor giriş metni dürüstleştirildi: ölçümün **ham model çıktısını**
+  (bilirkişi düzeltmesinden önceki hâli) ölçtüğü, bu yüzden düzeltmelerin
+  oranı değiştirmediği açıkça yazıyor.
+- `werMeasuredCount()` eklendi: özet satırı ("WER ölçümü yapılan kayıt") ile
+  tablo artık **aynı kaynaktan** besleniyor. Ayrışsalardı özet 1 derken tablo
+  0 satır gösterirdi.
+
+**Ölçüm (gerçek Chromium, rapor çıktısı):**
+
+```
+ÖNCE   model-kötü.wav → %0,0     model-iyi.wav → %100,0     (TERS)
+SONRA  model-kötü.wav → %100,0   model-iyi.wav → %0,0       (DOĞRU)
+özet: "WER ölçümü yapılan kayıt: 2"  (tablodaki 2 satırla uyumlu)
+```
+
+### KULLANICI NE GÖRECEK
+
+- Rapordaki WER tablosu artık **modelin gerçek doğruluğunu** gösterir.
+  Daha önce "%0 hata" yazan bir kayıt, model gerçekte kötüyse artık yüksek
+  oran gösterir.
+- Sizin yaptığınız metin düzeltmeleri bu oranı **değiştirmez** (ölçüm modelin
+  ham çıktısına aittir). Bu, tablonun anlamını netleştirir.
+- Model çıktısı saklanmamış eski kayıtlar bu tabloya **girmez**; uydurma
+  oran gösterilmez.
+- Rapor giriş metni, ölçümün neyi ölçtüğünü açıkça söyler.
+
+### Testle korunur
+
+`birim-testleri` [21] (11 kontrol): model hatalıyken %0 çıkmaz, model
+mükemmelken 0 çıkar, uzman metni değişince oran değişmez, `asrText` yoksa
+satır üretilmez, özet sayacı tabloyla aynıdır. Ayrıca `rapor-tutarlilik-testi`
+Senaryo 7b: model çıktısı yokken WER tablosu üç çıktıda da basılmaz.
+Testler düzeltme yokken **kaldı** (`277 geçti, 5 kaldı`), düzeltmeden sonra
+geçti (`284 geçti, 0 kaldı`).
 
 ## v2.89 — Eski dosyalardaki onaylar yüklenirken siliniyordu
 

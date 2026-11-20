@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.89.**
+yazılır. **Güncel sürüm: v2.90.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.90 — WER ters çalışıyordu (tamamlandı, canlı veri)
+
+Rapordaki "çözümleme doğruluğu (WER)" tablosu hipotez olarak `s.text`
+(bilirkişinin düzelttiği metin) kullanıyordu; modelin ham çıktısı `s.asrText`
+ölçüme girmiyordu. Sonuç TERS: model %100 hatalıyken rapor %0, model
+mükemmelken %100 diyordu. Hipotez artık yalnız `asrText`; model çıktısı yoksa
+satır yazılmaz. `werMeasuredCount()` ile özet sayacı tabloyla eşlendi.
+`birim-testleri` [21] ve `rapor-tutarlilik-testi` Senaryo 7b korur.
 
 ### v2.89 — Eski dosyalardaki onaylar yüklenirken siliniyordu (tamamlandı, canlı veri)
 
@@ -61,7 +70,7 @@ ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
 | 1 | Kayıt tamamen duruyordu + uyarı görünmüyordu | **v2.87 tamamlandı** |
 | 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | **v2.88 tamamlandı** |
 | 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | **v2.89 tamamlandı** |
-| 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | bekliyor |
+| 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | **v2.90 tamamlandı** |
 | 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | bekliyor |
 | 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | bekliyor |
 | 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | bekliyor |

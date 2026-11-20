@@ -80,6 +80,7 @@ const EXPOSE = [
   'VERSION_NOTICES', 'maybeShowVersionNotice', 'APP_VERSION',
   'setSegmentText', 'applyTextEdit', 'reviewLabel', 'emptySegmentForTest',
   'snapshotSegmentText', 'approvalDroppedByEdit',
+  'measureWerForCase', 'werMeasuredCount',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -833,9 +834,13 @@ console.log('\n[19] Sürüm notu (kullanıcı haberdar edilir)');
     // Gösterilen şerit gerçekten kullanıcıya hitap etmeli.
     const notice = T.el('#versionNotice');
     eq('şerit görünür', notice.hidden, false);
-    const t = String(notice.innerHTML).toLocaleLowerCase('tr-TR');
-    // Şerit metni güncel sürümün notunu taşımalı (sürüme özel metin değişebilir).
-    eq('şerit güncel not başlığını taşır', t.includes(String(note.title).toLocaleLowerCase('tr-TR').slice(0, 20)), true);
+    // Şerit metni güncel sürümün notunu taşımalı. Karşılaştırma HTML
+    // kaçışlarından arındırılarak yapılır (başlıkta " veya & olabilir).
+    const plain = (x) => String(x).replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .toLocaleLowerCase('tr-TR');
+    eq('şerit güncel not başlığını taşır',
+      plain(notice.innerHTML).includes(plain(note.title).slice(0, 20)), true);
   }
 }
 
@@ -926,6 +931,104 @@ console.log('\n[20] Onay metne bağlı (metin değişince onay düşer)');
     T.snapshotSegmentText(c2);
     T.setSegmentText(c2, 'başka');
     eq('zaten bekleyen bölümde bildirim yok', T.approvalDroppedByEdit(c2), false);
+  }
+}
+
+// --- 21. WER MODELİN çıktısını ölçmeli (v2.90 — yanıltıcı doğruluk) ------
+// GERÇEK HATA: `measureWerForCase` hipotez olarak `s.text` (bilirkişinin
+// düzenlediği metin) kullanıyordu. Modelin ürettiği ham metin `s.asrText`'te
+// duruyor ama ölçüme hiç girmiyordu. Sonuç: ölçüm TERS çalışıyordu.
+//   • model %100 hatalı, bilirkişi metni referansa eşit → rapor "%0 WER"
+//   • model mükemmel, bilirkişi metni bozuk               → rapor "%100 WER"
+// Yani "çözümleme doğruluğu" tablosu modelin doğruluğunu değil, bilirkişinin
+// referansa ne kadar yaklaştığını ölçüyordu. Rapor metni ise "otomatik
+// çözümleme çıktısının referansla karşılaştırılması" diyordu — yanlış iddia.
+// Kural: WER modelin çıktısını ölçer; model çıktısı yoksa satır YAZILMAZ.
+console.log('\n[21] WER modelin çıktısını ölçer');
+{
+  const mk = (asr, human, ref) => ({
+    materials: [{
+      name: 'a.wav',
+      expectedText: ref,
+      transcribedWithModel: 'Xenova/whisper-small',
+      segments: [{ text: human, asrText: asr }]
+    }]
+  });
+
+  // 1) Model %100 hatalı, bilirkişi metni referansa EŞİT → WER yüksek olmalı.
+  {
+    const rows = T.measureWerForCase(
+      mk('tamamen farklı model çıktısı', 'merhaba dünya nasılsın', 'merhaba dünya nasılsın')
+    );
+    eq('model hatalıysa satır var', rows.length, 1);
+    eq('model hatalıyken WER %0 ÇIKMAZ', !!(rows[0] && rows[0].ratio > 0.9), true);
+  }
+
+  // 2) Model MÜKEMMEL, bilirkişi metni bozuk → WER 0 olmalı.
+  {
+    const rows = T.measureWerForCase(
+      mk('merhaba dünya nasılsın', 'tamamen uydurma metin', 'merhaba dünya nasılsın')
+    );
+    eq('model mükemmelse WER 0', rows[0] && rows[0].ratio, 0);
+  }
+
+  // 3) Ölçülen metin gerçekten asrText olmalı (uzman metni değişse bile
+  //    WER değişmez: modelin çıktısı değişmedi).
+  {
+    const a = T.measureWerForCase(mk('model çıktısı', 'uzman A', 'referans'));
+    const b = T.measureWerForCase(mk('model çıktısı', 'tamamen başka uzman metni', 'referans'));
+    eq('uzman metni değişince WER değişmez', a[0].ratio, b[0].ratio);
+    eq('WER model çıktısını ölçer', a[0].hypCount, T.werWords('model çıktısı').length);
+  }
+
+  // 4) Model çıktısı saklanmamışsa (eski kayıt) satır YAZILMAZ — uydurma yok.
+  {
+    const rows = T.measureWerForCase({
+      materials: [{ name: 'b.wav', expectedText: 'merhaba dünya', segments: [{ text: 'merhaba dünya' }] }]
+    });
+    eq('asrText yoksa satır üretilmez', rows.length, 0);
+  }
+
+  // 5) Referans yoksa satır yok (değişmedi).
+  {
+    const rows = T.measureWerForCase({
+      materials: [{ name: 'c.wav', segments: [{ text: 'x', asrText: 'x' }] }]
+    });
+    eq('referans yoksa satır üretilmez', rows.length, 0);
+  }
+
+  // 6) Bölüm bazında: asrText yalnız bazı bölümlerde varsa o bölümler ölçülür;
+  //    asrText'siz bölüm hipoteze katılmaz (uydurma metin eklenmez).
+  {
+    const rows = T.measureWerForCase({
+      materials: [{
+        name: 'd.wav',
+        expectedText: 'bir iki',
+        segments: [
+          { id: 's1', text: 'bir', asrText: 'bir' },
+          { id: 's2', text: 'iki' } // asrText yok → modele ait değil
+        ]
+      }]
+    });
+    eq('ölçüm var', rows.length, 1);
+    eq('yalnız model çıktısı olan bölüm sayılır', rows[0].hypCount, 1);
+  }
+
+  // 7) ÖZET SAYACI ile TABLO aynı ölçütü kullanmalı. Aksi hâlde raporda
+  //    "WER ölçümü yapılan kayıt: 1" yazarken tabloda 0 satır olur.
+  {
+    const c = {
+      materials: [
+        // Ölçülebilir: referans + model çıktısı var.
+        { name: 'olculur.wav', expectedText: 'a b', segments: [{ text: 'a b', asrText: 'a b' }] },
+        // Ölçülemez: referans var ama MODEL ÇIKTISI yok (eski kayıt).
+        { name: 'model-yok.wav', expectedText: 'c d', segments: [{ text: 'c d' }] }
+      ]
+    };
+    const rows = T.measureWerForCase(c);
+    const summaryCount = T.werMeasuredCount(c);
+    eq('tabloda 1 satır', rows.length, 1);
+    eq('özet sayacı tabloyla aynı', summaryCount, rows.length);
   }
 }
 
