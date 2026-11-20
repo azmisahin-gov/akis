@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.122';
+} from './schema.js?v=2.123';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.122';
+const APP_VERSION = '2.123';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -396,7 +396,7 @@ async function persistNow() {
         storageFullWarned = true;
         showStorageBanner();
       }
-      $('#saveState').textContent = '● DEPOLAMA DOLU — yedek alın!';
+      $('#saveState').textContent = '● DEPOLAMA DOLU — paket oluşturun!';
       $('#saveState').classList.add('danger');
     } else {
       showSaveFailureBanner(e);
@@ -457,8 +457,8 @@ function showSaveFailureBanner(err) {
   el.innerHTML =
     '<div class="sb-body"><b>Değişiklikleriniz KAYDEDİLMİYOR</b>' +
     '<small>Son yaptığınız işlemler tarayıcıya yazılamadı; sayfayı yenilerseniz kaybolur. ' +
-    'Hemen <b>Dışa aktar</b> ile çalışmanızı bilgisayarınıza alın, sonra sayfayı yenileyin.</small></div>' +
-    '<button class="button button-primary button-small" id="saveFailureExport">Dışa aktar</button>' +
+    'Hemen <b>Paket oluştur</b> ile çalışmanızı bilgisayarınıza alın, sonra sayfayı yenileyin.</small></div>' +
+    '<button class="button button-primary button-small" id="saveFailureExport">Paket oluştur</button>' +
     '<button class="icon-button" id="saveFailureClose" aria-label="Kapat">×</button>';
   if (!el.dataset.wired) {
     el.dataset.wired = '1';
@@ -469,7 +469,7 @@ function showSaveFailureBanner(err) {
   el.dataset.reason = reason;
   const st = $('#saveState');
   if (st) {
-    st.textContent = '● KAYDEDİLMİYOR — yedek alın!';
+    st.textContent = '● KAYDEDİLMİYOR — paket oluşturun!';
     st.classList.add('danger');
   }
 }
@@ -641,8 +641,8 @@ function showStorageBanner() {
     el.innerHTML =
       '<div class="sb-body"><b>Depolama doldu — yeni değişiklikler KAYDEDİLMİYOR</b>' +
       '<small>Tarayıcının yerel alanı doldu. Şu andan sonra yaptığınız düzenlemeler kaybolur. ' +
-      'Hemen <b>Dışa aktar</b> ile dosyayı bilgisayarınıza alın, sonra eski dosyaları silin.</small></div>' +
-      '<button class="button button-primary button-small" id="storageBannerExport">Dışa aktar</button>' +
+      'Hemen <b>Paket oluştur</b> ile dosyayı bilgisayarınıza alın, sonra eski dosyaları silin.</small></div>' +
+      '<button class="button button-primary button-small" id="storageBannerExport">Paket oluştur</button>' +
       '<button class="icon-button" id="storageBannerClose" aria-label="Kapat">×</button>';
     document.body.appendChild(el);
     $('#storageBannerExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
@@ -1023,7 +1023,7 @@ function showLoadFailure(err, kind) {
     el.classList.add('danger');
   }
   showToast(
-    `Kayıt okunamadı (${kind}). Hiçbir şey silinmedi. Sayfayı yenilemeyin; önce Dışa aktarmayı deneyin.`
+    `Kayıt okunamadı (${kind}). Hiçbir şey silinmedi. Sayfayı yenilemeyin; önce Paket oluşturmayı deneyin.`
   );
   console.error('loadState hatası:', err);
 }
@@ -1048,7 +1048,7 @@ function reportLoadFailures(failed, stored) {
   }
   showToast(
     `${failed.length} dosya okunamadı ve atlandı; diğer dosyalarınız korundu. ` +
-      'Ham kayıt kurtarma alanında tutuldu. Lütfen yedek alın.'
+      'Ham kayıt kurtarma alanında tutuldu. Lütfen paket oluşturun.'
   );
   console.error('Yüklenemeyen dosyalar:', failed.map((f) => f.error));
 }
@@ -7075,7 +7075,7 @@ async function transcribe(id, opts = {}) {
     };
     logEvent(
       m,
-      'Yeniden çözümleme öncesi yedek',
+      'Yeniden çözümleme öncesi hâl',
       `${plan.segmentCount} bölüm saklandı (${why})`
     );
   }
@@ -8343,9 +8343,9 @@ function buildProjectPack(c) {
 }
 // Paketi doğrular; geçerliyse null, değilse açıklayıcı hata metni döndürür.
 function validateProjectPack(pack) {
-  if (!pack || typeof pack !== 'object') return 'Çalışma paketi okunamadı.';
-  if (pack.schema !== PROJECT_SCHEMA) return 'Çalışma paketi sürümü tanınmadı.';
-  if (!pack.case || typeof pack.case !== 'object') return 'Çalışma paketinde dosya verisi yok.';
+  if (!pack || typeof pack !== 'object') return 'Paket okunamadı.';
+  if (pack.schema !== PROJECT_SCHEMA) return 'Paket sürümü tanınmadı.';
+  if (!pack.case || typeof pack.case !== 'object') return 'Pakette dosya verisi yok.';
   return null;
 }
 // Paket içindeki ses girdilerini materyallere eşler. Girdi adı
@@ -8439,8 +8439,9 @@ function exportPlanFor(cases, activeCaseId, scope) {
   const kind = keepAll.length === 0 ? 'none' : keepAll.length === 1 ? 'single' : 'archive';
   return { kind, cases: keepAll, skipped: all.length - keepAll.length };
 }
-// Dosya adı: TARİH + SAAT taşır (v2.110). Aynı gün iki yedek alınırsa üzerine
-// yazılmaz. Eğik çizgi gibi dosya sisteminde sorun çıkaran karakterler temizlenir.
+// Dosya adı PAKET olduğunu, hangi dosya olduğunu ve ZAMANI söyler (v2.123).
+// Aynı gün iki paket birbirinin üzerine yazmaz. Eğik çizgi dosya sisteminde
+// sorun çıkardığı için dosya numarasında '-' kullanılır: 2024/108 → 2024-108.
 function backupFileName(plan, when) {
   // `instanceof Date` farklı çalışma bağlamlarında (test sandbox'ı, iframe)
   // güvenilmez; geçerli bir Date benzeri mi diye davranıştan anlaşılır.
@@ -8448,13 +8449,13 @@ function backupFileName(plan, when) {
   const p2 = (n) => String(n).padStart(2, '0');
   const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}`;
   const list = (plan && plan.cases) || [];
-  if (!list.length) return `AKIS_YEDEK_bos_${stamp}.akis`;
+  if (!list.length) return `AKIS_Paket_bos_${stamp}.akis`;
   if (plan.kind === 'single') {
     const c = list[0];
-    const base = String(c.fileNo || c.name || 'Dosya').trim() || 'Dosya';
-    return `AKIS_${safeName(base)}_${stamp}.akis`;
+    const base = String(c.fileNo || c.name || 'Dosya').trim().replace(/[\\/]+/g, '-') || 'Dosya';
+    return `AKIS_Paket_${safeName(base)}_${stamp}.akis`;
   }
-  return `AKIS_TUM_${list.length}dosya_${stamp}.akis`;
+  return `AKIS_Paket_Tam_${list.length}dosya_${stamp}.akis`;
 }
 
 // Arşiv paketinden, bu bilgisayardaki dosyayla eşleşen kaydı seçer.
@@ -8582,11 +8583,11 @@ function backupState() {
   const at = lastBackupAt();
   // Kısa görünen metinler (v2.105): uzun hâlleri üst barda başlığı sıkıştırıyordu.
   // Tam açıklama `title` ipucunda ve Ayarlar → yedek bölümünde.
-  if (!at || Number.isNaN(at.getTime())) return { level: 'none', text: 'Yedek yok' };
+  if (!at || Number.isNaN(at.getTime())) return { level: 'none', text: 'Paket yok' };
   const days = Math.floor((Date.now() - at.getTime()) / 86400000);
   const d = at.toLocaleDateString('tr-TR');
-  if (days >= BACKUP_WARN_DAYS) return { level: 'stale', days, text: `Yedek ${days} gün önce` };
-  return { level: 'ok', days, text: `Yedek ${d}` };
+  if (days >= BACKUP_WARN_DAYS) return { level: 'stale', days, text: `Son paket ${days} gün önce` };
+  return { level: 'ok', days, text: `Son paket ${d}` };
 }
 function renderBackupState() {
   const el = $('#backupState');
@@ -8596,10 +8597,10 @@ function renderBackupState() {
   el.className = 'backup-state ' + st.level;
   el.title =
     st.level === 'none'
-      ? 'Henüz yedek almadınız. Veri yalnız bu tarayıcıda; tarayıcı verisi silinirse kaybolur.'
+      ? 'Henüz paket oluşturmadınız. Veri yalnız bu tarayıcıda; tarayıcı verisi silinirse kaybolur.'
       : st.level === 'stale'
-        ? 'Uzun süredir yedek almadınız. Veri kaybını önlemek için Dışa aktar ile yedek alın.'
-        : 'Yedek güncel.';
+        ? 'Uzun süredir paket oluşturmadınız. Veri kaybını önlemek için Paket oluşturun.'
+        : 'Paket güncel.';
 }
 
 // Dışa aktarmadan önce "kim olarak çalışıyorsun?" sorusu. Dosyayı paylaşan
@@ -8615,10 +8616,10 @@ async function ensureEditorIdentity() {
   // Zaten seçili ve geçerliyse tekrar sorma.
   if (c.lastEditedBy && team.some((t) => t.id === c.lastEditedBy)) return true;
   return askConfirm(
-    'Kim olarak dışa aktarıyorsunuz?',
+    'Kim olarak paket oluşturuyorsunuz?',
     'Dosya bilgileri → İnceleme ekibi bölümünde "Şu an bu bilgisayarda çalışan" alanını doldurun. ' +
       'Bu bilgi olmadan yaptığınız düzeltmelerin kime ait olduğu sonradan çözülemez ve onayları geçersiz sayılır. ' +
-      'Şimdi doldurmak ister misiniz? (Vazgeç derseniz yine de dışa aktarılır.)'
+      'Şimdi doldurmak ister misiniz? (Vazgeç derseniz yine de paket oluşturulur.)'
   );
 }
 // `scope`: 'current' | 'all'. Verilmezse KULLANICIYA SORULUR (v2.110).
@@ -8630,7 +8631,7 @@ async function exportProject(scope) {
   const real = (appState.cases || []).filter((x) => !isEmptyCase(x));
   if (!real.length) {
     showToast(
-      'Yedek alınacak dosya yok: dosya numarası, mahkeme, taraf veya ses kaydı yok. ' +
+      'Pakete girecek dosya yok: dosya numarası, mahkeme, taraf veya ses kaydı yok. ' +
         'Önce bir dosyaya bilgi girin veya ses kaydı ekleyin.'
     );
     return;
@@ -8648,7 +8649,7 @@ async function exportProject(scope) {
   // Kimliği belirsiz paylaşım sonradan çözülemez; doğru anda sorulur.
   if (!(await ensureEditorIdentity())) {
     setCaseDrawer(true);
-    showToast('Önce "Şu an bu bilgisayarda çalışan" alanını doldurun, sonra tekrar dışa aktarın.');
+    showToast('Önce "Şu an bu bilgisayarda çalışan" alanını doldurun, sonra tekrar paket oluşturun.');
     return;
   }
   // YEDEK KAPSAMI (v2.84): v2.83 ve öncesinde YALNIZ aktif dosya paketlenir,
@@ -8662,7 +8663,7 @@ async function exportProject(scope) {
     showToast(
       scope === 'current'
         ? 'Bu dosya boş (dosya numarası, mahkeme, taraf veya ses kaydı yok). Önce bilgi girin.'
-        : 'Yedek alınacak dosya yok: dosyalar boş (dosya numarası, mahkeme, taraf, ses kaydı yok).'
+        : 'Pakete girecek dosya yok: dosyalar boş (dosya numarası, mahkeme, taraf, ses kaydı yok).'
     );
     return;
   }
@@ -8716,9 +8717,9 @@ async function exportProject(scope) {
   if (missingAudio.length) {
     zip.file(
       'EKSIK_SES_UYARISI.txt',
-      'Bu yedekte aşağıdaki ses dosyaları YOKTUR (yerel depoda bulunamadı):\n\n' +
+      'Bu pakette aşağıdaki ses dosyaları YOKTUR (yerel depoda bulunamadı):\n\n' +
         missingAudio.map((x) => '• ' + x).join('\n') +
-        '\n\nDeşifre metinleri ve rapor verisi yedekte vardır. ' +
+        '\n\nDeşifre metinleri ve rapor verisi pakette vardır. ' +
         'Ses dosyalarını orijinal kaynaktan yeniden eklemeniz gerekir.\n'
     );
   }
@@ -8729,15 +8730,15 @@ async function exportProject(scope) {
   markBackupDone();
   if (missingAudio.length) {
     showToast(
-      `Yedek alındı ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ.` +
-        ' Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri yedekte var.' +
+      `Paket oluşturuldu ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ.` +
+        ' Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri pakette var.' +
         skippedNote
     );
   } else {
     showToast(
       (multi
-        ? `Yedek alındı: TÜM dosyalar (${all.length} dosya) → ${fileName}`
-        : `Yedek alındı: yalnız "${caseDisplayName(all[0])}" → ${fileName}`) +
+        ? `Paket oluşturuldu: TÜM dosyalar (${all.length} dosya) → ${fileName}`
+        : `Paket oluşturuldu: yalnız "${caseDisplayName(all[0])}" → ${fileName}`) +
         ' — güvenli yerde saklayın.' +
         skippedNote
     );
@@ -8775,7 +8776,7 @@ async function readProjectPack(file) {
     return { zip, theirs, entryNames, archiveCount: list.length };
   }
   const meta = zip.file('case.json');
-  if (!meta) throw new Error('Bu dosya bir AKİS çalışma paketi değil (ne case.json ne archive.json var).');
+  if (!meta) throw new Error('Bu dosya bir paket değil (ne case.json ne archive.json var).');
   const pack = JSON.parse(await meta.async('string'));
   const err = validateProjectPack(pack);
   if (err) throw new Error(err);
@@ -9034,7 +9035,7 @@ async function importProject(file) {
     return importArchive(zip, arch);
   }
   const meta = zip.file('case.json');
-  if (!meta) throw new Error('Dosya geçerli bir AKİS veya önceki MİHENK çalışma paketi değil.');
+  if (!meta) throw new Error('Dosya geçerli bir AKİS veya önceki MİHENK paketi değil.');
   const pack = JSON.parse(await meta.async('string'));
   const err = validateProjectPack(pack);
   if (err) throw new Error(err);
@@ -9048,12 +9049,12 @@ async function importProject(file) {
     const devam = await askConfirm(
       'Bu dosya zaten açık',
       `"${c.fileNo || c.id}" numaralı dosya bu bilgisayarda zaten var. ` +
-        'İçe aktarma YENİ BİR KOPYA açar; birleştirme yapmaz. ' +
+        'Paketten yükleme YENİ BİR KOPYA açar; birleştirme yapmaz. ' +
         'Yardımcıdan gelen düzeltmeleri almak istiyorsanız "Vazgeç" deyip ⇄ Birleştir düğmesini kullanın. ' +
         'Yine de ayrı bir kopya açmak istiyor musunuz?'
     );
     if (!devam) {
-      showToast('İçe aktarma iptal edildi. Yardımcı dosyası için ⇄ Birleştir kullanın.');
+      showToast('Paketten yükleme iptal edildi. Yardımcı dosyası için ⇄ Birleştir kullanın.');
       return;
     }
   }
@@ -9070,8 +9071,8 @@ async function importProject(file) {
     const mime = m.type || 'audio/wav';
     await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
   }
-  c.name = c.name || c.fileNo || 'İçe aktarılan dosya';
-  snapshotForUndo('çalışma dosyası içe aktarıldı');
+  c.name = c.name || c.fileNo || 'Paketten yüklenen dosya';
+  snapshotForUndo('paketten dosya yüklendi');
   appState.cases.push(c);
   appState.activeCaseId = c.id;
   // Boş çalışma alanı (veri içermiyor) yeni dosyanın yanında bırakılmaz.
@@ -9085,7 +9086,7 @@ async function importProject(file) {
   await renderAudioList();
   switchView('overview');
   showToast(
-    'Çalışma dosyası içe aktarıldı.' +
+    'Dosya paketten yüklendi.' +
       ((c.team || []).length
         ? ' Bu dosya başka bilgisayardan geldi: Dosya bilgileri → "Şu an bu bilgisayarda çalışan" alanından kendinizi seçin.'
         : '')
@@ -10177,7 +10178,7 @@ function setupEvents() {
       try {
         await importProject(f);
       } catch (err) {
-        showToast(`İçe aktarma başarısız: ${err.message}`);
+        showToast(`Paketten yükleme başarısız: ${err.message}`);
       }
       e.target.value = '';
     }
@@ -10462,6 +10463,11 @@ function askExportScope({ currentName, total }) {
     curInput.disabled = !canCurrent;
     curLabel.classList.toggle('is-disabled', !canCurrent);
     curLabel.title = canCurrent ? '' : 'Aktif dosya boş: önce bilgi girin.';
+    // Her açılışta GÜVENLİ varsayılan: tüm dosyalar. Önceki seçim hatırlanmaz;
+    // aksi hâlde ikinci pakette yalnız bir dosya gidebilir (v2.110'daki
+    // "hepsini indirdim sandım" karışıklığı geri gelir).
+    allInput.checked = true;
+    curInput.checked = false;
     if (!canCurrent) allInput.checked = true;
     let done = false;
     const finish = (v) => {
@@ -10626,7 +10632,7 @@ async function purgeCaseById(id) {
     'KALICI SİLME — geri alınamaz',
     `"${phrase}" kalıcı olarak silinecek. ${mats} ses kaydı ve tüm deşifre/rapor verisi ` +
       'bu tarayıcıdan SİLİNİR. Ctrl+Z bu dosyayı geri getirmez; ses dosyaları da gider. ' +
-      'Tek kurtarma yolu daha önce aldığınız .akis yedeğidir. Devam edilsin mi?'
+      'Tek kurtarma yolu daha önce oluşturduğunuz .akis paketidir. Devam edilsin mi?'
   );
   if (!ok1) return showToast('Kalıcı silme iptal edildi. Dosya arşivde duruyor.');
   const ok2 = await askTypedConfirm({
@@ -10655,7 +10661,7 @@ async function purgeCaseById(id) {
   renderArchiveList();
   showToast(
     `"${phrase}" KALICI SİLİNDİ (${mats} kayıt). Ses dosyaları da silindi. ` +
-      'Ctrl+Z yalnız kaydı geri getirir; SES GERİ GELMEZ — yedekten yükleyin.'
+      'Ctrl+Z yalnız kaydı geri getirir; SES GERİ GELMEZ — paketten yükleyin.'
   );
 }
 const MODEL_CACHE = 'transformers-cache';
@@ -10770,7 +10776,7 @@ function renderUsage() {
     el.title =
       'Tarayıcı bu ortamda kota bilgisi vermiyor (gizli mod olabilir).\n' +
       `Dava verisi: ${fmtBytesShort(dataBytes)}\nİndirilen modeller: ${fmtBytesShort(modelBytes)}\n` +
-      'Veriler yine kaydedilir; yedek almayı ihmal etmeyin.';
+      'Veriler yine kaydedilir; paket oluşturmayı ihmal etmeyin.';
     return;
   }
   const pct = Math.min(100, Math.round((usage / quota) * 100));
@@ -10786,7 +10792,7 @@ function renderUsage() {
     `Tarayıcı kotası: ${fmtBytesShort(quota)}\n` +
     `Kalan: ${fmtBytesShort(quota - usage)}\n\n` +
     'Model önbelleği dava verisinden ayrıdır; "Tüm model önbelleğini temizle" ile silinip yeniden indirilebilir. ' +
-    'Dava verisi silinirse geri gelmez; düzenli yedek alın.';
+    'Dava verisi silinirse geri gelmez; düzenli paket oluşturun.';
 }
 async function refreshStorage() {
   try {
@@ -11153,6 +11159,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.123': {
+    title: 'Terimler sadeleşti: Paket oluştur, Paketten yükle',
+    body:
+      'Aynı şeye iki ad verilmiyor. "Dosya" tek dava; "Paket" taşınabilir .akis ' +
+      'dosyası (1+ dosya + ses kayıtları). Menüdeki "Dışa aktar" artık ' +
+      '"Paket oluştur", "İçe aktar" artık "Paketten yükle". Paket adı ne ' +
+      'olduğunu ve ne zaman alındığını söyler: ' +
+      'AKIS_Paket_2024-108_2026-11-20_16-55.akis; tüm dosyalar için ' +
+      'AKIS_Paket_Tam_3dosya_.... Böylece indirdiğiniz dosyanın ne olduğu ' +
+      'adından anlaşılır ve aynı gün iki paket birbirinin üzerine yazmaz. ' +
+      '"Arşivle" değişmedi: yalnız gizler, veriyi ve sesi silmez.'
+  },
   '2.122': {
     title: 'Birleştirmede bilirkişi onayları artık aktarılıyor',
     body:
@@ -11540,7 +11558,7 @@ const VERSION_NOTICES = {
       'yeterince görünmüyordu. Her ikisi düzeltildi. Bundan sonra bir yazma ' +
       'sorunu olursa ekranın üstünde büyük bir uyarı çıkar ve ne yapmanız ' +
       'gerektiğini söyler. Kaybolan çalışma geri getirilemez; elinizdeki ' +
-      'dosyaları "Dışa aktar" ile yedeklemeniz önerilir.'
+      'dosyaları "Paket oluştur" ile yedeklemeniz önerilir.'
   }
 };
 const SEEN_NOTICE_KEY = (v) => `akis.seenNotice.${v}`;
@@ -11557,7 +11575,7 @@ function maybeShowVersionNotice() {
   if (el) {
     el.innerHTML =
       `<div class="sb-body"><b>${esc(note.title)}</b><small>${esc(note.body)}</small></div>` +
-      '<button class="button button-primary button-small" id="versionNoticeExport">Dışa aktar</button>' +
+      '<button class="button button-primary button-small" id="versionNoticeExport">Paket oluştur</button>' +
       '<button class="icon-button" id="versionNoticeClose" aria-label="Kapat">×</button>';
     el.hidden = false;
     $('#versionNoticeExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));

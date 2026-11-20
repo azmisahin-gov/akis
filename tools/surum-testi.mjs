@@ -248,5 +248,41 @@ check('eksik ses kullanıcıya bildiriliyor', /bulunamadı ve pakete GİRMEDİ/.
 // v2.86: yazarken ağır yenileme geciktirilir (500 bölümde tuş başına 8,5 ms).
 check('yazma sırasında ağır iş geciktiriliyor', /function scheduleLightRefresh/.test(appJs));
 
+// [11] Terim tutarlılığı (v2.123) -----------------------------------------
+// KURAL: kullanıcı aynı şeye iki ad vermez. "Dosya" = tek dava/çalışma alanı;
+// "Paket" = taşınabilir .akis dosyası (1+ dosya + ses). Eylemler: Paket
+// oluştur · Paketten yükle · ⇄ Birleştir · Arşivle. Eski sürüm notlarında
+// tarihsel olarak "Dışa aktar" geçebilir; sözlük bugünkü adı söyler.
+console.log('\n[11] Terim tutarlılığı (paket / dosya / birleştir / arşiv)');
+{
+  const html = read('index.html');
+  const btnText = (id) => {
+    const m = html.match(new RegExp(`<button[^>]*id="${id}"[^>]*>([^<]*)<`));
+    return (m ? m[1] : '').trim();
+  };
+  check('dışa aktarma düğmesi "Paket oluştur"', btnText('exportProjectBtn') === 'Paket oluştur', btnText('exportProjectBtn'));
+  check('içe aktarma düğmesi "Paketten yükle"', btnText('importProjectBtn') === 'Paketten yükle', btnText('importProjectBtn'));
+  check('birleştirme düğmesi "⇄ Birleştir"', /Birleştir/.test(btnText('mergeProjectBtn')));
+
+  // Kapsam diyaloğu paket dilini kullanır.
+  const dlg = (html.match(/<dialog id="exportScopeDialog"[\s\S]*?<\/dialog>/) || [''])[0];
+  check('kapsam diyaloğu "PAKET" der', /PAKET/.test(dlg));
+  check('kapsam diyaloğu ne sorduğunu söyler', /pakete girsin/i.test(dlg));
+  check('kapsam diyaloğu "Paketten yükle" yönlendirir', /Paketten yükle/.test(dlg));
+  check('bayat dosya adı örneği kalmadı', !/AKIS_Yedek_N_dosya/.test(html));
+  check('yeni paket adı yardımda örneklenir', /AKIS_Paket_/.test(html));
+
+  // Yardım sözlüğü tek kaynak: terimler açıkça tanımlı.
+  check('yardımda terim sözlüğü var', /Terimler: dosya, paket/.test(html));
+  check('yardım paketi tanımlar', /Paket \(\.akis\)|Paket<\/b> =/.test(html));
+  check('yardım arşivin silmediğini söyler', /Arşivle<\/b> = .*silinmez/.test(html));
+
+  // Durum yazıları: "yedek" yerine "paket".
+  check('üst bar "Hiç paket oluşturulmadı"', /Hiç paket oluşturulmadı/.test(html));
+  check('uygulama "Paket yok" der', /'Paket yok'/.test(appJs));
+  check('uygulama "Son paket" der', /Son paket/.test(appJs));
+  check('kaydetme hatası paket oluşturmayı önerir', /Paket oluştur/.test(appJs));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

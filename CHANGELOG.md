@@ -6,12 +6,71 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.122.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.123.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.123 — Terim birliği ve paket adı
+
+CANLI VERİ. Bilirkişi: *"yedek alırken … kaydedilen dosya adı ile tanımlanan
+dosya adında bir karışıklık var… paket diyeceksek paket de yazabiliriz; hem
+arayüzde hem çıktılarda kavram karmaşası olmasın… dışa aktar demek paket
+oluştur demekse menüye paket oluştur yazalım… arşiv yerine gizle mi diyoruz,
+o güvenli yol mu?"*
+
+### ÖLÇÜM (v2.122)
+
+| Durum | Ad |
+|---|---|
+| Tek dosya | `AKIS_2024_108_2026-11-20_16-55.akis` (paket olduğu belli değil) |
+| Tüm dosyalar | `AKIS_TUM_3dosya_…` |
+| Boş | `AKIS_YEDEK_bos_…` |
+
+Üç ayrı sözcük; "tam" yok; tek dosya adında paket işareti yok. Yardım metni
+gerçek adla uyuşmayan `AKIS_Yedek_N_dosya_tarih.akis` örneğini gösteriyordu.
+Ayrıca "Dışa aktar" (index.html 4 + app.js 16), "yedek", "paket", "arşiv" iç
+içeydi.
+
+**Arşiv güvenli mi?** Evet, ölçüldü: `archiveCase` yalnız `status='archived'`
++ `archivedAt` + günlük yazar; kayıtlar ve sesler durur, pakete girmeye devam
+eder (`birim` [35]). Kalıcı silme ayrı ve iki onaylıdır.
+
+### DÜZELTME — tek kavram, tek terim
+
+| Terim | Anlamı |
+|---|---|
+| Dosya | Tek dava/çalışma alanı |
+| Paket (.akis) | 1+ dosya + ses kayıtları |
+| Paket oluştur | Paketi indir (eski "Dışa aktar") |
+| Paketten yükle | Paketi ekle, kopya açar (eski "İçe aktar") |
+| ⇄ Birleştir | Paketi açık dosyayla birleştir |
+| Arşivle | Gizle; silmez |
+
+Yeni adlar: `AKIS_Paket_2024-108_2026-11-20_16-55.akis` (tek dosya) ·
+`AKIS_Paket_Tam_3dosya_…` (tüm dosyalar) · `AKIS_Paket_bos_…`. Dosya
+numarasındaki eğik çizgi `-` olur. Durum yazıları "Paket yok" / "Son paket 3
+gün önce". Yardım sözlüğü tek kaynak; eski sürüm notlarında geçen "Dışa aktar"
+için "bugünkü adı Paket oluştur" notu vardır.
+
+### KULLANICI NE GÖRECEK
+
+- Menüde **Paket oluştur** ve **Paketten yükle** yazar; "dışa/içe aktar"
+  kavram karmaşası biter.
+- İndirdiğiniz dosyanın adı ne olduğunu söyler:
+  `AKIS_Paket_2024-108_2026-11-20_16-55.akis`; tüm dosyalar için
+  `AKIS_Paket_Tam_3dosya_…`.
+- Üst barda "Yedek yok" yerine **"Paket yok"**, "Yedek 3 gün önce" yerine
+  **"Son paket 3 gün önce"** yazar.
+- **Arşivle** aynı kaldı: yalnız gizler; veri ve ses silinmez.
+
+### Koruyan testler
+
+`birim` [38] (ad biçimi), `surum` [11] (düğme/yardım/sözlük terimleri, bayat
+ad örneği yok). Gerçek Chromium: düğme adları, kapsam diyaloğu ve indirilen
+paket adı ölçüldü.
 
 ## v2.122 — Birleştirmede bilirkişi onayları aktarılıyor
 

@@ -1172,7 +1172,7 @@ console.log('\n[12] Geri alma ve bölme netliği');
     ['paragraf', /paragraphize[\s\S]{0,400}snapshotForUndo/],
     ['bölüm silme', /deleteSeg[\s\S]{0,400}snapshotForUndo/],
     ['kayıt kaldırma', /removeAudio[\s\S]{0,300}snapshotForUndo/],
-    ['içe aktarma', /içe aktarıldı'\)/],
+    ['paketten yükleme', /paketten dosya yüklendi'\)/],
     ['dosya birleştirme', /çalışma dosyası birleştirildi/]
   ]) {
     ok(`${label} geri alınabilir`, rx.test(app));

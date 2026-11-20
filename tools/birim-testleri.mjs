@@ -822,7 +822,7 @@ console.log('\n[18] Kayıt hatası görünürlüğü');
     // Türkçe büyük İ küçük i'ye JS `/i` bayrağıyla eşlenmez; tr-TR ile indir.
     const bannerText = String(T.el('#saveFailureBanner').innerHTML).toLocaleLowerCase('tr-TR');
     eq('uyarı metni ne olduğunu söyler', bannerText.includes('kaydedilmiyor'), true);
-    eq('uyarı metni ne yapılacağını söyler', bannerText.includes('dışa aktar'), true);
+    eq('uyarı metni ne yapılacağını söyler', bannerText.includes('paket oluştur'), true);
 
     T.hideSaveFailureBanner();
     eq('şerit kapatılabilir', T.el('#saveFailureBanner').hidden, true);
@@ -2035,14 +2035,16 @@ console.log('\n[37] Boş çalışma alanı kayda yazılmaz');
   eq('boş taslak için görünen ad', T.caseDisplayName(fresh), 'Yeni inceleme dosyası #' + T.caseShortId(fresh));
 }
 
-// --- 38. Dışa aktarma kapsamı ve dosya adı (v2.110) ----------------------
+// --- 38. Paket oluşturma kapsamı ve adı (v2.110 · ad v2.123) --------------
 // CANLI VERİ. Bilirkişi: "dışa aktar derken bu çalışma alanını mı dışa
 // aktarıyoruz yoksa tüm çalışmalarımızı mı? netleştirelim... çıkan dosyalar
 // alındığı andaki zaman bilgileri ile alırsa iyi olur."
 // ÖLÇÜM (v2.109, 3 dosya varken AKTİF=2024/A): "Dışa aktar" düğmesinin ipucu
 // YOKTU ve 3 dosyanın HEPSİ indi (AKIS_Yedek_3_dosya_2026-11-20.akis).
 // Kullanıcı tek dosya sandı, hepsi gitti. Dosya adında SAAT de yoktu.
-console.log('\n[38] Dışa aktarma kapsamı ve dosya adı');
+// v2.123: terim birliği — "dışa aktar" yerine PAKET OLUŞTUR; ad paketin ne
+// olduğunu söyler: AKIS_Paket_<dosya no>_<tarih>_<saat>.akis.
+console.log('\n[38] Paket oluşturma kapsamı ve adı');
 {
   const real = (id, no) => ({ id, fileNo: no, court: 'Mahkeme', materials: [{ id: 'm' + id, segments: [] }] });
   const A = real('cA', '2024/A');
@@ -2074,21 +2076,34 @@ console.log('\n[38] Dışa aktarma kapsamı ve dosya adı');
   const arch = { ...B, status: 'archived' };
   eq('all: arşivli dosya da girer', T.exportPlanFor([A, arch], 'cA', 'all').cases.length, 2);
 
-  // 4) DOSYA ADI: zaman (tarih + saat) taşır, güvenli karakter, .akis.
+  // 4) DOSYA ADI: paket olduğunu, hangi dosya olduğunu ve zamanı söyler.
   const fixed = new Date('2026-11-20T16:45:00');
   const single = T.backupFileName({ kind: 'single', cases: [A] }, fixed);
   eq('tek dosya adı .akis ile biter', /\.akis$/.test(single), true);
   eq('tek dosya adı tarih içerir', /2026-11-20/.test(single), true);
   eq('tek dosya adı SAAT içerir', /16-45/.test(single), true);
-  // safeName dosya sistemine uygun hale getirir: '2024/A' → '2024_A'.
-  eq('tek dosya adı dosya numarasını taşır', /2024_A/.test(single), true);
+  // Paket olduğu addan anlaşılır (v2.123).
+  eq('tek dosya adı PAKET olduğunu söyler', /^AKIS_Paket_/.test(single), true);
+  // Dosya numarası okunur biçimde: '2024/A' → '2024-A'.
+  eq('tek dosya adı dosya numarasını taşır', /2024-A/.test(single), true);
   eq('tek dosya adı eğik çizgi içermez', single.includes('/'), false);
 
   const allName = T.backupFileName({ kind: 'archive', cases: [A, B, C] }, fixed);
-  eq('tümü adı dosya sayısını söyler', /3dosya/.test(allName), true);
-  eq('tümü adı tarih+saat içerir', /2026-11-20_16-45/.test(allName), true);
-  eq('tümü adı TUM içerir', /TUM/.test(allName), true);
-  eq('tümü adı .akis ile biter', /\.akis$/.test(allName), true);
+  eq('tam paket adı dosya sayısını söyler', /3dosya/.test(allName), true);
+  eq('tam paket adı tarih+saat içerir', /2026-11-20_16-45/.test(allName), true);
+  eq('tam paket adı TAM olduğunu söyler', /^AKIS_Paket_Tam_/.test(allName), true);
+  eq('tam paket adı .akis ile biter', /\.akis$/.test(allName), true);
+
+  // Boş paket (olmamalı; yine de ad tutarlı).
+  const noneName = T.backupFileName({ kind: 'none', cases: [] }, fixed);
+  eq('boş paket adı da PAKET der', /^AKIS_Paket_bos_/.test(noneName), true);
+
+  // Dosya numarası yoksa ad kullanılır; dosya sistemine uygun kalır.
+  const noNo = { id: 'cN', name: 'Yeni inceleme dosyası', materials: [{ id: 'mN', segments: [] }] };
+  const noNoName = T.backupFileName({ kind: 'single', cases: [noNo] }, fixed);
+  eq('numarasız dosyada ad kullanılır', /Yeni_inceleme_dosyas/.test(noNoName), true);
+  eq('numarasız ad da PAKET der', /^AKIS_Paket_/.test(noNoName), true);
+  eq('numarasız ad güvenli', /[\\/]/.test(noNoName), false);
 
   // 5) İki farklı zaman → iki farklı ad (üzerine yazma yok).
   const later = new Date('2026-11-20T16:46:00');

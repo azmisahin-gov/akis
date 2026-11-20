@@ -1070,6 +1070,47 @@ diyordu.
 Metin düzenleyen ≠ onaylayan. Aynı alanı iki soru için kullanmak (kim yazdı /
 kim onayladı) canlı veride onay kaybı üretti.
 
+### Aşama 10u — Terim birliği ve paket adı (TAMAMLANDI, v2.123)
+
+**KURAL: aynı şeye tek ad. "Dosya" = tek dava; "Paket" = taşınabilir .akis.
+"Yedek" diye ikinci bir kavram yok.**
+
+**Ölçülen karışıklık (v2.122):** aynı iş için üç sözcük ("dışa aktar", "yedek",
+"paket"); tek dosya adı `AKIS_2024_108_…` (paket olduğu belli değil), tümü
+`AKIS_TUM_3dosya_…`, boş `AKIS_YEDEK_bos_…`. Yardım metni gerçek adla
+uyuşmayan `AKIS_Yedek_N_dosya_tarih.akis` örneğini gösteriyordu.
+
+**Değişmez terim sözlüğü (yardım ekranıyla aynı):**
+
+| Terim | Anlamı | Eski ad |
+|---|---|---|
+| Dosya | Tek dava/çalışma alanı | — |
+| Paket (.akis) | 1+ dosya + ses | "yedek paketi" |
+| Paket oluştur | Paketi indir | "Dışa aktar" |
+| Paketten yükle | Paketi ekle (kopya açar) | "İçe aktar" |
+| ⇄ Birleştir | Paketi açık dosyayla birleştir | — |
+| Arşivle | Gizle; silmez | — |
+
+**Paket adı:** `AKIS_Paket_<dosya no>_<tarih>_<saat>.akis` ·
+`AKIS_Paket_Tam_<N>dosya_<tarih>_<saat>.akis` · `AKIS_Paket_bos_…`. Dosya
+numarasındaki `/` → `-`.
+
+**Kurallar:**
+
+1. Yeni kullanıcı metni yazarken bu sözlüğü kullanın; "dışa aktar", "içe
+   aktar", "yedek" sözcüklerini yeni metinde kullanmayın.
+2. Eski sürüm notları (VERSION_NOTICES, CHANGELOG, yardım geçmişi) tarihseldir;
+   yeniden yazılmaz. Yardım sözlüğü "bugünkü adı"nı söyler.
+3. `backupState` "Paket yok" / "Son paket …" der; "Yedek" yazmaz.
+4. **Arşiv güvenlidir** (ölçüldü): yalnız `status='archived'`; veri ve ses
+   durur, pakete girer; kalıcı silme ayrı ve iki onaylı. "Arşiv" adı korunur.
+5. Dosya adı biçimi testle sabittir (`birim` [38]); düğme/sözlük terimleri
+   `surum` [11] ile denetlenir.
+
+**DERS:** Aynı işi iki adla anlatmak kullanıcıyı yorar; adı dosyanın kendisi
+söylemeli. "Yedek" sözcüğü hem paketi hem geri dönüş kopyasını anlatıyordu;
+ikinci anlam kaldırıldı.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1243,7 +1284,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.122.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.123.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1397,7 +1438,7 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.122)
+## Yeni oturuma devir notu (v2.123)
 
 Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
@@ -1405,17 +1446,17 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.122** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **717 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = kod commit `a53b570` (bu devir notu ayrı bir belge commit'idir) |
-| Pages | `built` · kod commit `a53b570` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.122'`, `version.json` = 2.122 |
+| Sürüm | **v2.123** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **722 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Uzak dal | `main` = v2.123 kod commit'i (push sonrası bu notta yazılır) |
+| Pages | `built` · aynı kod commit'i |
+| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.123'`, `version.json` = 2.123 |
 | Açık konu | **Yok** |
 
-### v2.102–v2.122 turunda ne yapıldı (21 sürüm)
+### v2.102–v2.123 turunda ne yapıldı (22 sürüm)
 
 Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **717**.
+Test sayısı 441 → **722**.
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -1440,6 +1481,7 @@ Test sayısı 441 → **717**.
 | v2.120 | Liste yüksekliği kabı aşıyordu (137px kırpılıyordu) | `tasarim` [2d] |
 | v2.121 | Sağ panel kaydırma çubuğu; spektrogram dalganın yerine | `tasarim` [2d]/[2e] |
 | **v2.122** | **Birleştirmede onay kaybı** (onayın sahibi yoktu; sessiz düşüyordu) | `birim` [46] · `sema` [7f] |
+| **v2.123** | **Terim birliği + paket adı** (dışa/içe aktar → paket) | `birim` [38] · `surum` [11] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
@@ -1510,8 +1552,8 @@ ve `APP_VERSION`** doğru mu.
 
 ### Yeni oturumda ilk adımlar
 
-1. `bash tools/test.sh` → tümü yeşil mi (717 + 404 + diğerleri)
+1. `bash tools/test.sh` → tümü yeşil mi (722 + 404 + diğerleri)
 2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.122 mi
+3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.123 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
