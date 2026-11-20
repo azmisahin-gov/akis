@@ -480,6 +480,22 @@ console.log('\n[2l] Durum çubuğu kesmez (v2.133)');
   );
 }
 
+// --- 2m. Rapor kâğıdı dar ekranda kırpılmıyor (v2.137) ---------------------
+// ÖLÇÜM (v2.136): #view-report overflow-x:hidden. 760 px'te kâğıt 678 px,
+// görünüm 642 px → 26 px sessiz kesme; 600 px'te 40 px. KURAL: dar ekranda
+// iç boşluk azalır ve tablo hücreleri SARAR; kâğıdın sağ kenarı görünür kalır.
+console.log('\n[2m] Rapor kâğıdı dar ekranda kırpılmıyor (v2.137)');
+{
+  const rl = read('assets/reading-layer.css');
+  const blocks = [...rl.matchAll(/@media \(max-width: 900px\) \{[\s\S]{0,600}?\n\}/g)].map((m) => m[0]);
+  const block = blocks.find((b) => /report-paper/.test(b)) || '';
+  check('dar ekranda rapor iç boşluğu azalır', /#view-report \.report-paper\s*\{[^}]*padding:/.test(block));
+  check(
+    'tablo hücreleri sarar (overflow-wrap: anywhere)',
+    /\.paper-table th,[\s\S]{0,100}\.paper-table td\s*\{[^}]*overflow-wrap:\s*anywhere/.test(block)
+  );
+}
+
 // --- 3. Token disiplini --------------------------------------------------
 // Okuma katmanı metin rengini ham hex ile yazmamalı.
 console.log('\n[3] Token disiplini');

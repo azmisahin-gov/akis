@@ -1437,6 +1437,29 @@ sunucu günlüğünde 404: **0**.
 
 **Koruyan test:** `tasarim-testi` [4b] (3 kontrol) — düzeltme yokken KALDI.
 
+### Aşama 10ai — Rapor kâğıdı dar ekranda kırpılmıyor (TAMAMLANDI, v2.137)
+
+**KURAL: dar ekranda rapor kâğıdı KESİLMEZ; iç boşluk azalır, tablo hücreleri
+SARAR.**
+
+**Ölçülen hata (v2.136, 40 bölüm):** `#view-report { overflow-x: hidden }`.
+Kâğıdın en küçük genişliği tablo içeriğinden 678 px; görünüm 760 px'te 642 px,
+600 px'te 538 px → **26 / 40 px sağdan sessiz kesme**, kaydırma yok.
+
+**Düzeltme:** `@media (max-width: 900px)` → `#view-report .report-paper
+{padding:26px 16px}` + `.paper-table th/td { overflow-wrap: anywhere }`.
+Yalnız ekran; `@media print` ve UDF/DOCX değişmez.
+
+**Ölçüm (v2.137):** 1440 1310/1310 · 900 782/782 · 760 642/642 · 600 538/538 →
+kesilen 0.
+
+**DERS:** Tablo tabanlı bir belge düzeninde `min-content` genişliği kapsayıcıdan
+büyük olabilir. `overflow:hidden` bunu **sessiz kesme**ye çevirir. Ölçüt:
+`scrollWidth > clientWidth` + `overflow-x` görünür değilse kesme vardır; çözüm
+ya sar (`overflow-wrap`) ya da görünür kaydırma.
+
+**Koruyan test:** `tasarim-testi` [2m] (2 kontrol) — düzeltme yokken KALDI.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1610,7 +1633,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.136.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.137.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1772,7 +1795,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.136** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.137** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1821,6 +1844,7 @@ Test sayısı 441 → **782**.
 | **v2.134** | **İlk açılışta hayalet kayıt** (boş çalışma alanı yazılıyordu) | `birim` [52] |
 | **v2.135** | **Kritik uyarılar ekran okuyucuya duyurulur** (aria-live yoktu) | `birim` [53] |
 | **v2.136** | **Sekme simgesi** (favicon 404) | `tasarim` [4b] |
+| **v2.137** | **Rapor kâğıdı dar ekranda kırpılıyordu** (760 px'te 26 px) | `tasarim` [2m] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

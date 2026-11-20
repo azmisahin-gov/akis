@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.136';
+} from './schema.js?v=2.137';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.136';
+const APP_VERSION = '2.137';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11658,6 +11658,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.137': {
+    title: 'Rapor kâğıdı dar ekranda kırpılmıyor',
+    body:
+      '760 piksel ve altında rapor önizlemesinin sağ kenarı kesiliyordu (kâğıt ' +
+      '678 px, alan 642 px). Artık dar ekranda iç boşluk azalıyor ve tablo hücreleri ' +
+      'sarıyor; kâğıdın sağ kenarı görünür. Yazdırma ve UDF/DOCX çıktısı değişmedi.'
+  },
   '2.136': {
     title: 'Sekme simgesi eklendi',
     body:

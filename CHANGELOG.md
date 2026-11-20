@@ -6,12 +6,50 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.136.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.137.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.137 — Rapor kâğıdı dar ekranda kırpılmıyor
+
+DENETİM (v2.136 kapanış taraması). `#view-report` `overflow-x: hidden`;
+kâğıdın en küçük genişliği tablo içeriğinden geliyordu.
+
+### ÖLÇÜM (v2.136, 40 bölüm)
+
+| Genişlik | Görünüm | Kâğıt | Kesilen |
+|---|---|---|---|
+| 900 | 782 | 782 | 0 |
+| **760** | **642** | **678** | **26 px** |
+| **600** | **538** | **590** | **40 px** |
+
+Kesilen kısım kaydırılamıyordu (overflow hidden) → kâğıdın sağ kenarı
+görünmüyordu.
+
+### DÜZELTME
+
+- ≤900 px: `#view-report .report-paper { padding: 26px 16px }` (iç boşluk azalır).
+- ≤900 px: tablo başlığı/hücreleri `overflow-wrap: anywhere` → **sarar**.
+- Yalnız ekran; `@media print` ve UDF/DOCX üretimi etkilenmez.
+
+### KULLANICI NE GÖRECEK
+
+- Dar ekranda rapor önizlemesinin **sağ kenarı görünür**; metin kesilmez.
+- Kâğıt genişliği 1440 px'te değişmedi (900 px); yazdırma çıktısı aynı.
+
+### ÖLÇÜM (v2.137, gerçek Chromium)
+
+| Genişlik | Görünüm | Kesilen |
+|---|---|---|
+| 1440 | 1310/1310 | 0 |
+| 900 | 782/782 | 0 |
+| 760 | 642/642 | 0 (önce 26) |
+| 600 | 538/538 | 0 (önce 40) |
+
+Koruyan test: `tasarim-testi` [2m] (2 kontrol) — düzeltme yokken **KALDI**.
 
 ## v2.136 — Sekme simgesi (favicon)
 

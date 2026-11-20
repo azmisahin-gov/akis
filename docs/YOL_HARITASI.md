@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.136.**
+yazılır. **Güncel sürüm: v2.137.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.137 — Rapor kâğıdı dar ekranda kırpılmıyor (tamamlandı)
+
+760 px'te kâğıdın 26 px'i, 600 px'te 40 px'i sessizce kesiliyordu. Dar ekranda
+iç boşluk azalır, tablo hücreleri sarar. `tasarim` [2m].
 
 ### v2.136 — Sekme simgesi (tamamlandı)
 

@@ -1449,3 +1449,20 @@ body.ws-mode .workspace-bar {
 #view-audio.active {
   flex: 0 0 auto;
 }
+
+/* ============================================================================
+   v2.137 — RAPOR KÂĞIDI DAR EKRANDA KIRPILMIYOR.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.136, 40 bölüm):
+     #view-report { overflow-x: hidden } · kâğıdın en küçük genişliği 678 px
+     760 px: görünüm 642 px → **26 px** sağdan kesiliyor (kâğıdın sağ kenarı
+             görünmüyor, kaydırma da yok)
+     600 px: 538 px → **40 px** kesiliyor
+   KURAL: dar ekranda iç boşluk azalır ve tablo hücreleri SARAR; kâğıdın sağ
+   kenarı görünür kalır. Yazdırma düzeni etkilenmez (@media print ayrıdır).
+   ============================================================================ */
+@media (max-width: 900px) {
+  #view-report .report-paper { padding: 26px 16px; }
+  #view-report .paper-table th,
+  #view-report .paper-table td { overflow-wrap: anywhere; }
+}
