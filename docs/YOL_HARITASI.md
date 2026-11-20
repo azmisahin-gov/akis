@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.86.**
+yazılır. **Güncel sürüm: v2.87.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,38 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.87 — Kayıt tamamen duruyordu (tamamlandı, canlı veri)
+
+Bilirkişi "yaptığım tüm değişiklikleri kaybettim, uyarıyı görmedim" dedi.
+İki hata birleşmişti: (1) bölüme tıklayınca `attachSegWave` malzemeye fonksiyon
+yazıyor, IndexedDB `structuredClone` yapamadığı için **her kayıt iptal
+ediliyordu**; (2) yazma hatası büyük uyarı göstermiyordu (şerit yalnız kota
+hatasında çıkıyordu). `sanitizeForStorage()` eklendi; her yazma hatası görünür
+şerit üretir. `birim-testleri` [17]/[18] korur.
+
+### Açık konular — sırayla ele alınacak (tek konu = tek sürüm)
+
+Aşağıdakiler ölçülerek tespit edildi; her biri **kıran test + düzeltme** ile
+ayrı bir sürümde ele alınacak. Sıra, veri doğruluğuna etkisine göre:
+
+| Sıra | Konu | Durum |
+|---|---|---|
+| 1 | Kayıt tamamen duruyordu + uyarı görünmüyordu | **v2.87 tamamlandı** |
+| 2 | Onay metne bağlı değil: metin değişse de "Onaylandı" kalıyor | bekliyor |
+| 3 | v2 onay kodları yüklemede sessizce `pending`'e düşüyor | bekliyor |
+| 4 | WER, modelin çıktısı yerine bilirkişinin metnini ölçüyor | bekliyor |
+| 5 | Seviye/kırpılma ölçümü mono karışımdan (kırpılma görünmüyor) | bekliyor |
+| 6 | Sessizlik/perde ölçümü yalnız kanal 0 (stereo'da yanlış) | bekliyor |
+| 7 | `isHallucination` gerçek cümleleri dolgu sayıyor | bekliyor |
+| 8 | Birleştirmede kayıt düzeyi alanlar sessizce düşüyor | bekliyor |
+| 9 | `updatedAt` hiç güncellenmiyor (yenilik ölçütü ölü) | bekliyor |
+| 10 | Önizleme ile birleştirme farklı alan kümesi kullanıyor | bekliyor |
+| 11 | SHA-256 hesaplanamazsa "doğrulandı" deniyor | bekliyor |
+| 12 | Zaman alanı doğrulanmıyor (`00:00:05,100` → `00:00:00.000`) | bekliyor |
+| 13 | `paragraphize` asrText/asrModel'i siliyor | bekliyor |
+| 14 | Hızlı onay sayacı ile filtresi ayrışıyor | bekliyor |
+| 15 | Türkçe büyük İ terim tutarlılığını bozuyor | bekliyor |
 
 ### v2.86 — Eksik ses uyarısı + yazma akıcılığı (tamamlandı)
 

@@ -6,12 +6,83 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.86.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.87.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.87 — Kayıt tamamen duruyordu (canlı veride iş kaybı)
+
+CANLI VERİ. Bilirkişi "yaptığım tüm değişiklikleri kaybetmiş" ve "kayıt
+başarısız uyarısını görmemiş" diye bildirdi. İkisi de doğruydu; iki ayrı hata
+birleşince sessiz veri kaybı oluşuyordu.
+
+### 1. GERÇEK HATA: bölüme tıklayınca kayıt tamamen duruyordu
+
+`attachSegWave()` bölümün dalga formunu çizmek için malzeme nesnesine
+**fonksiyon** yazıyordu (`m.__segWaveRebind`, `m.__segWaveRedraw`).
+`persistNow()` ise `appState`'i doğrudan IndexedDB'ye yazıyor; tarayıcı yazarken
+`structuredClone` yapar ve **fonksiyon kopyalayamaz**. İşlem
+`DataCloneError` ile iptal ediliyor, hiçbir şey yazılmıyordu.
+
+Sonuç: bölüm listesinden **herhangi bir bölüme tıkmak** (normal çalışmanın ilk
+adımı) o oturumun geri kalanında her kaydı başarısız kılıyordu. Sayfa
+yenilenene kadar yazılan her şey kayboluyordu.
+
+Daha kötüsü: `JSON.stringify` fonksiyonları sessizce atladığı için **Dışa
+aktar çalışıyordu**. Bilirkişi "yedeğim var" sanıyor, oysa kayıt yoktu.
+
+**Ölçüm (gerçek Chromium):**
+
+```
+ÖNCE:  DataCloneError: () => { index2 = activeIdx(); ... } could not be cloned.
+       durum: "● Kayıt başarısız"      IndexedDB: [""]     ← metin yok
+SONRA: durum: "● Yerel kayıt güncellendi"  IndexedDB: ["BİLİRKİŞİ METNİ"]
+       yenileme sonrası metin korundu.
+```
+
+**Çözüm:** `sanitizeForStorage()` — kayda ve dışa aktarıma giden derin kopya.
+`__` ile başlayan her alan oturumluktur ve kayda girmez; fonksiyon hiçbir
+koşulda yazılmaz; dava verisi (metin, ölçüm, günlük) aynen korunur. Orijinal
+nesneye dokunulmaz (ekran fonksiyonları kullanmaya devam eder).
+
+### 2. GERÇEK HATA: kayıt başarısız uyarısı görünmüyordu
+
+Yazma başarısız olduğunda yalnız üst çubuktaki küçük `● Kayıt başarısız` yazısı
+değişiyordu. Büyük uyarı şeridi **yalnız kota hatasında** çıkıyordu; bu hata
+kota hatası sayılmadığı için hiçbir uyarı görünmedi. Bilirkişi çalışmaya devam
+etti ve her şeyi kaybetti.
+
+**Çözüm:** her yazma hatası artık büyük, ekranın üstünde, tam genişlikte bir
+şerit gösterir: ne olduğunu ("Değişiklikleriniz KAYDEDİLMİYOR"), ne
+kaybedeceğini ("sayfayı yenilerseniz kaybolur") ve ne yapacağını ("Dışa aktar
+ile çalışmanızı bilgisayarınıza alın") açıkça söyler.
+
+**Ölçüm (gerçek Chromium, yazma kasten bozuldu):**
+
+```
+durum: "● KAYDEDİLMİYOR — yedek alın!"
+şerit: görünür · üst: 0px · yükseklik: 111px · genişlik: 780/780 (tam)
+```
+
+### KULLANICI NE GÖRECEK
+
+- Bölüme tıkladıktan sonra yazdığınız metin **artık kaybolmuyor**; sayfayı
+  yenileseniz de yerinde durur.
+- Bir sorun nedeniyle kayıt yapılamazsa ekranın üstünde **kırmızı şerit**
+  çıkar ve ne yapmanız gerektiğini söyler. Küçük yazıyı fark etmek zorunda
+  kalmazsınız.
+- Dışa aktarma da aynı temiz kopyayı kullanır; yedek dosyası gereksiz büyük
+  veri (spektrogram, yakınlaştırma penceresi) taşımaz.
+
+### Testle korunur
+
+`birim-testleri` [17] (7 kontrol) ve [18] (6 kontrol): kayda giden kopyada
+fonksiyon kalmaz, kopya klonlanabilir, orijinal bozulmaz, yazma hatası görünür
+şerit üretir. Testler düzeltme yokken **kaldı** (kanıt: `236 geçti, 2 kaldı`),
+düzeltmeden sonra geçti (`249 geçti, 0 kaldı`).
 
 ## v2.86 — Eksik ses yedeğe yazılıyor + yazma akıcılığı
 

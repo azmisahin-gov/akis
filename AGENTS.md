@@ -605,7 +605,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.86.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.87.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -626,3 +626,75 @@ Sürüm geçmişi: [`CHANGELOG.md`](CHANGELOG.md). Yol haritası:
 ## Commit dili
 
 Commit mesajları Türkçe yazılır.
+
+## Çalışma disiplini (DEĞİŞMEZ — v2.87'de yazıldı)
+
+Bilirkişi bu uygulamayı **canlı/gerçek veriyle** kullanıyor. Bir kez kaybedilen
+iş geri gelmez. Bu yüzden aşağıdaki akış her düzeltmede istisnasız uygulanır.
+
+### 1. Tek konu, tek sürüm
+
+- Bir oturumda **tek bir konu** ele alınır. Konu bitmeden ikincisine
+  geçilmez; iki konu aynı commit'e/sürüme karıştırılmaz.
+- Her konu **tam olarak bir sürüm** üretir (`vX.Y`). Bir konu için birden
+  fazla sürüm gönderilmez; bir sürümde birden fazla konu olmaz.
+- Konu listesi ve sırası `docs/YOL_HARITASI.md` içinde tutulur.
+
+### 2. Önce kıran test, sonra düzeltme
+
+Her düzeltme şu sırayla yapılır — sıra atlanmaz:
+
+1. **Hatayı yeniden üret.** Ölç, tahmin etme. Gerekirse gerçek tarayıcıda
+   (headless Chromium + CDP) çalıştır.
+2. **Kıran testi yaz.** Test, düzeltme yokken **KALMALI**. Kalıyorsa test
+   hatayı gerçekten yakalamıyor; test düzeltilir.
+3. **Testin kaldığını göster** (`bash tools/test.sh` çıktısı).
+4. **Düzeltmeyi uygula.** Yalnız bu konuya dokun.
+5. **Testin geçtiğini göster.** Diğer testler de geçmeli.
+6. **Gerçek tarayıcıda akışı tıkla.** DOM/IndexedDB davranışı sahte DOM'da
+   görünmez (bkz. "DERS: sahte DOM yetmez").
+7. **Sürümü gönder** (aşağıdaki 3. madde).
+
+### 3. Sürüm gönderme (tek yol)
+
+1. `APP_VERSION` + `CHANGELOG.md` başlığı + `docs/YOL_HARITASI.md` birlikte.
+2. `index.html` içindeki `?v=` parametreleri.
+3. `bash tools/test.sh` → tümü geçmeli.
+4. Commit (Türkçe) → **push** → `git ls-remote` ile uzak hash eşit mi.
+5. Pages derlemesi `built` ve canlı site yeni sürümü sunuyor mu.
+
+Push edilmemiş commit yayın değildir (bkz. "DERS: commit ≠ yayın").
+
+### 4. Kullanıcı her değişiklikten haberdar edilir
+
+Bilirkişi teknik ayrıntıyı okumaz; **ne kaybettiğini ve ne kazandığını** bilmek
+zorundadır. Her sürümde üç yerde açık dille yazılır:
+
+1. **`CHANGELOG.md`** — "KULLANICI NE GÖRECEK" başlığı altında, teknik terim
+   yerine gözlemlenebilir sonuç ("kayıt artık durmuyor", "onay düşüyor" gibi).
+2. **Uygulama içi yardım ekranı** — kullanıcıya görünen davranış değişikliği
+   varsa (?) yardım ekranındaki ilgili bölüme yazılır.
+3. **Sürüm notu (toast/banner)** — kayıt kaybı gibi kritik bir hata
+   düzeltildiyse uygulama açılışta bir kez bilgilendirir
+   (`akis.seenNotice.<sürüm>` anahtarıyla, her açılışta tekrarlamaz).
+
+Bir hata **sessizce** düzeltilip geçilmez. "Kayıt başarısız" gibi bir uyarı
+kullanıcı tarafından görülmediyse, uyarı **yeterince görünür değildir** —
+uyarı görünürlüğü de düzeltmenin parçasıdır.
+
+### 5. Sessiz hata yasak
+
+Bu depoda en pahalı hata türü **sessiz** olandır: ekran "kaydedildi" derken
+veri yazılmaması, onayın sessizce düşmesi, ölçümün sessizce yanlış olması.
+Bir işlem başarısız oluyorsa:
+
+- kullanıcı **görmeli** (büyük, kapatılamaz uyarı),
+- **ne kaybettiğini** anlamalı,
+- **ne yapacağını** bilmeli (ör. "Dışa aktar" ile yedek al).
+
+### 6. Ölçülemeyen iddia yazılmaz
+
+Rapor ve arayüz yalnız ölçülmüş/doğrulanmış değeri gösterir. Ölçüm yapılmadıysa
+satır yazılmaz; ölçüm yapılamadıysa "ölçülemedi" yazılır, uydurma değer
+yazılmaz. Bu, hata düzeltmeleri için de geçerlidir: "düzeltildi" demek için
+önce/sonra ölçümü gösterilir.

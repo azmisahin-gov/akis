@@ -34,7 +34,15 @@ function makeEl(sel) {
 }
 const documentStub = {
   querySelector: (s) => { if (!els.has(s)) els.set(s, makeEl(s)); return els.get(s); },
-  querySelectorAll: () => [], createElement: () => makeEl('new'), addEventListener: noop,
+  querySelectorAll: () => [], createElement: () => makeEl('new'),
+  // createElement + appendChild ile kurulan öğeler kimlikleriyle erişilebilir
+  // olmalı; aksi hâlde banner gibi çalışma zamanında üretilen düğümler testte
+  // görünmez (v2.87: kayıt hatası şeridi bu yüzden sınanamıyordu).
+  body: {
+    classList: { add: noop, remove: noop, toggle: noop, contains: () => false },
+    appendChild: (el) => { if (el && el.id) els.set('#' + el.id, el); },
+  },
+  addEventListener: noop,
 };
 const localStorageStub = { _d: {}, getItem(k) { return this._d[k] ?? null; }, setItem(k, v) { this._d[k] = v; }, removeItem(k) { delete this._d[k]; } };
 
@@ -68,8 +76,15 @@ const EXPOSE = [
   'segQuickCheck', 'segCounts', 'segMatchesFilter', 'tcRange', 'fmtWer',
   'fmtBytesShort',
   'asrProfile', 'asrProfileOptions', 'ASR_PROFILES',
+  'sanitizeForStorage', 'showSaveFailureBanner', 'hideSaveFailureBanner',
+  'VERSION_NOTICES', 'maybeShowVersionNotice',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
+// Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
+// varsayılan üreticisi. Üretim kodunda bunlar yok; yalnız testte kullanılır.
+code += `\n;globalThis.__t.el = (s) => document.querySelector(s);
+globalThis.__t.emptyMaterialForTest = (o) => globalThis.__schema.emptyMaterial(o);
+globalThis.__t.emptyCaseForTest = (o) => globalThis.__schema.emptyCase(o);\nglobalThis.__t.store = localStorage;\n`;
 
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
 // okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
@@ -711,6 +726,106 @@ console.log('\n[16] Depolama gösterimi');
   eq('GB biçimi', T.fmtBytesShort(10 * 1024 * 1024 * 1024), '10.00 GB');
   eq('sıfır', T.fmtBytesShort(0), '0 B');
   eq('negatif sıfır sayılır', T.fmtBytesShort(-5), '0 B');
+}
+
+// --- 17. Kayda yazılabilir kopya (v2.87 — KRİTİK VERİ KAYBI) --------------
+// GERÇEK HATA (canlı veride yaşandı): Bölüme tıklandığında `attachSegWave()`
+// malzeme nesnesine FONKSİYON yazıyordu (m.__segWaveRebind / __segWaveRedraw).
+// `persistNow()` appState'i doğrudan IndexedDB'ye put ediyor; structuredClone
+// fonksiyon kopyalayamadığı için işlem DataCloneError ile iptal ediliyordu.
+// Sonuç: bilirkişi bölüme tıkladıktan sonra yaptığı TÜM iş kayboldu.
+// Ekranda yalnız küçük "● Kayıt başarısız" yazısı vardı; uyarı şeridi
+// görünmüyordu (kota hatası sayılmadığı için).
+// Bu test, kayda giden kopyanın HER ZAMAN klonlanabilir olduğunu doğrular.
+console.log('\n[17] Kayda yazılabilir kopya (DataCloneError koruması)');
+{
+  eq('sanitizeForStorage tanımlı', typeof T.sanitizeForStorage, 'function');
+
+  if (typeof T.sanitizeForStorage === 'function') {
+    // Gerçek hata senaryosu: oturumluk fonksiyonlar malzemede duruyor.
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.__segWaveRebind = () => {};
+    m.__segWaveRedraw = () => {};
+    m.__specData = { cols: 2, bins: 2, data: [1, 2, 3, 4] };
+    m.__zoom = { a: 0, b: 1 };
+    m.__sdZoom = { a: 0, b: 1 };
+    const state = { cases: [{ id: 'c1', materials: [m] }] };
+
+    const clean = T.sanitizeForStorage(state);
+    const keys = Object.keys(clean.cases[0].materials[0]);
+    eq('fonksiyon alanı kalmadı', keys.filter((k) => k.startsWith('__')), []);
+    eq('spektrogram verisi kayda girmez', '__specData' in clean.cases[0].materials[0], false);
+    eq('yakınlaştırma penceresi kayda girmez', '__zoom' in clean.cases[0].materials[0], false);
+
+    // Kopya gerçekten klonlanabilmeli (IndexedDB'nin yaptığı işlem).
+    let cloneError = null;
+    try {
+      structuredClone(clean);
+    } catch (e) {
+      cloneError = e.name;
+    }
+    eq('kopya klonlanabilir (DataCloneError yok)', cloneError, null);
+
+    // Temizlik orijinali bozmamalı: ekran hâlâ fonksiyonları kullanıyor.
+    eq('orijinal nesne değişmedi', typeof state.cases[0].materials[0].__segWaveRebind, 'function');
+    // Dava verisi korunur (temizlik veri atmaz).
+    eq('dosya verisi korundu', clean.cases[0].materials[0].fileName, 'a.wav');
+  }
+}
+
+// --- 18. Kayıt hatası GÖRÜNÜR olmalı (v2.87) ------------------------------
+// GERÇEK HATA: yazma herhangi bir nedenle başarısız olduğunda yalnız küçük
+// durum yazısı değişiyordu. Bilirkişi uyarıyı görmedi ve işini kaybetti.
+// Her yazma hatası büyük, kapatılamaz uyarı şeridi göstermelidir.
+console.log('\n[18] Kayıt hatası görünürlüğü');
+{
+  eq('showSaveFailureBanner tanımlı', typeof T.showSaveFailureBanner, 'function');
+
+  if (typeof T.showSaveFailureBanner === 'function') {
+    // Durum yazısı ve şerit gerçekten kurulmalı.
+    T.showSaveFailureBanner('DataCloneError');
+    eq('durum yazısı kayıt başarısız', String(T.el('#saveState').textContent).includes('KAYDEDİLMİYOR'), true);
+    eq('büyük uyarı şeridi göründü', T.el('#saveFailureBanner').hidden, false);
+    // Türkçe büyük İ küçük i'ye JS `/i` bayrağıyla eşlenmez; tr-TR ile indir.
+    const bannerText = String(T.el('#saveFailureBanner').innerHTML).toLocaleLowerCase('tr-TR');
+    eq('uyarı metni ne olduğunu söyler', bannerText.includes('kaydedilmiyor'), true);
+    eq('uyarı metni ne yapılacağını söyler', bannerText.includes('dışa aktar'), true);
+
+    T.hideSaveFailureBanner();
+    eq('şerit kapatılabilir', T.el('#saveFailureBanner').hidden, true);
+  }
+}
+
+// --- 19. Sürüm notu: kullanıcı kritik düzeltmeden haberdar olmalı (v2.87) --
+// GERÇEK DURUM: bilirkişi "kayıt başarısız uyarısını görmedim" dedi ve işini
+// kaybetti. Bir hata sessizce düzeltilip geçilemez: kullanıcı ne değiştiğini
+// uygulamayı açtığında görmelidir. Not her sürümde BİR KEZ gösterilir
+// (akis.seenNotice.<sürüm>), her açılışta tekrarlamaz.
+console.log('\n[19] Sürüm notu (kullanıcı haberdar edilir)');
+{
+  eq('VERSION_NOTICES tanımlı', typeof T.VERSION_NOTICES, 'object');
+  eq('2.87 için not var', !!(T.VERSION_NOTICES && T.VERSION_NOTICES['2.87']), true);
+  const note = (T.VERSION_NOTICES && T.VERSION_NOTICES['2.87']) || {};
+  eq('not kayıt kaybını anlatır', /kayd/i.test(String(note.title || '')), true);
+
+  eq('maybeShowVersionNotice tanımlı', typeof T.maybeShowVersionNotice, 'function');
+  if (typeof T.maybeShowVersionNotice === 'function') {
+    // Uygulamanın kullandığı depolama (sandbox) üzerinden sına.
+    const store = T.store;
+    store.removeItem('akis.seenNotice.2.87');
+    const first = T.maybeShowVersionNotice();
+    eq('ilk açılışta gösterilir', first, true);
+    eq('görüldü olarak işaretlendi', store.getItem('akis.seenNotice.2.87'), '1');
+    // İkinci açılış: tekrar gösterilmez.
+    const second = T.maybeShowVersionNotice();
+    eq('ikinci açılışta tekrarlamaz', second, false);
+    // Gösterilen şerit gerçekten kullanıcıya hitap etmeli.
+    const notice = T.el('#versionNotice');
+    eq('şerit görünür', notice.hidden, false);
+    const t = String(notice.innerHTML).toLocaleLowerCase('tr-TR');
+    eq('şerit kayıt sorununu anlatır', t.includes('kayded'), true);
+    eq('şerit yedek önerir', t.includes('dışa aktar'), true);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

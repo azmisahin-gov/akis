@@ -38,7 +38,7 @@ const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.86';
+const APP_VERSION = '2.87';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -304,15 +304,23 @@ async function persistNow() {
   // bunun yerine bu sekmenin yazma hakkı olup olmadığı denetlenir.
   if (!tabWriteGuard()) return;
   try {
+    // YAZILABİLİR KOPYA (v2.87 — kritik veri kaybı). appState içinde yalnız
+    // kayda giren veri bulunmaz: ekranın kullandığı fonksiyonlar ve büyük
+    // türetilmiş veriler (dalga bağlama, spektrogram) de nesnelerin üstünde
+    // durur. IndexedDB yazarken structuredClone yapar ve FONKSİYON
+    // kopyalayamaz → işlem DataCloneError ile iptal olur, hiçbir şey yazılmaz.
+    // Canlı veride yaşandı: bölüme tıklayan bilirkişinin tüm işi kayboldu.
+    const payload = sanitizeForStorage(appState);
     const db = await dbOpen();
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STATE_STORE, 'readwrite');
-      tx.objectStore(STATE_STORE).put({ key: STORE_KEY, value: appState });
+      tx.objectStore(STATE_STORE).put({ key: STORE_KEY, value: payload });
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
     $('#saveState').textContent = '● Yerel kayıt güncellendi';
     $('#saveState').classList.remove('danger');
+    hideSaveFailureBanner();
     if (storageFullWarned) {
       storageFullWarned = false;
       hideStorageBanner();
@@ -320,14 +328,94 @@ async function persistNow() {
     refreshUsage();
   } catch (e) {
     const full = e && (e.name === 'QuotaExceededError' || e.code === 22 || /quota/i.test(String(e.message || '')));
-    $('#saveState').textContent = full ? '● DEPOLAMA DOLU — yedek alın!' : '● Kayıt başarısız';
-    $('#saveState').classList.add('danger');
     console.warn('Kayıt başarısız:', e);
-    if (full && !storageFullWarned) {
-      storageFullWarned = true;
-      showStorageBanner();
+    // HER yazma hatası GÖRÜNÜR olmalı (v2.87). Öncesinde yalnız küçük durum
+    // yazısı değişiyordu; bilirkişi uyarıyı görmedi ve işini kaybetti.
+    if (full) {
+      if (!storageFullWarned) {
+        storageFullWarned = true;
+        showStorageBanner();
+      }
+      $('#saveState').textContent = '● DEPOLAMA DOLU — yedek alın!';
+      $('#saveState').classList.add('danger');
+    } else {
+      showSaveFailureBanner(e);
     }
   }
+}
+// Kayda/dışa aktarıma giden TEMİZ kopya. Derin kopyalar; orijinal nesneye
+// DOKUNMAZ (ekran fonksiyonları kullanmaya devam eder). Kural: `__` ile
+// başlayan her alan oturumluktur ve kayda girmez; fonksiyonlar hiçbir koşulda
+// yazılmaz. Dava verisi (metin, ölçüm, günlük) aynen korunur.
+function sanitizeForStorage(value) {
+  const seen = new WeakMap();
+  const walk = (v) => {
+    if (v === null || typeof v !== 'object') {
+      // Fonksiyon/simge kayda giremez; undefined da JSON'da kaybolur.
+      return typeof v === 'function' || typeof v === 'symbol' || v === undefined ? undefined : v;
+    }
+    if (seen.has(v)) return seen.get(v);
+    if (v instanceof Date) return new Date(v.getTime());
+    if (v instanceof ArrayBuffer || ArrayBuffer.isView(v) || (typeof Blob !== 'undefined' && v instanceof Blob)) {
+      return v; // ikili veri klonlanabilir; olduğu gibi geçer
+    }
+    if (Array.isArray(v)) {
+      const arr = [];
+      seen.set(v, arr);
+      for (const item of v) arr.push(walk(item));
+      return arr;
+    }
+    const out = {};
+    seen.set(v, out);
+    for (const k of Object.keys(v)) {
+      if (k.startsWith('__')) continue; // oturumluk alan
+      const w = walk(v[k]);
+      if (w !== undefined) out[k] = w;
+    }
+    return out;
+  };
+  return walk(value);
+}
+// Yazma hatası şeridi. Kota hatasından AYRI: burada sorun boyut değil,
+// yazmanın kendisi. Kullanıcı ne kaybettiğini ve ne yapacağını görmeli.
+function showSaveFailureBanner(err) {
+  const reason =
+    err && err.name === 'DataCloneError'
+      ? 'Kayıt verisi tarayıcıya aktarılamadı.'
+      : err && err.name
+        ? `Tarayıcı hatası: ${err.name}.`
+        : 'Bilinmeyen yazma hatası.';
+  let el = $('#saveFailureBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'saveFailureBanner';
+    document.body.appendChild(el);
+  }
+  el.className = 'storage-banner save-failure';
+  // İçerik HER çağrıda tazelenir: bayat/boş şerit kalırsa kullanıcı uyarıyı
+  // görmez. Dinleyiciler bir kez bağlanır (yinelenen bağlama olmasın).
+  el.innerHTML =
+    '<div class="sb-body"><b>Değişiklikleriniz KAYDEDİLMİYOR</b>' +
+    '<small>Son yaptığınız işlemler tarayıcıya yazılamadı; sayfayı yenilerseniz kaybolur. ' +
+    'Hemen <b>Dışa aktar</b> ile çalışmanızı bilgisayarınıza alın, sonra sayfayı yenileyin.</small></div>' +
+    '<button class="button button-primary button-small" id="saveFailureExport">Dışa aktar</button>' +
+    '<button class="icon-button" id="saveFailureClose" aria-label="Kapat">×</button>';
+  if (!el.dataset.wired) {
+    el.dataset.wired = '1';
+    $('#saveFailureExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
+    $('#saveFailureClose')?.addEventListener('click', hideSaveFailureBanner);
+  }
+  el.hidden = false;
+  el.dataset.reason = reason;
+  const st = $('#saveState');
+  if (st) {
+    st.textContent = '● KAYDEDİLMİYOR — yedek alın!';
+    st.classList.add('danger');
+  }
+}
+function hideSaveFailureBanner() {
+  const el = $('#saveFailureBanner');
+  if (el) el.hidden = true;
 }
 // ---- Geri alma (v2.75) ---------------------------------------------------
 // Her YIKICI işlemden önce durumun anlık görüntüsü saklanır (son 20 adım).
@@ -9251,6 +9339,52 @@ function renderAppearancePanel() {
   if (host) host.innerHTML = appearancePanelHtml();
 }
 
+// ---- Sürüm notu (v2.87) --------------------------------------------------
+// Kullanıcıya görünen davranış değişiklikleri burada toplanır. Bilirkişi
+// teknik ayrıntıyı okumaz; ne kaybettiğini/ne kazandığını uygulamayı açtığında
+// görmelidir. Kural: bir not her sürümde BİR KEZ gösterilir
+// (`akis.seenNotice.<sürüm>`), her açılışta tekrarlamaz; ayrıca yardım
+// ekranındaki "Son değişiklikler" bölümünde kalıcı olarak durur.
+const VERSION_NOTICES = {
+  '2.87': {
+    title: 'Kayıt sorunu giderildi — çalışmanız artık kaydediliyor',
+    body:
+      'Önceki sürümde bir bölüme tıkladıktan sonra yaptığınız değişiklikler ' +
+      'tarayıcıya yazılamıyor ve sayfayı yenileyince kayboluyordu. Uyarı da ' +
+      'yeterince görünmüyordu. Her ikisi düzeltildi. Bundan sonra bir yazma ' +
+      'sorunu olursa ekranın üstünde büyük bir uyarı çıkar ve ne yapmanız ' +
+      'gerektiğini söyler. Kaybolan çalışma geri getirilemez; elinizdeki ' +
+      'dosyaları "Dışa aktar" ile yedeklemeniz önerilir.'
+  }
+};
+const SEEN_NOTICE_KEY = (v) => `akis.seenNotice.${v}`;
+function maybeShowVersionNotice() {
+  const note = VERSION_NOTICES[APP_VERSION];
+  if (!note) return false;
+  try {
+    if (localStorage.getItem(SEEN_NOTICE_KEY(APP_VERSION)) === '1') return false;
+    localStorage.setItem(SEEN_NOTICE_KEY(APP_VERSION), '1');
+  } catch (e) {
+    return false;
+  }
+  const el = $('#versionNotice');
+  if (el) {
+    el.innerHTML =
+      `<div class="sb-body"><b>${esc(note.title)}</b><small>${esc(note.body)}</small></div>` +
+      '<button class="button button-primary button-small" id="versionNoticeExport">Dışa aktar</button>' +
+      '<button class="icon-button" id="versionNoticeClose" aria-label="Kapat">×</button>';
+    el.hidden = false;
+    $('#versionNoticeExport')?.addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
+    $('#versionNoticeClose')?.addEventListener('click', () => {
+      el.hidden = true;
+    });
+  } else {
+    // Şerit düğümü yoksa bile kullanıcı bilgilendirilir (sessiz kalmak yasak).
+    showToast(`${note.title}. Ayrıntı: Yardım (?) → Son değişiklikler.`);
+  }
+  return true;
+}
+
 async function init() {
   // Sürüm etiketini tek kaynaktan (APP_VERSION) yaz.
   const verEl = $('#appVersion');
@@ -9279,6 +9413,8 @@ async function init() {
   renderBackupState();
   renderUndoState();
   initTabGuard();
+  // Kullanıcıya sürüm notunu göster (bir kez). Kritik düzeltme sessiz geçmez.
+  maybeShowVersionNotice();
   refreshUsage();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());
