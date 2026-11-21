@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.156.**
+yazılır. **Güncel sürüm: v2.157.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.157 — Test verisi koruması (tamamlandı)
+
+"Hazır test dosyalarını yükle" onay sormadan 4 kurgusal dosyayı gerçek çalışma
+alanına ekliyordu. Artık `askConfirm` ile ne ekleneceğini söyler; yükleme
+sonrası aynı düğme **"Test dosyalarını kaldır (N)"** olur, `removeSamples()`
+dosyaları **ses bloblarıyla** birlikte siler (gerçek dosyalara dokunmaz).
+`sampleCases()` saf fonksiyon. Koruyan test: `birim` [63].
 
 ### v2.156 — Rapor hazırlığı kapsamayı sayar (tamamlandı)
 

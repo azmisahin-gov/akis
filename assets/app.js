@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.156';
+} from './schema.js?v=2.157';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.156';
+const APP_VERSION = '2.157';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1406,6 +1406,7 @@ function readQuestionsForm() {
   persist();
 }
 function renderOverview() {
+  refreshSampleAction();
   const c = currentCase();
   if (!c) return;
   $('#welcomeTitle').textContent = c.court || 'Çalışmaya başlayın';
@@ -10075,11 +10076,67 @@ async function importProject(file) {
         : '')
   );
 }
+// TEST VERİSİ KORUMASI (v2.157). Denetimde görüldü: "Hazır test dosyalarını
+// yükle" ONAY SORMADAN 4 kurgusal dosyayı gerçek çalışma alanına ekliyordu.
+// KURAL: yükleme onay ister; eklenenler tek tıkla ve sesleriyle kaldırılır.
+function sampleCases(cases) {
+  return (Array.isArray(cases) ? cases : []).filter((c) => c && c.sampleKey);
+}
+function refreshSampleAction() {
+  const btn = $('#loadSamplesBtn');
+  if (!btn) return;
+  const n = sampleCases(appState.cases).length;
+  const mode = n ? 'remove' : 'load';
+  if (btn.dataset.mode === mode && btn.dataset.count === String(n)) return;
+  btn.dataset.mode = mode;
+  btn.dataset.count = String(n);
+  btn.innerHTML = n
+    ? `<span class="quick-icon">▣</span><span><b>Test dosyalarını kaldır (${n})</b><small>Kurgusal dosyalar ve sesleri silinir</small></span><span>›</span>`
+    : '<span class="quick-icon">▣</span><span><b>Hazır test dosyalarını yükle</b><small>4 kurgusal dosya, 10 kayıt</small></span><span>›</span>';
+}
+async function removeSamples() {
+  const samples = sampleCases(appState.cases);
+  if (!samples.length) return showToast('Kaldırılacak test dosyası yok.');
+  const ok = await askConfirm(
+    'Test dosyalarını kaldır',
+    `Çalışma alanındaki ${samples.length} kurgusal dosya ve ses kayıtları bu tarayıcıdan silinecek. ` +
+      'Gerçek dosyalarınıza dokunulmaz. Devam edilsin mi?'
+  );
+  if (!ok) return;
+  for (const c of samples) {
+    for (const m of c.materials || []) {
+      try {
+        await deleteBlob(blobKey(c, m));
+      } catch (e) {}
+    }
+  }
+  const ids = new Set(samples.map((c) => c.id));
+  appState.cases = (appState.cases || []).filter((c) => !ids.has(c.id));
+  if (ids.has(appState.activeCaseId)) {
+    appState.activeCaseId = (visibleCases(appState.cases)[0] || appState.cases[0] || {}).id || null;
+  }
+  persist();
+  renderCaseSelect();
+  populateCaseForm();
+  populateQuestionsForm();
+  renderOverview();
+  await renderAudioList();
+  renderArchiveList();
+  refreshSampleAction();
+  showToast(`${samples.length} test dosyası ve sesleri kaldırıldı. Gerçek dosyalarınıza dokunulmadı.`);
+}
 async function loadSamples() {
-  if (appState.cases.some((c) => c.sampleKey)) {
-    showToast('Hazır test dosyaları daha önce yüklenmiş.');
+  if (sampleCases(appState.cases).length) {
+    showToast('Hazır test dosyaları daha önce yüklenmiş. Kaldırmak için aynı düğmeyi kullanın.');
     return;
   }
+  const ok = await askConfirm(
+    'Hazır test dosyalarını yükle',
+    'Çalışma alanına 4 KURGUSAL dosya ve 10 sentetik ses kaydı eklenecek. ' +
+      'Gerçek dosyalarınızla birlikte görünürler ve pakete de girerler. ' +
+      'İstediğiniz an "Test dosyalarını kaldır" düğmesiyle sesleriyle birlikte temizleyebilirsiniz. Devam edilsin mi?'
+  );
+  if (!ok) return;
   const btn = $('#loadSamplesBtn');
   btn.disabled = true;
   btn.querySelector('b').textContent = 'Test dosyaları yükleniyor…';
@@ -10124,12 +10181,13 @@ async function loadSamples() {
     populateQuestionsForm();
     renderOverview();
     await renderAudioList();
-    showToast('4 kurgusal dosya ve 10 sentetik ses kaydı yüklendi.');
+    refreshSampleAction();
+    showToast('4 kurgusal dosya ve 10 sentetik ses kaydı yüklendi. Kaldırmak için aynı düğmeyi kullanın.');
   } catch (e) {
     showToast(`Test paketi yüklenemedi: ${e.message}`);
   } finally {
     btn.disabled = false;
-    btn.querySelector('b').textContent = 'Hazır test dosyalarını yükle';
+    refreshSampleAction();
   }
 }
 // Odak modu tek noktadan yönetilir. Kenar çubuğu gizlendiğinde modu kapatan
@@ -11111,7 +11169,11 @@ function setupEvents() {
     renderAudioList();
     showToast('Hatalı kayıtlar kuyruğa alındı.');
   });
-  $('#loadSamplesBtn').addEventListener('click', loadSamples);
+  $('#loadSamplesBtn').addEventListener('click', () => {
+    const btn = $('#loadSamplesBtn');
+    if (btn.dataset.mode === 'remove') removeSamples();
+    else loadSamples();
+  });
   $('#downloadDocxBtn').addEventListener('click', () => makeDocx().catch((e) => showToast(e.message)));
   $('#downloadUdfBtn').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
   $('#exportProjectBtn').addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
@@ -12145,6 +12207,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.157': {
+    title: 'Hazır test dosyaları artık onay istiyor ve tek tıkla kaldırılıyor',
+    body:
+      'Önceden "Hazır test dosyalarını yükle" onay sormadan 4 kurgusal dosyayı ' +
+      'gerçek çalışma alanına ekliyordu. Artık önce ne ekleneceğini söyleyip ' +
+      'onay istiyor; yüklendikten sonra aynı düğme "Test dosyalarını kaldır (4)" ' +
+      'olur ve sesleriyle birlikte temizler. Gerçek dosyalarınıza dokunulmaz.'
+  },
   '2.156': {
     title: 'Rapor hazırlığı artık sesin bölümlenmemiş aralığını da sayar',
     body:

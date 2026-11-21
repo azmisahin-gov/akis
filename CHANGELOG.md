@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.156.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.157.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.157 — Test verisi koruması
+
+Tüm sayfa taramasında bulundu: "Hazır test dosyalarını yükle" **onay sormadan**
+4 kurgusal dosyayı ve 10 sentetik ses kaydını gerçek çalışma alanına ekliyordu.
+Bu dosyalar pakete de giriyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Düğme artık önce **ne ekleneceğini söyleyip onay istiyor**: "4 KURGUSAL
+  dosya ve 10 sentetik ses kaydı eklenecek; gerçek dosyalarınızla birlikte
+  görünürler ve pakete de girerler."
+- Yükleme bitince **aynı düğme** şuna dönüşür: **"Test dosyalarını kaldır (4)"**.
+  Basınca onay ister ve dosyaları **ses kayıtlarıyla birlikte** siler.
+- Gerçek dosyalarınıza **dokunulmaz**; düğme metni de bunu söyler.
+
+### ÖLÇÜM (v2.157, gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| İlk durum | düğme "Hazır test dosyalarını yükle" (mod `load`) |
+| Tıkla | onay diyaloğu açıldı, metin ne ekleneceğini söylüyor |
+| Onayla | 4 dosya yüklendi; düğme **"Test dosyalarını kaldır (4)"** (mod `remove`) |
+| Tekrar tıkla | onay diyaloğu; onayla → dosyalar ve sesleri silindi; düğme geri döndü |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` **[63]** (9 kontrol): `sampleCases` yalnız `sampleKey` taşıyanları
+seçer (null güvenli), yükleme `askConfirm` çağırır, `removeSamples` vardır ve
+onay ister, ses bloblarını siler, düğme iki modu bildirir.
 
 ## v2.156 — Rapor hazırlığı kapsamayı da sayar
 

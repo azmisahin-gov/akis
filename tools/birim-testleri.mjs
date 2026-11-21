@@ -117,7 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref',
+  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3093,6 +3093,26 @@ console.log('\n== [62] Rapor hazırlığı kapsamayı da sayar (v2.156)');
     materials: [mat({ duration: 0, segments: [seg('00:00:00.000', '00:00:04.000')] })]
   }));
   eq('süre yoksa kapsama maddesi yok', unknown.items.some((x) => x.key === 'coverage'), false);
+}
+
+console.log('\n== [63] Test verisi koruması (v2.157)');
+{
+  // DENETİM BULGUSU: "Hazır test dosyalarını yükle" onay sormadan 4 kurgusal
+  // dosyayı GERÇEK çalışma alanına ekliyordu. KURAL: onay + tek tıkla kaldır.
+  eq('sampleCases tanımlı', typeof T.sampleCases, 'function');
+  if (typeof T.sampleCases === 'function') {
+    const list = T.sampleCases([{ id: 'a', sampleKey: 'x' }, { id: 'b' }, { id: 'c', sampleKey: 'y' }]);
+    eq('yalnız örnek dosyalar seçilir', list.length, 2);
+    eq('örnek kimlikleri doğru', list.map((c) => c.id).join(','), 'a,c');
+    eq('boş/null güvenli', T.sampleCases(null).length, 0);
+    eq('örneksiz liste boş', T.sampleCases([{ id: 'b' }]).length, 0);
+  }
+  const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('yükleme ONAY ister', /async function loadSamples\(\)[\s\S]{0,900}askConfirm/.test(jsSrc), true);
+  eq('kaldırma yolu var', /async function removeSamples\(\)/.test(jsSrc), true);
+  eq('kaldırma da onay ister', /async function removeSamples\(\)[\s\S]{0,600}askConfirm/.test(jsSrc), true);
+  eq('kaldırma ses bloblarını siler', /async function removeSamples\(\)[\s\S]{0,1200}deleteBlob/.test(jsSrc), true);
+  eq('düğme iki modu bildirir (load/remove)', /dataset\.mode/.test(jsSrc), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

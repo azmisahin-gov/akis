@@ -2015,6 +2015,30 @@ güveneceğini bilemez. Yeni bir ölçüm eklerken "hazırlık/özet" ekranları
 aynı kaynağı kullanıp kullanmadığını sor.
 
 
+### Aşama 10bc — Test verisi koruması (TAMAMLANDI, v2.157)
+
+**BULGU (denetim #2):** "Hazır test dosyalarını yükle" **onay sormadan** 4
+kurgusal dosya + 10 sentetik kayıt ekliyordu; bunlar gerçek dosyalarla aynı
+listede ve **pakette** yer alıyordu.
+
+**KURAL:** test verisi **onayla** girer ve **tek tıkla, sesleriyle** çıkar.
+- `sampleCases(cases)` — yalnız `sampleKey` taşıyan dosyalar (saf).
+- `loadSamples()` → `askConfirm` (ne ekleneceğini söyler).
+- `removeSamples()` → `askConfirm` + `deleteBlob` (sesler) + aktif dosya düzeltme.
+- `refreshSampleAction()` — düğme `dataset.mode` = `load|remove`, metin
+  "Hazır test dosyalarını yükle" / "Test dosyalarını kaldır (N)".
+
+**Ölçüm (v2.157, gerçek Chromium):** ilk durum `load`; tıkla → onay diyaloğu;
+onayla → 4 dosya, düğme `remove` "…(4)"; tekrar tıkla → onay → dosyalar ve
+sesleri silindi, düğme `load`. JS hatası 0.
+
+**Koruyan test:** `birim-testleri` [63] (9 kontrol).
+
+**DERS:** Gerçek veriyle aynı listede duran "örnek" veri, onay ve tek tıkla
+çıkış olmadan veri hijyenidir diye adlandırılamaz. Örnek veri ekleyen her yol
+"nasıl çıkar?" sorusunun cevabını da taşımalı.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2188,7 +2212,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.156.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.157.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2487,7 +2511,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.156) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.157) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2498,10 +2522,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.156** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **929 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.156 |
-| Açık konu | **v2.157 — test verisi koruması** (denetim bulgusu #2) |
+| Sürüm | **v2.157** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **939 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.157 |
+| Açık konu | **v2.158 — bildirim yerleşimi + ses yok durumu** (denetim #4/#5) |
 
 ### Bu oturumda ne değişti (kısa)
 

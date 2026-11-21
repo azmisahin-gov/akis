@@ -1,4 +1,4 @@
-# Özellikler (v2.156 — mevcut durum)
+# Özellikler (v2.157 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -197,6 +197,8 @@ tuşları bozulmaz.
   - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
+- **Test verisi koruması (v2.157):** hazır test dosyaları **onayla** yüklenir;
+  aynı düğme "Test dosyalarını kaldır (N)" olur ve sesleriyle siler.
 - **Hazırlık ↔ kapsama (v2.156):** rapor hazırlığı bölümlenmemiş ses
   aralıklarını da sayar; satıra tıklayınca kapsam paneli açılır.
 - **Tek dil (v2.155):** kullanıcı metninde "Yedek" yok; paket diyaloğu
