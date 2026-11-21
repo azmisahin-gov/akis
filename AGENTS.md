@@ -2169,6 +2169,45 @@ toplu düzenleme yaparken **seçici ikizlenmesi** riski var (`.app-shell.app-she
 düzenleme sonrası ikiz seçici ve parantez dengesi ölçülmeli.
 
 
+### Aşama 10bi — Durum renkleri tek anlam (TAMAMLANDI, v2.163)
+
+**BULGU (kullanıcı gözlemi, ölçümle doğrulandı):** `.seg-tool.play-main` siyah
+zemin + mavi yazı (**1.1:1**), `#view-audio .follow-btn.on` altın zemin + koyu
+yazı (**3.03:1**), `#view-audio .play-main.on` sabit yeşil + tema yazısı
+(3.44:1), `.seg-tool.on` ID kapsamlı kural yüzünden rengi değişmiyordu.
+
+**KÖK NEDEN (üç ayrı hata):**
+1. **Anlam kayması:** "açık" durumu altınla işaretlenmişti (altın = uyarı).
+2. **Özgüllük:** `#view-audio .seg-tool { color: … }` (1,1,0) `.seg-tool.on`
+   (0,2,0) rengini eziyordu.
+3. **Eski değerler:** durum kuralları `--navy` + `#fff` kullanıyordu; `--navy`
+   temaya bağlanınca (v2.161) "siyah zemin" oluştu.
+
+**KURAL — DURUM TABLOSU (değişmez):**
+
+| Rol | Zemin | Yazı |
+|---|---|---|
+| Birincil (dolu) | `--accent` | `--accent-ink` |
+| Açık / seçili | `--accent-soft` | `--accent` |
+| Çalıyor | `--green` | `--surface` |
+| Uyarı / gözlem | `--gold-soft` | `--gold` |
+| Nötr | `--surface-2` | `--ink-2` |
+
+**Ölçüm (v2.163, gerçek Chromium):** 19 bileşen × 6 (2 görünüm × 3 tema) durum
+matrisi → **0** düşük kontrast; metin kontrastı 12/12 → 0 hata; koyu/sepya'da
+açık yüzey 0. Gerçek UI (takip + hız + filtre + Dinle açık) ekran görüntüsüyle
+doğrulandı.
+
+**Koruyan test:** `tasarim-testi` [2aa] (6 kontrol).
+
+**DERS (en pahalı):** Neden göremedim? Çünkü denetimlerim **temel durumu** ve
+**kontrastı** ölçüyordu; `.on`/`.is-active`/`:hover` gibi **durum sınıflarını
+hiç çizmedim**. Ayrıca minified CSS'te kural çok satıra yayıldığı için
+`grep` ile bulunamadı; kesin yöntem CDP `CSS.getMatchedStylesForNode` ile
+"hangi kural kazanıyor" sorusunu sormaktır. Bundan sonra her tema
+incelemesinde **durum matrisi** çıkarılmalı: bileşen × durum × tema.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2342,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.162.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.163.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2641,7 +2680,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.162) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.163) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2652,10 +2691,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.162** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.163** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.162 |
-| Açık konu | **Yok** (tema/palet/punto/kozmetik kapandı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.163 |
+| Açık konu | **Yok** (tema + durum renkleri kapandı; sırada senaryo ölçümü) |
 
 ### Bu oturumda ne değişti (kısa)
 

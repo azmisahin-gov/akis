@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.162.**
+yazılır. **Güncel sürüm: v2.163.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,18 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.163 — Durum renkleri tek anlam (tamamlandı)
+
+Kullanıcı gözlemi: "seg-tool play-main siyah zemin/mavi yazı", "follow-btn on
+kahverengi zemin/beyaz yazı". Ölçüm: `.play-main` **1.1:1**,
+`#view-audio .follow-btn.on` altın zemin + koyu yazı **3.03:1**, `.seg-tool.on`
+ID kapsamlı kural yüzünden `--ink-2` yazı. Kök: durum sınıfları `--navy` +
+beyaz kullanıyordu ve ID kapsamlı renk kuralları `.on` durumunu eziyordu.
+Durum tablosu: birincil `--accent`+`--accent-ink`, seçili `--accent-soft`+
+`--accent`, çalıyor `--green`+`--surface`, uyarı/gözlem `--gold-soft`+`--gold`.
+Ölçüm: 19 bileşen × 6 (görünüm×tema) → **0** düşük kontrast.
+Koruyan test: `tasarim` [2aa].
 
 ### v2.162 — Tema tam uygulama (tamamlandı)
 

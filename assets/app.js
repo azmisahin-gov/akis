@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.162';
+} from './schema.js?v=2.163';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.162';
+const APP_VERSION = '2.163';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12245,6 +12245,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.163': {
+    title: 'Durum renkleri tek anlama indi',
+    body:
+      '"▶ Dinle" siyah zemin/mavi yazı, "Canlı vurgu" açıkken kahverengi zemin, ' +
+      'hız/filtre seçiliyken okunmayan yazı görülüyordu. Durum renkleri artık tek ' +
+      'kurala bağlı: BİRİNCİL eylem = koyu lacivert (accent), AÇIK/seçili = açık ' +
+      'mavi zemin + lacivert yazı, ÇALIYOR = yeşil, UYARI/gözlem = altın. Üç ' +
+      'temada da ölçüldü: 19 bileşen × 6 tema/durum, düşük kontrast 0.'
+  },
   '2.162': {
     title: 'Temalar artık baştan sona uygulanıyor',
     body:

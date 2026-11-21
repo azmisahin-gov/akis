@@ -570,11 +570,34 @@ console.log('\n[2z] Tema tam uygulama (v2.162)');
     check(`${hex} token'a çevrildi`, !new RegExp('background[^;}]*' + hex, 'i').test(strip(appCss)));
   }
   // Dolu düğmeler tema accent'i kullanır.
-  check('oynat düğmesi accent kullanır', /#view-audio \.main-play\s*\{[^}]*var\(--accent\)/.test(rl));
-  check('split numarası accent kullanır', /#view-questions \.split-no\s*\{[^}]*var\(--accent\)/.test(rl));
+  check('oynat düğmesi accent kullanır', /\.main-play\{[^}]*background:var\(--accent\)/.test(appCss));
+  check('split numarası accent kullanır', /\.split-no\{background:var\(--accent\)/.test(appCss));
   // Tuval renkleri token'dan okunur ve tema değişince yeniden çizilir.
   check('tuval renkleri token\'dan', /function themeVar\(/.test(js) && /themeVar\('--surface-2'/.test(js));
   check('tema değişince tuval tazelenir', /__segWaveRedraw\?\.\(\)/.test(js));
+}
+
+// --- 2aa. Durum renkleri tek anlam (v2.163) -------------------------------
+// BULGU (kullanıcı gözlemi): "seg-tool play-main siyah zemin/mavi yazı",
+// "mini-button follow-btn on kahverengi zemin/beyaz yazı". Ölçüm: `.play-main`
+// 1.1:1, `#view-audio .follow-btn.on` altın zemin + koyu yazı (3.03:1).
+// KURAL: altın yalnız UYARI/GÖZLEM; açık (on) durumu accent-soft; birincil
+// eylem accent. Durum rengi ham hex olamaz.
+console.log('\n[2aa] Durum renkleri tek anlam (v2.163)');
+{
+  const ac = read('assets/app.css');
+  const rl = read('assets/reading-layer.css');
+  const rules = [...(ac + '\n' + rl).matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ sel: m[1].replace(/\s+/g, ' ').trim(), body: m[2] }))
+    .filter((r) => /(^|[\s,])\.(on|is-active)\b/.test(r.sel) || /:(hover|focus)/.test(r.sel) === false && /\.on\b/.test(r.sel));
+  const goldBg = rules.filter((r) => /background[^;]*var\(--gold\)/.test(r.body));
+  check('açık durumda altın zemin yok', goldBg.length === 0, goldBg.slice(0, 2).map((r) => r.sel).join(' | '));
+  const hexBg = rules.filter((r) => /background[^;]*#[0-9a-fA-F]{3,6}/.test(r.body));
+  check('açık durumda ham hex zemin yok', hexBg.length === 0, hexBg.slice(0, 2).map((r) => r.sel).join(' | '));
+  check('takip düğmesi açıkken accent-soft', /#view-audio \.follow-btn\.on\{[^}]*background:var\(--accent-soft\)/.test(ac));
+  check('dinle düğmesi çalarken yeşil', /#view-audio \.play-main\.on\{[^}]*background:var\(--green\)/.test(ac));
+  check('seg-tool açıkken accent-soft', /\.seg-tool\.on[^{]*\{[^}]*background: var\(--accent-soft\)/.test(rl));
+  check('birincil mini-button dolu accent', /\.mini-button\.primary \{[^}]*background: var\(--accent\)/.test(rl));
 }
 
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------

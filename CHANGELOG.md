@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.162.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.163.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.163 — Durum renkleri tek anlama indi
+
+Kullanıcı gözlemi: *"`seg-tool play-main` siyah zemin/mavi yazı, `mini-button
+follow-btn on` kahverengi zemin/beyaz yazı."* Ölçüm bunu doğruladı.
+
+### ÖLÇÜLEN HATALAR
+
+| Bileşen / durum | Ölçüm | Kök neden |
+|---|---|---|
+| `#view-audio .seg-tool.play-main` | **1.1:1** | zemin `--navy` (siyah), yazı ID kapsamlı kuraldan `--accent` (mavi) |
+| `#view-audio .follow-btn.on` | **3.03:1** | altın zemin (`var(--gold)`) + koyu yazı `#2b1d06` |
+| `#view-audio .play-main.on` | 3.44:1 | sabit `#2c8062` zemin + tema yazısı |
+| `.seg-tool.on` (ses görünümü) | renk değişmiyordu | `#view-audio .seg-tool` (ID) `.on` rengini eziyordu |
+| `.mini-button.primary` | "birincil" ama gri | `--surface-3` zemin |
+| `.karaoke span.on` | sabit `#ffd479` | tema dışı vurgu |
+
+### KURAL — DURUM RENKLERİ TEK TABLO
+
+| Rol | Zemin | Yazı | Nerede |
+|---|---|---|---|
+| **Birincil (dolu)** | `--accent` | `--accent-ink` | Onayla · Çal/Dinle · UDF · split numarası |
+| **Açık / seçili** | `--accent-soft` | `--accent` | filtre · hız · analiz modu · takip · split adımı |
+| **Çalıyor** | `--green` | `--surface` | bölüm "Dinle" düğmesi |
+| **Uyarı / gözlem** | `--gold-soft` | `--gold` | gürültü/üst üste işaretleri, uyarı kutuları |
+| **Nötr** | `--surface-2` | `--ink-2` | temel düğme/çip |
+
+Altın artık **yalnız uyarı/gözlem** için; "açık" durumun rengi değil.
+
+### YAPILAN
+
+- `--navy` tabanlı durum kuralları (`play-main`, `seg-tool.on`, `follow-btn.on`,
+  `obs-btn.on`, `mini-button.on`, `split-item.on`, `split-no`) tek tabloya çekildi.
+- ID kapsamlı renk kuralı `:not(.on):not(.play-main)` ile daraltıldı; `.on`
+  durumu artık ezilmiyor.
+- `.mini-button.primary` dolu accent oldu.
+- Takip vurgusu: ağır altın blok yerine **altın-soft zemin + alt çizgi**.
+- Karaoke vurgusu da token'a bağlandı.
+
+### DOĞRULAMA (gerçek Chromium)
+
+| Kontrol | Sonuç |
+|---|---|
+| **Durum matrisi**: 19 bileşen × 6 (2 görünüm × 3 tema) | **0** düşük kontrast |
+| Metin kontrastı (4 görünüm × 3 tema) | **0** hata |
+| Koyu/sepya'da açık yüzey | **0** |
+| Gerçek UI: takip + hız + filtre + Dinle açıkken ekran görüntüsü | tutarlı |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2aa]** (6 kontrol): açık durumda altın zemin yok, açık
+durumda ham hex zemin yok, takip = accent-soft, çalıyor = yeşil, seg-tool =
+accent-soft, birincil = dolu accent.
 
 ## v2.162 — Temalar baştan sona uygulandı
 

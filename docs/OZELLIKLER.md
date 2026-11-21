@@ -1,4 +1,4 @@
-# Özellikler (v2.162 — mevcut durum)
+# Özellikler (v2.163 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -197,6 +197,8 @@ tuşları bozulmaz.
   - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
+- **Durum renkleri (v2.163):** birincil = accent · seçili = accent-soft ·
+  çalıyor = yeşil · uyarı/gözlem = altın; üç temada tutarlı.
 - **Tema tam uygulama (v2.162):** yüzey/metin renkleri token; tuval temadan;
   üç temada AA kontrast; koyu/sepya temada açık kalan panel yok.
 - **Tasarım sistemi (v2.161):** üç temada AA kontrast; punto ölçeği tek

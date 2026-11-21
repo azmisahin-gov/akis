@@ -20,7 +20,7 @@
 .detail-panel{margin-top:14px}
 .audio-detail{min-height:40px}
 @media(max-width:720px){.material-row{grid-template-columns:28px minmax(0,1fr) auto}.mr-meta,.mr-status{display:none}}
-.audio-card{border:1px solid #e6ebf0;border-radius:9px;padding:14px 15px;background:var(--surface)}.audio-card-top{display:flex;gap:11px;align-items:center}.audio-file-icon{width:34px;height:34px;display:grid;place-items:center;background:var(--surface-3);border-radius:8px;color:#355c85}.audio-file-main{min-width:0;flex:1}.audio-file-main b{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:12px;color:#2c4055}.audio-file-main small{display:block;font-size:11px;color:#93a0ad;margin-top:3px}.audio-actions{display:flex;gap:6px;flex-wrap:wrap}.mini-button{border:1px solid #dfe6ed;background:var(--surface);color:#52677c;border-radius:6px;padding:7px 9px;font-size:11px;cursor:pointer}.mini-button.primary{background:var(--surface-3);border-color:#d9e3ed;color:#24486f}.audio-meta{display:flex;gap:15px;flex-wrap:wrap;padding:11px 0 0;margin-top:10px;border-top:1px solid #f0f2f5}.audio-meta span{font-size:11px;color:var(--ink-3)}.audio-meta b{color:#53677a;font-weight:600}.audio-player{width:100%;height:32px;margin-top:9px}
+.audio-card{border:1px solid #e6ebf0;border-radius:9px;padding:14px 15px;background:var(--surface)}.audio-card-top{display:flex;gap:11px;align-items:center}.audio-file-icon{width:34px;height:34px;display:grid;place-items:center;background:var(--surface-3);border-radius:8px;color:#355c85}.audio-file-main{min-width:0;flex:1}.audio-file-main b{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;font-size:12px;color:#2c4055}.audio-file-main small{display:block;font-size:11px;color:#93a0ad;margin-top:3px}.audio-actions{display:flex;gap:6px;flex-wrap:wrap}.mini-button{border:1px solid #dfe6ed;background:var(--surface);color:#52677c;border-radius:6px;padding:7px 9px;font-size:11px;cursor:pointer}.mini-button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}.audio-meta{display:flex;gap:15px;flex-wrap:wrap;padding:11px 0 0;margin-top:10px;border-top:1px solid #f0f2f5}.audio-meta span{font-size:11px;color:var(--ink-3)}.audio-meta b{color:#53677a;font-weight:600}.audio-player{width:100%;height:32px;margin-top:9px}
 .wave-wrap{margin-top:10px}
 .wave-canvas{width:100%;height:48px;display:block;border:1px solid #e3e9ef;border-radius:7px;background:var(--surface-2);cursor:crosshair}
 .wave-hint{font-size:11px;color:#93a0ad;margin-top:4px}
@@ -114,7 +114,7 @@
 .transcript-toolbar .group>span{font-size:11px;color:#7d8ea0;padding:0 6px;font-weight:600}
 .seg-tool{border:0;background:transparent;color:#3a5673;font:600 11px 'Segoe UI';padding:6px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
 .seg-tool:hover{background:#e2ecf5;color:var(--navy)}
-.seg-tool.on{background:var(--navy);color:#fff}
+.seg-tool.on{background:var(--accent-soft);color:var(--accent)}
 .seg-tool:disabled{opacity:.45;cursor:default}
 .speed-tool{min-width:44px;text-align:center}
 .filter-chip{border:1px solid #e2eaf2;background:var(--surface);color:#5a6f84;font:600 11px 'Segoe UI';padding:6px 10px;border-radius:20px;cursor:pointer}
@@ -228,7 +228,7 @@ body.focus-mode .seg-detail textarea{min-height:180px;font-size:15px}
 /* Karaoke vurgulaması */
 .karaoke{margin:0 0 7px;padding:9px 11px;background:#f3f7fb;border:1px solid #e0eaf3;border-radius:7px;font-size:12px;line-height:1.7;color:#8393a3}
 .karaoke span{transition:background .12s,color .12s;border-radius:3px;padding:0 1px}
-.karaoke span.on{background:#ffd479;color:#5a3f10;font-weight:700}
+.karaoke span.on{background:var(--gold-soft);color:var(--gold);font-weight:700}
 /* Kanal seçimi */
 .chan-select{display:flex;gap:2px;background:var(--surface-2);border:1px solid #e2eaf2;border-radius:8px;padding:2px}
 /* Dinleme yardımcıları */
@@ -620,10 +620,10 @@ html,body{height:100%;overflow:hidden}
 .split-item{display:flex;align-items:center;gap:9px;width:100%;text-align:left;border:0;
   background:transparent;border-radius:7px;padding:9px 10px;cursor:pointer;color:var(--ink-2)}
 .split-item:hover{background:var(--surface-2)}
-.split-item.on{background:var(--surface-2);box-shadow:inset 3px 0 var(--gold)}
+.split-item.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 3px 0 var(--gold)}
 .split-no{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:6px;
   background:var(--surface-3);color:var(--accent);font:700 11px Manrope}
-.split-item.on .split-no{background:var(--navy);color:#fff}
+.split-item.on .split-no{background:var(--accent);color:var(--accent-ink)}
 .split-item>span:nth-child(2){min-width:0;flex:1}
 .split-item b{display:block;font-size:11px;color:#2c4055;line-height:1.3}
 .split-item small{display:block;font-size:11px;color:#93a0ad;margin-top:2px}
@@ -811,14 +811,14 @@ body.ws-mode #view-audio .listen-strip .audio-player{height:38px}
 .listen-row{display:flex;align-items:center;gap:7px}
 .listen-row .audio-player{flex:1;min-width:0}
 .follow-btn{flex:none;white-space:nowrap;font-weight:700}
-.follow-btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.follow-btn.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 
 /* Canlı vurgu (takip modu) */
 #view-audio .karaoke{border-color:#d6e4f2;background:#f2f7fc;color:var(--ink-3)}
 #view-audio .karaoke .kk-done{color:#2c4055}
 #view-audio .karaoke .kk-rest{color:#b3bfcb}
 #view-audio .karaoke span.done{color:#2c4055}
-#view-audio .karaoke span.on{background:#ffd479;color:#5a3f10;font-weight:700}
+#view-audio .karaoke span.on{background:var(--gold-soft);color:var(--gold);font-weight:700}
 /* Takip açıkken liste ve metin alanı sade; dikkat dağıtacak şey yok. */
 body.follow-on #view-audio .transcript-toolbar{opacity:.55}
 body.follow-on #view-audio .seg-item{transition:background .15s}
@@ -992,9 +992,9 @@ body.ws-mode #view-audio .listen-strip .audio-player{height:36px}
 /* 1) Başlık: ince. Ana Dinle düğmesi belirgin. */
 #view-audio .seg-detail-head{margin:0;padding-bottom:6px;gap:8px}
 #view-audio .seg-detail-head .idx{font-size:11px}
-#view-audio .play-main{background:var(--navy);color:#fff;font-weight:700;padding:5px 11px}
+#view-audio .play-main{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700;padding:5px 11px}
 #view-audio .play-main:hover{background:#1b3b63}
-#view-audio .play-main.on{background:#2c8062}
+#view-audio .play-main.on{background:var(--green);border-color:var(--green);color:var(--surface)}
 
 /* 2) Notlar: tek satır çipler (3 ayrı kutu yerine). */
 #view-audio .seg-notes{display:flex;flex-wrap:wrap;gap:4px}
@@ -1062,15 +1062,15 @@ body.ws-mode #view-audio .zoom-wave{height:64px}
 #view-audio .listen-strip{display:flex;flex-direction:column;gap:5px;
   padding-bottom:6px;margin-bottom:5px}
 #view-audio .listen-row{display:flex;align-items:center;gap:7px}
-.main-play{flex:none;border:0;border-radius:8px;background:var(--navy);color:#fff;
+.main-play{flex:none;border:0;border-radius:8px;background:var(--accent);color:var(--accent-ink);
   font:700 12px 'Segoe UI';padding:8px 16px;cursor:pointer;min-width:104px;
   box-shadow:0 3px 10px rgba(20,44,77,.25)}
-.main-play:hover{background:#1b3b63}
-.main-play.on{background:var(--green)}
+.main-play:hover{background:var(--accent);filter:brightness(1.08)}
+.main-play.on{background:var(--accent)}
 #view-audio .listen-row .audio-player{flex:1;min-width:0;height:34px}
 #view-audio .follow-btn{flex:none;padding:7px 10px;font-size:11px}
-#view-audio .follow-btn.on{background:var(--gold);border-color:var(--gold);
-  color:#2b1d06;font-weight:700}
+#view-audio .follow-btn.on{background:var(--accent-soft);border-color:var(--accent);
+  color:var(--accent);font-weight:700}
 #view-audio .listen-strip .wave-canvas{height:44px}
 body.ws-mode #view-audio .listen-strip .wave-canvas{height:52px}
 
@@ -1129,7 +1129,7 @@ body.follow-on #view-audio .seg-detail *{transition:none!important;animation:non
 #view-audio .seg-obs-row .sb-lbl{font:600 11px 'Segoe UI';letter-spacing:.3px;
   color:#7d8ea0;margin-right:2px;flex:none}
 #view-audio .obs-btn{padding:4px 10px;font-size:11px;border-radius:14px}
-#view-audio .obs-btn.on{background:var(--navy);border-color:var(--navy);color:#fff}
+#view-audio .obs-btn.on{background:var(--gold-soft);border-color:var(--gold);color:var(--gold)}
 #view-audio .seg-ops-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;
   padding:4px 0 0}
 #view-audio .seg-ops-row .mini-button{font-size:11px;padding:3px 8px}
