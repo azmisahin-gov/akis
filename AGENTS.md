@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.198.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.199.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3632,3 +3632,70 @@ konmaz.**
 **Sürüm notu:** Aynı sürüm (v2.198) korunduğu için `version.json` değişmedi;
 açık sekmeler kendiliğinden yenilenmez. Kullanıcı sayfayı **bir kez** yenilemeli
 (`?t=<zaman>` veya Ctrl+Shift+R).
+
+## YENİ OTURUM DEVRİ (v2.199) — Dar ekranda karar çubuğu
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.199** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1058 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.199** |
+| Açık konu | v2.200 >45 sn birleştirme uyarısı; v2.201 rapora "Okuma metni" |
+
+### Bu sürümde ne yapıldı
+
+Kullanıcı: *"≤900 px'te Dinle/Kontrol ekran dışında; karar için kaydırmak
+gerekiyor."* Ölçüm (v2.198, 900×900): ayrıntı başlığı **y=1112** (ekran dışında);
+yapışkan çubukta **Kontrol seçicisi yoktu**.
+
+- `narrowBarHtml` sırası: **▶ Dinle · Kontrol · ↑/↓ · ✓ Onayla**.
+- Kontrol seçicisi `reviewSelectOptions(rev, true)` kullanır; ayrıntı başlığı
+  `reviewSelectOptions(rev)` (tam etiket). **Tek kaynak**; dar ekranda kısa
+  etiket (`Bekliyor`, `Yeniden`, `Belirsiz`…).
+- `.narrow-bar { flex-wrap: wrap }`: sığmayan öğe **sarar**, kırpılmaz.
+- Karar **tek kapıdan**: değişiklik işleyicisi `applyReviewChoice(m, i, el.value)`
+  çağırır. Böylece ikinci göz koruması, "Bekleyen" filtresinden düşme, ayrıntı
+  paneli ve dar çubuk **aynı anda** tazelenir. Önceden kopya mantık vardı:
+  pending filtresinde onaylanan satır listede kalıyor, başlık eski değeri
+  gösteriyordu.
+- Toast, çubuğun **gerçek** yüksekliğinin üstünde: `--narrow-bar-h`
+  (`syncNarrowBarHeight` + `ResizeObserver`). Sabit 66 px 360 px'te yetmiyordu.
+
+### Ölçüm (gerçek Chromium + CDP, 900×900)
+
+| Genişlik | Çubuk | Kırpılan | Toast çakışması |
+|---|---|---|---|
+| 900/760/600 | 54 px, tek satır | 0 | yok (20 px boşluk) |
+| 480/360 | 100 px, iki satır | 0 | yok (20 px) |
+| 320 | 146 px, üç satır | 0 | yok (18 px) |
+
+Akış (360 px): Kontrol'den **Anlaşılmadı** → satır `st-inaudible`, başlık ve
+çubuk aynı; "Bekleyen" filtresinde **↓** → sonraki; **Onaylandı** → satır
+listeden düştü (9 → 8); **✓ Onayla** → sonraki bölüme geçti. JS hatası **0**.
+
+### DEĞİŞMEZ KURAL: dar çubukta karar tek kapıdan
+
+Yeni bir kontrol kararı yazma noktası eklerken **`applyReviewChoice`** kullanın.
+Doğrudan `setSegReview` + elle DOM tazeleme, "Bekleyen" filtresini ve başlıktaki
+seçiciyi ayrı bırakır (v2.199'da düzeltildi). `narrowBarHtml` yeni bir kontrol
+eklerse mevcut `data-*` işleyicisini kullanmalı; kendi mantığını taşımamalı.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.199 sonrası)
+
+1. **v2.200 — Birleştirme >45 sn uyarısı.** Bölüm uzunluğu standardını korur
+   (engellemez); `birim` testi.
+2. **v2.201 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
+   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez.
+3. **v2.202 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
+4. **v2.203 — Dosyalar arası konuşmacı kaydı** (case-level registry).
+5. **v2.204 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+
+### Bilinen sınırlar (hata değil)
+
+- ≤900 px tek sütun; detay listenin altında.
+- 320 px'te çubuk üç satıra çıkar (146 px); kırpma yok, kaydırma gerekmez.
+- Toast, sayfa kartın sonuna kaydırıldığında çubuğun bir kısmını **geçici**
+  (3,4 sn) örtebilir; toast `pointer-events:none` olduğu için tıklamayı engellemez.

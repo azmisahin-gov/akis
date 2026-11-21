@@ -2025,6 +2025,9 @@ input::placeholder, textarea::placeholder {
     display: flex;
     align-items: center;
     gap: 6px;
+    /* KIRPMA YASAK (v2.190 dersi): sığmayan öğe alt satıra iner. Özellikle
+       Kontrol seçicisi eklendikten sonra 360 px'te tek satır yetmez. */
+    flex-wrap: wrap;
     margin-top: 10px;
     padding: 6px 8px;
     border: 1px solid var(--line-2);
@@ -2045,6 +2048,33 @@ input::placeholder, textarea::placeholder {
     cursor: pointer;
   }
   #view-audio .narrow-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  /* KONTROL SEÇİCİSİ (v2.199): dar ekranda karar vermek için ayrıntı başlığına
+     kaydırmak gerekmiyordu. Seçenekler ayrıntı başlığıyla AYNI kaynaktan gelir
+     (reviewSelectOptions). Doğal genişliğini korur; sığmazsa çubuk sarar. */
+  #view-audio .narrow-review {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex: 0 0 auto;
+    min-height: 40px;
+  }
+  #view-audio .narrow-review > span {
+    color: var(--ink-3);
+    font-size: var(--fs-2xs);
+    white-space: nowrap;
+  }
+  #view-audio .narrow-review select {
+    min-height: 40px;
+    padding: 6px 8px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-xs);
+    max-width: 100%;
+  }
+  #view-audio .narrow-review select:focus-visible { outline: none; box-shadow: var(--focus-ring); }
   #view-audio .narrow-approve {
     background: var(--accent);
     border-color: var(--accent);
@@ -2062,8 +2092,9 @@ input::placeholder, textarea::placeholder {
     font-variant-numeric: tabular-nums;
   }
   /* Bildirim yapışkan çubuğun ÜSTÜNDE kalır (v2.158 dersi: kaybolan bildirim
-     "durum" değildir). Ölçüm: çubuk 820–874, toast 811–854 → çakışıyordu. */
-  .toast { bottom: calc(var(--status-h) + 66px); }
+     "durum" değildir). Çubuğun GERÇEK yüksekliği JS ile `--narrow-bar-h`'a
+     yazılır (v2.199): 360 px'te çubuk iki satıra sarınca sabit 66 px yetmiyordu. */
+  .toast { bottom: calc(var(--status-h) + var(--narrow-bar-h, 54px) + 12px); }
 }
 
 /* --- v2.169 — Raporda punto alt sınırı ve hash okunabilirliği -------------- */

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.198';
+} from './schema.js?v=2.199';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.198';
+const APP_VERSION = '2.199';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1651,17 +1651,46 @@ function narrowBarHtml(m) {
   if (!segs.length) return '';
   const i = activeSegIndex(m);
   const s = segs[i];
+  const rev = segReview(s);
   const playing = segPlayback.materialId === m.id && segPlayback.playing;
+  // SIRA (v2.199): Dinle → Kontrol → ↑/↓ → Onayla. Kullanıcının dar ekranda
+  // kaydırmadan yaptığı tur budur: dinle, karar ver, sonrakine geç. Kontrol
+  // seçicisi ayrıntı başlığındakiyle AYNI kaynaktan (reviewSelectOptions) gelir.
   return `<div class="narrow-bar" data-narrow-bar="${esc(m.id)}" role="toolbar" aria-label="Bölüm işlemleri (dar ekran)">
+    <button class="narrow-btn narrow-play ${playing ? 'on' : ''}" data-play-active="1" title="Aktif bölümü dinle / duraklat">${playing ? '⏸ Duraklat' : '▶ Dinle'}</button>
+    <label class="narrow-review" title="Kontrol durumu — 1 Onay, 2 Anlaşılmadı, 3 Yeniden, 4 Belirsiz">
+      <span>Kontrol</span>
+      <select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu" title="Kontrol: 1 Onay · 2 Anlaşılmadı · 3 Yeniden dinle · 4 Belirsiz">${reviewSelectOptions(rev, true)}</select>
+    </label>
     <button class="narrow-btn" data-seg-nav="prev" title="Önceki bölüm (↑)" aria-label="Önceki bölüm">↑</button>
     <button class="narrow-btn" data-seg-nav="next" title="Sonraki bölüm (↓)" aria-label="Sonraki bölüm">↓</button>
-    <button class="narrow-btn narrow-play ${playing ? 'on' : ''}" data-play-active="1" title="Aktif bölümü dinle / duraklat">${playing ? '⏸ Duraklat' : '▶ Dinle'}</button>
     <button class="narrow-btn narrow-approve" data-approve-seg="${i}" title="Aktif bölümü onayla (Enter)">✓ Onayla</button>
     <span class="narrow-pos" title="Aktif bölüm / toplam">${i + 1}/${segs.length}</span>
   </div>`;
 }
 // Dar ekran çubuğu KENDİ mantığını taşımaz: düğmeler, kart içindeki mevcut
 // data-* işleyicilerini kullanır. Burada yalnız aktif bölüme göre yenilenir.
+// Çubuğun GERÇEK yüksekliği CSS'e yazılır (v2.199): 360 px'te iki satıra
+// sarınca sabit 66 px yetmiyor ve toast çubuğun üstüne biniyordu. Yükseklik
+// yeniden boyutlandırmada da değişebildiği için ResizeObserver ile izlenir.
+let narrowBarRO = null;
+function syncNarrowBarHeight(bar) {
+  const h = bar ? Math.round(bar.getBoundingClientRect().height) : 0;
+  document.documentElement.style.setProperty('--narrow-bar-h', h + 'px');
+  if (typeof ResizeObserver === 'undefined') return;
+  if (!narrowBarRO) {
+    narrowBarRO = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        document.documentElement.style.setProperty(
+          '--narrow-bar-h',
+          Math.round(e.target.getBoundingClientRect().height) + 'px'
+        );
+      }
+    });
+  }
+  narrowBarRO.disconnect();
+  if (bar) narrowBarRO.observe(bar);
+}
 function refreshNarrowBar(m, card) {
   const host = card || document.querySelector('.audio-card');
   if (!host) return;
@@ -1671,9 +1700,14 @@ function refreshNarrowBar(m, card) {
   const bar = cardEl.querySelector(`[data-narrow-bar="${CSS.escape(m.id)}"]`);
   // Bölüm yokken çubuk çizilmez; sonradan bölüm eklenirse (elle veya
   // çözümlemeyle) burada OLUŞTURULUR — yalnız güncellemek yetmez.
-  if (!html) { if (bar) bar.remove(); return; }
+  if (!html) {
+    if (bar) bar.remove();
+    syncNarrowBarHeight(null);
+    return;
+  }
   if (bar) bar.outerHTML = html;
   else cardEl.insertAdjacentHTML('beforeend', html);
+  syncNarrowBarHeight(cardEl.querySelector(`[data-narrow-bar="${CSS.escape(m.id)}"]`));
 }
 // Ses kaydını kaldırmak GERİ ALINAMAZ bir işlemdir: IndexedDB'deki ses
 // verisi kalıcı silinir, geri alma yalnız kaydı/metni getirir (v2.107 dersi).
@@ -4195,6 +4229,27 @@ function segHeadParts(i, total) {
   const t = Math.max(0, Number(total) || 0);
   return { label: `Bölüm ${n + 1}`, of: t ? ` / ${t}` : '' };
 }
+// Kontrol seçenekleri TEK KAYNAK (v2.199): ayrıntı başlığı ve dar ekran
+// çubuğu AYNI listeyi kullanır. Etiketler schema.js'ten gelir; kopya metin yok.
+// `short` yalnız DAR EKRAN çubuğu içindir: tam etiketler ("Kontrol bekliyor")
+// seçiciyi 148 px yapıp 360 px'te çubuğu 3 satıra çıkarıyordu. Kısa etiketler
+// anlamı korur; ayrıntı başlığında tam etiket kalır.
+const REVIEW_SHORT_LABEL = {
+  pending: 'Bekliyor',
+  machine: 'Çözümlendi',
+  approved: 'Onaylandı',
+  inaudible: 'Anlaşılmadı',
+  relisten: 'Yeniden',
+  ambiguous: 'Belirsiz'
+};
+function reviewSelectOptions(rev, short) {
+  return Object.keys(REVIEW_STATES)
+    .map((k) => {
+      const label = short ? REVIEW_SHORT_LABEL[k] || REVIEW_STATES[k].label : REVIEW_STATES[k].label;
+      return `<option value="${k}" ${rev === k ? 'selected' : ''}>${label}</option>`;
+    })
+    .join('');
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -4203,9 +4258,7 @@ function segDetailHtml(m) {
   const s = segs[i];
   if (!s) return '<div class="seg-detail-empty">Bölüm bulunamadı.</div>';
   const rev = segReview(s);
-  const opts = Object.keys(REVIEW_STATES)
-    .map((k) => `<option value="${k}" ${rev === k ? 'selected' : ''}>${REVIEW_STATES[k].label}</option>`)
-    .join('');
+  const opts = reviewSelectOptions(rev);
   const hist = (s.history || []).length;
   const halluc = isHallucination(s.text);
   const pr = segPriority(s, segs[i - 1]);
@@ -11727,20 +11780,12 @@ function setupEvents() {
     const i = Number(el.dataset.seg);
     const s = m?.segments[i];
     if (!s) return;
-    // İkinci göz onay veremez. "Anlaşılmadı" ve "Yeniden dinlenecek" bir onay
-    // değil, gözlem olduğu için serbesttir.
-    if (el.value === 'approved' && isSecondEyesEditor()) {
-      showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
-      el.value = segReview(s);
-      return;
-    }
-    setSegReview(s, el.value);
-    el.dataset.state = el.value;
-    persist();
-    updateSegListItem(m, i);
-    refreshSegChips(m);
-    renderOverview();
-    if ($('#view-report').classList.contains('active')) renderReport();
+    // TEK KAPI (v2.199): kontrol kararı applyReviewChoice'ten geçer. Böylece
+    // ikinci göz koruması, "Bekleyen" filtresinden düşme, ayrıntı paneli ve
+    // dar ekran çubuğu AYNI anda tazelenir. Önceden burada kopya mantık vardı:
+    // 'pending' filtresinde onaylanan satır listede kalıyor, başlıktaki seçici
+    // eski değeri gösteriyordu.
+    if (!applyReviewChoice(m, i, el.value)) el.value = segReview(s);
   });
   $('#loadModelBtn').addEventListener('click', () => ensureModel().catch((e) => showToast(e.message)));
   const modelSelectEl = $('#modelSelect');
@@ -12862,6 +12907,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.199': {
+    title: 'Dar ekranda karar çubuğu: Dinle · Kontrol · ↓',
+    body:
+      '900 pikselden dar ekranda bölüm kartının altındaki yapışkan çubuğa Kontrol ' +
+      'seçicisi eklendi. Artık dinledikten sonra Onaylandı / Anlaşılmadı / Yeniden ' +
+      'dinle / Belirsiz seçimini yapmak ve ↓ ile sonraki bölüme geçmek için yukarı ' +
+      'kaydırmak gerekmiyor. Çubuk sığmazsa alt satıra sarar; hiçbir düğme gizlenmez. ' +
+      '"Bekleyen" filtresinde onaylanan satır listeden düşer ve başlık anında güncellenir.'
+  },
   '2.198': {
     title: 'Birleştirme adayı: ⇄ rozet ve filtre',
     body:

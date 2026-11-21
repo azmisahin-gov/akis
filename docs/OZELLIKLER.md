@@ -1,4 +1,4 @@
-# Özellikler (v2.198 — mevcut durum)
+# Özellikler (v2.199 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,12 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Dar ekran karar çubuğu (v2.199):** ≤900 px'te bölüm kartının altındaki
+  yapışkan çubukta **▶ Dinle · Kontrol · ↑/↓ · ✓ Onayla** vardır. Karar
+  (Onaylandı / Anlaşılmadı / Yeniden dinle / Belirsiz) kaydırmadan verilir;
+  çubuk sığmazsa **alt satıra sarar**. Karar tek kapıdan (`applyReviewChoice`)
+  işlenir: "Bekleyen" filtresindeki satır onaylanınca listeden düşer ve başlık
+  anında güncellenir.
 - **Birleştirme adayı (v2.198):** Aynı konuşmacı + kısa bölüm (<2 sn veya
   <5 kelime) + cümle sonu noktalaması yok + sonrakiyle boşluk ≤0,5 sn koşullarını
   sağlayan satırlar listede **⇄** rozetiyle işaretlenir; araç çubuğunda

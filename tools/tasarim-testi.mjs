@@ -974,17 +974,19 @@ console.log('\n[2ac] Dar ekranda bölüm işlemleri erişilebilir (v2.165)');
   }
   check('≤900 px çubuk görünür ve yapışkan', okNarrow);
 
-  // Bildirim çubuğun üstünde kalmalı: toast bottom = status-h + Npx, N >= 60.
+  // Bildirim çubuğun üstünde kalmalı: toast bottom = status-h + çubuğun
+  // GERÇEK yüksekliği + 12px. v2.199: sabit 66 px, çubuk 360 px'te iki satıra
+  // sarınca yetmiyordu; yükseklik JS ile `--narrow-bar-h`'a yazılır.
   let toastClear = false;
   let re2 = /@media\s*\(max-width:\s*900px\)/g;
   let m2;
   while ((m2 = re2.exec(rl))) {
     const chunk = rl.slice(m2.index, m2.index + 6000);
     const rule = chunk.match(/\.toast\s*\{([^}]*)\}/);
-    const calc = rule && rule[1].match(/bottom:\s*calc\(var\(--status-h\)\s*\+\s*(\d+)px\)/);
-    if (calc && Number(calc[1]) >= 60) { toastClear = true; break; }
+    if (rule && /--narrow-bar-h/.test(rule[1]) && /bottom:\s*calc\(/.test(rule[1])) { toastClear = true; break; }
   }
   check('≤900 px bildirim yapışkan çubuğun üstünde', toastClear);
+  check('çubuk yüksekliği CSS değişkenine yazılıyor', /--narrow-bar-h/.test(js) && /function syncNarrowBarHeight/.test(js));
 }
 
 console.log('\n[2ad] Künye her görünümden erişilir (v2.167)');
@@ -1430,6 +1432,22 @@ console.log('\n[2ax] 5 tuşu: birleştirme adayı filtresi (v2.198 düzeltme)');
   check('aday yoksa filtre değişmiyor (saf fonksiyon)', /if \(!\(Number\(count\) > 0\)\) return current;/.test(appJs));
   check('yardım 5 tuşunu anıyor', /<b>5<\/b>/.test(help) && /5<\/b>[^<]{0,60}(birleştirme|aday)/i.test(help));
   check('yardım tanımsız 8 tuşu uydurmuyor', !/<b>8<\/b>/.test(help));
+}
+
+console.log('\n[2ay] Dar ekran karar çubuğu: Kontrol + sarma (v2.199)');
+{
+  const appJs = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const help = read('index.html');
+  // 900 px'te Dinle/Kontrol ekran dışındaydı (y=1631); çubuk artık Kontrol
+  // seçicisini taşır ve sığmayan öğe SARAR (kırpma yasak).
+  check('dar çubuk Kontrol seçicisi taşıyor', /class="narrow-review"[\s\S]{0,500}data-key="review"/.test(appJs));
+  check('dar çubuk kısa etiketleri kullanıyor', /reviewSelectOptions\(rev, true\)/.test(appJs));
+  check('seçenekler tek kaynaktan (reviewSelectOptions)', /function reviewSelectOptions\(rev, short\)/.test(appJs));
+  check('çubuk sarar (kırpma yok)', /#view-audio \.narrow-bar \{[\s\S]{0,500}flex-wrap: wrap/.test(layer));
+  check('karar tek kapıdan (applyReviewChoice)', /if \(el\.dataset\.key !== 'review'\) return;[\s\S]{0,1200}applyReviewChoice\(m, i, el\.value\)/.test(appJs));
+  check('toast çubuğun gerçek yüksekliğini kullanıyor', /--narrow-bar-h/.test(layer) && /syncNarrowBarHeight/.test(appJs));
+  check('yardım dar ekran çubuğunu anıyor', /<h3>Dar ekran \(≤900 px\)<\/h3>/.test(help));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

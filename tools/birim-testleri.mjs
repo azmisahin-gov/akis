@@ -119,6 +119,7 @@ const EXPOSE = [
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
+  'reviewSelectOptions', 'syncNarrowBarHeight',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -3384,6 +3385,28 @@ console.log('\n== [70] Birleştirme adayı: deterministik ölçüt (v2.198)');
   eq('5 tuşu: merge → all', T.nextMergeFilter('merge', 2), 'all');
   eq('5 tuşu: başka filtreden merge', T.nextMergeFilter('pending', 1), 'merge');
   eq('5 tuşu: aday yoksa mevcut merge kalır', T.nextMergeFilter('merge', 0), 'merge');
+}
+
+console.log('\n== [71] Dar ekran karar çubuğu: Kontrol seçenekleri (v2.199)');
+{
+  // KULLANICI: 900 px'te Dinle/Kontrol ekran dışında (y=1631); karar için
+  // kaydırmak gerekiyordu. Dar çubuk artık Kontrol seçicisini taşır.
+  // Seçenekler ayrıntı başlığıyla AYNI kaynaktan gelir; dar ekranda kısa etiket.
+  const full = T.reviewSelectOptions('approved');
+  eq('tam etiket: 6 seçenek', (full.match(/<option/g) || []).length, 6);
+  eq('tam etiket: Onaylandı seçili', /value="approved" selected>Onaylandı</.test(full), true);
+  eq('tam etiket: Kontrol bekliyor', /value="pending"[^>]*>Kontrol bekliyor</.test(full), true);
+  eq('tam etiket: Yeniden dinlenecek', /value="relisten"[^>]*>Yeniden dinlenecek</.test(full), true);
+  eq('tam etiket: Belirsiz okuma', /value="ambiguous"[^>]*>Belirsiz okuma</.test(full), true);
+  const short = T.reviewSelectOptions('approved', true);
+  eq('kısa etiket: 6 seçenek', (short.match(/<option/g) || []).length, 6);
+  eq('kısa etiket: Bekliyor', /value="pending"[^>]*>Bekliyor</.test(short), true);
+  eq('kısa etiket: Yeniden', /value="relisten"[^>]*>Yeniden</.test(short), true);
+  eq('kısa etiket: Belirsiz', /value="ambiguous"[^>]*>Belirsiz</.test(short), true);
+  eq('kısa etiket: Onaylandı seçili', /value="approved" selected>Onaylandı</.test(short), true);
+  eq('seçili olmayan işaretlenmez', /value="pending" selected/.test(short), false);
+  // Kısa etiketler TAM etiketlerden farklı olmalı (gerçekten kısa).
+  eq('kısa etiket tam etiketten kısa', short.length < full.length, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

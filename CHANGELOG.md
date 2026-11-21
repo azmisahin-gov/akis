@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.198.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.199.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.199 — Dar ekranda karar çubuğu (Kontrol + ↓)
+
+Kullanıcı: *"≤900 px'te Dinle/Kontrol ekran dışında; karar için kaydırmak
+gerekiyor."* Ölçüm (v2.198, 900×900): ayrıntı başlığı **y=1112** (ekran
+dışında); yapışkan çubukta **Kontrol seçicisi yoktu**.
+
+### KULLANICI NE GÖRECEK
+
+- ≤900 px'te kartın altındaki yapışkan çubukta artık **Kontrol** seçicisi var:
+  **▶ Dinle · Kontrol · ↑/↓ · ✓ Onayla**.
+- Dinledikten sonra **Onaylandı / Anlaşılmadı / Yeniden dinle / Belirsiz**
+  seçimi kaydırmadan yapılır; **↓** ile sonraki bölüme geçilir.
+- Çubuk sığmazsa **alt satıra sarar**; hiçbir düğme gizlenmez.
+- "Bekleyen" filtresinde bir bölümü onaylayınca satır **listeden düşer** ve
+  başlıktaki seçici **anında** güncellenir (önceden satır kalıyor, başlık eski
+  değeri gösteriyordu).
+
+### Teknik
+
+- `narrowBarHtml` → Kontrol seçicisi (`data-key="review"`), kısa etiketler
+  (`reviewSelectOptions(rev, true)`). Ayrıntı başlığı tam etiketleri kullanır;
+  ikisi **aynı kaynak**.
+- Karar **tek kapıdan**: `applyReviewChoice(m, i, el.value)`. Böylece ikinci göz
+  koruması, "Bekleyen" filtresinden düşme, ayrıntı paneli ve çubuk aynı anda
+  tazelenir.
+- `flex-wrap: wrap` (kırpma yasak).
+- Bildirim çubuğun **gerçek** yüksekliğinin üstünde: `--narrow-bar-h`
+  (`syncNarrowBarHeight` + `ResizeObserver`). Sabit 66 px 360 px'te yetmiyordu.
+
+**Ölçüm (gerçek Chromium + CDP, 900/760/600/480/360/320):**
+
+| Genişlik | Çubuk | Kırpılan | Toast çakışması |
+|---|---|---|---|
+| 900/760/600 | 54 px, tek satır | 0 | yok (20 px boşluk) |
+| 480/360 | 100 px, iki satır | 0 | yok (20 px) |
+| 320 | 146 px, üç satır | 0 | yok (18 px) |
+
+Akış (360 px): Kontrol'den **Anlaşılmadı** → satır `st-inaudible`, başlık ve
+çubuk aynı; "Bekleyen" filtresinde **↓** → sonraki; **Onaylandı** → satır
+listeden düştü (9 → 8); **✓ Onayla** → sonraki bölüme geçti. JS hatası **0**.
+
+**KORUYAN TEST:** `birim` [71] (13 kontrol) + `tasarim` [2ay] (7) + [2ac]
+(güncellendi).
 
 ## v2.198 — Birleştirme adayı (⇄ rozet + filtre)
 
