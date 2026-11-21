@@ -1622,3 +1622,10 @@ input::placeholder, textarea::placeholder {
   max-height: none;
   overflow: visible;
 }
+
+/* v2.148 — Takip şeridi YER TUTUCUSU: canlı vurgu açıkken kutu önceden
+   kurulur; oynatma yalnız metni değiştirir, yerleşim zıplamaz. */
+.sd-follow.is-placeholder {
+  color: var(--ink-3);
+  font-style: italic;
+}

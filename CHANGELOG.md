@@ -6,12 +6,62 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.147.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.148.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.148 — Oynatma başlarken sayfa zıplamıyor
+
+CANLI VERİ. Kullanıcı: *"sd-follow normalde kapalı; play'e basınca açılıyor ve
+sayfada ani bir değişiklik yaratıyor. Bölüm 1 yazıyor ama play'e basınca
+Bölüm 1 / 100 oluyor, orada bir değişiklik oluyor."*
+
+### ÖLÇÜM (v2.147, gerçek ses)
+
+| Durum | Metin alanı üstü | Başlık |
+|---|---|---|
+| Canlı vurgu kapalı | 305 px | "Bölüm 1 / 16" |
+| Canlı vurgu açık, oynatmadan | **369 px** (+64) | "Bölüm 1 / 16" |
+| Oynatma başladı | 369 px | **"Bölüm 1"** ( `/ 16` kayboldu) |
+
+İki ayrı hata:
+1. Şerit yalnız oynatma anında DOM'a ekleniyordu → metin 64 px aşağı itiliyordu.
+2. `syncSegDetailInPlace`, `.sd-idx`in textContent'ini yazıp **içindeki
+   ` / N` span'ını siliyordu** → oynatma anında başlık kısalıyordu.
+
+### DÜZELTME
+
+- `segHeadParts(i, total)` — etiket ve toplam TEK KAYNAK; `.sd-idx` ve `.sd-of`
+  artık **kardeş** span'lar (biri diğerini silemez).
+- `ensureFollowStrip(m, idx)` — canlı vurgu açıkken şerit **yer tutucu** olarak
+  önceden kurulur ("Canlı vurgu açık — oynatınca okunan cümle burada görünür.").
+  Oynatma yalnız METNİ değiştirir; yükseklik sabit kalır.
+- Metin yoksa şerit **silinmez**, yer tutucuya döner (yerleşim sabit).
+
+### ÖLÇÜM (v2.148, aynı ses)
+
+| Durum | Metin alanı üstü | Başlık |
+|---|---|---|
+| Canlı vurgu açık, oynatmadan | 369 px (yer tutucu) | "Bölüm 1 / 16" |
+| Oynatma başladı | **369 px (değişmedi)** | **"Bölüm 1 / 16"** |
+| Oynatma 1,5 sn sonra | 369 px | "Bölüm 1 / 16" |
+
+### KULLANICI NE GÖRECEK
+
+- Canlı vurguyu açtığınızda şerit bir kez yerleşir (bilinçli eylem).
+- **Oynat'a bastığınızda sayfa zıplamaz**; yalnız şeritteki metin değişir.
+- Bölüm başlığı her zaman "Bölüm X / N" — oynatmayla değişmez.
+
+### TASARIM NOTU (neden head'e taşımadık)
+
+Şerit başlığa taşınsaydı, iki satırlık metin başlık yüksekliğini oynatma
+anında büyütür ve **aynı zıplama** başlıkta olurdu. Yer tutucu çözümü
+zıplamayı tümüyle kaldırır; maliyeti canlı vurgu açıkken 48 px'lik sabit alan.
+
+Koruyan test: `birim-testleri` [58] (4) + `tasarim-testi` [2s] (3).
 
 ## v2.147 — Takip şeridi önceki bölüme dönmüyor
 

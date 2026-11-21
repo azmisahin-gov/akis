@@ -423,6 +423,19 @@ console.log('\n[2r] Detay paneli kırpmıyor (v2.143)');
   );
 }
 
+// --- 2s. Takip şeridi yer tutucusu (v2.148) -------------------------------
+// Kullanıcı: "sd-follow normalde kapalı; play'e basınca açılıyor ve sayfada
+// ani değişiklik yaratıyor." Şerit artık canlı vurgu AÇIKKEN yer tutucu olarak
+// önceden kurulur; oynatma yalnız metni değiştirir (yerleşim zıplamaz).
+console.log('\n[2s] Takip şeridi yer tutucusu (v2.148)');
+{
+  const rl = read('assets/reading-layer.css');
+  check('yer tutucu stili tanımlı', /\.sd-follow\.is-placeholder\s*\{/.test(rl));
+  const js = read('assets/app.js');
+  check('şerit çizimden sonra hazırlanıyor', /ensureFollowStrip\(m, idx\)/.test(js));
+  check('mod değişiminde şerit hazırlanıyor', /ensureFollowStrip\(mm, activeSegIndex\(mm\)\)/.test(js));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını

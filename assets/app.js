@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.147';
+} from './schema.js?v=2.148';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.147';
+const APP_VERSION = '2.148';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3779,6 +3779,16 @@ function asrCompareHtml(m, s, i) {
     <p class="asr-note">Bu metin modelin ürettiği ham çıktıdır ve <b>değiştirilmez</b>. Yukarıdaki alan sizin düzeltmenizdir; rapora onayladığınız metin girer.</p></div>
   </details>`;
 }
+// BÖLÜM BAŞLIĞI — TEK KAYNAK (v2.148).
+// NEDEN: ilk çizim "Bölüm 3 / 100" yazıyordu; yerinde güncelleme `.sd-idx`in
+// textContent'ini yazıp içindeki ` / N` span'ını SİLİYORDU → oynatma başlayınca
+// başlık "Bölüm 3"e düşüyordu (kullanıcı: "orada bir değişiklik oluyor").
+// Artık etiket ve toplam AYRI span'lardır; ikisi de aynı fonksiyondan gelir.
+function segHeadParts(i, total) {
+  const n = Math.max(0, Number(i) || 0);
+  const t = Math.max(0, Number(total) || 0);
+  return { label: `Bölüm ${n + 1}`, of: t ? ` / ${t}` : '' };
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -3837,7 +3847,7 @@ function segDetailHtml(m) {
   // yol açıyordu: içerik 642px, kap 416-562px).
   return `
   <div class="sd-head">
-    <span class="sd-idx">Bölüm ${i + 1}<span class="sd-of"> / ${segs.length}</span></span>
+    <span class="sd-idx">${segHeadParts(i, segs.length).label}</span><span class="sd-of">${segHeadParts(i, segs.length).of}</span>
     <span class="sd-nav">
       <button class="seg-tool" data-seg-nav="prev" title="Önceki bölüm (↑)">↑</button>
       <button class="seg-tool" data-seg-nav="next" title="Sonraki bölüm (↓)">↓</button>
@@ -4750,6 +4760,7 @@ function renderSegDetail(m) {
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = activeSegIndex(m);
+  ensureFollowStrip(m, idx);
   attachSegWave(m, idx);
   // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
   // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
@@ -5712,6 +5723,10 @@ function setFollow(on, mode) {
     localStorage.setItem('akis.followPref', JSON.stringify({ autoFollow: followState.on }));
   } catch (e) {}
   refreshFollowButtons();
+  // Canlı vurgu açıldıysa şerit YER TUTUCU olarak hemen kurulur (v2.148):
+  // oynatma anında sayfa zıplamasın.
+  const mm = activeMaterial();
+  if (mm) ensureFollowStrip(mm, activeSegIndex(mm));
   // Takip zamanlayıcısı yalnız "otomatik geçiş" için gerekir; canlı vurgu
   // oynatma olaylarıyla (timeupdate) zaten besleniyor.
   if (followState.autoAdvance) startFollow();
@@ -5814,8 +5829,9 @@ function syncSegDetailInPlace(m, idx) {
   // yeniden yazıldığı için hiçbir alan eşleşmiyordu. Sonuç: takip modunda
   // bölüm listesi ilerliyor, sağ panel eski bölümde kalıyordu — kullanıcının
   // "takip etmiyor" gözlemi buydu.
-  setTxt('.sd-head .sd-idx', `Bölüm ${idx + 1}`);
-  setTxt('.sd-head .sd-of', ` / ${segs.length}`);
+  const head = segHeadParts(idx, segs.length);
+  setTxt('.sd-head .sd-idx', head.label);
+  setTxt('.sd-head .sd-of', head.of);
   const times = detail.querySelectorAll('.sd-times .sd-time input');
   if (times[0] && times[0].value !== (s.start || '')) times[0].value = s.start || '';
   if (times[1] && times[1].value !== (s.end || '')) times[1].value = s.end || '';
@@ -6002,6 +6018,24 @@ function followStripIndex(m, idx, autoAdvance) {
   if (autoAdvance && m && Number.isInteger(m.activeSeg)) return m.activeSeg;
   return idx;
 }
+// TAKİP ŞERİDİ YER TUTUCUSU (v2.148).
+// NEDEN: şerit yalnız OYNATMA başlayınca DOM'a ekleniyordu; iki satırlık kutu
+// metni aşağı itiyor, sayfa oynatma anında zıplıyordu. Canlı vurgu açıksa
+// şerit ÖNCEDEN (boş yer tutucu olarak) kurulur; oynatma yalnız METNİ değiştirir.
+function ensureFollowStrip(m, idx) {
+  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
+  if (!wrap) return;
+  const bar = wrap.querySelector('.sd-follow');
+  if (!followState.liveHighlight) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (bar) return;
+  const el = document.createElement('div');
+  el.className = 'sd-follow is-placeholder';
+  el.textContent = 'Canlı vurgu açık — oynatınca okunan cümle burada görünür.';
+  wrap.insertBefore(el, wrap.firstChild);
+}
 function markTextFollow(m, idx, t) {
   idx = followStripIndex(m, idx, followState.autoAdvance);
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
@@ -6015,17 +6049,23 @@ function markTextFollow(m, idx, t) {
     return;
   }
   const s = (m.segments || [])[idx];
-  if (!s || !s.text || isHallucination(s.text)) {
-    wrap.querySelector('.sd-follow')?.remove();
+  const toPlaceholder = () => {
+    // Yerleşim SABİT kalır: şerit silinmez, yer tutucuya döner (v2.148).
+    const bar = wrap.querySelector('.sd-follow');
+    if (bar) {
+      bar.classList.add('is-placeholder');
+      bar.textContent = 'Canlı vurgu açık — oynatınca okunan cümle burada görünür.';
+    }
     delete wrap.__karaokeKey;
     delete wrap.__followSentence;
+  };
+  if (!s || !s.text || isHallucination(s.text)) {
+    toPlaceholder();
     return;
   }
   const segs = karaokeSegments(s);
   if (!segs.length) {
-    wrap.querySelector('.sd-follow')?.remove();
-    delete wrap.__karaokeKey;
-    delete wrap.__followSentence;
+    toPlaceholder();
     return;
   }
   // SABİT PENCERE (v2.125): yalnız O ANKİ CÜMLE gösterilir. Kutu yüksekliği
@@ -6047,6 +6087,7 @@ function markTextFollow(m, idx, t) {
     bar.className = 'sd-follow';
     wrap.insertBefore(bar, wrap.firstChild);
   }
+  bar.classList.remove('is-placeholder');
   if (wrap.__karaokeKey !== key) {
     // Kelime listesi boşluk parçası taşımıyorsa (ASR `words` yalnız kelimeleri
     // verir) kelimeler arasına boşluk KONUR; aksi hâlde metin tek kelime gibi
@@ -11695,6 +11736,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.148': {
+    title: 'Oynatma başlarken sayfa artık zıplamıyor',
+    body:
+      'Canlı vurgu açıkken takip şeridi ancak OYNATMA başlayınca ekleniyordu ve ' +
+      'metni aşağı itiyordu; ayrıca bölüm başlığı oynatma anında "Bölüm 1"den ' +
+      '"Bölüm 1 / 100"ye dönüşüyordu. Artık şerit canlı vurgu açıkken YER TUTUCU ' +
+      'olarak önceden kurulur (oynatma yalnız metni değiştirir) ve başlık her zaman ' +
+      '"Bölüm X / N" yazar. Ölçüm: metin alanı oynatma öncesi/sonrası aynı yerde.'
+  },
   '2.147': {
     title: 'Takip şeridi artık önceki bölüme dönmüyor',
     body:

@@ -115,7 +115,7 @@ const EXPOSE = [
   'normalizeRescueCases', 'persistPayloadFor',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
-  'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex',
+  'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2845,6 +2845,23 @@ console.log('\n== [57] Takip şeridi eski bölüme dönmüyor (v2.147)');
     eq('otomatik geçişte aktif bölüm kullanılır', T.followStripIndex({ activeSeg: 1 }, 0, true), 1);
     eq('otomatik geçiş kapalıyken verilen indeks', T.followStripIndex({ activeSeg: 1 }, 0, false), 0);
     eq('aktif bölüm yoksa verilen indeks', T.followStripIndex({}, 3, true), 3);
+  }
+}
+
+
+console.log('\n== [58] Bölüm başlığı tek kaynak (v2.148)');
+{
+  // Kullanıcı: "Bölüm 1 yazıyor ama play'e basınca Bölüm 1 / 100 oluyor,
+  // orada bir değişiklik oluyor." İlk çizim ile yerinde güncelleme AYRI
+  // yazıyordu; yerinde güncelleme `.sd-idx`in içindeki ` / N` span'ını siliyordu.
+  // KURAL: etiket ve toplam aynı saf fonksiyondan gelir.
+  eq('segHeadParts tanımlı', typeof T.segHeadParts, 'function');
+  if (typeof T.segHeadParts === 'function') {
+    const p = T.segHeadParts(2, 100);
+    eq('etiket', p.label, 'Bölüm 3');
+    eq('toplam', p.of, ' / 100');
+    const z = T.segHeadParts(0, 0);
+    eq('toplam yoksa boş', z.of, '');
   }
 }
 

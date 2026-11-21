@@ -1737,6 +1737,39 @@ konarak takip uçtan uca **gerçek sesle** ölçülebildi (ASR gerekmedi).
 
 **Koruyan test:** `birim-testleri` [57] (4).
 
+### Aşama 10at — Oynatma başlarken sayfa zıplamıyor (TAMAMLANDI, v2.148)
+
+**KURAL: bir panelin içeriği OYNATMA anında büyüyüp küçülmez. Yer tutucu
+kullan; başlık etiketi tek kaynaktan gelir.**
+
+**Ölçülen iki hata (v2.147, gerçek ses):**
+1. Takip şeridi ancak oynatma başlayınca DOM'a ekleniyordu → metin alanı
+   305 → 369 px (**+64**) aşağı itiliyordu.
+2. `syncSegDetailInPlace` `.sd-idx`in textContent'ini yazıyor, **içindeki
+   ` / N` span'ını siliyordu** → oynatma anında başlık "Bölüm 1 / 16"den
+   "Bölüm 1"e düşüyordu.
+
+**Düzeltme:**
+1. `segHeadParts(i, total)` — etiket ve toplam TEK KAYNAK; `.sd-idx` ve
+   `.sd-of` **kardeş** span'lar (biri diğerini silemez).
+2. `ensureFollowStrip(m, idx)` — canlı vurgu açıkken şerit **yer tutucu**
+   olarak önceden kurulur; oynatma yalnız metni değiştirir. Metin yoksa şerit
+   silinmez, yer tutucuya döner.
+
+**Ölçüm (v2.148):** oynatma öncesi/sonrası metin alanı **369 px (aynı)**;
+başlık iki durumda da "Bölüm 1 / 16"; JS hatası 0.
+
+**TASARIM NOTU:** Şeridi başlığa taşımak zıplamayı çözmez (iki satır başlığı
+büyütür). Doğru çözüm **yer tutucu**; maliyeti canlı vurgu açıkken 48 px sabit
+alan, karşılığı sıfır yerleşim kayması.
+
+**DERS:** `textContent =` ile içinde span olan bir öğeyi güncellemek çocukları
+siler. Etiket + toplam gibi iki parça ayrı span ise İKİSİ de ayrı yazılmalı ya
+da tek saf fonksiyondan üretilmeli. Ayrıca "oynatınca beliren" her kutu, kutu
+zaten yoksa yerleşimi kaydırır; kutu önceden kurulmalı.
+
+**Koruyan test:** `birim-testleri` [58] (4) + `tasarim-testi` [2s] (3).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1910,7 +1943,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.147.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.148.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2072,7 +2105,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.147** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.148** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2132,6 +2165,7 @@ Test sayısı 441 → **782**.
 | **v2.145** | **Takip vurgusu çakışmada geri atlamıyor** (`segmentIndexAtTime`) | `birim` [55] |
 | **v2.146** | **Zaman sorunu düzenlerken anında görünür** (⚠/çip yenilemeden çıkmıyordu) | `birim` [56] |
 | **v2.147** | **Takip şeridi eski bölüme dönmüyor** (timeupdate eski indeksi kullanıyordu) | `birim` [57] |
+| **v2.148** | **Oynatma başlarken sayfa zıplamıyor** (şerit yer tutucu, başlık tek kaynak) | `birim` [58] · `tasarim` [2s] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
