@@ -2543,16 +2543,16 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P4 kapandı)
+### Durum (2026-11-21, P1 + P2 + P4 kapandı)
 
 | | |
 |---|---|
-| Sürüm | **v2.168** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.169** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `4649805` |
+| Git | `main` = `origin/main` = `4fd2467` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.168** |
-| Açık konu | **Yok** — sırada P2 (rapor kâğıdı) ve P3 (CSS borcu) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.169** |
+| Açık konu | **Yok** — sırada P3 (CSS borcu) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
 
@@ -2584,6 +2584,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.166 | Ses kaydını kaldırma **onay ister** (onaysız kalıcı silme) | diyalog yok → var; Vazgeç sesi korur | `birim` [65] |
 | v2.167 | Künye her görünümden **tek tıkla** (üst barda ✎) | 4 tık + 2 görünüm → **2 tık, 0 görünüm** | `tasarim` [2ad] |
 | v2.168 | Dar ekranda bölüme geçince metin görünür alana gelir | 100 bölüm: metin 7.929 → **587 px**; 1440'ta kaydırma 0 | `tasarim` [2ae] |
+| v2.169 | Rapor kâğıdı: punto tabanı + belge fontu | 11 px altı metin 1 → **0**; kâğıt Segoe UI → **Arial** | `tasarim` [2af] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
