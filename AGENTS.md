@@ -1922,6 +1922,45 @@ gerçek 218 px'in altındaydı (P4'te de tahmin tutmamıştı). Tahminle iş
 bitirilmez; ölçüm yazılır ve kalan fark ADIYLA söylenir.
 
 
+### Aşama 10az — Tek panel, iki bölge (TAMAMLANDI, v2.154)
+
+**KURAL: detay paneli TEK panel, İKİ bölge. Sabit başlıkta yalnız günlük iş
+vardır; metin alanı kalan yüksekliği alır; teknik alan istenince açılır.
+Hiçbir birincil eylem kaydırmadan erişilemez olmaz.**
+
+**Neden (ölçüm, v2.153):** detayda 38 kontrol; 16'sı gizli; onay 90 px,
+gözlem 44 px, konuşmacı 13 px aşağıda. Panel aynı anda 6 iş yapıyordu; her
+sıkıştırma başka bir öğeyi aşağı itiyordu (v2.127 → v2.153 arası ders).
+
+**Yapı (`segDetailHtml`):**
+```
+sd-head (sabit): Bölüm X / N · ↑ ↓ · ▶ Dinle · ⏹
+                 · sd-primary: ✓ Onayla · Yeniden · Anlaşılmadı · ⋯
+                 · Teknik ▾  (data-tech-toggle)
+sd-body: .sd-right (metin, flex 1) + .sd-left.sd-tech[hidden] (dalga/zaman/meta/obs)
+```
+- Alt `.sd-actions` satırı **kaldırıldı** (tek satır, bir kez).
+- Teknik tercih `akis.techOpen` (`techOpenPref`/`setTechOpen`), **varsayılan kapalı**.
+- `renderSegDetail` ve `syncSegDetailInPlace` analiz çizimini YALNIZ teknik açıkken yapar.
+
+**Ölçüm (v2.154, gerçek Chromium):** 1440×900 kapalı: **17/17** kontrol görünür,
+kaydırma **0**, metin alanı **446 px** (önce 160). Açık: **34/34** görünür,
+kaydırma **0**, metin 120 px. 1280/1100/900/760: gizli **0**, kaydırma **0**.
+
+**BULUNAN YAN HATA:** teknik açıkken sayfa yenilenirse dalga BOŞ kalıyordu
+(`painted=0`; bölüm değişince 3020). Görünüm gizliyken çizilen tuvalin
+genişliği 0 olur ve sonraki çizim ESKİ tuvale bağlı kalır (closure).
+Düzeltme: `switchView('audio')` → `renderAudioList()` bittikten sonra
+`requestAnimationFrame` ile detay **yeniden çizilir**. Sonrası: `painted=3020`.
+
+**Koruyan test:** `tasarim-testi` [2v] (9 kontrol).
+
+**DERS:** Bir panelde "hepsini sığdırma" hedefi yanlıştır; hedef **işe göre
+bölge** ayırmaktır. Ölçüt "kaç piksel kaldı" değil, "kaydırmadan kaç kontrol
+erişilebilir" ve "ana iş (yazma) ne kadar yer alıyor" olmalıdır. Ayrıca gizli
+tuvalin genişliği 0'dır; çizim bağlama işini görünürlükten SONRA yapın.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2095,7 +2134,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.153.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.154.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2394,7 +2433,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.153) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.154) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2405,10 +2444,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.153** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.154** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.153 |
-| Açık konu | P5 kısmen: 46 px kaldı (karar kullanıcıda) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.154 |
+| Açık konu | **Yok** — P5 v2.154'te yapısal olarak çözüldü |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2485,11 +2524,11 @@ Koruyan test: `birim` [61]. Ayrıntı: Aşama 10aw.
 İki satırlı zaman hücresi (`.seg-start` / `.seg-end`), sütun 96 px, kesme yok.
 Ölçüm: satır 59 → 72 px. Koruyan test: `tasarim` [2t]. Ayrıntı: Aşama 10ax.
 
-#### P5 — Detay paneli yüksekliği (TAMAMLANDI kısmen, v2.153)
+#### P5 — Detay paneli yüksekliği (TAMAMLANDI, v2.154)
 
-İçerik 795 → 680 px. Gözlem düğmelerine kalan kaydırma 46 px (önce 125).
-Kapatmak için metin alanı veya analiz kutusu küçültülmeli — kullanıcı kararı
-bekliyor. Koruyan test: `tasarim` [2u]. Ayrıntı: Aşama 10ay.
+v2.153'te sıkıştırma 46 px eksik kaldı; v2.154'te yapısal çözüm uygulandı:
+sabit başlık + esneyen metin + isteğe bağlı teknik bölge. Kapalıyken metin
+446 px, kaydırma 0; açıkken 34/34 kontrol görünür. Ayrıntı: Aşama 10az.
 
 
 ### Bu oturumun en pahalı dersleri (tekrar etmeyin)

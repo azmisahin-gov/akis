@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.153.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.154.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.154 — Tek panel, iki bölge
+
+Kullanıcı: *"bu iş sıkıştırma sorunu değil, başka gözden bakmak gerek; tek
+panelden yanayım, masaüstü gibi olsun."*
+
+### ÖLÇÜM — neden sıkıştırma yetmiyordu (v2.153, 1440×900)
+
+| | |
+|---|---|
+| Detay panelinde etkileşimli öğe | **38** |
+| Kaydırmadan görünen | **22** (16 gizli) |
+| Onay düğmesi | **90 px aşağıda** |
+| Gözlem düğmeleri | **44 px aşağıda** |
+| Konuşmacı / Kontrol | **13 px aşağıda** |
+
+Panel aynı anda altı iş yapıyordu (dinle · böl · yaz · sınıflandır · onayla ·
+analiz et). Hangi öğe nereye konsa başka biri aşağı itiliyordu.
+
+### KARAR — tek panel, iki bölge
+
+- **Sabit başlık (asla kaymaz):** Bölüm X / N · ↑ ↓ · ▶ Dinle · ⏹ ·
+  **✓ Onayla** · Yeniden dinle · Anlaşılmadı · Diğer işlemler · **Teknik ▾**
+- **Metin:** kalan **tüm** yükseklik (deşifre = asıl iş)
+- **Teknik (istenince):** dalga, başlangıç/bitiş, konuşmacı, kontrol, gözlem
+- Alt eylem satırı **kaldırıldı** (başlığa taşındı): bir satır, bir kez.
+
+### KULLANICI NE GÖRECEK
+
+- Yazarken **metin alanı 160 → 446 px** (1440×900). Panelde **kaydırma yok**.
+- **Onayla** her zaman görünür; onaydan sonra sıradaki bölüme geçer.
+- Dalga/zaman/konuşmacı/gözlem **Teknik** düğmesiyle açılır; **açıkken de**
+  panelde kaydırma yok (34 kontrolün tamamı görünür). Tercih hatırlanır.
+
+### ÖLÇÜM (v2.154, gerçek Chromium)
+
+| Genişlik | Durum | Gizli kontrol | Kaydırma | Metin alanı |
+|---|---|---|---|---|
+| 1440 | Teknik kapalı | **0** | **0** | **446 px** |
+| 1440 | Teknik açık | **0** | **0** | 120 px |
+| 1280 | kapalı / açık | 0 / 0 | 0 / 0 | 396 / 120 |
+| 1100 | kapalı / açık | 0 / 0 | 0 / 0 | 329 / 120 |
+| 900 | kapalı / açık | 0 / 0 | 0 / 0 | 180 / 180 |
+| 760 | kapalı / açık | 0 / 0 | 0 / 0 | 180 / 180 |
+
+Onay akışı: bekleyen bölüm → **Onaylandı**, aktif bölüm ilerledi. Bölüm
+değişiminde başlık ve metin güncelleniyor; dalga yeni bölüm için çiziliyor.
+
+### BULUNAN YAN HATA (gerçek tarayıcıda)
+
+Teknik bölüm **açıkken sayfa yenilenirse** dalga **boş** kalıyordu
+(ölçüm: `painted=0`, bölüm değiştirince 3020). Sebep: görünüm gizliyken
+çizilen tuvalin genişliği 0'dır ve sonraki çizim eski tuvale bağlı kalıyordu.
+Düzeltme: ses görünümü **görünür olduktan sonra** detay bir kez yeniden
+çizilir. Ölçüm (sonrası): `painted=3020`.
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2v]** (9 kontrol): birincil eylemler başlıkta, teknik
+anahtarı, `.sd-tech` + varsayılan kapalı, alt eylem satırının kaldırılması,
+gizli teknik bölümün `display:none` olması, metin alanının esnemesi, gizli
+tuvalin çizilmemesi ve tercihin saklanması.
 
 ## v2.153 — Detay paneli sıkıştırıldı
 

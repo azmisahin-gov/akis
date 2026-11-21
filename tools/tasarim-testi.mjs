@@ -466,6 +466,25 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
   check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
 }
 
+// --- 2v. Tek panel, iki bölge (v2.154) -----------------------------------
+// ÖLÇÜM (v2.153): detayda 38 kontrol; 16'sı kaydırmadan görünmüyordu.
+// KURAL: sabit başlıkta günlük iş (gezinme, dinle, ONAYLA, teknik anahtarı),
+// metin alanı kalan yüksekliği alır, teknik bölüm istenince açılır.
+console.log('\n[2v] Tek panel, iki bölge (v2.154)');
+{
+  const js = read('assets/app.js');
+  const rl = read('assets/reading-layer.css');
+  check('birincil eylemler başlıkta (.sd-primary)', /class="sd-primary"/.test(js));
+  check('teknik anahtarı var (data-tech-toggle)', /data-tech-toggle="1"/.test(js));
+  check('teknik bölüm .sd-tech taşıyor', /class="sd-left sd-tech"/.test(js));
+  check('alt eylem satırı kaldırıldı (.sd-actions yok)', !/class="sd-actions"/.test(js));
+  check('teknik bölüm varsayılan kapalı (hidden)', /sd-left sd-tech"\$\{techOpen \? '' : ' hidden'\}/.test(js));
+  check('gizli teknik bölüm display:none', /#view-audio \.sd-tech\[hidden\]\s*\{\s*display:\s*none/.test(rl));
+  check('metin alanı kalan yüksekliği alır (flex)', /#view-audio \.seg-detail \.sd-right \.sd-text textarea\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
+  check('gizli tuval çizilmiyor (techOpenPref koruması)', /if \(techOpenPref\(\)\) \{\s*attachSegWave/.test(js));
+  check('teknik tercih saklanıyor', /akis\.techOpen/.test(js) && /function techOpenPref/.test(js));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını

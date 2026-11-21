@@ -1849,3 +1849,71 @@ input::placeholder, textarea::placeholder {
   #view-audio .sd-meta { grid-template-columns: 1fr; }
   #view-audio .sd-times .sd-time { flex-direction: column; align-items: stretch; }
 }
+
+/* ============================================================================
+   v2.154 — TEK PANEL, İKİ BÖLGE (masaüstü düzeni)
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.153, 1440×900): detay panelinde 38 kontrol; 16'sı kaydırmadan
+   görünmüyordu (onay 90 px, gözlem 44 px, konuşmacı 13 px aşağıda). İçerik
+   680 px / panel 577 px. Sıkıştırma bu farkı kapatmıyordu; çünkü panel AYNI
+   ANDA altı iş yapıyordu.
+   KARAR: panel iki bölgeye ayrılır —
+     • SABİT BAŞLIK: gezinme, dinle, ONAYLA, teknik anahtarı (asla kaymaz)
+     • METİN: kalan tüm yükseklik (deşifre = asıl iş)
+     • TEKNİK: dalga/zaman/konuşmacı/gözlem — istenince açılır, kapanınca
+       metin alanı büyür. Açıkken bile panel içine sığar (kaydırma yok).
+   ============================================================================ */
+@media (min-width: 901px) {
+  #view-audio .seg-detail {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  /* Başlık: tek satırda gezinme + dinleme + onay; sığmazsa SARAR (kesilmez). */
+  #view-audio .sd-head {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    row-gap: 4px;
+  }
+  #view-audio .sd-primary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-left: auto;
+  }
+  #view-audio .sd-primary .mini-button { font-size: var(--fs-2xs); padding: 3px 8px; }
+  #view-audio .sd-tech-btn {
+    flex: 0 0 auto;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-sm);
+    padding: 3px 8px;
+    font-size: var(--fs-2xs);
+    white-space: nowrap;
+  }
+  #view-audio .sd-tech-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  /* Gövde: metin esner, teknik sabit yükseklik alır. */
+  #view-audio .seg-detail .sd-body { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right .sd-text textarea {
+    flex: 1 1 auto;
+    min-height: 120px;
+    resize: none;
+  }
+  #view-audio .seg-detail .sd-tech { flex: 0 0 auto; }
+  /* `hidden` ATTRIBUTE'INI EZEN display kuralı: .sd-left display:flex taşıyor.
+     Açıkça yazılmazsa "gizli" teknik bölüm görünür kalır (v2.153 dersi). */
+  #view-audio .sd-tech[hidden] { display: none !important; }
+}
+/* Dar ekran (≤900): panel listenin altında, yükseklik dayatılmaz. Teknik
+   bölüm metnin ALTINDA açılır; metin alanı sabit okunabilir yükseklikte. */
+@media (max-width: 900px) {
+  #view-audio .sd-primary { display: flex; flex-wrap: wrap; gap: 4px; }
+  #view-audio .sd-tech[hidden] { display: none !important; }
+  #view-audio .sd-tech-btn { border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 3px 8px; }
+  #view-audio .sd-tech-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+}

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.153';
+} from './schema.js?v=2.154';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.153';
+const APP_VERSION = '2.154';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1197,7 +1197,19 @@ function switchView(name) {
       : `0${['overview', 'case', 'audio', 'questions', 'report'].indexOf(name)} / AKİS`;
   if (name === 'report') renderReport();
   if (name === 'questions') populateQuestionsForm();
-  if (name === 'audio') renderAudioList();
+  if (name === 'audio') {
+    // GÖRÜNÜR OLDUKTAN SONRA BİR KEZ DAHA ÇİZ (v2.154). Gizli görünümde
+    // çizilen tuvalin genişliği 0'dır; dalga boş kalır (ölçüldü: painted=0,
+    // bölüm değiştirince 3020). Yeniden çizim, gerçek genişlikle bağlanır.
+    renderAudioList()
+      .then(() =>
+        requestAnimationFrame(() => {
+          const m = activeMaterial();
+          if (m && techOpenPref()) renderSegDetail(m);
+        })
+      )
+      .catch(() => {});
+  }
 }
 function renderCaseSelect() {
   const sel = $('#caseSelect');
@@ -3907,6 +3919,11 @@ function segDetailHtml(m) {
   // sağ = METİN (asıl iş, tam yükseklik). Alt = onay + araçlar (tam genişlik).
   // Sabit yükseklik YOK; panel ihtiyacı kadar yer alır (eski clamp taşmaya
   // yol açıyordu: içerik 642px, kap 416-562px).
+  // TEK PANEL, İKİ BÖLGE (v2.154). SABİT başlıkta yalnız GÜNLÜK İŞ vardır:
+  // gezinme, dinleme, onay ve teknik bölüm anahtarı. Teknik alan (dalga, zaman,
+  // konuşmacı, gözlem) istenince açılır; metin alanı kalan yüksekliği alır.
+  // Böylece hiçbir birincil eylem kaydırmadan erişilemez olmaz.
+  const techOpen = techOpenPref();
   return `
   <div class="sd-head">
     <span class="sd-idx">${segHeadParts(i, segs.length).label}</span><span class="sd-of">${segHeadParts(i, segs.length).of}</span>
@@ -3916,6 +3933,13 @@ function segDetailHtml(m) {
       <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
       <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
     </span>
+    <span class="sd-primary">
+      <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
+      <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
+      <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
+      <details class="sd-more"><summary title="Geçmiş, ölçüm ve bölme araçları. Günlük onay akışını kalabalıklaştırmamak için katlanmıştır.">Diğer işlemler</summary><span class="sd-ops">${opsBtns}</span></details>
+    </span>
+    <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga, zamanlar, konuşmacı ve gözlem alanlarını göster/gizle. Yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
 
   ${proposalBandHtml(s, i)}
@@ -3927,7 +3951,7 @@ function segDetailHtml(m) {
   }
 
   <div class="sd-body">
-    <div class="sd-left">
+    <div class="sd-left sd-tech"${techOpen ? '' : ' hidden'}>
       <div class="sd-wave">
         <div class="sd-wave-bar">
           <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
@@ -3985,13 +4009,7 @@ function segDetailHtml(m) {
       </div>
     </div>
   </div>
-
-  <div class="sd-actions">
-    <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
-    <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
-    <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-    <details class="sd-more"><summary title="Geçmiş, ölçüm ve bölme araçları. Günlük onay akışını kalabalıklaştırmamak için katlanmıştır.">Diğer işlemler</summary><span class="sd-ops">${opsBtns}</span></details>
-  </div>`;
+  `;
 }
 // Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
 // her tuş vuruşunda çağrılır; bu yüzden textarea odağı ve imleç korunmalı.
@@ -4823,10 +4841,14 @@ function renderSegDetail(m) {
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = activeSegIndex(m);
   ensureFollowStrip(m, idx);
-  attachSegWave(m, idx);
-  // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
-  // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
-  setAnalysisMode(m, analysisMode);
+  // TEKNİK BÖLÜM KAPALIYKEN çizim bağlanmaz (v2.154): gizli tuvalin genişliği
+  // 0'dır; burada çizmek ölçeği bozar ve spektrogram hesabı boşa gider.
+  if (techOpenPref()) {
+    attachSegWave(m, idx);
+    // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
+    // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
+    setAnalysisMode(m, analysisMode);
+  }
 }
 function renderSegments(m, card) {
   const root = $(`#segments-${CSS.escape(m.id)}`, card || document);
@@ -5899,6 +5921,22 @@ function renderBehaviorPanel() {
 function followShouldAutoStart(pref) {
   return !!(pref && pref.autoFollow === true);
 }
+// TEKNİK BÖLÜM TERCİHİ (v2.154). Tek panel, iki bölge: METİN (asıl iş) ve
+// TEKNİK (dalga/zaman/konuşmacı/gözlem). Varsayılan KAPALI: deşifre yazarken
+// metin alanı tüm yüksekliği alır. Tercih yalnız bu tarayıcıda saklanır.
+const TECH_KEY = 'akis.techOpen';
+function techOpenPref() {
+  try {
+    return localStorage.getItem(TECH_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function setTechOpen(on) {
+  try {
+    localStorage.setItem(TECH_KEY, on ? '1' : '0');
+  } catch (e) {}
+}
 // Takip modu durumu (dosya bazlı saklanır: case.followMode).
 const followState = { on: false, autoAdvance: false, liveHighlight: false };
 // `setFollow(on, mode)` — v2.119: iki bağımsız mod.
@@ -6053,7 +6091,7 @@ function syncSegDetailInPlace(m, idx) {
   // kalırsa yanlış izlenim olur. Dalga tekrar görünür, spektrogram gizlenir.
   // Bölüm değişince analiz görünümü KORUNUR; spektrogram yeni bölüm için
   // yeniden hesaplanır (v2.128). Dalga ve spek aynı kutuda kalır.
-  setAnalysisMode(m, analysisMode);
+  if (techOpenPref()) setAnalysisMode(m, analysisMode);
   setVal('.sd-text textarea', s.text || '');
   const sel = meta[1]?.querySelector('select');
   if (sel) {
@@ -10503,6 +10541,15 @@ function setupEvents() {
         if (panel && !panel.hidden) closeCoveragePanel(m);
         else renderCoveragePanel(m);
       }
+    } else if (b.dataset.techToggle !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) {
+        setTechOpen(!techOpenPref());
+        renderSegDetail(m);
+        showToast(techOpenPref() ? 'Teknik bölüm açık.' : 'Teknik bölüm kapalı — metin alanı büyüdü.');
+      }
     } else if (b.dataset.covGoto !== undefined) {
       const [id, at] = b.dataset.covGoto.split('|');
       const m = c.materials.find((x) => x.id === id);
@@ -12067,6 +12114,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.154': {
+    title: 'Bölüm paneli iki bölgeye ayrıldı: yazarken daha çok yer',
+    body:
+      'Panel artık TEK panel, İKİ bölge: sabit başlıkta gezinme, dinleme, ONAYLA ' +
+      've "Teknik" anahtarı; metin alanı kalan tüm yüksekliği alır. Dalga, ' +
+      'zamanlar, konuşmacı ve gözlem "Teknik" ile açılır. Ölçüm: kapalıyken ' +
+      'metin alanı 446 px (önce 160), panelde kaydırma 0; açıkken bile 34 ' +
+      'kontrolün TAMAMI görünür ve kaydırma 0. Teknik tercih hatırlanır.'
+  },
   '2.153': {
     title: 'Bölüm detayı sıkıştırıldı: daha az kaydırma',
     body:

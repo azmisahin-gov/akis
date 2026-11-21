@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.153.**
+yazılır. **Güncel sürüm: v2.154.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.154 — Tek panel, iki bölge (tamamlandı)
+
+Detay paneli iki bölgeye ayrıldı: **sabit başlık** (gezinme, dinle, onayla,
+Teknik) + **metin** (kalan yükseklik) + **Teknik** (dalga/zaman/konuşmacı/
+gözlem; istenince açılır). Ölçüm (1440×900): kapalıyken metin alanı
+160 → **446 px**, kaydırma **0**; açıkken **34/34** kontrol görünür, kaydırma
+**0**. Dar ekran (900/760): 0 gizli, 0 kaydırma. Koruyan test: `tasarim` [2v].
 
 ### v2.153 — Detay paneli sıkıştırma (tamamlandı, hedef kısmen)
 
