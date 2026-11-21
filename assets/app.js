@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.138';
+} from './schema.js?v=2.139';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.138';
+const APP_VERSION = '2.139';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11658,6 +11658,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.139': {
+    title: 'Uzun listede düzenleme paneli hep görünür',
+    body:
+      '362 bölümlü bir kayıtta aşağı kaydırıp bir bölüme tıkladığınızda detay ' +
+      'paneli ekranın binlerce piksel üstünde kalıyordu; tıklama \"hiçbir şey ' +
+      'olmadı\" gibi hissediliyordu. Artık panel YAPIŞKAN: sağda hep görünür ve ' +
+      'üstteki çalışma çubuğunun altında durur. Panel ekrandan uzunsa yalnız o ' +
+      'zaman kendi içinde kayar.'
+  },
   '2.138': {
     title: 'Görünür değişiklik yok (iç düzen ölçümü)',
     body:

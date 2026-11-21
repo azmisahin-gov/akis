@@ -1481,6 +1481,40 @@ KALIR. Kanıt: tek `!important` eklendi → KALDI (64 > 63); geri alındı → g
 konum tabanlı otomatik düzenleme, kanıt üretmiyorsa yapılmaz. Borç önce
 ölçülür, nöbetçiyle sabitlenir; temizlik küçük ve kanıtlı adımlarla yapılır.
 
+### Aşama 10ak — Uzun listede detay yapışkan (TAMAMLANDI, v2.139)
+
+**KURAL: bölüm listesi uzunken düzenleme paneli YAPIŞKAN ve ekranla sınırlı
+olmalı; kullanıcı aşağıdayken tıkladığı bölümün metnini hemen görmeli.**
+
+**Ölçülen hata (v2.138, 362 bölüm, 1440×900):** listede %45'e kaydırıp 181.
+bölüme tıklayınca detay "Bölüm 181 / 362" olarak güncelleniyor ama blok
+**−5.899 px**'te kalıyordu; editör görünmüyordu. İki modda da aynı.
+
+**Düzeltme:**
+1. `#view-audio .seg-detail { position: sticky; top: 8px; max-height:
+   calc(100vh - 24px); overflow-y: auto }`; ws-mode'da `top: 53px`.
+2. Yapışkanlığı **beş ata kutusu** engelliyordu (segments-root,
+   transcript-editor, card-pane, audio-content-zone, audio-card →
+   `overflow:hidden`). Yalnız **deşifre sekmesi** kapsamında `overflow:visible`;
+   diğer sekmelerin kaydırması korunur. `!important` gerekmedi (aynı/ daha
+   yüksek özgüllük).
+3. Kısa listede davranış değişmez; panel ekrandan uzunsa kendi içinde kayar
+   (v2.121 kararı yalnız bu durum için güncellendi; test [2e] yenilendi).
+
+**Ölçüm (v2.139):** %45/%75 → detay 53–588, editör görünür; mod kapalı → 8–543;
+çubukla çakışma yok; yatay taşma yok; JS hatası 0.
+
+**BİLİNEN SINIR:** ≤900 px tek sütun → detay listenin ALTINDA; yapışkanlık
+devreye girmez. Dar ekran için ayrı düzen gerekir (açık konu).
+
+**DERS:** `position: sticky`, arada `overflow:hidden` olan bir ata varsa
+ÇALIŞMAZ (o ata kaydırma kabı sayılır). Önce ata zinciri ölçülür
+(`getComputedStyle` ile overflow), sonra yapışkanlık denenir. Ayrıca yeni kural
+mevcut `!important` sayacını **yorum içindeki kelimeyle** şişirdi: sayaç artık
+yorumları çıkarır.
+
+**Koruyan test:** `tasarim-testi` [2n] (4) + [2e] (güncellendi).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1654,7 +1688,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.138.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.139.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1816,7 +1850,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.138** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.139** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1867,6 +1901,7 @@ Test sayısı 441 → **782**.
 | **v2.136** | **Sekme simgesi** (favicon 404) | `tasarim` [4b] |
 | **v2.137** | **Rapor kâğıdı dar ekranda kırpılıyordu** (760 px'te 26 px) | `tasarim` [2m] |
 | **v2.138** | **CSS borcu ölçümü + nöbetçi** (temizlik kanıt tutmadığı için yayınlanmadı) | `tasarim` [8] |
+| **v2.139** | **Uzun listede detay yapışkan** (362 bölümde panel ekran dışında kalıyordu) | `tasarim` [2n] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

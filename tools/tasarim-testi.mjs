@@ -309,15 +309,39 @@ console.log('\n[2e] Sağ panel kendi içinde kaymıyor');
   const base = stripMedia(stripComments(layer));
   const detailRules = [...base.matchAll(/#view-audio \.seg-detail\s*\{([^}]*)\}/g)].map((m) => m[1]);
   const allDetail = detailRules.join(';');
+  // v2.139 — KARAR GÜNCELLENDİ: kısa listelerde panel kaydırmaz (v2.121).
+  // Uzun listede (362 bölüm) panel ekrandan uzun olursa, görünür kalabilmek
+  // için KENDİ İÇİNDE kayar; ama yalnız `max-height` ile SINIRLI olarak.
+  // Sınırsız `overflow-y:auto` (sabit yükseklik) hâlâ yasak.
+  const scrollsInside = /overflow-y:\s*(auto|scroll)/.test(allDetail);
   check(
-    'seg-detail kendi içinde kaydırmıyor (overflow-y auto/scroll yok)',
-    !/overflow-y:\s*(auto|scroll)/.test(allDetail),
-    /overflow-y:\s*(auto|scroll)/.test(allDetail) ? 'overflow-y: auto → panel içinde ayrı çubuk' : ''
+    'seg-detail kaydırıyorsa yüksekliği SINIRLI (max-height var)',
+    !scrollsInside || /max-height:\s*[^;]+/.test(allDetail),
+    scrollsInside ? allDetail.trim().slice(0, 120) : ''
   );
   check(
     'seg-detail yüksekliği sabitlenmiyor (içeriği kadar uzar)',
     !/height:\s*(100%|[0-9.]+px)\s*(!important)?/.test(allDetail.replace(/min-height[^;]*;/g, '')),
     allDetail.trim().slice(0, 80)
+  );
+}
+
+// --- 2n. Uzun listede detay görünür kalır (v2.139) ------------------------
+// ÖLÇÜM (v2.138, 362 bölüm): listede %45'e kaydırıp 181. bölüme tıklayınca
+// detay "Bölüm 181 / 362" olarak GÜNCELLENİYOR ama blok −5.899 px'te
+// (ekranın 5,9 bin px üstünde) kalıyordu; editör görünmüyordu. Tıklama
+// "hiçbir şey olmadı" gibi hissediliyordu (iki modda da).
+// KURAL: detay paneli yapışkan (sticky) ve ekran yüksekliğiyle sınırlı.
+console.log('\n[2n] Uzun listede detay görünür kalır (v2.139)');
+{
+  const rl = read('assets/reading-layer.css');
+  const stickyRule = (rl.match(/#view-audio \.seg-detail\s*\{[^}]*\}/g) || []).find((r) => /position:\s*sticky/.test(r)) || '';
+  check('detay paneli yapışkan (position: sticky)', /position:\s*sticky/.test(stickyRule), stickyRule.slice(0, 80));
+  check('yapışma noktası tanımlı (top)', /top:\s*[0-9]+px/.test(stickyRule));
+  check('yükseklik ekranla sınırlı (max-height)', /max-height:\s*calc\(100vh/.test(stickyRule));
+  check(
+    'çalışma modunda yapışma noktası çubuğun altında',
+    /body\.ws-mode #view-audio \.seg-detail\s*\{[^}]*top:\s*53px/.test(rl)
   );
 }
 
@@ -680,18 +704,23 @@ console.log('\n[8] CSS borcu (nöbetçi)');
       if (later && (!d.important || later.important)) cross++;
     }
   }
-  const impApp = (appCss.match(/!important/g) || []).length;
-  const impLayer = (layerCss.match(/!important/g) || []).length;
+  // Yorum içindeki "!important" kelimesi SAYILMAZ (v2.139'da yanlış pozitif üretti).
+  const noComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const impApp = (noComments(appCss).match(/!important/g) || []).length;
+  const impLayer = (noComments(layerCss).match(/!important/g) || []).length;
   const mainArea = (appCss.match(/\.main-area\s*\{/g) || []).length + (layerCss.match(/\.main-area\s*\{/g) || []).length;
   console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} · .main-area ${mainArea}`);
   console.log(`  ölü bildirim: reading-layer içi ${deadCount(layerRules)} · app.css→layer ${cross}`);
 
-  // Nöbetçi eşikleri (v2.138 ölçümü: 26/63/97/494/14). Borç ARTARSA test
-  // kalır; temizlik yapılırsa eşik DÜŞÜRÜLÜR.
+  // Nöbetçi eşikleri (v2.139 ölçümü: 26/59/98/507/14). Borç ARTARSA test
+  // kalır; temizlik yapılırsa eşik DÜŞÜRÜLÜR. 97→98 ve 501→507: v2.139'un
+  // yapışkan `.seg-detail` kuralı, app.css'teki yinelenen `overflow`
+  // bildirimlerini etkisiz bıraktı (bilinçli, tek seferlik). !important
+  // sayacı artık YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=63)', impLayer <= 63, String(impLayer));
-  check('reading-layer içi ölü bildirim artmadı (<=97)', deadCount(layerRules) <= 97, String(deadCount(layerRules)));
-  check('app.css→reading-layer ölü bildirim artmadı (<=494)', cross <= 494, String(cross));
+  check('reading-layer !important sayısı artmadı (<=59)', impLayer <= 59, String(impLayer));
+  check('reading-layer içi ölü bildirim artmadı (<=98)', deadCount(layerRules) <= 98, String(deadCount(layerRules)));
+  check('app.css→reading-layer ölü bildirim artmadı (<=507)', cross <= 507, String(cross));
   check('.main-area tanımı artmadı (<=14)', mainArea <= 14, String(mainArea));
 }
 

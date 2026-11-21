@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.138.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.139.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.139 — Uzun listede düzenleme paneli hep görünür
+
+CANLI VERİ. Bilirkişinin kaydında **362 bölüm** var. Ölçüm: listede %45'e
+kaydırıp 181. bölüme tıklayınca detay "Bölüm 181 / 362" olarak güncelleniyor
+ama blok **−5.899 px**'te (ekranın 5,9 bin px üstünde) kalıyordu; editör
+görünmüyordu. Tıklama "hiçbir şey olmadı" gibiydi — çalışma modu açık ve
+kapalı, ikisinde de.
+
+### DÜZELTME
+
+- `.seg-detail` artık **yapışkan** (`position: sticky; top: 8px`); çalışma
+  modunda yapışkan çubuğun altında (`top: 53px`).
+- Yükseklik ekranla sınırlı (`max-height: calc(100vh - …)`); panel ekrandan
+  uzunsa yalnız o zaman kendi içinde kayar. Kısa listede davranış değişmez.
+- Yapışkanlığı engelleyen `overflow:hidden` sarmalayıcılar (segments-root,
+  transcript-editor, card-pane, audio-content-zone, audio-card) yalnız
+  **deşifre sekmesi** kapsamında görünür yapıldı; diğer sekmelerin kendi
+  kaydırması korunur. `!important` eklenmedi.
+
+### ÖLÇÜM (v2.139, 362 bölüm, 1440×900)
+
+| Durum | Detay paneli | Editör görünür |
+|---|---|---|
+| Önce, %45 kaydırma | **−5.899 … −5.364** | ❌ |
+| Sonra, %45 (çalışma modu) | **53 … 588** | ✅ |
+| Sonra, %75 (çalışma modu) | **53 … 588** | ✅ |
+| Sonra, 181. bölüme tıklama | **53 … 588** ("Bölüm 181 / 362") | ✅ |
+| Sonra, %45 (mod kapalı) | **8 … 543** | ✅ |
+
+Çubukla çakışma: yok. Yatay taşma: yok. JS hatası: 0.
+
+### KULLANICI NE GÖRECEK
+
+- Uzun listede aşağıdayken bir bölüme tıkladığınızda **metni hemen sağda
+  görürsünüz**; sayfa başına dönmeniz gerekmez.
+- Dinleme/onay düğmeleri de panelde, hep elinizin altında.
+
+### BİLİNEN SINIR
+
+- **≤900 px (tek sütun):** detay listenin altında kalır; yapışkanlık orada
+  devreye girmez. Dar ekranda uzun listeler için ayrı bir düzen gerekir.
+
+Koruyan test: `tasarim-testi` [2n] (4) + [2e] güncellendi. CSS borcu nöbetçisi
+[8] yeni eşiklerle (26/59/98/507/14) geçiyor.
 
 ## v2.138 — CSS borcu: ölçüm ve nöbetçi (görünür değişiklik yok)
 

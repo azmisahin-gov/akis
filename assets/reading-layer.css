@@ -1466,3 +1466,41 @@ body.ws-mode .workspace-bar {
   #view-report .paper-table th,
   #view-report .paper-table td { overflow-wrap: anywhere; }
 }
+
+/* ============================================================================
+   v2.139 — UZUN LİSTEDE DETAY GÖRÜNÜR KALIR.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.138, 362 bölüm, 1440×900): listede %45'e kaydırıp 181. bölüme
+   tıklayınca detay "Bölüm 181 / 362" olarak GÜNCELLENİYOR ama blok −5.899 px'te
+   (ekranın 5,9 bin px üstünde) kalıyordu; editör görünmüyordu. Tıklama "hiçbir
+   şey olmadı" gibi hissediliyordu (çalışma modu açık ve kapalı, ikisinde de).
+   KURAL: detay paneli YAPIŞKAN ve ekran yüksekliğiyle SINIRLI. Kısa listede
+   panel yine kaydırmaz (v2.121); yalnız panel ekrandan uzunsa kendi içinde
+   kayar — bu, "detay hep görünür" hedefinin bedelidir.
+   ============================================================================ */
+/* Yapışkanlık, arada `overflow:hidden` olan sarmalayıcılar yüzünden
+   ÇALIŞMIYORDU (ölçüldü: segments-root, transcript-editor, card-pane,
+   audio-content-zone, audio-card). Yalnız deşifre sekmesi kapsamında görünür
+   yapılır; diğer sekmelerin kendi kaydırması korunur. `!important` gerekmedi
+   (seçiciler aynı/ daha yüksek özgüllükte). */
+#view-audio .audio-card,
+#view-audio .audio-content-zone,
+#view-audio .card-pane.on,
+#view-audio .card-pane[data-pane="transcript"] .transcript-editor,
+#view-audio .card-pane[data-pane="transcript"] .segments-root {
+  overflow: visible;
+}
+#view-audio .seg-detail {
+  position: sticky;
+  top: 8px;
+  align-self: start;
+  /* `height: auto` zaten app.css'te (v2.121); burada YİNELENMEZ — borç artmasın. */
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Çalışma modunda üstte yapışkan çubuk var (45 px): detay onun ALTINDA durur. */
+body.ws-mode #view-audio .seg-detail {
+  top: 53px;
+  max-height: calc(100vh - 69px);
+}
