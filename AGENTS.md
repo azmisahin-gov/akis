@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P9 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P10 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.179** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.180** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **974 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `cedf835` |
+| Git | `main` = `origin/main` = `0830630` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.179** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.180** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2595,6 +2595,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.177 | Satır menüsü (⋮ / sağ tık) | kontrol 54 → **47**; birleştirme 3 → **2** | `tasarim` (güncellendi) |
 | v2.178 | Sürükleyerek birleştirme (komşu) | 1 sürükleme; komşu olmayan reddedilir; satır 74 px | `tasarim` [2aj] |
 | v2.179 | Detay: canlı vurgu ezilmiyor | vurgu **14 → 48 px**, metin **120 → 160 px**, panel 81 px kaydırıyor | `tasarim` [2al] |
+| v2.180 | Konuşmacı/kontrol/gözlem her zaman görünür | meta **y=822 → 303**, gözlem **884 → 642** (panel içinde) | `tasarim` [2am] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2882,6 +2883,32 @@ borcu artmadı.
 çelişirse doğru çözüm **ezmek değil, kaydırmaktır**. Ölçüt: her öğenin
 `getBoundingClientRect().height` değeri, durum değişince (Teknik aç/kapa,
 ölçüm yap, not çık) **aynı kalıyor mu**. Gözle bakmak yetmez; ölçün.
+
+#### P10 — Bilgi mimarisi: analiz ≠ düzenleme (v2.180)
+
+**ÖLÇÜM (1440×900):** Teknik paneli açıkken (360 px) **konuşmacı+kontrol y=822**,
+**gözlem düğmeleri y=884**; panel 248–827 → **kaydırmadan erişilemiyordu**.
+
+**AYRIM (değişmez):**
+| Bölge | Ne taşır |
+|---|---|
+| Başlık (sabit) | bölüm no, gezinme, dinle, onayla, kontrol durumu düğmeleri, Teknik anahtarı |
+| **Düzenleme bilgisi** (her zaman görünür) | **konuşmacı** ve **kontrol** seçimleri (+ belirsiz okuma paneli, profil) |
+| Metin bölgesi | canlı vurgu, metin, quick-insert, **gözlem düğmeleri** |
+| **Teknik** (istenince) | dalga/spektrogram, zamanlar, seviye/sessizlik/perde ölçümleri |
+
+Kural: **analiz** (ölçüm/görselleştirme) ile **düzenleme** (konuşmacı, kontrol,
+gözlem) ayrı bölgede durur. Düzenleme bilgisi bir katlama/panel arkasına
+konmaz; çünkü her bölümde kullanılır.
+
+**ÖLÇÜM (sonra):** meta y=303, gözlem y=642 — panel içinde; metin 160 (Teknik
+açık) / 371 (kapalı); vurgu 48; panel kaydırması 81 → **55 px**; hata 0.
+
+**DERS:** Bir alanı "Teknik" gibi bir katlamaya koyarken soru şu olmalı:
+*"Bu bilgi her bölümde, yazarken gerekli mi?"* Evet ise katlanamaz. Ayrıca
+ölçümü **en kötü içerikle** yapın (notlar + ASR kökeni + Teknik açık); temiz
+durumda sorun görünmez (v2.179'da quick-insert'in kaybolması bu yüzden
+kaçmıştı).
 
 ### DOĞRULAMA (her oturum başı)
 
