@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.167.**
+yazılır. **Güncel sürüm: v2.168.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.168 — Dar ekranda metin görünür alana gelir (tamamlandı)
+
+Ölçüm (900×900, 100 bölüm): liste 7.224 px, metin alanı 7.349 px altında.
+`revealSegDetail(m)` eklendi: yalnız ≤900 px'te çalışır, satır tıklaması,
+önceki/sonraki ve onay sonrası çağrılır; `scrollIntoView` ile düzenleme
+alanını getirir. Masaüstünde kaydırma yapılmaz; takip modu kendiliğinden
+kaydırmaz. Ölçüm: 900 px'te metin 7.929 → **587 px** (ekranda), 1440'ta
+kaydırma **0**. Koruyan test: `tasarim` [2ae].
 
 ### v2.167 — Künye her görünümden tek tıkla (tamamlandı)
 

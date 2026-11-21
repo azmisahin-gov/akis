@@ -960,6 +960,26 @@ console.log('\n[2ad] Künye her görünümden erişilir (v2.167)');
     /#caseInfoBtn[\s\S]{0,200}setCaseDrawer\(true\)/.test(js));
 }
 
+console.log('\n[2ae] Dar ekranda düzenleme alanı görünür alana gelir (v2.168)');
+{
+  // ÖLÇÜM (v2.167, 900×900, 100 bölüm): liste 7.224 px, metin alanı listenin
+  // 7.349 px altında; satıra dokununca metin ekranda DEĞİL. Masaüstünde ise
+  // metin listenin yanında (107 px) — kaydırma gerekmez ve zıplama olmamalı.
+  // KURAL: ≤900 px'te bölüm değişince düzenleme alanı görünür alana gelir;
+  // ≥901 px'te HİÇ kaydırma yapılmaz.
+  const js = read('assets/app.js');
+  check('revealSegDetail tanımlı', /function revealSegDetail\(/.test(js));
+  const fn = js.slice(js.indexOf('function revealSegDetail('), js.indexOf('function revealSegDetail(') + 700);
+  check('yalnız ≤900 px\'te çalışır', /innerWidth\s*>\s*900\)\s*return|innerWidth\s*<=\s*900/.test(fn));
+  check('düzenleme alanını görünür alana getirir', /scrollIntoView\(/.test(fn));
+  const focus = js.slice(js.indexOf('function focusSegmentRow('), js.indexOf('function focusSegmentRow(') + 900);
+  check('satıra tıklayınca çağrılır', /revealSegDetail\(/.test(focus));
+  const nav = js.slice(js.indexOf('function navSegment('), js.indexOf('function navSegment(') + 1400);
+  check('önceki/sonraki ile çağrılır', /revealSegDetail\(/.test(nav));
+  const appr = js.slice(js.indexOf('function approveActiveSegment('), js.indexOf('function approveActiveSegment(') + 3000);
+  check('onaydan sonra çağrılır', /revealSegDetail\(/.test(appr));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

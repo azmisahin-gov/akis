@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.167.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.168.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.168 — Dar ekranda bölüme geçince metin görünür alana gelir
+
+Ölçüm (gerçek Chromium 900×900, **100 bölüm**): liste 7.224 px, metin alanı
+listenin **7.349 px** altında. Bir satıra dokununca düzenleme alanı ekranda
+değildi; kullanıcı binlerce piksel kaydırmak zorundaydı. Masaüstünde metin
+listenin yanında (107 px) — sorun yoktu.
+
+### KULLANICI NE GÖRECEK
+
+900 pikselden dar ekranda bir bölüme dokunduğunuzda (veya yapışkan çubuktan
+**↑ ↓** / **✓ Onayla** kullandığınızda) uygulama **düzenleme alanını görünür
+alana getirir**; metni görmek için kaydırmanız gerekmez. Masaüstünde **hiçbir
+kaydırma yapılmaz** (zıplama olmaz). Takip modu kendiliğinden kaydırmaz.
+
+### ÖLÇÜM
+
+| | Önce (v2.167) | Sonra (v2.168) |
+|---|---|---|
+| 900 px, satıra dokunma | metin 7.929 px'te | metin **587 px** — ekranda |
+| 900 px, çubuktan ↓ | metin ekranda değil | ekranda |
+| 1440 px, satıra dokunma | kaydırma yok | kaydırma yok (0) |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ae] (6 kontrol): `revealSegDetail` yalnız ≤900 px'te çalışır;
+satır tıklaması, önceki/sonraki ve onay yollarından çağrılır.
 
 ## v2.167 — Dosya künyesi her görünümden tek tıkla
 

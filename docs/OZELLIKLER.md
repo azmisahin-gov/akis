@@ -1,4 +1,4 @@
-# Özellikler (v2.167 — mevcut durum)
+# Özellikler (v2.168 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -408,6 +408,9 @@ uzmanlık alanını gösterir.
 - **Dar ekran işlem çubuğu (v2.165):** ≤900 px'te kartın altında yapışkan
   çubuk (↑ ↓ · ▶ Dinle · ✓ Onayla · konum) durur; onay ve dinleme için
   kaydırma gerekmez. Masaüstünde görünmez.
+- **Dar ekranda metne gidiş (v2.168):** ≤900 px'te bölüme dokununca veya
+  ↑ ↓ / ✓ kullanınca düzenleme alanı görünür alana gelir (100 bölümde metin
+  7.349 px uzaktaydı). Masaüstünde kaydırma yapılmaz.
 
 ## Konuşmacı yönetimi ve ses özellikleri
 

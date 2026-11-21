@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.167';
+} from './schema.js?v=2.168';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.167';
+const APP_VERSION = '2.168';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5021,6 +5021,7 @@ function navSegment(m, dir) {
   }
   pos = Math.max(0, Math.min(list.length - 1, pos + dir));
   setActiveSegment(m, list[pos]);
+  revealSegDetail(m);
 }
 // En yüksek inceleme önceliğini taşıyan ve henüz onaylanmamış bölüme atlar.
 // Toplu onay: YALNIZ "hızlı onaya uygun" ölçütünü geçen bölümler. Uygun
@@ -5194,6 +5195,7 @@ function approveActiveSegment(m) {
   }
   m.activeSeg = next;
   setActiveSegment(m, next);
+  revealSegDetail(m);
   if ($('#view-report').classList.contains('active')) renderReport();
   showToast(msg);
 }
@@ -5347,6 +5349,17 @@ function seekPlayerTo(m, sec, card) {
   showToast(`Konum: ${timecode(sec)}`);
   return true;
 }
+// Dar ekranda (≤900 px) düzenleme alanı listenin ALTINDA kalır; ölçüm
+// (v2.167, 100 bölüm): metin alanı listenin 7.349 px altındaydı. Bölüm
+// değiştiğinde metni görmek için binlerce piksel kaydırmak gerekiyordu.
+// Masaüstünde iki panel yan yana olduğu için kaydırma YAPILMAZ (zıplama
+// olmaz). Takip modu bu yolu KULLANMAZ: kendiliğinden kaydırmaz.
+function revealSegDetail(m) {
+  if (!(window.innerWidth <= 900)) return;
+  const detail = $(`#seg-detail-${CSS.escape(m.id)}`);
+  if (!detail) return;
+  detail.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
 function focusSegmentRow(el) {
   const card = el.closest('.audio-card');
   if (!card) return;
@@ -5354,6 +5367,7 @@ function focusSegmentRow(el) {
   const m = currentCase().materials.find((x) => x.id === id);
   if (!m) return;
   setActiveSegment(m, Number(el.dataset.segItem), { scroll: false });
+  revealSegDetail(m);
 }
 function handleSegKey(e, card, m) {
   const tag = (e.target.tagName || '').toLowerCase();
@@ -12297,6 +12311,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.168': {
+    title: 'Dar ekranda bölüme geçince metin görünür alana geliyor',
+    body:
+      '900 pikselden dar ekranda 100 bölümlü kayıtta metin alanı listenin ' +
+      '7.349 px altında kalıyordu; satıra dokununca düzenleme alanı ekranda ' +
+      'değildi. Artık satıra dokununca veya yapışkan çubuktan ↑ ↓ / ✓ ' +
+      'kullanınca metin alanı görünür alana gelir. Masaüstünde kaydırma yapılmaz.'
+  },
   '2.167': {
     title: 'Dosya künyesi her görünümden tek tıkla',
     body:
