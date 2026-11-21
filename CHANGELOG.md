@@ -6,12 +6,51 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.142.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.143.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.143 — Bölüm detayının alt kısmı kırpılmıyor
+
+CANLI VERİ. Kullanıcı: *"sd-left diye bir şey görüyorum; sd-meta'nın yarısı
+görünmüyor, ondan sonrası yok."*
+
+### ÖLÇÜM (v2.142, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Detay paneli | **385 px** yüksek, içerik **795 px** |
+| Panel `overflow-y` | **visible** (kaydırmıyor) |
+| `sd-meta` | 818–919 (panel 635'te bitiyor → **görünmüyor**) |
+| `sd-obs` (gözlem düğmeleri) | 927–950 (**görünmüyor**) |
+
+Kök neden: v2.129'un `#view-audio .seg-detail { overflow: visible !important }`
+kuralı masaüstü panelinin kaydırmasını eziyordu; taşan içerik
+`.seg-workspace`in `overflow:hidden`ı tarafından **kırpılıyordu**.
+
+### DÜZELTME
+
+- Masaüstünde `.seg-detail { overflow-y: auto !important; max-height: none }`.
+- Panel kendi içinde kayar; alt içerik erişilebilir.
+
+### ÖLÇÜM (v2.143, gerçek Chromium)
+
+| Durum | Sonuç |
+|---|---|
+| Panel | 385 px, `overflow-y: auto`, içerik 795 px |
+| Sona kaydırınca | `sd-meta` 408–509, `sd-obs` 517–540 → **görünür** |
+| JS hatası | 0 |
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm detayında **hiçbir alan kesilmiyor**: başlangıç/bitiş, konuşmacı,
+  kontrol, profil ve gözlem düğmeleri panelde kaydırılarak erişilir.
+- Panelin sağında ince bir kaydırma çubuğu görünür.
+
+Koruyan test: `tasarim-testi` [2r] (2).
 
 ## v2.142 — Çalışma modu kaldırıldı; kayıt listesi dikey
 

@@ -1587,7 +1587,9 @@ input::placeholder, textarea::placeholder {
     align-self: stretch;
     height: 100%;
     max-height: none;
-    overflow-y: auto;
+    /* v2.129 `overflow:visible !important` bıraktı; masaüstünde panel KENDİ
+       içinde kaymalı, yoksa alt içerik (sd-meta, gözlem) kırpılır. */
+    overflow-y: auto !important;
   }
   /* Kayıt başlığı kompakt: yer panellere kalsın. Oynatıcı KORUNUR, dalga gizlenir. */
   #view-audio .audio-file-main { padding: 2px 0; }

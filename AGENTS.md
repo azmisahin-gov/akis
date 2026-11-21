@@ -1616,6 +1616,28 @@ kaldırılan fonksiyona bağlı kaldığında malzeme seçimi **ReferenceError**
 
 **Koruyan test:** `tasarim-testi` [2p] (4) + [2q] (2).
 
+### Aşama 10ao — Detay panelinin alt kısmı kırpılmıyor (TAMAMLANDI, v2.143)
+
+**KURAL (≥901 px): bölüm detay paneli KENDİ İÇİNDE kayar; alt içerik
+(`sd-meta`, gözlem düğmeleri) kırpılmaz.**
+
+**Ölçülen hata (v2.142, 1440×900):** panel 385 px, içerik 795 px,
+`overflow-y: visible`. `sd-meta` 818–919 ve `sd-obs` 927–950 → panel 635'te
+bittiği için **görünmüyordu**. Kök neden: v2.129'un
+`#view-audio .seg-detail { overflow: visible !important }` kuralı masaüstü
+kaydırmasını eziyor; taşan içerik `.seg-workspace`in `overflow:hidden`ı ile
+kırpılıyordu.
+
+**Düzeltme:** masaüstünde `.seg-detail { overflow-y: auto !important;
+max-height: none }`. Ölçüm: sona kaydırınca `sd-meta` 408–509, `sd-obs`
+517–540 görünür; JS hatası 0.
+
+**DERS:** `overflow: visible !important` bir panelde "kaydırma yok" demek
+değildir; ata `overflow:hidden` ile birleşince **sessiz kırpma** olur. Panelin
+kaydırıp kaydırmadığını `overflow-y` + `clientHeight/scrollHeight` ile ölç.
+
+**Koruyan test:** `tasarim-testi` [2r] (2).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1789,7 +1811,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.142.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.143.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1951,7 +1973,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.142** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.143** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2006,6 +2028,7 @@ Test sayısı 441 → **782**.
 | **v2.140** | **Masaüstü kabuğu** (tek uzun sayfa → sabit çerçeve, paneller kendi kaydırır) | `tasarim` [2o] |
 | **v2.141** | **Masaüstünde çalışma modu kaldırıldı** (kayıt sütunu kalıcıyken gereksizdi) | `tasarim` [2p] |
 | **v2.142** | **Çalışma modu kaldırıldı; kayıt listesi dikey** (yanyana çipler, gizli başlık) | `tasarim` [2p]/[2q] |
+| **v2.143** | **Detay panelinin alt kısmı kırpılıyordu** (`sd-meta`, gözlem düğmeleri) | `tasarim` [2r] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

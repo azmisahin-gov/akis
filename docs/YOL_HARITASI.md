@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.142.**
+yazılır. **Güncel sürüm: v2.143.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.143 — Bölüm detayının alt kısmı kırpılmıyor (tamamlandı)
+
+Panel 385 px, içerik 795 px idi ve kaydırmıyordu; `sd-meta`/gözlem
+düğmeleri kırpılıyordu. Panel artık kendi içinde kayar. `tasarim` [2r].
 
 ### v2.142 — Çalışma modu kaldırıldı; kayıt listesi dikey (tamamlandı)
 

@@ -402,6 +402,27 @@ console.log('\n[2q] Kayıt sütunu: başlık görünür, liste tek kaydırma (v2
   );
 }
 
+// --- 2r. Detay paneli kırpmıyor: alt içerik erişilebilir (v2.143) ---------
+// Kullanıcı: "sd-left diye bir şey görüyorum; sd-meta'nın yarısı görünmüyor,
+// ondan sonrası yok." ÖLÇÜM: panel 385 px, içerik 795 px; v2.129'un
+// `overflow: visible !important` kuralı panelin kaydırmasını eziyordu →
+// içerik `.seg-workspace`in `overflow:hidden`ı tarafından KIRPILIYORDU.
+// KURAL (≥901 px): detay paneli kendi içinde kayar; alt içerik erişilebilir.
+console.log('\n[2r] Detay paneli kırpmıyor (v2.143)');
+{
+  const rl = read('assets/reading-layer.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const i = rl.indexOf('@media (min-width: 901px)');
+  const block = i >= 0 ? rl.slice(i, i + 9000) : '';
+  check(
+    'masaüstünde detay paneli kendi içinde kayar',
+    /#view-audio \.seg-detail\s*\{[^}]*overflow-y:\s*auto\s*!important/.test(block)
+  );
+  check(
+    'panel yüksekliği sabit değil (max-height: none)',
+    /#view-audio \.seg-detail\s*\{[^}]*max-height:\s*none/.test(block)
+  );
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını

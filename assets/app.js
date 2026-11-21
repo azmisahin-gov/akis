@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.142';
+} from './schema.js?v=2.143';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.142';
+const APP_VERSION = '2.143';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11565,6 +11565,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.143': {
+    title: 'Bölüm detayının alt kısmı artık görünüyor',
+    body:
+      'Sağdaki bölüm detayında başlangıç/bitiş, konuşmacı, kontrol ve gözlem ' +
+      'düğmeleri panelin altında KIRPILIYORDU ("sd-meta\'nın yarısı görünmüyor"); ' +
+      'panel kaydırılamıyordu. Artık panel kendi içinde kayıyor ve tüm alanlar ' +
+      'erişilebiliyor. Hiçbir bilgi kesilmiyor.'
+  },
   '2.142': {
     title: 'Çalışma modu kaldırıldı; kayıtlar dikey listede',
     body:
