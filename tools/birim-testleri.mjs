@@ -119,7 +119,7 @@ const EXPOSE = [
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
-  'reviewSelectOptions', 'syncNarrowBarHeight',
+  'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -3407,6 +3407,43 @@ console.log('\n== [71] Dar ekran karar çubuğu: Kontrol seçenekleri (v2.199)')
   eq('seçili olmayan işaretlenmez', /value="pending" selected/.test(short), false);
   // Kısa etiketler TAM etiketlerden farklı olmalı (gerçekten kısa).
   eq('kısa etiket tam etiketten kısa', short.length < full.length, true);
+}
+
+console.log('\n== [72] Bölüm uzunluğu: 45 sn üstü uyarı (v2.200)');
+{
+  // Standart: 1–3 cümle veya ~15–30 sn; üst sınır 45 sn. Uyarı BİLDİRİR,
+  // birleştirmeyi ENGELLEMEZ (karar bilirkişinin).
+  eq('45 sn tam sınır: uyarı yok', T.segmentLengthInfo(45).level, 'ok');
+  eq('45,1 sn: uzun', T.segmentLengthInfo(45.1).level, 'long');
+  eq('72 sn: uzun', T.segmentLengthInfo(72).level, 'long');
+  eq('72 sn kısa gösterim', T.segmentLengthInfo(72).short, '01:12');
+  eq('uyarı metni 45 sn içeriyor', /45 sn/.test(T.segmentLengthInfo(72).text), true);
+  eq('uyarı engelleme değil, bölme önerisi', /engellenmez/.test(T.segmentLengthInfo(72).text) && /bölün/.test(T.segmentLengthInfo(72).text), true);
+  eq('30 sn: uyarı yok (hedef içinde)', T.segmentLengthInfo(30).level, 'ok');
+  eq('geçersiz süre: uyarı yok', T.segmentLengthInfo(NaN).level, 'ok');
+  eq('sıfır süre: uyarı yok', T.segmentLengthInfo(0).level, 'ok');
+  eq('eşik 45 sn', T.SEG_LENGTH.hardMaxSec, 45);
+  eq('hedef üst sınır 30 sn', T.SEG_LENGTH.targetMaxSec, 30);
+
+  // RAPOR HAZIRLIĞI: 45 sn üstü bölüm denetim maddesi olarak görünür.
+  const c = T.emptyCaseForTest({ id: 'c1' });
+  const m = T.emptyMaterialForTest({ id: 'm1', name: 'x.wav' });
+  m.segments = [
+    T.emptySegmentForTest({ id: 'a', start: '00:00:00.000', end: '00:01:12.000', text: 'uzun bölüm', speaker: 'S1' }),
+    T.emptySegmentForTest({ id: 'b', start: '00:01:12.000', end: '00:01:20.000', text: 'kısa bölüm', speaker: 'S1' })
+  ];
+  c.materials = [m];
+  const r = T.reportReadiness(c);
+  const item = r.items.find((x) => x.key === 'longSegments');
+  eq('hazırlıkta 45 sn üstü maddesi var', !!item, true);
+  eq('madde sayısı 1', item && item.count, 1);
+  eq('madde ayrıntısı standardı içeriyor', item && /45 sn/.test(item.detail), true);
+  eq('madde ses görünümüne götürür', item && item.target, 'audio');
+  // 45 sn altındaki dosyada madde ÇIKMAZ.
+  m.segments[0].end = '00:00:40.000';
+  m.segments[1].start = '00:00:40.000';
+  const r2 = T.reportReadiness(c);
+  eq('45 sn altında madde yok', !!r2.items.find((x) => x.key === 'longSegments'), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -1169,7 +1169,8 @@ console.log("\n[2an] ASR kökeni metin kutusunun sağ üstünde (v2.188)");
   check('ASR kutusu açılır/kapanır', /dataset\.asrToggle[\s\S]{0,300}hidden = !pop\.hidden/.test(js9));
   check('eski katlanır blok kaldırıldı', !/class="asr-compare"/.test(js9) && !/\.asr-compare\s*\{/.test(rl9));
   check('model farkı durum çipinde', /st-chip info action[^>]*data-asr-open/.test(js9));
-  check('çip durum satırı üreticisinde', /function statusRowHtml[\s\S]{0,1600}data-asr-open/.test(js9));
+  const statusFn9 = js9.slice(js9.indexOf('function statusRowHtml'), js9.indexOf('\nfunction ', js9.indexOf('function statusRowHtml') + 10));
+  check('çip durum satırı üreticisinde', /data-asr-open/.test(statusFn9));
   check('çip ASR kutusunu açar', /dataset\.asrOpen[\s\S]{0,300}openAsrPopover/.test(js9));
   check('öncelik rozeti korunur', /function segPriorityBadge/.test(js9) && /badge prio/.test(js9));
 }
@@ -1194,7 +1195,8 @@ console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
   check('kontrol başlıkta', iRev > iHead && iRev < iTech, `head=${iHead} rev=${iRev} tech=${iTech}`);
   // v2.188: Profil alanı KALDIRILDI; "Henüz çözümlenmedi" DURUM satırına taşındı.
   check('profil alanı kaldırıldı', !/sd-profile/.test(bodyA));
-  check('"Henüz çözümlenmedi" durum satırında', /function statusRowHtml[\s\S]{0,1600}Henüz çözümlenmedi/.test(jsA));
+  const statusFnA = jsA.slice(jsA.indexOf('function statusRowHtml'), jsA.indexOf('\nfunction ', jsA.indexOf('function statusRowHtml') + 10));
+  check('"Henüz çözümlenmedi" durum satırında', /Henüz çözümlenmedi/.test(statusFnA));
   check('boş meta çizilmez (yalnız belirsiz okumada)', /\$\{rev === 'ambiguous'[\s\S]{0,140}sd-meta/.test(bodyA));
 }
 
@@ -1448,6 +1450,24 @@ console.log('\n[2ay] Dar ekran karar çubuğu: Kontrol + sarma (v2.199)');
   check('karar tek kapıdan (applyReviewChoice)', /if \(el\.dataset\.key !== 'review'\) return;[\s\S]{0,1200}applyReviewChoice\(m, i, el\.value\)/.test(appJs));
   check('toast çubuğun gerçek yüksekliğini kullanıyor', /--narrow-bar-h/.test(layer) && /syncNarrowBarHeight/.test(appJs));
   check('yardım dar ekran çubuğunu anıyor', /<h3>Dar ekran \(≤900 px\)<\/h3>/.test(help));
+}
+
+console.log('\n[2az] Bölüm uzunluğu: 45 sn üstü uyarı (v2.200)');
+{
+  const appJs = read('assets/app.js');
+  const help = read('index.html');
+  const mergeFn = appJs.slice(
+    appJs.indexOf('function mergeSegmentWithNext'),
+    appJs.indexOf('function paragraphGroups')
+  );
+  check('saf eşik fonksiyonu var', /function segmentLengthInfo\(seconds\)/.test(appJs) && /hardMaxSec:\s*45/.test(appJs));
+  check('liste satırında ⏱ rozeti', /lenBadge/.test(appJs) && /Uzun bölüm:/.test(appJs));
+  check('Durum satırında kalıcı çip', /Uzun bölüm \$\{esc\(len\.short\)\}/.test(appJs));
+  check('birleştirme 45 sn uyarısını gösterir', /len\.level === 'long'/.test(mergeFn) && /showToast\(/.test(mergeFn));
+  check('birleştirme 45 sn üstünde ENGELLEMEZ (koşullu çıkış yok)', !/if \(len\.level === 'long'\)/.test(mergeFn));
+  check('rapor hazırlığında 45 sn maddesi', /'longSegments'/.test(appJs) && /45 sn üstü bölüm/.test(appJs));
+  check('rapor uyarısında standart', /bölüm 45 sn üstünde/.test(appJs));
+  check('yardım standardı anıyor', /45 sn|45 saniye/.test(help) && /1–3 cümle/.test(help));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

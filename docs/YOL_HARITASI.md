@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.199.**
+yazılır. **Güncel sürüm: v2.200.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.200 — 45 saniye üstü bölüm uyarısı (tamamlandı)
+
+Birleştirme sonucu 45 sn'yi aşarsa işlem **engellenmez**; liste satırında **⏱**,
+Durum satırında **"Uzun bölüm"** çipi ve raporun **Rapor öncesi kontrol**
+satırında sayı görünür. Rapor hazırlığında **"45 sn üstü bölüm"** maddesi vardır.
+Standart: 1–3 cümle veya 15–30 sn; üst sınır 45 sn. Koruyan test: `birim` [72] +
+`tasarim` [2az].
 
 ### v2.199 — Dar ekranda karar çubuğu (tamamlandı)
 

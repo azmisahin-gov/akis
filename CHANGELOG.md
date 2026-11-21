@@ -6,12 +6,44 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.199.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.200.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.200 — 45 saniye üstü bölüm uyarısı
+
+Kullanıcı: *"Birleştirme sonucu çok uzun olursa uyarsın."* Standart:
+**1–3 cümle veya 15–30 sn**, üst sınır **45 sn**.
+
+### KULLANICI NE GÖRECEK
+
+- Birleştirme sonucu **45 sn**'yi aşarsa işlem **engellenmez**; uyarı çıkar.
+- Uyarı üç yerde **kalıcı** görünür: liste satırında **⏱**, Durum satırında
+  **"Uzun bölüm 01:12 — 45 sn üstü"** çipi, raporda **"Rapor öncesi kontrol"**
+  satırı (N bölüm 45 sn üstünde).
+- **Rapor hazırlığı** kartında **"45 sn üstü bölüm"** maddesi; tıklayınca ses
+  görünümü açılır.
+- Gerekirse bölüm **Böl** ile ikiye ayrılır; veri değişmez.
+
+### Teknik
+
+- `segmentLengthInfo(seconds)` saf fonksiyon: `SEG_LENGTH = {targetMaxSec:30,
+  hardMaxSec:45}`. `>45` → `level:'long'`, metin ve `short` (01:12).
+- `mergeSegmentWithNext` sonunda uyarı: `showToast(..., true)` (role=alert).
+  **Erken `return` YOK**; birleştirme engellenmez.
+- `segItemHtml` ⏱ rozeti; `statusRowHtml` kalıcı çip; `reportReadiness`
+  `longSegments` maddesi; `renderReport` uyarı satırı.
+- Toast kaybolsa da durum satırda/raporda kalır (v2.158 dersi).
+
+**Ölçüm (gerçek Chromium + CDP):** iki bölüm birleştirildi → 72 sn; satırda ⏱,
+Durum'da "Uzun bölüm 01:12 — 45 sn üstü", raporda "1 bölüm 45 sn üstünde (en
+uzun 01:12)"; veri korundu (bölüm sayısı 2→1), JS hatası 0. 44 sn'lik birleştirme
+uyarı üretmedi.
+
+**KORUYAN TEST:** `birim` [72] (15 kontrol) + `tasarim` [2az] (8).
 
 ## v2.199 — Dar ekranda karar çubuğu (Kontrol + ↓)
 

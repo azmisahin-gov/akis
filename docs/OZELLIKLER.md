@@ -1,4 +1,4 @@
-# Özellikler (v2.199 — mevcut durum)
+# Özellikler (v2.200 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,11 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **45 sn üstü bölüm uyarısı (v2.200):** Birleştirme sonucu **45 sn**'yi aşarsa
+  işlem **engellenmez**. Uyarı kalıcıdır: liste satırında **⏱**, Durum satırında
+  **"Uzun bölüm"** çipi, rapor hazırlığında **"45 sn üstü bölüm"** maddesi ve
+  raporun **"Rapor öncesi kontrol"** satırında sayı. Standart: **1–3 cümle veya
+  15–30 sn**, üst sınır **45 sn**.
 - **Dar ekran karar çubuğu (v2.199):** ≤900 px'te bölüm kartının altındaki
   yapışkan çubukta **▶ Dinle · Kontrol · ↑/↓ · ✓ Onayla** vardır. Karar
   (Onaylandı / Anlaşılmadı / Yeniden dinle / Belirsiz) kaydırmadan verilir;

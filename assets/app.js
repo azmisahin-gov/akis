@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.199';
+} from './schema.js?v=2.200';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.199';
+const APP_VERSION = '2.200';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3839,6 +3839,27 @@ function segDurationSec(s) {
     b = secondsFromTimecode(s.end);
   return b > a ? b - a : 0;
 }
+// BÖLÜM UZUNLUĞU (v2.200). Standart: 1–3 cümle veya ~15–30 sn; üst sınır
+// 45 sn. Bu fonksiyon yalnız GÖZLEMLENEBİLİR süreyi ölçer ve sınırı aşanı
+// BİLDİRİR; birleştirmeyi ENGELLEMEZ — karar bilirkişinindir.
+// Dönüş: { sec, level:'ok'|'long', short, text }.
+const SEG_LENGTH = { targetMaxSec: 30, hardMaxSec: 45 };
+function segmentLengthInfo(seconds) {
+  const sec = Number(seconds);
+  if (!Number.isFinite(sec) || sec <= 0) return { sec: 0, level: 'ok', short: '', text: '' };
+  const short = fmtShort(sec);
+  if (sec > SEG_LENGTH.hardMaxSec) {
+    return {
+      sec,
+      level: 'long',
+      short,
+      text:
+        `${short} — önerilen üst sınır 45 sn (1–3 cümle veya 15–30 sn). ` +
+        'Birleştirme engellenmez; gerekirse yeniden bölün.'
+    };
+  }
+  return { sec, level: 'ok', short, text: '' };
+}
 function segPriority(s, prev) {
   let score = 0;
   const reasons = [];
@@ -4018,6 +4039,12 @@ function segItemHtml(m, s, i, prev, issue) {
   const candBadge = cand.ok
     ? `<span class="badge cand" title="Birleştirme adayı: kısa bölüm, cümle bitmemiş, aynı konuşmacı ve sonrakiyle boşluk ≤0,5 sn. Birleştirmek için ⋮ menüsü veya M.">⇄</span>`
     : '';
+  // UZUN BÖLÜM (v2.200): 45 sn üstü. Yalnız BİLDİRİR; birleştirme engellenmez.
+  const len = segmentLengthInfo(segDurationSec(s));
+  const lenBadge =
+    len.level === 'long'
+      ? `<span class="badge warn" title="Uzun bölüm: ${esc(len.short)} — önerilen üst sınır 45 sn (1–3 cümle veya 15–30 sn). Gerekirse bölün.">⏱</span>`
+      : '';
   // METİN ÖNİZLEMESİ (v2.193). v2.185'te metin listeden kaldırılmıştı; ancak
   // BİRLEŞTİRME/BÖLME sırasında satırlar ayırt edilemiyordu (kullanıcı geri
   // getirilmesini istedi). Liste dizin kalır: TEK satır önizleme; tam metin
@@ -4029,7 +4056,7 @@ function segItemHtml(m, s, i, prev, issue) {
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-badges">${timeBadge}${lenBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
     <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
@@ -4173,6 +4200,13 @@ function statusRowHtml(m, s, i) {
       ? `Sessizlik %${Math.round(s.silence.ratio * 100)}`
       : '';
   if (sil) chips.push(`<span class="st-chip info" title="Bu bölümün sessizlik oranı (ölçüldü).">${esc(sil)}</span>`);
+  // UZUN BÖLÜM (v2.200): 45 sn üstü. Kalıcı çip; toast kaybolsa da durum görünür.
+  const len = segmentLengthInfo(segDurationSec(s));
+  if (len.level === 'long') {
+    chips.push(
+      `<span class="st-chip warn" title="Bölüm süresi ${esc(len.short)}; önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. Birleştirme engellenmez; gerekirse yeniden bölün.">Uzun bölüm ${esc(len.short)} — 45 sn üstü</span>`
+    );
+  }
   const pr = segPriority(s, (m.segments || [])[i - 1]);
   if (pr.score >= 15) {
     const label = pr.score >= 40 ? 'Yüksek' : pr.score >= 20 ? 'Orta' : 'Düşük';
@@ -7185,7 +7219,15 @@ function mergeSegmentWithNext(m, index) {
   if (card) renderSegments(m, card);
   restoreSegScroll(m, scroll, index);
   renderOverview();
-  showToast(`Bölüm ${index + 1} ile sonraki birleştirildi. İkinci bölümün ham çıktısı saklandı.`);
+  // UZUN BÖLÜM UYARISI (v2.200): birleştirme ENGELLENMEZ; sonuç 45 sn üstüyse
+  // söylenir. Kalıcı gösterge satırda (⏱) ve Durum satırında da durur.
+  const len = segmentLengthInfo(segDurationSec(s));
+  showToast(
+    len.level === 'long'
+      ? `Bölüm ${index + 1} ile sonraki birleştirildi; ancak süre ${len.short} — önerilen üst sınır 45 sn. Gerekirse yeniden bölün.`
+      : `Bölüm ${index + 1} ile sonraki birleştirildi. İkinci bölümün ham çıktısı saklandı.`,
+    len.level === 'long'
+  );
 }
 // PARAGRAF GÖRÜNÜMÜ — SALT OKUNUR (v2.195).
 // ESKİ DAVRANIŞ: `paragraphize` bölümleri YENİ paragraflarla DEĞİŞTİRİYORDU;
@@ -9032,6 +9074,17 @@ function reportReadiness(c) {
     'Çakışan/yinelenen aralıklar raporda da çelişkili görünür.',
     'time'
   );
+  // UZUN BÖLÜM (v2.200): standart 1–3 cümle veya 15–30 sn; üst sınır 45 sn.
+  // Bu bir DENETİM maddesidir; birleştirmeyi engellemez.
+  const longSegs = segs.filter((s) => segmentLengthInfo(segDurationSec(s)).level === 'long');
+  const longest = longSegs.reduce((n, s) => Math.max(n, segDurationSec(s)), 0);
+  add(
+    'longSegments',
+    '45 sn üstü bölüm',
+    longSegs.length,
+    'audio',
+    `En uzun ${fmtShort(longest)}. Önerilen 1–3 cümle veya 15–30 sn; üst sınır 45 sn. Birleştirme engellenmez; gerekirse bölün.`
+  );
   add(
     'hash',
     'SHA-256 hesaplanmamış kayıt',
@@ -9120,6 +9173,16 @@ function renderReport() {
   if (blankSegs) warnings.push(`${blankSegs} deşifre bölümünde anlamlı metin yok (dolgu/boş).`);
   const repSegs = allSegs.filter((s) => segmentRepetitionFlag(s)).length;
   if (repSegs) warnings.push(`${repSegs} deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın.`);
+  // UZUN BÖLÜM STANDARDI (v2.200): raporda görünür hatırlatma. Birleştirme
+  // engellenmez; yalnız "45 sn üstü" sayısı ve standart yazılır.
+  const longSegs = allSegs.filter((s) => segmentLengthInfo(segDurationSec(s)).level === 'long');
+  if (longSegs.length) {
+    const longest = longSegs.reduce((n, s) => Math.max(n, segDurationSec(s)), 0);
+    warnings.push(
+      `${longSegs.length} bölüm 45 sn üstünde (en uzun ${fmtShort(longest)}); ` +
+        'önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn.'
+    );
+  }
   const warning = $('#reportWarning');
   if (warnings.length) {
     warning.classList.add('show');
@@ -12907,6 +12970,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.200': {
+    title: '45 saniye üstü bölüm uyarısı',
+    body:
+      'Birleştirme sonucu 45 saniyeyi aşarsa işlem engellenmez; uyarı çıkar. Uyarı ' +
+      'kalıcıdır: liste satırında ⏱, Durum satırında "Uzun bölüm" çipi, rapor ' +
+      'hazırlığında "45 sn üstü bölüm" maddesi ve raporun "Rapor öncesi kontrol" ' +
+      'satırında sayı görünür. Önerilen: 1–3 cümle veya 15–30 saniye; üst sınır 45 saniye.'
+  },
   '2.199': {
     title: 'Dar ekranda karar çubuğu: Dinle · Kontrol · ↓',
     body:

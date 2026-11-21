@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.199.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.200.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3699,3 +3699,70 @@ eklerse mevcut `data-*` işleyicisini kullanmalı; kendi mantığını taşımam
 - 320 px'te çubuk üç satıra çıkar (146 px); kırpma yok, kaydırma gerekmez.
 - Toast, sayfa kartın sonuna kaydırıldığında çubuğun bir kısmını **geçici**
   (3,4 sn) örtebilir; toast `pointer-events:none` olduğu için tıklamayı engellemez.
+
+## YENİ OTURUM DEVRİ (v2.200) — 45 saniye üstü bölüm uyarısı
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.200** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1074 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.200** |
+| Açık konu | Rapor hazırlığındaki "Zaman sorunu" sayacı çok kayıtlı dosyada yanlış (aşağıda) |
+
+### Bu sürümde ne yapıldı
+
+Standart: **1–3 cümle veya 15–30 sn**, üst sınır **45 sn**. Birleştirme sonucu
+45 sn'yi aşarsa işlem **ENGELLENMEZ**; uyarı verilir.
+
+- `segmentLengthInfo(seconds)` saf fonksiyon; `SEG_LENGTH = {targetMaxSec:30,
+  hardMaxSec:45}`. `>45` → `level:'long'`, `short` (01:12), metin.
+- `mergeSegmentWithNext` sonunda `showToast(..., true)` (role=alert). Erken
+  `return` YOK — birleştirme engellenmez.
+- Kalıcı göstergeler: liste satırında **⏱**, Durum satırında **"Uzun bölüm
+  01:12 — 45 sn üstü"** çipi, `reportReadiness` içinde **"45 sn üstü bölüm"**
+  maddesi, `renderReport` uyarı satırı.
+- Toast kaybolsa da durum satırda/raporda kalır (v2.158 dersi).
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Adım | Sonuç |
+|---|---|
+| m1: 0–40 + 40–72 birleştir | 1 bölüm, **⏱ 1**, Durum "Uzun bölüm 01:12 — 45 sn üstü" |
+| Toast | **role=alert / assertive**, "…süre 01:12 — önerilen üst sınır 45 sn…" |
+| Rapor hazırlığı | **"1 45 sn üstü bölüm"** |
+| Rapor uyarısı | "1 bölüm 45 sn üstünde (en uzun 01:12); önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn." |
+| m2: 0–22 + 22–44 birleştir | **⏱ 0**, toast normal (uyarı YOK) |
+| JS hatası | **0** |
+
+### ÖLÇÜM SIRASINDA BULUNAN AYRI SORUN (v2.200'e DAHİL EDİLMEDİ)
+
+`reportReadiness` "Zaman sorunu" sayısını **tüm kayıtların bölümlerini tek zaman
+çizgisi gibi** sayıyor (`materials.flatMap`). İki kayıt da 0'dan başlıyorsa
+aralarında olmayan "çakışma" üretiliyor. Ölçümde 3 geçerli bölüm (m1: 0–72;
+m2: 0–22, 22–44) **"3 Zaman sorunu"** gösterdi. Ses görünümündeki `time` filtresi
+ise **kayıt başına** doğru sayıyor → iki araç ayrışıyor (v2.156 dersi).
+
+**Önerilen düzeltme (v2.201):** `reportReadiness` içinde zaman sorununu kayıt
+başına topla:
+`materials.reduce((n,m)=>n+segmentTimeIssueIndexes(m.segments||[]).size,0)`.
+Test: iki kayıt da 0'dan başlasın → hazırlıkta "Zaman sorunu" **0** olmalı.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.200 sonrası)
+
+1. **v2.201 — Rapor hazırlığı zaman sayacı (bulunan hata).** Yukarıdaki
+   kayıt-başına toplama + `birim` testi. Küçük ve kanıtlı.
+2. **v2.202 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
+   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez.
+3. **v2.203 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
+4. **v2.204 — Dosyalar arası konuşmacı kaydı** (case-level registry).
+5. **v2.205 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+
+### Bilinen sınırlar (hata değil)
+
+- 45 sn eşiği **sabit**tir; kullanıcı ayarlayamaz (standart `docs/STANDARTLAR.md`).
+- Uyarı **engellemez**; 5 dakikalık tek bölüm de birleştirilebilir (uyarı verilir).
+- Rapor uyarısı **ekran** "Rapor öncesi kontrol" bloğundadır; DOCX/UDF metnine
+  yeni bir cümle eklenmedi (belge bilirkişinin metni olarak kalır).
