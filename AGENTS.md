@@ -2543,16 +2543,16 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4 kapandı)
+### Durum (2026-11-21, P1 + P2 + P3 ilk adım + P4 kapandı)
 
 | | |
 |---|---|
-| Sürüm | **v2.169** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.170** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `4fd2467` |
+| Git | `main` = `origin/main` = `32e065f` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.169** |
-| Açık konu | **Yok** — sırada P3 (CSS borcu) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.170** |
+| Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
 
@@ -2585,6 +2585,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.167 | Künye her görünümden **tek tıkla** (üst barda ✎) | 4 tık + 2 görünüm → **2 tık, 0 görünüm** | `tasarim` [2ad] |
 | v2.168 | Dar ekranda bölüme geçince metin görünür alana gelir | 100 bölüm: metin 7.929 → **587 px**; 1440'ta kaydırma 0 | `tasarim` [2ae] |
 | v2.169 | Rapor kâğıdı: punto tabanı + belge fontu | 11 px altı metin 1 → **0**; kâğıt Segoe UI → **Arial** | `tasarim` [2af] |
+| v2.170 | CSS borcu: ölü `.seg-*` kuralları silindi | kural 852 → **828**, `!important` 62 → **58**, ölü 95 → **72**; stil farkı **0** | `tasarim` [2ag] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2700,12 +2701,30 @@ sayfa numarası, imza bloğu, tablo başlık tipografisi. **Şart:** HTML önizl
 DOCX ve UDF **aynı metni** üretmeli (`rapor-tutarlilik-testi`), uygulama adı
 geçmemeli.
 
-#### P3 — CSS borcu (kontrollü azaltma)
+#### P3 — CSS borcu (kontrollü azaltma) — v2.170'te ilk adım atıldı
 
-Nöbetçi eşikleri: ölü bildirim **98** (okuma katmanı) / **507** (app→layer),
-`!important` **26/62**, `.main-area` **15**. Borç **artırılamaz**; azaltma
-küçük ve kanıtlı adımlarla (aynı seçici+özellik sonra tanımlıysa öncekini
-silmek kanıttır; toplu otomatik düzenleme **yasak** — v2.138'de yapı bozuldu).
+Nöbetçi eşikleri (v2.170): ölü bildirim **72** (okuma katmanı) / **500**
+(app→layer), `!important` **26/58**, `.main-area` **15**, reading-layer kural
+**828**. Borç **artırılamaz**; azaltma küçük ve kanıtlı adımlarla.
+
+**v2.170'te ne yapıldı:** DOM'da hiç bulunmayan altı eski sınıfa
+(`.seg-meta-row`, `.seg-times`, `.seg-text-wrap`, `.seg-actions`,
+`.seg-obs-row`, `.seg-ops-row`) ait 18 kural silindi. Yöntem (tekrar
+kullanılabilir):
+
+1. Ölü sınıfı **DOM'da ölç** (malzemeli sayfa; `querySelectorAll` = 0) ve
+   `app.js`'te üretilmediğini doğrula.
+2. Kuralları **birebir metin eşleşmesiyle** sil (kendi ayrıştırıcısını yazma —
+   v2.138'de yapı bozuldu; bu turda ilk denemede yorumlar seçiciye karıştı,
+   geri alındı).
+3. Birleşik (virgüllü) kuralları **önce** sil; yoksa "yetim seçici" kalır.
+4. Parantez dengesi + "ölü sınıf kalmadı" kontrolü; geçmezse dosya yazılmaz.
+5. **Kanıt:** 4 görünüm × 3 tema, tüm öğeler × 33 hesaplanan özellik →
+   **0 fark** (araç: `/tmp` içinde, depoya girmez).
+6. Nöbetçi testi ([2ag]) ve eşik düşürme.
+
+Kalan borç: 72 ölü bildirim (katman içi) ve 500 (app→katman) — çoğu v2.50
+öncesi yamaların katman tarafından ezilmesi. Azaltma aynı yöntemle sürer.
 
 #### P4 — ≤900 px tek sütun IA (KAPANDI, v2.165 + v2.168)
 
