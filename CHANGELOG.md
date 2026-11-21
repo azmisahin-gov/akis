@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.182.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.183.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.183 — Başlıkta birleşik işlem satırı (üç düğme yerine seçici + ikon)
+
+Ölçüm (1440×900): başlıkta **üç düğme** (Onayla / Yeniden dinle /
+Anlaşılmadı) vardı ve **hemen altındaki Kontrol seçicisi** aynı işleri
+yapıyordu; konuşmacı seçicisi de ayrı satırdaydı. Üst bölge **76 px** (1440) ve
+**78 px** (900).
+
+### KULLANICI NE GÖRECEK
+
+- **Yeniden dinle** ve **Anlaşılmadı** düğmeleri kaldırıldı; bu durumlar
+  **Kontrol** seçicisinde (Onaylandı / Anlaşılmadı / Yeniden dinle / Belirsiz).
+- **Onayla** düğmesi ikon oldu: **✓** — ipucu "Onayla ve sonraki bölüme geç
+  (Enter)"; Enter kısayolu aynı.
+- **Konuşmacı** ve **Kontrol** seçicileri **başlıkta**, gezinmenin yanında.
+  Etiketleri ipucu/ekran okuyucuda (yer kazanımı).
+- **Profil** bilgisi **Teknik**'te (köken bilgisi).
+- **Belirsiz okuma** paneli yalnız gerektiğinde çizilir (boş satır yok).
+
+### ÖLÇÜM
+
+| | Önce (v2.182) | Sonra (v2.183) |
+|---|---|---|
+| Üst bölge 1440 | 76 px | **42 px** |
+| Üst bölge 1280 | 103 px | **79 px** |
+| Üst bölge 1100 | 128 px | **73 px** |
+| Üst bölge 900 | 78 px | **42 px** |
+| Metin alanı | 160 px | 160 px (900'de 180) |
+| Yatay taşma | yok | yok |
+
+Seçici gerçekten çalışıyor (tarayıcı ölçümü): "Anlaşılmadı" → rozet +
+`st-inaudible` + %100; "Onaylandı" → rozet + %100; onay ikonunun erişilebilir
+adı var; JS hatası **0**.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ao] (6 kontrol).
 
 ## v2.182 — Dikey yer kazanımı: etiketler satır içi, "ses yok" tek satır
 

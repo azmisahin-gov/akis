@@ -2304,3 +2304,32 @@ input::placeholder, textarea::placeholder {
    sığsın; değer uzunsa satır sarar, metin KIRPILMAZ. */
 #view-audio .sd-meta .sd-profile { flex: 0 1 auto; }
 #view-audio .sd-meta .sd-profile b { font-weight: 600; color: var(--ink-2); }
+
+/* --- v2.183 — Başlıkta birleşik işlem satırı ------------------------------- */
+/* ÖLÇÜM (v2.182, 1440×900): başlıkta üç düğme (Onayla/Yeniden dinle/
+   Anlaşılmadı) + hemen altında aynı işleri yapan "Kontrol" seçicisi vardı;
+   konuşmacı seçicisi ayrı satırdaydı. Toplam üst bölge 76 px (1440) / 78 px
+   (900). Artık: iki düğme kaldırıldı (Kontrol seçicisi onları taşır), onay
+   ikon oldu, konuşmacı+kontrol başlıkta. Ölçüm: 67 px (1440) / 42 px (900). */
+#view-audio .sd-head .sd-field {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+/* Ölçüm (1440, head 621 px): gap 8 + seçici 124 → 2 satır (71 px);
+   gap 4 + seçici 104 → **1 satır (42 px)**. Dar ekranda sarar (kabul). */
+#view-audio .sd-head { gap: 4px; }
+#view-audio .sd-head .sd-field select {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 92px;
+  max-width: 96px;
+  font-size: var(--fs-2xs);
+}
+#view-audio .sd-head .sd-spk-pick { display: flex; gap: 4px; flex: 0 1 auto; min-width: 0; }
+#view-audio .sd-head .sd-spk-pick select { min-width: 84px; max-width: 104px; }
+/* `margin-left:auto` onay düğmesini sağa itiyor ve satırı taşırıyordu
+   (ölçüm: 66,25 px). Başlıkta düğme gezinmenin YANINDA durur. */
+#view-audio .sd-head .sd-primary { margin-left: 0; }
+#view-audio .sd-head .sd-primary .primary { padding: 3px 8px; }

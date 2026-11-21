@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.182.**
+yazılır. **Güncel sürüm: v2.183.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.183 — Başlıkta birleşik işlem satırı (tamamlandı)
+
+Üç düğme (Onayla/Yeniden dinle/Anlaşılmadı) ile hemen altındaki Kontrol
+seçicisi aynı işleri yapıyordu. İki düğme kaldırıldı, onay ikon oldu (✓ +
+erişilebilir ad), konuşmacı+kontrol başlığa alındı, profil Teknik'e, boş meta
+çizilmiyor. Ölçüm: üst bölge 76 → **42** (1440), 128 → **73** (1100),
+78 → **42** (900); metin 160; taşma yok. Koruyan test: `tasarim` [2ao].
 
 ### v2.182 — Dikey yer kazanımı (tamamlandı)
 

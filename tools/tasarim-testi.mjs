@@ -1146,6 +1146,27 @@ console.log("\n[2an] ASR kökeni Teknik'te, metinde ince ipucu (v2.181)");
   check("ipucu Teknik'i açar", /dataset\.techJump[\s\S]{0,400}setTechOpen\(true\)/.test(js9));
 }
 
+console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
+{
+  // ÖLÇÜM (v2.182, 1440×900): başlıkta 3 düğme (Onayla/Yeniden dinle/
+  // Anlaşılmadı) + hemen altında AYNI işleri yapan Kontrol seçicisi vardı;
+  // üst bölge 76 px (1440) / 78 px (900). Artık 42 px / 42 px.
+  const jsA = read('assets/app.js');
+  const i0 = jsA.indexOf('function segDetailHtml');
+  const i1 = jsA.indexOf('\nfunction ', i0 + 10);
+  const bodyA = jsA.slice(i0, i1 > 0 ? i1 : i0 + 30000);
+  check('Yeniden dinle/Anlaşılmadı düğmeleri kaldırıldı', !/data-review-set="\$\{i\}\|(yeniden|anlasilmadi)"/.test(bodyA));
+  check('onay ikon + erişilebilir ad', /data-approve-seg="\$\{i\}" aria-label="Onayla/.test(bodyA));
+  const iHead = bodyA.indexOf('class="sd-head"');
+  const iTech = bodyA.indexOf('sd-left sd-tech');
+  const iSpk = bodyA.indexOf('data-key="speaker"');
+  const iRev = bodyA.indexOf('data-key="review"');
+  check('konuşmacı başlıkta', iSpk > iHead && iSpk < iTech, `head=${iHead} spk=${iSpk} tech=${iTech}`);
+  check('kontrol başlıkta', iRev > iHead && iRev < iTech, `head=${iHead} rev=${iRev} tech=${iTech}`);
+  check('profil Teknik içinde', bodyA.indexOf('sd-profile') > iTech);
+  check('boş meta çizilmez (yalnız belirsiz okumada)', /\$\{rev === 'ambiguous'[\s\S]{0,140}sd-meta/.test(bodyA));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
