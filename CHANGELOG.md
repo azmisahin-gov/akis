@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.200.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.201.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.201 — Rapor hazırlığı: zaman sayacı kayıt başına
+
+v2.200 ölçümünde bulunan hata. Çok kayıtlı dosyada **Rapor hazırlığı**
+kartındaki "Zaman sorunu" sayısı, tüm kayıtların bölümlerini **tek zaman
+çizgisi** gibi sayıyordu. Her kayıt 0'dan başladığı için aralarında olmayan
+"çakışma" üretiliyordu (ölçüm: iki geçerli kayıt → 4 zaman sorunu).
+
+### KULLANICI NE GÖRECEK
+
+- Hazırlık kartındaki **"Zaman sorunu olan bölüm"** sayısı artık **kayıt
+  başına** hesaplanır; ses görünümündeki **Zaman sorunları** filtresiyle
+  **aynı** sayıyı gösterir.
+- Aynı kayıt içindeki **gerçek** çakışma yine iki tarafıyla görünür (2).
+- İki ayrı kayıt da 0'dan başlasa da artık "çakışma" sayılmaz.
+
+### Teknik
+
+- `reportReadiness` → `materials.reduce((n,m)=>n+segmentTimeIssueIndexes(m.segments||[]).size,0)`.
+- Kayıtların zaman çizgileri ayrıdır; düzleştirilmiş (`flatMap`) sayım yanlıştı.
+- `segCounts(m).time` (filtre) ile aynı kural.
+
+**Ölçüm (gerçek Chromium + CDP):** m1 (0–10, 10–20), m2 (0–10, 10–20), m3
+(0–10, 5–15) → hazırlık **"2 Zaman sorunu"** (yalnız m3'ün iki tarafı);
+m1'de zaman çipi **yok**, m3'te **"Zaman sorunları 2"** ve filtre **2 satır**;
+JS hatası 0.
+
+**KORUYAN TEST:** `birim` [73] (5 kontrol) + `tasarim` [2ba] (3).
 
 ## v2.200 — 45 saniye üstü bölüm uyarısı
 

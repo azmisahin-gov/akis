@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.200';
+} from './schema.js?v=2.201';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.200';
+const APP_VERSION = '2.201';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -9066,10 +9066,18 @@ function reportReadiness(c) {
     '',
     'coverage'
   );
+  // ZAMAN SORUNU (v2.201): KAYIT BAŞINA sayılır. Kayıtların zaman çizgileri
+  // AYRIDIR; tüm bölümleri tek çizgi gibi saymak, her kayıt 0'dan başladığında
+  // olmayan "çakışma" üretiyordu (v2.200 ölçümü). Ses görünümündeki `time`
+  // filtresi de kayıt başına sayar; iki araç AYNI gerçeği söylemeli.
+  const timeIssues = materials.reduce(
+    (n, m) => n + segmentTimeIssueIndexes((m && m.segments) || []).size,
+    0
+  );
   add(
     'time',
     'Zaman sorunu olan bölüm',
-    segmentTimeIssueIndexes(segs).size,
+    timeIssues,
     'audio',
     'Çakışan/yinelenen aralıklar raporda da çelişkili görünür.',
     'time'
@@ -12970,6 +12978,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.201': {
+    title: 'Rapor hazırlığı: zaman sayacı kayıt başına',
+    body:
+      'Birden fazla ses kaydı olan dosyalarda hazırlık kartındaki "Zaman sorunu" sayısı, ' +
+      'tüm kayıtların bölümlerini tek zaman çizgisi gibi sayıyordu; her kayıt 0\'dan ' +
+      'başlayınca olmayan çakışma üretiyordu. Artık zaman sorunları kayıt başına sayılır ' +
+      've ses görünümündeki "Zaman sorunları" filtresiyle aynı sayıyı gösterir. Aynı kayıt ' +
+      'içindeki gerçek çakışma yine iki tarafıyla görünür.'
+  },
   '2.200': {
     title: '45 saniye üstü bölüm uyarısı',
     body:

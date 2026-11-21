@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.200.**
+yazılır. **Güncel sürüm: v2.201.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.201 — Rapor hazırlığı: zaman sayacı kayıt başına (tamamlandı)
+
+Çok kayıtlı dosyada hazırlık kartındaki "Zaman sorunu" sayısı tüm bölümleri tek
+zaman çizgisi gibi sayıyordu; her kayıt 0'dan başlayınca olmayan çakışma
+üretiyordu. Artık **kayıt başına** toplanır ve ses görünümündeki `Zaman
+sorunları` filtresiyle aynı sayıyı verir. Gerçek çakışma iki tarafıyla kalır.
+Koruyan test: `birim` [73] + `tasarim` [2ba].
 
 ### v2.200 — 45 saniye üstü bölüm uyarısı (tamamlandı)
 

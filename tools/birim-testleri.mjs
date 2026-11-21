@@ -3446,5 +3446,59 @@ console.log('\n== [72] Bölüm uzunluğu: 45 sn üstü uyarı (v2.200)');
   eq('45 sn altında madde yok', !!r2.items.find((x) => x.key === 'longSegments'), false);
 }
 
+console.log('\n== [73] Rapor hazırlığı: zaman sorunu kayıt başına (v2.201)');
+{
+  // BULUNAN HATA (v2.200 ölçümü): hazırlık sayacı tüm kayıtların bölümlerini
+  // TEK zaman çizgisi gibi sayıyordu. İki kayıt da 0'dan başlayınca aralarında
+  // olmayan "çakışma" üretiyordu; ses görünümündeki `time` filtresi ise kayıt
+  // başına doğru sayıyordu (v2.156 dersi: iki araç ayrışmamalı).
+  const seg = (o) => T.emptySegmentForTest(o);
+  const mat = (id, segs) => {
+    const m = T.emptyMaterialForTest({ id, name: id + '.wav' });
+    m.segments = segs;
+    return m;
+  };
+  const c = T.emptyCaseForTest({ id: 'c1' });
+  c.materials = [
+    mat('m1', [
+      seg({ id: 'a1', start: '00:00:00.000', end: '00:00:10.000', text: 'a', speaker: 'S1' }),
+      seg({ id: 'a2', start: '00:00:10.000', end: '00:00:20.000', text: 'b', speaker: 'S1' })
+    ]),
+    mat('m2', [
+      seg({ id: 'b1', start: '00:00:00.000', end: '00:00:10.000', text: 'c', speaker: 'S1' }),
+      seg({ id: 'b2', start: '00:00:10.000', end: '00:00:20.000', text: 'd', speaker: 'S1' })
+    ])
+  ];
+  const r = T.reportReadiness(c);
+  const timeItem = r.items.find((x) => x.key === 'time');
+  eq('iki kayıt da 0’dan başlasa da zaman sorunu yok', timeItem ? timeItem.count : 0, 0);
+  const perMaterial = c.materials.reduce((n, m) => n + T.segCounts(m).time, 0);
+  eq('hazırlık sayacı = kayıt başına toplam', timeItem ? timeItem.count : 0, perMaterial);
+
+  // GERÇEK çakışma aynı kayıt içinde: 0–10 ve 5–15 → iki taraf da sayılır.
+  c.materials = [
+    mat('m3', [
+      seg({ id: 'c1', start: '00:00:00.000', end: '00:00:10.000', text: 'e', speaker: 'S1' }),
+      seg({ id: 'c2', start: '00:00:05.000', end: '00:00:15.000', text: 'f', speaker: 'S1' })
+    ])
+  ];
+  const r2 = T.reportReadiness(c);
+  const t2 = r2.items.find((x) => x.key === 'time');
+  eq('gerçek çakışma iki tarafı da sayar', t2 && t2.count, 2);
+  eq('gerçek çakışma = kayıt başına toplam', t2 && t2.count, T.segCounts(c.materials[0]).time);
+
+  // KARIŞIK: geçerli m1 + çakışan m3 → yalnız gerçek çakışma (2).
+  c.materials = [
+    mat('m1', [seg({ id: 'a1', start: '00:00:00.000', end: '00:00:10.000', text: 'a', speaker: 'S1' })]),
+    mat('m3', [
+      seg({ id: 'c1', start: '00:00:00.000', end: '00:00:10.000', text: 'e', speaker: 'S1' }),
+      seg({ id: 'c2', start: '00:00:05.000', end: '00:00:15.000', text: 'f', speaker: 'S1' })
+    ])
+  ];
+  const r3 = T.reportReadiness(c);
+  const t3 = r3.items.find((x) => x.key === 'time');
+  eq('karışık dosyada yalnız gerçek çakışma', t3 && t3.count, 2);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

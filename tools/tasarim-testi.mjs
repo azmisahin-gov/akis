@@ -1470,5 +1470,23 @@ console.log('\n[2az] Bölüm uzunluğu: 45 sn üstü uyarı (v2.200)');
   check('yardım standardı anıyor', /45 sn|45 saniye/.test(help) && /1–3 cümle/.test(help));
 }
 
+console.log('\n[2ba] Rapor hazırlığı: zaman sayacı kayıt başına (v2.201)');
+{
+  const appJs = read('assets/app.js');
+  const fn = appJs.slice(
+    appJs.indexOf('function reportReadiness'),
+    appJs.indexOf('function readinessRowsHtml')
+  );
+  // Kayıtların zaman çizgileri AYRIDIR; düzleştirilmiş sayım olmayan çakışma
+  // üretiyordu. Hazırlık sayacı, ses görünümündeki `time` filtresiyle aynı
+  // (kayıt başına) olmalı.
+  check(
+    'zaman sorunu kayıt başına toplanıyor',
+    /materials\.reduce\([\s\S]{0,220}segmentTimeIssueIndexes\(\(m && m\.segments\) \|\| \[\]\)/.test(fn)
+  );
+  check('düzleştirilmiş zaman sayımı kaldırıldı', !/segmentTimeIssueIndexes\(segs\)\.size/.test(fn));
+  check('hazırlık maddesi time filtresine götürür', /'Zaman sorunu olan bölüm'/.test(fn) && /'time'/.test(fn));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

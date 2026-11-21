@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.200.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.201.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3710,7 +3710,7 @@ eklerse mevcut `data-*` işleyicisini kullanmalı; kendi mantığını taşımam
 | Testler | `bash tools/test.sh` → **1074 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | commit/push sonrası doğrulanacak |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.200** |
-| Açık konu | Rapor hazırlığındaki "Zaman sorunu" sayacı çok kayıtlı dosyada yanlış (aşağıda) |
+| Açık konu | — (v2.201'de düzeltildi) |
 
 ### Bu sürümde ne yapıldı
 
@@ -3737,7 +3737,7 @@ Standart: **1–3 cümle veya 15–30 sn**, üst sınır **45 sn**. Birleştirme
 | m2: 0–22 + 22–44 birleştir | **⏱ 0**, toast normal (uyarı YOK) |
 | JS hatası | **0** |
 
-### ÖLÇÜM SIRASINDA BULUNAN AYRI SORUN (v2.200'e DAHİL EDİLMEDİ)
+### ÖLÇÜM SIRASINDA BULUNAN AYRI SORUN (v2.201'de düzeltildi)
 
 `reportReadiness` "Zaman sorunu" sayısını **tüm kayıtların bölümlerini tek zaman
 çizgisi gibi** sayıyor (`materials.flatMap`). İki kayıt da 0'dan başlıyorsa
@@ -3752,8 +3752,8 @@ Test: iki kayıt da 0'dan başlasın → hazırlıkta "Zaman sorunu" **0** olmal
 
 ### SIRADAKİ İŞLER (öneri sırası — v2.200 sonrası)
 
-1. **v2.201 — Rapor hazırlığı zaman sayacı (bulunan hata).** Yukarıdaki
-   kayıt-başına toplama + `birim` testi. Küçük ve kanıtlı.
+1. **v2.201 — Rapor hazırlığı zaman sayacı (YAPILDI).** Kayıt-başına toplama
+   + `birim` [73] + `tasarim` [2ba].
 2. **v2.202 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
    çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez.
 3. **v2.203 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
@@ -3766,3 +3766,60 @@ Test: iki kayıt da 0'dan başlasın → hazırlıkta "Zaman sorunu" **0** olmal
 - Uyarı **engellemez**; 5 dakikalık tek bölüm de birleştirilebilir (uyarı verilir).
 - Rapor uyarısı **ekran** "Rapor öncesi kontrol" bloğundadır; DOCX/UDF metnine
   yeni bir cümle eklenmedi (belge bilirkişinin metni olarak kalır).
+
+## YENİ OTURUM DEVRİ (v2.201) — Rapor hazırlığı zaman sayacı
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.201** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1079 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.201** |
+| Açık konu | v2.202 rapora "Okuma metni"; v2.203 gözlem anahtarları |
+
+### Ne yapıldı
+
+v2.200 ölçümünde bulunan hata: `reportReadiness` "Zaman sorunu" sayısını
+`materials.flatMap(...)` ile **tüm kayıtları tek zaman çizgisi** gibi sayıyordu.
+Her kayıt 0'dan başladığı için aralarında olmayan "çakışma" üretiyordu.
+
+- `time` maddesi artık **kayıt başına**:
+  `materials.reduce((n,m)=>n+segmentTimeIssueIndexes((m&&m.segments)||[]).size,0)`.
+- Ses görünümündeki `time` filtresi (`segCounts(m).time`) ile **aynı** kural.
+- Gerçek çakışma (aynı kayıt içinde) iki tarafıyla kalır.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+m1 (0–10, 10–20), m2 (0–10, 10–20), m3 (0–10, 5–15):
+
+| Ölçüm | Önce (v2.200) | Sonra (v2.201) |
+|---|---|---|
+| Hazırlık "Zaman sorunu" | **4** (yanlış) | **2** (yalnız m3) |
+| m1 zaman çipi | — | **yok** |
+| m3 zaman çipi | — | **"Zaman sorunları 2"** |
+| m3 filtre satırı | — | **2** |
+| JS hatası | 0 | **0** |
+
+### DEĞİŞMEZ KURAL: zaman çizgileri KAYIT BAŞINA
+
+Ses kayıtlarının zaman çizgileri **ayrıdır**. Bölüm zamanlarını kayıtlar arası
+karşılaştırmak (düzleştirilmiş `flatMap` + `segmentTimeIssues`) yanlış "çakışma"
+üretir. Zaman denetimi gereken her yerde **kayıt başına** hesapla:
+`segmentTimeIssueIndexes(m.segments || [])`. Hazırlık kartı ve `time` filtresi
+aynı sayıyı vermelidir (v2.156 dersi: iki araç ayrışmamalı).
+
+### SIRADAKİ İŞLER (öneri sırası — v2.201 sonrası)
+
+1. **v2.202 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
+   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez.
+2. **v2.203 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
+3. **v2.204 — Dosyalar arası konuşmacı kaydı** (case-level registry).
+4. **v2.205 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+
+### Bilinen sınırlar (hata değil)
+
+- Zaman sorunu denetimi **kayıt içi**dir; iki kaydın aynı saniyeye denk gelmesi
+  sorun değildir (farklı zaman çizgileri).
+- 45 sn eşiği ve diğer v2.200 davranışları değişmedi.
