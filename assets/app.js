@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.176';
+} from './schema.js?v=2.177';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.176';
+const APP_VERSION = '2.177';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3741,6 +3741,59 @@ function ambiguousPanelHtml(s, i) {
     </div>
   </div>`;
 }
+// Satır işlemleri menüsü (v2.177). "Diğer işlemler" katlaması kaldırıldı;
+// aynı işler satırın ⋮ düğmesinden açılır. Menü KENDİ mantığını taşımaz:
+// öğeler mevcut data-* işleyicilerini kullanır (birleştir/böl/çözümle/…).
+let segMenuEl = null;
+function closeSegMenu() {
+  if (segMenuEl) {
+    segMenuEl.remove();
+    segMenuEl = null;
+  }
+}
+function openSegMenu(m, index, anchor) {
+  closeSegMenu();
+  const card = anchor.closest('.audio-card');
+  const s = (m.segments || [])[index];
+  if (!card || !s) return;
+  const hist = (s.history || []).length;
+  const menu = document.createElement('div');
+  menu.className = 'seg-menu';
+  menu.id = 'segMenu';
+  menu.setAttribute('role', 'menu');
+  menu.setAttribute('aria-label', `Bölüm ${index + 1} işlemleri`);
+  menu.innerHTML =
+    `<button role="menuitem" data-merge-next="${index}">Sonrakine ekle (birleştir)</button>` +
+    `<button role="menuitem" data-split-seg="${index}">Oynatıcı konumundan böl</button>` +
+    `<button role="menuitem" data-retranscribe-seg="${index}">↻ Bu aralığı çözümle</button>` +
+    (hist ? `<button role="menuitem" data-history="${index}">Metin geçmişi (${hist})</button>` : '') +
+    `<button role="menuitem" data-silence="${index}">Sessizlik ölç</button>` +
+    `<button role="menuitem" class="danger" data-delete-seg="${index}">Bölümü sil</button>`;
+  const r = anchor.getBoundingClientRect();
+  menu.style.position = 'fixed';
+  menu.style.top = Math.round(r.bottom + 4) + 'px';
+  menu.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - 260))) + 'px';
+  card.appendChild(menu);
+  segMenuEl = menu;
+  // Menü öğesine tıklanınca olay ÖNCE #view-audio'ya ulaşsın; kapatma sonra.
+  menu.addEventListener('click', (e) => {
+    if (e.target.closest('button')) setTimeout(closeSegMenu, 0);
+  });
+  setTimeout(() => {
+    document.addEventListener('click', onSegMenuOutside, true);
+    document.addEventListener('keydown', onSegMenuKey, true);
+  }, 0);
+}
+function onSegMenuOutside(e) {
+  if (!segMenuEl) return;
+  if (!segMenuEl.contains(e.target)) closeSegMenu();
+}
+function onSegMenuKey(e) {
+  if (e.key === 'Escape') {
+    closeSegMenu();
+    e.stopPropagation();
+  }
+}
 function segItemHtml(m, s, i, prev, issue) {
   const rev = segReview(s);
   const halluc = isHallucination(s.text);
@@ -3778,7 +3831,7 @@ function segItemHtml(m, s, i, prev, issue) {
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time"><span class="seg-start">${esc(s.start || '—')}</span><span class="seg-end">→ ${esc(s.end || '—')}</span></span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
-    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}</span>
+    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}<button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
   </div>`;
 }
 function segListHtml(m) {
@@ -3951,16 +4004,6 @@ function segDetailHtml(m) {
         `<button class="mini-button obs-btn ${s.obs && s.obs[k] ? 'on' : ''}" data-obs="${i}|${k}" title="${esc(tip)}">${lbl}</button>`
     )
     .join('');
-  const opsBtns = [
-    hist ? `<button class="mini-button tiny" data-history="${i}" title="Metin geçmişi">geçmiş (${hist})</button>` : '',
-    `<button class="mini-button tiny" data-silence="${i}" title="Sessizlik oranını ölç">sessizlik ölç</button>`,
-    `<button class="mini-button tiny" data-split-seg="${i}" title="Bu bölümü oynatıcının konumundan ikiye ayırır. Metin yeniden çözümlenmez; kesim noktasına göre paylaştırılır.">buradan böl</button>`,
-    `<button class="mini-button tiny" data-retranscribe-seg="${i}" title="Yalnız bu bölümün zaman aralığını (başlangıç–bitiş) ses dosyasından kesip yeniden çözümler. Metin kaybolduysa geri getirir; diğer bölümlere dokunmaz.">↻ Bu aralığı çözümle</button>`,
-    `<button class="mini-button tiny" data-merge-next="${i}" title="Sonrakiyle birleştir">sonrakine ekle</button>`,
-    `<button class="mini-button tiny danger" data-delete-seg="${i}" title="Bölümü sil">sil</button>`
-  ]
-    .filter(Boolean)
-    .join('');
 
   // YERLEŞİM (v2.62): beş bölge, hiçbiri diğerinin üstüne binmez.
   //   1. Başlık        — bölüm no + gezinme + dinle
@@ -3990,7 +4033,6 @@ function segDetailHtml(m) {
       <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
       <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
       <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-      <details class="sd-more"><summary title="Geçmiş, ölçüm ve bölme araçları. Günlük onay akışını kalabalıklaştırmamak için katlanmıştır.">Diğer işlemler</summary><span class="sd-ops">${opsBtns}</span></details>
     </span>
     <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga, zamanlar, konuşmacı ve gözlem alanlarını göster/gizle. Yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
@@ -10870,6 +10912,14 @@ function setupEvents() {
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
       if (m) retranscribeSegment(m.id, Number(b.dataset.retranscribeSeg));
+    } else if (b.dataset.segMenu !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) {
+        m.activeSeg = Number(b.dataset.segMenu);
+        openSegMenu(m, Number(b.dataset.segMenu), b);
+      }
     } else if (b.dataset.mergeNext !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -10964,6 +11014,17 @@ function setupEvents() {
       renderAudioList();
       renderOverview();
     }
+  });
+  // SAĞ TIK da satır menüsünü açar (v2.177): ⋮ düğmesi klavye/dokunmatik için,
+  // sağ tık fare alışkanlığı için aynı menüyü açar (tek kaynak: openSegMenu).
+  $('#view-audio').addEventListener('contextmenu', (e) => {
+    const item = e.target.closest('.seg-item');
+    if (!item) return;
+    e.preventDefault();
+    const card = item.closest('.audio-card');
+    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+    const m = currentCase()?.materials.find((x) => x.id === id);
+    if (m) openSegMenu(m, Number(item.dataset.segItem), item.querySelector('[data-seg-menu]') || item);
   });
   // Hızlı etiket: metnin sonuna gözlem ifadesi ekler (varsa boşlukla). Temizle
   // yalnızca metni boşaltır; geçmiş kaydı odak değişiminde tutulur.
@@ -12372,6 +12433,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.177': {
+    title: 'Bölüm işlemleri artık satır menüsünde (⋮ / sağ tık)',
+    body:
+      'Birleştirme 3 etkileşimdi ve ikincil araçlar "Diğer işlemler" katlamasında ' +
+      'saklıydı. Artık her satırın sonundaki ⋮ (veya sağ tık) menüsünde: ' +
+      'birleştir, oynatıcı konumundan böl, aralığı çözümle, metin geçmişi, ' +
+      'sessizlik ölç, sil. Detaydaki katlama kaldırıldı.'
+  },
   '2.176': {
     title: 'Birleştirme ham model çıktısını koruyor',
     body:

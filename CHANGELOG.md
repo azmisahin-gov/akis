@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.176.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.177.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.177 — Satır işlemleri menüsü (⋮ / sağ tık); "Diğer işlemler" kalktı
+
+Ölçüm (gerçek Chromium): birleştirme **3 etkileşimdi** (satırı seç → "Diğer
+işlemler" katlamasını aç → tıkla) ve bölme, çözümleme, geçmiş, sil aynı
+katlamada saklıydı; katlama açılmadan hiçbiri görünmüyordu.
+
+### KULLANICI NE GÖRECEK
+
+Her bölüm satırının sonunda **⋮** var; **sağ tık** da aynı menüyü açar:
+
+- Sonrakine ekle (birleştir)
+- Oynatıcı konumundan böl
+- ↻ Bu aralığı çözümle
+- Metin geçmişi (N) — geçmiş varsa
+- Sessizlik ölç
+- Bölümü sil
+
+**Esc** veya dışarı tıklama menüyü kapatır. Detay panelindeki "Diğer işlemler"
+katlaması kaldırıldı; **aynı işler kaybolmadı**, satır menüsüne taşındı.
+
+### ÖLÇÜM
+
+| | Önce (v2.176) | Sonra (v2.177) |
+|---|---|---|
+| Görünür kontrol (1440) | 54 | **47** |
+| Birleştirme | 3 etkileşim | **2** (⋮ → tık) |
+| Katlama açmadan erişim | yok | **var** |
+| Satır yüksekliği | 72 px | 72 px (değişmedi) |
+| Menü konumu | — | ekran içinde; Esc kapatır |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` (güncellendi): ikincil araçlar satır menüsünde, aynı işler
+korunur, detayda katlama kalmadı.
 
 ## v2.176 — Birleştirme adli olarak eksiksiz (ham çıktı korunur, günlüğe yazılır)
 

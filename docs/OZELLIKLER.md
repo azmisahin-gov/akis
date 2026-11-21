@@ -1,4 +1,4 @@
-# Özellikler (v2.176 — mevcut durum)
+# Özellikler (v2.177 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Satır menüsü (v2.177):** her bölüm satırında **⋮** (sağ tık da olur):
+  birleştir · oynatıcı konumundan böl · aralığı çözümle · metin geçmişi ·
+  sessizlik ölç · sil. Detaydaki "Diğer işlemler" katlaması kaldırıldı.
 - **Birleştirme güvenliği (v2.176):** birleşen bölümün ham model çıktısı
   (`mergedFrom`), kelime zamanları ve gözlemleri korunur; farklı konuşmacı ve
   ikinci göz reddedilir; birleştirme/bölme delil günlüğüne yazılır.

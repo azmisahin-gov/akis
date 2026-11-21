@@ -2151,3 +2151,46 @@ input::placeholder, textarea::placeholder {
   background: var(--bg);
   padding-block: 6px;
 }
+
+/* --- v2.177 — Satır işlemleri menüsü ------------------------------------- */
+/* "Diğer işlemler" katlaması kaldırıldı; aynı işler satırın ⋮ düğmesinden
+   açılır. Menü öğeleri MEVCUT data-* işleyicilerini kullanır (yeni mantık yok). */
+#view-audio .seg-menu-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--fs-md);
+  line-height: 1;
+  padding: 0 3px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#view-audio .seg-menu-btn:hover,
+#view-audio .seg-menu-btn:focus-visible { background: var(--surface-3); color: var(--ink); }
+
+.seg-menu {
+  position: fixed;
+  z-index: 40;
+  min-width: 230px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  box-shadow: var(--shadow-lg);
+}
+.seg-menu button {
+  text-align: left;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.seg-menu button:hover,
+.seg-menu button:focus-visible { background: var(--surface-2); }
+.seg-menu button.danger { color: var(--red); }

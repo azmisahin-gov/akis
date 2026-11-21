@@ -460,8 +460,12 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
   const js = read('assets/app.js');
   check('konuşmacı/kontrol/profil tek satır (3 sütun)', /#view-audio \.sd-meta\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*auto/.test(rl));
   check('zaman etiketi kutunun yanında (satır)', /#view-audio \.sd-times \.sd-time\s*\{[^}]*flex-direction:\s*row/.test(rl));
-  check('ikincil araçlar katlanır (details)', /<details class="sd-more">/.test(js));
-  check('katlanır araç başlığı biçimli', /#view-audio \.sd-more > summary\s*\{/.test(rl));
+  // v2.177: ikincil araçlar artık SATIR MENÜSÜNDE (⋮). Katlama kaldırıldı;
+  // aynı işler kaybolmadı, satır menüsüne taşındı.
+  check('ikincil araçlar satır menüsünde (⋮)', /data-seg-menu="/.test(js));
+  check('menü aynı işleri taşır (birleştir/böl/çözümle/sil)',
+    /data-merge-next/.test(js) && /data-split-seg/.test(js) && /data-retranscribe-seg/.test(js) && /data-delete-seg/.test(js));
+  check('detayda katlama kalmadı', !/<details class="sd-more">/.test(js));
   check('masaüstü metin alanı 160 px', /@media \(min-width: 901px\)[\s\S]{0,200}min-height:\s*160px/.test(rl));
   check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
 }

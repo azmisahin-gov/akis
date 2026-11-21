@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.176.**
+yazılır. **Güncel sürüm: v2.177.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.177 — Satır işlemleri menüsü (tamamlandı)
+
+Birleştirme 3 etkileşimdi ve ikincil araçlar katlamada saklıydı. Her satıra
+**⋮** (ve sağ tık) menüsü eklendi: birleştir, oynatıcı konumundan böl,
+aralığı çözümle, metin geçmişi, sessizlik ölç, sil. Menü öğeleri mevcut
+`data-*` işleyicilerini kullanır. "Diğer işlemler" katlaması kaldırıldı.
+Ölçüm: görünür kontrol 54 → **47**, birleştirme 3 → **2** etkileşim, satır
+72 px (aynı), Esc kapatır, hata 0. Koruyan test: `tasarim` (güncellendi).
 
 ### v2.176 — Birleştirme adli olarak eksiksiz (tamamlandı)
 
