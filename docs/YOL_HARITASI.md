@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.194.**
+yazılır. **Güncel sürüm: v2.195.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.195 — Paragraf görünümü salt okunur (tamamlandı)
+
+Yıkıcı `paragraphize` kaldırıldı. ¶ düğmesi `openParagraphView` açar:
+`paragraphGroups` aynı konuşmacının ardışık bölümlerini gruplar; `segments`
+DEĞİŞMEZ. Kanıt tablosu/cümle zamanları korunur. Diyalogda konuşmacı, zaman,
+bölüm sayısı, metin ve "1–3 cümle veya 15–30 sn" standardı görünür; panoya
+kopyalama vardır. Hızlı ekle'ye `[telefonda konuşma]` eklendi. Ölçüm: 6 → 6
+bölüm, 3 grup, JS hatası 0. Koruyan test: `birim` [7b]/[28], `sema`,
+`tasarim` [2au].
 
 ### v2.194 — Yeniden çözümleme sonrası kaydırma korunur (tamamlandı)
 

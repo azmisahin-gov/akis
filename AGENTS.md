@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.194.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.195.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.194** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.195** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3262,29 +3262,23 @@ tek satır metin önizlemesi gerekli: kullanıcı satırları metinden ayırt ed
 
 **Koruyan test:** `tasarim` [2ap] + [2as].
 
-#### P24 — "Paragraf / türetilmiş görünüm" konusu (KAYIT NOTU — kod değişikliği yok)
+#### P24 — "Paragraf / türetilmiş görünüm" konusu (v2.195 ile TAMAMLANDI)
 
 **SORU (2026-11-21):** "Paragraf/türetilmiş görünüm konusu diye bir konu var
 mıydı?"
 
-**DURUM:** Böyle ADLANDIRILMIŞ bir konu **yok**. Depoda iki ayrı şey var:
+**DURUM (v2.195):** Konu **tamamlandı**. Eski yıkıcı `paragraphize` KALDIRILDI.
+¶ düğmesi artık `openParagraphView` ile **salt-okunur paragraf görünümü** açar:
+`paragraphGroups` aynı konuşmacının ardışık bölümlerini gruplar; `m.segments`
+DEĞİŞMEZ. Kanıt tablosu ve cümle zamanları aynen kalır. Diyalogda konuşmacı,
+zaman aralığı, bölüm sayısı, metin ve "1–3 cümle veya 15–30 sn" standardı
+görünür; "Panoya kopyala" vardır.
 
-1. **Paragraf oluştur** (`paragraphize`; v2.12, adli düzeltme v2.98): ardışık ve
-   AYNI konuşmacıya ait bölümleri **yapısal olarak** tek bölümde birleştirir.
-   `m.segments` DEĞİŞİR; `snapshotForUndo` ile geri alınabilir. `asrText` /
-   `asrModel` / `asrAt` korunur; farklı modeller karışırsa model adı boşaltılır.
-   Paragraf sonrası liste kaydırması korunur (v2.193).
-2. **Türetilmiş görünüm**: böyle bir mod **YOK**. Rapor ve defter bölümlerden
-   türetilir; ayrı, salt-okunur bir "paragraf görünümü" ekranı yoktur.
+**AYRIM (korunur):** Paragraf **görünümü** veriyi DEĞİŞTİRMEZ; yalnız gösterir.
+Raporun kanıt tablosu bölümlerden gelir.
 
-**AYRIM (önemli):** "Paragraf oluştur" veriyi **DEĞİŞTİRİR** (geri alınabilir);
-"türetilmiş görünüm" veriyi **DEĞİŞTİRMEZ**, yalnız gösterir. Adli kayıtta bu
-fark karıştırılmamalıdır.
-
-**AÇIK KONU (istenirse):** Salt-okunur "Paragraf görünümü" — bölümleri
-konuşmacıya göre gruplayıp okuma kolaylığı sağlayan, `segment` yapısına
-DOKUNMAYAN bir görünüm — ayrı bir sürüm konusu olarak eklenebilir. Bu oturumda
-kod değişikliği YAPILMADI; yalnız kayıt düşüldü.
+**AÇIK KONU:** Paragraf/okuma metnini **rapora ayrı bölüm** olarak eklemek
+(HTML/DOCX/UDF) henüz YAPILMADI. Görünüm var; rapor entegrasyonu ayrı konu.
 
 **KARARLAR VE TERİM SÖZLÜĞÜ (2026-11-21, kullanıcıyla netleşti):**
 
@@ -3294,16 +3288,16 @@ kod değişikliği YAPILMADI; yalnız kayıt düşüldü.
   (`ASR_WINDOW_SECONDS = 30`). Kullanıcı bunu ayarlayamaz; bölüm uzunluğunu
   **birleştirme** ile uzman belirler.
 - **Paragraf / okuma metni** = bölümlerden türetilen, salt-okunur okuma biçimi
-  (henüz YOK).
+  (v2.195: ¶ düğmesiyle açılır; veriyi değiştirmez).
 - **Ayrıntılı (zaman damgalı) bölüm tablosu** = kanıt. "Granüler" yerine bu
   Türkçe ifade kullanılır.
 - **Birleştirme kuralı:** yalnız komşu ve AYNI konuşmacı; hedef **1–3 cümle
   veya ~15–30 sn**. 5 dakikalık tek satır YASAK. Konuşmacı değişiminde
   birleştirme yok (kod engeller).
-- **¶ (Paragraf oluştur):** veriyi DEĞİŞTİRİR; tek konuşmacıda tüm bölümleri
-  birleştirir; cümle zamanları kaybolur; geri alma **20 işlem** ve sayfa
-  yenilenince **SIFIRLANIR**. Kanıt için önerilmez; salt-okunur paragraf
-  görünümü açık konudur.
+- **¶ (Paragraf görünümü):** v2.195'ten itibaren **SALT OKUNUR**; bölümleri
+  DEĞİŞTİRMEZ. Aynı konuşmacının ardışık bölümlerini okuma paragrafı olarak
+  gruplar; kanıt tablosu ve cümle zamanları korunur. Eski yıkıcı "Paragraf
+  oluştur" kaldırıldı.
 - **Otomatik geçiş:** ilk tarama için; **son doğrulamada manuel**. "Onaydan
   sonra sonraki bekleyene geç" tercihi (varsayılan kapalı) daha güvenli.
 - **Konuşmacı:** model **diarization YAPMAZ**; etiketler uzmandan. Kodlar
@@ -3331,6 +3325,31 @@ kuruyordu; v2.193 koruması yalnız birleştirme/bölme/paragraf yolundaydı.
 sonrası `restoreSegScroll(m, scroll, index)`.
 
 **Koruyan test:** `tasarim` [2at].
+
+#### P26 — Paragraf görünümü salt okunur (v2.195)
+
+**KULLANICI:** *"Salt-okunur paragraf görünümü yapalım. ¶ bölümleri
+değiştiriyordu; cümle zamanları kayboluyordu."*
+
+**YAPILAN:**
+- `paragraphize` (yıkıcı) KALDIRILDI. Yerine `paragraphGroups(segments)` saf
+  gruplama ve `openParagraphView(m)` salt-okunur diyalog geldi.
+- ¶ düğmesi `#paragraphDialog` açar: konuşmacı · zaman · bölüm sayısı · metin;
+  "kontrol bekliyor" uyarısı; "Panoya kopyala".
+- Pencere içinde standart yazılı: **1–3 cümle veya 15–30 sn**.
+- Hızlı ekle'ye `[telefonda konuşma]` eklendi.
+- `docs/STANDARTLAR.md` eklendi (terimler, bölüm uzunluğu, konuşmacı,
+  rapor yöntemi, gözlemler, geri alma, LLM politikası).
+
+**ÖLÇÜM (gerçek Chromium):** ¶ öncesi/sonrası bölüm sayısı **6 → 6**
+(değişmedi); **3** paragraf grubu; grup metinleri birleşik; kopyalama metni
+doğru; JS hatası 0.
+
+**DERS:** "Paragraf" bir SUNUMdur, kanıt değil. Görünüm veriyi değiştirirse
+kanıt tablosu kabalaşır ve cümle zamanları kaybolur. Salt-okunur türetme,
+kanıtı korurken okunabilirlik sağlar.
+
+**Koruyan test:** `birim` [7b]/[28], `sema`, `tasarim` [2au].
 
 ### DOĞRULAMA (her oturum başı)
 

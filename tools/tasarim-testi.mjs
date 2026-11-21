@@ -1274,6 +1274,20 @@ console.log('\n[2at] Yeniden çözümleme sonrası kaydırma korunur (v2.194)');
   check('renderAudioList bekleniyor (await)', /await renderAudioList\(\)[\s\S]{0,200}restoreSegScroll/.test(js));
 }
 
+console.log('\n[2au] Paragraf görünümü salt okunur (v2.195)');
+{
+  // KULLANICI: "Salt-okunur paragraf görünümü yapalım." Eski `paragraphize`
+  // bölümleri değiştiriyordu; artık ¶ yalnız GÖRÜNÜM açar.
+  const js = read('assets/app.js');
+  const html = read('index.html');
+  check('¶ düğmesi paragraf görünümünü açar', /data-paragraph="1" title="Paragraf görünümü \(salt okunur\)/.test(js));
+  check('görünüm segmentlere dokunmaz', /function paragraphGroups\(segments\)/.test(js) && !/paragraphize\(/.test(js));
+  check('görünüm diyaloğu var', /id="paragraphDialog"/.test(html) && /id="paragraphBody"/.test(html));
+  check('salt okunur notu görünür', /Salt okunur: bölümleri değiştirmez/.test(js));
+  check('önerilen bölüm uzunluğu yazılı', /1–3 cümle veya 15–30 sn/.test(js));
+  check('telefonda konuşma hızlı etiketi var', /\[telefonda konuşma\]/.test(js));
+}
+
 console.log('\n[8] CSS borcu (nöbetçi)');
 {
   const appCss = read('assets/app.css');

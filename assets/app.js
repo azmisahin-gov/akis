@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.194';
+} from './schema.js?v=2.195';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.194';
+const APP_VERSION = '2.195';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -248,7 +248,8 @@ const QUICK_TAGS = [
   { label: '[uzaktan konuşma]', text: '[uzaktan/zayıf konuşma]', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
   { label: '[gürültülü]', text: '[gürültülü bölüm]', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
   { label: '[üst üste]', text: '[üst üste konuşma]', hint: 'İki veya daha fazla konuşma çakışıyor.' },
-  { label: '[müzik/ses]', text: '[müzik/ses efekti]', hint: 'Müzik veya ses efekti; konuşma değil.' }
+  { label: '[müzik/ses]', text: '[müzik/ses efekti]', hint: 'Müzik veya ses efekti; konuşma değil.' },
+  { label: '[telefonda konuşma]', text: '[telefonda konuşma]', hint: 'Konuşmacı telefonla görüşüyor; karşı tarafın sesi duyuluyor veya duyulmuyor olabilir.' }
 ];
 // Eski sürümlerin varsayılan yöntem metni (iki paragraf). Kayıtlı dosyalarda
 // aracın kendisini anan ifadeler kalmasın diye birebir karşılaştırmayla
@@ -5136,7 +5137,7 @@ function renderSegments(m, card) {
       <div class="tb-filters">${chips}</div>
       <div class="tb-spacer"></div>
       <div class="tb-progress" title="${reviewed}/${segs.length} denetlendi"><div class="bar"><span style="width:${pct}%"></span></div><small>%${pct}</small></div>
-      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${coverageButtonHtml(m)}${quickBulkBtn(counts, isSecondEyesEditor())}</div>
+      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf görünümü (salt okunur) — bölümleri değiştirmez" aria-label="Paragraf görünümü (salt okunur)">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${coverageButtonHtml(m)}${quickBulkBtn(counts, isSecondEyesEditor())}</div>
     </div>
     <div id="term-panel-${esc(m.id)}" class="term-panel" hidden></div>
     <div id="coverage-panel-${esc(m.id)}" class="coverage-panel" hidden></div>
@@ -6986,86 +6987,70 @@ function mergeSegmentWithNext(m, index) {
   renderOverview();
   showToast(`Bölüm ${index + 1} ile sonraki birleştirildi. İkinci bölümün ham çıktısı saklandı.`);
 }
-// Paragraf oluşturma: ardışık ve aynı konuşmacıya ait bölümleri tek paragrafta
-// toplar. Metinler boşlukla birleştirilir; zaman aralığı ilk başlangıçtan son
-// bitişe genişler. Konuşmacı değiştiğinde yeni paragraf başlar, böylece farklı
-// kişilerin sözleri karışmaz. Hiçbir metin uydurulmaz; yalnızca mevcut bölümler
-// birleştirilir. Onaylanmamış bölümler paragrafa katıldığında kontrol durumu
-// "bekliyor"a döner ki doğrulanmamış içerik onaylı sayılmasın.
-// Paragrafa giren bölümlerin model kimliği TEKSE onu döndürür; farklı
-// modeller karıştıysa boş string döner (yanlış atıf yapılmaz — v2.98).
-function uniformAsrModel(segs) {
-  const models = [...new Set((segs || []).map((s) => String(s.asrModel || '').trim()).filter(Boolean))];
-  return models.length === 1 ? models[0] : '';
-}
-function paragraphize(m) {
-  const segs = m.segments || [];
-  if (segs.length < 2) {
-    showToast('Paragraf oluşturmak için en az iki bölüm gerekir.');
-    return;
-  }
-  snapshotForUndo('paragraf oluşturuldu');
+// PARAGRAF GÖRÜNÜMÜ — SALT OKUNUR (v2.195).
+// ESKİ DAVRANIŞ: `paragraphize` bölümleri YENİ paragraflarla DEĞİŞTİRİYORDU;
+// cümle zamanları kayboluyor, kanıt tablosu kabalaşıyordu. Kullanıcı bunun
+// yerine salt-okunur paragraf görünümü istedi.
+// KURAL: bu görünüm `m.segments`e DOKUNMAZ; yalnız grupları HESAPLAR.
+function paragraphGroups(segments) {
+  const segs = Array.isArray(segments) ? segments : [];
   const groups = [];
   let cur = null;
   for (const s of segs) {
-    const spk = (s.speaker || '').trim();
-    if (cur && cur.speaker === spk) cur.segs.push(s);
-    else {
-      cur = { speaker: spk, segs: [s] };
+    const spk = String(s.speaker || '').trim();
+    if (cur && cur.speaker === spk) {
+      cur.items.push(s);
+      cur.end = s.end;
+    } else {
+      cur = { speaker: spk, start: s.start, end: s.end, items: [s] };
       groups.push(cur);
     }
   }
-  const merged = [];
-  for (const g of groups) {
-    const first = g.segs[0],
-      last = g.segs[g.segs.length - 1];
-    const texts = g.segs.map((s) => String(s.text || '').trim()).filter(Boolean);
-    const text = texts.join(' ');
-    const anyUnreviewed = g.segs.some((s) => !isReviewed(s));
-    const obs = g.segs.reduce((o, s) => {
-      for (const k in s.obs || {}) {
-        if (s.obs[k]) o[k] = true;
-      }
-      return o;
-    }, null);
-    merged.push({
-      // Paragraf yeni bir bölümdür: kimliği yeni olmalı, yoksa iki bilgisayarda
-      // aynı kimlik iki farklı metni gösterir.
-      id: newId('sg'),
-      start: first.start,
-      end: last.end,
-      speaker: first.speaker || '',
-      text,
-      // ADLİ AYRIM (v2.98): modelin ürettiği ham metin KORUNUR. Paragrafın
-      // otomatik çıktısı, girdi bölümlerinin asrText'lerinin birleşimidir.
-      // Öncesinde bu alanlar hiç taşınmıyor, paragraf oluşturan bilirkişi
-      // "model ne dedi" bilgisini kaybediyordu (v2.83 kuralı bozuluyordu).
-      // Girdilerde asrText yoksa UYDURULMAZ (boş kalır).
-      asrText: g.segs.map((s) => String(s.asrText || '').trim()).filter(Boolean).join(' '),
-      // Model kimliği: hepsi aynıysa korunur; farklı modeller karıştıysa
-      // boşaltılır (yanlış atıf yapmamak için).
-      asrModel: uniformAsrModel(g.segs),
-      asrAt: g.segs.map((s) => s.asrAt || '').filter(Boolean).sort()[0] || '',
-      // Paragrafa giren bölümlerden biri elle düzenlenmişse birleşik metin de
-      // "elle düzenlenmiş" sayılır; kaynağı otomatik metin olsa bile.
-      textRev: g.segs.some((s) => (Number(s.textRev) || 0) > 0) ? 1 : 0,
-      checked: !anyUnreviewed,
-      review: anyUnreviewed ? 'pending' : segReview(first),
-      history: [],
-      obs: obs || undefined,
-      words: g.segs.flatMap((s) => s.words || [])
-    });
+  return groups.map((g) => ({
+    speaker: g.speaker,
+    start: g.start,
+    end: g.end,
+    count: g.items.length,
+    text: g.items.map((s) => String(s.text || '').trim()).filter(Boolean).join(' '),
+    unreviewed: g.items.some((s) => !isReviewed(s)),
+    segmentIds: g.items.map((s) => s.id)
+  }));
+}
+function paragraphSpeakerLabel(m, name) {
+  if (!name) return 'Konuşmacı belirtilmedi';
+  const sp = speakerByName(m, name);
+  return sp && sp.code ? `${sp.code} · ${sp.name}` : name;
+}
+function paragraphViewText(m) {
+  return paragraphGroups(m.segments || [])
+    .map((g) => {
+      const head = `${paragraphSpeakerLabel(m, g.speaker)} · ${tcRange(g.start, g.end)} · ${g.count} bölüm`;
+      return `${head}\n${g.text || '(metin yok)'}`;
+    })
+    .join('\n\n');
+}
+function openParagraphView(m) {
+  const dlg = $('#paragraphDialog');
+  const body = $('#paragraphBody');
+  const note = $('#paragraphNote');
+  if (!dlg || !body) return;
+  const groups = paragraphGroups(m.segments || []);
+  if (note) {
+    note.textContent =
+      'Salt okunur: bölümleri değiştirmez; raporda ayrıntılı (zaman damgalı) bölüm tablosu aynen kalır. ' +
+      'Önerilen bölüm uzunluğu: 1–3 cümle veya 15–30 sn.';
   }
-  m.segments = merged;
-  m.activeSeg = 0;
-  segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
-  const scroll = captureSegScroll(m);
-  persist();
-  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
-  if (card) renderSegments(m, card);
-  restoreSegScroll(m, scroll, 0);
-  renderOverview();
-  showToast(`Paragraf oluşturuldu: ${segs.length} bölüm ${merged.length} paragrafa indirildi.`);
+  body.innerHTML = groups.length
+    ? groups
+        .map(
+          (g) =>
+            `<div class="paragraph-item"><div class="paragraph-head"><b>${esc(paragraphSpeakerLabel(m, g.speaker))}</b><span>${esc(tcRange(g.start, g.end))} · ${g.count} bölüm${g.unreviewed ? ' · kontrol bekliyor' : ''}</span></div><p class="paragraph-text">${esc(g.text || '(metin yok)')}</p></div>`
+        )
+        .join('')
+    : '<p class="seg-empty-note">Görüntülenecek bölüm yok.</p>';
+  dlg.dataset.copyText = paragraphViewText(m);
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open', '');
 }
 // Terim tutarlılığı panelini çizer. Bulunan kümeler listelenir; uzman bir
 // biçimi "esas al" seçerse diğer yazımlar o biçime çevrilir (yalnızca onayla).
@@ -10964,7 +10949,7 @@ function setupEvents() {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
-      if (m) paragraphize(m);
+      if (m) openParagraphView(m);
     } else if (b.dataset.terms !== undefined) {
       const card = b.closest('.audio-card');
       const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -11820,6 +11805,25 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
   });
   $('#helpBtn').addEventListener('click', () => $('#helpDialog').showModal());
   $('#closeHelp').addEventListener('click', () => $('#helpDialog').close());
+  // PARAGRAF GÖRÜNÜMÜ (v2.195): salt okunur; veriyi değiştirmez.
+  const paragraphDlg = $('#paragraphDialog');
+  const closeParagraph = () => {
+    if (!paragraphDlg) return;
+    if (typeof paragraphDlg.close === 'function') paragraphDlg.close();
+    else paragraphDlg.removeAttribute('open');
+  };
+  $('#closeParagraph')?.addEventListener('click', closeParagraph);
+  $('#paragraphClose')?.addEventListener('click', closeParagraph);
+  $('#paragraphCopy')?.addEventListener('click', async () => {
+    const text = paragraphDlg?.dataset?.copyText || '';
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('pano yok');
+      await navigator.clipboard.writeText(text);
+      showToast('Paragraf metni panoya kopyalandı.');
+    } catch (e) {
+      showToast('Panoya kopyalanamadı; metni seçip elle kopyalayın.');
+    }
+  });
   // Sürüm etiketine tıklayınca geçmiş: hangi sürümde ne değişti (kullanıcı dili).
   const verBtn = $('#appVersion');
   if (verBtn) {
@@ -12711,6 +12715,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.195': {
+    title: 'Paragraf görünümü artık salt okunur',
+    body:
+      '¶ düğmesi bölümleri değiştirmiyor; aynı konuşmacının ardışık bölümlerini ' +
+      'okuma paragrafı olarak gösteren salt-okunur bir pencere açıyor. Kanıt ' +
+      'tablosu ve cümle zamanları aynen kalır. Metin panoya kopyalanabilir. ' +
+      'Hızlı ekle etiketlerine "[telefonda konuşma]" eklendi.'
+  },
   '2.194': {
     title: 'Yeniden çözümleme sonrası liste başa dönmüyor',
     body:

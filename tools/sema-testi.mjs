@@ -1169,7 +1169,6 @@ console.log('\n[12] Geri alma ve bölme netliği');
   for (const [label, rx] of [
     ['bölme', /splitSegmentAt\(m, index, cut\)[\s\S]{0,300}snapshotForUndo/],
     // 'birleştirme' aşağıda DAVRANIŞ olarak sınanır (mesafe değil).
-    ['paragraf', /paragraphize[\s\S]{0,400}snapshotForUndo/],
     ['bölüm silme', /deleteSeg[\s\S]{0,400}snapshotForUndo/],
     ['kayıt kaldırma', /removeAudio[\s\S]{0,300}snapshotForUndo/],
     ['paketten yükleme', /paketten dosya yüklendi'\)/],
@@ -1177,6 +1176,13 @@ console.log('\n[12] Geri alma ve bölme netliği');
   ]) {
     ok(`${label} geri alınabilir`, rx.test(app));
   }
+  // PARAGRAF ARTIK YIKICI DEĞİL (v2.195): salt-okunur görünüm; segmentlere
+  // dokunmaz, geri alma kaydı GEREKTİRMEZ.
+  ok(
+    'paragraf görünümü salt okunur (segment değiştirmez)',
+    /function openParagraphView[\s\S]{0,1500}paragraphGroups\(m\.segments/.test(app) && !/paragraphize\(/.test(app)
+  );
+
   // BİRLEŞTİRME: geri alma kaydı, yıkıcı `splice`'ten ÖNCE alınmalı.
   // (v2.176'da koruma kontrolleri araya girdi; mesafe tabanlı test kırıldı.
   //  Kural: test YAZIMI değil DAVRANIŞI sınamalı.)

@@ -67,7 +67,7 @@ const EXPOSE = [
   'trDative', 'timecode', 'secondsFromTimecode',
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
-  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
+  'paragraphGroups', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText', 'analyzeSilence', 'segmentSilenceFlag',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
@@ -91,7 +91,7 @@ const EXPOSE = [
   'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
-  'paragraphize', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
+  'paragraphGroups', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText',
   'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
   'reprocessPlan', 'queueReprocessSummary',
@@ -252,29 +252,27 @@ eq('(Konuşma)', T.isHallucination('(Konuşma)'), true);
 eq('(Müzik - Jenerik)', T.isHallucination('(Müzik - Jenerik)'), true);
 eq('gerçek cümle', T.isHallucination('Merhaba, depozito hakkında konuşmak istiyorum.'), false);
 
-// --- 7b. Paragraf oluşturma -----------------------------------------------
-// Ardışık aynı konuşmacı bölümleri tek paragrafta birleşmeli; konuşmacı
-// değişince yeni paragraf başlamalı. Zaman aralığı ilk baştan son bite
-// genişlemeli ve onaylanmamış içerik paragraf onaylı sayılmamalı.
-console.log('\n[7b] Paragraf oluşturma');
+// --- 7b. Paragraf görünümü (SALT OKUNUR) --------------------------------
+// v2.195: eski `paragraphize` bölümleri DEĞİŞTİRİYORDU. Artık paragraf bir
+// GÖRÜNÜMDÜR: aynı konuşmacının ardışık bölümleri gruplanır; `segments`
+// dokunulmaz. Kanıt tablosu aynen kalır.
+console.log('\n[7b] Paragraf görünümü (salt okunur)');
 {
   const m = { segments: [
-    { start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'bir', review: 'onaylandi' },
-    { start: '00:00:05', end: '00:00:09', speaker: 'A', text: 'iki', review: 'onaylandi' },
-    { start: '00:00:09', end: '00:00:14', speaker: 'B', text: 'üç', review: 'bekliyor' },
+    { id: 'a1', start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'bir', review: 'onaylandi' },
+    { id: 'a2', start: '00:00:05', end: '00:00:09', speaker: 'A', text: 'iki', review: 'onaylandi' },
+    { id: 'b1', start: '00:00:09', end: '00:00:14', speaker: 'B', text: 'üç', review: 'bekliyor' }
   ] };
-  T.paragraphize(m);
-  eq('iki paragrafa indi', m.segments.length, 2);
-  eq('aynı konuşmacı birleşti', m.segments[0].text, 'bir iki');
-  eq('aralık genişledi', [m.segments[0].start, m.segments[0].end], ['00:00:00', '00:00:09']);
-  eq('konuşmacı değişince yeni paragraf', m.segments[1].speaker, 'B');
-  eq('onaylı içerik onaylı kalır', T.isReviewed(m.segments[0]), true);
-  eq('onaysız içerik onaysız kalır', T.isReviewed(m.segments[1]), false);
-}
-{
-  const m = { segments: [{ start: '00:00:00', end: '00:00:05', speaker: 'A', text: 'tek', review: 'onaylandi' }] };
-  T.paragraphize(m);
-  eq('tek bölüm değişmez', m.segments.length, 1);
+  const groups = T.paragraphGroups(m.segments);
+  eq('iki paragraf grubu', groups.length, 2);
+  eq('aynı konuşmacı birleşti', groups[0].text, 'bir iki');
+  eq('aralık genişledi', [groups[0].start, groups[0].end], ['00:00:00', '00:00:09']);
+  eq('konuşmacı değişince yeni grup', groups[1].speaker, 'B');
+  eq('grup bölüm sayısı', groups[0].count, 2);
+  eq('onaysız içerik işaretli', groups[1].unreviewed, true);
+  // SALT OKUNUR: segmentler DEĞİŞMEZ.
+  eq('segment sayısı korunur', m.segments.length, 3);
+  eq('segment metni korunur', m.segments[1].text, 'iki');
 }
 
 // --- 7c. Sessizlik ölçümü -------------------------------------------------
@@ -1476,96 +1474,40 @@ console.log('\n[27] Zaman alanı doğrulanır');
   }
 }
 
-// --- 28. paragraphize adli ayrımı korumalı (v2.98) -----------------------
-// GERÇEK HATA: paragraf oluşturulunca YENİ bölüm nesnesi `asrText`,
-// `asrModel`, `asrAt` alanlarını taşımıyordu. v2.83'teki adli ayrım kuralı
-// ("modelin ürettiği ham metin ASLA üzerine yazılmaz") bu yolda bozuluyordu:
-// paragraf oluşturan bilirkişi, modelin ne dediği bilgisini kaybediyordu.
-// Ölçüm: paragraf sonrası asrText/asrModel/asrAt → undefined.
-// KURAL: paragrafın otomatik çıktısı, girdi bölümlerinin asrText'lerinin
-// birleşimidir (aynı metin olduğu için bilgi kaybı yok). Model kimliği ve
-// zamanı korunur; FARKLI modeller karışırsa model alanı boşaltılır ve
-// günlüğe yazılır (uydurma model adı yazılmaz).
-console.log('\n[28] paragraphize adli ayrımı korur');
+// --- 28. Paragraf görünümü veriyi değiştirmez; bölme asrText paylaştırır ---
+// v2.195: paragraf artık salt-okunur. Aşağıdaki test, görünümün segmentlere ve
+// `asrText` alanına DOKUNMADIĞINI kanıtlar. Bölme kuralı (v2.98) korunur.
+console.log('\n[28] Paragraf görünümü veriyi değiştirmez; bölme asrText paylaştırır');
 {
-  const mk = (asrModel = 'Xenova/whisper-small') => {
-    const c = T.emptyCaseForTest({ id: 'c1' });
-    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
-    m.segments.push(T.emptySegmentForTest({
-      id: 's1', start: '00:00:00.000', end: '00:00:02.000', speaker: 'A',
-      text: 'model bir', asrText: 'model bir', asrModel, asrAt: '2026-01-01T00:00:00Z', review: 'approved'
-    }));
-    m.segments.push(T.emptySegmentForTest({
-      id: 's2', start: '00:00:02.000', end: '00:00:04.000', speaker: 'A',
-      text: 'model iki', asrText: 'model iki', asrModel, asrAt: '2026-01-01T00:00:00Z', review: 'approved'
-    }));
-    c.materials.push(m);
-    T.setAppState({ cases: [c], activeCaseId: 'c1' });
-    return m;
-  };
+  // A) Salt okunur paragraf görünümü.
+  const m = { segments: [
+    { id: 's1', start: '00:00:00.000', end: '00:00:02.000', speaker: 'A', text: 'model bir', asrText: 'model bir', asrModel: 'X', review: 'approved' },
+    { id: 's2', start: '00:00:02.000', end: '00:00:04.000', speaker: 'A', text: 'model iki', asrText: 'model iki', asrModel: 'X', review: 'approved' }
+  ] };
+  const groups = T.paragraphGroups(m.segments);
+  eq('tek paragraf grubu', groups.length, 1);
+  eq('grup metni birleşik', groups[0].text, 'model bir model iki');
+  eq('asrText segmentte korunur', m.segments[0].asrText, 'model bir');
+  eq('segment sayısı değişmez', m.segments.length, 2);
+  eq('segment id değişmez', m.segments[1].id, 's2');
 
-  // 1) Aynı model: paragrafın asrText'i girdilerin birleşimidir.
-  {
-    const m = mk();
-    T.paragraphize(m);
-    eq('tek paragraf', m.segments.length, 1);
-    eq('asrText korunur', m.segments[0].asrText, 'model bir model iki');
-    eq('asrModel korunur', m.segments[0].asrModel, 'Xenova/whisper-small');
-    eq('asrAt korunur', m.segments[0].asrAt, '2026-01-01T00:00:00Z');
-    // Adli ayrım: metin değişse bile asrText modelin ürünü olarak kalır.
-    eq('text ile asrText ayrı alanlar', m.segments[0].text !== undefined && m.segments[0].asrText !== undefined, true);
-  }
-
-  // 2) Girdi bölümlerinde asrText YOKSA uydurulmaz (eski kayıt).
-  {
-    const m = mk();
-    // Eski kayıt: ne asrText ne asrModel var.
-    m.segments.forEach((s) => { delete s.asrText; delete s.asrModel; delete s.asrAt; });
-    T.paragraphize(m);
-    eq('asrText uydurulmaz', m.segments[0].asrText, '');
-    eq('asrModel de uydurulmaz', m.segments[0].asrModel, '');
-    eq('asrAt de uydurulmaz', m.segments[0].asrAt, '');
-  }
-
-  // 3) FARKLI modeller karışırsa model adı boşaltılır (yanlış atıf yapılmaz).
+  // B) Bölme: `{...s}` TAM asrText'i iki yarıya kopyalamamalı; PAYLAŞTIRMALI.
   {
     const c = T.emptyCaseForTest({ id: 'c1' });
-    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
-    m.segments.push(T.emptySegmentForTest({
-      id: 's1', start: '00:00:00.000', end: '00:00:02.000', speaker: 'A',
-      text: 'a', asrText: 'a', asrModel: 'Xenova/whisper-small', asrAt: '2026-01-01T00:00:00Z', review: 'approved'
-    }));
-    m.segments.push(T.emptySegmentForTest({
-      id: 's2', start: '00:00:02.000', end: '00:00:04.000', speaker: 'A',
-      text: 'b', asrText: 'b', asrModel: 'Xenova/whisper-large-v3', asrAt: '2026-01-02T00:00:00Z', review: 'approved'
-    }));
-    c.materials.push(m);
-    T.setAppState({ cases: [c], activeCaseId: 'c1' });
-    T.paragraphize(m);
-    eq('karışık modelde model adı boşaltılır', m.segments[0].asrModel, '');
-    eq('asrText yine korunur', m.segments[0].asrText, 'a b');
-  }
-
-  // 4) BÖLME de aynı kurala uymalı: `{...s}` ile TAM asrText iki yarıya
-  //    kopyalanırsa iki bölüm de "model tüm metni söyledi" der. Bu, adli
-  //    ayrımı bozar: sağ yarıda model hiçbir şey söylememiş olabilir.
-  {
-    const c = T.emptyCaseForTest({ id: 'c1' });
-    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
-    m.segments.push(T.emptySegmentForTest({
+    const mm = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    mm.segments.push(T.emptySegmentForTest({
       id: 's1', start: '00:00:00.000', end: '00:00:10.000', speaker: 'A',
       text: 'bir iki üç dört', asrText: 'bir iki üç dört',
       asrModel: 'Xenova/whisper-small', asrAt: '2026-01-01T00:00:00Z', review: 'approved'
     }));
-    c.materials.push(m);
+    c.materials.push(mm);
     T.setAppState({ cases: [c], activeCaseId: 'c1' });
-    T.splitSegmentAt(m, 0, 5);
-    eq('ikiye ayrıldı', m.segments.length, 2);
-    const leftAsr = m.segments[0].asrText;
-    const rightAsr = m.segments[1].asrText;
+    T.splitSegmentAt(mm, 0, 5);
+    eq('ikiye ayrıldı', mm.segments.length, 2);
+    const leftAsr = mm.segments[0].asrText;
+    const rightAsr = mm.segments[1].asrText;
     eq('sol yarı asrText var', leftAsr.length > 0, true);
     eq('sağ yarı asrText var', rightAsr.length > 0, true);
-    // İkisi TOPLAMDA orijinali vermeli (biri diğerinin kopyası olmamalı).
     eq('asrText ikiye PAYLAŞTIRILIR, kopyalanmaz', `${leftAsr} ${rightAsr}`, 'bir iki üç dört');
   }
 }

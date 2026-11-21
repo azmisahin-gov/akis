@@ -1,4 +1,4 @@
-# Özellikler (v2.194 — mevcut durum)
+# Özellikler (v2.195 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,10 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Paragraf görünümü salt okunur (v2.195):** ¶ düğmesi bölümleri değiştirmez;
+  aynı konuşmacının ardışık bölümlerini okuma paragrafı olarak gösterir. Kanıt
+  tablosu ve cümle zamanları korunur; metin panoya kopyalanabilir. Önerilen
+  bölüm uzunluğu: 1–3 cümle veya 15–30 sn.
 - **Yeniden çözümleme sonrası kaydırma korunur (v2.194):** Bir bölümü
   yeniden çözümledikten sonra liste başa dönmez; konum ve seçili bölüm korunur.
 - **Birleştirme sonrası kaydırma korunur (v2.193):** Birleştirme/bölme/paragraf

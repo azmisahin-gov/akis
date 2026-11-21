@@ -2729,3 +2729,41 @@ input::placeholder, textarea::placeholder {
 }
 #view-audio .seg-item .seg-text-preview.is-empty { color: var(--ink-3); }
 #view-audio .seg-item.is-active .seg-text-preview { color: var(--ink); }
+
+/* ============================================================================
+   v2.195 — PARAGRAF GÖRÜNÜMÜ (SALT OKUNUR)
+   ----------------------------------------------------------------------------
+   Eski `paragraphize` bölümleri DEĞİŞTİRİYORDU (cümle zamanları kayboluyordu).
+   Artık ¶ düğmesi salt-okunur bir görünüm açar: bölümler aynen kalır, yalnız
+   aynı konuşmacının ardışık bölümleri okuma paragrafı olarak GRUPLANIR.
+   ============================================================================ */
+#paragraphDialog { width: min(720px, calc(100vw - 30px)); }
+.paragraph-note {
+  margin: 0 0 10px;
+  font-size: var(--fs-2xs);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+.paragraph-item {
+  margin-bottom: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.paragraph-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 10px;
+  margin-bottom: 4px;
+}
+.paragraph-head b { font-size: var(--fs-xs); color: var(--ink); }
+.paragraph-head span { font-size: var(--fs-2xs); color: var(--ink-3); }
+.paragraph-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: pre-wrap;
+}

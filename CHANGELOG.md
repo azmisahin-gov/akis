@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.194.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.195.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.195 — Paragraf görünümü artık salt okunur
+
+Kullanıcı: *"Salt-okunur paragraf görünümü yapalım. ¶ bölümleri değiştiriyordu;
+cümle zamanları kayboluyordu."*
+
+### KULLANICI NE GÖRECEK
+
+- **¶ düğmesi artık veriyi değiştirmiyor.** Aynı konuşmacının ardışık
+  bölümlerini **okuma paragrafı** olarak gösteren **salt-okunur** bir pencere
+  açar.
+- **Kanıt tablosu ve cümle zamanları aynen kalır.** Bölüm sayısı değişmez
+  (ölçüm: 6 → 6).
+- Her paragrafta **konuşmacı · zaman aralığı · bölüm sayısı** ve metin görünür;
+  "kontrol bekliyor" uyarısı taşınır.
+- **Panoya kopyala** ile okuma metni alınabilir.
+- Pencere içinde standart yazar: **1–3 cümle veya 15–30 sn**.
+- Hızlı ekle etiketlerine **`[telefonda konuşma]`** eklendi.
+
+### ÖLÇÜM (gerçek Chromium)
+
+| Konu | Sonuç |
+|---|---|
+| Bölüm sayısı (¶ öncesi → sonrası) | 6 → **6** (değişmedi) |
+| Paragraf grubu | **3** (S1×2, S2×3, S1×1) |
+| Grup metni | bölüm metinleri boşlukla birleşik |
+| Kopyalama metni | başlık + metin, doğru |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim` [7b]/[28] (salt-okunur; segment/asrText değişmez), `sema` (¶ yıkıcı
+değil), `tasarim` [2au] (¶ → görünüm, diyalog, standart metni, telefon etiketi).
 
 ## v2.194 — Yeniden çözümleme sonrası liste başa dönmüyor
 
