@@ -1770,3 +1770,26 @@ input::placeholder, textarea::placeholder {
 .behavior-text { display: flex; flex-direction: column; gap: 2px; }
 .behavior-text b { font-size: 12px; color: var(--ink); }
 .behavior-text small { font-size: 11px; color: var(--ink-3); }
+
+/* ============================================================================
+   v2.152 — LİSTEDE BİTİŞ ZAMANI
+   ----------------------------------------------------------------------------
+   Kullanıcı: "listedeki saat başlangıç mı bitiş mi belli değil." Zaman hücresi
+   iki satır: başlangıç / → bitiş. Satır 37 → ~51 px olur (kabul edildi: bilgi
+   eksikliği yerleşimden daha pahalı). Sütun ms için genişletildi; KESME YOK
+   (v2.130 dersi: sığmayan öğe sarar/yer açar, kırpılmaz).
+   ============================================================================ */
+#view-audio .seg-time {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#view-audio .seg-time .seg-start { color: var(--ink-2); }
+#view-audio .seg-time .seg-end { color: var(--ink-3); }
+/* Zaman sütunu 84 → 96 px: "→ 00:00:06.000" kesilmesin. */
+#view-audio .seg-item { grid-template-columns: 20px 96px minmax(0, 1fr) auto; }
+@media (min-width: 901px) {
+  #view-audio .seg-item { grid-template-columns: 20px 96px minmax(0, 1fr); }
+}

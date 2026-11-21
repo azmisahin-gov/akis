@@ -1862,6 +1862,30 @@ onaylanmış bölümleri tekrar tekrar gösterir. Tercih kullanıcıya bırakıl
 varsayılanı değiştirmek sessiz davranış değişikliği olurdu.
 
 
+### Aşama 10ax — Listede bitiş zamanı (TAMAMLANDI, v2.152)
+
+**KURAL: zaman hücresi iki satır (başlangıç / → bitiş); sütun ms için genişler,
+hiçbir saat KESİLMEZ.**
+
+- `segItemHtml` → `<span class="seg-time"><span class="seg-start">…</span>
+  <span class="seg-end">→ …</span></span>`.
+- CSS: `#view-audio .seg-time { display:flex; flex-direction:column }`;
+  `grid-template-columns: 20px 96px …` (hem temel hem ≥901 px bloğunda).
+
+**Ölçüm (v2.152, gerçek Chromium, 1440 px):** satır **59 → 72 px** (+13);
+zaman hücresi 35 px / 2 satır. 1440/1280/1100/900/760: `timeClipped=false`,
+`endClipped=false`, yatay taşma yok, rozet görünür.
+
+**Not:** P4 notundaki "37 → ~51 px" tahmini v2.140 masaüstü kabuğundan ÖNCE
+yazılmıştı; gerçek taban 59 px. Tahmin değil ÖLÇÜM yazılır.
+
+**Koruyan test:** `tasarim-testi` [2t] (6 kontrol).
+
+**DERS:** Kullanıcı "hangi saat ne" diye sorduğunda ek bilgi eklemek, tahmin
+yürütmesini beklemekten iyidir; ama sütun genişliği ölçülmeden artırılırsa
+(v2.130 dersi) saat sessizce kırpılır. Ekleyen ölçer.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2035,7 +2059,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.151.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.152.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2334,7 +2358,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.151) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.152) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2345,10 +2369,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.151** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.152** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.151 |
-| Açık konu | **P4 — listede bitiş zamanı** (P1–P3 bitti) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.152 |
+| Açık konu | **P5 — detay paneli yüksekliği** (P1–P4 bitti) |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2420,12 +2444,10 @@ Koruyan test: `birim` [59]. Ayrıntı: Aşama 10au.
 `nextPendingIndex()` + Ayarlar → "Onay davranışı" anahtarı (varsayılan kapalı).
 Koruyan test: `birim` [61]. Ayrıntı: Aşama 10aw.
 
-#### P4 — Listede bitiş zamanı (kullanıcının sorusu)
+#### P4 — Listede bitiş zamanı (TAMAMLANDI, v2.152)
 
-- Zaman hücresinde iki satır: `00:00:03.000` / `→ 00:00:06.000` (A seçeneği).
-- Satır 37 → ~51 px; liste uzar (kabul edildi). Bitiş ≤ başlangıç anında görünür.
-- **Kıran test:** `tasarim` — `.seg-time` iki satır, satır yüksekliği ölçümü;
-  bitiş metni doğru biçimde (ms).
+İki satırlı zaman hücresi (`.seg-start` / `.seg-end`), sütun 96 px, kesme yok.
+Ölçüm: satır 59 → 72 px. Koruyan test: `tasarim` [2t]. Ayrıntı: Aşama 10ax.
 
 #### P5 — Detay paneli yüksekliği (kozmetik, en son)
 

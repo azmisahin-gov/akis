@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.151';
+} from './schema.js?v=2.152';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.151';
+const APP_VERSION = '2.152';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3711,7 +3711,7 @@ function segItemHtml(m, s, i, prev, issue) {
     : '';
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0">
     <span class="seg-no">${i + 1}</span>
-    <span class="seg-time">${esc(s.start || '—')}</span>
+    <span class="seg-time"><span class="seg-start">${esc(s.start || '—')}</span><span class="seg-end">→ ${esc(s.end || '—')}</span></span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
     <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}</span>
   </div>`;
@@ -12067,6 +12067,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.152': {
+    title: 'Listede bitiş zamanı da görünüyor',
+    body:
+      'Bölüm listesindeki zaman hücresi artık iki satır: başlangıç ve "→ bitiş". ' +
+      'Hangi saatin ne olduğu tahmin edilmez. Satır biraz uzar (+13 px); bilgi ' +
+      'eksikliği yerleşimden daha pahalı olduğu için kabul edildi. Zaman sütunu ' +
+      'milisaniye için genişletildi; hiçbir saat KESİLMEZ.'
+  },
   '2.151': {
     title: 'Onaydan sonra sonraki bekleyene geçme seçeneği',
     body:

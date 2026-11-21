@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.151.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.152.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.152 — Listede bitiş zamanı
+
+Kullanıcı: *"listedeki saat başlangıç mı bitiş mi belli değil."*
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm listesindeki zaman hücresi artık **iki satır**:
+  `00:00:03.000` ve altında `→ 00:00:06.000`.
+- Hangi saatin başlangıç, hangisinin bitiş olduğu **tahmin edilmez**.
+- Zaman sütunu milisaniye için genişletildi (84 → 96 px); **hiçbir saat
+  kesilmez**. Dar ekranda da kırpılma yok.
+- Bedeli: satır yüksekliği **59 → 72 px** (+13). Liste uzar ama kendi içinde
+  kaydığı için sayfa uzamaz. Bu bedel bilinçli kabul edildi: bilgi eksikliği
+  yerleşimden daha pahalıdır.
+
+### ÖLÇÜM (v2.152, gerçek Chromium)
+
+| Genişlik | Satır | Zaman hücresi | Kırpılma | Yatay taşma |
+|---|---|---|---|---|
+| 1440 | 72 px | 35 px / 2 satır | yok | yok |
+| 1280 | 72 px | 35 px / 2 satır | yok | yok |
+| 1100 | 72 px | 35 px / 2 satır | yok | yok |
+| 900 | 72 px | 35 px / 2 satır | yok | yok |
+| 760 | 72 px | 35 px / 2 satır | yok | yok |
+
+Bitiş metni: `→ 00:00:02.000` (ms biçimi, kayıttaki değerden).
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2t]** (6 kontrol): iki satır (flex column), `.seg-start` ve
+`.seg-end` sınıfları, bitişin kayıttaki değerden yazılması, zaman hücresinde
+`text-overflow` (ellipsis) bulunmaması ve sütunun 96 px olması.
 
 ## v2.151 — Onaydan sonra sonraki bekleyene geç
 

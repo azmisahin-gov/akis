@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.151.**
+yazılır. **Güncel sürüm: v2.152.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.152 — Listede bitiş zamanı (tamamlandı)
+
+Zaman hücresi iki satır: `.seg-start` / `.seg-end` ("→ 00:00:06.000"). Zaman
+sütunu 84 → 96 px; **kesme yok**. Ölçüm (1440 px): satır 59 → **72 px** (+13).
+1440/1280/1100/900/760 px: zaman hücresi kırpılmıyor, yatay taşma yok.
+Koruyan test: `tasarim` [2t].
 
 ### v2.151 — Onaydan sonra sonraki bekleyene geç (tamamlandı)
 

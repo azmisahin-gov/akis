@@ -436,6 +436,21 @@ console.log('\n[2s] Takip şeridi yer tutucusu (v2.148)');
   check('mod değişiminde şerit hazırlanıyor', /ensureFollowStrip\(mm, activeSegIndex\(mm\)\)/.test(js));
 }
 
+// --- 2t. Listede bitiş zamanı iki satır (v2.152) ---------------------------
+// Kullanıcı: "listedeki saat başlangıç mı bitiş mi belli değil." KURAL: zaman
+// hücresi iki satır (başlangıç / → bitiş), ms biçimi korunur, KESME YOK.
+console.log('\n[2t] Listede bitiş zamanı iki satır (v2.152)');
+{
+  const rl = read('assets/reading-layer.css');
+  const js = read('assets/app.js');
+  check('zaman hücresi iki satır (flex column)', /#view-audio \.seg-time\s*\{[^}]*flex-direction:\s*column/.test(rl));
+  check('başlangıç satırı ayrı sınıf taşır', /class="seg-start"/.test(js));
+  check('bitiş satırı ayrı sınıf taşır', /class="seg-end"/.test(js));
+  check('bitiş zamanı kayıttaki değerden yazılır', /seg-end">→ \$\{esc\(s\.end/.test(js));
+  check('zaman hücresinde kesme (ellipsis) yok', !/#view-audio \.seg-time\s*\{[^}]*text-overflow/.test(rl));
+  check('zaman sütunu ms için genişletildi (96px)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*20px 96px/.test(rl));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
