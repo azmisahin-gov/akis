@@ -2211,7 +2211,6 @@ input::placeholder, textarea::placeholder {
   }
   #view-audio .seg-detail .sd-body { min-height: 236px; }
   #view-audio .seg-detail .sd-right { min-height: 236px; }
-  #view-audio .seg-detail .sd-right .sd-text textarea { min-height: 160px; }
 }
 
 /* --- v2.180 — Düzenleme bilgisi başlığın altında, gözlem metnin yanında ---- */
@@ -2363,9 +2362,65 @@ input::placeholder, textarea::placeholder {
 /* ÖLÇÜM (v2.184, 1440×900): satır **74 px**; metin hem listede hem editörde
    vardı (tekrar). Metin listeden kaldırıldı → satır **50 px** (−%32);
    aynı metin editörde ve satırın ipucunda durur. Izgara 3 sütuna indi. */
+/* (v2.185 sütunları v2.186'da tek satır düzenine geçti; tanımlar orada.) */
+
+/* --- v2.186 — Bölüm listesi: TEK satır, hizalı, başlangıç–bitiş yan yana --- */
+/* ÖLÇÜM (v2.185): zaman iki satırdaydı (başlangıç üstte, → bitiş altta);
+   satır 50 px ve sütunlar hizasız görünüyordu. Kullanıcı: "iki satır mı tek
+   satır mı belli değil; tek satır yap ve hepsini hizala; başlangıç ve bitiş
+   zamanlarını yan yana koy." */
 #view-audio .seg-item {
-  grid-template-columns: 20px 96px auto;
-  align-items: start;
+  grid-template-columns: 26px 132px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
 }
-#view-audio .seg-item .seg-badges { justify-content: flex-start; }
-#view-audio .seg-item .seg-time { min-width: 96px; }
+#view-audio .seg-item .seg-time {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 132px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+#view-audio .seg-item .seg-dash { color: var(--ink-3); }
+/* Rozetler KIRPILMAZ (v2.130 kuralı): sığmazsa SARAR; satır o zaman uzar. */
+#view-audio .seg-item .seg-badges {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  overflow: visible;
+}
+
+/* v2.186 — Liste rozetleri SIKI: 1280 px'te ⚠ + durum + konuşmacı + iki düğme
+   tek satıra sığsın (ölçüm: 164 px içerik / 157 px kap → 7 px taşıyordu). */
+#view-audio .seg-item .seg-badges { gap: 2px; }
+#view-audio .seg-item .seg-badges .badge { padding: 1px 6px; }
+
+/* v2.186 — TEK SATIR GARANTİSİ: dar listelerde ikincil rozet/düğme gizlenir.
+   ÖLÇÜM: 1280'de liste 348 px, 1100'de 300 px; ⚠ + durum + konuşmacı + iki
+   düğme sığmıyor ve satır 34 → 48 px'e çıkıyordu (hizasız görünüm).
+   Kural: önce İKİNCİL bilgi çıkar — konuşmacı (satır ipucunda ve detayda var),
+   sonra ⋮ düğmesi (sağ tık aynı menüyü açar). Durum rozeti ASLA çıkmaz. */
+@media (max-width: 1280px) {
+  #view-audio .seg-item .badge.spk { display: none; }
+}
+/* 1101–1200 arası liste 300 px'e kadar iner: ⋮ ve tutamak da çıkar.
+   ≤900'de liste TEK sütunda geniştir (730 px) → ikisi geri gelir. */
+@media (max-width: 1200px) {
+  #view-audio .seg-item .seg-menu-btn,
+  #view-audio .seg-item .seg-drag { display: none; }
+}
+@media (max-width: 900px) {
+  #view-audio .seg-item .seg-menu-btn,
+  #view-audio .seg-item .seg-drag { display: inline-block; }
+}
+
+/* --- v2.186 — Sıra: ÖNCE METİN, SONRA ANALİZ ---------------------------------
+   Teknik düğmesi kaldırıldı (her zaman görünür). Ama analiz kutusu metnin
+   üstünde kalınca yazma alanı 359 → 165 px'e düştü (ölçüldü). Kural: birincil
+   iş (yazma) ÜSTTE ve büyük; analiz ALTTA; sığmazsa PANEL kaydırır. */
+@media (min-width: 901px) {
+  #view-audio .seg-detail .sd-right { order: 1; }
+  #view-audio .seg-detail .sd-tech { order: 2; }
+  #view-audio .seg-detail .sd-right .sd-text textarea { min-height: 260px; }
+}

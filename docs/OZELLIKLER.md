@@ -1,4 +1,4 @@
-# Özellikler (v2.185 — mevcut durum)
+# Özellikler (v2.186 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Liste tek satır (v2.186):** satır 34 px, her genişlikte aynı; başlangıç–bitiş
+  yan yana (kısa saat; ms detayda). Öncelik rozeti detayın durum satırında.
+  Teknik düğmesi yok: analiz her zaman görünür, metnin altında.
 - **Bölüm listesi dizin (v2.185):** satırda metin yok; numara · zaman ·
   rozetler. Metin tek kaynak: editör (ve satır ipucu). Satır 74 → 50 px.
 - **Tek durum satırı (v2.184):** başlığın altında her bölümde görünen "Durum"

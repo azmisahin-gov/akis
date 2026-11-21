@@ -439,16 +439,19 @@ console.log('\n[2s] Takip şeridi yer tutucusu (v2.148)');
 // --- 2t. Listede bitiş zamanı iki satır (v2.152) ---------------------------
 // Kullanıcı: "listedeki saat başlangıç mı bitiş mi belli değil." KURAL: zaman
 // hücresi iki satır (başlangıç / → bitiş), ms biçimi korunur, KESME YOK.
-console.log('\n[2t] Listede bitiş zamanı iki satır (v2.152)');
+console.log('\n[2t] Listede başlangıç–bitiş YAN YANA (v2.152 → v2.186)');
 {
   const rl = read('assets/reading-layer.css');
   const js = read('assets/app.js');
-  check('zaman hücresi iki satır (flex column)', /#view-audio \.seg-time\s*\{[^}]*flex-direction:\s*column/.test(rl));
-  check('başlangıç satırı ayrı sınıf taşır', /class="seg-start"/.test(js));
-  check('bitiş satırı ayrı sınıf taşır', /class="seg-end"/.test(js));
-  check('bitiş zamanı kayıttaki değerden yazılır', /seg-end">→ \$\{esc\(s\.end/.test(js));
+  check('zaman hücresi TEK satır (flex row)', /#view-audio \.seg-item \.seg-time\s*\{[^}]*flex-direction:\s*row/.test(rl));
+  check('başlangıç sınıfı taşınır', /class="seg-start"/.test(js));
+  check('bitiş sınıfı taşınır', /class="seg-end"/.test(js));
+  check('tire ayırıcı var', /class="seg-dash"/.test(js));
+  // v2.186: listede KISA saat (ms YOK); ms DETAYDA düzenlenebilir kalır.
+  check('bitiş zamanı kayıttan yazılır (kısa biçim)', /seg-end">\$\{esc\(shortClock\(s\.end\)\)/.test(js));
+  check('detayda ms korunur (start/end girdileri tam)', /data-key="start" value="\$\{esc\(s\.start/.test(js));
   check('zaman hücresinde kesme (ellipsis) yok', !/#view-audio \.seg-time\s*\{[^}]*text-overflow/.test(rl));
-  check('zaman sütunu ms için genişletildi (96px)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*20px 96px/.test(rl));
+  check('zaman sütunu kısa saate göre (132px)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*26px 132px/.test(rl));
 }
 
 // --- 2u. Detay paneli sıkıştırma (v2.153) --------------------------------
@@ -481,14 +484,13 @@ console.log('\n[2v] Tek panel, iki bölge (v2.154)');
   const js = read('assets/app.js');
   const rl = read('assets/reading-layer.css');
   check('birincil eylemler başlıkta (.sd-primary)', /class="sd-primary"/.test(js));
-  check('teknik anahtarı var (data-tech-toggle)', /data-tech-toggle="1"/.test(js));
   check('teknik bölüm .sd-tech taşıyor', /class="sd-left sd-tech"/.test(js));
   check('alt eylem satırı kaldırıldı (.sd-actions yok)', !/class="sd-actions"/.test(js));
-  check('teknik bölüm varsayılan kapalı (hidden)', /sd-left sd-tech"\$\{techOpen \? '' : ' hidden'\}/.test(js));
-  check('gizli teknik bölüm display:none', /#view-audio \.sd-tech\[hidden\]\s*\{\s*display:\s*none/.test(rl));
   check('metin alanı kalan yüksekliği alır (flex)', /#view-audio \.seg-detail \.sd-right \.sd-text textarea\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
-  check('gizli tuval çizilmiyor (techOpenPref koruması)', /if \(techOpenPref\(\)\) \{\s*attachSegWave/.test(js));
-  check('teknik tercih saklanıyor', /akis\.techOpen/.test(js) && /function techOpenPref/.test(js));
+  // v2.186: TEKNİK DÜĞMESİ KALDIRILDI — bölüm her zaman görünür, çizim koşulsuz.
+  check('teknik düğmesi yok', !/data-tech-toggle/.test(js));
+  check('teknik bölüm her zaman görünür (hidden koşulu yok)', /class="sd-left sd-tech">/.test(js));
+  check('analiz çizimi koşulsuz', /attachSegWave\(m, idx\);\s*\n\s*setAnalysisMode\(m, analysisMode\);/.test(js));
 }
 
 // --- 2w. Dar ekranda yinelenen başlık gizlenir (v2.159) -------------------
@@ -1169,7 +1171,7 @@ console.log('\n[2ap] Bölüm listesi = dizin (metin tek yerde) (v2.185)');
   const rowFn = jsB.slice(i0, i1 > 0 ? i1 : i0 + 4000);
   check('satırda METİN gösterilmiyor (tek kaynak: editör)', !/class="seg-text"/.test(rowFn));
   check('metin satırın ipucunda', /title="\$\{esc\(\(s\.text/.test(rowFn));
-  check('ızgara 3 sütun (no · zaman · rozet)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*20px 96px auto/.test(rlB));
+  check('ızgara 3 sütun (no · zaman · rozet)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*26px 132px/.test(rlB));
   check('rozetler solda hizalanır', /#view-audio \.seg-item \.seg-badges\s*\{[^}]*justify-content:\s*flex-start/.test(rlB));
   // Rozet görünürlüğü korunur (v2.130 kuralı): kırpma yok.
   check('rozet kutusu kırpmaz (v2.130 korunuyor)', /#view-audio \.seg-badges\s*\{[^}]*overflow:\s*visible/.test(rlB));

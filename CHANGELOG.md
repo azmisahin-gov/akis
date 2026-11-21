@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.185.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.186.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.186 — Bölüm listesi tek satır; Teknik düğmesi kaldırıldı
+
+Kullanıcı: *"Segment listesi dağınık görünüyor, iki satır mı tek satır mı belli
+değil; tek satır yap, hepsini hizala, başlangıç ve bitişi yan yana koy. Bence
+Teknik düğmesine de gerek kalmadı."*
+
+### LİSTE: tek satır, hizalı
+
+| | Önce (v2.185) | Sonra (v2.186) |
+|---|---|---|
+| Satır | 50 px (zaman iki satır) | **34 px, her genişlikte aynı** |
+| Zaman | başlangıç üstte, → bitiş altta | **yan yana** `00:00:12 – 00:00:18` |
+| Milisaniye | listede | **detayda** (düzenlenebilir girdiler) |
+| Öncelik rozeti | satırda (sığmayınca satırı büyütüyordu) | **detayın durum satırında** çip |
+| 1440 / 1280 / 1100 / 900 | 50 / 50 / 66 / 50 | **34 / 34 / 34 / 34** |
+
+Dar listelerde ikincil öğeler çıkar (satır yine tek satır kalır): ≤1280
+**konuşmacı rozeti** (satır ipucunda ve detayda var), 901–1200 **⋮ ve tutamak**
+(sağ tık aynı menüyü açar). **Durum rozeti asla çıkmaz.**
+
+### TEKNİK: düğme kalktı, analiz her zaman görünür
+
+- **Teknik** düğmesi kaldırıldı; dalga/spektrogram + zamanlar + profil + ASR
+  kökeni artık **her zaman** görünür.
+- Sıra: **önce metin, sonra analiz** (yazma birincil iş).
+- Metin alanı tabanı **260 px**; sığmazsa **panel kaydırır**.
+
+**Dürüst bedel:** metin alanı 359 → **260 px** (−99) ve panel kaydırması
+0 → **141 px**. Karşılığında analiz gizli kalmıyor ve tek düğme eksiliyor.
+Düğme geri istenirse metin alanı yeniden 359 px olur.
+
+### ÖLÇÜM
+
+- Liste: 4 genişlikte **34 px**, kırpılma yok, yatay taşma yok.
+- Detay (1440): başlık 77 · durum 28 · metin **260** · analiz 313 (altında) ·
+  panel kaydırması 141 · kırpılma yok.
+- 900 px: metin 180, analiz görünür, ana alan kaydırıyor.
+- JS hatası: 0.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2t] (yenilendi: tek satır + kısa saat + ms detayda), [2ap]
+(ızgara 26/132), [2v] (Teknik düğmesi yok, bölüm her zaman görünür).
 
 ## v2.185 — Bölüm listesi dizin oldu (metin tek yerde)
 

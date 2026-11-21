@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.185';
+} from './schema.js?v=2.186';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.185';
+const APP_VERSION = '2.186';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1205,7 +1205,7 @@ function switchView(name) {
       .then(() =>
         requestAnimationFrame(() => {
           const m = activeMaterial();
-          if (m && techOpenPref()) renderSegDetail(m);
+          if (m) renderSegDetail(m);
         })
       )
       .catch(() => {});
@@ -3812,6 +3812,14 @@ function onSegMenuKey(e) {
     e.stopPropagation();
   }
 }
+// Liste için KISA saat (v2.186): "00:00:12". Milisaniye DETAYDA gösterilir
+// (orada düzenlenebilir); liste bir dizindir, ms orada yer kaplar ve sütunu
+// taşırır. Zaman yine kayıttan okunur, biçim kısaltılır.
+function shortClock(tc) {
+  const v = String(tc || '').trim();
+  if (!v) return '—';
+  return v.length >= 8 ? v.slice(0, 8) : v;
+}
 function segItemHtml(m, s, i, prev, issue) {
   const rev = segReview(s);
   const halluc = isHallucination(s.text);
@@ -3851,8 +3859,8 @@ function segItemHtml(m, s, i, prev, issue) {
   // Metin, satırın `title` ipucunda ve sağdaki editörde durur.
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
-    <span class="seg-time"><span class="seg-start">${esc(s.start || '—')}</span><span class="seg-end">→ ${esc(s.end || '—')}</span></span>
-    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
+    <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
+    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
   </div>`;
 }
 function segListHtml(m) {
@@ -3989,6 +3997,13 @@ function statusRowHtml(m, s, i) {
       ? `Sessizlik %${Math.round(s.silence.ratio * 100)}`
       : '';
   if (sil) chips.push(`<span class="st-chip info" title="Bu bölümün sessizlik oranı (ölçüldü).">${esc(sil)}</span>`);
+  const pr = segPriority(s, (m.segments || [])[i - 1]);
+  if (pr.score >= 15) {
+    const label = pr.score >= 40 ? 'Yüksek' : pr.score >= 20 ? 'Orta' : 'Düşük';
+    chips.push(
+      `<span class="st-chip info" title="İnceleme önceliği: ${esc(pr.reasons.join(', '))}">Öncelik: ${label}</span>`
+    );
+  }
   if (asrDiffers(s)) {
     chips.push(
       `<button class="st-chip info action" data-tech-jump="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma Teknik panelindedir; metin değişmez.">Model çıktısı farklı — karşılaştır</button>`
@@ -4067,7 +4082,6 @@ function segDetailHtml(m) {
   // gezinme, dinleme, onay ve teknik bölüm anahtarı. Teknik alan (dalga, zaman,
   // konuşmacı, gözlem) istenince açılır; metin alanı kalan yüksekliği alır.
   // Böylece hiçbir birincil eylem kaydırmadan erişilemez olmaz.
-  const techOpen = techOpenPref();
   return `
   <div class="sd-head">
     <span class="sd-idx">${segHeadParts(i, segs.length).label}</span><span class="sd-of">${segHeadParts(i, segs.length).of}</span>
@@ -4083,7 +4097,6 @@ function segDetailHtml(m) {
       <span class="sd-head-break" aria-hidden="true"></span>
     <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
       <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
-    <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga/spektrogram, zamanlar ve ölçümleri göster/gizle. Konuşmacı ve gözlem metnin yanındadır; yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
 
   <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
@@ -4097,7 +4110,7 @@ function segDetailHtml(m) {
   ${proposalBandHtml(s, i)}
 
   <div class="sd-body">
-    <div class="sd-left sd-tech"${techOpen ? '' : ' hidden'}>
+    <div class="sd-left sd-tech">
       <div class="sd-wave">
         <div class="sd-wave-bar">
           <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
@@ -5011,12 +5024,9 @@ function renderSegDetail(m) {
   // TEKNİK BÖLÜM KAPALIYKEN çizim bağlanmaz (v2.154): gizli tuvalin genişliği
   // 0'dır; burada çizmek ölçeği bozar ve spektrogram hesabı boşa gider.
   refreshAudioState(m);
-  if (techOpenPref()) {
-    attachSegWave(m, idx);
-    // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
-    // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
-    setAnalysisMode(m, analysisMode);
-  }
+  // Teknik bölüm artık HER ZAMAN görünür (v2.186): çizim koşulsuz yapılır.
+  attachSegWave(m, idx);
+  setAnalysisMode(m, analysisMode);
   refreshNarrowBar(m, root.closest('.audio-card'));
 }
 function renderSegments(m, card) {
@@ -6281,7 +6291,7 @@ function syncSegDetailInPlace(m, idx) {
   // kalırsa yanlış izlenim olur. Dalga tekrar görünür, spektrogram gizlenir.
   // Bölüm değişince analiz görünümü KORUNUR; spektrogram yeni bölüm için
   // yeniden hesaplanır (v2.128). Dalga ve spek aynı kutuda kalır.
-  if (techOpenPref()) setAnalysisMode(m, analysisMode);
+  setAnalysisMode(m, analysisMode);
   setVal('.sd-text textarea', s.text || '');
   const sel = meta[1]?.querySelector('select');
   if (sel) {
@@ -10878,15 +10888,6 @@ function setupEvents() {
           box.scrollIntoView({ block: 'nearest' });
         }
       }
-    } else if (b.dataset.techToggle !== undefined) {
-      const card = b.closest('.audio-card');
-      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
-      const m = c.materials.find((x) => x.id === id);
-      if (m) {
-        setTechOpen(!techOpenPref());
-        renderSegDetail(m);
-        showToast(techOpenPref() ? 'Teknik bölüm açık.' : 'Teknik bölüm kapalı — metin alanı büyüdü.');
-      }
     } else if (b.dataset.covGoto !== undefined) {
       const [id, at] = b.dataset.covGoto.split('|');
       const m = c.materials.find((x) => x.id === id);
@@ -12551,6 +12552,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.186': {
+    title: 'Bölüm listesi tek satır; Teknik düğmesi kaldırıldı',
+    body:
+      'Başlangıç–bitiş yan yana (00:00:12 – 00:00:18); milisaniye detayda. ' +
+      'Satır her genişlikte 34 px. Öncelik rozeti detayın Durum satırına ' +
+      'taşındı. Teknik düğmesi kaldırıldı: analiz her zaman görünür, metnin ' +
+      'altında. Metin alanı en az 260 px; sığmazsa panel kaydırır.'
+  },
   '2.185': {
     title: 'Bölüm listesi artık dizin: metin tek yerde',
     body:

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.185.**
+yazılır. **Güncel sürüm: v2.186.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.186 — Liste tek satır; Teknik düğmesi kaldırıldı (tamamlandı)
+
+Liste satırı **34 px** ve her genişlikte aynı; başlangıç–bitiş **yan yana**
+(kısa saat; ms detayda). Öncelik rozeti detayın durum satırına taşındı. Dar
+listelerde ikincil öğeler (konuşmacı rozeti ≤1280, ⋮/tutamak 901–1200) çıkar;
+durum rozeti asla çıkmaz. **Teknik** düğmesi kaldırıldı: analiz her zaman
+görünür, metnin ALTINDA; metin tabanı 260 px, panel kaydırır (141 px).
+Koruyan test: `tasarim` [2t] + [2ap] + [2v].
 
 ### v2.185 — Bölüm listesi dizin oldu (tamamlandı)
 

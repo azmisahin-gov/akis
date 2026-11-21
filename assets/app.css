@@ -832,7 +832,7 @@ body.follow-on #view-audio .seg-item.is-active{background:var(--surface-2)}
 #view-audio .seg-workspace{grid-template-columns:minmax(300px,40%) minmax(0,1fr);gap:10px}
 body.ws-mode #view-audio .seg-workspace{grid-template-columns:minmax(320px,38%) minmax(0,1fr)}
 /* Satır: numara + zaman + metin + rozet. Zaman sütunu ms için genişledi. */
-#view-audio .seg-item{grid-template-columns:20px 84px minmax(0,1fr) auto;gap:7px;padding:7px 8px}
+#view-audio .seg-item{gap:7px;padding:7px 8px}
 #view-audio .seg-time{font:600 11px 'Consolas','Segoe UI',monospace;color:var(--ink-3);
   white-space:nowrap;letter-spacing:-.2px}
 #view-audio .seg-text{font-size:11px;line-height:1.35}
