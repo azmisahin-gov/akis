@@ -1111,8 +1111,8 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   // `!important` taşıyan taşma kurallarını ezmek için). !important sayacı
   // YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=58)', impLayer <= 58, String(impLayer));
-  check('reading-layer içi ölü bildirim artmadı (<=72)', deadCount(layerRules) <= 72, String(deadCount(layerRules)));
+  check('reading-layer !important sayısı artmadı (<=55)', impLayer <= 55, String(impLayer));
+  check('reading-layer içi ölü bildirim artmadı (<=60)', deadCount(layerRules) <= 60, String(deadCount(layerRules)));
   check('app.css→reading-layer ölü bildirim artmadı (<=500)', cross <= 500, String(cross));
   check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));
 }

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.170.**
+yazılır. **Güncel sürüm: v2.171.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.171 — CSS borcu: ölü bildirimler (tamamlandı, görünür değişiklik yok)
+
+`#view-audio .seg-detail` aynı özellikleri yedi katmanda yeniden tanımlıyordu;
+sonraki tanım öncekini eziyordu. 12 ölü bildirim ve tamamen ölen kural blokları
+silindi. Kanıt: aynı veri ve aynı kimliklerle 4 görünüm × 3 tema × 400–425 öğe
+× 33 özellik → **0 fark**. Ölçüm: kural 828 → **825**, `!important` 58 → **55**,
+ölü bildirim 72 → **60**. Eşikler düşürüldü ([8]).
 
 ### v2.170 — CSS borcu azaltıldı (tamamlandı, görünür değişiklik yok)
 

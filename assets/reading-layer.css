@@ -505,7 +505,6 @@ input::placeholder, textarea::placeholder {
    Dikey yığın yerine üç bölge: (1) zaman + dalga, (2) metin, (3) işlemler.
    Gözlem işaretleri ve işlem düğmeleri metnin ALTINDA tek satırda toplanır;
    böylece metin alanı ile düğmeler iç içe geçmez. */
-#view-audio .seg-detail { display: flex; flex-direction: column; gap: var(--sp-2); }
 #view-audio .seg-detail > .seg-proposal { flex: 0 0 auto; }
 
 /* ---- Kaydırma: yalnız bölüm listesi ve detay kendi içinde --------------
@@ -518,7 +517,6 @@ input::placeholder, textarea::placeholder {
 #view-audio .segments-root { min-height: 0; flex: 1 1 auto; }
 #view-audio .seg-workspace { min-height: 0; overflow: visible; }
 #view-audio .seg-list { overflow-y: auto; overscroll-behavior: contain; }
-#view-audio .seg-detail { overflow: visible; }
 .badge.prop { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
 .seg-item.has-proposal { border-left: 3px solid var(--gold); }
 
@@ -528,16 +526,7 @@ input::placeholder, textarea::placeholder {
    çakışması → içerik taşıyor, düğmeler üst üste biniyordu). Bu blok en sonda
    geldiği için hepsini ezer. Yeni kural buraya yazılır; app.css'e dokunma.
    ============================================================================ */
-#view-audio .seg-detail {
-  display: flex !important;
-  flex-direction: column;
-  gap: var(--sp-2);
-  height: auto !important;
-  min-height: 0;
-  overflow: visible !important;
-  padding: var(--sp-3);
-}
-#view-audio .seg-detail > * { flex: 0 0 auto; }
+#view-audio .seg-detail > * {  }
 
 /* Başlık: tek satır, taşmaz. */
 #view-audio .seg-detail-head {

@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.170.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.171.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.171 — CSS borcu: 12 ölü bildirim daha silindi (görünür değişiklik yok)
+
+Ölçüm: `#view-audio .seg-detail` için aynı özellikler (`display`,
+`flex-direction`, `gap`, `overflow`, `height`, `padding`…) **yedi ayrı
+katmanda** yeniden tanımlanmıştı; sonraki tanım öncekini eziyordu. 12 bildirim
+etkisizdi ve silindi. Tamamı ölen kural blokları da kaldırıldı.
+
+### KULLANICI NE GÖRECEK
+
+**Görünür değişiklik yok.** Kanıt: aynı veri (künye + ses + bir bölüm) ve
+**aynı kimliklerle** 4 görünüm × 3 tema, görünüm başına 400–425 öğe ve 33
+hesaplanan özellik karşılaştırıldı → **0 fark**.
+
+### ÖLÇÜM
+
+| | Önce (v2.170) | Sonra (v2.171) |
+|---|---|---|
+| reading-layer kural | 828 | **825** |
+| `!important` (app + katman) | 26 + 58 | **26 + 55** |
+| ölü bildirim (katman içi) | 72 | **60** |
+| ölü bildirim (app → katman) | 500 | 500 |
+| hesaplanan stil farkı | — | **0** |
+
+### KORUYAN TEST
+
+`tasarim-testi` [8] nöbetçi eşikleri düşürüldü: `!important` **55**, ölü
+bildirim **60** / 500. Borç artarsa test kalır.
 
 ## v2.170 — CSS borcu azaltıldı (görünür değişiklik yok)
 

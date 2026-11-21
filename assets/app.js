@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.170';
+} from './schema.js?v=2.171';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.170';
+const APP_VERSION = '2.171';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12311,6 +12311,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.171': {
+    title: 'CSS borcu: 12 ölü bildirim silindi (görünür değişiklik yok)',
+    body:
+      'Bölüm detayı için aynı özellikler yedi ayrı katmanda yeniden tanımlanıyordu; ' +
+      'sonraki tanım öncekini eziyordu. 12 ölü bildirim silindi. Görünür etkisi ' +
+      'olmadığı ölçüldü: aynı veri ve aynı kimliklerle 4 görünüm × 3 tema, ' +
+      '400–425 öğe × 33 özellik → 0 fark.'
+  },
   '2.170': {
     title: 'CSS borcu azaltıldı (görünür değişiklik yok)',
     body:
