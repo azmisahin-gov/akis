@@ -2039,6 +2039,29 @@ sesleri silindi, düğme `load`. JS hatası 0.
 "nasıl çıkar?" sorusunun cevabını da taşımalı.
 
 
+### Aşama 10bd — Bildirim yerleşimi ve ses yok durumu (TAMAMLANDI, v2.158)
+
+**BULGULAR (denetim #4/#5):** toast durum çubuğunun üstüne biniyordu
+(ölçüm 835–878 / 876–900). Ses blob'u yokken analiz kutusu BOŞ kalıyordu;
+sebebi yalnız kaybolan toast söylüyordu.
+
+**Düzeltme:**
+- `.toast { bottom: calc(var(--status-h) + 12px) }` (reading-layer).
+- `audioStateText(hasSrc)` + `refreshAudioState(m)`: `[data-audio-state]`
+  satırı ses yoksa kalıcı uyarı yazar (sebep + çözüm), ses varsa gizlenir.
+  `renderSegDetail` her çizimde tazeler.
+
+**Ölçüm (v2.158, gerçek Chromium):** toast alt **854** / çubuk üst **876** →
+çakışma yok. Ses yokken uyarı görünür; gerçek WAV eklenince gizli, süre 47,7.
+JS hatası 0.
+
+**Koruyan test:** `birim-testleri` [64] (7 kontrol).
+
+**DERS:** Kaybolan bildirim "durum" değildir. Bir hata durumu ekranda kalıcı
+bir satır bırakmalı; toast yalnız *değişikliği* duyurur. Ayrıca sabit konumlu
+her öğe, altındaki sabit çubukla çakışma açısından ölçülmelidir.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2212,7 +2235,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.157.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.158.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2511,7 +2534,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.157) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.158) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2522,10 +2545,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.157** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **939 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.157 |
-| Açık konu | **v2.158 — bildirim yerleşimi + ses yok durumu** (denetim #4/#5) |
+| Sürüm | **v2.158** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.158 |
+| Açık konu | **v2.159 — dar ekran başlıkları + genel bakış boş alanı** (kozmetik) |
 
 ### Bu oturumda ne değişti (kısa)
 

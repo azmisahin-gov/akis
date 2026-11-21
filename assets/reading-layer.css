@@ -1917,3 +1917,23 @@ input::placeholder, textarea::placeholder {
   #view-audio .sd-tech-btn { border: 1px solid var(--line-2); border-radius: var(--r-sm); padding: 3px 8px; }
   #view-audio .sd-tech-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
 }
+
+/* ============================================================================
+   v2.158 — BİLDİRİM YERLEŞİMİ + SES YOK DURUMU
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.157): toast 835–878, durum çubuğu 876–900 → üst üste biniyordu.
+   Ses blob'u yokken analiz kutusu boş kalıyordu; sebebi yalnız toast'ta
+   görünüyordu (kaybolunca iz kalmıyordu).
+   ============================================================================ */
+/* Bildirim, durum çubuğunun ÜSTÜNDE durur; çubuğu kapatmaz. */
+.toast { bottom: calc(var(--status-h) + 12px); }
+#view-audio .sd-audio-state {
+  border: 1px solid var(--gold);
+  background: var(--gold-soft);
+  color: var(--gold);
+  border-radius: var(--r-sm);
+  padding: 6px 9px;
+  margin: 4px 0 6px;
+  font-size: var(--fs-2xs);
+  line-height: 1.5;
+}

@@ -117,7 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases',
+  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3113,6 +3113,26 @@ console.log('\n== [63] Test verisi koruması (v2.157)');
   eq('kaldırma da onay ister', /async function removeSamples\(\)[\s\S]{0,600}askConfirm/.test(jsSrc), true);
   eq('kaldırma ses bloblarını siler', /async function removeSamples\(\)[\s\S]{0,1200}deleteBlob/.test(jsSrc), true);
   eq('düğme iki modu bildirir (load/remove)', /dataset\.mode/.test(jsSrc), true);
+}
+
+console.log('\n== [64] Bildirim yerleşimi ve ses yok durumu (v2.158)');
+{
+  // DENETİM BULGULARI: (a) toast durum çubuğunun üstüne biniyordu (835–878 /
+  // 876–900); (b) ses blob'u yokken analiz kutusu BOŞ kalıyordu ve yalnız
+  // kaybolan toast sebebi söylüyordu. KURAL: kalıcı, metinli durum.
+  eq('audioStateText tanımlı', typeof T.audioStateText, 'function');
+  if (typeof T.audioStateText === 'function') {
+    eq('ses varsa metin boş', T.audioStateText(true), '');
+    const t = T.audioStateText(false);
+    eq('ses yoksa sebep yazar', /Ses dosyası/.test(t), true);
+    eq('ses yoksa çözümü söyler', /Paketten yükle/.test(t), true);
+    eq('ses yoksa dalga/spek anılmış', /dalga|spektrogram/i.test(t), true);
+  }
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('toast durum çubuğunun üstünde', /calc\(var\(--status-h\)\s*\+\s*[0-9]+px\)/.test(css), true);
+  eq('ses yok durumu biçimli', /#view-audio \.sd-audio-state\s*\{/.test(css), true);
+  const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('ses yok durumu DOM\'a yazılıyor', /data-audio-state/.test(jsSrc), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.157';
+} from './schema.js?v=2.158';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.157';
+const APP_VERSION = '2.158';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3974,6 +3974,7 @@ function segDetailHtml(m) {
         </div>
         <!-- TEK GÖRÜNÜM ALANI (v2.121): dalga ve spektrogram AYNI kutuda geçişir.
              Böylece düğme dalga araç çubuğunda kalır ve sağ panel uzamaz. -->
+        <div class="sd-audio-state" data-audio-state hidden></div>
         <div class="sd-canvas-wrap mode-both" id="sdwrap-${esc(m.id)}">
           <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="48" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
           <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="112" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
@@ -4831,6 +4832,23 @@ function quickBulkBtn(counts, secondEyes) {
   if (!n) return '';
   return `<button class="seg-tool bulk-approve" data-bulk-approve="1" title="Yalnız 'hızlı onaya uygun' ölçütünü geçen ${n} bölümü onaylar. Uygun olmayanlara dokunmaz. Onaydan önce liste bir kez dinlenmelidir; bu düğme denetim yerine geçmez.">✓ ${n} hızlı onayla</button>`;
 }
+// SES YOK DURUMU (v2.158). Denetimde görüldü: blob yokken analiz kutusu BOŞ
+// kalıyordu; sebebi yalnız kaybolan toast söylüyordu. KURAL: kalıcı, metinli
+// durum; çözümü de söyler.
+function audioStateText(hasSrc) {
+  return hasSrc
+    ? ''
+    : 'Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez. Paketten yükle veya dosyayı yeniden ekleyin.';
+}
+function refreshAudioState(m) {
+  if (!m) return;
+  const el = document.querySelector(`#seg-detail-${CSS.escape(m.id)} [data-audio-state]`);
+  if (!el) return;
+  const a = document.querySelector(`#player-${CSS.escape(m.id)}`);
+  const txt = audioStateText(!!(a && a.getAttribute('src')));
+  el.textContent = txt;
+  el.hidden = !txt;
+}
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
   if (!root) return;
@@ -4844,6 +4862,7 @@ function renderSegDetail(m) {
   ensureFollowStrip(m, idx);
   // TEKNİK BÖLÜM KAPALIYKEN çizim bağlanmaz (v2.154): gizli tuvalin genişliği
   // 0'dır; burada çizmek ölçeği bozar ve spektrogram hesabı boşa gider.
+  refreshAudioState(m);
   if (techOpenPref()) {
     attachSegWave(m, idx);
     // Analiz görünümü (v2.128) her çizimde uygulanır: dalga/spek aynı kutuda,
@@ -12207,6 +12226,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.158': {
+    title: 'Bildirim durum çubuğunu kapatmıyor; ses yoksa kalıcı uyarı var',
+    body:
+      'Bildirim kutusu durum çubuğunun üstüne biniyordu; artık çubuğun ÜSTÜNDE ' +
+      'duruyor. Ses dosyası tarayıcıda yoksa analiz kutusu boş kalmıyor: ' +
+      '"Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez. ' +
+      'Paketten yükle veya dosyayı yeniden ekleyin." satırı kalıcı olarak yazar.'
+  },
   '2.157': {
     title: 'Hazır test dosyaları artık onay istiyor ve tek tıkla kaldırılıyor',
     body:

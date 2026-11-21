@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.157.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.158.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.158 — Bildirim yerleşimi ve ses yok durumu
+
+İki denetim bulgusu kapatıldı.
+
+### KULLANICI NE GÖRECEK
+
+- **Bildirim artık durum çubuğunu kapatmıyor.** Ölçüm (v2.157): toast 835–878,
+  durum çubuğu 876–900 → üst üste biniyordu. Artık toast
+  `bottom: calc(var(--status-h) + 12px)` ile çubuğun **üstünde** durur.
+- **Ses dosyası yoksa kalıcı uyarı.** Önce yalnız kaybolan bir toast sebebi
+  söylüyordu; analiz kutusu boş beyaz kalıyordu. Artık teknik bölümde kalıcı
+  satır: *"Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez.
+  Paketten yükle veya dosyayı yeniden ekleyin."* Ses varsa satır **gizlenir**.
+
+### ÖLÇÜM (v2.158, gerçek Chromium)
+
+| Durum | Sonuç |
+|---|---|
+| Toast / durum çubuğu | toast alt **854**, çubuk üst **876** → **çakışma yok** |
+| Ses yok | uyarı **görünür**, metin çözümü de söylüyor |
+| Gerçek WAV eklendi | uyarı **gizli**, `src` var, süre **47,7 sn** |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` **[64]** (7 kontrol): `audioStateText` (ses varsa boş, yoksa
+sebep + çözüm), toast'ın `--status-h` ile konumlanması, uyarı satırının
+biçimi ve DOM'a yazılması.
 
 ## v2.157 — Test verisi koruması
 
