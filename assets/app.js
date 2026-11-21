@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.180';
+} from './schema.js?v=2.181';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.180';
+const APP_VERSION = '2.181';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3964,11 +3964,14 @@ function spkSelectOptions(m, current) {
 // belgelerdir; bu blok ikisini yan yana gösterir. Metin değişmediyse blok
 // gösterilmez (gereksiz gürültü yok). Otomatik çıktı yoksa (eski kayıt veya
 // elle girilmiş bölüm) hiçbir şey uydurulmaz, sessiz kalınır.
+// Modelin ham çıktısı bilirkişinin metninden FARKLI mı? (tek kaynak)
+function asrDiffers(s) {
+  const asr = String((s && s.asrText) || '').trim();
+  return !!asr && asr !== String((s && s.text) || '').trim();
+}
 function asrCompareHtml(m, s, i) {
-  const asr = (s.asrText || '').trim();
-  if (!asr) return '';
-  const cur = (s.text || '').trim();
-  if (asr === cur) return '';
+  if (!asrDiffers(s)) return '';
+  const asr = String(s.asrText).trim();
   const model = s.asrModel ? ` · ${esc(modelShortName(s.asrModel))}` : '';
   const when = s.asrAt ? ` · ${esc(new Date(s.asrAt).toLocaleString('tr-TR'))}` : '';
   return `<details class="asr-compare">
@@ -4076,7 +4079,7 @@ function segDetailHtml(m) {
 
   ${
     notes.length || silence
-      ? `<div class="sd-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}${pr.score >= 15 ? `<span class="sn info" title="${esc(pr.reasons.join(', '))}">öncelik ${pr.score >= 40 ? 'yüksek' : pr.score >= 20 ? 'orta' : 'düşük'}</span>` : ''}</div>`
+      ? `<div class="sd-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}</div>`
       : ''
   }
 
@@ -4115,11 +4118,12 @@ function segDetailHtml(m) {
         <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
         <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
       </div>
+      ${asrCompareHtml(m, s, i)}
     </div>
     <div class="sd-right">
       ${'' /* karaoke kutusu kaldırıldı (v2.119): tek görsel alan .sd-follow */}
       <div class="sd-text">
-        ${asrCompareHtml(m, s, i)}
+        ${asrDiffers(s) ? `<button class="asr-hint" data-tech-jump="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma Teknik panelindedir; metin değişmez.">Model çıktısı farklı — karşılaştır (Teknik)</button>` : ''}
         <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
         <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
           ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
@@ -10836,6 +10840,20 @@ function setupEvents() {
         if (panel && !panel.hidden) closeCoveragePanel(m);
         else renderCoveragePanel(m);
       }
+    } else if (b.dataset.techJump !== undefined) {
+      // "Model çıktısı farklı" ipucu: Teknik'i açar ve karşılaştırmayı gösterir.
+      const card = b.closest('.audio-card');
+      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) {
+        setTechOpen(true);
+        renderSegDetail(m);
+        const box = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .asr-compare`);
+        if (box) {
+          box.open = true;
+          box.scrollIntoView({ block: 'nearest' });
+        }
+      }
     } else if (b.dataset.techToggle !== undefined) {
       const card = b.closest('.audio-card');
       const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -12509,6 +12527,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.181': {
+    title: 'Model çıktısı artık metnin üstünde yer kaplamıyor',
+    body:
+      'Metnin üstünde yalnız tek satır ipucu var: "Model çıktısı farklı — ' +
+      'karşılaştır (Teknik)". Tıklayınca Teknik açılır; model adı, tarih ve ham ' +
+      'çıktı orada görünür. Notlardaki tekrar eden "öncelik" satırı kaldırıldı; ' +
+      'listedeki Öncelik rozeti duruyor.'
+  },
   '2.180': {
     title: 'Konuşmacı, kontrol ve gözlem artık her zaman görünür',
     body:

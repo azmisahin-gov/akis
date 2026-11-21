@@ -1122,6 +1122,30 @@ console.log('\n[2am] Konuşmacı/kontrol/gözlem her zaman görünür (v2.180)')
     !/Dalga, zamanlar, konuşmacı ve gözlem/.test(js8));
 }
 
+console.log("\n[2an] ASR kökeni Teknik'te, metinde ince ipucu (v2.181)");
+{
+  // ÖLÇÜM (v2.180): "Otomatik çözümleme çıktısı (model …)" bloğu metin
+  // alanının üstündeydi; notlarla birleşince metin bölgesini aşağı itiyordu.
+  // Köken bilgisi analizdir → Teknik'e taşındı; metinde tek satır ipucu.
+  const js9 = read('assets/app.js');
+  const i0 = js9.indexOf('function segDetailHtml');
+  const i1 = js9.indexOf('\nfunction ', i0 + 10);
+  const body9 = js9.slice(i0, i1 > 0 ? i1 : i0 + 30000);
+  const iTech = body9.indexOf('sd-left sd-tech');
+  const iAsrCall = body9.indexOf('${asrCompareHtml(m, s, i)}');
+  check('ASR köken bloğu Teknik içinde', iTech > 0 && iAsrCall > iTech, `asr=${iAsrCall} tech=${iTech}`);
+  check('metinde ince ipucu var', /data-tech-jump="\$\{i\}"/.test(body9));
+  // Metin bölgesi DOM'da Teknik'ten SONRA gelir; doğru ölçüt aralıktır.
+  const iText = body9.indexOf('class="sd-text"');
+  const iQuick = body9.indexOf('class="quick-insert"');
+  const iHint = body9.indexOf('asr-hint');
+  check('ipucu metin bölgesinde (sd-text … quick-insert arası)', iText > 0 && iText < iHint && iHint < iQuick,
+    `text=${iText} hint=${iHint} quick=${iQuick}`);
+  check('notlarda "öncelik" satırı kalmadı', !/öncelik \$\{pr\.score/.test(body9));
+  check('öncelik rozeti korunur', /function segPriorityBadge/.test(js9) && /badge prio/.test(js9));
+  check("ipucu Teknik'i açar", /dataset\.techJump[\s\S]{0,400}setTechOpen\(true\)/.test(js9));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

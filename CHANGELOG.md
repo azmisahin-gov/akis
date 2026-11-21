@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.180.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.181.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.181 — ASR kökeni Teknik'te; metinde yalnız ince ipucu
+
+Ölçüm (1440×900): "Otomatik çözümleme çıktısı (model … · tarih)" bloğu metin
+alanının **üstündeydi**; notlarla birleşince metin bölgesini aşağı itiyor,
+quick-insert'i görünür alandan çıkarabiliyordu. Köken bilgisi **analizdir**.
+
+### KULLANICI NE GÖRECEK
+
+- Metnin üstünde yalnız **tek satır ipucu**: *"Model çıktısı farklı —
+  karşılaştır (Teknik)"*. Tıklayınca **Teknik** açılır ve **model adı + tarih +
+  ham çıktı** görünür.
+- Karşılaştırma bloğu artık **Teknik** panelinde (analiz bölgesi).
+- Bölüm listesindeki **"Öncelik"** rozeti duruyor; notlardaki tekrar eden
+  "öncelik" satırı kaldırıldı (aynı bilgi iki yerdeydi).
+
+### ÖLÇÜM
+
+| | Önce (v2.180) | Sonra (v2.181) |
+|---|---|---|
+| Metin üstünde köken bloğu | ~30 px katlanmış blok | **19 px tek satır ipucu** |
+| Metin alanı | 371 px | **344 px** (ipucu görünürken) |
+| Köken bloğu yeri | metin bölgesi | **Teknik** |
+| İpucuna tıklama | — | Teknik açılır, blok açık, **panel içinde** |
+| Notlarda "öncelik" | var (rozetle tekrar) | **yok**, rozet duruyor |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2an] (6 kontrol): köken bloğu Teknik'te, ipucu metinde,
+notlarda öncelik yok, öncelik rozeti korunuyor, ipucu Teknik'i açıyor.
 
 ## v2.180 — Konuşmacı, kontrol ve gözlem artık her zaman görünür
 

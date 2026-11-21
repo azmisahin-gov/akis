@@ -1,4 +1,4 @@
-# Özellikler (v2.180 — mevcut durum)
+# Özellikler (v2.181 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **ASR kökeni Teknik'te (v2.181):** metin üstünde yalnız tek satır ipucu
+  ("Model çıktısı farklı — karşılaştır"); model adı, tarih ve ham çıktı Teknik
+  panelinde. Notlardaki "öncelik" satırı kaldırıldı; liste rozeti korunur.
 - **Düzenleme bilgisi her zaman görünür (v2.180):** konuşmacı ve kontrol
   seçimleri başlığın altında; gözlem düğmeleri metnin altında. Teknik paneli
   yalnız analiz taşır (dalga/spektrogram, zamanlar, ölçümler).

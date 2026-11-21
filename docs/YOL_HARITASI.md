@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.180.**
+yazılır. **Güncel sürüm: v2.181.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.181 — ASR kökeni Teknik'te (tamamlandı)
+
+"Otomatik çözümleme çıktısı (model …)" bloğu metin üstünden **Teknik**'e
+taşındı; metinde **19 px tek satır ipucu** kaldı ("Model çıktısı farklı —
+karşılaştır"). İpucu tıklanınca Teknik açılır, blok açık ve panel içinde
+görünür. Notlardaki tekrar eden "öncelik" satırı kaldırıldı (liste rozeti
+korunuyor). Ölçüm: metin alanı 371 → **344 px** (ipucu varken), hata 0.
+Koruyan test: `tasarim` [2an].
 
 ### v2.180 — Konuşmacı/kontrol/gözlem her zaman görünür (tamamlandı)
 

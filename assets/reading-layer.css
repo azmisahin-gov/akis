@@ -2254,3 +2254,23 @@ input::placeholder, textarea::placeholder {
 #view-audio .sd-meta select { min-width: 150px; }
 #view-audio .sd-meta .sd-profile { margin-left: auto; }
 #view-audio .sd-right .sd-obs { padding-top: 2px; }
+
+/* --- v2.181 — ASR kökeni Teknik'te, metinde yalnız ince ipucu ------------- */
+/* ÖLÇÜM (v2.180): "Otomatik çözümleme çıktısı (model …)" bloğu metin alanının
+   ÜSTÜNDEyken notlarla birlikte metin bölgesini aşağı itiyordu. Köken bilgisi
+   analizdir; Teknik'e taşındı. Metinde yalnız tek satır ipucu kalır. */
+#view-audio .asr-hint {
+  align-self: flex-start;
+  border: 1px dashed var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+  padding: 2px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+#view-audio .asr-hint:hover,
+#view-audio .asr-hint:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
