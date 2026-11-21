@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.190.**
+yazılır. **Güncel sürüm: v2.191.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.191 — Sağ panel kaymıyor; metin kendi içinde kayıyor (tamamlandı)
+
+Metin alanı autoGrow ile büyüyünce sağ panel kayıyordu. Artık gövde/sağ sütun
+`flex:1` + `min-height:0`, metin alanı `flex:1` + **120 px** taban ve
+`overflow-y:auto` (kendi içinde kayar). Vurgu katmanı `scrollTop` ile eşlenir.
+Ölçüm: 1440/1280/1100/900/760 → panel kayması **0**, dalga her zaman görünür;
+vurgu scrollTop 120=120. Koruyan test: `tasarim` [2aq]/[2u]/[2al]/[2v].
 
 ### v2.190 — Dalga menüleri görünür; metin dalgaya binmiyor (tamamlandı)
 

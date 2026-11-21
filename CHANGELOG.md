@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.190.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.191.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.191 — Sağ panel kaymıyor; metin kendi içinde kayıyor
+
+Kullanıcı: *"E alan çok yüksek olmamış mı? Scroll çıkıyor gereksiz yere;
+birazcık daha wave yukarıda duramaz mı ya da eşit? Bölüm listesiyle çalışırken
+sağ menüyü scroll yapmayalım."*
+
+### KULLANICI NE GÖRECEK
+
+- Sağdaki bölüm paneli artık **kaymıyor**; dalga bölümü **her zaman görünür**.
+- Metin alanı kalan yüksekliği alır (en az **120 px**) ve **kendi içinde kayar**.
+  Uzun metinde okunan kelime vurgusu, metin kaydırıldığında da **hizalı** kalır.
+- Dalga bölümü metnin hemen altında; gereksiz panel kaydırması yok.
+
+### ÖLÇÜM (gerçek Chromium + gerçek WAV)
+
+| Genişlik | Panel (görünen/kaydırılan) | Panel kayması | Metin (görünen/içerik) |
+|---|---|---|---|
+| 1440 | 577 / 577 | **yok** | 178 / 468 px |
+| 1280 | 552 / 552 | **yok** | 120 / 563 px |
+| 1100 | 509 / 509 | **yok** | 120 / 778 px |
+| 900 | 527 / 527 | **yok** | 120 / 444 px |
+| 760 | 563 / 563 | **yok** | 120 / 540 px |
+
+Vurgu eşlemesi: textarea `scrollTop` 120 → katman `scrollTop` 120; yükseklik
+142 = 142. JS hatası **0**.
+
+### KORUYAN TEST
+
+`tasarim` [2aq]/[2u]/[2al]/[2v] (gövde `flex:1` + `min-height:0`, metin 120 px,
+kendi içinde kayar, satır içi yükseklik dayatılmaz).
 
 ## v2.190 — Dalga menüleri görünür; metin dalganın üstüne binmiyor
 

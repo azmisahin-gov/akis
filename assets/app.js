@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.190';
+} from './schema.js?v=2.191';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.190';
+const APP_VERSION = '2.191';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5048,15 +5048,14 @@ function refreshAudioState(m) {
   chip.classList.toggle('bad', !ok);
   chip.title = audioStateHint(ok);
 }
-// METİN KUTUSU İÇERİĞE GÖRE BÜYÜR (v2.188).
-// NEDEN: vurgu katmanı textarea'nın tam arkasında durur. Textarea KENDİ İÇİNDE
-// kayarsa vurgu hizası kaydırma çubuğu genişliği kadar bozulur. Bu yüzden
-// textarea içeriği kadar uzar (iç kaydırma yok); panel zaten kendi içinde kayar.
-function autoGrowTextarea(ta) {
+// METİN KUTUSU VURGU HİZASI (v2.191).
+// Textarea artık KENDİ İÇİNDE kayar (panel kaymaz, dalga bölümü görünür kalır).
+// Vurgu katmanı textarea'nın görünür alanına ve scrollTop'una eşlenir; uzun
+// metinde de kelime hizası bozulmaz. Eski sürümden kalan satır içi yükseklik
+// temizlenir (alan yine esnek kabuğu doldurur).
+function syncTextEditor(ta) {
   if (!ta) return;
-  ta.style.height = 'auto';
-  const h = ta.scrollHeight;
-  if (h) ta.style.height = h + 'px';
+  if (ta.style.height) ta.style.height = '';
   const wrap = ta.closest('.sd-ta-wrap');
   if (wrap) syncHighlightLayer(wrap);
 }
@@ -5067,7 +5066,7 @@ function renderSegDetail(m) {
   const keepScroll = root.scrollTop;
   root.innerHTML = segDetailHtml(m);
   root.scrollTop = keepScroll;
-  autoGrowTextarea(root.querySelector('.sd-text textarea'));
+  syncTextEditor(root.querySelector('.sd-text textarea'));
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = activeSegIndex(m);
@@ -5121,7 +5120,7 @@ function renderSegments(m, card) {
   const ta0 = root.querySelector('.sd-text textarea');
   const wrap0 = ta0?.closest('.sd-ta-wrap');
   if (wrap0) bindHighlightLayer(wrap0);
-  autoGrowTextarea(ta0);
+  syncTextEditor(ta0);
   refreshNarrowBar(m, card || root.closest('.audio-card'));
 }
 // Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
@@ -6335,7 +6334,7 @@ function syncSegDetailInPlace(m, idx) {
   // yeniden hesaplanır (v2.128). Dalga ve spek aynı kutuda kalır.
   setAnalysisMode(m, analysisMode);
   setVal('.sd-text textarea', s.text || '');
-  autoGrowTextarea(q('.sd-text textarea'));
+  syncTextEditor(q('.sd-text textarea'));
   clearHighlightLayer(q('.sd-ta-wrap'));
   // DURUM SATIRI ve MODEL ÇIKTISI DÜĞMESİ bölüme bağlıdır (v2.188): takip
   // sırasında panel yeniden çizilmediği için bu iki bölge de YERİNDE
@@ -11336,7 +11335,7 @@ function setupEvents() {
     if (!s) return;
     if (el.dataset.key === 'text') {
       const wasProposal = applyTextEdit(s, el.value);
-      autoGrowTextarea(el);
+      syncTextEditor(el);
       // Metin değişince eski vurgu konumu geçersizdir; temizle.
       clearHighlightLayer(el.closest('.sd-ta-wrap'));
       // İkinci göz yazdıysa ana metin DEĞİŞMEDİ; kullanıcı bunu görmeli.
@@ -12581,6 +12580,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.191': {
+    title: 'Sağ panel kaymıyor; metin kendi içinde kayıyor',
+    body:
+      'Bölüm paneli artık kaymıyor; dalga bölümü her zaman görünür. Metin alanı ' +
+      'kalan yüksekliği alır (en az 120 px) ve kendi içinde kayar. Uzun metinde ' +
+      'okunan kelime vurgusu kaydırmayla birlikte hizalı kalır.'
+  },
   '2.190': {
     title: 'Dalga menüleri görünür; metin dalgaya binmiyor',
     body:

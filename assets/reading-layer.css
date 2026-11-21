@@ -1771,9 +1771,9 @@ input::placeholder, textarea::placeholder {
      `flex:1 1 auto` kabuğa sığmıyor, metin tekn(inin) ÜSTÜNE taşıyordu
      (ölçüm: metin 745'te bitiyor, dalga çubuğu 595'te başlıyordu → çakışma).
      Kural: gövde/sağ sütun/metin içeriğe göre büyür; sığmazsa PANEL kayar. */
-  #view-audio .seg-detail .sd-body { flex: 0 0 auto; }
-  #view-audio .seg-detail .sd-right { flex: 0 0 auto; }
-  #view-audio .seg-detail .sd-right .sd-text { flex: 0 0 auto; }
+  #view-audio .seg-detail .sd-body { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: 0; }
   #view-audio .seg-detail .sd-right .sd-text textarea {
     flex: 1 1 auto;
     resize: none;
@@ -2168,10 +2168,8 @@ input::placeholder, textarea::placeholder {
    masaüstü `min-height: 120px` kuralı; flex çocukları içeriklerinin altına
    inebiliyordu. KURAL: çocuklar İÇERİĞİNDEN aşağı inmez; sığmazsa PANEL
    kaydırır (tek kaydırma zaten panelde). */
-@media (min-width: 901px) {
-  #view-audio .seg-detail .sd-body { min-height: 236px; }
-  #view-audio .seg-detail .sd-right { min-height: 236px; }
-}
+/* v2.191: 236 px TABANI KALDIRILDI. Metin alanı artık KENDİ İÇİNDE kayar ve
+   140 px tabanı vardır; 236 px tabanı sağ paneli gereksiz yere kaydırıyordu. */
 
 /* --- v2.180 — Düzenleme bilgisi başlığın altında, gözlem metnin yanında ---- */
 /* ÖLÇÜM (v2.179, 1440×900): Teknik açıkken konuşmacı+kontrol y=822, gözlem
@@ -2400,14 +2398,16 @@ input::placeholder, textarea::placeholder {
    ÖLÇÜ KURALI: vurgu katmanı textarea ile AYNI puntoda, aynı dolguda ve aynı
    genişlikte olmalıdır; yoksa kelime kayar. Genişlik JS ile textarea.clientWidth
    değerinden verilir (kaydırma çubuğu farkı hizayı bozmaz). Metin alanı KENDİ
-   İÇİNDE kaymaz; içeriği kadar büyür (autoGrowTextarea), panel kayar.
+   İÇİNDE kayar; vurgu katmanı scrollTop ile eşlenir. Böylece sağ panel KAYMAZ
+   ve dalga bölümü her zaman görünür kalır (v2.191).
    ============================================================================ */
 #view-audio .seg-detail .sd-text { gap: 0; }
 #view-audio .seg-detail .sd-text .sd-editor {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
   min-width: 0;
   border: 1px solid var(--line-2);
   border-radius: var(--r-sm);
@@ -2432,7 +2432,8 @@ input::placeholder, textarea::placeholder {
 #view-audio .sd-editor .sd-ta-wrap {
   position: relative;
   display: flex;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 /* Textarea: kenarlık ve zemin KUTUYA aittir; alan saydamdır ki arkadaki
    vurgu katmanı görünsün. */
@@ -2441,8 +2442,8 @@ input::placeholder, textarea::placeholder {
   z-index: 1;
   display: block;
   width: 100%;
-  flex: 0 0 auto;
-  min-height: clamp(240px, 38vh, 520px);
+  flex: 1 1 auto;
+  min-height: 120px;
   margin: 0;
   padding: 8px 10px;
   border: 0;
@@ -2450,7 +2451,7 @@ input::placeholder, textarea::placeholder {
   background: transparent;
   box-shadow: none;
   resize: none;
-  overflow: hidden;
+  overflow-y: auto;
   color: var(--ink);
   font-family: 'Segoe UI', Arial, sans-serif;
   font-size: var(--fs-sm);

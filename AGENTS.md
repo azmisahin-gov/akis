@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.190.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.191.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.190** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.191** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3190,6 +3190,27 @@ bölümün üstüne biner; böyle yerlerde `flex:0 0 auto` + panel kaydırması 
 mimaridir.
 
 **Koruyan test:** `tasarim` [2aq].
+
+#### P21 — Sağ panel kaymıyor; metin kendi içinde kayıyor (v2.191)
+
+**KULLANICI:** *"E alan çok yüksek olmamış mı? Scroll çıkıyor gereksiz yere;
+birazcık daha wave yukarıda duramaz mı ya da eşit? Bölüm listesiyle çalışırken
+sağ menüyü scroll yapmayalım."*
+
+**DÜZELTME:** `.sd-body/.sd-right/.sd-text/.sd-editor/.sd-ta-wrap` `flex:1` +
+`min-height:0`; textarea `flex:1`, **min-height 120 px**, `overflow-y:auto`.
+Vurgu katmanı `syncHighlightLayer` ile `clientWidth/clientHeight` ve `scrollTop`
+eşlenir. v2.179'un 236 px tabanı KALDIRILDI (paneli gereksiz kaydırıyordu).
+
+**ÖLÇÜM:** 1440/1280/1100/900/760 → panel `scrollHeight == clientHeight`
+(kayma **0**), dalga çubuğu panel içinde. Textarea iç scroll: 468/563/778 px
+içerik. Vurgu `scrollTop` 120 = 120, yükseklik 142 = 142. JS hatası 0.
+
+**DERS:** Bir esnek kabukta metin alanı sınırsız büyürse panel kayar. Doğru
+çözüm: alan kalan yüksekliği alsın, **kendi içinde kaysın**; vurgu katmanı da
+`scrollTop` ile eşlensin. Böylece hem panel sabit kalır hem vurgu hizası korunur.
+
+**Koruyan test:** `tasarim` [2aq]/[2u]/[2al]/[2v].
 
 ### DOĞRULAMA (her oturum başı)
 

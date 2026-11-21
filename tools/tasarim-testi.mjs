@@ -486,8 +486,8 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
   check('menü aynı işleri taşır (birleştir/böl/çözümle/sil)',
     /data-merge-next/.test(js) && /data-split-seg/.test(js) && /data-retranscribe-seg/.test(js) && /data-delete-seg/.test(js));
   check('detayda katlama kalmadı', !/<details class="sd-more">/.test(js));
-  // v2.188: metin kutusu tek kutuda; alan içeriği kadar büyür, taban 240 px.
-  check('metin alanı tabanı 240 px (v2.188)', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*clamp\(240px/.test(rl));
+  // v2.191: metin kutusu kalan yüksekliği alır; taban 160 px, kendi içinde kayar.
+  check('metin alanı tabanı 120 px', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*120px/.test(rl));
   check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
 }
 
@@ -505,8 +505,8 @@ console.log('\n[2v] Tek panel, iki bölge (v2.154)');
   check('onay eylemi Enter ile de çalışır', /approveActiveSegment/.test(js));
   check('teknik bölüm .sd-tech taşıyor', /class="sd-left sd-tech"/.test(js));
   check('alt eylem satırı kaldırıldı (.sd-actions yok)', !/class="sd-actions"/.test(js));
-  check('metin kutusu içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-text \.sd-editor\s*\{[^}]*flex:\s*0 0 auto/.test(rl));
-  check('metin alanı içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('metin kutusu kalan yüksekliği alır (flex:1)', /#view-audio \.seg-detail \.sd-text \.sd-editor\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
+  check('metin alanı kalan yüksekliği alır (flex:1)', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
   // v2.186: TEKNİK DÜĞMESİ KALDIRILDI — bölüm her zaman görünür, çizim koşulsuz.
   check('teknik düğmesi yok', !/data-tech-toggle/.test(js));
   check('teknik bölüm her zaman görünür (hidden koşulu yok)', /class="sd-left sd-tech">/.test(js));
@@ -1123,10 +1123,9 @@ console.log('\n[2al] Metin kutusu: tek kutu, saydam alan, vurgu arkada (v2.188)'
   // (içeriği kadar büyür) ki arkadaki vurgu katmanı hizada kalsın.
   const rl7 = read('assets/reading-layer.css');
   check('metin alanı saydam (vurgu arkadan görünür)', /\.sd-ta-wrap textarea\s*\{[^}]*background:\s*transparent/.test(rl7));
-  check('metin alanı iç kaydırma yapmaz', /\.sd-ta-wrap textarea\s*\{[^}]*overflow:\s*hidden/.test(rl7));
-  check('metin alanı 240 px tabanı', /\.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*clamp\(240px/.test(rl7));
-  check('gövde alt sınırı', /\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7));
-  check('sağ sütun alt sınırı', /\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
+  check('metin alanı kendi içinde kayar (vurgu eşlenir)', /\.sd-ta-wrap textarea\s*\{[^}]*overflow-y:\s*auto/.test(rl7));
+  check('metin alanı 120 px tabanı', /\.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*120px/.test(rl7));
+  check('236 px tabanı kaldırıldı (panel kaymaz)', !/\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7) && !/\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
 }
 
 console.log('\n[2am] Konuşmacı/kontrol/gözlem her zaman görünür (v2.180 → v2.188)');
@@ -1226,12 +1225,15 @@ console.log('\n[2aq] Dalga çubuğu: menüler görünür, metinle çakışmaz (v
   // ÖLÇÜM (v2.190, 1440): metin alanı 349–751, dalga çubuğu 595'te başlıyordu
   // → METİN, dalga araçlarının ÜSTÜNE taşıyordu. Ayrıca 1100 px'te araç satırı
   // 470 px, kap 372 px; "Dalga/Spek/İkisi" görünmüyordu (gizli yatay kaydırma).
-  // KURAL: gövde içeriğe göre büyür (panel kayar), araç satırı SARAR.
+  // KURAL: gövde kalan yüksekliği alır; metin KENDİ İÇİNDE kayar (panel kaymaz,
+  // dalga görünür kalır). Araç satırı sığmayınca SARAR.
   const rl = read('assets/reading-layer.css');
   const js = read('assets/app.js');
-  check('gövde içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-body \{[^}]*flex:\s*0 0 auto/.test(rl));
-  check('sağ sütun içeriğe göre büyür', /#view-audio \.seg-detail \.sd-right \{[^}]*flex:\s*0 0 auto/.test(rl));
-  check('metin sütunu içeriğe göre büyür', /#view-audio \.seg-detail \.sd-right \.sd-text \{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('gövde kalan yüksekliği alır (flex:1, min-height:0)', /#view-audio \.seg-detail \.sd-body \{[^}]*flex:\s*1 1 auto[^}]*min-height:\s*0/.test(rl));
+  check('sağ sütun kalan yüksekliği alır (flex:1, min-height:0)', /#view-audio \.seg-detail \.sd-right \{[^}]*flex:\s*1 1 auto[^}]*min-height:\s*0/.test(rl));
+  check('metin sütunu kalan yüksekliği alır', /#view-audio \.seg-detail \.sd-right \.sd-text \{[^}]*flex:\s*1 1 auto/.test(rl));
+  check('metin alanı kendi içinde kayar (panel kaymaz)', /\.sd-ta-wrap textarea\s*\{[^}]*overflow-y:\s*auto/.test(rl));
+  check('satır içi yükseklik dayatılmıyor', !/ta\.style\.height\s*=\s*['"]auto['"]/.test(js));
   check('ipucu kısa metin + tam metin title', /sd-wave-hint" title="Tıkla: konuma git/.test(js));
   check('araç satırı sarar (gizli kaydırma yok)', /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) && !/sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl));
 }
