@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P14 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P15 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.184** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.185** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `e5aee0d` |
+| Git | `main` = `origin/main` = `c3dd18f` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.184** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.185** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2600,6 +2600,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.182 | Dikey yer kazanımı: etiketler satır içi | meta **63 → 40 px**; ses yok **47 → 31 px**; kaydırma 84 → 63 | `birim` [64] + `tasarim` [2am] |
 | v2.183 | Başlıkta birleşik işlem satırı | üst bölge **76 → 42 px** (1440), **78 → 42** (900) | `tasarim` [2ao] |
 | v2.184 | Tek durum satırı: her zaman görünür | satır üç durumda da **28 px**; boş şerit yok; metin 359 px | `tasarim` [2ai] + `birim` [64] |
+| v2.185 | Bölüm listesi = dizin (metin tek yerde) | satır **74 → 50 px**; rozetler görünür | `tasarim` [2ap] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -3029,6 +3030,30 @@ bilgisi ya **hep** görünür olmalı ya da hiç olmamalı; arada kalan "koşull
 şerit" hem yerleşimi oynatır hem güveni sarsar. Ayrıca bir bilgiyi ekrandan
 kaldırıp yalnız `title`'a koymak, o bilgiyi **gizlemek**tir (kullanıcı
 "tooltip'i kaldır, ekranda yaz" dedi).
+
+#### P15 — Liste dizindir, metin tek yerde (v2.185)
+
+**KULLANICI:** *"Segmente neden metin gösteriyoruz? Neden bunu detayda da
+gösteriyoruz? Segment kısmını biraz küçültürsün."*
+
+**ÖLÇÜM (v2.184, 1440×900):** satır **74 px**; bölüm metni **hem listede hem
+editörde** vardı. Aynı veriyi iki yerde tutmak hem yer kaplar hem bakım yükü
+doğurur (metin değişince iki yerin tutarlı kalması gerekir).
+
+**KURAL:** **Liste = dizin** (numara · başlangıç–bitiş · rozetler). **Metin tek
+kaynak: editör.** Metin, satırın `title` ipucunda yardımcı olarak durur.
+
+**YAPILAN:** `.seg-text` satırdan kaldırıldı; ızgara 3 sütuna indi
+(`20px 96px auto`); 4 sütunlu eski tanımlar (4 adet) silindi; rozetler sola
+hizalandı; rozet kırpması yok (v2.130 korunuyor).
+
+**ÖLÇÜM (sonra):** satır **50 px** (1440/1280/900), 1100'de **66 px**
+(rozetler iki satıra sarar — kırpma değil); rozetler görünür; yatay taşma yok;
+JS hatası 0.
+
+**DERS:** Liste bir **dizin**tir, belge değildir. Belgeyi (metni) liste ve
+editör olmak üzere iki yerde göstermek "aynı veri tek yerde" kuralını bozar;
+ayrıca satır yüksekliğini iki katına çıkarır. İçerik editörde, dizin listede.
 
 ### DOĞRULAMA (her oturum başı)
 
