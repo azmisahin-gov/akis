@@ -2767,3 +2767,15 @@ input::placeholder, textarea::placeholder {
   color: var(--ink);
   white-space: pre-wrap;
 }
+
+/* ============================================================================
+   v2.198 — Birleştirme adayı rozeti
+   Rozet yalnız İŞARETTİR: tıklanınca birleştirmez (yıkıcı eylem tek tıkla
+   olmaz). Eylem ⋮ menüsünde, M tuşunda veya sürüklemede. Renk, durum
+   tablosunun "açık/seçili" satırıdır (accent-soft zemin + accent yazı).
+   ========================================================================== */
+#view-audio .seg-item .badge.cand {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}

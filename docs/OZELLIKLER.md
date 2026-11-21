@@ -1,4 +1,4 @@
-# Özellikler (v2.197 — mevcut durum)
+# Özellikler (v2.198 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,14 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Birleştirme adayı (v2.198):** Aynı konuşmacı + kısa bölüm (<2 sn veya
+  <5 kelime) + cümle sonu noktalaması yok + sonrakiyle boşluk ≤0,5 sn koşullarını
+  sağlayan satırlar listede **⇄** rozetiyle işaretlenir; araç çubuğunda
+  **Birleştirme adayı** filtresi görünür. Uydurma skor yoktur. **Otomatik
+  birleştirme yapılmaz**; rozet yalnız işarettir, birleştirme ⋮ menüsü / **M** /
+  sürükleme ile yapılır. Denetlenmiş (onaylı/anlaşılmadı) bölüm aday gösterilmez
+  — birleştirme onayı "Kontrol bekliyor"a düşürür. Aday sayısı sıfıra düşünce
+  filtre kendiliğinden **Tümü**'ye döner.
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,

@@ -118,6 +118,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
+  'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -3270,6 +3271,111 @@ console.log('\n== [69] Konuşmacı silme ve rapor filtresi (v2.192)');
   eq('S1 listeden çıktı', m.speakers.some((s) => s.name === 'S1'), false);
   eq('rapor artık boş (atanmış konuşmacı yok)', T.speakerRows(c).length, 0);
   eq('metinler hâlâ korundu', m.segments.map((s) => s.text).join(''), 'abc');
+}
+
+console.log('\n== [70] Birleştirme adayı: deterministik ölçüt (v2.198)');
+{
+  // KULLANICI: "Birleştirilecek gibi bir şey koysak." Uydurma skor YOK;
+  // ölçüt yalnız gözlemlenebilir işaretler. Aday İŞARETTİR, otomatik
+  // birleştirme yapılmaz.
+  const seg = (o) => T.emptySegmentForTest(o);
+  const pair = (a = {}, b = {}) => [
+    seg({ id: 'a', start: '00:00:01.000', end: '00:00:02.200', text: 've', speaker: 'S1', ...a }),
+    seg({ id: 'b', start: '00:00:02.300', end: '00:00:04.000', text: 'sonra gitti.', speaker: 'S1', ...b })
+  ];
+
+  let segs = pair();
+  eq('uygun aday (aynı konuşmacı, kısa, noktalamasız, boşluksuz)', T.mergeCandidateAt(segs, 0).ok, true);
+  eq('uygun adayda neden yok', T.mergeCandidateAt(segs, 0).reasons, []);
+  eq('son bölüm aday değil', T.mergeCandidateAt(segs, 1).ok, false);
+  eq('son bölüm nedeni', T.mergeCandidateAt(segs, 1).reasons, ['sonraki bölüm yok']);
+  eq('aralık dışı indeks', T.mergeCandidateAt(segs, 9).ok, false);
+
+  // Ölçüt mutasyona yol açmamalı: aday hesabı veriyi DEĞİŞTİRMEZ.
+  const before = JSON.stringify(segs);
+  T.mergeCandidateAt(segs, 0);
+  T.mergeCandidateIndexes(segs);
+  eq('aday hesabı veriyi değiştirmez', JSON.stringify(segs), before);
+
+  segs = pair({ speaker: 'S1' }, { speaker: 'S2' });
+  eq('farklı konuşmacı aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('farklı konuşmacı nedeni', T.mergeCandidateAt(segs, 0).reasons.includes('farklı konuşmacı'), true);
+
+  segs = pair({ text: 'sonra gitti.' });
+  eq('cümle bitmiş (.) aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('cümle bitmiş nedeni', T.mergeCandidateAt(segs, 0).reasons.includes('cümle bitmiş'), true);
+  segs = pair({ text: 'sonra gitti…' });
+  eq('cümle bitmiş (…) aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  segs = pair({ text: 'geldi mi?' });
+  eq('soru işareti aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  segs = pair({ text: 'gitti."' });
+  eq('kapanış tırnağı sonrası nokta aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+
+  // Uzun VE çok kelimeli → aday değil. (İki ölçütten biri yeterli.)
+  segs = pair({ end: '00:00:09.000', text: 'bu cümle çok uzun ve tamamlanmış bir cümle' });
+  eq('uzun + çok kelime aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('uzun nedenli', T.mergeCandidateAt(segs, 0).reasons.includes('bölüm kısa değil'), true);
+  // Yalnız KELİME ölçütü: 3 kelime ama 6 sn → aday (VEYA ölçütü).
+  segs = pair({ end: '00:00:07.000', text: 'bir iki üç' }, { start: '00:00:07.200' });
+  eq('kısa kelime sayısı yeter (süre uzun olsa da)', T.mergeCandidateAt(segs, 0).ok, true);
+  // Yalnız SÜRE ölçütü: 1 sn ama 6 kelime → aday.
+  segs = pair({ end: '00:00:02.000', text: 'bir iki üç dört beş altı' }, { start: '00:00:02.100' });
+  eq('kısa süre yeter (kelime çok olsa da)', T.mergeCandidateAt(segs, 0).ok, true);
+
+  // Boşluk ölçütü: ≤ 0,5 sn aday; daha fazlası değil.
+  segs = pair({ end: '00:00:02.000' }, { start: '00:00:02.500' });
+  eq('boşluk tam 0,5 sn → aday', T.mergeCandidateAt(segs, 0).ok, true);
+  segs = pair({ end: '00:00:02.000' }, { start: '00:00:02.501' });
+  eq('boşluk 0,501 sn → aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('uzun boşluk nedeni', T.mergeCandidateAt(segs, 0).reasons.includes('arada uzun boşluk'), true);
+  segs = pair({ end: '00:00:03.000' }, { start: '00:00:02.000' });
+  eq('zaman çakışması aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('çakışma nedeni', T.mergeCandidateAt(segs, 0).reasons.includes('zaman çakışıyor'), true);
+  segs = pair({ end: 'bozuk' });
+  eq('geçersiz zaman aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('geçersiz zaman nedeni', T.mergeCandidateAt(segs, 0).reasons.includes('zaman okunamadı'), true);
+
+  // Denetlenmiş bölüm aday gösterilmez (birleştirme onayı düşürür).
+  segs = pair({ review: 'approved' });
+  eq('onaylı bölüm aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  eq('onaylı neden', T.mergeCandidateAt(segs, 0).reasons.includes('bölüm denetlenmiş'), true);
+  segs = pair({ review: 'machine' });
+  eq('makine işaretli bölüm aday (onay değil)', T.mergeCandidateAt(segs, 0).ok, true);
+
+  // Anlamlı metin yok → aday değil.
+  segs = pair({ text: '' });
+  eq('boş metin aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+  segs = pair({ text: '[müzik]' });
+  eq('dolgu etiketi aday değil', T.mergeCandidateAt(segs, 0).ok, false);
+
+  // TEK KAYNAK: sayaç, filtre ve rozet aynı kümeyi kullanır.
+  const many = [
+    ...pair(), // 0 aday
+    seg({ id: 'c', start: '00:00:04.000', end: '00:00:05.000', text: 'ama', speaker: 'S1' }), // 2 aday
+    seg({ id: 'd', start: '00:00:05.100', end: '00:00:09.000', text: 'uzun bir cümle burada bitti.', speaker: 'S1' })
+  ];
+  const idx = T.mergeCandidateIndexes(many);
+  eq('aday indeksleri', [...idx].sort(), [0, 2]);
+  const m = T.emptyMaterialForTest({ id: 'm1', name: 'x.wav' });
+  m.segments = many;
+  eq('sayaç = aday sayısı', T.segCounts(m).merge, 2);
+  eq('filtre adayı seçer', T.segMatchesFilter(many[0], 'merge', null, 0, null, idx), true);
+  eq('filtre aday olmayanı dışlar', T.segMatchesFilter(many[1], 'merge', many[0], 1, null, idx), false);
+  eq('filtre küme yoksa boş', T.segMatchesFilter(many[0], 'merge', null, 0, null, null), false);
+
+  // Koşullu çip: sayı 0 iken çizilmez, >0 iken çizilir.
+  const counts = (merge) => ({
+    all: 4, pending: 4, quick: 0, approved: 0, inaudible: 0, relisten: 0, time: 0, merge
+  });
+  eq('aday çipi yok (0)', T.segFilterChipsHtml(counts(0), 'all').includes('data-seg-filter="merge"'), false);
+  const chipHtml = T.segFilterChipsHtml(counts(2), 'merge');
+  eq('aday çipi var (>0)', chipHtml.includes('data-seg-filter="merge"'), true);
+  eq('çip etiketi "Birleştirme adayı"', /Birleştirme adayı/.test(chipHtml), true);
+  eq('aktif çip işaretli', /filter-chip on" data-seg-filter="merge"/.test(chipHtml), true);
+  eq('koşullu filtre kümesi', [...T.CONDITIONAL_FILTERS].sort(), ['merge', 'time']);
+  eq('eşikler: süre 2 sn', T.MERGE_CANDIDATE.maxDurSec, 2);
+  eq('eşikler: 5 kelime', T.MERGE_CANDIDATE.maxWords, 5);
+  eq('eşikler: 0,5 sn boşluk', T.MERGE_CANDIDATE.maxGapSec, 0.5);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

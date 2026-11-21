@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.197';
+} from './schema.js?v=2.198';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.197';
+const APP_VERSION = '2.198';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3410,8 +3410,21 @@ const SEG_FILTERS = [
   ['approved', 'Onaylandı'],
   ['inaudible', 'Anlaşılmadı'],
   ['relisten', 'Yeniden dinlenecek'],
-  ['time', 'Zaman sorunları']
+  ['time', 'Zaman sorunları'],
+  ['merge', 'Birleştirme adayı']
 ];
+// Koşullu filtreler: yalnız sayı > 0 iken çip çizilir (v2.146 kuralı).
+const CONDITIONAL_FILTERS = new Set(['time', 'merge']);
+// BİRLEŞTİRME ADAYI (v2.198). Kullanıcı bölümleri sık birleştiriyor; hangi
+// satırların birleştirmeye uygun olduğunu görmek istiyor. Uydurma bir skor
+// YOKTUR; ölçüt yalnız GÖZLENEBİLİR ve gerekçesi yazılabilir işaretlerdir:
+//   • aynı konuşmacı (birleştirme zaten farklı konuşmacıyı reddeder)
+//   • bölüm kısa (< 2 sn veya < 5 kelime) — yarım kalmış cümle parçası
+//   • cümle sonu noktalaması yok (. ! ? …)
+//   • sonraki bölümle boşluk ≤ 0,5 sn (arada uzun sessizlik yok)
+// Aday yalnız İŞARETTİR; otomatik birleştirme yapılmaz, kararı kullanıcı verir.
+const MERGE_CANDIDATE = { maxGapSec: 0.5, maxDurSec: 2, maxWords: 5, tol: 0.001 };
+const SENTENCE_END_RE = /[.!?…]["'”’)\]]?$/;
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
 // ZAMAN BÜTÜNLÜĞÜ (v2.144). Bölüm aralıkları sıralı ve örtüşmesiz olmalı.
 // Bu fonksiyon yalnız GÖZLEMLENEBİLİR hatayı bildirir; hiçbir zamanı DÜZELTMEZ.
@@ -3580,6 +3593,48 @@ function quickApproveTargets(m) {
   }
   return out;
 }
+// Bir bölümün BİRLEŞTİRME ADAYI olup olmadığını söyler (v2.198).
+// Dönüş: { ok, reasons } — `reasons` UYGUN OLMAMA nedenleridir (segQuickCheck
+// ile aynı sözleşme). Uygun olmayan adayın nedeni arayüzde gösterilebilir.
+function mergeCandidateAt(segments, i) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const s = segs[i];
+  const n = segs[i + 1];
+  if (!s || !n) return { ok: false, reasons: ['sonraki bölüm yok'] };
+  const reasons = [];
+  // Denetlenmiş bölüm aday gösterilmez: birleştirme onayı "Kontrol bekliyor"a
+  // düşürür. Sessiz onay kaybı adli kayıtta kabul edilemez (v2.88 kuralı).
+  if (isReviewed(s)) reasons.push('bölüm denetlenmiş');
+  const spkA = String(s.speaker || '').trim();
+  const spkB = String(n.speaker || '').trim();
+  if (spkA !== spkB) reasons.push('farklı konuşmacı');
+  const text = String(s.text || '').trim();
+  if (isHallucination(text)) reasons.push('anlamlı metin yok');
+  const dur = segDurationSec(s);
+  const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+  if (!(dur < MERGE_CANDIDATE.maxDurSec || words < MERGE_CANDIDATE.maxWords)) {
+    reasons.push('bölüm kısa değil');
+  }
+  if (text && SENTENCE_END_RE.test(text)) reasons.push('cümle bitmiş');
+  const a = parseTimecodeStrict(s.end);
+  const b = parseTimecodeStrict(n.start);
+  if (a == null || b == null) reasons.push('zaman okunamadı');
+  else {
+    const gap = b - a;
+    if (gap < -MERGE_CANDIDATE.tol) reasons.push('zaman çakışıyor');
+    else if (gap > MERGE_CANDIDATE.maxGapSec) reasons.push('arada uzun boşluk');
+  }
+  return { ok: reasons.length === 0, reasons };
+}
+// Aday bölümlerin indeks kümesi — sayaç, filtre ve rozet TEK kaynak kullanır.
+function mergeCandidateIndexes(segments) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const set = new Set();
+  for (let i = 0; i < segs.length; i++) {
+    if (mergeCandidateAt(segs, i).ok) set.add(i);
+  }
+  return set;
+}
 // BELİRSİZ OKUMA (v2.115). Ses duyuldu ama birden fazla okuma mümkün.
 // `inaudible`'den FARKI: orada ses anlaşılmıyor; burada ses anlaşılıyor ama
 // iki farklı kelime/cümle duyulabiliyor. Adli kural: belirsizlik GİZLENMEZ.
@@ -3639,17 +3694,18 @@ function pendingSummaryText(segments) {
   if (b.ambiguous) parts.push(`${b.ambiguous} belirsiz okuma`);
   return `${b.total} bölüm eksik: ${parts.join(' · ')}`;
 }
-function segMatchesFilter(s, filter, prev, idx, issueSet) {
+function segMatchesFilter(s, filter, prev, idx, issueSet, mergeSet) {
   const r = segReview(s);
   if (filter === 'all') return true;
   if (filter === 'pending') return !isReviewed(s);
   if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s, prev).ok;
   if (filter === 'time') return !!(issueSet && issueSet.has(idx));
+  if (filter === 'merge') return !!(mergeSet && mergeSet.has(idx));
   return r === filter;
 }
 function segCounts(m) {
   const segs = m.segments || [];
-  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0, time: 0 };
+  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0, time: 0, merge: 0 };
   for (let i = 0; i < segs.length; i++) {
     const s = segs[i];
     const r = segReview(s);
@@ -3662,6 +3718,8 @@ function segCounts(m) {
   c.quick = quickApproveTargets(m).length;
   // Zaman sorunlu bölüm SAYISI (çakışmanın iki tarafı da sayılır).
   c.time = segmentTimeIssueIndexes(segs).size;
+  // Birleştirme adayı SAYISI (filtre ve rozetle aynı kaynak).
+  c.merge = mergeCandidateIndexes(segs).size;
   return c;
 }
 // İnceleme önceliği: hangi bölümün önce dinlenmesi gerektiğini gösteren şeffaf
@@ -3891,6 +3949,12 @@ function segItemHtml(m, s, i, prev, issue) {
   const propBadge = s.proposal
     ? `<span class="badge prop" title="İkinci göz önerisi: ${esc((s.proposal.by || '') + ' — ' + (s.proposal.text || ''))}">Öneri</span>`
     : '';
+  // BİRLEŞTİRME ADAYI ROZETİ (v2.198). Yalnız İŞARETTİR: tıklanınca birleştirmez
+  // (otomatik/yıkıcı eylem yok). Eylem ⋮ menüsünde, M tuşunda veya sürüklemede.
+  const cand = mergeCandidateAt(m.segments, i);
+  const candBadge = cand.ok
+    ? `<span class="badge cand" title="Birleştirme adayı: kısa bölüm, cümle bitmemiş, aynı konuşmacı ve sonrakiyle boşluk ≤0,5 sn. Birleştirmek için ⋮ menüsü veya M.">⇄</span>`
+    : '';
   // METİN ÖNİZLEMESİ (v2.193). v2.185'te metin listeden kaldırılmıştı; ancak
   // BİRLEŞTİRME/BÖLME sırasında satırlar ayırt edilemiyordu (kullanıcı geri
   // getirilmesini istedi). Liste dizin kalır: TEK satır önizleme; tam metin
@@ -3902,7 +3966,7 @@ function segItemHtml(m, s, i, prev, issue) {
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-badges">${timeBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
     <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
@@ -3922,9 +3986,10 @@ function segListHtml(m) {
     }
   }
   // `prev` geçilir: 'quick' filtresi sayaçla AYNI ölçütü kullanmalı (v2.99).
+  const mergeSet = mergeCandidateIndexes(segs);
   const rows = segs
     .map((s, i) => ({ s, i }))
-    .filter((x) => segMatchesFilter(x.s, filter, segs[x.i - 1], x.i, issueSet));
+    .filter((x) => segMatchesFilter(x.s, filter, segs[x.i - 1], x.i, issueSet, mergeSet));
   if (!rows.length) return '<div class="seg-empty-note">Bu filtreye uyan bölüm yok.</div>';
   return rows.map(({ s, i }) => segItemHtml(m, s, i, segs[i - 1], issueAt.get(i))).join('');
 }
@@ -5130,6 +5195,9 @@ function renderSegments(m, card) {
   const counts = segCounts(m);
   const reviewed = counts.approved + counts.inaudible;
   const pct = segs.length ? Math.round((reviewed / segs.length) * 100) : 0;
+  // Koşullu filtre boşaldıysa "Tümü"ye dön (v2.198): çipi çizilmeyen bir
+  // filtrede kalmak listeyi boş gösterir.
+  if (CONDITIONAL_FILTERS.has(segFilter(m)) && !counts[segFilter(m)]) m.uiFilter = 'all';
   const filter = segFilter(m);
   const chips = segFilterChipsHtml(counts, filter);
   const spkOptions = (m.speakers || []).map((sp) => sp.label).filter(Boolean);
@@ -5251,7 +5319,8 @@ function navSegment(m, dir) {
   if (!segs.length) return;
   const filter = segFilter(m);
   const issueSet = segmentTimeIssueIndexes(segs);
-  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter, segs[i - 1], i, issueSet));
+  const mergeSet = mergeCandidateIndexes(segs);
+  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter, segs[i - 1], i, issueSet, mergeSet));
   const list = order.length ? order : segs.map((s, i) => i);
   const cur = Number.isInteger(m.activeSeg) ? m.activeSeg : list[0];
   let pos = list.indexOf(cur);
@@ -5471,10 +5540,11 @@ function scheduleLightRefresh(m) {
     } catch (e) {}
   }, 250);
 }
-// Filtre çipleri TEK KAYNAK (v2.146). "Zaman sorunları" çipi yalnız sorun
-// varsa görünür; sayı sıfıra düşerse çip kaldırılır.
+// Filtre çipleri TEK KAYNAK (v2.146). Koşullu çipler ("Zaman sorunları",
+// "Birleştirme adayı") yalnız sayı > 0 iken görünür; sayı sıfıra düşerse çip
+// kaldırılır (v2.198'de birleştirme adayı eklendi).
 function segFilterChipsHtml(counts, filter) {
-  return SEG_FILTERS.filter(([k]) => k !== 'time' || counts.time > 0)
+  return SEG_FILTERS.filter(([k]) => !CONDITIONAL_FILTERS.has(k) || counts[k] > 0)
     .map(
       ([k, label]) =>
         `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
@@ -5493,16 +5563,27 @@ function refreshSegChips(m) {
     const n = ch.querySelector('.n');
     if (n) n.textContent = counts[k];
   });
-  // Zaman sorunları çipi: sorun YENİ oluştuysa ekle, bittiyse kaldır (v2.146).
+  // Koşullu çipler: sorun/aday YENİ oluştuysa ekle, bittiyse kaldır (v2.146).
   const holder = root.querySelector('.tb-filters');
-  const timeChip = root.querySelector('[data-seg-filter="time"]');
-  if (holder && counts.time > 0 && !timeChip) {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = segFilterChipsHtml(counts, segFilter(m));
-    const fresh = tmp.querySelector('[data-seg-filter="time"]');
-    if (fresh) holder.appendChild(fresh);
-  } else if (timeChip && counts.time === 0) {
-    timeChip.remove();
+  for (const k of CONDITIONAL_FILTERS) {
+    const chip = root.querySelector(`[data-seg-filter="${k}"]`);
+    if (holder && counts[k] > 0 && !chip) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = segFilterChipsHtml(counts, segFilter(m));
+      const fresh = tmp.querySelector(`[data-seg-filter="${k}"]`);
+      if (fresh) holder.appendChild(fresh);
+    } else if (chip && counts[k] === 0) {
+      chip.remove();
+    }
+  }
+  // Aktif koşullu filtre boşaldıysa "Tümü"ye dön. Çipi olmayan bir filtrede
+  // kalmak listeyi boş gösterir ve kullanıcıya çıkış yolu bırakmaz.
+  if (CONDITIONAL_FILTERS.has(segFilter(m)) && !counts[segFilter(m)]) {
+    m.uiFilter = 'all';
+    root
+      .querySelectorAll('[data-seg-filter]')
+      .forEach((ch) => ch.classList.toggle('on', ch.dataset.segFilter === 'all'));
+    renderSegList(m);
   }
   // İlerleme artık araç çubuğunun içinde (.tb-progress); eski .seg-progress
   // sınıfı da desteklenir.
@@ -12745,6 +12826,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.198': {
+    title: 'Birleştirme adayı: ⇄ rozet ve filtre',
+    body:
+      'Bölüm listesinde birleştirmeye uygun görünen satırlar ⇄ rozetiyle işaretlenir; ' +
+      'araç çubuğunda "Birleştirme adayı" filtresi görünür. Ölçüt yalnız gözlemlenebilir: ' +
+      'aynı konuşmacı, kısa bölüm (<2 sn veya <5 kelime), cümle sonu noktalaması yok ve ' +
+      'sonraki bölümle boşluk ≤0,5 sn. Hiçbir şey kendiliğinden birleşmez; rozet yalnız ' +
+      'işarettir, birleştirmeyi ⋮ menüsü, M tuşu veya sürükleme ile siz yaparsınız. ' +
+      'Onaylanmış bölüm aday gösterilmez (birleştirme onayı düşürür).'
+  },
   '2.197': {
     title: 'Belirsiz okuma rapor hücresi kısaldı',
     body:

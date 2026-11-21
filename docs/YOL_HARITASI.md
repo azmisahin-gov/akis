@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.197.**
+yazılır. **Güncel sürüm: v2.198.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.198 — Birleştirme adayı (tamamlandı)
+
+Aynı konuşmacı + kısa bölüm (<2 sn veya <5 kelime) + cümle sonu noktalaması yok
++ sonrakiyle boşluk ≤0,5 sn koşullarını sağlayan bölümler listede **⇄** rozetiyle
+işaretlenir; araç çubuğunda **Birleştirme adayı** filtresi görünür. **Otomatik
+birleştirme yok**; rozet yalnız işarettir. Denetlenmiş bölüm aday gösterilmez
+(birleştirme onayı düşürür). Aday sayısı sıfıra düşünce filtre "Tümü"ye döner.
+Koruyan test: `birim` [70].
 
 ### v2.197 — Belirsiz okuma rapor hücresi (tamamlandı)
 

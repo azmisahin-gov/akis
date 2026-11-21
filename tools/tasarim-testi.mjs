@@ -1401,5 +1401,24 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));
 }
 
+console.log('\n[2aw] Birleştirme adayı rozeti ve filtresi (v2.198)');
+{
+  const appJs = read('assets/app.js');
+  const layerCss = read('assets/reading-layer.css');
+  // Rozet yalnız işarettir; yıkıcı eylem tek tıkla olmaz. Renk token'lardan
+  // gelmeli (ham hex yasak) ve durum tablosunun "açık/seçili" satırını kullanmalı.
+  const candRule = layerCss.match(/#view-audio \.seg-item \.badge\.cand\s*\{([\s\S]*?)\}/);
+  check('aday rozeti kuralı var (.badge.cand)', !!candRule);
+  check('aday rozeti accent-soft zemin kullanıyor', !!candRule && /var\(--accent-soft\)/.test(candRule[1]));
+  check('aday rozeti accent yazı kullanıyor', !!candRule && /color:\s*var\(--accent\)/.test(candRule[1]));
+  check('aday rozeti ham hex taşımıyor', !!candRule && !/#[0-9a-f]{3,8}/i.test(candRule[1]));
+  // Filtre anahtarı ve etiketi koddan gelmeli.
+  check("SEG_FILTERS 'merge' anahtarını taşıyor", /\['merge', 'Birleştirme adayı'\]/.test(appJs));
+  check('sayaç, filtre ve rozet aynı kaynağı kullanıyor',
+    /mergeCandidateIndexes\(segs\)/.test(appJs) && /mergeCandidateAt\(m\.segments, i\)/.test(appJs));
+  check('aday rozeti buton DEĞİL (yanlışlıkla birleştirmez)',
+    /class="badge cand"/.test(appJs) && !/class="badge cand"[^>]*data-merge-next/.test(appJs));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

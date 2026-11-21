@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.197.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.198.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3522,3 +3522,89 @@ curl -s https://azmisahin-gov.github.io/akis/assets/app.js | grep -m1 APP_VERSIO
 - **Ölçülemeyen iddia yok**: "düzeltildi" demek için önce/sonra ölçümü verilir.
 - **Tema bir "süs" değil**: üç temada da okunur ve tutarlı olmalı; durum
   renkleri (açık/seçili/çalıyor/uyarı) tek anlama sahip olmalı.
+
+## YENİ OTURUM DEVRİ (v2.198) — Birleştirme adayı
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.198** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1041 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = v2.198 commit'i |
+| Pages | push sonrası `built` doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.198** |
+| Açık konu | ≤900 px yapışkan karar şeridi; >45 sn birleştirme uyarısı; rapora "Okuma metni" |
+
+### Bu sürümde ne yapıldı
+
+Kullanıcı: *"Birleştirilecek gibi bir şey koysak."* Bölüm listesinde birleştirmeye
+uygun görünen satırlar **⇄** rozetiyle işaretlenir; araç çubuğunda **Birleştirme
+adayı** filtresi görünür.
+
+**Aday ölçütü (uydurma skor yok, yalnız gözlemlenebilir):**
+
+| Ölçüt | Değer |
+|---|---|
+| Konuşmacı | aynı (birleştirme zaten farklıyı reddeder) |
+| Kısa bölüm | **< 2 sn VEYA < 5 kelime** |
+| Cümle sonu | yok (`. ! ? …`) |
+| Sonrakiyle boşluk | **≤ 0,5 sn** (çakışma aday değil) |
+
+**Değişmez kural: aday İŞARETTİR, eylem değil.**
+- Rozet bir `<span>`'dir; **tıklanınca birleştirmez**. Yıkıcı eylem tek tıkla
+  olmaz; birleştirme ⋮ menüsü, **M** tuşu veya sürükleme ile yapılır.
+- **Otomatik birleştirme YOK**; kararı bilirkişi verir.
+- **Denetlenmiş bölüm aday gösterilmez** (`isReviewed`): birleştirme onayı
+  "Kontrol bekliyor"a düşürür — sessiz onay kaybı adli kayıtta kabul edilemez.
+- **TEK KAYNAK:** `mergeCandidateAt` → `mergeCandidateIndexes` → sayaç
+  (`segCounts.merge`), filtre (`segMatchesFilter(..., mergeSet)`) ve rozet
+  (`segItemHtml`) aynı kümeyi kullanır. Ayrışırsa kullanıcı sayının tutmadığını
+  görür (v2.99 dersi).
+- **Koşullu çip:** `CONDITIONAL_FILTERS = {time, merge}`; sayı 0 iken çip
+  çizilmez. Aktif koşullu filtre boşalınca liste kendiliğinden **Tümü**'ye
+  döner (çipi olmayan filtrede kalmak listeyi boş gösteriyordu).
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900 ve 900×900)
+
+10 bölümlük gerçek kayıt (5 aday beklenen veri: 0,2,4,5,8):
+
+| Ölçüm | Sonuç |
+|---|---|
+| Aday rozeti | **5** · satırlar `[0,2,4,5,8]` |
+| Çip | **"Birleştirme adayı 5"** |
+| Rozet öğe türü | **SPAN** (buton değil) |
+| Satır yüksekliği | **50 px** (10 satır; değişmedi) |
+| Kırpılan rozet şeridi | **0** |
+| Rozet kontrastı | açık **7.87** · koyu **6.05** · sepya **7.40** (AA) |
+| Filtre | 5 satır, hepsi aday; **veri korundu (10 bölüm)** |
+| 5 birleştirme sonrası | aday **0**, çip **kalktı**, filtre **`all`**, 5 bölüm kaldı |
+| 900 px | satır 50 px, kırpılan **0**, yatay taşma **yok** |
+| JS hatası | **0** |
+
+**Testin kırmızı olduğu kanıtlandı:** yeni test dosyası v2.197 koduyla
+çalıştırıldı → çıkış kodu **1** (fonksiyonlar yok). Düzeltmeyle **1041 geçti**.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.198 sonrası)
+
+1. **v2.199 — ≤900 px yapışkan karar şeridi.** Ölçüm: 900 px'te Dinle/Kontrol
+   ekran dışı. Yapışkan çubuğa **Kontrol + ↓** ekle; ölçüt: dinle→karar→sonraki
+   kaydırmasız.
+2. **v2.200 — Birleştirme >45 sn uyarısı.** Bölüm uzunluğu standardını korur
+   (engellemez); `birim` testi.
+3. **v2.201 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
+   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez; üç çıktı aynı
+   metni üretmeli (`rapor-tutarlilik-testi`).
+4. **v2.202 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
+5. **v2.203 — Dosyalar arası konuşmacı kaydı** (case-level registry; uzman
+   kanaati).
+6. **v2.204 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+
+### Bilinen sınırlar (hata değil)
+
+- Aday ölçütü **sezgiseldir**: aynı konuşmacı + kısa + noktalamasız + boşluksuz.
+  Yanlış aday gösterebilir; rozet bağlayıcı değildir, kararı kullanıcı verir.
+- Konuşmacı atanmamış iki bölüm `speaker` alanı ikisinde de boşsa "aynı" sayılır
+  (birleştirme kuralıyla birebir aynı davranış).
+- ≤900 px tek sütun; detay listenin altında.
+- Model indirme/ASR bu ortamda denenmedi (0,5–1,5 GB).
