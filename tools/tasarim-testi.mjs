@@ -483,7 +483,10 @@ console.log('\n[2v] Tek panel, iki bölge (v2.154)');
 {
   const js = read('assets/app.js');
   const rl = read('assets/reading-layer.css');
-  check('birincil eylemler başlıkta (.sd-primary)', /class="sd-primary"/.test(js));
+  // v2.186: "✓ Onayla" düğmesi başlıktan kaldırıldı (Kontrol seçicisi + Enter
+  // aynı işi yapar). Eylem GÖRÜNÜR kalır: satır menüsünde "✓ Onayla".
+  check('onay eylemi satır menüsünde', /role="menuitem" data-approve-seg="\$\{index\}"/.test(js));
+  check('onay eylemi Enter ile de çalışır', /approveActiveSegment/.test(js));
   check('teknik bölüm .sd-tech taşıyor', /class="sd-left sd-tech"/.test(js));
   check('alt eylem satırı kaldırıldı (.sd-actions yok)', !/class="sd-actions"/.test(js));
   check('metin alanı kalan yüksekliği alır (flex)', /#view-audio \.seg-detail \.sd-right \.sd-text textarea\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
@@ -708,9 +711,16 @@ console.log('\n[2j] Bölüm rozeti: durum her zaman görünür (v2.130)');
   check('rozetler sığmazsa sarar (flex-wrap: wrap)', badgeRules.some((r) => /flex-wrap:\s*wrap/.test(r)));
 
   const inner = (appJs.match(/<span class="seg-badges">([^`]*)<\/span>/) || [])[1] || '';
+  // v2.186: rozetler SAĞA yaslanır; DURUM rozeti en sağdadır (kullanıcı:
+  // "st-approved kısmını sağa yasasan daha düzgün olmaz mı?"). Kırpma yok,
+  // sarma var; sağ kenardaki rozet her zaman görünür.
   check(
-    'durum rozeti ilk sırada (kırpılacaksa en önemsiz kırpılsın)',
-    inner.includes('${state}') && inner.indexOf('${state}') < inner.indexOf('${spk}')
+    'durum rozeti EN SAĞDA',
+    inner.includes('${state}') && inner.lastIndexOf('${state}') > inner.indexOf('${spk}')
+  );
+  check(
+    'rozetler sağa yaslı',
+    badgeRules.some((r) => /justify-content:\s*flex-end/.test(r))
   );
   check(
     'dar ekranda rozetler metnin altına iner',
@@ -1149,7 +1159,8 @@ console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
   const i1 = jsA.indexOf('\nfunction ', i0 + 10);
   const bodyA = jsA.slice(i0, i1 > 0 ? i1 : i0 + 30000);
   check('Yeniden dinle/Anlaşılmadı düğmeleri kaldırıldı', !/data-review-set="\$\{i\}\|(yeniden|anlasilmadi)"/.test(bodyA));
-  check('onay ikon + erişilebilir ad', /data-approve-seg="\$\{i\}" aria-label="Onayla/.test(bodyA));
+  // v2.186: onay düğmesi başlıktan kalktı; eylem satır menüsünde (data-approve-seg).
+  check('onay eylemi menüde tanımlı', /role="menuitem" data-approve-seg="\$\{index\}"/.test(jsA));
   const iHead = bodyA.indexOf('class="sd-head"');
   const iTech = bodyA.indexOf('sd-left sd-tech');
   const iSpk = bodyA.indexOf('data-key="speaker"');
@@ -1172,7 +1183,7 @@ console.log('\n[2ap] Bölüm listesi = dizin (metin tek yerde) (v2.185)');
   check('satırda METİN gösterilmiyor (tek kaynak: editör)', !/class="seg-text"/.test(rowFn));
   check('metin satırın ipucunda', /title="\$\{esc\(\(s\.text/.test(rowFn));
   check('ızgara 3 sütun (no · zaman · rozet)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*26px 132px/.test(rlB));
-  check('rozetler solda hizalanır', /#view-audio \.seg-item \.seg-badges\s*\{[^}]*justify-content:\s*flex-start/.test(rlB));
+  check('rozetler SAĞA hizalanır (durum en sağda)', /#view-audio \.seg-item \.seg-badges\s*\{[^}]*justify-content:\s*flex-end/.test(rlB));
   // Rozet görünürlüğü korunur (v2.130 kuralı): kırpma yok.
   check('rozet kutusu kırpmaz (v2.130 korunuyor)', /#view-audio \.seg-badges\s*\{[^}]*overflow:\s*visible/.test(rlB));
 }

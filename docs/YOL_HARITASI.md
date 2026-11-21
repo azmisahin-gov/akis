@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.186.**
+yazılır. **Güncel sürüm: v2.187.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.187 — Liste sağa yaslı; Onayla düğmesi kalktı (tamamlandı)
+
+Rozetler sağa yaslandı, **durum rozeti en sağda** (sağ kenardan 8 px); satır
+34 px (dört genişlikte). Detaydaki "✓ Onayla" düğmesi kaldırıldı: durum
+Kontrol seçicisinde, eylem **satır menüsünde** ("✓ Onayla (sonrakine geç)") ve
+**Enter**'da. Başlık 78 px (≥1100; iki satır), 42 px (900). Koruyan test:
+`tasarim` [2j] + [2v]/[2ao].
 
 ### v2.186 — Liste tek satır; Teknik düğmesi kaldırıldı (tamamlandı)
 

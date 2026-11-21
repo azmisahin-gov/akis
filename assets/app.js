@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.186';
+} from './schema.js?v=2.187';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.186';
+const APP_VERSION = '2.187';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3781,6 +3781,7 @@ function openSegMenu(m, index, anchor) {
   menu.setAttribute('role', 'menu');
   menu.setAttribute('aria-label', `Bölüm ${index + 1} işlemleri`);
   menu.innerHTML =
+    `<button role="menuitem" data-approve-seg="${index}">✓ Onayla (sonrakine geç)</button>` +
     `<button role="menuitem" data-merge-next="${index}">Sonrakine ekle (birleştir)</button>` +
     `<button role="menuitem" data-split-seg="${index}">Oynatıcı konumundan böl</button>` +
     `<button role="menuitem" data-retranscribe-seg="${index}">↻ Bu aralığı çözümle</button>` +
@@ -3860,7 +3861,7 @@ function segItemHtml(m, s, i, prev, issue) {
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
+    <span class="seg-badges">${timeBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
   </div>`;
 }
 function segListHtml(m) {
@@ -4091,11 +4092,7 @@ function segDetailHtml(m) {
       <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
       <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
     </span>
-    <span class="sd-primary">
-      <button class="mini-button primary" data-approve-seg="${i}" aria-label="Onayla ve sonraki bölüme geç" title="Onayla ve sonraki bölüme geç (Enter). Durum seçicisi (Kontrol) diğer işaretleri taşır.">✓ Onayla</button>
-    </span>
-      <span class="sd-head-break" aria-hidden="true"></span>
-    <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
+      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
       <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
   </div>
 
@@ -12552,6 +12549,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.187': {
+    title: 'Liste sağa yaslandı; Onayla düğmesi kaldırıldı',
+    body:
+      'Rozetler sağa yaslandı; durum rozeti (Bekliyor / Onaylandı) en sağda. ' +
+      'Satır 34 px. Detaydaki "✓ Onayla" düğmesi kaldırıldı: durum Kontrol ' +
+      'seçicisinde, eylem satır menüsünde ("✓ Onayla (sonrakine geç)") ve Enter ile.'
+  },
   '2.186': {
     title: 'Bölüm listesi tek satır; Teknik düğmesi kaldırıldı',
     body:

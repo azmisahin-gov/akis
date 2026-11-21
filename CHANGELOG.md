@@ -6,12 +6,54 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.186.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.187.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.187 — Liste sağa yaslı; "✓ Onayla" düğmesi kaldırıldı
+
+Kullanıcı: *"Liste kocaman görünüyor; `st-approved` kısmını sağa yasasan daha
+düzgün olmaz mı? Listede başka bir şey yazıyor muyuz, düzenli olsun. Ayrıca
+detaydaki **Onayla** düğmesine gerek var mı? Zaten açılır listede bu seçenekler
+var."*
+
+### LİSTE: rozetler sağa yaslı, durum EN SAĞDA
+
+| | Önce (v2.186) | Sonra (v2.187) |
+|---|---|---|
+| Rozet hizası | sola | **sağa** |
+| Durum rozeti (`Bekliyor`/`Onaylandı`) | ilk sırada | **en sağda** (sağ kenardan 8 px) |
+| Satır | 34 px | 34 px (değişmedi) |
+| 1440 / 1280 / 1100 / 900 | 34 / 34 / 34 / 34 | **34 / 34 / 34 / 34** |
+
+Satırda yalnız şunlar var: **numara · başlangıç–bitiş · (⚠) · (konuşmacı) ·
+(öneri) · ⋮⋮ · ⋮ · durum**. Başka yazı yok; metin editörde.
+
+### "✓ Onayla" düğmesi kaldırıldı
+
+Onay **durum** değil **eylem**dir (sonraki bölüme geçer). Durum seçicide
+(`Onaylandı`) var; eylem iki yerde kaldı:
+- **Satır menüsü:** "✓ Onayla (sonrakine geç)" (⋮ veya sağ tık).
+- **Enter** kısayolu.
+
+Böylece başlıkta tekrar eden düğme yok. Başlık: `Bölüm X/N · ↑ ↓ ▶ Dinle ⏹ ·
+Konuşmacı · Kontrol`.
+
+### ÖLÇÜM
+
+- Liste: 34 px (dört genişlikte), durum rozeti sağ kenardan **8 px**, kırpılma
+  ve yatay taşma yok.
+- Başlık: **78 px** (1440/1280'de iki satır — iki etiketli seçici + gezinme
+  621 px'e sığmıyor), **42 px** (900'de tek satır).
+- JS hatası: 0.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2j] (durum en sağda + rozetler sağa yaslı), [2v]/[2ao] (onay
+eylemi menüde ve Enter'da).
 
 ## v2.186 — Bölüm listesi tek satır; Teknik düğmesi kaldırıldı
 

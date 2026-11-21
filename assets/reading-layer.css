@@ -1303,7 +1303,7 @@ input::placeholder, textarea::placeholder {
   row-gap: 2px;
 }
 @media (max-width: 1200px) {
-  #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
+  #view-audio .seg-badges { grid-column: 3; justify-content: flex-end; }
 
   /* v2.133 — DURUM ÇUBUĞU KESMEZ: sığmayan öğe alt satıra iner.
      ÖLÇÜM (v2.132): 1100 px'te 6/6 öğe kırpılıyordu (sbCase 241/273,
@@ -1513,7 +1513,7 @@ input::placeholder, textarea::placeholder {
   #view-audio .listen-strip .wave-canvas { display: none; }
   #view-audio .transcript-toolbar { padding: 2px 0; margin: 0; }
   /* Liste paneli dar: satır iki satır (metin + durum rozeti). */
-  #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
+  #view-audio .seg-badges { grid-column: 3; justify-content: flex-end; }
   /* Düzenleme paneli: metin üstte, teknik panel altta (tam genişlik). */
   #view-audio .seg-detail .sd-body { display: flex; flex-direction: column; gap: 8px; }
   #view-audio .seg-detail .sd-right { order: 1; }
@@ -2289,12 +2289,12 @@ input::placeholder, textarea::placeholder {
 }
 /* Ölçüm (1440, head 621 px): gap 8 + seçici 124 → 2 satır (71 px);
    gap 4 + seçici 104 → **1 satır (42 px)**. Dar ekranda sarar (kabul). */
-#view-audio .sd-head { gap: 4px; }
+#view-audio .sd-head { gap: 3px; }
 #view-audio .sd-head .sd-field select {
   width: auto;
   flex: 0 1 auto;
-  min-width: 92px;
-  max-width: 96px;
+  min-width: 80px;
+  max-width: 84px;
   font-size: var(--fs-2xs);
 }
 #view-audio .sd-head .sd-spk-pick { display: flex; gap: 4px; flex: 0 1 auto; min-width: 0; }
@@ -2384,9 +2384,9 @@ input::placeholder, textarea::placeholder {
   font-variant-numeric: tabular-nums;
 }
 #view-audio .seg-item .seg-dash { color: var(--ink-3); }
-/* Rozetler KIRPILMAZ (v2.130 kuralı): sığmazsa SARAR; satır o zaman uzar. */
+/* Rozetler KIRPILMAZ (v2.130) ve SAĞA yaslıdır (v2.186): sığmazsa SARAR. */
 #view-audio .seg-item .seg-badges {
-  justify-content: flex-start;
+  justify-content: flex-end;
   flex-wrap: wrap;
   overflow: visible;
 }
