@@ -3608,3 +3608,27 @@ adayı** filtresi görünür.
   (birleştirme kuralıyla birebir aynı davranış).
 - ≤900 px tek sütun; detay listenin altında.
 - Model indirme/ASR bu ortamda denenmedi (0,5–1,5 GB).
+
+### Düzeltme — 5 tuşu (aynı sürüm, yeni commit)
+
+Kullanıcı **5 ve 8**'i 1–4 gibi bir "karar" kısayolu sandı; 5'e basınca
+birleştirme rozeti konacağını düşündü. **Rozet otomatik hesaplanır; tuşla
+konmaz.**
+
+- `5` = **"Birleştirme adayı" filtresini aç/kapa** (`toggleMergeFilter`).
+  Veri **DEĞİŞMEZ**. Akış: **5 → adaylar → M (birleştir) → 5 (Tümü)**.
+- `nextMergeFilter(current, count)` saf karar: `count` 0 ise filtre **değişmez**;
+  >0 ise `merge ↔ all`.
+- **Aday yokken 5 filtre açmaz:** boş liste "veri gitti" izlenimi verir; ölçüt
+  metinle söylenir.
+- **6–9 (ve 8) tanımlı değildir.** Birleştirme kısayolu **M**'dir; uydurma tuş
+  eklenmez. (Kullanıcının gördüğü hareket, sayı tuş takımında NumLock kapalıyken
+  **8 = ↑** olmasından kaynaklanır; ölçüldü.)
+- Ölçüm (gerçek Chromium): 5 → **5 satır** (hepsi aday), tekrar 5 → **10 satır**;
+  aday yokken 5 → **filtre değişmedi + toast**; 8 → **değişiklik yok**;
+  JS hatası **0**.
+- Test: `birim` [70] (47 kontrol), `tasarim` [2ax] (5 kontrol).
+
+**Sürüm notu:** Aynı sürüm (v2.198) korunduğu için `version.json` değişmedi;
+açık sekmeler kendiliğinden yenilenmez. Kullanıcı sayfayı **bir kez** yenilemeli
+(`?t=<zaman>` veya Ctrl+Shift+R).

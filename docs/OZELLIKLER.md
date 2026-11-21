@@ -195,7 +195,9 @@ tuşları bozulmaz.
   birleştirme yapılmaz**; rozet yalnız işarettir, birleştirme ⋮ menüsü / **M** /
   sürükleme ile yapılır. Denetlenmiş (onaylı/anlaşılmadı) bölüm aday gösterilmez
   — birleştirme onayı "Kontrol bekliyor"a düşürür. Aday sayısı sıfıra düşünce
-  filtre kendiliğinden **Tümü**'ye döner.
+  filtre kendiliğinden **Tümü**'ye döner. Klavyeden **5** aday filtresini
+  açıp kapatır (karar değildir; veri değiştirmez). 6–9 tanımlı değildir;
+  birleştirme kısayolu **M**'dir.
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,

@@ -44,8 +44,25 @@ gösteriyordu).
 - Araç çubuğunda **Birleştirme adayı N** çipi; tıklayınca yalnız adaylar listelenir.
 - Hiçbir şey kendiliğinden birleşmez; veri değişmez.
 
-**KORUYAN TEST:** `birim` [70] (42 kontrol): eşikler, cümle sonu, konuşmacı,
-boşluk/çakışma, onaylı bölüm, tek kaynak sayaç/filtre/çip, veri değişmezliği.
+**KORUYAN TEST:** `birim` [70] (47 kontrol): eşikler, cümle sonu, konuşmacı,
+boşluk/çakışma, onaylı bölüm, tek kaynak sayaç/filtre/çip, 5 tuşu kararı, veri
+değişmezliği. `tasarim` [2ax] (5 kontrol).
+
+### Düzeltme — 5 tuşu (aynı sürüm, yeni commit)
+
+Kullanıcı **5 ve 8**'i 1–4 gibi bir "karar" kısayolu sandı; 5'e basınca
+birleştirme rozeti konacağını düşündü. **Rozet otomatik hesaplanır; tuşla
+konmaz.**
+
+- **5 = "Birleştirme adayı" filtresini aç/kapa.** Veri **DEĞİŞTİRMEZ**; yalnız
+  adayları gösterir. Akış: **5 → adaylar → M (birleştir) → 5 (Tümü)**.
+- **Aday yoksa filtre açılmaz:** boş liste "veri gitti" izlenimi verir; neden
+  aday olmadığı ölçütle birlikte söylenir.
+- **6–9 (ve 8) tanımlı değildir.** Birleştirme kısayolu **M**'dir; uydurma tuş
+  eklenmez.
+- Ölçüm (gerçek Chromium): 5 → **5 satır** (hepsi aday), tekrar 5 → **10 satır**;
+  aday yokken 5 → **filtre değişmedi + açıklama**; 8 → **değişiklik yok**;
+  JS hatası **0**.
 
 ## v2.197 — Belirsiz okuma rapor hücresi kısaldı
 

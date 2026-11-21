@@ -118,7 +118,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml',
+  'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -3376,6 +3376,14 @@ console.log('\n== [70] Birleştirme adayı: deterministik ölçüt (v2.198)');
   eq('eşikler: süre 2 sn', T.MERGE_CANDIDATE.maxDurSec, 2);
   eq('eşikler: 5 kelime', T.MERGE_CANDIDATE.maxWords, 5);
   eq('eşikler: 0,5 sn boşluk', T.MERGE_CANDIDATE.maxGapSec, 0.5);
+
+  // 5 TUŞU: yalnız GÖRÜNÜM filtresi; veri değiştirmez. Aday yoksa filtre
+  // değişmez (boş liste göstermek yanıltıcı olur).
+  eq('5 tuşu: aday yoksa filtre değişmez', T.nextMergeFilter('all', 0), 'all');
+  eq('5 tuşu: all → merge', T.nextMergeFilter('all', 2), 'merge');
+  eq('5 tuşu: merge → all', T.nextMergeFilter('merge', 2), 'all');
+  eq('5 tuşu: başka filtreden merge', T.nextMergeFilter('pending', 1), 'merge');
+  eq('5 tuşu: aday yoksa mevcut merge kalır', T.nextMergeFilter('merge', 0), 'merge');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

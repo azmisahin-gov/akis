@@ -1420,5 +1420,17 @@ console.log('\n[2aw] Birleştirme adayı rozeti ve filtresi (v2.198)');
     /class="badge cand"/.test(appJs) && !/class="badge cand"[^>]*data-merge-next/.test(appJs));
 }
 
+console.log('\n[2ax] 5 tuşu: birleştirme adayı filtresi (v2.198 düzeltme)');
+{
+  const appJs = read('assets/app.js');
+  const help = read('index.html');
+  // 5 KARAR değildir: yalnız görünüm filtresi. Veri değiştirmemeli.
+  check("5 tuşu toggleMergeFilter çağırıyor", /e\.key === '5'[\s\S]{0,160}toggleMergeFilter/.test(appJs));
+  check('toggleMergeFilter saf kararı kullanıyor', /nextMergeFilter\(segFilter\(m\), count\)/.test(appJs));
+  check('aday yoksa filtre değişmiyor (saf fonksiyon)', /if \(!\(Number\(count\) > 0\)\) return current;/.test(appJs));
+  check('yardım 5 tuşunu anıyor', /<b>5<\/b>/.test(help) && /5<\/b>[^<]{0,60}(birleştirme|aday)/i.test(help));
+  check('yardım tanımsız 8 tuşu uydurmuyor', !/<b>8<\/b>/.test(help));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

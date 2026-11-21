@@ -3635,6 +3635,35 @@ function mergeCandidateIndexes(segments) {
   }
   return set;
 }
+// 5 TUŞU (v2.198) — "Birleştirme adayı" filtresini açar/kapatır.
+// KULLANICI BEKLENTİSİ: 5'i 1–4 gibi bir "karar" sandı. Doğrusu: aday OTOMATİK
+// hesaplanır; 5 yalnız adayları GÖSTERİR. Veri DEĞİŞMEZ; birleştirme yine M /
+// ⋮ menüsü / sürükleme ile yapılır.
+// Aday yoksa filtre AÇILMAZ (boş liste "veri gitti" izlenimi verir) ve neden
+// aday olmadığı ölçütle birlikte söylenir.
+// Saf karar: sayaç 0 ise filtre DEĞİŞMEZ; >0 ise merge ↔ all.
+function nextMergeFilter(current, count) {
+  if (!(Number(count) > 0)) return current;
+  return current === 'merge' ? 'all' : 'merge';
+}
+function toggleMergeFilter(m, card) {
+  const count = mergeCandidateIndexes((m && m.segments) || []).size;
+  if (!count) {
+    showToast(
+      'Birleştirme adayı yok. Ölçüt: aynı konuşmacı, kısa bölüm (<2 sn veya <5 kelime), ' +
+        'cümle bitmemiş, sonrakiyle boşluk ≤0,5 sn.'
+    );
+    return false;
+  }
+  m.uiFilter = nextMergeFilter(segFilter(m), count);
+  renderSegments(m, card || null);
+  showToast(
+    m.uiFilter === 'merge'
+      ? `Birleştirme adayları gösteriliyor (${count}). Birleştirmek için M.`
+      : 'Tüm bölümler gösteriliyor.'
+  );
+  return true;
+}
 // BELİRSİZ OKUMA (v2.115). Ses duyuldu ama birden fazla okuma mümkün.
 // `inaudible`'den FARKI: orada ses anlaşılmıyor; burada ses anlaşılıyor ama
 // iki farklı kelime/cümle duyulabiliyor. Adli kural: belirsizlik GİZLENMEZ.
@@ -5768,6 +5797,13 @@ function handleSegKey(e, card, m) {
   if (!typing && reviewKey[e.key]) {
     const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
     applyReviewChoice(m, idx, reviewKey[e.key]);
+    e.preventDefault();
+    return true;
+  }
+  // 5 — "Birleştirme adayı" filtresi (v2.198). KARAR DEĞİL, görünüm: aday
+  // otomatik hesaplanır; 5 yalnız adayları gösterir/gizler. Veri değişmez.
+  if (e.key === '5' && !typing) {
+    toggleMergeFilter(m, card);
     e.preventDefault();
     return true;
   }
@@ -12834,7 +12870,8 @@ const VERSION_NOTICES = {
       'aynı konuşmacı, kısa bölüm (<2 sn veya <5 kelime), cümle sonu noktalaması yok ve ' +
       'sonraki bölümle boşluk ≤0,5 sn. Hiçbir şey kendiliğinden birleşmez; rozet yalnız ' +
       'işarettir, birleştirmeyi ⋮ menüsü, M tuşu veya sürükleme ile siz yaparsınız. ' +
-      'Onaylanmış bölüm aday gösterilmez (birleştirme onayı düşürür).'
+      'Onaylanmış bölüm aday gösterilmez (birleştirme onayı düşürür). Klavyeden 5 ' +
+      'aday filtresini açar/kapatır (karar değil; veri değiştirmez).'
   },
   '2.197': {
     title: 'Belirsiz okuma rapor hücresi kısaldı',
