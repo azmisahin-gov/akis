@@ -1055,6 +1055,9 @@ console.log('\n[2ai] "Ses yok" uyarısı Teknik kapalıyken de görünür (v2.17
   // Bölüm değişince de tazelenmeli (syncSegDetailInPlace).
   const sync5 = js5.slice(js5.indexOf('function syncSegDetailInPlace'), js5.indexOf('function syncSegDetailInPlace') + 9000);
   check('bölüm değişince de tazelenir', /refreshAudioState\(m\)/.test(sync5));
+  // İlk kart çizimi renderSegments içinde kurulur; orada da çağrılmalı (v2.175).
+  const rs5 = js5.slice(js5.indexOf('function renderSegments('), js5.indexOf('function renderSegments(') + 6000);
+  check('ilk çizimde de tazelenir', /refreshAudioState\(m\)/.test(rs5));
 }
 
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------

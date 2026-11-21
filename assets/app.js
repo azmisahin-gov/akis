@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.174';
+} from './schema.js?v=2.175';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.174';
+const APP_VERSION = '2.175';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4957,6 +4957,10 @@ function renderSegments(m, card) {
   root
     .querySelectorAll('.seg-item')
     .forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === active));
+  // İLK ÇİZİMDE de "ses yok" durumu yazılmalı (v2.175): burada yalnız HTML
+  // kuruluyor; refreshAudioState çağrılmazsa uyarı ilk açılışta boş kalıyor
+  // ve ancak bir sonraki çizimde (bölüm/Teknik) görünüyordu.
+  refreshAudioState(m);
   refreshNarrowBar(m, card || root.closest('.audio-card'));
 }
 // Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
@@ -12317,6 +12321,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.175': {
+    title: '"Ses yok" uyarısı ilk açılışta da görünüyor',
+    body:
+      'v2.174 uyarıyı Teknik panelinin dışına taşıdı ama ilk çizimde yazılmıyordu; ' +
+      'ancak bir bölüme tıklayınca ortaya çıkıyordu. Artık sesi bulunmayan kaydı ' +
+      'açtığınız anda uyarı görünür.'
+  },
   '2.174': {
     title: '"Ses yok" uyarısı artık her zaman görünüyor',
     body:

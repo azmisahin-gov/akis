@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.174.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.175.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.175 — "Ses yok" uyarısı İLK açılışta da görünüyor (v2.174 tamamlandı)
+
+v2.174 uyarıyı Teknik panelinin dışına taşıdı; ancak ölçüm şunu gösterdi:
+uyarı **ilk kart çiziminde** yazılmıyordu. `renderSegments` yalnız HTML
+kuruyor, `refreshAudioState` çağırmıyordu; bu yüzden uyarı ancak bir bölüme
+tıklanınca veya Teknik açılıp kapanınca ortaya çıkıyordu.
+
+### KULLANICI NE GÖRECEK
+
+Sesi bulunmayan kaydı açtığınız **anda** uyarı görünür (Teknik kapalı olsa da):
+"Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez. Paketten yükle
+veya dosyayı yeniden ekleyin."
+
+### ÖLÇÜM
+
+| | Önce (v2.174) | Sonra (v2.175) |
+|---|---|---|
+| Teknik kapalı, taze sayfa | uyarı **boş/gizli** | **görünür ve dolu** |
+| Teknik açık | görünür | görünür |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ai] (5 kontrol): ilk çizim yolu (`renderSegments`) da
+`refreshAudioState` çağırır.
 
 ## v2.174 — "Ses yok" uyarısı artık Teknik kapalıyken de görünüyor
 

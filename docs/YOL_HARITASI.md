@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.174.**
+yazılır. **Güncel sürüm: v2.175.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.175 — "Ses yok" uyarısı ilk açılışta (tamamlandı)
+
+v2.174'ün eksiği: `renderSegments` yalnız HTML kuruyordu, `refreshAudioState`
+çağırmıyordu; uyarı ilk çizimde boş kalıyordu. Çağrı eklendi. Ölçüm: Teknik
+kapalı + taze sayfa → uyarı görünür ve dolu, JS hatası 0. Koruyan test:
+`tasarim` [2ai] (5 kontrol).
 
 ### v2.174 — "Ses yok" uyarısı her zaman görünür (tamamlandı)
 
