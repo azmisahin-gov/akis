@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.164.**
+yazılır. **Güncel sürüm: v2.165.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.165 — Dar ekranda onay/dinle çubuğu (tamamlandı)
+
+Ölçüm (900×900, 10 bölüm): "✓ Onayla" y=1313 → ekranın 413 px altında. Kartın
+içine **yapışkan işlem çubuğu** eklendi (↑ ↓ · ▶ Dinle · ✓ Onayla · 3/10).
+Düğmeler mevcut `data-*` işleyicilerini kullanır; yeni mantık yok. Yalnız
+≤900 px görünür, masaüstü değişmez. Bildirim çubuğun üstüne alındı (v2.158
+dersi). Ölçüm: onay y=820–874 (ekranda), çakışma yok, JS hatası 0.
+Koruyan test: `tasarim` [2ac].
 
 ### v2.164 — Künye: zorunlu alanlar ilk ekranda (tamamlandı)
 

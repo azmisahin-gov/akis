@@ -1,4 +1,4 @@
-# Özellikler (v2.164 — mevcut durum)
+# Özellikler (v2.165 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -403,6 +403,9 @@ uzmanlık alanını gösterir.
   çıkmak üzere üst çubukta "Odak modundan çık" düğmesi ve `Esc` kısayolu vardır.
 - **Kompakt yükleme alanı:** ses ekleme şeridi ekranın çoğunu kaplamaz.
 - İşlemler listeyi bütünüyle yeniden kurmaz; yalnızca değişen bölüm güncellenir.
+- **Dar ekran işlem çubuğu (v2.165):** ≤900 px'te kartın altında yapışkan
+  çubuk (↑ ↓ · ▶ Dinle · ✓ Onayla · konum) durur; onay ve dinleme için
+  kaydırma gerekmez. Masaüstünde görünmez.
 
 ## Konuşmacı yönetimi ve ses özellikleri
 

@@ -2143,3 +2143,60 @@ input::placeholder, textarea::placeholder {
    düğmeler, split numarası, uyarı kutusu ve klavye ipucu ayrıca düzeltildi.
    ============================================================================ */
 
+
+/* --- v2.165 — Dar ekranda bölüm işlemleri her zaman erişilebilir ---------- */
+/* Ölçüm (v2.164, 900 px, 10 bölüm): bölüm listesi 554–1290 px arasında,
+   "✓ Onayla" y=1313 → ekranın 413 px ALTINDA. Liste uzadıkça onay/dinle
+   erişilemez oluyordu. Çubuk kartın İÇİNDEDİR: düğmeler kart içindeki mevcut
+   data-* işleyicilerini kullanır, yeni mantık yoktur. Yalnız ≤900 px görünür;
+   masaüstü düzeni değişmez. Yapışkan konum: içeriği kaplamaz, yer ayırır. */
+.narrow-bar { display: none; }
+
+@media (max-width: 900px) {
+  #view-audio .narrow-bar {
+    position: sticky;
+    bottom: 8px;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    padding: 6px 8px;
+    border: 1px solid var(--line-2);
+    border-radius: 10px;
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+  }
+  #view-audio .narrow-btn {
+    flex: 1 1 auto;
+    min-height: 40px;
+    padding: 6px 10px;
+    border: 1px solid var(--line-2);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font: inherit;
+    font-size: var(--fs-xs);
+    cursor: pointer;
+  }
+  #view-audio .narrow-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  #view-audio .narrow-approve {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  #view-audio .narrow-play.on {
+    background: var(--green);
+    border-color: var(--green);
+    color: var(--surface);
+  }
+  #view-audio .narrow-pos {
+    flex: 0 0 auto;
+    color: var(--ink-3);
+    font-size: var(--fs-2xs);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Bildirim yapışkan çubuğun ÜSTÜNDE kalır (v2.158 dersi: kaybolan bildirim
+     "durum" değildir). Ölçüm: çubuk 820–874, toast 811–854 → çakışıyordu. */
+  .toast { bottom: calc(var(--status-h) + 66px); }
+}

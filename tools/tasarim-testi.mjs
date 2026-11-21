@@ -901,6 +901,50 @@ console.log('\n[2ab] Künye: zorunlu alanlar ilk ekranda (v2.164)');
   );
 }
 
+console.log('\n[2ac] Dar ekranda bölüm işlemleri erişilebilir (v2.165)');
+{
+  // Ölçüm (v2.164, 900 px, 10 bölüm): bölüm listesi 554–1290 px arasında,
+  // "✓ Onayla" düğmesi y=1313 → ekranın 413 px ALTINDA. Dar ekranda liste
+  // uzadıkça onay/dinle erişilemez oluyordu. Çözüm: kartın içinde, aynı
+  // işleyicileri kullanan yapışkan bir çubuk (yeni mantık YOK).
+  const js = read('assets/app.js');
+  const rl = read('assets/reading-layer.css');
+  const cardStart = js.indexOf('function materialCardHtml');
+  const cardEnd = js.indexOf('\nfunction ', cardStart + 10);
+  const cardFn = js.slice(cardStart, cardEnd > 0 ? cardEnd : cardStart + 40000);
+  check('kart içinde dar ekran çubuğu çiziliyor', /narrowBarHtml\(m\)/.test(cardFn) && /data-narrow-bar/.test(js));
+  check('çubuk aynı işleyicileri kullanır (data-approve-seg / data-seg-nav / data-play-active)',
+    /data-narrow-bar/.test(js) && /data-approve-seg="\$\{i\}"/.test(js) && /data-seg-nav="prev"/.test(js) && /data-play-active="1"/.test(js));
+  check('çubuk yalnız bölüm varsa çizilir', /narrowBarHtml/.test(js) && /segs\.length\s*\?\s*''|!segs\.length\)\s*return ''/.test(js));
+
+  const baseRule = rl.match(/(^|\n)\.narrow-bar\s*\{([^}]*)\}/);
+  check('çubuk varsayılan olarak gizli (masaüstü değişmez)',
+    !!baseRule && /display:\s*none/.test(baseRule[2]), baseRule ? baseRule[2].trim() : 'kural yok');
+
+  // ≤900 px bloklarından birinde .narrow-bar görünür + yapışkan olmalı.
+  let okNarrow = false;
+  let re = /@media\s*\(max-width:\s*900px\)/g;
+  let m;
+  while ((m = re.exec(rl))) {
+    const chunk = rl.slice(m.index, m.index + 6000);
+    const rule = chunk.match(/\.narrow-bar\s*\{([^}]*)\}/);
+    if (rule && /display:\s*flex/.test(rule[1]) && /position:\s*sticky/.test(rule[1])) { okNarrow = true; break; }
+  }
+  check('≤900 px çubuk görünür ve yapışkan', okNarrow);
+
+  // Bildirim çubuğun üstünde kalmalı: toast bottom = status-h + Npx, N >= 60.
+  let toastClear = false;
+  let re2 = /@media\s*\(max-width:\s*900px\)/g;
+  let m2;
+  while ((m2 = re2.exec(rl))) {
+    const chunk = rl.slice(m2.index, m2.index + 6000);
+    const rule = chunk.match(/\.toast\s*\{([^}]*)\}/);
+    const calc = rule && rule[1].match(/bottom:\s*calc\(var\(--status-h\)\s*\+\s*(\d+)px\)/);
+    if (calc && Number(calc[1]) >= 60) { toastClear = true; break; }
+  }
+  check('≤900 px bildirim yapışkan çubuğun üstünde', toastClear);
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.164';
+} from './schema.js?v=2.165';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.164';
+const APP_VERSION = '2.165';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1645,6 +1645,35 @@ function refreshMaterialRow(m) {
   row.replaceWith(fresh);
 }
 // Seçili kaydın tam kartı (durum bölgesi + içerik bölgesi).
+function narrowBarHtml(m) {
+  const segs = m.segments || [];
+  if (!segs.length) return '';
+  const i = activeSegIndex(m);
+  const s = segs[i];
+  const playing = segPlayback.materialId === m.id && segPlayback.playing;
+  return `<div class="narrow-bar" data-narrow-bar="${esc(m.id)}" role="toolbar" aria-label="Bölüm işlemleri (dar ekran)">
+    <button class="narrow-btn" data-seg-nav="prev" title="Önceki bölüm (↑)" aria-label="Önceki bölüm">↑</button>
+    <button class="narrow-btn" data-seg-nav="next" title="Sonraki bölüm (↓)" aria-label="Sonraki bölüm">↓</button>
+    <button class="narrow-btn narrow-play ${playing ? 'on' : ''}" data-play-active="1" title="Aktif bölümü dinle / duraklat">${playing ? '⏸ Duraklat' : '▶ Dinle'}</button>
+    <button class="narrow-btn narrow-approve" data-approve-seg="${i}" title="Aktif bölümü onayla (Enter)">✓ Onayla</button>
+    <span class="narrow-pos" title="Aktif bölüm / toplam">${i + 1}/${segs.length}</span>
+  </div>`;
+}
+// Dar ekran çubuğu KENDİ mantığını taşımaz: düğmeler, kart içindeki mevcut
+// data-* işleyicilerini kullanır. Burada yalnız aktif bölüme göre yenilenir.
+function refreshNarrowBar(m, card) {
+  const host = card || document.querySelector('.audio-card');
+  if (!host) return;
+  const cardEl = host.classList?.contains('audio-card') ? host : host.querySelector('.audio-card');
+  if (!cardEl) return;
+  const html = narrowBarHtml(m);
+  const bar = cardEl.querySelector(`[data-narrow-bar="${CSS.escape(m.id)}"]`);
+  // Bölüm yokken çubuk çizilmez; sonradan bölüm eklenirse (elle veya
+  // çözümlemeyle) burada OLUŞTURULUR — yalnız güncellemek yetmez.
+  if (!html) { if (bar) bar.remove(); return; }
+  if (bar) bar.outerHTML = html;
+  else cardEl.insertAdjacentHTML('beforeend', html);
+}
 function materialCardHtml(m) {
   const segs = m.segments || [];
   // Kart iki ana işe göre düzenlenir:
@@ -1690,7 +1719,8 @@ function materialCardHtml(m) {
       <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
       </div>
-    </div>`;
+    </div>
+    ${narrowBarHtml(m)}`;
 }
 // Ondalık ayırıcı Türkçe biçimdedir; rapor ve arayüz aynı yardımcıyı kullanır.
 function fmtDb(x) {
@@ -4880,6 +4910,7 @@ function renderSegDetail(m) {
     // seçili mod korunur; spektrogram yeni bölüm için yeniden hesaplanır.
     setAnalysisMode(m, analysisMode);
   }
+  refreshNarrowBar(m, root.closest('.audio-card'));
 }
 function renderSegments(m, card) {
   const root = $(`#segments-${CSS.escape(m.id)}`, card || document);
@@ -4912,6 +4943,7 @@ function renderSegments(m, card) {
   root
     .querySelectorAll('.seg-item')
     .forEach((el) => el.classList.toggle('is-active', Number(el.dataset.segItem) === active));
+  refreshNarrowBar(m, card || root.closest('.audio-card'));
 }
 // Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
 // ve sağ panel yenilenir. Kaydırma ve odak korunur.
@@ -5882,13 +5914,15 @@ function refreshPlayButtons() {
   });
   document.querySelectorAll('.audio-card').forEach((card) => {
     const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
-    const btn = card.querySelector('[data-play-active]');
     const stop = card.querySelector('[data-stop-active]');
-    if (!btn) return;
     const isThis = segPlayback.materialId === id;
     const playing = isThis && segPlayback.playing;
-    btn.textContent = playing ? '⏸ Duraklat' : '▶ Dinle';
-    btn.classList.toggle('on', playing);
+    // Kartta İKİ oynat düğmesi olabilir: başlıktaki ve dar ekran çubuğundaki
+    // (v2.165). İkisi de aynı durumu göstermek zorunda.
+    card.querySelectorAll('[data-play-active]').forEach((btn) => {
+      btn.textContent = playing ? '⏸ Duraklat' : '▶ Dinle';
+      btn.classList.toggle('on', playing);
+    });
     if (stop) stop.disabled = !isThis;
   });
 }
@@ -6162,6 +6196,7 @@ function syncSegDetailInPlace(m, idx) {
   });
   // Zoom dalgası yeni bölüme bağlanmalı.
   attachZoomWave(m, idx);
+  refreshNarrowBar(m, detail.closest('.audio-card'));
   // Başlıktaki "Dinle" düğmesi ve dalga, yeni bölüme göre tazelenir.
   const playBtn = detail.querySelector('[data-play-active]');
   if (playBtn) {
@@ -12245,6 +12280,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.165': {
+    title: 'Dar ekranda onay ve dinleme her zaman erişilebilir',
+    body:
+      '900 pikselden dar ekranda "✓ Onayla" düğmesi ekranın 413 px altında ' +
+      'kalıyordu. Artık kartın altında yapışkan bir işlem çubuğu var: ' +
+      '↑ ↓ · ▶ Dinle · ✓ Onayla ve konum (3/10). İçeriği kaplamaz; ' +
+      'bildirimler çubuğun üstünde çıkar. Masaüstü düzeni değişmedi.'
+  },
   '2.164': {
     title: 'Künye: zorunlu alanlar artık ilk ekranda',
     body:

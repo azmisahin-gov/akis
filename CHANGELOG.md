@@ -6,12 +6,44 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.164.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.165.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.165 — Dar ekranda onay ve dinleme her zaman erişilebilir
+
+Ölçüm (gerçek Chromium 900×900, v2.164, 10 bölüm): bölüm listesi 554–1290 px
+arasında; **"✓ Onayla" düğmesi y=1313**, yani ekranın **413 px altında**.
+Liste uzadıkça (100 bölümde) onay ve dinleme erişilemez hâle geliyordu.
+
+### KULLANICI NE GÖRECEK
+
+900 pikselden dar ekranda, kayıt kartının altında **ince bir işlem çubuğu**
+durur: **↑ ↓ · ▶ Dinle · ✓ Onayla · "3/10"**. Kaydırma yapmadan aktif bölümü
+dinleyebilir, onaylayabilir ve bölümler arasında gezebilirsiniz. Çubuk
+**yapışkan**: içeriği kaplamaz, kendi yerini ayırır. Bildirimler çubuğun
+**üstünde** çıkar. **Masaüstü (≥901 px) değişmedi**: çubuk orada görünmez.
+
+### ÖLÇÜM
+
+| | Önce (v2.164) | Sonra (v2.165) |
+|---|---|---|
+| "✓ Onayla" konumu | y=1313 — ekran dışı | y=820–874 — ekranda |
+| Kaydırmadan onay | yok | var |
+| Bildirim ↔ çubuk | — | çakışma yok (toast 757–800, çubuk 820–874) |
+| Masaüstü | değişmez | değişmez (`display:none`) |
+
+Uçtan uca (gerçek ses): ↓ 1/10 → 2/10, ↑ 2/10 → 1/10, ✓ onay (1 bölüm),
+▶ Dinle (çalıyor, t=6,13 sn), JS hatası **0**.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ac] (6 kontrol): çubuk kartın içinde, aynı `data-*`
+işleyicilerini kullanır, bölüm yoksa çizilmez, masaüstünde gizli, ≤900 px'te
+yapışkan ve görünür, bildirim çubuğun üstünde.
 
 ## v2.164 — Künye: zorunlu alanlar ilk ekranda
 
