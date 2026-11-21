@@ -1264,6 +1264,16 @@ console.log('\n[2as] Birleştirme/bölme sonrası kaydırma korunur (v2.193)');
   check('scrollIntoView kullanılmıyor (sayfayı kaydırıyordu)', !/item\.scrollIntoView/.test(js));
 }
 
+console.log('\n[2at] Yeniden çözümleme sonrası kaydırma korunur (v2.194)');
+{
+  // KULLANICI: "Çözümleye bastığımda bölüm listesi yenileniyor, kullanım
+  // deneyimini etkiliyor." retranscribeSegment renderAudioList() çağırıyordu.
+  const js = read('assets/app.js');
+  check('yeniden çözümleme kaydırmayı yakalar', /async function retranscribeSegment[\s\S]{0,7000}captureSegScroll\(m\)/.test(js));
+  check('yeniden çözümleme kaydırmayı geri yükler', /async function retranscribeSegment[\s\S]{0,7500}restoreSegScroll\(m, scroll, index\)/.test(js));
+  check('renderAudioList bekleniyor (await)', /await renderAudioList\(\)[\s\S]{0,200}restoreSegScroll/.test(js));
+}
+
 console.log('\n[8] CSS borcu (nöbetçi)');
 {
   const appCss = read('assets/app.css');

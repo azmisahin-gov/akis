@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.193.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.194.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.193** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.194** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3285,6 +3285,52 @@ fark karıştırılmamalıdır.
 konuşmacıya göre gruplayıp okuma kolaylığı sağlayan, `segment` yapısına
 DOKUNMAYAN bir görünüm — ayrı bir sürüm konusu olarak eklenebilir. Bu oturumda
 kod değişikliği YAPILMADI; yalnız kayıt düşüldü.
+
+**KARARLAR VE TERİM SÖZLÜĞÜ (2026-11-21, kullanıcıyla netleşti):**
+
+- **Bölüm** = arayüzde ve raporda kullanılan terim (teknik adı `segment`).
+  Kullanıcıya/rapora "pencere" denmez.
+- **Zaman penceresi** = yalnız ASR'nin 30 sn'lik teknik dilimi
+  (`ASR_WINDOW_SECONDS = 30`). Kullanıcı bunu ayarlayamaz; bölüm uzunluğunu
+  **birleştirme** ile uzman belirler.
+- **Paragraf / okuma metni** = bölümlerden türetilen, salt-okunur okuma biçimi
+  (henüz YOK).
+- **Ayrıntılı (zaman damgalı) bölüm tablosu** = kanıt. "Granüler" yerine bu
+  Türkçe ifade kullanılır.
+- **Birleştirme kuralı:** yalnız komşu ve AYNI konuşmacı; hedef **1–3 cümle
+  veya ~15–30 sn**. 5 dakikalık tek satır YASAK. Konuşmacı değişiminde
+  birleştirme yok (kod engeller).
+- **¶ (Paragraf oluştur):** veriyi DEĞİŞTİRİR; tek konuşmacıda tüm bölümleri
+  birleştirir; cümle zamanları kaybolur; geri alma **20 işlem** ve sayfa
+  yenilenince **SIFIRLANIR**. Kanıt için önerilmez; salt-okunur paragraf
+  görünümü açık konudur.
+- **Otomatik geçiş:** ilk tarama için; **son doğrulamada manuel**. "Onaydan
+  sonra sonraki bekleyene geç" tercihi (varsayılan kapalı) daha güvenli.
+- **Konuşmacı:** model **diarization YAPMAZ**; etiketler uzmandan. Kodlar
+  **kayıt başınadır**: 1. dosyadaki S1 ile 2. dosyadaki S1 aynı kişi
+  DEĞİLDİR; aynı kişi ise aynı ETİKET adı kullanılmalı ve rapora not
+  düşülmelidir. Müzik/gürültü/telefon konuşmacı DEĞİLDİR; gözlem/etiket
+  olarak yazılır.
+- **Rapor yöntemi:** ASR aracı dürüstçe yazılır (yerel, açık kaynak Whisper
+  tabanlı model + sürüm). "Konuşmacı ayrıştırma / kaynak ayırma yaptık"
+  DENMEZ. Uygulama adı yazılmaz (v2.83 kuralı).
+- **Geri alma:** 20 işlem, bellek içi; sayfa yenileme/tarayıcı kapanışı
+  geçmişi temizler. Riskli toplu işlemden önce **paket** alınır.
+- **LLM:** doğrulanmış metni yalnız biçimlendirme için kullanmak dışında ham
+  ses/metin LLM'e verilmez; uydurma riski ve veri koruma nedeniyle.
+
+#### P25 — Yeniden çözümleme sonrası kaydırma (v2.194)
+
+**KULLANICI:** *"Çözümleye bastığımda bölüm listesi yenileniyor; kullanım
+deneyimini etkiliyor."*
+
+**KÖK:** `retranscribeSegment` sonunda `renderAudioList()` kartı yeniden
+kuruyordu; v2.193 koruması yalnız birleştirme/bölme/paragraf yolundaydı.
+
+**DÜZELTME:** işlem öncesi `captureSegScroll(m)`, `await renderAudioList()`
+sonrası `restoreSegScroll(m, scroll, index)`.
+
+**Koruyan test:** `tasarim` [2at].
 
 ### DOĞRULAMA (her oturum başı)
 

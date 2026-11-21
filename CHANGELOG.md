@@ -6,12 +6,25 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.193.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.194.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.194 — Yeniden çözümleme sonrası liste başa dönmüyor
+
+Kullanıcı: *"Çözümleye bastığımda bölüm listesi yenileniyor; bu kullanım
+deneyimini etkiliyor."*
+
+Bir bölümü **yeniden çözümle** (`↻ Bu aralığı çözümle`) kartı yeniden
+kuruyordu (`renderAudioList`), bu da liste/detay kaydırmasını sıfırlıyordu.
+Artık işlem öncesi kaydırma yakalanır, işlem sonrası geri yüklenir; yeniden
+çözümlenen bölüm görünür kalır. (v2.193 birleştirme/bölme/paragraf için aynı
+korumayı getirmişti.)
+
+**KORUYAN TEST:** `tasarim` [2at].
 
 ## v2.193 — Birleştirme sonrası kaydırma korunur; listede metin önizlemesi
 

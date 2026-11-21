@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.193.**
+yazılır. **Güncel sürüm: v2.194.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.194 — Yeniden çözümleme sonrası kaydırma korunur (tamamlandı)
+
+`retranscribeSegment` işlem sonunda `renderAudioList()` çağırıyor, kart yeniden
+kurulup liste başa dönüyordu. Artık `captureSegScroll`/`restoreSegScroll` ile
+kaydırma korunur (`await renderAudioList()` sonrası geri yükleme). Koruyan
+test: `tasarim` [2at].
 
 ### v2.193 — Birleştirme sonrası kaydırma korunur; metin önizlemesi (tamamlandı)
 

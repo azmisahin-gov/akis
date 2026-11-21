@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.193';
+} from './schema.js?v=2.194';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.193';
+const APP_VERSION = '2.194';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8145,8 +8145,12 @@ async function retranscribeSegment(materialId, index) {
     setSegReview(s, 'pending');
     s.words = meaningful.flatMap((f) => f.words || []);
     logEvent(m, 'Bölüm yeniden çözümlendi', `Bölüm ${index + 1}: ${s.start}–${s.end} · ${meaningful.length} parça`);
+    // KAYDIRMA KORUNUR (v2.194): renderAudioList kartı yeniden kuruyor ve
+    // liste başa dönüyordu (kullanıcı: "çözümleye basınca liste yenileniyor").
+    const scroll = captureSegScroll(m);
     persist();
-    renderAudioList();
+    await renderAudioList();
+    restoreSegScroll(m, scroll, index);
     renderOverview();
     showToast(`Bölüm ${index + 1} yeniden çözümlendi. Metni dinleyerek doğrulayın.`);
   } catch (e) {
@@ -12707,6 +12711,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.194': {
+    title: 'Yeniden çözümleme sonrası liste başa dönmüyor',
+    body:
+      'Bir bölümü yeniden çözümledikten sonra bölüm listesi başa dönüyordu; ' +
+      'artık liste konumu ve seçili bölüm korunur. Birleştirme/bölme için v2.193 ' +
+      'zaten aynı korumayı getirmişti.'
+  },
   '2.193': {
     title: 'Birleştirme sonrası kaydırma korunur; listede metin önizlemesi',
     body:
