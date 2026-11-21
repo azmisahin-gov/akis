@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.159.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.160.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.160 — Görsel düzen (kozmetik)
+
+İşlev değişmedi; yalnız hiyerarşi, boşluk ve yüzey dili toparlandı.
+
+### ÖLÇÜM (v2.159 → v2.160, 1440×900)
+
+| Öğe | Önce | Sonra |
+|---|---|---|
+| İş akışı kartındaki boş alan | ~**265 px** | **0** (kart içeriği kadar) |
+| İstatistik kartı | düz metin, 27 px sayı | **ikon yuvası + 30 px sayı** |
+| İş akışı adımı | düz satır, açıklama gizli | **yuvarlak numara + durum rozeti + açıklama** |
+| Hızlı erişim | çizgisiz satır | **çerçeveli kart, hover'da vurgu** |
+| İnceleme yazı yüzeyi | 1344 px'e yayılıyor | **920 px, ortalı** |
+| CSS borcu | 98 / 507 | **98 / 507** (artmadı) |
+
+### KULLANICI NE GÖRECEK
+
+- Genel bakışta kartlar arasında **boşluk kalmaz**; sayılar daha okunur.
+- İş akışı adımları **tıklanabilir kart** gibi görünür; durumu rozetle söyler.
+- Hızlı erişim düğmeleri çerçeveli; üzerine gelince belirginleşir.
+- İnceleme sayfasında yazı alanı **ortada ve ölçülü**; göz satırı kaybolmaz.
+- Ses listesinde satır üzerine gelince ve aktifken **yüzey** değişir.
+
+### DÜZELTİLEN YAN HATA (ölçümle)
+
+`align-items:start` verildiğinde, sabit yükseklikli genel bakış alanında kartlar
+**altlarındaki karta biniyordu** (900×700'de görüldü). `flex-shrink:0` +
+`flex-grow:0` ile alan içeriğe göre boyutlanır; görünüm kendi içinde kayar.
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2x]** (8 kontrol): içeriğe göre hizalama, büyümeme/kısalmama,
+ikon yuvası, 30 px sayı, adım açıklamalarının geniş ekranda görünmesi, ölçülü ve
+ortalı yazı yüzeyi, yeni bölümde ham hex olmaması.
 
 ## v2.159 — Dar ekranda yinelenen başlık
 

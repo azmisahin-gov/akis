@@ -2081,6 +2081,32 @@ yatay taşma yok. 1440 px → değişiklik yok (kabuk zaten gizliyor).
 bunlar üst üste gelir. "Kaç başlık var?" sorusu ölçülebilir bir denetimdir.
 
 
+### Aşama 10bf — Görsel düzen (kozmetik) (TAMAMLANDI, v2.160)
+
+**ÖLÇÜM (v2.159, 1440×900):** iş akışı kartı ~265 px boş alan taşıyordu;
+istatistik kartları düz metin (27 px sayı); adım açıklamaları gizli; inceleme
+yazı yüzeyi 1344 px'e yayılıyordu.
+
+**Yapılan (yalnız reading-layer sonuna eklenen v2.160 katmanı):**
+- Genel bakış: `.content-grid` → `align-items:start; flex-grow:0; flex-shrink:0`
+  (boşluk yok, taşma/üst üste binme yok), `.stat-card` ikon yuvası + 30 px sayı,
+  adımlar yuvarlak numara + durum rozeti, hızlı erişim çerçeveli kart.
+- İnceleme: yazı yüzeyi 920 px + `margin-inline:auto`.
+- Rapor: kâğıt gölgesi `--shadow-lg`, hazırlık satırları ferah.
+- Ses: satır hover yüzeyi; `material-chip` yarıçapı.
+- `::selection` token renkleriyle.
+
+**Ölçüm (v2.160, gerçek Chromium):** boşluk **0**; 900×700'de kartlar üst üste
+binmiyor (önce biniyordu); 1440/900'de JS hatası 0; CSS borcu **98/507** (artmadı).
+
+**Koruyan test:** `tasarim-testi` [2x] (8 kontrol).
+
+**DERS:** `align-items:start` tek başına yeterli değil: sabit yükseklikli bir
+flex alanında kartlar *kısalıp* altlarındaki karta binebilir. Kozmetik
+düzeltmede `flex-grow/flex-shrink` ikisini birlikte düşün; her genişlikte
+(1440 ve 900) ekran görüntüsü al.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2254,7 +2280,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.159.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.160.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2553,7 +2579,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.159) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.160) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2564,10 +2590,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.159** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.160** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.159 |
-| Açık konu | **Yok** (denetim bulguları #1–#6 kapatıldı; #7 kozmetik, isteğe bağlı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.160 |
+| Açık konu | **Yok** (denetim #1–#6 + kozmetik tur kapandı) |
 
 ### Bu oturumda ne değişti (kısa)
 

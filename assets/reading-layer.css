@@ -1950,3 +1950,168 @@ input::placeholder, textarea::placeholder {
 @media (max-width: 900px) {
   #view-audio .detail-panel > .panel-heading { display: none; }
 }
+
+/* ============================================================================
+   v2.160 — GÖRSEL DÜZEN (KOZMETİK)
+   ----------------------------------------------------------------------------
+   İşlev değişmez; yalnız hiyerarşi, boşluk ve yüzey dili toparlanır.
+   Kurallar:
+   • Boş alan üretilmez: kartlar içeriği kadar uzar (`align-items:start`).
+   • Sayı hiyerarşisi: etiket 11 px büyük harf, sayı 30 px, alt açıklama 11 px.
+   • İkonlar renkli yüzeyde (accent-soft) durur; metin değil, süs.
+   • Tüm renkler token; ham hex YOK. Punto alt sınırı 11 px korunur.
+   ============================================================================ */
+/* 1) Genel: seçim rengi (odak halkası zaten tanımlı; yinelemeyiz). */
+::selection { background: var(--accent-soft); color: var(--ink); }
+
+/* 2) GENEL BAKIŞ — kartlar içeriği kadar uzar (boş alan yok).
+   `flex-shrink:0`: sabit yükseklikli flex alanında kartlar kısaltılıp ALTTAKİ
+   kartın üstüne binmesin (900×700'de ölçüldü); görünüm kendi içinde kayar. */
+#view-overview .content-grid { align-items: start; flex-shrink: 0; flex-grow: 0; }
+/* Adım açıklamaları geniş ekranda geri gelir (dar ekranda gizli kalır). */
+@media (min-width: 901px) {
+  #view-overview .workflow-step small { display: block; }
+}
+#view-overview .panel { padding: var(--sp-4); }
+#view-overview .panel-heading { margin-bottom: var(--sp-3); }
+
+/* 2a) İstatistik kartları: ikon + sayı + açıklama. */
+#view-overview .stat-grid { gap: var(--sp-3); margin-bottom: var(--sp-4); }
+#view-overview .stat-card {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-rows: auto auto auto;
+  column-gap: var(--sp-3);
+  align-items: center;
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+#view-overview .stat-card::before {
+  grid-row: 1 / span 3;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+}
+#view-overview .stat-card:nth-child(1)::before { content: '♫'; }
+#view-overview .stat-card:nth-child(2)::before { content: '⏱'; }
+#view-overview .stat-card:nth-child(3)::before { content: '≡'; }
+#view-overview .stat-card:nth-child(4)::before { content: '✓'; }
+#view-overview .stat-card > span {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: var(--ink-3);
+}
+#view-overview .stat-card > strong {
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+#view-overview .stat-card > small { font-size: var(--fs-2xs); color: var(--ink-3); }
+
+/* 2b) İş akışı: her adım bir satır-kart; numara yuvarlak, durum rozet. */
+#view-overview .workflow-list { display: flex; flex-direction: column; gap: 6px; }
+#view-overview .workflow-step {
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  padding: 9px 10px;
+  background: transparent;
+  transition: background .15s ease, border-color .15s ease;
+}
+#view-overview .workflow-step:hover,
+#view-overview .workflow-step:focus-visible {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+#view-overview .workflow-step .step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+}
+#view-overview .workflow-step > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#view-overview .workflow-step b { font-size: var(--fs-sm); color: var(--ink); }
+#view-overview .workflow-step small { font-size: var(--fs-2xs); color: var(--ink-3); }
+#view-overview .step-state {
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-pill);
+  padding: 3px 9px;
+  background: var(--surface);
+}
+
+/* 2c) Hızlı erişim: çerçeveli kartlar, ikon rozetli. */
+#view-overview .quick-panel { display: flex; flex-direction: column; gap: 8px; }
+#view-overview .quick-action {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  background: var(--surface);
+  transition: border-color .15s ease, background .15s ease;
+}
+#view-overview .quick-action:hover,
+#view-overview .quick-action:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+#view-overview .quick-action > span:nth-child(2) {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#view-overview .quick-action b { font-size: var(--fs-sm); color: var(--ink); }
+#view-overview .quick-action small { font-size: var(--fs-2xs); color: var(--ink-3); }
+#view-overview .quick-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 16px;
+}
+#view-overview .notice-box { margin-top: 4px; }
+
+/* 3) İNCELEME — uzun metin alanı ölçülü genişlikte okunur. */
+#view-questions .split-body { padding: var(--sp-4); }
+/* Yazı yüzeyi ölçülü genişlikte ve ORTALANIR: sağda asimetrik boşluk kalmaz. */
+#view-questions .split-body textarea {
+  max-width: 920px;
+  min-height: 220px;
+  margin-inline: auto;
+  display: block;
+}
+#view-questions .split-item { border-radius: var(--r-md); }
+#view-questions .split-item:hover { background: var(--surface-2); }
+
+/* 4) RAPOR — kâğıt ve hazırlık kartı: yumuşak yüzey, net satır. */
+#view-report .report-paper { box-shadow: var(--shadow-lg); }
+#view-report .readiness-card { padding: var(--sp-3) var(--sp-4); }
+#view-report .ready-row { padding: 7px 10px; }
+#view-report .ready-row:hover { background: var(--surface-2); }
+
+/* 5) SES — liste satırı ve rozetler: tıklanabilirlik hissi. */
+#view-audio .seg-item { border-radius: var(--r-sm); }
+#view-audio .seg-item:hover { background: var(--surface-2); }
+#view-audio .material-chip { border-radius: var(--r-md); }

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.159.**
+yazılır. **Güncel sürüm: v2.160.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.160 — Görsel düzen (kozmetik) (tamamlandı)
+
+Genel bakış: kartlar içeriği kadar (`align-items:start`, `flex-grow:0`,
+`flex-shrink:0` — taşma/üst üste binme yok), istatistik kartlarında ikon yuvası
++ 30 px sayı, iş akışı adımlarında yuvarlak numara ve durum rozeti, hızlı
+erişimde çerçeveli kartlar. İnceleme: yazı yüzeyi 920 px ve ortalı. Rapor:
+kâğıt gölgesi ve hazırlık satırları. Ses: satır hover/aktif yüzeyi.
+CSS borcu artmadı (98/507). Koruyan test: `tasarim` [2x].
 
 ### v2.159 — Dar ekranda yinelenen başlık (tamamlandı)
 

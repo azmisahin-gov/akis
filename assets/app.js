@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.159';
+} from './schema.js?v=2.160';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.159';
+const APP_VERSION = '2.160';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12226,6 +12226,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.160': {
+    title: 'Görsel düzen: kartlar, sayılar ve boşluklar toparlandı',
+    body:
+      'Genel bakışta iş akışı kartı ~265 px boş alan taşıyordu; istatistik ' +
+      'kartları düz metindi. Artık kartlar içeriği kadar uzuyor, istatistiklerde ' +
+      'ikon + 30 px sayı var, iş akışı adımları yuvarlak numara ve durum rozeti ' +
+      'taşıyor, hızlı erişim kartları çerçeveli. İnceleme sayfasında yazı yüzeyi ' +
+      'ölçülü ve ortalı. İşlev değişmedi.'
+  },
   '2.159': {
     title: 'Dar ekranda yinelenen başlık kaldırıldı',
     body:

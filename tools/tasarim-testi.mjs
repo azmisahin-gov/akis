@@ -497,6 +497,23 @@ console.log('\n[2w] Dar ekranda yinelenen başlık gizlenir (v2.159)');
   check('masaüstünde başlık korunur', !/@media \(min-width: 901px\)[\s\S]{0,600}detail-panel > \.panel-heading\s*\{\s*display:\s*none/.test(rl));
 }
 
+// --- 2x. Kozmetik düzen: boş alan yok, hiyerarşi var (v2.160) -------------
+// ÖLÇÜM (v2.159): genel bakışta iş akışı kartı ~290 px boş alan taşıyordu;
+// istatistik kartları düz metindi. KURAL: kart içeriği kadar uzar, sayı
+// hiyerarşisi vardır, dar ekranda kartlar birbirinin üstüne binmez.
+console.log('\n[2x] Kozmetik düzen: boş alan yok, hiyerarşi var (v2.160)');
+{
+  const rl = read('assets/reading-layer.css');
+  check('genel bakış kartları içeriğe göre hizalanır', /#view-overview \.content-grid\s*\{[^}]*align-items:\s*start/.test(rl));
+  check('kart alanı büyümez (boşluk yok)', /#view-overview \.content-grid\s*\{[^}]*flex-grow:\s*0/.test(rl));
+  check('kart alanı kısalmaz (üst üste binmez)', /#view-overview \.content-grid\s*\{[^}]*flex-shrink:\s*0/.test(rl));
+  check('istatistik kartında ikon yuvası var', /#view-overview \.stat-card::before\s*\{/.test(rl));
+  check('sayı hiyerarşisi (30 px)', /#view-overview \.stat-card > strong\s*\{[^}]*font-size:\s*30px/.test(rl));
+  check('adım açıklamaları geniş ekranda görünür', /@media \(min-width: 901px\)[\s\S]{0,200}workflow-step small\s*\{\s*display:\s*block/.test(rl));
+  check('sorular metni ölçülü ve ortalı', /#view-questions \.split-body textarea\s*\{[^}]*margin-inline:\s*auto/.test(rl));
+  check('yeni bölümde ham hex yok', !/v2\.160[\s\S]*?#[0-9a-fA-F]{3,6}/.test(rl));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
