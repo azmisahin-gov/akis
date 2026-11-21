@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.177.**
+yazılır. **Güncel sürüm: v2.178.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.178 — Sürükleyerek birleştirme (tamamlandı)
+
+Satırdaki **⋮⋮** tutamağından **komşu** satıra sürükle-bırak birleştirme.
+Hedef kesikli çerçeveyle vurgulanır; uzak satır reddedilir; filtre "Tümü"
+değilse kapalıdır (nedeni yazılır). Klavye (M) ve satır menüsü korunur.
+Ölçüm: birleştirme 1 sürükleme; komşu olmayan → değişiklik yok; satır
+72 → **74 px**; kırpılma/taşma yok; hata 0. Koruyan test: `tasarim` [2aj].
 
 ### v2.177 — Satır işlemleri menüsü (tamamlandı)
 

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.177';
+} from './schema.js?v=2.178';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.177';
+const APP_VERSION = '2.178';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3744,6 +3744,24 @@ function ambiguousPanelHtml(s, i) {
 // Satır işlemleri menüsü (v2.177). "Diğer işlemler" katlaması kaldırıldı;
 // aynı işler satırın ⋮ düğmesinden açılır. Menü KENDİ mantığını taşımaz:
 // öğeler mevcut data-* işleyicilerini kullanır (birleştir/böl/çözümle/…).
+// SÜRÜKLE-BIRAK BİRLEŞTİRME (v2.178). Hızlandırıcıdır: klavye (M) ve satır
+// menüsü aynı işi yapar. Kurallar:
+//   • Yalnız KOMŞU satıra bırakılır (üst/alt) — zaman sırası korunur.
+//   • Filtre "Tümü" değilse KAPALI: filtreli listede komşu görünen satırlar
+//     gerçekte komşu olmayabilir (arada bölüm atlanır).
+//   • Birleştirme kuralları (konuşmacı/ikinci göz) mergeSegmentWithNext'te.
+let segDrag = null;
+function segDragIndexFrom(target) {
+  const el = target && target.closest ? target.closest('.seg-item') : null;
+  if (!el) return -1;
+  const n = Number(el.dataset.segItem);
+  return Number.isInteger(n) ? n : -1;
+}
+function clearDropMarks(card) {
+  (card || document).querySelectorAll('.seg-item.drop-merge, .seg-item.dragging').forEach((el) => {
+    el.classList.remove('drop-merge', 'dragging');
+  });
+}
 let segMenuEl = null;
 function closeSegMenu() {
   if (segMenuEl) {
@@ -3831,7 +3849,7 @@ function segItemHtml(m, s, i, prev, issue) {
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time"><span class="seg-start">${esc(s.start || '—')}</span><span class="seg-end">→ ${esc(s.end || '—')}</span></span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
-    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}<button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
+    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
   </div>`;
 }
 function segListHtml(m) {
@@ -11026,6 +11044,59 @@ function setupEvents() {
     const m = currentCase()?.materials.find((x) => x.id === id);
     if (m) openSegMenu(m, Number(item.dataset.segItem), item.querySelector('[data-seg-menu]') || item);
   });
+  // Sürükle-bırak birleştirme (v2.178): yalnız tutamaktan başlar.
+  $('#view-audio').addEventListener('dragstart', (e) => {
+    const grip = e.target.closest('[data-seg-drag]');
+    if (!grip) return;
+    const card = grip.closest('.audio-card');
+    const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+    const m = currentCase()?.materials.find((x) => x.id === id);
+    if (!m) return;
+    if (segFilter(m) !== 'all') {
+      e.preventDefault();
+      showToast('Sürükleyerek birleştirme yalnız "Tümü" filtresinde çalışır. Filtreyi kaldırın.');
+      return;
+    }
+    segDrag = { m, index: Number(grip.dataset.segDrag), card };
+    grip.closest('.seg-item')?.classList.add('dragging');
+    try {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(segDrag.index));
+    } catch (err) {}
+  });
+  $('#view-audio').addEventListener('dragover', (e) => {
+    if (!segDrag) return;
+    const i = segDragIndexFrom(e.target);
+    if (i < 0) return;
+    const adjacent = Math.abs(i - segDrag.index) === 1;
+    if (!adjacent) return;
+    e.preventDefault();
+    try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+    const el = e.target.closest('.seg-item');
+    segDrag.card.querySelectorAll('.seg-item.drop-merge').forEach((x) => { if (x !== el) x.classList.remove('drop-merge'); });
+    el.classList.add('drop-merge');
+  });
+  $('#view-audio').addEventListener('dragleave', (e) => {
+    if (!segDrag) return;
+    const el = e.target.closest && e.target.closest('.seg-item');
+    if (el) el.classList.remove('drop-merge');
+  });
+  $('#view-audio').addEventListener('drop', (e) => {
+    if (!segDrag) return;
+    const i = segDragIndexFrom(e.target);
+    if (i < 0 || Math.abs(i - segDrag.index) !== 1) return;
+    e.preventDefault();
+    const base = Math.min(i, segDrag.index);
+    const m = segDrag.m;
+    clearDropMarks(segDrag.card);
+    segDrag = null;
+    mergeSegmentWithNext(m, base);
+  });
+  $('#view-audio').addEventListener('dragend', () => {
+    if (!segDrag) return;
+    clearDropMarks(segDrag.card);
+    segDrag = null;
+  });
   // Hızlı etiket: metnin sonuna gözlem ifadesi ekler (varsa boşlukla). Temizle
   // yalnızca metni boşaltır; geçmiş kaydı odak değişiminde tutulur.
   $('#view-audio').addEventListener('click', (e) => {
@@ -12433,6 +12504,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.178': {
+    title: 'İki bölümü sürükleyerek birleştirebilirsiniz',
+    body:
+      'Satırın rozet şeridindeki ⋮⋮ tutamağını KOMŞU satıra bırakınca iki bölüm ' +
+      'birleşir; hedef kesikli çerçeveyle vurgulanır. Uzak satıra bırakma bir şey ' +
+      'yapmaz; "Tümü" filtresi dışında sürükleme kapalıdır. M tuşu ve ⋮ menüsü ' +
+      'aynı işi yapmaya devam eder.'
+  },
   '2.177': {
     title: 'Bölüm işlemleri artık satır menüsünde (⋮ / sağ tık)',
     body:

@@ -1064,6 +1064,26 @@ console.log('\n[2ai] "Ses yok" uyarısı Teknik kapalıyken de görünür (v2.17
   check('ilk çizimde de tazelenir', /refreshAudioState\(m\)/.test(rs5));
 }
 
+console.log('\n[2aj] Sürükle-bırak birleştirme güvenli (v2.178)');
+{
+  // KURAL: sürükleme bir HIZLANDIRICIDIR (klavye M ve satır menüsü korunur),
+  // yalnız TUTAMAKTAN başlar, yalnız KOMŞU satıra bırakılır ve filtre
+  // "Tümü" değilse KAPALIDIR (filtreli listede komşu görünen satırlar
+  // gerçekte komşu olmayabilir).
+  const js6 = read('assets/app.js');
+  const rl6 = read('assets/reading-layer.css');
+  check('satırda sürükleme tutamağı var', /data-seg-drag="/.test(js6));
+  check('tutamak draggable', /class="seg-drag" draggable="true"/.test(js6));
+  check('dragstart yalnız tutamakta', /closest\('\[data-seg-drag\]'\)/.test(js6));
+  check('filtre kilidi var', /segFilter\(m\) !== 'all'/.test(js6) && /yalnız "Tümü" filtresinde/.test(js6));
+  check('yalnız komşu hedef', /Math\.abs\(i - segDrag\.index\) === 1/.test(js6));
+  check('bırakma mevcut birleştirmeyi çağırır', /drop[\s\S]{0,600}mergeSegmentWithNext\(m, base\)/.test(js6));
+  check('bırakma hedefi görsel', /\.seg-item\.drop-merge\s*\{/.test(rl6));
+  // Klavye ve menü yolu KORUNUR (sürükleme tek yol olmamalı).
+  check('klavye yolu korunur (M)', /LOOP_KEYS|'m'/.test(js6) && /mergeSegmentWithNext/.test(js6));
+  check('menü yolu korunur', /data-merge-next/.test(js6));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

@@ -2194,3 +2194,23 @@ input::placeholder, textarea::placeholder {
 .seg-menu button:hover,
 .seg-menu button:focus-visible { background: var(--surface-2); }
 .seg-menu button.danger { color: var(--red); }
+
+/* --- v2.178 — Sürükle-bırak birleştirme ----------------------------------- */
+/* Yalnız TUTAMAKTAN sürüklenir (metin seçimi/kaydırma çakışmaz). Hedef
+   yalnız KOMŞU satırdır; bırakma hedefi kesikli çerçeveyle gösterilir.
+   Sürükleme bir HIZLANDIRICIDIR: M tuşu ve satır menüsü aynı işi yapar. */
+#view-audio .seg-drag {
+  cursor: grab;
+  color: var(--ink-3);
+  font-size: var(--fs-2xs);
+  letter-spacing: -1px;
+  padding: 0 2px;
+  user-select: none;
+}
+#view-audio .seg-drag:active { cursor: grabbing; }
+#view-audio .seg-item.dragging { opacity: .55; }
+#view-audio .seg-item.drop-merge {
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  background: var(--accent-soft);
+}

@@ -6,12 +6,46 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.177.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.178.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.178 — Sürükleyerek birleştirme (yalnız komşu, geri alınabilir)
+
+Ölçüm: birleştirme **2 etkileşimdi** (⋮ → tık). Kullanıcı önerisi: listede iki
+komşu satırı **sürükleyip bırakarak** birleştirmek.
+
+### KULLANICI NE GÖRECEK
+
+Her satırın rozet şeridinde **⋮⋮** tutamağı var. Tutamağı **komşu** satıra
+sürükleyip bırakınca iki bölüm birleşir; hedef satır **kesikli çerçeveyle**
+vurgulanır. Uzak satıra bırakma hiçbir şey yapmaz. Filtre "Tümü" değilse
+sürükleme **kapalıdır** (filtreli listede komşu görünen satırlar gerçekte
+komşu olmayabilir) ve nedeni söylenir. **M tuşu** ve **⋮ menüsü** aynen durur —
+sürükleme yalnız hızlandırıcıdır.
+
+### ÖLÇÜM
+
+| | Önce (v2.177) | Sonra (v2.178) |
+|---|---|---|
+| Birleştirme | 2 etkileşim (⋮ → tık) | **1 sürükleme** (veya 2: ⋮ → tık) |
+| Komşu olmayan hedef | — | **reddedilir** (vurgu yok, değişiklik yok) |
+| Filtre "Tümü" değilken | — | **kapalı**, nedeni yazılır |
+| Satır yüksekliği | 72 px | **74 px** (+2) |
+| Kırpılma / yatay taşma | yok | yok |
+| JS hatası | 0 | 0 |
+
+Birleştirme kuralları v2.176'dan gelir: ham çıktı `mergedFrom`'da saklanır,
+farklı konuşmacı ve ikinci göz reddedilir, delil günlüğüne yazılır ve Ctrl+Z ile
+geri alınır.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2aj] (9 kontrol): tutamak, filtre kilidi, komşu hedef, aynı
+birleştirme fonksiyonu, klavye ve menü yolları korunur.
 
 ## v2.177 — Satır işlemleri menüsü (⋮ / sağ tık); "Diğer işlemler" kalktı
 
