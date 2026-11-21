@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P12 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P13 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.182** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.183** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **976 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `fab4457` |
+| Git | `main` = `origin/main` = `670cedb` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.182** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.183** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2598,6 +2598,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.180 | Konuşmacı/kontrol/gözlem her zaman görünür | meta **y=822 → 303**, gözlem **884 → 642** (panel içinde) | `tasarim` [2am] |
 | v2.181 | ASR kökeni Teknik'te, metinde ince ipucu | metin 371 → **344 px**; blok Teknik'te; notta "öncelik" yok | `tasarim` [2an] |
 | v2.182 | Dikey yer kazanımı: etiketler satır içi | meta **63 → 40 px**; ses yok **47 → 31 px**; kaydırma 84 → 63 | `birim` [64] + `tasarim` [2am] |
+| v2.183 | Başlıkta birleşik işlem satırı | üst bölge **76 → 42 px** (1440), **78 → 42** (900) | `tasarim` [2ao] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2965,6 +2966,38 @@ JS hatası 0.
    denemede meta 67 px oldu); `min/max-width` ile tek satıra sabitlenir.
 3. Uzun uyarı metni 2 satıra sarar; **kısa metin + `title`** hem yeri korur hem
    bilgiyi kaybetmez.
+
+#### P13 — Başlıkta birleşik işlem satırı (v2.183)
+
+**ÖLÇÜM (1440×900):** başlıkta **üç düğme** (Onayla / Yeniden dinle /
+Anlaşılmadı) vardı; **hemen altındaki Kontrol seçicisi** aynı üç durumu
+taşıyordu. Konuşmacı seçicisi ayrı satırdaydı. Üst bölge **76 px** (1440),
+**78 px** (900), 1100'de **128 px**.
+
+**YAPILAN:**
+- Yeniden dinle + Anlaşılmadı düğmeleri **kaldırıldı** → durum tek kaynak:
+  Kontrol seçicisi.
+- Onayla **ikon**: `✓` + `aria-label`/`title` (Enter kısayolu aynı). Onay,
+  "durum" değil **eylem**dir (sonraki bölüme geçer); bu yüzden seçicide değil,
+  ikon olarak kalır.
+- Konuşmacı + Kontrol **başlıkta**; etiketler `aria-label`/`title`'da.
+- Profil → **Teknik** (köken bilgisi).
+- Boş `.sd-meta` **çizilmez**; yalnız belirsiz okuma paneli gerektiğinde çizilir.
+- `.sd-primary { margin-left: auto }` **sıfırlandı**: 66,25 px yer kaplayıp
+  satırı taşırıyordu.
+- `gap: 4px`, seçici `max-width: 96px` → 1440'ta **tek satır**.
+
+**ÖLÇÜM (sonra):** üst bölge **42 px** (1440), 79 px (1280), 73 px (1100),
+**42 px** (900); metin alanı 160 px (900'de 180); yatay taşma yok; hata 0.
+Seçici gerçekten çalışıyor: "Anlaşılmadı" → rozet + `st-inaudible` + %100.
+
+**DERS:**
+1. Aynı durumu iki denetimle sunmak (3 düğme + seçici) yer **ve dikkat
+   kaybıdır**; **durum** seçicide, **eylem** ikonda olmalı.
+2. `margin-left: auto` gibi görünmez boşluklar satırı taşırır; ölçümde
+   çocukların **margin**'lerini de oku (`getComputedStyle(el).marginLeft`).
+3. Etiket kaldırmak yalnız `aria-label`/`title` ile kabul edilebilir; ekran
+   okuyucu ve fare ipucu bilgiyi taşımaya devam etmeli.
 
 ### DOĞRULAMA (her oturum başı)
 
