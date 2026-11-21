@@ -2326,10 +2326,14 @@ input::placeholder, textarea::placeholder {
    zamanlarını yan yana koy." */
 #view-audio .seg-item {
   grid-template-columns: 26px 132px minmax(0, 1fr);
+  /* v2.193: metin önizlemesi ikinci satırda (birleştirme/bölmede ayırt etmek için). */
+  grid-template-areas: "no time badges" "text text text";
   align-items: center;
-  gap: 6px;
+  gap: 2px 6px;
 }
+#view-audio .seg-item .seg-no { grid-area: no; }
 #view-audio .seg-item .seg-time {
+  grid-area: time;
   display: flex;
   flex-direction: row;
   align-items: baseline;
@@ -2341,6 +2345,7 @@ input::placeholder, textarea::placeholder {
 #view-audio .seg-item .seg-dash { color: var(--ink-3); }
 /* Rozetler KIRPILMAZ (v2.130) ve SAĞA yaslıdır (v2.186): sığmazsa SARAR. */
 #view-audio .seg-item .seg-badges {
+  grid-area: badges;
   justify-content: flex-end;
   flex-wrap: wrap;
   overflow: visible;
@@ -2702,3 +2707,25 @@ input::placeholder, textarea::placeholder {
   color: var(--gold);
   font-weight: 600;
 }
+
+/* ============================================================================
+   v2.193 — LİSTE METİN ÖNİZLEMESİ (birleştirme/bölme için)
+   ----------------------------------------------------------------------------
+   KULLANICI: "Daha önce listeden kaldırdığımız, yalnız ipucunda gösterdiğimiz
+   metin başlıkları birleştirme/bölme işlemlerinde satırları ayırt etmeyi
+   zorlaştırıyor; geri getirilmesini öneriyorum."
+
+   KURAL: Liste DİZİN kalır; metnin TEK SATIR önizlemesi ikinci satırda görünür.
+   Tam metin editörde ve satırın `title` ipucundadır. Boş metin "—" ile yazılır.
+   Önizleme taşarsa `…` ile kısalır (bilgi kaybı değil: tam metin ipucunda).
+   ============================================================================ */
+#view-audio .seg-item .seg-text-preview {
+  grid-area: text;
+  min-width: 0;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#view-audio .seg-item .seg-text-preview.is-empty { color: var(--ink-3); }
+#view-audio .seg-item.is-active .seg-text-preview { color: var(--ink); }

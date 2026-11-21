@@ -1196,18 +1196,19 @@ console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
   check('boş meta çizilmez (yalnız belirsiz okumada)', /\$\{rev === 'ambiguous'[\s\S]{0,140}sd-meta/.test(bodyA));
 }
 
-console.log('\n[2ap] Bölüm listesi = dizin (metin tek yerde) (v2.185)');
+console.log('\n[2ap] Bölüm listesi: metin önizlemesi (v2.193)');
 {
-  // ÖLÇÜM (v2.184, 1440×900): satır 74 px; bölüm metni HEM listede HEM
-  // editörde gösteriliyordu (tekrar). Metin listeden kaldırıldı: satır 50 px.
+  // v2.185 metni listeden kaldırmıştı; birleştirme/bölmede satırlar ayırt
+  // edilemiyordu. v2.193: TEK satır önizleme geri geldi; tam metin ipucunda.
   const jsB = read('assets/app.js');
   const rlB = read('assets/reading-layer.css');
   const i0 = jsB.indexOf('function segItemHtml');
   const i1 = jsB.indexOf('\nfunction ', i0 + 10);
   const rowFn = jsB.slice(i0, i1 > 0 ? i1 : i0 + 4000);
-  check('satırda METİN gösterilmiyor (tek kaynak: editör)', !/class="seg-text"/.test(rowFn));
-  check('metin satırın ipucunda', /title="\$\{esc\(\(s\.text/.test(rowFn));
-  check('ızgara 3 sütun (no · zaman · rozet)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*26px 132px/.test(rlB));
+  check('satırda metin ÖNİZLEMESİ var', /class="seg-text-preview/.test(rowFn));
+  check('tam metin satır ipucunda', /title="\$\{esc\(\(s\.text/.test(rowFn));
+  check('ızgara iki satır (bilgi + metin)', /#view-audio \.seg-item\s*\{[^}]*grid-template-areas:\s*"no time badges"\s*"text text text"/.test(rlB));
+  check('önizleme tek satır, taşarsa …', /\.seg-text-preview\s*\{[^}]*text-overflow:\s*ellipsis/.test(rlB));
   check('rozetler SAĞA hizalanır (durum en sağda)', /#view-audio \.seg-item \.seg-badges\s*\{[^}]*justify-content:\s*flex-end/.test(rlB));
   // Rozet görünürlüğü korunur (v2.130 kuralı): kırpma yok.
   check('rozet kutusu kırpmaz (v2.130 korunuyor)', /#view-audio \.seg-badges\s*\{[^}]*overflow:\s*visible/.test(rlB));
@@ -1249,6 +1250,18 @@ console.log('\n[2ar] Konuşmacı silme ve kullanılmayanları temizleme (v2.192)
   check('rapor atanmamış konuşmacıyı atlar', /if \(!segs\.length\) continue;/.test(js));
   check('silme bölüm atamalarını temizler', /function removeSpeaker[\s\S]{0,700}speakerId = ''/.test(js));
   check('atanmış bölüm sayısı isim VE kimlikle bulunur', /function speakerSegments[\s\S]{0,400}sg\.speakerId === id/.test(js));
+}
+
+console.log('\n[2as] Birleştirme/bölme sonrası kaydırma korunur (v2.193)');
+{
+  // KULLANICI: "Birleştirme yaptıktan sonra sayfa başa geliyor." Kök:
+  // renderSegments listeyi yeniden kuruyor, scrollTop sıfırlanıyordu.
+  const js = read('assets/app.js');
+  check('kaydırma yakalanır', /function captureSegScroll\(m\)/.test(js));
+  check('kaydırma geri yüklenir', /function restoreSegScroll\(m, st, focusIndex\)/.test(js));
+  check('birleştirme kaydırmayı korur', /function mergeSegmentWithNext[\s\S]{0,5000}captureSegScroll\(m\)[\s\S]{0,400}restoreSegScroll\(m, scroll, index\)/.test(js));
+  check('bölme kaydırmayı korur', /function splitSegmentAt[\s\S]{0,3500}captureSegScroll\(m\)[\s\S]{0,300}restoreSegScroll\(m, scroll, index \+ 1\)/.test(js));
+  check('scrollIntoView kullanılmıyor (sayfayı kaydırıyordu)', !/item\.scrollIntoView/.test(js));
 }
 
 console.log('\n[8] CSS borcu (nöbetçi)');

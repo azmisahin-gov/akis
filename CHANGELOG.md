@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.192.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.193.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.193 — Birleştirme sonrası kaydırma korunur; listede metin önizlemesi
+
+Kullanıcı: *"Birleştirme yaptıktan sonra sayfa başa geliyor; kullanım deneyimini
+etkiliyor. Ayrıca daha önce listeden kaldırdığımız, yalnız ipucunda gösterdiğimiz
+metin başlıkları birleştirme/bölme sırasında satırları ayırt etmeyi
+zorlaştırıyor; geri getirilmesini öneriyorum."*
+
+### KULLANICI NE GÖRECEK
+
+- Birleştirme/bölme/paragraf sonrası **liste konumu korunur**; sayfa başa dönmez.
+  Birleşen satır **görünür kalır**.
+- Liste satırında **tek satır metin önizlemesi** geri geldi; tam metin satır
+  ipucunda ve editörde. Boş metin "—" ile gösterilir.
+- Satır yüksekliği 34 → **50 px** (üstte numara/zaman/rozetler, altta metin).
+
+### ÖLÇÜM (gerçek Chromium, 30 bölüm)
+
+| Konu | Sonuç |
+|---|---|
+| Liste kaydırma (birleştirme öncesi → sonrası) | 800 → **704** (başa dönme yok; birleşen satır görünür) |
+| Sayfa / ana alan kaydırma | 0 → **0** |
+| Satır | **50 px**, metin önizlemesi var, tam metin ipucunda |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`tasarim` [2ap] (metin önizlemesi, iki satırlı ızgara) + [2as] (kaydırma
+yakalanır/geri yüklenir, `scrollIntoView` kullanılmaz).
 
 ## v2.192 — Konuşmacı silme ve rapor filtresi
 

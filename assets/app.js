@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.192';
+} from './schema.js?v=2.193';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.192';
+const APP_VERSION = '2.193';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3890,14 +3890,19 @@ function segItemHtml(m, s, i, prev, issue) {
   const propBadge = s.proposal
     ? `<span class="badge prop" title="İkinci göz önerisi: ${esc((s.proposal.by || '') + ' — ' + (s.proposal.text || ''))}">Öneri</span>`
     : '';
-  // LİSTE = DİZİN (v2.185): satırda METİN gösterilmez. Metin editörde tek
-  // kaynaktır; aynı metni iki yerde göstermek hem yer kaplıyor hem bakım
-  // yükü doğuruyordu (kullanıcı: "neden metni iki yerde gösteriyoruz?").
-  // Metin, satırın `title` ipucunda ve sağdaki editörde durur.
+  // METİN ÖNİZLEMESİ (v2.193). v2.185'te metin listeden kaldırılmıştı; ancak
+  // BİRLEŞTİRME/BÖLME sırasında satırlar ayırt edilemiyordu (kullanıcı geri
+  // getirilmesini istedi). Liste dizin kalır: TEK satır önizleme; tam metin
+  // satırın ipucunda ve editörde. Boş metin "—" ile gösterilir.
+  const preview = String(s.text || '').replace(/\s+/g, ' ').trim();
+  // LİSTE = DİZİN + TEK SATIR ÖNİZLEME (v2.193): satırda metnin KISA hâli
+  // görünür; tam metin editörde ve satır ipucunda. Amaç birleştirme/bölme
+  // sırasında satırları ayırt edebilmek.
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
     <span class="seg-badges">${timeBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
 function segListHtml(m) {
@@ -5195,6 +5200,35 @@ function scrollListToItem(list, el) {
   });
   // Yuvarlama farkı birikmesin: mutlak değer yazılır (artımlı ekleme YOK).
   if (Math.abs(next - list.scrollTop) >= 0.5) list.scrollTop = next;
+}
+// YAPISAL İŞLEM SONRASI KAYDIRMA KORUNUR (v2.193).
+// NEDEN: birleştirme/bölme `renderSegments` ile listeyi yeniden kuruyordu;
+// `scrollTop` sıfırlanıp sayfa başa dönüyordu (kullanıcı: "sayfa saba geliyor").
+function captureSegScroll(m) {
+  const id = CSS.escape(m.id);
+  return {
+    list: document.querySelector(`#seg-list-${id}`)?.scrollTop || 0,
+    detail: document.querySelector(`#seg-detail-${id}`)?.scrollTop || 0,
+    main: document.querySelector('.main-area')?.scrollTop || 0,
+    win: window.scrollY || 0
+  };
+}
+function restoreSegScroll(m, st, focusIndex) {
+  if (!st) return;
+  const id = CSS.escape(m.id);
+  const list = document.querySelector(`#seg-list-${id}`);
+  const detail = document.querySelector(`#seg-detail-${id}`);
+  if (list) list.scrollTop = st.list;
+  if (detail) detail.scrollTop = st.detail;
+  const main = document.querySelector('.main-area');
+  if (main) main.scrollTop = st.main;
+  if (st.win) window.scrollTo(0, st.win);
+  // Aktif/odak bölümü listede görünür tut (mutlak hesap; scrollIntoView YOK —
+  // o, sayfayı da kaydırıp "başa dönme" etkisini büyütüyordu).
+  if (list && Number.isInteger(focusIndex)) {
+    const item = list.querySelector(`.seg-item[data-seg-item="${focusIndex}"]`);
+    if (item) scrollListToItem(list, item);
+  }
 }
 function setActiveSegment(m, index, { scroll = true } = {}) {
   const segs = m.segments || [];
@@ -6864,12 +6898,12 @@ function splitSegmentAt(m, index, cut) {
   segs.splice(index, 1, left, right);
   m.activeSeg = index;
   segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
+  const scroll = captureSegScroll(m);
   persist();
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   if (card) renderSegments(m, card);
+  restoreSegScroll(m, scroll, index + 1);
   renderOverview();
-  const item = card?.querySelector(`#seg-list-${CSS.escape(m.id)} .seg-item[data-seg-item="${index + 1}"]`);
-  if (item && item.scrollIntoView) item.scrollIntoView({ block: 'nearest' });
   showToast(
     parts.autoSplit
       ? `Bölüm ${index + 1} ikiye ayrıldı (${timecode(cut)}). Metin de paylaştırıldı — kontrol edin.`
@@ -6945,8 +6979,10 @@ function mergeSegmentWithNext(m, index) {
     `Bölüm ${index + 1} + ${index + 2} · ${s.start}–${s.end} · ikinci bölümün ham çıktısı saklandı`
   );
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const scroll = captureSegScroll(m);
   persist();
   if (card) renderSegments(m, card);
+  restoreSegScroll(m, scroll, index);
   renderOverview();
   showToast(`Bölüm ${index + 1} ile sonraki birleştirildi. İkinci bölümün ham çıktısı saklandı.`);
 }
@@ -7023,9 +7059,11 @@ function paragraphize(m) {
   m.segments = merged;
   m.activeSeg = 0;
   segPlayback = { materialId: null, index: null, playing: false, atEnd: false, stopAt: null };
+  const scroll = captureSegScroll(m);
   persist();
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   if (card) renderSegments(m, card);
+  restoreSegScroll(m, scroll, 0);
   renderOverview();
   showToast(`Paragraf oluşturuldu: ${segs.length} bölüm ${merged.length} paragrafa indirildi.`);
 }
@@ -12669,6 +12707,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.193': {
+    title: 'Birleştirme sonrası kaydırma korunur; listede metin önizlemesi',
+    body:
+      'Birleştirme/bölme sonrası liste konumu korunur; sayfa başa dönmez. Liste ' +
+      'satırında tek satır metin önizlemesi geri geldi (tam metin ipucunda ve ' +
+      'editörde). Satır 50 px: üstte numara/zaman/rozetler, altta metin.'
+  },
   '2.192': {
     title: 'Konuşmacı silme ve rapor filtresi',
     body:

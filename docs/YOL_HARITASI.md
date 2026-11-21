@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.192.**
+yazılır. **Güncel sürüm: v2.193.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.193 — Birleştirme sonrası kaydırma korunur; metin önizlemesi (tamamlandı)
+
+`renderSegments` listeyi yeniden kurunca `scrollTop` sıfırlanıyor, sayfa başa
+dönüyordu. Artık `captureSegScroll`/`restoreSegScroll` ile liste, detay, ana
+alan ve pencere kaydırması korunur; birleşen satır görünür tutulur
+(`scrollIntoView` kaldırıldı). Liste satırına **tek satır metin önizlemesi**
+geri geldi (tam metin ipucunda/editörde); satır 50 px. Ölçüm: liste 800 → 704
+(başa dönme yok), sayfa 0 → 0, JS hatası 0. Koruyan test: `tasarim` [2ap] +
+[2as].
 
 ### v2.192 — Konuşmacı silme ve rapor filtresi (tamamlandı)
 

@@ -1,4 +1,4 @@
-# Özellikler (v2.192 — mevcut durum)
+# Özellikler (v2.193 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,10 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Birleştirme sonrası kaydırma korunur (v2.193):** Birleştirme/bölme/paragraf
+  sonrası liste konumu korunur, sayfa başa dönmez; birleşen satır görünür kalır.
+  Liste satırında **tek satır metin önizlemesi** vardır (tam metin ipucunda ve
+  editörde); satır 50 px.
 - **Konuşmacı silme ve rapor filtresi (v2.192):** Hiçbir bölüme atanmamış
   konuşmacı raporda görünmez. Konuşmacı panelinde **Sil** ve
   **Kullanılmayanları temizle** vardır; silme ses/metni silmez, atanmış

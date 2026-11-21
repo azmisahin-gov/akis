@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.192.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.193.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.192** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.193** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3236,6 +3236,31 @@ ATANMIŞ konuşmacıları göstermelidir. Silme sessiz olmamalı: ne silineceği
 ses/metnin korunacağını ve atanmış bölümlerin ne olacağını söylemeli.
 
 **Koruyan test:** `birim` [69] + `tasarim` [2ar].
+
+#### P23 — Birleştirme sonrası kaydırma + metin önizlemesi (v2.193)
+
+**KULLANICI:** *"Birleştirme yaptıktan sonra sayfa başa geliyor. Ayrıca listeden
+kaldırdığımız, yalnız ipucunda gösterdiğimiz metin başlıkları birleştirme/bölme
+sırasında satırları ayırt etmeyi zorlaştırıyor; geri getirilsin."*
+
+**DÜZELTME:**
+- `captureSegScroll(m)` + `restoreSegScroll(m, st, focusIndex)`: liste, detay,
+  `.main-area` ve `window` kaydırması yapısal işlem sonrası geri yüklenir;
+  birleşen/odak satır `scrollListToItem` ile görünür tutulur. `scrollIntoView`
+  KALDIRILDI (sayfayı da kaydırıyordu). Birleştirme/bölme/paragraf kullanır.
+- `segItemHtml`: `.seg-text-preview` tek satır önizleme (grid ikinci satır);
+  tam metin `title` ve editörde. Boş metin "—". Satır 34 → **50 px**.
+
+**ÖLÇÜM (gerçek Chromium, 30 bölüm):** liste scrollTop 800 → **704** (başa
+dönme yok, birleşen satır görünür); `.main-area`/window 0 → 0; satır 50 px;
+JS hatası 0.
+
+**DERS:** `renderSegments` DOM'u yeniden kurduğunda `scrollTop` sıfırlanır.
+Yapısal işlemlerden sonra kaydırmayı AÇIKÇA yakala/geri yükle; `scrollIntoView`
+kullanma (üst kapları da kaydırır). Liste dizin kalsa da birleştirme/bölme için
+tek satır metin önizlemesi gerekli: kullanıcı satırları metinden ayırt eder.
+
+**Koruyan test:** `tasarim` [2ap] + [2as].
 
 ### DOĞRULAMA (her oturum başı)
 
