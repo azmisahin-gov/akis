@@ -98,6 +98,17 @@ case
 rapora girmez. `mergeCases(mine, theirs)` iki kopyayı id ile birleştirir ve
 metin çakışmasını sessizce ezmez, `conflicts[]` olarak raporlar.
 
+## Alan tanımlama sistemi (v2.203)
+
+Gözlem bayrakları gibi eklemeli alanlar `schema.js` içinde **tek bir tanım
+listesinden** (`OBS_DEFS`) türetilir. `defineOptions()` anahtar/etiket/kısa
+etiket/ipucu haritalarını üretir; arayüz düğmeleri, rapor etiketleri, yardım
+listesi, `emptySegment`/`normalizeSegment` ve testler buradan beslenir. Yeni
+bir gözlem bayrağı eklemek için yalnız `OBS_DEFS`'e bir satır eklenir.
+
+Ayrıntı, geriye/ileriye uyumluluk kuralları ve diğer alan aileleri için
+kademeli plan: [`ALAN_SISTEMI.md`](ALAN_SISTEMI.md).
+
 ## Uygulama katmanları (`assets/app.js`)
 
 `app.js` şu katmanları içerir:

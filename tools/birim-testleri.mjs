@@ -3529,5 +3529,34 @@ console.log('\n== [74] Raporda okuma metni (v2.202)');
   eq('boş metin uydurulmaz', g2[0].text.includes('merhaba'), false);
 }
 
+console.log('\n== [75] Gözlem işaretleri: dosya birleştirme (v2.203)');
+{
+  // v2.203: gözlem bayrakları tek tanımdan (OBS_DEFS) gelir. Dosya
+  // birleştirmede iki tarafın işaretleri OR'lanır; bilinmeyen (ileri sürüm)
+  // anahtar da korunur. Önceden `ts.obs` hiç okunmuyordu → sessiz kayıp.
+  const mk = (id, obs) => {
+    const c = T.emptyCaseForTest({ id });
+    c.updatedAt = '2026-11-20T10:00:00Z';
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(
+      T.emptySegmentForTest({ id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', text: 'merhaba', obs })
+    );
+    c.materials.push(m);
+    return c;
+  };
+  const mine = mk('c1', { noise: true });
+  const theirs = mk('c2', { phone: true, noSpeech: true, futureFlag: true });
+  theirs.updatedAt = '2026-11-20T11:00:00Z';
+  const r = T.mergeCasesForTest(mine, theirs);
+  const obs = r.merged.materials[0].segments[0].obs;
+  eq('yerel gözlem korunur (OR)', obs.noise, true);
+  eq('gelen telefon gözlemi alınır', obs.phone, true);
+  eq('gelen sessizlik gözlemi alınır', obs.noSpeech, true);
+  eq('ortak olmayan bilinen anahtar false kalır', obs.music, false);
+  eq('bilinmeyen ileri anahtar korunur', obs.futureFlag, true);
+  eq('gözlem birleşmesi günlüğe yazılır', r.applied.some((x) => /gözlem işaretleri birleşti/.test(x)), true);
+  eq('çakışma üretmez (gözlemler eklenir)', r.conflicts.length, 0);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

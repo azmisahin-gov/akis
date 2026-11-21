@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.202.**
+yazılır. **Güncel sürüm: v2.203.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,19 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.203 — Alan tanımlama sistemi ve iki yeni gözlem işareti (tamamlandı)
+
+Gözlem bayrakları `schema.js` → `OBS_DEFS` **tek tanım noktasına** taşındı;
+`defineOptions()` anahtar/etiket/kısa etiket/ipucu haritalarını üretir. Arayüz
+düğmeleri, rapor etiketleri, yardım listesi, `emptySegment`/`normalizeSegment`,
+gözlem sayacı ve testler buradan beslenir. **Yeni bayrak = tek satır.**
+Yeni işaretler: **telefon görüşmesi** ve **sessizlik (konuşma yok)**.
+Bilinmeyen (ileri sürüm) anahtarlar kayıtta korunur, rapora basılmaz;
+`mergeCases` gözlemleri OR'lar. ≤600 px'te tek "Gözlem" düğmesi + panel.
+Ölçüm: 1440/900 alt şerit 30 px; 360 31 px; kırpılan 0; JS hatası 0.
+Koruyan test: `sema` [3e] + `birim` [75] + `rapor` Senaryo 6 + `tasarim` [2bc].
+Ayrıntı: [`ALAN_SISTEMI.md`](ALAN_SISTEMI.md).
 
 ### v2.202 — Rapora "Okuma metni" (tamamlandı)
 

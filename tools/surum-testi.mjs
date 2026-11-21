@@ -172,7 +172,8 @@ const REQUIRED_TOPICS = [
   ['hızlı onaya uygun', /Hızlı onaya uygun/i],
   ['toplu onay', /toplu onay|hızlı onayla/i],
   ['çözümleme profili', /Çözümleme profilleri|Çözümleme profili/i],
-  ['profilin sınırı', /şive tanıma[\s\S]{0,200}yapmaz|kaynak ayrıştırma[\s\S]{0,120}yapmaz/i]
+  ['profilin sınırı', /şive tanıma[\s\S]{0,200}yapmaz|kaynak ayrıştırma[\s\S]{0,120}yapmaz/i],
+  ['gözlem işaretleri (telefon/sessizlik)', /telefon görüşmesi[\s\S]{0,300}sessizlik \(konuşma yok\)|sessizlik \(konuşma yok\)[\s\S]{0,300}telefon görüşmesi/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
@@ -189,7 +190,8 @@ const HELP_TOPICS = [
   ['A–B döngüsü', /A–B döngüsü/],
   ['konuşmacı standardı', /Konuşmacı standardı/],
   ['toplu onay', /toplu onay/],
-  ['çözümleme profili', /Çözümleme profili/]
+  ['çözümleme profili', /Çözümleme profili/],
+  ['gözlem işaretleri', /Gözlem işaretleri/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));

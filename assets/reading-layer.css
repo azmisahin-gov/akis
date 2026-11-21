@@ -2550,6 +2550,41 @@ input::placeholder, textarea::placeholder {
   padding: 2px 7px;
   font-size: var(--fs-2xs);
 }
+/* DAR EKRAN GÖZLEM MENÜSÜ (v2.203): 6+ düğme alt şeritte 4 satıra çıkıp
+   metni eziyordu. ≤600 px'te tek "Gözlem" düğmesi aynı düğmeleri açılır
+   panelde gösterir; geniş ekranda düğmeler görünür kalır. */
+#view-audio .sd-obs-menu {
+  display: none;
+  position: relative;
+  flex: 0 0 auto;
+}
+#view-audio .sd-obs-menu > summary {
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+#view-audio .sd-obs-menu > summary::-webkit-details-marker { display: none; }
+#view-audio .sd-obs-menu[open] > summary {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#view-audio .sd-obs-menu > .sd-obs {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  width: min(340px, 80vw);
+  padding: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+@media (max-width: 600px) {
+  #view-audio .sd-editor-bottom .sd-obs-row { display: none; }
+  #view-audio .sd-obs-menu { display: block; }
+}
 #view-audio .sd-quick {
   position: relative;
   display: flex;

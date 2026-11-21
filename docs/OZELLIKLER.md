@@ -1,4 +1,4 @@
-# Özellikler (v2.202 — mevcut durum)
+# Özellikler (v2.203 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,13 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Gözlem işaretleri tek kaynaktan (v2.203):** Bölüm gözlem bayrakları
+  `schema.js` → `OBS_DEFS` listesinde tanımlanır; arayüz düğmeleri, rapor
+  etiketleri, yardım listesi, `emptySegment`/`normalizeSegment` ve testler
+  buradan türetilir. Yeni bayrak eklemek için **tek satır** yeterlidir. Yeni
+  işaretler: **telefon görüşmesi** ve **sessizlik (konuşma yok)** (ölçülen
+  sessizlik oranından ayrıdır). Dosya birleştirmede gözlemler **OR**'lanır;
+  bilinmeyen (ileri sürüm) anahtarlar kayıtta korunur, rapora basılmaz.
 - **Raporda okuma metni (v2.202):** Raporun **5.1** bölümünde, ayrıntılı kanıt
   tablosundan **sonra** her kayıt için **"Okuma metni"** alt bölümü gelir. Aynı
   konuşmacının ardışık bölümleri tek paragraf; başında konuşmacı kodu/etiketi,

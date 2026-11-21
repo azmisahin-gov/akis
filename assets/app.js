@@ -33,19 +33,22 @@ import {
   SPEAKER_ROLE,
   SPEAKER_GENDER,
   MEDIUM_TYPE,
+  OBS_DEFS,
+  OBS_KEYS,
+  OBS_LABEL,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.202';
+} from './schema.js?v=2.203';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.202';
+const APP_VERSION = '2.203';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -173,12 +176,8 @@ const REPORT_TEXT = {
   speakerIntro:
     'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
-  obsLabels: {
-    noise: 'arka plan gürültüsü',
-    overlap: 'üst üste konuşma',
-    inaudible: 'anlaşılmaz bölüm',
-    music: 'müzik/ses efekti'
-  },
+  // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
+  obsLabels: OBS_LABEL,
   segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
   spectrogramLabel: 'Spektrogram incelendi',
   werHeading: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
@@ -4311,17 +4310,15 @@ function segDetailHtml(m) {
   if (pr.score >= 15) notes.push(`öncelik: ${pr.reasons.join(', ')}`);
   const silence = s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA ? `sessizlik %${Math.round(s.silence.ratio * 100)}` : '';
 
-  const obsBtns = [
-    ['noise', 'gürültü', 'Arka plan gürültüsü'],
-    ['overlap', 'üst üste', 'Üst üste konuşma'],
-    ['inaudible', 'anlaşılmaz', 'Anlaşılmaz bölüm'],
-    ['music', 'müzik', 'Müzik/ses efekti']
-  ]
-    .map(
-      ([k, lbl, tip]) =>
-        `<button class="mini-button obs-btn ${s.obs && s.obs[k] ? 'on' : ''}" data-obs="${i}|${k}" title="${esc(tip)}">${lbl}</button>`
-    )
-    .join('');
+  // TEK KAYNAK (v2.203): düğmeler schema.js `OBS_DEFS`ten türetilir.
+  // Yeni bir gözlem anahtarı eklemek için yalnız OBS_DEFS'e satır eklenir.
+  const obsBtns = OBS_DEFS.map(
+    (d) =>
+      `<button class="mini-button obs-btn ${s.obs && s.obs[d.key] ? 'on' : ''}" data-obs="${i}|${d.key}" title="${esc(d.hint)}">${esc(d.short)}</button>`
+  ).join('');
+  // Dar ekranda düğme yığını metin alanını ezmesin: tek "Gözlem" düğmesi +
+  // açılır panel. Aynı `obsBtns` kullanılır; mantık kopyası yok.
+  const activeObsCount = OBS_KEYS.filter((k) => s.obs && s.obs[k]).length;
 
   // YERLEŞİM (v2.62): beş bölge, hiçbiri diğerinin üstüne binmez.
   //   1. Başlık        — bölüm no + gezinme + dinle
@@ -4419,8 +4416,14 @@ function segDetailHtml(m) {
             <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
           </div>
           <div class="sd-editor-bottom">
-            <!-- GÖZLEM İŞARETLERİ: rapora aktarılan işaretler; sol altta, yer kaplamaz. -->
-            <div class="sd-obs" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            <!-- GÖZLEM İŞARETLERİ: rapora aktarılan işaretler; sol altta, yer kaplamaz.
+                 Geniş ekranda düğmeler görünür; ≤600 px'te tek "Gözlem" düğmesi
+                 aynı düğmeleri açılır panelde gösterir (düğme yığını metni ezmesin). -->
+            <div class="sd-obs sd-obs-row" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            <details class="sd-obs-menu">
+              <summary class="sd-mini" title="Gözlem işaretleri (rapora yazılır)">Gözlem${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
+              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            </details>
             <div class="sd-quick">
               <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Sık kullanılan gözlem etiketini metne ekle">+ Hızlı ekle</button>
               <div class="sd-quick-menu" role="group" aria-label="Hızlı metin ekle" hidden>
@@ -8884,9 +8887,18 @@ function tcRange(a, b) {
 }
 function segObsText(s) {
   const o = s.obs || {};
-  const keys = Object.keys(o).filter((k) => o[k]);
+  // Yalnız BİLİNEN anahtarlar yazılır (v2.203): ileri sürümün bilinmeyen
+  // anahtarı kayıtta korunur ama eski sürümün raporunda ham kod olarak basılmaz.
+  const keys = OBS_KEYS.filter((k) => o[k]);
   if (!keys.length) return '—';
   return keys.map((k) => REPORT_TEXT.obsLabels[k] || k).join(', ');
+}
+// YARDIM: gözlem işaretleri listesi TEK KAYNAKTAN (v2.203). Yeni bir OBS_DEFS
+// satırı yardım ekranında kendiliğinden görünür; ayrı metin güncellemesi yok.
+function renderObsHelp() {
+  const el = $('#obsHelpList');
+  if (!el) return;
+  el.innerHTML = OBS_DEFS.map((d) => `<b>${esc(d.short)}</b> — ${esc(d.label)}`).join(' · ');
 }
 // Raporun ÜÇ çıktısı (HTML/DOCX/UDF) aynı hücreyi kullanır. Aksi hâlde aynı
 // bölüm bir çıktıda "S1 · Kiracı", diğerinde "Kiracı" görünür ve tutarlılık
@@ -8940,7 +8952,7 @@ function reviewSummaryRows(c) {
   const reviewed = segs.filter((s) => isReviewed(s)).length;
   const inaudible = segs.filter((s) => segReview(s) === 'inaudible').length;
   const blank = segs.filter((s) => isHallucination(s.text)).length;
-  const observed = segs.filter((s) => s.obs && Object.keys(s.obs).some((k) => s.obs[k])).length;
+  const observed = segs.filter((s) => s.obs && OBS_KEYS.some((k) => s.obs[k])).length;
   const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA).length;
   const spec = mats.filter((m) => m.spectrogramReviewed).length;
   const chan = mats.filter((m) => m.tech?.channels === 2 && channelMode(m) !== 'both').length;
@@ -11492,7 +11504,18 @@ function setupEvents() {
         if (sg) {
           sg.obs = sg.obs || {};
           sg.obs[key] = !sg.obs[key];
-          b.classList.toggle('on', sg.obs[key]);
+          // Aynı anahtarın TÜM düğmeleri (geniş satır + dar menü) ve "Gözlem (N)"
+          // sayacı güncellenir; aksi hâlde biri eski durumu gösterir (v2.203).
+          card.querySelectorAll('[data-obs]').forEach((el) => {
+            const [ei, ek] = el.dataset.obs.split('|');
+            if (ei === String(ix) && ek === key) el.classList.toggle('on', !!sg.obs[key]);
+          });
+          const menu = card.querySelector('.sd-obs-menu');
+          const summary = menu && menu.querySelector('summary');
+          if (summary) {
+            const n = OBS_KEYS.filter((k) => sg.obs && sg.obs[k]).length;
+            summary.textContent = `Gözlem${n ? ` (${n})` : ''}`;
+          }
           persist();
           renderOverview();
           if ($('#view-report').classList.contains('active')) renderReport();
@@ -13019,6 +13042,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.203': {
+    title: 'Alan tanımlama sistemi ve iki yeni gözlem işareti',
+    body:
+      'Gözlem işaretlerine "telefon görüşmesi" ve "sessizlik (konuşma yok)" eklendi. ' +
+      'İşaretler artık tek tanımdan (OBS_DEFS) üretilir; yeni bir işaret eklemek için ' +
+      'yalnız o listeye bir satır eklenir. Eski kayıtlar korunur; bilinmeyen gözlem ' +
+      'anahtarları kaydetmede silinmez. "Sessizlik" işareti ölçülen sessizlik oranından ' +
+      'ayrıdır. Dar ekranda tek "Gözlem" düğmesi aynı işaretleri açılır panelde gösterir.'
+  },
   '2.202': {
     title: 'Rapora "Okuma metni" eklendi',
     body:
@@ -14117,6 +14149,7 @@ async function init() {
   populateQuestionsForm();
   renderOverview();
   setupEvents();
+  renderObsHelp();
   renderQueue();
   try {
     if (localStorage.getItem('akis.focusMode') === '1') setFocusMode(true);

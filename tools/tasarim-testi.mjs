@@ -1506,5 +1506,24 @@ console.log('\n[2bb] Raporda okuma metni (v2.202)');
   check('okuma metni salt okunur (paragraphize yok)', /function readingGroupsFor\(m\)[\s\S]{0,400}paragraphGroups/.test(appJs) && !/paragraphize\(/.test(appJs));
 }
 
+console.log('\n[2bc] Alan tanımlama: gözlem bayrakları tek kaynak (v2.203)');
+{
+  const appJs = read('assets/app.js');
+  const schemaJs = read('assets/schema.js');
+  const help = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('OBS_DEFS tek tanım noktası', /export const OBS_DEFS = \[/.test(schemaJs));
+  check('türetilmiş sabitler defineOptions ile', /const OBS = defineOptions\(OBS_DEFS\)/.test(schemaJs));
+  check('gözlem düğmeleri OBS_DEFS ten', /OBS_DEFS\.map\(/.test(appJs) && !/\['noise', 'gürültü'/.test(appJs));
+  check('rapor etiketleri OBS_LABEL den', /obsLabels: OBS_LABEL/.test(appJs));
+  check('yardım listesi dinamik', /id="obsHelpList"/.test(help) && /function renderObsHelp/.test(appJs));
+  check('telefon ve sessizlik tanımlı', /key: 'phone'/.test(schemaJs) && /key: 'noSpeech'/.test(schemaJs));
+  check('bilinmeyen anahtar normalize da korunur', /BİLİNMEYEN ANAHTAR KORUNUR/.test(schemaJs));
+  check('mergeCases gözlemleri OR lar', /gözlem işaretleri birleşti/.test(schemaJs));
+  // Dar ekranda düğme yığını metni ezmesin: tek "Gözlem" düğmesi + panel.
+  check('dar ekran gözlem menüsü var', /class="sd-obs-menu"/.test(appJs) && /sd-obs-row/.test(appJs));
+  check('dar ekran menüsü ≤600 px', /@media \(max-width: 600px\)[\s\S]{0,300}sd-obs-row/.test(layer));
+  check('menü aynı düğmeleri kullanır (kopya mantık yok)', /activeObsCount/.test(appJs) && /Gözlem\$\{activeObsCount/.test(appJs));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.202.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.203.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3888,3 +3888,80 @@ uydurma metin üretilmez.
 - Konuşmacı etiketi kayıt başınadır; iki kayıttaki `S1` aynı kişi olmayabilir.
 - Rapor uyarısı ekran "Rapor öncesi kontrol" bloğundadır; DOCX/UDF metnine yeni
   bir cümle eklenmedi (v2.200 notu).
+
+## YENİ OTURUM DEVRİ (v2.203) — Alan tanımlama sistemi
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.203** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1096 birim + 420 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.203** |
+| Açık konu | Alan sisteminin diğer aileleri (sınıflandırma, case alanları, rapor bölümleri) |
+
+### Ne yapıldı
+
+Kullanıcı yalnız iki gözlem işareti değil, **genişletilebilir alan altyapısı**
+istedi. Gözlem bayrakları tek tanım noktasına taşındı:
+
+- `schema.js` → `OBS_DEFS` (key, label, short, hint) — **TEK KAYNAK**.
+- `defineOptions(defs)` → `{ defs, keys, label, short, hint }`.
+- Türetilen: `OBS_KEYS`, `OBS_LABEL`, `OBS_SHORT`, `OBS_HINT`, `emptyObs()`.
+- `emptySegment.obs` ve `normalizeSegment` buradan beslenir.
+- `app.js` → `obsBtns` `OBS_DEFS.map`; `REPORT_TEXT.obsLabels = OBS_LABEL`;
+  `segObsText`/gözlem sayacı yalnız `OBS_KEYS`.
+- Yardım listesi `#obsHelpList` çalışma anında `OBS_DEFS`ten doldurulur.
+- Yeni işaretler: **telefon görüşmesi** (`phone`), **sessizlik (konuşma yok)**
+  (`noSpeech`; ölçülen `s.silence` oranından AYRIDIR).
+- ≤600 px'te tek **Gözlem** düğmesi + açılır panel (6 düğme 4 satıra çıkıp
+  metni eziyordu).
+- `mergeCases` gözlemleri **OR**'lar; gelen eklemeler `applied` günlüğüne yazılır.
+- `normalizeSegment` **bilinmeyen anahtarı silmez** (ileri uyum); rapor/sayaç
+  yalnız bilinen anahtarları basar/sayar.
+
+**Yeni gözlem bayrağı eklemek için tek zorunlu değişiklik `OBS_DEFS`'e bir
+satır.** Ayrıntı: [`docs/ALAN_SISTEMI.md`](docs/ALAN_SISTEMI.md).
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Genişlik | Alt şerit | Düğmeler | Kırpılan |
+|---|---|---|---|
+| 1440 / 900 | **30 px**, tek satır | 6 görünür | 0 |
+| 360 | **31 px**, "Gözlem" düğmesi | panelde 6, 2 satır | 0 |
+
+Rapor GÖZLEM hücresi: `telefon görüşmesi, sessizlik (konuşma yok)`; bilinmeyen
+`futureFlag` **basılmadı**; yardım listesi 6 işareti gösterdi; JS hatası **0**.
+
+### DEĞİŞMEZ KURALLAR
+
+1. Yeni gözlem bayrağı = **yalnız `OBS_DEFS`'e satır**; `OBS_KEYS`/`OBS_LABEL`/
+   `OBS_SHORT`/`OBS_HINT` elle yazılmaz.
+2. Arayüz düğmeleri `OBS_DEFS`ten, rapor etiketleri `OBS_LABEL`den türetilir.
+3. `emptySegment`/`normalizeSegment` bilinen anahtarları tamamlar; bilinmeyen
+   anahtarı **silmez**.
+4. Rapor/sayaç yalnız **bilinen** anahtarları basar/sayar.
+5. `mergeCases` gözlemleri OR'lar ve günlüğe yazar.
+6. Testler `OBS_DEFS`i gezer; yeni anahtar otomatik sınanır.
+7. Eklemeli alan `SCHEMA_VERSION`ı artırmaz; kırıcı değişiklik artırır.
+8. **Evrensel şema motoru / dinamik form üreteci yazma**: büyük yeniden yazım ve
+   veri kaybı riski. Alan aileleri kademeli taşınır.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.203 sonrası)
+
+1. **v2.204 — Sınıflandırma/rol seçenekleri `defineOptions` desenine.** Düşük
+   risk; etiket/kısa etiket/ipucu tek kaynaktan. (Alan sisteminin 2. aşaması.)
+2. **v2.205 — Dosyalar arası konuşmacı kaydı** (case-level registry; uzman
+   kanaati).
+3. **v2.206 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+4. **Case alanları / rapor bölümleri** — `ALAN_SISTEMI.md` §5'teki kademeli plan;
+   her biri ayrı sürüm.
+
+### Bilinen sınırlar (hata değil)
+
+- v2.203 **öncesi** uygulama yeni paketi açıp kaydederse bilinmeyen gözlem
+  anahtarlarını siler; paketler eski sürümle paylaşılmamalıdır.
+- "Sessizlik" işareti ölçülen sessizlik oranı değildir; ölçüm ayrı satırdadır.
+- ≤600 px'te gözlemler tek "Gözlem" düğmesi arkasındadır (açılır panel).
+- Case alanları ve rapor bölümleri hâlâ özel kod; ortaklaştırma kademeli.

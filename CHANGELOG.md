@@ -6,12 +6,85 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.202.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.203.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.203 — Alan tanımlama sistemi ve iki yeni gözlem işareti
+
+Kullanıcı: *"Yeni gözlem seçenekleri, değerlendirme alanları, kategoriler, rapor
+başlıkları eklemek istediğimde schema.js, app.js, raporlar, testler ve belgeler
+arasında elle çok sayıda değişiklik yapmak zorunda kalmamalıyım."*
+
+### Ne yapıldı
+
+Gözlem bayrakları **tek tanım noktasına** taşındı:
+
+```js
+// schema.js
+export const OBS_DEFS = [
+  { key: 'noise', label: 'arka plan gürültüsü', short: 'gürültü', hint: '…' },
+  …
+];
+```
+
+`defineOptions(defs)` bu listeden `OBS_KEYS`, `OBS_LABEL`, `OBS_SHORT`,
+`OBS_HINT` ve `emptyObs()` üretir. Şunlar artık **elle kopyalanmaz**:
+
+- arayüz gözlem düğmeleri (`OBS_DEFS.map`),
+- rapor GÖZLEM etiketleri (`OBS_LABEL`),
+- yardım listesi (`#obsHelpList`, çalışma anında doldurulur),
+- `emptySegment` varsayılanı,
+- `normalizeSegment` tamamlaması,
+- gözlem sayacı,
+- testler.
+
+**Yeni bir gözlem bayrağı eklemek için yalnız `OBS_DEFS`'e bir satır** eklenir.
+
+### Yeni işaretler
+
+- **telefon görüşmesi** (`phone`) — teslim ortamı "Telefon"dan ayrıdır.
+- **sessizlik (konuşma yok)** (`noSpeech`) — **ölçülen** sessizlik oranından
+  (`s.silence`) ayrıdır; etiket bunu açıkça söyler.
+
+### Geriye / ileriye uyumluluk
+
+- Eski kayıtta eksik bilinen anahtar `false` olur; veri kaybı yok.
+- `normalizeSegment` artık **bilinmeyen anahtarı silmez**; ileri sürümün bayrağı
+  kaydetmede korunur. Rapor ve sayaç yalnız **bilinen** anahtarları basar/sayar.
+- `mergeCases` gözlemleri **OR**'lar; gelen eklemeler `applied` günlüğüne yazılır.
+  (Önceden `ts.obs` hiç okunmuyordu → sessiz kayıp.)
+- Eklemeli alan olduğu için `SCHEMA_VERSION` artırılmadı.
+
+### Dar ekran
+
+6 düğme 360 px'te 4 satıra çıkıp metni eziyordu. ≤600 px'te tek **Gözlem**
+düğmesi aynı düğmeleri açılır panelde gösterir; geniş ekranda düğmeler görünür.
+
+**Ölçüm (gerçek Chromium + CDP):**
+
+| Genişlik | Alt şerit | Düğmeler | Kırpılan |
+|---|---|---|---|
+| 1440 / 900 | **30 px**, tek satır | 6 görünür | 0 |
+| 360 | **31 px**, "Gözlem" düğmesi | panelde 6, 2 satır | 0 |
+
+Rapor GÖZLEM hücresi: `telefon görüşmesi, sessizlik (konuşma yok)`; bilinmeyen
+`futureFlag` **basılmadı**; yardım listesi 6 işareti gösterdi; JS hatası **0**.
+
+**KORUYAN TEST:** `sema` [3e] (16) + `birim` [75] (7) + `rapor` Senaryo 6 +
+`tasarim` [2bc] (11).
+
+Ayrıntılı desen, sınırlar ve diğer alan aileleri için kademeli plan:
+[`docs/ALAN_SISTEMI.md`](docs/ALAN_SISTEMI.md).
+
+### Bilinen sınır
+
+v2.203 **öncesi** bir uygulama, yeni paketi açıp kaydederse bilinmeyen gözlem
+anahtarlarını hâlâ siler. Yeni işaretleri içeren paketler eski sürümle
+paylaşılmamalıdır; bu geriye dönük düzeltilemez.
 
 ## v2.202 — Rapora "Okuma metni"
 

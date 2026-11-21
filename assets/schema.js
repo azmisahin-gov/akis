@@ -108,8 +108,66 @@ export const MEDIUM_TYPE = [
   'other'
 ];
 
-/** Bölüm gözlem işaretleri (anahtar → etiket arayüzde). */
-export const OBS_KEYS = ['noise', 'overlap', 'inaudible', 'music'];
+/**
+ * ALAN TANIMLAMA — TEK KAYNAK (v2.203).
+ *
+ * Gözlem bayrakları burada tanımlanır. Yeni bir bayrak eklemek için YALNIZ
+ * bu listeye bir satır ekleyin; aşağıdaki türetilmiş sabitler, `emptyObs()`,
+ * arayüz düğmeleri, rapor etiketleri, yardım listesi ve testler buradan
+ * beslenir. Böylece aynı alanı dört ayrı yerde elle yazmak gerekmez.
+ *
+ * Alanlar:
+ *   key   — kayda yazılan ASCII kod (DEĞİŞMEZ)
+ *   label — rapor/ipucu tam etiketi
+ *   short — arayüz düğmesi kısa etiketi
+ *   hint  — fare ipucu / erişilebilirlik açıklaması
+ */
+export const OBS_DEFS = [
+  { key: 'noise', label: 'arka plan gürültüsü', short: 'gürültü', hint: 'Arka plan gürültüsü' },
+  { key: 'overlap', label: 'üst üste konuşma', short: 'üst üste', hint: 'Üst üste konuşma' },
+  { key: 'inaudible', label: 'anlaşılmaz bölüm', short: 'anlaşılmaz', hint: 'Anlaşılmayan bölüm' },
+  { key: 'music', label: 'müzik/ses efekti', short: 'müzik', hint: 'Müzik/ses efekti' },
+  {
+    key: 'phone',
+    label: 'telefon görüşmesi',
+    short: 'telefon',
+    hint: 'Konuşma telefon görüşmesi; karşı tarafın sesi duyuluyor veya duyulmuyor olabilir.'
+  },
+  {
+    key: 'noSpeech',
+    label: 'sessizlik (konuşma yok)',
+    short: 'sessizlik',
+    hint: 'Bu aralıkta konuşma yok; sessizlik. Ölçülen sessizlik oranından AYRIDIR.'
+  }
+];
+
+/**
+ * Ortak alan tanımı türeteci. Aynı desen ileride sınıflandırma/rol seçenekleri
+ * için de kullanılabilir: `defineOptions(defs)` → { defs, keys, label, short,
+ * hint }. Yeni bir alan ailesi eklerken bu yardımcıyı kullanın; etiketleri
+ * ayrı ayrı kopyalamayın.
+ */
+export function defineOptions(defs) {
+  const list = Array.isArray(defs) ? defs : [];
+  return {
+    defs: list,
+    keys: list.map((d) => d.key),
+    label: Object.fromEntries(list.map((d) => [d.key, d.label])),
+    short: Object.fromEntries(list.map((d) => [d.key, d.short || d.label])),
+    hint: Object.fromEntries(list.map((d) => [d.key, d.hint || d.label]))
+  };
+}
+const OBS = defineOptions(OBS_DEFS);
+export const OBS_KEYS = OBS.keys;
+export const OBS_LABEL = OBS.label;
+export const OBS_SHORT = OBS.short;
+export const OBS_HINT = OBS.hint;
+
+/** Boş gözlem nesnesi — TEK KAYNAK. Bilinmeyen `over` anahtarları yok sayılır. */
+export function emptyObs(over = {}) {
+  const src = over && typeof over === 'object' ? over : {};
+  return Object.fromEntries(OBS_KEYS.map((k) => [k, !!src[k]]));
+}
 
 /** Rapor türü. */
 export const REPORT_TYPE = ['hukuk', 'ceza', 'savcilik', 'icra'];
@@ -234,12 +292,7 @@ export const isSecondEyesRole = (role) => SECOND_EYES_ROLES.includes(role);
 export const APPROVER_ROLES = ['owner', 'expert'];
 export const canApproveRole = (role) => APPROVER_ROLES.includes(role);
 
-export const OBS_LABEL = {
-  noise: 'arka plan gürültüsü',
-  overlap: 'üst üste konuşma',
-  inaudible: 'anlaşılmaz bölüm',
-  music: 'müzik/ses efekti'
-};
+// OBS_LABEL artık yukarıda `OBS_DEFS`ten türetilir (v2.203); burada kopya yok.
 
 // ---- 4. Kimlik üretimi ----------------------------------------------------
 // Tarayıcıda crypto.randomUUID varsa o kullanılır; yoksa zaman + sayaç.
@@ -309,7 +362,7 @@ export function emptySpeaker(over = {}) {
 }
 
 export function emptySegment(over = {}) {
-  return {
+  const out = {
     id: newId('sg'),
     start: '', // 'HH:MM:SS.mmm'
     end: '',
@@ -337,12 +390,16 @@ export function emptySegment(over = {}) {
     reviewedBy: '', // teamMember.id — son kontrol kararını veren
     reviewedAt: '', // karar zamanı (ISO)
     review: 'pending',
-    obs: { noise: false, overlap: false, inaudible: false, music: false },
+    obs: emptyObs(),
     history: [], // [{ text, at, actor }]
     silence: null, // analyzeSilence çıktısı
     words: [], // [{ t, d, w }] — kelime zamanlaması (varsa)
     ...over
   };
+  // `over.obs` KISMİ olabilir; bilinen anahtarların hepsi bulunmalı (v2.203).
+  // Bilinmeyen (ileri sürüm) anahtarlar korunur.
+  out.obs = { ...out.obs, ...emptyObs(out.obs) };
+  return out;
 }
 
 export function emptyLevels(over = {}) {
@@ -475,6 +532,13 @@ const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
 export function normalizeSegment(src = {}) {
   const s = isObj(src) ? src : {};
   const obs = isObj(s.obs) ? s.obs : {};
+  // BİLİNMEYEN ANAHTAR KORUNUR (v2.203): ileri sürümün eklediği gözlem bayrağı
+  // bu sürümde tanınmasa bile kayıtta kalır; kaydetmede sessizce silinmez.
+  // Bilinen anahtarlar her zaman bulunur (eski kayıtta eksikse false).
+  const obsOut = {
+    ...Object.fromEntries(Object.entries(obs).map(([k, v]) => [k, !!v])),
+    ...emptyObs(obs)
+  };
   const out = {
     ...s,
     id: s.id || newId('sg'),
@@ -506,7 +570,7 @@ export function normalizeSegment(src = {}) {
     // okunuyordu ve tanınmayan değer sessizce 'pending'e düşüyordu; yani v2
     // dosyasındaki onaylar dosya açılır açılmaz SİLİNİYORDU.
     review: normalizeReviewState(s.review),
-    obs: Object.fromEntries(OBS_KEYS.map((k) => [k, !!obs[k]])),
+    obs: obsOut,
     history: Array.isArray(s.history)
       ? s.history.filter(isObj).map((h) => ({ text: str(h.text), at: str(h.at), actor: str(h.actor) }))
       : [],
@@ -1321,6 +1385,22 @@ export function mergeCases(mine, theirs) {
       if (ts.proposal && (!ms.proposal || (ts.proposal.at || '') > (ms.proposal.at || ''))) {
         ms.proposal = ts.proposal;
         applied.push(`ikinci göz önerisi alındı: ${ms.id}`);
+      }
+      // GÖZLEM İŞARETLERİ (v2.203): iki tarafın işaretleri BİRLEŞİR (OR).
+      // Önceden `ts.obs` hiç okunmuyordu; gelen tarafın işaretleri sessizce
+      // kayboluyordu. Bilinmeyen (ileri sürüm) anahtarlar da korunur.
+      const myObs = isObj(ms.obs) ? ms.obs : {};
+      const theirObs = isObj(ts.obs) ? ts.obs : {};
+      const obsKeys = new Set([...Object.keys(myObs), ...Object.keys(theirObs)]);
+      if (obsKeys.size) {
+        const mergedObs = {};
+        const addedObs = [];
+        for (const k of obsKeys) {
+          mergedObs[k] = !!(myObs[k] || theirObs[k]);
+          if (!myObs[k] && theirObs[k]) addedObs.push(k);
+        }
+        ms.obs = mergedObs;
+        if (addedObs.length) applied.push(`gözlem işaretleri birleşti: ${ms.id} (${addedObs.join(', ')})`);
       }
       // Gelen metni KİM düzenledi? (öneriye çevirme kararı için)
       const tEditor = ts.lastEditBy ? theirTeam.get(ts.lastEditBy) : null;

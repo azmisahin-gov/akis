@@ -269,10 +269,21 @@ console.log('\n[Senaryo 6] gözlem ve kanal bilgisi');
 {
   const c = withMaterial({ channelMode: 'left' });
   c.materials[0].tech.channels = 2;
-  c.materials[0].segments[0].obs = { noise: true, overlap: true };
+  // v2.203: yeni telefon/sessizlik işaretleri + bilinmeyen (ileri sürüm) anahtar.
+  c.materials[0].segments[0].obs = {
+    noise: true,
+    overlap: true,
+    phone: true,
+    noSpeech: true,
+    futureFlag: true
+  };
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('gürültü etiketi', REPORT_TEXT.obsLabels.noise, H, U, D);
   checkShared('üst üste konuşma etiketi', REPORT_TEXT.obsLabels.overlap, H, U, D);
+  checkShared('telefon etiketi', REPORT_TEXT.obsLabels.phone, H, U, D);
+  checkShared('sessizlik etiketi', REPORT_TEXT.obsLabels.noSpeech, H, U, D);
+  // Bilinmeyen ileri anahtar kayıtta korunur ama rapora BASILMAZ (v2.203).
+  check('bilinmeyen gözlem anahtarı rapora basılmaz', ![H, U, D].some((t) => String(t).includes('futureFlag')));
 }
 
 // Senaryo 7: WER tablosu referans metni olan kayıtta rapora yansıyor mu

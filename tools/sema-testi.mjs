@@ -36,6 +36,10 @@ import {
   TEAM_ROLE_LABEL,
   OBS_LABEL,
   OBS_KEYS,
+  OBS_DEFS,
+  OBS_SHORT,
+  OBS_HINT,
+  emptyObs,
   emptyCase,
   emptyMaterial,
   emptySegment,
@@ -151,6 +155,32 @@ console.log('\n[3] Kod ve etiket bütünlüğü');
   }
   ok('REPORT_TYPE dört tür', REPORT_TYPE.length === 4);
   ok('kodlar Türkçe metin değil (ASCII)', MATERIAL_STATUS.every((s) => /^[a-z]+$/.test(s)));
+}
+
+// --- 3e. Alan tanımlama: gözlem bayrakları TEK KAYNAK (v2.203) ----------
+console.log('\n[3e] Alan tanımlama: gözlem bayrakları (v2.203)');
+{
+  ok('OBS_DEFS tanımlı', Array.isArray(OBS_DEFS) && OBS_DEFS.length >= 6, String(OBS_DEFS.length));
+  const keys = OBS_DEFS.map((d) => d.key);
+  ok('gözlem anahtarları benzersiz', new Set(keys).size === keys.length);
+  ok('her anahtarın tam etiketi var', OBS_DEFS.every((d) => typeof d.label === 'string' && d.label.length > 0));
+  ok('her anahtarın kısa etiketi var', OBS_DEFS.every((d) => typeof OBS_SHORT[d.key] === 'string' && OBS_SHORT[d.key].length > 0));
+  ok('her anahtarın ipucu var', OBS_DEFS.every((d) => typeof OBS_HINT[d.key] === 'string' && OBS_HINT[d.key].length > 0));
+  ok('OBS_KEYS OBS_DEFS ile aynı', JSON.stringify(OBS_KEYS) === JSON.stringify(keys));
+  ok('OBS_LABEL OBS_DEFS ile aynı', OBS_KEYS.every((k) => OBS_LABEL[k] === OBS_DEFS.find((d) => d.key === k).label));
+  ok('telefon anahtarı var', OBS_KEYS.includes('phone'));
+  ok('sessizlik anahtarı var', OBS_KEYS.includes('noSpeech'));
+  const eo = emptyObs();
+  ok('emptyObs tüm anahtarları taşır', OBS_KEYS.every((k) => eo[k] === false));
+  ok('emptyObs bilinmeyen anahtarı yok sayar', emptyObs({ future: true }).future === undefined);
+  const seg = emptySegment({ obs: { phone: true } });
+  ok('emptySegment tüm gözlem anahtarlarını taşır', OBS_KEYS.every((k) => typeof seg.obs[k] === 'boolean'));
+  ok('emptySegment verilen işareti korur', seg.obs.phone === true);
+  // Eski kayıt: eksik bilinen anahtar false; bilinmeyen (ileri sürüm) KORUNUR.
+  const old = normalizeSegment({ id: 's1', obs: { noise: true, futureFlag: true } });
+  ok('eski kayıtta eksik anahtar false', old.obs.phone === false && old.obs.noSpeech === false);
+  ok('eski kayıtta bilinen işaret korunur', old.obs.noise === true);
+  ok('bilinmeyen gözlem anahtarı korunur (ileri uyum)', old.obs.futureFlag === true);
 }
 
 // --- 3b. Konuşmacı kodlama standardı ------------------------------------
