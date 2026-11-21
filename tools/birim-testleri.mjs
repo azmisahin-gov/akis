@@ -119,7 +119,7 @@ const EXPOSE = [
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
-  'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH',
+  'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -3498,6 +3498,35 @@ console.log('\n== [73] Rapor hazırlığı: zaman sorunu kayıt başına (v2.201
   const r3 = T.reportReadiness(c);
   const t3 = r3.items.find((x) => x.key === 'time');
   eq('karışık dosyada yalnız gerçek çakışma', t3 && t3.count, 2);
+}
+
+console.log('\n== [74] Raporda okuma metni (v2.202)');
+{
+  // Rapor "Okuma metni": paragraf görünümüyle AYNI gruplama; kanıt tablosu
+  // DEĞİŞMEZ. Gruplama salt okunurdur; `m.segments`e dokunmaz.
+  const m = T.emptyMaterialForTest({ id: 'm1', name: 'x.wav' });
+  m.speakers = [{ id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+  m.segments = [
+    T.emptySegmentForTest({ id: 'a', start: '00:00:00.000', end: '00:00:05.000', text: 'merhaba', speaker: 'Kiracı', review: 'approved' }),
+    T.emptySegmentForTest({ id: 'b', start: '00:00:05.000', end: '00:00:10.000', text: 'dünya', speaker: 'Kiracı', review: 'approved' }),
+    T.emptySegmentForTest({ id: 'c', start: '00:00:10.000', end: '00:00:15.000', text: 'evet', speaker: 'Ev sahibi', review: 'pending' })
+  ];
+  const g = T.readingGroupsFor(m);
+  eq('iki konuşmacı → iki grup', g.length, 2);
+  eq('aynı konuşmacının metni birleşir', g[0].text, 'merhaba dünya');
+  eq('grup 1 bölüm sayısı', /2 bölüm/.test(g[0].head), true);
+  eq('grup 1 onaylı (kontrol bekliyor yok)', /kontrol bekliyor/.test(g[0].head), false);
+  eq('grup 1 konuşmacı kodu (S1 · Kiracı)', /S1 · Kiracı/.test(g[0].head), true);
+  eq('grup 2 metni', g[1].text, 'evet');
+  eq('grup 2 kontrol bekliyor', /kontrol bekliyor/.test(g[1].head), true);
+  const before = JSON.stringify(m.segments);
+  T.readingGroupsFor(m);
+  eq('okuma metni veriyi değiştirmez', JSON.stringify(m.segments), before);
+  m.segments = [T.emptySegmentForTest({ id: 'd', start: '00:00:00.000', end: '00:00:02.000', text: '', speaker: 'Kiracı' })];
+  const g2 = T.readingGroupsFor(m);
+  eq('boş metin "(metin yok)"', g2[0].text, '(metin yok)');
+  // Uydurma metin YOK: boş bölüm için metin üretilmez.
+  eq('boş metin uydurulmaz', g2[0].text.includes('merhaba'), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

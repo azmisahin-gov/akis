@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.201.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.202.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3777,7 +3777,7 @@ Test: iki kayıt da 0'dan başlasın → hazırlıkta "Zaman sorunu" **0** olmal
 | Testler | `bash tools/test.sh` → **1079 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | commit/push sonrası doğrulanacak |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.201** |
-| Açık konu | v2.202 rapora "Okuma metni"; v2.203 gözlem anahtarları |
+| Açık konu | — (v2.202'de yapıldı); v2.203 gözlem anahtarları |
 
 ### Ne yapıldı
 
@@ -3812,8 +3812,8 @@ aynı sayıyı vermelidir (v2.156 dersi: iki araç ayrışmamalı).
 
 ### SIRADAKİ İŞLER (öneri sırası — v2.201 sonrası)
 
-1. **v2.202 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
-   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez.
+1. **v2.202 — Rapora "Okuma metni" (YAPILDI).** `readingGroupsFor` + üç çıktı;
+   kanıt tablosu değişmedi. Test: `rapor` Senaryo 12 + `birim` [74] + `tasarim` [2bb].
 2. **v2.203 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü).
 3. **v2.204 — Dosyalar arası konuşmacı kaydı** (case-level registry).
 4. **v2.205 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
@@ -3823,3 +3823,68 @@ aynı sayıyı vermelidir (v2.156 dersi: iki araç ayrışmamalı).
 - Zaman sorunu denetimi **kayıt içi**dir; iki kaydın aynı saniyeye denk gelmesi
   sorun değildir (farklı zaman çizgileri).
 - 45 sn eşiği ve diğer v2.200 davranışları değişmedi.
+
+## YENİ OTURUM DEVRİ (v2.202) — Rapora "Okuma metni"
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.202** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1089 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.202** |
+| Açık konu | v2.203 gözlem anahtarları; v2.204 konuşmacı kaydı |
+
+### Ne yapıldı
+
+Raporun **5.1** bölümünde, ayrıntılı kanıt tablosundan **sonra** her kayıt için
+**"Okuma metni"** alt bölümü eklendi.
+
+- `readingGroupsFor(m)` — `paragraphGroups` + `paragraphSpeakerLabel` + `tcRange`.
+  Grup başlığı: `S1 · Kiracı · 00:00:00.000 – 00:00:10.000 · 2 bölüm`; kontrol
+  bekleyen grupta `· kontrol bekliyor`.
+- `paragraphViewText` (¶ penceresinin "Panoya kopyala" metni) de **aynı**
+  `readingGroupsFor` kaynağını kullanır.
+- `REPORT_TEXT.readingHeading` / `readingIntro`.
+- HTML (`renderReport`), DOCX (`docxXml`) ve UDF (`makeUdf`) üçünde de kanıt
+  tablosundan sonra eklenir. **Kanıt tablosu ve cümle zamanları DEĞİŞMEZ.**
+- `m.segments`e dokunulmaz; yıkıcı `paragraphize` yok.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Rapor önizlemesi "Okuma metni" | **1** başlık |
+| Açıklama + grup metni | var ("salt okunur…", "merhaba dünya") |
+| Bölüm sayısı | **"2 bölüm"** |
+| Kanıt tablosu başlığı | **var** ("ZAMAN ARALIĞI") |
+| Okuma metni konumu | kanıt tablosundan **sonra** |
+| Ses görünümü bölüm sayısı | **3** (veri değişmedi) |
+| JS hatası | **0** |
+
+Üç çıktı (HTML/DOCX/UDF) `rapor` **Senaryo 12** ile aynı metni veriyor:
+başlık, açıklama, "merhaba dünya", "2 bölüm", kanıt tablosu başlığı.
+
+### DEĞİŞMEZ KURAL: okuma metni TÜRETİLMİŞ sunumdur
+
+Okuma metni `m.segments`i **değiştirmez**; kanıt (ayrıntılı zaman damgalı
+tablo) korunur. Yeni bir çıktı yolu eklerken **`readingGroupsFor(m)`** kullanın;
+kendi gruplama/biçimlendirme kopyanızı yazmayın. Üç çıktı **aynı metni**
+üretmelidir (`rapor-tutarlilik-testi`). Boş metin "(metin yok)" olarak görünür;
+uydurma metin üretilmez.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.202 sonrası)
+
+1. **v2.203 — Gözlem anahtarları:** telefon / sessizlik (`OBS_KEYS` şema göçü,
+   `emptySegment`, rapor gözlem sayacı).
+2. **v2.204 — Dosyalar arası konuşmacı kaydı** (case-level registry; uzman
+   kanaati).
+3. **v2.205 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+
+### Bilinen sınırlar (hata değil)
+
+- Okuma metni bölümleri **birleştirmez/bölmez**; yalnız gösterir.
+- Konuşmacı etiketi kayıt başınadır; iki kayıttaki `S1` aynı kişi olmayabilir.
+- Rapor uyarısı ekran "Rapor öncesi kontrol" bloğundadır; DOCX/UDF metnine yeni
+  bir cümle eklenmedi (v2.200 notu).

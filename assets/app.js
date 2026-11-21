@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.201';
+} from './schema.js?v=2.202';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.201';
+const APP_VERSION = '2.202';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -135,6 +135,11 @@ const REPORT_TEXT = {
     '7. EKLER'
   ],
   sub51: '5.1. Ses kayıtlarının çözümlenmesi',
+  // RAPOR "OKUMA METNİ" (v2.202). Paragraf görünümüyle AYNI gruplama; rapora
+  // yalnız okunabilir metin olarak eklenir. Kanıt tablosu DEĞİŞMEZ.
+  readingHeading: 'Okuma metni',
+  readingIntro:
+    'Aşağıdaki okuma metni, aynı konuşmacının ardışık bölümlerinden türetilmiş salt okunur bir okuma biçimidir. Ayrıntılı (zaman damgalı) bölüm tablosu ve cümle zamanları değişmez; bu bölüm yalnız okunabilirliği artırır.',
   sub52: '5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',
   sub53: '5.3. Teknik sınırlılıklar',
   emptyCourt: '……………………………… MAHKEMESİ',
@@ -7263,12 +7268,21 @@ function paragraphSpeakerLabel(m, name) {
   const sp = speakerByName(m, name);
   return sp && sp.code ? `${sp.code} · ${sp.name}` : name;
 }
+// RAPOR "OKUMA METNİ" (v2.202). Paragraf görünümüyle AYNI gruplama; rapora
+// yalnız okunabilir metin olarak eklenir. `m.segments` ve kanıt tablosu
+// DEĞİŞMEZ. Grup başlığı ayrıntılı tablodakiyle aynı konuşmacı etiketini ve
+// zaman aralığını kullanır; kontrol bekleyen grup AÇIKÇA işaretlenir.
+function readingGroupsFor(m) {
+  return paragraphGroups((m && m.segments) || []).map((g) => ({
+    head: `${paragraphSpeakerLabel(m, g.speaker)} · ${tcRange(g.start, g.end)} · ${g.count} bölüm${
+      g.unreviewed ? ' · kontrol bekliyor' : ''
+    }`,
+    text: g.text || '(metin yok)'
+  }));
+}
 function paragraphViewText(m) {
-  return paragraphGroups(m.segments || [])
-    .map((g) => {
-      const head = `${paragraphSpeakerLabel(m, g.speaker)} · ${tcRange(g.start, g.end)} · ${g.count} bölüm`;
-      return `${head}\n${g.text || '(metin yok)'}`;
-    })
+  return readingGroupsFor(m)
+    .map((g) => `${g.head}\n${g.text}`)
     .join('\n\n');
 }
 function openParagraphView(m) {
@@ -9230,6 +9244,13 @@ function renderReport() {
       if (m.segments?.length) {
         html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${esc(reviewCellText(s))}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
       } else html += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
+      // OKUMA METNİ (v2.202): kanıt tablosundan SONRA, ayrı alt bölüm. Yalnız
+      // okunabilirlik içindir; bölümler ve zamanlar değişmez.
+      const reading = readingGroupsFor(m);
+      if (reading.length) {
+        html += `<h4>${esc(REPORT_TEXT.readingHeading)}</h4><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>`;
+        for (const g of reading) html += `<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`;
+      }
     }
   } else html += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
   html += `<h4>${esc(REPORT_TEXT.sub52)}</h4>`;
@@ -9448,6 +9469,16 @@ function docxXml(c) {
         { widths: [1300, 1200, 3600, 1100, 900], header: true }
       );
     } else body += wP(REPORT_TEXT.noTranscript);
+    // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
+    const reading = readingGroupsFor(m);
+    if (reading.length) {
+      body += headingXml(REPORT_TEXT.readingHeading, 3);
+      body += wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 });
+      for (const g of reading) {
+        body += wP(g.head, { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
+        body += wP(g.text);
+      }
+    }
   }
   body += headingXml(REPORT_TEXT.sub52, 2);
   if (c.questions?.length) {
@@ -9817,6 +9848,16 @@ async function makeUdf() {
         ]);
         el.push(table([[...REPORT_TEXT.segmentHeadersObs], ...segments], [70, 68, 235, 75, 62], { header: true }));
       } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
+      // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
+      const reading = readingGroupsFor(m);
+      if (reading.length) {
+        el.push(paragraph(REPORT_TEXT.readingHeading, { size: 11, bold: true, color: 'mid', before: 5, after: 3 }));
+        el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+        for (const g of reading) {
+          el.push(paragraph(g.head, { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
+          el.push(paragraphLines(g.text, { justify: true }));
+        }
+      }
     });
   } else el.push(paragraph(REPORT_TEXT.noMaterials));
   el.push(paragraph(REPORT_TEXT.sub52, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
@@ -12978,6 +13019,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.202': {
+    title: 'Rapora "Okuma metni" eklendi',
+    body:
+      'Raporun 5.1 bölümünde, ayrıntılı (zaman damgalı) kanıt tablosundan sonra her kayıt için ' +
+      '"Okuma metni" gelir: aynı konuşmacının ardışık bölümleri tek paragraf olarak okunur. ' +
+      'Paragraf başında konuşmacı kodu/etiketi, zaman aralığı ve bölüm sayısı yazar; kontrol ' +
+      'bekleyen grup "kontrol bekliyor" ile işaretlenir. Kanıt tablosu ve cümle zamanları ' +
+      'değişmez; HTML, Word ve UDF aynı metni üretir.'
+  },
   '2.201': {
     title: 'Rapor hazırlığı: zaman sayacı kayıt başına',
     body:

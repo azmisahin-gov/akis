@@ -248,6 +248,7 @@ console.log('\n[Senaryo 5] kaynakta sabit kopya denetimi');
     'subtitle', 'inventoryNote', 'defaultEvaluation', 'defaultQuestions',
     'defaultScope', 'attachmentsText', 'defaultLimitations', 'defaultConclusion',
     'warnMissingFields', 'warnHallucination', 'segmentCountLabel', 'noMaterials',
+    'readingHeading', 'readingIntro',
   ];
   let leaks = 0;
   for (const [name, text] of Object.entries(renderers)) {
@@ -416,6 +417,25 @@ console.log('\n[Senaryo 11] dosya yapısı ve kaçış denetimi');
   check('HTML çıktısında konuşmacı kodu S1 var', H2.includes('S1'), '');
   check('UDF çıktısında konuşmacı kodu S1 var', U2.includes('S1'), '');
   check('DOCX çıktısında konuşmacı kodu S1 var', D2.includes('S1'), '');
+}
+
+// Senaryo 12: okuma metni (v2.202) — üç çıktı AYNI metni üretmeli, kanıt
+// tablosu DEĞİŞMEMELİ.
+console.log('\n[Senaryo 12] okuma metni (v2.202)');
+{
+  const c = withMaterial();
+  c.materials[0].segments = [
+    { start: '00:00:00', end: '00:00:05', speaker: 'K', text: 'merhaba', review: 'onaylandi' },
+    { start: '00:00:05', end: '00:00:10', speaker: 'K', text: 'dünya', review: 'onaylandi' },
+    { start: '00:00:10', end: '00:00:15', speaker: 'E', text: 'evet', review: 'onaylandi' }
+  ];
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('okuma metni başlığı', REPORT_TEXT.readingHeading, H, U, D);
+  checkShared('okuma metni açıklaması', REPORT_TEXT.readingIntro, H, U, D);
+  checkShared('okuma metni grup metni', 'merhaba dünya', H, U, D);
+  checkShared('okuma metni bölüm sayısı', '2 bölüm', H, U, D);
+  // Kanıt tablosu DEĞİŞMEDİ: ayrıntılı tablo başlığı duruyor.
+  checkShared('kanıt tablosu başlığı korunur', REPORT_TEXT.segmentHeadersObs[0], H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

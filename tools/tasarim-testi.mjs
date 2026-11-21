@@ -1488,5 +1488,23 @@ console.log('\n[2ba] Rapor hazırlığı: zaman sayacı kayıt başına (v2.201)
   check('hazırlık maddesi time filtresine götürür', /'Zaman sorunu olan bölüm'/.test(fn) && /'time'/.test(fn));
 }
 
+console.log('\n[2bb] Raporda okuma metni (v2.202)');
+{
+  const appJs = read('assets/app.js');
+  check('okuma metni tek kaynaktan (readingGroupsFor)', /function readingGroupsFor\(m\)/.test(appJs));
+  check(
+    'paragraf görünümü de aynı kaynağı kullanıyor',
+    /function paragraphViewText\(m\)[\s\S]{0,220}readingGroupsFor\(m\)/.test(appJs)
+  );
+  check('okuma metni başlığı REPORT_TEXT te', /readingHeading: 'Okuma metni'/.test(appJs) && /readingIntro:/.test(appJs));
+  check(
+    'HTML raporu okuma metnini ekliyor',
+    /readingGroupsFor\(m\)[\s\S]{0,400}REPORT_TEXT\.readingHeading/.test(appJs)
+  );
+  const uses = (appJs.match(/readingGroupsFor\(m\)/g) || []).length;
+  check('üç çıktı da okuma metnini üretiyor', uses >= 3, String(uses));
+  check('okuma metni salt okunur (paragraphize yok)', /function readingGroupsFor\(m\)[\s\S]{0,400}paragraphGroups/.test(appJs) && !/paragraphize\(/.test(appJs));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

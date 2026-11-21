@@ -1,4 +1,4 @@
-# Özellikler (v2.201 — mevcut durum)
+# Özellikler (v2.202 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,12 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Raporda okuma metni (v2.202):** Raporun **5.1** bölümünde, ayrıntılı kanıt
+  tablosundan **sonra** her kayıt için **"Okuma metni"** alt bölümü gelir. Aynı
+  konuşmacının ardışık bölümleri tek paragraf; başında konuşmacı kodu/etiketi,
+  zaman aralığı ve bölüm sayısı. Kontrol bekleyen grup **"kontrol bekliyor"** ile
+  işaretlenir. **Kanıt tablosu ve cümle zamanları değişmez**; HTML, DOCX ve UDF
+  aynı metni üretir.
 - **45 sn üstü bölüm uyarısı (v2.200):** Birleştirme sonucu **45 sn**'yi aşarsa
   işlem **engellenmez**. Uyarı kalıcıdır: liste satırında **⏱**, Durum satırında
   **"Uzun bölüm"** çipi, rapor hazırlığında **"45 sn üstü bölüm"** maddesi ve

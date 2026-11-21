@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.201.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.202.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.202 — Rapora "Okuma metni"
+
+Kullanıcı: *"Paragraf görünümünü rapora da koyalım; kanıt tablosu değişmesin."*
+`paragraphGroups` çıktısı artık **her kayıt için** rapora ayrı bir **"Okuma
+metni"** alt bölümü olarak ekleniyor.
+
+### KULLANICI NE GÖRECEK
+
+- Raporun **5.1** bölümünde, ayrıntılı (zaman damgalı) kanıt tablosundan
+  **sonra** **"Okuma metni"** gelir: aynı konuşmacının ardışık bölümleri tek
+  paragraf olarak okunur.
+- Her paragrafın başında **konuşmacı kodu/etiketi · zaman aralığı · bölüm
+  sayısı** yazar; kontrol bekleyen grupta **"kontrol bekliyor"** görünür.
+- **Kanıt tablosu ve cümle zamanları değişmez.** Okuma metni türetilmiş,
+  salt okunur bir sunumdur.
+- HTML önizleme, DOCX ve UDF **aynı metni** üretir.
+
+### Teknik
+
+- `readingGroupsFor(m)` — `paragraphGroups` + `paragraphSpeakerLabel` + `tcRange`;
+  `paragraphViewText` de aynı kaynağı kullanır.
+- `REPORT_TEXT.readingHeading` / `readingIntro`.
+- Üç oluşturucuda da (HTML/DOCX/UDF) kanıt tablosundan sonra eklenir.
+- `m.segments`e dokunulmaz; `paragraphize` yok.
+
+**Ölçüm:** üç çıktıda da başlık, açıklama, "merhaba dünya", "2 bölüm" ve kanıt
+tablosu başlığı var (Senaryo 12). `birim` [74] (11), `tasarim` [2bb] (6).
+
+**KORUYAN TEST:** `rapor` Senaryo 12 + `birim` [74] + `tasarim` [2bb].
 
 ## v2.201 — Rapor hazırlığı: zaman sayacı kayıt başına
 
