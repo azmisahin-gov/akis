@@ -2543,16 +2543,16 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 ilk tur kapandı)
+### Durum (2026-11-21, P1 + P4 kapandı)
 
 | | |
 |---|---|
-| Sürüm | **v2.166** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.168** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `b497265` |
+| Git | `main` = `origin/main` = `4649805` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.166** |
-| Açık konu | **Yok** — sırada IA kararları (aşağıdaki P1 tablosu) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.168** |
+| Açık konu | **Yok** — sırada P2 (rapor kâğıdı) ve P3 (CSS borcu) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
 
@@ -2582,6 +2582,8 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.164 | Künye: zorunlu alanlar ilk ekranda | 3/5 → **5/5**; `#expertName` 454→356 px | `tasarim` [2ab] |
 | v2.165 | ≤900 px yapışkan işlem çubuğu (↑↓ · Dinle · Onayla · 3/10) | onay y=1313 → **820–874**; toast çakışması yok | `tasarim` [2ac] |
 | v2.166 | Ses kaydını kaldırma **onay ister** (onaysız kalıcı silme) | diyalog yok → var; Vazgeç sesi korur | `birim` [65] |
+| v2.167 | Künye her görünümden **tek tıkla** (üst barda ✎) | 4 tık + 2 görünüm → **2 tık, 0 görünüm** | `tasarim` [2ad] |
+| v2.168 | Dar ekranda bölüme geçince metin görünür alana gelir | 100 bölüm: metin 7.929 → **587 px**; 1440'ta kaydırma 0 | `tasarim` [2ae] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2704,12 +2706,12 @@ Nöbetçi eşikleri: ölü bildirim **98** (okuma katmanı) / **507** (app→lay
 küçük ve kanıtlı adımlarla (aynı seçici+özellik sonra tanımlıysa öncekini
 silmek kanıttır; toplu otomatik düzenleme **yasak** — v2.138'de yapı bozuldu).
 
-#### P4 — ≤900 px tek sütun IA (v2.165 ile KISMEN kapandı)
+#### P4 — ≤900 px tek sütun IA (KAPANDI, v2.165 + v2.168)
 
-Dar ekranda detay hâlâ listenin altında; ancak onay/dinle artık yapışkan
-çubukta (ölçüldü: y=820–874, kaydırmasız). Kalan konu: **liste ile metin
-arasındaki mesafe** — 100 bölümde liste uzun, metin aşağıda. Ayrı bir yerleşim
-kararı gerekir.
+Onay/dinle yapışkan çubukta (y=820–874, kaydırmasız). Bölüme geçince
+düzenleme alanı görünür alana geliyor (metin 7.929 → 587 px). Masaüstünde
+kaydırma yapılmıyor. Kalan tek sınır: ≤900 px'te liste ile metin aynı anda
+görünmez (tek sütun) — bu tasarım kararı, kusur değil.
 
 #### P5 — Ses görünümü yoğunluğu (ölçüldü, DEĞİŞİKLİK YAPILMADI)
 
