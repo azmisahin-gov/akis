@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P13 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P14 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.183** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **976 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `670cedb` |
+| Sürüm | **v2.184** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `e5aee0d` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.183** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.184** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2599,6 +2599,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.181 | ASR kökeni Teknik'te, metinde ince ipucu | metin 371 → **344 px**; blok Teknik'te; notta "öncelik" yok | `tasarim` [2an] |
 | v2.182 | Dikey yer kazanımı: etiketler satır içi | meta **63 → 40 px**; ses yok **47 → 31 px**; kaydırma 84 → 63 | `birim` [64] + `tasarim` [2am] |
 | v2.183 | Başlıkta birleşik işlem satırı | üst bölge **76 → 42 px** (1440), **78 → 42** (900) | `tasarim` [2ao] |
+| v2.184 | Tek durum satırı: her zaman görünür | satır üç durumda da **28 px**; boş şerit yok; metin 359 px | `tasarim` [2ai] + `birim` [64] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2998,6 +2999,36 @@ Seçici gerçekten çalışıyor: "Anlaşılmadı" → rozet + `st-inaudible` + 
    çocukların **margin**'lerini de oku (`getComputedStyle(el).marginLeft`).
 3. Etiket kaldırmak yalnız `aria-label`/`title` ile kabul edilebilir; ekran
    okuyucu ve fare ipucu bilgiyi taşımaya devam etmeli.
+
+#### P14 — Durum bilgisi: tek satır, her zaman görünür (v2.184)
+
+**KULLANICI KURALI (değişmez):** *"Gizli bir şey olmasın, yeri dursun, ne işe
+yaradığı ekranda yazsın."*
+
+**ÖLÇÜM (v2.183):** aynı dikey alanda **üç ayrı şerit** vardı ve her biri başka
+koşulda çıkıyordu: `sd-audio-state` (31 px), `sd-notes` (19 px — bazı
+bölümlerde **boş**, çünkü "öncelik" koşulda sayılıp ekranda çizilmiyordu),
+`asr-hint` (19 px).
+
+**YAPILAN:** üçü tek `sd-status` satırında toplandı.
+- Satır **koşulsuz** çizilir; en az **"Ses: hazır"** / **"Ses: yok — paketten
+  yükle"** çipi vardır. `min-height` ile yükseklik sabit → **zıplama yok**.
+- Sorun çipleri: `Anlamlı metin yok` · `Model tekrarı` · `Sessizlik %N` ·
+  `Model çıktısı farklı — karşılaştır` (tıklanır → Teknik).
+- **Etiketler ekranda:** "Konuşmacı", "Kontrol", "✓ Onayla" (yalnız ikon
+  değil). Başlık **bilinçli iki satır** (77 px) — gizemli sarma yok.
+- Eski üç öğenin CSS'i ve boş kalan "öncelik" koşulu silindi.
+
+**ÖLÇÜM (sonra):** durum satırı **üç durumda da 28 px** (normal / boş metin /
+ses yok); boş şerit yok; metin alanı **359 px**; JS hatası 0.
+**Bedel:** üst bölge 42 → **77 px** (etiketler ve "Onayla" yazısı görünür).
+Bu turda kullanıcı **alan yerine açıklığı** seçti.
+
+**DERS:** Bir bilgi "bazen" görünüyorsa kullanıcı onu **kayıp** sayar. Durum
+bilgisi ya **hep** görünür olmalı ya da hiç olmamalı; arada kalan "koşullu
+şerit" hem yerleşimi oynatır hem güveni sarsar. Ayrıca bir bilgiyi ekrandan
+kaldırıp yalnız `title`'a koymak, o bilgiyi **gizlemek**tir (kullanıcı
+"tooltip'i kaldır, ekranda yaz" dedi).
 
 ### DOĞRULAMA (her oturum başı)
 
