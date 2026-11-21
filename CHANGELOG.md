@@ -6,12 +6,53 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.150.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.151.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.151 — Onaydan sonra sonraki bekleyene geç
+
+**İSTEĞE BAĞLI, VARSAYILAN KAPALI.** Takip modlarından (F/G) ayrı bir tercihtir.
+
+### KULLANICI NE GÖRECEK
+
+- Ayarlar çekmecesinde **"Onay davranışı"** bölümü ve **AÇIK/KAPALI** yazan bir
+  anahtar. Durum yalnız renkle değil **metinle** de yazılır.
+- **Kapalıyken (varsayılan):** eskisi gibi onaydan sonra bir sonraki bölüme
+  geçilir.
+- **Açıkken:** onaydan sonra sıradaki **kontrol edilmemiş** bölüme geçilir;
+  onaylanmış/anlaşılmadı işaretli bölümler atlanır. Bekleyen bölüm yoksa
+  **bulunduğunuz yerde kalırsınız** (başa dönülmez).
+- Tercih yalnız bu tarayıcıda saklanır; **kayda ve rapora yazılmaz**.
+
+### HESAP (saf fonksiyon)
+
+`nextPendingIndex(segments, from)` → `from` sonrasındaki ilk `!isReviewed`
+bölümün indeksi, yoksa `-1`. `isReviewed` ölçütü rapor hazırlığıyla aynıdır:
+`machine` (çözümlendi), `ambiguous` (belirsiz), `relisten` ve `pending`
+bekleyen sayılır.
+
+### ÖLÇÜM (v2.151, gerçek Chromium)
+
+4 bölüm (bekleyen, onaylı, onaylı, bekleyen):
+
+| Durum | Onaylanan | Sonuç |
+|---|---|---|
+| Anahtar KAPALI (varsayılan) | 1. bölüm | **2. bölüm** (eski davranış) |
+| Anahtar AÇIK | 1. bölüm | **4. bölüm** (onaylı 2–3 atlandı) |
+| Anahtar AÇIK | son bekleyen (4.) | **yerinde kaldı** |
+
+Kırpılma 0 · `aria-pressed` doğru · JS hatası 0.
+
+### KORUYAN TEST
+
+`birim-testleri` **[61]** (9 kontrol): aradaki onaylıları atlama, makine
+işaretinin bekleyen sayılması, son bekleyenden sonra `-1`, hiç bekleyen yokken
+`-1`, "anlaşılmadı"nın kontrol edilmiş sayılması, boş liste, geçersiz `from`
+(baştan arar) ve tercihin varsayılanının kapalı olması.
 
 ## v2.150 — Rapor hazırlık denetimi: eksikler tek listede
 

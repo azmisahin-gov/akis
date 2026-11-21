@@ -117,7 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'reportReadiness', 'readinessRowsHtml',
+  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3027,6 +3027,34 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
     const some = T.readinessRowsHtml({ ok: false, items: [{ key: 'pending', label: 'Kontrol edilmemiş bölüm', count: 3, target: 'audio', filter: 'pending' }] });
     eq('madde satırı sayı taşır', some.includes('>3<') || some.includes('3'), true);
     eq('madde satırı tıklanabilir', some.includes('data-ready-goto="audio"'), true);
+  }
+}
+
+console.log('\n== [61] Onaydan sonra sonraki bekleyene geç (v2.151)');
+{
+  // İSTEĞE BAĞLI, VARSAYILAN KAPALI. KURAL: tek düğme iki iş yapmaz; bu ayrı
+  // bir tercihtir. Bekleyen yoksa YERİNDE kalınır (başa dönülmez).
+  eq('nextPendingIndex tanımlı', typeof T.nextPendingIndex, 'function');
+  if (typeof T.nextPendingIndex === 'function') {
+    const seg = (rev) => ({ id: 's' + Math.random(), start: '00:00:00.000', end: '00:00:01.000', review: rev });
+    const segs = [seg('pending'), seg('approved'), seg('approved'), seg('relisten'), seg('approved'), seg('machine')];
+    eq('aradaki onaylıları atlar', T.nextPendingIndex(segs, 0), 3);
+    eq('makine işareti bekleyen sayılır', T.nextPendingIndex(segs, 3), 5);
+    eq('son bekleyenden sonra yok', T.nextPendingIndex(segs, 5), -1);
+    eq('hiç bekleyen yok', T.nextPendingIndex([seg('approved'), seg('inaudible')], 0), -1);
+    eq('anlaşılmadı kontrol edilmiş sayılır', T.nextPendingIndex([seg('inaudible'), seg('pending')], 0), 1);
+    eq('boş liste', T.nextPendingIndex([], 0), -1);
+    eq('geçersiz from baştan arar', T.nextPendingIndex(segs, null), 0);
+  }
+  eq('nextPendingPref tanımlı', typeof T.nextPendingPref, 'function');
+  if (typeof T.nextPendingPref === 'function') {
+    T.store.removeItem('akis.nextPending');
+    eq('varsayılan kapalı', T.nextPendingPref(), false);
+    T.store.setItem('akis.nextPending', '1');
+    eq('açıkken true', T.nextPendingPref(), true);
+    T.store.setItem('akis.nextPending', '0');
+    eq('kapalıyken false', T.nextPendingPref(), false);
+    T.store.removeItem('akis.nextPending');
   }
 }
 

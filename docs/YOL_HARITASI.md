@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.150.**
+yazılır. **Güncel sürüm: v2.151.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.151 — Onaydan sonra sonraki bekleyene geç (tamamlandı)
+
+`nextPendingIndex(segments, from)` saf fonksiyonu onay sonrası hedefi belirler
+(onaylıları atlar, bekleyen yoksa -1 = yerinde kal). Ayarlar → "Onay davranışı"
+anahtarı; tercih `akis.nextPending` ile saklanır, **varsayılan kapalı**, kayda ve
+rapora yazılmaz. Koruyan test: `birim` [61].
 
 ### v2.150 — Rapor hazırlık denetimi (tamamlandı)
 

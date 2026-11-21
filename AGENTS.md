@@ -1837,6 +1837,31 @@ Adli belgede yanlış "hazır" izlenimi, eksik listesinden daha tehlikelidir;
 bu yüzden yalnız madde + sayı gösterilir ve listenin onay olmadığı yazılır.
 
 
+### Aşama 10aw — Onaydan sonra sonraki bekleyene geç (TAMAMLANDI, v2.151)
+
+**KURAL: bu İSTEĞE BAĞLI bir tercihtir, VARSAYILAN KAPALI. Tek düğme iki iş
+yapmaz: takip modlarından (F/G) AYRIDIR. Bekleyen yoksa YERİNDE kalınır.**
+
+- `nextPendingIndex(segments, from)` — `from` sonrasındaki ilk
+  `!isReviewed(s)` bölüm; yoksa `-1`. Onaylı/anlaşılmadı atlanır; `machine`,
+  `ambiguous`, `relisten`, `pending` bekleyen sayılır (readiness ile aynı ölçüt).
+- `nextPendingPref()` / `setNextPending(on)` — `akis.nextPending` ('1'/'0'),
+  varsayılan kapalı. `behaviorPanelHtml()` + `#behaviorHost` (Ayarlar).
+- `approveActiveSegment(m)` tek onay kapısıdır; tercih orada uygulanır. Kapalıyken
+  eski davranış (`i+1`, son bölümde sabit) korunur.
+
+**Ölçüm (v2.151, gerçek Chromium):** varsayılan KAPALI (aria-pressed=false,
+kırpılma 0); açıkken bölüm 1 onaylandı → **bölüm 4** (onaylı 2–3 atlandı),
+detay "Bölüm 4"; son bekleyen onaylandı → **yerinde kaldı**. Kapalıyken bölüm 1
+onaylandı → **bölüm 2** (eski davranış). JS hatası 0.
+
+**Koruyan test:** `birim-testleri` [61] (9 kontrol).
+
+**DERS:** "Sonraki bölüme geç" varsayılanı uzun deşifrede hızlıdır ama
+onaylanmış bölümleri tekrar tekrar gösterir. Tercih kullanıcıya bırakılmalı;
+varsayılanı değiştirmek sessiz davranış değişikliği olurdu.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2010,7 +2035,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.150.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.151.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2309,7 +2334,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.150) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.151) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2320,10 +2345,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.150** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **910 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.150 |
-| Açık konu | **P3 — onaydan sonra sonraki bekleyene geç** (P1–P2 bitti) |
+| Sürüm | **v2.151** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.151 |
+| Açık konu | **P4 — listede bitiş zamanı** (P1–P3 bitti) |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2390,11 +2415,10 @@ Koruyan test: `birim` [59]. Ayrıntı: Aşama 10au.
 `reportReadiness()` + `#reportReadiness` kartı + satır tıklama. Koruyan test:
 `birim` [60]. Ayrıntı: Aşama 10av.
 
-#### P3 — Onay sonrası sonraki bekleyene geç (isteğe bağlı, varsayılan kapalı)
+#### P3 — Onay sonrası sonraki bekleyene geç (TAMAMLANDI, v2.151)
 
-- Ayrı anahtar (tek düğme iki iş yapmaz): "Onaydan sonra sonraki bekleyene geç".
-- `nextPendingIndex(segments, from)` saf fonksiyon; yoksa yerinde kalır.
-- **Kıran test:** son bekleyen, arada onaylılar, hiç bekleyen yok.
+`nextPendingIndex()` + Ayarlar → "Onay davranışı" anahtarı (varsayılan kapalı).
+Koruyan test: `birim` [61]. Ayrıntı: Aşama 10aw.
 
 #### P4 — Listede bitiş zamanı (kullanıcının sorusu)
 

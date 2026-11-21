@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.150';
+} from './schema.js?v=2.151';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.150';
+const APP_VERSION = '2.151';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5082,11 +5082,24 @@ function approveActiveSegment(m) {
     }
     refreshSegChips(m);
   }
-  const next = Math.min(segs.length - 1, i + 1);
+  // Tercih açıksa sıradaki KONTROL EDİLMEMİŞ bölüme geç (v2.151). Bekleyen
+  // yoksa YERİNDE kalınır; başa dönmek yanlış bölüme atlamaya yol açardı.
+  let next = Math.min(segs.length - 1, i + 1);
+  let msg = `Bölüm ${i + 1} onaylandı. Şimdi ${next + 1}. bölüm.`;
+  if (nextPendingPref()) {
+    const np = nextPendingIndex(segs, i);
+    if (np >= 0) {
+      next = np;
+      msg = `Bölüm ${i + 1} onaylandı. Sıradaki bekleyen: ${np + 1}. bölüm.`;
+    } else {
+      next = i;
+      msg = `Bölüm ${i + 1} onaylandı. Bekleyen başka bölüm yok.`;
+    }
+  }
   m.activeSeg = next;
   setActiveSegment(m, next);
   if ($('#view-report').classList.contains('active')) renderReport();
-  showToast(`Bölüm ${i + 1} onaylandı. Şimdi ${next + 1}. bölüm.`);
+  showToast(msg);
 }
 // Yazma sırasında ağır yenilemeyi geciktirir (v2.86). Son tuştan 250 ms
 // sonra bir kez çalışır; yazma akıcı kalır, sayaçlar yine doğru görünür.
@@ -5840,6 +5853,49 @@ let followTimer = null;
 const FOLLOW_MODES = ['autoAdvance', 'liveHighlight'];
 // Otomatik başlatma YALNIZ kullanıcı açıkça açtıysa (tercih true).
 // `followState` her zaman false başlar; tercih ayrı saklanır.
+// ONAYDAN SONRA SONRAKİ BEKLEYENE GEÇ (v2.151) — İSTEĞE BAĞLI, VARSAYILAN
+// KAPALI. "Tek düğme iki iş yapmaz": takip modlarından AYRI bir tercihtir.
+// Bekleyen bölüm yoksa YERİNDE kalınır; başa dönülmez (yorgunlukla yanlış
+// bölüme atlamak, sessiz hata üretir).
+const NEXT_PENDING_KEY = 'akis.nextPending';
+function nextPendingIndex(segments, from) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const start = Number.isInteger(from) ? from + 1 : 0;
+  for (let i = Math.max(0, start); i < segs.length; i++) {
+    if (!isReviewed(segs[i])) return i;
+  }
+  return -1;
+}
+function nextPendingPref() {
+  try {
+    return localStorage.getItem(NEXT_PENDING_KEY) === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function setNextPending(on) {
+  try {
+    localStorage.setItem(NEXT_PENDING_KEY, on ? '1' : '0');
+  } catch (e) {}
+  renderBehaviorPanel();
+  showToast(on ? 'Onaydan sonra sonraki bekleyen bölüme geçilecek.' : 'Onaydan sonra bir sonraki bölümde kalınacak.');
+}
+// Ayarlar çekmecesindeki "Onay davranışı" bölümü. Metin ve durum TEK KAYNAK.
+function behaviorPanelHtml() {
+  const on = nextPendingPref();
+  return `<div class="panel behavior-panel">
+    <div class="panel-heading"><div><div class="eyebrow">ONAY DAVRANIŞI</div>
+      <h3>Onaydan sonra ne olsun?<span class="info-i" tabindex="0" data-tip="Açıkken, bir bölümü onayladığınızda uygulama sıradaki KONTROL EDİLMEMİŞ bölüme geçer. Bekleyen bölüm yoksa bulunduğunuz yerde kalır. Yalnız bu tarayıcıda saklanır; kayda ve rapora yazılmaz.">i</span></h3></div></div>
+    <button class="behavior-toggle ${on ? 'on' : ''}" id="nextPendingToggle" aria-pressed="${on}" title="Açıkken onay sonrası sıradaki kontrol edilmemiş bölüme geçilir. Varsayılan: kapalı.">
+      <span class="behavior-state">${on ? 'AÇIK' : 'KAPALI'}</span>
+      <span class="behavior-text"><b>Sonraki bekleyene geç</b><small>${on ? 'Onaydan sonra sıradaki kontrol edilmemiş bölüme geçilir.' : 'Onaydan sonra bir sonraki bölümde kalınır.'}</small></span>
+    </button>
+  </div>`;
+}
+function renderBehaviorPanel() {
+  const host = $('#behaviorHost');
+  if (host) host.innerHTML = behaviorPanelHtml();
+}
 function followShouldAutoStart(pref) {
   return !!(pref && pref.autoFollow === true);
 }
@@ -11079,6 +11135,12 @@ if (readyBox)
     switchView(target);
     if (target === 'audio') renderAudioList().catch(() => {});
   });
+const behaviorHost = $('#behaviorHost');
+if (behaviorHost)
+  behaviorHost.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest('#nextPendingToggle') : null;
+    if (b) setNextPending(!nextPendingPref());
+  });
 $('#reportFullBtn').addEventListener('click', () => setReportFull(true));
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
@@ -11916,6 +11978,7 @@ function applyTheme({ announce = false } = {}) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#12171e' : theme === 'sepia' ? '#efe7d8' : '#14283f');
   renderAppearancePanel();
+  renderBehaviorPanel();
   if (announce) {
     const label = (THEMES.find((t) => t[0] === theme) || THEMES[0])[1];
     showToast(`Görünüm: ${label} tema.`);
@@ -12004,6 +12067,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.151': {
+    title: 'Onaydan sonra sonraki bekleyene geçme seçeneği',
+    body:
+      'Ayarlar → "Onay davranışı" bölümünde isteğe bağlı bir anahtar var. ' +
+      'Açıkken bir bölümü onayladığınızda uygulama sıradaki KONTROL EDİLMEMİŞ ' +
+      'bölüme geçer; bekleyen yoksa bulunduğunuz yerde kalır. Varsayılan KAPALI; ' +
+      'tercih yalnız bu tarayıcıda saklanır, kayda ve rapora yazılmaz.'
+  },
   '2.150': {
     title: 'Rapor hazırlığı: eksikler tek listede',
     body:
