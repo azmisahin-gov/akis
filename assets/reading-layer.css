@@ -903,27 +903,8 @@ input::placeholder, textarea::placeholder {
 }
 #view-audio .sd-obs { gap: 6px; }
 
-/* ---- v2.77 — Takip vurgusu (sağ panel metin alanı üstünde) --------------
-   Kullanıcı: "Takip modunda metin görünüyor ama takip etmiyor."
-   Artık sağ paneldeki metnin ÜSTÜNDE canlı okunan kısım vurgulanır. */
-#view-audio .sd-follow {
-  /* SABİT 2 SATIR (v2.125): yükseklik içerikle değişmez, iç çubuk yok.
-     Cümle 2 satırdan uzunsa yalnız programatik olarak SATIR SATIR kayar. */
-  font-size: var(--fs-xs); line-height: 1.5;
-  padding: 6px 8px; margin-bottom: var(--sp-2);
-  height: calc(2 * 1.5em + 12px);
-  background: var(--accent-soft); border: 1px solid var(--accent);
-  border-radius: var(--r-sm); color: var(--ink-2);
-  overflow: hidden;
-}
-#view-audio .sd-follow span { border-radius: 3px; padding: 0 1px; transition: background .1s; }
-#view-audio .sd-follow span.done { color: var(--ink-3); }
-#view-audio .sd-follow span.on {
-  /* Metrik DEĞİŞMEZ: kalın/dolgu yok (satır sonları kaymasın).
-     v2.163: ağır altın blok yerine altın-soft zemin + alt çizgi. */
-  background: var(--gold-soft); color: var(--ink);
-  box-shadow: inset 0 -2px 0 var(--gold);
-}
+/* v2.188 — `.sd-follow` şeridi KALDIRILDI. Canlı vurgu artık metin kutusunun
+   içinde (`.sd-hl`); ayrıntı dosya sonundaki v2.188 bloğunda. */
 
 /* --- v2.82 — Yerleşim düzeltmeleri ---------------------------------------
    Kullanıcı: "son değişikliklerde bazı görsel sorunlar olmuş."
@@ -943,25 +924,8 @@ input::placeholder, textarea::placeholder {
 }
 #view-audio .tb-more [data-bulk-approve]:hover { filter: brightness(1.06); }
 
-/* --- v2.83 — Otomatik çıktı ile düzeltme karşılaştırması ------------------
-   Adli ayrım: modelin ürettiği metin (asrText, değişmez) ile bilirkişinin
-   onayladığı metin (text) ayrı belgelerdir. Metin değiştiyse model çıktısı
-   katlanmış bir blokta gösterilir; yer kaplamaz, ama kaybolmaz. */
-#view-audio .sd-text .asr-compare {
-  border: 1px solid var(--line-2); border-left: 3px solid var(--ink-3);
-  border-radius: var(--r-sm); background: var(--surface-2);
-  font-size: var(--fs-xs); color: var(--ink-2);
-}
-#view-audio .sd-text .asr-compare > summary {
-  cursor: pointer; padding: var(--sp-2) var(--sp-3);
-  font-weight: 600; color: var(--ink-2); list-style: none;
-}
-#view-audio .sd-text .asr-compare > summary::-webkit-details-marker { display: none; }
-#view-audio .sd-text .asr-compare > summary::before { content: '▸ '; color: var(--ink-3); }
-#view-audio .sd-text .asr-compare[open] > summary::before { content: '▾ '; }
-#view-audio .sd-text .asr-body { padding: 0 var(--sp-3) var(--sp-2); }
-#view-audio .sd-text .asr-body p { margin: 0 0 var(--sp-2); line-height: var(--lh-body); }
-#view-audio .sd-text .asr-note { font-size: var(--fs-2xs); color: var(--ink-3); }
+/* v2.188 — Eski `.asr-compare` katlanır bloğu kaldırıldı. Modelin ham çıktısı
+   artık metin kutusunun sağ üstündeki düğmede açılır (`.sd-asr-pop`). */
 
 /* --- H. v2.104 — Punto kaçakları: app.css'te 11px altı kalan seçiciler -----
    NEDEN: "Hiçbir metin 11px altında olamaz" kuralı v2.103'e kadar EKRANDA
@@ -1120,9 +1084,6 @@ input::placeholder, textarea::placeholder {
   color: var(--ink-2);
   white-space: nowrap;
 }
-.sd-profile { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.sd-profile > span { font-size: var(--fs-2xs); color: var(--ink-3); }
-.sd-profile > b { font-size: var(--fs-xs); color: var(--ink-2); font-weight: 600; }
 
 /* --- N. v2.114 — Eksik bölüm dökümü (durum çubuğu) ---------------------- */
 .sb-pending {
@@ -1536,12 +1497,7 @@ input::placeholder, textarea::placeholder {
   overflow: visible;
 }
 
-/* v2.148 — Takip şeridi YER TUTUCUSU: canlı vurgu açıkken kutu önceden
-   kurulur; oynatma yalnız metni değiştirir, yerleşim zıplamaz. */
-.sd-follow.is-placeholder {
-  color: var(--ink-3);
-  font-style: italic;
-}
+/* v2.188 — `.sd-follow.is-placeholder` kaldırıldı (şerit yok). */
 
 /* ============================================================================
    v2.149 — KAPSAMA DENETİMİ
@@ -1724,8 +1680,6 @@ input::placeholder, textarea::placeholder {
 #view-audio .sd-times .sd-time-dur { flex-direction: column; align-items: stretch; }
 
 /* 2) Konuşmacı + Kontrol + Profil TEK satırda (101 → ~52 px). */
-#view-audio .sd-meta .sd-profile { min-width: 96px; }
-#view-audio .sd-meta .sd-profile b { white-space: nowrap; }
 
 /* 3) İkincil araçlar katlanır (74 → ~34 px). Onay düğmeleri GÖRÜNÜR kalır. */
 #view-audio .sd-more { display: inline-block; }
@@ -2205,10 +2159,6 @@ input::placeholder, textarea::placeholder {
    inebiliyordu. KURAL: çocuklar İÇERİĞİNDEN aşağı inmez; sığmazsa PANEL
    kaydırır (tek kaydırma zaten panelde). */
 @media (min-width: 901px) {
-  #view-audio .sd-follow {
-    flex: 0 0 auto;
-    min-height: calc(2 * 1.5em + 12px);
-  }
   #view-audio .seg-detail .sd-body { min-height: 236px; }
   #view-audio .seg-detail .sd-right { min-height: 236px; }
 }
@@ -2234,7 +2184,6 @@ input::placeholder, textarea::placeholder {
   white-space: nowrap;
 }
 #view-audio .sd-meta select { min-width: 150px; }
-#view-audio .sd-meta .sd-profile { margin-left: auto; }
 #view-audio .sd-right .sd-obs { padding-top: 2px; }
 
 /* --- v2.181 — ASR kökeni Teknik'te, metinde yalnız ince ipucu ------------- */
@@ -2271,8 +2220,6 @@ input::placeholder, textarea::placeholder {
 
 /* Profil meta satırında KALIR ama daralır (v2.182): tek satırda üç alan
    sığsın; değer uzunsa satır sarar, metin KIRPILMAZ. */
-#view-audio .sd-meta .sd-profile { flex: 0 1 auto; }
-#view-audio .sd-meta .sd-profile b { font-weight: 600; color: var(--ink-2); }
 
 /* --- v2.183 — Başlıkta birleşik işlem satırı ------------------------------- */
 /* ÖLÇÜM (v2.182, 1440×900): başlıkta üç düğme (Onayla/Yeniden dinle/
@@ -2423,4 +2370,211 @@ input::placeholder, textarea::placeholder {
   #view-audio .seg-detail .sd-right { order: 1; }
   #view-audio .seg-detail .sd-tech { order: 2; }
   #view-audio .seg-detail .sd-right .sd-text textarea { min-height: 260px; }
+}
+
+/* ============================================================================
+   v2.188 — METİN KUTUSU: TEK KUTU, DÖRT KÖŞE
+   ----------------------------------------------------------------------------
+   KULLANICI: "vurguyu text box içinde yaptır; quick-insert'leri buton olarak
+   yapmayalım, textbox alanına koyalım; sd-obs'u text box içine sol alt köşeye
+   koy; model çıktısını sağ üst köşeye koy; Profil'i sil."
+
+   YAPILAN:
+   • Ayrı `.sd-follow` şeridi KALDIRILDI. Okunan kelime textarea'nın arkasındaki
+     saydam `.sd-hl` katmanında vurgulanır → metin TEK yerde, ~48 px yer kazanılır.
+   • `.sd-obs` (rapora aktarılan gözlem işaretleri) kutunun ALT SOLUNDA.
+   • Hızlı ekle etiketleri tek düğme + açılır menü (ALT SAĞ) → satır kaplamaz.
+   • Model ham çıktısı kutunun ÜST SAĞINDA düğme + açılır kutu.
+   • Profil alanı kaldırıldı; "Henüz çözümlenmedi" DURUM satırına taşındı.
+
+   ÖLÇÜ KURALI: vurgu katmanı textarea ile AYNI puntoda, aynı dolguda ve aynı
+   genişlikte olmalıdır; yoksa kelime kayar. Genişlik JS ile textarea.clientWidth
+   değerinden verilir (kaydırma çubuğu farkı hizayı bozmaz). Metin alanı KENDİ
+   İÇİNDE kaymaz; içeriği kadar büyür (autoGrowTextarea), panel kayar.
+   ============================================================================ */
+#view-audio .seg-detail .sd-text { gap: 0; }
+#view-audio .seg-detail .sd-text .sd-editor {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-width: 0;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+}
+#view-audio .sd-editor-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 26px;
+  padding: 2px 6px;
+  border-bottom: 1px solid var(--line);
+}
+#view-audio .sd-editor-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+#view-audio .sd-editor .sd-ta-wrap {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+}
+/* Textarea: kenarlık ve zemin KUTUYA aittir; alan saydamdır ki arkadaki
+   vurgu katmanı görünsün. */
+#view-audio .seg-detail .sd-text .sd-editor .sd-ta-wrap textarea {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  flex: 0 0 auto;
+  min-height: clamp(240px, 38vh, 520px);
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  tab-size: 4;
+}
+#view-audio .seg-detail .sd-text .sd-editor .sd-ta-wrap textarea:focus {
+  border: 0;
+  box-shadow: none;
+}
+/* VURGU KATMANI: textarea'nın tam arkasında, aynı ölçülerde. Yalnız aktif
+   kelimenin arka planı görünür; metin saydamdır (üstteki textarea yazar). */
+#view-audio .sd-hl {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: hidden;
+  color: transparent;
+  pointer-events: none;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  letter-spacing: normal;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  tab-size: 4;
+}
+#view-audio .sd-hl .hl-word {
+  color: transparent;
+  background: var(--gold-soft);
+  border-radius: 3px;
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+#view-audio .sd-editor-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 30px;
+  padding: 3px 6px;
+  border-top: 1px solid var(--line);
+}
+#view-audio .sd-editor-bottom .sd-obs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding-top: 0;
+}
+#view-audio .sd-editor-bottom .sd-obs .obs-btn {
+  padding: 2px 7px;
+  font-size: var(--fs-2xs);
+}
+#view-audio .sd-quick {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+}
+#view-audio .sd-mini {
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  padding: 2px 8px;
+  font-size: var(--fs-2xs);
+  line-height: 1.5;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#view-audio .sd-mini:hover,
+#view-audio .sd-mini:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+#view-audio .sd-quick-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: min(340px, 70vw);
+  padding: 8px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+/* `hidden` NİTELİĞİNİ EZME: display:flex yazınca kapalı menü görünür kalırdı. */
+#view-audio .sd-quick-menu[hidden] { display: none; }
+#view-audio .sd-asr { position: relative; display: flex; }
+#view-audio .sd-asr-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  width: min(440px, calc(100vw - 80px));
+  max-height: 240px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow-md);
+}
+#view-audio .sd-asr-pop[hidden] { display: none; }
+#view-audio .sd-asr-head {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+#view-audio .sd-asr-text {
+  margin: 0 0 6px;
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+#view-audio .sd-asr-note {
+  margin: 0;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  line-height: 1.5;
 }

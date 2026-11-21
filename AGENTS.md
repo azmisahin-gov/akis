@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.187.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.188.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.187** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.188** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3108,6 +3108,37 @@ kırpılma/yatay taşma yok; başlık **78 px** (≥1100, iki satır) / **42 px*
 Onayla düğmesi **durum** değil **eylem** taşıyordu, ama seçicideki `Onaylandı`
 ile karışıyordu. Çözüm: **durum seçicide, eylem menüde** — ve eylemi yalnız
 klavyeye bırakmamak (menüde görünür).
+
+#### P18 — Metin kutusu: tek kutu, dört köşe (v2.188)
+
+**KULLANICI:** *"Vurguyu text box içinde yaptır; quick-insert'leri buton olarak
+yapmayalım, textbox alanına koyalım; sd-obs'u text box içine sol alt köşeye
+koy; model çıktısını sağ üst köşeye koy; Profil'i sil; 'Henüz çözümlenmedi'
+kısmını Durum'a koy."*
+
+**YAPILAN:**
+- `.sd-follow` şeridi kaldırıldı. Vurgu, textarea'nın arkasındaki saydam
+  `.sd-hl` katmanında: aynı punto (14), satır aralığı (1.7), dolgu (8×10).
+  Genişlik/yükseklik JS ile `textarea.clientWidth/clientHeight`'tan verilir.
+- Metin alanı **içeriği kadar büyür** (`autoGrowTextarea`), iç kaydırma yok →
+  vurgu hizası kaymaz; sığmazsa panel kayar.
+- `.sd-obs` kutunun **alt solunda**, "+ Hızlı ekle" menüsü **alt sağında**,
+  "Model çıktısı" düğmesi **sağ üstünde** (açılır kutu).
+- Profil alanı silindi; "Henüz çözümlenmedi" **Durum** satırına taşındı.
+
+**ÖLÇÜM (gerçek Chromium + gerçek WAV):** vurgu katmanı `scrollHeight` 611 =
+textarea 611; genişlik 582 = 582; t=1,08 "mi?", t=1,73 ikinci "Ali". Uzun metin
+587 px'e büyür (kırpılmaz). 1440/1280/1100/900/760/600 → kırpılan 0, yatay
+taşma 0. Hızlı ekle menüsü 340×64 tam görünür. JS hatası 0.
+
+**DERS:** `<textarea>` içine HTML yazılamaz; vurgu ancak arkasına konan AYNI
+ölçülü saydam katmanla metnin içinde gösterilebilir. İki katmanın puntoyu,
+satır aralığını, dolguyu ve GENİŞLİĞİ paylaşması şarttır — genişlik
+`clientWidth`'tan verilmezse kaydırma çubuğu farkı kelimeyi kaydırır. Ayrıca
+textarea kendi içinde kayarsa katman hizada kalamaz: alan içeriği kadar
+büyümeli, kaydırma panelde olmalıdır.
+
+**Koruyan test:** `birim` [68] + `tasarim` [2f]/[2s]/[2al]/[2am]/[2an]/[2ao].
 
 ### DOĞRULAMA (her oturum başı)
 

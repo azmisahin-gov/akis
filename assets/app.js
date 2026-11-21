@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.187';
+} from './schema.js?v=2.188';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.187';
+const APP_VERSION = '2.188';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3981,6 +3981,11 @@ function asrDiffers(s) {
   const asr = String((s && s.asrText) || '').trim();
   return !!asr && asr !== String((s && s.text) || '').trim();
 }
+// Kayıt çözümlendi mi? Profil alanı kaldırıldı (v2.188); "Henüz çözümlenmedi"
+// bilgisi artık DURUM satırında görünür ve tek kaynaktan gelir.
+function materialTranscribed(m) {
+  return !!(m && (m.transcribedWithModel || m.transcribedWithProfile));
+}
 // DURUM SATIRI — HER ZAMAN GÖRÜNÜR (v2.184).
 // NEDEN: "ses yok", "notlar" ve "model çıktısı farklı" için ÜÇ ayrı şerit
 // vardı; her biri başka yerde çıkıyor, yerleşim oynuyordu. Kullanıcı:
@@ -4005,23 +4010,44 @@ function statusRowHtml(m, s, i) {
       `<span class="st-chip info" title="İnceleme önceliği: ${esc(pr.reasons.join(', '))}">Öncelik: ${label}</span>`
     );
   }
+  if (!materialTranscribed(m)) {
+    chips.push(
+      `<span class="st-chip warn" title="Bu kayıt henüz otomatik çözümlenmedi. Bölümleri elle girebilir veya kaydı çözümleyebilirsiniz.">Henüz çözümlenmedi</span>`
+    );
+  }
   if (asrDiffers(s)) {
     chips.push(
-      `<button class="st-chip info action" data-tech-jump="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma Teknik panelindedir; metin değişmez.">Model çıktısı farklı — karşılaştır</button>`
+      `<button class="st-chip info action" data-asr-open="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma metin kutusunun sağ üstündeki düğmede açılır; metin değişmez.">Model çıktısı farklı — karşılaştır</button>`
     );
   }
   return `<div class="sd-status" role="status" aria-label="Bölüm durumu"><span class="sd-status-label">Durum</span>${chips.join('')}</div>`;
 }
-function asrCompareHtml(m, s, i) {
+// ASR KÖKENİ — METİN KUTUSUNUN SAĞ ÜST KÖŞESİ (v2.188).
+// Eski katlanır blok metnin ALTINDA (Teknik içinde) duruyordu ve yer kaplıyordu.
+// Artık metin kutusunun sağ üstünde küçük bir düğme; basınca ham çıktı
+// kutunun üzerinde açılır. Metin alanı bundan etkilenmez.
+function asrPopoverHtml(m, s, i) {
   if (!asrDiffers(s)) return '';
   const asr = String(s.asrText).trim();
   const model = s.asrModel ? ` · ${esc(modelShortName(s.asrModel))}` : '';
   const when = s.asrAt ? ` · ${esc(new Date(s.asrAt).toLocaleString('tr-TR'))}` : '';
-  return `<details class="asr-compare">
-    <summary>Otomatik çözümleme çıktısı (değiştirilmedi${model}${when})</summary>
-    <div class="asr-body"><p>${esc(asr)}</p>
-    <p class="asr-note">Bu metin modelin ürettiği ham çıktıdır ve <b>değiştirilmez</b>. Yukarıdaki alan sizin düzeltmenizdir; rapora onayladığınız metin girer.</p></div>
-  </details>`;
+  return `<div class="sd-asr">
+    <button type="button" class="sd-mini" data-asr-toggle="${i}" aria-expanded="false" title="Modelin ham çıktısını göster — bu metin değiştirilmez">Model çıktısı</button>
+    <div class="sd-asr-pop" role="dialog" aria-label="Otomatik çözümleme çıktısı" hidden>
+      <div class="sd-asr-head">Otomatik çözümleme çıktısı (değiştirilmedi${model}${when})</div>
+      <p class="sd-asr-text">${esc(asr)}</p>
+      <p class="sd-asr-note">Bu metin modelin ürettiği ham çıktıdır ve <b>değiştirilmez</b>. Rapora onayladığınız metin girer.</p>
+    </div>
+  </div>`;
+}
+function openAsrPopover(m) {
+  const detail = document.querySelector(`#seg-detail-${CSS.escape(m.id)}`);
+  if (!detail) return;
+  const pop = detail.querySelector('.sd-asr-pop');
+  const btn = detail.querySelector('[data-asr-toggle]');
+  if (!pop) return;
+  pop.hidden = false;
+  if (btn) btn.setAttribute('aria-expanded', 'true');
 }
 // BÖLÜM BAŞLIĞI — TEK KAYNAK (v2.148).
 // NEDEN: ilk çizim "Bölüm 3 / 100" yazıyordu; yerinde güncelleme `.sd-idx`in
@@ -4141,24 +4167,35 @@ function segDetailHtml(m) {
         <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
         <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
       </div>
-      <span class="sd-field sd-profile" title="${esc(
-        'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
-          'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
-          'Bir sonraki çözümleme, Ayarlar\'daki güncel profili kullanır.'
-      )}"><span>Profil</span><b>${esc(m.transcribedWithProfile ? profileRunLabel(m.transcribedWithProfile) : 'Henüz çözümlenmedi')}</b></span>
-      ${asrCompareHtml(m, s, i)}
     </div>
     <div class="sd-right">
-      ${'' /* karaoke kutusu kaldırıldı (v2.119): tek görsel alan .sd-follow */}
       <div class="sd-text">
-        <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
-        <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
-          ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
-          <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
+        <!-- METİN KUTUSU — TEK KUTU, DÖRT KÖŞE (v2.188).
+             Okunan kelime artık ayrı bir şeritte değil, textarea'nın arkasındaki
+             saydam katmanda vurgulanır (vurgu metnin İÇİNDE). Üst sağda model
+             çıktısı düğmesi, alt solda gözlem işaretleri, alt sağda hızlı ekle
+             menüsü durur. Hepsi kutunun içinde; metnin üzerine binmez. -->
+        <div class="sd-editor">
+          <div class="sd-editor-top">
+            <span class="sd-editor-label">Deşifre metni</span>
+            ${asrPopoverHtml(m, s, i)}
+          </div>
+          <div class="sd-ta-wrap">
+            <div class="sd-hl" aria-hidden="true"></div>
+            <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
+          </div>
+          <div class="sd-editor-bottom">
+            <!-- GÖZLEM İŞARETLERİ: rapora aktarılan işaretler; sol altta, yer kaplamaz. -->
+            <div class="sd-obs" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            <div class="sd-quick">
+              <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Sık kullanılan gözlem etiketini metne ekle">+ Hızlı ekle</button>
+              <div class="sd-quick-menu" role="group" aria-label="Hızlı metin ekle" hidden>
+                ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
+                <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <!-- GÖZLEM İŞARETLERİ (v2.180): metne ilişkin işaretler; analiz değil.
-             Teknik panelinde kalınca kaydırmadan erişilemiyordu. -->
-        <div class="sd-obs">${obsBtns}</div>
       </div>
     </div>
   </div>
@@ -5007,6 +5044,18 @@ function refreshAudioState(m) {
   chip.classList.toggle('bad', !ok);
   chip.title = audioStateHint(ok);
 }
+// METİN KUTUSU İÇERİĞE GÖRE BÜYÜR (v2.188).
+// NEDEN: vurgu katmanı textarea'nın tam arkasında durur. Textarea KENDİ İÇİNDE
+// kayarsa vurgu hizası kaydırma çubuğu genişliği kadar bozulur. Bu yüzden
+// textarea içeriği kadar uzar (iç kaydırma yok); panel zaten kendi içinde kayar.
+function autoGrowTextarea(ta) {
+  if (!ta) return;
+  ta.style.height = 'auto';
+  const h = ta.scrollHeight;
+  if (h) ta.style.height = h + 'px';
+  const wrap = ta.closest('.sd-ta-wrap');
+  if (wrap) syncHighlightLayer(wrap);
+}
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
   if (!root) return;
@@ -5014,6 +5063,7 @@ function renderSegDetail(m) {
   const keepScroll = root.scrollTop;
   root.innerHTML = segDetailHtml(m);
   root.scrollTop = keepScroll;
+  autoGrowTextarea(root.querySelector('.sd-text textarea'));
   // Sağ panel çizildikten sonra yakınlaştırılmış dalga formunu bağla. Panel
   // yalnızca bölüm değişince çizildiği için bu maliyet düşüktür.
   const idx = activeSegIndex(m);
@@ -5061,6 +5111,13 @@ function renderSegments(m, card) {
   // kuruluyor; refreshAudioState çağrılmazsa uyarı ilk açılışta boş kalıyor
   // ve ancak bir sonraki çizimde (bölüm/Teknik) görünüyordu.
   refreshAudioState(m);
+  // METİN KUTUSU İLK ÇİZİMDE DE İÇERİĞİ KADAR BÜYÜR (v2.188). Burada
+  // çağrılmazsa uzun metin 240 px'lik alanda gizli kalır ve vurgu katmanı
+  // yalnız görünen kısmı kaplar.
+  const ta0 = root.querySelector('.sd-text textarea');
+  const wrap0 = ta0?.closest('.sd-ta-wrap');
+  if (wrap0) bindHighlightLayer(wrap0);
+  autoGrowTextarea(ta0);
   refreshNarrowBar(m, card || root.closest('.audio-card'));
 }
 // Aktif bölümü değiştirir. Liste DOM'u yeniden kurulmaz; yalnızca sınıf taşınır
@@ -6118,22 +6175,6 @@ function renderBehaviorPanel() {
 function followShouldAutoStart(pref) {
   return !!(pref && pref.autoFollow === true);
 }
-// TEKNİK BÖLÜM TERCİHİ (v2.154). Tek panel, iki bölge: METİN (asıl iş) ve
-// TEKNİK (dalga/zaman/konuşmacı/gözlem). Varsayılan KAPALI: deşifre yazarken
-// metin alanı tüm yüksekliği alır. Tercih yalnız bu tarayıcıda saklanır.
-const TECH_KEY = 'akis.techOpen';
-function techOpenPref() {
-  try {
-    return localStorage.getItem(TECH_KEY) === '1';
-  } catch (e) {
-    return false;
-  }
-}
-function setTechOpen(on) {
-  try {
-    localStorage.setItem(TECH_KEY, on ? '1' : '0');
-  } catch (e) {}
-}
 // Takip modu durumu (dosya bazlı saklanır: case.followMode).
 const followState = { on: false, autoAdvance: false, liveHighlight: false };
 // `setFollow(on, mode)` — v2.119: iki bağımsız mod.
@@ -6290,6 +6331,15 @@ function syncSegDetailInPlace(m, idx) {
   // yeniden hesaplanır (v2.128). Dalga ve spek aynı kutuda kalır.
   setAnalysisMode(m, analysisMode);
   setVal('.sd-text textarea', s.text || '');
+  autoGrowTextarea(q('.sd-text textarea'));
+  clearHighlightLayer(q('.sd-ta-wrap'));
+  // DURUM SATIRI ve MODEL ÇIKTISI DÜĞMESİ bölüme bağlıdır (v2.188): takip
+  // sırasında panel yeniden çizilmediği için bu iki bölge de YERİNDE
+  // tazelenmezse önceki bölümün çipleri/düğmesi kalır (yanlış bilgi).
+  const statusEl = q('.sd-status');
+  if (statusEl) statusEl.outerHTML = statusRowHtml(m, s, idx);
+  const topEl = q('.sd-editor-top');
+  if (topEl) topEl.innerHTML = `<span class="sd-editor-label">Deşifre metni</span>${asrPopoverHtml(m, s, idx)}`;
   const sel = meta[1]?.querySelector('select');
   if (sel) {
     const rev = segReview(s);
@@ -6455,156 +6505,128 @@ function followStripIndex(m, idx, autoAdvance) {
   if (autoAdvance && m && Number.isInteger(m.activeSeg)) return m.activeSeg;
   return idx;
 }
-// TAKİP ŞERİDİ YER TUTUCUSU (v2.148).
-// NEDEN: şerit yalnız OYNATMA başlayınca DOM'a ekleniyordu; iki satırlık kutu
-// metni aşağı itiyor, sayfa oynatma anında zıplıyordu. Canlı vurgu açıksa
-// şerit ÖNCEDEN (boş yer tutucu olarak) kurulur; oynatma yalnız METNİ değiştirir.
-function ensureFollowStrip(m, idx) {
-  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
-  if (!wrap) return;
-  const bar = wrap.querySelector('.sd-follow');
-  if (!followState.liveHighlight) {
-    if (bar) bar.remove();
-    return;
+// CANLI VURGU — METİN KUTUSUNUN İÇİNDE (v2.188).
+// ESKİ ÇÖZÜM: `.sd-follow` adında AYRI bir şerit, okunan cümleyi ikinci kez
+// gösteriyordu (48 px dikey yer). Kullanıcı: "vurguyu text box içinde yaptır".
+// YENİ ÇÖZÜM: textarea'nın ARKASINDA, tam aynı ölçülerde saydam bir katman
+// (`.sd-hl`) durur; aktif kelime orada arka planla vurgulanır. Textarea'nın
+// kendi arka planı saydamdır, böylece vurgu metnin İÇİNDE görünür. Metin tek
+// yerde kalır; şerit kaldırıldı.
+// Kelimenin metindeki karakter aralığı — SAF FONKSİYON.
+// Parçalar metinde SIRAYLA aranır; bulunamazsa o parça vurgulanmaz (uydurma
+// konum yazılmaz). ASR kelimeleri düzenlenmiş metinle birebir örtüşmeyebilir.
+function karaokeCharSpans(text, segs) {
+  const src = String(text || '');
+  const list = Array.isArray(segs) ? segs : [];
+  const spans = [];
+  let pos = 0;
+  for (let i = 0; i < list.length; i++) {
+    const w = list[i] && list[i].w;
+    if (!w) {
+      spans.push(null);
+      continue;
+    }
+    let at = src.indexOf(w, pos);
+    if (at < 0) at = src.indexOf(w);
+    if (at < 0) {
+      spans.push(null);
+      continue;
+    }
+    spans.push([at, at + w.length]);
+    pos = at + w.length;
   }
-  if (bar) return;
-  const el = document.createElement('div');
-  el.className = 'sd-follow is-placeholder';
-  el.textContent = 'Canlı vurgu açık — oynatınca okunan cümle burada görünür.';
-  wrap.insertBefore(el, wrap.firstChild);
+  return spans;
+}
+// Vurgu katmanını textarea'nın görünür alanına hizala (kaydırma/ölçü değişimi).
+// Genişlik textarea'nın clientWidth'idir: böylece metin HER İKİ katmanda aynı
+// yerde sarar (kaydırma çubuğu farkı hizayı bozmaz).
+function syncHighlightLayer(wrap) {
+  if (!wrap) return;
+  const ta = wrap.querySelector('textarea');
+  const hl = wrap.querySelector('.sd-hl');
+  if (!ta || !hl) return;
+  if (ta.clientWidth) hl.style.width = ta.clientWidth + 'px';
+  if (ta.clientHeight) hl.style.height = ta.clientHeight + 'px';
+  hl.scrollTop = ta.scrollTop;
+  hl.scrollLeft = ta.scrollLeft;
+}
+function clearHighlightLayer(wrap) {
+  if (!wrap) return;
+  const hl = wrap.querySelector('.sd-hl');
+  if (hl && hl.innerHTML) hl.innerHTML = '';
+  delete wrap.__hlKey;
+}
+function bindHighlightLayer(wrap) {
+  if (!wrap || wrap.__hlBound) return;
+  wrap.__hlBound = true;
+  const ta = wrap.querySelector('textarea');
+  if (!ta) return;
+  ta.addEventListener('scroll', () => syncHighlightLayer(wrap));
+  if (typeof ResizeObserver !== 'undefined') {
+    try {
+      new ResizeObserver(() => syncHighlightLayer(wrap)).observe(ta);
+    } catch (e) {}
+  }
+}
+// Canlı vurgu açıksa katmanı hazırla; kapalıysa temizle. (Eski ad korunur:
+// çağrı yerleri değişmesin.)
+function ensureFollowStrip(m, idx) {
+  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-ta-wrap`);
+  if (!wrap) return;
+  bindHighlightLayer(wrap);
+  if (!followState.liveHighlight) clearHighlightLayer(wrap);
 }
 function markTextFollow(m, idx, t) {
   idx = followStripIndex(m, idx, followState.autoAdvance);
-  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
+  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-ta-wrap`);
   if (!wrap) return;
-  // CANLI VURGU KAPALIYSA ÇİZME (v2.119): kullanıcı istemediyse metin vurgusu
-  // görünmez. Takip şeridi de temizlenir.
+  const hl = wrap.querySelector('.sd-hl');
+  if (!hl) return;
   if (!followState.liveHighlight) {
-    wrap.querySelector('.sd-follow')?.remove();
-    delete wrap.__karaokeKey;
-    delete wrap.__followSentence;
+    clearHighlightLayer(wrap);
     return;
   }
   const s = (m.segments || [])[idx];
-  const toPlaceholder = () => {
-    // Yerleşim SABİT kalır: şerit silinmez, yer tutucuya döner (v2.148).
-    const bar = wrap.querySelector('.sd-follow');
-    if (bar) {
-      bar.classList.add('is-placeholder');
-      bar.textContent = 'Canlı vurgu açık — oynatınca okunan cümle burada görünür.';
-    }
-    delete wrap.__karaokeKey;
-    delete wrap.__followSentence;
-  };
   if (!s || !s.text || isHallucination(s.text)) {
-    toPlaceholder();
+    clearHighlightLayer(wrap);
     return;
   }
   const segs = karaokeSegments(s);
   if (!segs.length) {
-    toPlaceholder();
+    clearHighlightLayer(wrap);
     return;
   }
-  // SABİT PENCERE (v2.125): yalnız O ANKİ CÜMLE gösterilir. Kutu yüksekliği
-  // metne göre değişmez; içerik 2 satıra sığmazsa SATIR SATIR kayar (5 satır
-  // atlama yok). Aktif kelime yalnız arka planla vurgulanır → satır kaymaz.
-  const ranges = karaokeSentences(segs);
   const active = karaokeActiveIndex(segs, t);
-  let si = activeSentenceIndex(ranges, active);
-  if (si < 0) {
-    si = Number.isInteger(wrap.__followSentence) && ranges[wrap.__followSentence] ? wrap.__followSentence : 0;
+  if (active < 0) {
+    clearHighlightLayer(wrap);
+    return;
   }
-  const range = ranges[si] || { from: 0, to: segs.length - 1 };
-  // ANAHTAR: bölüm + cümle + metin. Değişmedikçe DOM YENİDEN YAZILMAZ.
-  // v2.115'te her tick'te innerHTML yazılıyordu → titreme (25 değişiklik/3sn).
-  const key = `${idx}|${si}|${s.text}`;
-  let bar = wrap.querySelector('.sd-follow');
-  if (!bar) {
-    bar = document.createElement('div');
-    bar.className = 'sd-follow';
-    wrap.insertBefore(bar, wrap.firstChild);
+  // ANAHTAR: bölüm + aktif kelime + metin. Değişmedikçe DOM yazılmaz (titreme yok).
+  const key = `${idx}|${active}|${s.text}`;
+  if (wrap.__hlKey === key) {
+    syncHighlightLayer(wrap);
+    return;
   }
-  bar.classList.remove('is-placeholder');
-  if (wrap.__karaokeKey !== key) {
-    // Kelime listesi boşluk parçası taşımıyorsa (ASR `words` yalnız kelimeleri
-    // verir) kelimeler arasına boşluk KONUR; aksi hâlde metin tek kelime gibi
-    // taşar ve satır kırılmaz (v2.125 ölçümü: 30 kelime 2 satıra sığmıyordu).
-    const hasSpaces = segs.some((x) => !x.w.trim());
-    let firstWord = true;
-    bar.innerHTML = segs
-      .slice(range.from, range.to + 1)
-      .map((x, k) => {
-        const gi = range.from + k;
-        if (!x.w.trim()) return esc(x.w);
-        const lead = !hasSpaces && !firstWord ? ' ' : '';
-        firstWord = false;
-        return `${lead}<span data-k="${gi}">${esc(x.w)}</span>`;
-      })
-      .join('');
-    wrap.__karaokeKey = key;
-    wrap.__followSentence = si;
-    bar.__active = -2;
-    bar.scrollTop = 0;
+  const span = karaokeCharSpans(s.text, segs)[active];
+  if (!span) {
+    clearHighlightLayer(wrap);
+    return;
   }
-  // Yalnız SINIF değişir: aktif parça `on`, öncekiler `done`. DOM sabit → titreme yok.
-  if (bar.__active !== active) {
-    const spans = bar.querySelectorAll('span[data-k]');
-    spans.forEach((el) => {
-      const i = Number(el.dataset.k);
-      el.classList.toggle('on', i === active);
-      el.classList.toggle('done', active >= 0 ? i < active : false);
-    });
-    bar.__active = active;
-    // 2 satırlık sabit pencere: aktif kelime görünür alanın dışına çıkarsa
-    // SATIR SATIR kaydır. Aşağı çıkınca kelime İKİNCİ satıra gelir (bir satır
-    // ilerler); yukarı çıkınca ilk satıra gelir. Konum MUTLAK hesaplanır.
-    const act = bar.querySelector('span.on');
-    if (act && bar.scrollHeight > bar.clientHeight + 1) {
-      const bt = bar.getBoundingClientRect();
-      const at = act.getBoundingClientRect();
-      if (at.top < bt.top + 1 || at.bottom > bt.bottom - 1) {
-        const lh = Math.max(1, parseFloat(getComputedStyle(bar).lineHeight) || 16);
-        const lineTop = Math.floor((at.top - bt.top + bar.scrollTop) / lh) * lh;
-        const target = at.top < bt.top + 1 ? lineTop : lineTop - lh;
-        const max = Math.max(0, bar.scrollHeight - bar.clientHeight);
-        bar.scrollTop = Math.max(0, Math.min(target, max));
-      }
-    }
-  }
+  const text = String(s.text);
+  hl.innerHTML =
+    esc(text.slice(0, span[0])) +
+    `<span class="hl-word">${esc(text.slice(span[0], span[1]))}</span>` +
+    esc(text.slice(span[1]));
+  wrap.__hlKey = key;
+  syncHighlightLayer(wrap);
 }
-// TAKİP ALT YAZISI — TEK ALAN (v2.116).
-// NEDEN: v2.115 ve öncesinde aynı metin ÜÇ yerde gösteriliyordu:
-//   1) `.karaoke` kutusu (innerHTML her tick yeniden yazılıyordu → TİTREME)
-//   2) `.sd-follow` şeridi (aynı metin, ikinci kez)
-//   3) `.sd-text textarea` (düzenlenebilir asıl metin)
-// Kullanıcı haklıydı: "neden iki tane alan koyduk bilemiyorum". Artık karaoke
-// kutusu KULLANILMAZ (gizli kalır); takip yalnız `.sd-follow` ile yapılır.
-// Bu, `markTextFollow`'un sınıf-tabanlı (titremesiz) yoludur.
+// TAKİP VURGUSU — TEK ALAN (v2.188).
+// Metin yalnız textarea'da; vurgu onun arkasındaki katmanda. Ayrı şerit ve
+// karaoke kutusu YOK. `followKaraoke` eski çağrılar için korunur, delege eder.
 function followKaraoke(m, idx, t) {
-  const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  // Karaoke kutusu varsa gizle: aynı metni ikinci kez göstermenin anlamı yok.
-  if (box) {
-    if (!box.hidden) box.hidden = true;
-    box.innerHTML = '';
-  }
   markTextFollow(m, idx, t);
 }
-// Karaoke vurgulaması: çalma sırasında o an konuşulan kelime (kelime zamanı
-// varsa) ya da bölüm metni vurgulanır. Kelime zamanı yoksa bölüm aralığına göre
-// tüm metin "okunuyor" olarak işaretlenir; uydurma zamanlama yapılmaz.
-// KARAOKE KUTUSU KALDIRILDI (v2.119).
-// NEDEN: v2.118'de bu fonksiyon HER `timeupdate`'te `box.innerHTML` yazıyordu.
-// Aynı metin iki yerde (karaoke + sd-follow) gösteriliyor, karaoke olan
-// sürekli yeniden yazıldığı için BOZULUYORDU ("sabit değil" — canlı veri).
-// Tek görsel alan `.sd-follow`dur ve sınıf-tabanlı çalışır (v2.116).
-// Bu fonksiyon artık yalnız delege eder; karaoke kutusu DOM'da tutulmaz.
 function renderKaraoke(m, index) {
-  const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  if (box) {
-    // Kalıntı kutu varsa temizle ve gizle (eski DOM/önbellek).
-    if (!box.hidden) box.hidden = true;
-    if (box.innerHTML) box.innerHTML = '';
-  }
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player = card?.querySelector('audio');
   const now = player && Number.isFinite(player.currentTime) ? player.currentTime : null;
@@ -6612,11 +6634,8 @@ function renderKaraoke(m, index) {
   markTextFollow(m, index, now);
 }
 function hideKaraoke(m) {
-  const box = $(`#karaoke-${CSS.escape(m.id)}`);
-  if (box) {
-    box.hidden = true;
-    box.innerHTML = '';
-  }
+  const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-ta-wrap`);
+  clearHighlightLayer(wrap);
 }
 function playSegmentRange(card, m, s, index, { restart = false } = {}) {
   const player = card.querySelector('audio');
@@ -10871,19 +10890,25 @@ function setupEvents() {
         if (panel && !panel.hidden) closeCoveragePanel(m);
         else renderCoveragePanel(m);
       }
-    } else if (b.dataset.techJump !== undefined) {
-      // "Model çıktısı farklı" ipucu: Teknik'i açar ve karşılaştırmayı gösterir.
+    } else if (b.dataset.asrToggle !== undefined) {
+      // Model çıktısı düğmesi: ham çıktı kutusunu aç/kapat (v2.188).
+      const pop = b.parentElement.querySelector('.sd-asr-pop');
+      if (pop) {
+        pop.hidden = !pop.hidden;
+        b.setAttribute('aria-expanded', pop.hidden ? 'false' : 'true');
+      }
+    } else if (b.dataset.asrOpen !== undefined) {
+      // Durum satırındaki "Model çıktısı farklı" çipi: kutusunu açar.
       const card = b.closest('.audio-card');
       const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
       const m = c.materials.find((x) => x.id === id);
-      if (m) {
-        setTechOpen(true);
-        renderSegDetail(m);
-        const box = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .asr-compare`);
-        if (box) {
-          box.open = true;
-          box.scrollIntoView({ block: 'nearest' });
-        }
+      if (m) openAsrPopover(m);
+    } else if (b.dataset.quickMenu !== undefined) {
+      // Hızlı ekle menüsü: düğmenin altında açılır.
+      const menu = b.parentElement.querySelector('.sd-quick-menu');
+      if (menu) {
+        menu.hidden = !menu.hidden;
+        b.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
       }
     } else if (b.dataset.covGoto !== undefined) {
       const [id, at] = b.dataset.covGoto.split('|');
@@ -11307,6 +11332,9 @@ function setupEvents() {
     if (!s) return;
     if (el.dataset.key === 'text') {
       const wasProposal = applyTextEdit(s, el.value);
+      autoGrowTextarea(el);
+      // Metin değişince eski vurgu konumu geçersizdir; temizle.
+      clearHighlightLayer(el.closest('.sd-ta-wrap'));
       // İkinci göz yazdıysa ana metin DEĞİŞMEDİ; kullanıcı bunu görmeli.
       // Panel yeniden çizilmez (odak kaybolmasın) ama öneri bandı yerinde
       // güncellenir. Aksi hâlde yazdığı metin kaybolmuş gibi görünür.
@@ -12549,6 +12577,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.188': {
+    title: 'Metin kutusu: tek kutu, dört köşe',
+    body:
+      'Okunan kelime artık metnin İÇİNDE vurgulanır; ayrı vurgu şeridi kaldırıldı. ' +
+      'Gözlem işaretleri (gürültü · üst üste · anlaşılmaz · müzik) metin kutusunun ' +
+      'alt solunda, "+ Hızlı ekle" menüsü alt sağında, "Model çıktısı" düğmesi sağ ' +
+      'üstünde. Profil alanı kaldırıldı; "Henüz çözümlenmedi" Durum satırında. ' +
+      'Metin alanı içeriği kadar büyür; uzun metin kırpılmaz, panel kayar.'
+  },
   '2.187': {
     title: 'Liste sağa yaslandı; Onayla düğmesi kaldırıldı',
     body:

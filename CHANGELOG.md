@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.187.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.188.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.188 — Metin kutusu: tek kutu, dört köşe
+
+Kullanıcı: *"Vurguyu text box içinde yaptır; quick-insert'leri buton olarak
+yapmayalım, textbox alanına koyalım; sd-obs'u text box içine sol alt köşeye
+koy; model çıktısını sağ üst köşeye koy; Profil'i sil; 'Henüz çözümlenmedi'
+kısmını Durum'a koy."*
+
+### KULLANICI NE GÖRECEK
+
+- **Okunan kelime artık metnin İÇİNDE vurgulanır.** Metnin üstündeki ayrı
+  vurgu şeridi kaldırıldı; aynı metin iki yerde gösterilmiyor.
+- **Gözlem işaretleri** (gürültü · üst üste · anlaşılmaz · müzik) **metin
+  kutusunun ALT SOLUNDA.** Rapora aktarılan işaretler elin altında, yer
+  kaplamıyor.
+- **Hızlı ekle etiketleri tek düğmede:** "+ Hızlı ekle" → açılır menü (ALT SAĞ).
+- **Modelin ham çıktısı metin kutusunun SAĞ ÜSTÜNDE:** "Model çıktısı" düğmesi
+  → açılır kutu. Yalnız metinden farklıysa görünür.
+- **Profil alanı kaldırıldı.** "Henüz çözümlenmedi" bilgisi **Durum** satırında.
+
+### ÖLÇÜM (gerçek Chromium + gerçek WAV)
+
+| Konu | Sonuç |
+|---|---|
+| Vurgu hizası | katman `scrollHeight` 611 = textarea 611; genişlik 582 = 582; kelime metnin içinde |
+| Canlı vurgu (gerçek ses) | t=1,08 sn → "mi?" vurgulandı; t=1,73 → ikinci "Ali" |
+| Uzun metin | textarea 587 px'e büyür (240 px'te kırpılmaz), panel kayar |
+| Hızlı ekle menüsü | 340×64, tam görünür; etiket eklenince menü kapanır |
+| Model çıktısı | düğme → kutu açılır/kapanır; durum çipi de açar |
+| Genişlikler | 1440/1280/1100/900/760/600 → kırpılan 0, yatay taşma 0 |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim` [68] (kelime konumu: sıralı arama, bulunamayan kelime null),
+`tasarim` [2f]/[2s]/[2al]/[2am]/[2an]/[2ao] (vurgu katmanı ölçüleri, dört köşe
+yerleşimi, ASR açılır kutusu, profil kaldırıldı).
 
 ## v2.187 — Liste sağa yaslı; "✓ Onayla" düğmesi kaldırıldı
 

@@ -423,17 +423,20 @@ console.log('\n[2r] Detay paneli kırpmıyor (v2.143)');
   );
 }
 
-// --- 2s. Takip şeridi yer tutucusu (v2.148) -------------------------------
-// Kullanıcı: "sd-follow normalde kapalı; play'e basınca açılıyor ve sayfada
-// ani değişiklik yaratıyor." Şerit artık canlı vurgu AÇIKKEN yer tutucu olarak
-// önceden kurulur; oynatma yalnız metni değiştirir (yerleşim zıplamaz).
-console.log('\n[2s] Takip şeridi yer tutucusu (v2.148)');
+// --- 2s. Canlı vurgu metin kutusunun İÇİNDE (v2.188) ----------------------
+// KULLANICI: "vurguyu text box içinde yaptır." Ayrı `.sd-follow` şeridi
+// kaldırıldı; okunan kelime textarea'nın arkasındaki saydam `.sd-hl`
+// katmanında vurgulanır. Metin tek yerde kalır, ~48 px dikey yer kazanılır.
+console.log('\n[2s] Canlı vurgu metin kutusunun içinde (v2.188)');
 {
   const rl = read('assets/reading-layer.css');
-  check('yer tutucu stili tanımlı', /\.sd-follow\.is-placeholder\s*\{/.test(rl));
   const js = read('assets/app.js');
-  check('şerit çizimden sonra hazırlanıyor', /ensureFollowStrip\(m, idx\)/.test(js));
-  check('mod değişiminde şerit hazırlanıyor', /ensureFollowStrip\(mm, activeSegIndex\(mm\)\)/.test(js));
+  check('vurgu katmanı .sd-hl çizilir', /class="sd-hl"/.test(js));
+  check('vurgu katmanı mutlak konumlu', /#view-audio \.sd-hl\s*\{[^}]*position:\s*absolute/.test(rl));
+  check('vurgu kelimesi arka planla işaretlenir', /\.sd-hl \.hl-word\s*\{[^}]*background/.test(rl));
+  check('eski ayrı şerit kaldırıldı', !/class="sd-follow"/.test(js) && !/#view-audio \.sd-follow\s*\{/.test(rl));
+  check('kelime konumu saf fonksiyonla bulunur', /function karaokeCharSpans\(/.test(js));
+  check('katman hazırlığı metin kutusunu hedefler', /ensureFollowStrip[\s\S]{0,220}sd-ta-wrap/.test(js));
 }
 
 // --- 2t. Listede bitiş zamanı iki satır (v2.152) ---------------------------
@@ -471,7 +474,8 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
   check('menü aynı işleri taşır (birleştir/böl/çözümle/sil)',
     /data-merge-next/.test(js) && /data-split-seg/.test(js) && /data-retranscribe-seg/.test(js) && /data-delete-seg/.test(js));
   check('detayda katlama kalmadı', !/<details class="sd-more">/.test(js));
-  check('masaüstü metin alanı 160 px', /@media \(min-width: 901px\)[\s\S]{0,200}min-height:\s*160px/.test(rl));
+  // v2.188: metin kutusu tek kutuda; alan içeriği kadar büyür, taban 240 px.
+  check('metin alanı tabanı 240 px (v2.188)', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*clamp\(240px/.test(rl));
   check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
 }
 
@@ -489,7 +493,8 @@ console.log('\n[2v] Tek panel, iki bölge (v2.154)');
   check('onay eylemi Enter ile de çalışır', /approveActiveSegment/.test(js));
   check('teknik bölüm .sd-tech taşıyor', /class="sd-left sd-tech"/.test(js));
   check('alt eylem satırı kaldırıldı (.sd-actions yok)', !/class="sd-actions"/.test(js));
-  check('metin alanı kalan yüksekliği alır (flex)', /#view-audio \.seg-detail \.sd-right \.sd-text textarea\s*\{[^}]*flex:\s*1 1 auto/.test(rl));
+  check('metin kutusu içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-text \.sd-editor\s*\{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('metin alanı içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*flex:\s*0 0 auto/.test(rl));
   // v2.186: TEKNİK DÜĞMESİ KALDIRILDI — bölüm her zaman görünür, çizim koşulsuz.
   check('teknik düğmesi yok', !/data-tech-toggle/.test(js));
   check('teknik bölüm her zaman görünür (hidden koşulu yok)', /class="sd-left sd-tech">/.test(js));
@@ -611,23 +616,26 @@ console.log('\n[2aa] Durum renkleri tek anlam (v2.163)');
   check('birincil mini-button dolu accent', /\.mini-button\.primary \{[^}]*background: var\(--accent\)/.test(rl));
 }
 
-// --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
-// ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
-// (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
-// kaydırabiliyordu. Kural: sabit yükseklik, iç çubuk yok, vurgu yalnız arka plan.
-console.log('\n[2f] Takip şeridi sabit ve vurgu metrik değiştirmiyor');
+// --- 2f. Vurgu katmanı metrik değiştirmiyor (v2.188) ---------------------
+// KURAL: vurgu katmanı textarea ile AYNI puntoda, satır aralığında ve dolguda
+// olmalı; yoksa kelime metnin üstünde kayar. Vurgu yalnız ARKA PLANLA yapılır
+// (kalın/dolgu satır sonlarını kaydırır).
+console.log('\n[2f] Vurgu katmanı metrik değiştirmiyor (v2.188)');
 {
   const stripComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
   const stripMedia = (css) => css.replace(/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/g, '');
   const base = stripMedia(stripComments(layer));
-  const follow = [...base.matchAll(/#view-audio \.sd-follow\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
-  check('takip şeridi sabit yükseklik taşır', /(^|;)\s*height:\s*[^;]+/.test(follow), follow.trim().slice(0, 80));
-  check('takip şeridi 120px tavanına dönmedi', !/max-height:\s*120px/.test(follow));
-  check('takip şeridi iç kaydırma çubuğu göstermez', /overflow:\s*hidden/.test(follow), follow.trim().slice(0, 80));
-  const on = [...base.matchAll(/#view-audio \.sd-follow span\.on\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
-  check('aktif kelime kalınlaştırmıyor (metrik sabit)', !/font-weight/.test(on), on.trim().slice(0, 80));
-  check('aktif kelime dolgu eklemiyor (metrik sabit)', !/(^|;)\s*padding/.test(on), on.trim().slice(0, 80));
-  check('aktif kelime arka planla vurgulanıyor', /background/.test(on));
+  const ta = [...base.matchAll(/#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  const hl = [...base.matchAll(/#view-audio \.sd-hl\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('textarea dolgusu tanımlı', /padding:\s*8px 10px/.test(ta));
+  check('vurgu katmanı aynı dolguyu taşır', /padding:\s*8px 10px/.test(hl), hl.trim().slice(0, 80));
+  check('textarea aynı puntoyu taşır', /font-size:\s*var\(--fs-sm\)/.test(ta));
+  check('vurgu katmanı aynı puntoyu taşır', /font-size:\s*var\(--fs-sm\)/.test(hl));
+  check('vurgu katmanı aynı satır aralığını taşır', /line-height:\s*1\.7/.test(hl));
+  const word = [...base.matchAll(/#view-audio \.sd-hl \.hl-word\s*\{([^}]*)\}/g)].map((m) => m[1]).join(';');
+  check('aktif kelime kalınlaştırmıyor (metrik sabit)', !/font-weight/.test(word), word.trim().slice(0, 80));
+  check('aktif kelime dolgu eklemiyor (metrik sabit)', !/(^|;)\s*padding/.test(word), word.trim().slice(0, 80));
+  check('aktif kelime arka planla vurgulanıyor', /background/.test(word));
 }
 
 // --- 2g. Analiz kutusu: katmanlı, sabit yükseklik (v2.128) ----------------
@@ -1093,60 +1101,60 @@ console.log('\n[2aj] Sürükle-bırak birleştirme güvenli (v2.178)');
   check('menü yolu korunur', /data-merge-next/.test(js6));
 }
 
-console.log('\n[2al] Detay paneli: canlı vurgu ezilmez (v2.179)');
+console.log('\n[2al] Metin kutusu: tek kutu, saydam alan, vurgu arkada (v2.188)');
 {
-  // ÖLÇÜM (v2.178, 1440×900): Teknik açıkken (360 px) canlı vurgu şeridi
-  // 48 → **14 px**, metin alanı 448 → **120 px**'e eziliyordu. Sebep:
-  // `.sd-body/.sd-right { min-height: 0 }` + metin alanının 120 px tabanı.
-  // KURAL: çocuklar içeriğinden aşağı inmez; sığmazsa PANEL kaydırır.
+  // v2.188: ayrı vurgu şeridi kaldırıldı. Metin alanı kendi içinde KAYMAZ
+  // (içeriği kadar büyür) ki arkadaki vurgu katmanı hizada kalsın.
   const rl7 = read('assets/reading-layer.css');
-  check('vurgu şeridi küçülmez (flex:0 0 auto)', /\.sd-follow\s*\{[^}]*flex:\s*0 0 auto[^}]*\}/.test(rl7));
-  check('vurgu şeridi 2 satır tabanı', /\.sd-follow\s*\{[^}]*min-height:\s*calc\(2 \* 1\.5em \+ 12px\)/.test(rl7));
-  check('metin alanı 160 px tabanı', /\.sd-text textarea\s*\{[^}]*min-height:\s*160px/.test(rl7));
+  check('metin alanı saydam (vurgu arkadan görünür)', /\.sd-ta-wrap textarea\s*\{[^}]*background:\s*transparent/.test(rl7));
+  check('metin alanı iç kaydırma yapmaz', /\.sd-ta-wrap textarea\s*\{[^}]*overflow:\s*hidden/.test(rl7));
+  check('metin alanı 240 px tabanı', /\.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*clamp\(240px/.test(rl7));
   check('gövde alt sınırı', /\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7));
   check('sağ sütun alt sınırı', /\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
 }
 
-console.log('\n[2am] Konuşmacı/kontrol/gözlem her zaman görünür (v2.180)');
+console.log('\n[2am] Konuşmacı/kontrol/gözlem her zaman görünür (v2.180 → v2.188)');
 {
-  // ÖLÇÜM (v2.179, 1440×900): Teknik açıkken konuşmacı+kontrol y=822,
-  // gözlem y=884; panel 248–827 → kaydırmadan erişilemiyordu. Oysa ikisi de
-  // ANALİZ DEĞİL, metin/düzenleme bilgisidir.
+  // v2.188: gözlem işaretleri (rapora aktarılır) metin kutusunun ALT SOLUNDA;
+  // hızlı ekle menüsü ALT SAĞINDA; model çıktısı ÜST SAĞINDA.
   const js8 = read('assets/app.js');
   const i0 = js8.indexOf('function segDetailHtml');
   const i1 = js8.indexOf('\nfunction ', i0 + 10);
   const body8 = js8.slice(i0, i1 > 0 ? i1 : i0 + 30000);
   const iMeta = body8.indexOf('class="sd-meta"');
-  const iObs = body8.indexOf('class="sd-obs"');
   const iTech = body8.indexOf('sd-left sd-tech');
-  const iQuick = body8.indexOf('class="quick-insert"');
+  const iEditor = body8.indexOf('class="sd-editor"');
+  const iBottom = body8.indexOf('class="sd-editor-bottom"');
+  const iObs = body8.indexOf('class="sd-obs"');
+  const iQuick = body8.indexOf('class="sd-quick"');
+  const iAsr = body8.indexOf('class="sd-editor-top"');
   check('konuşmacı/kontrol var', iMeta > 0);
   check('konuşmacı/kontrol Teknik DIŞINDA (önce)', iTech > 0 && iMeta < iTech, `meta=${iMeta} tech=${iTech}`);
-  check('gözlem var', iObs > 0);
-  check('gözlem Teknik DIŞINDA (sonra)', iObs > iTech, `obs=${iObs} tech=${iTech}`);
-  check('gözlem metin bölgesinde (quick-insert yanında)', iObs > iQuick, `obs=${iObs} quick=${iQuick}`);
-  check('Teknik ipucu artık konuşmacı/gözlem anmıyor',
-    !/Dalga, zamanlar, konuşmacı ve gözlem/.test(js8));
+  check('metin kutusu tek kutu', iEditor > 0 && iTech > 0 && iEditor > iTech, `editor=${iEditor} tech=${iTech}`);
+  check('gözlem kutunun ALT bölgesinde', iObs > iBottom, `obs=${iObs} bottom=${iBottom}`);
+  check('gözlem hızlı ekle ile aynı alt şeritte', iObs > iBottom && iQuick > iBottom, `obs=${iObs} quick=${iQuick}`);
+  check('model çıktısı kutunun ÜST bölgesinde', iAsr > 0 && iAsr < iEditor + 400, `asr=${iAsr} editor=${iEditor}`);
 }
 
-console.log("\n[2an] ASR kökeni Teknik'te, metinde ince ipucu (v2.181)");
+console.log("\n[2an] ASR kökeni metin kutusunun sağ üstünde (v2.188)");
 {
-  // ÖLÇÜM (v2.180): "Otomatik çözümleme çıktısı (model …)" bloğu metin
-  // alanının üstündeydi; notlarla birleşince metin bölgesini aşağı itiyordu.
-  // Köken bilgisi analizdir → Teknik'e taşındı; metinde tek satır ipucu.
+  // KULLANICI: "Otomatik çözümleme çıktısı kısmını text box içine sağ üst
+  // köşeye koy; basınca bir kutu açılsın." Eski katlanır blok kaldırıldı.
   const js9 = read('assets/app.js');
+  const rl9 = read('assets/reading-layer.css');
   const i0 = js9.indexOf('function segDetailHtml');
   const i1 = js9.indexOf('\nfunction ', i0 + 10);
   const body9 = js9.slice(i0, i1 > 0 ? i1 : i0 + 30000);
-  const iTech = body9.indexOf('sd-left sd-tech');
-  const iAsrCall = body9.indexOf('${asrCompareHtml(m, s, i)}');
-  check('ASR köken bloğu Teknik içinde', iTech > 0 && iAsrCall > iTech, `asr=${iAsrCall} tech=${iTech}`);
-  // v2.184: ipucu metin bölgesinden DURUM SATIRINA taşındı (tek yer).
-  check('model farkı durum çipinde', /st-chip info action[^>]*data-tech-jump/.test(js9));
-  check('çip durum satırı üreticisinde', /function statusRowHtml[\s\S]{0,1200}data-tech-jump/.test(js9));
-  check('notlarda "öncelik" satırı kalmadı', !/öncelik \$\{pr\.score/.test(body9));
+  const iEditorTop = body9.indexOf('class="sd-editor-top"');
+  const iAsrCall = body9.indexOf('${asrPopoverHtml(m, s, i)}');
+  check('ASR düğmesi üst şeritte', iEditorTop > 0 && iAsrCall > iEditorTop, `asr=${iAsrCall} top=${iEditorTop}`);
+  check('ASR kutusu gizli başlar', /class="sd-asr-pop"[^>]*hidden/.test(js9));
+  check('ASR kutusu açılır/kapanır', /dataset\.asrToggle[\s\S]{0,300}hidden = !pop\.hidden/.test(js9));
+  check('eski katlanır blok kaldırıldı', !/class="asr-compare"/.test(js9) && !/\.asr-compare\s*\{/.test(rl9));
+  check('model farkı durum çipinde', /st-chip info action[^>]*data-asr-open/.test(js9));
+  check('çip durum satırı üreticisinde', /function statusRowHtml[\s\S]{0,1600}data-asr-open/.test(js9));
+  check('çip ASR kutusunu açar', /dataset\.asrOpen[\s\S]{0,300}openAsrPopover/.test(js9));
   check('öncelik rozeti korunur', /function segPriorityBadge/.test(js9) && /badge prio/.test(js9));
-  check("ipucu Teknik'i açar", /dataset\.techJump[\s\S]{0,400}setTechOpen\(true\)/.test(js9));
 }
 
 console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
@@ -1167,7 +1175,9 @@ console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
   const iRev = bodyA.indexOf('data-key="review"');
   check('konuşmacı başlıkta', iSpk > iHead && iSpk < iTech, `head=${iHead} spk=${iSpk} tech=${iTech}`);
   check('kontrol başlıkta', iRev > iHead && iRev < iTech, `head=${iHead} rev=${iRev} tech=${iTech}`);
-  check('profil Teknik içinde', bodyA.indexOf('sd-profile') > iTech);
+  // v2.188: Profil alanı KALDIRILDI; "Henüz çözümlenmedi" DURUM satırına taşındı.
+  check('profil alanı kaldırıldı', !/sd-profile/.test(bodyA));
+  check('"Henüz çözümlenmedi" durum satırında', /function statusRowHtml[\s\S]{0,1600}Henüz çözümlenmedi/.test(jsA));
   check('boş meta çizilmez (yalnız belirsiz okumada)', /\$\{rev === 'ambiguous'[\s\S]{0,140}sd-meta/.test(bodyA));
 }
 

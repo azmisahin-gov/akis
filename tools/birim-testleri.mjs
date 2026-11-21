@@ -105,7 +105,7 @@ const EXPOSE = [
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
-  'karaokeSegments', 'karaokeActiveIndex',
+  'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
   'setSegReview',
   'karaokeSentences', 'activeSentenceIndex',
@@ -3245,6 +3245,39 @@ console.log('\n== [67] Birleştirme adli olarak eksiksiz (v2.176)');
   const lb3 = (m3.log || []).length;
   T.splitSegmentAt(m3, 0, 2);
   eq('bölme günlüğe yazıldı', (m3.log || []).length, lb3 + 1);
+}
+
+console.log('\n== [68] Canlı vurgu metin içinde: kelime konumu (v2.188)');
+{
+  // KULLANICI: "vurguyu text box içinde yaptır." Vurgu katmanı, aktif kelimenin
+  // METİN İÇİNDEKİ karakter aralığını bilmek zorunda. Yanlış aralık → yanlış
+  // kelime vurgulanır. Saf fonksiyon, düzenlenmiş metinle ASR kelimeleri
+  // birebir örtüşmediğinde bile uydurma konum yazmaz (null döner).
+  const txt = 'Ali geldi mi? Ali gelmedi.';
+  const segs = [
+    { w: 'Ali', s: 0, e: 0.5 },
+    { w: ' ', s: NaN, e: NaN },
+    { w: 'geldi', s: 0.5, e: 1 },
+    { w: ' ', s: NaN, e: NaN },
+    { w: 'mi?', s: 1, e: 1.2 },
+    { w: ' ', s: NaN, e: NaN },
+    { w: 'Ali', s: 1.2, e: 1.4 },
+    { w: ' ', s: NaN, e: NaN },
+    { w: 'gelmedi.', s: 1.4, e: 2 }
+  ];
+  const spans = T.karaokeCharSpans(txt, segs);
+  eq('ilk kelime konumu', JSON.stringify(spans[0]), JSON.stringify([0, 3]));
+  eq('ikinci Ali SIRAYLA bulunur (baştan değil)', JSON.stringify(spans[6]), JSON.stringify([14, 17]));
+  eq('son kelime konumu', JSON.stringify(spans[8]), JSON.stringify([18, 26]));
+  // Boşluk parçası eşlenir ama `s` NaN olduğu için ASLA aktif olmaz.
+  eq('boşluk parçası eşlenir', JSON.stringify(spans[1]), JSON.stringify([3, 4]));
+  eq('boşluk aktif indeks üretmez (geldi seçilir)', T.karaokeActiveIndex(segs, 0.6), 2);
+  // Düzenlenmiş metinde olmayan ASR kelimesi: konum uydurulmaz.
+  const spans2 = T.karaokeCharSpans('farklı metin', [{ w: 'yok', s: 0, e: 1 }]);
+  eq('bulunamayan kelime null', spans2[0], null);
+  // Aynı kelime iki kez: ikinci arama ilk bulgunun İLERİSİNDEN başlar.
+  const spans3 = T.karaokeCharSpans('ev ev', [{ w: 'ev', s: 0, e: 1 }, { w: ' ', s: NaN, e: NaN }, { w: 'ev', s: 1, e: 2 }]);
+  eq('yinelenen kelime ikinci konumda', JSON.stringify(spans3[2]), JSON.stringify([3, 5]));
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

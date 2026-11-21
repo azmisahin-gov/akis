@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.187.**
+yazılır. **Güncel sürüm: v2.188.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.188 — Metin kutusu: tek kutu, dört köşe (tamamlandı)
+
+Okunan kelime artık metnin **İÇİNDE** vurgulanır; ayrı vurgu şeridi kaldırıldı.
+Gözlem işaretleri (rapora aktarılır) kutunun **alt solunda**, "+ Hızlı ekle"
+menüsü **alt sağında**, modelin ham çıktısı **sağ üstünde** (düğme → açılır
+kutu). Profil alanı kaldırıldı; "Henüz çözümlenmedi" **Durum** satırına taşındı.
+Metin alanı içeriği kadar büyür (uzun metin kırpılmaz; panel kayar). Ölçüm:
+vurgu katmanı ile textarea aynı yükseklik/genişlik (611/611, 582/582); gerçek
+WAV ile t=1,08'de "mi?", t=1,73'te ikinci "Ali" vurgulandı; 1440→600 px
+kırpılan 0. Koruyan test: `birim` [68], `tasarim` [2f]/[2s]/[2al]/[2am]/[2an]/[2ao].
 
 ### v2.187 — Liste sağa yaslı; Onayla düğmesi kalktı (tamamlandı)
 
