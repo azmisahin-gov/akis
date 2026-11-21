@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 + P7 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 + P7 + P8 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.175** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **961 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `7da0d62` |
+| Sürüm | **v2.178** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **974 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `f27c17d` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.175** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.178** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2591,6 +2591,9 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.173 | Paket adı saniye taşıyor | aynı dakikada iki paket **farklı ad** (10-00-40 / 10-00-47) | `birim` [66] |
 | v2.174 | "Ses yok" uyarısı Teknik kapalıyken de görünür | uyarı panel dışına alındı | `tasarim` [2ai] |
 | v2.175 | Uyarı **ilk çizimde** de yazılır | Teknik kapalı + taze sayfa → uyarı görünür | `tasarim` [2ai] |
+| v2.176 | Birleştirme: ham çıktı korunur, günlüğe yazılır | asrText `mergedFrom`; S1/S2 reddedildi; günlük 1→2 | `birim` [67] |
+| v2.177 | Satır menüsü (⋮ / sağ tık) | kontrol 54 → **47**; birleştirme 3 → **2** | `tasarim` (güncellendi) |
+| v2.178 | Sürükleyerek birleştirme (komşu) | 1 sürükleme; komşu olmayan reddedilir; satır 74 px | `tasarim` [2aj] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2809,6 +2812,46 @@ yenilemeden sonra src boş). Yanıltıcı: kullanıcı sesi geri geldi sanabilir
 Sıradaki sürüm adayı: `purgeCaseById` içinde `URL.revokeObjectURL` + `objectUrls`
 temizliği; test: purge sonrası `[data-audio-state]` uyarısı görünür, oynatıcıda
 src yok.
+
+#### P8 — Bölüm işlemleri: birleştirme güvenliği, satır menüsü, sürükleme (v2.176–v2.178)
+
+**v2.176 — Birleştirme adli olarak eksiksiz.** Ölçüm: `mergeSegmentWithNext`
+ikinci bölümün `asrText`/`words`/model bilgisini **siliyor**, delil günlüğüne
+**yazmıyor**, farklı konuşmacıyı **sessizce** birleştiriyordu. Artık:
+
+- `mergedFrom[]`: ikinci bölümün ham çıktısı (asrText/asrModel/asrAt/words/
+  obs/review/proposal) saklanır; `asrText` üzerine YAZILMAZ.
+- Kelime zamanları ve gözlem işaretleri birleşir.
+- **Farklı konuşmacı reddedilir** (nedeni yazılır); **ikinci göz** birleştiremez.
+- Birleştirme ve bölme `logEvent` ile günlüğe yazılır.
+- Test: `birim` [67] (13 kontrol) + `sema` (geri alma kaydı `splice`'ten ÖNCE —
+  mesafe tabanlı kontrol **davranışa** çevrildi).
+
+**v2.177 — Satır menüsü.** Her satırda **⋮** (ve sağ tık) menüsü: birleştir ·
+oynatıcı konumundan böl · aralığı çözümle · metin geçmişi · sessizlik ölç ·
+sil. Menü öğeleri **mevcut `data-*` işleyicilerini** kullanır (yeni mantık yok).
+Detaydaki "Diğer işlemler" katlaması kaldırıldı. Ölçüm: görünür kontrol
+54 → **47**, birleştirme 3 → **2** etkileşim, satır 72 px (aynı).
+
+**v2.178 — Sürükleyerek birleştirme.** Satırdaki **⋮⋮** tutamağı, **komşu**
+satıra bırakılınca birleştirir; hedef kesikli çerçeveyle vurgulanır.
+
+**DEĞİŞMEZ KURALLAR (sürükleme):**
+1. Yalnız **tutamaktan** sürüklenir (metin seçimi/kaydırma çakışmaz).
+2. Yalnız **komşu** satır hedeftir; uzak satır sessizce reddedilir.
+3. Filtre **"Tümü" değilse kapalıdır**: filtreli listede komşu görünen satırlar
+   gerçekte komşu olmayabilir; kapalıyken neden söylenir.
+4. Sürükleme **hızlandırıcıdır**: **M** tuşu ve **⋮ menüsü** korunur
+   (erişilebilirlik; sürükleme tek yol olamaz).
+5. Birleştirme kuralları tek yerde: `mergeSegmentWithNext`.
+
+**ÖLÇÜM:** komşu sürükleme 3 → 2 satır (metin birleşti, vurgu göründü);
+komşu olmayan → vurgu yok, değişiklik yok, toast yok; filtreli → reddedildi;
+satır 72 → **74 px**; kırpılma/yatay taşma yok; hata 0.
+
+**ÖLÇÜM TUZAĞI:** `#toast` gizlense de **metni kalır**; `textContent` ile
+okumak eski mesajı "yeni uyarı" sanmanıza yol açar. Toast'ı
+`classList.contains('show')` ile birlikte okuyun.
 
 ### DOĞRULAMA (her oturum başı)
 
