@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.169.**
+yazılır. **Güncel sürüm: v2.170.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.170 — CSS borcu azaltıldı (tamamlandı, görünür değişiklik yok)
+
+Ölçüm: `reading-layer.css` içinde uygulamanın üretmediği altı eski sınıfa ait
+18 kural vardı (v2.62'de `sd-*` yapısına geçilince etkisiz kalmış). Birebir
+metin eşleşmesiyle silindi; parantez dengesi ve kural sayısı doğrulandı.
+Kanıt: 4 görünüm × 3 tema, 400–425 öğe × 33 özellik → **0 fark**.
+Ölçüm: kural 852 → **828**, `!important` 62 → **58**, ölü bildirim 95 → **72**,
+app→katman 507 → **500**. Eşikler düşürüldü; `tasarim` [2ag] geri gelmeyi
+engeller.
 
 ### v2.169 — Rapor kâğıdı: punto tabanı ve belge fontu (tamamlandı)
 

@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.169.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.170.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.170 — CSS borcu azaltıldı (görünür değişiklik yok)
+
+Ölçüm: `reading-layer.css` içinde, uygulamanın **hiç üretmediği** altı eski
+sınıfa (`.seg-meta-row`, `.seg-times`, `.seg-text-wrap`, `.seg-actions`,
+`.seg-obs-row`, `.seg-ops-row`) ait **18 kural** duruyordu. v2.62'de bölüm
+detayı `sd-*` sınıflarına taşınmış, bu kurallar etkisiz kalmıştı; dosyanın
+kendi notu da bunu söylüyordu ama silinmemişti.
+
+### KULLANICI NE GÖRECEK
+
+**Görünür değişiklik yok.** Silme kanıtlandı: 4 görünüm × 3 tema, görünüm
+başına 400–425 öğe ve 33 hesaplanan özellik karşılaştırıldı → **0 fark**.
+Kurallar yalnız DOM'da hiç bulunmayan sınıflara aitti.
+
+### ÖLÇÜM
+
+| | Önce (v2.169) | Sonra (v2.170) |
+|---|---|---|
+| reading-layer kural | 852 | **828** |
+| `!important` (app + katman) | 26 + 62 | **26 + 58** |
+| ölü bildirim (katman içi) | 95 | **72** |
+| ölü bildirim (app → katman) | 507 | **500** |
+| hesaplanan stil farkı | — | **0** |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ag] (12 kontrol): bu altı sınıf geri gelirse test kalır
+(kanıtlandı: sınıf geçici geri eklendi → test KALDI). Borç eşikleri
+düşürüldü: `!important` 58, ölü bildirim 72 / 500.
 
 ## v2.169 — Raporda 8 piksellik metin kalmadı; kâğıt belge fontuyla
 

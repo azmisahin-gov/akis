@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.169';
+} from './schema.js?v=2.170';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.169';
+const APP_VERSION = '2.170';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12311,6 +12311,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.170': {
+    title: 'CSS borcu azaltıldı (görünür değişiklik yok)',
+    body:
+      'Stil dosyasında uygulamanın artık kullanmadığı altı eski sınıfa ait 18 ' +
+      'kural silindi. Görünür etkisi olmadığı ölçüldü: 4 görünüm × 3 tema, ' +
+      '400–425 öğe × 33 özellik → 0 fark. Amaç: ilerideki düzeltmelerin başka ' +
+      'bir paneli bozma riskini azaltmak.'
+  },
   '2.169': {
     title: 'Rapor kâğıdı belge fontuyla; en küçük yazı 11 piksel',
     body:

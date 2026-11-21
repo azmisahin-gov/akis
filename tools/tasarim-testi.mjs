@@ -1002,6 +1002,21 @@ console.log('\n[2af] Rapor kâğıdı: punto alt sınırı ve belge fontu (v2.16
   check('paper-hash 11px tabanlı', /\.paper-hash\s*\{[^}]*font-size:\s*var\(--fs-2xs\)/.test(rl2));
 }
 
+console.log('\n[2ag] Ölü seg-* sınıfları geri gelmez (v2.170)');
+{
+  // Ölçüm (v2.169): bu sınıflar app.js'te ÜRETİLMİYOR, index.html'de yok,
+  // malzemeli sayfada DOM sayısı 0; buna rağmen reading-layer'da 18 kural
+  // vardı (v2.62'de sd-* yapısına geçilince etkisiz kalmışlardı). Silindi.
+  // Geri gelirse test kalır.
+  const rl3 = read('assets/reading-layer.css');
+  const js3 = read('assets/app.js');
+  const DEAD = ['seg-meta-row', 'seg-times', 'seg-text-wrap', 'seg-actions', 'seg-obs-row', 'seg-ops-row'];
+  for (const cls of DEAD) {
+    check(`reading-layer'da .${cls} kuralı yok`, !rl3.includes('.' + cls));
+    check(`app.js .${cls} sınıfını üretmiyor`, !new RegExp('class="[^"]*' + cls).test(js3));
+  }
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
@@ -1096,9 +1111,9 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   // `!important` taşıyan taşma kurallarını ezmek için). !important sayacı
   // YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=70)', impLayer <= 70, String(impLayer));
-  check('reading-layer içi ölü bildirim artmadı (<=98)', deadCount(layerRules) <= 98, String(deadCount(layerRules)));
-  check('app.css→reading-layer ölü bildirim artmadı (<=507)', cross <= 507, String(cross));
+  check('reading-layer !important sayısı artmadı (<=58)', impLayer <= 58, String(impLayer));
+  check('reading-layer içi ölü bildirim artmadı (<=72)', deadCount(layerRules) <= 72, String(deadCount(layerRules)));
+  check('app.css→reading-layer ölü bildirim artmadı (<=500)', cross <= 500, String(cross));
   check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));
 }
 
