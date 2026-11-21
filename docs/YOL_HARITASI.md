@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.148.**
+yazılır. **Güncel sürüm: v2.149.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.149 — Kapsama denetimi (tamamlandı)
+
+Araç çubuğunda "Kapsam %98 · 2 boşluk" düğmesi. `segmentCoverage()` saf fonksiyonu
+bölüm aralıklarının **birleşimini** ölçer (çakışma iki kez sayılmaz), boşlukları,
+kayıt sonunu aşan bölümleri ve sıfır süreli bölümleri bildirir. Panel boşlukları
+zaman aralığıyla listeler; "Git" oynatıcıyı o ana getirir. Düğme etiketi ve panel
+düzenleme sonrası **yerinde** tazelenir. Dürüst sınır: boşluk "konuşma yok"
+demek değildir; zaman otomatik düzeltilmez. Koruyan test: `birim` [59].
 
 ### v2.148 — Oynatma başlarken sayfa zıplamıyor (tamamlandı)
 

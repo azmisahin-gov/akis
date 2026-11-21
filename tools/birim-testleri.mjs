@@ -116,6 +116,7 @@ const EXPOSE = [
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
+  'segmentCoverage', 'coveragePctText',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2862,6 +2863,74 @@ console.log('\n== [58] Bölüm başlığı tek kaynak (v2.148)');
     eq('toplam', p.of, ' / 100');
     const z = T.segHeadParts(0, 0);
     eq('toplam yoksa boş', z.of, '');
+  }
+}
+
+console.log('\n== [59] Kapsama denetimi: bölümlenmemiş aralık (v2.149)');
+{
+  // Kullanıcı: "bölerken/çözümlerken parça kaçabiliyor mu, sesin hiç bölüme
+  // girmemiş aralığı var mı, listeden göremiyoruz." Kapsama BİRLEŞİM
+  // uzunluğudur (çakışma iki kez sayılmaz) ve boşluklar GÖRÜNÜR olur.
+  // Dürüst sınır: boşluk "konuşma yok" demek değildir, yalnız "bölümlenmemiş".
+  eq('segmentCoverage tanımlı', typeof T.segmentCoverage, 'function');
+  if (typeof T.segmentCoverage === 'function') {
+    const seg = (a, b) => ({ start: a, end: b });
+    const full = T.segmentCoverage([seg('00:00:00.000', '00:00:03.000'), seg('00:00:03.000', '00:00:06.000')], 6);
+    eq('tam kapsam ok', full.ok, true);
+    eq('tam kapsam süresi', full.coveredSec, 6);
+    eq('tam kapsam yüzdesi', Math.round(full.pct), 100);
+    eq('tam kapsamda boşluk yok', full.gaps.length, 0);
+
+    const gap = T.segmentCoverage([seg('00:00:00.000', '00:00:02.000'), seg('00:00:04.000', '00:00:06.000')], 6);
+    eq('boşluk sayısı', gap.gaps.length, 1);
+    eq('boşluk başlangıcı', gap.gaps[0].a, 2);
+    eq('boşluk bitişi', gap.gaps[0].b, 4);
+    eq('boşluklu kapsama', gap.coveredSec, 4);
+    eq('boşluklu yüzde', Math.round(gap.pct), 67);
+
+    const edges = T.segmentCoverage([seg('00:00:01.000', '00:00:02.000')], 4);
+    eq('baş ve son boşluğu', edges.gaps.length, 2);
+    eq('baştaki boşluk', edges.gaps[0].a, 0);
+    eq('sondaki boşluk bitişi', edges.gaps[1].b, 4);
+
+    const overlap = T.segmentCoverage([seg('00:00:00.000', '00:00:04.000'), seg('00:00:02.000', '00:00:06.000')], 6);
+    eq('çakışma iki kez sayılmaz', overlap.coveredSec, 6);
+    eq('çakışmada boşluk yok', overlap.gaps.length, 0);
+
+    const unsorted = T.segmentCoverage([seg('00:00:04.000', '00:00:06.000'), seg('00:00:00.000', '00:00:02.000')], 6);
+    eq('sırasız giriş doğru', unsorted.gaps.length, 1);
+
+    const beyond = T.segmentCoverage([seg('00:00:00.000', '00:00:08.000')], 6);
+    eq('kayıt dışı bölüm bildirilir', beyond.outside.length, 1);
+    eq('kayıt dışı kırpılır', beyond.coveredSec, 6);
+    eq('kayıt dışı yüzde 100', Math.round(beyond.pct), 100);
+
+    const zero = T.segmentCoverage([seg('00:00:02.000', '00:00:02.000')], 6);
+    eq('sıfır süre bildirilir', zero.zero.length, 1);
+    eq('sıfır süre kapsamaz', zero.coveredSec, 0);
+
+    const unknown = T.segmentCoverage([seg('00:00:00.000', '00:00:02.000')], 0);
+    eq('süre yoksa ok değil', unknown.ok, false);
+    eq('süre yoksa yüzde null', unknown.pct, null);
+    eq('süre yoksa boşluk üretilmez', unknown.gaps.length, 0);
+
+    // Zaman kodu milisaniye hassasiyetindedir; 1 ms'lik boşluk bitişik sayılır.
+    const tiny = T.segmentCoverage([seg('00:00:00.000', '00:00:02.000'), seg('00:00:02.001', '00:00:06.000')], 6);
+    eq('1 ms boşluk tolere edilir', tiny.gaps.length, 0);
+    const twoMs = T.segmentCoverage([seg('00:00:00.000', '00:00:02.000'), seg('00:00:02.002', '00:00:06.000')], 6);
+    eq('2 ms boşluk bildirilir', twoMs.gaps.length, 1);
+
+    const invalid = T.segmentCoverage([seg('abc', '00:00:02.000'), seg('00:00:00.000', '00:00:06.000')], 6);
+    eq('geçersiz zaman atlanır', invalid.coveredSec, 6);
+    eq('geçersizde boşluk yok', invalid.gaps.length, 0);
+  }
+  eq('coveragePctText tanımlı', typeof T.coveragePctText, 'function');
+  if (typeof T.coveragePctText === 'function') {
+    eq('tam kapsam metni', T.coveragePctText({ ok: true, pct: 100, gaps: [] }), 'Kapsam %100');
+    eq('boşluklu metin', T.coveragePctText({ ok: true, pct: 66.6, gaps: [{ a: 2, b: 4 }] }), 'Kapsam %66 · 1 boşluk');
+    eq('iki boşluk metni', T.coveragePctText({ ok: true, pct: 98, gaps: [{ a: 1, b: 2 }, { a: 5, b: 6 }] }), 'Kapsam %98 · 2 boşluk');
+    eq('yüzde 99 tavanı', T.coveragePctText({ ok: true, pct: 99.9, gaps: [{ a: 1, b: 2 }] }), 'Kapsam %99 · 1 boşluk');
+    eq('süre yok metni', T.coveragePctText({ ok: false, pct: null, gaps: [] }), 'Kapsam hesaplanamadı');
   }
 }
 

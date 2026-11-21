@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.148.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.149.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.149 — Kapsama denetimi: sesin bölümlenmemiş aralığı
+
+Kullanıcı: *"bölerken/çözümlerken parça kaçabiliyor mu, sesin hiç bölüme
+girmemiş aralığı var mı, listeden göremiyoruz."* Bu bir **ölçüm aracıdır**;
+hiçbir zamanı kendiliğinden düzeltmez.
+
+### KULLANICI NE GÖRECEK
+
+- Araç çubuğunda **"Kapsam %98 · 2 boşluk"** düğmesi. Boşluk yoksa
+  **"Kapsam %100"** yazar.
+- Tıklayınca panel açılır: her boşluk **zaman aralığıyla** listelenir
+  (`00:00:06.000 – 00:00:08.000 · 2,0 sn`) ve **Git** düğmesi oynatıcıyı o
+  aralığın başına getirir.
+- Bir bölümün süresini değiştirdiğinizde yüzde ve liste **yenilemeden**
+  güncellenir.
+- Kayıt sonunu aşan bölüm ve sıfır süreli bölüm ayrı satırda bildirilir.
+- **Dürüst sınır:** boşluk "konuşma yok" demek değildir; sessizlik, müzik veya
+  henüz bölünmemiş konuşma olabilir. Uygulama yalnız "bölümlenmemiş" der.
+
+### HESAP (saf fonksiyon)
+
+`segmentCoverage(segments, duration)` → `{ ok, totalSec, coveredSec, pct, gaps,
+outside, zero }`.
+
+- `coveredSec` **birleşim** uzunluğudur: çakışan bölüm iki kez sayılmaz.
+- Bitişik bölüm boşluk sayılmaz (1 ms tolerans).
+- Aralıklar `[0, duration]` içine kırpılır; dışarı taşan bölüm `outside`'ta
+  bildirilir, sessizce yutulmaz.
+- Süre bilinmiyorsa `ok:false`, `pct:null`; **uydurma yüzde yazılmaz**.
+
+### ÖLÇÜM (v2.149, gerçek Chromium)
+
+4 bölüm (0–3, 3–6, 8–10, 14–16) / 16 sn:
+
+| Adım | Sonuç |
+|---|---|
+| Düğme | "Kapsam %62 · 2 boşluk" (kırpılma yok) |
+| Panel | 2 satır: 06–08 ve 10–14 |
+| "Git" | oynatıcı `currentTime = 6` |
+| 2. bölümün bitişi 08.000 yapıldı | düğme **"Kapsam %75 · 1 boşluk"** (yenilemeden) |
+| JS hatası | 0 |
+
+Genişlikler 1440/1280/1100/900/760: düğme **hiçbirinde kırpılmıyor**, yatay
+sayfa taşması yok.
+
+### KORUYAN TEST
+
+`birim-testleri` **[59]** (28 kontrol): tam kapsam, boşluk, baş/son boşluğu,
+çakışmanın iki kez sayılmaması, sırasız giriş, kayıt dışı bölüm, sıfır süre,
+süre bilinmiyorken uydurma yüzde yazılmaması, 1 ms toleransı, geçersiz zaman ve
+etiket biçimi.
 
 ## v2.148 — Oynatma başlarken sayfa zıplamıyor
 

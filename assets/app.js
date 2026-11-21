@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.148';
+} from './schema.js?v=2.149';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.148';
+const APP_VERSION = '2.149';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3369,6 +3369,68 @@ function segmentTimeIssueIndexes(segments) {
   }
   return set;
 }
+// KAPSAMA DENETİMİ (v2.149). "Sesin hiç bölüme girmemiş aralığı var mı?"
+// Kullanıcı: "bölerken/çözümlerken parça kaçabiliyor mu, listeden göremiyoruz."
+// Kapsanan süre BİRLEŞİM uzunluğudur: çakışan bölüm iki kez sayılmaz.
+// Dürüst sınır: boşluk "konuşma yok" demek DEĞİLDİR; yalnız "bölümlenmemiş"tir.
+const COVERAGE_TOL = 0.001; // 1 ms — bitişik bölüm boşluk sayılmaz
+function segmentCoverage(segments, duration) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const total = Number(duration);
+  const known = Number.isFinite(total) && total > 0;
+  const zero = [];
+  const outside = [];
+  const intervals = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i] || {};
+    const a = parseTimecodeStrict(s.start);
+    const b = parseTimecodeStrict(s.end);
+    if (a == null || b == null) continue;
+    if (b - a <= COVERAGE_TOL) {
+      zero.push(i);
+      continue;
+    }
+    if (known && (b > total + COVERAGE_TOL || a < -COVERAGE_TOL)) outside.push(i);
+    const lo = Math.max(0, a);
+    const hi = known ? Math.min(total, b) : b;
+    if (hi - lo > COVERAGE_TOL) intervals.push([lo, hi]);
+  }
+  intervals.sort((x, y) => x[0] - y[0]);
+  const merged = [];
+  for (const [a, b] of intervals) {
+    const last = merged[merged.length - 1];
+    if (last && a <= last[1] + COVERAGE_TOL) last[1] = Math.max(last[1], b);
+    else merged.push([a, b]);
+  }
+  let coveredSec = 0;
+  for (const [a, b] of merged) coveredSec += b - a;
+  const gaps = [];
+  if (known) {
+    let cur = 0;
+    for (const [a, b] of merged) {
+      if (a > cur + COVERAGE_TOL) gaps.push({ a: cur, b: a });
+      cur = Math.max(cur, b);
+    }
+    if (total > cur + COVERAGE_TOL) gaps.push({ a: cur, b: total });
+  }
+  return {
+    ok: known,
+    totalSec: known ? total : 0,
+    coveredSec,
+    pct: known ? (coveredSec / total) * 100 : null,
+    gaps,
+    outside,
+    zero
+  };
+}
+// Ekran etiketi: boşluk varsa yüzde ASLA %100 yazılmaz (99 tavanı), çünkü
+// "%100" boşluk varken yanıltıcıdır.
+function coveragePctText(cov) {
+  if (!cov || !cov.ok) return 'Kapsam hesaplanamadı';
+  if (!cov.gaps.length) return 'Kapsam %100';
+  const pct = Math.max(0, Math.min(99, Math.floor(cov.pct)));
+  return `Kapsam %${pct} · ${cov.gaps.length} boşluk`;
+}
 function segFilter(m) {
   return m.uiFilter || 'all';
 }
@@ -4782,9 +4844,10 @@ function renderSegments(m, card) {
       <div class="tb-filters">${chips}</div>
       <div class="tb-spacer"></div>
       <div class="tb-progress" title="${reviewed}/${segs.length} denetlendi"><div class="bar"><span style="width:${pct}%"></span></div><small>%${pct}</small></div>
-      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${quickBulkBtn(counts, isSecondEyesEditor())}</div>
+      <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf oluştur">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${coverageButtonHtml(m)}${quickBulkBtn(counts, isSecondEyesEditor())}</div>
     </div>
     <div id="term-panel-${esc(m.id)}" class="term-panel" hidden></div>
+    <div id="coverage-panel-${esc(m.id)}" class="coverage-panel" hidden></div>
     <datalist id="spk-options-${esc(m.id)}">${spkOptions.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
     <div class="seg-workspace">
       <div class="seg-list" id="seg-list-${esc(m.id)}" role="list">${segListHtml(m)}</div>
@@ -5093,6 +5156,87 @@ function refreshSegChips(m) {
       btn.outerHTML = want;
     }
   }
+  refreshCoverage(m, root);
+}
+// ---- Kapsama denetimi (v2.149) ----
+// Düğme etiketi ve açık panel, bölüm listesi değiştikçe YERİNDE tazelenir;
+// aksi hâlde kullanıcı sayfayı yenileyene kadar eski yüzdeyi görür (v2.146
+// dersi: yerinde güncelleme tüm girdileri geçmeli).
+function coverageButtonHtml(m) {
+  const cov = segmentCoverage(m.segments || [], Number(m.duration) || 0);
+  const cls = cov.ok && cov.gaps.length ? ' has-gaps' : '';
+  return `<button class="seg-tool coverage-tool${cls}" data-coverage="1" title="Sesin ne kadarının bölümlere ayrıldığını denetler. 'Boşluk' konuşma olmadığı anlamına gelmez; yalnız hiçbir bölüme girmemiş aralık olduğunu söyler.">${esc(coveragePctText(cov))}</button>`;
+}
+function coveragePanelHtml(m) {
+  const cov = segmentCoverage(m.segments || [], Number(m.duration) || 0);
+  const head =
+    '<div class="term-head"><b>Kapsama denetimi</b><small>Boşluk "konuşma yok" demek değildir; yalnız bölümlenmemiş aralıktır. Hiçbir zaman otomatik düzeltilmez.</small></div>';
+  if (!cov.ok) {
+    return `${head}<div class="term-empty">Kayıt süresi bilinmiyor (ses henüz yüklenmemiş olabilir); kapsama hesaplanamadı. Sonuç uydurulmadı.</div>`;
+  }
+  const parts = [];
+  if (!cov.gaps.length) {
+    parts.push(
+      `<div class="cov-line cov-ok">Sesin tamamı (${fmtShort(cov.totalSec)}) bölümlere ayrılmış; boşluk yok.</div>`
+    );
+  } else {
+    const gapSec = cov.gaps.reduce((n, g) => n + (g.b - g.a), 0);
+    parts.push(
+      `<div class="cov-line">${cov.gaps.length} boşluk · toplam ${gapSec.toFixed(1)} sn · kapsanan ${fmtShort(cov.coveredSec)} / ${fmtShort(cov.totalSec)} (%${Math.floor(cov.pct)})</div>`
+    );
+    parts.push(
+      cov.gaps
+        .map(
+          (g) =>
+            `<div class="cov-gap"><span class="cov-range">${timecode(g.a)} – ${timecode(g.b)}</span><span class="cov-len">${(g.b - g.a).toFixed(1)} sn</span><button class="mini-button" data-cov-goto="${esc(m.id)}|${g.a}" title="Oynatıcıyı bu aralığın başına getir">Git</button></div>`
+        )
+        .join('')
+    );
+  }
+  if (cov.outside.length) {
+    parts.push(
+      `<div class="cov-line cov-warn">${cov.outside.length} bölüm kayıt süresini aşıyor (bölüm ${cov.outside.map((i) => i + 1).join(', ')}). Bitiş kayıt sonundan sonra; kapsama hesabında kayıt sonunda kesildi.</div>`
+    );
+  }
+  if (cov.zero.length) {
+    parts.push(
+      `<div class="cov-line cov-warn">${cov.zero.length} bölümün süresi sıfır (bölüm ${cov.zero.map((i) => i + 1).join(', ')}); kapsamaya katkısı yok.</div>`
+    );
+  }
+  return head + parts.join('');
+}
+function renderCoveragePanel(m) {
+  const panel = $(`#coverage-panel-${CSS.escape(m.id)}`);
+  if (!panel) return;
+  panel.hidden = false;
+  panel.innerHTML = coveragePanelHtml(m);
+}
+function closeCoveragePanel(m) {
+  const panel = $(`#coverage-panel-${CSS.escape(m.id)}`);
+  if (panel) {
+    panel.hidden = true;
+    panel.innerHTML = '';
+  }
+}
+function refreshCoverage(m, root) {
+  const scope = root || $(`#segments-${CSS.escape(m.id)}`);
+  if (!scope) return;
+  const btn = scope.querySelector('[data-coverage]');
+  if (btn) btn.outerHTML = coverageButtonHtml(m);
+  const panel = scope.querySelector(`#coverage-panel-${CSS.escape(m.id)}`);
+  if (panel && !panel.hidden) panel.innerHTML = coveragePanelHtml(m);
+}
+// "Git": oynatıcıyı boşluğun başına getirir; oynatmayı KENDİLİĞİNDEN başlatmaz.
+function seekPlayerTo(m, sec, card) {
+  const player = (card || document).querySelector('audio');
+  if (!player || !Number.isFinite(sec)) return false;
+  try {
+    player.currentTime = Math.max(0, sec);
+  } catch (e) {
+    return false;
+  }
+  showToast(`Konum: ${timecode(sec)}`);
+  return true;
 }
 function focusSegmentRow(el) {
   const card = el.closest('.audio-card');
@@ -10202,6 +10346,19 @@ function setupEvents() {
         if (panel && !panel.hidden) closeTermPanel(m);
         else renderTermPanel(m);
       }
+    } else if (b.dataset.coverage !== undefined) {
+      const card = b.closest('.audio-card');
+      const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === id);
+      if (m) {
+        const panel = $(`#coverage-panel-${CSS.escape(m.id)}`);
+        if (panel && !panel.hidden) closeCoveragePanel(m);
+        else renderCoveragePanel(m);
+      }
+    } else if (b.dataset.covGoto !== undefined) {
+      const [id, at] = b.dataset.covGoto.split('|');
+      const m = c.materials.find((x) => x.id === id);
+      if (m) seekPlayerTo(m, Number(at), b.closest('.audio-card'));
     } else if (b.dataset.mainPlay !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.mainPlay);
       if (mm) playWholeRecording(mm);
@@ -11736,6 +11893,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.149': {
+    title: 'Kapsama denetimi: sesin bölümlenmemiş aralığı görünür',
+    body:
+      'Araç çubuğunda artık "Kapsam %98 · 2 boşluk" gibi bir düğme var. Sesin ne ' +
+      'kadarının bölümlere ayrıldığını söyler; tıklayınca boşlukları zaman ' +
+      'aralığıyla listeler ve "Git" ile oynatıcıyı o ana getirir. Çakışan bölüm ' +
+      'iki kez sayılmaz. Dürüst sınır: boşluk "konuşma yok" demek DEĞİLDİR; yalnız ' +
+      'hiçbir bölüme girmemiş aralıktır. Uygulama hiçbir zamanı kendiliğinden ' +
+      'düzeltmez.'
+  },
   '2.148': {
     title: 'Oynatma başlarken sayfa artık zıplamıyor',
     body:

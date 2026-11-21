@@ -1629,3 +1629,48 @@ input::placeholder, textarea::placeholder {
   color: var(--ink-3);
   font-style: italic;
 }
+
+/* ============================================================================
+   v2.149 — KAPSAMA DENETİMİ
+   ----------------------------------------------------------------------------
+   "Sesin hiç bölüme girmemiş aralığı var mı?" sorusu görünür olur. Etiket
+   `Kapsam %98 · 2 boşluk`; ayrıntı panelde. Boşluk uyarısı YALNIZ renkle
+   anlatılmaz: metin + sol kenarlık da taşır (renk körlüğü).
+   ============================================================================ */
+.coverage-panel {
+  margin: 8px 0 4px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  padding: 11px 13px;
+}
+.coverage-tool.has-gaps {
+  color: var(--gold);
+  border-color: var(--gold);
+}
+.cov-line {
+  font-size: 11px;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+.cov-line.cov-ok { color: var(--green); }
+.cov-line.cov-warn {
+  color: var(--gold);
+  border-left: 3px solid var(--gold);
+  padding-left: 7px;
+}
+.cov-gap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 4px 0;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--ink);
+}
+.cov-range {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.cov-len { color: var(--ink-3); }

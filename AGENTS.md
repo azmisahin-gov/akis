@@ -1770,6 +1770,43 @@ zaten yoksa yerleşimi kaydırır; kutu önceden kurulmalı.
 
 **Koruyan test:** `birim-testleri` [58] (4) + `tasarim-testi` [2s] (3).
 
+### Aşama 10au — Kapsama denetimi (TAMAMLANDI, v2.149)
+
+**KURAL: "sesin bölümlenmemiş aralığı var mı" sorusu GÖRÜNÜR olur; boşluk
+"konuşma yok" demek değildir ve zaman OTOMATİK DÜZELTİLMEZ.**
+
+Kullanıcı: *"bölerken/çözümlerken parça kaçabiliyor mu, sesin hiç bölüme
+girmemiş aralığı var mı, listeden göremiyoruz."*
+
+**Saf fonksiyon:** `segmentCoverage(segments, duration)` →
+`{ ok, totalSec, coveredSec, pct, gaps, outside, zero }`.
+- `coveredSec` **birleşim** uzunluğu; çakışan bölüm iki kez sayılmaz.
+- Bitişik bölüm boşluk sayılmaz (`COVERAGE_TOL = 0.001`).
+- Aralıklar `[0, duration]` içine kırpılır; `outside` (kayıt sonunu aşan) ve
+  `zero` (sıfır/ters süre) ayrıca bildirilir.
+- Süre bilinmiyorsa `ok:false`, `pct:null` — **uydurma yüzde yok**.
+- `coveragePctText()` TEK KAYNAK: `"Kapsam %100"`, `"Kapsam %98 · 2 boşluk"`,
+  `"Kapsam hesaplanamadı"`. Boşluk varken yüzde **99 tavanı** (asla %100).
+
+**Arayüz:** araç çubuğunda `[data-coverage]` düğmesi; panel
+`#coverage-panel-<id>`; her boşlukta `[data-cov-goto]` = "Git" → `seekPlayerTo`
+(oynatmayı kendiliğinden başlatmaz). `refreshCoverage()` `refreshSegChips`
+içinden çağrılır → süre düzenlemesi **yenilemeden** yüzdeyi/listeyi tazeler.
+
+**Ölçüm (v2.149, gerçek Chromium):** 4 bölüm (0–3, 3–6, 8–10, 14–16) / 16 sn →
+düğme "Kapsam %62 · 2 boşluk"; panel 06–08 ve 10–14; "Git" → `currentTime=6`;
+2. bölümün bitişi 08.000 yapılınca **"Kapsam %75 · 1 boşluk"** (yenilemeden);
+JS hatası 0. 1440/1280/1100/900/760 px: düğme **kırpılmıyor**, yatay taşma yok.
+
+**Koruyan test:** `birim-testleri` [59] (28 kontrol).
+
+**DERS:** Kullanıcı "veride sorun var mı" diye sorduğunda önce **ölçüm aracı**
+ver. Otomatik düzeltme adli kayıtta kabul edilemez; araç yalnız "nerede"
+sorusunu cevaplar, kararı bilirkişiye bırakır. Ayrıca yüzde gösteren her yerde
+"boşluk varken %100 yazma" kuralı korunmalı — yanlış tamamlanmışlık izlenimi
+sessiz hatadır.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1943,7 +1980,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.148.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.149.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2242,23 +2279,21 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.148) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.149) — SIRADAKİ İŞLER
 
-Bu oturumda (v2.130–v2.148) **görünürlük ve tutarlılık** sorunları kapatıldı.
+Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
 sürüm** kuralıyla, kıran test → düzeltme → gerçek tarayıcı → push disipliniyle
 yapılır.
 
-### Durum (2026-11-20, kapanış)
+### Durum (2026-11-21, kapanış)
 
 | | |
 |---|---|
-| Sürüm | **v2.148** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **843 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `4dfe568`, çalışma ağacı temiz |
-| Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.148 |
-| Açık konu | **Yok** (aşağıdakiler yeni özellik/iyileştirme) |
+| Sürüm | **v2.149** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **877 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.149 |
+| Açık konu | **P2 — rapor hazırlık denetimi** (P1 v2.149'da bitti) |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2315,24 +2350,10 @@ yapılır.
 
 ### SIRADAKİ İŞLER (öncelik sırasıyla)
 
-#### P1 — Kapsama denetimi (önerilen ilk iş)
+#### P1 — Kapsama denetimi (TAMAMLANDI, v2.149)
 
-**Amaç:** "sesin hiç bölüme girmemiş aralığı var mı?" sorusunu uygulama
-cevaplasın. Meslektaş uyarısı ("bölerken/çözümlerken parça kaçabiliyor") tam
-olarak buna denk gelir.
-
-- Saf fonksiyon: `segmentCoverage(segments, duration)` →
-  `{ coveredSec, totalSec, pct, gaps:[{a,b}], outside:[i], zero:[i] }`.
-  - `gaps`: hiçbir bölümün kapsamadığı aralıklar (bitişik bölümler boşluk
-    sayılmaz; 1 ms tolerans).
-  - `outside`: `end > duration` olan bölümler.
-  - `coveredSec`: **birleşim** uzunluğu (çakışmalar iki kez sayılmaz).
-- Arayüz: araç çubuğunda **"Kapsam %98 · 2 boşluk"** düğmesi; tıklayınca panel
-  boşlukları listeler, "git" oynatıcıyı o ana getirir. Boşluk yoksa düğme
-  "Kapsam %100" der (tıklanınca bilgi).
-- **Kıran test:** boşluklu/çakışmalı/tamam veri; yüzdeler ve boşluk sayısı.
-- **Dürüst sınır:** boşluk "konuşma yok" demek değildir (sessizlik olabilir);
-  yalnız "bölümlenmemiş" der.
+`segmentCoverage()` + "Kapsam %98 · 2 boşluk" düğmesi + panel + "Git".
+Koruyan test: `birim` [59]. Ayrıntı: Aşama 10au.
 
 #### P2 — Rapor hazırlık denetimi
 
