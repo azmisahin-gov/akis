@@ -1158,6 +1158,23 @@ console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
   check('boş meta çizilmez (yalnız belirsiz okumada)', /\$\{rev === 'ambiguous'[\s\S]{0,140}sd-meta/.test(bodyA));
 }
 
+console.log('\n[2ap] Bölüm listesi = dizin (metin tek yerde) (v2.185)');
+{
+  // ÖLÇÜM (v2.184, 1440×900): satır 74 px; bölüm metni HEM listede HEM
+  // editörde gösteriliyordu (tekrar). Metin listeden kaldırıldı: satır 50 px.
+  const jsB = read('assets/app.js');
+  const rlB = read('assets/reading-layer.css');
+  const i0 = jsB.indexOf('function segItemHtml');
+  const i1 = jsB.indexOf('\nfunction ', i0 + 10);
+  const rowFn = jsB.slice(i0, i1 > 0 ? i1 : i0 + 4000);
+  check('satırda METİN gösterilmiyor (tek kaynak: editör)', !/class="seg-text"/.test(rowFn));
+  check('metin satırın ipucunda', /title="\$\{esc\(\(s\.text/.test(rowFn));
+  check('ızgara 3 sütun (no · zaman · rozet)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*20px 96px auto/.test(rlB));
+  check('rozetler solda hizalanır', /#view-audio \.seg-item \.seg-badges\s*\{[^}]*justify-content:\s*flex-start/.test(rlB));
+  // Rozet görünürlüğü korunur (v2.130 kuralı): kırpma yok.
+  check('rozet kutusu kırpmaz (v2.130 korunuyor)', /#view-audio \.seg-badges\s*\{[^}]*overflow:\s*visible/.test(rlB));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

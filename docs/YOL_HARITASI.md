@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.184.**
+yazılır. **Güncel sürüm: v2.185.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.185 — Bölüm listesi dizin oldu (tamamlandı)
+
+Bölüm metni hem listede hem editörde gösteriliyordu (tekrar). Liste dizine
+indirildi: numara · zaman · rozetler; metin yalnız editörde (ve satır
+ipucunda). Ölçüm: satır **74 → 50 px**; rozetler görünür, kırpılma ve yatay
+taşma yok; 1100 px'te rozetler sarar (66 px). Koruyan test: `tasarim` [2ap].
 
 ### v2.184 — Tek durum satırı: her zaman görünür (tamamlandı)
 

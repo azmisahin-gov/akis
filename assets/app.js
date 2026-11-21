@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.184';
+} from './schema.js?v=2.185';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.184';
+const APP_VERSION = '2.185';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3845,10 +3845,13 @@ function segItemHtml(m, s, i, prev, issue) {
   const propBadge = s.proposal
     ? `<span class="badge prop" title="İkinci göz önerisi: ${esc((s.proposal.by || '') + ' — ' + (s.proposal.text || ''))}">Öneri</span>`
     : '';
-  return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0">
+  // LİSTE = DİZİN (v2.185): satırda METİN gösterilmez. Metin editörde tek
+  // kaynaktır; aynı metni iki yerde göstermek hem yer kaplıyor hem bakım
+  // yükü doğuruyordu (kullanıcı: "neden metni iki yerde gösteriyoruz?").
+  // Metin, satırın `title` ipucunda ve sağdaki editörde durur.
+  return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time"><span class="seg-start">${esc(s.start || '—')}</span><span class="seg-end">→ ${esc(s.end || '—')}</span></span>
-    <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
     <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button></span>
   </div>`;
 }
@@ -12548,6 +12551,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.185': {
+    title: 'Bölüm listesi artık dizin: metin tek yerde',
+    body:
+      'Bölüm metni hem listede hem editörde gösteriliyordu; artık yalnız ' +
+      'editörde (ve satırın ipucunda). Liste: numara · başlangıç–bitiş · ' +
+      'rozetler. Satır 74 → 50 px; aynı yükseklikte daha çok bölüm görünür.'
+  },
   '2.184': {
     title: 'Tek durum satırı: her zaman görünür',
     body:

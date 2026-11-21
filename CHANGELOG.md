@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.184.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.185.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.185 — Bölüm listesi dizin oldu (metin tek yerde)
+
+Kullanıcı: *"Segmente neden metin gösteriyoruz? Neden bunu detayda da
+gösteriyoruz? Segment kısmını biraz küçültürsün; yer yoksa hem orası
+güzelleşir."*
+
+Ölçüm (1440×900, v2.184): satır **74 px**; bölüm metni **hem listede hem
+editörde** vardı. Aynı veriyi iki yerde göstermek hem yer kaplıyor hem bakım
+yükü doğuruyordu (metin değişince iki yerin tutarlı kalması gerekir).
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm listesi artık **dizin**: `numara · başlangıç–bitiş · durum rozetleri`
+  (konuşmacı, öncelik, öneri). **Metin listede yok**; tek kaynak sağdaki
+  editör. Metin, satırın **ipucunda** (fareyle üzerine gelince) görünür.
+- Satır **74 → 50 px**; aynı yükseklikte **daha çok bölüm** görünür.
+- Rozetler **görünür ve kırpılmaz** (v2.130 kuralı korunuyor).
+
+### ÖLÇÜM
+
+| | Önce (v2.184) | Sonra (v2.185) |
+|---|---|---|
+| Satır yüksekliği (1440) | 74 px | **50 px** (−%32) |
+| Metin listede | var (tekrar) | **yok** |
+| Metin ipucunda | yok | **var** |
+| Rozetler (durum/konuşmacı/öncelik) | görünür | **görünür** |
+| Rozet kırpılması | yok | **yok** |
+| Yatay taşma | yok | **yok** |
+| 900 px satır | 74 px | **50 px** |
+
+Not: 1100 px'te rozetler iki satıra sarar (satır 66 px) — kırpma değil, sarma.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ap] (5 kontrol): satırda metin yok, metin ipucunda, ızgara
+3 sütun, rozetler solda, rozet kutusu kırpmaz.
 
 ## v2.184 — Tek durum satırı: her zaman görünür, yeri sabit
 
