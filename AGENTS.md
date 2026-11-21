@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.195.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.196.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.195** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.196** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3350,6 +3350,130 @@ kanıt tablosu kabalaşır ve cümle zamanları kaybolur. Salt-okunur türetme,
 kanıtı korurken okunabilirlik sağlar.
 
 **Koruyan test:** `birim` [7b]/[28], `sema`, `tasarim` [2au].
+
+#### P27 — Hızlı karar şeridi (v2.196)
+
+**KULLANICI:** *"Dinle → Kontrol → en sola dön turu yavaş. Kontrol'ü Play'in
+yanına koysak? Ritmi kısaltabilir miyiz?"*
+
+**DÜZELTME:**
+- Başlıkta **Kontrol seçicisi Dinle'nin yanına** alındı (Konuşmacı'nın önüne).
+- **1/2/3/4 kısayolları:** onay / anlaşılmadı / yeniden dinle / belirsiz.
+  `applyReviewChoice` tek kapı; `setSegReview` kullanır; ikinci göz onayı
+  engellenir; metin alanında çalışmaz.
+- Yardıma **"Hızlı çalışma ritmi"** eklendi.
+
+**ÖLÇÜM (1440×900):** fare turu 1.624 → **1.196 px** (−%26);
+Dinle→Kontrol 373 → **159**; Kontrol→↓ 426 → **212**. Klavye turu **0 px**.
+
+**Koruyan test:** `tasarim` [2av].
+
+---
+
+## YENİ OTURUM DEVRİ (v2.196) — DURUM, KARARLAR, SIRADAKİ İŞLER
+
+Bu not, uzun tasarım/UX turunu kapatan oturumun devridir. Aşağıdaki kararlar
+**ölçümle** doğrulandı ve testle korunuyor. Yeni oturum bunları bozmadan devam
+etmelidir.
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.196** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **996 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `eb46ad0` sonrası v2.196 commit'i |
+| Pages | `built` (v2.196 push sonrası doğrulanacak) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.196** |
+| Açık konu | Rapora "Okuma metni" entegrasyonu; ≤900 px karar şeridi; bölüm uzunluğu uyarısı |
+
+### Bu oturumda yapılanlar (v2.188–v2.196)
+
+| Sürüm | Konu |
+|---|---|
+| v2.188 | Metin kutusu: tek kutu, dört köşe (vurgu içeride, obs alt sol, hızlı ekle alt sağ, ASR üst sağ, Profil silindi) |
+| v2.189 | Zamanlar dalganın üstünde yarı saydam şeritte |
+| v2.190 | Dalga menüleri görünür (sarma); metin dalgaya binmiyor |
+| v2.191 | Sağ panel kaymıyor; metin kendi içinde kayıyor |
+| v2.192 | Konuşmacı silme + rapor filtresi (atanmamış konuşmacı rapora girmez) |
+| v2.193 | Birleştirme/bölme/paragraf sonrası kaydırma korunur; listede metin önizlemesi |
+| v2.194 | Yeniden çözümleme sonrası kaydırma korunur |
+| v2.195 | Paragraf görünümü **salt okunur** (yıkıcı `paragraphize` kaldırıldı); `[telefonda konuşma]`; `docs/STANDARTLAR.md` |
+| v2.196 | Kontrol Dinle yanında; 1/2/3/4 karar kısayolları; hızlı ritim |
+
+### Değişmez kararlar (bu oturumda doğdu)
+
+1. **Paragraf bir SUNUMdur, kanıt değil.** ¶ salt okunur; `segments` değişmez.
+2. **Kanıt = ayrıntılı (zaman damgalı) bölüm tablosu.** Paragraf/okuma metni
+   ayrı gösterilir; rapora entegrasyonu henüz yok.
+3. **Bölüm uzunluğu standardı:** 1–3 cümle veya ~15–30 sn; 30–45 sn üst sınır;
+   konuşmacı değişimi/uzun duraklamada böl. 5 dk tek satır yasak.
+4. **Konuşmacı:** model diarization YAPMAZ; kodlar kayıt başınadır. Aynı kişi
+   ise aynı etiket adı + uzman kanaati notu. Perde tahmindir.
+5. **Rapor yöntemi:** yerel Whisper tabanlı ASR modeli + sürüm yazılır; uygulama
+   adı yazılmaz; "konuşmacı/kaynak ayrıştırma yaptık" denmez.
+6. **Geri alma:** 20 işlem, bellek içi; **sayfa yenileme geçmişi siler**.
+7. **LLM:** ham ses/metin verilmez; yalnız doğrulanmış metinde taslak/başlık
+   önerisi; insan onayı şart.
+8. **Kırpma yasak:** sığmayan öğe sarar; gizli yatay kaydırma yok.
+9. **Tek kaynak:** durum kodları/etiketler `schema.js`; rapor metinleri
+   `REPORT_TEXT`; konuşmacı eşleşmesi isim VE `speakerId`.
+10. **Ölçülemeyen iddia yok:** "düzeltildi" demek için önce/sonra ölçümü ver.
+
+Ayrıntılı standartlar: [`docs/STANDARTLAR.md`](docs/STANDARTLAR.md).
+
+### Önerilen çalışma ritmi
+
+1. **Ön tarama:** "Bekleyen" filtresi + Canlı vurgu (G) + Otomatik geçiş (F)
+   ile hızlı bak. Bariz olanları işaretle.
+2. **Son doğrulama:** Otomatik geçişi KAPAT. `↓` / `Y` / `1–4` / `Enter` ile
+   manuel ilerle. "Onaydan sonra sonraki bekleyene geç" (varsayılan kapalı)
+   isteğe bağlı.
+3. **Belirsizleri** "Yeniden dinlenecek" bırak; son turda filtrele.
+4. **İstisnalar:** gözlem düğmeleri + hızlı etiketler (`[uzaktan konuşma]`,
+   `[telefonda konuşma]`, `[müzik/ses]`…).
+5. **Bitirmeden önce:** Rapor hazırlığı kartı + Kapsam denetimi + zaman
+   sorunları filtresi.
+
+### SIRADAKİ İŞLER (öneri sırası)
+
+1. **v2.197 — ≤900 px yapışkan karar şeridi.** Ölçüm: 900 px'te Kontrol ve
+   Dinle y=1631'de (ekran dışı). Yapışkan çubuğa **Kontrol + ↓** ekle; kısayol
+   ipucu göster. Ölçüt: 900 px'te dinle→karar→sonraki kaydırmasız.
+2. **v2.198 — Bölüm uzunluğu uyarısı.** Birleştirme sonucu >45 sn ise **uyarı**
+   (engelleme yok) + raporda standart hatırlatması. `birim` testi.
+3. **v2.199 — Rapora "Okuma metni".** `paragraphGroups` çıktısını HTML/DOCX/UDF
+   çıktısına **ayrı bölüm** olarak ekle; kanıt tablosu değişmez. Üç çıktı aynı
+   metni üretmeli (`rapor-tutarlilik-testi`).
+4. **v2.200 — Gözlem anahtarları.** "telefon" ve "sessizlik" gözlem anahtarı
+   eklemek şema göçü gerektirir (`OBS_KEYS`, `emptySegment`, rapor sayacı).
+5. **v2.201 — Dosyalar arası konuşmacı kaydı.** Case-level speaker registry;
+   aynı kişiyi dosyalar arası bağlama (isteğe bağlı, uzman kanaati).
+6. **v2.202 — Yerel LLM yardımcısı (isteğe bağlı).** Doğrulanmış metinde
+   gruplama/başlık/rapor taslağı; ham veri verilmez; insan onayı şart.
+
+### Bilinen sınırlar (hata değil)
+
+- ≤900 px tek sütun; detay listenin altında.
+- Konuşmacı diarization yok; etiketler uzman.
+- Kaynak ayrıştırma (müzik/gürültü ayırma) yok.
+- Perde oktav hatası düzeltilmez; bildirilir.
+- Rapor "Okuma metni" bölümü henüz yok.
+- Model indirme/ASR bu ortamda denenmedi (0,5–1,5 GB).
+
+### Doğrulama (her oturum başı)
+
+```bash
+bash tools/test.sh
+git log --oneline -3; git status --short
+curl -s https://azmisahin-gov.github.io/akis/version.json
+curl -s https://azmisahin-gov.github.io/akis/assets/app.js | grep -m1 APP_VERSION
+```
+
+### İlk komut
+
+`bash tools/test.sh` → yeşil olmalı. Sonra **v2.197** ile başla (≤900 px
+yapışkan karar şeridi).
 
 ### DOĞRULAMA (her oturum başı)
 

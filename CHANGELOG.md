@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.195.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.196.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.196 — Hızlı karar: Kontrol Dinle yanında, 1/2/3/4 kısayolları
+
+Kullanıcı: *"Dinle → Kontrol → en sola dön turu yavaş. Kontrol'ü Play'in yanına
+koysak? Ritmi kısaltabilir miyiz?"*
+
+### KULLANICI NE GÖRECEK
+
+- **Kontrol seçicisi artık Dinle düğmesinin yanında** (Konuşmacı'nın önünde).
+- **1/2/3/4 kısayolları:** 1 onay · 2 anlaşılmadı · 3 yeniden dinle ·
+  4 belirsiz. Metin alanında yazarken çalışmaz.
+- Önerilen ritim yardımda: **bölüm seç → Y (Dinle) → 1–4 karar → ↓ sonraki**.
+- İkinci göz kuralı korunur: yardımcı `1` ile onaylayamaz.
+
+### ÖLÇÜM (gerçek Chromium, 1440×900)
+
+| Tur | Önce | Sonra |
+|---|---|---|
+| Liste → Dinle | 439 px | 439 px |
+| Dinle → Kontrol | 373 px | **159 px** |
+| Kontrol → sonraki (↓) | 426 px | **212 px** |
+| **Tur toplamı (fare)** | **1.624 px** | **1.196 px** (−%26) |
+| Klavye turu | — | **0 px** (↓ · Y · 1 · ↓) |
+
+Kısayol testi: `1` → Onaylandı, `3` → Yeniden dinle; metin alanında `1`
+kontrolü DEĞİŞTİRMEDİ.
+
+### KORUYAN TEST
+
+`tasarim` [2av] (Kontrol Dinle yanında, 1/2/3/4, tek kapı, ikinci göz, ipucu).
 
 ## v2.195 — Paragraf görünümü artık salt okunur
 

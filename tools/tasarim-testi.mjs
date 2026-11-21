@@ -1288,6 +1288,26 @@ console.log('\n[2au] Paragraf görünümü salt okunur (v2.195)');
   check('telefonda konuşma hızlı etiketi var', /\[telefonda konuşma\]/.test(js));
 }
 
+console.log('\n[2av] Hızlı karar: Kontrol Dinle yanında + 1/2/3/4 (v2.196)');
+{
+  // KULLANICI: "Dinle → Kontrol → en sola dön" turu yavaş. Kontrol, Dinle'nin
+  // yanına alındı ve 1/2/3/4 karar kısayolları eklendi.
+  const js = read('assets/app.js');
+  const html = read('index.html');
+  const i0 = js.indexOf('function segDetailHtml');
+  const i1 = js.indexOf('\nfunction ', i0 + 10);
+  const body = js.slice(i0, i1 > 0 ? i1 : i0 + 30000);
+  const iPlay = body.indexOf('data-play-active');
+  const iReview = body.indexOf('data-key="review"');
+  const iSpk = body.indexOf('data-key="speaker"');
+  check('Kontrol, Dinle\'nin yanında (önce konuşmacı)', iPlay > 0 && iReview > iPlay && iReview < iSpk, `play=${iPlay} review=${iReview} spk=${iSpk}`);
+  check('1/2/3/4 karar kısayolları tanımlı', /'1': 'approved'/.test(js) && /'2': 'inaudible'/.test(js) && /'3': 'relisten'/.test(js) && /'4': 'ambiguous'/.test(js));
+  check('karar tek kapıdan yazılır (applyReviewChoice)', /function applyReviewChoice[\s\S]{0,600}setSegReview\(s, code\)/.test(js));
+  check('ikinci göz onaylayamaz (kısayolda da)', /function applyReviewChoice[\s\S]{0,300}isSecondEyesEditor/.test(js));
+  check('klavye ipucu 1/2/3/4 taşır', /<kbd>1<\/kbd>\/<kbd>2<\/kbd>/.test(js));
+  check('yardımda hızlı ritim bölümü var', /Hızlı çalışma ritmi/.test(html));
+}
+
 console.log('\n[8] CSS borcu (nöbetçi)');
 {
   const appCss = read('assets/app.css');

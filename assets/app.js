@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.195';
+} from './schema.js?v=2.196';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.195';
+const APP_VERSION = '2.196';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4160,8 +4160,10 @@ function segDetailHtml(m) {
       <button class="seg-tool play-main ${isPlaying ? 'on' : ''}" data-play-active="1" title="Bu bölümü dinle / duraklat (Boşluk)">${isPlaying ? '⏸' : '▶'} Dinle</button>
       <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
     </span>
+      <!-- KONTROL, DİNLE'NİN YANINDA (v2.196): kullanıcı dinledikten sonra
+           fareyle sağ uca gitmiyor. Sıra: dinle → karar → sonraki. -->
+      <label class="sd-field" title="Kontrol durumu — 1 Onay, 2 Anlaşılmadı, 3 Yeniden, 4 Belirsiz"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu" title="Kontrol: 1 Onay · 2 Anlaşılmadı · 3 Yeniden dinle · 4 Belirsiz">${opts}</select></label>
       <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
-      <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
   </div>
 
   <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
@@ -5146,7 +5148,7 @@ function renderSegments(m, card) {
       <div class="seg-list" id="seg-list-${esc(m.id)}" role="list">${segListHtml(m)}</div>
       <div class="seg-detail" id="seg-detail-${esc(m.id)}">${segDetailHtml(m)}</div>
     </div>
-    <details class="kbd-fold"><summary>Klavye kısayolları</summary><div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>Enter</kbd> onayla · <kbd>Y</kbd> dinle · <kbd>[</kbd><kbd>]</kbd> hız · <kbd>←</kbd><kbd>→</kbd> 5 sn · <kbd>B</kbd> böl · <kbd>M</kbd> birleştir · Metin alanındayken <kbd>Esc</kbd> ile çık</div></details>`;
+    <details class="kbd-fold"><summary>Klavye kısayolları</summary><div class="kbd-hint"><b>Klavye:</b> <kbd>Boşluk</kbd> oynat/durdur · <kbd>↑</kbd><kbd>↓</kbd> bölüm · <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd>/<kbd>4</kbd> karar · <kbd>Enter</kbd> onayla · <kbd>Y</kbd> dinle · <kbd>[</kbd><kbd>]</kbd> hız · <kbd>←</kbd><kbd>→</kbd> 5 sn · <kbd>B</kbd> böl · <kbd>M</kbd> birleştir · Metin alanındayken <kbd>Esc</kbd> ile çık</div></details>`;
   // Aktif bölüm işaretini kur
   const active = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
   root
@@ -5377,6 +5379,26 @@ function cycleSpeed(m, delta) {
     .forEach((b) => b.classList.toggle('on', Number(b.dataset.segSpeed) === m.playbackRate));
   persist();
   showToast(`Oynatma hızı: ${m.playbackRate}×`);
+}
+// HIZLI KARAR (v2.196): klavyeden 1/2/3/4 ile kontrol durumu yazılır.
+// Onay yetkisi kuralı korunur: ikinci göz yalnız öneri bırakır.
+function applyReviewChoice(m, index, code) {
+  const s = (m.segments || [])[index];
+  if (!s) return false;
+  if (code === 'approved' && isSecondEyesEditor()) {
+    showToast('Onay yetkisi dosya sorumlusunda. İkinci göz düzeltme önerir, onaylayamaz.');
+    return false;
+  }
+  setSegReview(s, code);
+  persist();
+  if (segFilter(m) === 'pending') renderSegList(m);
+  else updateSegListItem(m, index);
+  refreshSegChips(m);
+  renderSegDetail(m);
+  renderOverview();
+  if ($('#view-report').classList.contains('active')) renderReport();
+  showToast(`Bölüm ${index + 1}: ${REVIEW_LABEL[code] || code}`);
+  return true;
 }
 // Aktif bölümü onaylar ve sonrakine geçer. Liste öğesi ve sağ panel cerrahi
 // güncellenir; tam yeniden çizim yapılmaz.
@@ -5657,6 +5679,14 @@ function handleSegKey(e, card, m) {
       return true;
     }
     approveActiveSegment(m);
+    e.preventDefault();
+    return true;
+  }
+  // 1/2/3/4 — hızlı karar (v2.196). Metin alanında yazmayı engellemez.
+  const reviewKey = { '1': 'approved', '2': 'inaudible', '3': 'relisten', '4': 'ambiguous' };
+  if (!typing && reviewKey[e.key]) {
+    const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+    applyReviewChoice(m, idx, reviewKey[e.key]);
     e.preventDefault();
     return true;
   }
@@ -12715,6 +12745,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.196': {
+    title: 'Hızlı karar: Kontrol Dinle yanında, 1/2/3/4 kısayolları',
+    body:
+      'Kontrol seçicisi Dinle düğmesinin yanına alındı. Klavyeden 1 onay, ' +
+      '2 anlaşılmadı, 3 yeniden dinle, 4 belirsiz. Böylece dinle→karar→sonraki ' +
+      'turu fareyle sağ uca gitmeden yapılır.'
+  },
   '2.195': {
     title: 'Paragraf görünümü artık salt okunur',
     body:

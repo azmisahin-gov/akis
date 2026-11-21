@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.195.**
+yazılır. **Güncel sürüm: v2.196.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.196 — Hızlı karar şeridi (tamamlandı)
+
+Kontrol seçicisi Dinle'nin yanına alındı; 1/2/3/4 karar kısayolları eklendi.
+Ölçüm (1440): fare turu 1.624 → **1.196 px** (−%26); Dinle→Kontrol 373 → 159;
+Kontrol→↓ 426 → 212. Klavye turu 0 px. Kısayolda ikinci göz onayı engellenir;
+metin alanında çalışmaz. Koruyan test: `tasarim` [2av].
 
 ### v2.195 — Paragraf görünümü salt okunur (tamamlandı)
 
