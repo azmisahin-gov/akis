@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.152';
+} from './schema.js?v=2.153';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.152';
+const APP_VERSION = '2.153';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3990,7 +3990,7 @@ function segDetailHtml(m) {
     <button class="mini-button primary" data-approve-seg="${i}" title="Onayla ve sonraki bölüme geç (Enter)">✓ Onayla →</button>
     <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
     <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
-    <span class="sd-ops">${opsBtns}</span>
+    <details class="sd-more"><summary title="Geçmiş, ölçüm ve bölme araçları. Günlük onay akışını kalabalıklaştırmamak için katlanmıştır.">Diğer işlemler</summary><span class="sd-ops">${opsBtns}</span></details>
   </div>`;
 }
 // Öneri bandını, panelin geri kalanına dokunmadan yerinde tazeler. Yazarken
@@ -12067,6 +12067,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.153': {
+    title: 'Bölüm detayı sıkıştırıldı: daha az kaydırma',
+    body:
+      'Detay panelinde başlangıç/bitiş etiketleri kutuların yanına, konuşmacı · ' +
+      'kontrol · profil tek satıra alındı; "geçmiş, sessizlik ölç, böl, sil" gibi ' +
+      'ikincil araçlar "Diğer işlemler" başlığı altında katlandı. Panel içeriği ' +
+      '795 → 680 px indi; gözlem düğmelerine kalan kaydırma 125 → 46 px. Metin ' +
+      'alanı ve analiz kutusu KÜÇÜLTÜLMEDİ.'
+  },
   '2.152': {
     title: 'Listede bitiş zamanı da görünüyor',
     body:

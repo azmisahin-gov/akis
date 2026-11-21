@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.152.**
+yazılır. **Güncel sürüm: v2.153.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.153 — Detay paneli sıkıştırma (tamamlandı, hedef kısmen)
+
+Zaman etiketleri satır içi, `.sd-meta` tek satır (3 sütun), ikincil araçlar
+`<details class="sd-more">` altında. Panel içeriği 795 → **680 px** (−115).
+Kalan: gözlem düğmeleri için 46 px kaydırma (önce 125). "Kaydırmasız" hedef
+tam karşılanmadı; kapatmak metin alanını (180→120) veya analiz kutusunu
+(160→120) küçültmeyi gerektirir; ikisi de bilinçli korundu. Koruyan test:
+`tasarim` [2u].
 
 ### v2.152 — Listede bitiş zamanı (tamamlandı)
 

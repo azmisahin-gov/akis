@@ -451,6 +451,21 @@ console.log('\n[2t] Listede bitiş zamanı iki satır (v2.152)');
   check('zaman sütunu ms için genişletildi (96px)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*20px 96px/.test(rl));
 }
 
+// --- 2u. Detay paneli sıkıştırma (v2.153) --------------------------------
+// ÖLÇÜM (v2.152): panel 577 px, içerik 795 px; sd-meta ve gözlem düğmeleri
+// ekran dışında. Sıkıştırma metin alanını ve analiz kutusunu KORUR.
+console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
+{
+  const rl = read('assets/reading-layer.css');
+  const js = read('assets/app.js');
+  check('konuşmacı/kontrol/profil tek satır (3 sütun)', /#view-audio \.sd-meta\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*auto/.test(rl));
+  check('zaman etiketi kutunun yanında (satır)', /#view-audio \.sd-times \.sd-time\s*\{[^}]*flex-direction:\s*row/.test(rl));
+  check('ikincil araçlar katlanır (details)', /<details class="sd-more">/.test(js));
+  check('katlanır araç başlığı biçimli', /#view-audio \.sd-more > summary\s*\{/.test(rl));
+  check('masaüstü metin alanı 160 px', /@media \(min-width: 901px\)[\s\S]{0,200}min-height:\s*160px/.test(rl));
+  check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını

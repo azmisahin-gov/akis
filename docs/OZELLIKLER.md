@@ -1,4 +1,4 @@
-# Özellikler (v2.152 — mevcut durum)
+# Özellikler (v2.153 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -197,6 +197,9 @@ tuşları bozulmaz.
   - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
+- **Detay paneli sıkıştırma (v2.153):** etiketler satır içinde, konuşmacı ·
+  kontrol · profil tek satırda, ikincil araçlar "Diğer işlemler" altında.
+  Panel içeriği 795 → 680 px; metin alanı ve analiz kutusu korunur.
 - **Listede bitiş zamanı (v2.152):** zaman hücresi iki satır — başlangıç ve
   **→ bitiş**; ms biçimi korunur, hiçbir saat kesilmez.
 - **Onaydan sonra sonraki bekleyene geç (v2.151):** Ayarlar → Onay davranışı.

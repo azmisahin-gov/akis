@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.152.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.153.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.153 — Detay paneli sıkıştırıldı
+
+P5 (kozmetik). Hedef: bölüm detayında **kaydırmadan** `Konuşmacı / Kontrol`
+satırını ve gözlem düğmelerini görmek.
+
+### KULLANICI NE GÖRECEK
+
+- Başlangıç / bitiş etiketleri kutuların **yanına** geçti.
+- **Konuşmacı · Kontrol · Profil** tek satırda.
+- "geçmiş", "sessizlik ölç", "buradan böl", "↻ Bu aralığı çözümle",
+  "sonrakine ekle", "sil" araçları **"Diğer işlemler"** başlığı altında
+  katlandı. Başlık her zaman görünür; açınca araçlar çıkar. Onay düğmeleri
+  (Onayla / Yeniden dinle / Anlaşılmadı) **görünür kalır**.
+- **Metin alanı ve analiz kutusu KÜÇÜLTÜLMEDİ** (metin 180 → 160 px yalnız
+  masaüstünde; ~7 satır kalır).
+
+### ÖLÇÜM (v2.153, gerçek Chromium, 1440×900)
+
+| Öğe | v2.152 | v2.153 |
+|---|---|---|
+| Zaman satırı | 52 px | **40 px** |
+| Konuşmacı/Kontrol/Profil | 101 px | **54 px** |
+| Onay + araç satırı | 74 px | **38 px** |
+| Panel içeriği | **795 px** | **680 px** |
+| `Konuşmacı/Kontrol` üstü | 818 | **786** |
+| Gözlem düğmeleri üstü | 927 | **848** |
+
+Gözlem düğmelerine kalan kaydırma **125 → 46 px**.
+
+### DÜRÜST SINIR — hedef tam karşılanmadı
+
+Panel yüksekliği 577 px, içerik 680 px: **46 px eksik**. "Kaydırmasız" hedefi
+kapatmak için metin alanını 180 → 120 veya analiz kutusunu 160 → 120 px
+küçültmek gerekir. İkisi de bilinçli korundu (metin alanı en çok bakılan yer;
+analiz kutusu kullanıcı isteğiyle büyütülmüştü). **Karar kullanıcıya bırakıldı.**
+
+### ÖLÇÜM — dar ekran
+
+1440 / 1280 / 1100 / 900 / 760 / 640 / 480 px: yatay taşma **0**, kırpılma
+**0**. ≤640 px'te konuşmacı/kontrol/profil yeniden alt alta (3 sütun sığmaz).
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2u]** (6 kontrol) + CSS borç nöbetçisi değişmedi
+(ölü bildirim 98 / 498, `!important` 26/70).
 
 ## v2.152 — Listede bitiş zamanı
 

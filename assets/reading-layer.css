@@ -1793,3 +1793,59 @@ input::placeholder, textarea::placeholder {
 @media (min-width: 901px) {
   #view-audio .seg-item { grid-template-columns: 20px 96px minmax(0, 1fr); }
 }
+
+/* ============================================================================
+   v2.153 — DETAY PANELİ SIKIŞTIRMA
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.152, 1440×900): panel 577 px, içerik 795 px → 218 px taşma;
+   `sd-meta` (818) ve `sd-obs` (927) ekran dışında kalıyordu. P5 hedefi:
+   kaydırmadan bu iki bölümü görmek. Metin alanı ve analiz kutusu KORUNUR;
+   yalnız etiket yerleşimi ve ikincil araçlar sıkıştırılır.
+   ============================================================================ */
+/* 1) Zamanlar: etiket ve kutu AYNI satırda (52 → ~36 px). */
+#view-audio .sd-times .sd-time {
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+}
+#view-audio .sd-times .sd-time > span { white-space: nowrap; }
+#view-audio .sd-times .sd-time input { flex: 1 1 auto; width: auto; }
+#view-audio .sd-times .sd-time-dur { flex-direction: column; align-items: stretch; }
+
+/* 2) Konuşmacı + Kontrol + Profil TEK satırda (101 → ~52 px). */
+#view-audio .sd-meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+#view-audio .sd-meta .sd-profile { min-width: 96px; }
+#view-audio .sd-meta .sd-profile b { white-space: nowrap; }
+
+/* 3) İkincil araçlar katlanır (74 → ~34 px). Onay düğmeleri GÖRÜNÜR kalır. */
+#view-audio .sd-more { display: inline-block; }
+#view-audio .sd-more > summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  border: 1px solid var(--line-2);
+  border-radius: var(--r-sm);
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+#view-audio .sd-more > summary::-webkit-details-marker { display: none; }
+#view-audio .sd-more > summary::before { content: '▸ '; }
+#view-audio .sd-more[open] > summary::before { content: '▾ '; }
+#view-audio .sd-more[open] { flex-basis: 100%; }
+/* KAPALIYKEN araçlar GÖRÜNMEZ. `display` yazmak tarayıcının `<details>`
+   gizlemesini EZER; bu yüzden kapalı durumu açıkça none yaparız. */
+#view-audio .sd-more .sd-ops { display: none; }
+#view-audio .sd-more[open] .sd-ops { display: flex; padding-top: 4px; }
+
+/* 4) Masaüstünde metin alanı 180 → 160 px: hâlâ ~7 satır (14 px/1.7). */
+@media (min-width: 901px) {
+  #view-audio .sd-right .sd-text textarea { min-height: 160px; }
+}
+
+/* Dar ekranda (≤640) konuşmacı/kontrol/profil ALT ALTA döner: 3 sütun
+   143 px'e sığmaz ve seçim kutuları okunamaz. v2.153 kuralı bunu EZMEMELİ. */
+@media (max-width: 640px) {
+  #view-audio .sd-meta { grid-template-columns: 1fr; }
+  #view-audio .sd-times .sd-time { flex-direction: column; align-items: stretch; }
+}

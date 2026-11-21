@@ -1886,6 +1886,42 @@ yürütmesini beklemekten iyidir; ama sütun genişliği ölçülmeden artırıl
 (v2.130 dersi) saat sessizce kırpılır. Ekleyen ölçer.
 
 
+### Aşama 10ay — Detay paneli sıkıştırma (TAMAMLANDI, v2.153 — hedef KISMEN)
+
+**ÖLÇÜM (v2.152, 1440×900):** panel **577 px**, içerik **795 px** (218 taşma).
+`sd-meta` 818'de, `sd-obs` 927'de → ekran dışında.
+
+**Yapılan (yalnız yerleşim; metin alanı ve analiz kutusu KORUNDU):**
+| Öğe | Önce | Sonra |
+|---|---|---|
+| `.sd-times` (etiket yanda) | 52 | **40** |
+| `.sd-meta` (3 sütun) | 101 | **54** |
+| `.sd-actions` (ikincil araçlar katlı) | 74 | **38** |
+| `.sd-text` (masaüstü 180→160) | 218 | **198** |
+| **Toplam içerik** | **795** | **680** |
+
+**Sonuç:** `sd-meta` 786'da (önce 818), `sd-obs` 848'de (önce 927). Gözlem
+düğmelerine kalan kaydırma **125 → 46 px**. **"Kaydırmasız" hedef TAM
+KARŞILANMADI** (46 px eksik). Kapatmak için metin alanı 180→120 (−60) veya
+analiz kutusu 160→120 (−40) küçültülmeli; ikisi de bilinçli korundu (metin
+alanı en çok bakılan yer; analiz kutusu kullanıcı isteğiyle büyütülmüştü).
+Karar kullanıcıya bırakıldı.
+
+**Dar ekran:** ≤640 px'te `.sd-meta` yeniden tek sütun (163 px), zaman
+etiketleri alt alta. 1440/1280/1100/900/760/640/480: kırpılma 0, yatay taşma 0.
+
+**Koruyan test:** `tasarim-testi` [2u] (6 kontrol).
+
+**DERS — `<details>` içine `display` yazmak gizlemeyi EZER:** kapalı
+`<details>` çocuğuna `display:flex` verilince araçlar KAPALIYKEN de göründü
+(tarayıcıda yakalandı). Kapalı durumu açıkça `display:none`, açık durumu
+`.sd-more[open] .sd-ops { display:flex }` ile yazın.
+
+**DERS — hedef tutmadıysa "tutmadı" yaz:** P5 notundaki "~100 px" tahmini
+gerçek 218 px'in altındaydı (P4'te de tahmin tutmamıştı). Tahminle iş
+bitirilmez; ölçüm yazılır ve kalan fark ADIYLA söylenir.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2059,7 +2095,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.152.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.153.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2358,7 +2394,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.152) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.153) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2369,10 +2405,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.152** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.153** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.152 |
-| Açık konu | **P5 — detay paneli yüksekliği** (P1–P4 bitti) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.153 |
+| Açık konu | P5 kısmen: 46 px kaldı (karar kullanıcıda) |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2449,11 +2485,12 @@ Koruyan test: `birim` [61]. Ayrıntı: Aşama 10aw.
 İki satırlı zaman hücresi (`.seg-start` / `.seg-end`), sütun 96 px, kesme yok.
 Ölçüm: satır 59 → 72 px. Koruyan test: `tasarim` [2t]. Ayrıntı: Aşama 10ax.
 
-#### P5 — Detay paneli yüksekliği (kozmetik, en son)
+#### P5 — Detay paneli yüksekliği (TAMAMLANDI kısmen, v2.153)
 
-- Kayıt başlığını sıkıştır (hız/filtre satırları), panel içeriğini ~100 px
-  azalt; hedef: kaydırma olmadan `sd-meta` ve gözlem düğmeleri görünsün.
-- **Kıran test:** `tasarim` — panel içeriği yüksekliği ve görünürlük.
+İçerik 795 → 680 px. Gözlem düğmelerine kalan kaydırma 46 px (önce 125).
+Kapatmak için metin alanı veya analiz kutusu küçültülmeli — kullanıcı kararı
+bekliyor. Koruyan test: `tasarim` [2u]. Ayrıntı: Aşama 10ay.
+
 
 ### Bu oturumun en pahalı dersleri (tekrar etmeyin)
 
