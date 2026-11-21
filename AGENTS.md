@@ -1807,6 +1807,36 @@ sorusunu cevaplar, kararı bilirkişiye bırakır. Ayrıca yüzde gösteren her 
 sessiz hatadır.
 
 
+### Aşama 10av — Rapor hazırlık denetimi (TAMAMLANDI, v2.150)
+
+**KURAL: rapor öncesi eksikler SAYIYLA görünür; uydurma "hazırlık yüzdesi"
+YOKTUR. Kart bir DENETİM LİSTESİDİR, onay değildir.**
+
+**Saf fonksiyon:** `reportReadiness(c)` → `{ ok, items:[{key,label,count,target,
+detail,filter}] }`. Maddeler: `fileNo`, `court`, `expert`, `materials`,
+`noSegments`, `pending` (pendingBreakdown), `ambiguous` (seçim yok), `speaker`
+(boş veya "Belirtilmedi"), `time` (segmentTimeIssueIndexes), `hash`
+(`isSha256Hex`), `origin` (sentetik hariç), `log` (zincir kırığı), `questions`.
+
+**Arayüz:** `#reportReadiness` kartı `renderReport()` içinde
+`renderReportReadiness(c)` ile çizilir; satırlar `[data-ready-goto]`
+(`case|audio|questions`) ve isteğe bağlı `[data-ready-filter]`
+(`pending|time`). Tıklama `#reportReadiness` delegasyonunda: filtreyi aktif
+kayda yazar, `switchView(target)` çağırır, `audio` ise `renderAudioList()`.
+
+**Ölçüm (v2.150, gerçek Chromium):** 4 bölümlük eksik dosya → kart
+"8 konu eksik" ve 8 satır (pending 3, zaman 2, konuşmacı 3, …); "Kontrol
+edilmemiş bölüm" satırına tıklayınca **view-audio** açıldı ve filtre
+**"Bekleyen 3"**, listede 3 satır. Eksikler tamamlanınca kart
+"Eksik görünmüyor" (is-ok). Kırpılma 0, punto 11px, JS hatası 0.
+
+**Koruyan test:** `birim-testleri` [60] (33 kontrol).
+
+**DERS:** "Hazır mı?" sorusuna yüzde ile cevap vermek sahte kesinlik üretir.
+Adli belgede yanlış "hazır" izlenimi, eksik listesinden daha tehlikelidir;
+bu yüzden yalnız madde + sayı gösterilir ve listenin onay olmadığı yazılır.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1980,7 +2010,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.149.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.150.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2279,7 +2309,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.149) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.150) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2290,10 +2320,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.149** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **877 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.149 |
-| Açık konu | **P2 — rapor hazırlık denetimi** (P1 v2.149'da bitti) |
+| Sürüm | **v2.150** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **910 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.150 |
+| Açık konu | **P3 — onaydan sonra sonraki bekleyene geç** (P1–P2 bitti) |
 
 ### Bu oturumda ne değişti (kısa)
 
@@ -2355,16 +2385,10 @@ yapılır.
 `segmentCoverage()` + "Kapsam %98 · 2 boşluk" düğmesi + panel + "Git".
 Koruyan test: `birim` [59]. Ayrıntı: Aşama 10au.
 
-#### P2 — Rapor hazırlık denetimi
+#### P2 — Rapor hazırlık denetimi (TAMAMLANDI, v2.150)
 
-**Amaç:** eksikle rapor üretmeyi engellemek (hata riskini en çok azaltan iş).
-
-- Saf fonksiyon: `reportReadiness(c)` → madde listesi + sayılar:
-  bekleyen bölüm, belirsiz okuma (seçim yok), konuşmacı atanmamış, zaman
-  sorunu, SHA-256 yok, teslim/köken bilgisi yok, dosya no/mahkeme boş.
-- Arayüz: rapor görünümünde **"Rapor hazırlığı"** kartı; her satır tıklanınca
-  ilgili yere gider. **Uydurma "hazırlık yüzdesi" yok**; yalnız sayı ve madde.
-- **Kıran test:** her madde için tek tek pozitif/negatif vaka.
+`reportReadiness()` + `#reportReadiness` kartı + satır tıklama. Koruyan test:
+`birim` [60]. Ayrıntı: Aşama 10av.
 
 #### P3 — Onay sonrası sonraki bekleyene geç (isteğe bağlı, varsayılan kapalı)
 

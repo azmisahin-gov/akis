@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.149';
+} from './schema.js?v=2.150';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.149';
+const APP_VERSION = '2.150';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8337,9 +8337,101 @@ function reportRows(c) {
     ['BİLİRKİŞİ SİCİL NO', c.registryNo]
   ].filter((x) => x[1] && x[1] !== '—');
 }
+// RAPOR HAZIRLIK DENETİMİ (v2.150).
+// Kullanıcı: "eksikle rapor üretmeyi engelle." KURAL: uydurma "hazırlık
+// yüzdesi" YOK; yalnız madde + sayı. Her madde nereye gidileceğini söyler.
+// Bu bir DENETİM LİSTESİDİR, onay değildir; raporu yine de okuyun.
+const READINESS_TARGETS = ['case', 'audio', 'questions', 'report'];
+function reportReadiness(c) {
+  const items = [];
+  const materials = c && Array.isArray(c.materials) ? c.materials : [];
+  const segs = materials.flatMap((m) => (m && Array.isArray(m.segments) ? m.segments : []));
+  const txt = (v) => String(v == null ? '' : v).trim();
+  const add = (key, label, count, target, detail, filter) => {
+    if (!(count > 0)) return;
+    items.push({ key, label, count, target, detail: detail || '', filter: filter || '' });
+  };
+  add('fileNo', 'Dosya numarası boş', txt(c && c.fileNo) ? 0 : 1, 'case', 'Kapak ve alt bilgi boş kalır.');
+  add('court', 'Mahkeme boş', txt(c && c.court) ? 0 : 1, 'case', 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
+  add('expert', 'Bilirkişi adı boş', txt(c && c.expertName) ? 0 : 1, 'case', 'Künyede ad alanı boş kalır.');
+  add('materials', 'Ses kaydı yok', materials.length ? 0 : 1, 'audio', 'Envanter ve deşifre bölümleri boş görünür.');
+  add(
+    'noSegments',
+    'Bölümlenmemiş kayıt',
+    materials.filter((m) => !((m && m.segments) || []).length).length,
+    'audio',
+    'Bu kayıtların deşifre tablosu boş görünür.'
+  );
+  const b = pendingBreakdown(segs);
+  add('pending', 'Kontrol edilmemiş bölüm', b.total, 'audio', pendingSummaryText(segs), 'pending');
+  const amb = segs.filter((s) => segReview(s) === 'ambiguous' && !txt(s.chosen)).length;
+  add('ambiguous', 'Belirsiz okumada seçim yok', amb, 'audio', 'Rapora "seçilmedi" olarak girer; belirsizlik gizlenmez.');
+  const noSpk = segs.filter((s) => !txt(s.speaker) || txt(s.speaker) === 'Belirtilmedi').length;
+  add('speaker', 'Konuşmacı atanmamış bölüm', noSpk, 'audio', 'Raporda konuşmacı sütunu boş kalır.');
+  add(
+    'time',
+    'Zaman sorunu olan bölüm',
+    segmentTimeIssueIndexes(segs).size,
+    'audio',
+    'Çakışan/yinelenen aralıklar raporda da çelişkili görünür.',
+    'time'
+  );
+  add(
+    'hash',
+    'SHA-256 hesaplanmamış kayıt',
+    materials.filter((m) => !isSha256Hex(m && m.sha256)).length,
+    'audio',
+    'Envanterde "Hesaplanamadı" yazar; bütünlük iddia edilemez.'
+  );
+  add(
+    'origin',
+    'Teslim/köken bilgisi girilmemiş kayıt',
+    materials.filter((m) => m && !m.synthetic && (!m.origin || !m.origin.mediumType || m.origin.mediumType === 'unspecified'))
+      .length,
+    'audio',
+    'Köken tablosunda "—" görünür.'
+  );
+  add(
+    'log',
+    'Delil günlüğünde zincir kırığı',
+    materials.filter((m) => m && logChainState(m.log).state === 'broken').length,
+    'audio',
+    'Günlük sonradan değiştirilmiş olabilir.'
+  );
+  add(
+    'questions',
+    'İnceleme sorusu yok',
+    c && Array.isArray(c.questions) && c.questions.length ? 0 : 1,
+    'questions',
+    'Raporda varsayılan soru metni kullanılır.'
+  );
+  return { ok: items.length === 0, items };
+}
+function readinessRowsHtml(r) {
+  const items = (r && r.items) || [];
+  if (!items.length)
+    return '<div class="ready-empty">Eksik görünmüyor. Bu bir denetim listesidir, onay değildir — raporu yine de okuyun.</div>';
+  return items
+    .map(
+      (it) =>
+        `<button class="ready-row" data-ready-goto="${esc(it.target)}"${it.filter ? ` data-ready-filter="${esc(it.filter)}"` : ''} title="${esc(it.detail || '')}"><span class="ready-n">${it.count}</span><span class="ready-l">${esc(it.label)}</span><span class="ready-go">git ›</span></button>`
+    )
+    .join('');
+}
+function renderReportReadiness(c) {
+  const el = $('#reportReadiness');
+  if (!el) return;
+  const r = reportReadiness(c);
+  el.classList.toggle('is-ok', r.ok);
+  el.innerHTML =
+    `<div class="ready-head"><b>Rapor hazırlığı</b><small>${
+      r.ok ? 'Eksik görünmüyor' : `${r.items.length} konu eksik`
+    } · denetim listesidir, onay değildir</small></div>` + readinessRowsHtml(r);
+}
 function renderReport() {
   const c = currentCase();
   if (!c) return;
+  renderReportReadiness(c);
   const materials = c.materials || [];
   const allSegs = materials.flatMap((m) => m.segments || []);
   const checked = allSegs.filter((s) => isReviewed(s)).length;
@@ -10968,6 +11060,25 @@ function setupEvents() {
   if (undoBtn) undoBtn.addEventListener('click', () => undoLast());
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
+// RAPOR HAZIRLIĞI (v2.150): satıra tıklayınca ilgili yere gider. Filtre
+// verilmişse (bekleyen/zaman) ses görünümü o filtreyle açılır.
+const readyBox = $('#reportReadiness');
+if (readyBox)
+  readyBox.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-ready-goto]') : null;
+    if (!b) return;
+    const target = b.dataset.readyGoto;
+    const filter = b.dataset.readyFilter || '';
+    if (filter) {
+      const m = activeMaterial();
+      if (m) {
+        m.uiFilter = filter;
+        persist();
+      }
+    }
+    switchView(target);
+    if (target === 'audio') renderAudioList().catch(() => {});
+  });
 $('#reportFullBtn').addEventListener('click', () => setReportFull(true));
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
@@ -11893,6 +12004,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.150': {
+    title: 'Rapor hazırlığı: eksikler tek listede',
+    body:
+      'Rapor görünümünde "Rapor hazırlığı" kartı var. Kontrol edilmemiş bölüm, ' +
+      'seçilmemiş belirsiz okuma, konuşmacı atanmamış bölüm, zaman sorunu, ' +
+      'SHA-256 yok, teslim/köken bilgisi yok, boş künye ve soru yokluğu tek ' +
+      'listede SAYIYLA görünür; satıra tıklayınca ilgili yere gider. Uydurma bir ' +
+      '"hazırlık yüzdesi" yoktur; bu bir denetim listesidir, onay değildir.'
+  },
   '2.149': {
     title: 'Kapsama denetimi: sesin bölümlenmemiş aralığı görünür',
     body:

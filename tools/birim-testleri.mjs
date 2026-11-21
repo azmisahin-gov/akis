@@ -117,6 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
+  'reportReadiness', 'readinessRowsHtml',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2931,6 +2932,101 @@ console.log('\n== [59] Kapsama denetimi: bölümlenmemiş aralık (v2.149)');
     eq('iki boşluk metni', T.coveragePctText({ ok: true, pct: 98, gaps: [{ a: 1, b: 2 }, { a: 5, b: 6 }] }), 'Kapsam %98 · 2 boşluk');
     eq('yüzde 99 tavanı', T.coveragePctText({ ok: true, pct: 99.9, gaps: [{ a: 1, b: 2 }] }), 'Kapsam %99 · 1 boşluk');
     eq('süre yok metni', T.coveragePctText({ ok: false, pct: null, gaps: [] }), 'Kapsam hesaplanamadı');
+  }
+}
+
+console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
+{
+  // Kullanıcı: "eksikle rapor üretmeyi engelle." KURAL: uydurma "hazırlık
+  // yüzdesi" YOK; yalnız madde + sayı. Her madde nereye gidileceğini söyler.
+  eq('reportReadiness tanımlı', typeof T.reportReadiness, 'function');
+  if (typeof T.reportReadiness === 'function') {
+    const sha = 'a'.repeat(64);
+    const seg = (o) => Object.assign({ id: 's1', start: '00:00:00.000', end: '00:00:10.000', text: 'merhaba', review: 'approved', speaker: 'Tanık' }, o);
+    const mat = (o) => Object.assign({
+      id: 'm1', name: 'a.wav', duration: 10, sha256: sha,
+      origin: { mediumType: 'usb', deliveredBy: 'X', deliveredAt: '2026-01-01' },
+      speakers: [{ id: 'sp1', code: 'S1', label: 'Tanık' }],
+      segments: [seg()], log: []
+    }, o);
+    const base = (o) => Object.assign({
+      id: 'c1', fileNo: '2026/1', court: 'Ankara 1. Asliye Hukuk Mahkemesi', expertName: 'A. Bilirkişi',
+      questions: [{ id: 'q1', question: 'Ne oldu?', answer: 'x' }],
+      materials: [mat()]
+    }, o);
+    const keys = (r) => r.items.map((x) => x.key);
+
+    const full = T.reportReadiness(base({}));
+    eq('tam dosya hazır', full.ok, true);
+    eq('tam dosyada madde yok', full.items.length, 0);
+    eq('uydurma yüzde yok', 'pct' in full, false);
+
+    const noFile = T.reportReadiness(base({ fileNo: '   ' }));
+    eq('dosya no boş yakalanır', keys(noFile).includes('fileNo'), true);
+    eq('dosya no hedefi dosya bilgileri', noFile.items.find((x) => x.key === 'fileNo').target, 'case');
+
+    const noCourt = T.reportReadiness(base({ court: '' }));
+    eq('mahkeme boş yakalanır', keys(noCourt).includes('court'), true);
+
+    const noExpert = T.reportReadiness(base({ expertName: '' }));
+    eq('bilirkişi adı boş yakalanır', keys(noExpert).includes('expert'), true);
+
+    const noMat = T.reportReadiness(base({ materials: [] }));
+    eq('kayıt yok yakalanır', keys(noMat).includes('materials'), true);
+    eq('kayıt yok hedefi ses görünümü', noMat.items.find((x) => x.key === 'materials').target, 'audio');
+
+    const noSegs = T.reportReadiness(base({ materials: [mat({ segments: [] })] }));
+    eq('bölümsüz kayıt yakalanır', keys(noSegs).includes('noSegments'), true);
+
+    const pending = T.reportReadiness(base({ materials: [mat({ segments: [seg({ review: 'pending' })] })] }));
+    const pItem = pending.items.find((x) => x.key === 'pending');
+    eq('bekleyen bölüm yakalanır', !!pItem, true);
+    eq('bekleyen sayısı', pItem.count, 1);
+    eq('bekleyen hedefi ses görünümü', pItem.target, 'audio');
+    eq('bekleyen filtresi', pItem.filter, 'pending');
+
+    const ambNo = T.reportReadiness(base({ materials: [mat({ segments: [seg({ review: 'ambiguous', reading1: 'geldi', reading2: 'kaldı' })] })] }));
+    eq('seçimsiz belirsiz okuma yakalanır', keys(ambNo).includes('ambiguous'), true);
+    const ambYes = T.reportReadiness(base({ materials: [mat({ segments: [seg({ review: 'ambiguous', reading1: 'geldi', reading2: 'kaldı', chosen: 'geldi' })] })] }));
+    eq('seçilmiş belirsiz okuma yakalanmaz', keys(ambYes).includes('ambiguous'), false);
+
+    const noSpk = T.reportReadiness(base({ materials: [mat({ segments: [seg({ speaker: '' })] })] }));
+    eq('konuşmacısız bölüm yakalanır', keys(noSpk).includes('speaker'), true);
+    const defSpk = T.reportReadiness(base({ materials: [mat({ segments: [seg({ speaker: 'Belirtilmedi' })] })] }));
+    eq('"Belirtilmedi" atanmamış sayılır', keys(defSpk).includes('speaker'), true);
+
+    const timeBad = T.reportReadiness(base({ materials: [mat({ segments: [seg(), seg({ id: 's2', start: '00:00:05.000', end: '00:00:12.000' })] })] }));
+    const tItem = timeBad.items.find((x) => x.key === 'time');
+    eq('zaman sorunu yakalanır', !!tItem, true);
+    eq('zaman sorunu iki tarafı sayar', tItem.count, 2);
+    eq('zaman sorunu filtresi', tItem.filter, 'time');
+
+    const noHash = T.reportReadiness(base({ materials: [mat({ sha256: '' })] }));
+    eq('SHA-256 yok yakalanır', keys(noHash).includes('hash'), true);
+
+    const noOrigin = T.reportReadiness(base({ materials: [mat({ origin: { mediumType: 'unspecified' } })] }));
+    eq('teslim bilgisi yok yakalanır', keys(noOrigin).includes('origin'), true);
+    const synthetic = T.reportReadiness(base({ materials: [mat({ synthetic: true, origin: { mediumType: 'unspecified' } })] }));
+    eq('sentetik kayıtta teslim bilgisi istenmez', keys(synthetic).includes('origin'), false);
+
+    const noQ = T.reportReadiness(base({ questions: [] }));
+    eq('soru yok yakalanır', keys(noQ).includes('questions'), true);
+
+    const broken = T.reportReadiness(base({ materials: [mat({ log: [{ at: '2026-01-01T00:00:00.000Z', event: 'x', prevHash: 'b', hash: 'c' }] })] }));
+    eq('kırık delil zinciri yakalanır', keys(broken).includes('log'), true);
+
+    const targets = new Set(['case', 'audio', 'questions', 'report']);
+    const all = T.reportReadiness(base({ fileNo: '', court: '', expertName: '', materials: [] }));
+    eq('her maddenin geçerli hedefi var', all.items.every((x) => targets.has(x.target)), true);
+    eq('her maddenin metni var', all.items.every((x) => typeof x.label === 'string' && x.label.length > 0), true);
+  }
+  eq('readinessRowsHtml tanımlı', typeof T.readinessRowsHtml, 'function');
+  if (typeof T.readinessRowsHtml === 'function') {
+    const empty = T.readinessRowsHtml({ ok: true, items: [] });
+    eq('hazırsa bilgi satırı', empty.includes('Eksik görünmüyor'), true);
+    const some = T.readinessRowsHtml({ ok: false, items: [{ key: 'pending', label: 'Kontrol edilmemiş bölüm', count: 3, target: 'audio', filter: 'pending' }] });
+    eq('madde satırı sayı taşır', some.includes('>3<') || some.includes('3'), true);
+    eq('madde satırı tıklanabilir', some.includes('data-ready-goto="audio"'), true);
   }
 }
 

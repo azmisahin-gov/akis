@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.149.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.150.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.150 — Rapor hazırlık denetimi: eksikler tek listede
+
+Kullanıcı: *"eksikle rapor üretmeyi engelle."* Rapor görünümünde **"Rapor
+hazırlığı"** kartı eklendi.
+
+### KULLANICI NE GÖRECEK
+
+- Rapor görünümünde kart, eksikleri **sayıyla** listeler: kontrol edilmemiş
+  bölüm, seçilmemiş belirsiz okuma, konuşmacı atanmamış bölüm, zaman sorunu,
+  SHA-256 hesaplanmamış kayıt, teslim/köken bilgisi girilmemiş kayıt, boş künye
+  (dosya no/mahkeme/bilirkişi) ve inceleme sorusu yokluğu.
+- Satıra tıklayınca ilgili yere gider. **"Kontrol edilmemiş bölüm"** satırı ses
+  görünümünü **Bekleyen** filtresiyle açar; **"Zaman sorunu"** satırı **Zaman
+  sorunları** filtresiyle.
+- Eksik yoksa **"Eksik görünmüyor"** yazar.
+- **Uydurma "hazırlık yüzdesi" YOKTUR.** Kart bir **denetim listesidir, onay
+  değildir**; bu cümle kartın üstünde yazılıdır.
+
+### HESAP (saf fonksiyon)
+
+`reportReadiness(c)` → `{ ok, items: [{ key, label, count, target, detail,
+filter }] }`. Sayımlar mevcut tek kaynaklardan gelir: `pendingBreakdown`
+(bekleyen), `segmentTimeIssueIndexes` (zaman), `isSha256Hex` (bütünlük),
+`logChainState` (delil zinciri). Sentetik kayıtlarda teslim bilgisi istenmez.
+
+### ÖLÇÜM (v2.150, gerçek Chromium)
+
+4 bölümlük eksik dosya (2 bekleyen + 1 belirsiz, çakışan zaman, SHA-256 yok,
+köken yok, bilirkişi adı boş, soru yok):
+
+| Adım | Sonuç |
+|---|---|
+| Kart | "8 konu eksik" + 8 satır (pending 3 · zaman 2 · konuşmacı 3 …) |
+| "Kontrol edilmemiş bölüm"e tıkla | `view-audio` açıldı, filtre **"Bekleyen 3"**, 3 satır |
+| Eksikler tamamlanınca | **"Eksik görünmüyor"** |
+| Kırpılma / punto | 0 · 11px |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` **[60]** (33 kontrol): her madde için pozitif/negatif vaka,
+hedef ve filtre alanları, sentetik kayıt istisnası, "yüzde alanı yok" ve HTML
+satırlarının tıklanabilirliği.
 
 ## v2.149 — Kapsama denetimi: sesin bölümlenmemiş aralığı
 

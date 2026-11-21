@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.149.**
+yazılır. **Güncel sürüm: v2.150.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.150 — Rapor hazırlık denetimi (tamamlandı)
+
+`reportReadiness(c)` saf fonksiyonu rapor öncesi eksikleri **sayıyla** listeler:
+kontrol edilmemiş bölüm, seçilmemiş belirsiz okuma, konuşmacı atanmamış bölüm,
+zaman sorunu, SHA-256 yok, teslim/köken bilgisi yok, boş künye, soru yok.
+Rapor görünümünde "Rapor hazırlığı" kartı; satır tıklanınca ilgili görünüme
+gider (bekleyen/zaman satırları filtreyi de kurar). Uydurma yüzde yoktur.
+Koruyan test: `birim` [60].
 
 ### v2.149 — Kapsama denetimi (tamamlandı)
 
