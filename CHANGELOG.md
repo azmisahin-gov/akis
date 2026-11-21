@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.181.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.182.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.182 — Dikey yer kazanımı: etiketler satır içi, "ses yok" tek satır
+
+Ölçüm (1440×900, v2.181): `.sd-field` `flex-direction: column` olduğu için
+"Konuşmacı"/"Kontrol" etiketleri seçimin **üstünde** duruyordu; her alan 57 px,
+meta satırı **63 px**. "Ses yok" satırı uzun metinle **47 px** (2 satır).
+
+### KULLANICI NE GÖRECEK
+
+- Konuşmacı ve Kontrol **tek satırda**; değerler kendini anlatıyor
+  ("S1 · Konuşmacı 1", "Kontrol bekliyor"). Görsel etiket kaldırıldı ama
+  **`aria-label` + `title`** olarak korunuyor (ekran okuyucu ve fare ipucu).
+- **Profil** kısa etiketiyle aynı satırda kalır.
+- "Ses dosyası yok — paketten yükle" **tek satır**; tam açıklama ipucunda.
+- **Metin alanı küçültülmedi**: 160 px = 6,7 satır.
+
+### ÖLÇÜM
+
+| | Önce (v2.181) | Sonra (v2.182) |
+|---|---|---|
+| Meta satırı | 63 px (2 satır) | **40 px (1 satır)** |
+| "Ses yok" satırı | 47 px | **31 px** |
+| Metin alanı | 160 px (6,7 satır) | 160 px (6,7 satır) |
+| Teknik açık kaydırma | 84 px | **63 px** |
+| 900 px | — | meta 40 px, yatay taşma yok |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` [64] (kısa metin ≤ 40 karakter, ayrıntı ipucunda) ve
+`tasarim-testi` [2am].
 
 ## v2.181 — ASR kökeni Teknik'te; metinde yalnız ince ipucu
 

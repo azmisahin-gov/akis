@@ -117,7 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3125,8 +3125,12 @@ console.log('\n== [64] Bildirim yerleşimi ve ses yok durumu (v2.158)');
     eq('ses varsa metin boş', T.audioStateText(true), '');
     const t = T.audioStateText(false);
     eq('ses yoksa sebep yazar', /Ses dosyası/.test(t), true);
-    eq('ses yoksa çözümü söyler', /Paketten yükle/.test(t), true);
-    eq('ses yoksa dalga/spek anılmış', /dalga|spektrogram/i.test(t), true);
+    // v2.182: satır KISALDI (tek satır), ayrıntı ipucunda.
+    eq('ses yoksa çözümü söyler (kısa)', /paketten yükle/i.test(t), true);
+    eq('kısa metin tek satıra sığar (<=40)', t.length <= 40, true);
+    const hint = T.audioStateHint(false);
+    eq('ipucu dalga/spek anıyor', /dalga|spektrogram/i.test(hint), true);
+    eq('ipucu çözümü söylüyor', /Paketten yükle/.test(hint), true);
   }
   const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
   eq('toast durum çubuğunun üstünde', /calc\(var\(--status-h\)\s*\+\s*[0-9]+px\)/.test(css), true);

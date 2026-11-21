@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.181';
+} from './schema.js?v=2.182';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.181';
+const APP_VERSION = '2.182';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4061,14 +4061,14 @@ function segDetailHtml(m) {
   <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
        zaman görünür. Teknik panelinde kalınca kaydırmadan erişilemiyordu. -->
     <div class="sd-meta">
-      <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
-      <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
-      ${rev === 'ambiguous' || s.reading1 || s.reading2 ? ambiguousPanelHtml(s, i) : ''}
+      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
+      <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
       <span class="sd-field sd-profile" title="${esc(
         'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
           'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
           'Bir sonraki çözümleme, Ayarlar\'daki güncel profili kullanır.'
       )}"><span>Profil</span><b>${esc(m.transcribedWithProfile ? profileRunLabel(m.transcribedWithProfile) : 'Henüz çözümlenmedi')}</b></span>
+      ${rev === 'ambiguous' || s.reading1 || s.reading2 ? ambiguousPanelHtml(s, i) : ''}
     </div>
 
   <!-- "Ses yok" durumu HER ZAMAN görünür (v2.174): Teknik panelinin içinde
@@ -4959,7 +4959,13 @@ function quickBulkBtn(counts, secondEyes) {
 // SES YOK DURUMU (v2.158). Denetimde görüldü: blob yokken analiz kutusu BOŞ
 // kalıyordu; sebebi yalnız kaybolan toast söylüyordu. KURAL: kalıcı, metinli
 // durum; çözümü de söyler.
+// KISA satır + uzun açıklama ipucunda (v2.182). Uzun metin 631 px'te 2 satıra
+// sarılıyor ve 47 px yer kaplıyordu; kısa metin tek satır (19 px). Ayrıntı
+// `title` ile korunur — bilgi kaybı yok, yalnız yer kazancı.
 function audioStateText(hasSrc) {
+  return hasSrc ? '' : 'Ses dosyası yok — paketten yükle';
+}
+function audioStateHint(hasSrc) {
   return hasSrc
     ? ''
     : 'Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez. Paketten yükle veya dosyayı yeniden ekleyin.';
@@ -4971,6 +4977,7 @@ function refreshAudioState(m) {
   const a = document.querySelector(`#player-${CSS.escape(m.id)}`);
   const txt = audioStateText(!!(a && a.getAttribute('src')));
   el.textContent = txt;
+  el.title = txt ? audioStateHint(false) : '';
   el.hidden = !txt;
 }
 function renderSegDetail(m) {
@@ -12527,6 +12534,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.182': {
+    title: 'Bölüm panelinde dikey yer kazanıldı',
+    body:
+      'Konuşmacı ve Kontrol etiketleri seçimin üstünde duruyordu; artık tek ' +
+      'satırda ve değerler kendini anlatıyor. Etiketler ipucu ve ekran okuyucu ' +
+      'için korunuyor. "Ses dosyası yok" satırı tek satıra indi (ayrıntı ipucunda). ' +
+      'Metin alanı küçültülmedi: 160 px = 6,7 satır.'
+  },
   '2.181': {
     title: 'Model çıktısı artık metnin üstünde yer kaplamıyor',
     body:

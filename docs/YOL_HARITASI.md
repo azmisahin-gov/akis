@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.181.**
+yazılır. **Güncel sürüm: v2.182.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.182 — Dikey yer kazanımı (tamamlandı)
+
+Etiketler seçimin üstünde duruyordu (`.sd-field` column): meta satırı 63 px.
+Etiketler satır içi yapıldı; Konuşmacı/Kontrol etiketleri görsel olarak
+kaldırıldı ama `aria-label` + `title` ile korundu (değerler kendini anlatıyor).
+"Ses yok" satırı tek satıra indi, ayrıntı ipucunda. Ölçüm: meta 63 → **40**,
+ses yok 47 → **31**, metin 160 (değişmedi), Teknik açık kaydırma 84 → **63**;
+900 px'te taşma yok. Koruyan test: `birim` [64] + `tasarim` [2am].
 
 ### v2.181 — ASR kökeni Teknik'te (tamamlandı)
 

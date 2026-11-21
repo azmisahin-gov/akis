@@ -2242,8 +2242,6 @@ input::placeholder, textarea::placeholder {
 }
 #view-audio .sd-meta .sd-field {
   display: flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
 }
 #view-audio .sd-meta .sd-field > span:first-child {
@@ -2274,3 +2272,35 @@ input::placeholder, textarea::placeholder {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* --- v2.182 — Dikey yer kazanımı: etiketler satır içi --------------------- */
+/* ÖLÇÜM (v2.181, 1440×900): `.sd-field` `flex-direction: column` olduğu için
+   "Konuşmacı"/"Kontrol"/"Profil" etiketleri seçimin ÜSTÜNDE duruyordu; her
+   alan 57 px, meta satırı **63 px**. Etiketi yan yana almak dikey yer kazandırır
+   (kaldırmak yalnız yatay kazanç verir; görünür etiket erişilebilirlik için
+   değerlidir). */
+#view-audio .sd-meta .sd-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+/* Genişlik SINIRLI: üç alan tek satıra sığmalı (ölçüm: 223 + 182 + 113 +
+   boşluklar ≈ 534 < 621). Sınırsız büyürse satır 2'ye sarar ve kazanç kaybolur. */
+#view-audio .sd-meta .sd-field select {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 120px;
+  max-width: 150px;
+}
+#view-audio .sd-meta .sd-field input {
+  width: auto;
+  flex: 0 1 auto;
+  min-width: 120px;
+}
+#view-audio .sd-meta .sd-spk-pick { flex: 0 1 auto; }
+#view-audio .sd-meta .sd-field > span:not(.sd-spk-pick) { flex: 0 0 auto; }
+
+/* Profil meta satırında KALIR ama daralır (v2.182): tek satırda üç alan
+   sığsın; değer uzunsa satır sarar, metin KIRPILMAZ. */
+#view-audio .sd-meta .sd-profile { flex: 0 1 auto; }
+#view-audio .sd-meta .sd-profile b { font-weight: 600; color: var(--ink-2); }
