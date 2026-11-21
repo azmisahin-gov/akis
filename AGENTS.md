@@ -2241,3 +2241,153 @@ ve `APP_VERSION`** doğru mu.
 3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.129 mi
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
+
+## Yeni oturuma devir notu (v2.148) — SIRADAKİ İŞLER
+
+Bu oturumda (v2.130–v2.148) **görünürlük ve tutarlılık** sorunları kapatıldı.
+Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
+sürüm** kuralıyla, kıran test → düzeltme → gerçek tarayıcı → push disipliniyle
+yapılır.
+
+### Durum (2026-11-20, kapanış)
+
+| | |
+|---|---|
+| Sürüm | **v2.148** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **843 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `4dfe568`, çalışma ağacı temiz |
+| Pages | `built`, commit bizimki |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.148 |
+| Açık konu | **Yok** (aşağıdakiler yeni özellik/iyileştirme) |
+
+### Bu oturumda ne değişti (kısa)
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.130 | Bölüm listesinde durum rozeti görünmüyordu | `tasarim` [2j] |
+| v2.131 | Görünüm kutusu: yapışkan bar + durum çubuğu örtüşmesi | `tasarim` [2k] |
+| v2.132 | Kurtarma kopyasında sessiz dosya düşmesi | `birim` [51] |
+| v2.133 | Durum çubuğu kesmesi | `tasarim` [2l] |
+| v2.134 | İlk açılışta hayalet kayıt | `birim` [52] |
+| v2.135 | Kritik uyarılar ekran okuyucuya duyurulmuyor | `birim` [53] |
+| v2.136 | favicon 404 | `tasarim` [4b] |
+| v2.137 | Rapor kâğıdı dar ekranda kırpılıyordu | `tasarim` [2m] |
+| v2.138 | CSS borcu ölçümü + nöbetçi (temizlik yayınlanmadı) | `tasarim` [8] |
+| v2.139 | Uzun listede detay paneli ekran dışında kalıyordu | `tasarim` [2n] |
+| v2.140 | **Masaüstü kabuğu**: sabit çerçeve, paneller kendi kaydırır | `tasarim` [2o] |
+| v2.141 | Masaüstünde çalışma modu kaldırıldı | `tasarim` [2p] |
+| v2.142 | Çalışma modu tamamen kaldırıldı; kayıt listesi **dikey** | `tasarim` [2p]/[2q] |
+| v2.143 | Detay panelinin alt kısmı (`sd-meta`) kırpılıyordu | `tasarim` [2r] |
+| v2.144 | **Zaman çakışmaları görünür** (⚠ + "Zaman sorunları") | `birim` [54] |
+| v2.145 | Takip vurgusu çakışmada geri atlıyordu | `birim` [55] |
+| v2.146 | Zaman sorunu düzenlerken anında görünmüyordu | `birim` [56] |
+| v2.147 | Takip şeridi eski bölüme dönüyordu (gerçek sesle kanıt) | `birim` [57] |
+| v2.148 | Oynatma başlarken sayfa zıplıyordu (şerit + başlık) | `birim` [58] · `tasarim` [2s] |
+
+### Mevcut mimari (bilinmesi gerekenler)
+
+- **≥901 px masaüstü kabuğu:** üst bar + durum çubuğu sabit; kayıtlar (220 px)
+  · bölüm listesi (320 px) · düzenleme paneli. Liste ve panel kendi kaydırır.
+  `reading-layer.css` sonundaki `@media (min-width: 901px)` bloğu.
+- **≤900 px:** eski tek-kaydırma yedeği (detay listenin altında).
+- **Çalışma modu YOK** (v2.142): `workspaceBar`, `workspaceBtn`, `setWorkspace`,
+  `ws-mode` kaldırıldı; geri getirmeyin.
+- **Zaman bütünlüğü:** `segmentTimeIssues` / `segmentTimeIssueAt` /
+  `segmentTimeIssueIndexes`; ⚠ rozeti + "Zaman sorunları" filtresi.
+- **Takip:** `segmentIndexAtTime` (çakışmada aktif bölüm) ve `followStripIndex`
+  (şerit aktif bölümü gösterir). `followState` iki ayrı mod: `autoAdvance` (F),
+  `liveHighlight` (G); ikisi de **varsayılan kapalı**.
+- **Yerleşim kararlılığı:** `segHeadParts` (başlık tek kaynak);
+  `ensureFollowStrip` (canlı vurgu açıkken şerit **yer tutucu** olarak önceden
+  kurulur; oynatma yalnız metni değiştirir).
+- **CSS borcu nöbetçisi:** `tasarim-testi` [8] eşikleri 26/68/98/507/15
+  (`!important` / ölü bildirim / `.main-area`). Borç artarsa test kalır.
+
+### Bilinen sınırlar (hata değil)
+
+- **≤900 px:** tek sütun; uzun listede detay aşağıda. Ayrı düzen gerekir.
+- **Detay paneli kaydırır:** panel ~385 px, içerik ~795 px (v2.143'te kırpma
+  bitti, kaydırma kaldı). Kayıt başlığı sıkıştırılırsa ~100 px kazanılır.
+- **Canlı vurgu açılırken** şerit bir kez 64 px yerleşir (bilinçli eylem);
+  oynatma sırasında zıplama yok.
+- Perde oktav hatası düzeltilmez, bildirilir. Kaynak ayrıştırma/konuşmacı
+  kimliği/montaj tespiti yapılmaz.
+
+### SIRADAKİ İŞLER (öncelik sırasıyla)
+
+#### P1 — Kapsama denetimi (önerilen ilk iş)
+
+**Amaç:** "sesin hiç bölüme girmemiş aralığı var mı?" sorusunu uygulama
+cevaplasın. Meslektaş uyarısı ("bölerken/çözümlerken parça kaçabiliyor") tam
+olarak buna denk gelir.
+
+- Saf fonksiyon: `segmentCoverage(segments, duration)` →
+  `{ coveredSec, totalSec, pct, gaps:[{a,b}], outside:[i], zero:[i] }`.
+  - `gaps`: hiçbir bölümün kapsamadığı aralıklar (bitişik bölümler boşluk
+    sayılmaz; 1 ms tolerans).
+  - `outside`: `end > duration` olan bölümler.
+  - `coveredSec`: **birleşim** uzunluğu (çakışmalar iki kez sayılmaz).
+- Arayüz: araç çubuğunda **"Kapsam %98 · 2 boşluk"** düğmesi; tıklayınca panel
+  boşlukları listeler, "git" oynatıcıyı o ana getirir. Boşluk yoksa düğme
+  "Kapsam %100" der (tıklanınca bilgi).
+- **Kıran test:** boşluklu/çakışmalı/tamam veri; yüzdeler ve boşluk sayısı.
+- **Dürüst sınır:** boşluk "konuşma yok" demek değildir (sessizlik olabilir);
+  yalnız "bölümlenmemiş" der.
+
+#### P2 — Rapor hazırlık denetimi
+
+**Amaç:** eksikle rapor üretmeyi engellemek (hata riskini en çok azaltan iş).
+
+- Saf fonksiyon: `reportReadiness(c)` → madde listesi + sayılar:
+  bekleyen bölüm, belirsiz okuma (seçim yok), konuşmacı atanmamış, zaman
+  sorunu, SHA-256 yok, teslim/köken bilgisi yok, dosya no/mahkeme boş.
+- Arayüz: rapor görünümünde **"Rapor hazırlığı"** kartı; her satır tıklanınca
+  ilgili yere gider. **Uydurma "hazırlık yüzdesi" yok**; yalnız sayı ve madde.
+- **Kıran test:** her madde için tek tek pozitif/negatif vaka.
+
+#### P3 — Onay sonrası sonraki bekleyene geç (isteğe bağlı, varsayılan kapalı)
+
+- Ayrı anahtar (tek düğme iki iş yapmaz): "Onaydan sonra sonraki bekleyene geç".
+- `nextPendingIndex(segments, from)` saf fonksiyon; yoksa yerinde kalır.
+- **Kıran test:** son bekleyen, arada onaylılar, hiç bekleyen yok.
+
+#### P4 — Listede bitiş zamanı (kullanıcının sorusu)
+
+- Zaman hücresinde iki satır: `00:00:03.000` / `→ 00:00:06.000` (A seçeneği).
+- Satır 37 → ~51 px; liste uzar (kabul edildi). Bitiş ≤ başlangıç anında görünür.
+- **Kıran test:** `tasarim` — `.seg-time` iki satır, satır yüksekliği ölçümü;
+  bitiş metni doğru biçimde (ms).
+
+#### P5 — Detay paneli yüksekliği (kozmetik, en son)
+
+- Kayıt başlığını sıkıştır (hız/filtre satırları), panel içeriğini ~100 px
+  azalt; hedef: kaydırma olmadan `sd-meta` ve gözlem düğmeleri görünsün.
+- **Kıran test:** `tasarim` — panel içeriği yüksekliği ve görünürlük.
+
+### Bu oturumun en pahalı dersleri (tekrar etmeyin)
+
+1. **`textContent =` çocukları siler.** İçinde ` / N` span'ı olan `.sd-idx`
+   güncellenince toplam kayboldu (v2.148). Etiket + toplam **kardeş span** ve
+   tek saf fonksiyondan (`segHeadParts`).
+2. **"Oynatınca beliren" kutu yerleşimi kaydırır.** Kutu önceden **yer tutucu**
+   olarak kurulmalı (v2.148).
+3. **`timeupdate` kapanış indeksini taşımamalı.** Şerit eski bölüme dönüyordu
+   (v2.147); indeks her çağrıda aktif durumdan okunur.
+4. **Yerinde satır güncellemesi TÜM rozet girdilerini geçmeli.** ⚠ yalnız tam
+   çizimde görünüyordu (v2.146); `segItemHtml` çağrılarının hepsini gözden geçir.
+5. **`overflow: visible !important` + ata `overflow:hidden` = sessiz kırpma.**
+   Panelin kaydırıp kaydırmadığını `overflow-y` + `clientHeight/scrollHeight`
+   ile ölç (v2.143).
+6. **CSS özgüllüğü:** `#view-audio>.panel:not(.detail-panel) .audio-list`
+   (1,3,0) kuralını `#view-audio .audio-list` (1,1,0) **ezmez** (v2.142).
+7. **Gerçek sesle test mümkün, "ses yok" bahanesi geçersiz.** `sample_data/audio`
+   WAV'ı IndexedDB'ye (`<caseId>::<materialId>`) konur, `--autoplay-policy=
+   no-user-gesture-required` ile oynatılır; ASR gerekmez (v2.147).
+8. **Boş ekran ölçümü yanıltır.** "Kırpma 0" ölçümü boş çalışma alanında
+   yapılmıştı; gerçek bölümlerle rozet kırpılması ortaya çıktı (v2.130).
+
+### Kapanış doğrulaması (bu oturum)
+
+- `bash tools/test.sh` → tümü yeşil (843 + 404 + rapor/sürüm/tasarım).
+- `git status --short` → temiz; `main` = `origin/main`.
+- Canlı `version.json` = **2.148**; Pages `built`.
