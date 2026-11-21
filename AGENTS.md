@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4 + P5 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.172** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `ed71984` |
+| Sürüm | **v2.173** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **961 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `a9b2e26` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.172** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.173** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2588,6 +2588,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.170 | CSS borcu: ölü `.seg-*` kuralları silindi | kural 852 → **828**, `!important` 62 → **58**, ölü 95 → **72**; stil farkı **0** | `tasarim` [2ag] |
 | v2.171 | CSS borcu: ölü bildirimler (7 katman tekrarı) | kural 828 → **825**, `!important` 58 → **55**, ölü 72 → **60**; stil farkı **0** | `tasarim` [8] eşik |
 | v2.172 | Rapor önizlemesi kırpılmıyor (tek kaydırma) | kâğıt **196 → 6.438 px**; görünüm 6.254 px kayıyor; araç çubuğu yapışkan | `tasarim` [2ah] |
+| v2.173 | Paket adı saniye taşıyor | aynı dakikada iki paket **farklı ad** (10-00-40 / 10-00-47) | `birim` [66] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2755,6 +2756,29 @@ depo kuralı gereği **sarma doğrudur**. Kanıtlanmış kusur yok; değiştiril
 **196 px'lik** kutuya sıkışıyordu (içerik 6.452 px). Sebep: `app.css`
 `#view-report #reportPreview` (2,0,0) kuralı. **v2.172'de düzeltildi**
 (kâğıt 6.438 px, tek kaydırma, yapışkan araç çubuğu).
+
+#### P6 — Ekip çalışması / paket birleştirme (ÖLÇÜLDÜ, v2.173)
+
+Gerçek Chromium'da uçtan uca ölçüldü (sahip → paket A → yardımcı → paket B →
+sahip birleştirir). **Akış doğru çalışıyor:**
+
+| Adım | Ölçüm |
+|---|---|
+| Sahip: 2 ekip üyesi + kimlik seçimi + 2 onaylı bölüm | paket A 2.109.241 bayt |
+| Yardımcı: metni düzeltir | **öneri** oluşur (rozet), ana metin **değişmez** |
+| Yardımcı: onay dener | **reddedilir** ("Onay yetkisi dosya sorumlusunda…") |
+| Sahip: ⇄ Birleştir önizlemesi | "Alınacak ikinci göz önerisi **1**", "Değişecek kayıt 1" |
+| Birleştirme sonrası | öneri geldi, ana metin korundu, onaylar korundu (2) |
+| Sahip: öneriyi kabul | metin değişti, onay **1**'e düştü (doğru), yeniden onay → 2 |
+
+**Ölçümde bulunan kusur (v2.173):** sahip ve yardımcı paketi **aynı dakikada**
+üretilince iki dosya da `…_09-58.akis` adını alıyordu; tarayıcı " (1)" ekliyor,
+hangi paketin kimden geldiği addan anlaşılmıyordu. Ad artık **saniye** taşıyor.
+
+**ÖLÇÜM TUZAĞI (tekrar etmesin):** paket adı dakika hassasiyetindeyken
+ölçüm betiği yanlış dosyayı seçti ve "birleştirme öneriyi aktarmıyor" gibi
+**yanlış** bir sonuç verdi. Kural: indirilen dosyaları **benzersiz adlara
+kopyalayıp** kullan (`A.akis` / `B.akis`); ada göre arama yapma.
 
 ### DOĞRULAMA (her oturum başı)
 
