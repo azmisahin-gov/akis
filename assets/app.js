@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.178';
+} from './schema.js?v=2.179';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.178';
+const APP_VERSION = '2.179';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12504,6 +12504,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.179': {
+    title: 'Canlı vurgu artık ezilmiyor',
+    body:
+      'Teknik paneli açıkken canlı vurgu şeridi 48 → 14 piksele, metin alanı ' +
+      '448 → 120 piksele eziliyordu; araya bir not/ölçüm satırı girince de aynısı ' +
+      'oluyordu. Artık vurgu her zaman 2 satır, metin alanı en az 160 px; ' +
+      'içerik sığmazsa panel kaydırır.'
+  },
   '2.178': {
     title: 'İki bölümü sürükleyerek birleştirebilirsiniz',
     body:

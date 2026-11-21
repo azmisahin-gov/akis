@@ -1814,12 +1814,13 @@ input::placeholder, textarea::placeholder {
   }
   #view-audio .sd-tech-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
   /* Gövde: metin esner, teknik sabit yükseklik alır. */
-  #view-audio .seg-detail .sd-body { flex: 1 1 auto; min-height: 0; }
-  #view-audio .seg-detail .sd-right { flex: 1 1 auto; min-height: 0; }
+  /* min-height tabanları v2.179'da tanımlandı (aşağıdaki blok); burada
+     yalnız esneme davranışı kalır. */
+  #view-audio .seg-detail .sd-body { flex: 1 1 auto; }
+  #view-audio .seg-detail .sd-right { flex: 1 1 auto; }
   #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: 0; }
   #view-audio .seg-detail .sd-right .sd-text textarea {
     flex: 1 1 auto;
-    min-height: 120px;
     resize: none;
   }
   #view-audio .seg-detail .sd-tech { flex: 0 0 auto; }
@@ -2213,4 +2214,21 @@ input::placeholder, textarea::placeholder {
   outline: 2px dashed var(--accent);
   outline-offset: -2px;
   background: var(--accent-soft);
+}
+
+/* --- v2.179 — Detay paneli: içerik ezer, panel kaydırır ------------------- */
+/* ÖLÇÜM (v2.178, 1440×900): Teknik açıkken (360 px) kalan alan yetmiyordu;
+   canlı vurgu şeridi 48 → **14 px**'e eziliyor, metin alanı 448 → **120 px**
+   düşüyordu. Sebep: `.sd-body/.sd-right { min-height: 0 }` ve metin alanının
+   masaüstü `min-height: 120px` kuralı; flex çocukları içeriklerinin altına
+   inebiliyordu. KURAL: çocuklar İÇERİĞİNDEN aşağı inmez; sığmazsa PANEL
+   kaydırır (tek kaydırma zaten panelde). */
+@media (min-width: 901px) {
+  #view-audio .sd-follow {
+    flex: 0 0 auto;
+    min-height: calc(2 * 1.5em + 12px);
+  }
+  #view-audio .seg-detail .sd-body { min-height: 236px; }
+  #view-audio .seg-detail .sd-right { min-height: 236px; }
+  #view-audio .seg-detail .sd-right .sd-text textarea { min-height: 160px; }
 }

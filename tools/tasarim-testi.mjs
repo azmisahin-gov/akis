@@ -1084,6 +1084,20 @@ console.log('\n[2aj] Sürükle-bırak birleştirme güvenli (v2.178)');
   check('menü yolu korunur', /data-merge-next/.test(js6));
 }
 
+console.log('\n[2al] Detay paneli: canlı vurgu ezilmez (v2.179)');
+{
+  // ÖLÇÜM (v2.178, 1440×900): Teknik açıkken (360 px) canlı vurgu şeridi
+  // 48 → **14 px**, metin alanı 448 → **120 px**'e eziliyordu. Sebep:
+  // `.sd-body/.sd-right { min-height: 0 }` + metin alanının 120 px tabanı.
+  // KURAL: çocuklar içeriğinden aşağı inmez; sığmazsa PANEL kaydırır.
+  const rl7 = read('assets/reading-layer.css');
+  check('vurgu şeridi küçülmez (flex:0 0 auto)', /\.sd-follow\s*\{[^}]*flex:\s*0 0 auto[^}]*\}/.test(rl7));
+  check('vurgu şeridi 2 satır tabanı', /\.sd-follow\s*\{[^}]*min-height:\s*calc\(2 \* 1\.5em \+ 12px\)/.test(rl7));
+  check('metin alanı 160 px tabanı', /\.sd-text textarea\s*\{[^}]*min-height:\s*160px/.test(rl7));
+  check('gövde alt sınırı', /\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7));
+  check('sağ sütun alt sınırı', /\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

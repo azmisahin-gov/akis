@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.178.**
+yazılır. **Güncel sürüm: v2.179.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.179 — Detay paneli: canlı vurgu ezilmiyor (tamamlandı)
+
+Ölçüm: Teknik açıkken canlı vurgu 48 → 14 px, metin 448 → 120 px'e eziliyordu
+(`min-height: 0` + 120 px taban). Artık vurgu şeridi `flex: 0 0 auto` + 2 satır
+tabanı, metin alanı 160 px tabanı, gövde/sağ sütun 236 px alt sınırı; sığmazsa
+panel kaydırır (81 px). 900 px'te vurgu 48, metin 180; kırpılma yok.
+Koruyan test: `tasarim` [2al].
 
 ### v2.178 — Sürükleyerek birleştirme (tamamlandı)
 

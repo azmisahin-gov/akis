@@ -1,4 +1,4 @@
-# Özellikler (v2.178 — mevcut durum)
+# Özellikler (v2.179 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Detay paneli ezilmez (v2.179):** canlı vurgu şeridi her zaman 48 px,
+  metin alanı en az 160 px; içerik sığmazsa **panel kaydırır** (Teknik açıkken
+  de). Not/uyarı/öneri satırı çıkınca düzen zıplamaz.
 - **Sürükleyerek birleştirme (v2.178):** satırdaki **⋮⋮** tutamağını **komşu**
   satıra bırakınca iki bölüm birleşir. Yalnız komşu; filtre "Tümü" değilse
   kapalı; M tuşu ve satır menüsü korunur; Ctrl+Z ile geri alınır.

@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.178.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.179.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.179 — Bölüm detayı: canlı vurgu artık ezilmiyor
+
+Ölçüm (1440×900): **Teknik** paneli açıkken (360 px) canlı vurgu şeridi
+**48 → 14 px**'e, metin alanı **448 → 120 px**'e eziliyordu. Sebep: gövde ve
+sağ sütun `min-height: 0` ile küçülebiliyor, metin alanının masaüstü tabanı
+120 px'ti. Araya bir satır (notlar, "ses yok" uyarısı, öneri bandı veya ölçüm
+sonucu) girdiğinde aynı ezilme oluyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Canlı vurgu şeridi **her zaman 2 satır (48 px)**; Teknik açıkken de küçülmez.
+- Metin alanı **en az 160 px**; içerik daha fazlaysa **panel kaydırır** —
+  metin ve vurgu ezilmez.
+- Notlar, "ses yok" uyarısı ve öneri bandı çıktığında düzen **zıplamaz**.
+
+### ÖLÇÜM
+
+| | Önce (v2.178) | Sonra (v2.179) |
+|---|---|---|
+| Vurgu şeridi (Teknik açık) | **14 px** (scroll 30 / görünen 12) | **48 px** |
+| Metin alanı (Teknik açık) | **120 px** | **160 px** |
+| Panel kaydırması | yok — çocuklar eziliyordu | **81 px** — panel kaydırıyor |
+| 900 px | — | vurgu 48 · metin 180 |
+| Kırpılma / yatay taşma | — | yok |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2al] (5 kontrol): vurgu şeridi `flex: 0 0 auto` + 2 satır
+tabanı, metin alanı 160 px tabanı, gövde/sağ sütun alt sınırı.
 
 ## v2.178 — Sürükleyerek birleştirme (yalnız komşu, geri alınabilir)
 
