@@ -6,12 +6,70 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.160.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.161.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.161 — Tasarım sistemi: palet, tema, punto ölçeği
+
+Tasarım katmanı gözden geçirildi. Bu turda **işlev değil, okunabilirlik ve
+kimlik** düzeltildi.
+
+### ÖLÇÜLEN HATA: KOYU TEMA OKUNMUYOR
+
+`tokens.css` tema blokları `[data-theme=…]` özgüllüğünde (0,1,0) tanımlıydı;
+`app.css` içindeki `:root` da (0,1,0) ve **sonra** yükleniyor. Bu yüzden yedi
+ortak ad (`--bg`, `--ink`, `--line`, `--gold`, `--green`, `--red`, `--paper`)
+her temada **açık temanın** değerini alıyordu.
+
+| Öğe (koyu tema) | Önce | Sonra |
+|---|---|---|
+| Sayfa zemini | `#f4f6f9` (açık) | `#0d131a` |
+| Kart başlığı kontrastı | **1.16:1** (okunmuyor) | **14.05:1** |
+| Gövde metni kontrastı | **1.11:1** | 14.15:1 |
+| DOSYA DURUMU değerleri | ham `#30465d` (koyu) | `--ink-2` (temalı) |
+
+Düzeltme: tema seçicileri `html[data-theme=…]` (0,1,1) yapıldı; `app.css`'in
+kendi adları (`--navy`, `--navy2`, `--blue`, `--muted`, `--pale`, `--shadow`)
+temaya bağlandı.
+
+### PALET VE TEMALAR
+
+- **Açık:** zemin `#eef2f7`, çizgiler biraz daha belirgin, kartlar **iki
+  katmanlı yumuşak gölge** ile yükseldi.
+- **Koyu:** zemin `#0d131a`, kart `#18212b`, yüzeyler arasında gerçek
+  yükseklik farkı.
+- **Sepya:** zemin `#ece2d0`, kart `#fbf6ec` — kâğıt hissi güçlendi.
+- **Rapor kâğıdı:** lacivert `#1c426b` → **`#16324f`** (kurumsal, daha derin);
+  bant `#f6f8fb`. Kâğıt yine temadan bağımsız (koyu temada da açık).
+
+### PUNTO ÖLÇEĞİ
+
+| | Önce | Sonra |
+|---|---|---|
+| Ölçek | 11/12/13/14/16/19/24 | **11/12/14/15/17/20/25/30** |
+| Okuma katmanında ham `font-size` | **13** | **0** |
+| Deşifre metni | 13 px | **14 px** (belgelenen değer) |
+| Büyük sayı (KPI) | 30 px (ham) | `--fs-3xl` |
+
+Büyütme kademeleri (büyük/çok büyük) yeni tabana göre güncellendi; en küçük
+kademe 12/13 px'in altına inmiyor.
+
+### DOĞRULAMA (gerçek Chromium)
+
+- **4 görünüm × 3 tema** metin kontrast taraması: **0 başarısız** (eşik 4.5).
+- 1440/1100/900: sayfa başlığı kırpılması **yok**; durum çubuğu 24/34/45 px,
+  kırpılan öğe **0**; detay panelinde kaydırma **0**; yatay taşma **yok**.
+- JS hatası **0**.
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2y]** (13 kontrol): tema seçicilerinin özgüllüğü, eski
+adların temaya bağlılığı, ölçeğin eksiksiz/artan olması, 11 px tabanı, okuma
+katmanında ham `font-size` olmaması, büyütme kademelerinin tabanı düşürmemesi.
 
 ## v2.160 — Görsel düzen (kozmetik)
 

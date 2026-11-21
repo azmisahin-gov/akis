@@ -1536,7 +1536,7 @@ input::placeholder, textarea::placeholder {
     margin: 0;
   }
   #view-audio > .panel:not(.detail-panel) .panel-heading .eyebrow { display: none; }
-  #view-audio > .panel:not(.detail-panel) .panel-heading h3 { font-size: 12px; margin: 0; }
+  #view-audio > .panel:not(.detail-panel) .panel-heading h3 { font-size: var(--fs-xs); margin: 0; }
 
   #view-audio > .detail-panel {
     grid-column: 2; grid-row: 1 / span 2;
@@ -1649,7 +1649,7 @@ input::placeholder, textarea::placeholder {
   border-color: var(--gold);
 }
 .cov-line {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ink-2);
   margin-bottom: 6px;
 }
@@ -1666,7 +1666,7 @@ input::placeholder, textarea::placeholder {
   gap: 8px;
   padding: 4px 0;
   border-top: 1px dashed var(--line);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ink);
 }
 .cov-range {
@@ -1700,8 +1700,8 @@ input::placeholder, textarea::placeholder {
   gap: 8px;
   margin-bottom: 6px;
 }
-.ready-head b { font-size: 12px; color: var(--ink); }
-.ready-head small { font-size: 11px; color: var(--ink-3); }
+.ready-head b { font-size: var(--fs-xs); color: var(--ink); }
+.ready-head small { font-size: var(--fs-2xs); color: var(--ink-3); }
 .ready-row {
   display: flex;
   align-items: center;
@@ -1714,7 +1714,7 @@ input::placeholder, textarea::placeholder {
   padding: 5px 8px;
   margin: 3px 0;
   font: inherit;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ink-2);
   cursor: pointer;
 }
@@ -1728,7 +1728,7 @@ input::placeholder, textarea::placeholder {
 }
 .ready-l { flex: 1 1 auto; }
 .ready-go { color: var(--accent); white-space: nowrap; }
-.ready-empty { font-size: 11px; color: var(--ink-2); }
+.ready-empty { font-size: var(--fs-2xs); color: var(--ink-2); }
 
 /* ============================================================================
    v2.151 — ONAY DAVRANIŞI (Ayarlar)
@@ -1757,7 +1757,7 @@ input::placeholder, textarea::placeholder {
   flex: 0 0 auto;
   min-width: 58px;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: .04em;
   padding: 2px 6px;
@@ -1768,8 +1768,8 @@ input::placeholder, textarea::placeholder {
 }
 .behavior-toggle.on .behavior-state { color: var(--green); border-color: var(--green); background: var(--surface); }
 .behavior-text { display: flex; flex-direction: column; gap: 2px; }
-.behavior-text b { font-size: 12px; color: var(--ink); }
-.behavior-text small { font-size: 11px; color: var(--ink-3); }
+.behavior-text b { font-size: var(--fs-xs); color: var(--ink); }
+.behavior-text small { font-size: var(--fs-2xs); color: var(--ink-3); }
 
 /* ============================================================================
    v2.152 — LİSTEDE BİTİŞ ZAMANI
@@ -1998,7 +1998,7 @@ input::placeholder, textarea::placeholder {
   border-radius: var(--r-md);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 18px;
+  font-size: var(--icon-md);
   line-height: 1;
 }
 #view-overview .stat-card:nth-child(1)::before { content: '♫'; }
@@ -2012,7 +2012,7 @@ input::placeholder, textarea::placeholder {
   color: var(--ink-3);
 }
 #view-overview .stat-card > strong {
-  font-size: 30px;
+  font-size: var(--fs-3xl);
   line-height: 1.15;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -2089,7 +2089,7 @@ input::placeholder, textarea::placeholder {
   border-radius: var(--r-sm);
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 16px;
+  font-size: var(--icon-sm);
 }
 #view-overview .notice-box { margin-top: 4px; }
 
@@ -2115,3 +2115,20 @@ input::placeholder, textarea::placeholder {
 #view-audio .seg-item { border-radius: var(--r-sm); }
 #view-audio .seg-item:hover { background: var(--surface-2); }
 #view-audio .material-chip { border-radius: var(--r-md); }
+
+/* ============================================================================
+   v2.161 — PALET, TEMA VE KÂĞIT RAFİNE
+   ----------------------------------------------------------------------------
+   BULGU (ölçüm): tokens.css tema blokları `[data-theme=…]` (0,1,0) ile
+   tanımlıydı; app.css `:root` da (0,1,0) ve DOSYA SONRA yükleniyor. Bu yüzden
+   yedi ortak ad (--bg, --ink, --line, --gold, --green, --red, --paper) HER
+   temada app.css'in AÇIK değerlerini alıyordu: koyu temada sayfa beyaz, kartlar
+   koyu, başlıklar okunamıyordu. Tema seçicileri `html[…]` ile (0,1,1) yapıldı;
+   app.css'in kendi adları (--navy, --blue, --muted, --pale) temaya bağlandı.
+   Ayrıca yüzey/çizgi/gölge ve kâğıt laciverti rafine edildi.
+   ============================================================================ */
+/* app.css'te ham hex kalmış metin renkleri: temaya bağlanır. */
+#view-overview .overview-item b { color: var(--ink-2); }
+#view-overview .overview-item small { color: var(--ink-3); }
+.statusbar .sb-note { color: var(--ink-3); }
+.statusbar .sb-model { color: var(--green); }

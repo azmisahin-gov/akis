@@ -70,12 +70,12 @@ const html = read('index.html');
 // --- 1. Kontrast ----------------------------------------------------------
 console.log('[1] Renk kontrastı (WCAG AA ≥ 4.5)');
 const themes = {
-  light: themeTokens(tokens, "[data-theme='light']"),
-  dark: themeTokens(tokens, "[data-theme='dark']"),
-  sepia: themeTokens(tokens, "[data-theme='sepia']")
+  light: themeTokens(tokens, "html[data-theme='light']"),
+  dark: themeTokens(tokens, "html[data-theme='dark']"),
+  sepia: themeTokens(tokens, "html[data-theme='sepia']")
 };
 // Açık tema `:root` ile birlikte tanımlanır; oradan da topla.
-const rootTokens = themeTokens(tokens, ':root');
+const rootTokens = themeTokens(tokens, 'html:root');
 const lightMerged = { ...rootTokens, ...themes.light };
 themes.light = lightMerged;
 
@@ -508,10 +508,47 @@ console.log('\n[2x] Kozmetik düzen: boş alan yok, hiyerarşi var (v2.160)');
   check('kart alanı büyümez (boşluk yok)', /#view-overview \.content-grid\s*\{[^}]*flex-grow:\s*0/.test(rl));
   check('kart alanı kısalmaz (üst üste binmez)', /#view-overview \.content-grid\s*\{[^}]*flex-shrink:\s*0/.test(rl));
   check('istatistik kartında ikon yuvası var', /#view-overview \.stat-card::before\s*\{/.test(rl));
-  check('sayı hiyerarşisi (30 px)', /#view-overview \.stat-card > strong\s*\{[^}]*font-size:\s*30px/.test(rl));
+  check('sayı hiyerarşisi (30 px token)', /#view-overview \.stat-card > strong\s*\{[^}]*font-size:\s*var\(--fs-3xl\)/.test(rl));
   check('adım açıklamaları geniş ekranda görünür', /@media \(min-width: 901px\)[\s\S]{0,200}workflow-step small\s*\{\s*display:\s*block/.test(rl));
   check('sorular metni ölçülü ve ortalı', /#view-questions \.split-body textarea\s*\{[^}]*margin-inline:\s*auto/.test(rl));
   check('yeni bölümde ham hex yok', !/v2\.160[\s\S]*?#[0-9a-fA-F]{3,6}/.test(rl));
+}
+
+// --- 2y. Punto ölçeği ve tema özgüllüğü (v2.161/v2.162) -------------------
+// BULGU: tema blokları `[data-theme=…]` (0,1,0) idi; app.css `:root` da
+// (0,1,0) ve sonra yüklendiği için 7 ortak token HER temada açık değeri
+// alıyordu (koyu temada başlıklar okunamıyordu). Ayrıca punto ölçeği token
+// değildi: app.css 13 farklı punto kullanıyor, okuma katmanında ham px kalıyordu.
+console.log('\n[2y] Punto ölçeği ve tema özgüllüğü (v2.161/v2.162)');
+{
+  const rl = read('assets/reading-layer.css');
+  const tok = read('assets/tokens.css');
+  // Tema seçicileri app.css :root'tan daha özgül olmalı.
+  for (const th of ['light', 'dark', 'sepia']) {
+    check(`${th}: tema seçicisi özgül (html[…])`, new RegExp(`html\\[data-theme='${th}'\\]`).test(tok));
+  }
+  // app.css'in kendi adları temaya bağlı.
+  for (const legacy of ['--navy', '--blue', '--muted', '--pale']) {
+    check(`${legacy} temaya bağlı`, new RegExp(`${legacy}: var\\(--`).test(tok));
+  }
+  // Ölçek: artan sıra ve 11 px taban.
+  const fs = (name) => {
+    const m = tok.match(new RegExp(`--fs-${name}:\\s*([0-9.]+)px`));
+    return m ? Number(m[1]) : null;
+  };
+  const order = ['2xs', 'xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl'];
+  const vals = order.map(fs);
+  check('punto ölçeği eksiksiz', vals.every((v) => v != null), vals.join('/'));
+  check('punto ölçeği artan', vals.every((v, i) => i === 0 || v > vals[i - 1]), vals.join('/'));
+  check('en küçük punto 11 px', vals[0] === 11, String(vals[0]));
+  // Okuma katmanında ham punto kalmadı (tek kaynak).
+  check('okuma katmanında ham font-size yok', !/font-size:\s*\d+px/.test(rl));
+  // Büyütme kademeleri tabanın altına inmez.
+  const large = tok.match(/\[data-fontscale='large'\]\s*\{([^}]*)\}/)[1];
+  const xlarge = tok.match(/\[data-fontscale='xlarge'\]\s*\{([^}]*)\}/)[1];
+  const minOf = (blk) => Math.min(...[...blk.matchAll(/--fs-[\w]+:\s*([0-9.]+)px/g)].map((m) => Number(m[1])));
+  check('büyük yazı tabanı düşürmez', minOf(large) >= 12, String(minOf(large)));
+  check('çok büyük yazı tabanı düşürmez', minOf(xlarge) >= 13, String(minOf(xlarge)));
 }
 
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------

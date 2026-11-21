@@ -22,12 +22,16 @@
      En küçük kademe 11px; yalnız ikincil etiketlerde kullanılır. */
   --fs-2xs: 11px;   /* en küçük: ikincil etiket, rozet */
   --fs-xs: 12px;    /* yardımcı metin */
-  --fs-sm: 13px;    /* gövde taban */
-  --fs-md: 14px;    /* vurgulu gövde, girdi */
-  --fs-lg: 16px;    /* bölüm başlığı */
-  --fs-xl: 19px;    /* sayfa başlığı */
-  --fs-2xl: 24px;   /* kapak başlığı */
-  --fs-mono: 13px;  /* zaman kodu */
+  --fs-sm: 14px;    /* gövde taban + deşifre metni (belgelenen 14 px) */
+  --fs-md: 15px;    /* vurgulu gövde, girdi */
+  --fs-lg: 17px;    /* bölüm başlığı */
+  --fs-xl: 20px;    /* sayfa başlığı */
+  --fs-2xl: 25px;   /* kapak başlığı */
+  --fs-3xl: 30px;   /* büyük sayı (KPI) */
+  --fs-mono: 14px;  /* zaman kodu */
+  /* İkon glifleri metin değildir; ölçekten ayrı tutulur. */
+  --icon-sm: 16px;
+  --icon-md: 18px;
 
   --lh-tight: 1.25;
   --lh-body: 1.55;
@@ -75,8 +79,8 @@
   --row-h: 27px;
   --pad-card: var(--sp-3);
   --gap-stack: var(--sp-2);
-  --fs-sm: 12.5px;
-  --fs-xs: 11.5px;
+  --fs-sm: 13px;
+  --fs-xs: 12px;
 }
 
 /* Yazı boyutu tercihi: punto ölçeğini bir kademe büyütür/küçültür.
@@ -84,36 +88,42 @@
 [data-fontscale='large'] {
   --fs-2xs: 12px;
   --fs-xs: 13px;
-  --fs-sm: 15px;
-  --fs-md: 16px;
-  --fs-lg: 18px;
+  --fs-sm: 16px;
+  --fs-md: 17px;
+  --fs-lg: 19px;
   --fs-xl: 22px;
   --fs-2xl: 27px;
-  --fs-mono: 15px;
+  --fs-3xl: 33px;
+  --fs-mono: 16px;
+  --icon-sm: 17px;
+  --icon-md: 19px;
 }
 [data-fontscale='xlarge'] {
   --fs-2xs: 13px;
   --fs-xs: 14px;
-  --fs-sm: 16.5px;
-  --fs-md: 18px;
-  --fs-lg: 20px;
+  --fs-sm: 18px;
+  --fs-md: 19px;
+  --fs-lg: 21px;
   --fs-xl: 25px;
   --fs-2xl: 30px;
-  --fs-mono: 17px;
+  --fs-3xl: 36px;
+  --fs-mono: 18px;
+  --icon-sm: 18px;
+  --icon-md: 20px;
 }
 
 /* --- 2. Açık tema (varsayılan) -------------------------------------------- */
 /* Kontrast oranları yorumda verilmiştir; `tools/tasarim-testi.mjs` her birini
    yeniden hesaplar. Değer düşerse test kalır. */
-:root,
-[data-theme='light'] {
+html:root,
+html[data-theme='light'] {
   color-scheme: light;
 
-  --bg: #f2f4f7;
+  --bg: #eef2f7;
   --surface: #ffffff;
-  --surface-2: #f8fafc;
-  --surface-3: #eef2f7;
-  --surface-sunken: #e9eef4;
+  --surface-2: #f7fafc;
+  --surface-3: #e9eff6;
+  --surface-sunken: #e3eaf2;
 
   --ink: #16283c;      /* 14.97:1 — gövde metni */
   --ink-2: #3a4d61;    /*  8.70:1 — ikincil gövde */
@@ -130,32 +140,40 @@
   --red: #9c3f3f;           /*  6.57:1 */
   --red-soft: #fbeeee;
 
-  --line: #dde5ed;
-  --line-2: #cfd9e3;
-  --line-strong: #b8c6d4;
+  --line: #dbe4ee;
+  --line-2: #ccd8e5;
+  --line-strong: #b4c4d4;
 
   --rail-bg: #14283f;
   --rail-bg-2: #1b3550;
   --rail-ink: #e3ecf5;
   --rail-ink-dim: #a8bdd2;
 
-  --shadow-sm: 0 1px 2px rgba(21, 44, 74, .06);
-  --shadow-md: 0 4px 14px rgba(21, 44, 74, .08);
-  --shadow-lg: 0 14px 40px rgba(21, 44, 74, .14);
+  --shadow-sm: 0 1px 2px rgba(21, 44, 74, .07), 0 2px 6px rgba(21, 44, 74, .05);
+  --shadow-md: 0 6px 18px rgba(21, 44, 74, .10), 0 2px 6px rgba(21, 44, 74, .06);
+  --shadow-lg: 0 18px 48px rgba(21, 44, 74, .16), 0 4px 12px rgba(21, 44, 74, .08);
 
   --focus-ring: 0 0 0 3px rgba(29, 74, 120, .28);
   --select-bg: #ffffff;
+  /* app.css'in kendi adları (v2.50 öncesi) tema ile eşlensin. */
+  --navy: var(--ink);
+  --navy2: var(--ink-2);
+  --blue: var(--accent);
+  --muted: var(--ink-3);
+  --pale: var(--surface-3);
+  --shadow: var(--shadow-md);
+
 }
 
 /* --- 3. Koyu tema ---------------------------------------------------------- */
-[data-theme='dark'] {
+html[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #12171e;
-  --surface: #1a2029;
-  --surface-2: #212932;
-  --surface-3: #28323d;
-  --surface-sunken: #0e131a;
+  --bg: #0d131a;
+  --surface: #18212b;
+  --surface-2: #1f2934;
+  --surface-3: #26323e;
+  --surface-sunken: #0a1016;
 
   --ink: #e9eff6;      /* 14.15:1 */
   --ink-2: #bcc9d6;    /*  9.72:1 */
@@ -172,9 +190,9 @@
   --red: #f08c8c;         /*  6.89:1 */
   --red-soft: #332020;
 
-  --line: #2e3a46;
-  --line-2: #3a4756;
-  --line-strong: #4d5c6d;
+  --line: #2b3743;
+  --line-2: #384553;
+  --line-strong: #4a5a6b;
 
   --rail-bg: #0d131a;
   --rail-bg-2: #16202b;
@@ -187,19 +205,27 @@
 
   --focus-ring: 0 0 0 3px rgba(127, 176, 224, .35);
   --select-bg: #212932;
+  /* app.css'in kendi adları (v2.50 öncesi) tema ile eşlensin. */
+  --navy: var(--ink);
+  --navy2: var(--ink-2);
+  --blue: var(--accent);
+  --muted: var(--ink-3);
+  --pale: var(--surface-3);
+  --shadow: var(--shadow-md);
+
 }
 
 /* --- 4. Sepya tema (uzun okuma) ------------------------------------------- */
 /* Kâğıt hissi: parlaklığı düşük sıcak zemin, düşük mavi ışık. Gece çalışan
    bilirkişi için koyu temadan daha az yorucu olabilir. */
-[data-theme='sepia'] {
+html[data-theme='sepia'] {
   color-scheme: light;
 
-  --bg: #efe7d8;
-  --surface: #faf5ea;
-  --surface-2: #f5eee0;
-  --surface-3: #e9dfcc;
-  --surface-sunken: #e2d7c2;
+  --bg: #ece2d0;
+  --surface: #fbf6ec;
+  --surface-2: #f5eddf;
+  --surface-3: #e8ddc9;
+  --surface-sunken: #e0d4bf;
 
   --ink: #33291c;      /* 13.10:1 */
   --ink-2: #574936;    /*  8.01:1 */
@@ -216,9 +242,9 @@
   --red: #963c3c;         /*  6.42:1 */
   --red-soft: #f5e4e0;
 
-  --line: #ded2bd;
-  --line-2: #cdbfa6;
-  --line-strong: #b6a68a;
+  --line: #dccfb8;
+  --line-2: #cbbda3;
+  --line-strong: #b3a286;
 
   --rail-bg: #2b2318;
   --rail-bg-2: #3a3023;
@@ -231,32 +257,40 @@
 
   --focus-ring: 0 0 0 3px rgba(29, 74, 120, .25);
   --select-bg: #faf5ea;
+  /* app.css'in kendi adları (v2.50 öncesi) tema ile eşlensin. */
+  --navy: var(--ink);
+  --navy2: var(--ink-2);
+  --blue: var(--accent);
+  --muted: var(--ink-3);
+  --pale: var(--surface-3);
+  --shadow: var(--shadow-md);
+
 }
 
 /* --- 5. Rapor kâğıdı ------------------------------------------------------ */
 /* Rapor önizlemesi BASILI BELGEYİ temsil eder: kâğıt her temada açık kalır.
    Koyu temada tam beyaz göz almasın diye hafifçe kısılır, ama metin/kenarlık
    oranları korunur. Bu tokenlar tema ile DEĞİŞMEZ (yalnız parlaklık kısılır). */
-:root,
-[data-theme='light'],
-[data-theme='sepia'] {
+html:root,
+html[data-theme='light'],
+html[data-theme='sepia'] {
   --paper: #ffffff;
   --paper-ink: #1f3042;
   --paper-ink-2: #476078;
   --paper-muted: #5c7085;
   --paper-line: #d7e1eb;
-  --paper-head: #1c426b;
+  --paper-head: #16324f;
   --paper-head-ink: #ffffff;
-  --paper-band: #f4f7fa;
+  --paper-band: #f6f8fb;
   --paper-dim: 1;
 }
-[data-theme='dark'] {
+html[data-theme='dark'] {
   --paper: #e9edf2;
   --paper-ink: #1a2735;
   --paper-ink-2: #3d5165;
   --paper-muted: #4f6478;
   --paper-line: #c3cfdb;
-  --paper-head: #24405e;
+  --paper-head: #1f3a57;
   --paper-head-ink: #ffffff;
   --paper-dim: .92;
 }

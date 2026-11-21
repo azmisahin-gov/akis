@@ -2107,6 +2107,36 @@ düzeltmede `flex-grow/flex-shrink` ikisini birlikte düşün; her genişlikte
 (1440 ve 900) ekran görüntüsü al.
 
 
+### Aşama 10bg — Tasarım sistemi: palet, tema, punto (TAMAMLANDI, v2.161)
+
+**ÖLÇÜLEN HATA (canlı):** koyu temada sayfa zemini açık, kartlar koyu, başlıklar
+**okunmuyordu** (kontrast **1.16:1**). Kök neden: `tokens.css` tema blokları
+`[data-theme=…]` (0,1,0); `app.css` `:root` da (0,1,0) ve **sonra** yükleniyor →
+7 ortak ad (`--bg,--ink,--line,--gold,--green,--red,--paper`) her temada açık
+değeri alıyordu.
+
+**Düzeltme:**
+1. Tema seçicileri `html[data-theme=…]` (0,1,1) → artık kazanıyor.
+2. `app.css`'in kendi adları temaya bağlandı: `--navy→--ink`, `--navy2→--ink-2`,
+   `--blue→--accent`, `--muted→--ink-3`, `--pale→--surface-3`, `--shadow→--shadow-md`.
+3. Ham kalan metin renkleri (`#30465d`, `#91a0ad`, `#9aa6b1`, `#2c6b4f`) token'a çevrildi.
+4. Palet rafine: açık zemin #eef2f7, koyu zemin #0d131a/kart #18212b, sepya
+   #ece2d0/#fbf6ec, iki katmanlı gölge, kâğıt laciverti #16324f.
+5. Punto ölçeği tek kaynak: 11/12/14/15/17/20/25/30 (+mono 14, ikon 16/18).
+   Okuma katmanındaki **13 ham `font-size`** token'a çevrildi (ham 0). Deşifre 13→14.
+
+**Ölçüm (v2.161, gerçek Chromium):** 4 görünüm × 3 tema kontrast taraması →
+**0 başarısız**; en düşük ölçülen 4.89:1. 1440/1100/900: başlık kırpılması yok,
+durum çubuğu 24/34/45 px / 0 kırpma, panel kaydırması 0, yatay taşma 0.
+
+**Koruyan test:** `tasarim-testi` [2y] (13 kontrol).
+
+**DERS:** İki stil dosyası aynı adı tanımlıyorsa **özgüllük ve yükleme sırası**
+birlikte düşünülmeli. `:root` ile `[data-theme]` eşit özgüllüktedir; sonra
+yüklenen kazanır. Tema testi yalnız "token var mı" değil, "**hesaplanan renk**
+doğru mu" diye bakmalı — bu hata yalnız ekran görüntüsünde görünüyordu.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2280,7 +2310,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.160.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.161.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2579,7 +2609,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.160) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.161) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2590,10 +2620,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.160** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.161** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.160 |
-| Açık konu | **Yok** (denetim #1–#6 + kozmetik tur kapandı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.161 |
+| Açık konu | **Yok** (denetim #1–#6, kozmetik ve tasarım sistemi kapandı) |
 
 ### Bu oturumda ne değişti (kısa)
 

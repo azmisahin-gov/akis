@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.160.**
+yazılır. **Güncel sürüm: v2.161.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,23 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.161 — Tasarım sistemi: palet, tema, punto ölçeği (tamamlandı)
+
+**KOYU TEMA ONARILDI:** tema blokları `[data-theme=…]` (0,1,0) idi; app.css
+`:root` da (0,1,0) ve sonra yüklendiği için 7 ortak token (bg, ink, line, gold,
+green, red, paper) her temada AÇIK değeri alıyordu. Koyu temada başlık
+kontrastı **1.16:1** ölçüldü. Seçiciler `html[…]` (0,1,1) yapıldı; app.css'in
+kendi adları (--navy/--blue/--muted/--pale) temaya bağlandı. Ayrıca yüzey,
+çizgi ve gölge rafine edildi; kâğıt laciverti `#16324f`.
+
+**PUNTO:** ölçek 11/12/14/15/17/20/25/30 (+mono 14, ikon 16/18). Okuma
+katmanındaki 13 ham `font-size` token'a çevrildi (ham 0). Deşifre metni
+13 → **14 px** (belgelenen değer).
+
+**Ölçüm:** 4 görünüm × 3 tema metin kontrast taraması → **0 başarısız**
+(eşik 4.5). 1440/1100/900: başlık kırpılması yok, durum çubuğu 24/34/45 px ve
+0 kırpma, detay panelinde kaydırma 0. Koruyan test: `tasarim` [2y] (13 kontrol).
 
 ### v2.160 — Görsel düzen (kozmetik) (tamamlandı)
 

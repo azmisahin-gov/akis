@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.160';
+} from './schema.js?v=2.161';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.160';
+const APP_VERSION = '2.161';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12226,6 +12226,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.161': {
+    title: 'Koyu tema onarıldı; palet, punto ölçeği ve kâğıt rafine edildi',
+    body:
+      'Koyu temada sayfa zemini açık, kartlar koyu kalıyor ve başlıklar ' +
+      'okunmuyordu (ölçüm: 1.16:1). Sebep: tema değişkenleri app.css ile aynı ' +
+      'öncelikteydi ve app.css sonra yükleniyordu. Artık tema değerleri kazanıyor; ' +
+      'üç temada da metin kontrastı AA üstü (ölçülen en düşük 4.89:1). Punto ' +
+      'ölçeği tek kaynağa indi (11/12/14/15/17/20/25/30); deşifre metni 13 → 14. ' +
+      'Rapor kâğıdının laciverti kurumsal tona çekildi.'
+  },
   '2.160': {
     title: 'Görsel düzen: kartlar, sayılar ve boşluklar toparlandı',
     body:
