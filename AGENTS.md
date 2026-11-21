@@ -1581,6 +1581,41 @@ sürümde emekliye ayır. Aksi hâlde iki tasarım kararı çelişir ve kullanı
 
 **Koruyan test:** `tasarim-testi` [2p] (4).
 
+### Aşama 10an — Çalışma modu kaldırıldı; kayıt listesi dikey (TAMAMLANDI, v2.142)
+
+**KURAL: tek mod vardır.** Kayıt listesi her zaman solda, **dikey** ve tek
+kaydırma (kayıt sütunu). "Çalışma modu", "← Kayıt listesine dön", `ws-mode`
+YOKTUR.
+
+**Kullanıcı devtools'ta üç şey buldu:** (1) gizli `workspaceBar` ("önceki/
+sonraki"), (2) gizlenmiş kayıt başlığı ("9 kayıt"), (3) dosyalar **yanyana**.
+
+**Ölçüm (v2.141):** `#audioList` `display:flex` (yatay çip şeridi), `max-height:
+190px` → liste kendi içinde ayrıca kayıyordu; `#workspaceBar` DOM'da duruyordu.
+
+**Düzeltme:**
+1. Mod tamamen kaldırıldı: HTML (`#workspaceBar`, `#workspaceBtn`), JS
+   (`setWorkspace`, `updateWorkspaceBar`, `workspaceDeclined`, W/L, otomatik
+   giriş, Esc dalı), CSS (`body.ws-mode ...`).
+2. `#view-audio > .panel:not(.detail-panel) .audio-list { display:grid;
+   max-height:none; overflow:visible }` → dikey, sütunla birlikte kayar.
+3. Başlık görünür: "Ses kayıtları" + "N kayıt".
+4. **DİKKAT:** `max-height:190px` kuralı `#view-audio>.panel:not(.detail-panel)
+   .audio-list` (1,3,0) idi; `#view-audio .audio-list` (1,1,0) YETMEDİ. Aynı
+   özgüllükte seçici gerekti.
+
+**Ölçüm (v2.142):** 100 kayıt → liste 5.711 px dikey, sütun 569/5.762 **tek
+kaydırma**; 9 kayıt → 516 px, kaydırma yok; `#workspaceBar`/`#workspaceBtn`
+DOM'da yok; JS hatası 0. CSS borcu: !important 70→59, ölü 98→96, app→layer
+507→496.
+
+**DERS:** Bir "mod"u kaldırırken yalnız görünürlüğü değil, o moda bağlı
+dinleyicileri, kısayolları ve çağrıları da kaldır. `updateWorkspaceBar()` çağrısı
+kaldırılan fonksiyona bağlı kaldığında malzeme seçimi **ReferenceError** üretirdi
+(`node --check` yakalamaz; grep ile bulundu).
+
+**Koruyan test:** `tasarim-testi` [2p] (4) + [2q] (2).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1754,7 +1789,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.141.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.142.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1916,7 +1951,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.141** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.142** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1970,6 +2005,7 @@ Test sayısı 441 → **782**.
 | **v2.139** | **Uzun listede detay yapışkan** (362 bölümde panel ekran dışında kalıyordu) | `tasarim` [2n] |
 | **v2.140** | **Masaüstü kabuğu** (tek uzun sayfa → sabit çerçeve, paneller kendi kaydırır) | `tasarim` [2o] |
 | **v2.141** | **Masaüstünde çalışma modu kaldırıldı** (kayıt sütunu kalıcıyken gereksizdi) | `tasarim` [2p] |
+| **v2.142** | **Çalışma modu kaldırıldı; kayıt listesi dikey** (yanyana çipler, gizli başlık) | `tasarim` [2p]/[2q] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.141';
+} from './schema.js?v=2.142';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.141';
+const APP_VERSION = '2.142';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1181,21 +1181,6 @@ function switchView(name) {
   // Ses kayıtları açılırken: kayıt varsa doğrudan çalışma moduna gir. Uzman
   // zaten tek kaydı dinleyip yazıyor; materyal şeridi sürekli gerekmiyor.
   // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
-  if (name === 'audio') {
-    const c0 = currentCase();
-    // Otomatik giriş YALNIZ dar ekranda (v2.141): masaüstünde kayıtlar zaten
-    // solda, çalışma modu gereksiz. Burada sessizce atlanır (toast yok).
-    const narrow = typeof window === 'undefined' || window.innerWidth <= 900;
-    if (
-      narrow &&
-      c0 &&
-      (c0.materials || []).length &&
-      !workspaceDeclined &&
-      !document.body.classList.contains('ws-mode')
-    ) {
-      setWorkspace(true);
-    }
-  }
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
   const labels = {
@@ -1593,7 +1578,6 @@ function setActiveMaterial(id) {
   persist();
   renderMaterialList();
   renderMaterialDetail();
-  updateWorkspaceBar();
 }
 // Kompakt kayıt satırı: sıra, dosya adı, süre/boyut, durum ve kontrol ilerlemesi.
 function materialRowHtml(m, i) {
@@ -5062,13 +5046,6 @@ function handleSegKey(e, card, m) {
     e.preventDefault();
     return true;
   }
-  // Böl / birleştir kısayolları: uzman kaydı dinlerken elleri klavyede kalır.
-  if ((e.key === 'l' || e.key === 'L') && !typing) {
-    // Kayıt listesini aç/kapat (çalışma modundan çıkar).
-    setWorkspace(!document.body.classList.contains('ws-mode'));
-    e.preventDefault();
-    return true;
-  }
   // F = otomatik bölüm geçişi, G = canlı metin vurgusu (v2.119).
   // İkisi ayrı; kullanıcı yalnız istediğini açar.
   if ((e.key === 'f' || e.key === 'F') && !typing) {
@@ -5080,11 +5057,6 @@ function handleSegKey(e, card, m) {
   if ((e.key === 'g' || e.key === 'G') && !typing) {
     setFollow(!followState.liveHighlight, 'liveHighlight');
     showToast(followState.liveHighlight ? 'Canlı metin vurgusu açık.' : 'Canlı metin vurgusu kapalı.');
-    e.preventDefault();
-    return true;
-  }
-  if ((e.key === 'w' || e.key === 'W') && !typing) {
-    setWorkspace(!document.body.classList.contains('ws-mode'));
     e.preventDefault();
     return true;
   }
@@ -5600,7 +5572,6 @@ function refreshPlayButtons() {
 // Uydurma zamanlama yoktur: vurgu gerçek oynatma konumundan hesaplanır.
 let followTimer = null;
 // Kullanıcı "listeye dön" dediyse bu oturumda otomatik çalışma moduna girme.
-let workspaceDeclined = false;
 // TAKİP MODU — İKİ AYRI KAVRAM (v2.119).
 // Kullanıcı haklıydı: tek düğme iki işi birden yapıyordu ve isimleri karışıyordu.
 //   autoAdvance   : çalarken sol listede BİR SONRAKİ bölüme otomatik geçiş
@@ -9653,57 +9624,6 @@ async function loadSamples() {
 // Esc kısayolu bulunur.
 // Ayarlar çekmecesi: model, toplu çözümleme ve depolama burada durur. Çalışma
 // alanını kapatmadığı için uzman bağlamı kaybetmez.
-// Çalışma modu: seçili kayıt tam ekranı kaplar. Yükleme alanı ve kayıt şeridi
-// gizlenir; deşifre/analiz alanına mümkün olan en fazla yer kalır. Kayıtlar
-// arasında önceki/sonraki ile geçilir, böylece moddan çıkmak gerekmez.
-function setWorkspace(on) {
-  // MASAÜSTÜ KABUĞU (v2.141): ≥901 px'te kayıtlar zaten solda; çalışma modu
-  // anlamsız. Otomatik giriş, düğme ve W/L kısayolu burada etkisizdir.
-  if (on && typeof window !== 'undefined' && window.innerWidth >= 901) {
-    showToast('Masaüstü düzeninde kayıtlar solda; çalışma modu gerekmiyor.');
-    return;
-  }
-  document.body.classList.toggle('ws-mode', on);
-  const bar = $('#workspaceBar');
-  if (bar) bar.hidden = !on;
-  if (on) {
-    switchView('audio');
-    updateWorkspaceBar();
-    try {
-      window.scrollTo(0, 0);
-    } catch (e) {}
-  }
-  // Gizliyken çizilmiş canvas'lar 0 genişlikte olur; mod açılınca yeniden çiz.
-  if (on) {
-    requestAnimationFrame(() => {
-      const m = activeMaterial();
-      if (!m) return;
-      const cv = document.querySelector('canvas.wave-canvas');
-      const pk = peakCache.get(m.id);
-      if (cv && pk) drawWave(cv, pk, m);
-    });
-  }
-}
-function updateWorkspaceBar() {
-  const c = currentCase();
-  const m = activeMaterial();
-  if (!c || !m) return;
-  const idx = (c.materials || []).indexOf(m);
-  const segs = m.segments || [];
-  const checked = segs.filter((s) => isReviewed(s)).length;
-  const t = $('#wsTitle');
-  if (t) {
-    t.textContent = `${idx + 1}. ${m.name}`;
-    // Dar ekranda başlık tek satırda kısalır; tam ad ipucunda kalır (v2.133).
-    t.title = `${idx + 1}. ${m.name}`;
-  }
-  const meta = $('#wsMeta');
-  if (meta) meta.textContent = `${fmtShort(m.duration || 0)} · ${segs.length} bölüm · ${checked} denetlendi`;
-  const prev = document.querySelector('[data-ws-nav="-1"]');
-  const next = document.querySelector('[data-ws-nav="1"]');
-  if (prev) prev.disabled = idx <= 0;
-  if (next) next.disabled = idx >= (c.materials || []).length - 1;
-}
 // Rapor tam ekran modu: kabuk gizlenir, yalnızca ince çubuk kalır.
 function setReportFull(on) {
   document.body.classList.toggle('report-full', on);
@@ -10720,29 +10640,6 @@ function setupEvents() {
   if (undoBtn) undoBtn.addEventListener('click', () => undoLast());
   $('#settingsBtn').addEventListener('click', () => setSettingsDrawer(true));
 $('#closeSettings').addEventListener('click', () => setSettingsDrawer(false));
-$('#workspaceBtn').addEventListener('click', () => setWorkspace(true));
-$('#wsListBtn').addEventListener('click', () => {
-  setWorkspace(false);
-  showToast('Kayıt listesi açık. Bir kayda tıklayınca çalışma moduna döner.');
-});
-$('#workspaceBackBtn').addEventListener('click', () => {
-  // Kullanıcı bilinçli olarak listeye döndü; bu oturumda tekrar otomatik girme.
-  workspaceDeclined = true;
-  setWorkspace(false);
-});
-$$('[data-ws-nav]').forEach((b) =>
-  b.addEventListener('click', () => {
-    const c = currentCase();
-    if (!c) return;
-    const mats = c.materials || [];
-    const idx = mats.indexOf(activeMaterial());
-    const next = idx + Number(b.dataset.wsNav);
-    if (next >= 0 && next < mats.length) {
-      setActiveMaterial(mats[next].id);
-      updateWorkspaceBar();
-    }
-  })
-);
 $('#reportFullBtn').addEventListener('click', () => setReportFull(true));
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
@@ -10770,11 +10667,6 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
     // Tam ekran rapordan çık.
     if (document.body.classList.contains('report-full')) {
       setReportFull(false);
-      return;
-    }
-    // Çalışma modundan çık.
-    if (document.body.classList.contains('ws-mode')) {
-      setWorkspace(false);
       return;
     }
     // Önce açık çekmeceyi kapat, sonra odak modunu.
@@ -11673,6 +11565,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.142': {
+    title: 'Çalışma modu kaldırıldı; kayıtlar dikey listede',
+    body:
+      'Kayıtlar artık solda tek sütun hâlinde ALT ALTA listelenir ve sütun kendi ' +
+      'içinde kayar; 100 kayıtta da sayfa uzamaz. "← Kayıt listesine dön" ve ' +
+      '"⛶ Çalışma modu" tamamen kaldırıldı. Kayıt sütununun başlığı ve ' +
+      '"N kayıt" sayısı artık görünür.'
+  },
   '2.141': {
     title: 'Masaüstünde "Kayıt listesine dön" kaldırıldı',
     body:

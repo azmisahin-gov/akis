@@ -518,7 +518,6 @@ input::placeholder, textarea::placeholder {
 }
 .listen-row { flex-wrap: wrap; gap: var(--sp-2); }
 .listen-strip .wave-canvas { height: 72px; }
-body.ws-mode .listen-strip .wave-canvas { height: 92px; }
 
 /* ---- Bölüm detayı yerleşimi (v2.60) -----------------------------------
    Dikey yığın yerine üç bölge: (1) zaman + dalga, (2) metin, (3) işlemler.
@@ -719,7 +718,6 @@ body.ws-mode .listen-strip .wave-canvas { height: 92px; }
   display: block; width: 100%; height: 88px;
   cursor: crosshair; touch-action: none;
 }
-body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
 
 /* 4) Zamanlar: üç sütun (başlangıç / bitiş / süre) */
 #view-audio .sd-times {
@@ -879,10 +877,6 @@ body.ws-mode #view-audio .sd-wave-canvas { height: 108px; }
   min-height: 240px !important;
   overflow-y: auto !important;
   overscroll-behavior: contain;
-}
-body.ws-mode #view-audio .seg-list {
-  max-height: calc(100vh - 240px) !important;
-  min-height: 320px !important;
 }
 /* Sol sütun da kendi içinde kayabilir (uzun bölüm metni). */
 #view-audio .seg-detail {
@@ -1368,27 +1362,8 @@ body.ws-mode #view-audio .seg-list {
   min-height: 0 !important;
   overflow: visible !important;
 }
-body.ws-mode #view-audio > .detail-panel,
-body.ws-mode #view-audio #audioDetail {
-  flex: 0 0 auto !important;
-  overflow: visible !important;
-}
-body.ws-mode #view-audio .seg-workspace,
-body.ws-mode #view-audio .seg-list {
-  height: auto !important;
-  max-height: none !important;
-  min-height: 0 !important;
-}
-/* Çalışma modunda üst bar görünür kalsın (önceki/sonraki kayıt). */
-body.ws-mode .workspace-bar {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  background: var(--surface, #fff);
-}
 @media (max-width: 1080px) {
   #view-audio .seg-list { height: auto !important; max-height: none !important; }
-  body.ws-mode #view-audio .seg-list { height: auto !important; max-height: none !important; }
 }
 @media (max-width: 900px) {
   #view-audio .seg-list { height: auto !important; max-height: none !important; }
@@ -1500,10 +1475,6 @@ body.ws-mode .workspace-bar {
   overscroll-behavior: contain;
 }
 /* Çalışma modunda üstte yapışkan çubuk var (45 px): detay onun ALTINDA durur. */
-body.ws-mode #view-audio .seg-detail {
-  top: 53px;
-  max-height: calc(100vh - 69px);
-}
 
 /* ============================================================================
    v2.140 — MASAÜSTÜ KABUĞU (≥901 px): SABİT ÇERÇEVE, PANELLER KENDİ KAYDIRIR.
@@ -1557,7 +1528,16 @@ body.ws-mode #view-audio .seg-detail {
     grid-column: 1; grid-row: 2;
     min-height: 0; overflow: auto; margin: 0;
   }
-  #view-audio > .panel:not(.detail-panel) .panel-heading { display: none; }
+  /* v2.142 — Kayıt sütunu: başlık GÖRÜNÜR (kullanıcı devtools'ta fark etti),
+     liste sütunla birlikte kayar (100 kayıtta ikinci çubuk olmaz). */
+  #view-audio > .panel:not(.detail-panel) .panel-heading {
+    display: flex;
+    padding: 4px 2px 6px;
+    margin: 0;
+  }
+  #view-audio > .panel:not(.detail-panel) .panel-heading .eyebrow { display: none; }
+  #view-audio > .panel:not(.detail-panel) .panel-heading h3 { font-size: 12px; margin: 0; }
+
   #view-audio > .detail-panel {
     grid-column: 2; grid-row: 1 / span 2;
     min-height: 0; overflow: hidden;
@@ -1624,12 +1604,19 @@ body.ws-mode #view-audio .seg-detail {
   #view-audio .seg-detail .sd-right { order: 1; }
   #view-audio .seg-detail .sd-left { order: 2; }
 
-  /* v2.141 — MASAÜSTÜNDE ÇALIŞMA MODU YOK.
-     Kayıtlar sürekli solda olduğu için "← Kayıt listesine dön" düğmesi ve
-     çalışma modu anlamsızdı (kullanıcı: "o buton gereksiz olmuş, kaldıralım").
-     Dar ekranda (≤900) çalışma modu korunur. */
-  body.ws-mode .workspace-bar { display: none; }
-  #workspaceBtn { display: none; }
-  body.ws-mode #view-audio > .panel:not(.detail-panel) { display: block !important; }
-  body.ws-mode #view-audio > .upload-zone { display: flex !important; }
+}
+
+/* ============================================================================
+   v2.142 — KAYIT LİSTESİ DİKEY (tüm genişlikler).
+   ----------------------------------------------------------------------------
+   ÖLÇÜM: `#audioList` `display:flex` (yatay çip şeridi) idi; 100 kayıtta
+   dosyalar YANYANA diziliyordu (kullanıcı: "dosyalar yanyana duruyor; aşağı
+   doğru listeleyeyim"). Artık tek sütun; sütun kendi içinde kayar.
+   ============================================================================ */
+#view-audio > .panel:not(.detail-panel) .audio-list {
+  display: grid;
+  grid-auto-rows: min-content;
+  gap: 6px;
+  max-height: none;
+  overflow: visible;
 }

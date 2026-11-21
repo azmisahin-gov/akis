@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.141.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.142.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.142 — Çalışma modu kaldırıldı; kayıt listesi dikey
+
+CANLI VERİ. Kullanıcı devtools'ta baktı ve üç şeyi bildirdi: (1) gizli
+`workspaceBar` ("önceki/sonraki") artık gereksiz, (2) kayıt sütununun başlığı
+("9 kayıt") görünmüyor, (3) dosyalar **yanyana** duruyor — alt alta listelensin.
+
+### ÖLÇÜM (v2.141)
+
+| Bulgu | Ölçüm |
+|---|---|
+| `#workspaceBar` | DOM'da duruyor (gizli), mantığı hâlâ kodda |
+| Kayıt sütunu başlığı | `display:none` (gizlenmişti) |
+| `#audioList` | `display:flex` → **yatay çip şeridi**; 100 kayıt yanyana |
+| `#audioList` max-height | 190 px → liste **kendi içinde** ayrıca kayıyordu |
+
+### DÜZELTME
+
+- **Çalışma modu tamamen kaldırıldı:** `workspaceBar`, `workspaceBtn`,
+  `setWorkspace`, `updateWorkspaceBar`, W/L kısayolları, otomatik giriş,
+  `ws-mode` CSS'i. Dar ekranda da ayrı mod yok; kayıt listesi her zaman görünür.
+- **Kayıt listesi dikey:** `#audioList` artık `display:grid`, tek sütun.
+- **Tek kaydırma:** listenin `max-height` sınırı kaldırıldı; kaydırma **kayıt
+  sütununda** (100 kayıtta ikinci çubuk yok).
+- **Başlık görünür:** "Ses kayıtları" + "N kayıt" sayısı sütunun üstünde.
+
+### ÖLÇÜM (v2.142, gerçek Chromium)
+
+| Durum | Sonuç |
+|---|---|
+| 100 kayıt, 1440 px | liste **5.711 px dikey**, sütun 569/5.762 → **tek kaydırma** |
+| 9 kayıt, 1440 px | liste 516 px, sütun 569/569 (kaydırma yok) |
+| 900 px | dikey liste, sayfa kaymıyor (900/900) |
+| `#workspaceBar` / `#workspaceBtn` | **DOM'da yok** |
+| JS hatası | **0** |
+
+### KULLANICI NE GÖRECEK
+
+- Dosyalar solda **alt alta**; 100 kayıt olsa da tek kaydırma çubuğu.
+- "Kayıt listesine dön" ve "Çalışma modu" **yok**.
+- Kayıt sütununda "Ses kayıtları · N kayıt" başlığı görünür.
+
+Koruyan test: `tasarim-testi` [2p] (4) + [2q] (2). CSS borcu düştü:
+`!important` 70 → 59, ölü bildirim 98 → 96, app→layer 507 → 496.
 
 ## v2.141 — Masaüstünde çalışma modu ve "Kayıt listesine dön" kaldırıldı
 

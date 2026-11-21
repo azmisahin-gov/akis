@@ -339,10 +339,6 @@ console.log('\n[2n] Uzun listede detay görünür kalır (v2.139)');
   check('detay paneli yapışkan (position: sticky)', /position:\s*sticky/.test(stickyRule), stickyRule.slice(0, 80));
   check('yapışma noktası tanımlı (top)', /top:\s*[0-9]+px/.test(stickyRule));
   check('yükseklik ekranla sınırlı (max-height)', /max-height:\s*calc\(100vh/.test(stickyRule));
-  check(
-    'çalışma modunda yapışma noktası çubuğun altında',
-    /body\.ws-mode #view-audio \.seg-detail\s*\{[^}]*top:\s*53px/.test(rl)
-  );
 }
 
 // --- 2o. Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydırır (v2.140) --
@@ -372,25 +368,38 @@ console.log('\n[2o] Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydır�
   check('oynatıcı şeridi korunur (dalga gizlenir)', /#view-audio \.listen-strip \.wave-canvas\s*\{[^}]*display:\s*none/.test(block));
 }
 
-// --- 2p. Masaüstünde çalışma modu YOK (v2.141) ----------------------------
-// Masaüstü kabuğunda kayıtlar sürekli solda olduğu için "← Kayıt listesine
-// dön" düğmesi ve çalışma modu anlamsız kalıyordu. Kullanıcı: "o buton
-// gereksiz olmuş, kaldıralım; dosyaları alt alta listelesin."
-// KURAL (≥901 px): çalışma çubuğu ve düğmesi gizli; ws-mode açık kalsa bile
-// kayıt sütunu görünür. Otomatik giriş ve W/L kısayolu etkisiz.
-console.log('\n[2p] Masaüstünde çalışma modu yok (v2.141)');
+// --- 2p. Çalışma modu TAMAMEN kaldırıldı (v2.142) --------------------------
+// Kayıtlar sürekli solda olduğu için çalışma modu, "← Kayıt listesine dön" ve
+// "⛶ Çalışma modu" düğmesi tamamen kaldırıldı (kullanıcı: "o buton gereksiz
+// olmuş, kaldıralım"). Dar ekranda da ayrı mod yok; liste her zaman görünür.
+console.log('\n[2p] Çalışma modu tamamen kaldırıldı (v2.142)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  check('çalışma çubuğu HTML\'den kaldırıldı', !/id="workspaceBar"/.test(html));
+  check('çalışma modu düğmesi HTML\'den kaldırıldı', !/id="workspaceBtn"/.test(html));
+  check('çalışma modu mantığı kaldırıldı (setWorkspace yok)', !/function setWorkspace\b/.test(js));
+  check('ws-mode sınıfı artık kullanılmıyor', !/ws-mode/.test(js));
+}
+
+// --- 2q. Kayıt sütunu: başlık görünür, liste tek kaydırma (v2.142) ---------
+// Kullanıcı devtools'ta gördü: kayıt sütununun başlığı ("9 kayıt") gizliydi ve
+// liste kendi içinde ayrıca kayıyordu. 100 kayıtta iki kaydırma çubuğu olur.
+console.log('\n[2q] Kayıt sütunu: başlık görünür, liste tek kaydırma (v2.142)');
 {
   const rl = read('assets/reading-layer.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const i = rl.indexOf('@media (min-width: 901px)');
   const block = i >= 0 ? rl.slice(i, i + 9000) : '';
-  check('çalışma çubuğu masaüstünde gizli', /body\.ws-mode \.workspace-bar\s*\{[^}]*display:\s*none/.test(block));
-  check('çalışma modu düğmesi masaüstünde gizli', /#workspaceBtn\s*\{[^}]*display:\s*none/.test(block));
   check(
-    'ws-mode açık olsa da kayıt sütunu görünür',
-    /body\.ws-mode #view-audio > \.panel:not\(\.detail-panel\)\s*\{[^}]*display:\s*block\s*!important/.test(block)
+    'kayıt sütunu başlığı görünür',
+    /#view-audio > \.panel:not\(\.detail-panel\) \.panel-heading\s*\{[^}]*display:\s*flex/.test(block)
   );
-  const js = read('assets/app.js');
-  check('otomatik giriş masaüstünde etkisiz (setWorkspace koruması)', /innerWidth\s*>=\s*901/.test(js));
+  check(
+    'kayıt listesi DİKEY ve sütunla birlikte kayar',
+    /#view-audio > \.panel:not\(\.detail-panel\) \.audio-list\s*\{[^}]*display:\s*grid[^}]*max-height:\s*none[^}]*overflow:\s*visible/.test(
+      rl
+    )
+  );
 }
 
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
@@ -468,7 +477,6 @@ console.log('\n[2i] Ses görünümü: tek kaydırma (v2.129)');
     'liste iç kaydırma yapmaz',
     /#view-audio \.seg-list\s*\{[^}]*height:\s*auto\s*!important[^}]*max-height:\s*none\s*!important[^}]*overflow:\s*visible\s*!important/.test(base)
   );
-  check('çalışma modunda üst bar yapışkan', /body\.ws-mode \.workspace-bar\s*\{[^}]*position:\s*sticky/.test(base));
 }
 
 // --- 2j. Bölüm rozeti: durum HER ZAMAN görünür (v2.130) ---------------------
@@ -519,10 +527,6 @@ console.log('\n[2k] Görünüm kutusu içerikle büyür (v2.131)');
     'ses görünümü kutusu içerikle büyür (flex: 0 0 auto)',
     /#view-audio\.active\s*\{[^}]*flex:\s*0\s+0\s+auto/.test(rl)
   );
-  check(
-    'çalışma modunda çalışma alanı yükseklik dayatmaz',
-    /body\.ws-mode #view-audio \.seg-workspace[^{]*\{[^}]*height:\s*auto\s*!important/.test(rl)
-  );
   check('ses görünümü iç kaydırma yapmaz', /#view-audio\.active\s*\{[^}]*overflow:\s*visible/.test(rl));
 }
 
@@ -545,10 +549,6 @@ console.log('\n[2l] Durum çubuğu kesmez (v2.133)');
   check(
     'durum çubuğu öğeleri kesilmez (normal + visible + clip)',
     /\.statusbar \.sb-item\s*\{[^}]*white-space:\s*normal[^}]*overflow:\s*visible[^}]*text-overflow:\s*clip/.test(window1200)
-  );
-  check(
-    'çalışma çubuğu başlığı tam adı ipucunda taşır',
-    /const t = \$\('#wsTitle'\);[\s\S]{0,200}\.title\s*=/.test(appJs)
   );
 }
 
