@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.143.**
+yazılır. **Güncel sürüm: v2.144.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.144 — Zaman çakışmaları görünür (tamamlandı)
+
+Çakışma/yinelenme/sıfır süre/ters aralık/okunamayan zaman için ⚠ rozet ve
+"Zaman sorunları" filtresi. Uygulama düzeltmez, bildirir. `birim` [54].
 
 ### v2.143 — Bölüm detayının alt kısmı kırpılmıyor (tamamlandı)
 

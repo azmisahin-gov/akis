@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.143.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.144.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.144 — Zaman çakışmaları görünür oldu
+
+CANLI VERİ. Kullanıcı: *"82 bölüm var; yanlışlıkla aynı zamanı mı böldük,
+aralıklar birbirine giriyor mu, listeden göremiyoruz."*
+
+### EKLENEN
+
+- `segmentTimeIssues(segments)` — saf fonksiyon. Bildirdiği durumlar:
+  **önceki bölümle çakışma**, **aynı aralığın yinelenmesi**, **sıfır süre**,
+  **ters aralık**, **okunamayan zaman**. Hiçbir zamanı DÜZELTMEZ.
+- Liste satırında **⚠** rozeti; ipucunda hangi bölümle çakıştığı yazar
+  (ör. "önceki bölümle çakışıyor (bölüm 11)").
+- Araç çubuğunda **"Zaman sorunları N"** filtresi; yalnız sorunlu bölümleri
+  listeler. Sorun yoksa çip görünmez.
+- Çakışmanın **iki tarafı da** işaretlenir (filtrede rozetsiz satır kalmaz).
+
+### ÖLÇÜM (v2.144, 82 bölüm, gerçek Chromium)
+
+| Durum | Sonuç |
+|---|---|
+| 1 çakışma + 1 yinelenen + 1 sıfır süre | çip **"Zaman sorunları 5"** |
+| ⚠ rozetli satır | **5** (11, 12, 21, 22, 31) |
+| Filtre tıklanınca | **5 satır** (yalnız sorunlular) |
+| JS hatası | 0 |
+
+### KULLANICI NE GÖRECEK
+
+- Sorunlu bölümler listede **⚠** ile görünür; üzerine gelince nedeni yazar.
+- "Zaman sorunları" filtresiyle yalnız onları görürsünüz.
+- Uygulama karar vermez; hangi bölümün çakıştığını söyler.
+
+Koruyan test: `birim-testleri` [54] (8 kontrol).
 
 ## v2.143 — Bölüm detayının alt kısmı kırpılmıyor
 

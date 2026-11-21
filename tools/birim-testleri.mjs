@@ -114,6 +114,7 @@ const EXPOSE = [
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
   'normalizeRescueCases', 'persistPayloadFor',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
+  'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2745,6 +2746,45 @@ console.log('\n== [53] Kritik uyarılar ekran okuyucuya duyurulur');
   const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('yükleme hatası kritik toast kullanır', /showLoadFailure[\s\S]{0,400}showToast\([\s\S]{0,300}true\s*\)/.test(src), true);
   eq('atlanan dosya bildirimi kritik toast kullanır', /function reportLoadFailures[\s\S]{0,1200}showToast\([\s\S]{0,300}true\s*\)/.test(src), true);
+}
+
+
+console.log('\n== [54] Zaman bütünlüğü: çakışma/yinelenme/sıfır süre');
+{
+  // Kullanıcı: "82 bölüm var; yanlışlıkla aynı zamanı mı böldük, aralıklar
+  // birbirine giriyor mu, listeden göremiyoruz." Ölçüt: aralıklar sıralı ve
+  // örtüşmesiz olmalı. Bu fonksiyon yalnız GÖZLEMLENEBİLİR zaman hatasını
+  // bildirir; düzeltmez.
+  eq('segmentTimeIssues tanımlı', typeof T.segmentTimeIssues, 'function');
+  if (typeof T.segmentTimeIssues === 'function') {
+    const seg = (a, b) => ({ start: a, end: b });
+    const clean = T.segmentTimeIssues([
+      seg('00:00:00.000', '00:00:03.000'),
+      seg('00:00:03.000', '00:00:06.000'),
+      seg('00:00:06.000', '00:00:09.000')
+    ]);
+    eq('bitişik aralıklar sorunsuz', clean.length, 0);
+    const overlap = T.segmentTimeIssues([
+      seg('00:00:00.000', '00:00:05.000'),
+      seg('00:00:03.000', '00:00:08.000')
+    ]);
+    eq('çakışma bulundu', overlap.filter((x) => x.kind === 'overlap').length, 1);
+    eq('çakışmada iki bölüm işaretlenir', T.segmentTimeIssueIndexes([
+      seg('00:00:00.000', '00:00:05.000'),
+      seg('00:00:03.000', '00:00:08.000')
+    ]).size, 2);
+    const dup = T.segmentTimeIssues([
+      seg('00:00:00.000', '00:00:03.000'),
+      seg('00:00:00.000', '00:00:03.000')
+    ]);
+    eq('aynı aralık yinelenmesi bulundu', dup.filter((x) => x.kind === 'duplicate').length, 1);
+    const zero = T.segmentTimeIssues([seg('00:00:03.000', '00:00:03.000')]);
+    eq('sıfır süre bulundu', zero.some((x) => x.kind === 'zero'), true);
+    const inv = T.segmentTimeIssues([seg('00:00:05.000', '00:00:02.000')]);
+    eq('ters aralık bulundu', inv.some((x) => x.kind === 'inverted'), true);
+    const bad = T.segmentTimeIssues([seg('abc', '00:00:02.000')]);
+    eq('okunamayan zaman bulundu', bad.some((x) => x.kind === 'invalid'), true);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

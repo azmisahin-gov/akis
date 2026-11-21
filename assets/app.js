@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.143';
+} from './schema.js?v=2.144';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.143';
+const APP_VERSION = '2.144';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3307,9 +3307,59 @@ const SEG_FILTERS = [
   ['quick', 'Hızlı onaya uygun'],
   ['approved', 'Onaylandı'],
   ['inaudible', 'Anlaşılmadı'],
-  ['relisten', 'Yeniden dinlenecek']
+  ['relisten', 'Yeniden dinlenecek'],
+  ['time', 'Zaman sorunları']
 ];
 const PLAYBACK_SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+// ZAMAN BÜTÜNLÜĞÜ (v2.144). Bölüm aralıkları sıralı ve örtüşmesiz olmalı.
+// Bu fonksiyon yalnız GÖZLEMLENEBİLİR hatayı bildirir; hiçbir zamanı DÜZELTMEZ.
+// Kullanıcı: "82 bölüm var; yanlışlıkla aynı zamanı mı böldük, aralıklar
+// birbirine giriyor mu, listeden göremiyoruz."
+const TIME_ISSUE_LABEL = {
+  overlap: 'önceki bölümle çakışıyor',
+  duplicate: 'aynı aralık yinelenmiş',
+  zero: 'sıfır süre',
+  inverted: 'bitiş başlangıçtan önce',
+  invalid: 'zaman okunamadı'
+};
+function segmentTimeIssueLabel(kind) {
+  return TIME_ISSUE_LABEL[kind] || 'zaman sorunu';
+}
+function segmentTimeIssues(segments) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const issues = [];
+  const seen = new Map();
+  let prevEnd = -Infinity;
+  let prevIdx = -1;
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i] || {};
+    const a = parseTimecodeStrict(s.start);
+    const b = parseTimecodeStrict(s.end);
+    if (a == null || b == null) {
+      issues.push({ kind: 'invalid', i, j: i });
+      continue;
+    }
+    if (b < a) issues.push({ kind: 'inverted', i, j: i });
+    else if (b === a) issues.push({ kind: 'zero', i, j: i });
+    const key = a + '|' + b;
+    if (seen.has(key)) issues.push({ kind: 'duplicate', i, j: seen.get(key) });
+    else seen.set(key, i);
+    if (a < prevEnd - 1e-9) issues.push({ kind: 'overlap', i, j: prevIdx });
+    if (b > prevEnd) {
+      prevEnd = b;
+      prevIdx = i;
+    }
+  }
+  return issues;
+}
+function segmentTimeIssueIndexes(segments) {
+  const set = new Set();
+  for (const it of segmentTimeIssues(segments)) {
+    set.add(it.i);
+    if (it.j != null) set.add(it.j);
+  }
+  return set;
+}
 function segFilter(m) {
   return m.uiFilter || 'all';
 }
@@ -3416,16 +3466,17 @@ function pendingSummaryText(segments) {
   if (b.ambiguous) parts.push(`${b.ambiguous} belirsiz okuma`);
   return `${b.total} bölüm eksik: ${parts.join(' · ')}`;
 }
-function segMatchesFilter(s, filter, prev) {
+function segMatchesFilter(s, filter, prev, idx, issueSet) {
   const r = segReview(s);
   if (filter === 'all') return true;
   if (filter === 'pending') return !isReviewed(s);
   if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s, prev).ok;
+  if (filter === 'time') return !!(issueSet && issueSet.has(idx));
   return r === filter;
 }
 function segCounts(m) {
   const segs = m.segments || [];
-  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0 };
+  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0, time: 0 };
   for (let i = 0; i < segs.length; i++) {
     const s = segs[i];
     const r = segReview(s);
@@ -3436,6 +3487,8 @@ function segCounts(m) {
   }
   // Hızlı onay sayısı TEK KAYNAKTAN gelir (filtre ve toplu onayla aynı).
   c.quick = quickApproveTargets(m).length;
+  // Zaman sorunlu bölüm SAYISI (çakışmanın iki tarafı da sayılır).
+  c.time = segmentTimeIssueIndexes(segs).size;
   return c;
 }
 // İnceleme önceliği: hangi bölümün önce dinlenmesi gerektiğini gösteren şeffaf
@@ -3552,7 +3605,7 @@ function ambiguousPanelHtml(s, i) {
     </div>
   </div>`;
 }
-function segItemHtml(m, s, i, prev) {
+function segItemHtml(m, s, i, prev, issue) {
   const rev = segReview(s);
   const halluc = isHallucination(s.text);
   const spkRec = s.speaker ? speakerByName(m, s.speaker) : null;
@@ -3574,6 +3627,12 @@ function segItemHtml(m, s, i, prev) {
   };
   const [bCls, bTxt] = badgeFor[rev] || ['', 'Bekliyor'];
   const state = `<span class="badge ${bCls}" title="${esc(reviewHintText(s))}">${esc(bTxt)}</span>`;
+  // ZAMAN SORUNU (v2.144): çakışma/yinelenme/sıfır süre listede GÖRÜNÜR.
+  const timeBadge = issue
+    ? `<span class="badge warn" title="Zaman sorunu: ${esc(segmentTimeIssueLabel(issue.kind))}${
+        issue.j != null && issue.j !== i ? ` (bölüm ${issue.j + 1})` : ''
+      }">⚠</span>`
+    : '';
   // Öneri varsa listede görünmeli; yoksa bilirkişi hangi bölümde bekleyen
   // öneri olduğunu ancak tek tek gezinerek bulabilir.
   const propBadge = s.proposal
@@ -3583,17 +3642,30 @@ function segItemHtml(m, s, i, prev) {
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time">${esc(s.start || '—')}</span>
     <span class="seg-text">${esc((s.text || '').trim()) || '(metin yok)'}</span>
-    <span class="seg-badges">${state}${propBadge}${spk}${segPriorityBadge(s, prev)}</span>
+    <span class="seg-badges">${timeBadge}${state}${propBadge}${spk}${segPriorityBadge(s, prev)}</span>
   </div>`;
 }
 function segListHtml(m) {
   const segs = m.segments || [];
   if (!segs.length) return '<div class="seg-empty-note">Henüz bölüm yok. "Çözümle" veya "＋ Bölüm" ile başlayın.</div>';
   const filter = segFilter(m);
+  const issues = segmentTimeIssues(segs);
+  const issueSet = segmentTimeIssueIndexes(segs);
+  const issueAt = new Map();
+  for (const it of issues) {
+    if (!issueAt.has(it.i)) issueAt.set(it.i, it);
+    // Çakışmanın/yinelenmenin DİĞER tarafı da işaretlenir; yoksa filtrede
+    // görünen bölüm rozetsiz kalır (v2.144).
+    if (it.j != null && it.j !== it.i && !issueAt.has(it.j)) {
+      issueAt.set(it.j, { ...it, i: it.j, j: it.i });
+    }
+  }
   // `prev` geçilir: 'quick' filtresi sayaçla AYNI ölçütü kullanmalı (v2.99).
-  const rows = segs.map((s, i) => ({ s, i })).filter((x) => segMatchesFilter(x.s, filter, segs[x.i - 1]));
+  const rows = segs
+    .map((s, i) => ({ s, i }))
+    .filter((x) => segMatchesFilter(x.s, filter, segs[x.i - 1], x.i, issueSet));
   if (!rows.length) return '<div class="seg-empty-note">Bu filtreye uyan bölüm yok.</div>';
-  return rows.map(({ s, i }) => segItemHtml(m, s, i, segs[i - 1])).join('');
+  return rows.map(({ s, i }) => segItemHtml(m, s, i, segs[i - 1], issueAt.get(i))).join('');
 }
 function renderSegList(m) {
   const root = $(`#seg-list-${CSS.escape(m.id)}`);
@@ -4679,10 +4751,12 @@ function renderSegments(m, card) {
   const reviewed = counts.approved + counts.inaudible;
   const pct = segs.length ? Math.round((reviewed / segs.length) * 100) : 0;
   const filter = segFilter(m);
-  const chips = SEG_FILTERS.map(
-    ([k, label]) =>
-      `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
-  ).join('');
+  const chips = SEG_FILTERS.filter(([k]) => k !== 'time' || counts.time > 0)
+    .map(
+      ([k, label]) =>
+        `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
+    )
+    .join('');
   const spkOptions = (m.speakers || []).map((sp) => sp.label).filter(Boolean);
   root.innerHTML = `<div class="transcript-toolbar compact-bar">
       <div class="group"><span>Hız</span>${PLAYBACK_SPEEDS.map((sp) => `<button class="seg-tool speed-tool ${(m.playbackRate || 1) === sp ? 'on' : ''}" data-seg-speed="${sp}">${sp}×</button>`).join('')}</div>
@@ -4759,7 +4833,8 @@ function navSegment(m, dir) {
   const segs = m.segments || [];
   if (!segs.length) return;
   const filter = segFilter(m);
-  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter, segs[i - 1]));
+  const issueSet = segmentTimeIssueIndexes(segs);
+  const order = segs.map((s, i) => i).filter((i) => segMatchesFilter(segs[i], filter, segs[i - 1], i, issueSet));
   const list = order.length ? order : segs.map((s, i) => i);
   const cur = Number.isInteger(m.activeSeg) ? m.activeSeg : list[0];
   let pos = list.indexOf(cur);
@@ -11565,6 +11640,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.144': {
+    title: 'Bölüm zamanlarındaki çakışmalar artık görünüyor',
+    body:
+      'Bölüm aralıkları çakışırsa, aynı aralık iki kez girilmişse veya süre sıfırsa ' +
+      'liste satırında ⚠ çıkar. Araç çubuğunda "Zaman sorunları N" filtresi yalnız bu ' +
+      'bölümleri gösterir. Uygulama zamanı KENDİLİĞİNDEN DÜZELTMEZ; hangi bölümün ' +
+      'sorunlu olduğunu söyler, kararı size bırakır.'
+  },
   '2.143': {
     title: 'Bölüm detayının alt kısmı artık görünüyor',
     body:

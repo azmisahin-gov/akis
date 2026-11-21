@@ -1638,6 +1638,29 @@ kaydırıp kaydırmadığını `overflow-y` + `clientHeight/scrollHeight` ile ö
 
 **Koruyan test:** `tasarim-testi` [2r] (2).
 
+### Aşama 10ap — Zaman bütünlüğü denetimi (TAMAMLANDI, v2.144)
+
+**KURAL: bölüm aralıkları sıralı ve örtüşmesiz olmalı; çakışma GÖRÜNÜR olur,
+uygulama kendiliğinden DÜZELTMEZ.**
+
+**Kullanıcı:** "82 bölüm var; yanlışlıkla aynı zamanı mı böldük, aralıklar
+birbirine giriyor mu, listeden göremiyoruz."
+
+**Eklenen:** `segmentTimeIssues(segments)` (saf) + `segmentTimeIssueIndexes`.
+Bildirir: `overlap`, `duplicate`, `zero`, `inverted`, `invalid`. Liste satırında
+⚠ rozeti (ipucunda "önceki bölümle çakışıyor (bölüm 11)"), araç çubuğunda
+"Zaman sorunları N" filtresi (0 ise gizli). Çakışmanın İKİ tarafı da işaretlenir.
+
+**Ölçüm (v2.144, 82 bölüm):** 1 çakışma + 1 yinelenen + 1 sıfır → çip 5;
+⚠ 5 satır (11, 12, 21, 22, 31); filtre 5 satır; JS hatası 0.
+
+**DERS:** Kullanıcı "veride sorun var mı" diye sorduğunda önce ÖLÇÜM ARACI ver.
+Zaman çakışması, takip vurgusunun komşu bölüme atlaması gibi belirtilerin ortak
+kökü olabilir; hangi bölümün sorunlu olduğunu göstermek, tahmin yürütmekten
+daha değerlidir. Zamanı otomatik düzeltmek adli kayıtta kabul edilemez.
+
+**Koruyan test:** `birim-testleri` [54] (8).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1811,7 +1834,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.143.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.144.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1973,7 +1996,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.143** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.144** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2029,6 +2052,7 @@ Test sayısı 441 → **782**.
 | **v2.141** | **Masaüstünde çalışma modu kaldırıldı** (kayıt sütunu kalıcıyken gereksizdi) | `tasarim` [2p] |
 | **v2.142** | **Çalışma modu kaldırıldı; kayıt listesi dikey** (yanyana çipler, gizli başlık) | `tasarim` [2p]/[2q] |
 | **v2.143** | **Detay panelinin alt kısmı kırpılıyordu** (`sd-meta`, gözlem düğmeleri) | `tasarim` [2r] |
+| **v2.144** | **Zaman çakışmaları görünür** (⚠ rozet + "Zaman sorunları" filtresi) | `birim` [54] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
