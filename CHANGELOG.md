@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.139.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.140.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.140 — Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydırır
+
+CANLI VERİ. Bilirkişi: *"aşağı doğru uzayıp gitmesi çok garip; uygulama
+masaüstü uygulaması havasında olmalı."* Haklı: v2.129'da seçilen "tek uzun
+sayfa" kararı 362 bölümde çalışmıyor.
+
+### ÖLÇÜM (v2.139, 362 bölüm, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Ses görünümü yüksekliği | **14.156 px** (tek sayfa) |
+| Bölüm listesi | 13.441 px, sayfayla birlikte akıyor |
+| Düzenleme paneli | aşağı kaydırınca ekran dışında |
+
+### DÜZELTME (≥901 px)
+
+- Kabuk sabit: `html/body/.app-shell/.main-area` taşmıyor; üst bar ve durum
+  çubuğu sabit.
+- Ses görünümü üç bölmeli ızgara: **kayıtlar (220 px) · bölüm listesi (320 px)
+  · düzenleme paneli**.
+- Bölüm listesi ve düzenleme paneli **kendi içinde kayar**; panel her zaman
+  görünür.
+- Kayıt başlığı kompakt; **oynatıcı korunur**, yalnız kayıt düzeyi dalga
+  gizlenir (bölüm dalgası panelde durur).
+- Liste paneli dar olduğu için satırlar iki satır: metin + **durum rozeti**.
+- Düzenleme panelinde metin üstte, teknik panel altta (tam genişlik) → hiçbir
+  düğme kesilmiyor.
+
+### ÖLÇÜM (v2.140, 362 bölüm, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Belge / ana alan | **900 / 900 px** (sayfa kaymıyor) |
+| Üst bar | 0–60 (sabit) |
+| Durum çubuğu | 876–900 (sabit) |
+| Bölüm listesi | 528 px, **kendi kaydırması** (21.473 px içerik) |
+| Düzenleme paneli | 248–778, **hep görünür**; kendi kaydırması (783) |
+| 181. bölüme tıklama | panelde "Bölüm 181 / 362" görünür |
+| Yatay taşma / JS hatası | yok / 0 |
+
+### KULLANICI NE GÖRECEK
+
+- Sayfa artık **aşağı doğru uzamıyor**; üst bar ve durum çubuğu yerinde kalır.
+- Bölüm listesinde tekerlekle gezinirken **düzenleme paneli sağda durur**.
+- Kayıt değiştirmek için soldaki kayıt sütunu kullanılır.
+
+### BİLİNEN SINIR
+
+- **≤900 px:** eski tek-kaydırma düzeni (dar ekran yedeği). Bu genişlikte
+  uzun listelerde panel yine aşağıda kalır.
+
+Koruyan test: `tasarim-testi` [2o] (6 kontrol). CSS borcu nöbetçisi [8]
+güncellendi (26/68/98/507/15).
 
 ## v2.139 — Uzun listede düzenleme paneli hep görünür
 

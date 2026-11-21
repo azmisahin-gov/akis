@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.139.**
+yazılır. **Güncel sürüm: v2.140.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.140 — Masaüstü kabuğu (tamamlandı)
+
+Ses görünümü tek uzun sayfa yerine sabit çerçeve: kayıtlar solda, liste ve
+düzenleme paneli kendi kaydırır. ≥901 px; ≤900 eski düzen. `tasarim` [2o].
 
 ### v2.139 — Uzun listede detay paneli yapışkan (tamamlandı)
 

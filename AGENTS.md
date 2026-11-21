@@ -1515,6 +1515,45 @@ yorumları çıkarır.
 
 **Koruyan test:** `tasarim-testi` [2n] (4) + [2e] (güncellendi).
 
+### Aşama 10al — Masaüstü kabuğu (TAMAMLANDI, v2.140)
+
+**KURAL (≥901 px): kabuk SABİT; kayıt sütunu, bölüm listesi ve düzenleme paneli
+KENDİ İÇİNDE kayar. Sayfa uzamaz. ≤900 px eski tek-kaydırma yedeğidir.**
+
+**Neden:** v2.129'un "tek uzun sayfa" kararı 362 bölümde çalışmıyordu
+(14.156 px; panel ekran dışında). Kullanıcı: "aşağı doğru uzayıp gitmesi çok
+garip; masaüstü uygulaması havasında olmalı."
+
+**Uygulama (reading-layer, `@media (min-width: 901px)`):** üç bölmeli ızgara
+(220 px kayıtlar · 320 px liste · kalan düzenleme), kayıt başlığı kompakt
+(oynatıcı KORUNUR, kayıt dalgası gizlenir), satırlar iki satır (metin + rozet),
+detayda metin üstte / teknik panel altta.
+
+**Ölçüm (v2.140, 362 bölüm, 1440×900):** belge/ana alan **900/900** (sayfa
+kaymıyor) · üst bar 0–60 · durum çubuğu 876–900 · liste 528 px kendi kaydırması
+(21.473 px) · panel 248–778 hep görünür · 181. bölüm tıklanınca panelde
+"Bölüm 181 / 362" · yatay taşma yok · JS hatası 0.
+
+**DÖRT SESSİZ TUZAK (ölçülerek bulundu):**
+1. `#view-audio.active{flex:0 0 auto}` (v2.131) — görünüm büyümez; id
+   özgüllüğü nedeniyle masaüstü bloğunda `flex:1 1 auto` AÇIKÇA yazılmalı.
+2. `#view-audio #audioDetail{flex:0 0 auto !important}` ve
+   `.audio-card{flex:0 0 auto}` (v2.129) — `!important` ile ezilmeden yükseklik
+   zinciri kurulmaz.
+3. `.seg-workspace{align-items:start}` (v2.129) + `.seg-detail{align-self:start}`
+   (v2.139) — paneller satırı DOLDURMAZ; içerik kadar uzayıp `overflow:hidden`
+   ile KIRPILIR (v2.129 hatasının aynısı). `stretch` şart.
+4. `height:auto !important` (app.css, seg-workspace) tek başına suçlu değil;
+   asıl sorun üstteki üç maddeydi.
+
+**DERS:** Bir yerleşim kararını geri alırken ATA ZİNCİRİNİN tamamını ölç
+(display/flex/min-height/align-self/overflow). Tek bir `align-self:start`
+bütün kabuğu sessizce bozar ve belirti "liste kırpılıyor" olur — yani eski hata
+geri gelmiş gibi görünür.
+
+**Koruyan test:** `tasarim-testi` [2o] (6). [2i]/[2e]/[2n] dar ekran yedeği
+için geçerli. CSS borcu eşikleri: 26/68/98/507/15.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1688,7 +1727,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.139.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.140.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1850,7 +1889,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.139** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.140** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1902,6 +1941,7 @@ Test sayısı 441 → **782**.
 | **v2.137** | **Rapor kâğıdı dar ekranda kırpılıyordu** (760 px'te 26 px) | `tasarim` [2m] |
 | **v2.138** | **CSS borcu ölçümü + nöbetçi** (temizlik kanıt tutmadığı için yayınlanmadı) | `tasarim` [8] |
 | **v2.139** | **Uzun listede detay yapışkan** (362 bölümde panel ekran dışında kalıyordu) | `tasarim` [2n] |
+| **v2.140** | **Masaüstü kabuğu** (tek uzun sayfa → sabit çerçeve, paneller kendi kaydırır) | `tasarim` [2o] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

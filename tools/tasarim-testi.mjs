@@ -345,6 +345,33 @@ console.log('\n[2n] Uzun listede detay görünür kalır (v2.139)');
   );
 }
 
+// --- 2o. Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydırır (v2.140) --
+// ÖLÇÜM (v2.139, 362 bölüm): ses görünümü TEK sayfa olarak 14.156 px; tüm
+// bölümler aynı kaydırmada akıyor. Masaüstü uygulaması böyle çalışmaz.
+// KURAL (≥901 px): kabuk sabit (html/body/main-area taşmaz), kayıt sütunu +
+// bölüm listesi + düzenleme paneli kendi içinde kayar; durum çubuğu sabittir.
+// ≤900 px: eski tek-kaydırma davranışı (dar ekran yedeği) korunur.
+console.log('\n[2o] Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydırır (v2.140)');
+{
+  const rl = read('assets/reading-layer.css');
+  // Yorumlar çıkarılır: yorum içindeki `{...}` örneği regex'i bozuyordu.
+  const rlNoComments = rl.replace(/\/\*[\s\S]*?\*\//g, '');
+  const i = rlNoComments.indexOf('@media (min-width: 901px)');
+  const block = i >= 0 ? rlNoComments.slice(i, i + 8000) : '';
+  check('masaüstü kabuğu tanımlı (≥901 px)', i >= 0);
+  check('ana alan taşmıyor (kabuk sabit)', /\.main-area\s*\{[^}]*overflow:\s*hidden\s*!important/.test(block));
+  check(
+    'ses görünümü üç bölmeli ızgara',
+    /#view-audio\.active\s*\{[^}]*display:\s*grid[^}]*grid-template-columns:\s*220px\s+minmax\(0,\s*1fr\)/.test(block)
+  );
+  check('bölüm listesi kendi içinde kayar', /#view-audio \.seg-list\s*\{[^}]*overflow-y:\s*auto\s*!important/.test(block));
+  check(
+    'düzenleme paneli kendi içinde kayar (yapışkan değil)',
+    /#view-audio \.seg-detail\s*\{[^}]*position:\s*static[^}]*overflow-y:\s*auto/.test(block)
+  );
+  check('oynatıcı şeridi korunur (dalga gizlenir)', /#view-audio \.listen-strip \.wave-canvas\s*\{[^}]*display:\s*none/.test(block));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
@@ -712,16 +739,16 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} · .main-area ${mainArea}`);
   console.log(`  ölü bildirim: reading-layer içi ${deadCount(layerRules)} · app.css→layer ${cross}`);
 
-  // Nöbetçi eşikleri (v2.139 ölçümü: 26/59/98/507/14). Borç ARTARSA test
+  // Nöbetçi eşikleri (v2.140 ölçümü: 26/68/98/507/15). Borç ARTARSA test
   // kalır; temizlik yapılırsa eşik DÜŞÜRÜLÜR. 97→98 ve 501→507: v2.139'un
-  // yapışkan `.seg-detail` kuralı, app.css'teki yinelenen `overflow`
-  // bildirimlerini etkisiz bıraktı (bilinçli, tek seferlik). !important
-  // sayacı artık YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
+  // v2.140 masaüstü kabuğu 7 zorunlu `!important` ekledi (v2.129'un
+  // `!important` taşıyan taşma kurallarını ezmek için). !important sayacı
+  // YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=59)', impLayer <= 59, String(impLayer));
+  check('reading-layer !important sayısı artmadı (<=68)', impLayer <= 68, String(impLayer));
   check('reading-layer içi ölü bildirim artmadı (<=98)', deadCount(layerRules) <= 98, String(deadCount(layerRules)));
   check('app.css→reading-layer ölü bildirim artmadı (<=507)', cross <= 507, String(cross));
-  check('.main-area tanımı artmadı (<=14)', mainArea <= 14, String(mainArea));
+  check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

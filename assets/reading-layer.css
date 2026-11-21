@@ -1504,3 +1504,123 @@ body.ws-mode #view-audio .seg-detail {
   top: 53px;
   max-height: calc(100vh - 69px);
 }
+
+/* ============================================================================
+   v2.140 — MASAÜSTÜ KABUĞU (≥901 px): SABİT ÇERÇEVE, PANELLER KENDİ KAYDIRIR.
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.139, 362 bölüm, 1440×900): ses görünümü TEK sayfa olarak
+   14.156 px; 362 bölümün hepsi aynı kaydırmada akıyor, düzenleme paneli
+   ekrandan çıkıyor. Kullanıcı: "aşağı doğru uzayıp gitmesi çok garip;
+   masaüstü uygulaması havası olmalı."
+   KURAL: kabuk sabit; kayıt sütunu, bölüm listesi ve düzenleme paneli KENDİ
+   İÇİNDE kayar. ≤900 px'te eski tek-kaydırma davranışı (dar ekran yedeği)
+   korunur; bu blok oraya dokunmaz.
+   `!important` YALNIZ v2.129'un `!important` taşıyan çakışan bildirimlerinde
+   kullanılır (main-area/seg-list/seg-workspace taşma kuralları); geri kalanı
+   özgüllükle çözülür. Böylece CSS borcu nöbetçisi [8] sınırda kalır.
+   ============================================================================ */
+@media (min-width: 901px) {
+  html, body { height: 100%; overflow: hidden; }
+  .app-shell { height: 100vh; overflow: hidden; }
+  .main-area {
+    height: 100vh;
+    overflow: hidden !important; /* v2.129: overflow-y:auto !important */
+    display: flex;
+    flex-direction: column;
+    padding: 0 14px 0;
+  }
+  .topbar { flex: 0 0 auto; margin-bottom: 8px; }
+  .statusbar { flex: 0 0 auto; height: 24px; margin-top: 4px; }
+  .main-area > .view.active { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+
+  /* Ses görünümü: kayıtlar (sol sütun) + kayıt başlığı + liste + düzenleme */
+  #view-audio.active {
+    /* v2.131 `#view-audio.active{flex:0 0 auto}` idi; masaüstü kabuğunda
+       görünüm kalan yüksekliği DOLDURMALI (id özgüllüğü nedeniyle burada
+       açıkça yazılır). */
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 8px;
+    overflow: hidden !important; /* v2.129: overflow:visible !important */
+  }
+  #view-audio > .upload-zone {
+    grid-column: 1; grid-row: 1;
+    padding: 8px 10px; margin: 0; min-height: 0;
+  }
+  #view-audio > .upload-zone .upload-icon,
+  #view-audio > .upload-zone h3,
+  #view-audio > .upload-zone small { display: none; }
+  #view-audio > .panel:not(.detail-panel) {
+    grid-column: 1; grid-row: 2;
+    min-height: 0; overflow: auto; margin: 0;
+  }
+  #view-audio > .panel:not(.detail-panel) .panel-heading { display: none; }
+  #view-audio > .detail-panel {
+    grid-column: 2; grid-row: 1 / span 2;
+    min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column; margin: 0;
+  }
+  #view-audio .detail-panel > .panel-heading { display: none; }
+  #view-audio #audioDetail {
+    flex: 1 1 auto !important; /* v2.129: flex:0 0 auto !important */
+    min-height: 0;
+    overflow: hidden !important; /* v2.129: overflow:visible !important */
+  }
+  #view-audio .audio-card {
+    flex: 1 1 auto !important; /* v2.129: flex:0 0 auto */
+    height: 100%; min-height: 0;
+    display: flex; flex-direction: column;
+    overflow: hidden; border: 0; padding: 0;
+  }
+  #view-audio .card-pane[data-pane="transcript"].on {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #view-audio .transcript-editor,
+  #view-audio .segments-root {
+    flex: 1 1 auto; min-height: 0; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  #view-audio .seg-workspace {
+    flex: 1 1 auto; min-height: 0;
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 8px;
+    /* v2.129 `align-items:start` idi; paneller satırı DOLDURMALI ki kendi
+       içlerinde kaysınlar (yoksa içerik kadar uzayıp kırpılırlar). */
+    align-items: stretch;
+    overflow: hidden !important; /* v2.129: overflow:visible !important */
+  }
+  /* TEK kaydırma kuralı burada BİLİNÇLİ olarak kalkar: paneller kendi kaydırır. */
+  #view-audio .seg-list {
+    height: 100% !important;      /* v2.129: height:auto !important */
+    max-height: none !important;  /* v2.129: max-height:none !important */
+    overflow-y: auto !important;  /* v2.129: overflow:visible !important */
+  }
+  #view-audio .seg-detail {
+    position: static;
+    top: auto;
+    /* v2.139 `align-self:start` bıraktı; masaüstünde satırı DOLDURMALI. */
+    align-self: stretch;
+    height: 100%;
+    max-height: none;
+    overflow-y: auto;
+  }
+  /* Kayıt başlığı kompakt: yer panellere kalsın. Oynatıcı KORUNUR, dalga gizlenir. */
+  #view-audio .audio-file-main { padding: 2px 0; }
+  #view-audio .audio-file-main small { display: none; }
+  #view-audio .card-tabs { margin: 2px 0; padding: 0; }
+  #view-audio .listen-strip { padding: 0; gap: 4px; }
+  #view-audio .listen-strip .wave-canvas { display: none; }
+  #view-audio .transcript-toolbar { padding: 2px 0; margin: 0; }
+  /* Liste paneli dar: satır iki satır (metin + durum rozeti). */
+  #view-audio .seg-item { grid-template-columns: 20px 84px minmax(0, 1fr); }
+  #view-audio .seg-badges { grid-column: 3; justify-content: flex-start; }
+  /* Düzenleme paneli: metin üstte, teknik panel altta (tam genişlik). */
+  #view-audio .seg-detail .sd-body { display: flex; flex-direction: column; gap: 8px; }
+  #view-audio .seg-detail .sd-right { order: 1; }
+  #view-audio .seg-detail .sd-left { order: 2; }
+}

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.139';
+} from './schema.js?v=2.140';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.139';
+const APP_VERSION = '2.140';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11658,6 +11658,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.140': {
+    title: 'Masaüstü düzeni: sayfa kaymıyor, paneller kendi kaydırıyor',
+    body:
+      '362 bölümlü kayıtta her şey tek uzun sayfada akıyordu (14 bin piksel); ' +
+      'aşağı indikçe düzenleme paneli kayboluyordu. Artık üst bar ve durum çubuğu ' +
+      'SABİT: kayıtlar solda, bölüm listesi ve düzenleme paneli kendi içinde kayıyor. ' +
+      'Panel her zaman görünür. 900 pikselden dar ekranlarda eski düzen korunur.'
+  },
   '2.139': {
     title: 'Uzun listede düzenleme paneli hep görünür',
     body:
