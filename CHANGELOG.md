@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.158.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.159.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.159 — Dar ekranda yinelenen başlık
+
+Tüm sayfa taramasında bulundu: 900 px'ten dar ekranda **tek kayıt için dört
+başlık** vardı — sayfa başlığı "Ses kayıtları", panel "MATERYAL LİSTESİ / Ses
+kayıtları", panel "SEÇİLİ KAYIT / <dosya adı>" ve kartın kendi dosya adı.
+
+### KULLANICI NE GÖRECEK
+
+- Dar ekranda "SEÇİLİ KAYIT" panel başlığı **kaldırıldı**; kart zaten dosya
+  adını ve düğmelerini taşıyor. Tek kayıt için **3 başlık** kalır.
+- **Masaüstünde değişiklik yok** (≥901 px'te iki panel yan yana; etiket ayırt
+  edici olduğu için korunur).
+
+### ÖLÇÜM (v2.159, gerçek Chromium)
+
+| Genişlik | Başlık yüksekliği | Kart | Yatay taşma |
+|---|---|---|---|
+| 900 | **0 px** (gizli) | görünür | yok |
+| 1440 | 0 px (masaüstü kabuğunda zaten gizli) | görünür | yok |
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2w]** (2 kontrol): ≤900 px'te gizli, ≥901 px'te bu kural
+uygulanmıyor.
 
 ## v2.158 — Bildirim yerleşimi ve ses yok durumu
 

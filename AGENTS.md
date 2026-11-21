@@ -2062,6 +2062,25 @@ bir satır bırakmalı; toast yalnız *değişikliği* duyurur. Ayrıca sabit ko
 her öğe, altındaki sabit çubukla çakışma açısından ölçülmelidir.
 
 
+### Aşama 10be — Dar ekranda yinelenen başlık (TAMAMLANDI, v2.159)
+
+**BULGU (denetim #6):** ≤900 px'te tek kayıt için DÖRT başlık: sayfa
+"Ses kayıtları" + panel "MATERYAL LİSTESİ / Ses kayıtları" + panel
+"SEÇİLİ KAYIT / <dosya adı>" + karttaki dosya adı.
+
+**Düzeltme:** `@media (max-width: 900px) { #view-audio .detail-panel >
+.panel-heading { display: none } }`. Kart adı ve eylemleri taşıdığı için bilgi
+kaybı yok. Masaüstü kuralı ayrı; test ikisini ayrı sınar.
+
+**Ölçüm (v2.159, gerçek Chromium):** 900 px → başlık **0 px**, kart görünür,
+yatay taşma yok. 1440 px → değişiklik yok (kabuk zaten gizliyor).
+
+**Koruyan test:** `tasarim-testi` [2w] (2 kontrol).
+
+**DERS:** Master–detail düzeninde her katman kendi başlığını ekler; dar ekranda
+bunlar üst üste gelir. "Kaç başlık var?" sorusu ölçülebilir bir denetimdir.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2235,7 +2254,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.158.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.159.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2534,7 +2553,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.158) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.159) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2545,10 +2564,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.158** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.159** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.158 |
-| Açık konu | **v2.159 — dar ekran başlıkları + genel bakış boş alanı** (kozmetik) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.159 |
+| Açık konu | **Yok** (denetim bulguları #1–#6 kapatıldı; #7 kozmetik, isteğe bağlı) |
 
 ### Bu oturumda ne değişti (kısa)
 

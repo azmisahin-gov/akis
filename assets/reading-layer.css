@@ -1937,3 +1937,16 @@ input::placeholder, textarea::placeholder {
   font-size: var(--fs-2xs);
   line-height: 1.5;
 }
+
+/* ============================================================================
+   v2.159 — DAR EKRANDA YİNELENEN BAŞLIK
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.158, 900 px): tek kayıt için DÖRT başlık vardı — sayfa başlığı
+   "Ses kayıtları", panel "MATERYAL LİSTESİ / Ses kayıtları", panel
+   "SEÇİLİ KAYIT / <dosya adı>" ve kartın kendi dosya adı. Dar ekranda detay
+   panelinin başlığı GİZLENİR; kart adı ve eylemleri zaten taşır. Masaüstünde
+   (≥901 px) başlık korunur: orada iki panel yan yana ve etiket ayırt edici.
+   ============================================================================ */
+@media (max-width: 900px) {
+  #view-audio .detail-panel > .panel-heading { display: none; }
+}

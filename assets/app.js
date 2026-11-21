@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.158';
+} from './schema.js?v=2.159';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.158';
+const APP_VERSION = '2.159';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12226,6 +12226,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.159': {
+    title: 'Dar ekranda yinelenen başlık kaldırıldı',
+    body:
+      '900 pikselden dar ekranda tek kayıt için dört başlık vardı (sayfa + ' +
+      'materyal listesi + seçili kayıt + karttaki dosya adı). "SEÇİLİ KAYIT" ' +
+      'başlığı kaldırıldı; kart kendi adını ve düğmelerini taşıyor. Masaüstünde ' +
+      'değişiklik yok.'
+  },
   '2.158': {
     title: 'Bildirim durum çubuğunu kapatmıyor; ses yoksa kalıcı uyarı var',
     body:

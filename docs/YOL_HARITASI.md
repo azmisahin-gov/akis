@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.158.**
+yazılır. **Güncel sürüm: v2.159.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.159 — Dar ekranda yinelenen başlık (tamamlandı)
+
+≤900 px'te "SEÇİLİ KAYIT" panel başlığı gizlenir (kart adı ve eylemleri taşır);
+masaüstünde korunur. Ölçüm: 900 px'te başlık **0 px**, kart görünür, yatay
+taşma yok. Koruyan test: `tasarim` [2w].
 
 ### v2.158 — Bildirim yerleşimi ve ses yok durumu (tamamlandı)
 

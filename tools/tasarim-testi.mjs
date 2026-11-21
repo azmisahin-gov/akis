@@ -485,6 +485,18 @@ console.log('\n[2v] Tek panel, iki bölge (v2.154)');
   check('teknik tercih saklanıyor', /akis\.techOpen/.test(js) && /function techOpenPref/.test(js));
 }
 
+// --- 2w. Dar ekranda yinelenen başlık gizlenir (v2.159) -------------------
+// ÖLÇÜM (v2.158, 900 px): "Ses kayıtları" (sayfa) + "MATERYAL LİSTESİ / Ses
+// kayıtları" + "SEÇİLİ KAYIT / <dosya adı>" + karttaki dosya adı → tek kayıt
+// için 4 başlık. Dar ekranda detay paneli başlığı GİZLENİR (kart kendi adını
+// ve eylemlerini taşır); masaüstünde başlık korunur.
+console.log('\n[2w] Dar ekranda yinelenen başlık gizlenir (v2.159)');
+{
+  const rl = read('assets/reading-layer.css');
+  check('dar ekranda detay başlığı gizli', /@media \(max-width: 900px\)[\s\S]{0,600}detail-panel > \.panel-heading\s*\{\s*display:\s*none/.test(rl));
+  check('masaüstünde başlık korunur', !/@media \(min-width: 901px\)[\s\S]{0,600}detail-panel > \.panel-heading\s*\{\s*display:\s*none/.test(rl));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
