@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 + P7 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.173** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.175** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **961 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `a9b2e26` |
+| Git | `main` = `origin/main` = `7da0d62` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.173** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.175** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2589,6 +2589,8 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.171 | CSS borcu: ölü bildirimler (7 katman tekrarı) | kural 828 → **825**, `!important` 58 → **55**, ölü 72 → **60**; stil farkı **0** | `tasarim` [8] eşik |
 | v2.172 | Rapor önizlemesi kırpılmıyor (tek kaydırma) | kâğıt **196 → 6.438 px**; görünüm 6.254 px kayıyor; araç çubuğu yapışkan | `tasarim` [2ah] |
 | v2.173 | Paket adı saniye taşıyor | aynı dakikada iki paket **farklı ad** (10-00-40 / 10-00-47) | `birim` [66] |
+| v2.174 | "Ses yok" uyarısı Teknik kapalıyken de görünür | uyarı panel dışına alındı | `tasarim` [2ai] |
+| v2.175 | Uyarı **ilk çizimde** de yazılır | Teknik kapalı + taze sayfa → uyarı görünür | `tasarim` [2ai] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2779,6 +2781,34 @@ hangi paketin kimden geldiği addan anlaşılmıyordu. Ad artık **saniye** taş
 ölçüm betiği yanlış dosyayı seçti ve "birleştirme öneriyi aktarmıyor" gibi
 **yanlış** bir sonuç verdi. Kural: indirilen dosyaları **benzersiz adlara
 kopyalayıp** kullan (`A.akis` / `B.akis`); ada göre arama yapma.
+
+#### P7 — Arşiv / kalıcı silme / kurtarma kopyası (ÖLÇÜLDÜ, v2.175)
+
+Gerçek Chromium'da uçtan uca ölçüldü (2 dosya + 2 ses; arşivle → geri al →
+yeniden arşivle → iki onayla sil → kurtarma kopyası).
+
+| Adım | Sonuç |
+|---|---|
+| Arşivle | onay sorulmaz (yıkıcı değil), dosya seçiciden gizlenir, "Arşiv (1)", toast "SİLİNMEDİ" |
+| Arşiv paneli | "↩ Geri al" + "Kalıcı sil"; geri alınca dosya döner, "Arşiv (0)" |
+| Kalıcı sil | 1. onay (sesin gideceğini söyler) + **yazılı ifade** (dosya no); yanlış ifade → düğme kapalı + hata |
+| Silme sonrası | yalnız o dosyanın ses blob'u silindi (**doğru dosya** doğrulandı), diğeri durdu |
+| Son dosya arşivlenince | onay + **yeni boş çalışma alanı**; ses korunur |
+| Son dosya silinince | yeni boş çalışma alanı; blob'lar boş |
+| Kurtarma kopyası | yazma beklerken `pagehide` → `akis.lastSnapshot` (2.577 bayt); yalnız IndexedDB silinip yenilenince "1 dosyalık kurtarma kopyası var" → geri yüklendi |
+
+**Ölçümde bulunan kusur (v2.174/v2.175):** sesi silinmiş kayıtta "ses yok"
+uyarısı Teknik panelinin içindeydi (kapalı) ve **ilk çizimde** yazılmıyordu →
+kullanıcı durumu hiç görmüyordu. Uyarı panel dışına alındı ve ilk çizimde de
+tazeleniyor.
+
+**AÇIK KONU (ölçüldü, DÜZELTİLMEDİ):** kalıcı silme sonrası Ctrl+Z kaydı
+arşivde geri getiriyor; ancak **bellekteki object URL iptal edilmediği** için
+ses, sayfa yenilenene kadar **çalınabiliyor** (ölçüm: `blob:` src, 47,7 sn;
+yenilemeden sonra src boş). Yanıltıcı: kullanıcı sesi geri geldi sanabilir.
+Sıradaki sürüm adayı: `purgeCaseById` içinde `URL.revokeObjectURL` + `objectUrls`
+temizliği; test: purge sonrası `[data-audio-state]` uyarısı görünür, oynatıcıda
+src yok.
 
 ### DOĞRULAMA (her oturum başı)
 
