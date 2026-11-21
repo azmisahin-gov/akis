@@ -452,7 +452,7 @@ console.log('\n[2t] Listede başlangıç–bitiş YAN YANA (v2.152 → v2.186)')
   check('tire ayırıcı var', /class="seg-dash"/.test(js));
   // v2.186: listede KISA saat (ms YOK); ms DETAYDA düzenlenebilir kalır.
   check('bitiş zamanı kayıttan yazılır (kısa biçim)', /seg-end">\$\{esc\(shortClock\(s\.end\)\)/.test(js));
-  check('detayda ms korunur (start/end girdileri tam)', /data-key="start" value="\$\{esc\(s\.start/.test(js));
+  check('detayda ms korunur (start/end girdileri tam)', /data-key="start"[^>]*value="\$\{esc\(s\.start/.test(js));
   check('zaman hücresinde kesme (ellipsis) yok', !/#view-audio \.seg-time\s*\{[^}]*text-overflow/.test(rl));
   check('zaman sütunu kısa saate göre (132px)', /#view-audio \.seg-item\s*\{[^}]*grid-template-columns:\s*26px 132px/.test(rl));
 }
@@ -467,7 +467,19 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
   // v2.180: konuşmacı/kontrol başlığın altına taşındı; yerleşim grid değil
   // FLEX satır (niyet aynı: tek satır, sığmazsa sarar).
   check('konuşmacı/kontrol tek satır (flex)', /#view-audio \.sd-meta\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/.test(rl));
-  check('zaman etiketi kutunun yanında (satır)', /#view-audio \.sd-times \.sd-time\s*\{[^}]*flex-direction:\s*row/.test(rl));
+  // v2.189: zaman alanları dalga kutusunun ÜSTÜNDE yarı saydam şeritte.
+  const iCanvas = js.indexOf('class="sd-canvas-wrap');
+  const iTimes = js.indexOf('class="sd-times sd-times-overlay"');
+  check('zaman şeridi dalga kutusunun içinde', iCanvas > 0 && iTimes > iCanvas, `canvas=${iCanvas} times=${iTimes}`);
+  check('zaman şeridi yarı saydam', /\.sd-times-overlay\s*\{[^}]*color-mix\(/.test(rl));
+  check('zaman şeridi tıklamayı geçirir', /\.sd-times-overlay\s*\{[^}]*pointer-events:\s*none/.test(rl));
+  check('sıra: başlangıç → süre → bitiş', (() => {
+    const b = js.slice(iTimes, iTimes + 1200);
+    const a = b.indexOf('data-key="start"');
+    const d = b.indexOf('class="sd-dur"');
+    const e = b.indexOf('data-key="end"');
+    return a >= 0 && d > a && e > d;
+  })());
   // v2.177: ikincil araçlar artık SATIR MENÜSÜNDE (⋮). Katlama kaldırıldı;
   // aynı işler kaybolmadı, satır menüsüne taşındı.
   check('ikincil araçlar satır menüsünde (⋮)', /data-seg-menu="/.test(js));

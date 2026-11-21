@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.188.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.189.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.188** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.189** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3139,6 +3139,27 @@ textarea kendi içinde kayarsa katman hizada kalamaz: alan içeriği kadar
 büyümeli, kaydırma panelde olmalıdır.
 
 **Koruyan test:** `birim` [68] + `tasarim` [2f]/[2s]/[2al]/[2am]/[2an]/[2ao].
+
+#### P19 — Zamanlar dalganın üstünde (v2.189)
+
+**KULLANICI:** *"sd-canvas-wrap kısmına da üzerine gelecek şekilde hafif şeffaf
+sol alt taraf time-input (Başlangıç — ortaya Süre — sağ alt Bitiş) taşı."*
+
+**YAPILAN:** `.sd-times` bloğu `.sd-canvas-wrap` içine taşındı ve
+`sd-times-overlay` sınıfıyla alt kenara yarı saydam şerit olarak bindirildi.
+Sıra: Başlangıç (sol) → Süre (orta) → Bitiş (sağ). Şerit `pointer-events:none`,
+yalnız `input`lar `auto` → dalga sürükleme/zoom bozulmaz.
+
+**ÖLÇÜM:** şerit 46 px / kanvas 160 px; 1440→600 kırpılma 0, yatay taşma 0;
+`elementFromPoint` şerit ortasında `sd-spec-canvas` döndü (tıklama geçiyor);
+input odaklanıyor (height 24). JS hatası 0.
+
+**DERS:** Bindirilmiş bir araç şeridi, altındaki tuvalin etkileşimini
+YUTMAMALIDIR. `pointer-events:none` + yalnız etkileşimli çocukta `auto`
+deseni bunu sağlar. Ayrıca form alanlarının `min-height` tabanı (32 px) şeridi
+şişirir; kompakt şeritte açıkça düşürülür (24 px).
+
+**Koruyan test:** `tasarim` [2u] + [2t].
 
 ### DOĞRULAMA (her oturum başı)
 

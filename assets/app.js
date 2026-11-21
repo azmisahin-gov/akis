@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.188';
+} from './schema.js?v=2.189';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.188';
+const APP_VERSION = '2.189';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4160,12 +4160,16 @@ function segDetailHtml(m) {
           <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="112" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
           <canvas class="sd-spec-overlay" id="sdspecov-${esc(m.id)}" aria-hidden="true" hidden></canvas>
           <span class="sd-spec-readout" id="sdspecread-${esc(m.id)}" hidden></span>
+          <!-- ZAMANLAR DALGANIN ÜSTÜNDE (v2.189): ayrı satır yer kaplamasın.
+               Yarı saydam şerit: solda Başlangıç, ortada Süre, sağda Bitiş.
+               Şerit tıklamayı geçirir (pointer-events:none); yalnız kutular
+               tıklamayı yakalar, dalga sürükleme bozulmaz. -->
+          <div class="sd-times sd-times-overlay">
+            <label class="sd-time"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" aria-label="Başlangıç zamanı" title="Başlangıç zamanı (SS:DD:ss.mmm)" value="${esc(s.start || '')}"></label>
+            <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
+            <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" aria-label="Bitiş zamanı" title="Bitiş zamanı (SS:DD:ss.mmm)" value="${esc(s.end || '')}"></label>
+          </div>
         </div>
-      </div>
-      <div class="sd-times">
-        <label class="sd-time"><span>Başlangıç</span><input class="time-input" data-seg="${i}" data-key="start" value="${esc(s.start || '')}"></label>
-        <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
-        <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
       </div>
     </div>
     <div class="sd-right">
@@ -12577,6 +12581,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.189': {
+    title: 'Zamanlar dalganın üstünde',
+    body:
+      'Başlangıç, Süre ve Bitiş alanları ayrı satırdan çıkıp dalga/spektrogram ' +
+      'kutusunun altına yarı saydam şerit olarak bindirildi: solda Başlangıç, ' +
+      'ortada Süre, sağda Bitiş. Yaklaşık 44 px dikey yer kazanılır. Şerit ' +
+      'tıklamayı geçirir; dalga sürükleme ve zoom bozulmaz.'
+  },
   '2.188': {
     title: 'Metin kutusu: tek kutu, dört köşe',
     body:

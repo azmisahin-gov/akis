@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.188.**
+yazılır. **Güncel sürüm: v2.189.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.189 — Zamanlar dalganın üstünde (tamamlandı)
+
+Başlangıç/Süre/Bitiş alanları ayrı satırdan çıkıp dalga/spektrogram kutusunun
+altına **yarı saydam şerit** olarak bindirildi (solda Başlangıç, ortada Süre,
+sağda Bitiş). Şerit 46 px; kanvas 160 px. Şerit tıklamayı geçirir
+(`pointer-events:none`), yalnız kutular tıklamayı yakalar → dalga sürükleme ve
+zoom bozulmaz. 1440→600 px kırpılma/yatay taşma 0. Koruyan test: `tasarim` [2u].
 
 ### v2.188 — Metin kutusu: tek kutu, dört köşe (tamamlandı)
 

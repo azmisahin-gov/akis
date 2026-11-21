@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.188.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.189.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.189 — Zamanlar dalganın üstünde
+
+Kullanıcı: *"sd-canvas-wrap kısmına da üzerine gelecek şekilde hafif şeffaf sol
+alt taraf time-input (Başlangıç — ortaya Süre — sağ alt Bitiş time-input)
+taşı."*
+
+### KULLANICI NE GÖRECEK
+
+- **Başlangıç, Süre ve Bitiş** artık dalga/spektrogram kutusunun **altında
+  yarı saydam bir şeritte**: solda **Başlangıç**, ortada **Süre**, sağda
+  **Bitiş**. Ayrı satır kalktığı için ~**44 px** dikey yer kazanılır.
+- Şerit **hafif şeffaftır** ve **tıklamayı geçirir**; yalnız zaman kutuları
+  tıklamayı yakalar. Dalga sürükleme, zoom ve spektrogram tıklaması bozulmaz.
+
+### ÖLÇÜM (gerçek Chromium + gerçek WAV)
+
+| Konu | Sonuç |
+|---|---|
+| Şerit konumu | `.sd-canvas-wrap` içinde, `position:absolute`, alt kenardan 6 px |
+| Yükseklik | **46 px** (kanvas 160 px), 1440→600 px aynı |
+| Sıra | Başlangıç < Süre < Bitiş (sol → orta → sağ) |
+| Zemin | `color-mix(surface 76%)` — temaya bağlı yarı saydam |
+| Tıklama | şerit zemini `pointer-events:none` → altındaki tuval; kutular `auto` |
+| Kırpılma / yatay taşma | **0 / 0** (1440/1280/1100/900/760/600) |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`tasarim` [2u] (şerit kanvas içinde, yarı saydam, tıklamayı geçirir, sıra
+başlangıç→süre→bitiş) + [2t] (ms'li değerler korunur).
 
 ## v2.188 — Metin kutusu: tek kutu, dört köşe
 

@@ -2578,3 +2578,77 @@ input::placeholder, textarea::placeholder {
   color: var(--ink-3);
   line-height: 1.5;
 }
+
+/* ============================================================================
+   v2.189 — ZAMANLAR DALGANIN ÜSTÜNDE (yarı saydam şerit)
+   ----------------------------------------------------------------------------
+   KULLANICI: "sd-canvas-wrap kısmına da üzerine gelecek şekilde hafif şeffaf
+   sol alt taraf time-input (Başlangıç — ortaya Süre — sağ alt Bitiş
+   time-input) taşı."
+
+   YAPILAN: Başlangıç/Bitiş/Süre alanları ayrı satırdan çıkıp dalga/spektrogram
+   kutusunun ALTINA yarı saydam bir şerit olarak bindirildi. Böylece ~44 px
+   dikey yer kazanılır. Şerit tıklamayı GEÇİRİR (`pointer-events:none`);
+   yalnız zaman kutuları tıklamayı yakalar → dalga sürükleme/zoom bozulmaz.
+
+   KURAL: Şerit zemini temaya bağlıdır (color-mix + --surface); koyu/sepya
+   temada da okunur. Ham renk yazılmaz. Şerit KIRPILMAZ: üç öğe sığmazsa
+   sarar (canvas 160 px sabit kalır).
+   ============================================================================ */
+#view-audio .sd-canvas-wrap .sd-times-overlay {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 4px 8px;
+  padding: 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--line-2) 55%, transparent);
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+}
+#view-audio .sd-canvas-wrap .sd-times-overlay .sd-time {
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  min-width: 0;
+  pointer-events: none;
+}
+#view-audio .sd-canvas-wrap .sd-times-overlay .sd-time > span {
+  font-size: var(--fs-2xs);
+  line-height: 1.2;
+  color: var(--ink-3);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+#view-audio .sd-canvas-wrap .sd-times-overlay .sd-time input {
+  width: 96px;
+  min-width: 0;
+  flex: 0 0 auto;
+  height: 24px;
+  min-height: 24px;
+  padding: 1px 5px;
+  font-size: var(--fs-2xs);
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: auto;
+}
+#view-audio .sd-canvas-wrap .sd-times-overlay .sd-time-dur {
+  flex-direction: column;
+  align-items: stretch;
+}
+#view-audio .sd-canvas-wrap .sd-times-overlay .sd-dur {
+  padding: 0;
+  text-align: center;
+  min-width: 48px;
+  font-size: var(--fs-2xs);
+}

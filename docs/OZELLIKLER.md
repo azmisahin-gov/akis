@@ -1,4 +1,4 @@
-# Özellikler (v2.188 — mevcut durum)
+# Özellikler (v2.189 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,10 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Zamanlar dalganın üstünde (v2.189):** Başlangıç, Süre ve Bitiş alanları
+  ayrı satır yerine dalga/spektrogram kutusunun altında **yarı saydam şeritte**
+  (solda Başlangıç, ortada Süre, sağda Bitiş). Şerit tıklamayı geçirir; dalga
+  sürükleme ve zoom bozulmaz; ~44 px dikey yer kazanılır.
 - **Metin kutusu: tek kutu, dört köşe (v2.188):** okunan kelime metnin
   **içinde** vurgulanır (ayrı vurgu şeridi yok). Gözlem işaretleri (rapora
   aktarılır) kutunun **alt solunda**, "+ Hızlı ekle" menüsü **alt sağında**,
