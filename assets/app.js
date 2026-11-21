@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.146';
+} from './schema.js?v=2.147';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.146';
+const APP_VERSION = '2.147';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5615,8 +5615,10 @@ function ensureSegStopListener(player) {
     if (st.materialId) {
       const mm = currentCase()?.materials.find((x) => x.id === st.materialId);
       if (mm) {
-        renderKaraoke(mm, st.index);
-        paintSpecOverlay(mm, st.index, null);
+        // ESKİ İNDEKS DEĞİL (v2.147): otomatik geçişte çalan bölüm aktif olandır.
+        const idxNow = activeSegIndex(mm);
+        renderKaraoke(mm, idxNow);
+        paintSpecOverlay(mm, idxNow, null);
       }
     }
     if (st.stopAt != null && player.currentTime >= st.stopAt - 0.01) {
@@ -5991,7 +5993,17 @@ function activeSentenceIndex(ranges, activeIdx) {
   return -1;
 }
 
+// TAKİP ŞERİDİ HANGİ BÖLÜMÜ GÖSTERİR — SAF (v2.147).
+// NEDEN: bölüm oynatıcısının `timeupdate`i, çalmaya BAŞLADIĞI indeksi
+// (`__segStop.index`) kullanıyordu. Otomatik geçiş bir sonraki bölüme geçince
+// şerit eski bölümün metnine dönüyordu (gerçek sesle ölçüldü: 1,3 sn'de 5 kez).
+// KURAL: otomatik geçiş açıkken şerit AKTİF bölümü gösterir.
+function followStripIndex(m, idx, autoAdvance) {
+  if (autoAdvance && m && Number.isInteger(m.activeSeg)) return m.activeSeg;
+  return idx;
+}
 function markTextFollow(m, idx, t) {
+  idx = followStripIndex(m, idx, followState.autoAdvance);
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-text`);
   if (!wrap) return;
   // CANLI VURGU KAPALIYSA ÇİZME (v2.119): kullanıcı istemediyse metin vurgusu
@@ -11683,6 +11695,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.147': {
+    title: 'Takip şeridi artık önceki bölüme dönmüyor',
+    body:
+      'Otomatik geçiş açıkken bölüm oynatıcısı, çalmaya başladığı ESKİ indeksi ' +
+      'kullanıyordu; şerit bir an önceki bölümün metnine dönüp sonra düzeliyordu ' +
+      '("bir öncekiyle karışıyor"). Artık şerit her zaman AKTİF bölümü gösterir. ' +
+      'Gerçek örnek sesle ölçüldü: 1,3 sn\'de 5 geri dönüş → 0.'
+  },
   '2.146': {
     title: 'Zaman sorunu düzenlerken anında görünüyor',
     body:

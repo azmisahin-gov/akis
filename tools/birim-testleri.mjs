@@ -115,7 +115,7 @@ const EXPOSE = [
   'normalizeRescueCases', 'persistPayloadFor',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
-  'segmentIndexAtTime', 'segmentTimeIssueAt',
+  'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2829,6 +2829,22 @@ console.log('\n== [56] Zaman sorunu: iki taraf da işaretlenir (v2.146)');
     eq('sonraki bölüm de işaretli', !!b && b.kind === 'overlap', true);
     eq('iki taraf birbirini gösterir', a.j, 1);
     eq('temiz veride sorun yok', T.segmentTimeIssueAt([seg('00:00:00.000', '00:00:03.000')], 0), null);
+  }
+}
+
+
+console.log('\n== [57] Takip şeridi eski bölüme dönmüyor (v2.147)');
+{
+  // GERÇEK SESLE ÖLÇÜM (sample_data/audio, 47 sn, 16 bölüm, F+G açık):
+  // active=1 iken şerit anahtarı 1,3 sn içinde 5 kez `0|0|Bölüm 1:`e döndü.
+  // Sebep: bölüm oynatıcısının timeupdate'i `renderKaraoke(mm, st.index)` ile
+  // ESKİ indeksi kullanıyordu. KURAL: otomatik geçiş açıkken şerit AKTİF
+  // bölümü gösterir; eski indeks şeridi geriye çekemez.
+  eq('followStripIndex tanımlı', typeof T.followStripIndex, 'function');
+  if (typeof T.followStripIndex === 'function') {
+    eq('otomatik geçişte aktif bölüm kullanılır', T.followStripIndex({ activeSeg: 1 }, 0, true), 1);
+    eq('otomatik geçiş kapalıyken verilen indeks', T.followStripIndex({ activeSeg: 1 }, 0, false), 0);
+    eq('aktif bölüm yoksa verilen indeks', T.followStripIndex({}, 3, true), 3);
   }
 }
 

@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.146.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.147.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.147 — Takip şeridi önceki bölüme dönmüyor
+
+CANLI VERİ. Kullanıcı: *"Otomatik geçiş + canlı vurgu açıkken bir önceki
+segment bir sonrakiyle mi karışıyor; vurgu sürekli değişiyor."* Bu kez
+**gerçek örnek sesle** ölçüldü (`sample_data/audio/ses_01…wav`, 47 sn,
+16 bölüm, F+G açık).
+
+### ÖLÇÜM (v2.146, gerçek ses, 50 ms aralıkla)
+
+| Zaman | Aktif bölüm | Şerit anahtarı | Şerit metni |
+|---|---|---|---|
+| 3,26 | Bölüm 2 | `1|0|Bölüm 2…` | "Bölüm 2:" |
+| **3,31** | Bölüm 2 | **`0|0|Bölüm 1…`** | **"Bölüm 1:"** |
+| 3,41 | Bölüm 2 | `1|0|Bölüm 2…` | "Bölüm 2:" |
+| **3,62** | Bölüm 2 | **`0|0|Bölüm 1…`** | **"Bölüm 1:"** |
+| … | | 1,3 sn'de **5 geri dönüş** | |
+
+Kök neden: `ensureSegStopListener`'ın `timeupdate`i `renderKaraoke(mm,
+st.index)` çağırıyordu; `st.index` **çalmanın başladığı** indekstir (0). Otomatik
+geçiş 1'e geçince şerit 0'a geri çekiliyordu.
+
+### DÜZELTME
+
+- `followStripIndex(m, idx, autoAdvance)` — saf fonksiyon: otomatik geçiş
+  açıkken şerit **aktif bölümü** gösterir.
+- `markTextFollow` indeksi bu fonksiyonla sabitler.
+- Bölüm oynatıcısının `timeupdate`i `activeSegIndex(mm)` kullanır (eski indeks
+  değil) — hem şerit hem spektrogram kaplaması.
+
+### ÖLÇÜM (v2.147, aynı gerçek ses)
+
+| Durum | Sonuç |
+|---|---|
+| Aktif bölüm 2 iken şerit anahtarı | **her örnekte `1|…`** |
+| Eski bölüme geri dönüş | **0** |
+| JS hatası | 0 |
+
+### DÜRÜST SINIR
+
+Bu düzeltme, **zaman çakışması olmayan** veride de görülen bir hatayı kapatır
+(eski indeks kullanımı). Kullanıcı verisinde "Zaman sorunları" boşsa karışmanın
+kaynağı buydu; doluysa v2.145'teki çakışma koruması da devreye girer.
+
+Koruyan test: `birim-testleri` [57] (4).
 
 ## v2.146 — Zaman sorunu düzenlerken anında görünüyor
 

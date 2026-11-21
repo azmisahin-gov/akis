@@ -1712,6 +1712,31 @@ geçir: biri (burada `updateSegListItem`) parametreyi geçmezse rozet yalnız ta
 
 **Koruyan test:** `birim-testleri` [56] (5).
 
+### Aşama 10as — Takip şeridi eski bölüme dönmüyor (TAMAMLANDI, v2.147)
+
+**KURAL: şerit hangi bölümü göstereceğini AKTİF bölümden alır; oynatıcının
+"çalmaya başladığı" indeks şeridi geriye çekemez.**
+
+**Ölçülen hata (v2.146, GERÇEK SES `sample_data/audio/ses_01…wav`, 16 bölüm,
+F+G açık, 50 ms aralık):** aktif bölüm 2 iken şerit anahtarı 1,3 sn içinde
+**5 kez** `0|0|Bölüm 1:`e döndü. Kök neden: `ensureSegStopListener`'ın
+`timeupdate`i `renderKaraoke(mm, st.index)` çağırıyordu; `st.index` çalmanın
+BAŞLADIĞI indekstir.
+
+**Düzeltme:** `followStripIndex(m, idx, autoAdvance)` (saf) + `markTextFollow`
+sabitlemesi; `timeupdate` artık `activeSegIndex(mm)` kullanır (şerit + spek
+kaplaması).
+
+**Ölçüm (v2.147, aynı ses):** eski bölüme dönüş **0**; anahtar her örnekte
+`1|…`; JS hatası 0.
+
+**DERS:** `timeupdate` gibi sık çalışan dinleyiciler kapanış anındaki indeksi
+taşımamalı; indeks HER çağrıda aktif durumdan okunmalı. Ayrıca sentetik veriyle
+"ses yok" diyip geçmemek gerekir: `sample_data/audio` WAV'ı IndexedDB'ye
+konarak takip uçtan uca **gerçek sesle** ölçülebildi (ASR gerekmedi).
+
+**Koruyan test:** `birim-testleri` [57] (4).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1885,7 +1910,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.146.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.147.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2047,7 +2072,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.146** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.147** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2106,6 +2131,7 @@ Test sayısı 441 → **782**.
 | **v2.144** | **Zaman çakışmaları görünür** (⚠ rozet + "Zaman sorunları" filtresi) | `birim` [54] |
 | **v2.145** | **Takip vurgusu çakışmada geri atlamıyor** (`segmentIndexAtTime`) | `birim` [55] |
 | **v2.146** | **Zaman sorunu düzenlerken anında görünür** (⚠/çip yenilemeden çıkmıyordu) | `birim` [56] |
+| **v2.147** | **Takip şeridi eski bölüme dönmüyor** (timeupdate eski indeksi kullanıyordu) | `birim` [57] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

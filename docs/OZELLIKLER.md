@@ -1,4 +1,4 @@
-# Özellikler (v2.146 — mevcut durum)
+# Özellikler (v2.147 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -197,6 +197,8 @@ tuşları bozulmaz.
   - Kısayollar belge düzeyinde dinlenir; odak listeden çıksa bile çalışır.
 - **Bölüm listesi:** numara, başlangıç, metin özeti, konuşmacı, öncelik ve
   kontrol durumu tek satırda. Aktif bölüm işaretlenir.
+- **Takip şeridi eski bölüme dönmez (v2.147):** otomatik geçişte şerit her
+  zaman aktif bölümü gösterir; eski indeks kullanılmaz.
 - **Zaman sorunu anında görünür (v2.146):** çakışma yaratan düzenleme biter
   bitmez iki satırda ⚠ ve filtre görünür; sorun bitince filtre kalkar.
 - **Takip çakışmada atlamaz (v2.145):** oynatma konumu aktif bölümün

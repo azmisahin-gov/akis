@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.146.**
+yazılır. **Güncel sürüm: v2.147.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,12 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.147 — Takip şeridi önceki bölüme dönmüyor (tamamlandı)
+
+Bölüm oynatıcısının timeupdate'i eski indeksi kullanıyordu. `followStripIndex`
+ve `activeSegIndex` ile düzeltildi; gerçek örnek sesle ölçüldü (5→0).
+`birim` [57].
 
 ### v2.146 — Zaman sorunu düzenlerken anında görünür (tamamlandı)
 
