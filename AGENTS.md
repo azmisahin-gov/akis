@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P3 sürüyor + P4 kapandı)
+### Durum (2026-11-21, P1 + P2 + P4 + P5 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.171** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.172** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `9ad3e89` |
+| Git | `main` = `origin/main` = `ed71984` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.171** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.172** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2587,6 +2587,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.169 | Rapor kâğıdı: punto tabanı + belge fontu | 11 px altı metin 1 → **0**; kâğıt Segoe UI → **Arial** | `tasarim` [2af] |
 | v2.170 | CSS borcu: ölü `.seg-*` kuralları silindi | kural 852 → **828**, `!important` 62 → **58**, ölü 95 → **72**; stil farkı **0** | `tasarim` [2ag] |
 | v2.171 | CSS borcu: ölü bildirimler (7 katman tekrarı) | kural 828 → **825**, `!important` 58 → **55**, ölü 72 → **60**; stil farkı **0** | `tasarim` [8] eşik |
+| v2.172 | Rapor önizlemesi kırpılmıyor (tek kaydırma) | kâğıt **196 → 6.438 px**; görünüm 6.254 px kayıyor; araç çubuğu yapışkan | `tasarim` [2ah] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2740,14 +2741,20 @@ düzenleme alanı görünür alana geliyor (metin 7.929 → 587 px). Masaüstün
 kaydırma yapılmıyor. Kalan tek sınır: ≤900 px'te liste ile metin aynı anda
 görünmez (tek sütun) — bu tasarım kararı, kusur değil.
 
-#### P5 — Ses görünümü yoğunluğu (ölçüldü, DEĞİŞİKLİK YAPILMADI)
+#### P5 — Ses görünümü: performans ve yoğunluk (KAPANDI, v2.172)
 
-Ölçüm (1440, 1 kayıt, 10 bölüm, Teknik kapalı): **96 kontrol, 54 görünür**
-(10'u bölüm satırı). 42 kontrol sekme/Teknik arkasında. Araç çubuğu 1280 ve
-altında 2 satıra kırılıyor (62 → 87 px) — depo kuralı gereği **sarma
-doğrudur**, kırpma değil. Hız için 7 düğme 330 px (araç çubuğunun %31–45'i).
-**Kanıtlanmış bir kusur yok**; bu yüzden v2.166'da değiştirilmedi. Değişiklik
-yapılacaksa önce "hangi iş yavaşlıyor" ölçülmeli (tıklama/odak kaybı).
+**Performans (gerçek Chromium, 100 bölüm):** yazma **0,21 ms/tuş** (p95 0,5),
+uzun görev **0**; onay **13 ms** (boya 17 ms); görünüm geçişi **21 ms** senkron
+/ 92 ms boya; rapor çizimi **2,4 ms** / 19 ms. Darboğaz **yok**.
+
+**Yoğunluk:** 96 kontrol, 54 görünür (10'u bölüm satırı); 42'si sekme/Teknik
+arkasında. Araç çubuğu 1280 px altında 2 satıra kırılıyor (62 → 87 px) —
+depo kuralı gereği **sarma doğrudur**. Kanıtlanmış kusur yok; değiştirilmedi.
+
+**Ölçüm sırasında bulunan gerçek kusur:** rapor önizlemesi 100 bölümde
+**196 px'lik** kutuya sıkışıyordu (içerik 6.452 px). Sebep: `app.css`
+`#view-report #reportPreview` (2,0,0) kuralı. **v2.172'de düzeltildi**
+(kâğıt 6.438 px, tek kaydırma, yapışkan araç çubuğu).
 
 ### DOĞRULAMA (her oturum başı)
 
