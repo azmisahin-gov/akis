@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P11 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P12 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.181** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **974 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `09a52e3` |
+| Sürüm | **v2.182** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **976 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `fab4457` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.181** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.182** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2597,6 +2597,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.179 | Detay: canlı vurgu ezilmiyor | vurgu **14 → 48 px**, metin **120 → 160 px**, panel 81 px kaydırıyor | `tasarim` [2al] |
 | v2.180 | Konuşmacı/kontrol/gözlem her zaman görünür | meta **y=822 → 303**, gözlem **884 → 642** (panel içinde) | `tasarim` [2am] |
 | v2.181 | ASR kökeni Teknik'te, metinde ince ipucu | metin 371 → **344 px**; blok Teknik'te; notta "öncelik" yok | `tasarim` [2an] |
+| v2.182 | Dikey yer kazanımı: etiketler satır içi | meta **63 → 40 px**; ses yok **47 → 31 px**; kaydırma 84 → 63 | `birim` [64] + `tasarim` [2am] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2934,6 +2935,36 @@ JS hatası 0.
 **DERS:** Aynı bilgiyi iki yerde göstermek (not + rozet) yükseklik yer ve
 dikkat dağıtır. "Bu bilgi nerede kullanılır?" sorusu: **yazarken** → metin
 bölgesi; **incelerken** → Teknik; **listede tararken** → rozet.
+
+#### P12 — Dikey yer: etiket satır içi, uyarı tek satır (v2.182)
+
+**ÖLÇÜM (1440×900):** `.sd-field` `flex-direction: column` olduğu için
+"Konuşmacı"/"Kontrol" etiketleri seçimin **üstünde** duruyordu; her alan 57 px,
+meta satırı **63 px**. "Ses yok" uyarısı uzun metinle **47 px** (2 satır).
+
+**YAPILAN:**
+- Etiketler **satır içi**; Konuşmacı/Kontrol görsel etiketi kaldırıldı →
+  `aria-label` + `title` (değerler kendini anlatıyor: "S1 · Konuşmacı 1",
+  "Kontrol bekliyor").
+- Profil kısa etiketiyle aynı satırda; seçim genişlikleri **sınırlı**
+  (`min/max-width`) ki üç alan tek satıra sığsın.
+- `audioStateText` kısaldı ("Ses dosyası yok — paketten yükle");
+  tam açıklama `audioStateHint` ile `title`'da.
+- **Metin alanı 160 px (6,7 satır) KORUNDU** — gerekçe: 80 px = **3,4 satır**,
+  bir cümle + yarım satır; deşifre alanı en çok yazılan yer (v2.50 kuralı).
+
+**ÖLÇÜM (sonra):** meta **40 px** (1 satır), ses yok **31 px**, metin 160 px,
+Teknik açık kaydırma **84 → 63 px**; 900 px'te meta 40 px ve yatay taşma yok;
+JS hatası 0.
+
+**DERS:**
+1. Etiketi **kaldırmak** dikey yer kazandırmaz; **satır içi yapmak** kazandırır
+   (kaldırmak yalnız yatay kazanç verir, görünür etiket erişilebilirlik için
+   değerlidir).
+2. Genişlik sınırsız bırakılırsa alanlar büyür ve satır **yine sarar** (ilk
+   denemede meta 67 px oldu); `min/max-width` ile tek satıra sabitlenir.
+3. Uzun uyarı metni 2 satıra sarar; **kısa metin + `title`** hem yeri korur hem
+   bilgiyi kaybetmez.
 
 ### DOĞRULAMA (her oturum başı)
 
