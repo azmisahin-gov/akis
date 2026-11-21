@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.155.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.156.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.156 — Rapor hazırlığı kapsamayı da sayar
+
+Tüm sayfa taramasında bulundu: aynı dosya için iki araç **farklı gerçek**
+söylüyordu. Araç çubuğu "Kapsam %68 · 16 boşluk" derken "Rapor hazırlığı" kartı
+"1 konu eksik" diyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Hazırlık kartında yeni satır: **"Bölümlenmemiş ses aralığı"** — kaç boşluk
+  olduğu ve toplam süresi (ör. "16 boşluk · 16,9 sn").
+- Satıra tıklayınca ses görünümü açılır ve **boşluk listesi kendiliğinden**
+  gelir; "Git" ile oynatıcı boşluğun başına gider.
+- Boşluk yoksa satır **çıkmaz**.
+- **Dürüst sınır:** boşluk "konuşma yok" demek değildir; yalnız bölümlenmemiş
+  aralıktır. Kayıt süresi bilinmiyorsa boşluk **üretilmez** (uydurma yok).
+
+### TEK KAYNAK
+
+`reportReadiness` artık kapsamayı `segmentCoverage` ile hesaplar; ayrı bir
+formül yok. Böylece düğme ile kart ayrışamaz.
+
+### ÖLÇÜM (v2.156, gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| 16 boşluklu dosya | kart: "1 konu eksik · **16** Bölümlenmemiş ses aralığı" |
+| Satıra tıkla | `view-audio` açıldı, kapsam paneli **açık**, **16** boşluk satırı |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` **[62]** (6 kontrol): tam kapsamda madde yok, boşlukta sayı ve
+hedef doğru, ayrıntı saniye taşır, satır kapsam panelini açar, süre yoksa
+madde yok.
 
 ## v2.155 — Dil tutarlılığı ve paket diyaloğu onarımı
 

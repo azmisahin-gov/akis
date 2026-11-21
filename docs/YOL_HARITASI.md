@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.155.**
+yazılır. **Güncel sürüm: v2.156.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.156 — Rapor hazırlığı kapsamayı sayar (tamamlandı)
+
+`reportReadiness` artık `segmentCoverage` kullanır: boşluk varsa
+"Bölümlenmemiş ses aralığı" satırı çıkar (sayı + toplam saniye). Satır
+tıklanınca ses görünümü açılır ve kapsam paneli kendiliğinden gelir.
+Süre bilinmiyorsa boşluk üretilmez (uydurma yok). Koruyan test: `birim` [62].
 
 ### v2.155 — Dil tutarlılığı ve paket diyaloğu onarımı (tamamlandı)
 

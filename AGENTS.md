@@ -1990,6 +1990,31 @@ iç içe geçmesi ve tekrar eden cümle. Bir cümlenin iki kez görünmesi
 "tasarım" değil, veri bozulmasıdır.
 
 
+### Aşama 10bb — Hazırlık ↔ kapsama tek gerçek (TAMAMLANDI, v2.156)
+
+**BULGU (denetim #1):** 14–16 boşluklu dosyada "Kapsam %68 · 16 boşluk"
+diyordu ama "Rapor hazırlığı" kartı **"1 konu eksik"** diyordu. İki teşhis
+aracı aynı dosya için farklı "hazır" tablosu çiziyordu.
+
+**KURAL:** `reportReadiness` kapsamayı `segmentCoverage` üzerinden sayar;
+boşluk = eksik maddedir. Satır `action:'coverage'` taşır; tıklanınca ses
+görünümü açılır ve `renderCoveragePanel` kendiliğinden gelir.
+
+**Dürüst sınır korunur:** süre bilinmiyorsa `segmentCoverage` boşluk
+üretmez → madde de çıkmaz. Boşluk "konuşma yok" demek değildir; metin bunu
+söyler.
+
+**Ölçüm (v2.156, gerçek Chromium):** 16 boşluklu dosya → kart
+"1 konu eksik · **16** Bölümlenmemiş ses aralığı"; satıra tıklayınca
+`view-audio` + kapsam paneli açık + **16** boşluk satırı. JS hatası 0.
+
+**Koruyan test:** `birim-testleri` [62] (6 kontrol).
+
+**DERS:** İki ayrı araç aynı veriyi farklı ölçerse kullanıcı hangisine
+güveneceğini bilemez. Yeni bir ölçüm eklerken "hazırlık/özet" ekranlarının da
+aynı kaynağı kullanıp kullanmadığını sor.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2163,7 +2188,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.155.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.156.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2462,7 +2487,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.155) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.156) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2473,10 +2498,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.155** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.155 |
-| Açık konu | **v2.156 — hazırlık ↔ kapsama** (denetim bulgusu #1) |
+| Sürüm | **v2.156** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **929 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.156 |
+| Açık konu | **v2.157 — test verisi koruması** (denetim bulgusu #2) |
 
 ### Bu oturumda ne değişti (kısa)
 

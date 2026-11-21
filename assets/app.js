@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.155';
+} from './schema.js?v=2.156';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.155';
+const APP_VERSION = '2.156';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8441,9 +8441,9 @@ function reportReadiness(c) {
   const materials = c && Array.isArray(c.materials) ? c.materials : [];
   const segs = materials.flatMap((m) => (m && Array.isArray(m.segments) ? m.segments : []));
   const txt = (v) => String(v == null ? '' : v).trim();
-  const add = (key, label, count, target, detail, filter) => {
+  const add = (key, label, count, target, detail, filter, action) => {
     if (!(count > 0)) return;
-    items.push({ key, label, count, target, detail: detail || '', filter: filter || '' });
+    items.push({ key, label, count, target, detail: detail || '', filter: filter || '', action: action || '' });
   };
   add('fileNo', 'Dosya numarası boş', txt(c && c.fileNo) ? 0 : 1, 'case', 'Kapak ve alt bilgi boş kalır.');
   add('court', 'Mahkeme boş', txt(c && c.court) ? 0 : 1, 'case', 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
@@ -8462,6 +8462,21 @@ function reportReadiness(c) {
   add('ambiguous', 'Belirsiz okumada seçim yok', amb, 'audio', 'Rapora "seçilmedi" olarak girer; belirsizlik gizlenmez.');
   const noSpk = segs.filter((s) => !txt(s.speaker) || txt(s.speaker) === 'Belirtilmedi').length;
   add('speaker', 'Konuşmacı atanmamış bölüm', noSpk, 'audio', 'Raporda konuşmacı sütunu boş kalır.');
+  // KAPSAMA (v2.156): "Kapsam" düğmesi ile "Rapor hazırlığı" AYNI gerçeği
+  // söyler. Boşluk = bölümlenmemiş aralık; süre bilinmiyorsa boşluk üretilmez
+  // (uydurma yok). Dürüst sınır: boşluk "konuşma yok" demek değildir.
+  const covs = materials.map((m) => segmentCoverage((m && m.segments) || [], Number(m && m.duration) || 0)).filter((x) => x.ok);
+  const gapCount = covs.reduce((n, x) => n + x.gaps.length, 0);
+  const gapSec = covs.reduce((n, x) => n + x.gaps.reduce((t, g) => t + (g.b - g.a), 0), 0);
+  add(
+    'coverage',
+    'Bölümlenmemiş ses aralığı',
+    gapCount,
+    'audio',
+    `${String(gapSec.toFixed(1)).replace('.', ',')} sn · "Kapsam" düğmesinden aralıkları görün.`,
+    '',
+    'coverage'
+  );
   add(
     'time',
     'Zaman sorunu olan bölüm',
@@ -8508,7 +8523,7 @@ function readinessRowsHtml(r) {
   return items
     .map(
       (it) =>
-        `<button class="ready-row" data-ready-goto="${esc(it.target)}"${it.filter ? ` data-ready-filter="${esc(it.filter)}"` : ''} title="${esc(it.detail || '')}"><span class="ready-n">${it.count}</span><span class="ready-l">${esc(it.label)}</span><span class="ready-go">git ›</span></button>`
+        `<button class="ready-row" data-ready-goto="${esc(it.target)}"${it.filter ? ` data-ready-filter="${esc(it.filter)}"` : ''}${it.action ? ` data-ready-action="${esc(it.action)}"` : ''} title="${esc(it.detail || '')}"><span class="ready-n">${it.count}</span><span class="ready-l">${esc(it.label)}</span><span class="ready-go">git ›</span></button>`
     )
     .join('');
 }
@@ -11172,6 +11187,7 @@ if (readyBox)
     if (!b) return;
     const target = b.dataset.readyGoto;
     const filter = b.dataset.readyFilter || '';
+    const action = b.dataset.readyAction || '';
     if (filter) {
       const m = activeMaterial();
       if (m) {
@@ -11180,7 +11196,22 @@ if (readyBox)
       }
     }
     switchView(target);
-    if (target === 'audio') renderAudioList().catch(() => {});
+    if (target === 'audio') {
+      renderAudioList()
+        .then(() => {
+          // Kapsama satırı doğrudan boşluk listesini açar (v2.156): kullanıcı
+          // "nerede" sorusunu ikinci bir tıklama yapmadan görür.
+          if (action === 'coverage') {
+            const mm = activeMaterial();
+            if (mm) {
+              renderCoveragePanel(mm);
+              const panel = document.getElementById(`coverage-panel-${mm.id}`);
+              if (panel) panel.scrollIntoView({ block: 'nearest' });
+            }
+          }
+        })
+        .catch(() => {});
+    }
   });
 const behaviorHost = $('#behaviorHost');
 if (behaviorHost)
@@ -12114,6 +12145,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.156': {
+    title: 'Rapor hazırlığı artık sesin bölümlenmemiş aralığını da sayar',
+    body:
+      'Daha önce "Kapsam" düğmesi 16 boşluk gösterirken "Rapor hazırlığı" kartı ' +
+      '"1 konu eksik" diyebiliyordu. Artık aynı gerçeği söylüyorlar: kartta ' +
+      '"Bölümlenmemiş ses aralığı" satırı çıkar; tıklayınca ses görünümü açılır ' +
+      've boşluk listesi kendiliğinden gelir. Dürüst sınır korunur: boşluk ' +
+      '"konuşma yok" demek değildir; süre bilinmiyorsa boşluk üretilmez.'
+  },
   '2.155': {
     title: 'Paket diyaloğu onarıldı, terimler tek dile indi',
     body:

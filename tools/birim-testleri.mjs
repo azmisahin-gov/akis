@@ -3058,5 +3058,42 @@ console.log('\n== [61] Onaydan sonra sonraki bekleyene geç (v2.151)');
   }
 }
 
+console.log('\n== [62] Rapor hazırlığı kapsamayı da sayar (v2.156)');
+{
+  // DENETİM BULGUSU: 14 boşluklu dosyada kart "1 konu eksik" diyordu; kapsama
+  // ile hazırlık iki ayrı gerçek söylüyordu. KURAL: boşluk = eksik maddedir.
+  // Dürüst sınır korunur: süre bilinmiyorsa boşluk ÜRETİLMEZ (uydurma yok).
+  const sha = 'a'.repeat(64);
+  const seg = (a, b) => ({ id: 's' + a, start: a, end: b, text: 'x', review: 'approved', speaker: 'Tanık' });
+  const mat = (o) => Object.assign({
+    id: 'm1', name: 'a.wav', duration: 10, sha256: sha,
+    origin: { mediumType: 'usb', deliveredBy: 'X', deliveredAt: '2026-01-01' },
+    speakers: [{ id: 'sp1', code: 'S1', label: 'Tanık' }],
+    segments: [seg('00:00:00.000', '00:00:10.000')], log: []
+  }, o || {});
+  const base = (o) => Object.assign({
+    id: 'c1', fileNo: '2026/1', court: 'X', expertName: 'Y',
+    questions: [{ id: 'q1', question: 'q', answer: 'a' }], materials: [mat()]
+  }, o || {});
+
+  const full = T.reportReadiness(base({}));
+  eq('tam kapsamda madde yok', full.items.some((x) => x.key === 'coverage'), false);
+
+  const gap = T.reportReadiness(base({
+    materials: [mat({ segments: [seg('00:00:00.000', '00:00:04.000'), seg('00:00:06.000', '00:00:10.000')] })]
+  }));
+  const it = gap.items.find((x) => x.key === 'coverage');
+  eq('boşluk maddesi var', !!it, true);
+  eq('boşluk sayısı', it && it.count, 1);
+  eq('boşluk hedefi ses görünümü', it && it.target, 'audio');
+  eq('boşluk ayrıntısı saniye taşır', !!(it && /2,0 sn/.test(it.detail)), true);
+  eq('boşluk maddesi kapsam panelini açar', it && it.action, 'coverage');
+
+  const unknown = T.reportReadiness(base({
+    materials: [mat({ duration: 0, segments: [seg('00:00:00.000', '00:00:04.000')] })]
+  }));
+  eq('süre yoksa kapsama maddesi yok', unknown.items.some((x) => x.key === 'coverage'), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
