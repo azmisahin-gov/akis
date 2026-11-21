@@ -1,4 +1,4 @@
-# Özellikler (v2.189 — mevcut durum)
+# Özellikler (v2.190 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,10 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Dalga menüleri görünür (v2.190):** Dalga / Spek / İkisi düğmeleri
+  sığmayınca **alt satıra iner** (gizli yatay kaydırma yok). Uzun metin dalga
+  araçlarının üstüne binmez; metin bittikten sonra dalga bölümü gelir, panel
+  kaydırılır. Dalga ipucu kısadır, tam açıklama fare ipucundadır.
 - **Zamanlar dalganın üstünde (v2.189):** Başlangıç, Süre ve Bitiş alanları
   ayrı satır yerine dalga/spektrogram kutusunun altında **yarı saydam şeritte**
   (solda Başlangıç, ortada Süre, sağda Bitiş). Şerit tıklamayı geçirir; dalga

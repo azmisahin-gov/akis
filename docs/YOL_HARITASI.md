@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.189.**
+yazılır. **Güncel sürüm: v2.190.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.190 — Dalga menüleri görünür; metin dalgaya binmiyor (tamamlandı)
+
+Ölçüm: 1100 px'te araç satırı 470 px, kap 372 px; gizli yatay kaydırma yüzünden
+**Dalga / Spek / İkisi** düğmeleri görünmüyordu. Ayrıca autoGrow metni flex
+kabuğa sığmayıp **dalga çubuğunun üstüne** biniyordu (metin 745, dalga 595).
+Düzeltme: gövde/sağ sütun/metin `flex:0 0 auto` (içeriğe göre büyür, panel
+kayar); araç satırı `flex-wrap:wrap` (sığmayan düğme alt satıra iner); ipucu
+kısaltıldı, tam metin `title`'da. 1440→600 px gizli düğme 0, kesik ipucu 0.
+Koruyan test: `tasarim` [2aq].
 
 ### v2.189 — Zamanlar dalganın üstünde (tamamlandı)
 

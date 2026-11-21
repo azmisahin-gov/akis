@@ -891,8 +891,9 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
   check('compact-bar öğe kesmiyor (nowrap+hidden yok)', nowrap.length === 0, nowrap.join(' | '));
   check('compact-bar alt satıra inebiliyor', compact.some((r) => /flex-wrap:\s*wrap/.test(r)));
 
-  // Dalga çubuğu: v2.82'de wrap denendi ama 5 satıra kırıldı (ölçüldü: 84px).
-  // Doğru çözüm İKİ satırlı grid: ipucu üstte, araçlar altta tek satır.
+  // Dalga çubuğu: v2.82'de tek satır + GİZLİ yatay kaydırma vardı; ölçüm
+  // (v2.190): 1100 px'te araç satırı 470 px, kap 372 px → "Dalga/Spek/İkisi"
+  // düğmeleri görünmüyordu. Görünmez kaydırma sessiz kesmedir. Artık SARAR.
   const waveBar = rl.match(/#view-audio \.sd-wave-bar \{[^}]*\}/g) || [];
   check(
     'sd-wave-bar iki satırlı grid (ipucu + araçlar)',
@@ -900,9 +901,12 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
     waveBar.join(' | ')
   );
   check(
-    'araç satırı tek satırda kalır (yatay kaydırma)',
-    /sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl) && /sd-wave-tools > \* \{[^}]*flex:\s*0 0 auto/.test(rl)
+    'araç satırı sığmayan düğmeyi SARAR (kesmez)',
+    /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) &&
+      /sd-wave-tools \{[^}]*overflow:\s*visible/.test(rl) &&
+      /sd-wave-tools > \* \{[^}]*flex:\s*0 0 auto/.test(rl)
   );
+  check('analiz görünümü düğmeleri birlikte kalır', /sd-view-modes \{[^}]*flex-wrap:\s*nowrap/.test(rl));
 
   // 3) Toplu onay düğmesi onay ailesinde (yeşil) görünmeli.
   check('toplu onay düğmesi yeşil ailede', /\[data-bulk-approve\][^{]*\{[^}]*var\(--green\)/.test(rl));
@@ -1217,6 +1221,21 @@ console.log('\n[2ap] Bölüm listesi = dizin (metin tek yerde) (v2.185)');
 // (son değer haritası) tutmadı; kanıtsız 500 bildirim silmek "bir düzeltme
 // başka paneli bozar" sınıfını üretir. Bu bölüm borcu ÖLÇER ve ARTIRAN
 // değişikliği durdurur. Ayrıntı: docs/CSS_BORCU.md.
+console.log('\n[2aq] Dalga çubuğu: menüler görünür, metinle çakışmaz (v2.190)');
+{
+  // ÖLÇÜM (v2.190, 1440): metin alanı 349–751, dalga çubuğu 595'te başlıyordu
+  // → METİN, dalga araçlarının ÜSTÜNE taşıyordu. Ayrıca 1100 px'te araç satırı
+  // 470 px, kap 372 px; "Dalga/Spek/İkisi" görünmüyordu (gizli yatay kaydırma).
+  // KURAL: gövde içeriğe göre büyür (panel kayar), araç satırı SARAR.
+  const rl = read('assets/reading-layer.css');
+  const js = read('assets/app.js');
+  check('gövde içeriğe göre büyür (flex:0 0 auto)', /#view-audio \.seg-detail \.sd-body \{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('sağ sütun içeriğe göre büyür', /#view-audio \.seg-detail \.sd-right \{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('metin sütunu içeriğe göre büyür', /#view-audio \.seg-detail \.sd-right \.sd-text \{[^}]*flex:\s*0 0 auto/.test(rl));
+  check('ipucu kısa metin + tam metin title', /sd-wave-hint" title="Tıkla: konuma git/.test(js));
+  check('araç satırı sarar (gizli kaydırma yok)', /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) && !/sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl));
+}
+
 console.log('\n[8] CSS borcu (nöbetçi)');
 {
   const appCss = read('assets/app.css');

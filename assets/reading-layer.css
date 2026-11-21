@@ -616,17 +616,26 @@ input::placeholder, textarea::placeholder {
 }
 #view-audio .sd-wave-hint {
   grid-area: hint; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  overflow: visible; text-overflow: clip; white-space: normal; line-height: 1.35;
 }
 #view-audio .sd-cursor-time { grid-area: meta; justify-self: end; }
-/* Araç satırı: tek satır, yatay kaydırılabilir; düğmeler daralmaz. */
+/* Araç satırı: SIĞMAYAN DÜĞME ALT SATIRA İNER (v2.190).
+   NEDEN: v2.82'de tek satır + `overflow-x:auto` + gizli kaydırma çubuğu
+   kullanıldı. Ölçüm: 1100 px'te araç satırı 470 px, kap 372 px → "Dalga /
+   Spek / İkisi" düğmeleri GÖRÜNMÜYORDU (kullanıcı: "wave menüleri kaybolmuş").
+   Görünmez yatay kaydırma, sessiz kesmedir. Artık düğmeler SARAR. */
 #view-audio .sd-wave-tools {
   grid-area: tools;
-  display: flex; align-items: center; gap: var(--sp-1);
-  overflow-x: auto; scrollbar-width: none; min-width: 0;
+  display: flex; align-items: center; flex-wrap: wrap;
+  gap: 4px var(--sp-1);
+  overflow: visible; min-width: 0;
 }
 #view-audio .sd-wave-tools::-webkit-scrollbar { display: none; }
 #view-audio .sd-wave-tools > * { flex: 0 0 auto; }
+/* Analiz görünümü düğmeleri BİRLİKTE kalır (bölünüp dağılmaz). */
+#view-audio .sd-view-modes {
+  display: flex; flex-wrap: nowrap; align-items: center; gap: 4px;
+}
 #view-audio .sd-zoom {
   font-family: var(--font-mono); font-size: var(--fs-2xs);
   color: var(--ink-2); flex: none;
@@ -1758,12 +1767,13 @@ input::placeholder, textarea::placeholder {
     white-space: nowrap;
   }
   #view-audio .sd-tech-btn.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
-  /* Gövde: metin esner, teknik sabit yükseklik alır. */
-  /* min-height tabanları v2.179'da tanımlandı (aşağıdaki blok); burada
-     yalnız esneme davranışı kalır. */
-  #view-audio .seg-detail .sd-body { flex: 1 1 auto; }
-  #view-audio .seg-detail .sd-right { flex: 1 1 auto; }
-  #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: 0; }
+  /* Gövde İÇERİĞİ KADAR BÜYÜR (v2.190): metin alanı autoGrow ile uzayınca
+     `flex:1 1 auto` kabuğa sığmıyor, metin tekn(inin) ÜSTÜNE taşıyordu
+     (ölçüm: metin 745'te bitiyor, dalga çubuğu 595'te başlıyordu → çakışma).
+     Kural: gövde/sağ sütun/metin içeriğe göre büyür; sığmazsa PANEL kayar. */
+  #view-audio .seg-detail .sd-body { flex: 0 0 auto; }
+  #view-audio .seg-detail .sd-right { flex: 0 0 auto; }
+  #view-audio .seg-detail .sd-right .sd-text { flex: 0 0 auto; }
   #view-audio .seg-detail .sd-right .sd-text textarea {
     flex: 1 1 auto;
     resize: none;

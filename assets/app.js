@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.189';
+} from './schema.js?v=2.190';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.189';
+const APP_VERSION = '2.190';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4136,16 +4136,16 @@ function segDetailHtml(m) {
     <div class="sd-left sd-tech">
       <div class="sd-wave">
         <div class="sd-wave-bar">
-          <span class="sd-wave-hint">Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom</span>
+          <span class="sd-wave-hint" title="Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom">Tıkla: git · Sürükle: sınır · Tekerlek: zoom</span>
           <span class="sd-cursor-time" data-sd-cursor>—</span>
           <div class="sd-wave-tools">
             <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
             <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
             <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) oynatıcının olduğu ana ayarla (kısayol: A)">A</button>
             <button class="seg-tool" data-loop-b title="Döngü bitişini (B) oynatıcının olduğu ana ayarla (kısayol: B)">B</button>
-            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">🔁 Döngü</button>
+            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">Döngü</button>
             <span class="sd-loop-span" data-loop-span></span>
-            <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">✂ Böl</button>
+            <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">Böl</button>
             <span class="sd-view-modes" role="group" aria-label="Analiz görünümü">
               <button class="seg-tool" data-analysis-mode="wave" title="Yalnız dalga: zaman, ritim, kırpılma ve sınır düzenleme">Dalga</button>
               <button class="seg-tool" data-analysis-mode="spec" data-seg-spec="${esc(m.id)}" title="Yalnız spektrogram: frekans içeriği (p/t/k, sürtünmeli sesler, gürültü)">Spek</button>
@@ -12581,6 +12581,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.190': {
+    title: 'Dalga menüleri görünür; metin dalgaya binmiyor',
+    body:
+      'Dalga çubuğundaki Dalga / Spek / İkisi düğmeleri artık hiç kaybolmuyor; ' +
+      'sığmayınca alt satıra iniyor. Uzun metin dalga araçlarının üstüne ' +
+      'binmiyor. Dalga ipucu kısaldı (tam açıklama fare ipucunda). Döngü ve Böl ' +
+      'düğmelerindeki görünmeyen simgeler kaldırıldı.'
+  },
   '2.189': {
     title: 'Zamanlar dalganın üstünde',
     body:

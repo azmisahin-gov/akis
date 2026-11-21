@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.189.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.190.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.190 — Dalga menüleri görünür; metin dalganın üstüne binmiyor
+
+Kullanıcı: *"Yalnız wave kısmındaki menüler kaybolmuş, kontrol et; her şey
+görünüyor mu, orası biraz karışmış."*
+
+### KULLANICI NE GÖRECEK
+
+- Dalga çubuğundaki **Dalga / Spek / İkisi** düğmeleri artık **kaybolmuyor**;
+  sığmayınca **alt satıra iniyor**. (Önce gizli yatay kaydırma vardı; 1100 px'te
+  bu üç düğme görünmüyordu.)
+- Uzun metin artık **dalga araçlarının üstüne binmiyor**; metin bittikten sonra
+  dalga bölümü geliyor, panel kaydırılarak erişiliyor.
+- Dalga ipucu kısaldı: *"Tıkla: git · Sürükle: sınır · Tekerlek: zoom"*; tam
+  açıklama fare ipucunda. Kesilme yok.
+- "🔁 Döngü" ve "✂ Böl" düğmelerindeki **görünmeyen simgeler** kaldırıldı;
+  metin sade: **Döngü**, **Böl**.
+
+### ÖLÇÜM
+
+| Konu | Önce (v2.189) | Sonra (v2.190) |
+|---|---|---|
+| Metin ↔ dalga | **çakışıyor** (metin 745, dalga 595) | **ayrı** (metin 751, dalga 759) |
+| 1100 px araç satırı | 470 / 372, **3 düğme gizli** | 372 / 372, **gizli 0** |
+| 600 px | "İkisi" gizli | **gizli 0** |
+| İpucu | 1280/760/600'de kesik | **kesik 0** |
+| Yatay taşma | — | **0** (1440→600) |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim` [2aq] (gövde içeriğe göre büyür, araç satırı sarar, ipucu tam metni
+`title` taşır) + güncellenen araç satırı kontrolü.
 
 ## v2.189 — Zamanlar dalganın üstünde
 

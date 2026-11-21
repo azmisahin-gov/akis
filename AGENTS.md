@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.189.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.190.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.189** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.190** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3160,6 +3160,36 @@ deseni bunu sağlar. Ayrıca form alanlarının `min-height` tabanı (32 px) şe
 şişirir; kompakt şeritte açıkça düşürülür (24 px).
 
 **Koruyan test:** `tasarim` [2u] + [2t].
+
+#### P20 — Dalga menüleri görünür; metin dalgaya binmiyor (v2.190)
+
+**KULLANICI:** *"Yalnız wave kısmındaki menüler kaybolmuş; her şey görünüyor mu,
+orası biraz karışmış."*
+
+**ÖLÇÜLEN İKİ HATA:**
+1. `.sd-wave-tools` tek satır + `overflow-x:auto` + gizli kaydırma çubuğuydu.
+   1100 px'te araç satırı **470 px**, kap **372 px** → "Dalga / Spek / İkisi"
+   düğmeleri **görünmüyordu** (sessiz kesme).
+2. v2.188 autoGrow sonrası `.sd-body/.sd-right/.sd-text` hâlâ `flex:1 1 auto`
+   idi; metin kabuğa sığmayıp **dalga çubuğunun üstüne** biniyordu
+   (metin 349–745, dalga 595'te başlıyordu).
+
+**DÜZELTME:** gövde/sağ sütun/metin `flex:0 0 auto` (içeriğe göre büyür, panel
+kayar); `.sd-wave-tools { flex-wrap: wrap; overflow: visible }`; `.sd-view-modes`
+birlikte kalır; ipucu kısaltıldı + tam metin `title`'da; "🔁"/"✂" tofu
+simgeleri metinden çıkarıldı.
+
+**ÖLÇÜM:** metin 751 / dalga 759 (**çakışma yok**); 1100 px'te gizli düğme **0**,
+araç satırı 372/372; 600 px'te gizli 0; ipucu kesiği 0; yatay taşma 0; JS
+hatası 0.
+
+**DERS:** `overflow-x:auto` + gizli kaydırma çubuğu, dar ekranda düğmeleri
+GÖRÜNMEZ yapar — bu sessiz kesmedir; çözüm **sarmaktır**. Ayrıca bir esnek
+kabukta (`flex:1 1 auto`) içeriği büyüyen bir alan, kabuğu taşıp ALTTAKİ
+bölümün üstüne biner; böyle yerlerde `flex:0 0 auto` + panel kaydırması doğru
+mimaridir.
+
+**Koruyan test:** `tasarim` [2aq].
 
 ### DOĞRULAMA (her oturum başı)
 
