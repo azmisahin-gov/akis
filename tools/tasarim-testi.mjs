@@ -551,6 +551,32 @@ console.log('\n[2y] Punto ölçeği ve tema özgüllüğü (v2.161/v2.162)');
   check('çok büyük yazı tabanı düşürmez', minOf(xlarge) >= 13, String(minOf(xlarge)));
 }
 
+// --- 2z. Tema tam uygulama (v2.162) ---------------------------------------
+// ÖLÇÜM: app.css'te 151 sabit background ve onlarca sabit metin rengi vardı;
+// koyu temada sorular paneli BEYAZ, "▶ Çal" 1.16:1, bölüm metni 1.67:1,
+// rozetler açık çipte kalıyordu. KURAL: yüzey/metin rengi token'dan gelir.
+console.log('\n[2z] Tema tam uygulama (v2.162)');
+{
+  const rl = read('assets/reading-layer.css');
+  const js = read('assets/app.js');
+  const strip = (css) => css.replace(/\/\*[\s\S]*?\*\//g, ' ');
+  // paper/print dışında saf beyaz zemin kalmadı.
+  const uiRules = [...strip(appCss).matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .filter((m) => !/paper|print/i.test(m[1]));
+  const white = uiRules.filter((m) => /background(?:-color)?\s*:\s*#fff(?:fff)?\b/i.test(m[2]));
+  check('paper/print dışında #fff zemin yok', white.length === 0, white.slice(0, 3).map((m) => m[1].trim().slice(0, 30)).join(' | '));
+  // Rozet/uç yüzeyleri token'a bağlı.
+  for (const hex of ['#e8f5ef', '#fdf3f3', '#fff4e3', '#f1eefb', '#f7fafc', '#edf3f8']) {
+    check(`${hex} token'a çevrildi`, !new RegExp('background[^;}]*' + hex, 'i').test(strip(appCss)));
+  }
+  // Dolu düğmeler tema accent'i kullanır.
+  check('oynat düğmesi accent kullanır', /#view-audio \.main-play\s*\{[^}]*var\(--accent\)/.test(rl));
+  check('split numarası accent kullanır', /#view-questions \.split-no\s*\{[^}]*var\(--accent\)/.test(rl));
+  // Tuval renkleri token'dan okunur ve tema değişince yeniden çizilir.
+  check('tuval renkleri token\'dan', /function themeVar\(/.test(js) && /themeVar\('--surface-2'/.test(js));
+  check('tema değişince tuval tazelenir', /__segWaveRedraw\?\.\(\)/.test(js));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını

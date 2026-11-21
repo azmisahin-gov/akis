@@ -2132,3 +2132,19 @@ input::placeholder, textarea::placeholder {
 #view-overview .overview-item small { color: var(--ink-3); }
 .statusbar .sb-note { color: var(--ink-3); }
 .statusbar .sb-model { color: var(--green); }
+
+/* ============================================================================
+   v2.162 — TEMA TAM UYGULAMA
+   ----------------------------------------------------------------------------
+   BULGU (ölçüm): app.css'te 151 sabit `background:#hex` (40'ı saf beyaz) ve
+   onlarca sabit metin rengi vardı. Tema yalnız bir kısmına uygulanıyordu:
+   koyu temada sorular paneli BEYAZ, "▶ Çal" düğmesi açık zemin + beyaz yazı
+   (1.16:1), bölüm metni 1.67:1, rozetler açık çipte kalıyordu.
+   Yapılan: yüzey ve metin renkleri token'a bağlandı (86 + 75 kural); dolu
+   düğmeler, split numarası, uyarı kutusu ve klavye ipucu ayrıca düzeltildi.
+   ============================================================================ */
+/* Dolu düğmeler: zemin --accent, yazı --accent-ink (temada okunur). */
+#view-audio .main-play { background: var(--accent); color: var(--accent-ink); }
+#view-audio .main-play:hover { background: var(--accent); filter: brightness(1.06); }
+#view-audio .main-play.on { background: var(--green); color: var(--surface); }
+#view-questions .split-no { background: var(--accent); color: var(--accent-ink); }

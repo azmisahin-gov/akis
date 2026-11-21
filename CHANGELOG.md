@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.161.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.162.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.162 — Temalar baştan sona uygulandı
+
+Kullanıcı: *"diğer temalara da baksaydın, onlarda da sorunlar vardı."* Haklıydı.
+
+### ÖLÇÜLEN HATALAR (koyu tema, v2.161)
+
+| Öğe | Ölçüm | Neden |
+|---|---|---|
+| "▶ Çal" düğmesi | **1.16:1** (beyaz yazı, açık zemin) | `background: var(--navy)`; `--navy` tema ile `--ink`e bağlanınca açık kaldı |
+| Bölüm metni | **1.67:1** | `.seg-text` rengi sabit `#3a5069` |
+| Zaman sütunu | **2.71:1** | sabit `#5a7089` |
+| Sorular paneli | **beyaz** | `.split-nav` / `.split-body` sabit `#fff` |
+| Split numarası | **1.16:1** | `background: var(--navy)` + beyaz yazı |
+| Uyarı kutusu | **2.79:1** | koyu kahve metin, koyu zeminde |
+| Rozetler | açık çip | `#e8f5ef`, `#fdf3f3`, `#fff4e3` sabit |
+
+Kök neden: `app.css` içinde **151 sabit `background:#hex`** (40'ı saf beyaz) ve
+onlarca sabit metin rengi vardı; tema yalnız bir kısmına uygulanıyordu.
+
+### YAPILAN
+
+- **86 kural** yüzey rengi, **75 kural** metin rengi token'a bağlandı
+  (`--surface/2/3`, `--ink/2/3`, `--accent`, `--gold`, `--green`, `--red`).
+- Dolu düğmeler (`main-play`, `button-primary`, `split-no`, aktif satır) artık
+  `--accent` + `--accent-ink`; uyarı kutusu `--gold-soft`; klavye tuşları
+  `--surface-3`.
+- **Tuval (dalga) renkleri** `themeVar()` ile temadan okunur; tema değişince
+  `__segWaveRedraw` + `renderAudioList` ile **yeniden çizilir**.
+- Spektrogram renk skalası bilinçli olarak tema bağımsız (veri görselleştirme).
+
+### DOĞRULAMA (gerçek Chromium, 1440×900)
+
+| Kontrol | Sonuç |
+|---|---|
+| Metin kontrastı (4 görünüm × 3 tema) | **0 hata** (eşik 4.5) |
+| Koyu/sepya'da açık yüzey (8 kombinasyon) | **0** |
+| Seçici bazlı kontrast (65 bileşen × koyu/sepya) | gerçek hata **0** (rail öğeleri yanlış pozitif: zemin gradyan; ölçülen rail kontrastı 12.61 / 7.16 / 15.19) |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` **[2z]** (11 kontrol): paper/print dışında `#fff` zemin yok,
+rozet yüzeyleri token, dolu düğmeler accent, tuval renkleri token'dan,
+tema değişince tuval tazeleniyor.
 
 ## v2.161 — Tasarım sistemi: palet, tema, punto ölçeği
 

@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.161';
+} from './schema.js?v=2.162';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.161';
+const APP_VERSION = '2.162';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1950,6 +1950,17 @@ async function computePeaks(blob, buckets) {
   await ctx.close();
   return peaks;
 }
+// TUVAL RENKLERİ TEMADAN (v2.162). Tuval JS ile boyandığı için CSS token'ı
+// doğrudan uygulanmaz; her çizimde hesaplanan değer okunur. Böylece koyu temada
+// dalga kutusu beyaz bir levha olarak kalmaz.
+function themeVar(name, fallback) {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
 function drawWave(canvas, peaks, m) {
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
@@ -1957,18 +1968,18 @@ function drawWave(canvas, peaks, m) {
   const h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   if (!peaks || !peaks.length) {
-    ctx.fillStyle = '#eef2f6';
+    ctx.fillStyle = themeVar('--surface-2', '#eef2f6');
     ctx.fillRect(0, h / 2 - 1, w, 2);
     return;
   }
   const dur = Number(m.duration) || 0;
-  ctx.fillStyle = '#c9d6e4';
+  ctx.fillStyle = themeVar('--line-2', '#c9d6e4');
   ctx.fillRect(0, 0, w, h);
   const mid = h / 2;
   for (let x = 0; x < w; x++) {
     const p = peaks[Math.floor((x / w) * peaks.length)] || 0;
     const bar = Math.max(1, p * mid * 0.92);
-    ctx.fillStyle = '#4a7bab';
+    ctx.fillStyle = themeVar('--accent', '#4a7bab');
     ctx.fillRect(x, mid - bar, 1, bar * 2);
   }
   const segs = m.segments || [];
@@ -2466,7 +2477,7 @@ function attachWave(card, m, url) {
     paint();
     const x = Math.floor((player.currentTime / dur) * canvas.width);
     const ctx = canvas.getContext('2d');
-    ctx.strokeStyle = '#b88645';
+    ctx.strokeStyle = themeVar('--gold', '#b88645');
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(x, 0);
@@ -4484,7 +4495,7 @@ function attachSegWave(m, index) {
     const w = canvas.width,
       h = canvas.height;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = '#fbfcfd';
+    ctx.fillStyle = themeVar('--surface-2', '#fbfcfd');
     ctx.fillRect(0, 0, w, h);
     const peaks = peakCache.get(m.id);
     const st = secondsFromTimecode(s.start);
@@ -4504,7 +4515,7 @@ function attachSegWave(m, index) {
         ctx.fillRect(x, mid - bar, 1, bar * 2);
       }
     } else {
-      ctx.fillStyle = '#e6ecf2';
+      ctx.fillStyle = themeVar('--line-2', '#e6ecf2');
       ctx.fillRect(0, mid - 1, w, 2);
     }
 
@@ -4529,14 +4540,14 @@ function attachSegWave(m, index) {
       ctx.beginPath();
       ctx.arc(x, 8, 5, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = themeVar('--surface', '#fff');
       ctx.font = 'bold 7px Segoe UI';
       ctx.textAlign = 'center';
       ctx.fillText(label, x, 11);
       ctx.textAlign = 'left';
     };
-    drawEdge(st, '#2c8062', 'B');
-    drawEdge(en, '#8a6320', 'S');
+    drawEdge(st, themeVar('--green', '#2c8062'), 'B');
+    drawEdge(en, themeVar('--gold', '#8a6320'), 'S');
 
     // Oynatma konumu
     if (player && Number.isFinite(player.currentTime) && player.currentTime >= v.a && player.currentTime <= v.b) {
@@ -5543,12 +5554,12 @@ function drawZoomWave(canvas, peaks, m, index) {
   const w = canvas.width,
     h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = '#fbfcfd';
+  ctx.fillStyle = themeVar('--surface-2', '#fbfcfd');
   ctx.fillRect(0, 0, w, h);
   const s = (m.segments || [])[index];
   const dur = Number(m.duration) || 0;
   if (!s || !peaks || !dur) {
-    ctx.fillStyle = '#93a0ad';
+    ctx.fillStyle = themeVar('--ink-3', '#93a0ad');
     ctx.font = '11px Segoe UI';
     ctx.fillText('Yakınlaştırma için bölüm ve dalga verisi gerekir.', 8, 34);
     return;
@@ -5580,13 +5591,13 @@ function drawZoomWave(canvas, peaks, m, index) {
   }
   const x0 = xs(st),
     x1 = xs(en);
-  ctx.strokeStyle = '#2c8062';
+  ctx.strokeStyle = themeVar('--green', '#2c8062');
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(x0, 0);
   ctx.lineTo(x0, h);
   ctx.stroke();
-  ctx.strokeStyle = '#b95252';
+  ctx.strokeStyle = themeVar('--red', '#b95252');
   ctx.beginPath();
   ctx.moveTo(x1, 0);
   ctx.lineTo(x1, h);
@@ -5601,7 +5612,7 @@ function drawZoomWave(canvas, peaks, m, index) {
     ctx.lineTo(xp, h);
     ctx.stroke();
   }
-  ctx.fillStyle = '#7d8ea0';
+  ctx.fillStyle = themeVar('--ink-3', '#7d8ea0');
   ctx.font = '9px Segoe UI';
   ctx.fillText(timecode(a), 4, 10);
   ctx.fillText(timecode(b), w - 70, 10);
@@ -12138,6 +12149,14 @@ function applyTheme({ announce = false } = {}) {
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#12171e' : theme === 'sepia' ? '#efe7d8' : '#14283f');
   renderAppearancePanel();
   renderBehaviorPanel();
+  // Tuval renkleri token'dan okunur (v2.162): tema değişince yeniden çizilir.
+  try {
+    const m = activeMaterial();
+    if (m) {
+      m.__segWaveRedraw?.();
+      if ($('#view-audio')?.classList.contains('active')) renderAudioList().catch(() => {});
+    }
+  } catch (e) {}
   if (announce) {
     const label = (THEMES.find((t) => t[0] === theme) || THEMES[0])[1];
     showToast(`Görünüm: ${label} tema.`);
@@ -12226,6 +12245,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.162': {
+    title: 'Temalar artık baştan sona uygulanıyor',
+    body:
+      'Koyu/sepya temada bazı paneller, düğmeler ve rozetler açık kalıyordu ' +
+      '(ölçüm: "▶ Çal" 1.16:1, bölüm metni 1.67:1, sorular paneli beyaz). ' +
+      'app.css içindeki 151 sabit yüzey rengi ve onlarca sabit metin rengi ' +
+      'token\'a bağlandı; tuval (dalga) renkleri de temadan okunuyor ve tema ' +
+      'değişince yeniden çiziliyor. Üç temada metin kontrastı AA üstü.'
+  },
   '2.161': {
     title: 'Koyu tema onarıldı; palet, punto ölçeği ve kâğıt rafine edildi',
     body:

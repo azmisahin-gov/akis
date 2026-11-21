@@ -2137,6 +2137,38 @@ yüklenen kazanır. Tema testi yalnız "token var mı" değil, "**hesaplanan ren
 doğru mu" diye bakmalı — bu hata yalnız ekran görüntüsünde görünüyordu.
 
 
+### Aşama 10bh — Temalar baştan sona uygulandı (TAMAMLANDI, v2.162)
+
+**BULGU (kullanıcı uyarısı, ölçümle doğrulandı):** koyu/sepya temada bileşenler
+açık kalıyordu. Ölçülen: "▶ Çal" **1.16:1**, `.seg-text` **1.67:1**,
+`.seg-time` 2.71, `.split-nav`/`.split-body` **beyaz**, `.split-no` 1.16,
+`.notice-box b` 2.79, rozetler açık çip (`#e8f5ef`, `#fdf3f3`, `#fff4e3`).
+
+**KÖK NEDEN:** `app.css` 151 sabit `background:#hex` (40 saf beyaz) + onlarca
+sabit metin rengi taşıyordu; reading-layer yalnız bir kısmını eziyordu.
+
+**YAPILAN:**
+- 86 yüzey + 75 metin kuralı token'a bağlandı (offset tabanlı güvenli düzenleme;
+  seçici ikizlenmesi olmadan).
+- Dolu düğmeler `--accent`/`--accent-ink`; uyarı kutusu `--gold-soft`; klavye
+  tuşları `--surface-3`.
+- Tuval: `themeVar(name, fallback)`; `applyTheme` içinde `__segWaveRedraw` +
+  `renderAudioList` ile tazeleme.
+
+**ÖLÇÜM (v2.162):** 4 görünüm × 3 tema kontrast **0 hata**; koyu/sepya'da açık
+yüzey **0**; seçici taraması 65 bileşen × 2 tema → gerçek hata 0 (rail
+yanlış pozitif; rail kontrastı 12.61/7.16/15.19). JS hatası 0.
+
+**Koruyan test:** `tasarim-testi` [2z] (11 kontrol).
+
+**DERS (pahalı):** "Tema var" ≠ "tema uygulanmış". Tema testi **hesaplanan
+rengi** ve **yüzey parlaklığını** ölçmeli: koyu temada parlak zemin = hata.
+Ayrıca JS ile boyanan tuval (dalga) CSS token'ı almaz; renkler `getComputedStyle`
+ile okunmalı ve tema değişiminde yeniden çizilmeli. Son olarak: minified CSS'te
+toplu düzenleme yaparken **seçici ikizlenmesi** riski var (`.app-shell.app-shell`);
+düzenleme sonrası ikiz seçici ve parantez dengesi ölçülmeli.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2310,7 +2342,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.161.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.162.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2609,7 +2641,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.161) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.162) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2620,10 +2652,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.161** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.162** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.161 |
-| Açık konu | **Yok** (denetim #1–#6, kozmetik ve tasarım sistemi kapandı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.162 |
+| Açık konu | **Yok** (tema/palet/punto/kozmetik kapandı) |
 
 ### Bu oturumda ne değişti (kısa)
 

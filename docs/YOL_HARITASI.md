@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.161.**
+yazılır. **Güncel sürüm: v2.162.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.162 — Tema tam uygulama (tamamlandı)
+
+app.css'te 151 sabit `background:#hex` ve onlarca sabit metin rengi vardı; tema
+yalnız bir kısmına uygulanıyordu. Koyu temada ölçülen hatalar: "▶ Çal" **1.16:1**,
+bölüm metni **1.67:1**, sorular paneli **beyaz**, rozetler açık çipte. 86 + 75
+kural token'a bağlandı; dolu düğme, split numarası, uyarı kutusu ve klavye
+tuşları ayrıca düzeltildi. Tuval renkleri `themeVar()` ile temadan okunur;
+tema değişince `__segWaveRedraw` + `renderAudioList` ile yeniden çizilir.
+Ölçüm: 4 görünüm × 3 tema kontrast **0 hata**; koyu/sepya'da açık yüzey **0**.
+Koruyan test: `tasarim` [2z].
 
 ### v2.161 — Tasarım sistemi: palet, tema, punto ölçeği (tamamlandı)
 
