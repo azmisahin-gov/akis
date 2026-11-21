@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.168.**
+yazılır. **Güncel sürüm: v2.169.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.169 — Rapor kâğıdı: punto tabanı ve belge fontu (tamamlandı)
+
+Ölçüm: raporda 152 metin düğümünden 1'i 8 px'ti (SHA-256 hücresi, satır içi
+stil); kâğıt Segoe UI (arayüz fontu) ile çiziliyordu. Satır içi stil
+`class="paper-hash"` oldu (11 px, mono, satır kırar); `--paper-font` token'ı
+eklendi ve `.report-paper` onu kullanıyor. Ölçüm: 11 px altı metin **0**,
+kâğıt fontu **Arial**, kırpılma yok. Rapor metni değişmedi (üç çıktı aynı).
+Koruyan test: `tasarim` [2af].
 
 ### v2.168 — Dar ekranda metin görünür alana gelir (tamamlandı)
 

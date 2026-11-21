@@ -6,12 +6,44 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.168.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.169.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.169 — Raporda 8 piksellik metin kalmadı; kâğıt belge fontuyla
+
+Ölçüm (gerçek Chromium, 3 bölümlü örnek dosya): rapor kâğıdındaki 152 metin
+düğümünden **1 tanesi 8 pikseldi** — SHA-256 hücresi, satır içi stille
+küçültülmüştü. Okunması en kritik dize (delil özeti) belgenin en küçük yazısıydı.
+Ayrıca kâğıt, belge fontu yerine **arayüz fontuyla** (Segoe UI) çiziliyordu;
+okuma katmanındaki `font-family: var(--font-ui)` kuralı app.css'in Arial'ini
+eziyordu.
+
+### KULLANICI NE GÖRECEK
+
+Rapor kâğıdı artık **Arial** (belge fontu) ile çiziliyor. SHA-256 özeti
+**11 piksel**, tek aralıklı yazıyla ve satır kırılarak gösteriliyor; kopyalarken
+karışmıyor. Rapor metni **değişmedi**: HTML önizleme, DOCX ve UDF aynı metni
+üretmeye devam ediyor.
+
+### ÖLÇÜM
+
+| | Önce (v2.168) | Sonra (v2.169) |
+|---|---|---|
+| 11 px altı metin | 1 (8 px) | **0** |
+| SHA-256 puntosu | 8 px | **11 px** (tek aralıklı) |
+| Kâğıt fontu | Segoe UI (arayüz) | **Arial** (belge) |
+| Kırpılma (1440 / 900) | yok | yok |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2af] (7 kontrol): `app.js` içinde 11 px altı satır içi punto
+yok, `--paper-font` belge fontu, kâğıt onu kullanıyor, `paper-hash` 11 px
+tabanlı.
 
 ## v2.168 — Dar ekranda bölüme geçince metin görünür alana gelir
 

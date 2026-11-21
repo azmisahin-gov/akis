@@ -328,7 +328,7 @@ input::placeholder, textarea::placeholder {
 .report-paper {
   background: var(--paper);
   color: var(--paper-ink);
-  font-family: var(--font-ui);
+  font-family: var(--paper-font);
   border-color: var(--paper-line);
   box-shadow: var(--shadow-md);
 }
@@ -2199,4 +2199,14 @@ input::placeholder, textarea::placeholder {
   /* Bildirim yapışkan çubuğun ÜSTÜNDE kalır (v2.158 dersi: kaybolan bildirim
      "durum" değildir). Ölçüm: çubuk 820–874, toast 811–854 → çakışıyordu. */
   .toast { bottom: calc(var(--status-h) + 66px); }
+}
+
+/* --- v2.169 — Raporda punto alt sınırı ve hash okunabilirliği -------------- */
+/* Ölçüm (v2.168): SHA-256 hücresi satır içi 8 piksellik punto taşıyordu — 138
+   metin düğümünün TEK 11px altı öğesi ve okunması en kritik dize. Punto
+   tabanı 11px; hash tek aralıklı yazıyla ve satır kırılarak gösterilir. */
+.paper-hash {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  word-break: break-all;
 }

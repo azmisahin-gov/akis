@@ -1,4 +1,4 @@
-# Özellikler (v2.168 — mevcut durum)
+# Özellikler (v2.169 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Kâğıt belge fontu ve punto tabanı (v2.169):** önizleme **Arial** ile çizilir;
+  SHA-256 özeti **11 px**, tek aralıklı ve satır kırar. Rapor kâğıdında 11 px
+  altı metin yoktur.
 - Bakanlığın yayımladığı hukuk örneğine göre yedi bölümlü yapı:
   1. İncelemenin konusu, kapsam ve sınırları
   2. Bilirkişinin cevaplaması gereken sorular

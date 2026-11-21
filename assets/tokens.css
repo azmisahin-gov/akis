@@ -283,6 +283,8 @@ html[data-theme='sepia'] {
   --paper-head-ink: #ffffff;
   --paper-band: #f6f8fb;
   --paper-dim: 1;
+  /* Rapor bir BELGEDİR: arayüz fontu değil, belge fontu kullanır. */
+  --paper-font: Arial, 'Helvetica Neue', Helvetica, sans-serif;
 }
 html[data-theme='dark'] {
   --paper: #e9edf2;
@@ -293,6 +295,7 @@ html[data-theme='dark'] {
   --paper-head: #1f3a57;
   --paper-head-ink: #ffffff;
   --paper-dim: .92;
+  --paper-font: Arial, 'Helvetica Neue', Helvetica, sans-serif;
 }
 
 /* --- 6. Hareket azaltma --------------------------------------------------- */

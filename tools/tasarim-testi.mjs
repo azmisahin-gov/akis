@@ -980,6 +980,28 @@ console.log('\n[2ae] Dar ekranda düzenleme alanı görünür alana gelir (v2.16
   check('onaydan sonra çağrılır', /revealSegDetail\(/.test(appr));
 }
 
+console.log('\n[2af] Rapor kâğıdı: punto alt sınırı ve belge fontu (v2.169)');
+{
+  // Ölçüm (v2.168, gerçek Chromium): raporda 137 metin düğümü 11px, 1 tanesi
+  // **8px** (SHA-256 hücresi, satır içi stil) — okunması en kritik dize.
+  // Kâğıt da belge fontu yerine arayüz fontuyla (Segoe UI) çiziliyordu:
+  // reading-layer `.report-paper { font-family: var(--font-ui) }`, app.css'in
+  // Arial'ini eziyordu.
+  const js = read('assets/app.js');
+  const inlineSizes = [...js.matchAll(/font-size:\s*([0-9.]+)px/g)].map((m) => Number(m[1]));
+  check('app.js içinde 11px altı satır içi punto yok', inlineSizes.every((v) => v >= 11), inlineSizes.join(',') || 'yok');
+  const tok = read('assets/tokens.css');
+  check('--paper-font token olarak tanımlı', /--paper-font\s*:/.test(tok));
+  const fontVal = (tok.match(/--paper-font\s*:\s*([^;]+);/) || [])[1] || '';
+  check('kâğıt fontu belge fontu (Arial/Times)', /Arial|Times|Georgia/i.test(fontVal), fontVal.trim());
+  const rl2 = read('assets/reading-layer.css');
+  const paperRule = rl2.match(/(^|\n)\.report-paper\s*\{([^}]*)\}/);
+  check("kâğıt kendi font token'ını kullanır", !!paperRule && /font-family:\s*var\(--paper-font\)/.test(paperRule[2]));
+  check('kâğıt arayüz fontu kullanmaz', !(paperRule && /var\(--font-ui\)/.test(paperRule[2])));
+  check('SHA hücresi sınıf taşır (satır içi stil yok)', /class="paper-hash"/.test(js));
+  check('paper-hash 11px tabanlı', /\.paper-hash\s*\{[^}]*font-size:\s*var\(--fs-2xs\)/.test(rl2));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
