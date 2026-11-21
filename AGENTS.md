@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4 + P5 + P6 + P7 + P8 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P9 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.178** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.179** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **974 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `f27c17d` |
+| Git | `main` = `origin/main` = `cedf835` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.178** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.179** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2594,6 +2594,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.176 | Birleştirme: ham çıktı korunur, günlüğe yazılır | asrText `mergedFrom`; S1/S2 reddedildi; günlük 1→2 | `birim` [67] |
 | v2.177 | Satır menüsü (⋮ / sağ tık) | kontrol 54 → **47**; birleştirme 3 → **2** | `tasarim` (güncellendi) |
 | v2.178 | Sürükleyerek birleştirme (komşu) | 1 sürükleme; komşu olmayan reddedilir; satır 74 px | `tasarim` [2aj] |
+| v2.179 | Detay: canlı vurgu ezilmiyor | vurgu **14 → 48 px**, metin **120 → 160 px**, panel 81 px kaydırıyor | `tasarim` [2al] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2852,6 +2853,35 @@ satır 72 → **74 px**; kırpılma/yatay taşma yok; hata 0.
 **ÖLÇÜM TUZAĞI:** `#toast` gizlense de **metni kalır**; `textContent` ile
 okumak eski mesajı "yeni uyarı" sanmanıza yol açar. Toast'ı
 `classList.contains('show')` ile birlikte okuyun.
+
+#### P9 — Detay paneli: içerik ezer, panel kaydırır (v2.179)
+
+**ÖLÇÜM (1440×900, gerçek Chromium):** Teknik paneli açıkken (360 px) canlı
+vurgu şeridi **48 → 14 px** (scroll 30 / görünen 12), metin alanı **448 →
+120 px**'e eziliyordu. Araya bir satır (notlar, "ses yok" uyarısı, öneri bandı,
+ölçüm sonucu) girdiğinde aynı ezilme oluyordu.
+
+**KÖK NEDEN:** `.sd-body`/`.sd-right` `min-height: 0` ile esniyor ve metin
+alanının masaüstü tabanı **120 px**'ti; flex çocukları içeriklerinin altına
+inebiliyordu. `sd-head` ile `sd-body` arasına giren her satır kalan yüksekliği
+azalttığı için vurgu şeridi ilk ezilen öğeydi.
+
+**KURAL (değişmez):** çocuklar **içeriğinden aşağı inmez**; sığmazsa **panel
+kaydırır** (v2.143'te panelde kaydırma zaten var).
+
+- `.sd-follow`: `flex: 0 0 auto` + `min-height: calc(2*1.5em+12px)` (48 px)
+- metin alanı: `min-height: 160px` (masaüstü)
+- `.sd-body` / `.sd-right`: `min-height: 236px`
+
+**ÖLÇÜM (sonra):** Teknik açık → vurgu **48**, metin **160**, panel **81 px**
+kaydırıyor; 900 px'te vurgu 48 / metin 180; kırpılma ve yatay taşma yok;
+JS hatası 0. Ezilen eski bildirimler (`min-height:0`, `120px`) silindi; CSS
+borcu artmadı.
+
+**DERS:** "Panelde kaydırma olmasın" hedefi (v2.154) ile "öğe ezilmesin"
+çelişirse doğru çözüm **ezmek değil, kaydırmaktır**. Ölçüt: her öğenin
+`getBoundingClientRect().height` değeri, durum değişince (Teknik aç/kapa,
+ölçüm yap, not çık) **aynı kalıyor mu**. Gözle bakmak yetmez; ölçün.
 
 ### DOĞRULAMA (her oturum başı)
 
