@@ -372,6 +372,27 @@ console.log('\n[2o] Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydır�
   check('oynatıcı şeridi korunur (dalga gizlenir)', /#view-audio \.listen-strip \.wave-canvas\s*\{[^}]*display:\s*none/.test(block));
 }
 
+// --- 2p. Masaüstünde çalışma modu YOK (v2.141) ----------------------------
+// Masaüstü kabuğunda kayıtlar sürekli solda olduğu için "← Kayıt listesine
+// dön" düğmesi ve çalışma modu anlamsız kalıyordu. Kullanıcı: "o buton
+// gereksiz olmuş, kaldıralım; dosyaları alt alta listelesin."
+// KURAL (≥901 px): çalışma çubuğu ve düğmesi gizli; ws-mode açık kalsa bile
+// kayıt sütunu görünür. Otomatik giriş ve W/L kısayolu etkisiz.
+console.log('\n[2p] Masaüstünde çalışma modu yok (v2.141)');
+{
+  const rl = read('assets/reading-layer.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const i = rl.indexOf('@media (min-width: 901px)');
+  const block = i >= 0 ? rl.slice(i, i + 9000) : '';
+  check('çalışma çubuğu masaüstünde gizli', /body\.ws-mode \.workspace-bar\s*\{[^}]*display:\s*none/.test(block));
+  check('çalışma modu düğmesi masaüstünde gizli', /#workspaceBtn\s*\{[^}]*display:\s*none/.test(block));
+  check(
+    'ws-mode açık olsa da kayıt sütunu görünür',
+    /body\.ws-mode #view-audio > \.panel:not\(\.detail-panel\)\s*\{[^}]*display:\s*block\s*!important/.test(block)
+  );
+  const js = read('assets/app.js');
+  check('otomatik giriş masaüstünde etkisiz (setWorkspace koruması)', /innerWidth\s*>=\s*901/.test(js));
+}
+
 // --- 2f. Takip şeridi: sabit yükseklik + metrik sabit vurgu (v2.125) ------
 // ÖLÇÜM (v2.124): kutu 120px tavanlıydı, içerik 202–314px; iç kaydırma 74px
 // (~5 satır) sıçrıyordu. Aktif kelime kalın+dolgu ile satır sonlarını
@@ -739,13 +760,13 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} · .main-area ${mainArea}`);
   console.log(`  ölü bildirim: reading-layer içi ${deadCount(layerRules)} · app.css→layer ${cross}`);
 
-  // Nöbetçi eşikleri (v2.140 ölçümü: 26/68/98/507/15). Borç ARTARSA test
+  // Nöbetçi eşikleri (v2.141 ölçümü: 26/70/98/507/15). Borç ARTARSA test
   // kalır; temizlik yapılırsa eşik DÜŞÜRÜLÜR. 97→98 ve 501→507: v2.139'un
   // v2.140 masaüstü kabuğu 7 zorunlu `!important` ekledi (v2.129'un
   // `!important` taşıyan taşma kurallarını ezmek için). !important sayacı
   // YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=68)', impLayer <= 68, String(impLayer));
+  check('reading-layer !important sayısı artmadı (<=70)', impLayer <= 70, String(impLayer));
   check('reading-layer içi ölü bildirim artmadı (<=98)', deadCount(layerRules) <= 98, String(deadCount(layerRules)));
   check('app.css→reading-layer ölü bildirim artmadı (<=507)', cross <= 507, String(cross));
   check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));

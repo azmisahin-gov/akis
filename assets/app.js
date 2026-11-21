@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.140';
+} from './schema.js?v=2.141';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.140';
+const APP_VERSION = '2.141';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1183,7 +1183,16 @@ function switchView(name) {
   // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
   if (name === 'audio') {
     const c0 = currentCase();
-    if (c0 && (c0.materials || []).length && !workspaceDeclined && !document.body.classList.contains('ws-mode')) {
+    // Otomatik giriş YALNIZ dar ekranda (v2.141): masaüstünde kayıtlar zaten
+    // solda, çalışma modu gereksiz. Burada sessizce atlanır (toast yok).
+    const narrow = typeof window === 'undefined' || window.innerWidth <= 900;
+    if (
+      narrow &&
+      c0 &&
+      (c0.materials || []).length &&
+      !workspaceDeclined &&
+      !document.body.classList.contains('ws-mode')
+    ) {
       setWorkspace(true);
     }
   }
@@ -9648,6 +9657,12 @@ async function loadSamples() {
 // gizlenir; deşifre/analiz alanına mümkün olan en fazla yer kalır. Kayıtlar
 // arasında önceki/sonraki ile geçilir, böylece moddan çıkmak gerekmez.
 function setWorkspace(on) {
+  // MASAÜSTÜ KABUĞU (v2.141): ≥901 px'te kayıtlar zaten solda; çalışma modu
+  // anlamsız. Otomatik giriş, düğme ve W/L kısayolu burada etkisizdir.
+  if (on && typeof window !== 'undefined' && window.innerWidth >= 901) {
+    showToast('Masaüstü düzeninde kayıtlar solda; çalışma modu gerekmiyor.');
+    return;
+  }
   document.body.classList.toggle('ws-mode', on);
   const bar = $('#workspaceBar');
   if (bar) bar.hidden = !on;
@@ -11658,6 +11673,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.141': {
+    title: 'Masaüstünde "Kayıt listesine dön" kaldırıldı',
+    body:
+      'Kayıtlar artık sürekli solda olduğu için çalışma modu ve "← Kayıt ' +
+      'listesine dön" düğmesi gereksizdi. Masaüstünde kaldırıldı: dosyalar solda ' +
+      'alt alta listelenir, düzenleme paneli sağda durur. Dar ekranda (900 piksel ' +
+      've altı) çalışma modu eskisi gibi çalışır.'
+  },
   '2.140': {
     title: 'Masaüstü düzeni: sayfa kaymıyor, paneller kendi kaydırıyor',
     body:

@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.140.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.141.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.141 — Masaüstünde çalışma modu ve "Kayıt listesine dön" kaldırıldı
+
+Kullanıcı: *"o kayıt listesi kısmı… ilk açılınca 'kayıt listesine geri dön'
+diye bir buton var, o gereksiz olmuş; kaldıralım; madem dosyaları alt alta
+listelesin."* Haklı: v2.140 kabuğunda kayıtlar **sürekli solda**, çalışma modu
+ise kayıt sütununu gizleyip geri dönme düğmesi gösteriyordu — çelişki.
+
+### DÜZELTME (≥901 px)
+
+- Otomatik çalışma moduna giriş **kaldırıldı**; Ses görünümü doğrudan masaüstü
+  düzeninde açılır.
+- `.workspace-bar` ve `#workspaceBtn` masaüstünde **gizli**.
+- `ws-mode` bir şekilde açık kalsa bile (dar ekrandan genişletme) **kayıt
+  sütunu görünür** kalır.
+- W/L kısayolu masaüstünde bilgilendirme gösterir: "Masaüstü düzeninde kayıtlar
+  solda; çalışma modu gerekmiyor."
+- ≤900 px: çalışma modu **eskisi gibi** çalışır (dar ekran yedeği).
+
+### ÖLÇÜM (v2.141, 362 bölüm)
+
+| Genişlik | ws-mode | Çalışma çubuğu | Kayıt sütunu | Liste |
+|---|---|---|---|---|
+| 1440 | **kapalı** | gizli | **görünür (148–719)** | 385 px, kendi kaydırması |
+| 900 | açık (otomatik) | görünür (110–168) | gizli (çalışma modu) | sayfa kaydırması |
+
+JS hatası 0.
+
+### KULLANICI NE GÖRECEK
+
+- Masaüstünde Ses görünümü açılınca **"← Kayıt listesine dön" yok**; dosyalar
+  solda alt alta durur.
+- "⛶ Çalışma modu" düğmesi masaüstünde görünmez.
+- Dar ekranda bu düğme ve mod eskisi gibi çalışır.
+
+Koruyan test: `tasarim-testi` [2p] (4 kontrol).
 
 ## v2.140 — Masaüstü kabuğu: sabit çerçeve, paneller kendi kaydırır
 

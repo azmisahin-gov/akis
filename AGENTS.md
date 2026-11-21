@@ -1554,6 +1554,33 @@ geri gelmiş gibi görünür.
 **Koruyan test:** `tasarim-testi` [2o] (6). [2i]/[2e]/[2n] dar ekran yedeği
 için geçerli. CSS borcu eşikleri: 26/68/98/507/15.
 
+### Aşama 10am — Masaüstünde çalışma modu kaldırıldı (TAMAMLANDI, v2.141)
+
+**KURAL: ≥901 px'te çalışma modu YOKTUR.** Kayıtlar sürekli solda; "← Kayıt
+listesine dön" ve "⛶ Çalışma modu" gereksizdir. ≤900 px'te mod korunur.
+
+**Neden:** v2.140 kabuğu kayıt sütununu kalıcı yaptı; çalışma modu ise aynı
+sütunu gizleyip geri dönme düğmesi gösteriyordu (çelişki). Kullanıcı:
+"o buton gereksiz olmuş, kaldıralım."
+
+**Düzeltme:**
+1. `switchView('audio')` otomatik girişi yalnız `window.innerWidth <= 900`.
+2. `setWorkspace(on)` koruması: ≥901'de `on` isteği yok sayılır + kısa bilgi
+   (W/L kısayolu sessiz kalmasın).
+3. Masaüstü bloğunda `.workspace-bar` ve `#workspaceBtn` gizli;
+   `body.ws-mode` açık kalsa bile kayıt sütunu görünür
+   (`display:block !important` — app.css'te `display:none!important` var).
+
+**Ölçüm (v2.141, 362 bölüm):** 1440 → ws-mode kapalı, çubuk/düğme gizli, kayıt
+sütunu 148–719, liste 385 px kendi kaydırması; 900 → mod açık, çubuk 110–168,
+kayıt sütunu gizli. JS hatası 0.
+
+**DERS:** Kalıcı bir panel eklediğinde, o paneli gizleyen eski "mod"u aynı
+sürümde emekliye ayır. Aksi hâlde iki tasarım kararı çelişir ve kullanıcı
+"gereksiz düğme" görür.
+
+**Koruyan test:** `tasarim-testi` [2p] (4).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1727,7 +1754,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.140.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.141.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1889,7 +1916,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.140** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.141** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -1942,6 +1969,7 @@ Test sayısı 441 → **782**.
 | **v2.138** | **CSS borcu ölçümü + nöbetçi** (temizlik kanıt tutmadığı için yayınlanmadı) | `tasarim` [8] |
 | **v2.139** | **Uzun listede detay yapışkan** (362 bölümde panel ekran dışında kalıyordu) | `tasarim` [2n] |
 | **v2.140** | **Masaüstü kabuğu** (tek uzun sayfa → sabit çerçeve, paneller kendi kaydırır) | `tasarim` [2o] |
+| **v2.141** | **Masaüstünde çalışma modu kaldırıldı** (kayıt sütunu kalıcıyken gereksizdi) | `tasarim` [2p] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

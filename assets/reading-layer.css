@@ -1623,4 +1623,13 @@ body.ws-mode #view-audio .seg-detail {
   #view-audio .seg-detail .sd-body { display: flex; flex-direction: column; gap: 8px; }
   #view-audio .seg-detail .sd-right { order: 1; }
   #view-audio .seg-detail .sd-left { order: 2; }
+
+  /* v2.141 — MASAÜSTÜNDE ÇALIŞMA MODU YOK.
+     Kayıtlar sürekli solda olduğu için "← Kayıt listesine dön" düğmesi ve
+     çalışma modu anlamsızdı (kullanıcı: "o buton gereksiz olmuş, kaldıralım").
+     Dar ekranda (≤900) çalışma modu korunur. */
+  body.ws-mode .workspace-bar { display: none; }
+  #workspaceBtn { display: none; }
+  body.ws-mode #view-audio > .panel:not(.detail-panel) { display: block !important; }
+  body.ws-mode #view-audio > .upload-zone { display: flex !important; }
 }
