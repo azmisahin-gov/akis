@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.175';
+} from './schema.js?v=2.176';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.175';
+const APP_VERSION = '2.176';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -6700,6 +6700,7 @@ function splitSegmentAt(m, index, cut) {
   // Yeni bölümler doğrulanmamıştır; metin değiştiği için onay düşer.
   setSegReview(left, 'pending');
   setSegReview(right, 'pending');
+  logEvent(m, 'Bölüm bölündü', `Bölüm ${index + 1} · ${timecode(cut)} noktasından ikiye ayrıldı`);
   left.textRev = 0;
   right.textRev = 0;
   segs.splice(index, 1, left, right);
@@ -6725,8 +6726,53 @@ function mergeSegmentWithNext(m, index) {
     showToast('Birleştirilecek sonraki bölüm yok.');
     return;
   }
+  // İKİNCİ GÖZ yapı değiştirmez (v2.176): metin önerir, bölüm birleştiremez.
+  // Aksi hâlde `applyTextEdit` öneri üretir ama sonraki bölüm yine silinirdi.
+  if (isSecondEyesEditor()) {
+    showToast('Birleştirme yetkisi dosya sorumlusunda. İkinci göz metin önerir, bölüm yapısını değiştirmez.');
+    return;
+  }
+  // FARKLI KONUŞMACI SESSİZCE BİRLEŞTİRİLMEZ (v2.176): birleşince ikinci
+  // bölümün konuşmacısı kaybolur ve sözler yanlış kişiye yazılır.
+  const spkA = String(s.speaker || '').trim();
+  const spkB = String(n.speaker || '').trim();
+  if (spkA !== spkB) {
+    showToast(
+      `Bölüm ${index + 1} ile ${index + 2} farklı konuşmacıda (${spkA || 'belirtilmedi'} / ${spkB || 'belirtilmedi'}). ` +
+        'Önce konuşmacıyı eşitleyin; sessizce birleştirilmez.'
+    );
+    return;
+  }
   snapshotForUndo(`bölüm ${index + 1} birleştirildi`);
+  // İKİNCİ BÖLÜMÜN HAM ÇIKTISI KORUNUR (v2.176): asrText/words/model/zaman
+  // bilgisi silinirse "model ne dedi" kaybolur (adli ayrım). Metin `text`
+  // alanında birleşir; ham çıktı `mergedFrom` altında saklanır.
+  s.mergedFrom = [
+    ...(s.mergedFrom || []),
+    {
+      id: n.id,
+      start: n.start,
+      end: n.end,
+      speaker: n.speaker || '',
+      text: n.text || '',
+      asrText: n.asrText || '',
+      asrModel: n.asrModel || '',
+      asrAt: n.asrAt || '',
+      words: Array.isArray(n.words) ? n.words : [],
+      obs: n.obs || null,
+      review: segReview(n),
+      proposal: n.proposal || null
+    }
+  ];
   s.end = n.end;
+  // Kelime zamanları karaoke için birleşir (ham veri bozulmaz).
+  if (Array.isArray(n.words) && n.words.length) s.words = [...(s.words || []), ...n.words];
+  // Gözlem işaretleri birleşir (biri işaretliyse birleşik bölüm de işaretli).
+  if (n.obs) {
+    const merged = { ...(s.obs || {}) };
+    for (const [k, v] of Object.entries(n.obs)) if (v) merged[k] = true;
+    s.obs = merged;
+  }
   if ((n.text || '').trim()) {
     const prev = s.text;
     applyTextEdit(s, (s.text || '') + (s.text ? ' ' : '') + n.text);
@@ -6735,11 +6781,16 @@ function mergeSegmentWithNext(m, index) {
   setSegReview(s, 'pending');
   segs.splice(index + 1, 1);
   m.activeSeg = index;
+  logEvent(
+    m,
+    'Bölüm birleştirildi',
+    `Bölüm ${index + 1} + ${index + 2} · ${s.start}–${s.end} · ikinci bölümün ham çıktısı saklandı`
+  );
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   persist();
   if (card) renderSegments(m, card);
   renderOverview();
-  showToast(`Bölüm ${index + 1} ile sonraki birleştirildi.`);
+  showToast(`Bölüm ${index + 1} ile sonraki birleştirildi. İkinci bölümün ham çıktısı saklandı.`);
 }
 // Paragraf oluşturma: ardışık ve aynı konuşmacıya ait bölümleri tek paragrafta
 // toplar. Metinler boşlukla birleştirilir; zaman aralığı ilk başlangıçtan son
@@ -12321,6 +12372,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.176': {
+    title: 'Birleştirme ham model çıktısını koruyor',
+    body:
+      'İki bölüm birleştirildiğinde ikinci bölümün model metni, model adı, ' +
+      'kelime zamanları ve gözlemleri artık saklanıyor; birleştirme delil ' +
+      'günlüğüne yazılıyor. Farklı konuşmacılı bölümler sessizce birleşmez ' +
+      've yardımcı (ikinci göz) birleştirme yapamaz.'
+  },
   '2.175': {
     title: '"Ses yok" uyarısı ilk açılışta da görünüyor',
     body:

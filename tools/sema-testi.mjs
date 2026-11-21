@@ -1168,7 +1168,7 @@ console.log('\n[12] Geri alma ve bölme netliği');
   // Yıkıcı işlemlerin her biri geri alma kaydı almalı.
   for (const [label, rx] of [
     ['bölme', /splitSegmentAt\(m, index, cut\)[\s\S]{0,300}snapshotForUndo/],
-    ['birleştirme', /mergeSegmentWithNext[\s\S]{0,500}snapshotForUndo/],
+    // 'birleştirme' aşağıda DAVRANIŞ olarak sınanır (mesafe değil).
     ['paragraf', /paragraphize[\s\S]{0,400}snapshotForUndo/],
     ['bölüm silme', /deleteSeg[\s\S]{0,400}snapshotForUndo/],
     ['kayıt kaldırma', /removeAudio[\s\S]{0,300}snapshotForUndo/],
@@ -1176,6 +1176,18 @@ console.log('\n[12] Geri alma ve bölme netliği');
     ['dosya birleştirme', /çalışma dosyası birleştirildi/]
   ]) {
     ok(`${label} geri alınabilir`, rx.test(app));
+  }
+  // BİRLEŞTİRME: geri alma kaydı, yıkıcı `splice`'ten ÖNCE alınmalı.
+  // (v2.176'da koruma kontrolleri araya girdi; mesafe tabanlı test kırıldı.
+  //  Kural: test YAZIMI değil DAVRANIŞI sınamalı.)
+  {
+    const i0 = app.indexOf('function mergeSegmentWithNext');
+    const i1 = app.indexOf('\nfunction ', i0 + 10);
+    const body = app.slice(i0, i1 > 0 ? i1 : i0 + 6000);
+    const iSnap = body.indexOf('snapshotForUndo');
+    const iSplice = body.indexOf('segs.splice(');
+    ok('birleştirme geri alınabilir (kayıt silmeden önce)', iSnap > 0 && iSplice > 0 && iSnap < iSplice,
+      `snapshot=${iSnap} splice=${iSplice}`);
   }
 
   // Dalga pan (Shift+sürükle) ve imleç zamanı

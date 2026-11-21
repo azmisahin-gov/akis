@@ -83,7 +83,7 @@ const EXPOSE = [
   'asrProfile', 'asrProfileOptions', 'ASR_PROFILES',
   'sanitizeForStorage', 'showSaveFailureBanner', 'hideSaveFailureBanner',
   'VERSION_NOTICES', 'maybeShowVersionNotice', 'APP_VERSION',
-  'setSegmentText', 'applyTextEdit', 'reviewLabel', 'emptySegmentForTest',
+  'setSegmentText', 'applyTextEdit', 'reviewLabel', 'emptySegmentForTest', 'mergeSegmentWithNext',
   'snapshotSegmentText', 'approvalDroppedByEdit',
   'measureWerForCase', 'werMeasuredCount',
   'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
@@ -3177,6 +3177,67 @@ console.log('\n== [66] Paket adı aynı dakikada ayırt edilir (v2.173)');
   eq('saniye değeri doğru (40)', /_16-45-40\.akis$/.test(n2), true);
   // Eski davranış korunur: dakika yine adda.
   eq('dakika korunur', /2026-11-20_16-45/.test(n1), true);
+}
+
+console.log('\n== [67] Birleştirme adli olarak eksiksiz (v2.176)');
+{
+  // ÖLÇÜM (v2.175, kod okuması + tarayıcı): `mergeSegmentWithNext` ikinci
+  // bölümün asrText/words/model bilgisini sessizce siliyordu (splice) ve
+  // delil günlüğüne YAZMIYORDU; konuşmacı farkı da denetlenmiyordu.
+  const mk = () => {
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.segments.push(T.emptySegmentForTest({ id: 's1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1',
+      text: 'bir iki', asrText: 'bir iki', asrModel: 'M1', asrAt: '2026-01-01T00:00:00Z',
+      words: [{ w: 'bir', s: 0, e: 1 }], obs: { noise: true } }));
+    m.segments.push(T.emptySegmentForTest({ id: 's2', start: '00:00:05.000', end: '00:00:09.000', speaker: 'S1',
+      text: 'üç dört', asrText: 'üç dört', asrModel: 'M2', asrAt: '2026-01-01T00:00:05Z',
+      words: [{ w: 'üç', s: 5, e: 6 }], obs: { overlap: true } }));
+    c.materials.push(m);
+    T.setAppState({ cases: [c], activeCaseId: 'c1' });
+    return m;
+  };
+
+  const m1 = mk();
+  const logBefore = (m1.log || []).length;
+  T.mergeSegmentWithNext(m1, 0);
+  eq('iki bölüm tek bölüme indi', m1.segments.length, 1);
+  eq('metin birleşti', m1.segments[0].text, 'bir iki üç dört');
+  eq('bitiş ikinci bölümden', m1.segments[0].end, '00:00:09.000');
+  eq("ikinci bölümün asrText'i korundu", (m1.segments[0].mergedFrom || [])[0]?.asrText, 'üç dört');
+  eq('ikinci bölümün modeli korundu', (m1.segments[0].mergedFrom || [])[0]?.asrModel, 'M2');
+  eq('kelime zamanları birleşti', (m1.segments[0].words || []).length, 2);
+  eq('gözlemler birleşti', !!(m1.segments[0].obs?.noise && m1.segments[0].obs?.overlap), true);
+  eq('birleştirme günlüğe yazıldı', (m1.log || []).length, logBefore + 1);
+  eq('onay durumu bekliyor', T.segReview(m1.segments[0]), 'pending');
+
+  // Farklı konuşmacı: sessizce birleştirilmez.
+  const m2 = mk();
+  m2.segments[1].speaker = 'S2';
+  const before2 = m2.segments.length;
+  T.mergeSegmentWithNext(m2, 0);
+  eq('farklı konuşmacı birleştirilmedi', m2.segments.length, before2);
+  eq('farklı konuşmacıda metin değişmedi', m2.segments[0].text, 'bir iki');
+
+  // İkinci göz (yardımcı) yapı değiştiremez.
+  {
+    const c6 = T.emptyCaseForTest({ id: 'c6' });
+    c6.team = [{ id: 'tm1', name: 'Yardımcı B', role: 'assistant' }];
+    c6.lastEditedBy = 'tm1';
+    const m6 = T.emptyMaterialForTest({ id: 'm6', fileName: 'c.wav' });
+    m6.segments.push(T.emptySegmentForTest({ id: 'x1', start: '00:00:00.000', end: '00:00:04.000', speaker: 'S1', text: 'a' }));
+    m6.segments.push(T.emptySegmentForTest({ id: 'x2', start: '00:00:04.000', end: '00:00:08.000', speaker: 'S1', text: 'b' }));
+    c6.materials.push(m6);
+    T.setAppState({ cases: [c6], activeCaseId: 'c6' });
+    T.mergeSegmentWithNext(m6, 0);
+    eq('ikinci göz birleştiremez', m6.segments.length, 2);
+  }
+
+  // Bölme de günlüğe yazılır.
+  const m3 = mk();
+  const lb3 = (m3.log || []).length;
+  T.splitSegmentAt(m3, 0, 2);
+  eq('bölme günlüğe yazıldı', (m3.log || []).length, lb3 + 1);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

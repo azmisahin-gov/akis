@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.175.**
+yazılır. **Güncel sürüm: v2.176.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.176 — Birleştirme adli olarak eksiksiz (tamamlandı)
+
+Ölçüm: birleştirme ikinci bölümün asrText/words/model bilgisini siliyor,
+günlüğe yazmıyor, farklı konuşmacıyı sessizce birleştiriyordu. Artık
+`mergedFrom` ham çıktıyı saklar; kelime zamanları ve gözlemler birleşir;
+farklı konuşmacı ve ikinci göz reddedilir; birleştirme/bölme `logEvent` ile
+günlüğe yazılır. Ölçüm: S1/S2 reddedildi, aynı konuşmacı birleşti, günlük
+1 → 2, hata 0. Koruyan test: `birim` [67] + `sema` (geri alma sırası).
 
 ### v2.175 — "Ses yok" uyarısı ilk açılışta (tamamlandı)
 

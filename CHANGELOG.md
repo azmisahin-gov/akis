@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.175.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.176.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.176 — Birleştirme adli olarak eksiksiz (ham çıktı korunur, günlüğe yazılır)
+
+Ölçüm (kod okuması + gerçek tarayıcı): "sonrakine ekle" / **M** ile yapılan
+birleştirme, ikinci bölümün **`asrText`'ini, `words`'ünü, model ve zaman
+bilgisini sessizce siliyordu** (bölüm `splice` ile kaldırılıyordu) ve **delil
+günlüğüne yazmıyordu**. Ayrıca **farklı konuşmacılı** iki bölüm sessizce
+birleşiyor, sözler ilk konuşmacıya yazılıyordu. Bölme de günlüğe yazmıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Birleştirme artık **ikinci bölümün ham çıktısını saklar** (`mergedFrom`):
+  model adı, çözümleme zamanı, ham metin, kelime zamanları, gözlemler, öneri.
+  "Model ne dedi" kaybolmaz.
+- Birleşik bölümün **kelime zamanları** ve **gözlem işaretleri** birleşir.
+- **Farklı konuşmacı** varsa birleştirme **yapılmaz**; nedeni yazılır.
+- **İkinci göz** (yardımcı) birleştiremez: yapı değişikliği dosya sorumlusunun işidir.
+- Birleştirme ve bölme **delil günlüğüne** yazılır (hash zinciri korunur).
+- Bildirim: "İkinci bölümün ham çıktısı saklandı."
+
+### ÖLÇÜM
+
+| | Önce (v2.175) | Sonra (v2.176) |
+|---|---|---|
+| İkinci bölümün `asrText`'i | **kaybolur** | `mergedFrom`'da korunur |
+| Kelime zamanları | kaybolur | birleşir |
+| Gözlem işaretleri | kaybolur | birleşir |
+| Delil günlüğü | yazılmıyor | yazılır (zincir doğrulanır) |
+| Farklı konuşmacı | sessizce birleşir | **reddedilir**, nedeni yazılır |
+| İkinci göz | birleştirebilir | **reddedilir** |
+| Tarayıcı ölçümü | — | S1/S2 reddedildi; aynı konuşmacı birleşti; günlük 1 → 2; hata **0** |
+
+### KORUYAN TEST
+
+`birim-testleri` [67] (13 kontrol) ve `sema-testi` (geri alma kaydı, yıkıcı
+`splice`'ten **önce** alınır).
 
 ## v2.175 — "Ses yok" uyarısı İLK açılışta da görünüyor (v2.174 tamamlandı)
 
