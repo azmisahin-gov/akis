@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P15 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P16 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.185** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.186** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `c3dd18f` |
+| Git | `main` = `origin/main` = `734ae94` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.185** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.186** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2601,6 +2601,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.183 | Başlıkta birleşik işlem satırı | üst bölge **76 → 42 px** (1440), **78 → 42** (900) | `tasarim` [2ao] |
 | v2.184 | Tek durum satırı: her zaman görünür | satır üç durumda da **28 px**; boş şerit yok; metin 359 px | `tasarim` [2ai] + `birim` [64] |
 | v2.185 | Bölüm listesi = dizin (metin tek yerde) | satır **74 → 50 px**; rozetler görünür | `tasarim` [2ap] |
+| v2.186 | Liste tek satır + Teknik düğmesi kalktı | satır **34 px** (4 genişlikte aynı); metin 359 → 260 | `tasarim` [2t]/[2ap]/[2v] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -3054,6 +3055,36 @@ JS hatası 0.
 **DERS:** Liste bir **dizin**tir, belge değildir. Belgeyi (metni) liste ve
 editör olmak üzere iki yerde göstermek "aynı veri tek yerde" kuralını bozar;
 ayrıca satır yüksekliğini iki katına çıkarır. İçerik editörde, dizin listede.
+
+#### P16 — Liste tek satır; Teknik düğmesi kalktı (v2.186)
+
+**KULLANICI:** *"Liste dağınık; iki satır mı tek satır mı belli değil. Tek satır
+yap, hizala, başlangıç ve bitişi yan yana koy. Teknik düğmesine de gerek
+kalmadı."*
+
+**LİSTE (ölçüm):** satır 50 → **34 px**, dört genişlikte de **aynı** (hizalı).
+- Başlangıç–bitiş **yan yana**; listede **kısa saat** (`00:00:12`), **ms
+  detayda** (düzenlenebilir girdiler). Liste dizindir; ms sütunu taşırıyordu.
+- Öncelik rozeti satırdan çıktı → **detayın Durum satırında** çip.
+- Dar listelerde **ikincil** öğe çıkar: ≤1280 konuşmacı rozeti (satır ipucunda
+  ve detayda var), 901–1200 `⋮` + tutamak (sağ tık aynı menü). **Durum rozeti
+  asla çıkmaz** (v2.130).
+
+**TEKNİK:** düğme ve `techOpen` tercihi **kaldırıldı**; analiz (dalga/spek,
+zamanlar, profil, ASR kökeni) **her zaman görünür** ve **metnin ALTINDA**
+(`order`). Metin tabanı **260 px**; sığmazsa **panel kaydırır** (141 px).
+
+**DÜRÜST BEDEL:** metin alanı 359 → **260 px** (−99), panel kaydırma 0 → **141
+px**. Düğme geri istenirse metin yeniden 359 olur.
+
+**DERS:**
+1. Liste sütunu **sandığınızdan dar** olabilir: 1440'ta 409 px, 1280'de 348,
+   1100'de **300**. Tek satır garantisi için ikincil öğeyi çıkarmak gerekir.
+2. Bir düğmeyi kaldırmak "gizli bilgi" bırakabilir: analiz artık gizlenmiyor
+   ama **yazma alanı küçülüyor**. Bedel ölçülüp yazılmalı; sessizce kabul
+   edilmemeli.
+3. Kısa biçim (ms'siz saat) **listede**, tam biçim **detayda**: aynı veri, iki
+   farklı çözünürlük — dizin ile belge ayrımının doğal sonucu.
 
 ### DOĞRULAMA (her oturum başı)
 
