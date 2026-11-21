@@ -1661,6 +1661,34 @@ daha değerlidir. Zamanı otomatik düzeltmek adli kayıtta kabul edilemez.
 
 **Koruyan test:** `birim-testleri` [54] (8).
 
+### Aşama 10aq — Takip vurgusu çakışmada geri atlamıyor (TAMAMLANDI, v2.145)
+
+**KURAL: `followTick` bölüm seçimi SAF fonksiyonla yapılır; t hâlâ AKTİF
+bölümün aralığındaysa aktif kalır.**
+
+**Ölçülen kök neden:** `followTick` "t'yi içeren İLK bölümü" seçiyordu.
+Aralıklar çakışırsa (0–5 ve 3–8), oynatma sonraki bölüme geçince zaman 5→3'e
+geri atlıyor; tarama yine ilk bölümü buluyor ve vurgu ÖNCEKİ bölüme dönüyordu
+(kullanıcı: "bir önceki segment bir sonrakiyle karışıyor").
+
+**Düzeltme:** `segmentIndexAtTime(segments, t, preferIdx)`:
+1) t aktif bölümün aralığında → aktif; 2) t'yi içeren ilk bölüm; 3) t'den sonra
+başlayan ilk bölüm; 4) yoksa −1. `followTick` bunu kullanır.
+
+**Ölçüm (birim [55]):** temiz veri t=4 → 2; boşluk t=3 → sonraki; çakışma t=4
+tercihsiz → 0 (eski); çakışma t=4 aktif=1 → **1**; aktif dışına çıkış → normal;
+kayıt sonu → −1.
+
+**DÜRÜST SINIR:** Gerçek sesle uçtan uca takip denemesi bu ortamda yapılamadı
+(sentetik kayıtta ses yok). Kullanıcı verisinde "Zaman sorunları" boşsa bu
+düzeltme devreye girmez; karışma başka kaynakta aranmalı.
+
+**DERS:** "Vurgu sürekli değişiyor" belirtisinin kökü zaman çakışması olabilir.
+Önce veriyi denetle (v2.144), sonra seçim mantığını düzelt; ikisini birlikte
+sun. Zaman seçimini saf fonksiyona ayırmak, ses olmadan da test edilebilir kılar.
+
+**Koruyan test:** `birim-testleri` [55] (8).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1834,7 +1862,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.144.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.145.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -1996,7 +2024,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.144** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.145** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2053,6 +2081,7 @@ Test sayısı 441 → **782**.
 | **v2.142** | **Çalışma modu kaldırıldı; kayıt listesi dikey** (yanyana çipler, gizli başlık) | `tasarim` [2p]/[2q] |
 | **v2.143** | **Detay panelinin alt kısmı kırpılıyordu** (`sd-meta`, gözlem düğmeleri) | `tasarim` [2r] |
 | **v2.144** | **Zaman çakışmaları görünür** (⚠ rozet + "Zaman sorunları" filtresi) | `birim` [54] |
+| **v2.145** | **Takip vurgusu çakışmada geri atlamıyor** (`segmentIndexAtTime`) | `birim` [55] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 

@@ -115,6 +115,7 @@ const EXPOSE = [
   'normalizeRescueCases', 'persistPayloadFor',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
+  'segmentIndexAtTime',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2784,6 +2785,30 @@ console.log('\n== [54] Zaman bütünlüğü: çakışma/yinelenme/sıfır süre'
     eq('ters aralık bulundu', inv.some((x) => x.kind === 'inverted'), true);
     const bad = T.segmentTimeIssues([seg('abc', '00:00:02.000')]);
     eq('okunamayan zaman bulundu', bad.some((x) => x.kind === 'invalid'), true);
+  }
+}
+
+
+console.log('\n== [55] Takip: çakışan aralıkta aktif bölüm korunur');
+{
+  // Kullanıcı: "otomatik geçiş + canlı vurgu açıkken bir önceki bölüm bir
+  // sonrakiyle karışıyor gibi; vurgu sürekli değişiyor." Kök neden: çakışan
+  // aralıkta `t`yi içeren İLK bölüm seçilince, oynatma sonraki bölüme geçince
+  // zaman geriye atlıyor ve vurgu ÖNCEKİ bölüme dönüyordu.
+  // KURAL: t hâlâ aktif bölümün aralığındaysa aktif kalır.
+  eq('segmentIndexAtTime tanımlı', typeof T.segmentIndexAtTime, 'function');
+  if (typeof T.segmentIndexAtTime === 'function') {
+    const seg = (a, b) => ({ start: a, end: b });
+    const clean = [seg('00:00:00.000', '00:00:03.000'), seg('00:00:03.000', '00:00:06.000')];
+    eq('temiz veri: t=4 → 2. bölüm', T.segmentIndexAtTime(clean, 4), 1);
+    eq('temiz veri: t=1 → 1. bölüm', T.segmentIndexAtTime(clean, 1), 0);
+    const gap = [seg('00:00:00.000', '00:00:02.000'), seg('00:00:05.000', '00:00:08.000')];
+    eq('boşlukta sonraki bölüm seçilir', T.segmentIndexAtTime(gap, 3), 1);
+    const overlap = [seg('00:00:00.000', '00:00:05.000'), seg('00:00:03.000', '00:00:08.000')];
+    eq('çakışmada tercih yoksa ilk bölüm', T.segmentIndexAtTime(overlap, 4), 0);
+    eq('çakışmada AKTİF bölüm korunur', T.segmentIndexAtTime(overlap, 4, 1), 1);
+    eq('aktif bölüm dışına çıkınca normal seçim', T.segmentIndexAtTime(overlap, 7, 0), 1);
+    eq('kayıt sonunda -1', T.segmentIndexAtTime(clean, 99), -1);
   }
 }
 

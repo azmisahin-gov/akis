@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.144';
+} from './schema.js?v=2.145';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.144';
+const APP_VERSION = '2.145';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5709,6 +5709,34 @@ function stopFollow() {
   }
 }
 // Oynatma konumuna göre aktif bölümü seç, listeyi kaydır, metni vurgula.
+// ZAMAN t İÇİN BÖLÜM SEÇİMİ — SAF (v2.145).
+// NEDEN: çakışan aralıklarda "t'yi içeren İLK bölüm" seçilince, oynatma
+// sonraki bölüme geçtiğinde zaman geriye atlıyor ve vurgu ÖNCEKİ bölüme
+// dönüyordu (kullanıcı: "bir önceki segment bir sonrakiyle karışıyor").
+// KURAL: t hâlâ AKTİF bölümün aralığındaysa aktif kalır; değilse t'yi içeren
+// ilk bölüm; o da yoksa t'den sonra başlayan ilk bölüm.
+function segmentIndexAtTime(segments, t, preferIdx = -1) {
+  const segs = Array.isArray(segments) ? segments : [];
+  const span = (s) => {
+    const a = parseTimecodeStrict(s && s.start);
+    const b = parseTimecodeStrict(s && s.end);
+    if (a == null || b == null) return null;
+    return [a, b > a ? b : a + 0.01];
+  };
+  if (preferIdx >= 0 && preferIdx < segs.length) {
+    const r = span(segs[preferIdx]);
+    if (r && t >= r[0] && t < r[1]) return preferIdx;
+  }
+  for (let i = 0; i < segs.length; i++) {
+    const r = span(segs[i]);
+    if (r && t >= r[0] && t < r[1]) return i;
+  }
+  for (let i = 0; i < segs.length; i++) {
+    const r = span(segs[i]);
+    if (r && r[0] > t) return i;
+  }
+  return -1;
+}
 function followTick() {
   // Yalnız "otomatik bölüm geçişi" modu bu zamanlayıcıyı kullanır (v2.119).
   // Canlı vurgu oynatma olaylarıyla beslenir; listede gezinmez.
@@ -5725,24 +5753,8 @@ function followTick() {
   if (!player) return;
   if (player.paused) return; // duraklatınca takip bekler, konum korunur
   const t = player.currentTime;
-  // t'yi içeren bölümü bul (yoksa en yakın sonraki).
-  let idx = -1;
-  for (let i = 0; i < segs.length; i++) {
-    const a = secondsFromTimecode(segs[i].start);
-    const b = secondsFromTimecode(segs[i].end);
-    if (t >= a && t < (b > a ? b : a + 0.01)) {
-      idx = i;
-      break;
-    }
-  }
-  if (idx < 0) {
-    for (let i = 0; i < segs.length; i++) {
-      if (secondsFromTimecode(segs[i].start) > t) {
-        idx = i;
-        break;
-      }
-    }
-  }
+  // t'yi içeren bölümü bul; ÇAKIŞMADA aktif bölüm korunur (v2.145).
+  const idx = segmentIndexAtTime(segs, t, Number.isInteger(m.activeSeg) ? m.activeSeg : -1);
   if (idx < 0) return;
   if (m.activeSeg !== idx) {
     m.activeSeg = idx;
@@ -11640,6 +11652,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.145': {
+    title: 'Takip vurgusu çakışan bölümlerde geri atlamıyor',
+    body:
+      'Otomatik geçiş + canlı vurgu açıkken, zaman aralıkları çakışan bölümlerde ' +
+      'vurgu bir önceki bölüme dönebiliyordu (oynatma sonraki bölüme geçince zaman ' +
+      'geriye atlıyordu). Artık oynatma konumu hâlâ AKTİF bölümün aralığındaysa ' +
+      'vurgu o bölümde kalır. Çakışma varsa "Zaman sorunları" filtresinde görünür.'
+  },
   '2.144': {
     title: 'Bölüm zamanlarındaki çakışmalar artık görünüyor',
     body:

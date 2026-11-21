@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.144.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.145.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.145 — Takip vurgusu çakışan bölümlerde geri atlamıyor
+
+CANLI VERİ. Kullanıcı: *"Çal'a basınca otomatik geçiş ve canlı vurgu açık;
+bir önceki segment bir sonrakiyle mi karışıyor, vurgu sürekli değişiyor."*
+
+### KÖK NEDEN (kod okuması + saf fonksiyon testi)
+
+`followTick` zamanı tarayıp **t'yi içeren İLK bölümü** seçiyordu. Aralıklar
+çakışıyorsa (ör. 0–5 ve 3–8), oynatma sonraki bölüme geçtiğinde zaman 5 → 3'e
+**geri atlıyor**; tarama yine ilk bölümü buluyor ve vurgu önceki bölüme
+dönüyordu. Kullanıcının gördüğü "karışma" budur.
+
+### DÜZELTME
+
+- `segmentIndexAtTime(segments, t, preferIdx)` — saf fonksiyon.
+  **t hâlâ aktif bölümün aralığındaysa aktif kalır**; değilse t'yi içeren ilk
+  bölüm; o da yoksa t'den sonra başlayan ilk bölüm.
+- `followTick` bu fonksiyonu kullanır.
+
+### ÖLÇÜM (birim, v2.145)
+
+| Durum | Sonuç |
+|---|---|
+| Temiz veri, t=4 | 2. bölüm |
+| Boşluk, t=3 | sonraki bölüm |
+| Çakışma, t=4, tercih yok | ilk bölüm (eski davranış) |
+| Çakışma, t=4, **aktif=2** | **2. bölüm korunur** |
+| Aktif bölüm dışına çıkış | normal seçim |
+| Kayıt sonu | −1 |
+
+### KULLANICI NE GÖRECEK
+
+- Çakışan aralıklarda vurgu artık komşu bölüme atlamaz.
+- Çakışma **veride varsa** "Zaman sorunları" filtresinde görünür; düzeltmeyi
+  siz yaparsınız.
+
+### DÜRÜST SINIR
+
+Saf seçim mantığı birim testiyle doğrulandı. **Gerçek sesle** uçtan uca takip
+denemesi bu ortamda yapılamadı (sentetik kayıtta ses yok); kullanıcı verisinde
+"Zaman sorunları" filtresi boşsa bu düzeltme devreye girmez ve karışma başka bir
+kaynakta aranmalıdır.
+
+Koruyan test: `birim-testleri` [55] (8).
 
 ## v2.144 — Zaman çakışmaları görünür oldu
 
