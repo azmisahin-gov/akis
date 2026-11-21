@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.145.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.146.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.146 — Zaman sorunu düzenlerken anında görünüyor
+
+CANLI VERİ. Kullanıcı: *"Boş bir kayıt açtım, ilk bölümün sonunu bilerek
+uzattım; otomatik olarak zaman sorunu göstermedi, sayfayı yenileyince sorun var
+dedi."*
+
+### ÖLÇÜM (v2.145, gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| 1. bölümün bitişi 00:00:04.000 yapıldı (2. bölümle çakışır) | çip **yok**, ⚠ **yok** |
+| Sayfa yenilendi | çip "Zaman sorunları 2", ⚠ 2 satır |
+
+Kök neden: zaman değişiminde `updateSegListItem` satırı yeniden çiziyordu ama
+**⚠ parametresini geçmiyordu**; "Zaman sorunları" çipi ise yalnız tam çizimde
+oluşturuluyordu (sayaç güncellemesi çipi ekleyemiyordu).
+
+### DÜZELTME
+
+- `segmentTimeIssueAt(segments, i)` — çakışmanın/yinelenmenin **iki tarafı da**
+  kendi satırında işaretlenir.
+- Zaman düzenlemesinden sonra **kendisi + önceki + sonraki** satır tazelenir.
+- Filtre çipleri tek kaynak (`segFilterChipsHtml`); "Zaman sorunları" çipi sorun
+  oluşunca **eklenir**, sorun bitince **kaldırılır**.
+
+### ÖLÇÜM (v2.146, gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| Aynı düzenleme, sayfa yenilemeden | çip **"Zaman sorunları 2"** |
+| ⚠ rozetli satır | **2** (1 ve 2; ipuçları birbirini gösterir) |
+| JS hatası | 0 |
+
+Koruyan test: `birim-testleri` [56] (5).
 
 ## v2.145 — Takip vurgusu çakışan bölümlerde geri atlamıyor
 

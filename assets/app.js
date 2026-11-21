@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.145';
+} from './schema.js?v=2.146';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.145';
+const APP_VERSION = '2.146';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3352,6 +3352,15 @@ function segmentTimeIssues(segments) {
   }
   return issues;
 }
+// Bir bölümün zaman sorunu (varsa). Çakışmanın/yinelenmenin DİĞER tarafı da
+// kendi satırında işaretlenir (v2.146).
+function segmentTimeIssueAt(segments, i) {
+  for (const it of segmentTimeIssues(segments)) {
+    if (it.i === i) return it;
+    if (it.j === i) return { ...it, i: it.j, j: it.i };
+  }
+  return null;
+}
 function segmentTimeIssueIndexes(segments) {
   const set = new Set();
   for (const it of segmentTimeIssues(segments)) {
@@ -3679,8 +3688,11 @@ function updateSegListItem(m, i) {
   const item = root.querySelector(`[data-seg-item="${i}"]`);
   if (!item) return;
   const s = m.segments[i];
+  // Zaman sorunu rozeti de tazelenir (v2.146): yalnız metin değil, süre
+  // düzenlemesi de satırı değiştirir. Aksi hâlde ⚠ yenilemeden görünmüyordu.
+  const issue = segmentTimeIssueAt(m.segments, i);
   const tmp = document.createElement('div');
-  tmp.innerHTML = segItemHtml(m, s, i, m.segments[i - 1]);
+  tmp.innerHTML = segItemHtml(m, s, i, m.segments[i - 1], issue);
   const fresh = tmp.firstElementChild;
   fresh.classList.toggle('is-active', item.classList.contains('is-active'));
   item.replaceWith(fresh);
@@ -4751,12 +4763,7 @@ function renderSegments(m, card) {
   const reviewed = counts.approved + counts.inaudible;
   const pct = segs.length ? Math.round((reviewed / segs.length) * 100) : 0;
   const filter = segFilter(m);
-  const chips = SEG_FILTERS.filter(([k]) => k !== 'time' || counts.time > 0)
-    .map(
-      ([k, label]) =>
-        `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
-    )
-    .join('');
+  const chips = segFilterChipsHtml(counts, filter);
   const spkOptions = (m.speakers || []).map((sp) => sp.label).filter(Boolean);
   root.innerHTML = `<div class="transcript-toolbar compact-bar">
       <div class="group"><span>Hız</span>${PLAYBACK_SPEEDS.map((sp) => `<button class="seg-tool speed-tool ${(m.playbackRate || 1) === sp ? 'on' : ''}" data-seg-speed="${sp}">${sp}×</button>`).join('')}</div>
@@ -5019,6 +5026,16 @@ function scheduleLightRefresh(m) {
     } catch (e) {}
   }, 250);
 }
+// Filtre çipleri TEK KAYNAK (v2.146). "Zaman sorunları" çipi yalnız sorun
+// varsa görünür; sayı sıfıra düşerse çip kaldırılır.
+function segFilterChipsHtml(counts, filter) {
+  return SEG_FILTERS.filter(([k]) => k !== 'time' || counts.time > 0)
+    .map(
+      ([k, label]) =>
+        `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
+    )
+    .join('');
+}
 function refreshSegChips(m) {
   const root = $(`#segments-${CSS.escape(m.id)}`);
   if (!root) return;
@@ -5031,6 +5048,17 @@ function refreshSegChips(m) {
     const n = ch.querySelector('.n');
     if (n) n.textContent = counts[k];
   });
+  // Zaman sorunları çipi: sorun YENİ oluştuysa ekle, bittiyse kaldır (v2.146).
+  const holder = root.querySelector('.tb-filters');
+  const timeChip = root.querySelector('[data-seg-filter="time"]');
+  if (holder && counts.time > 0 && !timeChip) {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = segFilterChipsHtml(counts, segFilter(m));
+    const fresh = tmp.querySelector('[data-seg-filter="time"]');
+    if (fresh) holder.appendChild(fresh);
+  } else if (timeChip && counts.time === 0) {
+    timeChip.remove();
+  }
   // İlerleme artık araç çubuğunun içinde (.tb-progress); eski .seg-progress
   // sınıfı da desteklenir.
   const bar = root.querySelector('.tb-progress .bar span') || root.querySelector('.seg-progress .bar span');
@@ -10408,7 +10436,10 @@ function setupEvents() {
     s[key] = canon;
     el.value = canon;
     persist();
+    // Çakışma iki satırı ilgilendirir: kendisi + önceki/sonraki (v2.146).
     updateSegListItem(m, idx);
+    if (idx > 0) updateSegListItem(m, idx - 1);
+    if (idx + 1 < (m.segments || []).length) updateSegListItem(m, idx + 1);
     scheduleLightRefresh(m);
     if ($('#view-report').classList.contains('active')) renderReport();
   });
@@ -11652,6 +11683,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.146': {
+    title: 'Zaman sorunu düzenlerken anında görünüyor',
+    body:
+      'Bir bölümün bitişini uzatıp çakışma yarattığınızda ⚠ rozeti ve "Zaman ' +
+      'sorunları" filtresi ancak sayfa yenilenince görünüyordu. Artık düzenleme ' +
+      'biter bitmez İKİ satırda da ⚠ çıkar ve filtre görünür. Sorun kalmayınca ' +
+      'filtre kendiliğinden kalkar.'
+  },
   '2.145': {
     title: 'Takip vurgusu çakışan bölümlerde geri atlamıyor',
     body:

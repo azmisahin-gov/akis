@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.145.**
+yazılır. **Güncel sürüm: v2.146.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,11 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.146 — Zaman sorunu düzenlerken anında görünür (tamamlandı)
+
+Satır güncellemesi ⚠'yı geçmiyordu ve çip yalnız tam çizimde oluşuyordu.
+Artık iki taraf da işaretlenir, çip eklenir/kalkar. `birim` [56].
 
 ### v2.145 — Takip vurgusu çakışmada geri atlamıyor (tamamlandı)
 

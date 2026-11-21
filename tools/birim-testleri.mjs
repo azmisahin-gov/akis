@@ -115,7 +115,7 @@ const EXPOSE = [
   'normalizeRescueCases', 'persistPayloadFor',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
-  'segmentIndexAtTime',
+  'segmentIndexAtTime', 'segmentTimeIssueAt',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2809,6 +2809,26 @@ console.log('\n== [55] Takip: çakışan aralıkta aktif bölüm korunur');
     eq('çakışmada AKTİF bölüm korunur', T.segmentIndexAtTime(overlap, 4, 1), 1);
     eq('aktif bölüm dışına çıkınca normal seçim', T.segmentIndexAtTime(overlap, 7, 0), 1);
     eq('kayıt sonunda -1', T.segmentIndexAtTime(clean, 99), -1);
+  }
+}
+
+
+console.log('\n== [56] Zaman sorunu: iki taraf da işaretlenir (v2.146)');
+{
+  // Kullanıcı: "ilk segmentin sonunu uzattım ama zaman sorunu göstermedi,
+  // sayfayı yenileyince söyledi." Satır güncellemesi ⚠'yı geçmiyordu ve
+  // "Zaman sorunları" çipi hiç oluşturulmuyordu. Çakışmanın İKİ tarafı da
+  // kendi satırında işaretlenmeli.
+  eq('segmentTimeIssueAt tanımlı', typeof T.segmentTimeIssueAt, 'function');
+  if (typeof T.segmentTimeIssueAt === 'function') {
+    const seg = (a, b) => ({ start: a, end: b });
+    const overlap = [seg('00:00:00.000', '00:00:04.000'), seg('00:00:03.000', '00:00:06.000')];
+    const a = T.segmentTimeIssueAt(overlap, 0);
+    const b = T.segmentTimeIssueAt(overlap, 1);
+    eq('önceki bölüm de işaretli', !!a && a.kind === 'overlap', true);
+    eq('sonraki bölüm de işaretli', !!b && b.kind === 'overlap', true);
+    eq('iki taraf birbirini gösterir', a.j, 1);
+    eq('temiz veride sorun yok', T.segmentTimeIssueAt([seg('00:00:00.000', '00:00:03.000')], 0), null);
   }
 }
 

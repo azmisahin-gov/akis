@@ -1689,6 +1689,29 @@ sun. Zaman seçimini saf fonksiyona ayırmak, ses olmadan da test edilebilir kı
 
 **Koruyan test:** `birim-testleri` [55] (8).
 
+### Aşama 10ar — Zaman sorunu düzenlerken anında görünür (TAMAMLANDI, v2.146)
+
+**KURAL: bir bölümün zamanı düzenlendiğinde ⚠ rozeti ve "Zaman sorunları"
+filtresi ANINDA güncellenir; sayfa yenilemek gerekmez.**
+
+**Ölçülen hata (v2.145):** 1. bölümün bitişi 00:00:04.000 yapıldı (2. bölümle
+çakışır) → çip yok, ⚠ yok; **sayfa yenilenince** "Zaman sorunları 2" ve 2 ⚠.
+Kök neden: `updateSegListItem` satırı yeniden çiziyor ama ⚠ parametresini
+geçmiyordu; çip yalnız tam çizimde oluşuyordu.
+
+**Düzeltme:** `segmentTimeIssueAt` (iki taraf), komşu satır tazeleme,
+`segFilterChipsHtml` (tek kaynak) + `refreshSegChips` içinde çip ekle/kaldır.
+
+**Ölçüm (v2.146):** aynı düzenleme, yenilemeden → çip 2, ⚠ 2 satır, JS hatası 0.
+
+**DERS:** Liste satırını "yerinde" güncelleyen her fonksiyon, satırın TÜM
+girdilerini (metin, durum, öneri, özet, zaman sorunu) yeniden hesaplamalı.
+Yeni bir rozet/rozet kuralı eklerken `segItemHtml` çağrılarının HEPSİNİ gözden
+geçir: biri (burada `updateSegListItem`) parametreyi geçmezse rozet yalnız tam
+çizimde görünür ve "yenileyince düzeldi" belirtisi doğar.
+
+**Koruyan test:** `birim-testleri` [56] (5).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -1862,7 +1885,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.145.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.146.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2024,7 +2047,7 @@ Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.145** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.146** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
 | Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
@@ -2082,6 +2105,7 @@ Test sayısı 441 → **782**.
 | **v2.143** | **Detay panelinin alt kısmı kırpılıyordu** (`sd-meta`, gözlem düğmeleri) | `tasarim` [2r] |
 | **v2.144** | **Zaman çakışmaları görünür** (⚠ rozet + "Zaman sorunları" filtresi) | `birim` [54] |
 | **v2.145** | **Takip vurgusu çakışmada geri atlamıyor** (`segmentIndexAtTime`) | `birim` [55] |
+| **v2.146** | **Zaman sorunu düzenlerken anında görünür** (⚠/çip yenilemeden çıkmıyordu) | `birim` [56] |
 
 ### v2.117–v2.122'de öğrenilen dört kritik ders
 
