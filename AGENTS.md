@@ -3262,6 +3262,30 @@ tek satır metin önizlemesi gerekli: kullanıcı satırları metinden ayırt ed
 
 **Koruyan test:** `tasarim` [2ap] + [2as].
 
+#### P24 — "Paragraf / türetilmiş görünüm" konusu (KAYIT NOTU — kod değişikliği yok)
+
+**SORU (2026-11-21):** "Paragraf/türetilmiş görünüm konusu diye bir konu var
+mıydı?"
+
+**DURUM:** Böyle ADLANDIRILMIŞ bir konu **yok**. Depoda iki ayrı şey var:
+
+1. **Paragraf oluştur** (`paragraphize`; v2.12, adli düzeltme v2.98): ardışık ve
+   AYNI konuşmacıya ait bölümleri **yapısal olarak** tek bölümde birleştirir.
+   `m.segments` DEĞİŞİR; `snapshotForUndo` ile geri alınabilir. `asrText` /
+   `asrModel` / `asrAt` korunur; farklı modeller karışırsa model adı boşaltılır.
+   Paragraf sonrası liste kaydırması korunur (v2.193).
+2. **Türetilmiş görünüm**: böyle bir mod **YOK**. Rapor ve defter bölümlerden
+   türetilir; ayrı, salt-okunur bir "paragraf görünümü" ekranı yoktur.
+
+**AYRIM (önemli):** "Paragraf oluştur" veriyi **DEĞİŞTİRİR** (geri alınabilir);
+"türetilmiş görünüm" veriyi **DEĞİŞTİRMEZ**, yalnız gösterir. Adli kayıtta bu
+fark karıştırılmamalıdır.
+
+**AÇIK KONU (istenirse):** Salt-okunur "Paragraf görünümü" — bölümleri
+konuşmacıya göre gruplayıp okuma kolaylığı sağlayan, `segment` yapısına
+DOKUNMAYAN bir görünüm — ayrı bir sürüm konusu olarak eklenebilir. Bu oturumda
+kod değişikliği YAPILMADI; yalnız kayıt düşüldü.
+
 ### DOĞRULAMA (her oturum başı)
 
 ```bash
