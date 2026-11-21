@@ -106,6 +106,13 @@ etiket/ipucu haritalarını üretir; arayüz düğmeleri, rapor etiketleri, yard
 listesi, `emptySegment`/`normalizeSegment` ve testler buradan beslenir. Yeni
 bir gözlem bayrağı eklemek için yalnız `OBS_DEFS`'e bir satır eklenir.
 
+v2.204'te aynı desen **sınıflandırma/rol seçeneklerine** uygulandı:
+`CASE_STATUS_DEFS`, `MATERIAL_STATUS_DEFS`, `REVIEW_DEFS`,
+`SPEAKER_ROLE_DEFS`, `SPEAKER_GENDER_DEFS`, `MEDIUM_TYPE_DEFS`,
+`TEAM_ROLE_DEFS`. `*_KEYS`/`*_LABEL`, `REVIEW_SHORT`/`REVIEW_HINT`/
+`REVIEW_TONE` ve rol yetkileri (`SECOND_EYES_ROLES`, `APPROVER_ROLES`) bunlardan
+türetilir; uygulamadaki kopya etiketler kaldırıldı.
+
 Ayrıntı, geriye/ileriye uyumluluk kuralları ve diğer alan aileleri için
 kademeli plan: [`ALAN_SISTEMI.md`](ALAN_SISTEMI.md).
 

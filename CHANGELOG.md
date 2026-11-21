@@ -6,12 +6,57 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.203.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.204.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.204 — Sınıflandırma/rol seçenekleri tek kaynakta
+
+Kullanıcı: *"Sınıflandırma/rol seçeneklerini de aynı desene taşı."* v2.203'te
+gözlem bayrakları için kurulan `OBS_DEFS` + `defineOptions` deseni, sabit
+seçenek listelerine uygulandı.
+
+### Ne yapıldı
+
+Şu listeler artık **`*_DEFS` tek kaynağından** türetilir:
+
+| Defs | Türetilenler |
+|---|---|
+| `CASE_STATUS_DEFS` | `CASE_STATUS`, `CASE_STATUS_LABEL` |
+| `MATERIAL_STATUS_DEFS` | `MATERIAL_STATUS`, `STATUS_LABEL` |
+| `REVIEW_DEFS` | `REVIEW_STATE`, `REVIEW_LABEL`, `REVIEW_SHORT`, `REVIEW_HINT`, `REVIEW_TONE` |
+| `SPEAKER_ROLE_DEFS` | `SPEAKER_ROLE`, `SPEAKER_ROLE_LABEL` |
+| `SPEAKER_GENDER_DEFS` | `SPEAKER_GENDER`, `SPEAKER_GENDER_LABEL` |
+| `MEDIUM_TYPE_DEFS` | `MEDIUM_TYPE`, `MEDIUM_TYPE_LABEL` |
+| `TEAM_ROLE_DEFS` | `TEAM_ROLE`, `TEAM_ROLE_LABEL`, `SECOND_EYES_ROLES`, `APPROVER_ROLES` |
+
+- `defineOptions(defs)` artık `byKey` de döndürür (tone gibi tanıma özgü alan).
+- Rol yetkileri ayrı liste değil, `TEAM_ROLE_DEFS` bayrakları
+  (`approver`, `secondEyes`) ile tanımlanır.
+- Uygulamadaki kopyalar kaldırıldı: `REVIEW_SHORT_LABEL`, `badgeFor` metinleri,
+  `SEG_FILTERS` kontrol etiketleri artık schema'dan gelir.
+- **Görünür davranış değişmedi**: aynı kodlar, aynı sıra, aynı etiketler.
+
+### Neden önemli
+
+Yeni bir rol/cinsiyet/ortam/durum seçeneği eklemek için artık ilgili
+`*_DEFS` listesine bir satır eklenir; `*_KEYS`, `*_LABEL`, seçenek listeleri,
+rozet/filtre etiketleri ve testler buradan beslenir. Ayrı haritaları elle
+güncellemek gerekmez.
+
+### Doğrulama
+
+- `bash tools/test.sh` → **1096 birim + 465 şema** + rapor/sürüm/tasarım,
+  hepsi yeşil.
+- `sema` [3f] (41 kontrol): her `*_DEFS` benzersiz, anahtar/etiket birebir,
+  `REVIEW_SHORT`/`REVIEW_TONE`, rol yetkileri türetilmiş, ortam etiketi göçü.
+- `tasarim` [2bd] (13 kontrol): kopya etiket kalmadı, rozet/filtre tek kaynak.
+- Rapor tutarlılığı ve tarayıcı davranışı değişmedi.
+
+Ayrıntı ve kalan alan aileleri: [`docs/ALAN_SISTEMI.md`](docs/ALAN_SISTEMI.md).
 
 ## v2.203 — Alan tanımlama sistemi ve iki yeni gözlem işareti
 

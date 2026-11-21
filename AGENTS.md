@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.203.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.204.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -3899,7 +3899,7 @@ uydurma metin üretilmez.
 | Testler | `bash tools/test.sh` → **1096 birim + 420 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | commit/push sonrası doğrulanacak |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.203** |
-| Açık konu | Alan sisteminin diğer aileleri (sınıflandırma, case alanları, rapor bölümleri) |
+| Açık konu | Case alanları ve rapor bölümleri (sınıflandırma/rol v2.204'te yapıldı) |
 
 ### Ne yapıldı
 
@@ -3950,8 +3950,8 @@ Rapor GÖZLEM hücresi: `telefon görüşmesi, sessizlik (konuşma yok)`; bilinm
 
 ### SIRADAKİ İŞLER (öneri sırası — v2.203 sonrası)
 
-1. **v2.204 — Sınıflandırma/rol seçenekleri `defineOptions` desenine.** Düşük
-   risk; etiket/kısa etiket/ipucu tek kaynaktan. (Alan sisteminin 2. aşaması.)
+1. **v2.204 — Sınıflandırma/rol seçenekleri (YAPILDI).** `*_DEFS` tek kaynak;
+   test: `sema` [3f] + `tasarim` [2bd].
 2. **v2.205 — Dosyalar arası konuşmacı kaydı** (case-level registry; uzman
    kanaati).
 3. **v2.206 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
@@ -3965,3 +3965,76 @@ Rapor GÖZLEM hücresi: `telefon görüşmesi, sessizlik (konuşma yok)`; bilinm
 - "Sessizlik" işareti ölçülen sessizlik oranı değildir; ölçüm ayrı satırdadır.
 - ≤600 px'te gözlemler tek "Gözlem" düğmesi arkasındadır (açılır panel).
 - Case alanları ve rapor bölümleri hâlâ özel kod; ortaklaştırma kademeli.
+
+## YENİ OTURUM DEVRİ (v2.204) — Sınıflandırma/rol seçenekleri tek kaynakta
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.204** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1096 birim + 465 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.204** |
+| Açık konu | Case alanları ve rapor bölümleri (kademeli); konuşmacı kaydı |
+
+### Ne yapıldı
+
+v2.203'te gözlem bayrakları için kurulan `*_DEFS` + `defineOptions` deseni
+sınıflandırma/rol seçeneklerine uygulandı:
+
+| Defs | Türetilenler |
+|---|---|
+| `CASE_STATUS_DEFS` | `CASE_STATUS`, `CASE_STATUS_LABEL` |
+| `MATERIAL_STATUS_DEFS` | `MATERIAL_STATUS`, `STATUS_LABEL` |
+| `REVIEW_DEFS` | `REVIEW_STATE`, `REVIEW_LABEL`, `REVIEW_SHORT`, `REVIEW_HINT`, `REVIEW_TONE` |
+| `SPEAKER_ROLE_DEFS` | `SPEAKER_ROLE`, `SPEAKER_ROLE_LABEL` |
+| `SPEAKER_GENDER_DEFS` | `SPEAKER_GENDER`, `SPEAKER_GENDER_LABEL` |
+| `MEDIUM_TYPE_DEFS` | `MEDIUM_TYPE`, `MEDIUM_TYPE_LABEL` |
+| `TEAM_ROLE_DEFS` | `TEAM_ROLE`, `TEAM_ROLE_LABEL`, `SECOND_EYES_ROLES`, `APPROVER_ROLES` |
+
+- `defineOptions` artık `byKey` döndürür (tone gibi ek alan).
+- Rol yetkileri ayrı liste değil, `TEAM_ROLE_DEFS` bayrakları (`approver`,
+  `secondEyes`).
+- Uygulamadaki kopyalar kaldırıldı: `REVIEW_SHORT_LABEL`, `badgeFor` metinleri,
+  `SEG_FILTERS` kontrol etiketleri artık schema'dan gelir.
+- **Görünür davranış değişmedi**; kodlar, sıra ve etiketler aynı.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Öğe | Sonuç |
+|---|---|
+| Filtre çipleri | "Onaylandı", "Anlaşılmadı", "Yeniden dinlenecek" |
+| Aktif bölüm rozeti | "Onaylandı" |
+| Tam Kontrol seçenekleri | 6 etiket (Kontrol bekliyor…Belirsiz okuma) |
+| Dar ekran Kontrol seçenekleri | 6 kısa etiket (Bekliyor…Belirsiz) |
+| JS hatası | **0** |
+
+### DEĞİŞMEZ KURALLAR
+
+1. Yeni bir seçenek = **ilgili `*_DEFS` listesine satır**; `*_KEYS`/`*_LABEL`
+   elle yazılmaz.
+2. Etiket/kısa etiket/ipucu/ton `*_DEFS` satırında; uygulama kopya tutmaz.
+3. Rol yetkileri (`approver`, `secondEyes`) `TEAM_ROLE_DEFS` bayrağıdır.
+4. `defineOptions` ek alanları `byKey` ile taşır; yeni bir tanım ailesi için
+   aynı yardımcı kullanılır.
+5. Testler `*_DEFS` listelerini gezer; yeni seçenek otomatik sınanır.
+6. Eklemeli alan `SCHEMA_VERSION`ı artırmaz; kırıcı değişiklik artırır.
+7. **Evrensel şema motoru / dinamik form üreteci yazma**: büyük yeniden yazım ve
+   veri kaybı riski. Alan aileleri kademeli taşınır.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.204 sonrası)
+
+1. **v2.205 — Dosyalar arası konuşmacı kaydı** (case-level registry; uzman
+   kanaati).
+2. **v2.206 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+3. **Case alanları / rapor bölümleri** — `ALAN_SISTEMI.md` §5 B/C kademeli plan;
+   her biri ayrı sürüm. `REPORT_TYPES` (kapak/rol/başlık metinleri) hâlâ app.js
+   içinde; rapor bölümü aşamasında ele alınacak.
+
+### Bilinen sınırlar (hata değil)
+
+- `REPORT_TYPE` anahtarları hâlâ düz dizi; `REPORT_TYPES` zengin metinleri
+  app.js'te (rapor bölümü aşaması).
+- Case alanları ve rapor bölümleri özel kod; tam otomatik değil.
+- Görünür davranış değişmediği için kullanıcıya yeni bir iş akışı sunulmadı.

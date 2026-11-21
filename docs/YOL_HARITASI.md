@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.203.**
+yazılır. **Güncel sürüm: v2.204.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.204 — Sınıflandırma/rol seçenekleri tek kaynakta (tamamlandı)
+
+`CASE_STATUS_DEFS`, `MATERIAL_STATUS_DEFS`, `REVIEW_DEFS`, `SPEAKER_ROLE_DEFS`,
+`SPEAKER_GENDER_DEFS`, `MEDIUM_TYPE_DEFS`, `TEAM_ROLE_DEFS` tek kaynak oldu;
+`*_KEYS`/`*_LABEL`/`REVIEW_SHORT`/`REVIEW_HINT`/`REVIEW_TONE` bunlardan türetilir.
+Rol yetkileri (`SECOND_EYES_ROLES`, `APPROVER_ROLES`) `TEAM_ROLE_DEFS`
+bayraklarından gelir. Uygulamadaki kopya etiketler kaldırıldı. **Görünür
+davranış değişmedi.** Koruyan test: `sema` [3f] + `tasarim` [2bd].
 
 ### v2.203 — Alan tanımlama sistemi ve iki yeni gözlem işareti (tamamlandı)
 

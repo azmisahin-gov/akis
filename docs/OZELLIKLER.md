@@ -1,4 +1,4 @@
-# Özellikler (v2.203 — mevcut durum)
+# Özellikler (v2.204 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,12 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Sınıflandırma/rol seçenekleri tek kaynaktan (v2.204):** Dosya/kayıt durumu,
+  kontrol durumu, konuşmacı rolü/cinsiyeti, ortam türü ve ekip rolü listeleri
+  `*_DEFS` tanımlarından türetilir; `*_KEYS`/`*_LABEL`, `REVIEW_SHORT`/
+  `REVIEW_HINT`/`REVIEW_TONE`, rozet/filtre etiketleri ve rol yetkileri
+  (`SECOND_EYES_ROLES`, `APPROVER_ROLES`) aynı kaynaktan gelir. **Görünür
+  davranış değişmedi**; kopya etiket haritaları kaldırıldı.
 - **Gözlem işaretleri tek kaynaktan (v2.203):** Bölüm gözlem bayrakları
   `schema.js` → `OBS_DEFS` listesinde tanımlanır; arayüz düğmeleri, rapor
   etiketleri, yardım listesi, `emptySegment`/`normalizeSegment` ve testler

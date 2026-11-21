@@ -27,9 +27,20 @@ import {
   MEDIUM_TYPE,
   REPORT_TYPE,
   TEAM_ROLE,
+  CASE_STATUS_DEFS,
+  MATERIAL_STATUS_DEFS,
+  REVIEW_DEFS,
+  SPEAKER_ROLE_DEFS,
+  SPEAKER_GENDER_DEFS,
+  MEDIUM_TYPE_DEFS,
+  TEAM_ROLE_DEFS,
   STATUS_LABEL,
   CASE_STATUS_LABEL,
   REVIEW_LABEL,
+  REVIEW_SHORT,
+  REVIEW_TONE,
+  SECOND_EYES_ROLES,
+  APPROVER_ROLES,
   SPEAKER_ROLE_LABEL,
   SPEAKER_GENDER_LABEL,
   MEDIUM_TYPE_LABEL,
@@ -181,6 +192,41 @@ console.log('\n[3e] Alan tanımlama: gözlem bayrakları (v2.203)');
   ok('eski kayıtta eksik anahtar false', old.obs.phone === false && old.obs.noSpeech === false);
   ok('eski kayıtta bilinen işaret korunur', old.obs.noise === true);
   ok('bilinmeyen gözlem anahtarı korunur (ileri uyum)', old.obs.futureFlag === true);
+}
+
+// --- 3f. Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204) ---------
+console.log('\n[3f] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)');
+{
+  const groups = [
+    ['CASE_STATUS', CASE_STATUS_DEFS, CASE_STATUS, CASE_STATUS_LABEL],
+    ['MATERIAL_STATUS', MATERIAL_STATUS_DEFS, MATERIAL_STATUS, STATUS_LABEL],
+    ['REVIEW_STATE', REVIEW_DEFS, REVIEW_STATE, REVIEW_LABEL],
+    ['SPEAKER_ROLE', SPEAKER_ROLE_DEFS, SPEAKER_ROLE, SPEAKER_ROLE_LABEL],
+    ['SPEAKER_GENDER', SPEAKER_GENDER_DEFS, SPEAKER_GENDER, SPEAKER_GENDER_LABEL],
+    ['MEDIUM_TYPE', MEDIUM_TYPE_DEFS, MEDIUM_TYPE, MEDIUM_TYPE_LABEL],
+    ['TEAM_ROLE', TEAM_ROLE_DEFS, TEAM_ROLE, TEAM_ROLE_LABEL]
+  ];
+  for (const [name, defs, keys, labels] of groups) {
+    ok(`${name}: defs tanımlı`, Array.isArray(defs) && defs.length > 0, String(defs && defs.length));
+    ok(`${name}: anahtarlar benzersiz`, new Set(defs.map((d) => d.key)).size === defs.length);
+    ok(`${name}: keys defs ile aynı`, JSON.stringify(keys) === JSON.stringify(defs.map((d) => d.key)));
+    ok(`${name}: her kodun etiketi var`, keys.every((k) => typeof labels[k] === 'string' && labels[k].length > 0));
+    ok(`${name}: fazladan etiket yok`, Object.keys(labels).every((k) => keys.includes(k)));
+  }
+  ok('REVIEW_SHORT her kodda', REVIEW_STATE.every((k) => typeof REVIEW_SHORT[k] === 'string' && REVIEW_SHORT[k].length > 0));
+  ok('REVIEW_TONE her kodda', REVIEW_STATE.every((k) => typeof REVIEW_TONE[k] === 'string' && REVIEW_TONE[k].length > 0));
+  // Rol yetkileri TEK KAYNAK: `TEAM_ROLE_DEFS` bayraklarından türetilir.
+  ok(
+    'ikinci göz rolleri türetilmiş',
+    JSON.stringify(SECOND_EYES_ROLES) === JSON.stringify(TEAM_ROLE_DEFS.filter((d) => d.secondEyes).map((d) => d.key))
+  );
+  ok(
+    'onay yetkisi rolleri türetilmiş',
+    JSON.stringify(APPROVER_ROLES) === JSON.stringify(TEAM_ROLE_DEFS.filter((d) => d.approver).map((d) => d.key))
+  );
+  // Ortam etiketi → kod göçü türetilmiş etiketlerle hâlâ çalışır.
+  ok('ortam etiketi koda çevrilir', normalizeMediumType('USB flaş bellek') === 'usb');
+  ok('bilinmeyen ortam unspecified', normalizeMediumType('yok böyle') === 'unspecified');
 }
 
 // --- 3b. Konuşmacı kodlama standardı ------------------------------------
@@ -555,14 +601,17 @@ console.log('\n[6c] v3 kod ≠ v2 kod (uygulama kodu)');
   // Rozet üretimi doğru kodlarla eşleşmeli. v2.106'da rozet metinleri TEK
   // KAYNAKTAN (schema.js) gelir; bu yüzden test yazımı değil DAVRANIŞI sınar:
   // her kodun kendi rozet sınıfı ve etiketi olmalı.
+  // v2.204: etiket artık `REVIEW_SHORT`tan gelir; test yazımı değil DAVRANIŞI
+  // sınar: sınıf doğru mu, etiket schema'daki kısa etiketle aynı mı?
   for (const [code, cls, label] of [
     ['approved', 'done', 'Onaylandı'],
     ['machine', 'auto', 'Çözümlendi'],
     ['inaudible', 'warn', 'Anlaşılmadı'],
     ['relisten', 'again', 'Yeniden']
   ]) {
-    const re = new RegExp(`'?${code}'?\\s*:\\s*\\[\\s*'${cls}'\\s*,\\s*'${label}'`);
-    ok(`${label} rozeti doğru sınıf/etiketle`, re.test(app), `${code} → ${cls}/${label}`);
+    const re = new RegExp(`'?${code}'?\\s*:\\s*\\[\\s*'${cls}'\\s*,\\s*REVIEW_SHORT\\.${code}`);
+    ok(`${label} rozeti doğru sınıf + tek kaynak etiket`, re.test(app), `${code} → ${cls}/${label}`);
+    ok(`${label} kısa etiketi schema ile aynı`, REVIEW_SHORT[code] === label, `${REVIEW_SHORT[code]}`);
   }
   // Otomatik çözümleme, onayla AYNI rozeti KULLANMAMALI (adli ayrım).
   ok(

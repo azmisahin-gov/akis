@@ -20,6 +20,7 @@ import {
   REVIEW_LABEL,
   REVIEW_LEGACY,
   REVIEW_STATE,
+  REVIEW_SHORT,
   normalizeReviewState,
   REVIEW_HINT,
   REVIEW_TONE,
@@ -41,14 +42,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.203';
+} from './schema.js?v=2.204';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.203';
+const APP_VERSION = '2.204';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3445,9 +3446,9 @@ const SEG_FILTERS = [
   ['all', 'Tümü'],
   ['pending', 'Bekleyen'],
   ['quick', 'Hızlı onaya uygun'],
-  ['approved', 'Onaylandı'],
-  ['inaudible', 'Anlaşılmadı'],
-  ['relisten', 'Yeniden dinlenecek'],
+  ['approved', REVIEW_LABEL.approved],
+  ['inaudible', REVIEW_LABEL.inaudible],
+  ['relisten', REVIEW_LABEL.relisten],
   ['time', 'Zaman sorunları'],
   ['merge', 'Birleştirme adayı']
 ];
@@ -4016,15 +4017,17 @@ function segItemHtml(m, s, i, prev, issue) {
   // içine değil `title` ipucuna yazılır. `machine` = otomatik çözümlendi,
   // BİLİRKİŞİ ONAYI DEĞİL; bu yüzden "Onaylandı" değil "Çözümlendi" ve
   // farklı renk (info) kullanır. Tek kaynak: schema.js etiketleri.
+  // Metinler TEK KAYNAK (v2.204): schema.js → REVIEW_SHORT. Sınıf adları
+  // UI'ya özgüdür (renk/tone), burada kalır.
   const badgeFor = {
-    approved: ['done', 'Onaylandı'],
-    machine: ['auto', 'Çözümlendi'],
-    inaudible: ['warn', 'Anlaşılmadı'],
-    relisten: ['again', 'Yeniden'],
+    approved: ['done', REVIEW_SHORT.approved],
+    machine: ['auto', REVIEW_SHORT.machine],
+    inaudible: ['warn', REVIEW_SHORT.inaudible],
+    relisten: ['again', REVIEW_SHORT.relisten],
     // BELİRSİZ OKUMA (v2.115): kısa etiket, onay yeşili DEĞİL.
-    ambiguous: ['amb', 'Belirsiz']
+    ambiguous: ['amb', REVIEW_SHORT.ambiguous]
   };
-  const [bCls, bTxt] = badgeFor[rev] || ['', 'Bekliyor'];
+  const [bCls, bTxt] = badgeFor[rev] || ['', REVIEW_SHORT.pending];
   const state = `<span class="badge ${bCls}" title="${esc(reviewHintText(s))}">${esc(bTxt)}</span>`;
   // ZAMAN SORUNU (v2.144): çakışma/yinelenme/sıfır süre listede GÖRÜNÜR.
   const timeBadge = issue
@@ -4272,18 +4275,11 @@ function segHeadParts(i, total) {
 // `short` yalnız DAR EKRAN çubuğu içindir: tam etiketler ("Kontrol bekliyor")
 // seçiciyi 148 px yapıp 360 px'te çubuğu 3 satıra çıkarıyordu. Kısa etiketler
 // anlamı korur; ayrıntı başlığında tam etiket kalır.
-const REVIEW_SHORT_LABEL = {
-  pending: 'Bekliyor',
-  machine: 'Çözümlendi',
-  approved: 'Onaylandı',
-  inaudible: 'Anlaşılmadı',
-  relisten: 'Yeniden',
-  ambiguous: 'Belirsiz'
-};
+// Kısa etiketler TEK KAYNAK: schema.js → REVIEW_DEFS.short (v2.204).
 function reviewSelectOptions(rev, short) {
   return Object.keys(REVIEW_STATES)
     .map((k) => {
-      const label = short ? REVIEW_SHORT_LABEL[k] || REVIEW_STATES[k].label : REVIEW_STATES[k].label;
+      const label = short ? REVIEW_SHORT[k] || REVIEW_STATES[k].label : REVIEW_STATES[k].label;
       return `<option value="${k}" ${rev === k ? 'selected' : ''}>${label}</option>`;
     })
     .join('');
@@ -13042,6 +13038,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.204': {
+    title: 'Sınıflandırma/rol seçenekleri tek kaynakta',
+    body:
+      'Dosya/kayıt durumu, kontrol durumu, konuşmacı rolü/cinsiyeti, ortam türü ve ' +
+      'ekip rolü seçenekleri artık tek tanımdan üretilir; rozet, filtre ve seçim ' +
+      'listeleri aynı kaynağı kullanır. Görünür davranış değişmedi; amaç ileride yeni ' +
+      'seçenek eklemeyi kolaylaştırmak.'
+  },
   '2.203': {
     title: 'Alan tanımlama sistemi ve iki yeni gözlem işareti',
     body:

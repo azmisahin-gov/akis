@@ -32,19 +32,31 @@ export const SCHEMA_NAME = 'akis.case';
 
 // ---- 2. Kodlar (sabit; Türkçe metin DEĞİL) --------------------------------
 
-/** Dosya (case) durumu. */
-export const CASE_STATUS = ['draft', 'active', 'review', 'completed', 'archived'];
-
-/** Kayıt (material) çözümleme durumu. */
-export const MATERIAL_STATUS = [
-  'pending', // İnceleme bekliyor
-  'transcribing', // Çözümleme sürüyor
-  'review', // Kontrol bekliyor
-  'empty', // Çözümleme sonucu boş
-  'partial', // Kısmen çözümlendi (iptal)
-  'cancelled', // İptal edildi
-  'error' // Çözümleme hatası
+/** Dosya (case) durumu — TEK KAYNAK (v2.204). */
+export const CASE_STATUS_DEFS = [
+  { key: 'draft', label: 'Taslak' },
+  { key: 'active', label: 'İncelemede' },
+  { key: 'review', label: 'Kontrolde' },
+  { key: 'completed', label: 'Tamamlandı' },
+  { key: 'archived', label: 'Arşivlendi' }
 ];
+const CASE_STATUS_OPT = defineOptions(CASE_STATUS_DEFS);
+export const CASE_STATUS = CASE_STATUS_OPT.keys;
+export const CASE_STATUS_LABEL = CASE_STATUS_OPT.label;
+
+/** Kayıt (material) çözümleme durumu — TEK KAYNAK (v2.204). */
+export const MATERIAL_STATUS_DEFS = [
+  { key: 'pending', label: 'İnceleme bekliyor' },
+  { key: 'transcribing', label: 'Çözümleme sürüyor' },
+  { key: 'review', label: 'Kontrol bekliyor' },
+  { key: 'empty', label: 'Çözümleme sonucu boş' },
+  { key: 'partial', label: 'Kısmen çözümlendi (iptal)' },
+  { key: 'cancelled', label: 'İptal edildi' },
+  { key: 'error', label: 'Çözümleme hatası' }
+];
+const MATERIAL_STATUS_OPT = defineOptions(MATERIAL_STATUS_DEFS);
+export const MATERIAL_STATUS = MATERIAL_STATUS_OPT.keys;
+export const STATUS_LABEL = MATERIAL_STATUS_OPT.label;
 
 /** Bölüm kontrol durumu. */
 // KONTROL DURUMLARI. `machine` (v2.106): makinenin "hızlı onaya uygun"
@@ -56,7 +68,61 @@ export const MATERIAL_STATUS = [
 // `inaudible`'den farkı: orada ses anlaşılmıyor; burada ses anlaşılıyor ama
 // iki farklı kelime/cümle duyulabiliyor. Adli açıdan ayrı tutulur ve raporda
 // belirsizlik GİZLENMEZ: her iki okuma yazılır, bilirkişinin seçimi belirtilir.
-export const REVIEW_STATE = ['pending', 'machine', 'approved', 'inaudible', 'relisten', 'ambiguous'];
+export const REVIEW_DEFS = [
+  {
+    key: 'pending',
+    label: 'Kontrol bekliyor',
+    short: 'Bekliyor',
+    hint: 'Henüz dinlenmedi. Metni ses kaydıyla karşılaştırıp onaylayın.',
+    tone: 'none'
+  },
+  {
+    key: 'machine',
+    label: 'Çözümlendi',
+    short: 'Çözümlendi',
+    hint:
+      'Otomatik çözümleme işareti — BİLİRKİŞİ ONAYI SAYILMAZ. Rapora onaylı ' +
+      'olarak girmez; ses kaydı dinlenmesi ve onaylanması gerekir.',
+    tone: 'info'
+  },
+  {
+    key: 'approved',
+    label: 'Onaylandı',
+    short: 'Onaylandı',
+    hint: 'Bilirkişi dinleyerek onayladı. Rapora "Onaylandı" olarak girer.',
+    tone: 'good'
+  },
+  {
+    key: 'inaudible',
+    label: 'Anlaşılmadı',
+    short: 'Anlaşılmadı',
+    hint: 'Dinlendi, anlaşılmadı. Rapora bu şekilde işlenir.',
+    tone: 'warn'
+  },
+  {
+    key: 'relisten',
+    label: 'Yeniden dinlenecek',
+    short: 'Yeniden',
+    hint: 'Dinlendi, yeniden dinlenmesi gerekiyor.',
+    tone: 'warn'
+  },
+  {
+    key: 'ambiguous',
+    label: 'Belirsiz okuma',
+    short: 'Belirsiz',
+    hint:
+      'Ses duyuldu ancak BİRDEN FAZLA okuma mümkün (ör. "geldi" / "kaldı"). ' +
+      'Bilirkişi onayı sayılmaz. İki okumayı yazın ve hangisini seçtiğinizi belirtin; ' +
+      'rapora belirsizlik AÇIKÇA yazılır.',
+    tone: 'warn'
+  }
+];
+const REVIEW_OPT = defineOptions(REVIEW_DEFS);
+export const REVIEW_STATE = REVIEW_OPT.keys;
+export const REVIEW_LABEL = REVIEW_OPT.label;
+export const REVIEW_SHORT = REVIEW_OPT.short;
+export const REVIEW_HINT = REVIEW_OPT.hint;
+export const REVIEW_TONE = Object.fromEntries(REVIEW_DEFS.map((d) => [d.key, d.tone || 'none']));
 
 /** Bilirkişinin DİNLEYEREK verdiği onaylar (rapora "Onaylandı" girer). */
 export const HUMAN_APPROVED = ['approved'];
@@ -88,25 +154,46 @@ export function normalizeReviewState(v) {
   return REVIEW_LEGACY[s] || 'pending';
 }
 
-/** Konuşmacı rolü. */
-export const SPEAKER_ROLE = ['unspecified', 'complainant', 'defendant', 'witness', 'expert', 'other'];
-
-/** Konuşmacı cinsiyeti (uzman beyanı; tespit değil). */
-export const SPEAKER_GENDER = ['unspecified', 'female', 'male', 'uncertain'];
-
-/** Kayıt kökeni ortam türü. */
-export const MEDIUM_TYPE = [
-  'unspecified',
-  'cd',
-  'usb',
-  'portable_disk',
-  'disk_image',
-  'email',
-  'cloud',
-  'memory_card',
-  'phone',
-  'other'
+/** Konuşmacı rolü — TEK KAYNAK (v2.204). */
+export const SPEAKER_ROLE_DEFS = [
+  { key: 'unspecified', label: 'Belirtilmedi' },
+  { key: 'complainant', label: 'Müşteki / Davacı' },
+  { key: 'defendant', label: 'Şüpheli / Davalı' },
+  { key: 'witness', label: 'Tanık' },
+  { key: 'expert', label: 'Bilirkişi' },
+  { key: 'other', label: 'Diğer' }
 ];
+const SPEAKER_ROLE_OPT = defineOptions(SPEAKER_ROLE_DEFS);
+export const SPEAKER_ROLE = SPEAKER_ROLE_OPT.keys;
+export const SPEAKER_ROLE_LABEL = SPEAKER_ROLE_OPT.label;
+
+/** Konuşmacı cinsiyeti (uzman beyanı; tespit değil) — TEK KAYNAK. */
+export const SPEAKER_GENDER_DEFS = [
+  { key: 'unspecified', label: 'Belirtilmedi' },
+  { key: 'female', label: 'Kadın' },
+  { key: 'male', label: 'Erkek' },
+  { key: 'uncertain', label: 'Belirsiz' }
+];
+const SPEAKER_GENDER_OPT = defineOptions(SPEAKER_GENDER_DEFS);
+export const SPEAKER_GENDER = SPEAKER_GENDER_OPT.keys;
+export const SPEAKER_GENDER_LABEL = SPEAKER_GENDER_OPT.label;
+
+/** Kayıt kökeni ortam türü — TEK KAYNAK. */
+export const MEDIUM_TYPE_DEFS = [
+  { key: 'unspecified', label: 'Belirtilmedi' },
+  { key: 'cd', label: 'CD / DVD' },
+  { key: 'usb', label: 'USB flaş bellek' },
+  { key: 'portable_disk', label: 'Taşınabilir disk' },
+  { key: 'disk_image', label: 'Sabit disk / imaj' },
+  { key: 'email', label: 'E-posta eki' },
+  { key: 'cloud', label: 'Bulut / ağ paylaşımı' },
+  { key: 'memory_card', label: 'Hafıza kartı' },
+  { key: 'phone', label: 'Telefon' },
+  { key: 'other', label: 'Diğer' }
+];
+const MEDIUM_TYPE_OPT = defineOptions(MEDIUM_TYPE_DEFS);
+export const MEDIUM_TYPE = MEDIUM_TYPE_OPT.keys;
+export const MEDIUM_TYPE_LABEL = MEDIUM_TYPE_OPT.label;
 
 /**
  * ALAN TANIMLAMA — TEK KAYNAK (v2.203).
@@ -154,7 +241,10 @@ export function defineOptions(defs) {
     keys: list.map((d) => d.key),
     label: Object.fromEntries(list.map((d) => [d.key, d.label])),
     short: Object.fromEntries(list.map((d) => [d.key, d.short || d.label])),
-    hint: Object.fromEntries(list.map((d) => [d.key, d.hint || d.label]))
+    hint: Object.fromEntries(list.map((d) => [d.key, d.hint || d.label])),
+    // Tanıma özgü ek alanlar (ör. REVIEW tone) `byKey` üzerinden okunur;
+    // `defineOptions` bunları ayrı map'lere zorlamaz.
+    byKey: Object.fromEntries(list.map((d) => [d.key, d]))
   };
 }
 const OBS = defineOptions(OBS_DEFS);
@@ -172,91 +262,24 @@ export function emptyObs(over = {}) {
 /** Rapor türü. */
 export const REPORT_TYPE = ['hukuk', 'ceza', 'savcilik', 'icra'];
 
-/** Ekip üyesi rolü (ortak çalışma). */
-export const TEAM_ROLE = ['owner', 'expert', 'assistant', 'reviewer', 'observer'];
+/** Ekip üyesi rolü (ortak çalışma) — TEK KAYNAK (v2.204). */
+export const TEAM_ROLE_DEFS = [
+  { key: 'owner', label: 'Dosya sorumlusu', approver: true },
+  { key: 'expert', label: 'Bilirkişi', approver: true },
+  { key: 'assistant', label: 'Yardımcı', secondEyes: true },
+  { key: 'reviewer', label: 'Kontrol eden', secondEyes: true },
+  { key: 'observer', label: 'Gözlemci', secondEyes: true }
+];
+const TEAM_ROLE_OPT = defineOptions(TEAM_ROLE_DEFS);
+export const TEAM_ROLE = TEAM_ROLE_OPT.keys;
+export const TEAM_ROLE_LABEL = TEAM_ROLE_OPT.label;
 
 // ---- 3. Etiketler (arayüz metni; kod değişmeden değişebilir) --------------
+// Durum/kontrol etiketleri yukarıdaki `*_DEFS` listelerinden türetilir
+// (v2.204); burada kopya tanım yok.
 
-export const STATUS_LABEL = {
-  pending: 'İnceleme bekliyor',
-  transcribing: 'Çözümleme sürüyor',
-  review: 'Kontrol bekliyor',
-  empty: 'Çözümleme sonucu boş',
-  partial: 'Kısmen çözümlendi (iptal edildi)',
-  cancelled: 'İptal edildi',
-  error: 'Çözümleme hatası'
-};
-
-export const CASE_STATUS_LABEL = {
-  draft: 'Taslak',
-  active: 'İncelemede',
-  review: 'Kontrolde',
-  completed: 'Tamamlandı',
-  archived: 'Arşivlendi'
-};
-
-export const REVIEW_LABEL = {
-  pending: 'Kontrol bekliyor',
-  machine: 'Çözümlendi', // KISA etiket; ayrıntı REVIEW_HINT'te
-  approved: 'Onaylandı',
-  inaudible: 'Anlaşılmadı',
-  relisten: 'Yeniden dinlenecek',
-  ambiguous: 'Belirsiz okuma' // KISA etiket; iki okuma detayda
-};
-
-/** Uzun açıklama: ipucu (title/aria) için. Ekranda gösterilmez. */
-export const REVIEW_HINT = {
-  pending: 'Henüz dinlenmedi. Metni ses kaydıyla karşılaştırıp onaylayın.',
-  machine:
-    'Otomatik çözümleme işareti — BİLİRKİŞİ ONAYI SAYILMAZ. Rapora onaylı ' +
-    'olarak girmez; ses kaydı dinlenmesi ve onaylanması gerekir.',
-  approved: 'Bilirkişi dinleyerek onayladı. Rapora "Onaylandı" olarak girer.',
-  inaudible: 'Dinlendi, anlaşılmadı. Rapora bu şekilde işlenir.',
-  relisten: 'Dinlendi, yeniden dinlenmesi gerekiyor.',
-  ambiguous:
-    'Ses duyuldu ancak BİRDEN FAZLA okuma mümkün (ör. "geldi" / "kaldı"). ' +
-    'Bilirkişi onayı sayılmaz. İki okumayı yazın ve hangisini seçtiğinizi belirtin; ' +
-    'rapora belirsizlik AÇIKÇA yazılır.'
-};
-
-/** Rozet rengi (tema token'ı app.css'te): makine onayı "başarı" değildir. */
-export const REVIEW_TONE = {
-  pending: 'none',
-  machine: 'info',
-  approved: 'good',
-  inaudible: 'warn',
-  relisten: 'warn',
-  ambiguous: 'warn' // onay yeşili DEĞİL: belirsizlik görünür olmalı
-};
-
-export const SPEAKER_ROLE_LABEL = {
-  unspecified: 'Belirtilmedi',
-  complainant: 'Müşteki / Davacı',
-  defendant: 'Şüpheli / Davalı',
-  witness: 'Tanık',
-  expert: 'Bilirkişi',
-  other: 'Diğer'
-};
-
-export const SPEAKER_GENDER_LABEL = {
-  unspecified: 'Belirtilmedi',
-  female: 'Kadın',
-  male: 'Erkek',
-  uncertain: 'Belirsiz'
-};
-
-export const MEDIUM_TYPE_LABEL = {
-  unspecified: 'Belirtilmedi',
-  cd: 'CD / DVD',
-  usb: 'USB flaş bellek',
-  portable_disk: 'Taşınabilir disk',
-  disk_image: 'Sabit disk / imaj',
-  email: 'E-posta eki',
-  cloud: 'Bulut / ağ paylaşımı',
-  memory_card: 'Hafıza kartı',
-  phone: 'Telefon',
-  other: 'Diğer'
-};
+// Rol/cinsiyet/ortam etiketleri yukarıdaki `*_DEFS` listelerinden türetilir
+// (v2.204); burada kopya tanım yok.
 
 // v2.56'da teslim alma diyaloğu bir süre Türkçe ETİKET yazdı; şema ise kod
 // bekler. Bu değerler kayıtta kalırsa doğrulayıcı hata verir ve bilgi
@@ -271,25 +294,19 @@ export function normalizeMediumType(v) {
   return MEDIUM_LABEL_TO_CODE[s] || 'unspecified';
 }
 
-export const TEAM_ROLE_LABEL = {
-  owner: 'Dosya sorumlusu',
-  expert: 'Bilirkişi',
-  assistant: 'Yardımcı',
-  reviewer: 'Kontrol eden',
-  observer: 'Gözlemci'
-};
-
 // "İkinci göz" rolleri: metni düzeltir ama ONAY VEREMEZ. Kararı bilirkişi
 // verir. Bu rollerin düzeltmesi `proposal` (öneri) olarak saklanır; bilirkişi
 // kabul veya reddeder. Rapor bu yüzden hiçbir zaman "Onaylandı" yazmaz.
 // v2.66: 'observer' (Gözlemci) de eklendi. Gözlemci SADECE bakar; onay
 // vermesi adli belgede kabul edilemez. Düzeltmesi öneri olarak saklanır.
-export const SECOND_EYES_ROLES = ['assistant', 'reviewer', 'observer'];
+// TEK KAYNAK (v2.204): roller ve yetkileri `TEAM_ROLE_DEFS` bayraklarından
+// türetilir; ayrı liste tutulmaz.
+export const SECOND_EYES_ROLES = TEAM_ROLE_DEFS.filter((d) => d.secondEyes).map((d) => d.key);
 export const isSecondEyesRole = (role) => SECOND_EYES_ROLES.includes(role);
 
 // Onay yetkisi: yalnız dosya sorumlusu ve bilirkişi. Onay kararı hukuken
 // bilirkişinindir; uygulama bu yetkiyi başkasına vermez.
-export const APPROVER_ROLES = ['owner', 'expert'];
+export const APPROVER_ROLES = TEAM_ROLE_DEFS.filter((d) => d.approver).map((d) => d.key);
 export const canApproveRole = (role) => APPROVER_ROLES.includes(role);
 
 // OBS_LABEL artık yukarıda `OBS_DEFS`ten türetilir (v2.203); burada kopya yok.

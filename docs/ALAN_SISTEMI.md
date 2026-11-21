@@ -126,11 +126,24 @@ gelen tarafın işaretleri sessizce kayboluyordu. Artık:
 Aynı desen her alana uygulanabilir; ancak her birinin kendi özel arayüzü ve
 rapor üretimi vardır. Bu nedenle **tek seferde evrensel bir motor** yazılmaz.
 
-### A. Sınıflandırma / rol seçenekleri (düşük risk)
-`REVIEW_STATE`, `SPEAKER_ROLE`, `MEDIUM_TYPE`, `TEAM_ROLE` gibi sabit listeler
-`defineOptions([...])` desenine taşınabilir. Etiket/kısa etiket/ipucu tek
-kaynaktan gelir; form seçenekleri buradan üretilir. Kademeli yapılır; her enum
-için test `keys ↔ label` çiftini doğrular.
+### A. Sınıflandırma / rol seçenekleri — v2.204'te TAŞINDI
+Aşağıdaki sabit listeler artık `*_DEFS` tek kaynağından türetilir:
+
+| Defs | Türetilenler |
+|---|---|
+| `CASE_STATUS_DEFS` | `CASE_STATUS`, `CASE_STATUS_LABEL` |
+| `MATERIAL_STATUS_DEFS` | `MATERIAL_STATUS`, `STATUS_LABEL` |
+| `REVIEW_DEFS` | `REVIEW_STATE`, `REVIEW_LABEL`, `REVIEW_SHORT`, `REVIEW_HINT`, `REVIEW_TONE` |
+| `SPEAKER_ROLE_DEFS` | `SPEAKER_ROLE`, `SPEAKER_ROLE_LABEL` |
+| `SPEAKER_GENDER_DEFS` | `SPEAKER_GENDER`, `SPEAKER_GENDER_LABEL` |
+| `MEDIUM_TYPE_DEFS` | `MEDIUM_TYPE`, `MEDIUM_TYPE_LABEL` |
+| `TEAM_ROLE_DEFS` | `TEAM_ROLE`, `TEAM_ROLE_LABEL`, `SECOND_EYES_ROLES`, `APPROVER_ROLES` |
+
+`defineOptions` artık `byKey` de döndürür; `REVIEW_TONE` gibi tanıma özgü alan
+`REVIEW_DEFS` satırında durur. Rol yetkileri ayrı liste değil, `TEAM_ROLE_DEFS`
+bayraklarıdır (`approver`, `secondEyes`). Uygulamadaki kopya etiketler
+(`REVIEW_SHORT_LABEL`, `badgeFor` metinleri, `SEG_FILTERS` kontrol etiketleri)
+kaldırıldı. **Görünür davranış değişmedi.**
 
 ### B. Dosya (case) alanları (orta risk)
 `CASE_FIELD_DEFS` ile etiket, sıra, zorunluluk ve doğrulama tek yerde
@@ -154,8 +167,10 @@ ayrı ve dikkatli bir sürüm konusudur.
 
 ## 6. Değişmez kurallar
 
-1. Yeni gözlem bayrağı = **yalnız `OBS_DEFS`'e satır**; etiket kopyası yazma.
-2. Arayüz düğmeleri `OBS_DEFS`ten, rapor etiketleri `OBS_LABEL`den türetilir.
+1. Yeni bir seçenek = **ilgili `*_DEFS` listesine satır** (gözlem için
+   `OBS_DEFS`, rol için `TEAM_ROLE_DEFS`…); etiket kopyası yazma.
+2. Arayüz düğmeleri `OBS_DEFS`ten, rapor etiketleri `OBS_LABEL`den türetilir;
+   kontrol/rol etiketleri `REVIEW_*`/`*_LABEL`den gelir.
 3. `emptySegment` ve `normalizeSegment` bilinen anahtarları tamamlar; bilinmeyen
    anahtarı **silmez**.
 4. Rapor ve sayaç yalnız **bilinen** anahtarları basar/sayar.
@@ -173,3 +188,7 @@ ayrı ve dikkatli bir sürüm konusudur.
   bilinmeyen anahtarın rapora basılmaması.
 - `tasarim-testi` [2bc] — düğmelerin/etiketlerin/yardımın tek kaynaktan
   türetilmesi.
+- `sema-testi` [3f] — sınıflandırma/rol `*_DEFS` listeleri, `REVIEW_SHORT`/
+  `REVIEW_TONE`, rol yetkilerinin türetilmesi, ortam etiketi göçü.
+- `tasarim-testi` [2bd] — uygulamadaki kopya etiketlerin kaldırılması;
+  rozet/filtre etiketlerinin tek kaynaktan gelmesi.

@@ -1525,5 +1525,19 @@ console.log('\n[2bc] Alan tanımlama: gözlem bayrakları tek kaynak (v2.203)');
   check('dar ekran menüsü ≤600 px', /@media \(max-width: 600px\)[\s\S]{0,300}sd-obs-row/.test(layer));
   check('menü aynı düğmeleri kullanır (kopya mantık yok)', /activeObsCount/.test(appJs) && /Gözlem\$\{activeObsCount/.test(appJs));
 }
+console.log('\n[2bd] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)');
+{
+  const appJs = read('assets/app.js');
+  const schemaJs = read('assets/schema.js');
+  check('defineOptions ek alanları taşır (byKey)', /byKey: Object\.fromEntries/.test(schemaJs));
+  for (const name of ['CASE_STATUS', 'MATERIAL_STATUS', 'REVIEW', 'SPEAKER_ROLE', 'SPEAKER_GENDER', 'MEDIUM_TYPE', 'TEAM_ROLE']) {
+    check(`${name}_DEFS tek kaynak`, new RegExp(`export const ${name}_DEFS = \\[`).test(schemaJs));
+  }
+  check('REVIEW_SHORT schema dan gelir', /export const REVIEW_SHORT = REVIEW_OPT\.short/.test(schemaJs));
+  check('uygulamada kısa etiket kopyası yok', !/REVIEW_SHORT_LABEL/.test(appJs));
+  check('rozet metni REVIEW_SHORT tan', /approved: \['done', REVIEW_SHORT\.approved\]/.test(appJs));
+  check('filtre etiketleri REVIEW_LABEL den', /\['approved', REVIEW_LABEL\.approved\]/.test(appJs));
+  check('rol yetkileri TEAM_ROLE_DEFS bayraklarından', /SECOND_EYES_ROLES = TEAM_ROLE_DEFS\.filter/.test(schemaJs) && /APPROVER_ROLES = TEAM_ROLE_DEFS\.filter/.test(schemaJs));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
