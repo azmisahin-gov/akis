@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.154.**
+yazılır. **Güncel sürüm: v2.155.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.155 — Dil tutarlılığı ve paket diyaloğu onarımı (tamamlandı)
+
+Kapsam diyaloğunda bozulmuş bir satır vardı (aynı cümle iki kez + `lt;dosya no`);
+onarıldı. Düğme "Yedeği oluştur" → **"Paketi oluştur"**, arşiv notu "Pakete dâhil
+edilirler". Yeni nöbetçiler: kullanıcı metninde "Yedek" yasak (tarihsel notlar
+hariç), satır içi etiket içine blok etiket giremez, `<p>`/`<code>` dengesi.
+Koruyan test: `surum` [11b] + [11] (8 kontrol).
 
 ### v2.154 — Tek panel, iki bölge (tamamlandı)
 

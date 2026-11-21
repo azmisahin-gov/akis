@@ -272,6 +272,29 @@ console.log('\n[11] Terim tutarlılığı (paket / dosya / birleştir / arşiv)'
   check('bayat dosya adı örneği kalmadı', !/AKIS_Yedek_N_dosya/.test(html));
   check('yeni paket adı yardımda örneklenir', /AKIS_Paket_/.test(html));
 
+  // [11b] "Yedek" KULLANICI METNİNDE YOK (v2.155). Sözlük "Paket" der; eski
+  // sürüm notları ve yardım ekranındaki geçmiş TARİHSELDİR, taranmaz.
+  // Yorumlar taranmaz (kullanıcı görmez).
+  const stripComments = (src) => src.replace(/(^|\s)\/\/[^\n]*/g, '$1');
+  const uiHtml = html.replace(/<dialog id="helpDialog"[\s\S]*?<\/dialog>/, '');
+  const appNoNotices = stripComments(read('assets/app.js')).replace(/const VERSION_NOTICES = \{[\s\S]*?\n\};/, '');
+  const yedekHits = [];
+  for (const [src, txt] of [['index.html', uiHtml], ['app.js', appNoNotices]]) {
+    for (const m of txt.matchAll(/.{0,24}Yede[kğ].{0,24}/g)) yedekHits.push(src + ': ' + m[0].replace(/\s+/g, ' ').trim());
+  }
+  check('kullanıcı metninde "Yedek" yok', yedekHits.length === 0, yedekHits.slice(0, 3).join(' | '));
+  check('kapsam düğmesi "Paketi oluştur"', btnText('exportScopeOk') === 'Paketi oluştur', btnText('exportScopeOk'));
+  check('kapsam notu bozulmamış (<code> içine <p> girmemiş)', !/<code>AKIS_Paket_<p/.test(html));
+  check('arşiv notu "pakete dâhil" der', /Pakete dâhil edilirler/.test(read('assets/app.js')));
+  // YAPISAL SAĞLIK: satır içi etiketin içine blok etiket girmemeli. v2.155'te
+  // kapsam notu bozulmuştu (`<code>...<p class="scope-note">`) ve tarayıcı
+  // metni iki kez gösteriyordu; etiket sayısı dengeli olduğu için yalnız
+  // denge kontrolü bunu YAKALAMAZ.
+  check('satır içi etiket içine blok girmemiş', !/<(code|b|small|span|label)[^>]*>[^<]*<(p|div)[\s>]/.test(uiHtml));
+  const bal = (tag) => [(uiHtml.match(new RegExp('<' + tag + '[\\s>]', 'g')) || []).length, (uiHtml.match(new RegExp('</' + tag + '>', 'g')) || []).length];
+  check('index.html <p> dengesi', bal('p')[0] === bal('p')[1], bal('p').join('/'));
+  check('index.html <code> dengesi', bal('code')[0] === bal('code')[1], bal('code').join('/'));
+
   // Yardım sözlüğü tek kaynak: terimler açıkça tanımlı.
   check('yardımda terim sözlüğü var', /Terimler: dosya, paket/.test(html));
   check('yardım paketi tanımlar', /Paket \(\.akis\)|Paket<\/b> =/.test(html));

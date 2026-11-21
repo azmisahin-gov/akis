@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.154.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.155.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.155 — Dil tutarlılığı ve paket diyaloğu onarımı
+
+Tüm sayfaları gözden geçirirken bulundu: **paket diyaloğunda bozuk bir satır**
+vardı (bir otomatik düzenleme iki cümleyi iç içe geçirmişti). Tarayıcı aynı
+cümleyi iki kez gösteriyor, arada `lt;dosya no` gibi çöp metin çıkıyordu.
+Ayrıca diyaloğun düğmesi "Yedeği oluştur" diyordu; sözlük (v2.123) "Yedek"
+kavramını kaldırmıştı.
+
+### KULLANICI NE GÖRECEK
+
+- "Paket oluştur" diyaloğu artık **tek ve doğru** metin gösterir:
+  `Paket adı: AKIS_Paket_<dosya no>_tarih_saat.akis` ve tek bir açıklama satırı.
+- Diyaloğun düğmesi **"Paketi oluştur"** (önce "Yedeği oluştur").
+- Arşiv notu **"Pakete dâhil edilirler"** der (önce "Yedeğe dâhil edilirler").
+- Boş çalışma alanında "Paket oluştur"a basınca ne yapılacağı yazılı:
+  *"Pakete girecek dosya yok: … Önce bir dosyaya bilgi girin veya ses kaydı ekleyin."*
+
+### NEDEN TEST YAKALAMADI
+
+Etiket sayısı **dengeli**ydi (bozuk satır iki tam paragraf içeriyordu), bu yüzden
+yalnız denge kontrolü yetmez. Yeni nöbetçi **yapısal**: satır içi etiketin
+(`code`, `b`, `span`, `label`, `small`) içine blok etiket (`p`, `div`) giremez.
+
+### KORUYAN TESTLER
+
+`surum-testi` [11] + [11b] — 8 yeni/keskinleşen kontrol:
+
+| Kontrol | Ne der |
+|---|---|
+| Kullanıcı metninde "Yedek" yok | `index.html` (yardım geçmişi hariç) + `app.js` (VERSION_NOTICES ve yorumlar hariç) |
+| Kapsam düğmesi "Paketi oluştur" | düğme metni |
+| Kapsam notu bozulmamış | `<code>…<p` deseni yok |
+| Arşiv notu "pakete dâhil" | metin |
+| Satır içi etiket içine blok girmemiş | yapısal |
+| `<p>` ve `<code>` dengesi | yapısal |
 
 ## v2.154 — Tek panel, iki bölge
 

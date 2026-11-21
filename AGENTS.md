@@ -1961,6 +1961,35 @@ erişilebilir" ve "ana iş (yazma) ne kadar yer alıyor" olmalıdır. Ayrıca gi
 tuvalin genişliği 0'dır; çizim bağlama işini görünürlükten SONRA yapın.
 
 
+### Aşama 10ba — Dil tutarlılığı ve bozuk diyalog onarımı (TAMAMLANDI, v2.155)
+
+**BULGU (tüm sayfa taraması):** `index.html` içindeki paket kapsam diyaloğunda
+bir satır bozuktu — `<code>AKIS_Paket_` içine iki tam paragraf girmiş, arada
+`lt;dosya no` çöpü kalmıştı. Etiket sayısı DENGELİ olduğu için hiçbir test
+yakalamadı; tarayıcı cümleyi iki kez gösteriyordu. Ayrıca düğme "Yedeği
+oluştur" diyordu (v2.123 sözlüğü "Yedek"i kaldırmıştı).
+
+**Düzeltme:** satır iki temiz paragrafa ayrıldı; düğme "Paketi oluştur";
+arşiv notu "Pakete dâhil edilirler"; iki kod yorumu "anlık kopya/paket" diline
+çekildi.
+
+**Yeni nöbetçiler (`surum-testi` [11]/[11b]):**
+- Kullanıcı metninde `Yede[kğ]` yasak — `index.html` (yardım geçmişi hariç) ve
+  `app.js` (VERSION_NOTICES + yorumlar hariç).
+- Satır içi etiketin (`code|b|small|span|label`) içine blok (`p|div`) giremez.
+- `<p>` ve `<code>` dengesi.
+
+**Ölçüm (v2.155, gerçek Chromium):** diyalog metni tek: "Paket adı:
+AKIS_Paket_<dosya no>_tarih_saat.akis Dosya adına tarih ve saat eklenir; …";
+düğme "Paketi oluştur"; `Dosya adına tarih` sayısı **1**; `lt;dosya` **yok**.
+Boş çalışma alanında "Paket oluştur" → açıklayıcı toast, JS hatası 0.
+
+**DERS:** Etiket dengesi, bozuk HTML'i yakalamaz. Otomatik metin düzenlemesi
+yapan her araç, sonunda **yapısal** bir kontrol çalıştırmalı: satır içi/blok
+iç içe geçmesi ve tekrar eden cümle. Bir cümlenin iki kez görünmesi
+"tasarım" değil, veri bozulmasıdır.
+
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2134,7 +2163,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.154.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.155.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2433,7 +2462,7 @@ ve `APP_VERSION`** doğru mu.
 4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
    Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
 
-## Yeni oturuma devir notu (v2.154) — SIRADAKİ İŞLER
+## Yeni oturuma devir notu (v2.155) — SIRADAKİ İŞLER
 
 Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
 Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
@@ -2444,10 +2473,10 @@ yapılır.
 
 | | |
 |---|---|
-| Sürüm | **v2.154** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.155** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **922 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.154 |
-| Açık konu | **Yok** — P5 v2.154'te yapısal olarak çözüldü |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.155 |
+| Açık konu | **v2.156 — hazırlık ↔ kapsama** (denetim bulgusu #1) |
 
 ### Bu oturumda ne değişti (kısa)
 

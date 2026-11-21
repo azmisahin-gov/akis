@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.154';
+} from './schema.js?v=2.155';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.154';
+const APP_VERSION = '2.155';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7909,7 +7909,7 @@ async function transcribe(id, opts = {}) {
     }
     snapshotForUndo('yeniden çözümleme');
     // Geri dönüş kopyası: eski bölümler kayda yazılır (yalnız son 1 kopya).
-    // Yedek yalnız geri dönüş için: metin, zaman, konuşmacı, kontrol durumu.
+    // Anlık kopya yalnız geri dönüş için: metin, zaman, konuşmacı, kontrol durumu.
     // Geçmiş ve kelime zamanlaması kopyalanmaz (dosyayı iki katına çıkarıyordu).
     m.previousSegments = {
       at: new Date().toISOString(),
@@ -9344,7 +9344,7 @@ function isEmptyCase(c) {
   ];
   return !filled.some((v) => String(v == null ? '' : v).trim());
 }
-// Yedeğe girecek dosyaları belirler. Boş dosyalar sessizce atılmaz;
+// Pakete girecek dosyaları belirler. Boş dosyalar sessizce atılmaz;
 // `skipped` ile bildirilir (sessiz hata yasak).
 function buildExportPlan(cases) {
   const all = Array.isArray(cases) ? cases : [];
@@ -11499,7 +11499,7 @@ function renderArchiveList() {
   }
   host.innerHTML =
     '<p class="drawer-note">Arşivlenen dosyalar burada durur; <b>verileri ve ses kayıtları silinmez</b>. ' +
-    'Yedeğe dâhil edilirler. İsterseniz geri alabilir veya iki onayla kalıcı silebilirsiniz.</p>' +
+    'Pakete dâhil edilirler. İsterseniz geri alabilir veya iki onayla kalıcı silebilirsiniz.</p>' +
     archived
       .map(
         (c) => `<div class="archive-row">
@@ -12114,6 +12114,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.155': {
+    title: 'Paket diyaloğu onarıldı, terimler tek dile indi',
+    body:
+      'Paket oluşturma diyaloğunda bir cümle iki kez görünüyor ve "lt;dosya no" ' +
+      'gibi bozuk metin çıkıyordu; düzeltildi. Diyaloğun düğmesi artık "Paketi ' +
+      'oluştur" (önce "Yedeği oluştur"); arşiv notu "Pakete dâhil edilirler" der. ' +
+      'Sözlük tek: Dosya (tek dava) · Paket (.akis).'
+  },
   '2.154': {
     title: 'Bölüm paneli iki bölgeye ayrıldı: yazarken daha çok yer',
     body:
