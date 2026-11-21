@@ -2543,18 +2543,47 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, kapanış)
+### Durum (2026-11-21, P1 ilk tur kapandı)
 
 | | |
 |---|---|
-| Sürüm | **v2.163** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `422b58b` (bu devir notu ayrı bir belge commit'idir) |
+| Sürüm | **v2.166** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `b497265` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.163** |
-| Açık konu | **Yok** — sırada **senaryo ölçümü + bilgi mimarisi** (kullanıcı isteği) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.166** |
+| Açık konu | **Yok** — sırada IA kararları (aşağıdaki P1 tablosu) |
 
-### Bu oturumda ne yapıldı (v2.149–v2.163, 15 sürüm)
+### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
+
+Gerçek Chromium 156 + CDP, gerçek WAV (2,1 MB / 47,7 sn), 1440×900 ve 900×900.
+Ölçülen: tıklama, dosya işlemi, kaydırma, gizli/ekran dışı kontrol, odak
+kaybı, hata. **Beş senaryoda JS hatası 0.**
+
+| Senaryo | Tıklama | Not |
+|---|---|---|
+| Yeni dosya + künye | 2 | 17 alan, ilk ekranda 8; zorunlu `expertName` 454 px aşağıda |
+| Ses ekle + teslim alma | +2 (+1 dosya) | diyalog 5 alan |
+| 10 bölüm yaz/onayla | +31 (11 elle bölüm + 20 yaz/onay) | odak kaybı 0, bölüm başına 2 tık |
+| Rapor + UDF | +2 | hazırlık 1 eksik madde, indirme ilk ekranda |
+| Paket oluştur → başka profile yükle | 4 + 3 | künye + kayıt + 10 bölüm korundu |
+
+Görünüm envanteri (1440): Özet 9 · Ses **96 (54 görünür)** · İnceleme 8 ·
+Rapor 7. 900 px'te Ses görünümünde 21 kontrol ekran dışında, ana alan
+825 px kayıyordu; "✓ Onayla" **y=1313** (ekranın 413 px altında).
+
+**Bu ölçümden çıkan üç sürüm:** v2.164 (künye), v2.165 (dar ekran çubuğu),
+v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
+
+### Bu oturumda ne yapıldı (v2.164–v2.166, P1 ilk tur)
+
+| Sürüm | Konu | Ölçüm | Koruyan test |
+|---|---|---|---|
+| v2.164 | Künye: zorunlu alanlar ilk ekranda | 3/5 → **5/5**; `#expertName` 454→356 px | `tasarim` [2ab] |
+| v2.165 | ≤900 px yapışkan işlem çubuğu (↑↓ · Dinle · Onayla · 3/10) | onay y=1313 → **820–874**; toast çakışması yok | `tasarim` [2ac] |
+| v2.166 | Ses kaydını kaldırma **onay ister** (onaysız kalıcı silme) | diyalog yok → var; Vazgeç sesi korur | `birim` [65] |
+
+### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
@@ -2675,15 +2704,26 @@ Nöbetçi eşikleri: ölü bildirim **98** (okuma katmanı) / **507** (app→lay
 küçük ve kanıtlı adımlarla (aynı seçici+özellik sonra tanımlıysa öncekini
 silmek kanıttır; toplu otomatik düzenleme **yasak** — v2.138'de yapı bozuldu).
 
-#### P4 — ≤900 px tek sütun IA
+#### P4 — ≤900 px tek sütun IA (v2.165 ile KISMEN kapandı)
 
-Dar ekranda detay listenin altında; uzun listede düzenleme paneli uzak.
-Ayrı bir yerleşim kararı gerekir (senaryo ölçümüyle).
+Dar ekranda detay hâlâ listenin altında; ancak onay/dinle artık yapışkan
+çubukta (ölçüldü: y=820–874, kaydırmasız). Kalan konu: **liste ile metin
+arasındaki mesafe** — 100 bölümde liste uzun, metin aşağıda. Ayrı bir yerleşim
+kararı gerekir.
+
+#### P5 — Ses görünümü yoğunluğu (ölçüldü, DEĞİŞİKLİK YAPILMADI)
+
+Ölçüm (1440, 1 kayıt, 10 bölüm, Teknik kapalı): **96 kontrol, 54 görünür**
+(10'u bölüm satırı). 42 kontrol sekme/Teknik arkasında. Araç çubuğu 1280 ve
+altında 2 satıra kırılıyor (62 → 87 px) — depo kuralı gereği **sarma
+doğrudur**, kırpma değil. Hız için 7 düğme 330 px (araç çubuğunun %31–45'i).
+**Kanıtlanmış bir kusur yok**; bu yüzden v2.166'da değiştirilmedi. Değişiklik
+yapılacaksa önce "hangi iş yavaşlıyor" ölçülmeli (tıklama/odak kaybı).
 
 ### DOĞRULAMA (her oturum başı)
 
 ```bash
-bash tools/test.sh                      # 947 + 404 + rapor/sürüm/tasarım
+bash tools/test.sh                      # 956 + 404 + rapor/sürüm/tasarım
 git log --oneline -3; git status --short
 curl -s https://azmisahin-gov.github.io/akis/version.json
 curl -s https://azmisahin-gov.github.io/akis/assets/app.js | grep -m1 APP_VERSION
