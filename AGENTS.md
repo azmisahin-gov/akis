@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P3 ilk adım + P4 kapandı)
+### Durum (2026-11-21, P1 + P2 + P3 sürüyor + P4 kapandı)
 
 | | |
 |---|---|
-| Sürüm | **v2.170** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.171** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **956 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `32e065f` |
+| Git | `main` = `origin/main` = `9ad3e89` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.170** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.171** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2586,6 +2586,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.168 | Dar ekranda bölüme geçince metin görünür alana gelir | 100 bölüm: metin 7.929 → **587 px**; 1440'ta kaydırma 0 | `tasarim` [2ae] |
 | v2.169 | Rapor kâğıdı: punto tabanı + belge fontu | 11 px altı metin 1 → **0**; kâğıt Segoe UI → **Arial** | `tasarim` [2af] |
 | v2.170 | CSS borcu: ölü `.seg-*` kuralları silindi | kural 852 → **828**, `!important` 62 → **58**, ölü 95 → **72**; stil farkı **0** | `tasarim` [2ag] |
+| v2.171 | CSS borcu: ölü bildirimler (7 katman tekrarı) | kural 828 → **825**, `!important` 58 → **55**, ölü 72 → **60**; stil farkı **0** | `tasarim` [8] eşik |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2703,9 +2704,9 @@ geçmemeli.
 
 #### P3 — CSS borcu (kontrollü azaltma) — v2.170'te ilk adım atıldı
 
-Nöbetçi eşikleri (v2.170): ölü bildirim **72** (okuma katmanı) / **500**
-(app→layer), `!important` **26/58**, `.main-area` **15**, reading-layer kural
-**828**. Borç **artırılamaz**; azaltma küçük ve kanıtlı adımlarla.
+Nöbetçi eşikleri (v2.171): ölü bildirim **60** (okuma katmanı) / **500**
+(app→layer), `!important` **26/55**, `.main-area` **15**, reading-layer kural
+**825**. Borç **artırılamaz**; azaltma küçük ve kanıtlı adımlarla.
 
 **v2.170'te ne yapıldı:** DOM'da hiç bulunmayan altı eski sınıfa
 (`.seg-meta-row`, `.seg-times`, `.seg-text-wrap`, `.seg-actions`,
@@ -2723,7 +2724,13 @@ kullanılabilir):
    **0 fark** (araç: `/tmp` içinde, depoya girmez).
 6. Nöbetçi testi ([2ag]) ve eşik düşürme.
 
-Kalan borç: 72 ölü bildirim (katman içi) ve 500 (app→katman) — çoğu v2.50
+**v2.171'de:** `#view-audio .seg-detail` aynı özellikleri yedi katmanda
+yeniden tanımlıyordu; 12 ölü bildirim silindi. **Kanıt yöntemi (önemli):**
+A/B fotoğrafı **aynı veri ve aynı kimliklerle** alınmalı — `reset` kimlikleri
+değiştirdiği için ilk karşılaştırma 240 sahte fark üretti; doğrusu yalnız
+sayfayı yenilemek (`Page.reload({ignoreCache:true})`).
+
+Kalan borç: 60 ölü bildirim (katman içi) ve 500 (app→katman) — çoğu v2.50
 öncesi yamaların katman tarafından ezilmesi. Azaltma aynı yöntemle sürer.
 
 #### P4 — ≤900 px tek sütun IA (KAPANDI, v2.165 + v2.168)
