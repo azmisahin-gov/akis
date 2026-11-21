@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.166.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.167.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.167 — Dosya künyesi her görünümden tek tıkla
+
+Ölçüm (gerçek Chromium, Ses görünümünde çalışırken): künyeye ulaşmak
+**4 tık + 2 görünüm değişimi** (Ses → Özet → aç → kapat → Ses). Üst barda
+dosya seçici vardı ama künye düğmesi yoktu; bilgi yalnız Genel görünümden
+açılabiliyordu.
+
+### KULLANICI NE GÖRECEK
+
+Üst barda, dosya seçicinin yanında **✎ künye düğmesi** var. Hangi görünümde
+olursanız olun tek tıkla dosya bilgileri açılır; kapattığınızda **aynı
+görünümde, aynı yerde** kalırsınız. Deşifre yazarken mahkeme veya esas no
+düzeltmek için ekran değiştirmek gerekmez.
+
+### ÖLÇÜM
+
+| | Önce (v2.166) | Sonra (v2.167) |
+|---|---|---|
+| Künyeyi açmak | 2 tık + görünüm değişimi | **1 tık** |
+| Gidiş-dönüş | 4 tık | **2 tık** |
+| Görünüm değişimi | 2 | **0** |
+| Üst bar kırpılması (1280/1100/900) | yok | yok |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ad] (3 kontrol): düğme üst barda, erişilebilir adı var,
+çekmeceyi açar (görünüm değişmez).
 
 ## v2.166 — Ses kaydını kaldırma artık onay istiyor (veri kaybı)
 

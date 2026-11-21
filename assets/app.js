@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.166';
+} from './schema.js?v=2.167';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.166';
+const APP_VERSION = '2.167';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10339,6 +10339,9 @@ function setupEvents() {
     await renderAudioList();
     renderQueue();
   });
+  // Künye HER görünümden açılır (v2.167): Ses görünümünde deşifre yazarken
+  // mahkeme/esas no düzeltmek için görünüm değiştirmek gerekmez.
+  $('#caseInfoBtn')?.addEventListener('click', () => setCaseDrawer(true));
   $('#newCaseBtn').addEventListener('click', () => {
     const c = freshCase();
     // Zaten boş bir çalışma alanı varsa yenisini eklemek "hayalet dosya"
@@ -12294,6 +12297,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.167': {
+    title: 'Dosya künyesi her görünümden tek tıkla',
+    body:
+      'Deşifre yazarken mahkeme veya esas no düzeltmek için Özet görünümüne ' +
+      'geçip geri dönmek gerekiyordu (4 tık + 2 görünüm değişimi). Üst barda, ' +
+      'dosya seçicinin yanındaki ✎ düğmesi dosya bilgilerini her görünümden ' +
+      'açar; kapatınca aynı yerde kalırsınız.'
+  },
   '2.166': {
     title: 'Ses kaydını kaldırma artık onay istiyor',
     body:

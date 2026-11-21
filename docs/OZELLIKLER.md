@@ -1,4 +1,4 @@
-# Özellikler (v2.166 — mevcut durum)
+# Özellikler (v2.167 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -9,6 +9,8 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   çizgiyle işaretlenir; ses kaydı sayısı rozet olarak görünür.
 - **Üst bar:** çalışma dosyası seçici, sayfa başlığı, kayıt durumu, içe/dışa
   aktarma düğmeleri her an görünür.
+- **Künye düğmesi (v2.167):** dosya seçicinin yanındaki **✎** her görünümden
+  dosya bilgilerini tek tıkla açar; kapatınca aynı görünümde kalırsınız.
 - **Alt durum çubuğu:** dosya · kayıt sayısı · bölüm sayısı · denetim yüzdesi ·
   yüklü model ve çalışma birimi (GPU/CPU).
 - **Sağ çekmeceler:** Ayarlar (model, toplu çözümleme, depolama) ve Dosya

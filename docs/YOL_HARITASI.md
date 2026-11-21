@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.166.**
+yazılır. **Güncel sürüm: v2.167.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.167 — Künye her görünümden tek tıkla (tamamlandı)
+
+Ölçüm: Ses görünümünden künyeye ulaşmak 4 tık + 2 görünüm değişimiydi. Üst
+bara dosya seçicinin yanına **✎ künye düğmesi** eklendi; `setCaseDrawer(true)`
+çağırır, görünüm değişmez. Ölçüm: 1 tık (gidiş-dönüş 2), görünüm değişimi 0;
+1280/1100/900'de başlık kırpılması ve yatay taşma yok. Koruyan test:
+`tasarim` [2ad].
 
 ### v2.166 — Ses kaydını kaldırma onay ister (tamamlandı)
 

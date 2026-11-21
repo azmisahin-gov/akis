@@ -945,6 +945,21 @@ console.log('\n[2ac] Dar ekranda bölüm işlemleri erişilebilir (v2.165)');
   check('≤900 px bildirim yapışkan çubuğun üstünde', toastClear);
 }
 
+console.log('\n[2ad] Künye her görünümden erişilir (v2.167)');
+{
+  // Ölçüm (v2.166): Ses görünümünden künyeyi açmak **4 tık + 2 görünüm
+  // değişimi** (Ses→Özet→aç→kapat→Ses). Üst barda dosya seçici vardı ama
+  // künye düğmesi yoktu; bilgi yalnız Genel görünümden erişilebiliyordu.
+  // KURAL: dosya künyesi her görünümden TEK tıkla açılır ve görünüm değişmez.
+  const js = read('assets/app.js');
+  const csStart = html.indexOf('class="case-switcher"');
+  const switcher = html.slice(csStart, html.indexOf('</div>', csStart));
+  check('üst barda künye düğmesi var', /id="caseInfoBtn"/.test(switcher));
+  check('künye düğmesi erişilebilir ad taşır', /id="caseInfoBtn"[^>]*aria-label="[^"]+"/.test(html));
+  check('düğme çekmeceyi açar (görünüm değişmez)',
+    /#caseInfoBtn[\s\S]{0,200}setCaseDrawer\(true\)/.test(js));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
