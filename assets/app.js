@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.165';
+} from './schema.js?v=2.166';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.165';
+const APP_VERSION = '2.166';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1673,6 +1673,17 @@ function refreshNarrowBar(m, card) {
   if (!html) { if (bar) bar.remove(); return; }
   if (bar) bar.outerHTML = html;
   else cardEl.insertAdjacentHTML('beforeend', html);
+}
+// Ses kaydını kaldırmak GERİ ALINAMAZ bir işlemdir: IndexedDB'deki ses
+// verisi kalıcı silinir, geri alma yalnız kaydı/metni getirir (v2.107 dersi).
+// Metin tek kaynaktan gelir; hem onay diyaloğu hem test aynı cümleyi kullanır.
+function removeAudioWarning(m) {
+  const name = (m && (m.name || m.fileName)) || 'Ses kaydı';
+  const segs = (m && m.segments ? m.segments.length : 0);
+  const extra = segs ? ` Bu kayda bağlı ${segs} bölüm ve metinleri de listeden kalkar.` : '';
+  return `"${name}" bu bilgisayardan KALICI olarak silinecek.${extra} ` +
+    'Geri alma (Ctrl+Z) yalnız kaydı ve metinleri geri getirir; SES DOSYASI GERİ GELMEZ. ' +
+    'Dosya başka bir yerde saklanmıyorsa önce paket oluşturmanız önerilir.';
 }
 function materialCardHtml(m) {
   const segs = m.segments || [];
@@ -10490,6 +10501,9 @@ function setupEvents() {
     } else if (b.dataset.removeAudio) {
       const m = c.materials.find((x) => x.id === b.dataset.removeAudio);
       if (!m) return;
+      // KALICI SİLME ÖNCE SORULUR (v2.166). Ölçüm: onaysız silmede ses blob'u
+      // gidiyor, Ctrl+Z yalnız kaydı geri getiriyor, ses gelmiyordu.
+      if (!(await askConfirm('Ses kaydını kaldır', removeAudioWarning(m)))) return;
       snapshotForUndo(`kayıt kaldırıldı: ${m.fileName || m.name || ''}`);
       closeAudioGraph(m);
       await deleteBlob(blobKey(c, m));
@@ -12280,6 +12294,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.166': {
+    title: 'Ses kaydını kaldırma artık onay istiyor',
+    body:
+      '"Kaldır" düğmesi ses dosyasını onaysız ve kalıcı siliyordu; geri alma ' +
+      'yalnız kaydı getiriyor, SESİ GETİRMİYORDU. Artık önce sorulur: kaydın ' +
+      'adı, kaç bölümün kalkacağı, sesin KALICI silineceği ve geri almanın ' +
+      'sesi getirmediği yazılı. Vazgeç derseniz hiçbir şey silinmez.'
+  },
   '2.165': {
     title: 'Dar ekranda onay ve dinleme her zaman erişilebilir',
     body:

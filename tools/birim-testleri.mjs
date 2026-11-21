@@ -117,7 +117,7 @@ const EXPOSE = [
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
   'segmentCoverage', 'coveragePctText',
-  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText',
+  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'removeAudioWarning',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3133,6 +3133,31 @@ console.log('\n== [64] Bildirim yerleşimi ve ses yok durumu (v2.158)');
   eq('ses yok durumu biçimli', /#view-audio \.sd-audio-state\s*\{/.test(css), true);
   const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('ses yok durumu DOM\'a yazılıyor', /data-audio-state/.test(jsSrc), true);
+}
+
+console.log('\n== [65] Ses kaydını kaldırma: onay + kalıcılık (v2.166)');
+{
+  // ÖLÇÜM (v2.166, gerçek Chromium): "Kaldır" düğmesi HİÇ onay sormadan ses
+  // blob'unu siliyordu. Ölçüm: önce anahtar [c::m] vardı, tıklamadan sonra
+  // yoktu, açık diyalog 0. Ctrl+Z kaydı geri getirdi ama ses anahtarı BOŞ
+  // kaldı → kullanıcı "geri alındı" bildirimi alıp sesi kaybediyordu.
+  // KURAL: kalıcı silme ÖNCE sorulur ve sonucun geri alınamaz olduğu yazılır.
+  eq('removeAudioWarning tanımlı', typeof T.removeAudioWarning, 'function');
+  if (typeof T.removeAudioWarning === 'function') {
+    const txt = T.removeAudioWarning({ name: 'kayit.wav', segments: [{}, {}, {}] });
+    eq('uyarı kaydın adını taşır', /kayit\.wav/.test(txt), true);
+    eq('uyarı KALICI olduğunu söyler', /KALICI/.test(txt), true);
+    // Türkçe 'İ' ASCII 'i' ile eşleşmez (v2.100 dersi): yerel küçültme kullan.
+    eq('uyarı sesin geri gelmeyeceğini söyler', /ses dosyası geri gelmez/.test(txt.toLocaleLowerCase('tr')), true);
+    eq('uyarı bölüm sayısını söyler', /3 bölüm/.test(txt), true);
+    const txt0 = T.removeAudioWarning({ name: 'x.wav', segments: [] });
+    eq('bölüm yoksa sayı uydurulmaz', /bölüm/.test(txt0), false);
+  }
+  const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const branch = jsSrc.slice(jsSrc.indexOf('b.dataset.removeAudio'), jsSrc.indexOf("showToast('Ses kaydı kaldırıldı.')"));
+  eq('kaldırma dalı bulundu', branch.length > 100, true);
+  eq('silmeden ÖNCE onay istenir', /askConfirm\(/.test(branch) && branch.indexOf('askConfirm(') < branch.indexOf('deleteBlob('), true);
+  eq('kaldırma düğmesi uyarıyı kullanır', /removeAudioWarning\(/.test(branch), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

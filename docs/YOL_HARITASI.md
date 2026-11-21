@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.165.**
+yazılır. **Güncel sürüm: v2.166.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.166 — Ses kaydını kaldırma onay ister (tamamlandı)
+
+Ölçüm (gerçek Chromium): "Kaldır" onaysız çalışıyor, ses blob'u kalıcı
+siliniyor, Ctrl+Z yalnız kaydı geri getiriyordu (ses anahtarı boş). Artık
+`askConfirm` + `removeAudioWarning(m)`: ad, bölüm sayısı, KALICI silme ve
+"ses dosyası geri gelmez" yazar. Ölçüm: diyalog açılıyor; Vazgeç → ses
+korunur; Devam et → silinir; JS hatası 0. Koruyan test: `birim` [65].
 
 ### v2.165 — Dar ekranda onay/dinle çubuğu (tamamlandı)
 

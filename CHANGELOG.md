@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.165.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.166.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.166 — Ses kaydını kaldırma artık onay istiyor (veri kaybı)
+
+Ölçüm (gerçek Chromium): kayıt kartındaki **"Kaldır"** düğmesi **hiç onay
+sormadan** ses dosyasını IndexedDB'den siliyordu. Ölçüm: tıklamadan önce ses
+anahtarı (`c::m`) vardı, sonrasında **yoktu**; açık onay diyaloğu **0**.
+**Ctrl+Z kaydı geri getiriyor, ses anahtarı boş kalıyordu** → ekran "Geri
+alındı" diyor, ses dosyası kayboluyordu.
+
+### KULLANICI NE GÖRECEK
+
+"Kaldır" artık **önce sorar**: kaydın adı, kaç bölümün kalkacağı, sesin
+**KALICI** silineceği ve **geri almanın sesi getirmediği** yazılı. "Vazgeç"
+derseniz hiçbir şey silinmez. Onaylarsanız davranış eskisi gibi: ses silinir.
+Uyarı ayrıca "önce paket oluşturmanız önerilir" der.
+
+### ÖLÇÜM
+
+| | Önce (v2.165) | Sonra (v2.166) |
+|---|---|---|
+| Onay diyaloğu | yok | var |
+| "Vazgeç" → ses | — | korunur (anahtar 1) |
+| "Devam et" → ses | silinir | silinir |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`birim-testleri` [65] (9 kontrol): uyarı metni kaydın adını, KALICI ifadesini,
+"ses dosyası geri gelmez" cümlesini ve bölüm sayısını taşır; silme **onaydan
+önce** yapılmaz.
 
 ## v2.165 — Dar ekranda onay ve dinleme her zaman erişilebilir
 

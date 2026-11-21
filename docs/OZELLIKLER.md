@@ -1,4 +1,4 @@
-# Özellikler (v2.165 — mevcut durum)
+# Özellikler (v2.166 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -452,6 +452,9 @@ uzmanlık alanını gösterir.
 - SHA-256 sonradan doğrulama; fark çıkarsa açık uyarı.
 - Delil işlem günlüğü (ekleme, çözümleme, doğrulama) tarih-saat damgalı.
 - Orijinal ses dosyası değiştirilmez.
+- **Ses kaydını kaldırma onay ister (v2.166):** ses IndexedDB'den **kalıcı**
+  silinir; geri alma yalnız kaydı/metni getirir. Bu yüzden onay diyaloğu
+  kaydın adını, bölüm sayısını ve "ses dosyası geri gelmez" uyarısını gösterir.
 
 ## Model yöneticisi
 
