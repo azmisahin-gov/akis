@@ -3160,5 +3160,24 @@ console.log('\n== [65] Ses kaydını kaldırma: onay + kalıcılık (v2.166)');
   eq('kaldırma düğmesi uyarıyı kullanır', /removeAudioWarning\(/.test(branch), true);
 }
 
+console.log('\n== [66] Paket adı aynı dakikada ayırt edilir (v2.173)');
+{
+  // ÖLÇÜM (v2.172, gerçek Chromium): sahip ve yardımcı paketi AYNI DAKİKADA
+  // üretildi → iki dosya da "AKIS_Paket_2026-777_E_2026-11-21_09-58.akis"
+  // oldu; tarayıcı ikincisine " (1)" ekledi. Hangi paketin kimden geldiği
+  // addan anlaşılmıyordu (adli kayıtta karışma riski).
+  const A = { id: 'cA', fileNo: '2024/A', name: 'A dosyası', materials: [{ id: 'mA', segments: [] }] };
+  const t1 = new Date('2026-11-20T16:45:10');
+  const t2 = new Date('2026-11-20T16:45:40');
+  const n1 = T.backupFileName({ kind: 'single', cases: [A] }, t1);
+  const n2 = T.backupFileName({ kind: 'single', cases: [A] }, t2);
+  eq('aynı dakikada iki paket FARKLI ad alır', n1 !== n2, true);
+  eq('ad saniye taşır', /_\d{2}-\d{2}-\d{2}\.akis$/.test(n1), true);
+  eq('saniye değeri doğru (10)', /_16-45-10\.akis$/.test(n1), true);
+  eq('saniye değeri doğru (40)', /_16-45-40\.akis$/.test(n2), true);
+  // Eski davranış korunur: dakika yine adda.
+  eq('dakika korunur', /2026-11-20_16-45/.test(n1), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

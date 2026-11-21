@@ -1,4 +1,4 @@
-# Özellikler (v2.172 — mevcut durum)
+# Özellikler (v2.173 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,8 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Paket adında saniye (v2.173):** `AKIS_Paket_<dosya no>_<tarih>_<saat>-<saniye>.akis`.
+  Aynı dakikada üretilen iki paket (sahip + yardımcı) karışmaz.
 - **Önizleme tek kaydırma (v2.172):** rapor kâğıdı kendi yüksekliğinde akar;
   araç çubuğu yapışkandır. 100 bölümde kâğıt 196 px'lik kutudan **6.438 px**'e
   çıktı.

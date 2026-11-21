@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.172.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.173.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.173 — Paket adı saniye taşıyor (aynı dakikada iki paket karışmıyor)
+
+Ölçüm (gerçek Chromium, ekip senaryosu): sahip ve yardımcı paketi **aynı
+dakikada** üretildiğinde iki dosya da
+`AKIS_Paket_2026-777_E_2026-11-21_09-58.akis` adını aldı; tarayıcı ikincisine
+" (1)" ekledi. Hangi paketin kimden geldiği **addan anlaşılmıyordu** — adli
+dosyada paketlerin karışma riski.
+
+### KULLANICI NE GÖRECEK
+
+Paket adı artık **saniye** de taşıyor:
+`AKIS_Paket_2026-777_E_2026-11-21_10-00-40.akis`. Aynı dakikada üretilen iki
+paket (sahip + yardımcı) birbirinden ayrılır; dosya adından hangisinin ne zaman
+alındığı okunur. Diğer her şey aynı: tarih, saat, dosya numarası ve
+"yalnız bu dosya / tüm dosyalar" ayrımı.
+
+### ÖLÇÜM
+
+| | Önce (v2.172) | Sonra (v2.173) |
+|---|---|---|
+| Aynı dakikada iki paket | aynı ad | **farklı ad** (saniye) |
+| Ad örneği | `…_09-58.akis` | `…_10-00-40.akis` |
+| Ekip akışı (paket → öneri → birleştir → kabul) | çalışıyor | çalışıyor (yeniden ölçüldü) |
+
+### KORUYAN TEST
+
+`birim-testleri` [66] (5 kontrol): aynı dakikada iki ad farklı, saniye değeri
+doğru, dakika korunur.
 
 ## v2.172 — Rapor önizlemesi artık kırpılmıyor (196 px → tam sayfa)
 

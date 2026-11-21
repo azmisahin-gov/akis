@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.172.**
+yazılır. **Güncel sürüm: v2.173.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.173 — Paket adına saniye (tamamlandı)
+
+Ölçüm (ekip senaryosu): sahip ve yardımcı paketi aynı dakikada üretilince iki
+dosya da `…_09-58.akis` oldu; tarayıcı " (1)" ekledi. Ad artık saniye taşıyor
+(`…_10-00-40.akis`). Ölçüm: aynı dakikada iki paket **farklı ad**; ekip akışı
+(paket → öneri → onay reddi → birleştir → kabul) yeniden ölçüldü ve doğru
+çalışıyor. Koruyan test: `birim` [66].
 
 ### v2.172 — Rapor önizlemesi kırpılmıyor (tamamlandı)
 

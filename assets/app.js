@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.172';
+} from './schema.js?v=2.173';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.172';
+const APP_VERSION = '2.173';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -9518,7 +9518,9 @@ function backupFileName(plan, when) {
   // güvenilmez; geçerli bir Date benzeri mi diye davranıştan anlaşılır.
   const d = when && typeof when.getTime === 'function' && Number.isFinite(when.getTime()) ? when : new Date();
   const p2 = (n) => String(n).padStart(2, '0');
-  const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}`;
+  // SANİYE de adda (v2.173): aynı dakikada iki paket (ör. sahip + yardımcı)
+  // aynı adı alıyordu; hangi paketin kimden geldiği addan anlaşılmıyordu.
+  const stamp = `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}_${p2(d.getHours())}-${p2(d.getMinutes())}-${p2(d.getSeconds())}`;
   const list = (plan && plan.cases) || [];
   if (!list.length) return `AKIS_Paket_bos_${stamp}.akis`;
   // KAPSAM seçimi adda görünür. Tek dosya varken "tüm dosyalar" seçilirse
@@ -12311,6 +12313,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.173': {
+    title: 'Paket adı artık saniye taşıyor',
+    body:
+      'Sahip ve yardımcı paketi aynı dakikada üretildiğinde iki dosya da aynı ' +
+      'adı alıyordu; hangisinin kimden geldiği addan anlaşılmıyordu. Paket adı ' +
+      'artık saniye de taşıyor: AKIS_Paket_<dosya no>_<tarih>_<saat>-<saniye>.akis.'
+  },
   '2.172': {
     title: 'Rapor önizlemesi artık kırpılmıyor',
     body:
