@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.173';
+} from './schema.js?v=2.174';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.173';
+const APP_VERSION = '2.174';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3995,6 +3995,10 @@ function segDetailHtml(m) {
     <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga, zamanlar, konuşmacı ve gözlem alanlarını göster/gizle. Yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
 
+  <!-- "Ses yok" durumu HER ZAMAN görünür (v2.174): Teknik panelinin içinde
+       kalırsa panel kapalıyken kullanıcı hiç göremez (v2.158 garantisi). -->
+  <div class="sd-audio-state" data-audio-state hidden></div>
+
   ${proposalBandHtml(s, i)}
 
   ${
@@ -4026,7 +4030,6 @@ function segDetailHtml(m) {
         </div>
         <!-- TEK GÖRÜNÜM ALANI (v2.121): dalga ve spektrogram AYNI kutuda geçişir.
              Böylece düğme dalga araç çubuğunda kalır ve sağ panel uzamaz. -->
-        <div class="sd-audio-state" data-audio-state hidden></div>
         <div class="sd-canvas-wrap mode-both" id="sdwrap-${esc(m.id)}">
           <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="48" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
           <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="112" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
@@ -6221,6 +6224,7 @@ function syncSegDetailInPlace(m, idx) {
   });
   // Zoom dalgası yeni bölüme bağlanmalı.
   attachZoomWave(m, idx);
+  refreshAudioState(m);
   refreshNarrowBar(m, detail.closest('.audio-card'));
   // Başlıktaki "Dinle" düğmesi ve dalga, yeni bölüme göre tazelenir.
   const playBtn = detail.querySelector('[data-play-active]');
@@ -12313,6 +12317,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.174': {
+    title: '"Ses yok" uyarısı artık her zaman görünüyor',
+    body:
+      'Sesi bulunmayan bir kayıtta uyarı yalnız Teknik paneli açılınca ' +
+      'yazılıyordu; panel varsayılan kapalı olduğu için durum hiç görünmüyordu. ' +
+      'Artık Teknik kapalıyken de "Ses dosyası bu tarayıcıda yok — paketten ' +
+      'yükle veya dosyayı yeniden ekleyin" satırı görünür.'
+  },
   '2.173': {
     title: 'Paket adı artık saniye taşıyor',
     body:

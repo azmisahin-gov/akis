@@ -1037,6 +1037,26 @@ console.log('\n[2ah] Rapor önizlemesi kırpılmıyor (v2.172)');
   check('araç çubuğu yapışkan (indirme erişilebilir)', /position:\s*sticky/.test(toolbarRule), toolbarRule.trim());
 }
 
+console.log('\n[2ai] "Ses yok" uyarısı Teknik kapalıyken de görünür (v2.174)');
+{
+  // ÖLÇÜM (v2.173, gerçek Chromium): ses blob'u silinmiş bir kayıtta uyarı
+  // metni yalnız Teknik paneli AÇILINCA yazılıyordu; panel varsayılan kapalı
+  // olduğu için kullanıcı "ses yok" durumunu hiç görmüyordu (v2.158'in
+  // "kalıcı uyarı" garantisinin gerilemesi).
+  const js5 = read('assets/app.js');
+  const start5 = js5.indexOf('function segDetailHtml');
+  const end5 = js5.indexOf('\nfunction ', start5 + 10);
+  const body5 = js5.slice(start5, end5 > 0 ? end5 : start5 + 30000);
+  const iState = body5.indexOf('data-audio-state');
+  const iTech = body5.indexOf('sd-left sd-tech');
+  check('uyarı öğesi şablon içinde var', iState > 0);
+  check('uyarı Teknik panelinin DIŞINDA (önce)', iTech > 0 && iState < iTech, `state=${iState} · tech=${iTech}`);
+  check('uyarı her çizimde tazelenir', /refreshAudioState\(m\)/.test(js5));
+  // Bölüm değişince de tazelenmeli (syncSegDetailInPlace).
+  const sync5 = js5.slice(js5.indexOf('function syncSegDetailInPlace'), js5.indexOf('function syncSegDetailInPlace') + 9000);
+  check('bölüm değişince de tazelenir', /refreshAudioState\(m\)/.test(sync5));
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

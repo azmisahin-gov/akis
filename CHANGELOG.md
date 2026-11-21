@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.173.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.174.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.174 — "Ses yok" uyarısı artık Teknik kapalıyken de görünüyor
+
+Ölçüm (gerçek Chromium): ses blob'u silinmiş bir kayıtta (kalıcı silme → geri
+alma → arşivden geri yükleme) uyarı metni **yalnız Teknik paneli açılınca**
+yazılıyordu. Panel varsayılan kapalı olduğu için kullanıcı "ses yok" durumunu
+**hiç görmüyordu**; dalga boş, oynatıcı sessiz kalıyordu. Bu, v2.158'in
+"kalıcı uyarı" garantisinin gerilemesiydi.
+
+### KULLANICI NE GÖRECEK
+
+Sesi bulunmayan bir kaydı açtığınızda, **Teknik kapalı olsa da** şu satır
+görünür: "Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez.
+Paketten yükle veya dosyayı yeniden ekleyin." Ses varsa satır görünmez.
+Bölüm değiştirdiğinizde de durum tazelenir.
+
+### ÖLÇÜM
+
+| | Önce (v2.173) | Sonra (v2.174) |
+|---|---|---|
+| Teknik kapalı, ses yok | uyarı **görünmüyor** | **görünüyor** |
+| Teknik açık, ses yok | görünüyor | görünüyor |
+| Bölüm değişince | tazelenmiyordu | **tazeleniyor** |
+| Ses varsa | gizli | gizli |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ai] (4 kontrol): uyarı öğesi Teknik panelinin **dışında**,
+her çizimde ve bölüm değişiminde tazelenir.
 
 ## v2.173 — Paket adı saniye taşıyor (aynı dakikada iki paket karışmıyor)
 

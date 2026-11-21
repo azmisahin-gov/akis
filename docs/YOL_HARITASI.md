@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.173.**
+yazılır. **Güncel sürüm: v2.174.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.174 — "Ses yok" uyarısı her zaman görünür (tamamlandı)
+
+Ölçüm: ses blob'u silinmiş kayıtta uyarı yalnız Teknik paneli açılınca
+yazılıyordu; panel kapalıyken kullanıcı durumu görmüyordu. Uyarı öğesi
+`segDetailHtml` içinde Teknik panelinin DIŞINA alındı; bölüm değişiminde de
+tazeleniyor. Ölçüm: Teknik kapalıyken uyarı görünür, ses varsa gizli, JS
+hatası 0. Koruyan test: `tasarim` [2ai].
 
 ### v2.173 — Paket adına saniye (tamamlandı)
 
