@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.191';
+} from './schema.js?v=2.192';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.191';
+const APP_VERSION = '2.192';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3012,8 +3012,39 @@ function ensureSpeakers(m) {
 function speakerByName(m, name) {
   return (m.speakers || []).find((s) => s.name === name) || null;
 }
-function speakerSegments(m, name) {
-  return (m.segments || []).filter((sg) => (sg.speaker || '') === name);
+// Konuşmacıya bağlı bölümler. İsim VEYA kimlik ile eşleşir: v3 kaydında
+// `speakerId`, eski kayıtta `speaker` (ad) bulunur. Yalnız isme bakmak,
+// yüklenen dosyada "0 bölüm" yanılgısı üretiyordu.
+function speakerSegments(m, spOrName) {
+  const name = typeof spOrName === 'string' ? spOrName : (spOrName && spOrName.name) || '';
+  const id = typeof spOrName === 'string' ? '' : (spOrName && spOrName.id) || '';
+  return (m.segments || []).filter((sg) => {
+    if (name && (sg.speaker || '') === name) return true;
+    return !!(id && sg.speakerId === id);
+  });
+}
+// KONUŞMACIYI SİL (v2.192). Kayıt listeden kalkar; ona atanmış bölümler
+// "Konuşmacı seçilmedi" olur (dangling referans bırakılmaz). Ses ve metin
+// silinmez. Silme günlüğe yazılır.
+function removeSpeaker(m, sp) {
+  if (!m || !sp) return 0;
+  let cleared = 0;
+  for (const sg of m.segments || []) {
+    const match = (sp.name && (sg.speaker || '') === sp.name) || (sp.id && sg.speakerId === sp.id);
+    if (!match) continue;
+    sg.speaker = '';
+    sg.speakerId = '';
+    cleared++;
+  }
+  m.speakers = (m.speakers || []).filter((x) => x.id !== sp.id);
+  assignSpeakerCodes(m.speakers);
+  logEvent(m, 'Konuşmacı silindi', `${sp.name || sp.id}${cleared ? ` · ${cleared} bölümün ataması kaldırıldı` : ''}`);
+  return cleared;
+}
+// Hiçbir bölüme atanmamış konuşmacıları temizler. Raporda görünmeyen ama
+// listede kalan eski etiketler (K, E, S1, S2…) böylece kalkar.
+function unusedSpeakers(m) {
+  return (m.speakers || []).filter((sp) => speakerSegments(m, sp).length === 0);
 }
 function fmtHz(hz) {
   return hz ? `${Math.round(hz)} Hz` : '';
@@ -3321,9 +3352,13 @@ function speakersPanelHtml(m) {
   const mergeNote = merges.length
     ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map((g) => g.map((s) => esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`
     : '';
+  const unused = unusedSpeakers(m);
+  const cleanBar = unused.length
+    ? `<div class="spk-toolbar"><span>${unused.length} konuşmacı hiçbir bölüme atanmamış; raporda görünmez.</span><button class="mini-button" data-clean-spk="${esc(m.id)}" title="Hiçbir bölüme atanmamış konuşmacıları listeden kaldır. Ses ve metinler silinmez.">Kullanılmayanları temizle (${unused.length})</button></div>`
+    : '';
   const rows = sp
     .map((s) => {
-      const segs = speakerSegments(m, s.name);
+      const segs = speakerSegments(m, s);
       const roleOpts = SPEAKER_ROLE.map(
         (code) =>
           `<option value="${esc(code)}" ${normalizeSpeakerRole(s.role) === code ? 'selected' : ''}>${esc(SPEAKER_ROLE_LABEL[code] || code)}</option>`
@@ -3333,6 +3368,7 @@ function speakersPanelHtml(m) {
           `<option value="${esc(code)}" ${normalizeSpeakerGender(s.gender) === code ? 'selected' : ''}>${esc(SPEAKER_GENDER_LABEL[code] || code)}</option>`
       ).join('');
       return `<div class="spk-card" data-spk-card="${esc(s.id)}">
+      <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.">Sil</button></div>
       <div class="seg-row2">
         <div class="seg-field"><label>Standart kod</label><input data-spk="${esc(s.id)}" data-spk-key="code" value="${esc(s.code || '')}" placeholder="S1" title="Raporda ve bölüm listesinde bu kod görünür. Etiket değişse de aynı kişi aynı kodla kalır."></div>
         <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"></div>
@@ -3345,11 +3381,11 @@ function speakersPanelHtml(m) {
         <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"></div>
         <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
       </div>
-      <small>${segs.length} bölüm · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
+      <small>${segs.length ? `${segs.length} bölüm` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
     </div>`;
     })
     .join('');
-  return `${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -8529,8 +8565,12 @@ function speakerRows(c) {
   for (const m of c.materials || []) {
     for (const sp of m.speakers || []) {
       if (!sp.name || sp.name === 'Belirtilmedi') continue;
-      const segs = (m.segments || []).filter((sg) => (sg.speaker || '') === sp.name);
-      const dur = segs.length ? `${m.name}: ${segs.length} bölüm` : `${m.name}`;
+      const segs = speakerSegments(m, sp);
+      // HİÇ BÖLÜME ATANMAMIŞ konuşmacı rapora GİRMEZ (v2.192). Aksi hâlde
+      // bölümden "Konuşmacı seçilmedi" yapılsa bile eski etiket (K, E, S1…)
+      // rapor tablosunda kalıyordu (kullanıcı bildirimi).
+      if (!segs.length) continue;
+      const dur = `${m.name}: ${segs.length} bölüm`;
       const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : ''].filter(Boolean).join(' · ');
       // Standart kod (S1, S2…) raporda kimliği belirsizleştirmeden taşır;
       // etiket değişse de aynı kişi aynı kodla görünür.
@@ -8621,11 +8661,19 @@ function reviewSummaryRows(c) {
   const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA).length;
   const spec = mats.filter((m) => m.spectrogramReviewed).length;
   const chan = mats.filter((m) => m.tech?.channels === 2 && channelMode(m) !== 'both').length;
+  // Sayaç TABLO ile aynı kaynaktan: yalnız bölüme atanmış konuşmacı sayılır.
   const speakers = mats.reduce(
-    (n, m) => n + (m.speakers || []).filter((s) => s.name && s.name !== 'Belirtilmedi').length,
+    (n, m) =>
+      n +
+      (m.speakers || []).filter(
+        (s) => s.name && s.name !== 'Belirtilmedi' && speakerSegments(m, s).length > 0
+      ).length,
     0
   );
-  const pitched = mats.reduce((n, m) => n + (m.speakers || []).filter((s) => s.pitch).length, 0);
+  const pitched = mats.reduce(
+    (n, m) => n + (m.speakers || []).filter((s) => s.pitch && speakerSegments(m, s).length > 0).length,
+    0
+  );
   const levelMeasured = mats.filter((m) => m.levels && m.levels.ok && m.levels.schema === LEVELS_SCHEMA).length;
   // Köken belgelenmiş sayılır: ortam türü 'Belirtilmedi' dışında bir değer ve
   // en az bir teslim bilgisi (eden veya tarih) girilmişse.
@@ -11045,6 +11093,47 @@ function setupEvents() {
       renderSpeakersPanel(m);
       renderOverview();
       showToast(`${rec.code} eklendi ve bu bölüme atandı. Etiketini konuşmacı panelinden yazın.`);
+    } else if (b.dataset.delSpk !== undefined) {
+      // Konuşmacıyı sil (v2.192): atanmış bölümler "seçilmedi" olur.
+      const [mid, sid] = b.dataset.delSpk.split('|');
+      const m = c.materials.find((x) => x.id === mid);
+      const sp = m?.speakers?.find((x) => x.id === sid);
+      if (!m || !sp) return;
+      const n = speakerSegments(m, sp).length;
+      const ok = await askConfirm(
+        'Konuşmacıyı sil',
+        `"${sp.code ? sp.code + ' · ' : ''}${sp.name}" konuşmacısı listeden ve rapor tablosundan kaldırılacak.` +
+          (n ? ` Ona atanmış ${n} bölüm "Konuşmacı seçilmedi" olur.` : ' Ona atanmış bölüm yok.') +
+          ' Ses kaydı ve bölüm metinleri SİLİNMEZ. Devam edilsin mi?'
+      );
+      if (!ok) return;
+      const cleared = removeSpeaker(m, sp);
+      persist();
+      renderSpeakersPanel(m);
+      renderSegments(m, b.closest('.audio-card'));
+      renderOverview();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast(`Konuşmacı silindi${cleared ? `; ${cleared} bölümün ataması kaldırıldı` : ''}.`);
+    } else if (b.dataset.cleanSpk !== undefined) {
+      // Kullanılmayan (hiçbir bölüme atanmamış) konuşmacıları tek tıkla temizle.
+      const m = c.materials.find((x) => x.id === b.dataset.cleanSpk);
+      if (!m) return;
+      const unused = unusedSpeakers(m);
+      if (!unused.length) return;
+      const ok = await askConfirm(
+        'Kullanılmayan konuşmacıları temizle',
+        `${unused.length} konuşmacı hiçbir bölüme atanmamış: ` +
+          `${unused.map((s) => (s.code ? s.code + ' · ' : '') + s.name).join(', ')}. ` +
+          'Bunlar listeden kaldırılacak. Ses ve metinler SİLİNMEZ. Devam edilsin mi?'
+      );
+      if (!ok) return;
+      for (const sp of unused) removeSpeaker(m, sp);
+      persist();
+      renderSpeakersPanel(m);
+      renderSegments(m, b.closest('.audio-card'));
+      renderOverview();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast(`${unused.length} kullanılmayan konuşmacı temizlendi.`);
     } else if (b.dataset.spec !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.spec);
       if (mm) toggleSpectrogram(mm);
@@ -12580,6 +12669,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.192': {
+    title: 'Konuşmacı silme ve rapor filtresi',
+    body:
+      'Hiçbir bölüme atanmamış konuşmacı artık raporda görünmüyor. Konuşmacı ' +
+      'panelinde her kartta Sil, ayrıca "Kullanılmayanları temizle" var. Silme ' +
+      'ses ve metni silmez; atanmış bölümler "Konuşmacı seçilmedi" olur.'
+  },
   '2.191': {
     title: 'Sağ panel kaymıyor; metin kendi içinde kayıyor',
     body:

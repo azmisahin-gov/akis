@@ -1238,6 +1238,19 @@ console.log('\n[2aq] Dalga çubuğu: menüler görünür, metinle çakışmaz (v
   check('araç satırı sarar (gizli kaydırma yok)', /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) && !/sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl));
 }
 
+console.log('\n[2ar] Konuşmacı silme ve kullanılmayanları temizleme (v2.192)');
+{
+  // KULLANICI: "Bölümde konuşmacı seçilmedi yapıyorum ama raporda ve ses
+  // dosyasında yine görünüyor; silemiyor muyuz?" Kök: kayıt silinmiyordu ve
+  // rapor tüm kayıtları listeliyordu. Artık Sil + Temizle var, rapor filtreler.
+  const js = read('assets/app.js');
+  check('kart başlığında Sil düğmesi var', /data-del-spk="\$\{esc\(m\.id\)\}\|\$\{esc\(s\.id\)\}"/.test(js));
+  check('kullanılmayanları temizle düğmesi var', /data-clean-spk="\$\{esc\(m\.id\)\}"/.test(js));
+  check('rapor atanmamış konuşmacıyı atlar', /if \(!segs\.length\) continue;/.test(js));
+  check('silme bölüm atamalarını temizler', /function removeSpeaker[\s\S]{0,700}speakerId = ''/.test(js));
+  check('atanmış bölüm sayısı isim VE kimlikle bulunur', /function speakerSegments[\s\S]{0,400}sg\.speakerId === id/.test(js));
+}
+
 console.log('\n[8] CSS borcu (nöbetçi)');
 {
   const appCss = read('assets/app.css');

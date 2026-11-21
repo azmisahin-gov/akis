@@ -2663,3 +2663,42 @@ input::placeholder, textarea::placeholder {
   min-width: 48px;
   font-size: var(--fs-2xs);
 }
+
+/* ============================================================================
+   v2.192 — KONUŞMACI SİLME / KULLANILMAYANLARI TEMİZLEME
+   ----------------------------------------------------------------------------
+   KULLANICI: "Bölümde konuşmacı seçilmedi yapıyorum ama raporda ve ses
+   dosyasında yine görünüyor; bunları silemiyor muyuz?"
+
+   NEDEN: Konuşmacı kaydı, bölümden atama kaldırılınca SİLİNMİYORDU; rapor da
+   tüm kayıtları listeliyordu. Artık: (1) hiçbir bölüme atanmamış konuşmacı
+   rapora GİRMEZ, (2) panelde tek tek "Sil" ve "Kullanılmayanları temizle"
+   vardır. Silme ses/metin silmez; atanmış bölümler "seçilmedi" olur.
+   ============================================================================ */
+#view-audio .spk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+#view-audio .spk-toolbar > span {
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+}
+#view-audio .spk-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+#view-audio .spk-card-head b {
+  font-size: var(--fs-xs);
+  color: var(--ink);
+}
+#view-audio .spk-unused {
+  color: var(--gold);
+  font-weight: 600;
+}

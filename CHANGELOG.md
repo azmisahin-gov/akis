@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.191.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.192.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.192 — Konuşmacı silme ve rapor filtresi
+
+Kullanıcı: *"Bölümde konuşmacı seçilmedi yapıyorum ama raporda ve ses dosyasında
+yine görünüyor; bunları silemiyor muyuz?"*
+
+### NEDEN OLDU
+
+Uygulama konuşmacı **kimliği tespit etmez**; yalnız bölümlerdeki konuşmacı
+etiketlerini listeler. `K`, `E`, `S1`, `S2` gibi kayıtlar **eski/elle girilmiş
+etiketlerden** gelir; `Konuşmacı 1` elle bölüm eklenince oluşur. Bölümde
+"seçilmedi" yapılınca yalnız **atama** kalkıyordu; **kayıt silinmiyordu** ve
+rapor tüm kayıtları listeliyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Hiçbir bölüme atanmamış konuşmacı **raporda görünmez** (özet sayacı da saymaz).
+- Konuşmacı panelinde her kartta **Sil**; ayrıca **"Kullanılmayanları temizle (N)"**.
+- Silme **ses ve metni silmez**; atanmış bölümler "Konuşmacı seçilmedi" olur.
+- Panelde *"hiçbir bölüme atanmamış — raporda görünmez"* uyarısı görünür.
+
+### ÖLÇÜM (gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| 5 atanmamış konuşmacı | raporda **0 satır** (yalnız "konuşmacı etiketi girilmedi"), panelde 5 kart + temizle (5) |
+| Tek tek **Sil** | 5 → **4** kart |
+| **Kullanılmayanları temizle** | 4 → **0** kart |
+| Bölüm metinleri | **korundu** |
+| JS hatası | 0 |
+
+### KORUYAN TEST
+
+`birim` [69] (isim/kimlik eşleşmesi, rapor filtresi, silme atamaları temizler,
+metin korunur) + `tasarim` [2ar] (Sil/Temizle düğmeleri).
 
 ## v2.191 — Sağ panel kaymıyor; metin kendi içinde kayıyor
 

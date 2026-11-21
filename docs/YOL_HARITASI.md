@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.191.**
+yazılır. **Güncel sürüm: v2.192.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.192 — Konuşmacı silme ve rapor filtresi (tamamlandı)
+
+Atanmamış konuşmacı kaydı silinmiyordu ve rapor tüm kayıtları listeliyordu
+(`S1 Konuşmacı 1`, `K`, `E`, `S1`, `S2`). Artık `speakerRows` yalnız bölüme
+atanmış konuşmacıyı yazar; panelde **Sil** ve **Kullanılmayanları temizle**
+vardır. `speakerSegments` isim VE `speakerId` ile eşleşir (v3 kaydı). Silme ses
+ve metni silmez; atanan bölümler "seçilmedi" olur. Ölçüm: 5 kart → tek tek Sil
+4 → temizle 0; rapor 0 satır; JS hatası 0. Koruyan test: `birim` [69] +
+`tasarim` [2ar].
 
 ### v2.191 — Sağ panel kaymıyor; metin kendi içinde kayıyor (tamamlandı)
 

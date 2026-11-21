@@ -102,6 +102,7 @@ const EXPOSE = [
   'casesForStorage', 'isEmptyWorkspace',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
+  'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
@@ -3278,6 +3279,50 @@ console.log('\n== [68] Canlı vurgu metin içinde: kelime konumu (v2.188)');
   // Aynı kelime iki kez: ikinci arama ilk bulgunun İLERİSİNDEN başlar.
   const spans3 = T.karaokeCharSpans('ev ev', [{ w: 'ev', s: 0, e: 1 }, { w: ' ', s: NaN, e: NaN }, { w: 'ev', s: 1, e: 2 }]);
   eq('yinelenen kelime ikinci konumda', JSON.stringify(spans3[2]), JSON.stringify([3, 5]));
+}
+
+console.log('\n== [69] Konuşmacı silme ve rapor filtresi (v2.192)');
+{
+  // KULLANICI: "Bölümde konuşmacı seçilmedi yapıyorum ama raporda/ses
+  // dosyasında yine görünüyor; silemiyor muyuz?" Kök: konuşmacı kaydı
+  // silinmiyordu ve rapor TÜM kayıtları listeliyordu.
+  const c = T.emptyCaseForTest({ id: 'c1' });
+  const m = T.emptyMaterialForTest({ id: 'm1', name: '3.mp3', fileName: '3.mp3' });
+  m.speakers = [
+    { id: 'sp1', code: 'S1', name: 'S1', role: 'unspecified', gender: 'unspecified' },
+    { id: 'sp2', code: 'S2', name: 'K', role: 'unspecified', gender: 'unspecified' },
+    { id: 'sp3', code: 'S3', name: 'E', role: 'unspecified', gender: 'unspecified' }
+  ];
+  // seg1: ad ile; seg2: YALNIZ speakerId ile (v3 kaydı) bağlı.
+  m.segments = [
+    T.emptySegmentForTest({ id: 'g1', speaker: 'S1', text: 'a' }),
+    T.emptySegmentForTest({ id: 'g2', speakerId: 'sp1', text: 'b' }),
+    T.emptySegmentForTest({ id: 'g3', speaker: '', speakerId: '', text: 'c' })
+  ];
+  c.materials = [m];
+  eq('ada göre eşleşir', T.speakerSegments(m, 'S1').length, 1);
+  eq('kimliğe göre eşleşir (v3)', T.speakerSegments(m, m.speakers[0]).length, 2);
+  eq('atanmamış konuşmacı 0 bölüm', T.speakerSegments(m, m.speakers[1]).length, 0);
+  eq('kullanılmayanlar: K ve E', T.unusedSpeakers(m).map((s) => s.name).join(','), 'K,E');
+  // Rapor yalnız ATANMIŞ konuşmacıyı listeler.
+  const rows = T.speakerRows(c);
+  eq('raporda tek satır (S1)', rows.length, 1);
+  eq('satır kodu S1', rows[0][0], 'S1 · S1');
+  eq('satır bölüm sayısı', /2 bölüm/.test(rows[0][5]), true);
+  // Atanmamış K silinir: bölümlere dokunmaz.
+  const clearedK = T.removeSpeaker(m, m.speakers[1]);
+  eq('K silindi, bölüm ataması yok', clearedK, 0);
+  eq('K listeden çıktı', m.speakers.some((s) => s.name === 'K'), false);
+  eq('metinler korundu', m.segments.map((s) => s.text).join(''), 'abc');
+  // Atanmış S1 silinir: iki bölümün ataması temizlenir.
+  const sp1 = m.speakers.find((s) => s.name === 'S1');
+  const cleared1 = T.removeSpeaker(m, sp1);
+  eq('S1 iki bölümden temizlendi', cleared1, 2);
+  eq('bölüm 1 ataması boş', m.segments[0].speaker, '');
+  eq('bölüm 2 kimliği boş', m.segments[1].speakerId, '');
+  eq('S1 listeden çıktı', m.speakers.some((s) => s.name === 'S1'), false);
+  eq('rapor artık boş (atanmış konuşmacı yok)', T.speakerRows(c).length, 0);
+  eq('metinler hâlâ korundu', m.segments.map((s) => s.text).join(''), 'abc');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

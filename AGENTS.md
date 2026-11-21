@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.191.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.192.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -2547,7 +2547,7 @@ bunları bozmadan devam etmelidir.
 
 | | |
 |---|---|
-| Sürüm | **v2.191** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.192** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
 | Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
@@ -3211,6 +3211,31 @@ içerik. Vurgu `scrollTop` 120 = 120, yükseklik 142 = 142. JS hatası 0.
 `scrollTop` ile eşlensin. Böylece hem panel sabit kalır hem vurgu hizası korunur.
 
 **Koruyan test:** `tasarim` [2aq]/[2u]/[2al]/[2v].
+
+#### P22 — Konuşmacı silme ve rapor filtresi (v2.192)
+
+**KULLANICI:** *"Bölümde konuşmacı seçilmedi yapıyorum ama raporda ve ses
+dosyasında yine görünüyor; bunları silemiyor muyuz?"*
+
+**KÖK:** `ensureSpeakers` segment etiketlerinden kayıt üretir; atama kaldırılınca
+kayıt SİLİNMİYORDU ve `speakerRows` TÜM kayıtları listeliyordu. `Konuşmacı 1`
+elle bölüm eklenince oluşur; K/E/S1/S2 eski etiketlerdir. ASR konuşmacı tespiti
+YAPMAZ.
+
+**DÜZELTME:** `speakerRows` yalnız `speakerSegments(m,sp).length > 0` olanları
+yazar (özet sayacı da aynı). `speakerSegments` isim VE `speakerId` ile eşleşir.
+Panelde `data-del-spk` (Sil) + `data-clean-spk` (Kullanılmayanları temizle);
+`removeSpeaker` atanmış bölümlerin `speaker`/`speakerId` alanlarını temizler,
+ses/metne dokunmaz, günlüğe yazar.
+
+**ÖLÇÜM (gerçek Chromium):** 5 atanmamış konuşmacı → rapor 0 satır, panel 5 kart;
+tek tek Sil → 4; temizle → 0; metinler korundu; JS hatası 0.
+
+**DERS:** "Atamayı kaldır" ≠ "kaydı sil". Rapor, kayıt listesini değil GERÇEKTEN
+ATANMIŞ konuşmacıları göstermelidir. Silme sessiz olmamalı: ne silineceğini,
+ses/metnin korunacağını ve atanmış bölümlerin ne olacağını söylemeli.
+
+**Koruyan test:** `birim` [69] + `tasarim` [2ar].
 
 ### DOĞRULAMA (her oturum başı)
 
