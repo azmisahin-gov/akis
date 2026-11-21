@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.179.**
+yazılır. **Güncel sürüm: v2.180.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.180 — Konuşmacı/kontrol/gözlem her zaman görünür (tamamlandı)
+
+Ölçüm: Teknik açıkken konuşmacı+kontrol y=822, gözlem y=884 → panel (248–827)
+dışında. İkisi de analiz değil. Konuşmacı/kontrol başlığın altına, gözlem
+düğmeleri metnin altına (quick-insert yanına) taşındı. Ölçüm: meta y=303,
+gözlem y=642 — **panel içinde**; metin 160 (Teknik açık) / 371 (kapalı);
+panel kaydırması 81 → **55 px**. Koruyan test: `tasarim` [2am].
 
 ### v2.179 — Detay paneli: canlı vurgu ezilmiyor (tamamlandı)
 

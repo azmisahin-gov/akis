@@ -6,12 +6,46 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.179.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.180.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.180 — Konuşmacı, kontrol ve gözlem artık her zaman görünür
+
+Ölçüm (1440×900, v2.179): Teknik paneli açıkken **konuşmacı + kontrol y=822**,
+**gözlem düğmeleri y=884**; panel 248–827 → **kaydırmadan erişilemiyordu**.
+Oysa üçü de analiz değil: konuşmacı/kontrol **düzenleme bilgisi**, gözlem
+**metne ilişkin işarettir**. Ayrıca notlar/ASR kökeni satırı çıkınca metin
+bölgesi aşağı itiliyor, quick-insert görünmez olabiliyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Konuşmacı** ve **Kontrol** seçimleri başlığın hemen altında, **her zaman
+  görünür** (Teknik kapalı ya da açık — fark etmez).
+- **Gözlem düğmeleri** (gürültü / üst üste / anlaşılmaz / müzik) metnin
+  altında, quick-insert ile aynı bölgede.
+- **Teknik** artık yalnız analiz: dalga/spektrogram, zamanlar, ölçümler.
+
+### ÖLÇÜM
+
+| | Önce (v2.179) | Sonra (v2.180) |
+|---|---|---|
+| Konuşmacı/kontrol (Teknik açık) | y=822 — **panel dışında** | y=303 — **panel içinde** |
+| Gözlem (Teknik açık) | y=884 — **panel dışında** | y=642 — **panel içinde** |
+| quick-insert | görünür | görünür |
+| Metin alanı | 160 px | 160 px (Teknik açık) / 371 px (kapalı) |
+| Canlı vurgu | 48 px | 48 px |
+| Panel kaydırması (Teknik açık) | 81 px | 55 px |
+| JS hatası | 0 | 0 |
+
+### KORUYAN TEST
+
+`tasarim-testi` [2am] (6 kontrol): konuşmacı/kontrol Teknik **dışında** (önce),
+gözlem Teknik **dışında** ve quick-insert yanında; Teknik ipucu artık
+konuşmacı/gözlem anmıyor.
 
 ## v2.179 — Bölüm detayı: canlı vurgu artık ezilmiyor
 

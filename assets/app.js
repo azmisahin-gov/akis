@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.179';
+} from './schema.js?v=2.180';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.179';
+const APP_VERSION = '2.180';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4052,8 +4052,21 @@ function segDetailHtml(m) {
       <button class="mini-button" data-review-set="${i}|yeniden">Yeniden dinle</button>
       <button class="mini-button" data-review-set="${i}|anlasilmadi">Anlaşılmadı</button>
     </span>
-    <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga, zamanlar, konuşmacı ve gözlem alanlarını göster/gizle. Yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
+    <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga/spektrogram, zamanlar ve ölçümleri göster/gizle. Konuşmacı ve gözlem metnin yanındadır; yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
+
+  <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
+       zaman görünür. Teknik panelinde kalınca kaydırmadan erişilemiyordu. -->
+    <div class="sd-meta">
+      <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
+      <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
+      ${rev === 'ambiguous' || s.reading1 || s.reading2 ? ambiguousPanelHtml(s, i) : ''}
+      <span class="sd-field sd-profile" title="${esc(
+        'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
+          'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
+          'Bir sonraki çözümleme, Ayarlar\'daki güncel profili kullanır.'
+      )}"><span>Profil</span><b>${esc(m.transcribedWithProfile ? profileRunLabel(m.transcribedWithProfile) : 'Henüz çözümlenmedi')}</b></span>
+    </div>
 
   <!-- "Ses yok" durumu HER ZAMAN görünür (v2.174): Teknik panelinin içinde
        kalırsa panel kapalıyken kullanıcı hiç göremez (v2.158 garantisi). -->
@@ -4102,17 +4115,6 @@ function segDetailHtml(m) {
         <label class="sd-time"><span>Bitiş</span><input class="time-input" data-seg="${i}" data-key="end" value="${esc(s.end || '')}"></label>
         <label class="sd-time sd-time-dur"><span>Süre</span><output class="sd-dur">${esc(fmtShort(Math.max(0, secondsFromTimecode(s.end) - secondsFromTimecode(s.start))))}</output></label>
       </div>
-      <div class="sd-meta">
-        <label class="sd-field"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
-        <label class="sd-field"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}">${opts}</select></label>
-        ${rev === 'ambiguous' || s.reading1 || s.reading2 ? ambiguousPanelHtml(s, i) : ''}
-        <span class="sd-field sd-profile" title="${esc(
-          'Bu kaydın çözümlenmesinde kullanılan profil. Profil yalnız dil ipucu ve bağlam istemini değiştirir; ' +
-            'şive tanıma veya kaynak ayrıştırma YAPMAZ, rapora yazılmaz. ' +
-            'Bir sonraki çözümleme, Ayarlar\'daki güncel profili kullanır.'
-        )}"><span>Profil</span><b>${esc(m.transcribedWithProfile ? profileRunLabel(m.transcribedWithProfile) : 'Henüz çözümlenmedi')}</b></span>
-      </div>
-      <div class="sd-obs">${obsBtns}</div>
     </div>
     <div class="sd-right">
       ${'' /* karaoke kutusu kaldırıldı (v2.119): tek görsel alan .sd-follow */}
@@ -4123,6 +4125,9 @@ function segDetailHtml(m) {
           ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
           <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
         </div>
+        <!-- GÖZLEM İŞARETLERİ (v2.180): metne ilişkin işaretler; analiz değil.
+             Teknik panelinde kalınca kaydırmadan erişilemiyordu. -->
+        <div class="sd-obs">${obsBtns}</div>
       </div>
     </div>
   </div>
@@ -12504,6 +12509,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.180': {
+    title: 'Konuşmacı, kontrol ve gözlem artık her zaman görünür',
+    body:
+      'Teknik paneli açıkken konuşmacı/kontrol ve gözlem düğmeleri panelin ' +
+      'altında kalıyor, kaydırmadan erişilemiyordu. Artık konuşmacı + kontrol ' +
+      'başlığın hemen altında, gözlem düğmeleri metnin altında. Teknik yalnız ' +
+      'analiz taşır: dalga/spektrogram, zamanlar, ölçümler.'
+  },
   '2.179': {
     title: 'Canlı vurgu artık ezilmiyor',
     body:

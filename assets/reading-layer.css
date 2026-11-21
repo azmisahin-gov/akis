@@ -654,7 +654,6 @@ input::placeholder, textarea::placeholder {
 }
 
 /* 5) Konuşmacı + Kontrol */
-#view-audio .sd-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
 #view-audio .sd-field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 /* Yalnız ETİKET span'ı biçimlenir. v2.81'de `> span` seçicisi .sd-spk-pick
    sarmalayıcısını da yakalıyordu: seçim kutusu ve ＋ düğmesi 11px, soluk,
@@ -708,7 +707,6 @@ input::placeholder, textarea::placeholder {
 @media (max-width: 640px) {
   #view-audio .sd-times { grid-template-columns: 1fr 1fr; }
   #view-audio .sd-dur { grid-column: 1 / -1; text-align: left; padding: 0; }
-  #view-audio .sd-meta { grid-template-columns: 1fr; }
   #view-audio .sd-actions .mini-button.primary { margin-left: 0; }
 }
 
@@ -1731,7 +1729,6 @@ input::placeholder, textarea::placeholder {
 #view-audio .sd-times .sd-time-dur { flex-direction: column; align-items: stretch; }
 
 /* 2) Konuşmacı + Kontrol + Profil TEK satırda (101 → ~52 px). */
-#view-audio .sd-meta { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
 #view-audio .sd-meta .sd-profile { min-width: 96px; }
 #view-audio .sd-meta .sd-profile b { white-space: nowrap; }
 
@@ -1764,7 +1761,6 @@ input::placeholder, textarea::placeholder {
 /* Dar ekranda (≤640) konuşmacı/kontrol/profil ALT ALTA döner: 3 sütun
    143 px'e sığmaz ve seçim kutuları okunamaz. v2.153 kuralı bunu EZMEMELİ. */
 @media (max-width: 640px) {
-  #view-audio .sd-meta { grid-template-columns: 1fr; }
   #view-audio .sd-times .sd-time { flex-direction: column; align-items: stretch; }
 }
 
@@ -2232,3 +2228,29 @@ input::placeholder, textarea::placeholder {
   #view-audio .seg-detail .sd-right { min-height: 236px; }
   #view-audio .seg-detail .sd-right .sd-text textarea { min-height: 160px; }
 }
+
+/* --- v2.180 — Düzenleme bilgisi başlığın altında, gözlem metnin yanında ---- */
+/* ÖLÇÜM (v2.179, 1440×900): Teknik açıkken konuşmacı+kontrol y=822, gözlem
+   y=884; panel 248–827 → KAYDIRMADAN ERİŞİLEMİYORDU. Oysa ikisi de analiz
+   değil, metin/düzenleme bilgisidir. Artık her zaman görünürler. */
+#view-audio .sd-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 4px 0 2px;
+}
+#view-audio .sd-meta .sd-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+#view-audio .sd-meta .sd-field > span:first-child {
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+#view-audio .sd-meta select { min-width: 150px; }
+#view-audio .sd-meta .sd-profile { margin-left: auto; }
+#view-audio .sd-right .sd-obs { padding-top: 2px; }

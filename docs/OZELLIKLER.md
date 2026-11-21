@@ -1,4 +1,4 @@
-# Özellikler (v2.179 — mevcut durum)
+# Özellikler (v2.180 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -471,6 +471,9 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **Düzenleme bilgisi her zaman görünür (v2.180):** konuşmacı ve kontrol
+  seçimleri başlığın altında; gözlem düğmeleri metnin altında. Teknik paneli
+  yalnız analiz taşır (dalga/spektrogram, zamanlar, ölçümler).
 - **Detay paneli ezilmez (v2.179):** canlı vurgu şeridi her zaman 48 px,
   metin alanı en az 160 px; içerik sığmazsa **panel kaydırır** (Teknik açıkken
   de). Not/uyarı/öneri satırı çıkınca düzen zıplamaz.

@@ -458,7 +458,9 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
 {
   const rl = read('assets/reading-layer.css');
   const js = read('assets/app.js');
-  check('konuşmacı/kontrol/profil tek satır (3 sütun)', /#view-audio \.sd-meta\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)\s*minmax\(0,\s*1fr\)\s*auto/.test(rl));
+  // v2.180: konuşmacı/kontrol başlığın altına taşındı; yerleşim grid değil
+  // FLEX satır (niyet aynı: tek satır, sığmazsa sarar).
+  check('konuşmacı/kontrol tek satır (flex)', /#view-audio \.sd-meta\s*\{[^}]*display:\s*flex[^}]*flex-wrap:\s*wrap/.test(rl));
   check('zaman etiketi kutunun yanında (satır)', /#view-audio \.sd-times \.sd-time\s*\{[^}]*flex-direction:\s*row/.test(rl));
   // v2.177: ikincil araçlar artık SATIR MENÜSÜNDE (⋮). Katlama kaldırıldı;
   // aynı işler kaybolmadı, satır menüsüne taşındı.
@@ -1096,6 +1098,28 @@ console.log('\n[2al] Detay paneli: canlı vurgu ezilmez (v2.179)');
   check('metin alanı 160 px tabanı', /\.sd-text textarea\s*\{[^}]*min-height:\s*160px/.test(rl7));
   check('gövde alt sınırı', /\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7));
   check('sağ sütun alt sınırı', /\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
+}
+
+console.log('\n[2am] Konuşmacı/kontrol/gözlem her zaman görünür (v2.180)');
+{
+  // ÖLÇÜM (v2.179, 1440×900): Teknik açıkken konuşmacı+kontrol y=822,
+  // gözlem y=884; panel 248–827 → kaydırmadan erişilemiyordu. Oysa ikisi de
+  // ANALİZ DEĞİL, metin/düzenleme bilgisidir.
+  const js8 = read('assets/app.js');
+  const i0 = js8.indexOf('function segDetailHtml');
+  const i1 = js8.indexOf('\nfunction ', i0 + 10);
+  const body8 = js8.slice(i0, i1 > 0 ? i1 : i0 + 30000);
+  const iMeta = body8.indexOf('class="sd-meta"');
+  const iObs = body8.indexOf('class="sd-obs"');
+  const iTech = body8.indexOf('sd-left sd-tech');
+  const iQuick = body8.indexOf('class="quick-insert"');
+  check('konuşmacı/kontrol var', iMeta > 0);
+  check('konuşmacı/kontrol Teknik DIŞINDA (önce)', iTech > 0 && iMeta < iTech, `meta=${iMeta} tech=${iTech}`);
+  check('gözlem var', iObs > 0);
+  check('gözlem Teknik DIŞINDA (sonra)', iObs > iTech, `obs=${iObs} tech=${iTech}`);
+  check('gözlem metin bölgesinde (quick-insert yanında)', iObs > iQuick, `obs=${iObs} quick=${iQuick}`);
+  check('Teknik ipucu artık konuşmacı/gözlem anmıyor',
+    !/Dalga, zamanlar, konuşmacı ve gözlem/.test(js8));
 }
 
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
