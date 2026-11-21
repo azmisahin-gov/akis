@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.163';
+} from './schema.js?v=2.164';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.163';
+const APP_VERSION = '2.164';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12245,6 +12245,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.164': {
+    title: 'Künye: zorunlu alanlar artık ilk ekranda',
+    body:
+      'Dosya bilgileri çekmecesinde 17 alan vardı; ilk ekranda 8\'i görünüyor ve ' +
+      'zorunlu bilirkişi adı 454 px, inceleme konusu 166 px aşağıda kalıyordu. ' +
+      'Artık en üstte "01 Zorunlu bilgiler" var: rapor türü, mahkeme, esas no, ' +
+      'bilirkişi adı ve inceleme konusu — beşi de ilk ekranda. İsteğe bağlı ' +
+      'alanlar (tarihler, taraf, sicil, ekip, arşiv) aşağıda. Alanlar ve ' +
+      'otomatik kayıt değişmedi.'
+  },
   '2.163': {
     title: 'Durum renkleri tek anlama indi',
     body:

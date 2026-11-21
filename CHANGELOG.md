@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.163.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.164.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.164 — Künye: zorunlu alanlar ilk ekranda
+
+Senaryo ölçümü (gerçek Chromium 1440×900, v2.163): dosya bilgileri
+çekmecesinde **17 alan** vardı, ilk ekranda **8**'i görünüyordu. Zorunlu
+alanlardan **bilirkişi adı 454 px**, **inceleme konusu 166 px** aşağıdaydı.
+Yeni dosya açan bilirkişi künyeyi tamamlamak için çekmeceyi kaydırmak
+zorundaydı.
+
+### KULLANICI NE GÖRECEK
+
+Dosya bilgileri çekmecesi açıldığında **beş zorunlu alan** (rapor türü,
+mahkeme, esas no, bilirkişi adı, inceleme konusu) **ilk ekranda** durur.
+İsteğe bağlı alanlar (görevlendirme tarihleri, taraf bilgileri, sicil/uzmanlık,
+ekip, arşivle) aşağıda kalır. Künyeyi tamamlamak için kaydırma gerekmez.
+Alanların kimlikleri ve otomatik kayıt davranışı **değişmedi**.
+
+### ÖLÇÜM
+
+| | Önce (v2.163) | Sonra (v2.164) |
+|---|---|---|
+| Zorunlu alan ilk ekranda | 3 / 5 | **5 / 5** |
+| `#expertName` | 454 px aşağıda | 356 px — görünür |
+| `#subject` | 166 px aşağıda | 426 px — görünür |
+| Çekmece içeriği | 1.924 px | 1.983 px (isteğe bağlı alanlar) |
+
+Ölçüm (gerçek Chromium): beş zorunlu alan da görünür, girilen künye
+yenilemeden sonra korunur, JS hatası **0**.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ab] (3 kontrol): beş zorunlu alan çekmecede var, hepsi
+isteğe bağlı alanlardan **önce**, "Zorunlu bilgiler" başlığı altında.
 
 ## v2.163 — Durum renkleri tek anlama indi
 

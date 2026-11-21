@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.163.**
+yazılır. **Güncel sürüm: v2.164.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.164 — Künye: zorunlu alanlar ilk ekranda (tamamlandı)
+
+Senaryo ölçümü: çekmecede 17 alan, ilk ekranda 8; zorunlu bilirkişi adı
+454 px, inceleme konusu 166 px aşağıdaydı. Çekmece yeniden sıralandı:
+**01 Zorunlu bilgiler** (rapor türü, mahkeme, esas no, bilirkişi adı,
+inceleme konusu) → 02 tarihler → 03 taraf → 04 bilirkişi künyesi → 05 ekip →
+06 arşivle. Ölçüm: zorunlu alan **5/5 görünür**; `#expertName` 356 px,
+`#subject` 426 px (ekran içinde). Kimlikler ve otomatik kayıt değişmedi.
+Koruyan test: `tasarim` [2ab].
 
 ### v2.163 — Durum renkleri tek anlam (tamamlandı)
 

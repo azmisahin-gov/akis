@@ -870,6 +870,37 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
   check('toplu onay düğmesi yeşil ailede', /\[data-bulk-approve\][^{]*\{[^}]*var\(--green\)/.test(rl));
 }
 
+console.log('\n[2ab] Künye: zorunlu alanlar ilk ekranda (v2.164)');
+{
+  // Ölçüm (v2.163): çekmecede 17 alan, ilk ekranda 8; zorunlu #expertName
+  // 454 px, #subject 166 px aşağıdaydı. Zorunlu alanlar İSTEĞE BAĞLI
+  // alanlardan önce gelmeli; aksi hâlde yeni dosya açan kullanıcı künyeyi
+  // tamamlamak için çekmeceyi kaydırmak zorunda kalır.
+  const start = html.indexOf('id="caseDrawer"');
+  const drawer = html.slice(start, html.indexOf('</aside>', start));
+  const pos = (id) => drawer.indexOf('id="' + id + '"');
+  const required = ['reportType', 'court', 'fileNo', 'expertName', 'subject'];
+  const optional = [
+    'assignmentDate', 'assignmentDurationDays', 'dueDate',
+    'plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel',
+    'caseDate', 'inspectionDate', 'registryNo', 'expertField', 'reportDate',
+    'addTeamBtn', 'archiveCaseBtn'
+  ];
+  check('çekmecede beş zorunlu alan var', required.every((id) => pos(id) >= 0));
+  const lastRequired = Math.max(...required.map(pos));
+  const firstOptional = Math.min(...optional.map(pos).filter((p) => p >= 0));
+  check(
+    'zorunlu alanların tümü isteğe bağlı alanlardan ÖNCE',
+    lastRequired < firstOptional,
+    `son zorunlu ${lastRequired} < ilk isteğe bağlı ${firstOptional}`
+  );
+  const firstRequired = Math.min(...required.map(pos));
+  check(
+    'zorunlu blok "Zorunlu bilgiler" başlığı altında',
+    /Zorunlu bilgiler/i.test(drawer.slice(0, firstRequired))
+  );
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik
