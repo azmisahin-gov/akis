@@ -2535,157 +2535,13 @@ gerçek tarayıcı → push** disipliniyle yürütüldü. Test sayısı 361 → 
   model içermiyor ve yapılmış gibi göstermiyor.
 - `pitchHint` cinsiyet ipucu yalnız **güvenilir** ölçümde gösterilir.
 
-## Yeni oturuma devir notu (v2.129)
+## Yeni oturuma devir notu (v2.163) — DURUM, KURALLAR, SIRADAKİ İŞLER
 
-Bu dosya yeni oturumda otomatik yüklenir; aşağıdakiler **durum** bilgisidir.
-
-### Durum tablosu
-
-| | |
-|---|---|
-| Sürüm | **v2.148** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **782 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Uzak dal | `main` = kod commit `c71b374` (bu devir notu ayrı bir belge commit'idir) |
-| Pages | `built` · kod commit `c71b374` (canlı doğrulandı) |
-| Canlı | https://azmisahin-gov.github.io/akis/ → `APP_VERSION = '2.129'`, `version.json` = 2.129 |
-| Açık konu | **Yok** |
-
-### v2.102–v2.129 turunda ne yapıldı (28 sürüm)
-
-Her sürüm: **kıran test → düzeltme → gerçek Chromium → push → canlı doğrulama**.
-Test sayısı 441 → **782**.
-
-| Sürüm | Konu | Koruyan test |
-|---|---|---|
-| v2.102 | Boş dosya yedeğe girmiyor; arşiv birleştirilebiliyor; kopya birikmiyor | `birim` [32] |
-| v2.103 | Yeniden çözümleme onaysız/geri alınamaz silme | `birim` [33] |
-| v2.104 | Punto kaçakları (7px sürüm etiketi), sürüm geçmişi | `tasarim` [2b] |
-| v2.105 | Üst bar başlığı sessizce kesiliyordu | `tasarim` [2c] |
-| v2.106 | Otomatik onay ≠ bilirkişi onayı (`machine`/Çözümlendi) | `birim` [34] |
-| v2.107 | Arşivleme + iki aşamalı kalıcı silme | `birim` [35] |
-| v2.108 | Arşivde boş dosya birikmesi, görünmeyen kimlik | `birim` [36] |
-| v2.109 | İlk açılış gerçekten boş (boş taslak kaydedilmiyordu) | `birim` [37] |
-| v2.110 | Dışa aktarma kapsamı soruluyor; ad tarih+saat | `birim` [38] |
-| v2.111 | Profil kayıt başına sabit + görünür | `birim` [39] |
-| v2.112 | A–B döngüsü (3 hata: Dinle öldürüyordu, tuş yok, gösterge yok) | `birim` [40] |
-| v2.113 | Liste kaydırma `scrollTop +=` birikmesi | `birim` [41] |
-| v2.114 | "%100 olmuyor" açıklaması (`pendingBreakdown`) | `birim` [42] |
-| v2.115 | Belirsiz okuma (`ambiguous`) + bölüm spektrogramı | `birim` [43] |
-| v2.116 | Karaoke titremesi (25 DOM değişikliği → 0) | `birim` [44] |
-| **v2.117** | **ACİL:** canlı site açılmıyordu (`schema.js` import sürümsüz) | `surum` [2b] |
-| **v2.118** | **Kendini güncelleyen sayfa** (`version.json`, `__akisIdle`) | `surum` [2c] |
-| v2.119 | Takip iki moda ayrıldı; karaoke kutusu kaldırıldı | `birim` [45] |
-| v2.120 | Liste yüksekliği kabı aşıyordu (137px kırpılıyordu) | `tasarim` [2d] |
-| v2.121 | Sağ panel kaydırma çubuğu; spektrogram dalganın yerine | `tasarim` [2d]/[2e] |
-| **v2.122** | **Birleştirmede onay kaybı** (onayın sahibi yoktu; sessiz düşüyordu) | `birim` [46] · `sema` [7f] |
-| **v2.123** | **Terim birliği + paket adı** (dışa/içe aktar → paket) | `birim` [38] · `surum` [11] |
-| **v2.124** | **"Tüm dosyalar" seçimi adda görünmüyordu** (ad dosya sayısına bağlıydı) | `birim` [38] |
-| **v2.125** | **Takip şeridi sabit + cümle penceresi** (5 satır atlama, reflow) | `birim` [47] · `tasarim` [2f] |
-| **v2.126** | **Spektrogram tam genişlik + etkileşim** (tıkla/sürükle/Alt/okuma) | `birim` [48] · `tasarim` [2g] |
-| **v2.127** | **Yerleşim: metin listeye bitişik + kontroller yanında** | `birim` [49] · `tasarim` [2h] |
-| **v2.128** | **Katmanlı analiz kutusu** (dalga+spek aynı yerde, 3 mod) | `birim` [50] · `tasarim` [2g] |
-| **v2.129** | **Ses görünümü tek kaydırma** (taşma, kısayol/araç görünmüyordu) | `tasarim` [2i] |
-| **v2.130** | **Bölüm rozeti: durum her zaman görünür** (96 px kapta kırpılıyordu) | `tasarim` [2j] |
-| **v2.131** | **Görünüm kutusu içerikle büyür** (yapışkan bar 635 px sonra bırakıyordu; durum çubuğu tıklamayı yutuyordu) | `tasarim` [2k] |
-| **v2.132** | **Kurtarma kopyasında sessiz düşme** (bozuk dosya bildirilmiyordu) | `birim` [51] |
-| **v2.133** | **Durum çubuğu yazıları kesilmiyor** (≤1100 px'te 6/6 öğe kırpılıyordu) | `tasarim` [2l] |
-| **v2.134** | **İlk açılışta hayalet kayıt** (boş çalışma alanı yazılıyordu) | `birim` [52] |
-| **v2.135** | **Kritik uyarılar ekran okuyucuya duyurulur** (aria-live yoktu) | `birim` [53] |
-| **v2.136** | **Sekme simgesi** (favicon 404) | `tasarim` [4b] |
-| **v2.137** | **Rapor kâğıdı dar ekranda kırpılıyordu** (760 px'te 26 px) | `tasarim` [2m] |
-| **v2.138** | **CSS borcu ölçümü + nöbetçi** (temizlik kanıt tutmadığı için yayınlanmadı) | `tasarim` [8] |
-| **v2.139** | **Uzun listede detay yapışkan** (362 bölümde panel ekran dışında kalıyordu) | `tasarim` [2n] |
-| **v2.140** | **Masaüstü kabuğu** (tek uzun sayfa → sabit çerçeve, paneller kendi kaydırır) | `tasarim` [2o] |
-| **v2.141** | **Masaüstünde çalışma modu kaldırıldı** (kayıt sütunu kalıcıyken gereksizdi) | `tasarim` [2p] |
-| **v2.142** | **Çalışma modu kaldırıldı; kayıt listesi dikey** (yanyana çipler, gizli başlık) | `tasarim` [2p]/[2q] |
-| **v2.143** | **Detay panelinin alt kısmı kırpılıyordu** (`sd-meta`, gözlem düğmeleri) | `tasarim` [2r] |
-| **v2.144** | **Zaman çakışmaları görünür** (⚠ rozet + "Zaman sorunları" filtresi) | `birim` [54] |
-| **v2.145** | **Takip vurgusu çakışmada geri atlamıyor** (`segmentIndexAtTime`) | `birim` [55] |
-| **v2.146** | **Zaman sorunu düzenlerken anında görünür** (⚠/çip yenilemeden çıkmıyordu) | `birim` [56] |
-| **v2.147** | **Takip şeridi eski bölüme dönmüyor** (timeupdate eski indeksi kullanıyordu) | `birim` [57] |
-| **v2.148** | **Oynatma başlarken sayfa zıplamıyor** (şerit yer tutucu, başlık tek kaynak) | `birim` [58] · `tasarim` [2s] |
-
-### v2.117–v2.122'de öğrenilen dört kritik ders
-
-1. **`?v=` tek dosyayı kırar, import zincirini KIRMAZ.** `app.js` içindeki
-   `import './schema.js'` sürümsüzdü; tarayıcı eski `schema.js`'i kullandı →
-   `AMBIGUOUS_REVIEW` bulunamadı → **canlı site açılmadı**. Artık import
-   `?v=${APP_VERSION}` taşır; `surum-testi` [2b] zorunlu kılar.
-2. **Önbelleği kullanıcıya kırdırma.** GitHub Pages her dosyaya `max-age=600`
-   verir. `version.json` (`no-store`) + dakikalık denetim + `__akisIdle()`
-   ile sayfa **kendini yeniler** (çalışırken değil). `surum-testi` [2c].
-3. **Yerleşim düzeltmesi BAŞKA paneli bozar.** `height:100%` verince liste
-   düzeldi ama sağ panel 351px'e sıkışıp kaydırma çubuğu çıktı. Kural:
-   kap yükseklik dayatmaz (`height:auto`), **tek kaydırma** (`.seg-list`),
-   `overflow:hidden` ile çocuk kırpılmaz.
-4. **Onayı veren ≠ metni yazan.** Birleştirme "kim onayladı" sorusunu
-   `lastEditBy` ile tahmin ederse, dinleyip onaylayan bilirkişinin onayı
-   sahipsiz kalır ve sessizce düşer. Ayrı alan (`reviewedBy`) şart; ayrıca
-   düşürme **bildirilir**. `birim` [46].
-
-### Sürüm gönderme — 6 yer birlikte (test zorunlu kılar)
-
-1. `assets/app.js` → `APP_VERSION`
-2. `assets/app.js` → `import ... from './schema.js?v=X.Y'` (AYNI sürüm)
-3. `index.html` → `var RUNNING = 'X.Y'` + dört `?v=X.Y`
-4. `version.json` → `{"version":"X.Y"}`
-5. `CHANGELOG.md` başlığı + `docs/YOL_HARITASI.md` başlığı
-6. `README.md`, `docs/OZELLIKLER.md`, `AGENTS.md` sürüm satırları
-
-Sonra: `bash tools/test.sh` → commit (Türkçe) → **push** → `git ls-remote`
-hash eşit mi → Pages `built` + commit bizimki mi → **canlı `version.json`
-ve `APP_VERSION`** doğru mu.
-
-### Kullanıcı bilgilendirmesi — 3 yer (her sürümde)
-
-1. `VERSION_NOTICES['x.y']` (açılışta bir kez, `akis.seenNotice.*`)
-2. `index.html` yardım → "Son değişiklikler (vX.Y)"
-3. `CHANGELOG.md` → "KULLANICI NE GÖRECEK"
-
-### Kullanıcı tercihleri (bu turdan çıkan, değişmez)
-
-- **Ekran etiketleri KISA**; ayrıntı **ipucunda** (`title`). Liste kalabalık olmaz.
-- **Mimari:** tarayıcıda çalışsa da **masaüstü uygulaması gibi** hissettirmeli.
-- **Tek düğme iki iş yapmaz.** Ör. takip: `Otomatik geçiş (F)` ve
-  `Canlı vurgu (G)` ayrı; varsayılan **kapalı**.
-- **Kırpma yasak:** sığmayan öğe kesilmez; **sarar** veya **kaydırır** (görünür).
-- **Aynı veri tek yerde** gösterilir (karaoke + sd-follow ikilemi kaldırıldı).
-- **Ölçülemeyen iddia yok:** "düzeltildi" demek için önce/sonra ölçümü verilir.
-
-### Tarayıcı doğrulaması (zorunlu — sahte DOM yetmez)
-
-- `/usr/bin/chromium` + CDP (headless). Gerekli bayraklar:
-  `--autoplay-policy=no-user-gesture-required` (ses testleri için).
-- Uygulama fonksiyonları `window`'da **değil** (modül kapsamı). **Gerçek UI'ı
-  tıklayın**; `evaluate` ile iç fonksiyon çağırmayın.
-- Veri tohumlama: IndexedDB `mihenk-pro-assets` → `state` anahtarı
-  `mihenk.pro.cases.v1`; ses `audio` store'unda `<dosyaId>::<kayıtId>`.
-- Ölçüm ölçütleri: `scrollHeight > clientHeight` (kırpma/taşma),
-  `getBoundingClientRect().bottom` (gerçek görünürlük),
-  `MutationObserver` (titreme), `getComputedStyle` (punto/kırpma).
-- Geçici dosyalar (`/tmp/*.mjs`) iş bitince **silinir**.
-
-### Bilinen dürüst sınırlar (hata değil)
-
-- Perde oktav hatası **düzeltilmiyor**, `detectPitchAmbiguity()` ile bildiriliyor.
-- Kaynak ayrıştırma, konuşmacı kimlik tespiti, montaj tespiti **yapılmaz**.
-- `date`/`fs`/`vm` sandbox farkı: `instanceof Date` güvenilmez; davranıştan anla.
-- Ölçüm şemaları: `LEVELS_SCHEMA` (3), `SILENCE_SCHEMA` (2).
-
-### Yeni oturumda ilk adımlar
-
-1. `bash tools/test.sh` → tümü yeşil mi (782 + 404 + diğerleri)
-2. `git log --oneline -3` ve `git status --short` → temiz mi
-3. `curl -s https://azmisahin-gov.github.io/akis/version.json` → 2.129 mi
-4. Kullanıcının talebini al. Soru ise **yalnız cevap ver** (kod değişmez).
-   Değişiklik ise yukarıdaki disiplin: **tek konu = tek sürüm**.
-
-## Yeni oturuma devir notu (v2.163) — SIRADAKİ İŞLER
-
-Bu oturumda (v2.130–v2.149) **görünürlük, tutarlılık ve kapsama** sorunları kapatıldı.
-Aşağıdaki liste bir sonraki oturumun iş sırasıdır; her madde **tek konu = tek
-sürüm** kuralıyla, kıran test → düzeltme → gerçek tarayıcı → push disipliniyle
-yapılır.
+Bu not, **tasarım/tema/kozmetik turunu** kapatan oturumun devridir. Eski
+v2.129 devir notu kaldırıldı; onun yerini bu not alır (mimari ve sınırlar
+güncellendi). Aşağıdaki
+kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
+bunları bozmadan devam etmelidir.
 
 ### Durum (2026-11-21, kapanış)
 
@@ -2693,115 +2549,163 @@ yapılır.
 |---|---|
 | Sürüm | **v2.163** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **947 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = 2.163 |
-| Açık konu | **Yok** (tema + durum renkleri kapandı; sırada senaryo ölçümü) |
+| Git | `main` = `origin/main` = `422b58b` (bu devir notu ayrı bir belge commit'idir) |
+| Pages | `built`, commit bizimki |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.163** |
+| Açık konu | **Yok** — sırada **senaryo ölçümü + bilgi mimarisi** (kullanıcı isteği) |
 
-### Bu oturumda ne değişti (kısa)
+### Bu oturumda ne yapıldı (v2.149–v2.163, 15 sürüm)
 
 | Sürüm | Konu | Koruyan test |
 |---|---|---|
-| v2.130 | Bölüm listesinde durum rozeti görünmüyordu | `tasarim` [2j] |
-| v2.131 | Görünüm kutusu: yapışkan bar + durum çubuğu örtüşmesi | `tasarim` [2k] |
-| v2.132 | Kurtarma kopyasında sessiz dosya düşmesi | `birim` [51] |
-| v2.133 | Durum çubuğu kesmesi | `tasarim` [2l] |
-| v2.134 | İlk açılışta hayalet kayıt | `birim` [52] |
-| v2.135 | Kritik uyarılar ekran okuyucuya duyurulmuyor | `birim` [53] |
-| v2.136 | favicon 404 | `tasarim` [4b] |
-| v2.137 | Rapor kâğıdı dar ekranda kırpılıyordu | `tasarim` [2m] |
-| v2.138 | CSS borcu ölçümü + nöbetçi (temizlik yayınlanmadı) | `tasarim` [8] |
-| v2.139 | Uzun listede detay paneli ekran dışında kalıyordu | `tasarim` [2n] |
-| v2.140 | **Masaüstü kabuğu**: sabit çerçeve, paneller kendi kaydırır | `tasarim` [2o] |
-| v2.141 | Masaüstünde çalışma modu kaldırıldı | `tasarim` [2p] |
-| v2.142 | Çalışma modu tamamen kaldırıldı; kayıt listesi **dikey** | `tasarim` [2p]/[2q] |
-| v2.143 | Detay panelinin alt kısmı (`sd-meta`) kırpılıyordu | `tasarim` [2r] |
-| v2.144 | **Zaman çakışmaları görünür** (⚠ + "Zaman sorunları") | `birim` [54] |
-| v2.145 | Takip vurgusu çakışmada geri atlıyordu | `birim` [55] |
-| v2.146 | Zaman sorunu düzenlerken anında görünmüyordu | `birim` [56] |
-| v2.147 | Takip şeridi eski bölüme dönüyordu (gerçek sesle kanıt) | `birim` [57] |
-| v2.148 | Oynatma başlarken sayfa zıplıyordu (şerit + başlık) | `birim` [58] · `tasarim` [2s] |
+| v2.149 | **Kapsama denetimi**: "Kapsam %98 · 2 boşluk" düğmesi + panel + "Git" | `birim` [59] |
+| v2.150 | **Rapor hazırlığı** kartı (eksikler sayıyla; uydurma yüzde yok) | `birim` [60] |
+| v2.151 | **Onaydan sonra sonraki bekleyene geç** (varsayılan kapalı) | `birim` [61] |
+| v2.152 | **Listede bitiş zamanı** (iki satır; sütun 96 px; kesme yok) | `tasarim` [2t] |
+| v2.153 | Detay paneli sıkıştırma (hedef kısmen; 46 px kaldı) | `tasarim` [2u] |
+| v2.154 | **Tek panel, iki bölge**: sabit başlık + metin + isteğe bağlı teknik | `tasarim` [2v] |
+| v2.155 | **Paket diyaloğu onarıldı** (bozuk satır) + "Yedek" → "Paket" | `surum` [11]/[11b] |
+| v2.156 | **Hazırlık ↔ kapsama** tek gerçek | `birim` [62] |
+| v2.157 | **Test verisi koruması** (onay + tek tıkla kaldır) | `birim` [63] |
+| v2.158 | Toast durum çubuğunun üstünde + **ses yok** kalıcı uyarısı | `birim` [64] |
+| v2.159 | ≤900 px'te yinelenen başlık kaldırıldı | `tasarim` [2w] |
+| v2.160 | **Kozmetik düzen**: kartlar içeriğe göre, ikon+sayı, rozetli adımlar | `tasarim` [2x] |
+| v2.161 | **Palet + tema + punto**: koyu tema onarıldı (1.16:1 → 14.05:1) | `tasarim` [2y] |
+| v2.162 | **Tema tam uygulama**: 151 sabit yüzey → token; tuval temadan | `tasarim` [2z] |
+| v2.163 | **Durum renkleri tek anlam**: `.play-main`, `.follow-btn.on`, `.seg-tool.on` | `tasarim` [2aa] |
 
-### Mevcut mimari (bilinmesi gerekenler)
+### DEĞİŞMEZ TASARIM KURALLARI (bu oturumda doğdu)
 
-- **≥901 px masaüstü kabuğu:** üst bar + durum çubuğu sabit; kayıtlar (220 px)
-  · bölüm listesi (320 px) · düzenleme paneli. Liste ve panel kendi kaydırır.
-  `reading-layer.css` sonundaki `@media (min-width: 901px)` bloğu.
-- **≤900 px:** eski tek-kaydırma yedeği (detay listenin altında).
-- **Çalışma modu YOK** (v2.142): `workspaceBar`, `workspaceBtn`, `setWorkspace`,
-  `ws-mode` kaldırıldı; geri getirmeyin.
-- **Zaman bütünlüğü:** `segmentTimeIssues` / `segmentTimeIssueAt` /
-  `segmentTimeIssueIndexes`; ⚠ rozeti + "Zaman sorunları" filtresi.
-- **Takip:** `segmentIndexAtTime` (çakışmada aktif bölüm) ve `followStripIndex`
-  (şerit aktif bölümü gösterir). `followState` iki ayrı mod: `autoAdvance` (F),
-  `liveHighlight` (G); ikisi de **varsayılan kapalı**.
-- **Yerleşim kararlılığı:** `segHeadParts` (başlık tek kaynak);
-  `ensureFollowStrip` (canlı vurgu açıkken şerit **yer tutucu** olarak önceden
-  kurulur; oynatma yalnız metni değiştirir).
-- **CSS borcu nöbetçisi:** `tasarim-testi` [8] eşikleri 26/68/98/507/15
-  (`!important` / ölü bildirim / `.main-area`). Borç artarsa test kalır.
+**1. Tema özgüllüğü.** Tema blokları `html[data-theme='light|dark|sepia']`
+(0,1,1) yazılır. `:root` (0,1,0) ile eşit özgüllükte olursa **sonra yüklenen**
+app.css kazanır ve tema sessizce çalışmaz. `tasarim` [2y] bunu denetler.
 
-### Bilinen sınırlar (hata değil)
+**2. Eski adlar temaya bağlı.** app.css `:root` içinde kendi adları var; her
+tema bloğunda takma adlar tanımlı: `--navy→--ink`, `--navy2→--ink-2`,
+`--blue→--accent`, `--muted→--ink-3`, `--pale→--surface-3`,
+`--shadow→--shadow-md`. Yeni bir eski-ad kullanımı eklerken bunları kullanın.
 
-- **≤900 px:** tek sütun; uzun listede detay aşağıda. Ayrı düzen gerekir.
-- **Detay paneli kaydırır:** panel ~385 px, içerik ~795 px (v2.143'te kırpma
-  bitti, kaydırma kaldı). Kayıt başlığı sıkıştırılırsa ~100 px kazanılır.
-- **Canlı vurgu açılırken** şerit bir kez 64 px yerleşir (bilinçli eylem);
-  oynatma sırasında zıplama yok.
-- Perde oktav hatası düzeltilmez, bildirilir. Kaynak ayrıştırma/konuşmacı
-  kimliği/montaj tespiti yapılmaz.
+**3. Durum renkleri TEK TABLO** (altın **yalnız** uyarı/gözlem):
+
+| Rol | Zemin | Yazı | Nerede |
+|---|---|---|---|
+| Birincil (dolu) | `--accent` | `--accent-ink` | Onayla · Çal/Dinle · UDF · split no |
+| Açık / seçili | `--accent-soft` | `--accent` | filtre · hız · analiz modu · takip |
+| Çalıyor | `--green` | `--surface` | bölüm "Dinle" |
+| Uyarı / gözlem | `--gold-soft` | `--gold` | gürültü/üst üste, uyarı kutuları |
+| Nötr | `--surface-2` | `--ink-2` | temel düğme/çip |
+
+**4. Punto ölçeği tek kaynak:** 11/12/14/15/17/20/25/30 (+mono 14, ikon 16/18).
+Okuma katmanında **ham `font-size` yok**; deşifre metni **14 px**. Büyütme
+kademeleri (large/xlarge) tabanı düşürmez.
+
+**5. Yüzey/metin rengi token.** `app.css` içinde `paper`/`print` dışında
+`background:#fff` yok; yüzeyler `--surface/2/3`, metin `--ink/2/3`.
+Yeni kural yazarken ham hex kullanmayın (yalnız `tokens.css`).
+
+**6. Tuval (dalga) renkleri temadan.** `themeVar(name, fallback)` ile okunur;
+`applyTheme` içinde `__segWaveRedraw` + `renderAudioList` ile yeniden çizilir.
+Spektrogram renk skalası bilinçli olarak tema bağımsızdır (veri görselleştirme).
+
+**7. Kozmetik yerleşim.** Kartlar **içeriği kadar** uzar
+(`align-items:start; flex-grow:0; flex-shrink:0`) — boş alan ve üst üste binme
+yok. Tek panel iki bölge (v2.154): sabit başlık · esneyen metin · isteğe bağlı
+teknik. Kırpma yasak: sığmayan öğe sarar.
+
+### DENETİM YÖNTEMİ (bu oturumun en pahalı dersi)
+
+Kullanıcı "siyah zemin/mavi yazı", "kahverengi zemin" gördü; ben **göremedim**.
+Sebep: denetimlerim **temel durumu** ve **kontrastı** ölçüyordu; `.on`,
+`.is-active`, `:hover` gibi **durum sınıflarını hiç çizmedim**. Ayrıca minified
+CSS'te kural çok satıra yayıldığı için `grep` kaçırdı.
+
+**Bundan sonra her tema/arayüz incelemesinde üç ölçüm zorunlu:**
+
+1. **Durum matrisi** — bileşen × durum × tema; her hücre için fg/bg + kontrast.
+   "Hangi kural kazanıyor?" sorusu **CDP `CSS.getMatchedStylesForNode`** ile
+   sorulur (grep değil).
+2. **Yüzey taraması** — koyu/sepia temada parlak zemin (`luminance > 0.6`) =
+   hata. Rail öğeleri yanlış pozitif verir (zemin gradyan; elle ölçüldü:
+   12.61 / 7.16 / 15.19).
+3. **Metin kontrastı** — 4 görünüm × 3 tema, eşik 4.5.
+4. **Gerçek tıklama + ekran görüntüsü** — durumları UI'dan aç (takip, hız,
+   filtre, Dinle) ve **gözle** doğrula.
+
+Tarayıcı denetimi için kısa tarif (geçici dosyalar iş bitince **silinir**):
+
+```bash
+python3 -m http.server 8790 &
+/usr/bin/chromium --headless=new --no-sandbox --disable-gpu \
+  --remote-debugging-port=9229 --user-data-dir=/tmp/akis-audit \
+  --autoplay-policy=no-user-gesture-required about:blank &
+# CDP: Runtime.evaluate ile ölç; IndexedDB: mihenk-pro-assets → state →
+# anahtar 'mihenk.pro.cases.v1'; ses: 'audio' store, key '<caseId>::<materialId>'
+```
 
 ### SIRADAKİ İŞLER (öncelik sırasıyla)
 
-#### P1 — Kapsama denetimi (TAMAMLANDI, v2.149)
+#### P1 — Senaryo ölçümü ve bilgi mimarisi (kullanıcının açık isteği)
 
-`segmentCoverage()` + "Kapsam %98 · 2 boşluk" düğmesi + panel + "Git".
-Koruyan test: `birim` [59]. Ayrıntı: Aşama 10au.
+Amaç: "gerçek kullanımda uygulama iş görüyor mu, hangi iş nerede olmalı?"
+**Önce ölç, sonra yerleştir.**
 
-#### P2 — Rapor hazırlık denetimi (TAMAMLANDI, v2.150)
+- 5 senaryo, gerçek Chromium + gerçek WAV (`sample_data/audio/ses_01_…wav`):
+  1. Yeni dosya + künye (kaç tık, kaç kaydırma)
+  2. Ses ekle + teslim alma
+  3. 10 bölüm deşifre yaz/onayla (odak kaybı, kaydırma)
+  4. Rapor hazırlığı + UDF indir
+  5. Paket oluştur → başka profile yükle
+- Ölçütler: **tıklama**, **kaydırma sayısı**, **görünmeyen kontrol**,
+  **odak kaybı**, **hata/toast**.
+- Sonra IA kararı: sol ray gruplaması (Özet·Ses·İnceleme·Rapor), "Ayarlar"ın
+  yeri (sağ çekmece), iş akışı sırası (künye → ses → sorular → rapor).
+- Her karar **tek sürüm**; ölçüm tablosu CHANGELOG'a.
 
-`reportReadiness()` + `#reportReadiness` kartı + satır tıklama. Koruyan test:
-`birim` [60]. Ayrıntı: Aşama 10av.
+#### P2 — Rapor kâğıdının kurumsal biçimi
 
-#### P3 — Onay sonrası sonraki bekleyene geç (TAMAMLANDI, v2.151)
+Kâğıt laciverti `#16324f` (v2.161). Derinleştirme adayları: başlık bandı,
+sayfa numarası, imza bloğu, tablo başlık tipografisi. **Şart:** HTML önizleme,
+DOCX ve UDF **aynı metni** üretmeli (`rapor-tutarlilik-testi`), uygulama adı
+geçmemeli.
 
-`nextPendingIndex()` + Ayarlar → "Onay davranışı" anahtarı (varsayılan kapalı).
-Koruyan test: `birim` [61]. Ayrıntı: Aşama 10aw.
+#### P3 — CSS borcu (kontrollü azaltma)
 
-#### P4 — Listede bitiş zamanı (TAMAMLANDI, v2.152)
+Nöbetçi eşikleri: ölü bildirim **98** (okuma katmanı) / **507** (app→layer),
+`!important` **26/62**, `.main-area` **15**. Borç **artırılamaz**; azaltma
+küçük ve kanıtlı adımlarla (aynı seçici+özellik sonra tanımlıysa öncekini
+silmek kanıttır; toplu otomatik düzenleme **yasak** — v2.138'de yapı bozuldu).
 
-İki satırlı zaman hücresi (`.seg-start` / `.seg-end`), sütun 96 px, kesme yok.
-Ölçüm: satır 59 → 72 px. Koruyan test: `tasarim` [2t]. Ayrıntı: Aşama 10ax.
+#### P4 — ≤900 px tek sütun IA
 
-#### P5 — Detay paneli yüksekliği (TAMAMLANDI, v2.154)
+Dar ekranda detay listenin altında; uzun listede düzenleme paneli uzak.
+Ayrı bir yerleşim kararı gerekir (senaryo ölçümüyle).
 
-v2.153'te sıkıştırma 46 px eksik kaldı; v2.154'te yapısal çözüm uygulandı:
-sabit başlık + esneyen metin + isteğe bağlı teknik bölge. Kapalıyken metin
-446 px, kaydırma 0; açıkken 34/34 kontrol görünür. Ayrıntı: Aşama 10az.
+### DOĞRULAMA (her oturum başı)
 
+```bash
+bash tools/test.sh                      # 947 + 404 + rapor/sürüm/tasarım
+git log --oneline -3; git status --short
+curl -s https://azmisahin-gov.github.io/akis/version.json
+curl -s https://azmisahin-gov.github.io/akis/assets/app.js | grep -m1 APP_VERSION
+```
 
-### Bu oturumun en pahalı dersleri (tekrar etmeyin)
+### BİLİNEN SINIRLAR (hata değil)
 
-1. **`textContent =` çocukları siler.** İçinde ` / N` span'ı olan `.sd-idx`
-   güncellenince toplam kayboldu (v2.148). Etiket + toplam **kardeş span** ve
-   tek saf fonksiyondan (`segHeadParts`).
-2. **"Oynatınca beliren" kutu yerleşimi kaydırır.** Kutu önceden **yer tutucu**
-   olarak kurulmalı (v2.148).
-3. **`timeupdate` kapanış indeksini taşımamalı.** Şerit eski bölüme dönüyordu
-   (v2.147); indeks her çağrıda aktif durumdan okunur.
-4. **Yerinde satır güncellemesi TÜM rozet girdilerini geçmeli.** ⚠ yalnız tam
-   çizimde görünüyordu (v2.146); `segItemHtml` çağrılarının hepsini gözden geçir.
-5. **`overflow: visible !important` + ata `overflow:hidden` = sessiz kırpma.**
-   Panelin kaydırıp kaydırmadığını `overflow-y` + `clientHeight/scrollHeight`
-   ile ölç (v2.143).
-6. **CSS özgüllüğü:** `#view-audio>.panel:not(.detail-panel) .audio-list`
-   (1,3,0) kuralını `#view-audio .audio-list` (1,1,0) **ezmez** (v2.142).
-7. **Gerçek sesle test mümkün, "ses yok" bahanesi geçersiz.** `sample_data/audio`
-   WAV'ı IndexedDB'ye (`<caseId>::<materialId>`) konur, `--autoplay-policy=
-   no-user-gesture-required` ile oynatılır; ASR gerekmez (v2.147).
-8. **Boş ekran ölçümü yanıltır.** "Kırpma 0" ölçümü boş çalışma alanında
-   yapılmıştı; gerçek bölümlerle rozet kırpılması ortaya çıktı (v2.130).
+- **≤900 px** tek sütun; detay listenin altında.
+- **Perde oktav hatası** düzeltilmez, `detectPitchAmbiguity()` ile bildirilir.
+- **Spektrogram renk skalası** tema bağımsız (veri görselleştirme).
+- **Rail zemini gradyan**; kontrast taramasında yanlış pozitif üretir.
+- **Model indirme/ASR** bu ortamda denenmedi (0,5–1,5 GB indirme gerekir).
+- `date`/`fs`/`vm` sandbox farkı: `instanceof Date` güvenilmez; davranıştan anla.
+- Ölçüm şemaları: `LEVELS_SCHEMA` (3), `SILENCE_SCHEMA` (2).
 
-### Kapanış doğrulaması (bu oturum)
+### KULLANICI TERCİHLERİ (bu oturumda netleşti)
 
-- `bash tools/test.sh` → tümü yeşil (843 + 404 + rapor/sürüm/tasarım).
-- `git status --short` → temiz; `main` = `origin/main`.
-- Canlı `version.json` = **2.148**; Pages `built`.
+- **Ekran etiketleri KISA**; ayrıntı **ipucunda** (`title`).
+- **Masaüstü uygulaması** hissi: sabit çerçeve, paneller kendi içinde kayar.
+- **Tek düğme iki iş yapmaz** (takip F/G ayrı; onay davranışı ayrı anahtar).
+- **Kırpma yasak**: sığmayan öğe **sarar** veya görünür **kaydırır**.
+- **Aynı veri tek yerde** gösterilir.
+- **Ölçülemeyen iddia yok**: "düzeltildi" demek için önce/sonra ölçümü verilir.
+- **Tema bir "süs" değil**: üç temada da okunur ve tutarlı olmalı; durum
+  renkleri (açık/seçili/çalıyor/uyarı) tek anlama sahip olmalı.
