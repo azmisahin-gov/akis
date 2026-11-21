@@ -1,4 +1,4 @@
-# Özellikler (v2.196 — mevcut durum)
+# Özellikler (v2.197 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,8 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
+  `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,
   **2** anlaşılmadı, **3** yeniden dinle, **4** belirsiz. Önerilen ritim:
   bölüm seç → Y → 1–4 → ↓.

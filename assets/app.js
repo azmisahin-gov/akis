@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.196';
+} from './schema.js?v=2.197';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.196';
+const APP_VERSION = '2.197';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3597,7 +3597,7 @@ function ambiguousReportText(s) {
   if (!list.length) return 'Belirsiz okuma (okuma girilmedi)';
   const quoted = list.map((v) => `"${v}"`).join(' / ');
   const chosen = String((s && s.chosen) || '').trim();
-  return `Belirsiz: ${quoted} (seçilen: ${chosen || 'seçilmedi'})`;
+  return `Belirsiz okuma: ${quoted} (seçilen: ${chosen || 'seçilmedi'})`;
 }
 // "%100 OLMAZ" SORUSUNUN CEVABI (v2.114).
 // Sayaç `isReviewed()` kullanır: yalnız `approved` ve `inaudible` sayılır.
@@ -7598,9 +7598,9 @@ function reviewLabel(s) {
 // `machine` → "Çözümlendi". `ambiguous` → "Belirsiz okuma" + İKİ OKUMA
 // (v2.115): adli kural gereği belirsizlik rapora GİZLENMEDEN yazılır.
 function reviewCellText(s) {
-  if (segReview(s) === AMBIGUOUS_REVIEW) {
-    return `${reviewLabel(s)} — ${ambiguousReportText(s)}`;
-  }
+  // BELİRSİZ OKUMA (v2.197): hücrede "Belirsiz okuma — Belirsiz:" tekrarı
+  // vardı; metin uzuyordu. Artık tek kez yazılır; iki okuma ve seçim korunur.
+  if (segReview(s) === AMBIGUOUS_REVIEW) return ambiguousReportText(s);
   return reviewLabel(s);
 }
 // İpucu (tooltip): uzun açıklama ekrana değil ipucuna yazılır (kullanıcı isteği).
@@ -12745,6 +12745,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.197': {
+    title: 'Belirsiz okuma rapor hücresi kısaldı',
+    body:
+      'Rapor hücresinde "Belirsiz okuma — Belirsiz:" tekrarı vardı. Artık tek kez ' +
+      'yazılır: Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …). İki okuma ve ' +
+      'seçim korunur; belirsizlik gizlenmez.'
+  },
   '2.196': {
     title: 'Hızlı karar: Kontrol Dinle yanında, 1/2/3/4 kısayolları',
     body:

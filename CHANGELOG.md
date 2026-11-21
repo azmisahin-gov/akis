@@ -6,12 +6,29 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.196.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.197.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.197 — Belirsiz okuma rapor hücresi kısaldı
+
+Kullanıcı: *"Belirsiz harika olmuş ama rapor aynı böyle mi yazacağız, çok uzun
+değil mi?"*
+
+Rapor hücresinde **"Belirsiz okuma — Belirsiz:"** tekrarı vardı. Artık:
+
+```
+Belirsiz okuma: "geldi" / "kaldı" (seçilen: geldi)
+```
+
+İki okuma ve seçim **korunur**; belirsizlik gizlenmez. Yalnız yinelenen etiket
+kaldırıldı.
+
+**KORUYAN TEST:** `birim` [43] (hücrede "Belirsiz okuma" tek kez, "—" yok,
+iki okuma korunur).
 
 ## v2.196 — Hızlı karar: Kontrol Dinle yanında, 1/2/3/4 kısayolları
 

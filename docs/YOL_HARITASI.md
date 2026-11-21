@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.196.**
+yazılır. **Güncel sürüm: v2.197.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,13 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.197 — Belirsiz okuma rapor hücresi (tamamlandı)
+
+`reviewCellText` belirsiz okumada `reviewLabel — ambiguousReportText` yazıyordu
+("Belirsiz okuma — Belirsiz:"). Artık yalnız `ambiguousReportText` yazılır:
+`Belirsiz okuma: "geldi" / "kaldı" (seçilen: geldi)`. İki okuma/seçim korunur.
+Koruyan test: `birim` [43].
 
 ### v2.196 — Hızlı karar şeridi (tamamlandı)
 

@@ -2276,6 +2276,11 @@ console.log('\n== [43] Belirsiz okuma (iki okuma mümkün)');
   eq('rapor iki okumayı yazar', /geldi/.test(t) && /kaldı/.test(t), true);
   eq('rapor seçimi belirtir', /seçilen|tercih/i.test(t), true);
   eq('rapor belirsizliği gizlemez', /belirsiz/i.test(t), true);
+  // HÜCRE METNİ (v2.197): "Belirsiz okuma — Belirsiz:" tekrarı kaldırıldı.
+  const cell = T.reviewCellText(s1);
+  eq('hücrede "Belirsiz okuma" TEK kez', (cell.match(/Belirsiz okuma/g) || []).length, 1);
+  eq('hücrede "—" tekrarı yok', /—/.test(cell), false);
+  eq('hücre iki okumayı korur', /geldi/.test(cell) && /kaldı/.test(cell), true);
   // Seçim yoksa "seçilmedi" der (uydurma yok).
   eq('seçim yoksa açıkça söyler', /seçilmedi/i.test(T.ambiguousReportText({ reading1: 'a', reading2: 'b' })), true);
   // Tek okuma varsa da yazar.
