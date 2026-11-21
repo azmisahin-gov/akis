@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P16 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P17 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.186** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.187** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **977 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `734ae94` |
+| Git | `main` = `origin/main` = `b1f2d88` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.186** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.187** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2602,6 +2602,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.184 | Tek durum satırı: her zaman görünür | satır üç durumda da **28 px**; boş şerit yok; metin 359 px | `tasarim` [2ai] + `birim` [64] |
 | v2.185 | Bölüm listesi = dizin (metin tek yerde) | satır **74 → 50 px**; rozetler görünür | `tasarim` [2ap] |
 | v2.186 | Liste tek satır + Teknik düğmesi kalktı | satır **34 px** (4 genişlikte aynı); metin 359 → 260 | `tasarim` [2t]/[2ap]/[2v] |
+| v2.187 | Liste sağa yaslı; Onayla düğmesi kalktı | satır 34 px; durum sağdan **8 px**; eylem menüde + Enter | `tasarim` [2j]/[2v]/[2ao] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -3085,6 +3086,28 @@ px**. Düğme geri istenirse metin yeniden 359 olur.
    edilmemeli.
 3. Kısa biçim (ms'siz saat) **listede**, tam biçim **detayda**: aynı veri, iki
    farklı çözünürlük — dizin ile belge ayrımının doğal sonucu.
+
+#### P17 — Liste sağa yaslı; onay eylemi menüde (v2.187)
+
+**KULLANICI:** *"Liste kocaman görünüyor; `st-approved` kısmını sağa yasasan
+daha düzgün olmaz mı? Listede başka bir şey var mı? Detaydaki Onayla düğmesine
+gerek var mı? Zaten açılır listede bu seçenekler var."*
+
+**YAPILAN:**
+- Rozetler **sağa yaslı**; **durum rozeti en sağda** (sağ kenardan 8 px).
+  Satırda yalnız: numara · zaman · (⚠) · (konuşmacı) · (öneri) · ⋮⋮ · ⋮ · durum.
+- **"✓ Onayla" düğmesi başlıktan kaldırıldı.** Onay bir **eylem**dir (sonraki
+  bölüme geçer); **durum** seçicide (`Onaylandı`) durur. Eylem iki yerde
+  görünür kalır: **satır menüsü** ("✓ Onayla (sonrakine geç)") ve **Enter**.
+- Satır kırma öğesi kaldırıldı; başlık 900 px'te tek satıra indi.
+
+**ÖLÇÜM:** satır **34 px** (1440/1280/1100/900), durum rozeti sağdan **8 px**,
+kırpılma/yatay taşma yok; başlık **78 px** (≥1100, iki satır) / **42 px** (900).
+
+**DERS:** "Aynı işi yapan iki denetim" sorunu düğme tarafında da geçerli:
+Onayla düğmesi **durum** değil **eylem** taşıyordu, ama seçicideki `Onaylandı`
+ile karışıyordu. Çözüm: **durum seçicide, eylem menüde** — ve eylemi yalnız
+klavyeye bırakmamak (menüde görünür).
 
 ### DOĞRULAMA (her oturum başı)
 
