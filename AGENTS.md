@@ -2543,15 +2543,15 @@ güncellendi). Aşağıdaki
 kurallar bu oturumda **ölçümle** doğrulandı ve testle korunuyor; yeni oturum
 bunları bozmadan devam etmelidir.
 
-### Durum (2026-11-21, P1 + P2 + P4–P10 kapandı; P3 sürüyor)
+### Durum (2026-11-21, P1 + P2 + P4–P11 kapandı; P3 sürüyor)
 
 | | |
 |---|---|
-| Sürüm | **v2.180** (`assets/app.js` → `APP_VERSION`) |
+| Sürüm | **v2.181** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **974 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | `main` = `origin/main` = `0830630` |
+| Git | `main` = `origin/main` = `09a52e3` |
 | Pages | `built`, commit bizimki |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.180** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.181** |
 | Açık konu | **Yok** — sırada P3 devamı ve P5 (karar bekliyor) |
 
 ### Senaryo ölçümü (v2.163'te yapıldı, kararların dayanağı)
@@ -2596,6 +2596,7 @@ v2.166 (onaysız ses silme — ölçüm sırasında bulunan **veri kaybı**).
 | v2.178 | Sürükleyerek birleştirme (komşu) | 1 sürükleme; komşu olmayan reddedilir; satır 74 px | `tasarim` [2aj] |
 | v2.179 | Detay: canlı vurgu ezilmiyor | vurgu **14 → 48 px**, metin **120 → 160 px**, panel 81 px kaydırıyor | `tasarim` [2al] |
 | v2.180 | Konuşmacı/kontrol/gözlem her zaman görünür | meta **y=822 → 303**, gözlem **884 → 642** (panel içinde) | `tasarim` [2am] |
+| v2.181 | ASR kökeni Teknik'te, metinde ince ipucu | metin 371 → **344 px**; blok Teknik'te; notta "öncelik" yok | `tasarim` [2an] |
 
 ### Önceki oturum (v2.149–v2.163, 15 sürüm)
 
@@ -2909,6 +2910,30 @@ açık) / 371 (kapalı); vurgu 48; panel kaydırması 81 → **55 px**; hata 0.
 ölçümü **en kötü içerikle** yapın (notlar + ASR kökeni + Teknik açık); temiz
 durumda sorun görünmez (v2.179'da quick-insert'in kaybolması bu yüzden
 kaçmıştı).
+
+#### P11 — Köken bilgisi analizdir (v2.181)
+
+**ÖLÇÜM (v2.180):** "Otomatik çözümleme çıktısı (model … · tarih)" bloğu metin
+alanının üstündeydi (~30 px katlanmış). Notlarla birleşince metin bölgesi
+aşağı itiliyor, quick-insert görünür alandan çıkabiliyordu.
+
+**KURAL:** **köken/provenans** (hangi model, ne zaman, ham çıktı) **analizdir**
+→ Teknik panelinde. Metin bölgesinde yalnız **tek satır ipucu** kalır:
+"Model çıktısı farklı — karşılaştır (Teknik)"; tıklayınca Teknik açılır, blok
+açılır ve `scrollIntoView` ile panel içinde gösterilir.
+
+- `asrDiffers(s)` tek kaynak: ham çıktı metinden farklı mı (hem blok hem ipucu
+  bunu kullanır).
+- Notlarda **tekrar eden** bilgi olmaz: "öncelik" satırı notlardan kaldırıldı;
+  aynı bilgi listedeki **Öncelik** rozetinde (gerekçe `title`'da) durur.
+
+**ÖLÇÜM (sonra):** metin alanı 371 → **344 px** (ipucu görünürken); blok
+Teknik'te; ipucuya tıklayınca model adı + tarih + ham metin **panel içinde**;
+JS hatası 0.
+
+**DERS:** Aynı bilgiyi iki yerde göstermek (not + rozet) yükseklik yer ve
+dikkat dağıtır. "Bu bilgi nerede kullanılır?" sorusu: **yazarken** → metin
+bölgesi; **incelerken** → Teknik; **listede tararken** → rozet.
 
 ### DOĞRULAMA (her oturum başı)
 
