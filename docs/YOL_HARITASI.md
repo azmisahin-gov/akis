@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.183.**
+yazılır. **Güncel sürüm: v2.184.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.184 — Tek durum satırı: her zaman görünür (tamamlandı)
+
+Üç ayrı şerit (ses yok · notlar · model ipucu) tek "Durum" satırında toplandı;
+satır her bölümde çizilir, en az "Ses: …" çipi taşır, yüksekliği sabittir
+(28 px) → hiçbir öğe gizlenmez, yerleşim zıplamaz. Etiketler ("Konuşmacı",
+"Kontrol") ve "✓ Onayla" yazısı ekranda geri geldi; başlık bilinçli iki satır
+(77 px). Ölçüm: durum satırı üç durumda da **28 px**; boş şerit artık yok;
+metin alanı 359 px. Koruyan test: `tasarim` [2ai] + `birim` [64].
 
 ### v2.183 — Başlıkta birleşik işlem satırı (tamamlandı)
 

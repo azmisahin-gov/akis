@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.183.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.184.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.184 — Tek durum satırı: her zaman görünür, yeri sabit
+
+Kullanıcı: *"gizli bir şey olmasın, yeri dursun, ne işe yaradığı ekranda yazsın."*
+
+Ölçüm (1440×900, v2.183): aynı dikey alanda **üç ayrı şerit** vardı ve her biri
+başka koşulda çıkıyordu: `sd-audio-state` (ses yok, 31 px), `sd-notes`
+("anlamlı metin yok" / "model tekrarı" / sessizlik, 19 px), `asr-hint`
+("model çıktısı farklı", 19 px). Üstelik `sd-notes` bazı bölümlerde **boş**
+görünüyordu (v2.181'de "öncelik" ekrandan kaldırıldı ama koşulda sayılıyordu).
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm başlığının altında **tek "Durum" satırı** var ve **her bölümde** duruyor.
+  İçinde en az **"Ses: hazır"** (ya da **"Ses: yok — paketten yükle"**) çipi
+  bulunur; sorun varsa yanına çipler eklenir: **Anlamlı metin yok**,
+  **Model tekrarı**, **Sessizlik %N**, **Model çıktısı farklı — karşılaştır**
+  (tıklanınca Teknik açılır).
+- **Etiketler ekranda**: "Konuşmacı", "Kontrol" ve onay düğmesi **"✓ Onayla"**
+  (yalnız ikon değil). Ne işe yaradığını görmek için fareyle üzerine gelmek
+  gerekmez.
+- Başlık **bilinçli iki satır**: 1) bölüm no · gezinme · ✓ Onayla · Teknik,
+  2) Konuşmacı · Kontrol. Gizemli sarma/3. satır yok.
+
+### ÖLÇÜM
+
+| | Önce (v2.183) | Sonra (v2.184) |
+|---|---|---|
+| Durum satırı — normal | yok (0 px) | **28 px** |
+| Durum satırı — ses yok | 31 px (ayrı şerit) | **28 px** (aynı satır) |
+| Durum satırı — model farkı | 19 px (ayrı şerit) | **28 px** (aynı satır) |
+| Boş şerit (artık) | olabiliyordu | **yok** |
+| Başlık | 42 px | 77 px (etiketler görünür) |
+| Metin alanı | 160 px | **359 px** |
+
+**Dürüst değerlendirme:** üst bölge **büyüdü** (42 → 77 px) çünkü etiketler ve
+"Onayla" yazısı geri geldi; karşılığında **hiçbir öğe gizlenmiyor** ve
+**yerleşim zıplamıyor**. Kullanıcı bu turda alan yerine **açıklığı** seçti.
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ai] (6 kontrol) — satır koşulsuz çizilir, eski üç şerit yok,
+"Ses:" çipi var, yükseklik sabit; `birim` [64] — çip metni + ipucu.
 
 ## v2.183 — Başlıkta birleşik işlem satırı (üç düğme yerine seçici + ikon)
 

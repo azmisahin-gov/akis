@@ -1043,29 +1043,24 @@ console.log('\n[2ah] Rapor önizlemesi kırpılmıyor (v2.172)');
   check('araç çubuğu yapışkan (indirme erişilebilir)', /position:\s*sticky/.test(toolbarRule), toolbarRule.trim());
 }
 
-console.log('\n[2ai] "Ses yok" uyarısı Teknik kapalıyken de görünür (v2.174)');
+console.log('\n[2ai] Tek durum satırı her zaman görünür (v2.184)');
 {
-  // ÖLÇÜM (v2.173, gerçek Chromium): ses blob'u silinmiş bir kayıtta uyarı
-  // metni yalnız Teknik paneli AÇILINCA yazılıyordu; panel varsayılan kapalı
-  // olduğu için kullanıcı "ses yok" durumunu hiç görmüyordu (v2.158'in
-  // "kalıcı uyarı" garantisinin gerilemesi).
+  // KULLANICI KURALI: "gizli bir şey olmasın, yeri dursun, ne işe yaradığı
+  // ekranda yazsın." Üç ayrı şerit (ses yok · notlar · model ipucu) tek
+  // satırda toplandı; satır KOŞULSUZ çizilir ve en az "Ses: …" çipi taşır.
   const js5 = read('assets/app.js');
+  const rl5 = read('assets/reading-layer.css');
   const start5 = js5.indexOf('function segDetailHtml');
   const end5 = js5.indexOf('\nfunction ', start5 + 10);
   const body5 = js5.slice(start5, end5 > 0 ? end5 : start5 + 30000);
-  const iState = body5.indexOf('data-audio-state');
-  const iTech = body5.indexOf('sd-left sd-tech');
-  check('uyarı öğesi şablon içinde var', iState > 0);
-  check('uyarı Teknik panelinin DIŞINDA (önce)', iTech > 0 && iState < iTech, `state=${iState} · tech=${iTech}`);
-  check('uyarı her çizimde tazelenir', /refreshAudioState\(m\)/.test(js5));
-  // Bölüm değişince de tazelenmeli (syncSegDetailInPlace).
+  check('durum satırı KOŞULSUZ çizilir', /\$\{statusRowHtml\(m, s, i\)\}/.test(body5));
+  check('eski üç şerit kaldırıldı', !/sd-audio-state|sd-notes|asr-hint/.test(body5));
+  check('satırda "Ses:" çipi var', /data-status-audio[\s\S]{0,140}Ses:/.test(js5));
+  check('durum satırı yüksekliği sabit', /#view-audio \.sd-status\s*\{[^}]*min-height:\s*[0-9]+px/.test(rl5));
   const sync5 = js5.slice(js5.indexOf('function syncSegDetailInPlace'), js5.indexOf('function syncSegDetailInPlace') + 9000);
   check('bölüm değişince de tazelenir', /refreshAudioState\(m\)/.test(sync5));
-  // İlk kart çizimi renderSegments içinde kurulur; orada da çağrılmalı (v2.175).
-  const rs5 = js5.slice(js5.indexOf('function renderSegments('), js5.indexOf('function renderSegments(') + 6000);
-  check('ilk çizimde de tazelenir', /refreshAudioState\(m\)/.test(rs5));
+  check('ilk çizimde de tazelenir', /function renderSegments\([\s\S]{0,6000}refreshAudioState\(m\)/.test(js5));
 }
-
 console.log('\n[2aj] Sürükle-bırak birleştirme güvenli (v2.178)');
 {
   // KURAL: sürükleme bir HIZLANDIRICIDIR (klavye M ve satır menüsü korunur),
@@ -1134,13 +1129,9 @@ console.log("\n[2an] ASR kökeni Teknik'te, metinde ince ipucu (v2.181)");
   const iTech = body9.indexOf('sd-left sd-tech');
   const iAsrCall = body9.indexOf('${asrCompareHtml(m, s, i)}');
   check('ASR köken bloğu Teknik içinde', iTech > 0 && iAsrCall > iTech, `asr=${iAsrCall} tech=${iTech}`);
-  check('metinde ince ipucu var', /data-tech-jump="\$\{i\}"/.test(body9));
-  // Metin bölgesi DOM'da Teknik'ten SONRA gelir; doğru ölçüt aralıktır.
-  const iText = body9.indexOf('class="sd-text"');
-  const iQuick = body9.indexOf('class="quick-insert"');
-  const iHint = body9.indexOf('asr-hint');
-  check('ipucu metin bölgesinde (sd-text … quick-insert arası)', iText > 0 && iText < iHint && iHint < iQuick,
-    `text=${iText} hint=${iHint} quick=${iQuick}`);
+  // v2.184: ipucu metin bölgesinden DURUM SATIRINA taşındı (tek yer).
+  check('model farkı durum çipinde', /st-chip info action[^>]*data-tech-jump/.test(js9));
+  check('çip durum satırı üreticisinde', /function statusRowHtml[\s\S]{0,1200}data-tech-jump/.test(js9));
   check('notlarda "öncelik" satırı kalmadı', !/öncelik \$\{pr\.score/.test(body9));
   check('öncelik rozeti korunur', /function segPriorityBadge/.test(js9) && /badge prio/.test(js9));
   check("ipucu Teknik'i açar", /dataset\.techJump[\s\S]{0,400}setTechOpen\(true\)/.test(js9));

@@ -596,8 +596,6 @@ input::placeholder, textarea::placeholder {
 #view-audio .sd-idx .sd-of { font-weight: 400; color: var(--ink-3); }
 #view-audio .sd-nav { display: flex; gap: 4px; flex-wrap: wrap; }
 
-/* 2) Notlar */
-#view-audio .sd-notes { display: flex; flex-wrap: wrap; gap: 4px; }
 
 /* 3) Dalga: sürüklenebilir sınırlar */
 #view-audio .sd-wave {
@@ -1842,16 +1840,6 @@ input::placeholder, textarea::placeholder {
    ============================================================================ */
 /* Bildirim, durum çubuğunun ÜSTÜNDE durur; çubuğu kapatmaz. */
 .toast { bottom: calc(var(--status-h) + 12px); }
-#view-audio .sd-audio-state {
-  border: 1px solid var(--gold);
-  background: var(--gold-soft);
-  color: var(--gold);
-  border-radius: var(--r-sm);
-  padding: 6px 9px;
-  margin: 4px 0 6px;
-  font-size: var(--fs-2xs);
-  line-height: 1.5;
-}
 
 /* ============================================================================
    v2.159 — DAR EKRANDA YİNELENEN BAŞLIK
@@ -2257,21 +2245,6 @@ input::placeholder, textarea::placeholder {
 /* ÖLÇÜM (v2.180): "Otomatik çözümleme çıktısı (model …)" bloğu metin alanının
    ÜSTÜNDEyken notlarla birlikte metin bölgesini aşağı itiyordu. Köken bilgisi
    analizdir; Teknik'e taşındı. Metinde yalnız tek satır ipucu kalır. */
-#view-audio .asr-hint {
-  align-self: flex-start;
-  border: 1px dashed var(--line-2);
-  background: var(--surface-2);
-  color: var(--ink-2);
-  font-size: var(--fs-2xs);
-  padding: 2px 8px;
-  border-radius: 999px;
-  cursor: pointer;
-}
-#view-audio .asr-hint:hover,
-#view-audio .asr-hint:focus-visible {
-  border-color: var(--accent);
-  color: var(--accent);
-}
 
 /* --- v2.182 — Dikey yer kazanımı: etiketler satır içi --------------------- */
 /* ÖLÇÜM (v2.181, 1440×900): `.sd-field` `flex-direction: column` olduğu için
@@ -2313,6 +2286,7 @@ input::placeholder, textarea::placeholder {
    ikon oldu, konuşmacı+kontrol başlıkta. Ölçüm: 67 px (1440) / 42 px (900). */
 #view-audio .sd-head .sd-field {
   display: flex;
+  flex-direction: row;   /* etiket seçimin YANINDA (base: column) */
   align-items: center;
   gap: 4px;
   min-width: 0;
@@ -2333,3 +2307,57 @@ input::placeholder, textarea::placeholder {
    (ölçüm: 66,25 px). Başlıkta düğme gezinmenin YANINDA durur. */
 #view-audio .sd-head .sd-primary { margin-left: 0; }
 #view-audio .sd-head .sd-primary .primary { padding: 3px 8px; }
+
+/* --- v2.184 — TEK durum satırı: her zaman görünür, yeri sabit -------------- */
+/* Üç ayrı şerit (ses yok · notlar · model ipucu) TEK satırda toplandı.
+   KULLANICI KURALI: "gizli bir şey olmasın, yeri dursun, ne işe yaradığı
+   ekranda yazsın." Satır her bölümde çizilir, en az "Ses: …" çipi vardır;
+   min-height ile yükseklik sabittir → içerik gelince yerleşim ZIPLAMAZ. */
+#view-audio .sd-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 0;
+  margin: 2px 0 4px;
+  border-bottom: 1px dashed var(--line);
+}
+#view-audio .sd-status-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: .3px;
+}
+#view-audio .st-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+  line-height: 1.4;
+}
+#view-audio .st-chip.bad { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+#view-audio .st-chip.warn { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+#view-audio .st-chip.info { border-color: var(--line-2); background: var(--surface-3); color: var(--ink-2); }
+#view-audio .st-chip.action { cursor: pointer; border-style: dashed; }
+#view-audio .st-chip.action:hover,
+#view-audio .st-chip.action:focus-visible { border-color: var(--accent); color: var(--accent); }
+
+/* v2.184 — Başlıkta etiketler KIRPILMAZ: "Konuşmacı"/"Kontrol" tek satır,
+   seçim kutusu kendi genişliğini korur. Etiket sıkışıp kırpılırsa kullanıcı
+   ne olduğunu okuyamaz (kullanıcı kuralı: ne işe yaradığı ekranda yazsın). */
+#view-audio .sd-head .sd-field > span:not(.sd-spk-pick) {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+}
+
+/* v2.184 — Başlık BİLİNÇLİ iki satır: 1) gezinme + onay + Teknik
+   2) Konuşmacı + Kontrol. Sabit düzen; gizemli sarma ve 3. satır yok. */
+#view-audio .sd-head-break { flex-basis: 100%; height: 0; }

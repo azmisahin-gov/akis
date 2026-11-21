@@ -38,14 +38,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.183';
+} from './schema.js?v=2.184';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.183';
+const APP_VERSION = '2.184';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3969,6 +3969,30 @@ function asrDiffers(s) {
   const asr = String((s && s.asrText) || '').trim();
   return !!asr && asr !== String((s && s.text) || '').trim();
 }
+// DURUM SATIRI — HER ZAMAN GÖRÜNÜR (v2.184).
+// NEDEN: "ses yok", "notlar" ve "model çıktısı farklı" için ÜÇ ayrı şerit
+// vardı; her biri başka yerde çıkıyor, yerleşim oynuyordu. Kullanıcı:
+// "gizli bir şey olmasın, yeri dursun, ne işe yaradığı ekranda yazsın."
+// KURAL: satır her bölümde çizilir; içinde en az "Ses: …" çipi vardır.
+// Böylece satır kaybolmaz, yükseklik zıplamaz ve durum adı görünür olur.
+function statusRowHtml(m, s, i) {
+  const chips = [
+    `<span class="st-chip" data-status-audio title="Bu ses dosyası tarayıcıda var mı?">Ses: kontrol ediliyor…</span>`
+  ];
+  if (isHallucination(s.text)) chips.push('<span class="st-chip bad" title="Metin anlamlı değil; dinleyerek yazın.">Anlamlı metin yok</span>');
+  if (detectRepetition(s.text)) chips.push('<span class="st-chip warn" title="Model aynı ifadeyi tekrarlamış olabilir.">Model tekrarı</span>');
+  const sil =
+    s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA
+      ? `Sessizlik %${Math.round(s.silence.ratio * 100)}`
+      : '';
+  if (sil) chips.push(`<span class="st-chip info" title="Bu bölümün sessizlik oranı (ölçüldü).">${esc(sil)}</span>`);
+  if (asrDiffers(s)) {
+    chips.push(
+      `<button class="st-chip info action" data-tech-jump="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma Teknik panelindedir; metin değişmez.">Model çıktısı farklı — karşılaştır</button>`
+    );
+  }
+  return `<div class="sd-status" role="status" aria-label="Bölüm durumu"><span class="sd-status-label">Durum</span>${chips.join('')}</div>`;
+}
 function asrCompareHtml(m, s, i) {
   if (!asrDiffers(s)) return '';
   const asr = String(s.asrText).trim();
@@ -4051,10 +4075,11 @@ function segDetailHtml(m) {
       <button class="seg-tool" data-stop-active="1" title="Durdur ve başa dön" ${canStop ? '' : 'disabled'}>⏹</button>
     </span>
     <span class="sd-primary">
-      <button class="mini-button primary" data-approve-seg="${i}" aria-label="Onayla ve sonraki bölüme geç" title="Onayla ve sonraki bölüme geç (Enter). Durum seçicisi (Kontrol) diğer işaretleri taşır.">✓</button>
+      <button class="mini-button primary" data-approve-seg="${i}" aria-label="Onayla ve sonraki bölüme geç" title="Onayla ve sonraki bölüme geç (Enter). Durum seçicisi (Kontrol) diğer işaretleri taşır.">✓ Onayla</button>
     </span>
-      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
-      <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
+      <span class="sd-head-break" aria-hidden="true"></span>
+    <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
+      <label class="sd-field" title="Kontrol durumu — onay, anlaşılmadı, yeniden dinle"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu">${opts}</select></label>
     <button class="seg-tool sd-tech-btn ${techOpen ? 'on' : ''}" data-tech-toggle="1" aria-expanded="${techOpen}" title="Dalga/spektrogram, zamanlar ve ölçümleri göster/gizle. Konuşmacı ve gözlem metnin yanındadır; yazarken kapalı tutun.">Teknik ${techOpen ? '▴' : '▾'}</button>
   </div>
 
@@ -4064,17 +4089,9 @@ function segDetailHtml(m) {
       ? `<div class="sd-meta">${ambiguousPanelHtml(s, i)}</div>`
       : ''}
 
-  <!-- "Ses yok" durumu HER ZAMAN görünür (v2.174): Teknik panelinin içinde
-       kalırsa panel kapalıyken kullanıcı hiç göremez (v2.158 garantisi). -->
-  <div class="sd-audio-state" data-audio-state hidden></div>
+  ${statusRowHtml(m, s, i)}
 
   ${proposalBandHtml(s, i)}
-
-  ${
-    notes.length || silence
-      ? `<div class="sd-notes">${halluc ? '<span class="sn bad">anlamlı metin yok</span>' : ''}${rep ? '<span class="sn warn">model tekrarı</span>' : ''}${silence ? `<span class="sn">${esc(silence)}</span>` : ''}</div>`
-      : ''
-  }
 
   <div class="sd-body">
     <div class="sd-left sd-tech"${techOpen ? '' : ' hidden'}>
@@ -4121,7 +4138,6 @@ function segDetailHtml(m) {
     <div class="sd-right">
       ${'' /* karaoke kutusu kaldırıldı (v2.119): tek görsel alan .sd-follow */}
       <div class="sd-text">
-        ${asrDiffers(s) ? `<button class="asr-hint" data-tech-jump="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma Teknik panelindedir; metin değişmez.">Model çıktısı farklı — karşılaştır (Teknik)</button>` : ''}
         <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
         <div class="quick-insert" role="group" aria-label="Hızlı metin ekle">
           ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
@@ -4961,7 +4977,7 @@ function quickBulkBtn(counts, secondEyes) {
 // sarılıyor ve 47 px yer kaplıyordu; kısa metin tek satır (19 px). Ayrıntı
 // `title` ile korunur — bilgi kaybı yok, yalnız yer kazancı.
 function audioStateText(hasSrc) {
-  return hasSrc ? '' : 'Ses dosyası yok — paketten yükle';
+  return hasSrc ? '' : 'yok — paketten yükle';
 }
 function audioStateHint(hasSrc) {
   return hasSrc
@@ -4970,13 +4986,13 @@ function audioStateHint(hasSrc) {
 }
 function refreshAudioState(m) {
   if (!m) return;
-  const el = document.querySelector(`#seg-detail-${CSS.escape(m.id)} [data-audio-state]`);
-  if (!el) return;
+  const chip = document.querySelector(`#seg-detail-${CSS.escape(m.id)} [data-status-audio]`);
+  if (!chip) return;
   const a = document.querySelector(`#player-${CSS.escape(m.id)}`);
-  const txt = audioStateText(!!(a && a.getAttribute('src')));
-  el.textContent = txt;
-  el.title = txt ? audioStateHint(false) : '';
-  el.hidden = !txt;
+  const ok = !!(a && a.getAttribute('src'));
+  chip.textContent = ok ? 'Ses: hazır' : `Ses: ${audioStateText(false)}`;
+  chip.classList.toggle('bad', !ok);
+  chip.title = audioStateHint(ok);
 }
 function renderSegDetail(m) {
   const root = $(`#seg-detail-${CSS.escape(m.id)}`);
@@ -12532,6 +12548,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.184': {
+    title: 'Tek durum satırı: her zaman görünür',
+    body:
+      'Bölüm başlığının altında "Durum" satırı her bölümde durur: Ses: hazır ' +
+      '(ya da Ses: yok — paketten yükle), Anlamlı metin yok, Model tekrarı, ' +
+      'Sessizlik %N, Model çıktısı farklı — karşılaştır. Yükseklik sabit; öğe ' +
+      'gizlenmez. Konuşmacı, Kontrol ve "✓ Onayla" yazıları ekranda.'
+  },
   '2.183': {
     title: 'Bölüm başlığı sadeleşti: seçici + ikon',
     body:

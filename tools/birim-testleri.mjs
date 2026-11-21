@@ -3124,7 +3124,8 @@ console.log('\n== [64] Bildirim yerleşimi ve ses yok durumu (v2.158)');
   if (typeof T.audioStateText === 'function') {
     eq('ses varsa metin boş', T.audioStateText(true), '');
     const t = T.audioStateText(false);
-    eq('ses yoksa sebep yazar', /Ses dosyası/.test(t), true);
+    // v2.184: çip "Ses: " ön ekiyle basılır; tam sebep ipucundadır.
+    eq('ses yoksa sebep yazar (ipucu)', /Ses dosyası/.test(T.audioStateHint(false)), true);
     // v2.182: satır KISALDI (tek satır), ayrıntı ipucunda.
     eq('ses yoksa çözümü söyler (kısa)', /paketten yükle/i.test(t), true);
     eq('kısa metin tek satıra sığar (<=40)', t.length <= 40, true);
@@ -3134,9 +3135,11 @@ console.log('\n== [64] Bildirim yerleşimi ve ses yok durumu (v2.158)');
   }
   const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
   eq('toast durum çubuğunun üstünde', /calc\(var\(--status-h\)\s*\+\s*[0-9]+px\)/.test(css), true);
-  eq('ses yok durumu biçimli', /#view-audio \.sd-audio-state\s*\{/.test(css), true);
+  // v2.184: tek durum satırı — her zaman görünür, yükseklik sabit.
+  eq('durum satırı biçimli', /#view-audio \.sd-status\s*\{/.test(css), true);
+  eq('durum satırı yüksekliği sabit (min-height)', /#view-audio \.sd-status\s*\{[^}]*min-height:\s*[0-9]+px/.test(css), true);
   const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
-  eq('ses yok durumu DOM\'a yazılıyor', /data-audio-state/.test(jsSrc), true);
+  eq('ses durumu çipe yazılıyor', /data-status-audio/.test(jsSrc), true);
 }
 
 console.log('\n== [65] Ses kaydını kaldırma: onay + kalıcılık (v2.166)');
