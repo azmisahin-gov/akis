@@ -1017,6 +1017,26 @@ console.log('\n[2ag] Ölü seg-* sınıfları geri gelmez (v2.170)');
   }
 }
 
+console.log('\n[2ah] Rapor önizlemesi kırpılmıyor (v2.172)');
+{
+  // ÖLÇÜM (v2.171, 100 bölüm, 1440×900): #view-report 804 px; üstteki
+  // bölüm tanıtımı (63) + araç çubuğu (38) + hazırlık kartı (303) + uyarı (56)
+  // + çıktı notu (77) = 537 px alıyor, kâğıda 196 px kalıyordu. Kâğıdın
+  // içeriği 6.452 px → rapor, 196 px'lik bir kutuda kaydırılıyordu.
+  // KURAL: rapor görünümü TEK kaydırma; kâğıt kendi içinde kırpılmaz.
+  const rl4 = read('assets/reading-layer.css');
+  const viewRule = rl4.match(/#view-report[^{]*\{([^}]*)\}/g) || [];
+  const scrolls = viewRule.some((r) => /overflow-y:\s*auto/.test(r));
+  check('rapor görünümü kendi içinde kayar (overflow-y:auto)', scrolls);
+  // app.css'teki `#view-report #reportPreview { flex:1 1 auto }` (2,0,0)
+  // eziliyor; bu yüzden kural id seçicisiyle yazılır.
+  const paperRules = [...rl4.matchAll(/#view-report #reportPreview\s*\{([^}]*)\}/g)].map((m) => m[1]);
+  check('kâğıt küçülmez (flex: 0 0 auto)', paperRules.some((r) => /flex:\s*0 0 auto/.test(r)));
+  check('kâğıt kendi içinde kırpılmaz (overflow: visible)', paperRules.some((r) => /overflow:\s*visible/.test(r)));
+  const toolbarRule = (rl4.match(/#view-report \.report-toolbar\s*\{([^}]*)\}/) || [])[1] || '';
+  check('araç çubuğu yapışkan (indirme erişilebilir)', /position:\s*sticky/.test(toolbarRule), toolbarRule.trim());
+}
+
 // --- 8. CSS borcu: ölçüm ve nöbetçi ---------------------------------------
 // NEDEN: app.css tarihsel yamalarla büyüdü (tek satır minify, çok sayıda
 // !important, aynı seçicinin onlarca kez yeniden tanımlanması). Otomatik

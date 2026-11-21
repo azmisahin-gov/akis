@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.171.**
+yazılır. **Güncel sürüm: v2.172.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.172 — Rapor önizlemesi kırpılmıyor (tamamlandı)
+
+Ölçüm (100 bölüm): rapor görünümü 804 px; üstteki tanıtım + araç çubuğu +
+hazırlık kartı + uyarı + çıktı notu 537 px alıyor, kâğıda 196 px kalıyordu
+(içerik 6.452 px). Kâğıt, `app.css`'in `#view-report #reportPreview`
+(2,0,0) kuralı yüzünden küçülüyordu; okuma katmanındaki `.report-paper`
+(1,1,0) yetmiyordu. Kural id seçicisiyle yazıldı; ezilen app.css bildirimleri
+silindi. Ölçüm: kâğıt 196 → **6.438 px**, görünüm kaydırması 6.254 px, araç
+çubuğu yapışkan, 900 px'te 6.390 px, yatay kırpılma yok. Koruyan test:
+`tasarim` [2ah].
 
 ### v2.171 — CSS borcu: ölü bildirimler (tamamlandı, görünür değişiklik yok)
 

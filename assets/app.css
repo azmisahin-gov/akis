@@ -517,7 +517,7 @@ html,body{height:100%;overflow:hidden}
 #view-report.active{display:flex;flex-direction:column;gap:10px}
 #view-report .section-intro{flex:0 0 auto;margin-bottom:0}
 #view-report .report-toolbar,#view-report .report-fullbar,#view-report .report-warning{flex:0 0 auto;margin-bottom:0}
-#view-report #reportPreview{flex:1 1 auto;min-height:0;overflow-y:auto}
+
 #view-report .export-note{flex:0 0 auto;margin-top:0}
 
 /* Ses ve rapor görünümleri kendi içinde kayar; dış view kaydırmasın

@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.171.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.172.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.172 — Rapor önizlemesi artık kırpılmıyor (196 px → tam sayfa)
+
+Ölçüm (100 bölüm, 1440×900): rapor görünümü 804 px; üstteki tanıtım (63) +
+araç çubuğu (38) + hazırlık kartı (303) + uyarı (56) + çıktı notu (77) =
+537 px alıyordu. Kâğıda **196 px** kalıyordu; kâğıdın içeriği **6.452 px**.
+Yani rapor önizlemesi, iki satırlık bir kutuda kaydırılıyordu.
+
+### KULLANICI NE GÖRECEK
+
+Rapor önizlemesi artık **tek kaydırma**: kâğıt kendi yüksekliğinde akıyor
+(196 → **6.438 px**), sayfayı normal bir belge gibi kaydırıyorsunuz. Araç
+çubuğu (önizleme durumu, Tam ekran, Word, UDF) **yapışkan**; sayfanın
+aşağısındayken de indirme düğmeleri görünür kalır.
+
+### ÖLÇÜM
+
+| | Önce (v2.171) | Sonra (v2.172) |
+|---|---|---|
+| Kâğıt yüksekliği | 196 px (6.452 px içerik) | **6.438 px** (tam) |
+| Kâğıt kendi içinde kaydırma | var | **yok** |
+| Görünüm kaydırması | yok | **6.254 px** |
+| Araç çubuğu (1.200 px aşağıda) | — | **yapışkan**, indirme görünür |
+| 900 px | kâğıt 86 px | **6.390 px** |
+| Yatay kırpılma | yok | yok |
+
+### NOT — ÖZGÜLLÜK TUZAĞI
+
+`app.css` içinde `#view-report #reportPreview { flex:1 1 auto; overflow-y:auto }`
+(özgüllük 2,0,0) vardı; okuma katmanındaki `.report-paper` (1,1,0) onu
+**ezemiyordu**. Kural id seçicisiyle yazıldı. Ezilen `app.css` bildirimleri
+silindi (borç artmadı: app.css kural 980 → 979).
+
+### KORUYAN TEST
+
+`tasarim-testi` [2ah] (4 kontrol): görünüm kaydırır, kâğıt küçülmez, kâğıt
+kendi içinde kırpılmaz, araç çubuğu yapışkan.
 
 ## v2.171 — CSS borcu: 12 ölü bildirim daha silindi (görünür değişiklik yok)
 

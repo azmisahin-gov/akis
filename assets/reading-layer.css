@@ -2129,3 +2129,25 @@ input::placeholder, textarea::placeholder {
   font-size: var(--fs-2xs);
   word-break: break-all;
 }
+
+/* --- v2.172 — Rapor önizlemesi: TEK kaydırma, kâğıt kırpılmaz -------------- */
+/* Ölçüm (100 bölüm, 1440×900): #view-report 804 px; üstteki tanıtım (63) +
+   araç çubuğu (38) + hazırlık kartı (303) + uyarı (56) + çıktı notu (77) =
+   537 px alıyordu; kâğıda 196 px kalıyordu ve içerik 6.452 px'ti. Rapor
+   196 px'lik bir kutuda kaydırılıyordu. Artık görünüm TEK kaydırma; kâğıt
+   kendi yüksekliğinde akar, araç çubuğu yapışkan kalır. */
+#view-report.active {
+  overflow-y: auto;
+}
+#view-report #reportPreview {
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: visible;
+}
+#view-report .report-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--bg);
+  padding-block: 6px;
+}
