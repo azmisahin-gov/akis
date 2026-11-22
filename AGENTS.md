@@ -3641,7 +3641,7 @@ açık sekmeler kendiliğinden yenilenmez. Kullanıcı sayfayı **bir kez** yeni
 |---|---|
 | Sürüm | **v2.199** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1058 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.199** |
 | Açık konu | v2.200 >45 sn birleştirme uyarısı; v2.201 rapora "Okuma metni" |
 
@@ -3708,7 +3708,7 @@ eklerse mevcut `data-*` işleyicisini kullanmalı; kendi mantığını taşımam
 |---|---|
 | Sürüm | **v2.200** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1074 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.200** |
 | Açık konu | — (v2.201'de düzeltildi) |
 
@@ -3775,7 +3775,7 @@ Test: iki kayıt da 0'dan başlasın → hazırlıkta "Zaman sorunu" **0** olmal
 |---|---|
 | Sürüm | **v2.201** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1079 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.201** |
 | Açık konu | — (v2.202'de yapıldı); v2.203 gözlem anahtarları |
 
@@ -3832,7 +3832,7 @@ aynı sayıyı vermelidir (v2.156 dersi: iki araç ayrışmamalı).
 |---|---|
 | Sürüm | **v2.202** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1089 birim + 404 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.202** |
 | Açık konu | v2.203 gözlem anahtarları; v2.204 konuşmacı kaydı |
 
@@ -3897,7 +3897,7 @@ uydurma metin üretilmez.
 |---|---|
 | Sürüm | **v2.203** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1096 birim + 420 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.203** |
 | Açık konu | Case alanları ve rapor bölümleri (sınıflandırma/rol v2.204'te yapıldı) |
 
@@ -3974,7 +3974,7 @@ Rapor GÖZLEM hücresi: `telefon görüşmesi, sessizlik (konuşma yok)`; bilinm
 |---|---|
 | Sürüm | **v2.204** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1096 birim + 465 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
 | Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.204** |
 | Açık konu | Case alanları ve rapor bölümleri (kademeli); konuşmacı kaydı |
 
@@ -4047,8 +4047,8 @@ sınıflandırma/rol seçeneklerine uygulandı:
 |---|---|
 | Sürüm | **v2.205** (`assets/app.js` → `APP_VERSION`) |
 | Testler | `bash tools/test.sh` → **1105 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
-| Git | commit/push sonrası doğrulanacak |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.205** |
+| Git | `main` = `origin/main` = **c867344** (push doğrulandı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.205** (Pages `built`) |
 | Açık konu | Case alanları / rapor bölümleri; yerel LLM |
 
 ### Ne yapıldı
@@ -4105,3 +4105,33 @@ Aynı kişi birden çok kayıtta görünüyorsa **dosya geneli kişi** kaydı:
   çelişki birleştirmede çakışma olarak çıkar.
 - Eski kayıtlarda dosya geneli kişi yoktur; sonradan bağlanır.
 - ≤900 px tek sütun; detay listenin altında.
+
+### Yeni oturum başlangıcı (kopyala-yapıştır)
+
+Bu oturum **v2.205** ile kapatıldı. Yeni oturum aynı depoyu açtığında:
+
+1. **İlk komut:**
+   ```bash
+   bash tools/test.sh
+   ```
+   Beklenen: **1105 birim + 482 şema** + rapor/sürüm/tasarım yeşil.
+2. **Durum doğrula:**
+   ```bash
+   git log --oneline -3          # c867344 v2.205
+   git status --short            # temiz olmalı
+   curl -s https://azmisahin-gov.github.io/akis/version.json
+   ```
+3. **Önerilen ilk mesaj:**
+   > "AGENTS.md'deki **YENİ OTURUM DEVRİ (v2.205)** bölümünü oku.
+   > `bash tools/test.sh` çalıştır. Sonra **v2.206** ile devam et."
+4. **Sıradaki iş seçenekleri (kullanıcı seçer):**
+   - **v2.206 — Case alanları (ALAN_SISTEMI §5B):** etiket/sıra/doğrulama tek
+     kaynak; özel denetimler korunur. (Alan sisteminin 3. aşaması.)
+   - **v2.207 — Rapor bölümleri (ALAN_SISTEMI §5C):** başlık/sıra/TOC tek
+     kaynak; içerik renderer'ları korunur; üç çıktı birlikte.
+   - **v2.208 — Yerel LLM yardımcısı (isteğe bağlı):** yalnız doğrulanmış
+     metinde gruplama/başlık/rapor taslağı; ham ses/metin verilmez.
+
+**Not:** Her yeni sürümde `APP_VERSION` + `CHANGELOG` başlığı +
+`docs/YOL_HARITASI.md` + `index.html` dört `?v=` + `version.json` birlikte
+artırılır; `bash tools/test.sh` yeşil olmadan push edilmez.
