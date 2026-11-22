@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.206.**
+yazılır. **Güncel sürüm: v2.207.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -27,16 +27,22 @@ bakın.
 
 ## v2 — Sıradaki çalışma
 
-### v2.206 — Yerel LLM yardımcısı (tamamlandı, isteğe bağlı)
+### v2.207 — Yerel LLM denemesi kaldırıldı (tamamlandı)
 
-Rapor görünümünde **Yardımcı taslak** düğmesi. Tarayıcıda çalışan küçük bir
-yazı modeliyle (Qwen2.5 0.5B/1.5B ONNX) **taslak** üretir: konu başlıkları,
-okuma metni düzenlemesi, kısa özet. **Yalnız bilirkişinin onayladığı bölüm
-metni** modele verilir; ses gönderilmez, metin cihazdan çıkmaz. Çıktı rapora
-kendiliğinden girmez; yalnız panoya kopyalanır. Denetim kaynakta olmayan sayıyı
-ve uygulama adını yakalar; anlam kayması denetlenemez. Kaynak değişirse taslak
-bayatlar ve kopyalanamaz. Koruyan test: `birim` [77] + `tasarim` [2bf].
-**Dürüst sınır:** model indirme ve üretim bu ortamda denenmedi.
+v2.206'da eklenen deneysel yerel LLM yardımcısı ölçüldü ve **kaldırıldı**.
+Gerçek tarayıcı ölçümü: 0.5B q4f16 WebGPU çöp çıktı (Kiril), 1.5B q4f16
+WebGPU `Aborted()` (bellek), 0.5B/1.5B int8 WASM ise Türkçe ama **sadakatsiz**
+(metinde olmayan içerik uyduruyor). Sonuç: tarayıcıdaki 0,5–1,5B modeller
+Türkçe hukuki metinde güvenilir taslak üretmiyor. Arayüz ve kod kaldırıldı;
+hiçbir model indirilmez, ek risk yok. Mevcut akışlar değişmedi.
+İleride araştırma adayı: transformers.js 4.3.2 + Qwen3.5-0.8B-Text int8 +
+açık GPU seçici; **ölçülmeden** ürüne alınmaz.
+
+### v2.206 — Yerel LLM yardımcısı (deneysel; v2.207'de kaldırıldı)
+
+Kısa süreli deneme. Yalnız onaylı metinle çalışan, çıktısı rapora girmeyen bir
+taslak yardımcısı eklendi. Ölçüm sonrası kullanılamaz bulundu; v2.207'de
+tamamen kaldırıldı.
 
 ### v2.205 — Dosyalar arası konuşmacı kaydı (tamamlandı)
 

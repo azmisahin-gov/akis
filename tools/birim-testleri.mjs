@@ -121,9 +121,6 @@ const EXPOSE = [
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
-  'llmSource', 'llmSourceReason', 'llmSourceFingerprint', 'llmPromptFor', 'llmTask', 'LLM_TASKS',
-  'LLM_SYSTEM_PROMPT', 'llmGuardOutput', 'llmDraftStale', 'llmCanUseDraft', 'llmExtractContent',
-  'LLM_MODELS', 'LLM_DEFAULT_MODEL', 'LLM_SOURCE_LIMIT', 'llmModelSpec', 'llmStatusText', 'llmAvailability',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3604,110 +3601,6 @@ console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
   c.materials[0].speakers[0].personId = 'ps-yok';
   eq('eksik kişi bağı bağsız sayılır', T.speakerRows(c).length, 3);
 }
-
-console.log('\n== [77] Yerel LLM yardımcısı: kaynak, istem, denetim (v2.206)');
-{
-  // KURAL: LLM yalnız BİLİRKİŞİNİN ONAYLADIĞI metni görür. Ses gönderilmez.
-  // Çıktı taslaktır; sayı/isim uydurması ve uygulama adı denetimle yakalanır.
-  const hasLlm = typeof T.llmSource === 'function';
-  eq('llmSource tanımlı', hasLlm, true);
-  if (hasLlm) {
-    const seg = (id, o) =>
-      T.emptySegmentForTest({ id, start: '00:00:00.000', end: '00:00:02.000', ...o });
-    const m1 = T.emptyMaterialForTest({ id: 'm1', fileName: 'A.wav' });
-    m1.speakers = [{ id: 'sp1', code: 'S1', name: 'Kiracı' }];
-    m1.segments = [
-      seg('s1', { text: 'Merhaba dünya.', speaker: 'Kiracı', review: 'approved' }),
-      seg('s2', { text: 'Bekleyen metin.', speaker: 'Kiracı', review: 'pending' }),
-      seg('s3', { text: '', speaker: 'Kiracı', review: 'approved' }),
-      seg('s4', { text: 'Makine metni.', speaker: 'Kiracı', review: 'machine' }),
-      seg('s5', { text: 'Anlaşılmadı metni.', speaker: 'Kiracı', review: 'inaudible' })
-    ];
-    const m2 = T.emptyMaterialForTest({ id: 'm2', fileName: 'B.wav' });
-    m2.speakers = [{ id: 'sp2', code: 'S1', name: 'Tanık' }];
-    m2.segments = [seg('s6', { text: 'İkinci kayıt.', speaker: 'Tanık', review: 'approved' })];
-
-    const src = T.llmSource([m1, m2]);
-    eq('kaynak yalnız onaylı metni alır (2 bölüm)', src.included, 2);
-    eq('kaynak onaylı metni taşır', /Merhaba dünya\./.test(src.text) && /İkinci kayıt\./.test(src.text), true);
-    eq('onaysız metin kaynağa girmez', /Bekleyen|Makine|Anlaşılmadı/.test(src.text), false);
-    eq('atlananlar sayılır (pending/machine/inaudible/empty)',
-      [src.skipped.pending, src.skipped.machine, src.skipped.inaudible, src.skipped.empty].join(','), '1,1,1,1');
-    eq('toplam bölüm sayısı', src.totalSegments, 6);
-    eq('kaynak başlığı dosya + konuşmacı taşır', /A\.wav/.test(src.text) && /S1/.test(src.text), true);
-    eq('kaynak parmak izi 8 hex', /^[0-9a-f]{8}$/.test(src.fingerprint), true);
-
-    // Onaylı bölüm yoksa AÇIKÇA reddedilir; sessizce boş istem gönderilmez.
-    const empty = T.llmSource([m1].map((m) => ({ ...m, segments: [seg('x', { text: 'a', review: 'pending' })] })));
-    eq('onaylı bölüm yoksa ok=false', empty.ok, false);
-    eq('ret nedeni onay ister', /Onaylanmış bölüm yok/i.test(T.llmSourceReason(empty)), true);
-
-    // Sınır: kaynak çok uzunsa ilk bölümler alınır ve bu AÇIKÇA söylenir.
-    const long = T.llmSource([m1, m2], { limit: 40 });
-    eq('sınırda kesme bildirilir', long.truncated, true);
-    eq('sınırda en az bir bölüm alınır', long.included >= 1, true);
-    eq('kesme nedeni sınırı söyler', /sınır/i.test(T.llmSourceReason(long)), true);
-
-    // İstem: sistem kuralları + görev + kaynak. Deterministik.
-    const p1 = T.llmPromptFor('outline', src.text);
-    const p2 = T.llmPromptFor('outline', src.text);
-    eq('istem iki mesaj (sistem + kullanıcı)', p1.messages.length, 2);
-    eq('sistem rolü', p1.messages[0].role, 'system');
-    eq('sistem uydurma yasağını yazar', /eklemezsin/i.test(p1.messages[0].content) && /Türkçe/.test(p1.messages[0].content), true);
-    eq('kullanıcı kaynağı taşır', p1.messages[1].content.includes(src.text), true);
-    eq('istem deterministik', JSON.stringify(p1), JSON.stringify(p2));
-    const pRead = T.llmPromptFor('reading', src.text);
-    eq('farklı görev farklı istem', pRead.messages[1].content !== p1.messages[1].content, true);
-    eq('bilinmeyen görev ilk göreve düşer', T.llmTask('yok').key, T.LLM_TASKS[0].key);
-    eq('görev listesi dolu', T.LLM_TASKS.length >= 2, true);
-
-    // Denetim: sayı uydurma, uygulama adı, boşluk, aşırı uzunluk.
-    const g1 = T.llmGuardOutput('Merhaba dünya. İkinci kayıt.', src.text);
-    eq('temiz çıktı geçer', g1.ok, true);
-    const g2 = T.llmGuardOutput('Kira 5000 TL ödendi.', 'Kira ödendi.');
-    eq('kaynakta olmayan sayı yakalanır', g2.codes.includes('number'), true);
-    const g3 = T.llmGuardOutput('Kira 5000 TL ödendi.', 'Kira 5000 TL ödendi.');
-    eq('kaynakta olan sayı serbest', g3.ok, true);
-    const g4 = T.llmGuardOutput('1. Konu\n2. Konu', 'Konu');
-    eq('liste numarası sayı sayılmaz', g4.ok, true);
-    const g5 = T.llmGuardOutput('Bu metin AKİS ile üretildi.', 'Metin.');
-    eq('uygulama adı yakalanır', g5.codes.includes('identity'), true);
-    const g6 = T.llmGuardOutput('   ', 'Metin.');
-    eq('boş çıktı yakalanır', g6.codes.includes('empty'), true);
-    const g7 = T.llmGuardOutput('Saat 14:30:00 itibarıyla', 'Saat itibarıyla');
-    eq('uydurma saat yakalanır', g7.codes.includes('number'), true);
-    const g8 = T.llmGuardOutput('a'.repeat(2000), 'a');
-    eq('aşırı uzun çıktı yakalanır', g8.codes.includes('tooLong'), true);
-    eq('denetim etiketi Türkçe', /sayı/i.test(g2.problems[0].label), true);
-
-    // Taslak: kaynak değişirse geçersiz (bayat).
-    const fp = T.llmSourceFingerprint(src.text);
-    eq('parmak izi aynı metinde aynı', T.llmSourceFingerprint(src.text), fp);
-    eq('parmak izi farklı metinde farklı', T.llmSourceFingerprint(src.text + 'x') !== fp, true);
-    const draft = { sourceFingerprint: fp, guard: { ok: true }, text: 'taslak' };
-    eq('kaynak değişmedi → taze', T.llmDraftStale(draft, src.text), false);
-    eq('kaynak değişti → bayat', T.llmDraftStale(draft, src.text + 'x'), true);
-    eq('taze + denetim geçti → kopyalanabilir', T.llmCanUseDraft(draft, src.text).ok, true);
-    eq('bayat taslak kopyalanamaz', T.llmCanUseDraft(draft, src.text + 'x').ok, false);
-    eq('denetim düşen taslak kopyalanamaz',
-      T.llmCanUseDraft({ ...draft, guard: { ok: false, problems: [] } }, src.text).ok, false);
-
-    // Çıktı biçimi: düz metin ve sohbet dizisi birlikte desteklenir.
-    eq('düz metin çıktısı', T.llmExtractContent([{ generated_text: ' abc ' }]), 'abc');
-    eq('sohbet çıktısı',
-      T.llmExtractContent([{ generated_text: [{ role: 'user', content: 'x' }, { role: 'assistant', content: 'yanıt' }] }]), 'yanıt');
-    eq('boş çıktı', T.llmExtractContent([]), '');
-    eq('tanımsız çıktı', T.llmExtractContent(null), '');
-
-    // Model listesi: gerçek ONNX depoları, ölçülen boyutlar.
-    const spec = T.llmModelSpec(T.LLM_DEFAULT_MODEL);
-    eq('varsayılan model Qwen', /Qwen/.test(spec.label), true);
-    eq('model boyutu sayı', typeof spec.sizeMB === 'number' && spec.sizeMB > 0, true);
-    eq('durum metni hazır', T.llmStatusText('ready'), 'Model hazır');
-    eq('durum metni boşta', T.llmStatusText('idle'), 'Model yüklenmedi');
-  }
-}
-
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

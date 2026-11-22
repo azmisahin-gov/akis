@@ -175,8 +175,7 @@ const REQUIRED_TOPICS = [
   ['profilin sınırı', /şive tanıma[\s\S]{0,200}yapmaz|kaynak ayrıştırma[\s\S]{0,120}yapmaz/i],
   ['gözlem işaretleri (telefon/sessizlik)', /telefon görüşmesi[\s\S]{0,300}sessizlik \(konuşma yok\)|sessizlik \(konuşma yok\)[\s\S]{0,300}telefon görüşmesi/i],
   ['sınıflandırma/rol tek kaynak', /Sınıflandırma\/rol seçenekleri tek kaynaktan|sınıflandırma ve rol etiketleri[\s\S]{0,100}tek kaynak/i],
-  ['dosyalar arası konuşmacı', /Dosyalar arası konuşmacı kaydı|Dosyalar arası kişi/i],
-  ['yerel LLM yardımcısı', /Yerel LLM yardımcısı[\s\S]{0,400}onaylı|LLM yardımcısı/i]
+  ['dosyalar arası konuşmacı', /Dosyalar arası konuşmacı kaydı|Dosyalar arası kişi/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
@@ -196,8 +195,7 @@ const HELP_TOPICS = [
   ['çözümleme profili', /Çözümleme profili/],
   ['gözlem işaretleri', /Gözlem işaretleri/],
   ['sınıflandırma/rol tek kaynak', /Sınıflandırma ve rol etiketleri artık tek kaynaktan/],
-  ['dosyalar arası kişiler', /Dosyalar arası kişiler/],
-  ['yerel LLM yardımcısı', /Yerel LLM yardımcısı \(isteğe bağlı\)/]
+  ['dosyalar arası kişiler', /Dosyalar arası kişiler/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));
@@ -216,8 +214,7 @@ const REQUIRED_IDS = [
   ['çözümleme profili seçici', 'asrProfileSelect'],
   ['ayarlar çekmecesi', 'settingsDrawer'],
   ['dosya bilgileri çekmecesi', 'caseDrawer'],
-  ['yardım penceresi', 'helpDialog'],
-  ['yerel LLM penceresi', 'llmDialog']
+  ['yardım penceresi', 'helpDialog']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

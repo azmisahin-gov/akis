@@ -120,20 +120,6 @@ Bunlar ayrı eğitilmiş modeller gerektirir; yapılmış gibi gösterilmez.
 - Yerel/çevrimdışı model tercih edilir; ses ve metin dışarı çıkmaz.
 - LLM'in önerdiği her değişiklik orijinal metinle karşılaştırılır.
 
-### Uygulamada nasıl korunur (v2.206)
-
-- Kaynak **yalnız `approved`** (bilirkişi onaylı) bölüm metnidir; `machine`,
-  `pending`, `ambiguous`, `relisten`, `inaudible` ve boş metin girmez.
-- Ses dosyası hiçbir koşulda modele verilmez; model tarayıcıda çalışır.
-- Çıktı **rapora kendiliğinden girmez**; yalnız panoya kopyalanır. Üç rapor
-  çıktısı (HTML/DOCX/UDF) LLM taslağını okumaz.
-- Denetim **yalnız gözlemlenebilir uydurmayı** yakalar (kaynakta olmayan sayı,
-  uygulama adı, boşluk, aşırı uzunluk). **Anlam kayması denetlenemez**; arayüz
-  bunu açıkça yazar.
-- Kaynak metin değişirse taslak **bayatlar** ve kopyalanamaz.
-- Kaynak sınırı (8.000 karakter) aşılırsa **açıkça bildirilir**; sessiz kırpma
-  yoktur.
-
 ## 11. Değişiklik yönetimi
 
 - Bu standartlardan biri değişirse `CHANGELOG.md` ve `AGENTS.md` güncellenir.

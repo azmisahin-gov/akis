@@ -6,63 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.206.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.207.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
 
-## v2.206 — Yerel LLM yardımcısı (isteğe bağlı)
+## v2.207 — Yerel LLM denemesi kaldırıldı (ölçüm sonrası)
 
-Kullanıcı: *"Rapor yazarken taslak/başlık önerisi alabilir miyim? Ama sesim ve
-metnim dışarı çıkmasın."*
+Kullanıcı: *"Deneyelim; olmazsa bırakırız."* Denendi, ölçüldü ve **kaldırıldı**.
+
+### ÖLÇÜM (gerçek tarayıcı)
+
+| Deneme | Sonuç |
+|---|---|
+| Qwen2.5-0.5B · q4f16 · WebGPU | Çıktı **çöp**: `Кызета / 8.о / 8о` (Kiril), yavaş |
+| Qwen2.5-1.5B · q4f16 · WebGPU | **`Aborted()`** — 6 GB kartta bellek/GPU hatası |
+| Qwen2.5-0.5B · int8 · WASM | Türkçe ama **sadakatsiz**: metinde olmayan içerik uyduruyor, özetlemiyor, araya Çince karakter karıştırıyor |
+| Qwen2.5-1.5B · int8 · WASM | Türkçe ama **konuyla ilgisiz**: "belirli bir şekilde düzenlenip…" gibi genel metin |
+
+**Sonuç:** Tarayıcıda çalışan 0,5–1,5B modeller Türkçe hukuki metinde güvenilir
+taslak üretmiyor. Kuantizasyon değiştirmek (q4f16 → int8) çöp çıktıyı
+düzeltmiyor; yalnızca "anlamsız"dan "sadakatsiz"e taşıyor. Bu, rapora
+girebilecek bir araç için kabul edilemez.
 
 ### KULLANICI NE GÖRECEK
 
-- Rapor görünümünde **Yardımcı taslak** düğmesi. Varsayılan **kapalı** bir
-  yetenektir; kullanmak için modeli kendiniz yüklersiniz.
-- Pencere açılınca kural görünür: **yalnız onayladığınız metin** gönderilir,
-  **ses dosyası gönderilmez**, metin **cihazdan çıkmaz**, çıktı **taslaktır**.
-- Üç görev: **Konu başlıkları**, **Okuma metni düzenlemesi**,
-  **Kısa taslak özet**.
-- Model seçimi (**Qwen2.5 0.5B ~483 MB** veya **1.5B ~1,22 GB**) ve
-  **Modeli yükle** düğmesi; ilerleme yüzdesi gösterilir.
-- **Taslak oluştur** → çıktı kutuda; **Panoya kopyala**.
-- Denetim: kaynakta olmayan **sayı** ve **uygulama adı** yakalanır. Çıktı
-  denetimden geçmezse **kopyalanamaz**; neden yazılır.
-- Kaynak metin değişirse (yeni onay/düzenleme) taslak **bayat** olur ve
-  kopyalanamaz; yeniden oluşturulur.
-- Onaylanmış bölüm yoksa yardımcı **çalışmaz** ve nedenini söyler.
+- **Yardımcı taslak düğmesi ve LLM penceresi kaldırıldı.** Rapor ekranı eski
+  sade hâline döndü.
+- Hiçbir model indirilmez, GPU kullanılmaz, ek risk yok.
+- Mevcut çözümleme, deşifre, onay, rapor ve paket akışları **değişmedi**.
 
-### DEĞİŞMEZ KURALLAR
+### NEDEN YÜKSELTMEDİK (dürüst sınır)
 
-1. **Ham ses gönderilmez.** Kaynak yalnız `approved` (bilirkişi onaylı) bölüm
-   metnidir; `machine`, `pending`, `ambiguous`, `relisten`, `inaudible` ve boş
-   metin **girmez**.
-2. **Taslak rapora kendiliğinden girmez.** Yalnız panoya kopyalanır. Üç rapor
-   çıktısı (HTML/DOCX/UDF) LLM taslağını **okumaz**; `tasarim-testi` [2bf]
-   bunu korur.
-3. **Denetim uydurmayı yakalar, anlamı yakalamaz.** Sayı/isim uydurması ve
-   uygulama adı denetlenir; anlam kayması denetlenemez. Arayüz bunu açıkça
-   yazar.
-4. **Bayat taslak kullanılamaz.** Kaynak parmak izi (FNV-1a) değişirse taslak
-   geçersiz sayılır.
-5. **Kaynak sınırı açıkça bildirilir** (8.000 karakter). Kesilirse "ilk N bölüm
-   gönderildi" yazılır; sessiz kırpma yoktur.
-6. **Model listesi gerçek ONNX depolarıdır**; boyutlar Hugging Face'teki
-   dosyalardan ölçülmüştür. Depolama panelinde yazı modeli ayrı etiketlenir;
-   Whisper bütünlük denetimi ona uygulanmaz.
-7. **Dürüst sınır:** model indirme ve üretim bu ortamda denenmedi (0,5–1,2 GB).
-   Mantık saf fonksiyonlarla ve arayüzle sınandı; ilk gerçek deneme kullanıcıda
-   yapılacaktır.
+- Uygulama `transformers.js 3.7.2` kullanıyor (Whisper için ölçülerek sabit).
+  Qwen3/Qwen3.5/Gemma 4 mimarileri **4.x** istiyor; yükseltme Whisper'ı bozma
+  riski taşır.
+- Gemma 4 E2B tarayıcı için **~3,3 GB** (multimodal); E4B ~5,2 GB.
+- Qwen3.5-0.8B-Text int8 umut verici bir adaydır ama **ölçülmeden** ürüne
+  alınmaz. İleride araştırma konusu olarak not edildi.
 
 ### Koruyan testler
 
-- `birim-testleri` **[77]** (45 kontrol): kaynak seçimi, istem, denetim,
-  bayatlık, çıktı biçimi, model listesi.
-- `tasarim-testi` **[2bf]** (11 kontrol): pencere/kural metni, onay kaynağı,
-  rapor çıktılarının taslağı okumaması, kırpma yok, ham hex yok.
+- `bash tools/test.sh` → tümü yeşil (LLM'e ait testler ve arayüz kaldırıldı).
+- Sürüm: `APP_VERSION`, `version.json`, dört `?v=`, `schema.js` import'u,
+  CHANGELOG, YOL_HARITASI, README, OZELLIKLER ve AGENTS birlikte **2.207**.
+
+## v2.206 — Yerel LLM yardımcısı (deneysel; v2.207'de kaldırıldı)
+
+Kısa süreli deneme: rapor ekranına "Yardımcı taslak" düğmesi ve yerel yazı
+modeli (Qwen2.5 0.5B/1.5B) eklendi. Yalnız onaylı metin gönderiliyordu; çıktı
+taslaktı ve rapora girmiyordu. **Ölçüm sonrası kullanılamaz bulundu** ve
+v2.207'de tamamen kaldırıldı. Ayrıntılı ölçüm: v2.207 bölümü.
 
 ## v2.205 — Dosyalar arası konuşmacı kaydı (case-level registry)
 

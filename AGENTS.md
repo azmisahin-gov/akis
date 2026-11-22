@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.206.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.207.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4136,76 +4136,57 @@ Bu oturum **v2.205** ile kapatıldı. Yeni oturum aynı depoyu açtığında:
 `docs/YOL_HARITASI.md` + `index.html` dört `?v=` + `version.json` birlikte
 artırılır; `bash tools/test.sh` yeşil olmadan push edilmez.
 
-## YENİ OTURUM DEVRİ (v2.206) — Yerel LLM yardımcısı (isteğe bağlı)
+## YENİ OTURUM DEVRİ (v2.207) — Yerel LLM denemesi kaldırıldı
 
 ### Durum (2026-11-22)
 
 | | |
 |---|---|
-| Sürüm | **v2.206** (`assets/app.js` → `APP_VERSION`) |
-| Testler | `bash tools/test.sh` → **1150 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Sürüm | **v2.207** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → tümü yeşil |
 | Git | commit + push sonrası `main` = `origin/main` doğrulanacak |
-| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.206** |
-| Açık konu | Case alanları / rapor bölümleri (kademeli); LLM modelinin gerçek indirme/üretim denemesi |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.207** |
+| Açık konu | Yok — proje kullanıcı kararıyla burada kapatıldı |
 
-### Ne yapıldı
+### Ne oldu
 
-Kullanıcı: *"Rapor yazarken taslak/başlık önerisi alabilir miyim? Ama sesim ve
-metnim dışarı çıkmasın."* İsteğe bağlı, tarayıcıda çalışan yazı yardımcısı:
+v2.206'da **deneysel** bir yerel LLM yardımcısı eklenmişti (Qwen2.5 0.5B/1.5B,
+yalnız onaylı metin, çıktı rapora girmiyor). Kullanıcı denedi; sonuçlar:
 
-- **Rapor görünümü → Yardımcı taslak** düğmesi → `#llmDialog`.
-- Üç görev: `outline` (konu başlıkları), `reading` (okuma metni düzenlemesi),
-  `summary` (kısa taslak özet).
-- Model: Qwen2.5 0.5B (~483 MB) / 1.5B (~1,22 GB) ONNX; transformers.js
-  `text-generation` (ASR ile aynı CDN sürümü).
-- Çıktı **taslaktır**; yalnız **Panoya kopyala** ile alınır.
+| Deneme | Sonuç |
+|---|---|
+| 0.5B · q4f16 · WebGPU | Çöp çıktı: `Кызета / 8.о / 8о` (Kiril), yavaş |
+| 1.5B · q4f16 · WebGPU | `Aborted()` — 6 GB kartta bellek/GPU hatası |
+| 0.5B · int8 · WASM | Türkçe ama **sadakatsiz**; metinde olmayan içerik uyduruyor, özetlemiyor |
+| 1.5B · int8 · WASM | Türkçe ama konuyla ilgisiz, genel metin |
 
-### DEĞİŞMEZ KURALLAR
+**Karar:** Tarayıcıdaki 0,5–1,5B modeller Türkçe hukuki metinde güvenilir
+taslak üretmiyor. Özellik **tamamen kaldırıldı** (arayüz + kod + testler).
+Hiçbir model indirilmez, GPU kullanılmaz, ek risk yok. Mevcut akışlar değişmedi.
 
-1. **Kaynak yalnız `approved` bölüm metnidir.** `llmSource()` `isHumanApproved`
-   kullanır; `machine`/`pending`/`ambiguous`/`relisten`/`inaudible`/boş metin
-   girmez. Ses hiçbir koşulda gönderilmez.
-2. **Taslak rapora kendiliğinden girmez.** Üç rapor çıktısı (HTML/DOCX/UDF)
-   `llmState`/`llmDraft` okumaz; `tasarim` [2bf] bunu denetler.
-3. **Denetim (`llmGuardOutput`) yalnız gözlemlenebilir uydurmayı yakalar:**
-   kaynakta olmayan sayı, uygulama adı, boş çıktı, aşırı uzunluk. **Anlam
-   kayması denetlenemez**; arayüz bunu açıkça yazar.
-4. **Bayat taslak kopyalanamaz.** `llmSourceFingerprint` (FNV-1a) değişirse
-   `llmDraftStale` true olur; `llmCanUseDraft` reddeder.
-5. **Kaynak sınırı açıkça bildirilir** (`LLM_SOURCE_LIMIT = 8000`); kesilirse
-   "ilk N bölüm" yazılır.
-6. **Depolama paneli yazı modelini ayrı etiketler**; Whisper bütünlük denetimi
-   ona uygulanmaz (`data-verify-model` yalnız ASR modellerinde).
-7. **Dürüst sınır:** model indirme/üretim bu ortamda denenmedi (0,5–1,2 GB).
-   Mantık saf fonksiyonlarla ve arayüzle sınandı; ilk gerçek deneme kullanıcıda.
+### DEĞİŞMEZ DERS
 
-### Fonksiyonlar (saf, test edilir)
+- **"Daha yeni model" tek başına çözüm değildir.** Qwen3.5/Gemma 4 mimarileri
+  `transformers.js 4.x` ister; uygulama Whisper için `3.7.2`'de sabitlidir.
+  Kütüphane yükseltmesi ASR regresyonu demektir; ölçülmeden yapılmaz.
+- **Kuantizasyon değiştirmek kalite sorununu çözmez.** q4f16 → int8, "anlamsız"
+  çıktıyı "sadakatsiz" çıktıya çevirdi; ikisi de rapora giremez.
+- **Küçük model + hukuki Türkçe = güvenilmez.** Bu sınıf iş için 3–4B alt sınır;
+  tarayıcıda 2–4 GB indirme ve yavaş CPU demek.
+- **Model demo'su ile tarayıcı denemesi aynı şey değildir.** Demo büyük olasılıkla
+  daha büyük model/farklı çalışma birimi kullanır.
+- **Kullanıcı verisiyle deneme yapılmaz.** Deneme yalnız kurgusal/onaylı metinle
+  yapıldı; rapora hiçbir LLM çıktısı girmedi.
 
-`llmSource`, `llmSourceReason`, `llmSourceFingerprint`, `llmPromptFor`,
-`llmTask`, `llmGuardOutput`, `llmDraftStale`, `llmCanUseDraft`,
-`llmExtractContent`, `llmModelSpec`, `llmStatusText`, `llmAvailability`.
+### İleride araştırma adayı (ürüne alınmadı)
 
-### Koruyan testler
-
-- `birim-testleri` **[77]** (45 kontrol): kaynak seçimi, istem, denetim,
-  bayatlık, çıktı biçimi, model listesi.
-- `tasarim-testi` **[2bf]** (11 kontrol): pencere/kural metni, onay kaynağı,
-  rapor çıktılarının taslağı okumaması, kırpma yok, ham hex yok.
-- `surum-testi`: `#llmDialog` kimliği, OZELLIKLER ve yardım konusu.
+`transformers.js 4.3.2` + `onnx-community/Qwen3.5-0.8B-Text-ONNX` (int8 ~470 MB)
++ açık GPU seçici + Whisper regresyon testi. **Ölçüm iyi çıkmadan** varsayılan
+model değiştirilmez; çıktı yine taslak olur ve rapora kendiliğinden girmez.
 
 ### Bilinen sınırlar (hata değil)
 
-- Model indirme/üretim denenmedi; ilk gerçek deneme kullanıcıda yapılacak.
-- Denetim anlam kaymasını yakalamaz; çıktı her cümlesi karşılaştırılmalıdır.
-- Kaynak 8.000 karakterle sınırlıdır; uzun dosyada ilk bölümler gönderilir.
-- Taslak oturumluktur; sayfa yenilenince kaybolur (kayda yazılmaz).
-- CPU (WASM) çıkarımı yavaş olabilir; WebGPU varsa hızlıdır.
-
-### SIRADAKİ İŞLER (öneri sırası — v2.206 sonrası)
-
-1. **v2.207 — Case alanları (ALAN_SISTEMI §5B):** etiket/sıra/doğrulama tek
-   kaynak; özel denetimler korunur.
-2. **v2.208 — Rapor bölümleri (ALAN_SISTEMI §5C):** başlık/sıra/TOC tek kaynak;
-   içerik renderer'ları korunur; üç çıktı birlikte.
-3. **LLM modelinin gerçek denemesi:** indirme + üretim + guard ölçümü; sonuç
-   CHANGELOG'a ölçümle yazılır.
+- Yerel LLM özelliği **yoktur**; arayüzde düğme yoktur.
+- Deterministik yardımcılar (paragraf görünümü, terim tutarlılığı, kapsama,
+  rapor hazırlığı) korunur ve LLM'siz çalışır.
+- Whisper çözümlemesi ve tüm mevcut akışlar değişmedi.

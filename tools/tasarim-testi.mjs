@@ -1552,36 +1552,5 @@ console.log('\n[2be] Dosyalar arası kişi kaydı (v2.205)');
   check('birleştirme kişi/bağ çakışması', /kind: 'case-speaker'/.test(schemaJs) && /kind: 'speaker-person'/.test(schemaJs));
   check('rapor açıklaması uzman kanaati der', /uzman kanaatidir, otomatik kimlik tespiti değildir/.test(appJs));
 }
-console.log('\n[2bf] Yerel LLM yardımcısı: yalnız onaylı metin, taslak (v2.206)');
-{
-  const appJs = read('assets/app.js');
-  const html = read('index.html');
-  const layer = read('assets/reading-layer.css');
-  check('yardımcı penceresi ve düğmesi var', /id="llmDialog"/.test(html) && /id="llmOpenBtn"/.test(html));
-  check('model ve görev seçicileri var', /id="llmModelSelect"/.test(html) && /id="llmTaskSelect"/.test(html));
-  check('kural metni görünür: yalnız onaylı metin', /Yalnız onayladığınız metin gönderilir/.test(html));
-  check('kural metni görünür: rapora kendiliğinden girmez', /rapora kendiliğinden girmez/.test(html));
-  check('kaynak yalnız bilirkişi onayını alır', /function llmSource\([\s\S]{0,700}isHumanApproved\(s\)/.test(appJs));
-  check('istem uydurmayı yasaklar', /Metinde olmayan bilgi, isim, sayı/.test(appJs));
-  check('denetim sayı ve uygulama adını arar', /function llmGuardOutput\([\s\S]{0,900}LLM_IDENTITY_RE/.test(appJs) && /unknown\.length/.test(appJs));
-  check('bayat taslak kopyalanamaz', /function llmCanUseDraft\([\s\S]{0,400}llmDraftStale/.test(appJs));
-  // Rapor çıktıları taslağı OKUMAZ: LLM metni rapora kendiliğinden giremez.
-  // Yalnız üç oluşturucunun GÖVDESİ taranır (çağrı yerleri değil).
-  const defOf = (sig) => {
-    const i = appJs.indexOf(sig);
-    if (i < 0) return '';
-    const rest = appJs.slice(i + sig.length);
-    const j = rest.search(/\n(?:async )?function /);
-    return appJs.slice(i, j < 0 ? appJs.length : i + sig.length + j);
-  };
-  const reportBodies = ['function renderReport() {', 'async function makeDocx() {', 'async function makeUdf() {']
-    .map(defOf)
-    .join('\n');
-  check('rapor çıktıları LLM taslağını okumaz',
-    reportBodies.length > 0 && !/llmState|llmDraft|llmSource|llmGuardOutput|llmPromptFor/.test(reportBodies));
-  check('taslak kutusu kendi içinde kayar (kırpma yok)', /\.llm-draft\s*\{[^}]*max-height:\s*320px[^}]*overflow:\s*auto/.test(layer));
-  check('LLM stilinde ham hex yok', !/\.llm-[^{]*\{[^}]*#[0-9a-fA-F]{3,8}/.test(layer));
-}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
-
