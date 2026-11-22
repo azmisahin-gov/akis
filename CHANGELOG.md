@@ -6,12 +6,83 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.211.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.212.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.212 — Delil teslim zinciri: teslim eden, operatör ve alet
+
+Kullanıcı gerçek akışı anlattı: *flash disk mahkeme kaleminden kapalı zarf
+içinde elden teslim alınıyor*. v2.208–v2.211 bu bilgiyi **taşımıyordu**:
+`deliveredBy` her zaman boş kalıyor, rapor "—" yazıyor, operatörün sicili
+görünmüyordu. Ayrıca raporda **sürücü harfi (D:)** ve **ürün adı** vardı.
+
+### ÖLÇÜM (düzeltmeden önce)
+
+| Ölçüm | Sonuç |
+|---|---|
+| `normalizeMaterial` yeni köken alanları | `deliveredByRegistry` / `deliveryPlace` → **undefined** (sessiz kayıp) |
+| Delil verili raporda "uygulama" | **true** (Senaryo 10 bunu yakalamıyordu) |
+| Raporda ARAÇ hücresi | `AKIS Edinme 1.0` (ürün markası) |
+| Raporda cihaz hücresi | `SanDisk · E:` (sürücü harfi) |
+| İki özdeş edinme tutanağı birleştirme | **1 çakışma** + ekranda `[object Object]` |
+| Önizleme ↔ birleştirme | önizleme "alınacak alan", birleştirme "çakışma" (ayrışma) |
+
+### DÜZELTME
+
+- **Teslim eden ≠ operatör.** `delil.json` → `delivery { deliveredBy, registry,
+  deliveredAt, place }`; AKİS → `origin.deliveredBy`,
+  `origin.deliveredByRegistry`, `origin.deliveredAt`, `origin.deliveryPlace`.
+  Operatör ayrı alanda (`acquisition.operator`) kalır. Alanlar **isteğe
+  bağlıdır**, boşsa **uydurulmaz**.
+- **TCKN istenmez.** Alan "sicil / kayıt no (varsa)" olarak adlandırıldı;
+  kurumdan kuruma değiştiği için serbest metindir ve doğrulanmaz.
+- **Sürücü harfi rapora yazılmaz.** `device.volumes` yalnız `delil.json`
+  teknik izinde kalır. (v2.211'de cihaz hücresine yazılıyordu; kaldırıldı.)
+- **Operatör hücresi** `Ad Soyad · Sicil`; **köken tablosu** 7 sütun oldu
+  (`TESLİM YERİ` eklendi), teslim eden hücresi sicili taşır.
+- **Alet adı ürün adı değil.** `method.tool = { name: 'edinme.ps1', version,
+  engine: 'PowerShell' }`; rapor `edinme.ps1 1.0 · PowerShell` yazar. Eski
+  paketler kendi alet adlarını **olduğu gibi** taşır (kanıt tahrif edilmez).
+- **Rapor metni** ürün kimliği taşımaz: `acqIntro` yeniden yazıldı.
+- **Yeniden yükleme ezmez:** aynı SHA-256 varsa yalnız **boş** köken/teslim
+  alanları doldurulur; dolu değer korunur ve günlüğe yazılır.
+- **Birleştirme nesneyi okunur karşılaştırır:** aynı tutanak çakışma sayılmaz;
+  farklıysa `SanDisk · seri SN999 · operatör …` gibi **okunur metinle**
+  bildirilir. Önizleme ve birleştirme aynı kuralı kullanır.
+- **Araç indirme:** Ses → **Edinme aracını indir** → tek zip
+  (`edinme.ps1`, `BASLAT.bat`, `OKUBENI.md`). Windows'ta `BASLAT.bat`'a sağ
+  tık → **Yönetici olarak çalıştır**; parametreleri sorar.
+- **Edinme aracı:** `-OperatorRegistry`, `-DeliveredBy`,
+  `-DeliveredByRegistry`, `-DeliveredAt`, `-DeliveryPlace`, `-NonInteractive`;
+  birim etiketi (`Get-Volume.FileSystemLabel`) manifeste eklenir.
+
+### KULLANICI NE GÖRECEK
+
+- Raporda **teslim eden, sicili, teslim yeri ve tarihi** görünür; operatör ayrı
+  sütunda **siciliyle** yazar.
+- Cihaz sütununda artık **`E:`/`D:` yok**; marka/model, seri ve etiket var.
+- ARAÇ sütununda **ürün adı değil alet** yazar (`edinme.ps1 1.0 · PowerShell`).
+- Edinme aracını uygulamadan **tek tıkla** indirebilirsiniz.
+- Aynı paketi yeniden yüklemek **hiçbir elle girilmiş bilgiyi ezmez**.
+
+### KORUYAN TESTLER
+
+- `birim` **[78]** (alet metni, teslim alanları, etiket, köken satırı, rapor
+  metinlerinde ürün kimliği yok) ve **[79]** (normalize koruması, nesne
+  karşılaştırma, ezmeme kuralı).
+- `rapor` **Senaryo 14** (üç çıktıda alet/operatör/teslim satırı, sürücü harfi
+  yok) ve **Senaryo 15** (delil verili çıktıda "AKİS/uygulama/tarayıcı" yok).
+- `tasarim` **[2bh]** (alanlar, indirme düğmesi, yardım metni).
+
+### DÜRÜST SINIR
+
+`edinme.ps1` bu ortamda (Linux, USB yok, `pwsh` yok) **çalıştırılmadı**; yalnız
+şema/import/rapor tarafı otomatik sınandı. Yeni teslim parametreleri Windows'ta
+kurgusal klasörde denenmelidir.
 
 ## v2.211 — Delil paketi: yinelenen dosya ve ses dışı dosya
 

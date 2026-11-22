@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.211.**
+yazılır. **Güncel sürüm: v2.212.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,19 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.212 — Delil teslim zinciri: teslim eden, operatör ve alet (tamamlandı)
+
+- **Teslim eden ≠ operatör.** `delil.json` `delivery` bloğu (eden, sicil/kayıt
+  no, tarih, yer) ve AKİS `origin` alanları; ikisi raporda ayrı.
+- **Sürücü harfi raporda yok:** yalnız `delil.json` teknik izinde.
+- **Operatör hücresi** `Ad · Sicil`; köken tablosu **7 sütun** (`TESLİM YERİ`).
+- **Alet adı ürün adı değil:** `edinme.ps1 1.0 · PowerShell`.
+- **Rapor metni** ürün kimliği taşımaz (delil bölümü dahil).
+- **Yeniden yükleme ezmez:** yalnız boş alan dolar; günlüğe yazılır.
+- **Birleştirme** nesneyi okunur karşılaştırır; `[object Object]` yok.
+- **Araç indirme:** Ses → **Edinme aracını indir** (tek zip).
+- Koruyan testler: `birim` [78]/[79], `rapor` 14/15, `tasarim` [2bh].
 
 ### v2.211 — Delil paketi: yinelenen dosya ve ses dışı dosya (tamamlandı)
 

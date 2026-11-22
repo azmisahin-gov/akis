@@ -483,11 +483,15 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
 
 // Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
 // üretmeli; paket yoksa bölüm hiç çizilmemeli.
-console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208)');
+console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208, v2.212)');
 {
   const c = withMaterial();
   c.materials[0].origin = {
     ...(c.materials[0].origin || {}),
+    deliveredBy: 'Mehmet Kaya',
+    deliveredByRegistry: 'K-77',
+    deliveredAt: '2026-11-21',
+    deliveryPlace: 'Ankara 3. Sulh Ceza Mahkemesi',
     acquisition: {
       schema: 'akis.delil.v1',
       acquiredAt: '2026-11-22T10:15:00+03:00',
@@ -498,7 +502,7 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208)');
         hardwareWriteBlocker: false,
         copyType: 'logical-file-copy',
         image: null,
-        tool: { name: 'AKIS Edinme', version: '1.0' }
+        tool: { name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' }
       },
       hashState: 'verified'
     }
@@ -509,6 +513,17 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208)');
   checkShared('seri no', 'SN123', H, U, D);
   checkShared('yöntem', 'Mantıksal dosya kopyası', H, U, D);
   checkShared('doğrulama durumu', 'Doğrulandı', H, U, D);
+  // v2.212 — alet adı (ürün markası değil) üç çıktıda aynı.
+  checkShared('alet adı', 'edinme.ps1 1.0 · PowerShell', H, U, D);
+  // v2.212 — operatör sicili üç çıktıda aynı.
+  checkShared('operatör sicili', 'Ahmet Yılmaz · 1234', H, U, D);
+  // v2.212 — teslim zinciri: eden + sicil, yer, tarih.
+  checkShared('teslim eden + sicil', 'Mehmet Kaya · K-77', H, U, D);
+  checkShared('teslim yeri', 'Ankara 3. Sulh Ceza Mahkemesi', H, U, D);
+  // v2.212 — sürücü harfi kanıt kimliği değildir; üç çıktıda da YOK.
+  check('sürücü harfi raporda yok (HTML)', !/\bE:/.test(H), 'E: bulundu');
+  check('sürücü harfi raporda yok (UDF)', !/\bE:/.test(U), 'E: bulundu');
+  check('sürücü harfi raporda yok (DOCX)', !/\bE:/.test(D), 'E: bulundu');
 
   const c0 = withMaterial();
   const H0 = htmlText(c0), U0 = await udfText(c0), D0 = await docxText(c0);
@@ -516,6 +531,35 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208)');
     'paket yokken delil bölümü yok',
     !H0.includes(REPORT_TEXT.acqHeading) && !U0.includes(REPORT_TEXT.acqHeading) && !D0.includes(REPORT_TEXT.acqHeading)
   );
+}
+
+// Senaryo 15 (v2.212): delil bölümü de "rapor bilirkişi adına yazılır"
+// kuralına uyar. v2.208'de acqIntro "Uygulama cihazı görmez" diyordu; Senaryo
+// 10 delil verisi olmadan çalıştığı için bunu yakalayamıyordu.
+console.log('\n[Senaryo 15] delil verisiyle de ürün kimliği yok (v2.212)');
+{
+  const c = withMaterial();
+  c.materials[0].origin = {
+    ...(c.materials[0].origin || {}),
+    acquisition: {
+      schema: 'akis.delil.v1',
+      acquiredAt: '2026-11-22T10:15:00+03:00',
+      operator: { name: 'Ahmet Yılmaz', registry: '1234' },
+      device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', volumes: ['E:'] },
+      method: { copyType: 'logical-file-copy', tool: { name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' } },
+      hashState: 'verified'
+    }
+  };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`${name} çıktısında "AKİS" geçmez (delil verili)`, !/ak[iİ]s/i.test(text));
+    check(`${name} çıktısında "uygulama" geçmez (delil verili)`, !/uygulama/i.test(text));
+    check(`${name} çıktısında "tarayıcı" geçmez (delil verili)`, !/tarayıcı/i.test(text));
+  }
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uz = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uz.file('content.xml').async('string');
+  check('UDF XML içinde "Akis" geçmez (delil verili)', !/Akis/i.test(ux));
 }
 
 

@@ -12,7 +12,7 @@ Bu araç, USB/flaş/SD içindeki ses dosyalarını kopyalar, her dosyanın
 
 ```
 AKIS_Delil_20261122_101500/
-  delil.json      # cihaz, yöntem, operatör, dosya hash'leri
+  delil.json      # cihaz, etiket, yöntem, operatör, TESLİM zinciri, dosya hash'leri
   delil.log       # adım adım kayıt
   ses/...         # kopyalanan dosyalar
 AKIS_Delil_20261122_101500.zip
@@ -43,19 +43,44 @@ işlenir. v2.211 öncesi oluşmuş kopyaları **Kaldır** ile temizleyin.
 > **Operatör zorunlu:** `-Operator` verilmezse PowerShell sorar. Boş bırakılamaz.
 > Operatör = edinme işlemini fiilen yapan kişi (genellikle bilirkişi).
 
+> **Teslim eden ≠ operatör.** Teslim eden, flash'ı/kaydı bilirkişiye veren
+> kişi veya kurumdur (ör. mahkeme kalemi). İkisi `delil.json` içinde **ayrı**
+> alanlarda tutulur ve raporda ayrı gösterilir. Teslim alanları **isteğe
+> bağlıdır**; boş bırakılırsa **uydurulmaz**.
+>
+> **TCKN istenmez.** Teslim edenin kimliği ad + birimle bellidir; kurum sicili
+> veya kayıt numarası yeterlidir.
+
 ## SD kart / SCSI
 
 SD kart okuyucular sık sık `BusType=SCSI` bildirir. Araç yalnız `BusType`'a
 bakmaz: birim **`DriveType=Removable`** ise kabul eder. Sistem/boot diski her
 durumda reddedilir. Log'da `Sürücü türü · BusType` yazılır.
 
+## İndirme
+
+AKİS'te **Ses → Edinme aracını indir** düğmesi bu klasörü **tek zip** olarak
+indirir (`edinme.ps1`, `BASLAT.bat`, `OKUBENI.md`). Ayrıca depodan da alınabilir:
+`tools/edinme/`.
+
 ## Kullanım
 
-1. `BASLAT.bat` → yönetici PowerShell açılır.
-2. Komutu çalıştırın (örnek):
+1. Zip'i bir klasöre açın.
+2. `BASLAT.bat` → **Yönetici olarak** PowerShell açılır (sağ tık → Yönetici
+   olarak çalıştır). Parametreler sorulur; boş bırakılan isteğe bağlı alan boş
+   kalır.
+3. İsterseniz komutu elle çalıştırın:
 
 ```powershell
 .\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234
+```
+
+Teslim zinciriyle birlikte:
+
+```powershell
+.\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234 `
+  -DeliveredBy "Mehmet Kaya" -DeliveredByRegistry "K-77" `
+  -DeliveredAt 2026-11-21 -DeliveryPlace "Ankara 3. Sulh Ceza Mahkemesi"
 ```
 
 Tüm dosyalar (yalnız ses değil):
@@ -64,7 +89,20 @@ Tüm dosyalar (yalnız ses değil):
 .\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -IncludeAll
 ```
 
-3. Oluşan `.zip` dosyasını AKİS'te **Ses → Delil paketi yükle** ile açın.
+4. Oluşan `.zip` dosyasını AKİS'te **Ses → Delil paketi yükle** ile açın.
+
+## Raporda ne görünür?
+
+| Alan | Nereden |
+|---|---|
+| ARAÇ | `edinme.ps1 1.0 · PowerShell` (ürün adı yazılmaz) |
+| OPERATÖR | `Ad Soyad · Sicil` |
+| TESLİM EDEN | `Ad Soyad · Sicil` (köken tablosu) |
+| TESLİM TARİHİ / YERİ | Paketten veya elle |
+| CİHAZ / SERİ | Marka-model, seri no, etiket |
+
+Sürücü harfi (`E:`, `D:`) **rapora yazılmaz**: kanıt kimliği değildir ve işletim
+sistemi değişince değişir. Harf yalnız `delil.json` teknik izinde kalır.
 
 ## Kurgusal test (gerçek delil değil)
 

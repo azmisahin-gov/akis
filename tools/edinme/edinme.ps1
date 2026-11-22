@@ -31,13 +31,32 @@
   Paketin yazılacağı klasör (ör. D:\delil). Kaynak sürücüde OLAMAZ.
 
 .PARAMETER Operator
-  Operatör adı (delil.json'a yazılır).
+  Operatör adı — edinmeyi FİİLEN yapan kişi (genellikle bilirkişi).
+  "Teslim eden" ile aynı kişi DEĞİLDİR; ikisi ayrı kaydedilir.
 
 .PARAMETER Registry
   Operatör sicil no (isteğe bağlı).
 
 .PARAMETER Organization
   Kurum (isteğe bağlı).
+
+.PARAMETER OperatorRegistry
+  Operatör sicil no için kısa ad (Registry ile aynı alana yazılır).
+
+.PARAMETER DeliveredBy
+  Teslim eden: flash'ı bilirkişiye veren kişi/kurum (isteğe bağlı; sorulur).
+
+.PARAMETER DeliveredByRegistry
+  Teslim edenin sicili/kayıt no (isteğe bağlı). TCKN YAZILMAZ.
+
+.PARAMETER DeliveredAt
+  Teslim tarihi, YYYY-AA-GG (isteğe bağlı; sorulur).
+
+.PARAMETER DeliveryPlace
+  Teslim yeri, ör. "Ankara 3. Sulh Ceza Mahkemesi" (isteğe bağlı; sorulur).
+
+.PARAMETER NonInteractive
+  Soruları atla (betikli kullanım). Boş bırakılan isteğe bağlı alan boş kalır.
 
 .PARAMETER IncludeAll
   Yalnız ses dosyaları yerine TÜM dosyaları kopyala.
@@ -59,8 +78,14 @@ param(
   [Parameter(Mandatory = $true)][string]$Operator,
   [string]$Registry = '',
   [string]$Organization = '',
+  [string]$OperatorRegistry = '',
+  [string]$DeliveredBy = '',
+  [string]$DeliveredByRegistry = '',
+  [string]$DeliveredAt = '',
+  [string]$DeliveryPlace = '',
   [switch]$IncludeAll,
-  [switch]$Simulate
+  [switch]$Simulate,
+  [switch]$NonInteractive
 )
 
 $ErrorActionPreference = 'Stop'
@@ -69,8 +94,11 @@ $ErrorActionPreference = 'Stop'
 try { chcp.com 65001 | Out-Null } catch {}
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [System.Text.Encoding]::UTF8
-$ToolName = 'AKIS Edinme'
+# Alet adı ÜRÜN MARKASI DEĞİL, çalışan dosyanın kendisidir. Rapor ARAÇ
+# sütununa bu yazılır (ör. "edinme.ps1 1.0 · PowerShell").
+$ToolName = 'edinme.ps1'
 $ToolVersion = '1.0'
+$ToolEngine = 'PowerShell'
 $Schema = 'akis.delil.v1'
 $script:LogPath = $null
 
@@ -118,6 +146,8 @@ $device = [ordered]@{
   busType   = ''
   model     = ''
   serial    = ''
+  # Birim etiketi (varsa). Uydurulmaz; boşsa boş kalır.
+  label     = ''
   sizeBytes = 0
   volumes   = @()
   removable = $false
@@ -131,6 +161,7 @@ try {
     $device.busType = 'USB (simulate)'
     $device.model = 'Kurgusal cihaz'
     $device.serial = 'SIM-0001'
+    $device.label = 'KURGUSAL'
     $device.sizeBytes = 0
     $device.volumes = @()
     $device.removable = $true
@@ -168,10 +199,11 @@ try {
     $device.busType = [string]$disk.BusType
     $device.model = [string]$disk.FriendlyName
     $device.serial = [string]$disk.SerialNumber
+    $device.label = if ($vol) { [string]$vol.FileSystemLabel } else { '' }
     $device.sizeBytes = [int64]$disk.Size
     $device.volumes = @("$driveLetter`:")
     $device.removable = $isRemovable
-    Write-Log "Cihaz: $($device.model) · seri: $($device.serial) · $($device.sizeBytes) bayt · $($device.busType)"
+    Write-Log "Cihaz: $($device.model) · seri: $($device.serial) · etiket: $($device.label) · $($device.sizeBytes) bayt · $($device.busType)"
 
     # Önce salt-okunur; başarısızsa devam etme.
     $dp = @"
@@ -190,6 +222,30 @@ attributes disk
     $readOnlyMethod = "diskpart: select disk $diskNumber; attributes disk set readonly"
     Write-Log 'Disk salt-okunur: EVET (doğrulandı).'
   }
+
+  # --- 2b. Teslim zinciri (isteğe bağlı) -----------------------------------
+  # Teslim eden = flash'ı bilirkişiye veren kişi/kurum. Operatör = edinmeyi
+  # fiilen yapan. İkisi AYRI kaydedilir. Boş alan UYDURULMAZ.
+  function Read-Optional {
+    param([string]$Value, [string]$Prompt)
+    if ($Value) { return $Value }
+    if ($NonInteractive -or $Simulate) { return '' }
+    try { return [string](Read-Host $Prompt) } catch { return '' }
+  }
+  $deliveredBy = Read-Optional $DeliveredBy "Teslim eden (flash'i veren kisi/kurum; bos = bilinmiyor)"
+  $deliveredByRegistry = Read-Optional $DeliveredByRegistry "Teslim edenin sicili/kayit no (varsa; TCKN yazmayin)"
+  $deliveryPlace = Read-Optional $DeliveryPlace "Teslim yeri (or. Ankara 3. Sulh Ceza Mahkemesi)"
+  $deliveredAtRaw = Read-Optional $DeliveredAt "Teslim tarihi (YYYY-AA-GG veya GG.AA.YYYY; bos = bilinmiyor)"
+  $deliveredAtIso = ''
+  if ($deliveredAtRaw) {
+    try {
+      $deliveredAtIso = ([datetime]::Parse($deliveredAtRaw)).ToString('yyyy-MM-dd')
+    }
+    catch {
+      Write-Log "UYARI: teslim tarihi okunamadi, bos birakildi: $deliveredAtRaw"
+    }
+  }
+  Write-Log ("Teslim: eden='" + $deliveredBy + "' sicil='" + $deliveredByRegistry + "' yer='" + $deliveryPlace + "' tarih='" + $deliveredAtIso + "'")
 
   # --- 3. Dosyaları seç ----------------------------------------------------
   $audioExt = @('.wav', '.mp3', '.m4a', '.ogg', '.flac', '.aac')
@@ -232,13 +288,21 @@ attributes disk
   else {
     'Donanım write-blocker kullanılmadı; disk yazılımsal olarak salt-okunur yapıldı. Bu bir adli imaj değil, belgelenmiş dosya kopyasıdır.'
   }
+  $opRegistry = if ($OperatorRegistry) { $OperatorRegistry } else { $Registry }
   $manifest = [ordered]@{
     schema     = $Schema
     acquiredAt = (Get-Date).ToString('o')
     operator   = [ordered]@{
       name         = $Operator
-      registry     = $Registry
+      registry     = $opRegistry
       organization = $Organization
+    }
+    # Teslim zinciri: teslim eden ≠ operatör. Boş alan boş kalır.
+    delivery   = [ordered]@{
+      deliveredBy = $deliveredBy
+      registry    = $deliveredByRegistry
+      deliveredAt = $deliveredAtIso
+      place       = $deliveryPlace
     }
     device     = $device
     method     = [ordered]@{
@@ -249,6 +313,7 @@ attributes disk
       tool                 = [ordered]@{
         name    = $ToolName
         version = $ToolVersion
+        engine  = $ToolEngine
       }
     }
     files      = $entries.ToArray()

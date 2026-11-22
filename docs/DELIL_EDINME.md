@@ -69,10 +69,17 @@ gerçek delile uygulanır.
     "registry": "Sicil No",
     "organization": "Kurum"
   },
+  "delivery": {
+    "deliveredBy": "Teslim eden ad / birim",
+    "registry": "Sicil veya kayıt no (varsa)",
+    "deliveredAt": "2026-11-21",
+    "place": "Ankara 3. Sulh Ceza Mahkemesi"
+  },
   "device": {
     "busType": "USB",
     "model": "SanDisk Cruzer",
     "serial": "4C530001…",
+    "label": "DELIL-7",
     "sizeBytes": 16000000000,
     "volumes": ["E:"]
   },
@@ -81,7 +88,7 @@ gerçek delile uygulanır.
     "hardwareWriteBlocker": false,
     "copyType": "logical-file-copy",
     "image": null,
-    "tool": { "name": "AKİS Edinme", "version": "1.0" }
+    "tool": { "name": "edinme.ps1", "version": "1.0", "engine": "PowerShell" }
   },
   "files": [
     {
@@ -95,6 +102,17 @@ gerçek delile uygulanır.
   "notes": "Donanım write-blocker kullanılmadı; disk yazılımsal olarak salt-okunur yapıldı."
 }
 ```
+
+**Teslim zinciri (v2.212):** `delivery` bloğu **isteğe bağlıdır**; alanlar boş
+bırakılabilir ve **uydurulmaz**. `deliveredBy` = flash'ı bilirkişiye veren
+kişi/kurum; `operator` = edinmeyi fiilen yapan kişi. İkisi aynı değildir.
+`registry` bir **sicil/kayıt no**dur; **TCKN istenmez**. Teslim şekli (kapalı
+zarf içinde elden teslim, kargo vb.) ayrı bir alan olarak **henüz yok**; sonraki
+sürümde değerlendirilecektir.
+
+**Alet adı (v2.212):** `method.tool.name` ürün markası değil, çalışan aletin
+kendisidir (`edinme.ps1`). Raporun ARAÇ sütununa `ad + sürüm · motor` yazılır.
+Ürün adı rapora girmez.
 
 `copyType` değerleri:
 

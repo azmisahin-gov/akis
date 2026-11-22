@@ -1,4 +1,4 @@
-# Özellikler (v2.211 — mevcut durum)
+# Özellikler (v2.212 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -640,19 +640,32 @@ uzmanlık alanını gösterir.
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
 
-## Delil paketi (v2.208)
+## Delil paketi (v2.208, teslim zinciri v2.212)
 
 Ayrı edinme aracı + tarayıcıda doğrulama. Tarayıcı USB'yi **görmez**; edinme
 `tools/edinme/edinme.ps1` ile yapılır, AKİS yalnız **doğrular ve belgeler**.
+Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
+(`edinme.ps1`, `BASLAT.bat`, `OKUBENI.md`).
 
 - **Paket:** ZIP içinde `delil.json` + `ses/` dosyaları.
 - **Yükleme:** Ses görünümü → **Delil paketi yükle**.
 - **Doğrulama:** her dosyanın SHA-256 özeti yeniden hesaplanır; üç durum:
   **Doğrulandı** / **Uyuşmuyor** / **Doğrulanamadı**. Hash yoksa
   "Doğrulandı" denmez.
-- **Cihaz bilgisi:** model, seri no, kapasite, yöntem, araç, operatör,
-  alınma zamanı. Bu bilgiler **edinme aracının beyanıdır**; uygulama cihazı
-  görmez.
+- **Cihaz bilgisi:** model, seri no, birim etiketi (varsa), kapasite, yöntem,
+  araç, operatör (ad + sicil), alınma zamanı. Bu bilgiler **edinme
+  tutanağının beyanıdır**; cihaz bu ortamda okunmaz.
+- **Teslim zinciri (v2.212):** **Teslim eden** (flash'ı veren kişi/kurum, ad +
+  isteğe bağlı sicil/kayıt no) ile **operatör** (edinmeyi yapan) **ayrı**
+  kaydedilir; teslim tarihi ve teslim yeri isteğe bağlıdır. Boş alan
+  **uydurulmaz**. **TCKN istenmez.** Bilgiler paketten gelir veya elle girilir
+  (Ses → kayıt → **Kayıt kökeni ve teslim zinciri**).
+- **Sürücü harfi raporda yok (v2.212):** `E:`/`D:` kanıt kimliği değildir ve
+  platform değişince değişir; yalnız `delil.json` teknik izinde kalır.
+- **Alet adı:** raporun ARAÇ sütunu ürün adını değil aleti yazar
+  (`edinme.ps1 1.0 · PowerShell`). Ürün adı rapora girmez.
+- **Yeniden yükleme:** aynı SHA-256 varsa yeni kayıt açılmaz; mevcut kayıt ve
+  düzenlemeler korunur, **yalnız boş alanlar** doldurulur ve günlüğe yazılır.
 - **Uyuşmazlık:** sessizce geçmez; onay istenir, kabul edilirse raporda
   "Uyuşmuyor" yazar.
 - **Delil günlüğü:** "Delil paketinden alındı" + "SHA-256 doğrulandı /
@@ -668,7 +681,7 @@ Ayrı edinme aracı + tarayıcıda doğrulama. Tarayıcı USB'yi **görmez**; ed
 - Hukuki değerlendirme ve bilirkişi kanaati üretmez.
 - Konuşmacı kimliği, kayıt orijinalliği veya montaj tespiti yapmaz.
 - E-imza üretmez, UYAP'a belge göndermez.
-- **USB/cihaz edinmez.** Cihaz bilgisi edinme aracının beyanıdır; tarayıcı
-  cihazı görmez. Tier 1 çıktısı "adli imaj" değil, "belgelenmiş kopya"dır.
+- **USB/cihaz edinmez.** Cihaz bilgisi edinme tutanağının beyanıdır; cihaz bu
+  ortamda okunmaz. Tier 1 çıktısı "adli imaj" değil, "belgelenmiş kopya"dır.
 - Kontrol edilmemiş deşifreyi doğrulanmış gibi göstermez.
 - Yapılmayan incelemeyi rapora yazmaz.

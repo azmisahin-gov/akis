@@ -480,7 +480,13 @@ export function emptyMaterial(over = {}) {
       mediumType: 'unspecified',
       mediumLabel: '',
       deliveredBy: '',
+      // Teslim edenin sicili/kayıt no (varsa). Kurumdan kuruma değişir; TCKN
+      // istenmez, doğrulanmaz, zorunlu değildir.
+      deliveredByRegistry: '',
       deliveredAt: '',
+      // Teslim yeri (ör. mahkeme/merci). Kapalı zarf içinde elden teslim gibi
+      // teslim şekli ayrı bir alandır; burada yalnız YER tutulur.
+      deliveryPlace: '',
       deviceInfo: '',
       // Delil paketinden geldiyse edinme tutanağı (v2.208). Cihaz bilgisi
       // EDİNME ARACININ BEYANIDIR; uygulama cihazı görmez.
@@ -803,7 +809,10 @@ export function normalizeMaterial(src = {}) {
       mediumType: pick(normalizeMediumType(origin.mediumType), MEDIUM_TYPE, 'unspecified'),
       mediumLabel: str(origin.mediumLabel),
       deliveredBy: str(origin.deliveredBy),
+      // v2.212: beyaz liste; buraya yazılmayan alan ilk kaydetmede silinir.
+      deliveredByRegistry: str(origin.deliveredByRegistry),
       deliveredAt: str(origin.deliveredAt),
+      deliveryPlace: str(origin.deliveryPlace),
       deviceInfo: str(origin.deviceInfo),
       // Edinme tutanağı bilinmeyen alanlarıyla birlikte korunur; v2.208.
       acquisition: isObj(origin.acquisition) ? { ...origin.acquisition } : null
@@ -1149,6 +1158,32 @@ function isBlankValue(v) {
 }
 
 /**
+ * `origin` değerleri metin veya NESNE olabilir (`acquisition` tutanağı).
+ * Nesneyi referansla karşılaştırmak, içerik aynı olsa bile "farklı" der:
+ * önizleme "alınacak alan", birleştirme "çakışma" üretir ve ekranda
+ * "[object Object]" görünür (v2.212'de ölçüldü). Karşılaştırma JSON ile,
+ * gösterim okunur metinle yapılır.
+ */
+function sameOriginValue(a, b) {
+  if (a === b) return true;
+  if (isObj(a) && isObj(b)) return JSON.stringify(a) === JSON.stringify(b);
+  return false;
+}
+/** Nesne değerini çakışma ekranında okunur tek satıra çevirir. */
+function originValueText(v) {
+  if (v == null || v === '') return '';
+  if (!isObj(v)) return String(v);
+  const d = v.device || {};
+  const op = v.operator || {};
+  const parts = [];
+  if (d.model) parts.push(String(d.model));
+  if (d.serial) parts.push(`seri ${d.serial}`);
+  if (op.name) parts.push(`operatör ${op.name}`);
+  if (v.acquiredAt) parts.push(String(v.acquiredAt).slice(0, 10));
+  return parts.length ? parts.join(' · ') : JSON.stringify(v).slice(0, 120);
+}
+
+/**
  * İki kayıt kopyası arasındaki KAYIT DÜZEYİ farkları listeler — v2.94.
  * Önizleme (`compareCases`) ve birleştirme (`mergeMaterialFields`) aynı
  * kümeyi görmelidir; ayrışırlarsa kullanıcı yanlış bilgiyle karar verir.
@@ -1164,7 +1199,17 @@ function diffMaterialFields(mm, tm) {
     consider(key, mm[key], tm[key]);
   }
   if (isObj(tm.tech)) for (const k of Object.keys(tm.tech)) consider(`tech.${k}`, mm.tech && mm.tech[k], tm.tech[k]);
-  if (isObj(tm.origin)) for (const k of Object.keys(tm.origin)) consider(`origin.${k}`, mm.origin && mm.origin[k], tm.origin[k]);
+  if (isObj(tm.origin))
+    for (const k of Object.keys(tm.origin)) {
+      const mv = mm.origin && mm.origin[k];
+      const tv = tm.origin[k];
+      if (isBlankValue(tv) || sameOriginValue(mv, tv)) continue;
+      out.push({
+        field: `origin.${k}`,
+        mine: isBlankValue(mv) ? '' : originValueText(mv),
+        theirs: originValueText(tv)
+      });
+    }
   if (isObj(tm.levels) && !isObj(mm.levels)) consider('levels', null, tm.levels);
   if (isObj(tm.levels) && isObj(mm.levels) && JSON.stringify(mm.levels) !== JSON.stringify(tm.levels)) {
     out.push({ field: 'levels', mine: `tepe ${mm.levels.peakDb}`, theirs: `tepe ${tm.levels.peakDb}` });
@@ -1261,12 +1306,14 @@ function mergeMaterialFields(mm, tm, applied, conflicts) {
   }
 
   // Köken / teslim zinciri (uzman beyanı): alan alan birleştir.
+  // v2.212: nesne değerler (`acquisition`) JSON ile karşılaştırılır; aynı
+  // içerik çakışma sayılmaz, farklı içerik okunur metinle bildirilir.
   if (isObj(tm.origin)) {
     mm.origin = mm.origin || {};
     for (const key of Object.keys(tm.origin)) {
       const mv = mm.origin[key];
       const tv = tm.origin[key];
-      if (isEmpty(tv) || tv === mv) continue;
+      if (isEmpty(tv) || sameOriginValue(mv, tv)) continue;
       if (isEmpty(mv)) {
         mm.origin[key] = tv;
         applied.push(`köken bilgisi dolduruldu: ${name}.origin.${key}`);
@@ -1276,8 +1323,8 @@ function mergeMaterialFields(mm, tm, applied, conflicts) {
           materialId: mm.id,
           materialName: name,
           field: `origin.${key}`,
-          mine: mv,
-          theirs: tv
+          mine: originValueText(mv),
+          theirs: originValueText(tv)
         });
       }
     }

@@ -1568,5 +1568,21 @@ console.log('\n[2bg] Delil paketi: yükleme, doğrulama, rapor (v2.208)');
   check('delil stilinde ham hex yok', !/\.delil-[^{]*\{[^}]*#[0-9a-fA-F]{3,8}/.test(layer));
 }
 
+console.log('\n[2bh] Delil teslim zinciri ve alet deneyimi (v2.212)');
+{
+  const appJs = read('assets/app.js');
+  const html = read('index.html');
+  check('alet metni tek kaynaktan', /function delilToolText\(/.test(appJs));
+  check('araç adı ürün markası değil', /edinme\.ps1/.test(read('tools/edinme/edinme.ps1')));
+  check('köken panelinde sicil alanı', /data-origin-key="deliveredByRegistry"/.test(appJs));
+  check('köken panelinde teslim yeri alanı', /data-origin-key="deliveryPlace"/.test(appJs));
+  check('teslim alma penceresinde sicil alanı', /id="intakeDeliveredByRegistry"/.test(html));
+  check('teslim alma penceresinde yer alanı', /id="intakeDeliveryPlace"/.test(html));
+  check('köken tablosu teslim yerini taşır', /'TESLİM YERİ'/.test(appJs));
+  check('rapor cihaz hücresi sürücü harfi taşımaz', !/vols\.join/.test(appJs) && !/vols\.length \? vols/.test(appJs));
+  check('alet indirme düğmesi var', /id="downloadToolBtn"/.test(html));
+  check('yardım ekranı v2.212 değişikliğini anar', /Son değişiklikler \(v2\.212\)/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

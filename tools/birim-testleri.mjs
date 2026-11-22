@@ -124,6 +124,7 @@ const EXPOSE = [
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
+  'delilToolText', 'originRows', 'REPORT_TEXT',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3693,11 +3694,15 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     const rows = T.acquisitionRows(c);
     eq('delil kaydı tek satır', rows.length, 1);
     eq('satır dosya adı', rows[0][0], 'a.wav');
-    eq('satır cihaz + birim', rows[0][1], 'SanDisk · E:');
+    // v2.212: sürücü harfi (D:) kanıt kimliği DEĞİLDİR; rapora yazılmaz.
+    // Platform değişince harf de değişir; marka/model/seri kalır.
+    eq('satır cihaz (sürücü harfi yok)', rows[0][1], 'SanDisk');
     eq('satır seri no', rows[0][2], 'SN123');
     eq('satır yöntem', rows[0][3], 'Mantıksal dosya kopyası');
-    eq('satır araç', rows[0][4], 'AKIS Edinme 1.0');
-    eq('satır operatör', rows[0][5], 'Ahmet Yılmaz');
+    // Eski paketler alet adını kendi yazar; kanıt tahrif edilmez.
+    eq('eski paket araç adı korunur', rows[0][4], 'AKIS Edinme 1.0');
+    // v2.212: operatör hücresi sicili taşır (Ad Soyad · Sicil).
+    eq('satır operatör + sicil', rows[0][5], 'Ahmet Yılmaz · 1234');
     eq('satır tarih yıl taşır', /2026/.test(rows[0][6]), true);
     eq('satır doğrulama durumu', rows[0][7], 'Doğrulandı');
     m.origin.acquisition.hashState = 'mismatch';
@@ -3707,7 +3712,138 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     const m2 = T.emptyMaterialForTest({ id: 'm2', fileName: 'b.wav' });
     c2.materials = [m2];
     eq('paket yoksa satır yok', T.acquisitionRows(c2).length, 0);
+
+    // --- v2.212: alet adı ürün markası değil, aletin kendisidir ---------
+    const hasV212 = typeof T.delilToolText === 'function' && typeof T.originRows === 'function';
+    eq('v2.212 fonksiyonları tanımlı (alet metni, köken satırı)', hasV212, true);
+    if (hasV212) {
+    eq('alet metni ad + sürüm + motor', T.delilToolText({ name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' }), 'edinme.ps1 1.0 · PowerShell');
+    eq('alet motoru yoksa yalnız ad', T.delilToolText({ name: 'edinme.ps1', version: '1.0' }), 'edinme.ps1 1.0');
+    eq('alet yoksa tire', T.delilToolText(null), '—');
+
+    // --- v2.212: teslim eden ≠ operatör; ikisi ayrı kaydedilir ----------
+    const dPack = {
+      ...pack,
+      delivery: {
+        deliveredBy: 'Mehmet Kaya',
+        registry: 'K-77',
+        deliveredAt: '2026-11-21T14:05:00+03:00',
+        place: 'Ankara 3. Sulh Ceza Mahkemesi'
+      }
+    };
+    const dOrigin = T.delilOriginFromPack(dPack);
+    eq('teslim eden paketten gelir', dOrigin.deliveredBy, 'Mehmet Kaya');
+    eq('teslim eden sicili paketten gelir', dOrigin.deliveredByRegistry, 'K-77');
+    eq('teslim tarihi gün olarak saklanır', dOrigin.deliveredAt, '2026-11-21');
+    eq('teslim yeri paketten gelir', dOrigin.deliveryPlace, 'Ankara 3. Sulh Ceza Mahkemesi');
+    eq('ham teslim beyanı teknik izde kalır', dOrigin.acquisition.delivery.place, 'Ankara 3. Sulh Ceza Mahkemesi');
+    eq('teslim bilgisi yoksa uydurulmaz', T.delilOriginFromPack(pack).deliveredByRegistry, '');
+    eq('operatör teslim edenle karışmaz', T.delilOriginFromPack(pack).acquisition.operator.name, 'Ahmet Yılmaz');
+
+    // --- v2.212: cihaz etiketi (varsa) ortam etiketine girer ------------
+    eq(
+      'etiket + model + seri',
+      T.delilOriginFromPack({ ...pack, device: { ...pack.device, label: 'DELIL-7' } }).mediumLabel,
+      'DELIL-7 · SanDisk · SN123'
+    );
+    eq(
+      'etiket yoksa uydurulmaz',
+      T.delilOriginFromPack({ ...pack, device: { ...pack.device, label: '' } }).mediumLabel,
+      'SanDisk · SN123'
+    );
+
+    // --- v2.212: köken tablosu teslim yerini taşır ----------------------
+    const oc = T.emptyCaseForTest({ id: 'c3' });
+    const om = T.emptyMaterialForTest({ id: 'm3', fileName: 'a.wav' });
+    om.origin.deliveredBy = 'Mehmet Kaya';
+    om.origin.deliveredByRegistry = 'K-77';
+    om.origin.deliveredAt = '2026-11-21';
+    om.origin.deliveryPlace = 'Ankara 3. Sulh Ceza Mahkemesi';
+    oc.materials = [om];
+    const orow = T.originRows(oc)[0];
+    eq('köken satırı 7 sütun', orow.length, 7);
+    eq('teslim eden hücresi sicili taşır', orow[3], 'Mehmet Kaya · K-77');
+    eq('teslim yeri sütunu', orow[5], 'Ankara 3. Sulh Ceza Mahkemesi');
+
+    // --- v2.212: rapor metinleri ürün kimliği taşımaz -------------------
+    // v2.208'de acqIntro "Uygulama cihazı görmez" diyordu; bu, "rapor
+    // bilirkişi adına yazılır" kuralını ihlal ediyordu ve Senaryo 10 bunu
+    // delil verisi olmadan çalıştığı için yakalayamıyordu.
+    const rtext = Object.values(T.REPORT_TEXT).map((v) => (Array.isArray(v) ? v.join(' ') : typeof v === 'string' ? v : '')).join(' ');
+    eq('rapor metninde "uygulama" yok', /uygulama/i.test(rtext), false);
+    eq('rapor metninde "AKİS" yok', /ak[iİ]s/i.test(rtext), false);
+    eq('rapor metninde "tarayıcı" yok', /tarayıcı/i.test(rtext), false);
+    }
   }
+}
+
+console.log('\n== [79] Köken/teslim alanları korunur; birleştirme nesneyi okunur karşılaştırır (v2.212)');
+{
+  // F1 — normalizeMaterial `origin` alanını BEYAZ LİSTE ile yeniden kuruyordu;
+  // yeni teslim alanları listede yoksa ilk kaydet/yenile'de sessizce silinirdi.
+  const nm = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+  const norm = __schemaMod.normalizeMaterial({
+    ...nm,
+    origin: { mediumType: 'usb', deliveredBy: 'X', deliveredByRegistry: '42', deliveryPlace: 'Adliye' }
+  });
+  eq('normalize teslim eden sicilini korur', norm.origin.deliveredByRegistry, '42');
+  eq('normalize teslim yerini korur', norm.origin.deliveryPlace, 'Adliye');
+  eq('normalize mevcut alanı korur', norm.origin.deliveredBy, 'X');
+
+  const acq = {
+    schema: 'akis.delil.v1',
+    acquiredAt: '2026-11-22T10:15:00+03:00',
+    operator: { name: 'Ahmet Yılmaz', registry: '1234' },
+    device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', volumes: ['E:'] },
+    method: { copyType: 'logical-file-copy', tool: { name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' } },
+    hashState: 'verified'
+  };
+  const mkCase = (acqObj) => {
+    const c = T.emptyCaseForTest({ id: 'c1', fileNo: '1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.sha256 = 'a'.repeat(64);
+    m.origin = { ...m.origin, mediumType: 'usb', acquisition: acqObj ? JSON.parse(JSON.stringify(acqObj)) : null };
+    c.materials = [m];
+    return c;
+  };
+
+  // F3 — Aynı içerikli tutanak, referans karşılaştırması yüzünden "farklı"
+  // sayılıyordu: önizleme "alınacak alan", birleştirme "çakışma" diyor ve
+  // ikisi de ekranda "[object Object]" basıyordu.
+  const same = T.mergeCasesForTest(mkCase(acq), mkCase(acq));
+  eq('aynı tutanak çakışma üretmez', (same.conflicts || []).filter((x) => x.field === 'origin.acquisition').length, 0);
+  eq('aynı tutanak uygulanacak alan üretmez', (same.applied || []).filter((x) => /origin\.acquisition/.test(x)).length, 0);
+
+  const cmpSame = T.compareCasesForTest(mkCase(acq), mkCase(acq));
+  eq('önizleme de fark göstermez', (cmpSame.materials.fields || []).filter((x) => x.field === 'origin.acquisition').length, 0);
+
+  const other = { ...acq, device: { ...acq.device, serial: 'SN999' } };
+  const diff = T.mergeCasesForTest(mkCase(acq), mkCase(other));
+  const cf = (diff.conflicts || []).find((x) => x.field === 'origin.acquisition');
+  eq('farklı tutanak çakışma bildirir', !!cf, true);
+  eq('çakışma değeri okunur metin', typeof cf.mine === 'string' && cf.mine.includes('SanDisk'), true);
+  eq('çakışma metni [object Object] değil', /\[object Object\]/.test(String(cf.mine) + String(cf.theirs)), false);
+  const cmpDiff = T.compareCasesForTest(mkCase(acq), mkCase(other));
+  const pf = (cmpDiff.materials.fields || []).find((x) => x.field === 'origin.acquisition');
+  eq('önizleme de okunur metin verir', typeof pf.mine === 'string' && !/\[object Object\]/.test(pf.mine), true);
+
+  // Teslim alanları: yerel boşsa gelen doldurur (veri kaybı yok).
+  const a = mkCase(acq);
+  const b = mkCase(acq);
+  b.materials[0].origin.deliveryPlace = 'Ankara 3. Sulh Ceza';
+  b.materials[0].origin.deliveredByRegistry = 'K-9';
+  const filled = T.mergeCasesForTest(a, b);
+  eq('teslim yeri boşsa dolar', filled.merged.materials[0].origin.deliveryPlace, 'Ankara 3. Sulh Ceza');
+  eq('teslim sicili boşsa dolar', filled.merged.materials[0].origin.deliveredByRegistry, 'K-9');
+
+  // Yerel doluysa gelen sessizce EZMEZ; çakışma bildirir.
+  const c3 = mkCase(acq);
+  c3.materials[0].origin.deliveryPlace = 'Yerel Yer';
+  const c4 = mkCase(acq);
+  c4.materials[0].origin.deliveryPlace = 'Gelen Yer';
+  const clash = T.mergeCasesForTest(c3, c4);
+  eq('dolu teslim yeri korunur', clash.merged.materials[0].origin.deliveryPlace, 'Yerel Yer');
+  eq('dolu teslim yeri çakışma bildirir', (clash.conflicts || []).some((x) => x.field === 'origin.deliveryPlace'), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

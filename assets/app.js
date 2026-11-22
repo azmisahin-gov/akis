@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.211';
+} from './schema.js?v=2.212';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.211';
+const APP_VERSION = '2.212';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -196,12 +196,14 @@ const REPORT_TEXT = {
   originHeading: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ',
   originIntro:
     'Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler bilirkişi beyanına ve teslim tutanağına dayanır; ortam türü kendiliğinden tespit edilmemiştir.',
-  originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'KAYIT CİHAZI / TARİHİ'],
+  originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'TESLİM YERİ', 'KAYIT CİHAZI / TARİHİ'],
   originEmpty: '—',
   // DELİL EDİNME (v2.208): yalnız delil paketinden gelen kayıtlar için.
+  // v2.212: metin ürün kimliği taşımaz ("uygulama", marka adı yok). Cihaz
+  // bilgisi edinme tutanağındaki BEYANDIR; cihaz bu ortamda okunmaz.
   acqHeading: 'DELİL EDİNME VE DOĞRULAMA',
   acqIntro:
-    'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Uygulama cihazı görmez; yalnız dosya özetlerini (SHA-256) yeniden hesaplayarak doğrular. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
+    'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
   acqHeaders: ['KAYIT', 'CİHAZ', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
   mediumTypes: [
     'Belirtilmedi',
@@ -7473,6 +7475,16 @@ const DELIL_COPY_TYPES = {
 function delilCopyTypeLabel(t) {
   return DELIL_COPY_TYPES[t] || (t ? String(t) : '—');
 }
+// Alet = edinmeyi fiilen yapan araç (ör. edinme.ps1). Rapor ÜRÜNÜ değil,
+// ALETİ adlandırır: ad + sürüm + motor. Ürün markası rapora girmez.
+function delilToolText(tool) {
+  if (!tool) return '—';
+  const name = String(tool.name || '').trim();
+  const version = String(tool.version || '').trim();
+  const engine = String(tool.engine || '').trim();
+  const head = [name, version].filter(Boolean).join(' ');
+  return [head, engine].filter(Boolean).join(' · ') || '—';
+}
 // Paket içinde delil.json kökte veya tek bir üst klasörde olabilir.
 // ZIP üreticileri ayırıcı olarak `\` yazabilir (Windows .NET); bu yüzden
 // karşılaştırma `/` üzerinden yapılır, dönen değer GERÇEK girdi adıdır.
@@ -7523,27 +7535,36 @@ function delilOriginFromPack(pack) {
   const d = (pack && pack.device) || {};
   const meth = (pack && pack.method) || {};
   const op = (pack && pack.operator) || {};
+  const del = (pack && pack.delivery) || {};
   const bus = String(d.busType || '');
   const model = String(d.model || '');
   const isCard = /sd|mmc|card reader/i.test(bus + ' ' + model);
   const isRemovable = d.removable === true || /usb/i.test(bus);
-  const label = [d.model, d.serial].filter(Boolean).join(' · ');
-  const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
+  // Etiket (varsa) önce gelir; yoksa uydurulmaz.
+  const label = [d.label, d.model, d.serial].filter(Boolean).join(' · ');
+  const tool = delilToolText(meth.tool);
   const wb = meth.hardwareWriteBlocker ? 'donanım write-blocker: evet' : 'donanım write-blocker: hayır';
   return {
     mediumType: isCard ? 'memory_card' : isRemovable ? 'usb' : 'unspecified',
     mediumLabel: label,
-    // Operatör = edinmeyi yapan kişi; "teslim eden" ile aynı şey DEĞİLDİR.
-    // Teslim bilgisi pakette yoksa boş bırakılır; operatör edinme tablosunda.
-    deliveredBy: '',
-    deliveredAt: '',
-    deviceInfo: [delilCopyTypeLabel(meth.copyType), tool, wb].filter(Boolean).join(' · '),
+    // Teslim eden = flash'ı bilirkişiye veren kişi/kurum. Operatör = edinmeyi
+    // fiilen yapan kişi. İkisi AYRI kaydedilir (v2.212). Pakette teslim bilgisi
+    // yoksa (v1 paket) boş bırakılır; uydurulmaz.
+    deliveredBy: String(del.deliveredBy || '').trim(),
+    deliveredByRegistry: String(del.registry || '').trim(),
+    // Teslim tarihi kayıtta GÜN olarak tutulur (giriş alanı tarih); tam zaman
+    // damgası teknik izde (`acquisition.delivery`) korunur.
+    deliveredAt: String(del.deliveredAt || '').slice(0, 10),
+    deliveryPlace: String(del.place || '').trim(),
+    deviceInfo: [delilCopyTypeLabel(meth.copyType), tool === '—' ? '' : tool, wb].filter(Boolean).join(' · '),
     acquisition: {
       schema: pack.schema,
       acquiredAt: (pack && pack.acquiredAt) || '',
       operator: { ...op },
       device: { ...d },
       method: { ...meth },
+      // Ham teslim beyanı bilinmeyen alanlarıyla korunur (teknik iz).
+      delivery: { ...del },
       notes: (pack && pack.notes) || ''
     }
   };
@@ -7583,16 +7604,19 @@ function acquisitionRows(c) {
     const d = a.device || {};
     const meth = a.method || {};
     const op = a.operator || {};
-    const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
-    const vols = Array.isArray(d.volumes) ? d.volumes.filter(Boolean) : [];
-    const deviceCell = [d.model || '—', vols.length ? vols.join(', ') : ''].filter(Boolean).join(' · ');
+    // Operatör hücresi: ad + sicil (varsa). Teslim eden ayrı tablodadır.
+    const opCell = [op.name, op.registry].filter(Boolean).join(' · ') || '—';
+    // Cihaz hücresi: model + etiket. Sürücü harfi (D:) YAZILMAZ: kanıt kimliği
+    // değildir, platform değişince harf de değişir. Harf yalnız delil.json
+    // teknik izinde (device.volumes) kalır.
+    const deviceCell = [d.model, d.label].filter(Boolean).join(' · ') || '—';
     out.push([
       m.name || m.fileName || '—',
       deviceCell,
       d.serial || '—',
       delilCopyTypeLabel(meth.copyType),
-      tool || '—',
-      op.name || '—',
+      delilToolText(meth.tool),
+      opCell,
       a.acquiredAt ? niceDate(String(a.acquiredAt).slice(0, 10)) : '—',
       delilStateLabel(a.hashState)
     ]);
@@ -7682,7 +7706,9 @@ function askIntake(count) {
     $('#intakeCount').textContent = String(count);
     $('#intakeMediumLabel').value = '';
     $('#intakeDeliveredBy').value = '';
+    $('#intakeDeliveredByRegistry').value = '';
     $('#intakeDeliveredAt').value = '';
+    $('#intakeDeliveryPlace').value = '';
     $('#intakeDeviceInfo').value = '';
     let done = false;
     const finish = (v) => {
@@ -7702,7 +7728,9 @@ function askIntake(count) {
         mediumType: $('#intakeMediumType').value || 'unspecified',
         mediumLabel: $('#intakeMediumLabel').value.trim(),
         deliveredBy: $('#intakeDeliveredBy').value.trim(),
+        deliveredByRegistry: $('#intakeDeliveredByRegistry').value.trim(),
         deliveredAt: $('#intakeDeliveredAt').value || '',
+        deliveryPlace: $('#intakeDeliveryPlace').value.trim(),
         deviceInfo: $('#intakeDeviceInfo').value.trim()
       });
     };
@@ -7759,6 +7787,8 @@ async function addAudioFiles(files, opts = {}) {
         'Teslim bilgisi girildi',
         `${MEDIUM_TYPE_LABEL[intake.mediumType] || intake.mediumType}${intake.mediumLabel ? ' · ' + intake.mediumLabel : ''}${
           intake.deliveredBy ? ' · teslim eden: ' + intake.deliveredBy : ''
+        }${intake.deliveredByRegistry ? ' (sicil: ' + intake.deliveredByRegistry + ')' : ''}${
+          intake.deliveryPlace ? ' · yer: ' + intake.deliveryPlace : ''
         }`
       );
     }
@@ -7866,6 +7896,15 @@ async function importDelilPack(file) {
       const ex = r.existing;
       ex.origin = ex.origin || {};
       if (r.packageState === 'verified') {
+        const filled = [];
+        // Mevcut kaydın kendi bilgisi EZİLMEZ: yalnız boş alan doldurulur.
+        // (v2.211 deseni; v2.212'de teslim alanları da aynı kurala bağlandı.)
+        const fillIfEmpty = (key, value, label) => {
+          if (!value) return;
+          if (ex.origin[key]) return;
+          ex.origin[key] = value;
+          filled.push(label);
+        };
         if (!ex.origin.acquisition) {
           ex.origin.acquisition = {
             ...origin.acquisition,
@@ -7873,17 +7912,25 @@ async function importDelilPack(file) {
             manifestSha256: f.sha256 || '',
             fileRelPath: f.relPath || ''
           };
-          if (!ex.origin.mediumType || ex.origin.mediumType === 'unspecified') ex.origin.mediumType = origin.mediumType;
-          if (!ex.origin.mediumLabel) ex.origin.mediumLabel = origin.mediumLabel;
-          if (!ex.origin.deviceInfo) ex.origin.deviceInfo = origin.deviceInfo;
-          logEvent(
-            ex,
-            'Delil paketinden edinme bilgisi işlendi',
-            `Aynı SHA-256; yeni kayıt eklenmedi. Cihaz: ${(pack.device && pack.device.model) || '—'} · ${delilCopyTypeLabel(pack.method && pack.method.copyType)} · paket: ${file.name}`
-          );
-        } else {
-          logEvent(ex, 'Delil paketinde aynı dosya görüldü', `Aynı SHA-256; mevcut edinme bilgisi korundu. Paket: ${file.name}`);
+          filled.push('edinme tutanağı');
         }
+        if (!ex.origin.mediumType || ex.origin.mediumType === 'unspecified') {
+          ex.origin.mediumType = origin.mediumType;
+          filled.push('ortam türü');
+        }
+        fillIfEmpty('mediumLabel', origin.mediumLabel, 'ortam etiketi');
+        fillIfEmpty('deviceInfo', origin.deviceInfo, 'yöntem');
+        fillIfEmpty('deliveredBy', origin.deliveredBy, 'teslim eden');
+        fillIfEmpty('deliveredByRegistry', origin.deliveredByRegistry, 'teslim eden sicili');
+        fillIfEmpty('deliveredAt', origin.deliveredAt, 'teslim tarihi');
+        fillIfEmpty('deliveryPlace', origin.deliveryPlace, 'teslim yeri');
+        logEvent(
+          ex,
+          filled.length ? 'Delil paketinden edinme bilgisi işlendi' : 'Delil paketinde aynı dosya görüldü',
+          filled.length
+            ? `Aynı SHA-256; yeni kayıt eklenmedi. Doldurulan: ${filled.join(', ')}. Cihaz: ${(pack.device && pack.device.model) || '—'} · ${delilCopyTypeLabel(pack.method && pack.method.copyType)} · paket: ${file.name}`
+            : `Aynı SHA-256; mevcut bilgi korundu (boş alan yok). Paket: ${file.name}`
+        );
         linked++;
       } else {
         logEvent(
@@ -7954,6 +8001,30 @@ async function importDelilPack(file) {
   if (summary.missing) parts.push(`${summary.missing} pakette yok`);
   showToast(`Delil paketi: ${parts.join(' · ')}.`, summary.mismatch || summary.missing);
 }
+// Edinme aracını TEK zip olarak indirir (v2.212). Tarayıcı USB'yi görmez;
+// araç ayrı çalışır. Zip: edinme.ps1 + BASLAT.bat + OKUBENI.md.
+const ACQ_TOOL_FILES = ['edinme.ps1', 'BASLAT.bat', 'OKUBENI.md'];
+async function downloadAcquisitionTool() {
+  try {
+    if (!window.JSZip) throw new Error('paketleme bileşeni yüklenemedi; sayfayı yenileyin');
+    const zip = new window.JSZip();
+    for (const name of ACQ_TOOL_FILES) {
+      const res = await fetch(`tools/edinme/${name}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`${name} indirilemedi (${res.status})`);
+      zip.file(name, await res.text());
+    }
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    a.href = url;
+    a.download = 'akis-edinme-araci.zip';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    showToast('Edinme aracı indirildi. Zip içindeki BASLAT.bat dosyasını Yönetici olarak çalıştırın.');
+  } catch (e) {
+    showToast('Edinme aracı indirilemedi: ' + (e && e.message ? e.message : e), true);
+  }
+}
 function renderDelilResult(summary, pack, results, fileName) {
   const body = $('#delilResultBody');
   const dlg = $('#delilResultDialog');
@@ -7961,7 +8032,15 @@ function renderDelilResult(summary, pack, results, fileName) {
   const d = (pack && pack.device) || {};
   const meth = (pack && pack.method) || {};
   const op = (pack && pack.operator) || {};
-  const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '—';
+  const del = (pack && pack.delivery) || {};
+  const tool = delilToolText(meth.tool);
+  // Teslim zinciri: teslim eden ≠ operatör. İkisi ayrı satırda gösterilir.
+  const deliveredParts = [
+    del.deliveredBy ? `<b>Teslim eden:</b> ${esc(del.deliveredBy)}` : '',
+    del.registry ? `sicil ${esc(del.registry)}` : '',
+    del.place ? `yer ${esc(del.place)}` : '',
+    del.deliveredAt ? `tarih ${esc(String(del.deliveredAt).slice(0, 10))}` : ''
+  ].filter(Boolean);
   const stateCls = (s) => (s === 'verified' ? 'ok' : s === 'mismatch' || s === 'missing' ? 'bad' : 'warn');
   const rows = (results || [])
     .map(
@@ -7973,9 +8052,10 @@ function renderDelilResult(summary, pack, results, fileName) {
   body.innerHTML =
     `<div class="delil-meta">` +
     `<div><b>Paket:</b> ${esc(fileName || '—')}</div>` +
-    `<div><b>Cihaz:</b> ${esc(d.model || '—')} · <b>Seri:</b> ${esc(d.serial || '—')} · ${esc(fmtBytes(d.sizeBytes || 0))}${Array.isArray(d.volumes) && d.volumes.filter(Boolean).length ? ' · <b>Birim:</b> ' + esc(d.volumes.filter(Boolean).join(', ')) : ''}</div>` +
-    `<div><b>Yöntem:</b> ${esc(delilCopyTypeLabel(meth.copyType))} · <b>Araç:</b> ${esc(tool || '—')} · <b>Write-blocker:</b> ${meth.hardwareWriteBlocker ? 'evet' : 'hayır'}</div>` +
+    `<div><b>Cihaz:</b> ${esc([d.label, d.model].filter(Boolean).join(' · ') || '—')} · <b>Seri:</b> ${esc(d.serial || '—')} · ${esc(fmtBytes(d.sizeBytes || 0))}</div>` +
+    `<div><b>Yöntem:</b> ${esc(delilCopyTypeLabel(meth.copyType))} · <b>Araç:</b> ${esc(tool)} · <b>Write-blocker:</b> ${meth.hardwareWriteBlocker ? 'evet' : 'hayır'}</div>` +
     `<div><b>Operatör:</b> ${esc(op.name || '—')}${op.registry ? ' · ' + esc(op.registry) : ''} · <b>Alınma:</b> ${esc(String((pack && pack.acquiredAt) || '—').slice(0, 19).replace('T', ' '))}</div>` +
+    `<div>${deliveredParts.length ? deliveredParts.join(' · ') : '<b>Teslim bilgisi:</b> pakette yok'}</div>` +
     `</div>` +
     `<div class="delil-counts ${bad ? 'is-warn' : 'is-ok'}">` +
     `<b>${summary.total}</b> dosya · <b>${summary.verified}</b> doğrulandı` +
@@ -7985,7 +8065,7 @@ function renderDelilResult(summary, pack, results, fileName) {
     (summary.duplicate ? ` · <b>${summary.duplicate}</b> zaten vardı (atlandı)` : '') +
     (summary.skipped ? ` · <b>${summary.skipped}</b> ses dışı (atlandı)` : '') +
     `</div>` +
-    `<p class="delil-note">Cihaz bilgisi <b>edinme aracının beyanıdır</b>; uygulama cihazı görmez. "Doğrulandı" yalnız SHA-256 özeti tutuyorsa yazılır. <b>Zaten var (atlandı):</b> aynı ses (aynı SHA-256) dosyada vardı; mevcut kayıt ve düzenlemeler korundu, edinme bilgisi varsa ona işlendi.</p>` +
+    `<p class="delil-note">Cihaz bilgisi <b>edinme tutanağındaki beyandır</b>; cihaz bu ortamda okunmaz. "Doğrulandı" yalnız SHA-256 özeti tutuyorsa yazılır. <b>Zaten var (atlandı):</b> aynı ses (aynı SHA-256) dosyada vardı; mevcut kayıt ve düzenlemeler korundu, edinme bilgisi varsa ona işlendi.</p>` +
     `<table class="delil-table"><thead><tr><th>DOSYA</th><th>BEKLENEN SHA-256</th><th>DURUM</th></tr></thead><tbody>${rows}</tbody></table>`;
   if (typeof dlg.showModal === 'function') dlg.showModal();
   else dlg.setAttribute('open', '');
@@ -9252,7 +9332,11 @@ function originPanelHtml(m) {
   </div>
   <div class="seg-row2">
     <div class="seg-field"><label>Teslim eden</label><input data-origin="${esc(m.id)}" data-origin-key="deliveredBy" value="${esc(o.deliveredBy || '')}" placeholder="Ad soyad / birim"></div>
+    <div class="seg-field"><label>Teslim eden sicil / kayıt no (varsa)</label><input data-origin="${esc(m.id)}" data-origin-key="deliveredByRegistry" value="${esc(o.deliveredByRegistry || '')}" placeholder="Kurum sicili veya kayıt no; TCKN yazmayın"></div>
+  </div>
+  <div class="seg-row2">
     <div class="seg-field"><label>Teslim tarihi</label><input type="date" data-origin="${esc(m.id)}" data-origin-key="deliveredAt" value="${esc(o.deliveredAt || '')}"></div>
+    <div class="seg-field"><label>Teslim yeri</label><input data-origin="${esc(m.id)}" data-origin-key="deliveryPlace" value="${esc(o.deliveryPlace || '')}" placeholder="Örn. Ankara 3. Sulh Ceza Mahkemesi"></div>
   </div>
   <div class="seg-field"><label>Kayıt cihazı / kayıt tarihi (varsa)</label><input data-origin="${esc(m.id)}" data-origin-key="deviceInfo" value="${esc(o.deviceInfo || '')}" placeholder="Örn. cep telefonu, 12.03.2026 14:20"></div>`;
 }
@@ -9260,12 +9344,15 @@ function originRows(c) {
   const out = [];
   for (const m of c.materials || []) {
     const o = m.origin || {};
+    // Teslim eden hücresi ad + sicil (varsa) taşır; teslim yeri ayrı sütundadır.
+    const by = [o.deliveredBy, o.deliveredByRegistry].filter(Boolean).join(' · ');
     out.push([
       m.name,
       o.mediumType ? MEDIUM_TYPE_LABEL[o.mediumType] || o.mediumType : REPORT_TEXT.originEmpty,
       o.mediumLabel || REPORT_TEXT.originEmpty,
-      o.deliveredBy || REPORT_TEXT.originEmpty,
+      by || REPORT_TEXT.originEmpty,
       o.deliveredAt ? niceDate(o.deliveredAt) : REPORT_TEXT.originEmpty,
+      o.deliveryPlace || REPORT_TEXT.originEmpty,
       o.deviceInfo || REPORT_TEXT.originEmpty
     ]);
   }
@@ -9697,7 +9784,7 @@ function renderReport() {
   html += `</div>`;
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length ? materials.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec || m.type || REPORT_TEXT.codecFallback)} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration || 0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate ? ' · ' + esc(m.tech.sampleRate) + ' Hz' : ''}${m.tech?.bitDepth ? ' · ' + esc(m.tech.bitDepth) + ' bit' : ''}${m.tech?.channels === 2 ? '<br>Dinlenen: ' + esc(chanModeText(m)) : ''}${m.spectrogramReviewed ? '<br>' + esc(REPORT_TEXT.spectrogramLabel) + ' (' + esc(new Date(m.spectrogramReviewed.at).toLocaleString('tr-TR')) + ')' : ''}</td><td class="paper-hash">${esc(m.sha256 || 'Hesaplanamadı')}</td></tr>`).join('') : `<tr><td colspan="5">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows = originRows(c);
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
+  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
   const acqRows = acquisitionRows(c);
   if (acqRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -9902,7 +9989,7 @@ function docxXml(c) {
   body += headingXml(REPORT_TEXT.originHeading);
   body += wP(REPORT_TEXT.originIntro);
   body += wTable([[...REPORT_TEXT.originHeaders], ...(dOrg.length ? dOrg : [REPORT_TEXT.noInventoryRow])], {
-    widths: [1500, 1300, 1300, 1300, 1300, 1500],
+    widths: [1400, 1100, 1100, 1100, 1100, 1200, 1200],
     header: true
   });
   const dAcq = acquisitionRows(c);
@@ -10277,7 +10364,7 @@ async function makeUdf() {
   el.push(
     table(
       [[...REPORT_TEXT.originHeaders], ...(uOrg.length ? uOrg : [REPORT_TEXT.noInventoryRow])],
-      [95, 85, 85, 85, 85, 105],
+      [80, 70, 70, 70, 70, 75, 105],
       { header: true }
     )
   );
@@ -11551,6 +11638,7 @@ function setupEvents() {
   // DELİL PAKETİ (v2.208): ZIP içinde delil.json + ses dosyaları.
   const delilInput = $('#importDelilInput');
   $('#importDelilBtn')?.addEventListener('click', () => delilInput?.click());
+  $('#downloadToolBtn')?.addEventListener('click', downloadAcquisitionTool);
   delilInput?.addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -13661,6 +13749,18 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.212': {
+    title: 'Teslim zinciri ayrıldı; sürücü harfi raporda yok',
+    body:
+      'Teslim eden (flash\'ı veren kişi/kurum) ile operatör (edinmeyi yapan) ' +
+      'artık ayrı kaydedilir ve raporda ayrı gösterilir. Teslim edenin sicili, ' +
+      'teslim yeri ve tarihi paketten gelir; yoksa uydurulmaz, elle girilebilir. ' +
+      'TCKN istenmez. Raporda sürücü harfi (D:) artık yazılmaz: kanıt kimliği ' +
+      'değildir, işletim sistemi değişince değişir. ARAÇ sütunu ürün adını değil ' +
+      'edinme aletinin kendisini yazar (edinme.ps1 1.0 · PowerShell). Edinme ' +
+      'aracı Ses → Edinme aracını indir ile tek zip olarak iner. Aynı paketi ' +
+      'yeniden yüklemek elle girdiğiniz bilgiyi ezmez.'
+  },
   '2.211': {
     title: 'Delil paketi: kopya oluşmaz',
     body:

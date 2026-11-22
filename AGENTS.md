@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.211.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.212.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4536,3 +4536,60 @@ curl -s https://azmisahin-gov.github.io/akis/version.json
 
 Beklenen: **1155 birim + 482 şema** + rapor/sürüm/tasarım yeşil; sürüm 2.211.
 Sonra **v2.212** ile başla.
+
+## YENİ OTURUM DEVRİ (v2.212) — Delil teslim zinciri
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.212** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1188 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit + push sonrası doğrulanacak |
+| Açık konu | v2.213 (disk envanteri + paket v2), v2.214 (envanter UI) |
+
+### Ne yapıldı
+
+- **Teslim eden ≠ operatör.** `delil.json` → `delivery { deliveredBy, registry,
+  deliveredAt, place }`; AKİS → `origin.deliveredBy`, `deliveredByRegistry`,
+  `deliveredAt`, `deliveryPlace`. Operatör `acquisition.operator` alanında kalır.
+- **Sürücü harfi rapordan kaldırıldı** (`device.volumes` yalnız teknik izde).
+- **Operatör hücresi** `Ad · Sicil`; köken tablosu 7 sütun (`TESLİM YERİ`).
+- **Alet adı ürün adı değil:** `edinme.ps1 1.0 · PowerShell` (rapor ARAÇ sütunu).
+  Eski paketler kendi alet adını taşır; manifest tahrif edilmez.
+- **Rapor metni** ürün kimliği taşımaz (`acqIntro` yeniden yazıldı).
+- **Yeniden yükleme ezmez:** yalnız boş köken/teslim alanı dolar; günlüğe yazılır.
+- **Birleştirme nesneyi JSON ile karşılaştırır:** aynı tutanak çakışma değil;
+  farklıysa okunur metin. Önizleme = birleştirme.
+- **Araç indirme:** Ses → **Edinme aracını indir** (zip: ps1 + BASLAT.bat + OKUBENI).
+- **edinme.ps1:** `-OperatorRegistry`, `-DeliveredBy`, `-DeliveredByRegistry`,
+  `-DeliveredAt`, `-DeliveryPlace`, `-NonInteractive`; `device.label`.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Rapor ÜRÜNÜ değil ALETİ adlandırır.** ARAÇ hücresi `ad sürüm · motor`.
+   Ürün adı/sürümü hiçbir çıktıda (başlık, künye, alt bilgi, gövde) yer almaz.
+   Delil verili çıktı da kurala dahildir (`rapor` Senaryo 15).
+2. **Sürücü harfi kanıt kimliği değildir.** Rapora yazılmaz; platform değişince
+   değişir. Yalnız `delil.json` teknik izinde (`device.volumes`) kalır.
+3. **Teslim eden ≠ operatör.** İkisi ayrı alan, ayrı sütun. Boş alan uydurulmaz.
+4. **TCKN istenmez.** "Sicil / kayıt no (varsa)" serbest metindir, doğrulanmaz.
+5. **`normalizeMaterial` beyaz listesi:** `origin` altına yeni alan eklerken
+   `emptyMaterial.origin` + `normalizeMaterial` + test **birlikte** güncellenir;
+   aksi hâlde alan ilk kaydetmede sessizce silinir (v2.212'de ölçüldü).
+6. **Birleştirmede nesne değeri referansla karşılaştırma.** `sameOriginValue`
+   + `originValueText` kullanın; ekranda `[object Object]` yasak.
+7. **Yeniden yükleme ezmez:** mevcut kaydın dolu alanı korunur, yalnız boş alan
+   dolar ve günlüğe yazılır.
+
+### Dürüst sınır
+
+`edinme.ps1` bu ortamda (Linux, USB yok, `pwsh` yok) **çalıştırılmadı**. Yalnız
+şema/import/rapor tarafı otomatik sınandı. Windows'ta kurgusal klasörde
+`-Simulate` ve gerçek USB'de teslim parametreleriyle denenmelidir.
+
+### Sıradaki iş
+
+**v2.213 — Disk envanteri + paket v2:** `disk.json`, `icerik/<etiket|seri|marka>/`,
+varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu. Ayrıntı:
+`docs/GELECEK_PLANI.md` §9.
