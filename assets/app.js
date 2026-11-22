@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.207';
+} from './schema.js?v=2.208';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.207';
+const APP_VERSION = '2.208';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -198,6 +198,11 @@ const REPORT_TEXT = {
     'Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler bilirkişi beyanına ve teslim tutanağına dayanır; ortam türü kendiliğinden tespit edilmemiştir.',
   originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'KAYIT CİHAZI / TARİHİ'],
   originEmpty: '—',
+  // DELİL EDİNME (v2.208): yalnız delil paketinden gelen kayıtlar için.
+  acqHeading: 'DELİL EDİNME VE DOĞRULAMA',
+  acqIntro:
+    'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Uygulama cihazı görmez; yalnız dosya özetlerini (SHA-256) yeniden hesaplayarak doğrular. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
+  acqHeaders: ['KAYIT', 'CİHAZ', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
   mediumTypes: [
     'Belirtilmedi',
     'CD / DVD',
@@ -7456,6 +7461,120 @@ function verifyHashState(nowHash, storedHash) {
   if (!isSha256Hex(nowHash) || !isSha256Hex(storedHash)) return 'unavailable';
   return nowHash === storedHash ? 'verified' : 'mismatch';
 }
+// ===== DELİL PAKETİ (v2.208) ============================================
+// Tarayıcı USB'yi görmez; edinme ayrı bir araçla yapılır. AKİS yalnız
+// delil.json + ses dosyalarını alır, hash'leri DOĞRULAR ve belgeler.
+const DELIL_SCHEMA = 'akis.delil.v1';
+const DELIL_COPY_TYPES = {
+  'logical-file-copy': 'Mantıksal dosya kopyası',
+  'full-device-image': 'Tam DD imajı',
+  'used-block-image': 'Kullanılan blok imajı'
+};
+function delilCopyTypeLabel(t) {
+  return DELIL_COPY_TYPES[t] || (t ? String(t) : '—');
+}
+// Paket içinde delil.json kökte veya tek bir üst klasörde olabilir.
+function findDelilManifestPath(names) {
+  const list = (names || []).map(String);
+  if (list.includes('delil.json')) return 'delil.json';
+  const nested = list
+    .filter((n) => /(^|\/)delil\.json$/.test(n))
+    .sort((a, b) => a.split('/').length - b.split('/').length);
+  return nested[0] || null;
+}
+// Şema doğrulaması: eksik/yanlış paket sessizce alınmaz. Dönüş: hata metni
+// veya null (geçerli).
+function validateDelilPack(pack) {
+  if (!pack || typeof pack !== 'object') return 'Delil dosyası okunamadı.';
+  if (pack.schema !== DELIL_SCHEMA)
+    return `Desteklenmeyen delil şeması: ${pack.schema || 'yok'}. Beklenen: ${DELIL_SCHEMA}.`;
+  if (!Array.isArray(pack.files) || !pack.files.length)
+    return 'Delil dosyasında ses dosyası listesi yok.';
+  for (const f of pack.files) {
+    if (!f || typeof f !== 'object') return 'Dosya kaydı geçersiz.';
+    if (!f.name || !f.relPath) return 'Dosya adı veya yolu eksik.';
+  }
+  if (!pack.device || (!pack.device.model && !pack.device.serial))
+    return 'Cihaz bilgisi (model veya seri no) eksik.';
+  if (!pack.method || !pack.method.copyType) return 'Edinme yöntemi (copyType) eksik.';
+  return null;
+}
+function delilFileState(file, nowHash) {
+  return verifyHashState(nowHash, file && file.sha256);
+}
+// Delil paketinden materyalin `origin` alanını üretir. Cihaz bilgisi
+// edinme aracının BEYANIDIR; uygulama cihazı görmez.
+function delilOriginFromPack(pack) {
+  const d = (pack && pack.device) || {};
+  const meth = (pack && pack.method) || {};
+  const op = (pack && pack.operator) || {};
+  const isUsb = /usb/i.test(String(d.busType || ''));
+  const label = [d.model, d.serial].filter(Boolean).join(' · ');
+  const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
+  const wb = meth.hardwareWriteBlocker ? 'donanım write-blocker: evet' : 'donanım write-blocker: hayır';
+  return {
+    mediumType: isUsb ? 'usb' : 'unspecified',
+    mediumLabel: label,
+    // Operatör = edinmeyi yapan kişi; "teslim eden" ile aynı şey DEĞİLDİR.
+    // Teslim bilgisi pakette yoksa boş bırakılır; operatör edinme tablosunda.
+    deliveredBy: '',
+    deliveredAt: '',
+    deviceInfo: [delilCopyTypeLabel(meth.copyType), tool, wb].filter(Boolean).join(' · '),
+    acquisition: {
+      schema: pack.schema,
+      acquiredAt: (pack && pack.acquiredAt) || '',
+      operator: { ...op },
+      device: { ...d },
+      method: { ...meth },
+      notes: (pack && pack.notes) || ''
+    }
+  };
+}
+function delilSummary(results) {
+  const out = { total: 0, verified: 0, mismatch: 0, unavailable: 0, missing: 0 };
+  for (const r of results || []) {
+    out.total++;
+    if (r && r.state === 'verified') out.verified++;
+    else if (r && r.state === 'mismatch') out.mismatch++;
+    else if (r && r.state === 'missing') out.missing++;
+    else out.unavailable++;
+  }
+  return out;
+}
+function delilStateLabel(state) {
+  return (
+    {
+      verified: 'Doğrulandı',
+      mismatch: 'Uyuşmuyor',
+      unavailable: 'Doğrulanamadı',
+      missing: 'Pakette yok'
+    }[state] || 'Doğrulanamadı'
+  );
+}
+// Rapor: yalnız delil paketinden gelen kayıtlar girer. Paket yoksa bölüm
+// hiç çizilmez (yapılmayan edinme rapora yazılmaz).
+function acquisitionRows(c) {
+  const out = [];
+  for (const m of (c && c.materials) || []) {
+    const a = m.origin && m.origin.acquisition;
+    if (!a) continue;
+    const d = a.device || {};
+    const meth = a.method || {};
+    const op = a.operator || {};
+    const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
+    out.push([
+      m.name || m.fileName || '—',
+      d.model || '—',
+      d.serial || '—',
+      delilCopyTypeLabel(meth.copyType),
+      tool || '—',
+      op.name || '—',
+      a.acquiredAt ? niceDate(String(a.acquiredAt).slice(0, 10)) : '—',
+      delilStateLabel(a.hashState)
+    ]);
+  }
+  return out;
+}
 // Technical inventory for the evidence record. The browser can only expose
 // container-level facts (codec, channel count, sample rate, bit depth); these are
 // read straight from the decoded buffer or the WAV header, never guessed.
@@ -7631,6 +7750,152 @@ async function addAudioFiles(files, opts = {}) {
       ? `${valid.length} ses dosyası teslim bilgisiyle eklendi.`
       : `${valid.length} ses dosyası eklendi. Teslim bilgisi sonra doldurulabilir.`
   );
+}
+// Delil paketi (v2.208): delil.json + ses dosyaları. Tarayıcı cihazı görmez;
+// yalnız hash doğrular. Uyuşmazlıkta sessizce "doğrulandı" denmez.
+async function importDelilPack(file) {
+  if (!window.JSZip) throw new Error('Delil paketi açma bileşeni yüklenemedi. Sayfayı yenileyin.');
+  const c = currentCase();
+  if (!c) return;
+  const zip = await JSZip.loadAsync(file);
+  const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+  const manifestPath = findDelilManifestPath(names);
+  if (!manifestPath) throw new Error('Pakette delil.json bulunamadı.');
+  let pack;
+  try {
+    pack = JSON.parse(await zip.file(manifestPath).async('string'));
+  } catch (e) {
+    throw new Error('delil.json okunamadı: ' + (e && e.message ? e.message : e));
+  }
+  const err = validateDelilPack(pack);
+  if (err) throw new Error(err);
+  const baseDir = manifestPath.includes('/') ? manifestPath.slice(0, manifestPath.lastIndexOf('/') + 1) : '';
+  const results = [];
+  for (const f of pack.files) {
+    const candidates = [
+      baseDir + f.relPath,
+      f.relPath,
+      baseDir + 'ses/' + f.name,
+      'ses/' + f.name,
+      f.name
+    ];
+    const zf = candidates.map((n) => zip.file(n)).find(Boolean);
+    if (!zf) {
+      results.push({ file: f, state: 'missing', blob: null, nowHash: null });
+      continue;
+    }
+    const raw = await zf.async('blob');
+    const mime = raw.type || (/\.wav$/i.test(f.name) ? 'audio/wav' : 'audio/*');
+    const blob = new Blob([raw], { type: mime });
+    const nowHash = await sha256(blob);
+    results.push({ file: f, state: delilFileState(f, nowHash), blob, nowHash });
+  }
+  const summary = delilSummary(results);
+  if (summary.mismatch || summary.missing) {
+    const devam = await askConfirm(
+      'Delil paketi doğrulanamadı',
+      `${summary.mismatch} dosyanın SHA-256 özeti uyuşmuyor, ${summary.missing} dosya pakette yok. ` +
+        'Paket bozulmuş veya değiştirilmiş olabilir. Yine de yüklenirse raporda "Uyuşmuyor" / "Pakette yok" olarak görünür. Devam edilsin mi?'
+    );
+    if (!devam) {
+      showToast('Delil paketi yüklenmedi.');
+      return;
+    }
+  }
+  const origin = delilOriginFromPack(pack);
+  let added = 0;
+  for (const r of results) {
+    if (!r.blob) continue;
+    const f = r.file;
+    const id = uid();
+    const m = {
+      id,
+      name: f.name,
+      type: r.blob.type || 'audio',
+      size: r.blob.size,
+      duration: await audioDuration(r.blob),
+      sha256: r.nowHash,
+      tech: await audioTech(r.blob),
+      segments: [],
+      status: 'pending',
+      synthetic: false,
+      addedAt: new Date().toISOString(),
+      log: [],
+      origin: {
+        ...origin,
+        acquisition: {
+          ...origin.acquisition,
+          hashState: r.state,
+          manifestSha256: f.sha256 || '',
+          fileRelPath: f.relPath || ''
+        }
+      }
+    };
+    c.materials.push(m);
+    logEvent(
+      m,
+      'Delil paketinden alındı',
+      `${(pack.device && pack.device.model) || 'cihaz'} · ${delilCopyTypeLabel(pack.method && pack.method.copyType)} · paket: ${file.name}`
+    );
+    logEvent(
+      m,
+      r.state === 'verified'
+        ? 'SHA-256 doğrulandı'
+        : r.state === 'mismatch'
+          ? 'SHA-256 UYUŞMUYOR'
+          : 'SHA-256 doğrulanamadı',
+      r.state === 'verified'
+        ? `Özet: ${r.nowHash}`
+        : `Beklenen: ${f.sha256 || 'yok'} · Bulunan: ${r.nowHash || 'hesaplanamadı'}`
+    );
+    await storeBlob(blobKey(c, m), r.blob);
+    objectUrls.set(blobKey(c, m), URL.createObjectURL(r.blob));
+    added++;
+  }
+  persist();
+  renderOverview();
+  await renderAudioList();
+  switchView('audio');
+  renderDelilResult(summary, pack, results, file.name);
+  showToast(
+    summary.mismatch || summary.missing
+      ? `Delil paketi yüklendi (${added} kayıt) — ${summary.mismatch + summary.missing} dosya doğrulanamadı.`
+      : `Delil paketi doğrulandı: ${summary.verified}/${summary.total} dosya.`
+  );
+}
+function renderDelilResult(summary, pack, results, fileName) {
+  const body = $('#delilResultBody');
+  const dlg = $('#delilResultDialog');
+  if (!body || !dlg) return;
+  const d = (pack && pack.device) || {};
+  const meth = (pack && pack.method) || {};
+  const op = (pack && pack.operator) || {};
+  const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '—';
+  const stateCls = (s) => (s === 'verified' ? 'ok' : s === 'mismatch' || s === 'missing' ? 'bad' : 'warn');
+  const rows = (results || [])
+    .map(
+      (r) =>
+        `<tr><td>${esc(r.file.name)}</td><td class="delil-hash">${esc((r.file.sha256 || '—').slice(0, 16))}${r.file.sha256 ? '…' : ''}</td><td class="delil-state ${stateCls(r.state)}">${esc(delilStateLabel(r.state))}</td></tr>`
+    )
+    .join('');
+  const bad = summary.mismatch || summary.missing;
+  body.innerHTML =
+    `<div class="delil-meta">` +
+    `<div><b>Paket:</b> ${esc(fileName || '—')}</div>` +
+    `<div><b>Cihaz:</b> ${esc(d.model || '—')} · <b>Seri:</b> ${esc(d.serial || '—')} · ${esc(fmtBytes(d.sizeBytes || 0))}</div>` +
+    `<div><b>Yöntem:</b> ${esc(delilCopyTypeLabel(meth.copyType))} · <b>Araç:</b> ${esc(tool || '—')} · <b>Write-blocker:</b> ${meth.hardwareWriteBlocker ? 'evet' : 'hayır'}</div>` +
+    `<div><b>Operatör:</b> ${esc(op.name || '—')}${op.registry ? ' · ' + esc(op.registry) : ''} · <b>Alınma:</b> ${esc(String((pack && pack.acquiredAt) || '—').slice(0, 19).replace('T', ' '))}</div>` +
+    `</div>` +
+    `<div class="delil-counts ${bad ? 'is-warn' : 'is-ok'}">` +
+    `<b>${summary.total}</b> dosya · <b>${summary.verified}</b> doğrulandı` +
+    (summary.mismatch ? ` · <b>${summary.mismatch}</b> uyuşmuyor` : '') +
+    (summary.unavailable ? ` · <b>${summary.unavailable}</b> doğrulanamadı` : '') +
+    (summary.missing ? ` · <b>${summary.missing}</b> pakette yok` : '') +
+    `</div>` +
+    `<p class="delil-note">Cihaz bilgisi <b>edinme aracının beyanıdır</b>; uygulama cihazı görmez. "Doğrulandı" yalnız SHA-256 özeti tutuyorsa yazılır.</p>` +
+    `<table class="delil-table"><thead><tr><th>DOSYA</th><th>BEKLENEN SHA-256</th><th>DURUM</th></tr></thead><tbody>${rows}</tbody></table>`;
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open', '');
 }
 async function ensureModel() {
   const modelId = $('#modelSelect').value;
@@ -9340,6 +9605,10 @@ function renderReport() {
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length ? materials.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec || m.type || REPORT_TEXT.codecFallback)} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration || 0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate ? ' · ' + esc(m.tech.sampleRate) + ' Hz' : ''}${m.tech?.bitDepth ? ' · ' + esc(m.tech.bitDepth) + ' bit' : ''}${m.tech?.channels === 2 ? '<br>Dinlenen: ' + esc(chanModeText(m)) : ''}${m.spectrogramReviewed ? '<br>' + esc(REPORT_TEXT.spectrogramLabel) + ' (' + esc(new Date(m.spectrogramReviewed.at).toLocaleString('tr-TR')) + ')' : ''}</td><td class="paper-hash">${esc(m.sha256 || 'Hesaplanamadı')}</td></tr>`).join('') : `<tr><td colspan="5">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows = originRows(c);
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
+  const acqRows = acquisitionRows(c);
+  if (acqRows.length) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
   const spkRows = speakerRows(c);
   html += `<div class="paper-section"><h3>Konuşmacılar</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
@@ -9543,6 +9812,15 @@ function docxXml(c) {
     widths: [1500, 1300, 1300, 1300, 1300, 1500],
     header: true
   });
+  const dAcq = acquisitionRows(c);
+  if (dAcq.length) {
+    body += headingXml(REPORT_TEXT.acqHeading);
+    body += wP(REPORT_TEXT.acqIntro);
+    body += wTable([[...REPORT_TEXT.acqHeaders], ...dAcq], {
+      widths: [1100, 1000, 1000, 1000, 900, 1000, 900, 1000],
+      header: true
+    });
+  }
   const dSpk = speakerRows(c);
   body += headingXml('Konuşmacılar');
   body += wP(REPORT_TEXT.speakerIntro);
@@ -9910,6 +10188,12 @@ async function makeUdf() {
       { header: true }
     )
   );
+  const uAcq = acquisitionRows(c);
+  if (uAcq.length) {
+    el.push(h(REPORT_TEXT.acqHeading));
+    el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
+    el.push(table([[...REPORT_TEXT.acqHeaders], ...uAcq], [85, 70, 65, 70, 60, 65, 60, 65], { header: true }));
+  }
   const uSpk = speakerRows(c);
   el.push(h('Konuşmacılar'));
   el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
@@ -11171,6 +11455,25 @@ function setupEvents() {
     if (files.length) await addAudioFiles(files);
     e.target.value = '';
   });
+  // DELİL PAKETİ (v2.208): ZIP içinde delil.json + ses dosyaları.
+  const delilInput = $('#importDelilInput');
+  $('#importDelilBtn')?.addEventListener('click', () => delilInput?.click());
+  delilInput?.addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      await importDelilPack(f);
+    } catch (err) {
+      showToast('Delil paketi yüklenemedi: ' + (err && err.message ? err.message : err), true);
+    }
+  });
+  $('#closeDelilResult')?.addEventListener('click', () => $('#delilResultDialog')?.close());
+  $('#delilResultClose')?.addEventListener('click', () => $('#delilResultDialog')?.close());
+  $('#delilResultReport')?.addEventListener('click', () => {
+    $('#delilResultDialog')?.close();
+    switchView('report');
+  });
   const dz = $('#dropZone');
   ['dragenter', 'dragover'].forEach((ev) =>
     dz.addEventListener(ev, (e) => {
@@ -11186,6 +11489,15 @@ function setupEvents() {
   );
   dz.addEventListener('drop', async (e) => {
     const files = [...e.dataTransfer.files];
+    const zip = files.find((f) => /\.zip$/i.test(f.name));
+    if (zip) {
+      try {
+        await importDelilPack(zip);
+      } catch (err) {
+        showToast('Delil paketi yüklenemedi: ' + (err && err.message ? err.message : err), true);
+      }
+      return;
+    }
     if (files.length) await addAudioFiles(files);
   });
   $('#view-audio').addEventListener('click', async (e) => {
@@ -13256,6 +13568,17 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.208': {
+    title: 'Delil paketi ve doğrulama (Tier 1)',
+    body:
+      'Ses görünümüne "Delil paketi yükle" eklendi. Ayrı edinme aracı ' +
+      '(tools/edinme/edinme.ps1) USB\'yi yazılımsal salt-okunur yapar, dosyaları ' +
+      'kopyalar, SHA-256 hesaplar ve delil.json üretir. AKİS paketi yükler ve her ' +
+      'dosyanın hash\'ini yeniden hesaplar: Doğrulandı / Uyuşmuyor / Doğrulanamadı. ' +
+      'Cihaz bilgisi edinme aracının beyanıdır; tarayıcı cihazı görmez. Tier 1 ' +
+      'silinmiş veri/boş alan içermez; "adli imaj" değildir. PowerShell aracı ' +
+      'kurgusal USB\'de test edilmeden gerçek delile uygulanmamalıdır.'
+  },
   '2.207': {
     title: 'Yerel LLM denemesi kaldırıldı',
     body:

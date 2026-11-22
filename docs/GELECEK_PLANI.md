@@ -1,14 +1,15 @@
-# Gelecek Planı — Öneriler (uygulanmadı)
+# Gelecek Planı — Öneriler
 
-> **Durum:** Bu belge bir **öneri ve planlama** belgesidir. Buradaki hiçbir
-> özellik uygulanmış değildir; hiçbir sürümde yoktur. Uygulanmadan önce ölçüm,
-> test ve kullanıcı onayı gerekir.
+> **Durum:** **Delil Tier 1 v2.208'de uygulandı.** Bu belgedeki diğer konular
+> (LLM, rapor, Rust/Tauri, delil Tier 2) **öneridir**; uygulanmamıştır.
+> Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
 >
-> **Güncel sürüm:** v2.207 (yalnız belge; uygulama değişmedi).
+> **Güncel sürüm:** v2.208.
 
 ## 0. Öncelik sırası (kullanıcı kararı)
 
-1. **Delil edinme** — hızlı geçiş: minimum standart + paket doğrulama.
+1. ~~**Delil edinme** — hızlı geçiş: minimum standart + paket doğrulama.~~
+   **v2.208'de yapıldı (Tier 1).**
 2. **LLM** — hızlı çalışan çözüm: yerel, ölçülmüş, yalnız taslak.
 3. **Rapor** — bölüm yapısı + kurumsal biçim.
 4. **Uzun vade:** saf Rust / Tauri yeniden yazım (opsiyonel).
@@ -48,8 +49,8 @@ gir. Bu akış:
 
 **A → B → (C) → (D, isteğe bağlı).**
 
-1. **v2.208 — A:** PowerShell Tier 1 + `delil.json` + AKİS "Delil paketi yükle".
-   Bugün çalışır, kurulum istemez, kanıt zinciri üretir.
+1. **v2.208 — A: YAPILDI.** PowerShell Tier 1 + `delil.json` + AKİS
+   "Delil paketi yükle". Bugün çalışır, kurulum istemez, kanıt zinciri üretir.
 2. **Sonraki — B:** Aynı şema ve akış Rust CLI'ye taşınır; PowerShell emekliye
    ayrılır. A'nın emeği kaybolmaz; **sözleşme `delil.json`'dur**.
 3. **İsteğe bağlı — C:** Tam DD imajı; kurgusal USB'de ölçülmeden gerçek delile
@@ -190,8 +191,8 @@ taslak üretmiyor. Tarayıcı-içi küçük model yolu **kapatıldı**.
 
 ## 6. Önerilen sürüm sırası
 
-1. **v2.208 — Delil Tier 1:** `delil.json` + PowerShell `edinme.ps1` + AKİS
-   "Delil paketi yükle" + hash doğrulama + rapor satırı.
+1. **v2.208 — Delil Tier 1: YAPILDI.** `delil.json` + PowerShell `edinme.ps1`
+   + AKİS "Delil paketi yükle" + hash doğrulama + rapor satırı.
 2. **v2.209 — Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu
    listesi, seçmeli özet.
 3. **v2.210 — LLM (Ollama) — isteğe bağlı:** 4B model, taslak-only, guard,

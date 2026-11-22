@@ -1552,5 +1552,21 @@ console.log('\n[2be] Dosyalar arası kişi kaydı (v2.205)');
   check('birleştirme kişi/bağ çakışması', /kind: 'case-speaker'/.test(schemaJs) && /kind: 'speaker-person'/.test(schemaJs));
   check('rapor açıklaması uzman kanaati der', /uzman kanaatidir, otomatik kimlik tespiti değildir/.test(appJs));
 }
+console.log('\n[2bg] Delil paketi: yükleme, doğrulama, rapor (v2.208)');
+{
+  const appJs = read('assets/app.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('delil yükleme düğmesi ve girişi var', /id="importDelilBtn"/.test(html) && /id="importDelilInput"/.test(html));
+  check('doğrulama penceresi var', /id="delilResultDialog"/.test(html) && /id="delilResultBody"/.test(html));
+  check('kural: cihaz bilgisi beyandır', /edinme aracının beyanıdır/.test(html) || /edinme aracının beyanıdır/.test(appJs));
+  check('paket içe aktarma ve şema doğrulama var', /async function importDelilPack/.test(appJs) && /function validateDelilPack/.test(appJs));
+  check('hash doğrulaması verifyHashState kullanır', /function delilFileState\([\s\S]{0,120}verifyHashState/.test(appJs));
+  check('içe aktarma delil günlüğüne yazar', /Delil paketinden alındı/.test(appJs) && /SHA-256 doğrulandı/.test(appJs));
+  check('rapor üç çıktıda edinme satırı', (appJs.match(/acquisitionRows\(c\)/g) || []).length >= 3);
+  check('delil tablosu sarar (kırpma yok)', /\.delil-table[\s\S]{0,500}overflow-wrap:\s*anywhere/.test(layer));
+  check('delil stilinde ham hex yok', !/\.delil-[^{]*\{[^}]*#[0-9a-fA-F]{3,8}/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

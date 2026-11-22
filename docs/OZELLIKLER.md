@@ -1,4 +1,4 @@
-# Özellikler (v2.207 — mevcut durum)
+# Özellikler (v2.208 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -640,10 +640,35 @@ uzmanlık alanını gösterir.
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
 
+## Delil paketi (v2.208)
+
+Ayrı edinme aracı + tarayıcıda doğrulama. Tarayıcı USB'yi **görmez**; edinme
+`tools/edinme/edinme.ps1` ile yapılır, AKİS yalnız **doğrular ve belgeler**.
+
+- **Paket:** ZIP içinde `delil.json` + `ses/` dosyaları.
+- **Yükleme:** Ses görünümü → **Delil paketi yükle**.
+- **Doğrulama:** her dosyanın SHA-256 özeti yeniden hesaplanır; üç durum:
+  **Doğrulandı** / **Uyuşmuyor** / **Doğrulanamadı**. Hash yoksa
+  "Doğrulandı" denmez.
+- **Cihaz bilgisi:** model, seri no, kapasite, yöntem, araç, operatör,
+  alınma zamanı. Bu bilgiler **edinme aracının beyanıdır**; uygulama cihazı
+  görmez.
+- **Uyuşmazlık:** sessizce geçmez; onay istenir, kabul edilirse raporda
+  "Uyuşmuyor" yazar.
+- **Delil günlüğü:** "Delil paketinden alındı" + "SHA-256 doğrulandı /
+  UYUŞMUYOR / doğrulanamadı" girdileri zincirle yazılır.
+- **Rapor:** **DELİL EDİNME VE DOĞRULAMA** bölümü; HTML/DOCX/UDF aynı metni
+  üretir. Paket yoksa bölüm çizilmez.
+- **Tier 1 sınırı:** silinmiş dosya/boş alan gelmez; "adli imaj" değil,
+  "belgelenmiş dosya kopyası"dır. Yazılımsal salt-okunur, donanım
+  write-blocker değildir; yöntem raporda yazılır.
+
 ## Mesleki sınırlar (uygulama bunları yapmaz)
 
 - Hukuki değerlendirme ve bilirkişi kanaati üretmez.
 - Konuşmacı kimliği, kayıt orijinalliği veya montaj tespiti yapmaz.
 - E-imza üretmez, UYAP'a belge göndermez.
+- **USB/cihaz edinmez.** Cihaz bilgisi edinme aracının beyanıdır; tarayıcı
+  cihazı görmez. Tier 1 çıktısı "adli imaj" değil, "belgelenmiş kopya"dır.
 - Kontrol edilmemiş deşifreyi doğrulanmış gibi göstermez.
 - Yapılmayan incelemeyi rapora yazmaz.

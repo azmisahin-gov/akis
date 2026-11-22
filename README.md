@@ -4,7 +4,7 @@ Bilirkişiler için ses kaydı inceleme, konuşma çözümleme (deşifre) ve rap
 hazırlama aracı. Tamamen tarayıcıda çalışır; Python veya Node.js kurulumu
 gerektirmez.
 
-**Sürüm:** v2.207 · **Lisans:** özel / kurumsal kullanım
+**Sürüm:** v2.208 · **Lisans:** özel / kurumsal kullanım
 
 > Sürüm numarası tek kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`.
 > Arayüzdeki etiket buradan yazılır. Her güncellemede bu değer, `CHANGELOG.md`
@@ -67,8 +67,8 @@ başlatır ve Microsoft Edge'i açar. Bu yol internet olmadan çalışmak içind
 | [`docs/MIMARI.md`](docs/MIMARI.md) | Dosya düzeni, katmanlar, veri akışı |
 | [`docs/OZELLIKLER.md`](docs/OZELLIKLER.md) | Mevcut (çalışan) özelliklerin tam listesi |
 | [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md) | Sürüm geçmişi ve planlanan çalışmalar |
-| [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md) | Gelecek planı — seçenekler ve öneriler (uygulanmadı) |
-| [`docs/DELIL_EDINME.md`](docs/DELIL_EDINME.md) | Delil edinme standardı ve `delil.json` (öneri) |
+| [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md) | Gelecek planı — seçenekler ve öneriler (delil Tier 1 uygulandı) |
+| [`docs/DELIL_EDINME.md`](docs/DELIL_EDINME.md) | Delil edinme standardı ve `delil.json` (Tier 1 uygulandı) |
 | [`docs/BILINEN_SORUNLAR.md`](docs/BILINEN_SORUNLAR.md) | Tespit edilen sorunlar ve teknik borç |
 | [`docs/KAYNAK.md`](docs/KAYNAK.md) | Resmî kaynaklar ve mevzuat notları |
 | [`CHANGELOG.md`](CHANGELOG.md) | Sürüm geçmişi |

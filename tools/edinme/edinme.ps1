@@ -1,0 +1,269 @@
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+  AKİS Delil Edinme — Tier 1 (yazılımsal salt-okunur + dosya kopyası + SHA-256).
+
+.DESCRIPTION
+  USB/flaş/SD kaynağından ses dosyalarını (varsayılan) kopyalar, her dosyanın
+  SHA-256 özetini hesaplar ve AKİS'in okuyabileceği bir delil paketi üretir:
+    AKIS_Delil_<tarih>_<saat>/
+      delil.json
+      delil.log
+      ses/...
+    AKIS_Delil_<tarih>_<saat>.zip
+
+  GÜVENLİK:
+  - Kaynağa ASLA yazmaz; yalnız okur.
+  - Önce diski `diskpart` ile salt-okunur yapar; başarısızsa DURUR.
+  - İş bitince salt-okunurluğu kaldırır (finally).
+  - Hedef klasör kaynak sürücüde olamaz.
+
+  DÜRÜST SINIR:
+  - Donanım write-blocker YOKSA bu "adli imaj" değildir; "belgelenmiş dosya
+    kopyası"dır. Raporda yöntem böyle yazılır.
+  - Bu araç doğrulanmış adli araç değildir; kurgusal USB'de test edilmeden
+    gerçek delile uygulanmamalıdır.
+
+.PARAMETER SourcePath
+  Kaynak sürücü kökü veya klasör (ör. E:\).
+
+.PARAMETER OutDir
+  Paketin yazılacağı klasör (ör. D:\delil). Kaynak sürücüde OLAMAZ.
+
+.PARAMETER Operator
+  Operatör adı (delil.json'a yazılır).
+
+.PARAMETER Registry
+  Operatör sicil no (isteğe bağlı).
+
+.PARAMETER Organization
+  Kurum (isteğe bağlı).
+
+.PARAMETER IncludeAll
+  Yalnız ses dosyaları yerine TÜM dosyaları kopyala.
+
+.PARAMETER Simulate
+  Kurgusal test: diskpart/cihaz bilgisi atlanır; bir klasörden paket üretilir.
+  Gerçek delilde KULLANILMAZ.
+
+.EXAMPLE
+  .\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234
+
+.EXAMPLE
+  .\edinme.ps1 -SourcePath C:\test-veri -OutDir C:\test-cikti -Simulate
+#>
+[CmdletBinding()]
+param(
+  [Parameter(Mandatory = $true)][string]$SourcePath,
+  [Parameter(Mandatory = $true)][string]$OutDir,
+  [string]$Operator = '',
+  [string]$Registry = '',
+  [string]$Organization = '',
+  [switch]$IncludeAll,
+  [switch]$Simulate
+)
+
+$ErrorActionPreference = 'Stop'
+$ToolName = 'AKIS Edinme'
+$ToolVersion = '1.0'
+$Schema = 'akis.delil.v1'
+$script:LogPath = $null
+
+function Write-Log {
+  param([string]$Message)
+  $line = '{0} {1}' -f (Get-Date).ToString('s'), $Message
+  Write-Host $line
+  if ($script:LogPath) {
+    Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8
+  }
+}
+
+function Fail {
+  param([string]$Message)
+  Write-Log ("HATA: " + $Message)
+  throw $Message
+}
+
+# --- 1. Yollar -------------------------------------------------------------
+$source = (Resolve-Path -LiteralPath $SourcePath).Path.TrimEnd('\')
+if (-not (Test-Path -LiteralPath $source -PathType Container)) {
+  Fail "Kaynak klasör bulunamadı: $SourcePath"
+}
+if (-not (Test-Path -LiteralPath $OutDir)) {
+  New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
+}
+$outDir = (Resolve-Path -LiteralPath $OutDir).Path.TrimEnd('\')
+if (-not $Simulate -and $outDir.ToLowerInvariant().StartsWith($source.ToLowerInvariant())) {
+  Fail 'Hedef klasör kaynak sürücünün içinde olamaz. Harici bir hedef seçin.'
+}
+
+$stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$pkgName = "AKIS_Delil_$stamp"
+$pkgDir = Join-Path $outDir $pkgName
+New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
+$script:LogPath = Join-Path $pkgDir 'delil.log'
+
+Write-Log "AKİS Delil Edinme $ToolVersion başladı."
+Write-Log "Kaynak: $source"
+Write-Log "Hedef: $pkgDir"
+Write-Log ("Kip: " + $(if ($Simulate) { 'SİMÜLASYON (kurgusal)' } else { 'GERÇEK (yazılımsal salt-okunur)' }))
+
+# --- 2. Cihaz bilgisi / salt-okunur ---------------------------------------
+$device = [ordered]@{
+  busType   = ''
+  model     = ''
+  serial    = ''
+  sizeBytes = 0
+  volumes   = @()
+}
+$readOnlyMethod = 'yok (Simulate)'
+$diskNumber = $null
+$readOnlySet = $false
+
+try {
+  if ($Simulate) {
+    $device.busType = 'USB (simulate)'
+    $device.model = 'Kurgusal cihaz'
+    $device.serial = 'SIM-0001'
+    $device.sizeBytes = 0
+    $device.volumes = @()
+    Write-Log 'Simülasyon: diskpart ve cihaz bilgisi atlandı.'
+  }
+  else {
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
+      [Security.Principal.WindowsBuiltInRole]::Administrator
+    )
+    if (-not $isAdmin) {
+      Fail 'Yönetici olarak çalıştırın (diskpart için gerekli). PowerShell''i "Yönetici olarak çalıştır" ile açın.'
+    }
+
+    $qualifier = Split-Path -Qualifier $source
+    if (-not $qualifier) { Fail 'Kaynak bir sürücü harfiyle belirtilmeli (ör. E:\).' }
+    $driveLetter = $qualifier.TrimEnd(':')
+
+    $part = Get-Partition -DriveLetter $driveLetter -ErrorAction Stop
+    $disk = Get-Disk -Number $part.DiskNumber -ErrorAction Stop
+    if (@('USB', 'SD', 'MMC') -notcontains $disk.BusType) {
+      Fail "Kaynak çıkarılabilir USB/SD değil (BusType=$($disk.BusType)). Edinme durduruldu."
+    }
+
+    $diskNumber = $disk.Number
+    $device.busType = [string]$disk.BusType
+    $device.model = [string]$disk.FriendlyName
+    $device.serial = [string]$disk.SerialNumber
+    $device.sizeBytes = [int64]$disk.Size
+    $device.volumes = @("$driveLetter`:")
+    Write-Log "Cihaz: $($device.model) · seri: $($device.serial) · $($device.sizeBytes) bayt · $($device.busType)"
+
+    # Önce salt-okunur; başarısızsa devam etme.
+    $dp = @"
+select disk $diskNumber
+attributes disk set readonly
+attributes disk
+"@
+    $dpOut = $dp | diskpart
+    # Komut çalıştıysa temizlik (finally) her durumda denenmeli.
+    $readOnlySet = $true
+    Write-Log ('diskpart çıktısı: ' + (($dpOut | Out-String).Trim() -replace "`r?`n", ' | '))
+    $after = Get-Disk -Number $diskNumber -ErrorAction Stop
+    if (-not $after.IsReadOnly) {
+      Fail 'Disk salt-okunur yapılamadı. Edinme durduruldu; kaynağa yazma riski var.'
+    }
+    $readOnlyMethod = "diskpart: select disk $diskNumber; attributes disk set readonly"
+    Write-Log 'Disk salt-okunur: EVET (doğrulandı).'
+  }
+
+  # --- 3. Dosyaları seç ----------------------------------------------------
+  $audioExt = @('.wav', '.mp3', '.m4a', '.ogg', '.flac', '.aac')
+  $files = Get-ChildItem -LiteralPath $source -Recurse -File -ErrorAction Stop | Where-Object {
+    $IncludeAll -or ($audioExt -contains $_.Extension.ToLowerInvariant())
+  }
+  if (-not $files -or $files.Count -eq 0) {
+    Fail 'Kopyalanacak dosya bulunamadı. (Tüm dosyalar için -IncludeAll kullanın.)'
+  }
+  Write-Log ("Kopyalanacak dosya: " + $files.Count)
+
+  # --- 4. Kopyala + SHA-256 ------------------------------------------------
+  $entries = New-Object System.Collections.Generic.List[object]
+  $n = 0
+  foreach ($f in $files) {
+    $n++
+    $rel = $f.FullName.Substring($source.Length).TrimStart('\')
+    $relPosix = $rel.Replace('\', '/')
+    $dest = Join-Path (Join-Path $pkgDir 'ses') $rel
+    $destDir = Split-Path -Parent $dest
+    if (-not (Test-Path -LiteralPath $destDir)) {
+      New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+    }
+    Copy-Item -LiteralPath $f.FullName -Destination $dest -Force
+    $hash = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash.ToLowerInvariant()
+    $entries.Add([ordered]@{
+        name       = $f.Name
+        relPath    = ('ses/' + $relPosix)
+        sizeBytes  = [int64]$f.Length
+        sha256     = $hash
+        modifiedAt = $f.LastWriteTime.ToString('o')
+      })
+    Write-Log ("[$n/$($files.Count)] $relPosix · SHA-256 $hash")
+  }
+
+  # --- 5. delil.json -------------------------------------------------------
+  $notes = if ($Simulate) {
+    'KURGUSAL TEST: gerçek cihaz okunmadı; yalnız paket/şema testi.'
+  }
+  else {
+    'Donanım write-blocker kullanılmadı; disk yazılımsal olarak salt-okunur yapıldı. Bu bir adli imaj değil, belgelenmiş dosya kopyasıdır.'
+  }
+  $manifest = [ordered]@{
+    schema     = $Schema
+    acquiredAt = (Get-Date).ToString('o')
+    operator   = [ordered]@{
+      name         = $Operator
+      registry     = $Registry
+      organization = $Organization
+    }
+    device     = $device
+    method     = [ordered]@{
+      readOnly             = $readOnlyMethod
+      hardwareWriteBlocker = $false
+      copyType             = 'logical-file-copy'
+      image                = $null
+      tool                 = [ordered]@{
+        name    = $ToolName
+        version = $ToolVersion
+      }
+    }
+    files      = @($entries)
+    notes      = $notes
+  }
+  $json = $manifest | ConvertTo-Json -Depth 10
+  $utf8 = New-Object System.Text.UTF8Encoding($false)
+  [System.IO.File]::WriteAllText((Join-Path $pkgDir 'delil.json'), $json, $utf8)
+  Write-Log 'delil.json yazıldı.'
+
+  # --- 6. ZIP --------------------------------------------------------------
+  $zipPath = Join-Path $outDir ($pkgName + '.zip')
+  if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
+  Compress-Archive -Path (Join-Path $pkgDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
+  Write-Log "Paket: $zipPath"
+
+  Write-Host ''
+  Write-Host 'TAMAM.' -ForegroundColor Green
+  Write-Host "Paket: $zipPath"
+  Write-Host 'AKİS → Ses → "Delil paketi yükle" ile açın.'
+}
+finally {
+  if ($readOnlySet -and $diskNumber -ne $null) {
+    try {
+      $dp = @"
+select disk $diskNumber
+attributes disk clear readonly
+"@
+      $dp | diskpart | Out-Null
+      Write-Log 'Salt-okunur kaldırıldı.'
+    }
+    catch {
+      Write-Log ('UYARI: salt-okunur kaldırılamadı. Diski elle kontrol edin: ' + $_)
+    }
+  }
+}

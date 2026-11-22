@@ -481,5 +481,43 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   check('kişi tek satır (DOCX)', count(D) === 1, String(count(D)));
 }
 
+// Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
+// üretmeli; paket yoksa bölüm hiç çizilmemeli.
+console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208)');
+{
+  const c = withMaterial();
+  c.materials[0].origin = {
+    ...(c.materials[0].origin || {}),
+    acquisition: {
+      schema: 'akis.delil.v1',
+      acquiredAt: '2026-11-22T10:15:00+03:00',
+      operator: { name: 'Ahmet Yılmaz', registry: '1234', organization: 'Kurum' },
+      device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', sizeBytes: 16000000000, volumes: ['E:'] },
+      method: {
+        readOnly: 'diskpart',
+        hardwareWriteBlocker: false,
+        copyType: 'logical-file-copy',
+        image: null,
+        tool: { name: 'AKIS Edinme', version: '1.0' }
+      },
+      hashState: 'verified'
+    }
+  };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('delil başlığı', REPORT_TEXT.acqHeading, H, U, D);
+  checkShared('cihaz modeli', 'SanDisk', H, U, D);
+  checkShared('seri no', 'SN123', H, U, D);
+  checkShared('yöntem', 'Mantıksal dosya kopyası', H, U, D);
+  checkShared('doğrulama durumu', 'Doğrulandı', H, U, D);
+
+  const c0 = withMaterial();
+  const H0 = htmlText(c0), U0 = await udfText(c0), D0 = await docxText(c0);
+  check(
+    'paket yokken delil bölümü yok',
+    !H0.includes(REPORT_TEXT.acqHeading) && !U0.includes(REPORT_TEXT.acqHeading) && !D0.includes(REPORT_TEXT.acqHeading)
+  );
+}
+
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.207.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.208.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4191,18 +4191,19 @@ model değiştirilmez; çıktı yine taslak olur ve rapora kendiliğinden girmez
   rapor hazırlığı) korunur ve LLM'siz çalışır.
 - Whisper çözümlemesi ve tüm mevcut akışlar değişmedi.
 
-## PLANLAMA (v2.207 sonrası) — Öneriler, uygulanmadı
+## PLANLAMA (v2.208 sonrası) — Delil Tier 1 uygulandı; diğerleri öneri
 
 Ayrıntılı seçenekler: [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md).
 Delil standardı ve `delil.json`: [`docs/DELIL_EDINME.md`](docs/DELIL_EDINME.md).
 
-**Durum:** Bu bölümdeki hiçbir özellik uygulanmadı; sürüm numarası verilmedi.
-Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
+**Durum:** **Delil Tier 1 v2.208'de uygulandı.** Bu bölümdeki diğer özellikler
+uygulanmadı; sürüm numarası verilmedi. Uygulanmadan önce ölçüm, test ve
+kullanıcı onayı gerekir.
 
 ### Öncelik sırası (kullanıcı kararı)
 
-1. **Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
-   "Delil paketi yükle" + hash doğrulama. (v2.208 önerisi)
+1. ~~**Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
+   "Delil paketi yükle" + hash doğrulama.~~ **v2.208'de yapıldı.**
 2. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
    seçmeli özet.
 3. **LLM (isteğe bağlı):** tarayıcı küçük modeller **kapalı** (ölçüldü:
@@ -4219,3 +4220,83 @@ Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
   girmez.
 - "Daha yeni model" tek başına çözüm değildir; **ölçülmeden** ürüne alınmaz.
 - Her konu **tek sürüm**; plan belgesi sürüm yerine geçmez.
+
+## YENİ OTURUM DEVRİ (v2.208) — Delil paketi (Tier 1)
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.208** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1143 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit + push sonrası `main` = `origin/main` doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.208** |
+| Açık konu | LLM (Ollama/native) ve rapor sırada; Tier 2 (DD imajı) öneri |
+
+### Ne yapıldı
+
+Ayrı edinme aracı + tarayıcıda doğrulama:
+
+- **`tools/edinme/edinme.ps1`** (Windows, yönetici): USB'yi listeler,
+  `diskpart` ile **yazılımsal salt-okunur** yapar, dosyaları kopyalar, SHA-256
+  hesaplar, `delil.json` + `delil.log` + ZIP üretir. `-Simulate` kurgusal test.
+- **AKİS "Delil paketi yükle"** (Ses görünümü): ZIP içindeki `delil.json` +
+  `ses/` dosyalarını alır; her dosyanın SHA-256'sını **yeniden hesaplar**.
+- **Doğrulama penceresi**: cihaz, seri, yöntem, araç, operatör, alınma ve
+  dosya bazında durum.
+- **Rapor**: **DELİL EDİNME VE DOĞRULAMA** bölümü; HTML/DOCX/UDF aynı metni
+  üretir. Paket yoksa bölüm çizilmez.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Tarayıcı cihazı görmez.** `delil.json` cihaz bilgisi **edinme aracının
+   beyanıdır**; arayüz bunu yazar.
+2. **Hash yoksa doğrulanmış sayılmaz.** `verifyHashState` üç hâllidir:
+   `verified` / `mismatch` / `unavailable`.
+3. **Uyuşmazlık sessizce geçmez.** Onay istenir; raporda "Uyuşmuyor" yazılır.
+4. **Tier 1 imaj değildir.** Silinmiş dosya/boş alan gelmez; "belgelenmiş
+   dosya kopyası"dır.
+5. **Yazılımsal salt-okunur, donanım write-blocker değildir.** Yöntem raporda
+   açıkça yazılır.
+6. **Paket yoksa rapor bölümü çizilmez.** Yapılmayan edinme rapora yazılmaz.
+
+### Fonksiyonlar (saf, test edilir)
+
+`validateDelilPack`, `findDelilManifestPath`, `delilFileState`,
+`delilOriginFromPack`, `delilSummary`, `delilStateLabel`, `delilCopyTypeLabel`,
+`acquisitionRows`; ayrıca `importDelilPack`, `renderDelilResult`.
+
+### Şema
+
+`emptyMaterial.origin.acquisition` (v2.208): edinme tutanağı; `normalizeMaterial`
+bilinmeyen alanlarıyla korur. `hashState`, `manifestSha256`, `fileRelPath`
+materyal bazında yazılır.
+
+### Koruyan testler
+
+- `birim-testleri` **[78]** (38 kontrol): şema, manifest yolu, hash üçlüsü,
+  origin eşlemesi, özet, rapor satırı.
+- `rapor-tutarlilik-testi` **Senaryo 14**: üç çıktı aynı edinme satırını üretir;
+  paket yoksa bölüm yok.
+- `tasarim-testi` **[2bg]**: düğme/pencere, beyan metni, hash doğrulaması,
+  delil günlüğü, üç çıktı, kırpma yok.
+- `surum-testi`: `#importDelilBtn`, `#delilResultDialog`, OZELLIKLER/yardım
+  konusu.
+
+### Dürüst sınır
+
+- PowerShell aracı bu ortamda (Linux, USB yok) **çalıştırılmadı**. Yalnız
+  şema/import/rapor tarafı test edildi. Gerçek delilden önce kurgusal USB'de
+  3–5 deneme şart.
+- Tier 2 (tam DD imajı) henüz yok; `docs/GELECEK_PLANI.md`.
+- `diskpart` salt-okunur doğrulaması `Get-Disk.IsReadOnly` ile yapılır; dil
+  bağımsızdır.
+
+### SIRADAKİ İŞLER
+
+1. **v2.209 — Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu
+   listesi, seçmeli özet.
+2. **v2.210 — LLM (Ollama/native) — isteğe bağlı:** 4B, taslak-only, CORS/PNA
+   ölçümü.
+3. **v2.211 — Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
+4. **Sonra:** Rust CLI edinme, DD imajı, yerel ajan, Tauri.

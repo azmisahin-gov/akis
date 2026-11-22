@@ -6,12 +6,71 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.207.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.208.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.208 — Delil paketi (Tier 1) ve doğrulama
+
+Kullanıcı: *"USB'den dosya kopyalamak delil güvenliği açısından zayıf; kendi
+standardımızı kuralım. Edinme ayrı bir araçla olsun, AKİS yalnız doğrulasın."*
+
+### KULLANICI NE GÖRECEK
+
+- **Ses → Delil paketi yükle** düğmesi (ZIP). Paket içinde `delil.json` ve
+  `ses/` dosyaları vardır.
+- Yükleme sonunda **doğrulama penceresi**: cihaz modeli, seri no, yöntem, araç,
+  operatör, alınma zamanı ve her dosyanın SHA-256 durumu.
+- Üç dürüst durum: **Doğrulandı** / **Uyuşmuyor** / **Doğrulanamadı**.
+  Hash yoksa "Doğrulandı" **denmez**.
+- Hash uyuşmazsa yükleme **onay ister**; kabul edilirse raporda "Uyuşmuyor"
+  yazar.
+- Raporun **"DELİL EDİNME VE DOĞRULAMA"** bölümü: kayıt, cihaz, seri no,
+  yöntem, araç, operatör, alınma, doğrulama. HTML/DOCX/UDF **aynı metni** üretir.
+- Delil günlüğüne **"Delil paketinden alındı"** ve **"SHA-256 doğrulandı /
+  UYUŞMUYOR / doğrulanamadı"** girdileri zincirle yazılır.
+
+### EDİNME ARACI
+
+- `tools/edinme/edinme.ps1` (Windows, yönetici): USB'yi listeler, `diskpart`
+  ile **salt-okunur** yapar, dosyaları kopyalar, SHA-256 hesaplar,
+  `delil.json` + `delil.log` + ZIP üretir.
+- `tools/edinme/BASLAT.bat` yönetici PowerShell açar.
+- Kurgusal test: `-Simulate` (diskpart/cihaz bilgisi atlanır).
+- Ayrıntı: [`docs/DELIL_EDINME.md`](docs/DELIL_EDINME.md) ve
+  [`tools/edinme/OKUBENI.md`](tools/edinme/OKUBENI.md).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Tarayıcı cihazı görmez.** `delil.json`'daki cihaz bilgisi **edinme
+   aracının beyanıdır**; arayüz bunu açıkça yazar.
+2. **Hash yoksa doğrulanmış sayılmaz.** `verifyHashState` üç hâllidir:
+   `verified` / `mismatch` / `unavailable`.
+3. **Uyuşmazlık sessizce geçmez.** Onay istenir; raporda "Uyuşmuyor" yazılır.
+4. **Tier 1 imaj değildir.** Silinmiş dosya/boş alan gelmez; raporda
+   "belgelenmiş dosya kopyası" olarak yazılır.
+5. **Yazılımsal salt-okunur, donanım write-blocker değildir.** Yöntem raporda
+   açıkça yazılır.
+6. **Paket yoksa rapor bölümü çizilmez.** Yapılmayan edinme rapora yazılmaz.
+
+### DÜRÜST SINIR
+
+- PowerShell edinme aracı bu ortamda (Linux, USB yok) **çalıştırılmadı**;
+  yalnız şema/import/rapor tarafı test edildi. Gerçek delilden önce kurgusal
+  USB'de 3–5 deneme şart.
+- Tier 2 (tam DD imajı) henüz yok; plan [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md).
+
+### Koruyan testler
+
+- `birim-testleri` **[78]** (38 kontrol): şema, manifest yolu, hash üçlüsü,
+  origin eşlemesi, özet, rapor satırı.
+- `rapor-tutarlilik-testi` **Senaryo 14**: üç çıktı aynı edinme satırını üretir;
+  paket yoksa bölüm yok.
+- `tasarim-testi` **[2bg]**: düğme/pencere, beyan metni, hash doğrulaması,
+  delil günlüğü, üç çıktı, kırpma yok.
 
 ## v2.207 — Yerel LLM denemesi kaldırıldı (ölçüm sonrası)
 

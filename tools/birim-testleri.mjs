@@ -121,6 +121,8 @@ const EXPOSE = [
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
+  'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3600,6 +3602,97 @@ console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
   // Bağ var ama kişi kaydı yok → bağsız sayılır (uydurma eşleştirme yok).
   c.materials[0].speakers[0].personId = 'ps-yok';
   eq('eksik kişi bağı bağsız sayılır', T.speakerRows(c).length, 3);
+}
+
+console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
+{
+  // KURAL: Tarayıcı cihazı görmez. delil.json'daki cihaz bilgisi edinme
+  // aracının BEYANIDIR; uygulama yalnız dosya SHA-256'sını doğrular.
+  const hasDelil = typeof T.validateDelilPack === 'function';
+  eq('delil fonksiyonları tanımlı', hasDelil, true);
+  if (hasDelil) {
+    const hash = 'a'.repeat(64);
+    const pack = {
+      schema: 'akis.delil.v1',
+      acquiredAt: '2026-11-22T10:15:00+03:00',
+      operator: { name: 'Ahmet Yılmaz', registry: '1234', organization: 'Kurum' },
+      device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', sizeBytes: 16000000000, volumes: ['E:'] },
+      method: {
+        readOnly: 'diskpart attributes disk set readonly',
+        hardwareWriteBlocker: false,
+        copyType: 'logical-file-copy',
+        image: null,
+        tool: { name: 'AKIS Edinme', version: '1.0' }
+      },
+      files: [{ name: 'a.wav', relPath: 'ses/a.wav', sizeBytes: 10, sha256: hash }],
+      notes: 'deneme'
+    };
+    eq('geçerli paket kabul edilir', T.validateDelilPack(pack), null);
+    eq('yanlış şema reddedilir', /şema/i.test(T.validateDelilPack({ ...pack, schema: 'x' })), true);
+    eq('boş dosya listesi reddedilir', /listesi/i.test(T.validateDelilPack({ ...pack, files: [] })), true);
+    eq('cihaz bilgisi zorunlu', /Cihaz bilgisi/i.test(T.validateDelilPack({ ...pack, device: {} })), true);
+    eq('yöntem zorunlu', /yöntem/i.test(T.validateDelilPack({ ...pack, method: {} })), true);
+    eq('dosya yolu zorunlu', /yolu eksik/i.test(T.validateDelilPack({ ...pack, files: [{ name: 'a.wav' }] })), true);
+
+    eq('kök delil.json bulunur', T.findDelilManifestPath(['delil.json', 'ses/a.wav']), 'delil.json');
+    eq('nested delil.json bulunur', T.findDelilManifestPath(['pkg/ses/a.wav', 'pkg/delil.json']), 'pkg/delil.json');
+    eq('delil.json yoksa null', T.findDelilManifestPath(['a.wav']), null);
+
+    eq('hash tutuyor → verified', T.delilFileState({ sha256: hash }, hash), 'verified');
+    eq('hash farklı → mismatch', T.delilFileState({ sha256: 'b'.repeat(64) }, hash), 'mismatch');
+    eq('beklenen hash yok → unavailable', T.delilFileState({}, hash), 'unavailable');
+    eq('hesaplanan hash yok → unavailable', T.delilFileState({ sha256: hash }, null), 'unavailable');
+
+    const origin = T.delilOriginFromPack(pack);
+    eq('ortam türü USB', origin.mediumType, 'usb');
+    eq('cihaz etiketi model + seri', origin.mediumLabel, 'SanDisk · SN123');
+    eq('teslim eden boş (operatör edinme tutanağında)', origin.deliveredBy, '');
+    eq('teslim tarihi boş (alınma ayrı)', origin.deliveredAt, '');
+    eq('operatör edinme tutanağında', origin.acquisition.operator.name, 'Ahmet Yılmaz');
+    eq('yöntem/araç/write-blocker yazılır', /Mantıksal dosya kopyası/.test(origin.deviceInfo) && /AKIS Edinme 1\.0/.test(origin.deviceInfo) && /hayır/.test(origin.deviceInfo), true);
+    eq('edinme tutanağı korunur', origin.acquisition.device.serial, 'SN123');
+
+    eq('kopya türü etiketi', T.delilCopyTypeLabel('full-device-image'), 'Tam DD imajı');
+    eq('bilinmeyen kopya türü kendini yazar', T.delilCopyTypeLabel('x'), 'x');
+    eq('kopya türü yok → tire', T.delilCopyTypeLabel(), '—');
+    eq('durum etiketi doğrulandı', T.delilStateLabel('verified'), 'Doğrulandı');
+    eq('durum etiketi pakette yok', T.delilStateLabel('missing'), 'Pakette yok');
+    eq('bilinmeyen durum doğrulanamadı', T.delilStateLabel('x'), 'Doğrulanamadı');
+
+    const sum = T.delilSummary([
+      { state: 'verified' },
+      { state: 'mismatch' },
+      { state: 'unavailable' },
+      { state: 'missing' }
+    ]);
+    eq('özet sayıları', [sum.total, sum.verified, sum.mismatch, sum.unavailable, sum.missing].join(','), '4,1,1,1,1');
+
+    // Rapor satırı: yalnız delil paketinden gelen kayıt girer.
+    const c = T.emptyCaseForTest({ id: 'c1' });
+    const m = T.emptyMaterialForTest({ id: 'm1', fileName: 'a.wav' });
+    m.origin.acquisition = {
+      ...origin.acquisition,
+      hashState: 'verified'
+    };
+    c.materials = [m];
+    const rows = T.acquisitionRows(c);
+    eq('delil kaydı tek satır', rows.length, 1);
+    eq('satır dosya adı', rows[0][0], 'a.wav');
+    eq('satır cihaz', rows[0][1], 'SanDisk');
+    eq('satır seri no', rows[0][2], 'SN123');
+    eq('satır yöntem', rows[0][3], 'Mantıksal dosya kopyası');
+    eq('satır araç', rows[0][4], 'AKIS Edinme 1.0');
+    eq('satır operatör', rows[0][5], 'Ahmet Yılmaz');
+    eq('satır tarih yıl taşır', /2026/.test(rows[0][6]), true);
+    eq('satır doğrulama durumu', rows[0][7], 'Doğrulandı');
+    m.origin.acquisition.hashState = 'mismatch';
+    eq('uyuşmuyor satırı', T.acquisitionRows(c)[0][7], 'Uyuşmuyor');
+    // Paket yoksa bölüm çizilmez.
+    const c2 = T.emptyCaseForTest({ id: 'c2' });
+    const m2 = T.emptyMaterialForTest({ id: 'm2', fileName: 'b.wav' });
+    c2.materials = [m2];
+    eq('paket yoksa satır yok', T.acquisitionRows(c2).length, 0);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

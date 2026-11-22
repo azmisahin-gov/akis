@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.207.**
+yazılır. **Güncel sürüm: v2.208.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -15,8 +15,8 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 
 Öncelik sırası (kullanıcı kararı):
 
-1. **Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
-   "Delil paketi yükle" + hash doğrulama. (v2.208 önerisi)
+1. ~~**Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
+   "Delil paketi yükle" + hash doğrulama.~~ **v2.208'de yapıldı.**
 2. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
    seçmeli özet.
 3. **LLM (isteğe bağlı):** tarayıcı küçük modeller kapalı; Ollama/native 4B
@@ -24,7 +24,7 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 4. **Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
 5. **Uzun vade:** Rust CLI → yerel ajan → Tauri; tam Rust yeniden yazım en son.
 
-Bu maddeler **uygulanmadı**; sürüm numarası verilmedi.
+Kalan maddeler **uygulanmadı**; sürüm numarası verilmedi.
 
 ## v1 — Yayımlanmış sürüm (tamamlandı)
 
@@ -44,6 +44,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.208 — Delil paketi (Tier 1) (tamamlandı)
+
+`delil.json` şeması, `tools/edinme/edinme.ps1` (yazılımsal salt-okunur +
+dosya kopyası + SHA-256) ve AKİS'te **Delil paketi yükle** akışı eklendi.
+Dosya hash'leri yeniden hesaplanır; üç durum: **Doğrulandı / Uyuşmuyor /
+Doğrulanamadı**. Cihaz bilgisi edinme aracının beyanıdır; uygulama cihazı
+görmez. Raporun **DELİL EDİNME VE DOĞRULAMA** bölümü üç çıktıda aynı metni
+üretir. Koruyan test: `birim` [78] + `rapor` Senaryo 14 + `tasarim` [2bg].
+**Dürüst sınır:** PowerShell aracı bu ortamda çalıştırılmadı; kurgusal USB'de
+test edilmeden gerçek delile uygulanmaz. Tier 2 (DD imajı) henüz yok.
 
 ### v2.207 — Yerel LLM denemesi kaldırıldı (tamamlandı)
 

@@ -1,10 +1,10 @@
-# Delil Edinme Standardı — Öneri (uygulanmadı)
+# Delil Edinme Standardı — Tier 1 uygulandı
 
-> **Durum:** Bu belge bir **öneri ve standart taslağıdır**. Buradaki araçlar ve
-> AKİS özellikleri **uygulanmamıştır**; hiçbir sürümde yoktur. Uygulanmadan
-> önce kurgusal USB'de ölçüm, test ve kullanıcı onayı gerekir.
+> **Durum:** **Tier 1 uygulandı (v2.208).** Tier 2 (tam DD imajı) hâlâ
+> öneridir ve uygulanmamıştır. Tier 1 çıktısı "adli imaj" değil,
+> "belgelenmiş dosya kopyası"dır.
 >
-> **Güncel sürüm:** v2.207 (yalnız belge; uygulama değişmedi).
+> **Güncel sürüm:** v2.208.
 
 ## 1. Amaç ve kapsam
 
@@ -142,7 +142,7 @@ wsl --unmount \\.\PHYSICALDRIVE2
 - 16 GB ham imaj sıkıştırınca genelde 100 MB–1 GB olur; yine de ham imaj
   oluşturulurken geçici disk alanı gerekir.
 
-## 7. AKİS tarafı (v2.208 önerisi)
+## 7. AKİS tarafı (v2.208'de uygulandı)
 
 - **"Delil paketi yükle"** düğmesi (mevcut "Ses dosyası ekle" akışının yanına).
 - `delil.json` okunur; **her dosyanın SHA-256'sı** yeniden hesaplanır.

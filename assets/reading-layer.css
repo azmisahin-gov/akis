@@ -2879,3 +2879,69 @@ input::placeholder, textarea::placeholder {
   #view-audio .person-panel small,
   #view-audio .spk-list small { overflow-wrap: anywhere; }
 }
+
+/* ==========================================================================
+   DELİL PAKETİ DOĞRULAMA (v2.208)
+   Cihaz bilgisi edinme aracının beyanıdır; uygulama yalnız hash doğrular.
+   Kırpma yok: uzun özetler sarar; tablo dar ekranda kendi içinde kaymaz.
+   ========================================================================== */
+.delil-dialog { width: min(760px, 94vw); }
+.delil-meta {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+.delil-meta b { color: var(--ink); }
+.delil-counts {
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+}
+.delil-counts.is-ok { background: var(--surface-3); color: var(--green); }
+.delil-counts.is-warn { background: var(--gold-soft); color: var(--gold); border: 1px solid var(--gold); }
+.delil-note {
+  margin: 0 0 8px;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.delil-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-xs);
+  color: var(--ink);
+}
+.delil-table th,
+.delil-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.delil-table th {
+  color: var(--ink-3);
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.04em;
+}
+.delil-hash { font-family: var(--font-mono); color: var(--ink-2); }
+.delil-state { font-weight: 600; white-space: nowrap; }
+.delil-state.ok { color: var(--green); }
+.delil-state.bad { color: var(--red); }
+.delil-state.warn { color: var(--gold); }
+@media (max-width: 600px) {
+  .delil-dialog { width: 96vw; }
+  .delil-table { font-size: var(--fs-2xs); }
+  .delil-table th,
+  .delil-table td { padding: 5px 6px; }
+}

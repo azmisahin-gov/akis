@@ -481,7 +481,10 @@ export function emptyMaterial(over = {}) {
       mediumLabel: '',
       deliveredBy: '',
       deliveredAt: '',
-      deviceInfo: ''
+      deviceInfo: '',
+      // Delil paketinden geldiyse edinme tutanağı (v2.208). Cihaz bilgisi
+      // EDİNME ARACININ BEYANIDIR; uygulama cihazı görmez.
+      acquisition: null
     },
     lastVerify: null, // { at, ok, hash }
     log: [],
@@ -801,7 +804,9 @@ export function normalizeMaterial(src = {}) {
       mediumLabel: str(origin.mediumLabel),
       deliveredBy: str(origin.deliveredBy),
       deliveredAt: str(origin.deliveredAt),
-      deviceInfo: str(origin.deviceInfo)
+      deviceInfo: str(origin.deviceInfo),
+      // Edinme tutanağı bilinmeyen alanlarıyla birlikte korunur; v2.208.
+      acquisition: isObj(origin.acquisition) ? { ...origin.acquisition } : null
     },
     lastVerify: isObj(m.lastVerify) ? m.lastVerify : null,
     log: Array.isArray(m.log) ? m.log.filter(isObj) : []
