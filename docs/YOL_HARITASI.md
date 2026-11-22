@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.204.**
+yazılır. **Güncel sürüm: v2.205.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.205 — Dosyalar arası konuşmacı kaydı (tamamlandı)
+
+`case.speakers[]` dosya geneli kişi kaydı (K1, K2…) ve kayıt içi konuşmacıda
+`personId` bağı eklendi. Aynı kişiye bağlı konuşmacılar raporda **tek satırda**
+gösterilir; BÖLÜM/NOT hücresinde kayıt + yerel kod + bölüm sayısı ve **uzman
+eşleştirmesi** notu yazılır. Bağsız konuşmacılar ayrı satır kalır. Kişi silme
+yalnız bağı kaldırır; ses/metin korunur. Birleştirmede kişi alanları doldurulur,
+farklı değer/bağ **çakışma** olarak bildirilir. Koruyan test: `sema` [3g] +
+`birim` [76] + `rapor` Senaryo 13 + `tasarim` [2be].
 
 ### v2.204 — Sınıflandırma/rol seçenekleri tek kaynakta (tamamlandı)
 

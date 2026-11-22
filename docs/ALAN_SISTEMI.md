@@ -192,3 +192,25 @@ ayrı ve dikkatli bir sürüm konusudur.
   `REVIEW_TONE`, rol yetkilerinin türetilmesi, ortam etiketi göçü.
 - `tasarim-testi` [2bd] — uygulamadaki kopya etiketlerin kaldırılması;
   rozet/filtre etiketlerinin tek kaynaktan gelmesi.
+
+## 8. İlişkisel alan: dosya geneli kişi (v2.205)
+
+Gözlem bayrakları ve rol seçenekleri birer **seçenek listesi**dir; dosya geneli
+kişi farklı bir türdür: **ilişki**. Bu yüzden `defineOptions` ile modellenmez.
+
+- **Tek kaynak:** `case.speakers[]` (K1, K2…) kişiyi tanımlar; kayıt içi
+  konuşmacı yalnız `personId` ile bu kayda bağlanır. Yerel `S1/S2` kodları
+  kayıt başına ayrı kalır.
+- **Otomatik eşleştirme yok:** ad, perde veya benzerlik bağ kurmaz. Bağ yalnız
+  uzmanın açık seçimiyle kurulur; bu bir **kimlik tespiti değildir**.
+- **Rapor:** bağlı kişiler tek satırda; bağsız konuşmacılar ayrı satırda.
+  BÖLÜM/NOT hücresi kayıt + yerel kod + bölüm sayısı ve "uzman eşleştirmesi"
+  notunu taşır.
+- **Silme:** kişi kaydı silinince yalnız `personId` bağları temizlenir; ses,
+  metin ve yerel konuşmacı etiketleri korunur.
+- **Birleştirme:** kişi alanları boşsa doldurulur; iki farklı dolu değer
+  `case-speaker`, aynı konuşmacının iki farklı kişiye bağlanması
+  `speaker-person` çakışması olarak bildirilir. Önizleme aynı kuralı kullanır.
+- **Genişletme:** yeni bir ilişki türü eklerken aynı deseni kullanın: kayıt
+  kimliği + `personId` benzeri bağ + rapor gruplaması + birleştirme çakışması +
+  silmede yalnız bağın kaldırılması.

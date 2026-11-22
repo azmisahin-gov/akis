@@ -2845,3 +2845,37 @@ input::placeholder, textarea::placeholder {
   color: var(--accent);
   border: 1px solid var(--accent);
 }
+
+/* ============================================================================
+   v2.205 — Dosyalar arası kişiler (case-level registry)
+   Aynı kişi birden çok kayıtta görünüyorsa tek kayıt olarak tutulur; kayıt içi
+   S1/S2 kodları ayrı kalır. Eşleştirme UZMAN KANAATİDİR.
+   ========================================================================== */
+#view-audio .person-panel {
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+#view-audio .person-panel .pane-title { margin-bottom: 4px; }
+#view-audio .spk-person-note {
+  margin: 0 0 6px;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+#view-audio .person-card { border-color: var(--accent); }
+#view-audio .person-card .spk-card-head b { color: var(--accent); }
+
+/* Dar ekran: kişi/kayıt kartları tek sütun; form alanları kabı aşmaz. */
+@media (max-width: 600px) {
+  #view-audio .person-panel .seg-row2,
+  #view-audio .spk-list .seg-row2 { grid-template-columns: 1fr; }
+  #view-audio .person-panel input,
+  #view-audio .person-panel select,
+  #view-audio .spk-list input,
+  #view-audio .spk-list select { min-width: 0; width: 100%; }
+  #view-audio .person-panel small,
+  #view-audio .spk-list small { overflow-wrap: anywhere; }
+}

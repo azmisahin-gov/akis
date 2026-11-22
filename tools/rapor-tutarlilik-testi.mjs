@@ -449,5 +449,37 @@ console.log('\n[Senaryo 12] okuma metni (v2.202)');
   checkShared('kanıt tablosu başlığı korunur', REPORT_TEXT.segmentHeadersObs[0], H, U, D);
 }
 
+// Senaryo 13: dosyalar arası kişi (v2.205) — üç çıktı aynı satırı üretmeli.
+console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
+{
+  const c = withMaterial();
+  c.speakers = [
+    { id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant', gender: 'female', ageRange: '30-40', notes: '' }
+  ];
+  c.materials[0].speakers = [
+    { id: 'spA', code: 'S1', name: 'Kiracı', label: 'Kiracı', personId: 'ps1', role: 'complainant', gender: 'female' }
+  ];
+  c.materials[0].segments[0].speaker = 'Kiracı';
+  const m2 = JSON.parse(JSON.stringify(c.materials[0]));
+  m2.id = 'm2';
+  m2.name = 'b.wav';
+  m2.fileName = 'b.wav';
+  m2.segments = [{ ...c.materials[0].segments[0], id: 'sg2', text: 'dünya' }];
+  m2.speakers = [{ ...c.materials[0].speakers[0], id: 'spB' }];
+  c.materials.push(m2);
+
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('dosya geneli kişi kodu', 'K1 · Kiracı', H, U, D);
+  checkShared('iki kayıt tek satırda (A)', 'a.wav: S1 · 1 bölüm', H, U, D);
+  checkShared('iki kayıt tek satırda (B)', 'b.wav: S1 · 1 bölüm', H, U, D);
+  checkShared('uzman eşleştirmesi notu', 'uzman eşleştirmesi', H, U, D);
+  checkShared('konuşmacı açıklaması', REPORT_TEXT.speakerIntro, H, U, D);
+  // Aynı kişi iki kez satıra düşmemeli: her çıktıda tek "K1 · Kiracı".
+  const count = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
+  check('kişi tek satır (HTML)', count(H) === 1, String(count(H)));
+  check('kişi tek satır (UDF)', count(U) === 1, String(count(U)));
+  check('kişi tek satır (DOCX)', count(D) === 1, String(count(D)));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

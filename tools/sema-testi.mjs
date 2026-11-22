@@ -55,6 +55,9 @@ import {
   emptyMaterial,
   emptySegment,
   emptySpeaker,
+  emptyCaseSpeaker,
+  assignCaseSpeakerCodes,
+  normalizeCaseSpeaker,
   emptyQuestion,
   emptyTeamMember,
   normalizeCase,
@@ -227,6 +230,73 @@ console.log('\n[3f] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)'
   // Ortam etiketi → kod göçü türetilmiş etiketlerle hâlâ çalışır.
   ok('ortam etiketi koda çevrilir', normalizeMediumType('USB flaş bellek') === 'usb');
   ok('bilinmeyen ortam unspecified', normalizeMediumType('yok böyle') === 'unspecified');
+}
+
+// --- 3g. Dosyalar arası konuşmacı kaydı (v2.205) -------------------------
+console.log('\n[3g] Dosyalar arası konuşmacı kaydı (v2.205)');
+{
+  const ec = emptyCase({ id: 'c1' });
+  ok('emptyCase.speakers dizisi var', Array.isArray(ec.speakers) && ec.speakers.length === 0);
+  const p = emptyCaseSpeaker({ label: 'Kiracı' });
+  ok('emptyCaseSpeaker kimlik taşır', !!p.id && p.code === '');
+  ok('emptyCaseSpeaker rol/cinsiyet varsayılanı', p.role === 'unspecified' && p.gender === 'unspecified');
+  const list = [{ code: 'K2', label: 'B' }, { code: '', label: 'A' }];
+  assignCaseSpeakerCodes(list);
+  ok('K kodu var olanı korur', list[0].code === 'K2');
+  ok('K kodu boşluğu doldurur', list[1].code === 'K1');
+  const ns = normalizeCaseSpeaker({ name: 'Kiracı', role: 'Davacı', gender: 'Kadın' });
+  ok('kişi etiketi name den gelir', ns.label === 'Kiracı' && ns.name === 'Kiracı');
+  ok('kişi rolü koda çevrilir', ns.role === 'complainant');
+  ok('kişi cinsiyeti koda çevrilir', ns.gender === 'female');
+
+  // Normalize: dosya geneli kişi + kayıt içi bağ korunur.
+  const c = emptyCase({ id: 'c1' });
+  c.speakers = [{ id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant' }];
+  const m = emptyMaterial({ id: 'm1' });
+  m.speakers = [{ id: 'sp1', code: 'S1', label: 'Kiracı', personId: 'ps1' }];
+  m.segments = [{ id: 'sg1', start: '00:00:00.000', end: '00:00:01.000', text: 'a', speaker: 'Kiracı' }];
+  c.materials = [m];
+  const nc = normalizeCase(c);
+  ok('dosya geneli kişi normalize korunur', nc.speakers.length === 1 && nc.speakers[0].code === 'K1');
+  ok('kayıt içi personId korunur', nc.materials[0].speakers[0].personId === 'ps1');
+
+  // Birleştirme: kişi ekleme + alan doldurma + çakışma.
+  const base = () => {
+    const cc = emptyCase({ id: 'c1' });
+    cc.speakers = [{ id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+    const mm = emptyMaterial({ id: 'm1' });
+    mm.speakers = [{ id: 'sp1', code: 'S1', label: 'Kiracı', personId: '' }];
+    mm.segments = [{ id: 'sg1', start: '00:00:00.000', end: '00:00:01.000', text: 'a', speaker: 'Kiracı' }];
+    cc.materials = [mm];
+    return cc;
+  };
+  const mine = base();
+  const theirs = base();
+  theirs.updatedAt = '2026-11-21T10:00:00Z';
+  theirs.speakers = [
+    { id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant', gender: 'female' },
+    { id: 'ps2', code: '', label: 'Ev sahibi', role: 'defendant' }
+  ];
+  theirs.materials[0].speakers[0].personId = 'ps1';
+  const r = mergeCases(mine, theirs);
+  ok('gelen kişi alanı dolduruldu', r.merged.speakers[0].gender === 'female');
+  ok('yeni dosya geneli kişi eklendi', r.merged.speakers.some((x) => x.id === 'ps2' && x.code === 'K2'));
+  ok('konuşmacı bağı dolduruldu', r.merged.materials[0].speakers[0].personId === 'ps1');
+  ok('gözlem/bağ çakışması yok', r.conflicts.length === 0, String(r.conflicts.length));
+
+  // Farklı kişi bağı → çakışma (sessiz ezme yok).
+  const mine2 = base();
+  mine2.materials[0].speakers[0].personId = 'ps1';
+  const theirs2 = base();
+  theirs2.speakers = [{ id: 'ps2', code: 'K2', label: 'Ev sahibi' }];
+  theirs2.materials[0].speakers[0].personId = 'ps2';
+  const r2 = mergeCases(mine2, theirs2);
+  ok('farklı kişi bağı çakışma bildirir', r2.conflicts.some((x) => x.kind === 'speaker-person'));
+
+  // Önizleme birleştirmeyle aynı gerçeği söyler.
+  const cmp = compareCases(base(), theirs);
+  ok('önizleme yeni kişiyi sayar', cmp.speakers.added.length === 1);
+  ok('önizleme bağı sayar', cmp.speakers.linked === 1);
 }
 
 // --- 3b. Konuşmacı kodlama standardı ------------------------------------

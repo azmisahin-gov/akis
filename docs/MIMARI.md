@@ -60,6 +60,7 @@ case
 ├── assignment{ date, dueDate, durationDays, scope, body }
 ├── expert    { name, registryNo, field }
 ├── team[]    { id, name, role, registryNo, institution, email, phone }
+├── speakers[]{ id, code (K1…), label, role, gender, ageRange, notes }
 ├── report    { date, methodText, limitationsText, conclusionText }
 ├── questions[]{ id, no, question, answer, evidence[], basisNote, answeredBy }
 ├── materials[]
@@ -68,7 +69,8 @@ case
 │   ├── status (kod), statusNote, transcribedWithModel, transcribedAt
 │   ├── segments[]{ id, start, end, speakerId, text, review, obs, history,
 │   │               silence, words }
-│   ├── speakers[]{ id, label, role, gender, ageRange, notes, pitchHz }
+│   ├── speakers[]{ id, code (S1…), label, role, gender, ageRange, notes,
+│   │               pitchHz, personId (case.speakers[].id) }
 │   ├── referenceSegments[], expectedText
 │   ├── levels, spectrogramReviewedAt
 │   ├── origin { mediumType, mediumLabel, deliveredBy, deliveredAt, deviceInfo }

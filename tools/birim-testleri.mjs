@@ -102,7 +102,7 @@ const EXPOSE = [
   'casesForStorage', 'isEmptyWorkspace',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
-  'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows',
+  'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
@@ -3556,6 +3556,50 @@ console.log('\n== [75] Gözlem işaretleri: dosya birleştirme (v2.203)');
   eq('bilinmeyen ileri anahtar korunur', obs.futureFlag, true);
   eq('gözlem birleşmesi günlüğe yazılır', r.applied.some((x) => /gözlem işaretleri birleşti/.test(x)), true);
   eq('çakışma üretmez (gözlemler eklenir)', r.conflicts.length, 0);
+}
+
+console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
+{
+  // Aynı kişi iki kayıtta eşleştirilmişse rapor tablosunda TEK satır olmalı;
+  // bağsız konuşmacılar ayrı satır kalır. Eşleştirme uzman kanaatidir.
+  const mkMat = (id, name, speakers, segs) => {
+    const m = T.emptyMaterialForTest({ id, name, fileName: name });
+    m.speakers = speakers;
+    m.segments = segs;
+    return m;
+  };
+  const seg = (id, speaker) => T.emptySegmentForTest({ id, start: '00:00:00.000', end: '00:00:01.000', text: 'x', speaker });
+  const c = T.emptyCaseForTest({ id: 'c1' });
+  c.speakers = [
+    { id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant', gender: 'female', ageRange: '30-40', notes: '' }
+  ];
+  const spA = { id: 'spA', code: 'S1', name: 'Kiracı', role: 'complainant', gender: 'female', pitch: 120, pitchSamples: 10, personId: 'ps1' };
+  const spB = { id: 'spB', code: 'S1', name: 'Kiracı', role: 'complainant', gender: 'female', pitch: 118, pitchSamples: 8, personId: 'ps1' };
+  const spC = { id: 'spC', code: 'S2', name: 'Tanık', role: 'witness', gender: 'male', pitch: null, pitchSamples: 0, personId: '' };
+  c.materials = [
+    mkMat('m1', 'A.wav', [spA], [seg('a1', 'Kiracı'), seg('a2', 'Kiracı')]),
+    mkMat('m2', 'B.wav', [spB, spC], [seg('b1', 'Kiracı'), seg('b2', 'Tanık')])
+  ];
+  const rows = T.speakerRows(c);
+  eq('eşleşen kişi tek satır + bağsız = 2', rows.length, 2);
+  eq('ilk satır kişi kodu + etiket', rows[0][0], 'K1 · Kiracı');
+  eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][5]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][5]), true);
+  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][5]), true);
+  eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][4]) && /B\.wav: 118/.test(rows[0][4]), true);
+  eq('bağsız konuşmacı ayrı satır', rows[1][0], 'S2 · Tanık');
+  // Özet sayacı TABLO ile aynı: 2 (3 değil).
+  const rs = T.reviewSummaryRows(c);
+  const speakerRow = rs.find((r) => r[0] === 'Etiketlenen konuşmacı');
+  eq('özet konuşmacı sayısı = tablo satırı', speakerRow && speakerRow[1], 2);
+
+  // Bağ yoksa eski davranış: her kayıt için ayrı satır (3).
+  c.materials[0].speakers[0].personId = '';
+  c.materials[1].speakers[0].personId = '';
+  eq('bağ yoksa 3 satır', T.speakerRows(c).length, 3);
+
+  // Bağ var ama kişi kaydı yok → bağsız sayılır (uydurma eşleştirme yok).
+  c.materials[0].speakers[0].personId = 'ps-yok';
+  eq('eksik kişi bağı bağsız sayılır', T.speakerRows(c).length, 3);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

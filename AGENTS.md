@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.204.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.205.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4038,3 +4038,70 @@ sınıflandırma/rol seçeneklerine uygulandı:
   app.js'te (rapor bölümü aşaması).
 - Case alanları ve rapor bölümleri özel kod; tam otomatik değil.
 - Görünür davranış değişmediği için kullanıcıya yeni bir iş akışı sunulmadı.
+
+## YENİ OTURUM DEVRİ (v2.205) — Dosyalar arası konuşmacı kaydı
+
+### Durum (2026-11-21)
+
+| | |
+|---|---|
+| Sürüm | **v2.205** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1105 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | commit/push sonrası doğrulanacak |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.205** |
+| Açık konu | Case alanları / rapor bölümleri; yerel LLM |
+
+### Ne yapıldı
+
+Aynı kişi birden çok kayıtta görünüyorsa **dosya geneli kişi** kaydı:
+
+- `case.speakers[]` → `{ id, code: K1/K2…, label, role, gender, ageRange, notes }`.
+- `material.speakers[].personId` → bu kişiye bağ. Yerel `S1/S2` kodları AYRI kalır.
+- **Analiz → Konuşmacılar** panelinde **"Dosyalar arası kişiler"** bölümü
+  (ekle/düzenle/sil) ve her konuşmacı kartında **"Aynı kişi (dosyalar arası)"**
+  seçicisi (mevcut kişi veya `＋ Yeni kişi`).
+- Rapor `speakerRows(c)` bağlı kişileri **tek satırda** gruplar:
+  `K1 · Kiracı`; BÖLÜM/NOT: `A.wav: S1 · 12 bölüm · B.wav: S1 · 8 bölüm ·
+  uzman eşleştirmesi`. Perde kayıt adıyla listelenir. Bağsızlar ayrı satır.
+- `reviewSummaryRows` konuşmacı sayacı **tablo satırıyla** aynı kaynaktan.
+- `mergeCases`: kişi alanları boşsa doldurulur; farklı dolu değer
+  `case-speaker`, aynı konuşmacının iki farklı kişiye bağlanması
+  `speaker-person` çakışması. `compareCases` aynı kuralı önizler.
+- Kişi silme yalnız `personId` bağlarını temizler; ses/metin/yerel etiket korunur.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Adım | Sonuç |
+|---|---|
+| m1'de ＋ Yeni kişi | **K1 · Kiracı**, “1 kayıt: a.wav (S1)” |
+| m2'yi K1'e bağla | “2 kayıt: a.wav (S1) · b.wav (S1)” |
+| Rapor | **tek** `K1 · Kiracı` satırı; `a.wav` + `b.wav` aynı satırda; “uzman eşleştirmesi” |
+| m2 bağını kes | m2 ayrı satır; K1 satırında yalnız a.wav |
+| Kişiyi sil | K1 satırı kalktı; yerel etiket/metin korundu |
+| 1440 / 900 / 360 | kişi paneli taşma **0**, kırpılan **0** |
+| JS hatası | **0** |
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Kimlik tespiti değildir.** Bağ **uzman kanaatidir**; ses biyometrisi yok.
+2. **Yerel kodlar ayrı.** İki kaydın `S1`'i otomatik aynı kişi sayılmaz;
+   dosya geneli kod **K1**'dir.
+3. **Ad/perde benzerliğiyle otomatik bağ YOK.** Yalnız açık seçim.
+4. **Silme veri silmez:** yalnız `personId` temizlenir.
+5. **Birleştirme sessiz ezmez:** kişi alanı ve bağ çakışması bildirilir.
+6. **Önizleme = birleştirme:** `compareCases` aynı kuralı kullanır.
+7. Yeni bir ilişki türü eklerken `docs/ALAN_SISTEMI.md` §8 desenini kullan.
+
+### SIRADAKİ İŞLER (öneri sırası — v2.205 sonrası)
+
+1. **v2.206 — Yerel LLM yardımcısı** (isteğe bağlı; yalnız doğrulanmış metin).
+2. **Case alanları / rapor bölümleri** — `ALAN_SISTEMI.md` §5 B/C kademeli plan.
+3. **≤900 px** tek sütunda detay/liste kararı (bilinen sınır).
+
+### Bilinen sınırlar (hata değil)
+
+- Eşleştirme otomatik doğrulanmaz; uzman beyanıdır.
+- Kişi rol/cinsiyeti kayıt içi konuşmacıdan farklıysa **kişi kaydı** kullanılır;
+  çelişki birleştirmede çakışma olarak çıkar.
+- Eski kayıtlarda dosya geneli kişi yoktur; sonradan bağlanır.
+- ≤900 px tek sütun; detay listenin altında.

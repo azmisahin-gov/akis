@@ -370,10 +370,29 @@ export function emptySpeaker(over = {}) {
     gender: 'unspecified',
     ageRange: '',
     notes: '',
+    // DOSYA GENELİ KİŞİ BAĞI (v2.205). Aynı kişi birden çok kayıtta
+    // görünüyorsa uzman bu alanla `case.speakers[]` kaydına bağlar. Boşsa
+    // konuşmacı yalnız bu kayda özgüdür (eski davranış).
+    personId: '',
     // Ölçüm sonucu; ölçülmediyse null (0 değil — 0 Hz diye bir perde yok).
     pitchHz: null,
     pitchSamples: 0,
     measuredAt: null,
+    ...over
+  };
+}
+
+/** Dosya geneli kişi (case-level registry) — v2.205. */
+export function emptyCaseSpeaker(over = {}) {
+  return {
+    id: newId('ps'),
+    // Dosya geneli kişi kodu: K1, K2… Kayıt içi S1/S2'den AYRIDIR.
+    code: '',
+    label: '', // "Kiracı", "Ev sahibi"…
+    role: 'unspecified',
+    gender: 'unspecified',
+    ageRange: '',
+    notes: '',
     ...over
   };
 }
@@ -515,6 +534,10 @@ export function emptyCase(over = {}) {
       field: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi'
     },
     team: [], // emptyTeamMember() listesi
+    // DOSYA GENELİ KİŞİLER (v2.205): aynı kişi birden çok kayıtta görünüyorsa
+    // burada TEK kayıt olarak tutulur; kayıt içi konuşmacılar `personId` ile
+    // bağlanır. Uzman kanaatidir; otomatik kimlik tespiti değildir.
+    speakers: [], // emptyCaseSpeaker() listesi
 
     // Rapor
     report: {
@@ -663,6 +686,24 @@ export function assignSpeakerCodes(speakers) {
   }
   return speakers || [];
 }
+// Dosya geneli kişi kodları: K1, K2… Kayıt içi S1/S2'den AYRIDIR; iki kaydın
+// S1'i aynı kişi olmayabilir. Var olan kod korunur, boş koda en küçük boş kod
+// verilir (silinen kişinin kodu yeniden kullanılır).
+export function assignCaseSpeakerCodes(speakers) {
+  const used = new Set();
+  for (const sp of speakers || []) {
+    const c = str(sp.code).trim();
+    if (/^K\d+$/.test(c)) used.add(c);
+  }
+  let n = 1;
+  for (const sp of speakers || []) {
+    if (/^K\d+$/.test(str(sp.code).trim())) continue;
+    while (used.has('K' + n)) n += 1;
+    sp.code = 'K' + n;
+    used.add(sp.code);
+  }
+  return speakers || [];
+}
 
 export function normalizeSpeaker(src = {}) {
   const s = isObj(src) ? src : {};
@@ -679,12 +720,32 @@ export function normalizeSpeaker(src = {}) {
     gender: normalizeSpeakerGender(s.gender),
     ageRange: str(s.ageRange),
     notes: str(s.notes),
+    // Dosya geneli kişi bağı (v2.205). Boşsa kayda özgü konuşmacı.
+    personId: str(s.personId),
     pitchHz: Number.isFinite(Number(s.pitchHz ?? s.pitch)) ? Number(s.pitchHz ?? s.pitch) : null,
     pitchSamples: num(s.pitchSamples),
     measuredAt: s.measuredAt || s.pitchAt || null
   };
   // `name` alanı `label` ile AYNI tutulur (tek kaynak). Arayüz `name`,
   // şema `label` okuyor; ayrışırlarsa konuşmacı bağı kopar (v2.85).
+  out.name = out.label;
+  return out;
+}
+
+// Dosya geneli kişi normalleştirmesi (v2.205). Kayıt içi konuşmacıdan farkı:
+// perde/ölçüm alanı yoktur; kimlik kayıtlar arasında ortaktır.
+export function normalizeCaseSpeaker(src = {}) {
+  const s = isObj(src) ? src : {};
+  const out = {
+    ...s,
+    id: s.id || newId('ps'),
+    code: str(s.code),
+    label: str(s.label || s.name),
+    role: normalizeSpeakerRole(s.role),
+    gender: normalizeSpeakerGender(s.gender),
+    ageRange: str(s.ageRange),
+    notes: str(s.notes)
+  };
   out.name = out.label;
   return out;
 }
@@ -782,6 +843,10 @@ export function normalizeCase(src = {}) {
     id: (isObj(t) && t.id) || newId('tm'),
     role: pick(isObj(t) ? t.role : null, TEAM_ROLE, 'expert')
   }));
+  // DOSYA GENELİ KİŞİLER (v2.205): eski kayıtta yoktur; boş dizi olur.
+  const speakers = assignCaseSpeakerCodes(
+    (Array.isArray(c.speakers) ? c.speakers : []).map(normalizeCaseSpeaker)
+  );
   return {
     ...c,
     schemaVersion: SCHEMA_VERSION,
@@ -816,6 +881,7 @@ export function normalizeCase(src = {}) {
       field: str(expert.field || c.expertField) || '56.12'
     },
     team,
+    speakers,
     report: {
       date: str(report.date || c.reportDate),
       methodText: str(report.methodText ?? c.methodText),
@@ -1251,6 +1317,29 @@ function mergeMaterialFields(mm, tm, applied, conflicts) {
     // Kod çakışması olmasın: iki makinede ayrı id ile eklenen kişiler
     // aynı kodu almış olabilir.
     assignSpeakerCodes(mm.speakers);
+    // DOSYA GENELİ KİŞİ BAĞI (v2.205): aynı konuşmacı id'sinde gelen bağ
+    // boşsa doldurulur; iki farklı bağ sessizce ezilmez, çakışma bildirilir.
+    for (const sp of tm.speakers) {
+      const mineSp = byId.get(sp.id);
+      if (!mineSp) continue;
+      const mp = str(mineSp.personId);
+      const tp = str(sp.personId);
+      if (!tp) continue;
+      if (!mp) {
+        mineSp.personId = tp;
+        applied.push(`konuşmacı dosya geneli kişiye bağlandı: ${name} · ${sp.code || sp.id}`);
+      } else if (mp !== tp) {
+        conflicts.push({
+          kind: 'speaker-person',
+          materialId: mm.id,
+          materialName: name,
+          speakerName: `${sp.code || ''} ${sp.name || sp.id}`.trim(),
+          mine: mp,
+          theirs: tp,
+          reason: 'aynı konuşmacı iki farklı dosya geneli kişiye bağlı'
+        });
+      }
+    }
   }
 
   // Delil günlüğü: yerel korunur; gelen dosyanın girdileri zincire EKLENİR
@@ -1325,6 +1414,40 @@ export function mergeCases(mine, theirs) {
   for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) {
     mergeTextField(merged, mine, theirs, newer, k, applied, conflicts, k);
   }
+
+  // DOSYA GENELİ KİŞİLER (v2.205): id ile birleşir. Boş alan doldurulur;
+  // iki dolu farklı değer sessizce ezilmez, çakışma bildirilir.
+  merged.speakers = Array.isArray(merged.speakers) ? merged.speakers : [];
+  const myPersons = new Map(merged.speakers.map((p) => [p.id, p]));
+  for (const tp of Array.isArray(theirs.speakers) ? theirs.speakers : []) {
+    const mp = myPersons.get(tp.id);
+    if (!mp) {
+      merged.speakers.push(tp);
+      myPersons.set(tp.id, tp);
+      applied.push(`dosya geneli kişi eklendi: ${tp.code || tp.label || tp.id}`);
+      continue;
+    }
+    for (const k of ['label', 'role', 'gender', 'ageRange', 'notes']) {
+      const mv = str(mp[k]);
+      const tv = str(tp[k]);
+      const isEmpty = k === 'role' || k === 'gender' ? (v) => !v || v === 'unspecified' : (v) => !v;
+      if (isEmpty(mv) && !isEmpty(tv)) {
+        mp[k] = tp[k];
+        applied.push(`dosya geneli kişi alanı dolduruldu: ${mp.code || mp.id} (${k})`);
+      } else if (!isEmpty(mv) && !isEmpty(tv) && mv !== tv) {
+        conflicts.push({
+          kind: 'case-speaker',
+          personId: mp.id,
+          personLabel: `${mp.code || ''} ${mp.label || ''}`.trim(),
+          field: k,
+          mine: mv,
+          theirs: tv,
+          reason: 'aynı dosya geneli kişide farklı değer'
+        });
+      }
+    }
+  }
+  assignCaseSpeakerCodes(merged.speakers);
 
   // İç içe gruplar. Yardımcı bu alanları da doldurabilir/düzeltebilir.
   // v2.65: parties / expert / assignment alanları eksikti; yardımcının
@@ -1622,6 +1745,9 @@ export function compareCases(mine, theirs) {
     questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
     caseFields: { filled: [], autoResolved: [], conflicts: [] },
     team: { added: [] },
+    // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
+    // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
+    speakers: { added: [], filled: 0, linked: 0, conflicts: [] },
     conflicts: []
   };
   if (!mine || !theirs) return empty;
@@ -1777,9 +1903,68 @@ export function compareCases(mine, theirs) {
     if (!mineTeam.has(tt.id)) out.team.added.push({ id: tt.id, name: tt.name || tt.id, role: tt.role });
   }
 
+  // DOSYA GENELİ KİŞİLER (v2.205): önizleme, birleştirme ile AYNI kuralı
+  // kullanmalı. Ekleme/doldurma/çakışma sayıları burada çıkar.
+  const minePersons = new Map((mine.speakers || []).map((p) => [p.id, p]));
+  for (const tp of theirs.speakers || []) {
+    const mp = minePersons.get(tp.id);
+    if (!mp) {
+      out.speakers.added.push({ id: tp.id, code: tp.code || '', label: tp.label || tp.id });
+      continue;
+    }
+    for (const k of ['label', 'role', 'gender', 'ageRange', 'notes']) {
+      const mv = str(mp[k]);
+      const tv = str(tp[k]);
+      const isEmpty = k === 'role' || k === 'gender' ? (v) => !v || v === 'unspecified' : (v) => !v;
+      if (isEmpty(mv) && !isEmpty(tv)) out.speakers.filled++;
+      else if (!isEmpty(mv) && !isEmpty(tv) && mv !== tv) {
+        out.speakers.conflicts.push({
+          kind: 'case-speaker',
+          personId: mp.id,
+          personLabel: `${mp.code || ''} ${mp.label || ''}`.trim(),
+          field: k,
+          mine: mv,
+          theirs: tv,
+          reason: 'aynı dosya geneli kişide farklı değer'
+        });
+      }
+    }
+  }
+  const myMatById = new Map((mine.materials || []).map((m) => [m.id, m]));
+  for (const tm of theirs.materials || []) {
+    const mm = myMatById.get(tm.id);
+    if (!mm) continue;
+    const mySpk = new Map((mm.speakers || []).map((s) => [s.id, s]));
+    for (const sp of tm.speakers || []) {
+      const ms = mySpk.get(sp.id);
+      if (!ms) continue;
+      const mp = str(ms.personId);
+      const tp = str(sp.personId);
+      if (!tp) continue;
+      if (!mp) out.speakers.linked++;
+      else if (mp !== tp) {
+        out.speakers.conflicts.push({
+          kind: 'speaker-person',
+          materialId: mm.id,
+          materialName: mm.fileName || mm.id,
+          speakerName: `${sp.code || ''} ${sp.name || sp.id}`.trim(),
+          mine: mp,
+          theirs: tp,
+          reason: 'aynı konuşmacı iki farklı dosya geneli kişiye bağlı'
+        });
+      }
+    }
+  }
+
   // Kaynağı tanımsız onaylar döngü sırasında `out.conflicts`'e eklenir; burada
   // yeniden atama onları SİLERDİ. Bu yüzden önce toplanır, sonra birleştirilir.
-  out.conflicts = [...out.segments.changed, ...out.questions.conflicts, ...out.caseFields.conflicts, ...out.conflicts];
+  out.conflicts = [
+    ...out.segments.changed,
+    ...out.questions.conflicts,
+    ...out.caseFields.conflicts,
+    ...out.speakers.conflicts,
+    ...out.conflicts
+  ];
   return out;
 }
 

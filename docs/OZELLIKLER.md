@@ -1,4 +1,4 @@
-# Özellikler (v2.204 — mevcut durum)
+# Özellikler (v2.205 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -188,6 +188,14 @@ sağda aktif bölüm detayı (çalışma). Aktif bölüm değişince DOM yeniden
 yalnızca işaret ve detay alanları güncellenir. Böylece kaydırma, odak ve ok
 tuşları bozulmaz.
 
+- **Dosyalar arası konuşmacı kaydı (v2.205):** `case.speakers[]` dosya geneli
+  kişi kaydı (**K1, K2…**) ve kayıt içi konuşmacıda `personId` bağı. **Analiz →
+  Konuşmacılar** panelinde **"Dosyalar arası kişiler"** ve her konuşmacı kartında
+  **"Aynı kişi"** seçicisi. Aynı kişiye bağlı konuşmacılar raporda **tek satırda**
+  gösterilir; BÖLÜM/NOT hücresinde kayıt + yerel kod + bölüm sayısı ve **uzman
+  eşleştirmesi** notu yazılır. Bağsız konuşmacılar ayrı satır kalır. Kişi silme
+  yalnız eşleştirmeyi kaldırır; ses ve metin korunur. **Bu bir kimlik tespiti
+  değildir**; yerel `S1/S2` kodları ayrı kalır.
 - **Sınıflandırma/rol seçenekleri tek kaynaktan (v2.204):** Dosya/kayıt durumu,
   kontrol durumu, konuşmacı rolü/cinsiyeti, ortam türü ve ekip rolü listeleri
   `*_DEFS` tanımlarından türetilir; `*_KEYS`/`*_LABEL`, `REVIEW_SHORT`/

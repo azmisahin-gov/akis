@@ -1539,5 +1539,18 @@ console.log('\n[2bd] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)
   check('filtre etiketleri REVIEW_LABEL den', /\['approved', REVIEW_LABEL\.approved\]/.test(appJs));
   check('rol yetkileri TEAM_ROLE_DEFS bayraklarından', /SECOND_EYES_ROLES = TEAM_ROLE_DEFS\.filter/.test(schemaJs) && /APPROVER_ROLES = TEAM_ROLE_DEFS\.filter/.test(schemaJs));
 }
+console.log('\n[2be] Dosyalar arası kişi kaydı (v2.205)');
+{
+  const appJs = read('assets/app.js');
+  const schemaJs = read('assets/schema.js');
+  check('emptyCase dosya geneli kişi taşır', /speakers: \[\], \/\/ emptyCaseSpeaker/.test(schemaJs));
+  check('kişi kodu K1 üretilir', /assignCaseSpeakerCodes/.test(schemaJs) && /\^K\\d\+\$/.test(schemaJs));
+  check('kayıt içi personId korunur', /personId: str\(s\.personId\)/.test(schemaJs));
+  check('rapor kişiye göre gruplar', /linksByPerson/.test(appJs) && /emitted\.has\(pid\)/.test(appJs));
+  check('kişi paneli ve bağ seçici var', /data-add-person/.test(appJs) && /data-person-key/.test(appJs) && /data-spk-key="personId"/.test(appJs));
+  check('kişi silme onay ister', /data-del-person/.test(appJs) && /Dosya geneli kişiyi sil/.test(appJs));
+  check('birleştirme kişi/bağ çakışması', /kind: 'case-speaker'/.test(schemaJs) && /kind: 'speaker-person'/.test(schemaJs));
+  check('rapor açıklaması uzman kanaati der', /uzman kanaatidir, otomatik kimlik tespiti değildir/.test(appJs));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

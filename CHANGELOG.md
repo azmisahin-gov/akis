@@ -6,12 +6,68 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.204.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.205.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.205 — Dosyalar arası konuşmacı kaydı (case-level registry)
+
+Kullanıcı: *"Aynı kişi birden çok kayıtta geçiyorsa bunu bir kez tanımlayıp
+rapora tek satırda yazalım."*
+
+### KULLANICI NE GÖRECEK
+
+- **Analiz → Konuşmacılar** panelinde yeni **"Dosyalar arası kişiler"** bölümü:
+  kişi kodu **K1, K2…**, etiket, rol, cinsiyet, yaş, not.
+- Her kayıt içi konuşmacı kartında **"Aynı kişi (dosyalar arası)"** seçicisi:
+  mevcut bir kişiye bağla veya **＋ Yeni kişi** oluştur.
+- Aynı kişiye bağlı konuşmacılar raporda **TEK satırda** gösterilir:
+  `K1 · Kiracı`; BÖLÜM/NOT hücresinde **hangi kayıtta hangi yerel kodla**
+  geçtiği (`A.wav: S1 · 12 bölüm · B.wav: S1 · 8 bölüm`) ve
+  **"uzman eşleştirmesi"** notu yazılır.
+- **Bağsız** konuşmacılar eski davranışla ayrı satır kalır.
+- Kişi kaydı silinirse **ses, metin ve yerel konuşmacı etiketleri KORUNUR**;
+  yalnız eşleştirme kaldırılır.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Bu bir kimlik tespiti değildir.** Eşleştirme **uzman kanaatidir**; uygulama
+   ses biyometrisiyle kimlik doğrulamaz. Rapor açıklaması bunu yazar.
+2. **Yerel kodlar ayrı kalır.** Bir kayıttaki `S1` ile başka kayıttaki `S1`
+   otomatik olarak aynı kişi sayılmaz. Dosya geneli kişi kodu **K1**'dir.
+3. **Ad benzerliğiyle otomatik birleştirme YOK.** Yalnız açık seçim bağlar.
+4. **Silme veri silmez:** kişi kaydı silinince yalnız `personId` bağları
+   temizlenir.
+5. **Birleştirme sessiz ezmez:** dosya geneli kişi alanları boşsa doldurulur;
+   iki farklı dolu değer **çakışma** olarak bildirilir. Aynı konuşmacı iki ayrı
+   kişiye bağlıysa `speaker-person` çakışması çıkar.
+6. Önizleme (`compareCases`) birleştirmeyle **aynı** kuralı kullanır.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Adım | Sonuç |
+|---|---|
+| m1'de ＋ Yeni kişi | **K1 · Kiracı**, “1 kayıt: a.wav (S1)” |
+| m2'yi K1'e bağla | “2 kayıt: a.wav (S1) · b.wav (S1)” |
+| Rapor | **tek** `K1 · Kiracı` satırı; `a.wav` ve `b.wav` aynı satırda; “uzman eşleştirmesi” |
+| m2 bağını kes | m2 ayrı satır; K1 satırında yalnız a.wav |
+| Kişiyi sil | `K1` satırı **kalktı**; yerel etiketler/metinler korundu |
+| 1440 / 900 / 360 | kişi paneli taşma **0**, kırpılan **0** |
+| JS hatası | **0** |
+
+**KORUYAN TEST:** `sema` [3g] (17) + `birim` [76] (9) + `rapor` Senaryo 13 (8) +
+`tasarim` [2be] (8).
+
+### Bilinen sınırlar (hata değil)
+
+- Eşleştirme **uzman beyanıdır**; otomatik doğrulanmaz.
+- Aynı kişi farklı kayıtlarda farklı **rol/cinsiyet** ile işaretlenmişse kişi
+  kaydındaki değer kullanılır; çelişki birleştirmede çakışma olarak bildirilir.
+- Eski kayıtlarda dosya geneli kişi yoktur; istenirse sonradan bağlanır.
+- Perde kayıt başına ölçülür; kişi satırında kayıt adıyla listelenir.
 
 ## v2.204 — Sınıflandırma/rol seçenekleri tek kaynakta
 

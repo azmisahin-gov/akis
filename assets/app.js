@@ -39,17 +39,19 @@ import {
   OBS_LABEL,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
+  emptyCaseSpeaker,
+  assignCaseSpeakerCodes,
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.204';
+} from './schema.js?v=2.205';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.204';
+const APP_VERSION = '2.205';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -175,7 +177,7 @@ const REPORT_TEXT = {
   inventoryHeaders: ['DOSYA ADI', 'BİÇİM / BOYUT', 'SÜRE', 'KANAL / ÖRNEKLEME', 'SHA-256 ÖZETİ'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   speakerIntro:
-    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir; bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
@@ -3385,9 +3387,76 @@ function suggestSpeakerMerges(m) {
 // beklediği için kaydedilen rol/cinsiyet yeniden yüklemede 'unspecified'a
 // düşüyordu (sessiz veri kaybı).
 function speakersPanelHtml(m) {
+  const c = currentCase();
   const sp = m.speakers || [];
+  const casePersons = (c && c.speakers) || [];
+  const roleOptions = (role) =>
+    SPEAKER_ROLE.map(
+      (code) =>
+        `<option value="${esc(code)}" ${normalizeSpeakerRole(role) === code ? 'selected' : ''}>${esc(SPEAKER_ROLE_LABEL[code] || code)}</option>`
+    ).join('');
+  const genderOptions = (gender) =>
+    SPEAKER_GENDER.map(
+      (code) =>
+        `<option value="${esc(code)}" ${normalizeSpeakerGender(gender) === code ? 'selected' : ''}>${esc(SPEAKER_GENDER_LABEL[code] || code)}</option>`
+    ).join('');
+  const linkedSpeakers = (pid) => {
+    const out = [];
+    for (const mm of (c && c.materials) || []) {
+      for (const s of mm.speakers || []) if (String(s.personId || '') === pid) out.push({ m: mm, sp: s });
+    }
+    return out;
+  };
+  const personName = (p) => `${p.code || ''}${p.code ? ' · ' : ''}${p.label || 'Etiketsiz'}`;
+  const personOptions = (s) => {
+    const cur = String(s.personId || '');
+    const opts = ['<option value="">— Bağlı değil (yalnız bu kayıt) —</option>'];
+    for (const p of casePersons) {
+      const n = linkedSpeakers(p.id).length;
+      opts.push(
+        `<option value="${esc(p.id)}" ${cur === p.id ? 'selected' : ''}>${esc(personName(p))} (${n} kayıt)</option>`
+      );
+    }
+    if (cur && !casePersons.some((p) => p.id === cur)) {
+      opts.push(`<option value="${esc(cur)}" selected>Bağlı kişi bulunamadı (kayıt eksik)</option>`);
+    }
+    opts.push('<option value="__new__">＋ Yeni kişi (bu konuşmacıdan)</option>');
+    return opts.join('');
+  };
+
+  const personCards = casePersons
+    .map((p) => {
+      const links = linkedSpeakers(p.id);
+      const linkText = links.length
+        ? links.map((x) => `${x.m.name} (${x.sp.code || x.sp.name})`).join(' · ')
+        : 'henüz bağlı değil';
+      return `<div class="spk-card person-card" data-person-card="${esc(p.id)}">
+      <div class="spk-card-head"><b>${esc(personName(p))}</b><button class="mini-button danger" data-del-person="${esc(p.id)}" title="Bu dosya geneli kişiyi siler; ona bağlı konuşmacı etiketleri ve bölümler KORUNUR, yalnız eşleştirme kaldırılır.">Sil</button></div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Kişi kodu</label><input data-person="${esc(p.id)}" data-person-key="code" value="${esc(p.code || '')}" placeholder="K1" title="Dosya geneli kişi kodu; kayıt içi S1/S2'den ayrıdır."></div>
+        <div class="seg-field"><label>Etiket</label><input data-person="${esc(p.id)}" data-person-key="label" value="${esc(p.label || '')}" placeholder="Örn. Kiracı"></div>
+      </div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Rol</label><select data-person="${esc(p.id)}" data-person-key="role">${roleOptions(p.role)}</select></div>
+        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-person="${esc(p.id)}" data-person-key="gender">${genderOptions(p.gender)}</select></div>
+      </div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Yaş aralığı</label><input data-person="${esc(p.id)}" data-person-key="ageRange" value="${esc(p.ageRange || '')}" placeholder="Örn. 30-40"></div>
+        <div class="seg-field"><label>Not / gözlem</label><input data-person="${esc(p.id)}" data-person-key="notes" value="${esc(p.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
+      </div>
+      <small>${links.length} kayıt: ${esc(linkText)} · <b>uzman eşleştirmesi</b></small>
+    </div>`;
+    })
+    .join('');
+  const personBlock = `<div class="person-panel">
+    <div class="pane-title">Dosyalar arası kişiler<span class="info-i" tabindex="0" data-tip="Aynı kişi birden çok kayıtta görünüyorsa burada TEK kayıt olarak tutulur. Eşleştirme uzman kanaatidir; uygulama kimlik tespiti yapmaz. Kayıt içi S1/S2 kodları ayrı kalır.">i</span></div>
+    <p class="spk-person-note">Aynı kişi birden çok kayıtta görünüyorsa aşağıdaki kişiye bağlayın. Bu bir <b>uzman eşleştirmesidir</b>; otomatik kimlik tespiti değildir.</p>
+    ${personCards || '<div class="seg-empty-note">Henüz dosya geneli kişi yok. Bir konuşmacıyı “＋ Yeni kişi” ile bağlayın.</div>'}
+    <button class="mini-button" data-add-person="${esc(m.id)}" title="Boş bir dosya geneli kişi oluştur; sonra konuşmacıları bağlayın.">＋ Kişi ekle</button>
+  </div>`;
+
   if (!sp.length)
-    return '<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>';
+    return `${personBlock}<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>`;
   const merges = suggestSpeakerMerges(m);
   const mergeNote = merges.length
     ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map((g) => g.map((s) => esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`
@@ -3399,14 +3468,12 @@ function speakersPanelHtml(m) {
   const rows = sp
     .map((s) => {
       const segs = speakerSegments(m, s);
-      const roleOpts = SPEAKER_ROLE.map(
-        (code) =>
-          `<option value="${esc(code)}" ${normalizeSpeakerRole(s.role) === code ? 'selected' : ''}>${esc(SPEAKER_ROLE_LABEL[code] || code)}</option>`
-      ).join('');
-      const genOpts = SPEAKER_GENDER.map(
-        (code) =>
-          `<option value="${esc(code)}" ${normalizeSpeakerGender(s.gender) === code ? 'selected' : ''}>${esc(SPEAKER_GENDER_LABEL[code] || code)}</option>`
-      ).join('');
+      const linkedPerson = casePersons.find((p) => p.id === String(s.personId || ''));
+      const linkedNote = s.personId
+        ? linkedPerson
+          ? `Bağlı: ${personName(linkedPerson)}`
+          : 'Bağlı kişi bulunamadı (kayıt eksik)'
+        : '';
       return `<div class="spk-card" data-spk-card="${esc(s.id)}">
       <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.">Sil</button></div>
       <div class="seg-row2">
@@ -3414,18 +3481,22 @@ function speakersPanelHtml(m) {
         <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"></div>
       </div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOpts}</select></div>
-        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender">${genOpts}</select></div>
+        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOptions(s.role)}</select></div>
+        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender">${genderOptions(s.gender)}</select></div>
       </div>
       <div class="seg-row2">
         <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"></div>
         <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
       </div>
+      <div class="seg-row2">
+        <div class="seg-field"><label>Aynı kişi (dosyalar arası)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir.">${personOptions(s)}</select></div>
+        ${linkedNote ? `<div class="seg-field"><label>Bağlantı</label><small>${esc(linkedNote)}</small></div>` : ''}
+      </div>
       <small>${segs.length ? `${segs.length} bölüm` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
     </div>`;
     })
     .join('');
-  return `${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${personBlock}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -8843,30 +8914,70 @@ function originRows(c) {
   return out;
 }
 function speakerRows(c) {
+  // DOSYA GENELİ KİŞİLER (v2.205): aynı kişi birden çok kayıtta
+  // eşleştirilmişse TEK satırda gösterilir. Eşleştirme UZMAN KANAATİDİR;
+  // otomatik kimlik tespiti değildir. Bağsız konuşmacılar eski davranışla
+  // (her kayıt için ayrı satır) gösterilir.
   const out = [];
+  const persons = new Map((c.speakers || []).map((p) => [p.id, p]));
+  const linksByPerson = new Map();
   for (const m of c.materials || []) {
     for (const sp of m.speakers || []) {
-      if (!sp.name || sp.name === 'Belirtilmedi') continue;
+      const pid = String(sp.personId || '');
+      if (!pid || !persons.has(pid)) continue;
       const segs = speakerSegments(m, sp);
-      // HİÇ BÖLÜME ATANMAMIŞ konuşmacı rapora GİRMEZ (v2.192). Aksi hâlde
-      // bölümden "Konuşmacı seçilmedi" yapılsa bile eski etiket (K, E, S1…)
-      // rapor tablosunda kalıyordu (kullanıcı bildirimi).
       if (!segs.length) continue;
-      const dur = `${m.name}: ${segs.length} bölüm`;
-      const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : ''].filter(Boolean).join(' · ');
-      // Standart kod (S1, S2…) raporda kimliği belirsizleştirmeden taşır;
-      // etiket değişse de aynı kişi aynı kodla görünür.
-      const code = sp.code ? `${sp.code} · ` : '';
-      // Rol ve cinsiyet KOD olarak saklanır; raporda Türkçe ETİKET görünür.
-      // Kod yazılırsa rapora "complainant" girer — kabul edilemez.
-      out.push([
-        `${code}${sp.name}`,
-        SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
-        SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
-        sp.ageRange || '—',
-        pitchCellText(sp),
-        `${dur}${note ? ' · ' + note : ''}`
-      ]);
+      if (!linksByPerson.has(pid)) linksByPerson.set(pid, []);
+      linksByPerson.get(pid).push({ m, sp, segs });
+    }
+  }
+  const emitted = new Set();
+  for (const m of c.materials || []) {
+    for (const sp of m.speakers || []) {
+      const pid = String(sp.personId || '');
+      const segs = speakerSegments(m, sp);
+      if (!segs.length) continue;
+      if (pid && persons.has(pid)) {
+        if (emitted.has(pid)) continue;
+        emitted.add(pid);
+        const p = persons.get(pid);
+        const links = linksByPerson.get(pid) || [];
+        const first = links[0] || { sp, m };
+        const label = p.label || first.sp.name || 'Belirtilmedi';
+        const role = p.role && p.role !== 'unspecified' ? p.role : first.sp.role || 'unspecified';
+        const gender = p.gender && p.gender !== 'unspecified' ? p.gender : first.sp.gender || 'unspecified';
+        const age = p.ageRange || first.sp.ageRange || '—';
+        const pitches = links
+          .filter((x) => x.sp.pitch)
+          .map((x) => `${x.m.name}: ${fmtHz(x.sp.pitch)}`)
+          .join('; ');
+        const parts = links
+          .map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`)
+          .join(' · ');
+        const note = [p.notes, 'uzman eşleştirmesi'].filter(Boolean).join(' · ');
+        out.push([
+          `${p.code ? p.code + ' · ' : ''}${label}`,
+          SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
+          SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
+          age,
+          pitches || '—',
+          `${parts}${note ? ' · ' + note : ''}`
+        ]);
+      } else {
+        // Bağsız: eski davranış (tek kayıt satırı).
+        if (!sp.name || sp.name === 'Belirtilmedi') continue;
+        const dur = `${m.name}: ${segs.length} bölüm`;
+        const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : ''].filter(Boolean).join(' · ');
+        const code = sp.code ? `${sp.code} · ` : '';
+        out.push([
+          `${code}${sp.name}`,
+          SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
+          SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
+          sp.ageRange || '—',
+          pitchCellText(sp),
+          `${dur}${note ? ' · ' + note : ''}`
+        ]);
+      }
     }
   }
   return out;
@@ -8952,19 +9063,11 @@ function reviewSummaryRows(c) {
   const silenceMeasured = segs.filter((s) => s.silence && s.silence.ok && s.silence.schema === SILENCE_SCHEMA).length;
   const spec = mats.filter((m) => m.spectrogramReviewed).length;
   const chan = mats.filter((m) => m.tech?.channels === 2 && channelMode(m) !== 'both').length;
-  // Sayaç TABLO ile aynı kaynaktan: yalnız bölüme atanmış konuşmacı sayılır.
-  const speakers = mats.reduce(
-    (n, m) =>
-      n +
-      (m.speakers || []).filter(
-        (s) => s.name && s.name !== 'Belirtilmedi' && speakerSegments(m, s).length > 0
-      ).length,
-    0
-  );
-  const pitched = mats.reduce(
-    (n, m) => n + (m.speakers || []).filter((s) => s.pitch && speakerSegments(m, s).length > 0).length,
-    0
-  );
+  // Sayaç TABLO ile aynı kaynaktan: aynı kişi birden çok kayıtta
+  // eşleştirilmişse TEK sayılır (v2.205).
+  const speakerRowsForCount = speakerRows(c);
+  const speakers = speakerRowsForCount.length;
+  const pitched = speakerRowsForCount.filter((r) => r[4] && r[4] !== '—').length;
   const levelMeasured = mats.filter((m) => m.levels && m.levels.ok && m.levels.schema === LEVELS_SCHEMA).length;
   // Köken belgelenmiş sayılır: ortam türü 'Belirtilmedi' dışında bir değer ve
   // en az bir teslim bilgisi (eden veya tarih) girilmişse.
@@ -10003,6 +10106,9 @@ function isEmptyCase(c) {
   if (!c || typeof c !== 'object') return true;
   if ((c.materials || []).length) return false;
   if ((c.team || []).length) return false;
+  // Dosya geneli kişi kaydı kullanıcı verisidir (v2.205): yalnız kişi tanımlanmış
+  // olsa bile dosya boş sayılmaz; aksi hâlde kayıt dışa aktarmada düşer.
+  if ((c.speakers || []).length) return false;
   if ((c.questions || []).some((q) => String(q?.question || '').trim() || String(q?.answer || '').trim())) return false;
   const filled = [
     c.court,
@@ -10473,7 +10579,15 @@ function renderMergePreview(cmp) {
     row('Doldurulacak dosya alanı', cmp.caseFields.filled.length),
     row('Otomatik alınacak dosya alanı', cmp.caseFields.autoResolved.length),
     row('Çakışan dosya alanı', cmp.caseFields.conflicts.length, cmp.caseFields.conflicts.length ? 'warn' : ''),
-    row('Ekibe eklenecek kişi', cmp.team.added.length)
+    row('Ekibe eklenecek kişi', cmp.team.added.length),
+    row('Yeni dosya geneli kişi', cmp.speakers.added.length),
+    row('Doldurulacak dosya geneli kişi alanı', cmp.speakers.filled),
+    row('Eşleştirilecek konuşmacı', cmp.speakers.linked),
+    row(
+      'Konuşmacı eşleştirme çakışması',
+      cmp.speakers.conflicts.length,
+      cmp.speakers.conflicts.length ? 'warn' : ''
+    )
   ].join('');
 
   if (!cmp.conflicts.length) {
@@ -10492,9 +10606,13 @@ function renderMergePreview(cmp) {
             ? `Soru cevabı · ${(c.questionId || '').slice(-6)}`
             : c.kind === 'case-field'
               ? `Dosya alanı · ${c.field || ''}`
-              : c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
-                ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
-                : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+              : c.kind === 'case-speaker'
+                ? `Dosya geneli kişi · ${c.personLabel || ''} · ${c.field || ''}`
+                : c.kind === 'speaker-person'
+                  ? `Konuşmacı eşleştirmesi · ${c.materialName || ''} · ${c.speakerName || ''}`
+                  : c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
+                    ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
+                    : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
         ${c.reason ? `<p class="merge-reason">${esc(c.reason)}</p>` : ''}
@@ -11481,6 +11599,48 @@ function setupEvents() {
       renderOverview();
       if ($('#view-report').classList.contains('active')) renderReport();
       showToast(`${unused.length} kullanılmayan konuşmacı temizlendi.`);
+    } else if (b.dataset.addPerson !== undefined) {
+      // Dosya geneli kişi (v2.205): boş kayıt oluştur; bağlama konuşmacı
+      // kartındaki "Aynı kişi" alanından yapılır.
+      const m = c.materials.find((x) => x.id === b.dataset.addPerson);
+      if (!m) return;
+      c.speakers = c.speakers || [];
+      const p = emptyCaseSpeaker({ label: 'Yeni kişi' });
+      c.speakers.push(p);
+      assignCaseSpeakerCodes(c.speakers);
+      persist();
+      renderSpeakersPanel(m);
+      renderOverview();
+      showToast(`${p.code} · ${p.label} oluşturuldu. Bir konuşmacıyı "Aynı kişi" alanından bağlayın.`);
+    } else if (b.dataset.delPerson !== undefined) {
+      // Dosya geneli kişiyi sil: bağlı konuşmacılar ve bölümler KORUNUR;
+      // yalnız eşleştirme kaldırılır (v2.205).
+      const pid = b.dataset.delPerson;
+      const p = (c.speakers || []).find((x) => x.id === pid);
+      if (!p) return;
+      const links = [];
+      for (const mm of c.materials || []) {
+        for (const sp of mm.speakers || []) if (String(sp.personId || '') === pid) links.push(sp);
+      }
+      const ok = await askConfirm(
+        'Dosya geneli kişiyi sil',
+        `${p.code ? p.code + ' · ' : ''}${p.label || 'Etiketsiz'} dosya geneli kişi kaydı silinecek. ` +
+          (links.length
+            ? `Ona bağlı ${links.length} konuşmacı etiketi ve bölümler KORUNUR; yalnız eşleştirme kaldırılır.`
+            : 'Bağlı konuşmacı yok.') +
+          ' Ses ve metin SİLİNMEZ. Devam edilsin mi?'
+      );
+      if (!ok) return;
+      for (const sp of links) sp.personId = '';
+      c.speakers = (c.speakers || []).filter((x) => x.id !== pid);
+      persist();
+      const card = b.closest('.audio-card');
+      const mid = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = c.materials.find((x) => x.id === mid) || c.materials[0];
+      if (m) renderSpeakersPanel(m);
+      renderOverview();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast(`${p.code || p.label || 'Kişi'} silindi; eşleştirme kaldırıldı. Ses ve metin korundu.`);
     } else if (b.dataset.spec !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.spec);
       if (mm) toggleSpectrogram(mm);
@@ -11828,6 +11988,17 @@ function setupEvents() {
       persist();
       return;
     }
+    if (el.dataset && el.dataset.person !== undefined) {
+      // Dosya geneli kişi metin alanları (v2.205).
+      const c = currentCase();
+      const p = (c.speakers || []).find((x) => x.id === el.dataset.person);
+      if (!p) return;
+      const key = el.dataset.personKey;
+      p[key] = el.value;
+      if (key === 'label') p.name = el.value;
+      persist();
+      return;
+    }
     if (!el.dataset || el.dataset.spk === undefined) return;
     const card = el.closest('.audio-card');
     const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -11884,10 +12055,24 @@ function setupEvents() {
       );
       return;
     }
+    if (el.dataset && el.dataset.person !== undefined) {
+      // Dosya geneli kişi rol/cinsiyet (v2.205).
+      const c = currentCase();
+      const p = (c.speakers || []).find((x) => x.id === el.dataset.person);
+      if (!p) return;
+      const key = el.dataset.personKey;
+      if (key === 'role') p.role = normalizeSpeakerRole(el.value);
+      else if (key === 'gender') p.gender = normalizeSpeakerGender(el.value);
+      else p[key] = el.value;
+      persist();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      return;
+    }
     if (el.dataset && el.dataset.spk !== undefined) {
       const card = el.closest('.audio-card');
       const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
-      const m = currentCase().materials.find((x) => x.id === id);
+      const c = currentCase();
+      const m = c.materials.find((x) => x.id === id);
       if (m) {
         const rec = (m.speakers || []).find((x) => x.id === el.dataset.spk);
         if (rec) {
@@ -11895,12 +12080,45 @@ function setupEvents() {
           // Rol ve cinsiyet seçeneklerinin value'su ASCII KOD'dur; kayda kod
           // yazılır, etiket yalnız görünür. Etiket yazılırsa şema onu tanımaz ve
           // değer 'unspecified'a düşerdi (v2.78 ve öncesi sessiz veri kaybı).
-          if (key === 'role') rec.role = normalizeSpeakerRole(el.value);
+          if (key === 'personId') {
+            const pid = el.value;
+            if (pid === '__new__') {
+              const p = emptyCaseSpeaker({
+                label: rec.name || rec.label || 'Konuşmacı',
+                role: rec.role || 'unspecified',
+                gender: rec.gender || 'unspecified',
+                ageRange: rec.ageRange || '',
+                notes: rec.notes || ''
+              });
+              c.speakers = c.speakers || [];
+              c.speakers.push(p);
+              assignCaseSpeakerCodes(c.speakers);
+              rec.personId = p.id;
+              showToast(`${p.code} · ${p.label} oluşturuldu ve bu konuşmacı bağlandı.`);
+            } else {
+              rec.personId = pid || '';
+              if (pid) {
+                const p = (c.speakers || []).find((x) => x.id === pid);
+                if (p) {
+                  // Kişi bilgisi boşsa bu konuşmacıdan doldur; dolu alan korunur.
+                  if (!p.label) {
+                    p.label = rec.name || '';
+                    p.name = p.label;
+                  }
+                  if (!p.role || p.role === 'unspecified') p.role = rec.role || 'unspecified';
+                  if (!p.gender || p.gender === 'unspecified') p.gender = rec.gender || 'unspecified';
+                  if (!p.ageRange) p.ageRange = rec.ageRange || '';
+                  if (!p.notes) p.notes = rec.notes || '';
+                }
+              }
+            }
+          } else if (key === 'role') rec.role = normalizeSpeakerRole(el.value);
           else if (key === 'gender') rec.gender = normalizeSpeakerGender(el.value);
           else rec[key] = el.value;
           persist();
           renderSpeakersPanel(m);
           renderOverview();
+          if ($('#view-report').classList.contains('active')) renderReport();
         }
       }
     }
@@ -13038,6 +13256,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.205': {
+    title: 'Dosyalar arası konuşmacı kaydı',
+    body:
+      'Aynı kişi birden çok kayıtta görünüyorsa Analiz → Konuşmacılar panelindeki ' +
+      '"Dosyalar arası kişiler" bölümünde K1, K2… koduyla tanımlayın; her kayıt içi ' +
+      'konuşmacıyı "Aynı kişi" alanından bağlayın. Raporda tek satırda gösterilir; hangi ' +
+      'kayıtta hangi yerel kodla geçtiği ve uzman eşleştirmesi notu yazılır. Bu bir kimlik ' +
+      'tespiti değildir; yerel S1/S2 kodları ayrı kalır. Kişi silme yalnız eşleştirmeyi ' +
+      'kaldırır; ses ve metin korunur.'
+  },
   '2.204': {
     title: 'Sınıflandırma/rol seçenekleri tek kaynakta',
     body:
