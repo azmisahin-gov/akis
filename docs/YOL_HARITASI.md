@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.205.**
+yazılır. **Güncel sürüm: v2.206.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -26,6 +26,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.206 — Yerel LLM yardımcısı (tamamlandı, isteğe bağlı)
+
+Rapor görünümünde **Yardımcı taslak** düğmesi. Tarayıcıda çalışan küçük bir
+yazı modeliyle (Qwen2.5 0.5B/1.5B ONNX) **taslak** üretir: konu başlıkları,
+okuma metni düzenlemesi, kısa özet. **Yalnız bilirkişinin onayladığı bölüm
+metni** modele verilir; ses gönderilmez, metin cihazdan çıkmaz. Çıktı rapora
+kendiliğinden girmez; yalnız panoya kopyalanır. Denetim kaynakta olmayan sayıyı
+ve uygulama adını yakalar; anlam kayması denetlenemez. Kaynak değişirse taslak
+bayatlar ve kopyalanamaz. Koruyan test: `birim` [77] + `tasarim` [2bf].
+**Dürüst sınır:** model indirme ve üretim bu ortamda denenmedi.
 
 ### v2.205 — Dosyalar arası konuşmacı kaydı (tamamlandı)
 

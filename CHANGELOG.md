@@ -6,12 +6,63 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.205.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.206.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.206 — Yerel LLM yardımcısı (isteğe bağlı)
+
+Kullanıcı: *"Rapor yazarken taslak/başlık önerisi alabilir miyim? Ama sesim ve
+metnim dışarı çıkmasın."*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor görünümünde **Yardımcı taslak** düğmesi. Varsayılan **kapalı** bir
+  yetenektir; kullanmak için modeli kendiniz yüklersiniz.
+- Pencere açılınca kural görünür: **yalnız onayladığınız metin** gönderilir,
+  **ses dosyası gönderilmez**, metin **cihazdan çıkmaz**, çıktı **taslaktır**.
+- Üç görev: **Konu başlıkları**, **Okuma metni düzenlemesi**,
+  **Kısa taslak özet**.
+- Model seçimi (**Qwen2.5 0.5B ~483 MB** veya **1.5B ~1,22 GB**) ve
+  **Modeli yükle** düğmesi; ilerleme yüzdesi gösterilir.
+- **Taslak oluştur** → çıktı kutuda; **Panoya kopyala**.
+- Denetim: kaynakta olmayan **sayı** ve **uygulama adı** yakalanır. Çıktı
+  denetimden geçmezse **kopyalanamaz**; neden yazılır.
+- Kaynak metin değişirse (yeni onay/düzenleme) taslak **bayat** olur ve
+  kopyalanamaz; yeniden oluşturulur.
+- Onaylanmış bölüm yoksa yardımcı **çalışmaz** ve nedenini söyler.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Ham ses gönderilmez.** Kaynak yalnız `approved` (bilirkişi onaylı) bölüm
+   metnidir; `machine`, `pending`, `ambiguous`, `relisten`, `inaudible` ve boş
+   metin **girmez**.
+2. **Taslak rapora kendiliğinden girmez.** Yalnız panoya kopyalanır. Üç rapor
+   çıktısı (HTML/DOCX/UDF) LLM taslağını **okumaz**; `tasarim-testi` [2bf]
+   bunu korur.
+3. **Denetim uydurmayı yakalar, anlamı yakalamaz.** Sayı/isim uydurması ve
+   uygulama adı denetlenir; anlam kayması denetlenemez. Arayüz bunu açıkça
+   yazar.
+4. **Bayat taslak kullanılamaz.** Kaynak parmak izi (FNV-1a) değişirse taslak
+   geçersiz sayılır.
+5. **Kaynak sınırı açıkça bildirilir** (8.000 karakter). Kesilirse "ilk N bölüm
+   gönderildi" yazılır; sessiz kırpma yoktur.
+6. **Model listesi gerçek ONNX depolarıdır**; boyutlar Hugging Face'teki
+   dosyalardan ölçülmüştür. Depolama panelinde yazı modeli ayrı etiketlenir;
+   Whisper bütünlük denetimi ona uygulanmaz.
+7. **Dürüst sınır:** model indirme ve üretim bu ortamda denenmedi (0,5–1,2 GB).
+   Mantık saf fonksiyonlarla ve arayüzle sınandı; ilk gerçek deneme kullanıcıda
+   yapılacaktır.
+
+### Koruyan testler
+
+- `birim-testleri` **[77]** (45 kontrol): kaynak seçimi, istem, denetim,
+  bayatlık, çıktı biçimi, model listesi.
+- `tasarim-testi` **[2bf]** (11 kontrol): pencere/kural metni, onay kaynağı,
+  rapor çıktılarının taslağı okumaması, kırpma yok, ham hex yok.
 
 ## v2.205 — Dosyalar arası konuşmacı kaydı (case-level registry)
 

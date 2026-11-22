@@ -1,4 +1,4 @@
-# Özellikler (v2.205 — mevcut durum)
+# Özellikler (v2.206 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -640,10 +640,37 @@ uzmanlık alanını gösterir.
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
 
+## Yerel LLM yardımcısı (v2.206)
+
+İsteğe bağlı, **varsayılan kapalı** yazı yardımcısı. Rapor görünümündeki
+**Yardımcı taslak** düğmesiyle açılır. Tarayıcıda çalışır (transformers.js
+`text-generation`); metin cihazdan çıkmaz.
+
+- **Kaynak yalnız onaylı metindir:** `llmSource()` yalnız `approved` (bilirkişi
+  onaylı) ve anlamlı metin taşıyan bölümleri alır. `machine`, `pending`,
+  `ambiguous`, `relisten`, `inaudible` ve boş metin **girmez**. Ses dosyası
+  hiçbir koşulda gönderilmez.
+- **Görevler:** konu başlıkları, okuma metni düzenlemesi, kısa taslak özet.
+- **Modeller:** Qwen2.5 0.5B (~483 MB) ve 1.5B (~1,22 GB) ONNX; boyutlar
+  Hugging Face deposundan ölçülmüştür. Depolama panelinde **yazı modeli**
+  olarak ayrı etiketlenir; Whisper bütünlük denetimi ona uygulanmaz.
+- **Taslak rapora girmez:** çıktı yalnız panoya kopyalanır; üç rapor çıktısı
+  (HTML/DOCX/UDF) LLM taslağını okumaz.
+- **Denetim:** `llmGuardOutput()` kaynakta olmayan sayıyı, uygulama adını, boş
+  çıktıyı ve aşırı uzunluğu yakalar. Denetim düşerse **kopyalanamaz**.
+  **Anlam kayması denetlenemez**; arayüz bunu açıkça yazar.
+- **Bayat taslak:** kaynak metnin parmak izi (FNV-1a) değişirse taslak geçersiz
+  olur; yeni onay/düzenlemeden sonra yeniden oluşturulmalıdır.
+- **Kaynak sınırı:** 8.000 karakter; kesilirse "ilk N bölüm" yazılır.
+- **Dürüst sınır:** model indirme ve üretim bu ortamda denenmedi; mantık saf
+  fonksiyonlarla (`birim` [77]) ve arayüzle (`tasarim` [2bf]) sınanır.
+
 ## Mesleki sınırlar (uygulama bunları yapmaz)
 
 - Hukuki değerlendirme ve bilirkişi kanaati üretmez.
 - Konuşmacı kimliği, kayıt orijinalliği veya montaj tespiti yapmaz.
 - E-imza üretmez, UYAP'a belge göndermez.
+- Yerel LLM **taslağı** bilirkişi onayı olmadan rapora girmez; uygulama taslağı
+  kendiliğinden metne yazmaz.
 - Kontrol edilmemiş deşifreyi doğrulanmış gibi göstermez.
 - Yapılmayan incelemeyi rapora yazmaz.

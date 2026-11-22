@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.205';
+} from './schema.js?v=2.206';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.205';
+const APP_VERSION = '2.206';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12172,6 +12172,12 @@ function setupEvents() {
         sel.value = b.dataset.useModel;
         showToast('Model seçildi: ' + b.dataset.useModel);
       }
+    } else if (b.dataset.useLlm) {
+      saveLlmPref(b.dataset.useLlm);
+      const sel = $('#llmModelSelect');
+      if (sel) sel.value = b.dataset.useLlm;
+      openLlmDialog();
+      showToast('Yazı modeli seçildi: ' + b.dataset.useLlm);
     }
   });
   $('#startQueueBtn').addEventListener('click', () => runQueue());
@@ -12365,6 +12371,42 @@ $('#focusModeBtn').addEventListener('click', () => setFocusMode(!document.body.c
       showToast('Panoya kopyalanamadı; metni seçip elle kopyalayın.');
     }
   });
+  // YEREL LLM YARDIMCISI (v2.206). İsteğe bağlı; çıktı taslaktır.
+  const llmDlg = $('#llmDialog');
+  const closeLlm = () => {
+    if (!llmDlg) return;
+    if (typeof llmDlg.close === 'function') llmDlg.close();
+    else llmDlg.removeAttribute('open');
+  };
+  $('#closeLlm')?.addEventListener('click', closeLlm);
+  $('#llmClose')?.addEventListener('click', closeLlm);
+  $('#llmOpenBtn')?.addEventListener('click', openLlmDialog);
+  $('#llmLoadBtn')?.addEventListener('click', () => {
+    const id = $('#llmModelSelect') ? $('#llmModelSelect').value : savedLlmPref();
+    ensureLlm(id).catch((e) => showToast('Model yüklenemedi: ' + (e && e.message ? e.message : e), true));
+  });
+  $('#llmRunBtn')?.addEventListener('click', () => generateLlmDraft());
+  $('#llmModelSelect')?.addEventListener('change', (e) => {
+    saveLlmPref(e.target.value);
+    renderLlmDialog();
+  });
+  $('#llmCopyBtn')?.addEventListener('click', async () => {
+    const src = llmSourceForCase(currentCase());
+    const can = llmCanUseDraft(llmState.draft, src.text);
+    if (!can.ok) {
+      showToast(can.reason, true);
+      return;
+    }
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('pano yok');
+      await navigator.clipboard.writeText(llmState.draft.text);
+      showToast('Taslak panoya kopyalandı. Rapor metnine kendi denetiminizle aktarın.');
+    } catch (e) {
+      showToast('Panoya kopyalanamadı; taslağı seçip elle kopyalayın.');
+    }
+  });
+  renderLlmModelOptions();
+  renderLlmTaskOptions();
   // Sürüm etiketine tıklayınca geçmiş: hangi sürümde ne değişti (kullanıcı dili).
   const verBtn = $('#appVersion');
   if (verBtn) {
@@ -12506,6 +12548,475 @@ async function runQueue() {
   renderOverview();
   showToast(c.queueCancel ? 'Kuyruk durduruldu.' : 'Toplu çözümleme tamamlandı.');
 }
+// ===== Yerel LLM yardımcısı (v2.206) =====================================
+// İSTEĞE BAĞLI. Tarayıcıda çalışır; metin cihazdan çıkmaz. Yalnız
+// BİLİRKİŞİNİN ONAYLADIĞI bölüm metni gönderilir (ses gönderilmez). Çıktı
+// TASLAKTIR; rapora kendiliğinden girmez, yalnız panoya kopyalanabilir.
+// Denetim yalnız gözlemlenebilir uydurmayı yakalar (kaynakta olmayan sayı,
+// uygulama adı, aşırı uzunluk). Anlam kayması denetlenemez; bu yüzden çıktı
+// her cümlesi bilirkişi tarafından asıl metinle karşılaştırılmalıdır.
+const LLM_SOURCE_LIMIT = 8000;
+const LLM_TASKS = [
+  {
+    key: 'outline',
+    label: 'Konu başlıkları',
+    maxTokens: 240,
+    instruction:
+      'Verilen metni konu değişimlerine göre grupla ve her grup için kısa bir başlık yaz. ' +
+      'Yalnız metindeki konuları adlandır; yeni bilgi, isim, sayı, tarih veya olay ekleme.'
+  },
+  {
+    key: 'reading',
+    label: 'Okuma metni düzenlemesi',
+    maxTokens: 600,
+    instruction:
+      'Verilen metni akıcı ve okunur hâle getir. Cümleleri düzenle; anlamı değiştirme; ' +
+      'metinde olmayan bilgi, isim, sayı, tarih veya olay ekleme.'
+  },
+  {
+    key: 'summary',
+    label: 'Kısa taslak özet',
+    maxTokens: 320,
+    instruction:
+      'Verilen metnin kısa bir taslak özetini yaz. Yalnız metinde geçen bilgileri kullan; ' +
+      'yorum, çıkarım ve hukuki değerlendirme ekleme.'
+  }
+];
+const LLM_SYSTEM_PROMPT =
+  'Sen bir adli bilirkişinin yazı yardımcısısın. Yalnız sana verilen metni kullanırsın. ' +
+  'Metinde olmayan bilgi, isim, sayı, tarih, saat, yer veya olay eklemezsin. ' +
+  'Tahmin, yorum ve hukuki değerlendirme yapmazsın. ' +
+  'Uygulama, yazılım veya tarayıcı adı anmazsın. ' +
+  'Yanıtı yalnız Türkçe ve düz metin olarak verirsin.';
+const LLM_MODELS = {
+  'onnx-community/Qwen2.5-0.5B-Instruct': {
+    label: 'Qwen2.5 0.5B — küçük ve hızlı (~483 MB)',
+    sizeMB: 483,
+    webgpuDtype: 'q4f16',
+    wasmDtype: 'q4'
+  },
+  'onnx-community/Qwen2.5-1.5B-Instruct': {
+    label: 'Qwen2.5 1.5B — daha iyi Türkçe (~1,22 GB)',
+    sizeMB: 1222,
+    webgpuDtype: 'q4f16',
+    wasmDtype: 'q4'
+  }
+};
+const LLM_DEFAULT_MODEL = 'onnx-community/Qwen2.5-0.5B-Instruct';
+function llmModelSpec(id) {
+  return LLM_MODELS[id] || LLM_MODELS[LLM_DEFAULT_MODEL];
+}
+function llmTask(key) {
+  return LLM_TASKS.find((t) => t.key === key) || LLM_TASKS[0];
+}
+// FNV-1a: kaynak metnin kimliği. Taslak hangi metinden üretildiğini taşır;
+// metin sonradan değişirse taslak BAYAT sayılır ve kopyalanamaz.
+function llmSourceFingerprint(text) {
+  let h = 0x811c9dc5;
+  const s = String(text || '');
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+// Kaynak yalnız BİLİRKİŞİ ONAYLI (approved) ve anlamlı metin taşıyan
+// bölümlerden oluşur. `machine` (makine işareti), `ambiguous`, `relisten`,
+// `inaudible` ve `pending` GİRMEZ: doğrulanmamış metin LLM'e verilmez.
+function llmSource(materials, opts = {}) {
+  const limit = Number(opts.limit) > 0 ? Number(opts.limit) : LLM_SOURCE_LIMIT;
+  const skipped = { pending: 0, machine: 0, ambiguous: 0, relisten: 0, inaudible: 0, empty: 0, other: 0 };
+  const parts = [];
+  const usedMaterials = new Set();
+  let included = 0;
+  let totalSegments = 0;
+  let truncated = false;
+  let chars = 0;
+  for (const m of materials || []) {
+    let headerAdded = false;
+    for (const s of m.segments || []) {
+      totalSegments++;
+      if (!isHumanApproved(s)) {
+        const rev = segReview(s);
+        if (skipped[rev] != null) skipped[rev]++;
+        else skipped.other++;
+        continue;
+      }
+      const text = String(s.text || '').trim();
+      if (!text || isHallucination(text)) {
+        skipped.empty++;
+        continue;
+      }
+      const line = `${m.fileName || m.name || 'Kayıt'} · ${segSpeakerCell(m, s)} · ${s.start || '—'}–${s.end || '—'}: ${text}`;
+      const header = headerAdded ? 0 : String(m.fileName || m.name || 'Kayıt').length + 5;
+      if (included > 0 && chars + header + line.length + 1 > limit) {
+        truncated = true;
+        break;
+      }
+      if (!headerAdded) {
+        parts.push(`### ${m.fileName || m.name || 'Kayıt'}`);
+        chars += header;
+        headerAdded = true;
+      }
+      parts.push(line);
+      chars += line.length + 1;
+      included++;
+      usedMaterials.add(m.id);
+    }
+    if (truncated) break;
+  }
+  const text = parts.join('\n');
+  return {
+    ok: included > 0,
+    text,
+    included,
+    totalSegments,
+    materialsUsed: usedMaterials.size,
+    skipped,
+    truncated,
+    chars: text.length,
+    limit,
+    fingerprint: llmSourceFingerprint(text)
+  };
+}
+function llmSourceReason(src) {
+  if (!src) return 'Kaynak metin yok.';
+  if (!src.ok)
+    return 'Onaylanmış bölüm yok. Yerel LLM yalnız bilirkişinin onayladığı metni görür; önce bölümleri dinleyip onaylayın.';
+  if (src.truncated)
+    return `Kaynak ${src.limit} karakter sınırını aşıyor; yalnız ilk ${src.included} bölüm gönderildi. Kalan bölümler taslağa dâhil değil.`;
+  return `${src.included} onaylı bölüm · ${src.materialsUsed} kayıt · ${src.chars} karakter.`;
+}
+function llmPromptFor(taskKey, sourceText) {
+  const t = llmTask(taskKey);
+  const src = String(sourceText || '').trim();
+  return {
+    task: t.key,
+    maxTokens: t.maxTokens,
+    messages: [
+      { role: 'system', content: LLM_SYSTEM_PROMPT },
+      { role: 'user', content: `${t.instruction}\n\nMETİN:\n"""\n${src}\n"""` }
+    ]
+  };
+}
+const LLM_IDENTITY_RE = /\bAK[İI]S\b|\b(uygulama|tarayıcı)\b/i;
+function llmNumbers(text) {
+  return String(text || '').match(/\d+(?:[.,]\d+)?/g) || [];
+}
+// Çıktı denetimi: uydurma sayı, uygulama adı, boşluk ve aşırı uzunluk.
+// Satır başındaki liste numaraları (1. / 2)) sayı sayılmaz.
+function llmGuardOutput(output, sourceText) {
+  const text = String(output || '').trim();
+  const problems = [];
+  const codes = [];
+  const add = (code, label, detail) => {
+    codes.push(code);
+    problems.push({ code, label, detail: detail || '' });
+  };
+  if (!text) {
+    add('empty', 'Çıktı boş.');
+    return { ok: false, codes, problems };
+  }
+  if (LLM_IDENTITY_RE.test(text))
+    add('identity', 'Çıktı uygulama/tarayıcı adı anıyor; rapora giremez.');
+  const body = text
+    .split('\n')
+    .map((l) => l.replace(/^\s*\d{1,2}[.)]\s+/, ''))
+    .join('\n');
+  const srcNums = new Set(llmNumbers(sourceText));
+  const unknown = [...new Set(llmNumbers(body))].filter((n) => !srcNums.has(n));
+  if (unknown.length)
+    add('number', 'Kaynakta olmayan sayı: ' + unknown.slice(0, 4).join(', '), unknown.join(','));
+  if (text.length > Math.max(400, String(sourceText || '').length * 4))
+    add('tooLong', 'Çıktı kaynağa göre aşırı uzun; uydurma olabilir.');
+  return { ok: problems.length === 0, codes, problems };
+}
+function llmDraftStale(draft, sourceText) {
+  if (!draft) return true;
+  return draft.sourceFingerprint !== llmSourceFingerprint(String(sourceText || ''));
+}
+function llmCanUseDraft(draft, sourceText) {
+  if (!draft || !draft.text) return { ok: false, reason: 'Taslak yok.' };
+  if (llmDraftStale(draft, sourceText))
+    return { ok: false, reason: 'Kaynak metin değişti; taslağı yeniden oluşturun.' };
+  if (!draft.guard || !draft.guard.ok)
+    return { ok: false, reason: 'Taslak denetimden geçmedi; kopyalanamaz.' };
+  return { ok: true, reason: '' };
+}
+// transformers.js `text-generation` iki biçim döndürebilir: düz metin
+// (`generated_text: string`) veya sohbet dizisi (son öğe asistan yanıtı).
+function llmExtractContent(out) {
+  if (!Array.isArray(out) || !out.length) return '';
+  const g = out[0] && out[0].generated_text;
+  let text = '';
+  if (typeof g === 'string') text = g;
+  else if (Array.isArray(g) && g.length) {
+    const last = g[g.length - 1];
+    if (last && typeof last.content === 'string') text = last.content;
+  }
+  return String(text || '').trim();
+}
+function llmStatusText(state) {
+  return (
+    {
+      idle: 'Model yüklenmedi',
+      loading: 'Model indiriliyor…',
+      ready: 'Model hazır',
+      running: 'Taslak oluşturuluyor…',
+      error: 'Model yüklenemedi'
+    }[state] || 'Model yüklenmedi'
+  );
+}
+function llmAvailability(hasWebGPU) {
+  return hasWebGPU
+    ? { device: 'webgpu', note: 'WebGPU kullanılabilir; model hızlı çalışır.' }
+    : { device: 'wasm', note: 'WebGPU yok; model CPU (WASM) ile çalışır ve yavaş olabilir.' };
+}
+const LLM_PREF_KEY = 'akis.llmModel';
+const llmState = {
+  pipeline: null,
+  modelId: null,
+  device: null,
+  dtype: null,
+  loading: false,
+  loadPromise: null,
+  running: false,
+  draft: null,
+  status: 'idle',
+  error: ''
+};
+function savedLlmPref() {
+  try {
+    const v = localStorage.getItem(LLM_PREF_KEY);
+    return LLM_MODELS[v] ? v : LLM_DEFAULT_MODEL;
+  } catch (e) {
+    return LLM_DEFAULT_MODEL;
+  }
+}
+function saveLlmPref(id) {
+  try {
+    localStorage.setItem(LLM_PREF_KEY, id);
+  } catch (e) {}
+}
+async function ensureLlm(modelId) {
+  const id = LLM_MODELS[modelId] ? modelId : LLM_DEFAULT_MODEL;
+  if (llmState.pipeline && llmState.modelId === id) return llmState.pipeline;
+  if (llmState.loading && llmState.loadPromise) return llmState.loadPromise;
+  llmState.loading = true;
+  llmState.status = 'loading';
+  llmState.error = '';
+  renderLlmDialog();
+  llmState.loadPromise = (async () => {
+    const spec = llmModelSpec(id);
+    const avail = llmAvailability(asrDevice === 'webgpu');
+    const dtype = avail.device === 'webgpu' ? spec.webgpuDtype : spec.wasmDtype;
+    const { pipeline, env } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+    if (llmState.pipeline && llmState.pipeline.dispose) {
+      try {
+        await llmState.pipeline.dispose();
+      } catch (e) {}
+    }
+    llmState.pipeline = null;
+    const pipe = await pipeline('text-generation', id, {
+      device: avail.device,
+      dtype,
+      progress_callback: (p) => {
+        if (p.status === 'progress' && p.file) {
+          const pct = Math.max(0, Math.min(99, Math.round(Number(p.progress || 0))));
+          const st = $('#llmStatus');
+          if (st) st.textContent = `${spec.label} indiriliyor… %${pct} · ${p.file}`;
+          const bar = $('#llmLoadBar');
+          if (bar) {
+            bar.hidden = false;
+            const fill = bar.querySelector('span');
+            if (fill) fill.style.width = pct + '%';
+          }
+        }
+      }
+    });
+    llmState.pipeline = pipe;
+    llmState.modelId = id;
+    llmState.device = avail.device;
+    llmState.dtype = dtype;
+    llmState.status = 'ready';
+    const bar = $('#llmLoadBar');
+    if (bar) {
+      bar.hidden = true;
+      const fill = bar.querySelector('span');
+      if (fill) fill.style.width = '0%';
+    }
+    saveLlmPref(id);
+    renderLlmDialog();
+    showToast('Yerel yazı modeli hazır.');
+    refreshStorage();
+    return pipe;
+  })();
+  try {
+    return await llmState.loadPromise;
+  } catch (e) {
+    llmState.status = 'error';
+    llmState.error = e && e.message ? e.message : String(e);
+    renderLlmDialog();
+    throw e;
+  } finally {
+    llmState.loading = false;
+    llmState.loadPromise = null;
+  }
+}
+function llmSourceForCase(c) {
+  return llmSource((c && c.materials) || []);
+}
+async function generateLlmDraft() {
+  const c = currentCase();
+  if (!c || llmState.running) return;
+  const src = llmSourceForCase(c);
+  if (!src.ok) {
+    showToast(llmSourceReason(src), true);
+    return;
+  }
+  const taskKey = $('#llmTaskSelect') ? $('#llmTaskSelect').value : LLM_TASKS[0].key;
+  const modelId = $('#llmModelSelect') ? $('#llmModelSelect').value : savedLlmPref();
+  llmState.running = true;
+  llmState.status = 'running';
+  llmState.error = '';
+  renderLlmDialog();
+  try {
+    const gen = await ensureLlm(modelId);
+    const p = llmPromptFor(taskKey, src.text);
+    const out = await gen(p.messages, {
+      max_new_tokens: p.maxTokens,
+      do_sample: false,
+      repetition_penalty: 1.1
+    });
+    const text = llmExtractContent(out);
+    const guard = llmGuardOutput(text, src.text);
+    llmState.draft = {
+      task: p.task,
+      modelId: llmState.modelId || modelId,
+      text,
+      guard,
+      sourceFingerprint: src.fingerprint,
+      included: src.included,
+      materialsUsed: src.materialsUsed,
+      chars: src.chars,
+      truncated: src.truncated,
+      at: new Date().toISOString()
+    };
+    llmState.status = 'ready';
+    if (!guard.ok) showToast('Taslak denetimden geçmedi; kopyalanamaz. Uyarıları okuyun.', true);
+  } catch (e) {
+    llmState.status = 'error';
+    llmState.error = e && e.message ? e.message : String(e);
+    showToast('Taslak oluşturulamadı: ' + llmState.error, true);
+  } finally {
+    llmState.running = false;
+    renderLlmDialog();
+  }
+}
+function renderLlmModelOptions() {
+  const sel = $('#llmModelSelect');
+  if (!sel) return;
+  sel.innerHTML = Object.entries(LLM_MODELS)
+    .map(([id, s]) => `<option value="${esc(id)}">${esc(s.label)}</option>`)
+    .join('');
+  sel.value = savedLlmPref();
+}
+function renderLlmTaskOptions() {
+  const sel = $('#llmTaskSelect');
+  if (!sel) return;
+  sel.innerHTML = LLM_TASKS.map((t) => `<option value="${esc(t.key)}">${esc(t.label)}</option>`).join('');
+}
+function renderLlmDialog() {
+  const status = $('#llmStatus');
+  if (!status) return;
+  const c = currentCase();
+  const src = llmSourceForCase(c);
+  const modelId = $('#llmModelSelect') ? $('#llmModelSelect').value : savedLlmPref();
+  const spec = llmModelSpec(modelId);
+  const avail = llmAvailability(asrDevice === 'webgpu');
+  const statusText =
+    llmState.status === 'error' && llmState.error
+      ? `${llmStatusText('error')}: ${llmState.error}`
+      : llmStatusText(llmState.status);
+  const loadedNote =
+    llmState.pipeline && llmState.modelId
+      ? ` · yüklü: ${llmModelSpec(llmState.modelId).label.split('—')[0].trim()} (${llmState.device === 'webgpu' ? 'GPU' : 'CPU'})`
+      : '';
+  status.textContent = `${statusText}${loadedNote} · ${avail.note}`;
+
+  const info = $('#llmSourceInfo');
+  if (info) {
+    info.textContent = llmSourceReason(src);
+    info.classList.toggle('is-warn', !src.ok);
+  }
+  const runBtn = $('#llmRunBtn');
+  if (runBtn) {
+    runBtn.disabled = !src.ok || llmState.running || llmState.loading;
+    runBtn.textContent = llmState.running ? 'Oluşturuluyor…' : 'Taslak oluştur';
+    runBtn.title = src.ok ? 'Yalnız onaylanmış bölümlerden taslak üretir' : llmSourceReason(src);
+  }
+  const loadBtn = $('#llmLoadBtn');
+  if (loadBtn) {
+    const isLoaded = llmState.pipeline && llmState.modelId === modelId;
+    loadBtn.disabled = llmState.loading || !!isLoaded;
+    loadBtn.textContent = isLoaded ? 'Model yüklü' : llmState.loading ? 'İndiriliyor…' : 'Modeli yükle';
+    loadBtn.title = `${spec.label} — tarayıcıya indirilir, cihazdan metin çıkmaz`;
+  }
+
+  const draft = llmState.draft;
+  const draftEl = $('#llmDraft');
+  if (draftEl) {
+    draftEl.hidden = !draft;
+    draftEl.textContent = draft ? draft.text || '(boş çıktı)' : '';
+  }
+  const guardEl = $('#llmGuard');
+  if (guardEl) {
+    if (!draft) {
+      guardEl.hidden = true;
+      guardEl.innerHTML = '';
+    } else if (draft.guard && draft.guard.ok) {
+      guardEl.hidden = false;
+      guardEl.className = 'llm-guard is-ok';
+      guardEl.innerHTML =
+        '<b>Denetim:</b> kaynakta olmayan sayı veya uygulama adı bulunmadı. ' +
+        'Bu, anlam kayması olmadığını KANITLAMAZ; her cümleyi kendi metninizle karşılaştırın.';
+    } else {
+      guardEl.hidden = false;
+      guardEl.className = 'llm-guard is-warn';
+      guardEl.innerHTML =
+        '<b>Denetim uyarısı:</b> ' +
+        (draft.guard && draft.guard.problems ? draft.guard.problems.map((p) => esc(p.label)).join(' ') : '') +
+        ' Taslak bu hâliyle kopyalanamaz; yeniden oluşturun.';
+    }
+  }
+  const note = $('#llmNote');
+  const can = llmCanUseDraft(draft, src.text);
+  if (note) {
+    if (!draft) note.textContent = 'Taslak kayda yazılmaz; sayfa yenilenince kaybolur.';
+    else if (llmDraftStale(draft, src.text))
+      note.textContent = 'Kaynak metin değişti (yeni onay/düzenleme). Taslak geçersiz; yeniden oluşturun.';
+    else if (draft.truncated)
+      note.textContent = `Taslak kaynağın ilk ${draft.included} bölümünden üretildi (karakter sınırı).`;
+    else
+      note.textContent = `${draft.included} onaylı bölüm · ${draft.materialsUsed} kayıt · taslak yalnız panoya kopyalanır.`;
+  }
+  const copyBtn = $('#llmCopyBtn');
+  if (copyBtn) {
+    copyBtn.disabled = !can.ok;
+    copyBtn.title = can.ok ? 'Taslağı panoya kopyala (rapora kendiliğinden girmez)' : can.reason;
+  }
+}
+function openLlmDialog() {
+  renderLlmDialog();
+  const dlg = $('#llmDialog');
+  if (!dlg) return;
+  if (typeof dlg.showModal === 'function') dlg.showModal();
+  else dlg.setAttribute('open', '');
+}
+
+
 // Model manager. transformers.js stores every downloaded file in the browser
 // Cache Storage under a fixed name, so the same cache can be enumerated,
 // measured and pruned here. File URLs contain the repo id, which is how an
@@ -12813,8 +13324,23 @@ function renderStorage(scan) {
   list.innerHTML = ids
     .map((id) => {
       const info = scan.models[id];
-      const known = !!ASR_MODELS[id];
-      return `<div class="storage-item"><div class="storage-main"><b>${esc(known ? ASR_MODELS[id].label.split('–')[0].trim() : id)}</b><small>${esc(id)} · ${info.files} dosya · ${fmtBytes(info.bytes)}</small></div><div class="storage-item-actions">${known ? `<button class="mini-button" data-use-model="${esc(id)}">Bu modeli seç</button>` : ''}<button class="mini-button" data-verify-model="${esc(id)}">Doğrula</button><button class="mini-button danger" data-delete-model="${esc(id)}">Sil</button></div></div>`;
+      const asrKnown = !!ASR_MODELS[id];
+      const llmKnown = !!LLM_MODELS[id];
+      const label = asrKnown
+        ? ASR_MODELS[id].label.split('–')[0].trim()
+        : llmKnown
+          ? llmModelSpec(id).label.split('—')[0].trim()
+          : id;
+      // Bütünlük kontrolü Whisper dosya yapısına özgüdür; yazı modelinde
+      // "eksik dosya" demek yanıltıcı olur. Bu yüzden yalnız ASR modelinde
+      // "Doğrula" gösterilir.
+      const useBtn = asrKnown
+        ? `<button class="mini-button" data-use-model="${esc(id)}">Bu modeli seç</button>`
+        : llmKnown
+          ? `<button class="mini-button" data-use-llm="${esc(id)}">Yazı modeli olarak seç</button>`
+          : '';
+      const verifyBtn = asrKnown ? `<button class="mini-button" data-verify-model="${esc(id)}">Doğrula</button>` : '';
+      return `<div class="storage-item"><div class="storage-main"><b>${esc(label)}</b><small>${esc(id)} · ${info.files} dosya · ${fmtBytes(info.bytes)}${llmKnown ? ' · yazı modeli' : ''}</small></div><div class="storage-item-actions">${useBtn}${verifyBtn}<button class="mini-button danger" data-delete-model="${esc(id)}">Sil</button></div></div>`;
     })
     .join('');
 }
@@ -13256,6 +13782,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.206': {
+    title: 'Yerel LLM yardımcısı (isteğe bağlı)',
+    body:
+      'Rapor görünümündeki "Yardımcı taslak" düğmesi, tarayıcıda çalışan küçük bir yazı modeliyle ' +
+      'taslak üretir: konu başlıkları, okuma metni düzenlemesi veya kısa özet. Yalnız ONAYLADIĞINIZ ' +
+      'bölüm metni modele verilir; ses gönderilmez ve metin cihazdan çıkmaz. Çıktı rapora ' +
+      'kendiliğinden girmez; yalnız panoya kopyalanır. Kaynakta olmayan sayı ve uygulama adı ' +
+      'denetlenir; anlam kayması denetlenemez. Model ilk kullanımda indirilir (0,5B ~483 MB); ' +
+      'indirme ve üretim bu sürümde denenmedi.'
+  },
   '2.205': {
     title: 'Dosyalar arası konuşmacı kaydı',
     body:
