@@ -3636,6 +3636,7 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
 
     eq('kök delil.json bulunur', T.findDelilManifestPath(['delil.json', 'ses/a.wav']), 'delil.json');
     eq('nested delil.json bulunur', T.findDelilManifestPath(['pkg/ses/a.wav', 'pkg/delil.json']), 'pkg/delil.json');
+    eq('backslash delil.json bulunur', T.findDelilManifestPath(['pkg\\delil.json', 'pkg\\ses\\a.wav']), 'pkg\\delil.json');
     eq('delil.json yoksa null', T.findDelilManifestPath(['a.wav']), null);
 
     eq('hash tutuyor → verified', T.delilFileState({ sha256: hash }, hash), 'verified');
@@ -3647,6 +3648,7 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     eq('ortam türü USB', origin.mediumType, 'usb');
     eq('SCSI + removable → usb', T.delilOriginFromPack({ ...pack, device: { ...pack.device, busType: 'SCSI', removable: true } }).mediumType, 'usb');
     eq('SD → memory_card', T.delilOriginFromPack({ ...pack, device: { ...pack.device, busType: 'SD' } }).mediumType, 'memory_card');
+    eq('Card Reader modeli → memory_card', T.delilOriginFromPack({ ...pack, device: { ...pack.device, busType: 'SCSI', model: 'Realtek PCIE Card Reader', removable: true } }).mediumType, 'memory_card');
     eq('cihaz etiketi model + seri', origin.mediumLabel, 'SanDisk · SN123');
     eq('teslim eden boş (operatör edinme tutanağında)', origin.deliveredBy, '');
     eq('teslim tarihi boş (alınma ayrı)', origin.deliveredAt, '');

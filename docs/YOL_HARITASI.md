@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.209.**
+yazılır. **Güncel sürüm: v2.210.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.210 — Delil paketi içe aktarma: Windows ZIP ayırıcısı (tamamlandı)
+
+Windows .NET ZIP'i girdi adlarını `\` ile yazdığı için AKİS dosyaları
+"pakette yok" sayıyordu (0/10). ZIP girdi adları ve `relPath` `/` üzerinden
+normalize edildi; büyük/küçük harf yedeği eklendi. Kart okuyucu modeli
+"Card Reader" ise ortam türü **Hafıza kartı** eşlenir. Edinme aracı başında
+`chcp.com 65001` (Türkçe konsol). Ölçüm: `\` ayırıcılı ZIP → **1/1
+Doğrulandı**; JS hatası 0. Koruyan test: `birim` [78].
 
 ### v2.209 — Edinme aracı düzeltmeleri (tamamlandı)
 

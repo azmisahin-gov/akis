@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.209.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.210.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4344,3 +4344,39 @@ Kullanıcı v2.208 aracını Windows 11'de denedi. İki gerçek hata:
   `ZipFile`; Windows PowerShell 5.1 ve PS 7'de çalışır.
 - **Cihaz filtresi yalnız `BusType`'a bakmaz:** SD okuyucular SCSI bildirir;
   `DriveType=Removable` da kabul ölçütüdür. Sistem diski her zaman reddedilir.
+
+## EK DÜZELTME (v2.210) — Windows ZIP ayırıcısı
+
+Kullanıcı sıfır profilli Brave'de SD paketini yükledi: **0 doğrulandı, 10
+pakette yok**. Paket sağlamdı; hata uygulamadaydı.
+
+### Kök neden
+
+Windows .NET `ZipFile.CreateFromDirectory` ZIP girdi adlarını **`\`** ile
+yazabiliyor (`ses\00-bozuk.aac`). Uygulama yalnız `/` ile eşleştiriyordu
+(`ses/00-bozuk.aac`); `delil.json` kökte bulundu, ses dosyaları "yok" sayıldı.
+
+### Düzeltme
+
+- `importDelilPack`: ZIP girdi adları ve `relPath` **`/` üzerinden normalize**;
+  büyük/küçük harf duyarsız yedek eşleşme.
+- `findDelilManifestPath`: `\` içeren yol da kök/nested bulunur.
+- Kart okuyucu modeli "Card Reader" ise ortam türü **Hafıza kartı**.
+- `edinme.ps1` başında `chcp.com 65001` (Windows PowerShell 5.1 Türkçe konsol;
+  Linux'ta yok sayılır).
+
+### Ölçüm
+
+- `\` ayırıcılı ZIP (1 WAV) → **1/1 Doğrulandı**, onay penceresi yok, JS hatası 0.
+- Normal `/` ZIP ve PowerShell `-Simulate` → 2/2 Doğrulandı (önceki).
+- `birim-testleri` [78]: backslash `delil.json` + "Card Reader" eşlemesi.
+
+### KURAL
+
+- **ZIP girdi adlarını asla ham karşılaştırmayın.** `\` ve `/` aynı anlama
+  gelir; normalize edin. Windows'ta üretilen ZIP, Linux/macOS'ta üretilenden
+  farklı ayırıcı taşıyabilir.
+- Büyük/küçük harf de eşleşmeyebilir (Windows duyarsız, ZIP duyarlı); yedek
+  eşleşme tutun.
+- Bir dosya "pakette yok" diyorsa önce **ayırıcı** ve **göreli yol** kontrol
+  edilir; paketin bozuk olduğu sonucuna hemen varılmaz.

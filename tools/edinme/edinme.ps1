@@ -64,7 +64,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+# Windows PowerShell 5.1: konsol kod sayfasını UTF-8 yap; aksi hâlde Türkçe
+# karakterler "Ã¼" gibi görünür. Linux'ta chcp yoktur; hata yutulur.
+try { chcp.com 65001 | Out-Null } catch {}
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
+$OutputEncoding = [System.Text.Encoding]::UTF8
 $ToolName = 'AKIS Edinme'
 $ToolVersion = '1.0'
 $Schema = 'akis.delil.v1'

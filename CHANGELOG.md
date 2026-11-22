@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.209.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.210.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.210 — Delil paketi içe aktarma: Windows ZIP ayırıcısı
+
+Kullanıcı Brave'de (sıfır profil) SD paketini yükledi: **0 doğrulandı,
+10 pakette yok**. Paket sağlamdı; sorun uygulama tarafındaydı.
+
+### KÖK NEDEN
+
+Windows .NET `ZipFile.CreateFromDirectory` girdi adlarını **`\`** ile
+yazabiliyor (`ses\00-bozuk.aac`). Uygulama yalnız **`/`** ile eşleştiriyordu
+(`ses/00-bozuk.aac`); bu yüzden `delil.json` bulundu (kök), ama ses dosyaları
+"pakette yok" sayıldı.
+
+### DÜZELTME
+
+- ZIP girdi adları ve `relPath` değerleri **`/` üzerinden normalize** edilir;
+  eşleşme büyük/küçük harf duyarsız yedekle de denenir.
+- `delil.json` yolu `\` içerse de kök/nested bulunur.
+- Kart okuyucu modeli "Card Reader" ise ortam türü **Hafıza kartı** eşlenir
+  (SCSI + Removable olsa bile).
+- Edinme aracı başında `chcp.com 65001`: Windows PowerShell 5.1'de Türkçe
+  konsol çıktısı düzelir (Linux'ta yok sayılır).
+
+### ÖLÇÜM
+
+- `\` ayırıcılı ZIP (1 WAV) → AKİS'te **1/1 Doğrulandı**; onay penceresi yok;
+  JS hatası **0**.
+- Normal `/` ayırıcılı ZIP ve PowerShell `-Simulate` çıktısı: **2/2 Doğrulandı**
+  (önceki ölçüm).
+- `birim-testleri` **[78]**: backslash `delil.json` + "Card Reader" eşlemesi
+  eklendi.
+
+### KULLANICI NE GÖRECEK
+
+- Aynı ZIP'i yeniden yükleyin; **10/10 Doğrulandı** görmelisiniz. Yeniden
+  edinme gerekmez.
+- SD kart artık **Hafıza kartı** olarak görünür (modelde "Card Reader" varsa).
+- Konsolda Türkçe karakterler düzgün görünür.
+
+### DÜRÜST SINIR
+
+- Windows'un ürettiği gerçek ZIP bu ortamda yok; aynı ayırıcıyla **yeniden
+  üretilmiş** ZIP ile ölçüldü. Kullanıcı denemesi bekleniyor.
+- Tier 1 hâlâ imaj değildir; silinmiş veri/boş alan gelmez.
 
 ## v2.209 — Edinme aracı düzeltmeleri (v2.208 geri bildirimi)
 

@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.209';
+} from './schema.js?v=2.210';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.209';
+const APP_VERSION = '2.210';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7474,12 +7474,16 @@ function delilCopyTypeLabel(t) {
   return DELIL_COPY_TYPES[t] || (t ? String(t) : '—');
 }
 // Paket içinde delil.json kökte veya tek bir üst klasörde olabilir.
+// ZIP üreticileri ayırıcı olarak `\` yazabilir (Windows .NET); bu yüzden
+// karşılaştırma `/` üzerinden yapılır, dönen değer GERÇEK girdi adıdır.
 function findDelilManifestPath(names) {
   const list = (names || []).map(String);
-  if (list.includes('delil.json')) return 'delil.json';
+  const norm = (n) => n.replace(/\\/g, '/');
+  const root = list.find((n) => norm(n) === 'delil.json');
+  if (root) return root;
   const nested = list
-    .filter((n) => /(^|\/)delil\.json$/.test(n))
-    .sort((a, b) => a.split('/').length - b.split('/').length);
+    .filter((n) => /(^|\/)delil\.json$/.test(norm(n)))
+    .sort((a, b) => norm(a).split('/').length - norm(b).split('/').length);
   return nested[0] || null;
 }
 // Şema doğrulaması: eksik/yanlış paket sessizce alınmaz. Dönüş: hata metni
@@ -7509,7 +7513,8 @@ function delilOriginFromPack(pack) {
   const meth = (pack && pack.method) || {};
   const op = (pack && pack.operator) || {};
   const bus = String(d.busType || '');
-  const isCard = /sd|mmc/i.test(bus);
+  const model = String(d.model || '');
+  const isCard = /sd|mmc|card reader/i.test(bus + ' ' + model);
   const isRemovable = d.removable === true || /usb/i.test(bus);
   const label = [d.model, d.serial].filter(Boolean).join(' · ');
   const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
@@ -7761,6 +7766,19 @@ async function importDelilPack(file) {
   if (!c) return;
   const zip = await JSZip.loadAsync(file);
   const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+  // ZIP girdi adlarını `/` üzerinden eşleştir; Windows .NET `\` yazabilir.
+  const entryMap = new Map();
+  const lowerMap = new Map();
+  for (const n of names) {
+    const key = n.replace(/\\/g, '/').replace(/^\.?\//, '');
+    entryMap.set(key, n);
+    lowerMap.set(key.toLowerCase(), n);
+  }
+  const findEntry = (p) => {
+    const key = String(p || '').replace(/\\/g, '/').replace(/^\.?\//, '');
+    const actual = entryMap.get(key) || lowerMap.get(key.toLowerCase());
+    return actual ? zip.file(actual) : null;
+  };
   const manifestPath = findDelilManifestPath(names);
   if (!manifestPath) throw new Error('Pakette delil.json bulunamadı.');
   let pack;
@@ -7771,7 +7789,8 @@ async function importDelilPack(file) {
   }
   const err = validateDelilPack(pack);
   if (err) throw new Error(err);
-  const baseDir = manifestPath.includes('/') ? manifestPath.slice(0, manifestPath.lastIndexOf('/') + 1) : '';
+  const mp = manifestPath.replace(/\\/g, '/');
+  const baseDir = mp.includes('/') ? mp.slice(0, mp.lastIndexOf('/') + 1) : '';
   const results = [];
   for (const f of pack.files) {
     const candidates = [
@@ -7781,7 +7800,7 @@ async function importDelilPack(file) {
       'ses/' + f.name,
       f.name
     ];
-    const zf = candidates.map((n) => zip.file(n)).find(Boolean);
+    const zf = candidates.map(findEntry).find(Boolean);
     if (!zf) {
       results.push({ file: f, state: 'missing', blob: null, nowHash: null });
       continue;
@@ -13570,6 +13589,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.210': {
+    title: 'Delil paketi içe aktarma düzeltmesi',
+    body:
+      'Windows ZIP\'i dosya adlarını ters bölü (\\) ile yazdığı için AKİS ' +
+      'dosyaları "pakette yok" sayıyordu (0/10). ZIP adları artık normalize ' +
+      'edilir; aynı ZIP yeniden yüklenebilir, yeniden edinme gerekmez. SD kart ' +
+      'okuyucu modeli "Card Reader" ise ortam türü Hafıza kartı görünür. ' +
+      'Edinme aracı konsolu UTF-8 yapar.'
+  },
   '2.209': {
     title: 'Edinme aracı düzeltmeleri',
     body:

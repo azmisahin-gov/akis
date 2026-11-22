@@ -4,7 +4,7 @@
 > öneridir ve uygulanmamıştır. Tier 1 çıktısı "adli imaj" değil,
 > "belgelenmiş dosya kopyası"dır.
 >
-> **Güncel sürüm:** v2.209.
+> **Güncel sürüm:** v2.210.
 
 ## 0. v2.209 düzeltmeleri (kullanıcı geri bildirimi)
 
