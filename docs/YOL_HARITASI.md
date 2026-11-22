@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.210.**
+yazılır. **Güncel sürüm: v2.211.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.211 — Delil paketi: yinelenen dosya ve ses dışı dosya (tamamlandı)
+
+Aynı ses (aynı SHA-256) dosyada zaten varsa **yeni kayıt açılmaz**; mevcut
+düzenlemeler/onaylar korunur ve edinme bilgisi mevcut kayda işlenir. `bilgi.txt`
+gibi ses dışı dosyalar listeye girmez; manifestte kalır ve **“Ses dışı
+(atlandı)”** görünür. Cihaz satırında **Birim: D:** gösterilir. Ölçüm: onaylı/
+düzenlenmiş materyal + aynı WAV + `bilgi.txt` → kayıt **1**, `review` approved,
+metin korundu, edinme bilgisi işlendi; boş dosyada 1 doğrulandı + 1 ses dışı;
+JS hatası 0. Koruyan test: `birim` [78].
 
 ### v2.210 — Delil paketi içe aktarma: Windows ZIP ayırıcısı (tamamlandı)
 

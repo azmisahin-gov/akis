@@ -4,7 +4,7 @@
 > öneridir ve uygulanmamıştır. Tier 1 çıktısı "adli imaj" değil,
 > "belgelenmiş dosya kopyası"dır.
 >
-> **Güncel sürüm:** v2.210.
+> **Güncel sürüm:** v2.211.
 
 ## 0. v2.209 düzeltmeleri (kullanıcı geri bildirimi)
 
@@ -164,7 +164,13 @@ wsl --unmount \\.\PHYSICALDRIVE2
   - `uyuşmuyor` — hash farklı; paket geçersiz
   - `doğrulanamadı` — hash yok veya hesaplanamadı
 - Cihaz bilgisi **"edinme aracının beyanı"** olarak gösterilir; uygulama cihazı
-  görmez.
+  görmez. Cihaz satırında **birim (D:)** de görünür.
+- **Yinelenen dosya (v2.211):** Aynı ses (aynı SHA-256) dosyada zaten varsa
+  **yeni kayıt açılmaz**. Mevcut kayıt, düzenlemeler ve onaylar korunur;
+  doğrulanmış paketin edinme bilgisi mevcut kayda işlenir ve günlüğe yazılır.
+- **Ses dışı dosya (v2.211):** `bilgi.txt`, video vb. materyal olarak
+  **eklenmez**; manifestte kayıtlı kalır, doğrulama penceresinde **"Ses dışı
+  (atlandı)"** görünür. Böylece `-IncludeAll` güvenlidir.
 - Delil günlüğüne zincir kaydı yazılır (`logEvent`).
 - Raporun **"KAYIT KÖKENİ VE TESLİM ZİNCİRİ"** tablosuna cihaz, yöntem, araç,
   operatör ve hash girer.

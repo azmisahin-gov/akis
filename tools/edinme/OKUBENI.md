@@ -20,6 +20,20 @@ AKIS_Delil_20261122_101500.zip
 
 `delil.json` şeması: [`docs/DELIL_EDINME.md`](../../docs/DELIL_EDINME.md).
 
+## Hangi dosyalar kopyalanır?
+
+- **Varsayılan:** yalnız ses dosyaları (wav, mp3, m4a, ogg, flac, aac).
+- **Tüm dosyalar:** `-IncludeAll` ekleyin. `bilgi.txt`, video vb. de kopyalanır
+  ve manifestte kayıtlı kalır.
+- AKİS yalnız **ses** dosyalarını materyal yapar; ses dışı dosyalar doğrulama
+  penceresinde **“Ses dışı (atlandı)”** görünür.
+
+## Aynı dosya zaten dosyada varsa?
+
+AKİS aynı sesi **SHA-256** ile tanır. Paket mevcut dosyaya yüklenirse **yeni
+kayıt açılmaz**; düzenlemeler ve onaylar korunur, edinme bilgisi mevcut kayda
+işlenir. v2.211 öncesi oluşmuş kopyaları **Kaldır** ile temizleyin.
+
 ## Gereksinimler
 
 - Windows 10/11, PowerShell 5.1+

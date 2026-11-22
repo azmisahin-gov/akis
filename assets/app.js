@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.210';
+} from './schema.js?v=2.211';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.210';
+const APP_VERSION = '2.211';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7506,6 +7506,17 @@ function validateDelilPack(pack) {
 function delilFileState(file, nowHash) {
   return verifyHashState(nowHash, file && file.sha256);
 }
+// Yalnız ses dosyaları AKİS'e materyal olarak girer. Paketteki diğer dosyalar
+// (ör. bilgi.txt) manifestte kayıtlı kalır; arayüzde "ses dışı (atlandı)" görünür.
+function isAudioFileName(name) {
+  return /\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(String(name || ''));
+}
+// Aynı ses (aynı SHA-256) dosyada zaten varsa yeni kayıt AÇILMAZ; mevcut
+// kayıt korunur (düzenlemeler/onaylar kaybolmaz).
+function delilDuplicateOf(materials, hash) {
+  if (!isSha256Hex(hash)) return null;
+  return (materials || []).find((m) => m && m.sha256 === hash) || null;
+}
 // Delil paketinden materyalin `origin` alanını üretir. Cihaz bilgisi
 // edinme aracının BEYANIDIR; uygulama cihazı görmez.
 function delilOriginFromPack(pack) {
@@ -7538,12 +7549,14 @@ function delilOriginFromPack(pack) {
   };
 }
 function delilSummary(results) {
-  const out = { total: 0, verified: 0, mismatch: 0, unavailable: 0, missing: 0 };
+  const out = { total: 0, verified: 0, mismatch: 0, unavailable: 0, missing: 0, duplicate: 0, skipped: 0 };
   for (const r of results || []) {
     out.total++;
     if (r && r.state === 'verified') out.verified++;
     else if (r && r.state === 'mismatch') out.mismatch++;
     else if (r && r.state === 'missing') out.missing++;
+    else if (r && r.state === 'duplicate') out.duplicate++;
+    else if (r && r.state === 'skipped') out.skipped++;
     else out.unavailable++;
   }
   return out;
@@ -7554,7 +7567,9 @@ function delilStateLabel(state) {
       verified: 'Doğrulandı',
       mismatch: 'Uyuşmuyor',
       unavailable: 'Doğrulanamadı',
-      missing: 'Pakette yok'
+      missing: 'Pakette yok',
+      duplicate: 'Zaten var (atlandı)',
+      skipped: 'Ses dışı (atlandı)'
     }[state] || 'Doğrulanamadı'
   );
 }
@@ -7569,9 +7584,11 @@ function acquisitionRows(c) {
     const meth = a.method || {};
     const op = a.operator || {};
     const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
+    const vols = Array.isArray(d.volumes) ? d.volumes.filter(Boolean) : [];
+    const deviceCell = [d.model || '—', vols.length ? vols.join(', ') : ''].filter(Boolean).join(' · ');
     out.push([
       m.name || m.fileName || '—',
-      d.model || '—',
+      deviceCell,
       d.serial || '—',
       delilCopyTypeLabel(meth.copyType),
       tool || '—',
@@ -7793,6 +7810,12 @@ async function importDelilPack(file) {
   const baseDir = mp.includes('/') ? mp.slice(0, mp.lastIndexOf('/') + 1) : '';
   const results = [];
   for (const f of pack.files) {
+    // Ses dışı dosyalar (bilgi.txt, video vb.) AKİS'e materyal olarak girmez;
+    // manifestte kayıtlı kalır ve "ses dışı (atlandı)" olarak gösterilir.
+    if (!isAudioFileName(f.name)) {
+      results.push({ file: f, state: 'skipped', blob: null, nowHash: null });
+      continue;
+    }
     const candidates = [
       baseDir + f.relPath,
       f.relPath,
@@ -7809,7 +7832,18 @@ async function importDelilPack(file) {
     const mime = raw.type || (/\.wav$/i.test(f.name) ? 'audio/wav' : 'audio/*');
     const blob = new Blob([raw], { type: mime });
     const nowHash = await sha256(blob);
-    results.push({ file: f, state: delilFileState(f, nowHash), blob, nowHash });
+    const state = delilFileState(f, nowHash);
+    results.push({ file: f, state, packageState: state, blob, nowHash });
+  }
+  // Aynı ses (aynı SHA-256) dosyada zaten varsa YENİ KAYIT AÇILMAZ.
+  // Mevcut kayıt korunur; düzenlemeler ve onaylar kaybolmaz.
+  for (const r of results) {
+    if (!r.blob || !isSha256Hex(r.nowHash)) continue;
+    const existing = delilDuplicateOf(c.materials, r.nowHash);
+    if (existing) {
+      r.state = 'duplicate';
+      r.existing = existing;
+    }
   }
   const summary = delilSummary(results);
   if (summary.mismatch || summary.missing) {
@@ -7825,9 +7859,42 @@ async function importDelilPack(file) {
   }
   const origin = delilOriginFromPack(pack);
   let added = 0;
+  let linked = 0;
   for (const r of results) {
-    if (!r.blob) continue;
     const f = r.file;
+    if (r.state === 'duplicate' && r.existing) {
+      const ex = r.existing;
+      ex.origin = ex.origin || {};
+      if (r.packageState === 'verified') {
+        if (!ex.origin.acquisition) {
+          ex.origin.acquisition = {
+            ...origin.acquisition,
+            hashState: 'verified',
+            manifestSha256: f.sha256 || '',
+            fileRelPath: f.relPath || ''
+          };
+          if (!ex.origin.mediumType || ex.origin.mediumType === 'unspecified') ex.origin.mediumType = origin.mediumType;
+          if (!ex.origin.mediumLabel) ex.origin.mediumLabel = origin.mediumLabel;
+          if (!ex.origin.deviceInfo) ex.origin.deviceInfo = origin.deviceInfo;
+          logEvent(
+            ex,
+            'Delil paketinden edinme bilgisi işlendi',
+            `Aynı SHA-256; yeni kayıt eklenmedi. Cihaz: ${(pack.device && pack.device.model) || '—'} · ${delilCopyTypeLabel(pack.method && pack.method.copyType)} · paket: ${file.name}`
+          );
+        } else {
+          logEvent(ex, 'Delil paketinde aynı dosya görüldü', `Aynı SHA-256; mevcut edinme bilgisi korundu. Paket: ${file.name}`);
+        }
+        linked++;
+      } else {
+        logEvent(
+          ex,
+          'Delil paketinde aynı dosya görüldü (paket doğrulanamadı)',
+          `Paket durumu: ${delilStateLabel(r.packageState)} · paket: ${file.name}`
+        );
+      }
+      continue;
+    }
+    if (!r.blob) continue;
     const id = uid();
     const m = {
       id,
@@ -7878,11 +7945,14 @@ async function importDelilPack(file) {
   await renderAudioList();
   switchView('audio');
   renderDelilResult(summary, pack, results, file.name);
-  showToast(
-    summary.mismatch || summary.missing
-      ? `Delil paketi yüklendi (${added} kayıt) — ${summary.mismatch + summary.missing} dosya doğrulanamadı.`
-      : `Delil paketi doğrulandı: ${summary.verified}/${summary.total} dosya.`
-  );
+  const parts = [];
+  if (summary.verified) parts.push(`${summary.verified} doğrulandı`);
+  if (summary.duplicate) parts.push(`${summary.duplicate} zaten vardı (atlandı)`);
+  if (linked) parts.push(`${linked} mevcut kayda işlendi`);
+  if (summary.skipped) parts.push(`${summary.skipped} ses dışı (atlandı)`);
+  if (summary.mismatch) parts.push(`${summary.mismatch} uyuşmuyor`);
+  if (summary.missing) parts.push(`${summary.missing} pakette yok`);
+  showToast(`Delil paketi: ${parts.join(' · ')}.`, summary.mismatch || summary.missing);
 }
 function renderDelilResult(summary, pack, results, fileName) {
   const body = $('#delilResultBody');
@@ -7903,7 +7973,7 @@ function renderDelilResult(summary, pack, results, fileName) {
   body.innerHTML =
     `<div class="delil-meta">` +
     `<div><b>Paket:</b> ${esc(fileName || '—')}</div>` +
-    `<div><b>Cihaz:</b> ${esc(d.model || '—')} · <b>Seri:</b> ${esc(d.serial || '—')} · ${esc(fmtBytes(d.sizeBytes || 0))}</div>` +
+    `<div><b>Cihaz:</b> ${esc(d.model || '—')} · <b>Seri:</b> ${esc(d.serial || '—')} · ${esc(fmtBytes(d.sizeBytes || 0))}${Array.isArray(d.volumes) && d.volumes.filter(Boolean).length ? ' · <b>Birim:</b> ' + esc(d.volumes.filter(Boolean).join(', ')) : ''}</div>` +
     `<div><b>Yöntem:</b> ${esc(delilCopyTypeLabel(meth.copyType))} · <b>Araç:</b> ${esc(tool || '—')} · <b>Write-blocker:</b> ${meth.hardwareWriteBlocker ? 'evet' : 'hayır'}</div>` +
     `<div><b>Operatör:</b> ${esc(op.name || '—')}${op.registry ? ' · ' + esc(op.registry) : ''} · <b>Alınma:</b> ${esc(String((pack && pack.acquiredAt) || '—').slice(0, 19).replace('T', ' '))}</div>` +
     `</div>` +
@@ -7912,8 +7982,10 @@ function renderDelilResult(summary, pack, results, fileName) {
     (summary.mismatch ? ` · <b>${summary.mismatch}</b> uyuşmuyor` : '') +
     (summary.unavailable ? ` · <b>${summary.unavailable}</b> doğrulanamadı` : '') +
     (summary.missing ? ` · <b>${summary.missing}</b> pakette yok` : '') +
+    (summary.duplicate ? ` · <b>${summary.duplicate}</b> zaten vardı (atlandı)` : '') +
+    (summary.skipped ? ` · <b>${summary.skipped}</b> ses dışı (atlandı)` : '') +
     `</div>` +
-    `<p class="delil-note">Cihaz bilgisi <b>edinme aracının beyanıdır</b>; uygulama cihazı görmez. "Doğrulandı" yalnız SHA-256 özeti tutuyorsa yazılır.</p>` +
+    `<p class="delil-note">Cihaz bilgisi <b>edinme aracının beyanıdır</b>; uygulama cihazı görmez. "Doğrulandı" yalnız SHA-256 özeti tutuyorsa yazılır. <b>Zaten var (atlandı):</b> aynı ses (aynı SHA-256) dosyada vardı; mevcut kayıt ve düzenlemeler korundu, edinme bilgisi varsa ona işlendi.</p>` +
     `<table class="delil-table"><thead><tr><th>DOSYA</th><th>BEKLENEN SHA-256</th><th>DURUM</th></tr></thead><tbody>${rows}</tbody></table>`;
   if (typeof dlg.showModal === 'function') dlg.showModal();
   else dlg.setAttribute('open', '');
@@ -13589,6 +13661,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.211': {
+    title: 'Delil paketi: kopya oluşmaz',
+    body:
+      'Aynı ses (aynı SHA-256) dosyada zaten varsa yeni kayıt açılmaz; ' +
+      'düzenlemeleriniz ve onaylarınız korunur, edinme bilgisi mevcut kayda ' +
+      'işlenir. bilgi.txt gibi ses dışı dosyalar listeye girmez; doğrulama ' +
+      'penceresinde "Ses dışı (atlandı)" görünür. Cihaz satırında birim (D:) ' +
+      'gösterilir. v2.211 öncesi oluşmuş kopyaları Kaldır ile temizleyin.'
+  },
   '2.210': {
     title: 'Delil paketi içe aktarma düzeltmesi',
     body:

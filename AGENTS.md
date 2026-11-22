@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.210.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.211.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4380,3 +4380,47 @@ yazabiliyor (`ses\00-bozuk.aac`). Uygulama yalnız `/` ile eşleştiriyordu
   eşleşme tutun.
 - Bir dosya "pakette yok" diyorsa önce **ayırıcı** ve **göreli yol** kontrol
   edilir; paketin bozuk olduğu sonucuna hemen varılmaz.
+
+## EK DÜZELTME (v2.211) — Delil paketi kopya oluşturmaz
+
+Kullanıcı gerçekçi senaryoyu denedi: dosyada elle eklenmiş, düzenlenmiş ve
+onaylanmış bir kayıt varken aynı sesi içeren delil paketini yükledi. Sonuç:
+**12 kayıt** (2 elle + 10 paket) ve paket kopyalarında düzenleme/onay yok.
+
+### Kök neden
+
+Paket içe aktarma her zaman **yeni materyal** ekliyordu; aynı ses olup olmadığını
+**SHA-256 ile karşılaştırmıyordu**. `-IncludeAll` ile gelen `bilgi.txt` gibi ses
+dışı dosyalar da materyal sanılıyordu.
+
+### Düzeltme
+
+- **Yinelenen koruması:** `delilDuplicateOf(materials, hash)`; aynı SHA-256 varsa
+  yeni kayıt açılmaz.
+- **Edinme bilgisi mevcut kayda işlenir:** paket doğrulandıysa
+  `origin.acquisition` mevcut materyale yazılır; düzenlemeler/onaylar korunur;
+  günlüğe "Delil paketinden edinme bilgisi işlendi" girer.
+- **Ses dışı dosyalar:** `isAudioFileName`; `bilgi.txt`/video materyal olmaz,
+  manifestte kalır, "Ses dışı (atlandı)" görünür. `-IncludeAll` güvenli.
+- **Birim:** `device.volumes` sonuç penceresinde ve rapor cihaz hücresinde
+  (`model · D:`).
+
+### Ölçüm
+
+- Onaylı/düzenlenmiş materyal + aynı WAV + `bilgi.txt` ZIP:
+  kayıt **1**, `review` **approved**, metin **düzenlenmiş metin** korundu,
+  `origin.acquisition.hashState` **verified**, birim **D:**, günlük 1;
+  pencere **1 zaten vardı · 1 ses dışı**.
+- Boş dosyaya aynı ZIP: **1 doğrulandı · 1 ses dışı**, kayıt 1; JS hatası 0.
+- Rapor: cihaz + birim + operatör.
+
+### KURAL
+
+- **İçe aktarma "ekle" demek değildir; önce KİMLİK (SHA-256) kontrol edilir.**
+  Aynı ses ikinci kez eklenirse düzenlemeler/onaylar kaybolur. Yeni materyal
+  yalnız hash dosyada yoksa açılır.
+- **Edinme bilgisi mevcut kayda işlenir**, yeni kopya açılmaz.
+- **Ses dışı dosya materyal değildir.** Manifestte kalır; arayüzde atlandı
+  olarak görünür.
+- **Eski kopyalar silinmez:** v2.211 öncesi oluşanlar Kaldır ile temizlenir.
+- **Hash yoksa eşleşme olmaz:** eski kayıtta `sha256` yoksa yeni kayıt açılır.

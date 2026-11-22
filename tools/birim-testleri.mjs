@@ -123,6 +123,7 @@ const EXPOSE = [
   'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
+  'isAudioFileName', 'delilDuplicateOf',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3661,15 +3662,25 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     eq('kopya türü yok → tire', T.delilCopyTypeLabel(), '—');
     eq('durum etiketi doğrulandı', T.delilStateLabel('verified'), 'Doğrulandı');
     eq('durum etiketi pakette yok', T.delilStateLabel('missing'), 'Pakette yok');
+    eq('durum etiketi zaten var', T.delilStateLabel('duplicate'), 'Zaten var (atlandı)');
+    eq('durum etiketi ses dışı', T.delilStateLabel('skipped'), 'Ses dışı (atlandı)');
     eq('bilinmeyen durum doğrulanamadı', T.delilStateLabel('x'), 'Doğrulanamadı');
+
+    eq('ses dosyası tanınır', T.isAudioFileName('a.WAV') && T.isAudioFileName('b.m4a'), true);
+    eq('ses dışı tanınmaz', T.isAudioFileName('bilgi.txt') || T.isAudioFileName('video.mp4'), false);
+    eq('aynı hash mevcut kaydı bulur', T.delilDuplicateOf([{ id: 'm1', sha256: hash }], hash).id, 'm1');
+    eq('farklı hash kayıt bulmaz', T.delilDuplicateOf([{ id: 'm1', sha256: 'b'.repeat(64) }], hash), null);
+    eq('geçersiz hash kayıt bulmaz', T.delilDuplicateOf([{ id: 'm1', sha256: hash }], 'x'), null);
 
     const sum = T.delilSummary([
       { state: 'verified' },
       { state: 'mismatch' },
       { state: 'unavailable' },
-      { state: 'missing' }
+      { state: 'missing' },
+      { state: 'duplicate' },
+      { state: 'skipped' }
     ]);
-    eq('özet sayıları', [sum.total, sum.verified, sum.mismatch, sum.unavailable, sum.missing].join(','), '4,1,1,1,1');
+    eq('özet sayıları', [sum.total, sum.verified, sum.mismatch, sum.unavailable, sum.missing, sum.duplicate, sum.skipped].join(','), '6,1,1,1,1,1,1');
 
     // Rapor satırı: yalnız delil paketinden gelen kayıt girer.
     const c = T.emptyCaseForTest({ id: 'c1' });
@@ -3682,7 +3693,7 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     const rows = T.acquisitionRows(c);
     eq('delil kaydı tek satır', rows.length, 1);
     eq('satır dosya adı', rows[0][0], 'a.wav');
-    eq('satır cihaz', rows[0][1], 'SanDisk');
+    eq('satır cihaz + birim', rows[0][1], 'SanDisk · E:');
     eq('satır seri no', rows[0][2], 'SN123');
     eq('satır yöntem', rows[0][3], 'Mantıksal dosya kopyası');
     eq('satır araç', rows[0][4], 'AKIS Edinme 1.0');

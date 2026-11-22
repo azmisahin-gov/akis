@@ -6,12 +6,71 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.210.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.211.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.211 — Delil paketi: yinelenen dosya ve ses dışı dosya
+
+Kullanıcı gerçekçi senaryoyu denedi: dosyada elle eklenmiş, düzenlenmiş ve
+onaylanmış bir kayıt varken aynı sesi içeren delil paketini yükledi. Sonuç:
+**12 kayıt** (2 elle + 10 paket) ve paket kopyalarında **düzenleme/onay yok**.
+
+### KÖK NEDEN
+
+Paket içe aktarma **her zaman yeni materyal** ekliyordu; aynı ses olup
+olmadığını **SHA-256 ile karşılaştırmıyordu**. Ayrıca `-IncludeAll` ile
+paketlenen `bilgi.txt` gibi ses dışı dosyalar materyal sanılıyordu.
+
+### DÜZELTME
+
+- **Yinelenen koruması:** Aynı SHA-256 dosyada zaten varsa **yeni kayıt
+  açılmaz**. Mevcut kayıt, düzenlemeler ve onaylar korunur.
+- **Edinme bilgisi mevcut kayda işlenir:** Paket doğrulandıysa cihaz/seri/
+  yöntem/operatör bilgisi mevcut materyalin `origin.acquisition` alanına
+  yazılır; delil günlüğüne “Delil paketinden edinme bilgisi işlendi” girer.
+- **Ses dışı dosyalar:** `bilgi.txt`, video vb. materyal olarak **eklenmez**;
+  manifestte kayıtlı kalır ve doğrulama penceresinde **“Ses dışı (atlandı)”**
+  görünür. Böylece `-IncludeAll` güvenlidir.
+- **Birim bilgisi:** Cihaz satırında **Birim: D:** gösterilir; raporda cihaz
+  hücresi `model · D:` olur.
+- **Özet:** “N doğrulandı · N zaten vardı (atlandı) · N ses dışı (atlandı)”.
+
+### ÖLÇÜM (gerçek Chromium)
+
+- Dosyada onaylı/düzenlenmiş materyal + aynı WAV'ı ve `bilgi.txt`'i içeren ZIP:
+  - kayıt sayısı **1** (artmadı),
+  - `review` **approved**, metin **düzenlenmiş metin** korundu,
+  - `origin.acquisition.hashState` **verified**, birim **D:**,
+  - günlük: **“Delil paketinden edinme bilgisi işlendi”**,
+  - pencere: **1 zaten vardı (atlandı) · 1 ses dışı (atlandı)**.
+- Boş dosyaya aynı ZIP: **1 doğrulandı · 1 ses dışı**; kayıt 1; JS hatası **0**.
+- Rapor: cihaz + birim + operatör göründü.
+
+### KULLANICI NE GÖRECEK
+
+- Aynı paketi mevcut dosyaya yüklediğinizde **kopya oluşmaz**; düzenlediğiniz
+  kayıt korunur ve edinme bilgisi ona eklenir.
+- `bilgi.txt` gibi dosyalar listeye **girmez**; doğrulama penceresinde
+  “Ses dışı (atlandı)” yazar.
+- **v2.211 öncesi** oluşmuş kopyalar silinmez; onları **Kaldır** ile temizleyin
+  veya yeni bir dosyaya paketi yeniden yükleyin.
+
+### DÜRÜST SINIR
+
+- Eşleştirme **SHA-256** iledir. Eski kayıtta hash yoksa eşleşme olmaz; yeni
+  kayıt açılır. (Yeni eklenen dosyalarda hash vardır.)
+- Aynı ses farklı sürümlerde (yeniden kodlanmış) farklı hash taşır; kopya
+  sayılmaz. Bu doğrudur: içerik değişmiştir.
+
+### Koruyan testler
+
+- `birim-testleri` **[78]**: `duplicate`/`skipped` özeti, `isAudioFileName`,
+  `delilDuplicateOf`, cihaz+birim hücresi.
+- `bash tools/test.sh` tümü yeşil.
 
 ## v2.210 — Delil paketi içe aktarma: Windows ZIP ayırıcısı
 
