@@ -4,7 +4,7 @@
 > (LLM, rapor, Rust/Tauri, delil Tier 2) **öneridir**; uygulanmamıştır.
 > Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
 >
-> **Güncel sürüm:** v2.208.
+> **Güncel sürüm:** v2.209.
 
 ## 0. Öncelik sırası (kullanıcı kararı)
 

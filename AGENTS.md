@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.208.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.209.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4300,3 +4300,47 @@ materyal bazında yazılır.
    ölçümü.
 3. **v2.211 — Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
 4. **Sonra:** Rust CLI edinme, DD imajı, yerel ajan, Tauri.
+
+## EK DÜZELTME (v2.209) — Edinme aracı (kullanıcı geri bildirimi)
+
+Kullanıcı v2.208 aracını Windows 11'de denedi. İki gerçek hata:
+
+1. **SD kart reddedildi:** SD okuyucu `BusType=SCSI` bildirdi; araç yalnız
+   USB/SD/MMC kabul ediyordu.
+2. **USB'de paket oluşmadı:** `Bağımsız değişken türleri eşleşmiyor`
+   (ArgumentException). Kök: `files = @($entries)` (PowerShell 7.7'de
+   `List[object]` üzerinde hata) ve `Compress-Archive` modül bağımlılığı.
+
+### Düzeltmeler
+
+- **SD/SCSI:** `Get-Volume.DriveType = Removable` ise SCSI kabul; sistem/boot
+  diski reddedilir. Log'da `Sürücü türü · BusType`.
+- **`files = $entries.ToArray()`**: ArgumentException giderildi.
+- **ZIP:** .NET `ZipFile.CreateFromDirectory`; modül yoksa `Compress-Archive`
+  yedeği.
+- **`-Operator` zorunlu**; boş künye ile paket oluşmaz.
+- **Konsol UTF-8:** `chcp 65001` + `[Console]::OutputEncoding`.
+- **`device.removable`:** manifest alanı; AKİS'te SCSI+removable → `usb`,
+  SD/MMC → `memory_card`.
+- **Yol ayırıcı:** `TrimStart/TrimEnd` `\` ve `/` kabul eder (Linux testi).
+
+### Ölçüm
+
+- PowerShell 7.7 (Linux, `-Simulate`) uçtan uca: 2 dosya → `delil.json` + ZIP
+  → AKİS'te **2/2 Doğrulandı**, operatör/seri/cihaz rapora girdi, JS hatası 0.
+- Windows `diskpart`/SD algılama bu ortamda denenemedi; kullanıcı denemesi
+  bekleniyor.
+
+### Koruyan test
+
+- `birim-testleri` **[78]**: SCSI+removable → `usb`, SD → `memory_card`
+  (40 kontrol). `bash tools/test.sh` tümü yeşil.
+
+### KURAL (tekrar)
+
+- **PowerShell'de `List[object]` üzerinde `@($list)` kullanmayın.** `.ToArray()`
+  kullanın. Aksi hâlde PS 7.7'de `Argument types do not match` alınır.
+- **Dış modül bağımlılığından kaçının:** `Compress-Archive` yerine .NET
+  `ZipFile`; Windows PowerShell 5.1 ve PS 7'de çalışır.
+- **Cihaz filtresi yalnız `BusType`'a bakmaz:** SD okuyucular SCSI bildirir;
+  `DriveType=Removable` da kabul ölçütüdür. Sistem diski her zaman reddedilir.

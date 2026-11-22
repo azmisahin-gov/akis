@@ -6,12 +6,58 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.208.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.209.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.209 — Edinme aracı düzeltmeleri (v2.208 geri bildirimi)
+
+Kullanıcı denemesi iki gerçek hata gösterdi:
+
+1. **SD kart reddedildi:** SD okuyucu `BusType=SCSI` bildirdi; araç yalnız
+   USB/SD/MMC kabul ettiği için durdu.
+2. **USB'de kopyalama bitti, paket oluşmadı:** `Bağımsız değişken türleri
+   eşleşmiyor` (ArgumentException). Kök: `files = @($entries)` (PowerShell
+   7.7'de `List[object]` üzerinde hata) ve `Compress-Archive` modül bağımlılığı.
+
+### DÜZELTMELER
+
+- **SD/SCSI kabul:** `Get-Volume.DriveType = Removable` ise SCSI de kabul
+  edilir; sistem/boot diski **reddedilir**. Log'da `Sürücü türü · BusType`
+  yazılır.
+- **`files = $entries.ToArray()`**: ArgumentException giderildi.
+- **ZIP:** `Compress-Archive` yerine **.NET `ZipFile.CreateFromDirectory`**;
+  modül yüklenemezse `Compress-Archive` yedeği.
+- **Operatör zorunlu:** `-Operator` artık zorunlu; boş künye ile paket
+  oluşmaz.
+- **Konsol UTF-8:** `chcp 65001` + `[Console]::OutputEncoding`; Türkçe
+  karakterler bozulmaz.
+- **`device.removable`:** manifest'e eklendi; AKİS'te SCSI+removable → `usb`,
+  SD/MMC → `memory_card` eşlemesi.
+- **Yol ayırıcı:** `TrimStart/TrimEnd` hem `\` hem `/` kabul eder (test
+  kolaylığı; Windows davranışı değişmez).
+
+### ÖLÇÜM
+
+- PowerShell 7.7 `-Simulate` uçtan uca: 2 dosya → `delil.json` + ZIP →
+  AKİS'te **2/2 Doğrulandı**, operatör/seri/cihaz rapora girdi, JS hatası **0**.
+- Windows `diskpart` yolu bu ortamda (Linux) çalıştırılamadı; kullanıcı
+  denemesi bekleniyor.
+
+### DÜRÜST SINIR
+
+- `diskpart`/salt-okunur ve SD/USB algılama yalnız Windows'ta denenebilir.
+- Tier 1 hâlâ imaj değildir; silinmiş veri/boş alan gelmez.
+- Yazılımsal salt-okunur, donanım write-blocker değildir.
+
+### Koruyan testler
+
+- `birim-testleri` **[78]**: SCSI+removable → `usb`, SD → `memory_card`
+  eklendi (40 kontrol).
+- `bash tools/test.sh` tümü yeşil.
 
 ## v2.208 — Delil paketi (Tier 1) ve doğrulama
 

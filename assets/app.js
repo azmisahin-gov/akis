@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.208';
+} from './schema.js?v=2.209';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.208';
+const APP_VERSION = '2.209';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7508,12 +7508,14 @@ function delilOriginFromPack(pack) {
   const d = (pack && pack.device) || {};
   const meth = (pack && pack.method) || {};
   const op = (pack && pack.operator) || {};
-  const isUsb = /usb/i.test(String(d.busType || ''));
+  const bus = String(d.busType || '');
+  const isCard = /sd|mmc/i.test(bus);
+  const isRemovable = d.removable === true || /usb/i.test(bus);
   const label = [d.model, d.serial].filter(Boolean).join(' · ');
   const tool = meth.tool ? `${meth.tool.name || ''} ${meth.tool.version || ''}`.trim() : '';
   const wb = meth.hardwareWriteBlocker ? 'donanım write-blocker: evet' : 'donanım write-blocker: hayır';
   return {
-    mediumType: isUsb ? 'usb' : 'unspecified',
+    mediumType: isCard ? 'memory_card' : isRemovable ? 'usb' : 'unspecified',
     mediumLabel: label,
     // Operatör = edinmeyi yapan kişi; "teslim eden" ile aynı şey DEĞİLDİR.
     // Teslim bilgisi pakette yoksa boş bırakılır; operatör edinme tablosunda.
@@ -13568,6 +13570,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.209': {
+    title: 'Edinme aracı düzeltmeleri',
+    body:
+      'SD kart okuyucular SCSI bildirse de (Removable ise) artık kabul edilir; ' +
+      'sistem/boot diski reddedilir. USB paketleme hatası (Bağımsız değişken ' +
+      'türleri eşleşmiyor) giderildi; ZIP .NET ile üretilir. Operatör adı artık ' +
+      'zorunlu; Türkçe konsol çıktısı düzeltildi. Lütfen tools/edinme/edinme.ps1 ' +
+      'dosyasını yeniden indirin.'
+  },
   '2.208': {
     title: 'Delil paketi ve doğrulama (Tier 1)',
     body:

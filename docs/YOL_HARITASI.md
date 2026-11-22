@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.208.**
+yazılır. **Güncel sürüm: v2.209.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,16 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.209 — Edinme aracı düzeltmeleri (tamamlandı)
+
+Kullanıcı denemesi iki hata gösterdi: SD kart `BusType=SCSI` diye reddedildi;
+USB'de kopyalama bitti ama `Bağımsız değişken türleri eşleşmiyor` hatası
+verdi. Düzeltmeler: SCSI+Removable kabul (sistem diski hariç), `files`
+dizisi `$entries.ToArray()`, ZIP için .NET `ZipFile`, `-Operator` zorunlu,
+konsol UTF-8, `device.removable` ve AKİS eşlemesi. PowerShell 7.7 `-Simulate`
+uçtan uca → AKİS'te 2/2 **Doğrulandı**. Windows `diskpart` yolu kullanıcıda
+denenecek. Koruyan test: `birim` [78].
 
 ### v2.208 — Delil paketi (Tier 1) (tamamlandı)
 

@@ -50,13 +50,13 @@
   .\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234
 
 .EXAMPLE
-  .\edinme.ps1 -SourcePath C:\test-veri -OutDir C:\test-cikti -Simulate
+  .\edinme.ps1 -SourcePath C:\test-veri -OutDir C:\test-cikti -Operator "Ad Soyad" -Simulate
 #>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $true)][string]$SourcePath,
   [Parameter(Mandatory = $true)][string]$OutDir,
-  [string]$Operator = '',
+  [Parameter(Mandatory = $true)][string]$Operator,
   [string]$Registry = '',
   [string]$Organization = '',
   [switch]$IncludeAll,
@@ -64,6 +64,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $ToolName = 'AKIS Edinme'
 $ToolVersion = '1.0'
 $Schema = 'akis.delil.v1'
@@ -85,14 +86,14 @@ function Fail {
 }
 
 # --- 1. Yollar -------------------------------------------------------------
-$source = (Resolve-Path -LiteralPath $SourcePath).Path.TrimEnd('\')
+$source = (Resolve-Path -LiteralPath $SourcePath).Path.TrimEnd([char[]]@('\', '/'))
 if (-not (Test-Path -LiteralPath $source -PathType Container)) {
   Fail "Kaynak klasör bulunamadı: $SourcePath"
 }
 if (-not (Test-Path -LiteralPath $OutDir)) {
   New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 }
-$outDir = (Resolve-Path -LiteralPath $OutDir).Path.TrimEnd('\')
+$outDir = (Resolve-Path -LiteralPath $OutDir).Path.TrimEnd([char[]]@('\', '/'))
 if (-not $Simulate -and $outDir.ToLowerInvariant().StartsWith($source.ToLowerInvariant())) {
   Fail 'Hedef klasör kaynak sürücünün içinde olamaz. Harici bir hedef seçin.'
 }
@@ -115,6 +116,7 @@ $device = [ordered]@{
   serial    = ''
   sizeBytes = 0
   volumes   = @()
+  removable = $false
 }
 $readOnlyMethod = 'yok (Simulate)'
 $diskNumber = $null
@@ -127,6 +129,7 @@ try {
     $device.serial = 'SIM-0001'
     $device.sizeBytes = 0
     $device.volumes = @()
+    $device.removable = $true
     Write-Log 'Simülasyon: diskpart ve cihaz bilgisi atlandı.'
   }
   else {
@@ -143,8 +146,18 @@ try {
 
     $part = Get-Partition -DriveLetter $driveLetter -ErrorAction Stop
     $disk = Get-Disk -Number $part.DiskNumber -ErrorAction Stop
-    if (@('USB', 'SD', 'MMC') -notcontains $disk.BusType) {
-      Fail "Kaynak çıkarılabilir USB/SD değil (BusType=$($disk.BusType)). Edinme durduruldu."
+    # USB okuyucular ve SD kart okuyucular sık sık BusType=SCSI bildirir.
+    # Bu yüzden yalnız BusType'a bakmayız: birim "Removable" ise de kabul ederiz.
+    $vol = Get-Volume -DriveLetter $driveLetter -ErrorAction SilentlyContinue
+    $driveType = if ($vol) { [string]$vol.DriveType } else { '' }
+    $allowedBus = @('USB', 'SD', 'MMC')
+    $isRemovable = ($driveType -eq 'Removable')
+    Write-Log "Sürücü türü: $driveType · BusType: $($disk.BusType)"
+    if ($disk.IsBoot -or $disk.IsSystem) {
+      Fail 'Kaynak sistem/boot diski. Edinme durduruldu; yanlış diski seçmeyin.'
+    }
+    if (($allowedBus -notcontains $disk.BusType) -and -not $isRemovable) {
+      Fail "Kaynak çıkarılabilir USB/SD değil (BusType=$($disk.BusType), DriveType=$driveType). Edinme durduruldu."
     }
 
     $diskNumber = $disk.Number
@@ -153,6 +166,7 @@ try {
     $device.serial = [string]$disk.SerialNumber
     $device.sizeBytes = [int64]$disk.Size
     $device.volumes = @("$driveLetter`:")
+    $device.removable = $isRemovable
     Write-Log "Cihaz: $($device.model) · seri: $($device.serial) · $($device.sizeBytes) bayt · $($device.busType)"
 
     # Önce salt-okunur; başarısızsa devam etme.
@@ -188,7 +202,7 @@ attributes disk
   $n = 0
   foreach ($f in $files) {
     $n++
-    $rel = $f.FullName.Substring($source.Length).TrimStart('\')
+    $rel = $f.FullName.Substring($source.Length).TrimStart([char[]]@('\', '/'))
     $relPosix = $rel.Replace('\', '/')
     $dest = Join-Path (Join-Path $pkgDir 'ses') $rel
     $destDir = Split-Path -Parent $dest
@@ -233,18 +247,38 @@ attributes disk
         version = $ToolVersion
       }
     }
-    files      = @($entries)
+    files      = $entries.ToArray()
     notes      = $notes
   }
   $json = $manifest | ConvertTo-Json -Depth 10
-  $utf8 = New-Object System.Text.UTF8Encoding($false)
-  [System.IO.File]::WriteAllText((Join-Path $pkgDir 'delil.json'), $json, $utf8)
+  $utf8 = New-Object System.Text.UTF8Encoding -ArgumentList $false
+  try {
+    [System.IO.File]::WriteAllText((Join-Path $pkgDir 'delil.json'), $json, $utf8)
+  }
+  catch {
+    Fail ('delil.json yazılamadı: ' + $_.Exception.Message)
+  }
   Write-Log 'delil.json yazıldı.'
 
   # --- 6. ZIP --------------------------------------------------------------
   $zipPath = Join-Path $outDir ($pkgName + '.zip')
   if (Test-Path -LiteralPath $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
-  Compress-Archive -Path (Join-Path $pkgDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
+  try {
+    # .NET ZipFile, Compress-Archive modülüne bağımlı değildir; Windows
+    # PowerShell 5.1 ve PowerShell 7'de çalışır.
+    try { Add-Type -AssemblyName System.IO.Compression.FileSystem -ErrorAction Stop } catch {}
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+      $pkgDir, $zipPath, [System.IO.Compression.CompressionLevel]::Optimal, $false
+    )
+  }
+  catch {
+    try {
+      Compress-Archive -Path (Join-Path $pkgDir '*') -DestinationPath $zipPath -CompressionLevel Optimal
+    }
+    catch {
+      Fail ('ZIP oluşturulamadı: ' + $_.Exception.Message)
+    }
+  }
   Write-Log "Paket: $zipPath"
 
   Write-Host ''

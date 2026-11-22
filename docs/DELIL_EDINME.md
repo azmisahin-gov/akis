@@ -4,7 +4,20 @@
 > öneridir ve uygulanmamıştır. Tier 1 çıktısı "adli imaj" değil,
 > "belgelenmiş dosya kopyası"dır.
 >
-> **Güncel sürüm:** v2.208.
+> **Güncel sürüm:** v2.209.
+
+## 0. v2.209 düzeltmeleri (kullanıcı geri bildirimi)
+
+- **SD/SCSI:** SD kart okuyucular `BusType=SCSI` bildirebilir. Birim
+  `DriveType=Removable` ise kabul edilir; sistem/boot diski **reddedilir**.
+- **`-Operator` zorunlu:** boş operatörle paket oluşmaz.
+- **ZIP:** `Compress-Archive` yerine **.NET `ZipFile`** kullanılır; modül
+  bağımlılığı yoktur.
+- **`files` dizisi:** `$entries.ToArray()`; PowerShell 7.7'de görülen
+  `Bağımsız değişken türleri eşleşmiyor` hatası giderildi.
+- **Konsol UTF-8:** `chcp 65001` + `[Console]::OutputEncoding`.
+- **`device.removable`:** manifest alanı; AKİS'te SCSI+removable → `usb`,
+  SD/MMC → `memory_card`.
 
 ## 1. Amaç ve kapsam
 

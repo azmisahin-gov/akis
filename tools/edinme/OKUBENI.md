@@ -26,6 +26,15 @@ AKIS_Delil_20261122_101500.zip
 - **Yönetici** yetkisi (`diskpart` için)
 - Harici hedef klasör (kaynak sürücüde **olamaz**)
 
+> **Operatör zorunlu:** `-Operator` verilmezse PowerShell sorar. Boş bırakılamaz.
+> Operatör = edinme işlemini fiilen yapan kişi (genellikle bilirkişi).
+
+## SD kart / SCSI
+
+SD kart okuyucular sık sık `BusType=SCSI` bildirir. Araç yalnız `BusType`'a
+bakmaz: birim **`DriveType=Removable`** ise kabul eder. Sistem/boot diski her
+durumda reddedilir. Log'da `Sürücü türü · BusType` yazılır.
+
 ## Kullanım
 
 1. `BASLAT.bat` → yönetici PowerShell açılır.
@@ -48,7 +57,7 @@ Tüm dosyalar (yalnız ses değil):
 Diskpart ve cihaz bilgisi atlanır; bir klasörden paket üretir:
 
 ```powershell
-.\edinme.ps1 -SourcePath C:\test-veri -OutDir C:\test-cikti -Simulate
+.\edinme.ps1 -SourcePath C:\test-veri -OutDir C:\test-cikti -Operator "Ad Soyad" -Simulate
 ```
 
 Gerçek delilde `-Simulate` **kullanılmaz**.
