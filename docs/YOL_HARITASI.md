@@ -8,6 +8,24 @@ Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki il
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
 
+## Planlanan çalışmalar (uygulanmadı)
+
+Ayrıntılı seçenekler ve öneriler: [`GELECEK_PLANI.md`](GELECEK_PLANI.md).
+Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
+
+Öncelik sırası (kullanıcı kararı):
+
+1. **Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
+   "Delil paketi yükle" + hash doğrulama. (v2.208 önerisi)
+2. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
+   seçmeli özet.
+3. **LLM (isteğe bağlı):** tarayıcı küçük modeller kapalı; Ollama/native 4B
+   ancak ölçümden sonra. Çıktı taslak; rapora kendiliğinden girmez.
+4. **Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
+5. **Uzun vade:** Rust CLI → yerel ajan → Tauri; tam Rust yeniden yazım en son.
+
+Bu maddeler **uygulanmadı**; sürüm numarası verilmedi.
+
 ## v1 — Yayımlanmış sürüm (tamamlandı)
 
 v1 kapsamındaki çalışmalar tamamlanmış ve `main` dalında yayındadır.

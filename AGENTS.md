@@ -4190,3 +4190,32 @@ model değiştirilmez; çıktı yine taslak olur ve rapora kendiliğinden girmez
 - Deterministik yardımcılar (paragraf görünümü, terim tutarlılığı, kapsama,
   rapor hazırlığı) korunur ve LLM'siz çalışır.
 - Whisper çözümlemesi ve tüm mevcut akışlar değişmedi.
+
+## PLANLAMA (v2.207 sonrası) — Öneriler, uygulanmadı
+
+Ayrıntılı seçenekler: [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md).
+Delil standardı ve `delil.json`: [`docs/DELIL_EDINME.md`](docs/DELIL_EDINME.md).
+
+**Durum:** Bu bölümdeki hiçbir özellik uygulanmadı; sürüm numarası verilmedi.
+Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
+
+### Öncelik sırası (kullanıcı kararı)
+
+1. **Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
+   "Delil paketi yükle" + hash doğrulama. (v2.208 önerisi)
+2. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
+   seçmeli özet.
+3. **LLM (isteğe bağlı):** tarayıcı küçük modeller **kapalı** (ölçüldü:
+   çöp/sadakatsiz). Hızlı çalışan yol: **Ollama** veya native 4B; CORS/PNA
+   ölçülmeden söz verilmez. Çıktı taslak; rapora kendiliğinden girmez.
+4. **Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
+5. **Uzun vade:** Rust CLI → yerel ajan → Tauri; tam Rust yeniden yazım en son.
+
+### Değişmez ilkeler (plan için de geçerli)
+
+- Tarayıcı tek başına USB'yi göremez; "tarama" ancak **yerel ajan**la olur.
+- Donanım write-blocker yoksa "adli imaj" denmez; yöntem raporda yazılır.
+- LLM yalnız **onaylı** metni görür; çıktı **taslaktır**, rapora kendiliğinden
+  girmez.
+- "Daha yeni model" tek başına çözüm değildir; **ölçülmeden** ürüne alınmaz.
+- Her konu **tek sürüm**; plan belgesi sürüm yerine geçmez.
