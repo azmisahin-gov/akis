@@ -218,7 +218,43 @@ Bu sıra **öneridir**; kullanıcı her adımda durdurabilir veya sırayı deği
 | 2026-11-22 | LLM (tarayıcı) | Kaldırıldı | Ölçüm: çöp/sadakatsiz çıktı |
 | 2026-11-22 | Planlama | Bu belge eklendi | Seçenekleri kayda geçirmek |
 
-## 9. İlgili belgeler
+## 9. Delil envanteri (v2.212–v2.215)
+
+v2.208–v2.211 ile edinme + doğrulama çalışıyor. Kullanıcı kararı: paket
+**“imaj gibi”** düşünülecek; içinde bilinmeyen dosyalar olabilir. Aşağıdaki
+sıra onaylandı.
+
+| Sürüm | İş | Not |
+|---|---|---|
+| **v2.212** | Teslim/operatör ayrımı + rapor düzeltmesi | `delivery` alanları, operatör sicili, **D: rapora yazılmaz**, marka/model/seri/etiket |
+| **v2.213** | Disk envanteri + paket v2 | `disk.json` (partition/volume anlık görüntüsü), `icerik/<etiket\|seri\|marka>/...`, varsayılan **tüm dosyalar**, `-AudioOnly`; v1 uyumlu |
+| **v2.214** | Envanter arayüzü | ağaç, filtre, paket özeti, “Elle ekle (paketsiz)” ikincil |
+| **v2.215** | Hızlı akış | “Paketten yeni dosya” sihirbazı, ilerleme, hatırlama, toplu |
+
+**Kararlar:**
+
+- **Teslim eden ≠ operatör.** Teslim eden: flash'ı bilirkişiye veren
+  mahkeme/merci personeli. Operatör: edinmeyi fiilen yapan (bilirkişi/yardımcı).
+  İkisi ayrı kaydedilir; rapor ikisini ayrı gösterir.
+- **Sürücü harfi (D:) kanıt kimliği değildir;** raporda yok. `device.volumes`
+  yalnız `delil.json` teknik izinde.
+- **Varsayılan tüm dosyalar;** `-AudioOnly` büyük medya için. AKİS yalnız
+  `audio` rolünü materyal yapar; diğerleri envanterde görünür.
+- **Kök klasör:** etiket → seri → marka (sanitize). `ses/` adı terk edilir.
+- **`disk.json`:** raw/sıfır yok; disk/partition/volume metadata.
+- **Elle “Dosya ekle” hemen kaldırılmaz;** ikincil “Elle ekle (paketsiz)” olur.
+  Kaldırma, envanter UI oturduktan sonra ölçümle.
+
+**Açık sorular:**
+
+1. Envanter yeri: “Ses” içinde ağaç mı, yeni “Envanter” ray öğesi mi?
+2. `-AudioOnly` eşiği (öneri: 8 GB üstünde uyarı).
+3. Teslim eden sicili zorunlu mu? (öneri: isteğe bağlı).
+4. Teslim yeri/şekli rapora ayrı satır mı? (öneri: evet, isteğe bağlı).
+5. Hukuki usul: kurumun standardı teyit edilecek.
+
+
+## 10. İlgili belgeler
 
 - [`DELIL_EDINME.md`](DELIL_EDINME.md) — delil standardı ve `delil.json`
 - [`YOL_HARITASI.md`](YOL_HARITASI.md) — sürüm planı

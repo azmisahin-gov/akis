@@ -4424,3 +4424,115 @@ dışı dosyalar da materyal sanılıyordu.
   olarak görünür.
 - **Eski kopyalar silinmez:** v2.211 öncesi oluşanlar Kaldır ile temizlenir.
 - **Hash yoksa eşleşme olmaz:** eski kayıtta `sha256` yoksa yeni kayıt açılır.
+
+## YENİ OTURUM DEVRİ (v2.211) — Delil envanteri ve teslim zinciri
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.211** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1155 birim + 482 şema** + rapor/sürüm/tasarım, hepsi yeşil |
+| Git | `main` = `origin/main` = `895b8df` (push doğrulandı) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.211** |
+| Açık konu | **v2.212–v2.215** delil envanteri/teslim zinciri planı; envanter yeri kararı |
+
+### Bu oturumda tamamlananlar (v2.208–v2.211)
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.208 | `delil.json` + PowerShell edinme aracı + AKİS “Delil paketi yükle” + rapor bölümü | `birim` [78], `rapor` 14, `tasarim` [2bg] |
+| v2.209 | SD/SCSI kabul (Removable), ZIP .NET, `-Operator` zorunlu, UTF-8 | `birim` [78] |
+| v2.210 | Windows ZIP `\` ayırıcısı normalizasyonu | `birim` [78] |
+| v2.211 | SHA-256 yinelenen koruması, ses dışı atlama, birim bilgisi | `birim` [78] |
+
+**Kullanıcı testi (Windows 11):** SD (SCSI+Removable) ve USB (Kingston) →
+salt-okunur EVET → 10 dosya → `delil.json` + ZIP → AKİS'te **10/10 Doğrulandı**.
+Aynı paket mevcut dosyaya yüklenince **kopya oluşmadı**; düzenleme/onay korundu,
+edinme bilgisi mevcut kayda işlendi.
+
+### Kullanıcı kararları (onaylandı)
+
+1. **Paket “imaj gibi” düşünülecek.** İçinde avukat/başka kişinin koyduğu
+   bilinmeyen dosyalar olabilir; yalnız sese daralmayalım.
+2. **Varsayılan kopya: tüm dosyalar.** `-AudioOnly` büyük medya için seçenek.
+3. **Kök klasör:** **etiket → seri → marka** sırasıyla, sanitize edilmiş ad.
+   `ses/` adı terk edilecek; `icerik/<stabıl kök>/<klasör yapısı>`.
+4. **Rapor:** **Teslim eden** ve **Operatör** ayrı alanlar. Operatör hücresi
+   `Ad Soyad · Sicil`. **Sürücü harfi (D:) rapora yazılmaz**; marka/model/
+   seri/etiket yazılır. `device.volumes` yalnız `delil.json` teknik izinde kalır.
+5. **`disk.json`:** disk/partition/volume anlık görüntüsü (raw değil, sıfır yok).
+6. **Envanter yeri:** kullanıcı kararsız; **yeni oturum ölçüp karar verecek**
+   (A: “Ses” içinde ağaç · B: yeni “Envanter” ray öğesi).
+7. **Elle “Dosya ekle” hemen kaldırılmayacak.** Eski dosyalar ve paketsiz
+   istisnalar için **ikincil “Elle ekle (paketsiz)”** olarak kalacak. Kaldırma
+   ancak envanter UI oturduktan ve ölçüldükten sonra.
+
+### Plan (v2.212–v2.215)
+
+| Sürüm | İş | Not |
+|---|---|---|
+| **v2.212** | Teslim/operatör ayrımı + rapor düzeltmesi | `delivery` alanları, operatör sicili, D: kaldır, marka/seri/etiket |
+| **v2.213** | Disk envanteri + paket v2 | `disk.json`, `icerik/<kök>/...`, varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu |
+| **v2.214** | Envanter arayüzü | ağaç, filtre, paket özeti, “Elle ekle” ikincil |
+| **v2.215** | Hızlı akış | “Paketten yeni dosya” sihirbazı, ilerleme, hatırlama, toplu |
+
+### v2.212 için somut kapsam (sıradaki)
+
+- `delil.json`:
+  - `operator: { name, registry, organization }`
+  - `delivery: { deliveredBy, registry, deliveredAt, place, method }`
+  - `device: { busType, model, serial, label, sizeBytes, removable }`
+  - `volumes` yalnız teknik iz.
+- `edinme.ps1` parametreleri:
+  `-Operator`, `-OperatorRegistry`, `-DeliveredBy`, `-DeliveredByRegistry`,
+  `-DeliveredAt`, `-DeliveryPlace`.
+  - `Operator` zorunlu; teslim alanları isteğe bağlı ama **sorulur**.
+- AKİS:
+  - `origin.deliveredBy`, `origin.deliveredAt`, `origin.deliveredByRegistry`,
+    `origin.deliveryPlace`.
+  - `origin.acquisition.operator.registry`.
+  - Sonuç penceresi: “Teslim eden · tarih · yer” ve “Operatör · sicil”.
+  - Rapor “KAYIT KÖKENİ VE TESLİM ZİNCİRİ”: teslim eden/tarih.
+  - Rapor “DELİL EDİNME VE DOĞRULAMA”: operatör + sicil, marka/model/seri/
+    etiket; **D: yok**.
+- Test: `birim` [78] + `rapor` 14 + `tasarim` [2bg] güncellenecek.
+
+### Açık sorular (yeni oturum)
+
+1. **Envanter yeri:** A (“Ses” içinde ağaç) mı, B (yeni “Envanter” ray öğesi)
+   mi? Ölçüt: tıklama, kaydırma, görünmeyen kontrol, mevcut ses akışının
+   bozulmaması.
+2. **Elle ekle:** ikincil menüde kalsın mı? (Öneri: kalsın; kaldırma ayrı ve
+   ölçümlü karar.)
+3. **`-AudioOnly` eşiği:** öneri 8 GB üstünde uyarı; kullanıcı onayı.
+4. **Teslim eden sicili** zorunlu mu? (Öneri: isteğe bağlı.)
+5. **Teslim yeri/şekli** rapora ayrı satır mı? (Öneri: evet, isteğe bağlı.)
+6. **Hukuki usul:** kurumun standardı teyit edilecek; uygulama yalnız doğru
+   kaydı ve dürüst sınırı sağlar.
+
+### Değişmez kurallar / dersler (bu oturum)
+
+- **ZIP girdi adları `\` veya `/` olabilir; normalizasyon ZORUNLU.** Windows
+  .NET `\` yazar; ham karşılaştırma “pakette yok” üretir.
+- **İçe aktarma = kimlik kontrolü.** Aynı SHA-256 varsa yeni kayıt açılmaz;
+  mevcut düzenleme/onay korunur; edinme bilgisi mevcut kayda işlenir.
+- **Ses dışı dosya materyal değildir.** Manifestte kalır; “Ses dışı (atlandı)”.
+- **PowerShell `List[object]` üzerinde `@($list)` kullanma.** `.ToArray()`.
+- **Salt-okunur doğrulaması `Get-Disk.IsReadOnly` ile** (dil bağımsız).
+- **SD okuyucular SCSI bildirir;** `DriveType=Removable` kabul ölçütü.
+- **Sürücü harfi kanıt kimliği değildir;** rapora yazılmaz.
+- **Teslim eden ≠ operatör.** İkisi ayrı kaydedilir.
+- **Elle ekleme kaldırılmadan önce** envanter akışının eski dosyaları
+  kapsadığı ölçülür.
+
+### İlk komut (yeni oturum)
+
+```bash
+bash tools/test.sh
+git log --oneline -3
+curl -s https://azmisahin-gov.github.io/akis/version.json
+```
+
+Beklenen: **1155 birim + 482 şema** + rapor/sürüm/tasarım yeşil; sürüm 2.211.
+Sonra **v2.212** ile başla.
