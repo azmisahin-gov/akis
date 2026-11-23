@@ -10844,7 +10844,7 @@ function renderReport() {
   renderReportKunye(c);
   renderReportQc(c);
   const on = (k) => reportSectionOn(c, k);
-  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  const toc = reportTocTitles(c);
   let html = '';
   if (on('cover')) {
     html += `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;
@@ -10870,47 +10870,58 @@ function renderReport() {
   }
   html += '<div class="paper-page-break">';
   if (on('s1')) {
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[0])}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject || '—')}</p></div>`;
+    html += reportOrderMarker('s1');
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's1', REPORT_TEXT.sections[0]))}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject || '—')}</p></div>`;
   }
   if (on('s2')) {
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[1])}</h3>`;
+    html += reportOrderMarker('s2');
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's2', REPORT_TEXT.sections[1]))}</h3>`;
     if (c.questions?.length) {
       html += `<ol class="question-list">${c.questions.map((q) => `<li>${esc(q.question || REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;
     } else html += `<p>${esc(questionsFallbackText(c))}</p>`;
     html += `</div>`;
   }
   if (on('s3')) {
+    html += reportOrderMarker('s3');
     const invRows = inventoryRows(c);
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's3', REPORT_TEXT.sections[2]))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   }
   if (on('origin')) {
+    html += reportOrderMarker('origin');
     const orgRows = originRows(c);
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
   }
   const embRows = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
   if (on('embedded') && embRows.length) {
+    html += reportOrderMarker('embedded');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.embeddedHeading)}</h3><p>${esc(REPORT_TEXT.embeddedIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   const acqRows = acquisitionRows(c);
   if (on('acquisition') && acqRows.length) {
+    html += reportOrderMarker('acquisition');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   if (on('speakers')) {
+    html += reportOrderMarker('speakers');
     const spkRows = speakerRows(c);
     html += `<div class="paper-section"><h3>Konuşmacılar</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
   }
   if (on('s4')) {
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
+    html += reportOrderMarker('s4');
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's4', REPORT_TEXT.sections[3]))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
   }
   if (on('tech')) {
+    html += reportOrderMarker('tech');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.techHeading)}</h3><p>${esc(REPORT_TEXT.techIntro)}</p><table class="paper-table cover-fields"><tbody>${reportTechRows(c)
       .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
       .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.techNote)}</p></div>`;
   }
   if (on('enhance')) {
+    html += reportOrderMarker('enhance');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.enhanceHeading)}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`;
   }
   if (on('asr')) {
+    html += reportOrderMarker('asr');
     const asrRows = reportAsrRows(c);
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.asrHeading)}</h3><p>${esc(REPORT_TEXT.asrIntro)}</p>`;
     if (asrRows.length) {
@@ -10919,11 +10930,12 @@ function renderReport() {
     html += `<p class="paper-muted">${esc(REPORT_TEXT.asrLocal)} ${esc(REPORT_TEXT.asrVerify)}</p></div>`;
   }
   if (on('s5')) {
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
+    html += reportOrderMarker('s5');
+  html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's5', REPORT_TEXT.sections[4]))}</h3><h4>${esc(reportSubTitle(c, 1, REPORT_TEXT.sub51))}</h4>`;
   if (materials.length) {
     for (let i = 0; i < materials.length; i++) {
       const m = materials[i];
-      html += `<h4>5.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+      html += `<h4>${reportMainNumbers(c).s5 || 5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
       if (m.hallucinationWarning)
         html += `<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;
       if (m.languageWarning)
@@ -10940,45 +10952,54 @@ function renderReport() {
       }
     }
   } else html += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
-  html += `<h4>${esc(REPORT_TEXT.sub52)}</h4>`;
+  html += `<h4>${esc(reportSubTitle(c, 2, REPORT_TEXT.sub52))}</h4>`;
   if (c.questions?.length) {
     for (let i = 0; i < c.questions.length; i++) {
       const q = c.questions[i];
-      html += `<h4>5.2.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis || REPORT_TEXT.defaultBasis)}</p>`;
+      html += `<h4>${reportMainNumbers(c).s5 || 5}.2.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis || REPORT_TEXT.defaultBasis)}</p>`;
     }
   } else html += `<p>${esc(evaluationFallbackText(c))}</p>`;
-  html += `<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
+  html += `<h4>${esc(reportSubTitle(c, 3, REPORT_TEXT.sub53))}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
   }
   if (on('scopeNote')) {
+    html += reportOrderMarker('scopeNote');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.scopeNoteHeading)}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`;
   }
   if (on('s6')) {
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`;
+    html += reportOrderMarker('s6');
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's6', REPORT_TEXT.sections[5]))}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`;
   }
   if (on('s7')) {
-    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
+    html += reportOrderMarker('s7');
+    html += `<div class="paper-section"><h3>${esc(reportSectionTitle(c, 's7', REPORT_TEXT.sections[6]))}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
   }
   const rsRows = reviewSummaryRows(c);
   const werRows = measureWerForCase(c);
   if (on('wer') && werRows.length) {
+    html += reportOrderMarker('wer');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.werHeading)}</h3><p>${esc(REPORT_TEXT.werIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.werHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${werRows.map((r) => `<tr><td>${esc(r.material)}</td><td>${esc(r.model || '—')}</td><td>${r.refCount}</td><td>${r.hypCount}</td><td>${r.errors}</td><td>${esc(fmtWer(r.ratio))}</td></tr>`).join('')}</tbody></table></div>`;
   }
   const levelRows = levelRowsForCase(c);
   if (on('levels') && levelRows.length) {
+    html += reportOrderMarker('levels');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.levelHeading)}</h3><p>${esc(REPORT_TEXT.levelIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.levelHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${levelRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   if (on('reviewSummary')) {
+    html += reportOrderMarker('reviewSummary');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
   }
   if (on('qc')) {
+    html += reportOrderMarker('qc');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.qcHeading)}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
       .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
       .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`;
   }
   if (on('privacy')) {
+    html += reportOrderMarker('privacy');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.privacyHeading)}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`;
   }
   if (on('annex')) {
+    html += reportOrderMarker('annex');
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.annexHeading)}</h3>`;
     for (const b of reportAnnexBlocks(c)) {
       html += `<h4>${esc(b.heading)}</h4>`;
@@ -10998,12 +11019,14 @@ function renderReport() {
     html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   }
   html += '</div>';
+  html = orderReportMarkup(html, c);
   $('#reportPreview').innerHTML = html;
   $('#reportStatus').innerHTML =
     `<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   renderPageGuides();
+  if (window.__akisReportWorkspace && typeof window.__akisReportWorkspace.render === 'function') window.__akisReportWorkspace.render(c);
 }
 function xesc(s = '') {
   return String(s)
@@ -11126,7 +11149,7 @@ function docxXml(c) {
     body += wP(REPORT_TEXT.summaryIntro);
     body += wTable(reportSummaryRows(c), { widths: [4200, 4800], header: false, shadeFirstCol: true });
   }
-  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  const toc = reportTocTitles(c);
   if (on('toc') && toc.length) {
     body += headingXml(REPORT_TEXT.tocHeading);
     toc.forEach((t) => {
@@ -11135,12 +11158,14 @@ function docxXml(c) {
   }
   body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   if (on('s1')) {
-    body += headingXml(REPORT_TEXT.sections[0]);
+    body += reportOrderMarker('s1');
+    body += headingXml(reportSectionTitle(c, 's1', REPORT_TEXT.sections[0]));
     body += wP(c.assignmentScope || REPORT_TEXT.defaultScope);
     body += wP(`İnceleme konusu: ${c.subject || '—'}`, { bold: true });
   }
   if (on('s2')) {
-    body += headingXml(REPORT_TEXT.sections[1]);
+    body += reportOrderMarker('s2');
+    body += headingXml(reportSectionTitle(c, 's2', REPORT_TEXT.sections[1]));
     if (c.questions?.length) {
       c.questions.forEach((q, i) => {
         body += wP(`${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
@@ -11155,7 +11180,8 @@ function docxXml(c) {
     } else body += wP(questionsFallbackText(c));
   }
   if (on('s3')) {
-    body += headingXml(REPORT_TEXT.sections[2]);
+    body += reportOrderMarker('s3');
+    body += headingXml(reportSectionTitle(c, 's3', REPORT_TEXT.sections[2]));
     body += wP(REPORT_TEXT.defaultInventoryIntro);
     const dInv = inventoryRows(c);
     body += wTable(
@@ -11165,6 +11191,7 @@ function docxXml(c) {
     body += wP(REPORT_TEXT.inventoryNote, { color: '74869A', size: 17, italic: true });
   }
   if (on('origin')) {
+    body += reportOrderMarker('origin');
     const dOrg = originRows(c);
     body += headingXml(REPORT_TEXT.originHeading);
     body += wP(REPORT_TEXT.originIntro);
@@ -11176,6 +11203,7 @@ function docxXml(c) {
   }
   const dEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
   if (on('embedded') && dEmb.length) {
+    body += reportOrderMarker('embedded');
     body += headingXml(REPORT_TEXT.embeddedHeading);
     body += wP(REPORT_TEXT.embeddedIntro);
     body += wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], {
@@ -11185,6 +11213,7 @@ function docxXml(c) {
   }
   const dAcq = acquisitionRows(c);
   if (on('acquisition') && dAcq.length) {
+    body += reportOrderMarker('acquisition');
     body += headingXml(REPORT_TEXT.acqHeading);
     body += wP(REPORT_TEXT.acqIntro);
     body += wTable([[...REPORT_TEXT.acqHeaders], ...dAcq], {
@@ -11193,6 +11222,7 @@ function docxXml(c) {
     });
   }
   if (on('speakers')) {
+    body += reportOrderMarker('speakers');
     const dSpk = speakerRows(c);
     body += headingXml('Konuşmacılar');
     body += wP(REPORT_TEXT.speakerIntro);
@@ -11202,20 +11232,24 @@ function docxXml(c) {
     });
   }
   if (on('s4')) {
-    body += headingXml(REPORT_TEXT.sections[3]);
+    body += reportOrderMarker('s4');
+    body += headingXml(reportSectionTitle(c, 's4', REPORT_TEXT.sections[3]));
     body += wP(c.methodText || DEFAULT_METHOD);
   }
   if (on('tech')) {
+    body += reportOrderMarker('tech');
     body += headingXml(REPORT_TEXT.techHeading);
     body += wP(REPORT_TEXT.techIntro);
     body += wTable(reportTechRows(c), { widths: [3400, 5600], header: false, shadeFirstCol: true });
     body += wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true });
   }
   if (on('enhance')) {
+    body += reportOrderMarker('enhance');
     body += headingXml(REPORT_TEXT.enhanceHeading);
     body += wP(REPORT_TEXT.enhanceText);
   }
   if (on('asr')) {
+    body += reportOrderMarker('asr');
     body += headingXml(REPORT_TEXT.asrHeading);
     body += wP(REPORT_TEXT.asrIntro);
     const dAsr = reportAsrRows(c);
@@ -11224,11 +11258,12 @@ function docxXml(c) {
     body += wP(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { color: '74869A', size: 17, italic: true });
   }
   if (on('s5')) {
-    body += headingXml(REPORT_TEXT.sections[4]);
-    body += headingXml(REPORT_TEXT.sub51, 2);
+    body += reportOrderMarker('s5');
+    body += headingXml(reportSectionTitle(c, 's5', REPORT_TEXT.sections[4]));
+    body += headingXml(reportSubTitle(c, 1, REPORT_TEXT.sub51), 2);
   for (let i = 0; i < c.materials.length; i++) {
     const m = c.materials[i];
-    body += headingXml(`5.1.${i + 1}. ${m.name}`, 2);
+    body += headingXml(`${reportMainNumbers(c).s5 || 5}.1.${i + 1}. ${m.name}`, 2);
     body += wP(
       `Süre: ${fmtTime(matDuration(m))}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
       { color: '6F8295', size: 17 }
@@ -11263,10 +11298,10 @@ function docxXml(c) {
       }
     }
   }
-  body += headingXml(REPORT_TEXT.sub52, 2);
+  body += headingXml(reportSubTitle(c, 2, REPORT_TEXT.sub52), 2);
   if (c.questions?.length) {
     c.questions.forEach((q, i) => {
-      body += wP(`5.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+      body += wP(`${reportMainNumbers(c).s5 || 5}.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
         bold: true,
         color: '385873',
         size: 20,
@@ -11278,23 +11313,27 @@ function docxXml(c) {
       body += wP(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, { color: '657D92', size: 17, italic: true });
     });
   } else body += wP(evaluationFallbackText(c));
-  body += headingXml(REPORT_TEXT.sub53, 2);
+  body += headingXml(reportSubTitle(c, 3, REPORT_TEXT.sub53), 2);
   body += wP(c.limitationsText || REPORT_TEXT.defaultLimitations);
   }
   if (on('scopeNote')) {
+    body += reportOrderMarker('scopeNote');
     body += headingXml(REPORT_TEXT.scopeNoteHeading);
     body += wP(REPORT_TEXT.scopeNoteText);
   }
   if (on('s6')) {
-    body += headingXml(REPORT_TEXT.sections[5]);
+    body += reportOrderMarker('s6');
+    body += headingXml(reportSectionTitle(c, 's6', REPORT_TEXT.sections[5]));
     body += wP(c.conclusionText || REPORT_TEXT.defaultConclusion);
   }
   if (on('s7')) {
-    body += headingXml(REPORT_TEXT.sections[6]);
+    body += reportOrderMarker('s7');
+    body += headingXml(reportSectionTitle(c, 's7', REPORT_TEXT.sections[6]));
     body += wP(REPORT_TEXT.attachmentsText);
   }
   const dWer = measureWerForCase(c);
   if (on('wer') && dWer.length) {
+    body += reportOrderMarker('wer');
     body += headingXml(REPORT_TEXT.werHeading);
     body += wP(REPORT_TEXT.werIntro);
     body += wTable(
@@ -11314,6 +11353,7 @@ function docxXml(c) {
   }
   const dLevel = levelRowsForCase(c);
   if (on('levels') && dLevel.length) {
+    body += reportOrderMarker('levels');
     body += headingXml(REPORT_TEXT.levelHeading);
     body += wP(REPORT_TEXT.levelIntro);
     body += wTable([[...REPORT_TEXT.levelHeaders], ...dLevel], {
@@ -11322,6 +11362,7 @@ function docxXml(c) {
     });
   }
   if (on('reviewSummary')) {
+    body += reportOrderMarker('reviewSummary');
     body += headingXml(REPORT_TEXT.reviewSummaryHeading);
     body += wP(REPORT_TEXT.reviewSummaryIntro);
     body += wTable(
@@ -11330,16 +11371,19 @@ function docxXml(c) {
     );
   }
   if (on('qc')) {
+    body += reportOrderMarker('qc');
     body += headingXml(REPORT_TEXT.qcHeading);
     body += wP(REPORT_TEXT.qcIntro);
     body += wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true });
     body += wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true });
   }
   if (on('privacy')) {
+    body += reportOrderMarker('privacy');
     body += headingXml(REPORT_TEXT.privacyHeading);
     body += wP(REPORT_TEXT.privacyText);
   }
   if (on('annex')) {
+    body += reportOrderMarker('annex');
     body += headingXml(REPORT_TEXT.annexHeading);
     for (const b of reportAnnexBlocks(c)) {
       body += headingXml(b.heading, 2);
@@ -11358,6 +11402,7 @@ function docxXml(c) {
   if (on('signature')) {
     body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
   }
+  body = orderReportMarkup(body, c);
   const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
@@ -11584,19 +11629,21 @@ async function makeUdf() {
     el.push(paragraph(REPORT_TEXT.summaryIntro, { size: 10 }));
     el.push(table(reportSummaryRows(c), [220, 290], { header: false, shadeFirstCol: true }));
   }
-  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  const toc = reportTocTitles(c);
   if (on('toc') && toc.length) {
     el.push(paragraph(REPORT_TEXT.tocHeading, { size: 16, bold: true, color: 'navy', before: 8, after: 12 }));
     toc.forEach((t) => el.push(paragraph(t, { size: 11, bold: true, color: 'mid', before: 5, after: 8 })));
   }
   el.push(pageBreak());
   if (on('s1')) {
-    el.push(h(REPORT_TEXT.sections[0]));
+    el.push(reportOrderMarker('s1'));
+    el.push(h(reportSectionTitle(c, 's1', REPORT_TEXT.sections[0])));
     el.push(paragraphLines(c.assignmentScope || REPORT_TEXT.defaultScope, { justify: true }));
     el.push(paragraph(`İnceleme konusu: ${c.subject || '—'}`, { bold: true, after: 7 }));
   }
   if (on('s2')) {
-    el.push(h(REPORT_TEXT.sections[1]));
+    el.push(reportOrderMarker('s2'));
+    el.push(h(reportSectionTitle(c, 's2', REPORT_TEXT.sections[1])));
     if (c.questions?.length)
       c.questions.forEach((q, i) =>
         el.push(
@@ -11612,7 +11659,8 @@ async function makeUdf() {
     else el.push(paragraph(questionsFallbackText(c)));
   }
   if (on('s3')) {
-    el.push(h(REPORT_TEXT.sections[2]));
+    el.push(reportOrderMarker('s3'));
+    el.push(h(reportSectionTitle(c, 's3', REPORT_TEXT.sections[2])));
     el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
     const inventory = inventoryRows(c);
     el.push(
@@ -11628,6 +11676,7 @@ async function makeUdf() {
     el.push(paragraph(REPORT_TEXT.inventoryNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('origin')) {
+    el.push(reportOrderMarker('origin'));
     const uOrg = originRows(c);
     el.push(h(REPORT_TEXT.originHeading));
     el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
@@ -11642,17 +11691,20 @@ async function makeUdf() {
   }
   const uEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
   if (on('embedded') && uEmb.length) {
+    el.push(reportOrderMarker('embedded'));
     el.push(h(REPORT_TEXT.embeddedHeading));
     el.push(paragraph(REPORT_TEXT.embeddedIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.embeddedHeaders], ...uEmb], [130, 130, 150, 130], { header: true }));
   }
   const uAcq = acquisitionRows(c);
   if (on('acquisition') && uAcq.length) {
+    el.push(reportOrderMarker('acquisition'));
     el.push(h(REPORT_TEXT.acqHeading));
     el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.acqHeaders], ...uAcq], [70, 60, 55, 55, 55, 55, 55, 55, 65], { header: true }));
   }
   if (on('speakers')) {
+    el.push(reportOrderMarker('speakers'));
     const uSpk = speakerRows(c);
     el.push(h('Konuşmacılar'));
     el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
@@ -11665,20 +11717,24 @@ async function makeUdf() {
     );
   }
   if (on('s4')) {
-    el.push(h(REPORT_TEXT.sections[3]));
+    el.push(reportOrderMarker('s4'));
+    el.push(h(reportSectionTitle(c, 's4', REPORT_TEXT.sections[3])));
     el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
   }
   if (on('tech')) {
+    el.push(reportOrderMarker('tech'));
     el.push(h(REPORT_TEXT.techHeading));
     el.push(paragraph(REPORT_TEXT.techIntro, { size: 10 }));
     el.push(table(reportTechRows(c), [170, 340], { header: false, shadeFirstCol: true }));
     el.push(paragraph(REPORT_TEXT.techNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('enhance')) {
+    el.push(reportOrderMarker('enhance'));
     el.push(h(REPORT_TEXT.enhanceHeading));
     el.push(paragraphLines(REPORT_TEXT.enhanceText, { justify: true }));
   }
   if (on('asr')) {
+    el.push(reportOrderMarker('asr'));
     el.push(h(REPORT_TEXT.asrHeading));
     el.push(paragraph(REPORT_TEXT.asrIntro, { size: 10 }));
     const uAsr = reportAsrRows(c);
@@ -11687,11 +11743,12 @@ async function makeUdf() {
     el.push(paragraph(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('s5')) {
-  el.push(h(REPORT_TEXT.sections[4]));
-  el.push(paragraph(REPORT_TEXT.sub51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
+    el.push(reportOrderMarker('s5'));
+  el.push(h(reportSectionTitle(c, 's5', REPORT_TEXT.sections[4])));
+  el.push(paragraph(reportSubTitle(c, 1, REPORT_TEXT.sub51), { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
   if (c.materials?.length) {
     c.materials.forEach((m, i) => {
-      el.push(paragraph(`5.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+      el.push(paragraph(`${reportMainNumbers(c).s5 || 5}.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
       el.push(
         paragraph(
           `Süre: ${fmtTime(matDuration(m))}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
@@ -11736,11 +11793,11 @@ async function makeUdf() {
       }
     });
   } else el.push(paragraph(REPORT_TEXT.noMaterials));
-  el.push(paragraph(REPORT_TEXT.sub52, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
+  el.push(paragraph(reportSubTitle(c, 2, REPORT_TEXT.sub52), { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
   if (c.questions?.length)
     c.questions.forEach((q, i) => {
       el.push(
-        paragraph(`5.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+        paragraph(`${reportMainNumbers(c).s5 || 5}.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
           size: 11,
           bold: true,
           color: 'mid',
@@ -11759,23 +11816,27 @@ async function makeUdf() {
       );
     });
   else el.push(paragraph(evaluationFallbackText(c)));
-  el.push(paragraph(REPORT_TEXT.sub53, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
+  el.push(paragraph(reportSubTitle(c, 3, REPORT_TEXT.sub53), { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
   el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
   }
   if (on('scopeNote')) {
+    el.push(reportOrderMarker('scopeNote'));
     el.push(h(REPORT_TEXT.scopeNoteHeading));
     el.push(paragraphLines(REPORT_TEXT.scopeNoteText, { justify: true }));
   }
   if (on('s6')) {
-    el.push(h(REPORT_TEXT.sections[5]));
+    el.push(reportOrderMarker('s6'));
+    el.push(h(reportSectionTitle(c, 's6', REPORT_TEXT.sections[5])));
     el.push(paragraphLines(c.conclusionText || REPORT_TEXT.defaultConclusion, { justify: true }));
   }
   if (on('s7')) {
-    el.push(h(REPORT_TEXT.sections[6]));
+    el.push(reportOrderMarker('s7'));
+    el.push(h(reportSectionTitle(c, 's7', REPORT_TEXT.sections[6])));
     el.push(paragraph(REPORT_TEXT.attachmentsText));
   }
   const uWer = measureWerForCase(c);
   if (on('wer') && uWer.length) {
+    el.push(reportOrderMarker('wer'));
     el.push(h(REPORT_TEXT.werHeading));
     el.push(paragraph(REPORT_TEXT.werIntro, { size: 10 }));
     el.push(
@@ -11798,11 +11859,13 @@ async function makeUdf() {
   }
   const uLevel = levelRowsForCase(c);
   if (on('levels') && uLevel.length) {
+    el.push(reportOrderMarker('levels'));
     el.push(h(REPORT_TEXT.levelHeading));
     el.push(paragraph(REPORT_TEXT.levelIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.levelHeaders], ...uLevel], [110, 70, 70, 80, 80, 80], { header: true }));
   }
   if (on('reviewSummary')) {
+    el.push(reportOrderMarker('reviewSummary'));
     el.push(h(REPORT_TEXT.reviewSummaryHeading));
     el.push(paragraph(REPORT_TEXT.reviewSummaryIntro, { size: 10 }));
     el.push(
@@ -11814,16 +11877,19 @@ async function makeUdf() {
     );
   }
   if (on('qc')) {
+    el.push(reportOrderMarker('qc'));
     el.push(h(REPORT_TEXT.qcHeading));
     el.push(paragraph(REPORT_TEXT.qcIntro, { size: 10 }));
     el.push(table(reportQcRows(c), [170, 340], { header: false, shadeFirstCol: true }));
     el.push(paragraph(REPORT_TEXT.qcNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('privacy')) {
+    el.push(reportOrderMarker('privacy'));
     el.push(h(REPORT_TEXT.privacyHeading));
     el.push(paragraphLines(REPORT_TEXT.privacyText, { justify: true }));
   }
   if (on('annex')) {
+    el.push(reportOrderMarker('annex'));
     el.push(h(REPORT_TEXT.annexHeading));
     for (const b of reportAnnexBlocks(c)) {
       el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
@@ -11861,7 +11927,8 @@ async function makeUdf() {
     el.push(paragraph(REPORT_TEXT.signatureLabel, { size: 10, color: 'muted', align: 2, after: 0 }));
   }
   const bodyText = textParts.join('');
-  const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${el.join('')}</elements>${styles}\n</template>`;
+  const orderedElements = orderReportMarkup(el.join(''), c);
+  const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${orderedElements}</elements>${styles}\n</template>`;
   const parsed = new DOMParser().parseFromString(udfXml, 'application/xml');
   if (parsed.querySelector('parsererror')) throw new Error('UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı.');
   const outZip = new JSZip();
@@ -16556,3 +16623,7 @@ async function init() {
   restoreAudioUrls().then(() => renderAudioList());
 }
 init().catch((e) => { console.error(e); });
+
+
+// Rapor çalışma alanı modülünün kullandığı dar arayüz.
+export { currentCase, renderReport, persist };
