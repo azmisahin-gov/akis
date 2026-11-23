@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.214.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.215.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4675,4 +4675,48 @@ tırnağı **dize sınırı** sanar ve betik erken kapanır.
 **DERS:** Tarayıcıda dosya indirirken **baytları** düşünün. `text()` metin
 verir, BOM'u atar; `Blob`/`arrayBuffer` bayt verir. Bir betiğin kodlaması
 önemliyse içeriği metin olarak yeniden paketlerken BOM'u **açıkça** geri koyun.
+
+## YENİ OTURUM DEVRİ (v2.215) — Paket v2: disk yapısı ve disk.json
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.215** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1237 birim + 482 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.216 (envanter ağacı UI), v2.217 (sanal imaj/geri yazma fikri) |
+
+### Ne yapıldı
+
+- **Paket yapısı v2:** `icerik/<cihaz-kökü>/<kaynak yolu>`; yapay `ses/` yok.
+  Kök = **seri no** (yoksa etiket/model), klasör kaynağında klasör adı.
+- **İki yol:** `files[].relPath` = kaynak cihaz yolu; `files[].packagePath` =
+  paket içi yol. AKİS `packagePath || relPath` sırasıyla arar (v1 uyumlu).
+- **Varsayılan tüm dosyalar**; `-AudioOnly` yalnız ses. `-IncludeAll` no-op.
+- **`disk.json` (`akis.disk.v1`):** disk/bölüm/birim metadata'sı + dizin ağacı.
+  Raw sektör/boş alan **yok**; imaj değildir.
+- **AKİS:** `case.disks[]` (normalize + birleştirme kimlikle + önizleme sayacı);
+  materyal `origin.acquisition.diskId`, `fileRelPath`, `packagePath`.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **`relPath` KAYNAK yoludur.** Paket içi yol `packagePath`'tir. Yapay klasör
+   (`ses/`) eklemeyin; disk yapısı birebir korunur.
+2. **Kök = seri no** (yoksa etiket/model). Klasör kaynağında klasör adı.
+3. **Varsayılan tüm dosyalar.** Yalnız ses istenirse `-AudioOnly`.
+4. **`disk.json` metadata'dır.** Raw sektör/boş alan/silinmiş veri içermez;
+   "imaj" diye sunulmaz.
+5. **Disk envanteri kimlikle birleşir.** Aynı kimlik + farklı içerik = çakışma;
+   sessiz ezme yok.
+6. **Eski paketler açılır.** `relPath` yedeği ve `ses/` adayları korunur.
+
+### Dürüst sınır
+
+`edinme.ps1` burada çalıştırılmadı. Sanal imaj üretme/geri yazma **yapılmadı**;
+yalnız yapı korunuyor.
+
+### Sıradaki iş
+
+**v2.216 — Envanter arayüzü:** `case.disks[]` ağacı, dizin/filtre, paket özeti;
+"Elle ekle (paketsiz)" ikincil. Rapor bölümü ayrı sürüm.
 

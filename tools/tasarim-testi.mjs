@@ -1611,5 +1611,22 @@ console.log('\n[2bi] Delil raporu sütunları ve Edinim aracı (v2.213)');
   check('zip BOM yardımcısı var', /function acquisitionToolFileContent\(/.test(appJs));
 }
 
+console.log('\n[2bj] Paket v2: kaynak dizin yapısı ve disk.json (v2.215)');
+{
+  const appJs = read('assets/app.js');
+  const ps1 = read('tools/edinme/edinme.ps1');
+  const html = read('index.html');
+  const schema = read('assets/schema.js');
+  check('paket yapısı icerik/ altında', /icerik\//.test(ps1) && /contentRoot/.test(ps1));
+  check('relPath kaynak yolu (ses/ eklenmez)', /relPath\s*=\s*\$relPosix/.test(ps1) && !/relPath\s*=\s*\('ses\/'/.test(ps1));
+  check('paket içi yol ayrı alan', /packagePath\s*=\s*\(\$contentRoot/.test(ps1));
+  check('disk.json üretilir', /akis\.disk\.v1/.test(ps1) && /disk\.json/.test(ps1));
+  check('varsayılan tüm dosyalar', /-AudioOnly/.test(ps1) && /-not \$AudioOnly/.test(ps1));
+  check('uygulama disk.json okur', /function findDelilDiskPath/.test(appJs) && /function validateDiskDoc/.test(appJs));
+  check('uygulama paket yolunu çözer', /function delilFilePath/.test(appJs));
+  check('şema disk envanteri taşır', /disks: \[\]/.test(schema));
+  check('yardım paket yapısını anar', /icerik\//.test(html) && /disk\.json/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

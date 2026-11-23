@@ -26,18 +26,31 @@ Hedef klasör kaynak sürücüde olamaz (ör. kaynak `E`, hedef `E:\yedek` → d
 ```
 Edinim_20261122_101500/
   delil.json      # cihaz, etiket, yöntem, operatör, teslim zinciri, hash'ler
+  disk.json       # disk/bölüm/birim özeti + dizin ağacı (raw sektör YOK)
   delil.log       # adım adım kayıt
-  ses/...         # kopyalanan dosyalar
+  icerik/
+    4C530001/     # cihaz kökü: SERİ NO (yoksa etiket, yoksa model)
+      DCIM/Voice/001.mp3   # KAYNAKTAKİ yol BİREBİR korunur
+      Music/album/02.flac
 Edinim_20261122_101500.zip
 ```
+
+- **Yapay `ses/` klasörü yoktur.** Dosyalar cihazdaki dizin yapısıyla kopyalanır.
+- `delil.json` içinde her dosya için iki yol vardır:
+  - `relPath` — **kaynak cihazdaki** yol (ör. `DCIM/Voice/001.mp3`)
+  - `packagePath` — **paket içindeki** yol (ör. `icerik/4C530001/DCIM/Voice/001.mp3`)
+- **`disk.json`** disk numarası, bölüm tablosu (offset/boyut/tür), birim bilgisi
+  (dosya sistemi, etiket, birim seri no) ve dizin listesini taşır. **Raw sektör,
+  boş alan veya silinmiş veri içermez**; bu bir imaj değildir.
 
 `delil.json` şeması: [`docs/DELIL_EDINME.md`](../../docs/DELIL_EDINME.md).
 
 ## Hangi dosyalar kopyalanır?
 
-- **Varsayılan:** yalnız ses dosyaları (wav, mp3, m4a, ogg, flac, aac).
-- **Tüm dosyalar:** `-IncludeAll` ekleyin. `bilgi.txt`, video vb. de kopyalanır
-  ve manifestte kayıtlı kalır.
+- **Varsayılan: TÜM dosyalar.** Disk/flash yapısı birebir korunur; `bilgi.txt`,
+  video, belge vb. de kopyalanır ve manifestte kayıtlı kalır.
+- **Yalnız ses:** `-AudioOnly` ekleyin (wav, mp3, m4a, ogg, flac, aac).
+  `-IncludeAll` geriye uyumluluk için kabul edilir (varsayılan zaten tümü).
 - AKİS yalnız **ses** dosyalarını materyal yapar; ses dışı dosyalar doğrulama
   penceresinde **“Ses dışı (atlandı)”** görünür.
 

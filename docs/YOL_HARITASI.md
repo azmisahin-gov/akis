@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.214.**
+yazılır. **Güncel sürüm: v2.215.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,17 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.215 — Paket v2: disk yapısı ve disk.json (tamamlandı)
+
+- Paket: `icerik/<cihaz-kökü>/<kaynak yolu>`; yapay `ses/` yok. Kök = seri no
+  (yoksa etiket/model), klasör kaynağında klasör adı.
+- `relPath` = kaynak yolu; `packagePath` = paket içi yol. v1 uyumlu.
+- Varsayılan **tüm dosyalar**; `-AudioOnly` yalnız ses.
+- `disk.json` (`akis.disk.v1`): disk/bölüm/birim + dizin ağacı; raw sektör yok.
+- AKİS: `case.disks[]`, materyal `origin.acquisition.diskId`; birleştirme
+  kimlikle, farklı içerik çakışma.
+- Koruyan testler: `birim` [81], `tasarim` [2bj].
 
 ### v2.214 — Edinim 1.2: zip'te BOM korunur (tamamlandı)
 

@@ -554,6 +554,10 @@ export function emptyCase(over = {}) {
     // burada TEK kayıt olarak tutulur; kayıt içi konuşmacılar `personId` ile
     // bağlanır. Uzman kanaatidir; otomatik kimlik tespiti değildir.
     speakers: [], // emptyCaseSpeaker() listesi
+    // DİSK ENVANTERİ (v2.215): delil paketindeki disk.json kayıtları.
+    // Disk/bölüm/birim metadata'sı + dizin ağacı; raw sektör YOKTUR.
+    // Kayıtlar burada tutulur; materyal `origin.acquisition.diskId` ile bağlanır.
+    disks: [],
 
     // Rapor
     report: {
@@ -912,6 +916,8 @@ export function normalizeCase(src = {}) {
     },
     team,
     speakers,
+    // Disk envanteri: bilinmeyen alanlar korunur; kimlik yoksa verilir.
+    disks: (Array.isArray(c.disks) ? c.disks : []).filter(isObj).map((d) => ({ ...d, id: d.id || newId('dk') })),
     report: {
       date: str(report.date || c.reportDate),
       methodText: str(report.methodText ?? c.methodText),
@@ -1517,6 +1523,28 @@ export function mergeCases(mine, theirs) {
   }
   assignCaseSpeakerCodes(merged.speakers);
 
+  // DİSK ENVANTERİ (v2.215): aynı disk iki dosyada varsa id ile eşleşir.
+  // Aynı içerik tekrar eklenmez; farklı içerik sessizce ezilmez.
+  merged.disks = Array.isArray(merged.disks) ? merged.disks : [];
+  const myDisks = new Map(merged.disks.map((d) => [d.id, d]));
+  for (const td of Array.isArray(theirs.disks) ? theirs.disks : []) {
+    const md = myDisks.get(td.id);
+    if (!md) {
+      merged.disks.push(td);
+      myDisks.set(td.id, td);
+      applied.push(`disk envanteri eklendi: ${(td.device && (td.device.serial || td.device.model)) || td.id}`);
+    } else if (JSON.stringify(md) !== JSON.stringify(td)) {
+      conflicts.push({
+        kind: 'case-disk',
+        diskId: md.id,
+        field: 'disks',
+        mine: `${(md.content && md.content.fileCount) || 0} dosya`,
+        theirs: `${(td.content && td.content.fileCount) || 0} dosya`,
+        reason: 'aynı disk kimliğinde farklı envanter'
+      });
+    }
+  }
+
   // İç içe gruplar. Yardımcı bu alanları da doldurabilir/düzeltebilir.
   // v2.65: parties / expert / assignment alanları eksikti; yardımcının
   // doldurduğu davacı, davalı, bilirkişi adı, sicil no, tarihler sessizce
@@ -1813,6 +1841,7 @@ export function compareCases(mine, theirs) {
     questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
     caseFields: { filled: [], autoResolved: [], conflicts: [] },
     team: { added: [] },
+    disks: { added: 0 },
     // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
     // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
     speakers: { added: [], filled: 0, linked: 0, conflicts: [] },
@@ -1845,6 +1874,12 @@ export function compareCases(mine, theirs) {
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);
+  }
+
+  // Disk envanteri: yalnız YENİ kimlikler "eklenecek" sayılır.
+  {
+    const have = new Set((mine.disks || []).map((d) => d.id));
+    out.disks.added = (theirs.disks || []).filter((d) => !have.has(d.id)).length;
   }
 
   const mineMats = new Map((mine.materials || []).map((m) => [m.id, m]));

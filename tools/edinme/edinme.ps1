@@ -58,8 +58,11 @@
 .PARAMETER NonInteractive
   Soruları atla (betikli kullanım). Boş bırakılan isteğe bağlı alan boş kalır.
 
+.PARAMETER AudioOnly
+  Yalnız ses dosyalarını kopyala. Varsayılan TÜM dosyalardır (disk yapısı korunur).
+
 .PARAMETER IncludeAll
-  Yalnız ses dosyaları yerine TÜM dosyaları kopyala.
+  Geriye uyumluluk için kabul edilir; varsayılan zaten TÜM dosyalardır.
 
 .PARAMETER Simulate
   Kurgusal test: diskpart/cihaz bilgisi atlanır; bir klasörden paket üretilir.
@@ -84,6 +87,7 @@ param(
   [string]$DeliveredAt = '',
   [string]$DeliveryPlace = '',
   [switch]$IncludeAll,
+  [switch]$AudioOnly,
   [switch]$Simulate,
   [switch]$NonInteractive
 )
@@ -127,6 +131,20 @@ function Normalize-DrivePath {
   if ($p -match '^[A-Za-z]$') { return ($p.ToUpperInvariant() + ':\') }
   if ($p -match '^[A-Za-z]:$') { return ($p.ToUpperInvariant() + '\') }
   return $p
+}
+
+# Cihaz/klasör adını dosya sistemi güvenli klasör adına çevirir. Türkçe
+# harfler korunur; Windows'ta yasak karakterler '_' olur.
+function ConvertTo-SafeName {
+  param([string]$Name, [string]$Fallback = 'cihaz')
+  $n = [string]$Name
+  if (-not $n) { return $Fallback }
+  $n = $n -replace '[<>:"/\\|?*]', '_'
+  $n = $n.Trim().TrimEnd('.')
+  $n = $n -replace '\s+', '_'
+  if (-not $n) { return $Fallback }
+  if ($n.Length -gt 64) { $n = $n.Substring(0, 64) }
+  return $n
 }
 
 function Read-Answer {
@@ -188,7 +206,7 @@ if (-not $NonInteractive) {
   Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' | ' + $DeliveredByRegistry } else { '' }))
   Write-Host ("  Teslim yeri  : {0}" -f $(if ($DeliveryPlace) { $DeliveryPlace } else { '(bilinmiyor)' }))
   Write-Host ("  Teslim tarihi: {0}" -f $(if ($DeliveredAt) { $DeliveredAt } else { '(bilinmiyor)' }))
-  Write-Host ("  Kapsam       : {0}" -f $(if ($IncludeAll) { 'TÜM dosyalar' } else { 'yalnız ses dosyaları' }))
+  Write-Host ("  Kapsam       : {0}" -f $(if ($AudioOnly) { 'yalnız ses dosyaları' } else { 'TÜM dosyalar (disk yapısı korunur)' }))
   Write-Host ''
   $go = Read-Answer 'Başlasın mı? (E/h)' 'E'
   if ($go -match '^(h|hayir|hayır|n|no)$') {
@@ -327,14 +345,31 @@ attributes disk
   Write-Log ("Teslim: eden='" + $deliveredBy + "' sicil='" + $deliveredByRegistry + "' yer='" + $deliveryPlace + "' tarih='" + $deliveredAtIso + "'")
 
   # --- 3. Dosyaları seç ----------------------------------------------------
+  # VARSAYILAN: TÜM dosyalar (disk/flash yapısı birebir korunur). Yalnız ses
+  # istenirse -AudioOnly. -IncludeAll geriye uyumluluk için kabul edilir.
   $audioExt = @('.wav', '.mp3', '.m4a', '.ogg', '.flac', '.aac')
-  $files = Get-ChildItem -LiteralPath $source -Recurse -File -ErrorAction Stop | Where-Object {
-    $IncludeAll -or ($audioExt -contains $_.Extension.ToLowerInvariant())
-  }
-  if (-not $files -or $files.Count -eq 0) {
-    Fail 'Kopyalanacak dosya bulunamadı. (Tüm dosyalar için -IncludeAll kullanın.)'
+  if ($AudioOnly -and $IncludeAll) { Fail '-AudioOnly ve -IncludeAll birlikte kullanılamaz.' }
+  $files = @(Get-ChildItem -LiteralPath $source -Recurse -File -ErrorAction Stop | Where-Object {
+    (-not $AudioOnly) -or ($audioExt -contains $_.Extension.ToLowerInvariant())
+  })
+  if ($files.Count -eq 0) {
+    Fail 'Kopyalanacak dosya bulunamadı.'
   }
   Write-Log ("Kopyalanacak dosya: " + $files.Count)
+
+  # --- 3b. İçerik kökü -----------------------------------------------------
+  # Paket yapısı: icerik/<cihaz-kökü>/<KAYNAKTAKİ yol>. Cihaz kökü seri no
+  # (yoksa etiket, yoksa model) olur; klasör kaynağında klasör adı kullanılır.
+  $rootSeed = if ($Simulate) {
+    Split-Path -Leaf $source
+  }
+  elseif ($device.serial) { $device.serial }
+  elseif ($device.label) { $device.label }
+  else { $device.model }
+  $safeRoot = ConvertTo-SafeName $rootSeed 'cihaz'
+  $contentRoot = 'icerik/' + $safeRoot
+  $rootDir = Join-Path (Join-Path $pkgDir 'icerik') $safeRoot
+  Write-Log ("İçerik kökü: $contentRoot")
 
   # --- 4. Kopyala + SHA-256 ------------------------------------------------
   $entries = New-Object System.Collections.Generic.List[object]
@@ -342,9 +377,10 @@ attributes disk
   foreach ($f in $files) {
     $n++
     Write-Progress -Activity 'Kopyalanıyor' -Status ("{0} / {1}  {2}" -f $n, $files.Count, $f.Name) -PercentComplete (($n / $files.Count) * 100)
+    # KAYNAKTAKİ göreli yol (orijinal). "ses/" gibi yapay klasör EKLENMEZ.
     $rel = $f.FullName.Substring($source.Length).TrimStart([char[]]@('\', '/'))
     $relPosix = $rel.Replace('\', '/')
-    $dest = Join-Path (Join-Path $pkgDir 'ses') $rel
+    $dest = Join-Path $rootDir $rel
     $destDir = Split-Path -Parent $dest
     if (-not (Test-Path -LiteralPath $destDir)) {
       New-Item -ItemType Directory -Path $destDir -Force | Out-Null
@@ -352,13 +388,76 @@ attributes disk
     Copy-Item -LiteralPath $f.FullName -Destination $dest -Force
     $hash = (Get-FileHash -LiteralPath $dest -Algorithm SHA256).Hash.ToLowerInvariant()
     $entries.Add([ordered]@{
-        name       = $f.Name
-        relPath    = ('ses/' + $relPosix)
-        sizeBytes  = [int64]$f.Length
-        sha256     = $hash
-        modifiedAt = $f.LastWriteTime.ToString('o')
+        name        = $f.Name
+        relPath     = $relPosix
+        packagePath = ($contentRoot + '/' + $relPosix)
+        sizeBytes   = [int64]$f.Length
+        sha256      = $hash
+        modifiedAt  = $f.LastWriteTime.ToString('o')
       })
     Write-Log ("[$n/$($files.Count)] $relPosix | SHA-256 $hash")
+  }
+
+  # Dizin listesi: her dosyanın üst klasörleri (disk yapısı).
+  $dirSet = New-Object System.Collections.Generic.HashSet[string]
+  foreach ($e in $entries) {
+    $p = [string]$e.relPath
+    while (($idx = $p.LastIndexOf('/')) -gt 0) {
+      $p = $p.Substring(0, $idx)
+      [void]$dirSet.Add($p)
+    }
+  }
+  $dirs = @($dirSet | Sort-Object)
+
+  # --- 4b. Disk / bölüm / birim anlık görüntüsü (raw sektör YOK) -----------
+  $deviceMeta = [ordered]@{
+    model     = $device.model
+    serial    = $device.serial
+    label     = $device.label
+    busType   = $device.busType
+    sizeBytes = $device.sizeBytes
+    removable = $device.removable
+  }
+  $partitionMeta = @()
+  $volumeMeta = @()
+  if (-not $Simulate -and $diskNumber -ne $null) {
+    $afterDisk = Get-Disk -Number $diskNumber -ErrorAction SilentlyContinue
+    if ($afterDisk) {
+      $deviceMeta.number = [int]$afterDisk.Number
+      $deviceMeta.partitionStyle = [string]$afterDisk.PartitionStyle
+      $deviceMeta.isReadOnly = [bool]$afterDisk.IsReadOnly
+      $deviceMeta.isBoot = [bool]$afterDisk.IsBoot
+      $deviceMeta.isSystem = [bool]$afterDisk.IsSystem
+    }
+    $partitionMeta = @(Get-Partition -DiskNumber $diskNumber -ErrorAction SilentlyContinue | ForEach-Object {
+        [ordered]@{
+          number      = [int]$_.PartitionNumber
+          offsetBytes = [int64]$_.Offset
+          sizeBytes   = [int64]$_.Size
+          type        = [string]$_.Type
+          driveLetter = ([string]$_.DriveLetter).TrimEnd(':')
+          isActive    = [bool]$_.IsActive
+          isHidden    = [bool]$_.IsHidden
+        }
+      })
+    $volumeMeta = @($partitionMeta | Where-Object { $_.driveLetter } | ForEach-Object {
+        $v = Get-Volume -DriveLetter $_.driveLetter -ErrorAction SilentlyContinue
+        $volSerial = ''
+        try {
+          $ld = Get-CimInstance -ClassName Win32_LogicalDisk -Filter ("DeviceID='" + $_.driveLetter + ":'") -ErrorAction Stop
+          $volSerial = [string]$ld.VolumeSerialNumber
+        }
+        catch {}
+        [ordered]@{
+          driveLetter   = $_.driveLetter
+          fileSystem    = if ($v) { [string]$v.FileSystem } else { '' }
+          label         = if ($v) { [string]$v.FileSystemLabel } else { '' }
+          driveType     = if ($v) { [string]$v.DriveType } else { '' }
+          sizeBytes     = if ($v) { [int64]$v.Size } else { 0 }
+          sizeRemaining = if ($v) { [int64]$v.SizeRemaining } else { 0 }
+          volumeSerial  = $volSerial
+        }
+      })
   }
 
   # --- 5. delil.json -------------------------------------------------------
@@ -385,6 +484,11 @@ attributes disk
       place       = $deliveryPlace
     }
     device     = $device
+    # Paket içeriğinin kökü: icerik/<cihaz-kökü>
+    content    = [ordered]@{
+      root      = $contentRoot
+      fileCount = $entries.Count
+    }
     method     = [ordered]@{
       readOnly             = $readOnlyMethod
       hardwareWriteBlocker = $false
@@ -408,6 +512,33 @@ attributes disk
     Fail ('delil.json yazılamadı: ' + $_.Exception.Message)
   }
   Write-Log 'delil.json yazıldı.'
+
+  # --- 5b. disk.json (disk/bölüm/birim + dizin ağacı; raw sektör YOK) ------
+  $diskDoc = [ordered]@{
+    schema     = 'akis.disk.v1'
+    capturedAt = (Get-Date).ToString('o')
+    source     = [ordered]@{
+      type = $(if ($Simulate) { 'simulate' } else { 'device' })
+      path = $source
+    }
+    device     = $deviceMeta
+    partitions = @($partitionMeta)
+    volumes    = @($volumeMeta)
+    content    = [ordered]@{
+      root        = $contentRoot
+      directories = @($dirs)
+      fileCount   = $entries.Count
+    }
+  }
+  $diskJson = $diskDoc | ConvertTo-Json -Depth 10
+  try {
+    [System.IO.File]::WriteAllText((Join-Path $pkgDir 'disk.json'), $diskJson, $utf8)
+  }
+  catch {
+    Fail ('disk.json yazılamadı: ' + $_.Exception.Message)
+  }
+  Write-Log 'disk.json yazıldı.'
+
 
   # --- 6. ZIP --------------------------------------------------------------
   $zipPath = Join-Path $outDir ($pkgName + '.zip')
@@ -439,6 +570,7 @@ attributes disk
   Write-Host '==========================================================' -ForegroundColor Green
   Write-Host ("  Paket        : {0}" -f $zipPath)
   Write-Host ("  Dosya        : {0} (her biri SHA-256 ile)" -f $entries.Count)
+  Write-Host ("  Yapı         : {0}/<kaynak yolu>" -f $contentRoot)
   Write-Host ("  Cihaz        : {0} | seri {1}{2}" -f $device.model, $device.serial, $(if ($device.label) { ' | etiket ' + $device.label } else { '' }))
   Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegOut) { ' | ' + $opRegOut } else { '' }))
   Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' | ' + $DeliveredByRegistry } else { '' }))

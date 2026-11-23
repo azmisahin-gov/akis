@@ -90,10 +90,15 @@ gerçek delile uygulanır.
     "image": null,
     "tool": { "name": "Edinim", "version": "1.2", "engine": "PowerShell" }
   },
+  "content": {
+    "root": "icerik/4C530001",
+    "fileCount": 1
+  },
   "files": [
     {
       "name": "kayit.wav",
-      "relPath": "ses/kayit.wav",
+      "relPath": "DCIM/Voice/kayit.wav",
+      "packagePath": "icerik/4C530001/DCIM/Voice/kayit.wav",
       "sizeBytes": 123456,
       "sha256": "…",
       "modifiedAt": "2026-11-20T09:30:00+03:00"
@@ -102,6 +107,19 @@ gerçek delile uygulanır.
   "notes": "Donanım write-blocker kullanılmadı; disk yazılımsal olarak salt-okunur yapıldı."
 }
 ```
+
+**Paket yapısı v2 (v2.215):** dosyalar `icerik/<cihaz-kökü>/<kaynak yolu>`
+altındadır. `<cihaz-kökü>` = **seri no** (yoksa etiket, yoksa model); klasör
+kaynağında klasör adı. `relPath` **kaynak cihazdaki** yolu, `packagePath`
+**paket içindeki** yolu verir. Yapay `ses/` klasörü kaldırıldı; cihazın dizin
+yapısı birebir korunur. Varsayılan **tüm dosyalar**; `-AudioOnly` yalnız sesi
+alır. Eski (v1) paketler `ses/...` + `relPath` ile okunmaya devam eder.
+
+**`disk.json` (v2.215):** paket kökünde ikinci bir manifesttir; disk numarası,
+bölüm tablosu (offset/boyut/tür), birim bilgisi (dosya sistemi, etiket, birim
+seri no) ve dizin listesini taşır. **Raw sektör, boş alan, silinmiş veri
+YOKTUR**; "imaj" değildir. Şema: `akis.disk.v1`. AKİS bunu `case.disks[]`
+alanında saklar; materyal `origin.acquisition.diskId` ile bağlanır.
 
 **Teslim zinciri (v2.212):** `delivery` bloğu **isteğe bağlıdır**; alanlar boş
 bırakılabilir ve **uydurulmaz**. `deliveredBy` = flash'ı bilirkişiye veren

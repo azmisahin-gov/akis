@@ -6,12 +6,60 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.214.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.215.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.215 — Paket v2: disk yapısı ve disk.json
+
+Kullanıcı paket içindeki yolları inceledi: dosyalar yapay `ses/` klasörüne
+kopyalanıyordu; kaynak cihazdaki dizin yapısı kayboluyordu. Ayrıca disk/bölüm
+bilgisi hiç kaydedilmiyordu. İleriye dönük "sanal imaj" fikri için yapının
+birebir korunması gerekiyor.
+
+### DÜZELTME
+
+- **Paket yapısı v2:** `icerik/<cihaz-kökü>/<kaynak yolu>`.
+  - Kök = **seri no** (yoksa etiket, yoksa model); klasör kaynağında klasör adı.
+  - **Yapay `ses/` klasörü kaldırıldı**; cihazdaki dizin yapısı birebir korunur.
+- **İki yol alanı:** `relPath` = **kaynak cihazdaki** yol;
+  `packagePath` = **paket içindeki** yol. Eski v1 paketler (`ses/...`) açılmaya
+  devam eder; AKİS `packagePath || relPath` sırasıyla arar.
+- **Varsayılan tüm dosyalar:** `bilgi.txt`, video, belge vb. de kopyalanır.
+  Yalnız ses için `-AudioOnly`. `-IncludeAll` geriye uyumluluk için kabul edilir.
+- **`disk.json` (`akis.disk.v1`):** disk numarası, bölüm tablosu (offset, boyut,
+  tür, sürücü harfi, aktif/gizli), birim bilgisi (dosya sistemi, etiket, birim
+  seri no, kapasite) ve dizin listesi. **Raw sektör, boş alan, silinmiş veri
+  yoktur**; "imaj" değildir.
+- **AKİS:** `case.disks[]` alanında envanter saklanır; materyal
+  `origin.acquisition.diskId` ile bağlanır. Birleştirmede disk **kimlikle**
+  eşleşir; aynı kimlikte farklı içerik **çakışma** bildirir (sessiz ezme yok).
+  Önizleme "eklenecek disk" sayısını gösterir.
+- Sürüm: uygulama **2.215**; Edinim aracı **1.2** (aynı araç, yeni paket yapısı).
+
+### KULLANICI NE GÖRECEK
+
+- Paket içinde `ses/` yerine `icerik/<seri no>/...` görürsünüz; dosyalar
+  flash'taki klasörlerle aynı yerde durur.
+- Artık **ses dışı dosyalar da** pakete girer (varsayılan). Yalnız ses
+  isterseniz `-AudioOnly`.
+- Paket kökünde **`disk.json`** vardır; disk/bölüm/birim özetini taşır.
+
+### KORUYAN TESTLER
+
+- `birim` **[81]** (packagePath çözümü, disk.json bulma/doğrulama, v2 paket,
+  disk normalizasyonu/birleştirme/önizleme).
+- `tasarim` **[2bj]** (ps1 `icerik/`, `packagePath`, `disk.json`, `-AudioOnly`;
+  uygulama disk okuma; şema `disks`; yardım metni).
+
+### DÜRÜST SINIR
+
+`edinme.ps1` bu ortamda çalıştırılmadı. `disk.json` **metadata**dır; raw sektör
+içermez, bu yüzden tek başına "adli imaj" değildir. Sanal imaj/geri yazma fikri
+ileride ayrı bir adımdır.
 
 ## v2.214 — Edinim 1.2: zip'te BOM korunur
 

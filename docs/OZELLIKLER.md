@@ -1,4 +1,4 @@
-# Özellikler (v2.214 — mevcut durum)
+# Özellikler (v2.215 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -675,6 +675,16 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
 - **Edinim aracı 1.2 (v2.213/v2.214):** soru-cevap sihirbazı (kaynak, hedef, operatör,
   teslim zinciri, özet + onay), ilerleme çubuğu, `E`/`E:`/`E:\` kabul,
   UTF-8 BOM ile düzgün Türkçe, `İŞLEM DURDURULDU` özeti.
+- **Paket v2 — disk yapısı (v2.215):** dosyalar `icerik/<cihaz-kökü>/<kaynak yolu>`
+  altında, cihazdaki dizin yapısı **birebir** korunur; yapay `ses/` klasörü yok.
+  Kök = seri no (yoksa etiket/model); klasör kaynağında klasör adı. `relPath`
+  kaynak yolu, `packagePath` paket içi yoldur. Varsayılan **tüm dosyalar**;
+  `-AudioOnly` yalnız ses. v1 paketler açılmaya devam eder.
+- **`disk.json` (v2.215):** disk/bölüm/birim metadata'sı (offset, boyut, tür,
+  dosya sistemi, etiket, birim seri no) + dizin listesi. **Raw sektör/boş alan
+  yok**; imaj değildir. AKİS `case.disks[]` alanında saklar; materyal
+  `origin.acquisition.diskId` ile bağlanır. Birleştirmede disk kimliğiyle
+  eşleşir; farklı içerik çakışma bildirir.
 - **Zip BOM korunur (v2.214):** indirilen zip'te `edinme.ps1` **UTF-8 BOM** ile
   yazılır. `fetch().text()` BOM'u sildiği için zip'te kayboluyordu; Windows
   PowerShell 5.1 dosyayı ANSI okuyup sözdizimi hatası veriyordu. Ayrıca betikte

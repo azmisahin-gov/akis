@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.214';
+} from './schema.js?v=2.215';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.214';
+const APP_VERSION = '2.215';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7488,18 +7488,40 @@ function delilToolText(tool) {
   // Motor (PowerShell/Rust) teknik izde kalır; rapor hücresi kısa kalır.
   return engine && /\bRust\b/i.test(engine) ? `${head} · ${engine}` : head;
 }
-// Paket içinde delil.json kökte veya tek bir üst klasörde olabilir.
-// ZIP üreticileri ayırıcı olarak `\` yazabilir (Windows .NET); bu yüzden
-// karşılaştırma `/` üzerinden yapılır, dönen değer GERÇEK girdi adıdır.
-function findDelilManifestPath(names) {
+const DELIL_DISK_SCHEMA = 'akis.disk.v1';
+// Paket içinde yardımcı dosya (delil.json / disk.json) kökte veya tek bir üst
+// klasörde olabilir. ZIP üreticileri ayırıcı olarak `\` yazabilir (Windows
+// .NET); karşılaştırma `/` üzerinden yapılır, dönen değer GERÇEK girdi adıdır.
+function findDelilSidecarPath(names, fileName) {
   const list = (names || []).map(String);
   const norm = (n) => n.replace(/\\/g, '/');
-  const root = list.find((n) => norm(n) === 'delil.json');
+  const target = String(fileName || '').toLowerCase();
+  const base = (n) => norm(n).split('/').pop().toLowerCase();
+  const root = list.find((n) => norm(n).toLowerCase() === target);
   if (root) return root;
   const nested = list
-    .filter((n) => /(^|\/)delil\.json$/.test(norm(n)))
+    .filter((n) => base(n) === target)
     .sort((a, b) => norm(a).split('/').length - norm(b).split('/').length);
   return nested[0] || null;
+}
+function findDelilManifestPath(names) {
+  return findDelilSidecarPath(names, 'delil.json');
+}
+function findDelilDiskPath(names) {
+  return findDelilSidecarPath(names, 'disk.json');
+}
+// disk.json doğrulaması: yalnız yapı. İçerik yoksa envanter sayılmaz.
+function validateDiskDoc(doc) {
+  if (!doc || typeof doc !== 'object') return 'disk.json okunamadı.';
+  if (doc.schema !== DELIL_DISK_SCHEMA) return `Desteklenmeyen disk şeması: ${doc.schema || 'yok'}.`;
+  if (!doc.content || typeof doc.content !== 'object') return 'disk.json içerik bilgisi yok.';
+  if (!doc.content.root) return 'disk.json içerik kökü yok.';
+  if (!Array.isArray(doc.content.directories)) return 'disk.json dizin listesi yok.';
+  return null;
+}
+// Dosyanın PAKET İÇİ yolu: v2 `packagePath`, v1 `relPath`.
+function delilFilePath(f) {
+  return String((f && (f.packagePath || f.relPath)) || '');
 }
 // Şema doğrulaması: eksik/yanlış paket sessizce alınmaz. Dönüş: hata metni
 // veya null (geçerli).
@@ -7511,7 +7533,7 @@ function validateDelilPack(pack) {
     return 'Delil dosyasında ses dosyası listesi yok.';
   for (const f of pack.files) {
     if (!f || typeof f !== 'object') return 'Dosya kaydı geçersiz.';
-    if (!f.name || !f.relPath) return 'Dosya adı veya yolu eksik.';
+    if (!f.name || !(f.relPath || f.packagePath)) return 'Dosya adı veya yolu eksik.';
   }
   if (!pack.device || (!pack.device.model && !pack.device.serial))
     return 'Cihaz bilgisi (model veya seri no) eksik.';
@@ -7896,6 +7918,35 @@ async function importDelilPack(file) {
   }
   const err = validateDelilPack(pack);
   if (err) throw new Error(err);
+  // disk.json (v2.215): disk/bölüm/birim + dizin ağacı. Teknik izdir; yoksa
+  // paket yine açılır (v1 uyumluluğu). Bozuksa SESSİZCE yutulmaz: bildirilir.
+  let diskDoc = null;
+  const diskPath = findDelilDiskPath(names);
+  if (diskPath) {
+    try {
+      const rawDisk = JSON.parse(await zip.file(diskPath).async('string'));
+      const derr = validateDiskDoc(rawDisk);
+      if (derr) showToast('disk.json okunamadı: ' + derr, true);
+      else diskDoc = rawDisk;
+    } catch (e) {
+      showToast('disk.json okunamadı: ' + (e && e.message ? e.message : e), true);
+    }
+  }
+  let diskId = '';
+  if (diskDoc) {
+    c.disks = Array.isArray(c.disks) ? c.disks : [];
+    const dSerial = (diskDoc.device && diskDoc.device.serial) || '';
+    const same = c.disks.find(
+      (d) => d.schema === diskDoc.schema && d.capturedAt === diskDoc.capturedAt && ((d.device && d.device.serial) || '') === dSerial
+    );
+    if (same) {
+      diskId = same.id;
+    } else {
+      const rec = { id: uid(), ...diskDoc, packName: file.name };
+      c.disks.push(rec);
+      diskId = rec.id;
+    }
+  }
   const mp = manifestPath.replace(/\\/g, '/');
   const baseDir = mp.includes('/') ? mp.slice(0, mp.lastIndexOf('/') + 1) : '';
   const results = [];
@@ -7906,7 +7957,10 @@ async function importDelilPack(file) {
       results.push({ file: f, state: 'skipped', blob: null, nowHash: null });
       continue;
     }
+    // v2: packagePath (icerik/<kök>/<kaynak yolu>) — v1: relPath (ses/...)
     const candidates = [
+      baseDir + delilFilePath(f),
+      delilFilePath(f),
       baseDir + f.relPath,
       f.relPath,
       baseDir + 'ses/' + f.name,
@@ -7984,6 +8038,14 @@ async function importDelilPack(file) {
         fillIfEmpty('deliveredByRegistry', origin.deliveredByRegistry, 'teslim eden sicili');
         fillIfEmpty('deliveredAt', origin.deliveredAt, 'teslim tarihi');
         fillIfEmpty('deliveryPlace', origin.deliveryPlace, 'teslim yeri');
+        if (diskId && !ex.origin.acquisition.diskId) {
+          ex.origin.acquisition.diskId = diskId;
+          filled.push('disk envanteri');
+        }
+        if (!ex.origin.acquisition.packagePath && f.packagePath) {
+          ex.origin.acquisition.packagePath = f.packagePath;
+          filled.push('paket yolu');
+        }
         logEvent(
           ex,
           filled.length ? 'Delil paketinden edinme bilgisi işlendi' : 'Delil paketinde aynı dosya görüldü',
@@ -8022,7 +8084,10 @@ async function importDelilPack(file) {
           ...origin.acquisition,
           hashState: r.state,
           manifestSha256: f.sha256 || '',
-          fileRelPath: f.relPath || ''
+          // relPath = KAYNAKTAKİ (cihazdaki) yol; packagePath = paket içi yol.
+          fileRelPath: f.relPath || '',
+          packagePath: f.packagePath || '',
+          diskId
         }
       }
     };
@@ -13805,6 +13870,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.215': {
+    title: 'Paket v2: disk yapısı korunuyor',
+    body:
+      "Delil paketinde dosyalar artık yapay 'ses' klasörüne değil, " +
+      "'icerik/<seri no>/<kaynak yolu>' altına kopyalanır; flash'taki klasör " +
+      "yapısı birebir korunur. Paket kökünde disk.json vardır: disk, bölüm ve " +
+      "birim bilgisi ile dizin listesi (raw sektör yok). Varsayılan olarak TÜM " +
+      "dosyalar kopyalanır; yalnız ses için -AudioOnly kullanın. Eski paketler " +
+      "açılmaya devam eder. Aracı yeniden indirmeniz gerekir."
+  },
   '2.214': {
     title: "Edinim 1.2: araç Windows PowerShell 5.1'de açılıyor",
     body:

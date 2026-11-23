@@ -126,6 +126,7 @@ const EXPOSE = [
   'isAudioFileName', 'delilDuplicateOf',
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
   'acquisitionToolFileContent',
+  'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3901,6 +3902,75 @@ console.log('\n== [80] Edinim aracı zip: BOM korunur (v2.214)');
     eq('bat dosyasına BOM eklenmez', T.acquisitionToolFileContent('BASLAT.bat', 'echo x'), 'echo x');
     eq('md dosyasına BOM eklenmez', T.acquisitionToolFileContent('OKUBENI.md', '# x'), '# x');
     eq('boş içerik güvenli', T.acquisitionToolFileContent('edinme.ps1', null), '\uFEFF');
+  }
+}
+
+console.log('\n== [81] Paket v2: kaynak yolu, disk.json, disk envanteri (v2.215)');
+{
+  const has = typeof T.findDelilDiskPath === 'function' && typeof T.validateDiskDoc === 'function' && typeof T.delilFilePath === 'function';
+  eq('paket v2 fonksiyonları tanımlı', has, true);
+  if (has) {
+    // Dosya yolu: packagePath (paket içi) öncelikli, v1 relPath yedek.
+    eq('packagePath öncelikli', T.delilFilePath({ relPath: 'Music/a.mp3', packagePath: 'icerik/SN123/Music/a.mp3' }), 'icerik/SN123/Music/a.mp3');
+    eq('v1 relPath yedeği', T.delilFilePath({ relPath: 'ses/a.wav' }), 'ses/a.wav');
+    eq('yol yoksa boş', T.delilFilePath({}), '');
+
+    // disk.json bulma (kök / nested / ters bölü)
+    eq('kök disk.json', T.findDelilDiskPath(['disk.json', 'delil.json']), 'disk.json');
+    eq('nested disk.json', T.findDelilDiskPath(['p/ses/a.wav', 'p/disk.json']), 'p/disk.json');
+    eq('backslash disk.json', T.findDelilDiskPath(['p\\disk.json']), 'p\\disk.json');
+    eq('disk.json yoksa null', T.findDelilDiskPath(['delil.json']), null);
+
+    // disk.json doğrulama
+    const disk = {
+      schema: 'akis.disk.v1',
+      capturedAt: '2026-11-22T10:00:00+03:00',
+      device: { serial: 'SN123', model: 'SanDisk' },
+      content: { root: 'icerik/SN123', directories: ['Music'], fileCount: 2 }
+    };
+    eq('geçerli disk.json', T.validateDiskDoc(disk), null);
+    eq('yanlış şema reddedilir', /şema/i.test(T.validateDiskDoc({ ...disk, schema: 'x' })), true);
+    eq('içerik yok reddedilir', /içerik/i.test(T.validateDiskDoc({ ...disk, content: null })), true);
+    eq('kök yok reddedilir', /kök/i.test(T.validateDiskDoc({ ...disk, content: { directories: [] } })), true);
+    eq('dizin listesi yok reddedilir', /dizin/i.test(T.validateDiskDoc({ ...disk, content: { root: 'icerik/x' } })), true);
+
+    // v2 paket: relPath kaynak yolu, packagePath paket içi
+    const v2pack = {
+      schema: 'akis.delil.v1',
+      acquiredAt: '2026-11-22T10:15:00+03:00',
+      operator: { name: 'A' },
+      device: { model: 'M', serial: 'SN' },
+      method: { copyType: 'logical-file-copy' },
+      files: [{ name: 'a.mp3', relPath: 'Music/a.mp3', packagePath: 'icerik/SN/Music/a.mp3', sha256: 'a'.repeat(64) }]
+    };
+    eq('v2 paket kabul edilir', T.validateDelilPack(v2pack), null);
+    eq('packagePath tek başına yeterli', T.validateDelilPack({ ...v2pack, files: [{ name: 'a.mp3', packagePath: 'icerik/SN/a.mp3' }] }), null);
+
+    // Şema: disk envanteri korunur / kimlik verilir
+    const cA = T.emptyCaseForTest({ id: 'cA' });
+    cA.disks = [disk];
+    const norm = __schemaMod.normalizeCase(cA);
+    eq('disk envanteri normalize edilir', norm.disks.length, 1);
+    eq('disk kimliği verilir', !!norm.disks[0].id, true);
+
+    // Birleştirme: yeni disk eklenir
+    const cB = T.emptyCaseForTest({ id: 'cB' });
+    cB.disks = [{ ...disk, id: 'dk1' }];
+    const m1 = T.mergeCasesForTest(T.emptyCaseForTest({ id: 'cA' }), cB);
+    eq('disk envanteri birleşir', m1.merged.disks.length, 1);
+    eq('disk envanteri günlüğe yazılır', (m1.applied || []).some((x) => /disk envanteri eklendi/.test(x)), true);
+
+    // Birleştirme: aynı kimlik farklı içerik -> çakışma (sessiz ezme yok)
+    const cC = T.emptyCaseForTest({ id: 'cC' });
+    cC.disks = [{ ...disk, id: 'dk1', content: { ...disk.content, fileCount: 3 } }];
+    const cD = T.emptyCaseForTest({ id: 'cD' });
+    cD.disks = [{ ...disk, id: 'dk1', content: { ...disk.content, fileCount: 5 } }];
+    const m2 = T.mergeCasesForTest(cC, cD);
+    eq('aynı disk çakışması bildirilir', (m2.conflicts || []).some((x) => x.kind === 'case-disk'), true);
+
+    // Önizleme: eklenecek disk sayısı
+    const cmp = T.compareCasesForTest(T.emptyCaseForTest({ id: 'cE' }), cB);
+    eq('önizleme disk sayısı', cmp.disks.added, 1);
   }
 }
 
