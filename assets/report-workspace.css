@@ -244,6 +244,37 @@
   #view-report .report-canvas { min-height: 60vh; overflow: visible; }
   #view-report #reportPreview.report-paper { min-height: 0; padding: 12mm 9mm; }
 }
+body.report-full #view-report .report-workspace-toolbar,
+body.report-full #view-report .report-outline,
+body.report-full #view-report .report-inspector,
+body.report-full #view-report .report-canvas-toolbar,
+body.report-full #view-report .report-warning { display: none !important; }
+body.report-full #view-report .report-workspace-grid { display: block; overflow: visible; }
+body.report-full #view-report .report-canvas {
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+}
+body.report-full #view-report .report-fullbar {
+  display: flex !important;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+body.report-full #view-report #reportPreview.report-paper {
+  width: 100%;
+  max-width: none;
+  margin: 0 auto;
+  border: 0;
+  box-shadow: none;
+  padding: 24px 8px;
+}
 @media print {
   #view-report .report-workspace-toolbar,
   #view-report .report-outline,
