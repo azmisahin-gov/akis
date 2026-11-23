@@ -1711,10 +1711,13 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
     new Set(REPORT_SECTION_KEYS).size === REPORT_SECTION_KEYS.length
   );
   const base = emptyReportSections();
-  ok('boş bölüm kümesi tüm anahtarları taşır', REPORT_SECTION_KEYS.every((k) => base[k] === true));
+  // Varsayılan, tanımdaki `def` ile birebir aynı olmalı (v2.220: yeni 56.12
+  // bölümleri varsayılan KAPALI, mevcutlar AÇIK).
+  const defMap = Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, d.def]));
+  ok('boş bölüm kümesi tanımdaki varsayılanı taşır', REPORT_SECTION_KEYS.every((k) => base[k] === defMap[k]));
   ok(
     'emptyCase.report.sections varsayılanla dolu',
-    REPORT_SECTION_KEYS.every((k) => emptyCase().report.sections[k] === true)
+    REPORT_SECTION_KEYS.every((k) => emptyCase().report.sections[k] === defMap[k])
   );
   // Eksik anahtar varsayılana döner; kapalı anahtar korunur.
   const norm = normalizeReportSections({ origin: false, s6: false });

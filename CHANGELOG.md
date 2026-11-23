@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.219.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.220.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.220 — 56.12 şablon bölümleri (isteğe bağlı)
+
+Eklediğiniz 56.12 rapor şablonundaki bölümlerin **veriyle beslenebilen** kısmı
+eklendi. Yeni bölümler **VARSAYILAN KAPALI**; mevcut rapor görünümü değişmez,
+bilirkişi isterse açar.
+
+### Yeni bölümler (7)
+
+- **Rapor künyesi (ayrıntılı):** dosya no, makam, karar tarihi, süre/son tarih,
+  bilirkişi, sicil, uzmanlık, rapor tarihi.
+- **Raporun kısa özeti:** dosya sayısı, toplam süre, deşifre aralığı, konuşmacı
+  kodu sayısı, anlaşılmadı/belirsiz bölüm, ASR ve iyileştirme kullanımı.
+- **Ses iyileştirme / filtreleme:** dürüst metin — uygulanmadı, orijinal
+  değiştirilmedi.
+- **Otomatik konuşma tanıma / yapay zekâ:** model + çözümleme zamanı; yerel
+  çalışma ve insan doğrulaması notu.
+- **Görev alanı dışı / sınırlılık beyanı:** 56.12 sınırı; kimlik/montaj/cihaz
+  analizinin yapılmadığı açıkça yazar.
+- **Kişisel veri / gizlilik:** yerel işlem, harici aktarım yok.
+- **Ekler:** EK-1 teslim/iade, EK-2 teknik envanter, EK-3 işlem günlüğü,
+  EK-5 gösterim anahtarı, EK-6 son kontrol, EK-7 hukuki/yöntemsel dayanak.
+
+### Kurallar
+
+- **Otomatik doldur, uydurma yok:** veri yoksa "—" yazılır.
+- **Üç çıktı aynı:** HTML/DOCX/UDF aynı satırları üretir.
+- **Varsayılan kapalı:** `reportSectionOn` eksik anahtarda tanımdaki varsayılana
+  düşer; eski kayıt sessizce değişmez.
+- **Profil rapora yazılmaz** (v2.111 kuralı korunur).
+
+### Ölçüm (gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| Varsayılan rapor | yeni başlıklar **yok** (üç çıktı) |
+| 7 bölüm açık | başlıklar **üç çıktıda da** var |
+| ASR modeli / EK-1 / EK-3 / EK-5 | üç çıktıda aynı |
+| 900 / 600 px | taşma/kırpılma **0** |
+| JS hatası | **0** |
+
+**Koruyan test:** `rapor-tutarlilik-testi` [Senaryo 18], `sema-testi` [3h],
+`tasarim-testi` [2bn].
 
 ## v2.219 — Parametrik rapor: bölümleri aç/kapa
 

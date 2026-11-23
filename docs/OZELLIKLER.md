@@ -1,4 +1,4 @@
-# Özellikler (v2.219 — mevcut durum)
+# Özellikler (v2.220 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -566,6 +566,10 @@ uzmanlık alanını gösterir.
   inceleme özeti, imza) tek tek açılır/kapatılır. Kapalı bölüm **üç çıktıya da**
   girmez; içindekiler yalnız açık bölümleri listeler. Tercih
   `case.report.sections`'ta saklanır; varsayılan hepsi açık.
+- **56.12 şablon bölümleri (v2.220):** rapor künyesi (ayrıntılı), kısa özet,
+  ses iyileştirme, ASR/yapay zekâ, görev alanı dışı beyan, gizlilik ve
+  EK-1…EK-7 ekleri **varsayılan kapalı** olarak eklendi. Veri yoksa "—" yazılır;
+  uydurma yok. Üç çıktı aynı metni üretir.
 - **Liste sağa yaslı (v2.187):** rozetler sağda, durum rozeti en sağda; satır
   34 px. Detaydaki "Onayla" düğmesi kaldırıldı: eylem satır menüsünde ve
   Enter'da; durum Kontrol seçicisinde.

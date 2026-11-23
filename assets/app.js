@@ -46,14 +46,14 @@ import {
   canApproveRole,
   REPORT_SECTION_DEFS,
   emptyReportSections
-} from './schema.js?v=2.219';
+} from './schema.js?v=2.220';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.219';
+const APP_VERSION = '2.220';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -264,6 +264,36 @@ const REPORT_TEXT = {
 // Envanter tablosundaki boş satır, tek 'materyal yok' metninden türetilir;
 // böylece iki metin birbirinden ayrı düşemez.
 REPORT_TEXT.noInventoryRow = [REPORT_TEXT.noMaterials, '', '', '', ''];
+// v2.220 — 56.12 şablon bölümleri. Yeni bölümler VARSAYILAN KAPALI; mevcut
+// rapor görünümü değişmez. Metinler tek kaynakta toplanır (HTML/DOCX/UDF aynı).
+Object.assign(REPORT_TEXT, {
+  kunyeHeading: 'RAPOR KÜNYESİ',
+  summaryHeading: 'RAPORUN KISA ÖZETİ',
+  summaryIntro:
+    'Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler birbiriyle tutarlıdır.',
+  enhanceHeading: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ',
+  enhanceText:
+    'Ses iyileştirme uygulanmamıştır; orijinal kayıt değiştirilmemiştir. Dinleme yardımcıları (hız, filtre, kanal seçimi) yalnızca dinlemeyi kolaylaştırır, kaydı değiştirmez ve deşifre metnini etkilemez. İşlenmiş bir kopya oluşturulmamıştır.',
+  asrHeading: 'OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI',
+  asrIntro:
+    'Otomatik konuşma tanıma (ASR) yalnızca yardımcı araç olarak kullanılmıştır. Otomatik çıktının tamamı uzman tarafından ses kaydı dinlenerek karşılaştırılmış; denetlenmeyen otomatik metin nihai transkript olarak kabul edilmemiştir. Otomatik sistemin duyulmayan kelimeyi üretmesi veya özel isimleri yanlış tamamlaması mümkündür; bu yüzden rapora onaylanmış metin girer.',
+  asrHeaders: ['KAYIT', 'MODEL', 'ÇÖZÜMLEME ZAMANI'],
+  asrNone: 'Bu dosyada otomatik konuşma tanıma kullanılmamıştır.',
+  asrLocal: 'Çalışma biçimi: yerel/çevrimdışı (kayıt harici bir hizmete aktarılmamıştır).',
+  asrVerify:
+    'İnsan doğrulaması: bölümler dinlenerek kontrol edilmiş; yalnızca uzman onaylı metin rapora aktarılmıştır.',
+  scopeNoteHeading: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI',
+  scopeNoteText:
+    'Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.',
+  privacyHeading: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ',
+  privacyText:
+    'Ses içeriği ve çözümleme bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.',
+  annexHeading: 'EKLER – RAPORUN DENETLENEBİLİRLİĞİ İÇİN',
+  annexLegalText:
+    'Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.',
+  annexNoLog: 'Kayıtlı işlem günlüğü yok.',
+  annexNoInventory: 'Teknik envanter kaydı yok.'
+});
 // Hızlı etiketler: uzmanın elle yazmadan boş/anlaşılmaz/uzaktan gelen bölümleri
 // işaretlemesini sağlar. Bunlar köşeli parantezle yazılır ve rapora aynen akar;
 // uydurma metin üretilmez, yalnızca gözlem ifadesi eklenir.
@@ -10293,10 +10323,14 @@ function readinessRowsHtml(r) {
 // ---- Rapor bölüm görünürlüğü (v2.219) ------------------------------------
 // PARAMETRİK RAPOR: bütün bölümler hazır tutulur; bilirkişi her birini açar/
 // kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
-// kısa arayüz etiketidir. Eksik anahtar = açık (eski kayıt bozulmaz).
+// kısa arayüz etiketidir. Eksik anahtar = tanımdaki varsayılan (eski kayıt bozulmaz).
 function reportSectionOn(c, key) {
   const s = (c && c.report && c.report.sections) || {};
-  return s[key] !== false;
+  if (typeof s[key] === 'boolean') return s[key];
+  // Kayıtta anahtar yoksa TANIMDAKİ varsayılana düş (v2.220): mevcut 19 bölüm
+  // açık, 56.12 şablon bölümleri kapalı. Eski kayıtlar sessizce değişmez.
+  const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
+  return def ? def.def : true;
 }
 const REPORT_SECTION_GROUPS = [
   {
@@ -10337,7 +10371,19 @@ const REPORT_SECTION_GROUPS = [
       ['reviewSummary', 'İnceleme özeti (denetim kaydı)']
     ]
   },
-  { title: 'İmza', items: [['signature', 'İmza ve alt bilgi']] }
+  { title: 'İmza', items: [['signature', 'İmza ve alt bilgi']] },
+  {
+    title: '56.12 şablonu (isteğe bağlı)',
+    items: [
+      ['kunye', 'Rapor künyesi (ayrıntılı)'],
+      ['summary', 'Raporun kısa özeti'],
+      ['enhance', 'Ses iyileştirme / filtreleme'],
+      ['asr', 'Otomatik konuşma tanıma / yapay zekâ'],
+      ['scopeNote', 'Görev alanı dışı / sınırlılık beyanı'],
+      ['privacy', 'Kişisel veri / gizlilik'],
+      ['annex', 'Ekler (EK-1…EK-7)']
+    ]
+  }
 ];
 function renderReportSections(c) {
   const host = $('#reportSections');
@@ -10364,6 +10410,134 @@ function setReportSection(key, on) {
   c.report.sections = { ...(c.report.sections || {}), [key]: !!on };
   persist();
   renderReport();
+}
+// v2.220 — 56.12 şablon bölümlerinin VERİSİ (tek kaynak). Üç çıktı bu
+// satırları/biçimleri kendi biçiminde basar; metin burada uydurulmaz.
+function reportKunyeRows(c) {
+  const a = c.assignment || {};
+  const sure = [a.durationDays ? `${a.durationDays} gün` : '', a.dueDate ? niceDate(a.dueDate) : '']
+    .filter(Boolean)
+    .join(' · ');
+  return [
+    ['Dosya / soruşturma / esas numarası', c.fileNo || '—'],
+    ['Görevlendirme makamı', c.court || '—'],
+    ['Görevlendirme kararı tarihi', a.date ? niceDate(a.date) : '—'],
+    ['Verilen rapor süresi / son tarih', sure || '—'],
+    ['Bilirkişinin adı ve soyadı', c.expertName || '—'],
+    ['Bilirkişilik sicil / liste numarası', c.registryNo || '—'],
+    ['Temel ve alt uzmanlık alanı', expertFieldShort(c)],
+    ['Rapor tarihi', c.reportDate ? niceDate(c.reportDate) : '—'],
+    ['Tarafsızlık / bağımsızlık beyanı', '—']
+  ];
+}
+function reportSummaryRows(c) {
+  const materials = c.materials || [];
+  const allSegs = materials.flatMap((m) => m.segments || []);
+  const totalDur = materials.reduce((n, m) => n + (matDuration(m) || 0), 0);
+  const segDur = allSegs.reduce((n, s) => n + segDurationSec(s), 0);
+  let codeCount = 0;
+  for (const m of materials) {
+    const set = new Set();
+    for (const s of m.segments || []) {
+      const code = s.speakerId || s.speaker;
+      if (code) set.add(code);
+    }
+    codeCount += set.size;
+  }
+  const inaudible = allSegs.filter((s) => segReview(s) === 'inaudible').length;
+  const ambiguous = allSegs.filter((s) => segReview(s) === 'ambiguous').length;
+  const asrUsed = materials.some((m) => m.transcribedWithModel);
+  return [
+    ['İncelenen ses dosyası sayısı', String(materials.length)],
+    ['Toplam kayıt süresi', totalDur ? fmtShort(totalDur) : '—'],
+    ['Deşifre edilen toplam zaman aralığı', segDur ? fmtShort(segDur) : '—'],
+    ['Konuşmacı kodu sayısı (kimlik tespiti değildir)', String(codeCount)],
+    ['Anlaşılmayan / kısmen anlaşılan bölüm', `${inaudible} / ${ambiguous}`],
+    ['Otomatik konuşma tanıma kullanımı', asrUsed ? 'Kullanıldı (yerel)' : 'Kullanılmadı'],
+    ['Ses iyileştirme', 'Uygulanmadı'],
+    ['Transkriptin bulunduğu bölüm', '5.1. Ses kayıtlarının çözümlenmesi']
+  ];
+}
+function reportAsrRows(c) {
+  const out = [];
+  for (const m of c.materials || []) {
+    if (!m.transcribedWithModel) continue;
+    out.push([m.name, m.transcribedWithModel, m.asrAt ? String(m.asrAt) : '—']);
+  }
+  return out;
+}
+function reportChecklistRows(c) {
+  const materials = c.materials || [];
+  const segs = materials.flatMap((m) => m.segments || []);
+  const approved = segs.filter((s) => segReview(s) === 'approved').length;
+  const inaudible = segs.filter((s) => segReview(s) === 'inaudible').length;
+  const pending = segs.filter((s) => !isReviewed(s)).length;
+  const long = segs.filter((s) => segmentLengthInfo(segDurationSec(s)).level === 'long').length;
+  const verified = materials.filter((m) => m.lastVerify && m.lastVerify.state === 'verified').length;
+  return [
+    ['İncelenen kayıt', String(materials.length)],
+    ['Toplam bölüm', String(segs.length)],
+    ['Uzman onaylı bölüm', String(approved)],
+    ['Anlaşılmadı işaretli bölüm', String(inaudible)],
+    ['Kontrol bekleyen bölüm', String(pending)],
+    ['45 sn üstü bölüm', String(long)],
+    ['SHA-256 doğrulanmış kayıt', String(verified)]
+  ];
+}
+function reportAnnexBlocks(c) {
+  const materials = c.materials || [];
+  const o = (materials[0] && materials[0].origin) || {};
+  const typeLabel = o.mediumType ? MEDIUM_TYPE_LABEL[o.mediumType] || o.mediumType : '—';
+  const logRows = [];
+  for (const m of materials) {
+    for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
+  }
+  return [
+    {
+      heading: 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI',
+      kind: 'table',
+      header: false,
+      rows: [
+        ['Dosya numarası', c.fileNo || '—'],
+        ['Teslim tarihi', o.deliveredAt ? niceDate(o.deliveredAt) : '—'],
+        ['Teslim eden', o.deliveredBy || '—'],
+        ['Teslim yeri', o.deliveryPlace || '—'],
+        ['Ortam / taşıyıcı', o.mediumLabel || typeLabel],
+        ['İade tarihi', '—'],
+        ['Açıklama', '—']
+      ]
+    },
+    {
+      heading: 'EK-2. DOSYA TEKNİK ENVANTERİ',
+      kind: 'table',
+      header: true,
+      headers: REPORT_TEXT.inventoryHeaders,
+      rows: inventoryRows(c),
+      empty: REPORT_TEXT.annexNoInventory
+    },
+    {
+      heading: 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ',
+      kind: 'table',
+      header: true,
+      headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'],
+      rows: logRows,
+      empty: REPORT_TEXT.annexNoLog
+    },
+    {
+      heading: 'EK-5. TRANSKRİPT GÖSTERİM ANAHTARI',
+      kind: 'table',
+      header: true,
+      headers: ['İŞARET', 'ANLAMI'],
+      rows: [
+        ['[anlaşılmıyor]', 'Ses güvenilir biçimde çözümlenemedi.'],
+        ['[kısmen anlaşılmıyor]', 'Bir bölüm veya sözcük çözümlenemedi.'],
+        ['[eşzamanlı konuşma]', 'Üst üste konuşma; ayrıştırılamadı.'],
+        ['[konuşma dışı ses]', 'Gülme, öksürme, kapı vb. gözlenebilir ses.']
+      ]
+    },
+    { heading: 'EK-6. SON KONTROL LİSTESİ', kind: 'table', header: false, rows: reportChecklistRows(c) },
+    { heading: 'EK-7. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', kind: 'para', text: REPORT_TEXT.annexLegalText }
+  ];
 }
 function renderReportReadiness(c) {
   const el = $('#reportReadiness');
@@ -10444,6 +10618,16 @@ function renderReport() {
       .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
       .join('')}</tbody></table>`;
   }
+  if (on('kunye')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.kunyeHeading)}</h3><table class="paper-table cover-fields"><tbody>${reportKunyeRows(c)
+      .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      .join('')}</tbody></table></div>`;
+  }
+  if (on('summary')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(REPORT_TEXT.summaryIntro)}</p><table class="paper-table cover-fields"><tbody>${reportSummaryRows(c)
+      .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      .join('')}</tbody></table></div>`;
+  }
   if (on('toc') && toc.length) {
     html += `<div class="paper-section toc-section"><h3>${esc(REPORT_TEXT.tocHeading)}</h3><ol>${toc.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
   }
@@ -10481,6 +10665,17 @@ function renderReport() {
   if (on('s4')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
   }
+  if (on('enhance')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.enhanceHeading)}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`;
+  }
+  if (on('asr')) {
+    const asrRows = reportAsrRows(c);
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.asrHeading)}</h3><p>${esc(REPORT_TEXT.asrIntro)}</p>`;
+    if (asrRows.length) {
+      html += `<table class="paper-table"><thead><tr>${REPORT_TEXT.asrHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${asrRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    } else html += `<p>${esc(REPORT_TEXT.asrNone)}</p>`;
+    html += `<p class="paper-muted">${esc(REPORT_TEXT.asrLocal)} ${esc(REPORT_TEXT.asrVerify)}</p></div>`;
+  }
   if (on('s5')) {
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
   if (materials.length) {
@@ -10512,6 +10707,9 @@ function renderReport() {
   } else html += `<p>${esc(evaluationFallbackText(c))}</p>`;
   html += `<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
   }
+  if (on('scopeNote')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.scopeNoteHeading)}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`;
+  }
   if (on('s6')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`;
   }
@@ -10529,6 +10727,25 @@ function renderReport() {
   }
   if (on('reviewSummary')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  if (on('privacy')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.privacyHeading)}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`;
+  }
+  if (on('annex')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.annexHeading)}</h3>`;
+    for (const b of reportAnnexBlocks(c)) {
+      html += `<h4>${esc(b.heading)}</h4>`;
+      if (b.kind === 'para') {
+        html += `<p>${esc(b.text)}</p>`;
+        continue;
+      }
+      if (b.header) {
+        html += `<table class="paper-table"><thead><tr>${b.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.length ? b.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${b.headers.length}">${esc(b.empty || '—')}</td></tr>`}</tbody></table>`;
+      } else {
+        html += `<table class="paper-table cover-fields"><tbody>${b.rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
+      }
+    }
+    html += `</div>`;
   }
   if (on('signature')) {
     html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
@@ -10650,6 +10867,15 @@ function docxXml(c) {
       { widths: [3000, 6000], header: false, shadeFirstCol: true }
     );
   }
+  if (on('kunye')) {
+    body += headingXml(REPORT_TEXT.kunyeHeading);
+    body += wTable(reportKunyeRows(c), { widths: [3200, 5800], header: false, shadeFirstCol: true });
+  }
+  if (on('summary')) {
+    body += headingXml(REPORT_TEXT.summaryHeading);
+    body += wP(REPORT_TEXT.summaryIntro);
+    body += wTable(reportSummaryRows(c), { widths: [4200, 4800], header: false, shadeFirstCol: true });
+  }
   const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
   if (on('toc') && toc.length) {
     body += headingXml(REPORT_TEXT.tocHeading);
@@ -10729,6 +10955,18 @@ function docxXml(c) {
     body += headingXml(REPORT_TEXT.sections[3]);
     body += wP(c.methodText || DEFAULT_METHOD);
   }
+  if (on('enhance')) {
+    body += headingXml(REPORT_TEXT.enhanceHeading);
+    body += wP(REPORT_TEXT.enhanceText);
+  }
+  if (on('asr')) {
+    body += headingXml(REPORT_TEXT.asrHeading);
+    body += wP(REPORT_TEXT.asrIntro);
+    const dAsr = reportAsrRows(c);
+    if (dAsr.length) body += wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true });
+    else body += wP(REPORT_TEXT.asrNone);
+    body += wP(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { color: '74869A', size: 17, italic: true });
+  }
   if (on('s5')) {
     body += headingXml(REPORT_TEXT.sections[4]);
     body += headingXml(REPORT_TEXT.sub51, 2);
@@ -10787,6 +11025,10 @@ function docxXml(c) {
   body += headingXml(REPORT_TEXT.sub53, 2);
   body += wP(c.limitationsText || REPORT_TEXT.defaultLimitations);
   }
+  if (on('scopeNote')) {
+    body += headingXml(REPORT_TEXT.scopeNoteHeading);
+    body += wP(REPORT_TEXT.scopeNoteText);
+  }
   if (on('s6')) {
     body += headingXml(REPORT_TEXT.sections[5]);
     body += wP(c.conclusionText || REPORT_TEXT.defaultConclusion);
@@ -10830,6 +11072,26 @@ function docxXml(c) {
       reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
       { widths: [6000, 3000], header: false, shadeFirstCol: true }
     );
+  }
+  if (on('privacy')) {
+    body += headingXml(REPORT_TEXT.privacyHeading);
+    body += wP(REPORT_TEXT.privacyText);
+  }
+  if (on('annex')) {
+    body += headingXml(REPORT_TEXT.annexHeading);
+    for (const b of reportAnnexBlocks(c)) {
+      body += headingXml(b.heading, 2);
+      if (b.kind === 'para') {
+        body += wP(b.text);
+        continue;
+      }
+      if (b.header) {
+        const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
+        body += wTable([[...b.headers], ...rows], { header: true });
+      } else {
+        body += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true });
+      }
+    }
   }
   if (on('signature')) {
     body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
@@ -11012,6 +11274,7 @@ async function makeUdf() {
   }
   const el = [];
   const on = (k) => reportSectionOn(c, k);
+  const h = (t) => paragraph(t, { size: 14, bold: true, color: 'navy', before: 9, after: 5 });
   if (on('cover')) {
   el.push(paragraph('T.C.', { size: 16, bold: true, color: 'navy', align: 1, after: 4 }));
   el.push(
@@ -11050,13 +11313,21 @@ async function makeUdf() {
       )
     );
   }
+  if (on('kunye')) {
+    el.push(h(REPORT_TEXT.kunyeHeading));
+    el.push(table(reportKunyeRows(c), [170, 340], { header: false, shadeFirstCol: true }));
+  }
+  if (on('summary')) {
+    el.push(h(REPORT_TEXT.summaryHeading));
+    el.push(paragraph(REPORT_TEXT.summaryIntro, { size: 10 }));
+    el.push(table(reportSummaryRows(c), [220, 290], { header: false, shadeFirstCol: true }));
+  }
   const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
   if (on('toc') && toc.length) {
     el.push(paragraph(REPORT_TEXT.tocHeading, { size: 16, bold: true, color: 'navy', before: 8, after: 12 }));
     toc.forEach((t) => el.push(paragraph(t, { size: 11, bold: true, color: 'mid', before: 5, after: 8 })));
   }
   el.push(pageBreak());
-  const h = (t) => paragraph(t, { size: 14, bold: true, color: 'navy', before: 9, after: 5 });
   if (on('s1')) {
     el.push(h(REPORT_TEXT.sections[0]));
     el.push(paragraphLines(c.assignmentScope || REPORT_TEXT.defaultScope, { justify: true }));
@@ -11135,6 +11406,18 @@ async function makeUdf() {
     el.push(h(REPORT_TEXT.sections[3]));
     el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
   }
+  if (on('enhance')) {
+    el.push(h(REPORT_TEXT.enhanceHeading));
+    el.push(paragraphLines(REPORT_TEXT.enhanceText, { justify: true }));
+  }
+  if (on('asr')) {
+    el.push(h(REPORT_TEXT.asrHeading));
+    el.push(paragraph(REPORT_TEXT.asrIntro, { size: 10 }));
+    const uAsr = reportAsrRows(c);
+    if (uAsr.length) el.push(table([[...REPORT_TEXT.asrHeaders], ...uAsr], [120, 240, 150], { header: true }));
+    else el.push(paragraph(REPORT_TEXT.asrNone, { italic: true, color: 'muted' }));
+    el.push(paragraph(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { size: 9, italic: true, color: 'muted', after: 7 }));
+  }
   if (on('s5')) {
   el.push(h(REPORT_TEXT.sections[4]));
   el.push(paragraph(REPORT_TEXT.sub51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
@@ -11211,6 +11494,10 @@ async function makeUdf() {
   el.push(paragraph(REPORT_TEXT.sub53, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
   el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
   }
+  if (on('scopeNote')) {
+    el.push(h(REPORT_TEXT.scopeNoteHeading));
+    el.push(paragraphLines(REPORT_TEXT.scopeNoteText, { justify: true }));
+  }
   if (on('s6')) {
     el.push(h(REPORT_TEXT.sections[5]));
     el.push(paragraphLines(c.conclusionText || REPORT_TEXT.defaultConclusion, { justify: true }));
@@ -11257,6 +11544,26 @@ async function makeUdf() {
         { header: false, shadeFirstCol: true }
       )
     );
+  }
+  if (on('privacy')) {
+    el.push(h(REPORT_TEXT.privacyHeading));
+    el.push(paragraphLines(REPORT_TEXT.privacyText, { justify: true }));
+  }
+  if (on('annex')) {
+    el.push(h(REPORT_TEXT.annexHeading));
+    for (const b of reportAnnexBlocks(c)) {
+      el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+      if (b.kind === 'para') {
+        el.push(paragraphLines(b.text, { justify: true }));
+        continue;
+      }
+      const w = b.header
+        ? b.headers.map(() => Math.floor(510 / b.headers.length))
+        : [170, 340];
+      const body = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
+      const rows = b.header ? [b.headers, ...body] : b.rows;
+      el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
+    }
   }
   if (on('signature')) {
     el.push(
@@ -14584,6 +14891,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.220': {
+    title: '56.12 şablon bölümleri eklendi (isteğe bağlı)',
+    body:
+      'Rapor bölümleri paneline 7 yeni bölüm eklendi: rapor künyesi, kısa özet, ' +
+      'ses iyileştirme, ASR/yapay zekâ, görev alanı dışı beyan, gizlilik ve ' +
+      'EK-1…EK-7. Hepsi VARSAYILAN KAPALI; mevcut rapor değişmez. İstediğinizi ' +
+      'açın; veri yoksa "—" yazılır, uydurulmaz. Üç çıktı aynı metni üretir.'
+  },
   '2.219': {
     title: 'Rapor bölümlerini açıp kapatabilirsiniz',
     body:

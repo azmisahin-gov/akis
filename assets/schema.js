@@ -540,7 +540,16 @@ export const REPORT_SECTION_DEFS = [
   { key: 'reviewSummary', def: true }, // İnceleme özeti (denetim kaydı)
   { key: 's6', def: true }, // 6. Gerekçeli sonuç
   { key: 's7', def: true }, // 7. Ekler
-  { key: 'signature', def: true } // İmza ve alt bilgi
+  { key: 'signature', def: true }, // İmza ve alt bilgi
+  // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI:
+  // mevcut rapor görünümü değişmez; bilirkişi isterse açar.
+  { key: 'kunye', def: false }, // Rapor künyesi (ayrıntılı)
+  { key: 'summary', def: false }, // Raporun kısa özeti
+  { key: 'enhance', def: false }, // Ses iyileştirme / filtreleme
+  { key: 'asr', def: false }, // Otomatik konuşma tanıma / yapay zekâ
+  { key: 'scopeNote', def: false }, // Görev alanı dışı / sınırlılık beyanı
+  { key: 'privacy', def: false }, // Kişisel veri / gizlilik
+  { key: 'annex', def: false } // Ekler (EK-1…EK-7)
 ];
 export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 /** Tüm bölümler varsayılanla açık; `over` ile tek tek kapatılabilir. */

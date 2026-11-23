@@ -664,5 +664,56 @@ console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
   checkShared('açık kalan sorular bölümü', REPORT_TEXT.sections[1], H2, U2, D2);
 }
 
+// Senaryo 18: 56.12 şablon bölümleri (v2.220). Yeni bölümler VARSAYILAN
+// KAPALI (mevcut rapor değişmez); açılınca üç çıktıda AYNI görünmeli.
+console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
+{
+  const mk = (sections) =>
+    baseCase({
+      materials: [
+        {
+          id: 'm1',
+          name: 'a.wav',
+          type: 'audio/wav',
+          size: 1000,
+          duration: 12.5,
+          sha256: 'abc',
+          tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+          segments: [{ id: 'sg1', start: '00:00:00', end: '00:00:05', speaker: 'S1', text: 'merhaba', review: 'onaylandi' }],
+          transcribedWithModel: 'Xenova/whisper-small',
+          asrAt: '2026-02-01',
+          origin: { mediumType: 'usb', mediumLabel: 'FLASH-1', deliveredBy: 'Ahmet Yılmaz', deliveredAt: '2026-03-12', deliveryPlace: 'Mahkeme' },
+          log: [{ at: '2026-02-01T10:00:00Z', event: 'teslim', detail: 'kayıt alındı' }]
+        }
+      ],
+      ...(sections ? { report: { sections } } : {})
+    });
+  const NEW = [
+    REPORT_TEXT.kunyeHeading,
+    REPORT_TEXT.summaryHeading,
+    REPORT_TEXT.enhanceHeading,
+    REPORT_TEXT.asrHeading,
+    REPORT_TEXT.scopeNoteHeading,
+    REPORT_TEXT.privacyHeading,
+    REPORT_TEXT.annexHeading
+  ];
+  const d = mk();
+  const Hd = htmlText(d), Ud = await udfText(d), Dd = await docxText(d);
+  check(
+    'varsayılan: yeni bölümler KAPALI (üç çıktıda yok)',
+    NEW.every((t) => !Hd.includes(t) && !Ud.includes(t) && !Dd.includes(t))
+  );
+
+  const on = mk({ kunye: true, summary: true, enhance: true, asr: true, scopeNote: true, privacy: true, annex: true });
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  for (const t of NEW) checkShared(`açık: ${t.slice(0, 24)}`, t, H, U, D);
+  checkShared('künye değeri (dosya no)', '2026/214 E.', H, U, D);
+  checkShared('kısa özet başlığı içeriği', 'İncelenen ses dosyası sayısı', H, U, D);
+  checkShared('ASR modeli', 'Xenova/whisper-small', H, U, D);
+  checkShared('EK-1 teslim tutanağı', 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('EK-3 işlem günlüğü', 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
+  checkShared('EK-5 gösterim anahtarı', 'EK-5. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);
