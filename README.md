@@ -4,7 +4,7 @@ Bilirkişiler için ses kaydı inceleme, konuşma çözümleme (deşifre) ve rap
 hazırlama aracı. Tamamen tarayıcıda çalışır; Python veya Node.js kurulumu
 gerektirmez.
 
-**Sürüm:** v2.226 · **Lisans:** özel / kurumsal kullanım
+**Sürüm:** v2.227 · **Lisans:** özel / kurumsal kullanım
 
 > Sürüm numarası tek kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`.
 > Arayüzdeki etiket buradan yazılır. Her güncellemede bu değer, `CHANGELOG.md`
@@ -65,6 +65,7 @@ başlatır ve Microsoft Edge'i açar. Bu yol internet olmadan çalışmak içind
 | Belge | İçerik |
 |-------|--------|
 | [`docs/MIMARI.md`](docs/MIMARI.md) | Dosya düzeni, katmanlar, veri akışı |
+| `assets/report-workspace.js` / `.css` | Üç bölgeli rapor ekranı, bölüm ve ek düzeni, revizyon geçmişi |
 | [`docs/OZELLIKLER.md`](docs/OZELLIKLER.md) | Mevcut (çalışan) özelliklerin tam listesi |
 | [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md) | Sürüm geçmişi ve planlanan çalışmalar |
 | [`docs/GELECEK_PLANI.md`](docs/GELECEK_PLANI.md) | Gelecek planı — seçenekler ve öneriler (delil Tier 1 uygulandı) |
