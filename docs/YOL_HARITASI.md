@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.216.**
+yazılır. **Güncel sürüm: v2.217.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,15 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.217 — Gömülü metadata (cihaz beyanı) (tamamlandı)
+
+- ID3v2.3/2.4, MP4/M4A, WAV (bext/INFO), FLAC ayrıştırıcıları.
+- `origin.embedded` (kaynak, kayıt/kodlama/sürüm zamanı, yazılım, okunma).
+- Köken panelinde gösterim + **Dosyadan oku**.
+- Rapor: **varsayılan kapalı** `report.includeEmbedded`; açılınca üç çıktıda
+  "GÖMÜLÜ METADATA (CİHAZ BEYANI)" bölümü.
+- Koruyan testler: `birim` [83], `rapor` 16, `tasarim` [2bl].
 
 ### v2.216 — Delil envanteri ve dosya zamanları (tamamlandı)
 

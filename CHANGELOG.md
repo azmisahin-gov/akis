@@ -6,12 +6,52 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.216.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.217.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.217 — Gömülü metadata (cihaz beyanı)
+
+Kullanıcı "gömülü cihaz beyanına ihtiyacımız var mı bilmiyorum ama ekleyelim;
+gerekirse rapora yansıtmayı açıp kapatabiliriz" dedi. Bu sürüm metadata'yı
+okur, gösterir ve rapora **isteğe bağlı** olarak ekler.
+
+### DÜZELTME
+
+- **Ayrıştırıcılar:** ID3v2.3/2.4 (`TDRC`, `TDEN`, `TDRL`, `TSSE`), MP4/M4A
+  (`mvhd` oluşturma zamanı, `©day`, `©too`), WAV (`bext` tarih/saat/köken,
+  `LIST-INFO` `ICRD`/`ISFT`), FLAC (Vorbis `DATE`, `ENCODER`).
+- **Kayıt:** `origin.embedded = { source, recordingAt, encodingAt, releaseAt,
+  software, readAt }`. Dosya eklenince ve delil paketi içe aktarılınca okunur.
+- **Arayüz:** Kayıt kökeni panelinde özet + **Dosyadan oku** düğmesi (yeniden
+  okur, delil günlüğüne yazar).
+- **Rapor anahtarı:** Rapor görünümünde **"Gömülü metadata (cihaz beyanı)
+  raporda görünsün"**. **Varsayılan KAPALI.** Açılınca üç çıktıda
+  "GÖMÜLÜ METADATA (CİHAZ BEYANI)" bölümü: dosya · kayıt zamanı · yazılım ·
+  kaynak. Açıklama metni değerlerin **beyan** olduğunu söyler.
+
+### KULLANICI NE GÖRECEK
+
+- Kayıt seçince köken panelinde "kayıt: 2026-03-12T14:20 · yazılım: … (MP4/M4A)"
+  satırı; yoksa "Okunmadı veya dosyada yok".
+- Raporda **varsayılan olarak bu bölüm yok**; kutu işaretlenince girer.
+- Metin açıkça "cihaz beyanı, doğrulanmamış" der; kayıt zamanı kanıtı sayılmaz.
+
+### KORUYAN TESTLER
+
+- `birim` **[83]** (dört biçim ayrıştırma, epoch dönüşümü, özet, satırlar,
+  şema koruması, rapor anahtarı varsayılanı).
+- `rapor` **Senaryo 16** (açıkken üç çıktıda, kapalıyken hiçbirinde yok).
+- `tasarim` **[2bl]** (anahtar, ayrıştırıcılar, panel düğmesi, stil).
+
+### DÜRÜST SINIR
+
+Metadata **beyandır**: değiştirilebilir, cihaz saati yanlış olabilir, çoğu
+dosyada hiç yoktur. Bu yüzden "kayıt zamanı" alanına yazılmaz ve rapora
+kendiliğinden girmez. Ayrıştırma yalnız ilk 8 MB'a bakar.
 
 ## v2.216 — Delil envanteri ve dosya zamanları
 

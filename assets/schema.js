@@ -496,6 +496,10 @@ export function emptyMaterial(over = {}) {
       // DEĞİLDİR: kopyalama, dosya sistemi ve saat dilimi ile değişir.
       // Yalnız edinme sırasında okunan değerlerdir; beyan değildir.
       fileTimes: { createdAt: '', modifiedAt: '', accessedAt: '' },
+      // GÖMÜLÜ METADATA (v2.217): dosyanın KENDİ beyanı. Doğrulanmamıştır;
+      // "kayıt zamanı" değil, "cihaz beyanı"dır. Rapora ancak kullanıcı
+      // açarsa girer (report.includeEmbedded).
+      embedded: { source: '', recordingAt: '', encodingAt: '', releaseAt: '', software: '', readAt: '' },
       // Eski tek alan (v2.212 ve öncesi). Görüntülemede yalnız gerçek cihaz
       // metni ise kullanılır; edinme metni buraya karışmış kayıtlar yok sayılır.
       deviceInfo: '',
@@ -566,6 +570,9 @@ export function emptyCase(over = {}) {
     // Rapor
     report: {
       date: '',
+      // Gömülü metadata (cihaz beyanı) rapora girsin mi? VARSAYILAN KAPALI:
+      // beyan niteliğindedir, kullanıcı bilinçli açmalıdır.
+      includeEmbedded: false,
       methodText: '',
       limitationsText: '',
       conclusionText: ''
@@ -842,6 +849,14 @@ export function normalizeMaterial(src = {}) {
         modifiedAt: str(isObj(origin.fileTimes) ? origin.fileTimes.modifiedAt : ''),
         accessedAt: str(isObj(origin.fileTimes) ? origin.fileTimes.accessedAt : '')
       },
+      embedded: {
+        source: str(isObj(origin.embedded) ? origin.embedded.source : ''),
+        recordingAt: str(isObj(origin.embedded) ? origin.embedded.recordingAt : ''),
+        encodingAt: str(isObj(origin.embedded) ? origin.embedded.encodingAt : ''),
+        releaseAt: str(isObj(origin.embedded) ? origin.embedded.releaseAt : ''),
+        software: str(isObj(origin.embedded) ? origin.embedded.software : ''),
+        readAt: str(isObj(origin.embedded) ? origin.embedded.readAt : '')
+      },
       deviceInfo: str(origin.deviceInfo),
       // Edinme tutanağı bilinmeyen alanlarıyla birlikte korunur; v2.208.
       acquisition: isObj(origin.acquisition) ? { ...origin.acquisition } : null
@@ -929,6 +944,7 @@ export function normalizeCase(src = {}) {
     disks: (Array.isArray(c.disks) ? c.disks : []).filter(isObj).map((d) => ({ ...d, id: d.id || newId('dk') })),
     report: {
       date: str(report.date || c.reportDate),
+      includeEmbedded: !!report.includeEmbedded,
       methodText: str(report.methodText ?? c.methodText),
       limitationsText: str(report.limitationsText ?? c.limitationsText),
       conclusionText: str(report.conclusionText ?? c.conclusionText)

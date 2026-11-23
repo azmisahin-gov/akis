@@ -1642,5 +1642,19 @@ console.log('\n[2bk] Delil envanteri arayüzü (v2.216)');
   check('yardım envanteri anar', /Delil envanteri/.test(html));
 }
 
+console.log('\n[2bl] Gömülü metadata (cihaz beyanı) (v2.217)');
+{
+  const appJs = read('assets/app.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('rapor anahtarı var', /id="reportEmbeddedToggle"/.test(html));
+  check('anahtar varsayılan kapalı', /includeEmbedded:\s*false/.test(read('assets/schema.js')));
+  check('ayrıştırıcılar tanımlı', /function parseId3v2/.test(appJs) && /function parseMp4Meta/.test(appJs) && /function parseWavMeta/.test(appJs) && /function parseFlacMeta/.test(appJs));
+  check('köken panelinde okuma düğmesi', /data-read-embedded/.test(appJs));
+  check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /REPORT_TEXT.embeddedHeading/.test(appJs));
+  check('gömülü stil token kullanır', /\.origin-embedded[\s\S]{0,200}var\(--ink-2/.test(layer));
+  check('yardım gömülü metadata anar', /Gömülü metadata/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

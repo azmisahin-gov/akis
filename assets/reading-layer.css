@@ -3037,3 +3037,25 @@ input::placeholder, textarea::placeholder {
 .di-file.is-other:hover { background: none; }
 .di-name { overflow-wrap: anywhere; }
 .di-meta { color: var(--ink-3); font-size: var(--fs-2xs); }
+
+/* ===== v2.217 — Gömülü metadata (cihaz beyanı) ========================= */
+.origin-embedded {
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+  margin: 2px 0 6px;
+}
+.report-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  margin: 8px 0 12px;
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+}
+.report-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}

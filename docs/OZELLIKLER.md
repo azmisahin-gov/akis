@@ -1,4 +1,4 @@
-# Özellikler (v2.216 — mevcut durum)
+# Özellikler (v2.217 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -684,6 +684,11 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
   paketteki TÜM dosyaları (ses + ses dışı) klasör ağacıyla gösterir; arama ve
   paket seçimi vardır. Ses satırı ilgili kaydı açar. Envanter `case.disks[].files`
   alanında tutulur (ad, yol, boyut, SHA-256, rol, materyal bağı).
+- **Gömülü metadata — cihaz beyanı (v2.217):** MP4/M4A `mvhd`/`©day`/`©too`,
+  ID3v2.3/2.4 `TDRC`/`TDEN`/`TDRL`/`TSSE`, WAV `bext`/`LIST-INFO`, FLAC Vorbis
+  `DATE`/`ENCODER` okunur. `origin.embedded` alanında saklanır. **Beyandır**;
+  doğrulanmaz. Rapora **varsayılan kapalı** (`report.includeEmbedded`); Rapor
+  görünümündeki anahtarla açılır. Kapalıyken bölüm çizilmez.
 - **Gözlenen dosya zamanları (v2.216):** her dosyanın oluşturulma/değiştirilme/
   erişim zamanı `origin.fileTimes` alanına yazılır. Bunlar **kayıt zamanı
   değildir**; rapor köken tablosunun altında bu sınırı yazar.

@@ -128,6 +128,7 @@ const EXPOSE = [
   'acquisitionToolFileContent',
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
   'fileTimesFromEntry', 'inventoryCounts', 'inventoryTree',
+  'readEmbeddedMeta', 'parseId3v2', 'parseMp4Meta', 'parseWavMeta', 'parseFlacMeta', 'embeddedSummary', 'embeddedRows', 'mp4EpochToIso',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -4015,6 +4016,106 @@ console.log('\n== [82] Envanter ağacı ve gözlenen dosya zamanları (v2.216)')
       origin: { mediumType: 'usb', fileTimes: { createdAt: 'C', modifiedAt: 'M', accessedAt: 'A' } }
     });
     eq('şema dosya zamanlarını korur', `${norm.origin.fileTimes.createdAt}/${norm.origin.fileTimes.modifiedAt}/${norm.origin.fileTimes.accessedAt}`, 'C/M/A');
+  }
+}
+
+console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (v2.217)');
+{
+  const has = typeof T.readEmbeddedMeta === 'function' && typeof T.parseId3v2 === 'function';
+  eq('gömülü metadata fonksiyonları tanımlı', has, true);
+  if (has) {
+    const cat = (...arrs) => {
+      const total = arrs.reduce((n, a) => n + a.length, 0);
+      const out = new Uint8Array(total);
+      let o = 0;
+      for (const a of arrs) {
+        out.set(a, o);
+        o += a.length;
+      }
+      return out;
+    };
+    const ascii = (str) => Uint8Array.from([...String(str)].map((c) => c.charCodeAt(0) & 255));
+    const syncsafe = (n) => Uint8Array.from([(n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f]);
+    const be32 = (n) => Uint8Array.from([(n >>> 24) & 255, (n >>> 16) & 255, (n >>> 8) & 255, n & 255]);
+    const le32 = (n) => Uint8Array.from([n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]);
+
+    // --- ID3v2.4 (MP3)
+    const id3frame = (id, text) => {
+      const body = cat(Uint8Array.from([3]), ascii(text));
+      return cat(ascii(id), syncsafe(body.length), Uint8Array.from([0, 0]), body);
+    };
+    const frames = cat(id3frame('TDRC', '2026-03-12T14:20'), id3frame('TSSE', 'PhoneRecorder 2.0'));
+    const id3 = cat(ascii('ID3'), Uint8Array.from([4, 0, 0]), syncsafe(frames.length), frames);
+    const rid3 = T.parseId3v2(id3);
+    eq('ID3 kayıt zamanı', rid3.recordingAt, '2026-03-12T14:20');
+    eq('ID3 yazılım', rid3.software, 'PhoneRecorder 2.0');
+    eq('ID3 kaynak', rid3.source, 'ID3v2.4');
+    eq('ID3 olmayan dosya boş', Object.keys(T.parseId3v2(ascii('RIFFxxxx'))).length, 0);
+
+    // --- MP4/M4A (mvhd + ©day + ©too)
+    const box = (type, payload) => cat(be32(8 + payload.length), ascii(type), payload);
+    const dataBox = (text) => box('data', cat(be32(1), be32(0), ascii(text)));
+    const epoch = Math.floor(Date.UTC(2026, 2, 12, 14, 20, 0) / 1000) + 2082844800;
+    const mvhd = box('mvhd', cat(Uint8Array.from([0, 0, 0, 0]), be32(epoch), be32(epoch), be32(1000), be32(0)));
+    const ilst = box('ilst', cat(box('\u00a9day', dataBox('2026-03-12')), box('\u00a9too', dataBox('PhoneRecorder 2.0'))));
+    const meta = box('meta', cat(Uint8Array.from([0, 0, 0, 0]), ilst));
+    const mp4 = cat(box('ftyp', ascii('M4A ')), box('moov', cat(mvhd, box('udta', meta))));
+    const rmp4 = T.parseMp4Meta(mp4);
+    eq('MP4 kayıt zamanı ISO', rmp4.recordingAt, '2026-03-12T14:20:00.000Z');
+    eq('MP4 yazılım', rmp4.software, 'PhoneRecorder 2.0');
+    eq('MP4 sürüm/tarih', rmp4.releaseAt, '2026-03-12');
+    eq('MP4 kaynak', rmp4.source, 'MP4/M4A');
+    eq('MP4 epoch dönüşümü', T.mp4EpochToIso(0), '');
+
+    // --- WAV bext
+    const bext = new Uint8Array(602);
+    const put = (str, off) => {
+      for (let i = 0; i < str.length; i++) bext[off + i] = str.charCodeAt(i) & 255;
+    };
+    put('PhoneRecorder', 256);
+    put('2026-03-12', 320);
+    put('14:20:00', 330);
+    const wav = cat(ascii('RIFF'), le32(4 + 8 + bext.length), ascii('WAVE'), ascii('bext'), le32(bext.length), bext);
+    const rwav = T.parseWavMeta(wav);
+    eq('WAV kayıt zamanı', rwav.recordingAt, '2026-03-12 14:20:00');
+    eq('WAV yazılım', rwav.software, 'PhoneRecorder');
+    eq('WAV kaynak', rwav.source, 'WAV bext');
+
+    // --- FLAC Vorbis yorumu
+    const vendor = ascii('test');
+    const c1 = ascii('DATE=2026-03-12');
+    const c2 = ascii('ENCODER=flac 1.4');
+    const vc = cat(le32(vendor.length), vendor, le32(2), le32(c1.length), c1, le32(c2.length), c2);
+    const flac = cat(ascii('fLaC'), Uint8Array.from([0x84, (vc.length >> 16) & 255, (vc.length >> 8) & 255, vc.length & 255]), vc);
+    const rflac = T.parseFlacMeta(flac);
+    eq('FLAC kayıt zamanı', rflac.recordingAt, '2026-03-12');
+    eq('FLAC yazılım', rflac.software, 'flac 1.4');
+    eq('FLAC kaynak', rflac.source, 'FLAC');
+
+    // --- Birleşik okuyucu + özet
+    const r = T.readEmbeddedMeta(id3);
+    eq('birleşik okuyucu ID3 bulur', r.recordingAt, '2026-03-12T14:20');
+    eq('boş buffer güvenli', T.readEmbeddedMeta(new Uint8Array(0)).recordingAt, '');
+    eq('özet metni', /kayıt: 2026-03-12T14:20/.test(T.embeddedSummary(r)), true);
+    eq('boş özet', T.embeddedSummary({}), '');
+
+    // --- Rapor satırları: yalnız gömülü verisi olan kayıt
+    const rc = T.emptyCaseForTest({ id: 'cEmb' });
+    const m1 = T.emptyMaterialForTest({ id: 'e1', fileName: 'a.m4a' });
+    m1.origin.embedded = { source: 'MP4/M4A', recordingAt: '2026-03-12T14:20:00.000Z', software: 'PhoneRecorder 2.0', encodingAt: '', releaseAt: '', readAt: 'x' };
+    const m2 = T.emptyMaterialForTest({ id: 'e2', fileName: 'b.wav' });
+    rc.materials = [m1, m2];
+    const erows = T.embeddedRows(rc);
+    eq('gömülü satır sayısı', erows.length, 1);
+    eq('gömülü satır dosyası', erows[0][0], 'a.m4a');
+    eq('gömülü satır kaynak', erows[0][3], 'MP4/M4A');
+
+    // --- Şema: gömülü alan ve rapor anahtarı korunur
+    const normM = __schemaMod.normalizeMaterial({ ...T.emptyMaterialForTest({ id: 'e3' }), origin: { embedded: { recordingAt: 'R', software: 'S' } } });
+    eq('şema gömülü metadata korur', normM.origin.embedded.recordingAt + '/' + normM.origin.embedded.software, 'R/S');
+    eq('rapor anahtarı varsayılan kapalı', __schemaMod.emptyCase({}).report.includeEmbedded, false);
+    const normC = __schemaMod.normalizeCase({ ...T.emptyCaseForTest({ id: 'e4' }), report: { includeEmbedded: true } });
+    eq('rapor anahtarı korunur', normC.report.includeEmbedded, true);
   }
 }
 

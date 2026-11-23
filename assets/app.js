@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.216';
+} from './schema.js?v=2.217';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.216';
+const APP_VERSION = '2.217';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -209,6 +209,11 @@ const REPORT_TEXT = {
   acqIntro:
     'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
   acqHeaders: ['KAYIT', 'CİHAZ', 'ETİKET', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
+  // GÖMÜLÜ METADATA (v2.217): yalnız kullanıcı açarsa rapora girer.
+  embeddedHeading: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)',
+  embeddedIntro:
+    'Aşağıdaki değerler ses dosyasının kendi metadata’sından okunmuştur. Cihaz beyanıdır; doğrulanmamıştır ve değiştirilebilir. Tek başına kayıt zamanı kanıtı değildir.',
+  embeddedHeaders: ['KAYIT', 'KAYIT ZAMANI (beyan)', 'YAZILIM (beyan)', 'KAYNAK'],
   mediumTypes: [
     'Belirtilmedi',
     'CD / DVD',
@@ -7764,6 +7769,16 @@ function delilStateLabel(state) {
     }[state] || 'Doğrulanamadı'
   );
 }
+// Gömülü metadata satırları (cihaz beyanı). Değer yoksa satır yazılmaz.
+function embeddedRows(c) {
+  const out = [];
+  for (const m of (c && c.materials) || []) {
+    const e = m.origin && m.origin.embedded;
+    if (!e || !embeddedSummary(e)) continue;
+    out.push([m.name || m.fileName || '—', e.recordingAt || '—', e.software || '—', e.source || '—']);
+  }
+  return out;
+}
 // Rapor: yalnız delil paketinden gelen kayıtlar girer. Paket yoksa bölüm
 // hiç çizilmez (yapılmayan edinme rapora yazılmaz).
 function acquisitionRows(c) {
@@ -7853,6 +7868,230 @@ async function audioTech(blob, name) {
   // Biçim uzantıdan; uzantı yoksa codec'ten türetilir.
   info.format = audioFormatLabel(name, info.codec);
   return info;
+}
+// ===== GÖMÜLÜ METADATA (CİHAZ BEYANI) — v2.217 ========================
+// Dosyanın KENDİ metadata'sıdır: doğrulanmamıştır, değiştirilebilir ve cihazın
+// saat ayarı yanlış olabilir. Bu yüzden "kayıt zamanı" DEĞİL, "cihaz beyanı"dır.
+const EMBEDDED_EMPTY = { source: '', recordingAt: '', encodingAt: '', releaseAt: '', software: '' };
+function embeddedText(bytes, encoding) {
+  const u8 = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes || []);
+  const clean = (t) => String(t || '').replace(/\u0000+$/g, '').trim();
+  try {
+    if (encoding === 1) return clean(new TextDecoder('utf-16').decode(u8));
+    if (encoding === 2) return clean(new TextDecoder('utf-16be').decode(u8));
+    if (encoding === 3) return clean(new TextDecoder('utf-8').decode(u8));
+    return clean(new TextDecoder('iso-8859-1').decode(u8));
+  } catch (e) {
+    return '';
+  }
+}
+// MP4/M4A: mvhd zamanı 1904-01-01 UTC'den saniye; unix = değer - 2082844800.
+function mp4EpochToIso(sec) {
+  const n = Number(sec);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  try {
+    return new Date((n - 2082844800) * 1000).toISOString();
+  } catch (e) {
+    return '';
+  }
+}
+function parseId3v2(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 10 || u8[0] !== 0x49 || u8[1] !== 0x44 || u8[2] !== 0x33) return out;
+  const ver = u8[3];
+  if (ver < 3) return out; // v2.2 çerçeve kimliği farklı
+  const flags = u8[5];
+  const size = ((u8[6] & 0x7f) << 21) | ((u8[7] & 0x7f) << 14) | ((u8[8] & 0x7f) << 7) | (u8[9] & 0x7f);
+  let off = 10;
+  const end = Math.min(u8.length, 10 + size);
+  if (flags & 0x40 && off + 4 <= end) {
+    const eh = ((u8[off] & 0x7f) << 21) | ((u8[off + 1] & 0x7f) << 14) | ((u8[off + 2] & 0x7f) << 7) | (u8[off + 3] & 0x7f);
+    off += 4 + eh;
+  }
+  while (off + 10 <= end) {
+    const id = String.fromCharCode(u8[off], u8[off + 1], u8[off + 2], u8[off + 3]);
+    if (!/^[A-Z0-9]{4}$/.test(id)) break;
+    const fsize =
+      ver === 4
+        ? ((u8[off + 4] & 0x7f) << 21) | ((u8[off + 5] & 0x7f) << 14) | ((u8[off + 6] & 0x7f) << 7) | (u8[off + 7] & 0x7f)
+        : ((u8[off + 4] << 24) | (u8[off + 5] << 16) | (u8[off + 6] << 8) | u8[off + 7]) >>> 0;
+    const fstart = off + 10;
+    if (fsize <= 0 || fstart + fsize > end) break;
+    if (id === 'TDRC' || id === 'TDEN' || id === 'TDRL' || id === 'TSSE') {
+      const txt = embeddedText(u8.subarray(fstart + 1, fstart + fsize), u8[fstart]);
+      if (id === 'TDRC') out.recordingAt = txt;
+      else if (id === 'TDEN') out.encodingAt = txt;
+      else if (id === 'TDRL') out.releaseAt = txt;
+      else out.software = txt;
+    }
+    off = fstart + fsize;
+  }
+  out.source = `ID3v2.${ver}`;
+  return out;
+}
+function parseMp4Meta(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 12) return out;
+  const rd32 = (o) => ((u8[o] << 24) | (u8[o + 1] << 16) | (u8[o + 2] << 8) | u8[o + 3]) >>> 0;
+  const fourcc = (o) => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+  if (fourcc(4) !== 'ftyp') return out;
+  const containers = ['moov', 'trak', 'mdia', 'udta', 'meta', 'ilst', 'edts', 'minf', 'stbl'];
+  const dataText = (start, end) => {
+    if (start + 16 > end) return '';
+    const dsize = rd32(start);
+    if (fourcc(start + 4) !== 'data') return '';
+    const flag = rd32(start + 8);
+    const enc = flag === 2 ? 1 : 3;
+    return embeddedText(u8.subarray(start + 16, Math.min(end, start + dsize)), enc);
+  };
+  const walk = (start, end, depth) => {
+    let o = start;
+    while (o + 8 <= end) {
+      let size = rd32(o);
+      const type = fourcc(o + 4);
+      let header = 8;
+      if (size === 1 && o + 16 <= end) {
+        size = rd32(o + 8) * 4294967296 + rd32(o + 12);
+        header = 16;
+      } else if (size === 0) {
+        size = end - o;
+      }
+      if (size < header || o + size > end) break;
+      const body = o + header;
+      if (type === 'mvhd' && body + 12 <= o + size) {
+        const t = u8[body] === 1 ? rd32(body + 4) * 4294967296 + rd32(body + 8) : rd32(body + 4);
+        const iso = mp4EpochToIso(t);
+        if (iso) out.recordingAt = out.recordingAt || iso;
+      } else if (type === '\u00a9day' || type === '\u00a9too') {
+        const txt = dataText(body, o + size);
+        if (type === '\u00a9day' && txt && !out.releaseAt) out.releaseAt = txt;
+        if (type === '\u00a9too' && txt && !out.software) out.software = txt;
+      }
+      if (depth < 8 && containers.includes(type)) walk(type === 'meta' ? body + 4 : body, o + size, depth + 1);
+      o += size;
+    }
+  };
+  walk(0, Math.min(u8.length, 8 * 1024 * 1024), 0);
+  if (out.recordingAt || out.releaseAt || out.software) out.source = 'MP4/M4A';
+  return out;
+}
+function parseWavMeta(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 12) return out;
+  const tag = (o) => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+  if (tag(0) !== 'RIFF' || tag(8) !== 'WAVE') return out;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  const field = (o, n) => embeddedText(u8.subarray(o, o + n), 0).replace(/\u0000/g, '').trim();
+  let o = 12;
+  while (o + 8 <= u8.length) {
+    const id = tag(o);
+    const size = dv.getUint32(o + 4, true);
+    const body = o + 8;
+    if (body + size > u8.length) break;
+    if (id === 'bext' && size >= 338) {
+      const date = field(body + 320, 10);
+      const time = field(body + 330, 8);
+      const originator = field(body + 256, 32);
+      if (date) out.recordingAt = time ? `${date} ${time}` : date;
+      if (originator && !out.software) out.software = originator;
+      out.source = 'WAV bext';
+    } else if (id === 'LIST' && tag(body) === 'INFO') {
+      let p = body + 4;
+      while (p + 8 <= body + size) {
+        const iid = tag(p);
+        const isz = dv.getUint32(p + 4, true);
+        const txt = field(p + 8, isz);
+        if (iid === 'ICRD' && txt && !out.recordingAt) out.recordingAt = txt;
+        if (iid === 'ISFT' && txt && !out.software) out.software = txt;
+        p += 8 + isz + (isz % 2);
+      }
+      if (!out.source) out.source = 'WAV INFO';
+    }
+    o = body + size + (size % 2);
+  }
+  return out;
+}
+function parseFlacMeta(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 8) return out;
+  const tag = (o) => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+  if (tag(0) !== 'fLaC') return out;
+  const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+  let o = 4;
+  while (o + 4 <= u8.length) {
+    const header = u8[o];
+    const last = (header & 0x80) !== 0;
+    const type = header & 0x7f;
+    const len = (u8[o + 1] << 16) | (u8[o + 2] << 8) | u8[o + 3];
+    const body = o + 4;
+    if (body + len > u8.length) break;
+    if (type === 4) {
+      let p = body;
+      const vlen = dv.getUint32(p, true);
+      p += 4 + vlen;
+      if (p + 4 <= body + len) {
+        const count = dv.getUint32(p, true);
+        p += 4;
+        for (let i = 0; i < count && p + 4 <= body + len; i++) {
+          const clen = dv.getUint32(p, true);
+          p += 4;
+          const line = embeddedText(u8.subarray(p, p + clen), 3);
+          p += clen;
+          const eq = line.indexOf('=');
+          if (eq < 0) continue;
+          const key = line.slice(0, eq).toUpperCase();
+          const value = line.slice(eq + 1);
+          if ((key === 'DATE' || key === 'CREATION_TIME' || key === 'YEAR') && !out.recordingAt) out.recordingAt = value;
+          if (key === 'ENCODER' && !out.software) out.software = value;
+        }
+      }
+      out.source = 'FLAC';
+    }
+    o = body + len;
+    if (last) break;
+  }
+  return out;
+}
+// Dört biçimi de dener; ilk bulunan alan kazanır. Hata yutulur (metadata
+// okunamazsa dosya yine işlenir), ama sonuç "boş" olarak dürüst kalır.
+function readEmbeddedMeta(buf) {
+  const out = { ...EMBEDDED_EMPTY };
+  for (const fn of [parseId3v2, parseMp4Meta, parseWavMeta, parseFlacMeta]) {
+    let r = null;
+    try {
+      r = fn(buf);
+    } catch (e) {
+      r = null;
+    }
+    if (!r) continue;
+    for (const k of ['recordingAt', 'encodingAt', 'releaseAt', 'software', 'source']) {
+      if (!out[k] && r[k]) out[k] = String(r[k]);
+    }
+  }
+  return out;
+}
+async function audioEmbedded(blob) {
+  const empty = { ...EMBEDDED_EMPTY, readAt: new Date().toISOString() };
+  try {
+    const head = await blob.slice(0, Math.min(blob.size, 8 * 1024 * 1024)).arrayBuffer();
+    return { ...readEmbeddedMeta(head), readAt: new Date().toISOString() };
+  } catch (e) {
+    return empty;
+  }
+}
+function embeddedSummary(e) {
+  if (!e) return '';
+  const parts = [];
+  if (e.recordingAt) parts.push(`kayıt: ${e.recordingAt}`);
+  if (e.encodingAt) parts.push(`kodlama: ${e.encodingAt}`);
+  if (e.releaseAt) parts.push(`sürüm: ${e.releaseAt}`);
+  if (e.software) parts.push(`yazılım: ${e.software}`);
+  if (!parts.length) return '';
+  return `${parts.join(' · ')}${e.source ? ` (${e.source})` : ''}`;
 }
 function fmtChannels(n) {
   if (!n) return 'Bilinmiyor';
@@ -7997,6 +8236,7 @@ async function addAudioFiles(files, opts = {}) {
         ? { ...intake }
         : { mediumType: 'unspecified', mediumLabel: '', deliveredBy: '', deliveredAt: '', deviceInfo: '' }
     };
+    m.origin.embedded = await audioEmbedded(file);
     c.materials.push(m);
     logEvent(
       m,
@@ -8203,6 +8443,10 @@ async function importDelilPack(file) {
           ex.origin.acquisition.packagePath = f.packagePath;
           filled.push('paket yolu');
         }
+        if (!ex.origin.embedded || !ex.origin.embedded.readAt) {
+          ex.origin.embedded = await audioEmbedded(r.blob);
+          filled.push('gömülü metadata');
+        }
         if (!ex.origin.fileTimes || !ex.origin.fileTimes.modifiedAt) {
           const ft = fileTimesFromEntry(f);
           if (ft.modifiedAt || ft.createdAt || ft.accessedAt) {
@@ -8245,6 +8489,7 @@ async function importDelilPack(file) {
       origin: {
         ...origin,
         fileTimes: fileTimesFromEntry(f),
+        embedded: await audioEmbedded(r.blob),
         acquisition: {
           ...origin.acquisition,
           hashState: r.state,
@@ -9651,6 +9896,7 @@ function trDative(name) {
 // Bu, kaydın nereden geldiğini ve nasıl teslim edildiğini belgeler.
 function originPanelHtml(m) {
   const o = m.origin || {};
+  const embTxt = embeddedSummary(o.embedded);
   const typeOpts = MEDIUM_TYPE.map(
     (code) =>
       `<option value="${esc(code)}" ${o.mediumType === code ? 'selected' : ''}>${esc(MEDIUM_TYPE_LABEL[code] || code)}</option>`
@@ -9670,6 +9916,10 @@ function originPanelHtml(m) {
   <div class="seg-row2">
     <div class="seg-field"><label>Kayıt cihazı (varsa)</label><input data-origin="${esc(m.id)}" data-origin-key="recordingDevice" value="${esc(o.recordingDevice || '')}" placeholder="Örn. cep telefonu, ses kayıt cihazı"></div>
     <div class="seg-field"><label>Kayıt tarihi (varsa)</label><input type="date" data-origin="${esc(m.id)}" data-origin-key="recordingAt" value="${esc(o.recordingAt || '')}"></div>
+  </div>
+  <div class="seg-field"><label>Gömülü metadata (cihaz beyanı)</label>
+    <div class="origin-embedded">${embTxt ? esc(embTxt) : 'Okunmadı veya dosyada yok'}</div>
+    <button type="button" class="mini-button" data-read-embedded="${esc(m.id)}" title="Dosyanın kendi metadata'sını yeniden okur. Cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.">Dosyadan oku</button>
   </div>`;
 }
 function originRows(c) {
@@ -10051,6 +10301,8 @@ function renderReportReadiness(c) {
 function renderReport() {
   const c = currentCase();
   if (!c) return;
+  const embToggle = $('#reportEmbeddedToggle');
+  if (embToggle) embToggle.checked = !!(c.report && c.report.includeEmbedded);
   renderReportReadiness(c);
   const materials = c.materials || [];
   const allSegs = materials.flatMap((m) => m.segments || []);
@@ -10119,6 +10371,10 @@ function renderReport() {
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows = originRows(c);
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
+  const embRows = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
+  if (embRows.length) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.embeddedHeading)}</h3><p>${esc(REPORT_TEXT.embeddedIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  }
   const acqRows = acquisitionRows(c);
   if (acqRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -10317,6 +10573,15 @@ function docxXml(c) {
     header: true
   });
   body += wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true });
+  const dEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
+  if (dEmb.length) {
+    body += headingXml(REPORT_TEXT.embeddedHeading);
+    body += wP(REPORT_TEXT.embeddedIntro);
+    body += wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], {
+      widths: [2200, 2200, 2400, 2200],
+      header: true
+    });
+  }
   const dAcq = acquisitionRows(c);
   if (dAcq.length) {
     body += headingXml(REPORT_TEXT.acqHeading);
@@ -10688,6 +10953,12 @@ async function makeUdf() {
     )
   );
   el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+  const uEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
+  if (uEmb.length) {
+    el.push(h(REPORT_TEXT.embeddedHeading));
+    el.push(paragraph(REPORT_TEXT.embeddedIntro, { size: 10 }));
+    el.push(table([[...REPORT_TEXT.embeddedHeaders], ...uEmb], [130, 130, 150, 130], { header: true }));
+  }
   const uAcq = acquisitionRows(c);
   if (uAcq.length) {
     el.push(h(REPORT_TEXT.acqHeading));
@@ -11966,6 +12237,35 @@ function setupEvents() {
     e.preventDefault();
     setActiveMaterial(btn.dataset.invMaterial);
   });
+  // Gömülü metadata (cihaz beyanı) — dosyadan yeniden oku (v2.217).
+  $('#view-audio')?.addEventListener('click', async (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-read-embedded]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    const c = currentCase();
+    const m = ((c && c.materials) || []).find((x) => x.id === btn.dataset.readEmbedded);
+    if (!m) return;
+    btn.disabled = true;
+    try {
+      const blob = await getAudioBlob(c, m);
+      if (!blob) {
+        showToast('Ses dosyası bulunamadı; gömülü metadata okunamadı.', true);
+        return;
+      }
+      m.origin = m.origin || {};
+      m.origin.embedded = await audioEmbedded(blob);
+      const sum = embeddedSummary(m.origin.embedded);
+      logEvent(m, 'Gömülü metadata okundu', sum || 'Dosyada gömülü metadata bulunamadı.');
+      persist();
+      const host = $(`#origin-panel-${m.id}`);
+      if (host) host.innerHTML = originPanelHtml(m);
+      showToast(sum ? 'Gömülü metadata okundu.' : 'Dosyada gömülü metadata bulunamadı.');
+    } catch (err) {
+      showToast('Gömülü metadata okunamadı: ' + (err && err.message ? err.message : err), true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
   $('#view-audio')?.addEventListener('change', (e) => {
     if (!e.target || e.target.id !== 'invPackSelect') return;
     invState.packIndex = Number(e.target.value) || 0;
@@ -13135,6 +13435,15 @@ if (behaviorHost)
     if (b) setNextPending(!nextPendingPref());
   });
 $('#reportFullBtn').addEventListener('click', () => setReportFull(true));
+// Gömülü metadata rapora girsin mi? (v2.217) — varsayılan KAPALI.
+$('#reportEmbeddedToggle')?.addEventListener('change', (e) => {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.includeEmbedded = !!e.target.checked;
+  persist();
+  renderReport();
+});
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
 $('#reportUdfBtn2').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
@@ -14087,6 +14396,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.217': {
+    title: 'Gömülü metadata: cihaz beyanı',
+    body:
+      'Dosyanın kendi metadata’sı okunur: MP4 kayıt zamanı, ID3 TDRC, WAV bext, ' +
+      'FLAC DATE. Kayıt kökeni panelinde görünür; "Dosyadan oku" ile tazelenir. ' +
+      'Bunlar cihaz beyanıdır: doğrulanmamıştır ve değiştirilebilir. Rapora ' +
+      'varsayılan olarak girmez; Rapor görünümündeki anahtarla açılır.'
+  },
   '2.216': {
     title: 'Delil envanteri ve dosya zamanları',
     body:

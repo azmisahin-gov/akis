@@ -574,5 +574,38 @@ console.log('\n[Senaryo 15] delil verisiyle de ürün kimliği yok (v2.212)');
 }
 
 
+// Senaryo 16 (v2.217): gömülü metadata bölümü YALNIZ kullanıcı açarsa girer.
+console.log('\n[Senaryo 16] gömülü metadata (cihaz beyanı) aç/kapa');
+{
+  const c = withMaterial();
+  c.report = { ...(c.report || {}), includeEmbedded: true };
+  c.materials[0].origin = {
+    ...(c.materials[0].origin || {}),
+    embedded: {
+      source: 'MP4/M4A',
+      recordingAt: '2026-03-12T14:20:00.000Z',
+      software: 'PhoneRecorder 2.0',
+      encodingAt: '',
+      releaseAt: '',
+      readAt: '2026-11-22T10:00:00+03:00'
+    }
+  };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('gömülü başlık', REPORT_TEXT.embeddedHeading, H, U, D);
+  checkShared('gömülü açıklama', REPORT_TEXT.embeddedIntro, H, U, D);
+  checkShared('gömülü kayıt zamanı', '2026-03-12T14:20:00.000Z', H, U, D);
+  checkShared('gömülü yazılım', 'PhoneRecorder 2.0', H, U, D);
+  checkShared('gömülü kaynak', 'MP4/M4A', H, U, D);
+
+  const off = withMaterial();
+  off.report = { ...(off.report || {}), includeEmbedded: false };
+  off.materials[0].origin = { ...(off.materials[0].origin || {}), embedded: c.materials[0].origin.embedded };
+  const H2 = htmlText(off), U2 = await udfText(off), D2 = await docxText(off);
+  check(
+    'kapalıyken bölüm yok',
+    !H2.includes(REPORT_TEXT.embeddedHeading) && !U2.includes(REPORT_TEXT.embeddedHeading) && !D2.includes(REPORT_TEXT.embeddedHeading)
+  );
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

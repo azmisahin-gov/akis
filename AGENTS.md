@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.216.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.217.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4774,4 +4774,45 @@ Dosya sistemi zamanları **gözlem**dir; kayıt anını kanıtlamaz. Gömülü m
 **v2.217 — Gömülü metadata (cihaz beyanı):** MP4/M4A `creation_time`, ID3
 `TDRC/TDRL`, WAV `bext`/`ICRD`; **"cihaz beyanı"** etiketiyle, doğrulanmış gerçek
 gibi sunulmadan. Sonra raporda ayrı sütun/not.
+
+## YENİ OTURUM DEVRİ (v2.217) — Gömülü metadata (cihaz beyanı)
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.217** |
+| Testler | `bash tools/test.sh` → **1277 birim + 482 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Rapor sütunu olarak gömülü metadata (şu an ayrı bölüm, isteğe bağlı) |
+
+### Ne yapıldı
+
+- Ayrıştırıcılar: `parseId3v2`, `parseMp4Meta`, `parseWavMeta`, `parseFlacMeta`,
+  `readEmbeddedMeta`, `audioEmbedded`, `embeddedSummary`, `embeddedRows`.
+- `origin.embedded = { source, recordingAt, encodingAt, releaseAt, software, readAt }`.
+- Köken panelinde özet + `data-read-embedded` (Dosyadan oku).
+- Rapor anahtarı: `case.report.includeEmbedded` (**varsayılan false**),
+  `#reportEmbeddedToggle`.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Gömülü metadata BEYANDIR.** Doğrulanmış gerçek gibi sunulmaz; `recordingAt`
+   alanına (beyan) yazılmaz, ayrı `embedded` alanında durur.
+2. **Rapora kendiliğinden girmez.** Varsayılan kapalı; kullanıcı açarsa üç
+   çıktıda aynı bölüm.
+3. **Ayrıştırma hatası veriyi düşürmez.** Hata yutulur, sonuç boş kalır.
+4. **Yalnız ilk 8 MB taranır** (performans); büyük dosyada metadata sonda
+   olabilir — bu bilinen sınırdır.
+5. **MP4 zamanı UTC'ye çevrilir** (1904 epoch); diğer biçimler **ham metin**
+   olarak korunur (saat dilimi uydurulmaz).
+
+### Dürüst sınır
+
+Metadata değiştirilebilir, cihaz saati yanlış olabilir, çoğu dosyada yoktur.
+"Kayıt zamanı" kanıtı değildir.
+
+### Sıradaki iş (aday)
+
+Rapor sütunu/grafiği; gömülü metadata ile dosya zamanı arasındaki farkı gösteren
+**tutarlılık uyarısı** (ör. mtime < metadata tarihi). Karar kullanıcıda.
 
