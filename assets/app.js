@@ -10567,9 +10567,10 @@ function reportAnnexBlocks(c) {
   for (const m of materials) {
     for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
   }
-  return [
+  const definitions = [
     {
-      heading: 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI',
+      key: 'ek1',
+      title: 'Materyal teslim ve iade tutanağı',
       kind: 'table',
       header: false,
       rows: [
@@ -10583,7 +10584,8 @@ function reportAnnexBlocks(c) {
       ]
     },
     {
-      heading: 'EK-2. DOSYA TEKNİK ENVANTERİ',
+      key: 'ek2',
+      title: 'Dosya teknik envanteri',
       kind: 'table',
       header: true,
       headers: REPORT_TEXT.inventoryHeaders,
@@ -10591,7 +10593,8 @@ function reportAnnexBlocks(c) {
       empty: REPORT_TEXT.annexNoInventory
     },
     {
-      heading: 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ',
+      key: 'ek3',
+      title: 'Zincirleme muhafaza / işlem günlüğü',
       kind: 'table',
       header: true,
       headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'],
@@ -10599,7 +10602,14 @@ function reportAnnexBlocks(c) {
       empty: REPORT_TEXT.annexNoLog
     },
     {
-      heading: 'EK-5. TRANSKRİPT GÖSTERİM ANAHTARI',
+      key: 'ek4',
+      title: 'Bilirkişi teknik gözlem notu',
+      kind: 'para',
+      text: ''
+    },
+    {
+      key: 'ek5',
+      title: 'Transkript gösterim anahtarı',
       kind: 'table',
       header: true,
       headers: ['İŞARET', 'ANLAMI'],
@@ -10610,9 +10620,51 @@ function reportAnnexBlocks(c) {
         ['[konuşma dışı ses]', 'Gülme, öksürme, kapı vb. gözlenebilir ses.']
       ]
     },
-    { heading: 'EK-6. SON KONTROL LİSTESİ', kind: 'table', header: false, rows: reportChecklistRows(c) },
-    { heading: 'EK-7. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', kind: 'para', text: REPORT_TEXT.annexLegalText }
+    {
+      key: 'ek6',
+      title: 'Son kontrol listesi',
+      kind: 'table',
+      header: false,
+      rows: reportChecklistRows(c)
+    },
+    {
+      key: 'ek7',
+      title: 'Hukuki ve yöntemsel dayanaklar',
+      kind: 'para',
+      text: REPORT_TEXT.annexLegalText
+    }
   ];
+  const defaults = [
+    { key: 'ek1', title: 'Materyal teslim ve iade tutanağı', enabled: true, content: '', note: '' },
+    { key: 'ek2', title: 'Dosya teknik envanteri', enabled: true, content: '', note: '' },
+    { key: 'ek3', title: 'Zincirleme muhafaza / işlem günlüğü', enabled: true, content: '', note: '' },
+    { key: 'ek4', title: 'Bilirkişi teknik gözlem notu', enabled: false, content: '', note: '' },
+    { key: 'ek5', title: 'Transkript gösterim anahtarı', enabled: true, content: '', note: '' },
+    { key: 'ek6', title: 'Son kontrol listesi', enabled: true, content: '', note: '' },
+    { key: 'ek7', title: 'Hukuki ve yöntemsel dayanaklar', enabled: true, content: '', note: '' }
+  ];
+  const configured = c.report && c.report.layout && Array.isArray(c.report.layout.annexes)
+    ? c.report.layout.annexes
+    : [];
+  const items = configured.length ? configured : defaults;
+  const byKey = new Map(definitions.map((item) => [item.key, item]));
+  return items
+    .filter((item) => item && item.enabled !== false)
+    .map((item, index) => {
+      const key = String(item.key || '');
+      const base = byKey.get(key);
+      const title = String(item.title || (base && base.title) || 'Özel ek');
+      const block = base
+        ? { ...base }
+        : { key, kind: 'para', text: String(item.content || '—') };
+      if (key === 'ek4') block.text = String(item.content || '—');
+      if (!base && item.content) block.text = String(item.content);
+      return {
+        ...block,
+        heading: `EK-${index + 1}. ${title}`,
+        note: String(item.note || '')
+      };
+    });
 }
 // v2.226 — Kalite kontrolü / denetlenebilirlik: otomatik sayılar + ikinci göz.
 function reportQcRows(c) {
