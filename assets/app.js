@@ -10344,6 +10344,53 @@ function reportSectionOn(c, key) {
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
   return def ? def.def : true;
 }
+function reportLayoutOrder(c) {
+  const keys = REPORT_SECTION_DEFS.map((item) => item.key);
+  const allowed = new Set(keys);
+  const stored = c && c.report && c.report.layout && Array.isArray(c.report.layout.order)
+    ? c.report.layout.order
+    : [];
+  const seen = new Set();
+  const order = [];
+  for (const key of stored) {
+    if (typeof key === 'string' && allowed.has(key) && !seen.has(key)) {
+      seen.add(key);
+      order.push(key);
+    }
+  }
+  for (const key of keys) if (!seen.has(key)) order.push(key);
+  return order;
+}
+function reportMainNumbers(c) {
+  const enabled = reportLayoutOrder(c).filter((key) => /^s[1-7]$/.test(key) && reportSectionOn(c, key));
+  return Object.fromEntries(enabled.map((key, index) => [key, index + 1]));
+}
+function reportSectionTitle(c, key, label) {
+  const number = reportMainNumbers(c)[key];
+  if (!number) return String(label || '');
+  return String(label || '').replace(/^\s*\d+\s*[.·)]?\s*/, `${number}. `);
+}
+function reportSubTitle(c, part, label) {
+  const number = reportMainNumbers(c).s5 || 5;
+  return String(label || '').replace(/^\s*\d+(?:\.\d+)*[.·)]?\s*/, `${number}.${part}. `);
+}
+function reportTocTitles(c) {
+  return reportLayoutOrder(c)
+    .filter((key) => /^s[1-7]$/.test(key) && reportSectionOn(c, key))
+    .map((key) => reportSectionTitle(c, key, REPORT_TEXT.sections[Number(key.slice(1)) - 1]));
+}
+function reportOrderMarker(key) {
+  return `<!--AKIS_REPORT_BLOCK:${key}-->`;
+}
+function orderReportMarkup(markup, c) {
+  const source = String(markup || '');
+  const sorter = typeof window !== 'undefined' && window.__akisReportWorkspace &&
+    typeof window.__akisReportWorkspace.sortMarkedParts === 'function'
+      ? window.__akisReportWorkspace.sortMarkedParts
+      : null;
+  return sorter ? sorter(source, c) : source.replace(/<!--AKIS_REPORT_BLOCK:[a-zA-Z0-9_-]+-->/g, '');
+}
+
 const REPORT_SECTION_GROUPS = [
   {
     title: 'Kapak ve künye',
