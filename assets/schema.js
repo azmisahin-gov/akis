@@ -492,6 +492,10 @@ export function emptyMaterial(over = {}) {
       // Edinme yöntemi/aracı buraya YAZILMAZ (v2.213).
       recordingDevice: '',
       recordingAt: '',
+      // ORTAMDAN GÖZLENEN dosya zamanları (v2.216). Bunlar KAYIT ZAMANI
+      // DEĞİLDİR: kopyalama, dosya sistemi ve saat dilimi ile değişir.
+      // Yalnız edinme sırasında okunan değerlerdir; beyan değildir.
+      fileTimes: { createdAt: '', modifiedAt: '', accessedAt: '' },
       // Eski tek alan (v2.212 ve öncesi). Görüntülemede yalnız gerçek cihaz
       // metni ise kullanılır; edinme metni buraya karışmış kayıtlar yok sayılır.
       deviceInfo: '',
@@ -833,6 +837,11 @@ export function normalizeMaterial(src = {}) {
           ? str(origin.deviceInfo)
           : ''),
       recordingAt: str(origin.recordingAt),
+      fileTimes: {
+        createdAt: str(isObj(origin.fileTimes) ? origin.fileTimes.createdAt : ''),
+        modifiedAt: str(isObj(origin.fileTimes) ? origin.fileTimes.modifiedAt : ''),
+        accessedAt: str(isObj(origin.fileTimes) ? origin.fileTimes.accessedAt : '')
+      },
       deviceInfo: str(origin.deviceInfo),
       // Edinme tutanağı bilinmeyen alanlarıyla birlikte korunur; v2.208.
       acquisition: isObj(origin.acquisition) ? { ...origin.acquisition } : null

@@ -6,12 +6,54 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.215.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.216.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.216 — Delil envanteri ve dosya zamanları
+
+Kullanıcı şunu sordu: *"USB'ye ne zaman kaydedildi, dosya hangi cihazda ne zaman
+oluşturuldu, bunları tutmalı mıyız?"* Cevap üç katmanı ayırmaktı: **kayıt**
+(beyan, genelde bilinmiyor), **ortam** (gözlenen dosya sistemi zamanı) ve
+**edinme** (bizim, kesin). Bu sürüm ikinci katmanı görünür ve dürüst hale
+getiriyor; ayrıca paketteki tüm dosyaları gezilebilir kılıyor.
+
+### DÜZELTME
+
+- **Delil envanteri paneli (Ses görünümü):** paketteki **tüm** dosyalar (ses +
+  ses dışı) klasör ağacıyla listelenir; arama ve çoklu paket seçimi vardır.
+  Ses satırına tıklamak ilgili kaydı açar.
+- **Envanter verisi:** `case.disks[].files` — ad, kaynak yolu, paket yolu,
+  boyut, SHA-256, rol (ses/ses dışı), durum ve materyal bağı. v1 paketlerde de
+  dosya listesi oluşur (disk metadata'sı olmasa bile).
+- **Gözlenen dosya zamanları:** `origin.fileTimes` = oluşturulma/değiştirilme/
+  erişim. Bunlar **kayıt zamanı değildir**; kopyalama ve saat dilimiyle
+  değişebilir. `disk.json` kaynağına saat dilimi/UTC farkı eklenir.
+- **Rapor notu:** köken tablosunun altında "bu zamanlar kayıt zamanı değildir;
+  kayıt cihazı/tarihi yalnız beyan varsa yazılır" açıklaması **üç çıktıda**.
+- Edinim aracı 1.3: her dosya için `createdAt`/`accessedAt` de yazılır.
+
+### KULLANICI NE GÖRECEK
+
+- Ses görünümünde **Delil envanteri** başlığı: kaç dosya, kaçı ses, kaçı diğer.
+- Klasör ağacı flash'taki yapıyla aynı; arama kutusu ile dosya bulunur.
+- Raporda "kayıt tarihi: bilinmiyor" yazıyorsa nedeni açıkça belirtilir; dosya
+  sistemi tarihi kayıt tarihi gibi sunulmaz.
+
+### KORUYAN TESTLER
+
+- `birim` **[82]** (envanter sayıları, ağaç kurulumu/sıralama, dosya zamanları,
+  şema koruması).
+- `rapor` **Senaryo 14** (not üç çıktıda aynı).
+- `tasarim` **[2bk]** (panel, ağaç, filtre, kayıt bağlantısı, token/sarma).
+
+### DÜRÜST SINIR
+
+Dosya sistemi zamanları **gözlem**dir; kayıt anını kanıtlamaz. Gömülü metadata
+(MP4/ID3) okuma bu sürümde **yok**; sonraki adım.
 
 ## v2.215 — Paket v2: disk yapısı ve disk.json
 

@@ -127,6 +127,7 @@ const EXPOSE = [
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
   'acquisitionToolFileContent',
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
+  'fileTimesFromEntry', 'inventoryCounts', 'inventoryTree',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3971,6 +3972,49 @@ console.log('\n== [81] Paket v2: kaynak yolu, disk.json, disk envanteri (v2.215)
     // Önizleme: eklenecek disk sayısı
     const cmp = T.compareCasesForTest(T.emptyCaseForTest({ id: 'cE' }), cB);
     eq('önizleme disk sayısı', cmp.disks.added, 1);
+  }
+}
+
+console.log('\n== [82] Envanter ağacı ve gözlenen dosya zamanları (v2.216)');
+{
+  const has = typeof T.inventoryTree === 'function' && typeof T.inventoryCounts === 'function' && typeof T.fileTimesFromEntry === 'function';
+  eq('envanter fonksiyonları tanımlı', has, true);
+  if (has) {
+    const files = [
+      { name: 'a.wav', relPath: 'DCIM/Voice/a.wav', sizeBytes: 1000, role: 'audio', materialId: 'm1' },
+      { name: 'b.txt', relPath: 'Notes/b.txt', sizeBytes: 10, role: 'other' },
+      { name: 'c.mp3', relPath: 'Music/c.mp3', sizeBytes: 2000, role: 'audio', materialId: 'm2' },
+      { name: 'kok.txt', relPath: 'kok.txt', sizeBytes: 5, role: 'other' }
+    ];
+    const counts = T.inventoryCounts(files);
+    eq('envanter sayıları', [counts.total, counts.audio, counts.other, counts.bytes].join(','), '4,2,2,3015');
+    eq('boş liste sayıları', T.inventoryCounts([]).total, 0);
+
+    const tree = T.inventoryTree(files);
+    eq('kök dizinler sıralı', tree.dirs.map((d) => d.name).join(','), 'DCIM,Music,Notes');
+    eq('alt dizin', tree.dirs[0].dirs.map((d) => d.name).join(','), 'Voice');
+    eq('kök dosya', tree.files.map((f) => f.base).join(','), 'kok.txt');
+    eq('dizin dosyası', tree.dirs[0].dirs[0].files.map((f) => f.base).join(','), 'a.wav');
+    eq('dosya yolu korunur', tree.dirs[0].dirs[0].files[0].path, 'DCIM/Voice/a.wav');
+    eq('ses kaydı bağı', tree.dirs[0].dirs[0].files[0].materialId, 'm1');
+
+    // Yol yoksa packagePath, o da yoksa name kullanılır.
+    const t2 = T.inventoryTree([{ name: 'x.wav', packagePath: 'icerik/SN/x.wav', role: 'audio' }]);
+    eq('packagePath yedeği', t2.dirs[0].name, 'icerik');
+
+    // Gözlenen dosya zamanları: eksik alan boş kalır (uydurulmaz).
+    const ft = T.fileTimesFromEntry({ createdAt: '2026-11-21T10:00:00+03:00', modifiedAt: '2026-11-20T09:00:00+03:00' });
+    eq('createdAt okunur', ft.createdAt, '2026-11-21T10:00:00+03:00');
+    eq('accessedAt yoksa boş', ft.accessedAt, '');
+    eq('boş girdi güvenli', T.fileTimesFromEntry(null).modifiedAt, '');
+
+    // Şema: dosya zamanları korunur (beyaz liste tuzağı).
+    const nm = T.emptyMaterialForTest({ id: 'm9', fileName: 'a.wav' });
+    const norm = __schemaMod.normalizeMaterial({
+      ...nm,
+      origin: { mediumType: 'usb', fileTimes: { createdAt: 'C', modifiedAt: 'M', accessedAt: 'A' } }
+    });
+    eq('şema dosya zamanlarını korur', `${norm.origin.fileTimes.createdAt}/${norm.origin.fileTimes.modifiedAt}/${norm.origin.fileTimes.accessedAt}`, 'C/M/A');
   }
 }
 

@@ -393,7 +393,11 @@ attributes disk
         packagePath = ($contentRoot + '/' + $relPosix)
         sizeBytes   = [int64]$f.Length
         sha256      = $hash
+        # Dosya sistemi zamanları GÖZLEMDİR; kayıt zamanı değildir. Yerel saat,
+        # ISO 8601 offset ile yazılır (FAT/exFAT saat dilimi taşımaz).
+        createdAt   = $f.CreationTime.ToString('o')
         modifiedAt  = $f.LastWriteTime.ToString('o')
+        accessedAt  = $f.LastAccessTime.ToString('o')
       })
     Write-Log ("[$n/$($files.Count)] $relPosix | SHA-256 $hash")
   }
@@ -520,6 +524,10 @@ attributes disk
     source     = [ordered]@{
       type = $(if ($Simulate) { 'simulate' } else { 'device' })
       path = $source
+      # Dosya sistemi zaman damgaları yerel saat taşır; hangi dilimde
+      # okunduğu kayda geçer (FAT/exFAT saat dilimi saklamaz).
+      timeZone = [string](Get-TimeZone).Id
+      utcOffsetMinutes = [int][System.TimeZoneInfo]::Local.GetUtcOffset((Get-Date)).TotalMinutes
     }
     device     = $deviceMeta
     partitions = @($partitionMeta)

@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.215';
+} from './schema.js?v=2.216';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.215';
+const APP_VERSION = '2.216';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -199,6 +199,9 @@ const REPORT_TEXT = {
   originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'TESLİM YERİ', 'KAYIT CİHAZI', 'KAYIT TARİHİ'],
   originUnknown: 'bilinmiyor',
   originEmpty: '—',
+  // v2.216: gözlenen dosya zamanları KAYIT zamanı değildir; raporda açıkça yazar.
+  originFileTimeNote:
+    'Ortamdaki dosya zamanları (oluşturulma/değiştirilme/erişim) yalnız edinme sırasında okunan gözlemlerdir; kayıt zamanı değildir. Kopyalama, dosya sistemi ve saat dilimi bu değerleri değiştirebilir. Kayıt cihazı ve kayıt tarihi yalnız beyan varsa yazılır; yoksa “bilinmiyor” yazar.',
   // DELİL EDİNME (v2.208): yalnız delil paketinden gelen kayıtlar için.
   // v2.212: metin ürün kimliği taşımaz ("uygulama", marka adı yok). Cihaz
   // bilgisi edinme tutanağındaki BEYANDIR; cihaz bu ortamda okunmaz.
@@ -303,7 +306,10 @@ function fmtShort(s) {
 }
 function fmtSize(n) {
   if (!Number.isFinite(n)) return '—';
-  return n < 1024 * 1024 ? `${(n / 1024).toFixed(0)} KB` : `${(n / 1024 / 1024).toFixed(2)} MB`;
+  // Küçük dosya "0 KB" görünmesin: 1 KB altı bayt olarak yazılır.
+  if (n < 1024) return `${Math.round(n)} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(n < 10 * 1024 ? 1 : 0)} KB`;
+  return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
 function dateToday() {
   return new Date().toISOString().slice(0, 10);
@@ -1637,6 +1643,7 @@ function renderMaterialList() {
   const mats = c.materials || [];
   $('#audioListLabel').textContent = `${mats.length} kayıt`;
   renderQueue();
+  renderDelilInventory();
   root.classList.toggle('empty-list', !mats.length);
   if (!mats.length) {
     root.innerHTML =
@@ -2004,6 +2011,91 @@ async function renderAudioList() {
   if (!c) return;
   renderMaterialList();
   await renderMaterialDetail();
+}
+// ===== DELİL ENVANTERİ (v2.216) =========================================
+// Paket içindeki TÜM dosyalar (ses + ses dışı) disk yapısıyla gösterilir.
+// Ses satırına tıklamak ilgili kaydı açar. Filtre yalnız oturumluktur.
+const invState = { packIndex: 0, filter: '', builtFor: '' };
+function invFileRowHtml(f) {
+  const meta = `${fmtSize(Number(f.sizeBytes) || 0)} · ${f.role === 'audio' ? 'ses' : 'ses dışı'}`;
+  const title = esc(f.path || f.base || f.name || '');
+  if (f.role === 'audio' && f.materialId) {
+    return `<button type="button" class="di-file" data-inv-material="${esc(f.materialId)}" title="${title}"><span class="di-name">${esc(f.base || f.name)}</span><span class="di-meta">${esc(meta)}</span></button>`;
+  }
+  return `<div class="di-file is-other" title="${title}"><span class="di-name">${esc(f.base || f.name)}</span><span class="di-meta">${esc(meta)}</span></div>`;
+}
+function invTreeHtml(node) {
+  const dirs = node.dirs
+    .map((d) => `<li class="di-dir"><div class="di-dir-name">${esc(d.name)}/</div><ul>${invTreeHtml(d)}</ul></li>`)
+    .join('');
+  const files = node.files.map((f) => `<li class="di-item">${invFileRowHtml(f)}</li>`).join('');
+  return dirs + files;
+}
+function invCurrentPack() {
+  const c = currentCase();
+  const packs = c && Array.isArray(c.disks) ? c.disks : [];
+  if (!packs.length) return null;
+  if (invState.packIndex >= packs.length) invState.packIndex = 0;
+  return packs[invState.packIndex];
+}
+function renderInvTree() {
+  const pack = invCurrentPack();
+  const host = $('#invTree');
+  const note = $('#invNote');
+  if (!pack || !host) return;
+  const q = invState.filter.trim();
+  const ql = trLowerCase(q);
+  const all = Array.isArray(pack.files) ? pack.files : [];
+  const shown = ql ? all.filter((f) => trLowerCase(`${f.relPath || ''} ${f.name || ''}`).includes(ql)) : all;
+  host.innerHTML = invTreeHtml(inventoryTree(shown));
+  if (note) note.textContent = ql ? `${shown.length} / ${all.length} dosya gösteriliyor.` : '';
+}
+function renderDelilInventory() {
+  const box = $('#delilInventory');
+  if (!box) return;
+  const pack = invCurrentPack();
+  if (!pack) {
+    box.hidden = true;
+    box.open = false;
+    invState.builtFor = '';
+    return;
+  }
+  box.hidden = false;
+  const counts = inventoryCounts(pack.files);
+  const sum = $('#delilInventorySummary');
+  if (sum) sum.textContent = `${counts.total} dosya · ${counts.audio} ses · ${counts.other} diğer · ${fmtSize(counts.bytes)}`;
+  const c = currentCase();
+  const packs = (c && c.disks) || [];
+  const builtKey = `${pack.id}|${packs.length}`;
+  if (invState.builtFor === builtKey) {
+    renderInvTree();
+    return;
+  }
+  invState.builtFor = builtKey;
+  const dev = pack.device || {};
+  const packOptions =
+    packs.length > 1
+      ? `<select id="invPackSelect" class="di-select" aria-label="Delil paketi">${packs
+          .map((p, i) => `<option value="${i}" ${i === invState.packIndex ? 'selected' : ''}>${esc(p.packName || 'Paket ' + (i + 1))}</option>`)
+          .join('')}</select>`
+      : '';
+  const meta = [
+    pack.capturedAt ? `Alınma: ${esc(niceDate(String(pack.capturedAt).slice(0, 10)))}` : '',
+    dev.serial ? `Seri: ${esc(dev.serial)}` : '',
+    dev.label ? `Etiket: ${esc(dev.label)}` : '',
+    pack.content && pack.content.root ? `Kök: ${esc(pack.content.root)}` : ''
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const host = $('#delilInventoryBody');
+  if (!host) return;
+  host.innerHTML =
+    `<div class="di-head">${packOptions}` +
+    `<input id="invFilter" class="di-filter" type="search" placeholder="Yol veya dosya adı ara" value="${esc(invState.filter)}" aria-label="Envanterde ara">` +
+    `<span class="di-note" id="invNote"></span></div>` +
+    (meta ? `<div class="di-meta-line">${meta}</div>` : '') +
+    `<ul class="di-tree" id="invTree"></ul>`;
+  renderInvTree();
 }
 // Waveform rendering. Peaks are computed once per material and cached on the
 // material object, so re-rendering the list does not re-decode the audio.
@@ -7523,6 +7615,54 @@ function validateDiskDoc(doc) {
 function delilFilePath(f) {
   return String((f && (f.packagePath || f.relPath)) || '');
 }
+// ORTAMDAN gözlenen dosya zamanları. KAYIT ZAMANI DEĞİLDİR; yalnız edinme
+// sırasında okunan değerlerdir. Kopyalama/saat dilimi ile değişebilir.
+function fileTimesFromEntry(f) {
+  return {
+    createdAt: String((f && f.createdAt) || ''),
+    modifiedAt: String((f && f.modifiedAt) || ''),
+    accessedAt: String((f && f.accessedAt) || '')
+  };
+}
+// Paket içindeki TÜM dosyaların özeti (ses + ses dışı).
+function inventoryCounts(files) {
+  const out = { total: 0, audio: 0, other: 0, bytes: 0 };
+  for (const f of files || []) {
+    out.total++;
+    if (f && f.role === 'audio') out.audio++;
+    else out.other++;
+    out.bytes += Number(f && f.sizeBytes) || 0;
+  }
+  return out;
+}
+// Düz dosya listesinden dizin ağacı: diskteki yapıyı olduğu gibi gösterir.
+function inventoryTree(files) {
+  const root = { name: '', path: '', dirs: [], files: [] };
+  const map = new Map([['', root]]);
+  const ensure = (p) => {
+    if (map.has(p)) return map.get(p);
+    const i = p.lastIndexOf('/');
+    const parent = ensure(i < 0 ? '' : p.slice(0, i));
+    const node = { name: i < 0 ? p : p.slice(i + 1), path: p, dirs: [], files: [] };
+    parent.dirs.push(node);
+    map.set(p, node);
+    return node;
+  };
+  for (const f of files || []) {
+    const p = String((f && (f.relPath || f.packagePath || f.name)) || '');
+    if (!p) continue;
+    const i = p.lastIndexOf('/');
+    const node = ensure(i < 0 ? '' : p.slice(0, i));
+    node.files.push({ ...f, path: p, base: i < 0 ? p : p.slice(i + 1) });
+  }
+  const sortNode = (n) => {
+    n.dirs.sort((a, b) => a.name.localeCompare(b.name, 'tr'));
+    n.files.sort((a, b) => a.base.localeCompare(b.base, 'tr'));
+    n.dirs.forEach(sortNode);
+  };
+  sortNode(root);
+  return root;
+}
 // Şema doğrulaması: eksik/yanlış paket sessizce alınmaz. Dönüş: hata metni
 // veya null (geçerli).
 function validateDelilPack(pack) {
@@ -7932,19 +8072,35 @@ async function importDelilPack(file) {
       showToast('disk.json okunamadı: ' + (e && e.message ? e.message : e), true);
     }
   }
+  // PAKET ENVANTERİ: disk.json varsa disk/bölüm/birim; yoksa (v1) yalnız dosya
+  // listesi. Her paket TEK kayıt; aynı paket yeniden yüklenirse çoğalmaz.
   let diskId = '';
-  if (diskDoc) {
+  let invRec = null;
+  {
     c.disks = Array.isArray(c.disks) ? c.disks : [];
-    const dSerial = (diskDoc.device && diskDoc.device.serial) || '';
+    const capturedAt = (diskDoc && diskDoc.capturedAt) || pack.acquiredAt || '';
+    const dev = (diskDoc && diskDoc.device) || pack.device || {};
+    const serial = (dev && dev.serial) || '';
     const same = c.disks.find(
-      (d) => d.schema === diskDoc.schema && d.capturedAt === diskDoc.capturedAt && ((d.device && d.device.serial) || '') === dSerial
+      (d) => (d.capturedAt || '') === capturedAt && ((d.device && d.device.serial) || '') === serial
     );
     if (same) {
+      invRec = same;
       diskId = same.id;
     } else {
-      const rec = { id: uid(), ...diskDoc, packName: file.name };
-      c.disks.push(rec);
-      diskId = rec.id;
+      invRec = {
+        id: uid(),
+        packName: file.name,
+        capturedAt,
+        source: (diskDoc && diskDoc.source) || { type: 'legacy' },
+        device: dev,
+        partitions: (diskDoc && diskDoc.partitions) || [],
+        volumes: (diskDoc && diskDoc.volumes) || [],
+        content: (diskDoc && diskDoc.content) || { root: '', directories: [], fileCount: 0 },
+        files: []
+      };
+      c.disks.push(invRec);
+      diskId = invRec.id;
     }
   }
   const mp = manifestPath.replace(/\\/g, '/');
@@ -8008,6 +8164,7 @@ async function importDelilPack(file) {
     const f = r.file;
     if (r.state === 'duplicate' && r.existing) {
       const ex = r.existing;
+      r.material = ex;
       ex.origin = ex.origin || {};
       if (r.packageState === 'verified') {
         const filled = [];
@@ -8046,6 +8203,13 @@ async function importDelilPack(file) {
           ex.origin.acquisition.packagePath = f.packagePath;
           filled.push('paket yolu');
         }
+        if (!ex.origin.fileTimes || !ex.origin.fileTimes.modifiedAt) {
+          const ft = fileTimesFromEntry(f);
+          if (ft.modifiedAt || ft.createdAt || ft.accessedAt) {
+            ex.origin.fileTimes = { ...(ex.origin.fileTimes || {}), ...ft };
+            filled.push('dosya zamanları');
+          }
+        }
         logEvent(
           ex,
           filled.length ? 'Delil paketinden edinme bilgisi işlendi' : 'Delil paketinde aynı dosya görüldü',
@@ -8080,6 +8244,7 @@ async function importDelilPack(file) {
       log: [],
       origin: {
         ...origin,
+        fileTimes: fileTimesFromEntry(f),
         acquisition: {
           ...origin.acquisition,
           hashState: r.state,
@@ -8092,6 +8257,7 @@ async function importDelilPack(file) {
       }
     };
     c.materials.push(m);
+    r.material = m;
     logEvent(
       m,
       'Delil paketinden alındı',
@@ -8111,6 +8277,37 @@ async function importDelilPack(file) {
     await storeBlob(blobKey(c, m), r.blob);
     objectUrls.set(blobKey(c, m), URL.createObjectURL(r.blob));
     added++;
+  }
+  // Envanter dosya listesi (ses + ses dışı) ve dizinler.
+  if (invRec) {
+    const byFile = new Map(results.map((r) => [r.file, r]));
+    const invFiles = (pack.files || []).map((f) => {
+      const r = byFile.get(f);
+      return {
+        name: f.name || '',
+        relPath: f.relPath || '',
+        packagePath: f.packagePath || '',
+        sizeBytes: Number(f.sizeBytes) || 0,
+        sha256: f.sha256 || '',
+        role: isAudioFileName(f.name) ? 'audio' : 'other',
+        state: r ? r.state : '',
+        materialId: r && r.material ? r.material.id : ''
+      };
+    });
+    invRec.files = invFiles;
+    invRec.content = { ...(invRec.content || {}), fileCount: invFiles.length };
+    if (!Array.isArray(invRec.content.directories) || !invRec.content.directories.length) {
+      const dirSet = new Set();
+      for (const f of invFiles) {
+        let p = String(f.relPath || '');
+        let i;
+        while ((i = p.lastIndexOf('/')) > 0) {
+          p = p.slice(0, i);
+          dirSet.add(p);
+        }
+      }
+      invRec.content.directories = [...dirSet].sort();
+    }
   }
   persist();
   renderOverview();
@@ -9921,7 +10118,7 @@ function renderReport() {
   const invRows = inventoryRows(c);
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows = originRows(c);
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
+  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
   const acqRows = acquisitionRows(c);
   if (acqRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -10119,6 +10316,7 @@ function docxXml(c) {
     widths: [1100, 900, 900, 900, 900, 1000, 1100, 1200],
     header: true
   });
+  body += wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true });
   const dAcq = acquisitionRows(c);
   if (dAcq.length) {
     body += headingXml(REPORT_TEXT.acqHeading);
@@ -10489,6 +10687,7 @@ async function makeUdf() {
       { header: true }
     )
   );
+  el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   const uAcq = acquisitionRows(c);
   if (uAcq.length) {
     el.push(h(REPORT_TEXT.acqHeading));
@@ -11760,6 +11959,24 @@ function setupEvents() {
   const delilInput = $('#importDelilInput');
   $('#importDelilBtn')?.addEventListener('click', () => delilInput?.click());
   $('#downloadToolBtn')?.addEventListener('click', downloadAcquisitionTool);
+  // Delil envanteri (v2.216): ses satırı kaydı açar; filtre/paket seçimi.
+  $('#view-audio')?.addEventListener('click', (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest('[data-inv-material]') : null;
+    if (!btn) return;
+    e.preventDefault();
+    setActiveMaterial(btn.dataset.invMaterial);
+  });
+  $('#view-audio')?.addEventListener('change', (e) => {
+    if (!e.target || e.target.id !== 'invPackSelect') return;
+    invState.packIndex = Number(e.target.value) || 0;
+    invState.builtFor = '';
+    renderDelilInventory();
+  });
+  $('#view-audio')?.addEventListener('input', (e) => {
+    if (!e.target || e.target.id !== 'invFilter') return;
+    invState.filter = e.target.value;
+    renderInvTree();
+  });
   delilInput?.addEventListener('change', async (e) => {
     const f = e.target.files && e.target.files[0];
     e.target.value = '';
@@ -13870,6 +14087,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.216': {
+    title: 'Delil envanteri ve dosya zamanları',
+    body:
+      'Ses görünümünde Delil envanteri paneli paketteki TÜM dosyaları klasör ' +
+      'ağacıyla gösterir; arama vardır, ses satırı kaydı açar. Her dosyanın ' +
+      'oluşturulma/değiştirilme/erişim zamanı kayda geçer. Bu zamanlar kayıt ' +
+      'zamanı değildir: kopyalama ve saat dilimiyle değişir; rapor bunu yazar. ' +
+      'Kayıt cihazı/tarihi yalnız beyan varsa dolar, yoksa bilinmiyor kalır.'
+  },
   '2.215': {
     title: 'Paket v2: disk yapısı korunuyor',
     body:

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.215.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.216.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4719,4 +4719,59 @@ yalnız yapı korunuyor.
 
 **v2.216 — Envanter arayüzü:** `case.disks[]` ağacı, dizin/filtre, paket özeti;
 "Elle ekle (paketsiz)" ikincil. Rapor bölümü ayrı sürüm.
+
+## YENİ OTURUM DEVRİ (v2.216) — Delil envanteri ve dosya zamanları
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.216** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1251 birim + 482 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Gömülü metadata (MP4/ID3) okuma; raporda dosya zamanı sütunu |
+
+### ÜÇ KATMAN (değişmez kavramsal çerçeve)
+
+| Katman | Alan | Anlamı |
+|---|---|---|
+| **Kayıt** | `origin.recordingDevice`, `origin.recordingAt` | Sesin oluştuğu cihaz/an. **Beyan**; genelde bilinmiyor. |
+| **Ortam** | `origin.fileTimes {createdAt, modifiedAt, accessedAt}` | USB'deki dosya sistemi zamanı. **Gözlem**; kayıt zamanı DEĞİL. |
+| **Edinme** | `acquisition.acquiredAt` + `sha256` | Bizim aldığımız an; kesin. |
+
+### Ne yapıldı
+
+- **Delil envanteri paneli:** Ses görünümünde katlanır `#delilInventory`; paketteki
+  TÜM dosyalar (ses + ses dışı) klasör ağacıyla. Arama (`#invFilter`), çoklu paket
+  seçimi (`#invPackSelect`), ses satırı → `setActiveMaterial`.
+- **Envanter verisi:** `case.disks[].files` = `{name, relPath, packagePath,
+  sizeBytes, sha256, role, state, materialId}`. v1 paketlerde de oluşur.
+- **Dosya zamanları:** `origin.fileTimes`; edinimde okunur, `disk.json`
+  `source.timeZone/utcOffsetMinutes` taşır.
+- **Rapor notu:** `REPORT_TEXT.originFileTimeNote` — köken tablosunun altında,
+  üç çıktıda aynı.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Dosya sistemi zamanı KAYIT ZAMANI değildir.** `KAYIT TARİHİ` sütununa
+   yazılmaz; yalnız `origin.fileTimes` (gözlem) olarak saklanır ve rapor notuyla
+   sınırı söylenir.
+2. **Envanter tek kaynak:** `inventoryTree` + `inventoryCounts`. Yeni bir görünüm
+   eklerken bunları kullanın.
+3. **Envanter yalnız oturumluk filtre tutar** (`invState.filter`); kayda yazılmaz.
+4. **Ses satırı kaydı açar**, yeni kayıt oluşturmaz.
+5. **`case.disks[].files` paket gerçeğidir**; materyal silinse bile envanterde
+   dosya görünür (rol/ses, materyal bağı boşalabilir).
+6. **Rapor notu kaldırılamaz:** "gözlem, kayıt zamanı değil" açıklaması üç
+   çıktıda bulunmalı (`rapor` Senaryo 14 denetler).
+
+### Dürüst sınır
+
+Dosya sistemi zamanları **gözlem**dir; kayıt anını kanıtlamaz. Gömülü metadata
+(MP4 `creation_time`, ID3 `TDRC`, WAV `bext`) okuma **yapılmadı**; sıradaki aday.
+
+### Sıradaki iş
+
+**v2.217 — Gömülü metadata (cihaz beyanı):** MP4/M4A `creation_time`, ID3
+`TDRC/TDRL`, WAV `bext`/`ICRD`; **"cihaz beyanı"** etiketiyle, doğrulanmış gerçek
+gibi sunulmadan. Sonra raporda ayrı sütun/not.
 

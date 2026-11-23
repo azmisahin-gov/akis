@@ -1628,5 +1628,19 @@ console.log('\n[2bj] Paket v2: kaynak dizin yapısı ve disk.json (v2.215)');
   check('yardım paket yapısını anar', /icerik\//.test(html) && /disk\.json/.test(html));
 }
 
+console.log('\n[2bk] Delil envanteri arayüzü (v2.216)');
+{
+  const appJs = read('assets/app.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('envanter bloğu HTML\'de', /id="delilInventory"/.test(html) && /id="delilInventoryBody"/.test(html));
+  check('envanter çizimi tek kaynak', /function renderDelilInventory\(/.test(appJs) && /function inventoryTree\(/.test(appJs));
+  check('ses satırı kaydı açar', /data-inv-material/.test(appJs) && /setActiveMaterial\(btn\.dataset\.invMaterial\)/.test(appJs));
+  check('filtre ve paket seçimi', /id="invFilter"/.test(appJs) && /id="invPackSelect"/.test(appJs));
+  check('envanter stili token kullanır', /\.di-tree[\s\S]{0,400}var\(--ink/.test(layer));
+  check('envanter kırpmaz (sarar)', /\.di-name\s*\{[^}]*overflow-wrap:\s*anywhere/.test(layer));
+  check('yardım envanteri anar', /Delil envanteri/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

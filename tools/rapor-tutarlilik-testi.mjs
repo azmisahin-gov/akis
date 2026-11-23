@@ -529,6 +529,8 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208, v2.212)');
   checkShared('envanter örnekleme sütunu', 'ÖRNEKLEME HIZI', H, U, D);
   checkShared('envanterde biçim WAV', 'WAV', H, U, D);
   checkShared('envanterde örnekleme', '16.000 Hz', H, U, D);
+  // v2.216 — gözlenen dosya zamanı notu üç çıktıda aynı.
+  checkShared('dosya zamanı notu', REPORT_TEXT.originFileTimeNote, H, U, D);
   // v2.212 — sürücü harfi kanıt kimliği değildir; üç çıktıda da YOK.
   check('sürücü harfi raporda yok (HTML)', !/\bE:/.test(H), 'E: bulundu');
   check('sürücü harfi raporda yok (UDF)', !/\bE:/.test(U), 'E: bulundu');

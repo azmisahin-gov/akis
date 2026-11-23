@@ -2945,3 +2945,95 @@ input::placeholder, textarea::placeholder {
   .delil-table th,
   .delil-table td { padding: 5px 6px; }
 }
+
+/* ===== v2.216 — Delil envanteri (dosya ağacı) ========================== */
+.delil-inventory {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+.delil-inventory > summary {
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+  font-weight: 600;
+  color: var(--ink);
+  list-style-position: inside;
+}
+.delil-inventory > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.di-title { font-size: var(--fs-sm); }
+.di-sub { color: var(--ink-3); font-weight: 400; font-size: var(--fs-xs); }
+.di-body { margin-top: 10px; display: grid; gap: 8px; }
+.di-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.di-select,
+.di-filter {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-xs);
+}
+.di-filter { flex: 1 1 220px; min-width: 180px; }
+.di-select { flex: 0 1 260px; }
+.di-note { color: var(--ink-3); font-size: var(--fs-2xs); }
+.di-meta-line {
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  overflow-wrap: anywhere;
+}
+.di-tree,
+.di-tree ul {
+  list-style: none;
+  margin: 0;
+}
+.di-tree ul { padding-left: 14px; }
+.di-tree {
+  max-height: 320px;
+  overflow: auto;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+.di-dir-name {
+  color: var(--ink-2);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 2px 0;
+  overflow-wrap: anywhere;
+}
+.di-file {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  align-items: baseline;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 3px 6px;
+  border-radius: 6px;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+}
+.di-file:hover { background: var(--surface-2); }
+.di-file.is-other { cursor: default; color: var(--ink-3); }
+.di-file.is-other:hover { background: none; }
+.di-name { overflow-wrap: anywhere; }
+.di-meta { color: var(--ink-3); font-size: var(--fs-2xs); }

@@ -1,4 +1,4 @@
-# Özellikler (v2.215 — mevcut durum)
+# Özellikler (v2.216 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -680,6 +680,13 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
   Kök = seri no (yoksa etiket/model); klasör kaynağında klasör adı. `relPath`
   kaynak yolu, `packagePath` paket içi yoldur. Varsayılan **tüm dosyalar**;
   `-AudioOnly` yalnız ses. v1 paketler açılmaya devam eder.
+- **Delil envanteri (v2.216):** Ses görünümünde katlanır **Delil envanteri** paneli
+  paketteki TÜM dosyaları (ses + ses dışı) klasör ağacıyla gösterir; arama ve
+  paket seçimi vardır. Ses satırı ilgili kaydı açar. Envanter `case.disks[].files`
+  alanında tutulur (ad, yol, boyut, SHA-256, rol, materyal bağı).
+- **Gözlenen dosya zamanları (v2.216):** her dosyanın oluşturulma/değiştirilme/
+  erişim zamanı `origin.fileTimes` alanına yazılır. Bunlar **kayıt zamanı
+  değildir**; rapor köken tablosunun altında bu sınırı yazar.
 - **`disk.json` (v2.215):** disk/bölüm/birim metadata'sı (offset, boyut, tür,
   dosya sistemi, etiket, birim seri no) + dizin listesi. **Raw sektör/boş alan
   yok**; imaj değildir. AKİS `case.disks[]` alanında saklar; materyal
