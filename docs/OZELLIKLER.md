@@ -1,4 +1,4 @@
-# Özellikler (v2.226 — mevcut durum)
+# Özellikler (v2.227 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -755,3 +755,14 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
   ortamda okunmaz. Tier 1 çıktısı "adli imaj" değil, "belgelenmiş kopya"dır.
 - Kontrol edilmemiş deşifreyi doğrulanmış gibi göstermez.
 - Yapılmayan incelemeyi rapora yazmaz.
+
+
+## Rapor çalışma alanı (v2.227)
+
+- Üç bölgeli ekran: solda rapor iskeleti, ortada A4 oranlı önizleme, sağda hazırlık kontrolü ve düzenleme panelleri.
+- Hazır rapor profilleri korunur; bölümler yukarı/aşağı düğmeleriyle erişilebilir şekilde sıralanır.
+- Kapak, dosya künyesi, içindekiler, okuma metni ve imza sabit konumda tutulur; ana rapor gövdesi ortak sıraya göre HTML, DOCX ve UDF'e aktarılır.
+- Açık ana bölümler 1…N biçiminde yeniden numaralandırılır; içindekiler aynı kaynaktan üretilir.
+- EK-1…EK-7 ayrı yönetilir; EK-4 isteğe bağlıdır. Özel ek eklenebilir; başlık, metin ve not saklanır.
+- Son 10 rapor revizyonu çalışma dosyasında saklanır; alan grupları bazında karşılaştırılabilir ve önceki metin/rapor düzeni geri yüklenebilir.
+- A4 önizleme, 210 × 297 mm kâğıt oranını kullanır. Ekrandaki sayfa sınırları yaklaşık kılavuzdur; kesin sayfalama yazdırma/PDF motorunda oluşur.
