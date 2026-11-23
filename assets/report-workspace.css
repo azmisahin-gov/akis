@@ -167,7 +167,8 @@
   box-sizing: border-box;
   width: 100%;
   max-width: 210mm;
-  min-height: 297mm;
+  min-height: 0;
+  aspect-ratio: 210 / 297;
   margin: 0 auto 18px;
   padding: 18mm 17mm;
   background: var(--paper, #fff);
