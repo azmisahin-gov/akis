@@ -6,12 +6,67 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.212.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.213.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.213 — Delil tabloları ayrıştı, Edinim 1.1
+
+Kullanıcı aracı Windows'ta denedi ve rapor tablolarını inceledi. Üç sınıf sorun
+vardı: **(1)** edinme aracı kullanımı zordu, `E` yazınca hata veriyordu ve
+Türkçe karakterler bozuktu; **(2)** envanter tablosu sütunları birleşikti ve
+delil paketinden gelen kayıtlarda biçim/kanal/örnekleme **“bilinmiyor”**
+görünüyordu; **(3)** köken tablosunda kayıt cihazı/tarihi ayrılmamış, oraya
+**edinme yöntemi** yazılmıştı; edinme tablosunda cihaz ve etiket karışmıştı.
+
+### DÜZELTME
+
+- **Edinim 1.1 (araç):** soru-cevap sihirbazı — kaynak, hedef, operatör, teslim
+  zinciri; **özet + onay**; ilerleme çubuğu; sonuç özeti. Sürücü `E`, `E:` veya
+  `E:\` yazılabilir (normalize edilir). Dosya **UTF-8 BOM** ile kaydedilir
+  (Windows PowerShell 5.1 Türkçeyi doğru okur). Hata olursa `İŞLEM DURDURULDU`
+  yazar, yığın izi basmaz.
+- **Envanter tablosu 7 ayrı sütun:** DOSYA ADI · DOSYA BİÇİMİ · DOSYA BOYUTU ·
+  SÜRE · SES KANALI · ÖRNEKLEME HIZI · SHA-256. Biçim **uzantıdan** okunur
+  (MP3/WAV/M4A…), kanal ve örnekleme hızı dosya çözülerek **ölçülür**. Tek
+  kaynak `inventoryRows` (HTML/DOCX/UDF aynı hücreler).
+- **Köken tablosu 8 sütun:** KAYIT CİHAZI ve KAYIT TARİHİ **ayrı**; bilinmiyorsa
+  **“bilinmiyor”**. Edinme yöntemi/aracı bu alanlara **artık yazılmaz**. Eski
+  kayıtlardaki gerçek cihaz metni yeni alana göç eder; edinme metni yok sayılır.
+- **Edinme tablosu 9 sütun:** CİHAZ ve ETİKET **ayrı**.
+- **Alet adı:** `Edinim v1.1` (ürün adı yazılmaz). Yöntem etiketi
+  “Mantıksal kopya”.
+- **Delil paketinden gelen kayıtlarda** biçim/kanal/örnekleme artık dolu:
+  dosya adı `audioTech`'e geçirilir; MIME `audio/*` olsa da uzantı kullanılır.
+
+### KULLANICI NE GÖRECEK
+
+- Envanter tablosu, örnekteki gibi **her bilgi ayrı sütunda**; “bilinmiyor”
+  yalnız gerçekten ölçülemeyen alanda yazar.
+- Raporda **kayıt cihazı** ve **kayıt tarihi** ayrı sütun; bilinmiyorsa
+  “bilinmiyor”. Edinme yöntemi artık buraya karışmaz.
+- Edinme tablosunda **cihaz** ve **etiket** ayrı.
+- ARAÇ sütununda **Edinim v1.1**.
+- Edinim aracı sorularla ilerler; `E` yazmak yeterlidir; Türkçe düzgün görünür.
+
+### KORUYAN TESTLER
+
+- `birim` **[78]** (9 sütunlu edinme satırı, etiket sütunu, “Edinim v1.1”,
+  yöntemin cihaz alanına yazılmaması, 8 sütunlu köken, 7 sütunlu envanter,
+  biçim/hz biçimlendirme) ve **[79]** (köken koruma, birleştirme).
+- `rapor` **Senaryo 14** (üç çıktıda etiket, “bilinmiyor”, envanter sütunları,
+  “Edinim v1.1”) ve **Senaryo 15** (ürün kimliği yok).
+- `tasarim` **[2bh]/[2bi]** (sütunlar, ayrı alanlar, sihirbaz, `E` normalizasyonu,
+  UTF-8 BOM).
+
+### DÜRÜST SINIR
+
+`edinme.ps1` bu ortamda (Linux, USB yok, `pwsh` yok) **çalıştırılmadı**; yalnız
+şema/import/rapor tarafı otomatik sınandı. Windows'ta `-Simulate` ve gerçek
+USB'de denenmelidir.
 
 ## v2.212 — Delil teslim zinciri: teslim eden, operatör ve alet
 

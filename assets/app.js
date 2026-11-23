@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.212';
+} from './schema.js?v=2.213';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.212';
+const APP_VERSION = '2.213';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -174,7 +174,7 @@ const REPORT_TEXT = {
     'Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
   attachmentsText:
     'Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.',
-  inventoryHeaders: ['DOSYA ADI', 'BİÇİM / BOYUT', 'SÜRE', 'KANAL / ÖRNEKLEME', 'SHA-256 ÖZETİ'],
+  inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   speakerIntro:
     'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir; bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
@@ -196,7 +196,8 @@ const REPORT_TEXT = {
   originHeading: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ',
   originIntro:
     'Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler bilirkişi beyanına ve teslim tutanağına dayanır; ortam türü kendiliğinden tespit edilmemiştir.',
-  originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'TESLİM YERİ', 'KAYIT CİHAZI / TARİHİ'],
+  originHeaders: ['KAYIT', 'ORTAM TÜRÜ', 'ORTAM ETİKETİ', 'TESLİM EDEN', 'TESLİM TARİHİ', 'TESLİM YERİ', 'KAYIT CİHAZI', 'KAYIT TARİHİ'],
+  originUnknown: 'bilinmiyor',
   originEmpty: '—',
   // DELİL EDİNME (v2.208): yalnız delil paketinden gelen kayıtlar için.
   // v2.212: metin ürün kimliği taşımaz ("uygulama", marka adı yok). Cihaz
@@ -204,7 +205,7 @@ const REPORT_TEXT = {
   acqHeading: 'DELİL EDİNME VE DOĞRULAMA',
   acqIntro:
     'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
-  acqHeaders: ['KAYIT', 'CİHAZ', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
+  acqHeaders: ['KAYIT', 'CİHAZ', 'ETİKET', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
   mediumTypes: [
     'Belirtilmedi',
     'CD / DVD',
@@ -1574,7 +1575,7 @@ function audioStatusZoneHtml(m) {
   const status = materialStatusLabel(m);
   const stCode = materialStatus(m);
   const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(m.size)} · ${fmtShort(m.duration || 0)}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check" title="${esc(pendingSummaryText(segs) || 'Tüm bölümler kontrol edildi.')}">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(matSize(m))} · ${fmtShort(matDuration(m))}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check" title="${esc(pendingSummaryText(segs) || 'Tüm bölümler kontrol edildi.')}">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -1913,7 +1914,7 @@ function levelPanelHtml(m) {
 function recordPanelHtml(m) {
   const rows = [
     ['Dosya adı', m.name || '—'],
-    ['Biçim / boyut', `${m.type || '—'} · ${fmtSize(m.size)}`],
+    ['Biçim / boyut', `${matFormat(m)} · ${fmtSize(matSize(m))}`],
     ['Süre', fmtShort(m.duration || 0)],
     ['Codec', m.tech?.codec || '—'],
     ['Kanal', fmtChannels(m.tech?.channels)],
@@ -7468,7 +7469,7 @@ function verifyHashState(nowHash, storedHash) {
 // delil.json + ses dosyalarını alır, hash'leri DOĞRULAR ve belgeler.
 const DELIL_SCHEMA = 'akis.delil.v1';
 const DELIL_COPY_TYPES = {
-  'logical-file-copy': 'Mantıksal dosya kopyası',
+  'logical-file-copy': 'Mantıksal kopya',
   'full-device-image': 'Tam DD imajı',
   'used-block-image': 'Kullanılan blok imajı'
 };
@@ -7480,10 +7481,12 @@ function delilCopyTypeLabel(t) {
 function delilToolText(tool) {
   if (!tool) return '—';
   const name = String(tool.name || '').trim();
-  const version = String(tool.version || '').trim();
+  const version = String(tool.version || '').trim().replace(/^v\.?/i, '');
   const engine = String(tool.engine || '').trim();
-  const head = [name, version].filter(Boolean).join(' ');
-  return [head, engine].filter(Boolean).join(' · ') || '—';
+  if (!name) return '—';
+  const head = version ? `${name} v${version}` : name;
+  // Motor (PowerShell/Rust) teknik izde kalır; rapor hücresi kısa kalır.
+  return engine && /\bRust\b/i.test(engine) ? `${head} · ${engine}` : head;
 }
 // Paket içinde delil.json kökte veya tek bir üst klasörde olabilir.
 // ZIP üreticileri ayırıcı olarak `\` yazabilir (Windows .NET); bu yüzden
@@ -7556,7 +7559,12 @@ function delilOriginFromPack(pack) {
     // damgası teknik izde (`acquisition.delivery`) korunur.
     deliveredAt: String(del.deliveredAt || '').slice(0, 10),
     deliveryPlace: String(del.place || '').trim(),
-    deviceInfo: [delilCopyTypeLabel(meth.copyType), tool === '—' ? '' : tool, wb].filter(Boolean).join(' · '),
+    // KAYIT CİHAZI / KAYIT TARİHİ: edinme yöntemi buraya YAZILMAZ (v2.213).
+    // Ses dosyasının metadata'sından güvenilir cihaz bilgisi okunamaz; uzman
+    // girerse dolar, girmezse rapora "bilinmiyor" yazılır.
+    recordingDevice: '',
+    recordingAt: '',
+    deviceInfo: '',
     acquisition: {
       schema: pack.schema,
       acquiredAt: (pack && pack.acquiredAt) || '',
@@ -7606,13 +7614,13 @@ function acquisitionRows(c) {
     const op = a.operator || {};
     // Operatör hücresi: ad + sicil (varsa). Teslim eden ayrı tablodadır.
     const opCell = [op.name, op.registry].filter(Boolean).join(' · ') || '—';
-    // Cihaz hücresi: model + etiket. Sürücü harfi (D:) YAZILMAZ: kanıt kimliği
-    // değildir, platform değişince harf de değişir. Harf yalnız delil.json
-    // teknik izinde (device.volumes) kalır.
-    const deviceCell = [d.model, d.label].filter(Boolean).join(' · ') || '—';
+    // CİHAZ ve ETİKET ayrı sütun (v2.213). Sürücü harfi (D:) YAZILMAZ: kanıt
+    // kimliği değildir, platform değişince harf de değişir. Harf yalnız
+    // delil.json teknik izinde (device.volumes) kalır.
     out.push([
       m.name || m.fileName || '—',
-      deviceCell,
+      d.model || '—',
+      d.label || '—',
       d.serial || '—',
       delilCopyTypeLabel(meth.copyType),
       delilToolText(meth.tool),
@@ -7626,8 +7634,22 @@ function acquisitionRows(c) {
 // Technical inventory for the evidence record. The browser can only expose
 // container-level facts (codec, channel count, sample rate, bit depth); these are
 // read straight from the decoded buffer or the WAV header, never guessed.
-async function audioTech(blob) {
-  const info = { channels: null, sampleRate: null, bitDepth: null, codec: null };
+// Dosya BİÇİMİ (WAV/MP3/M4A/OGG/FLAC/AAC): uzantıdan okunur. MIME türü
+// güvenilmez (delil paketinde `audio/*` gelir); uzantı asıl kaynaktır.
+function audioFormatLabel(name, codec) {
+  const ext = (String(name || '').match(/\.([a-z0-9]+)$/i) || [])[1];
+  const byExt = { wav: 'WAV', mp3: 'MP3', m4a: 'M4A', ogg: 'OGG', flac: 'FLAC', aac: 'AAC' };
+  if (ext && byExt[ext.toLowerCase()]) return byExt[ext.toLowerCase()];
+  const c = String(codec || '');
+  if (/WAV/i.test(c)) return 'WAV';
+  if (/MP3|MPEG/i.test(c)) return 'MP3';
+  if (/AAC|M4A|MP4/i.test(c)) return 'M4A';
+  if (/Vorbis|OGG/i.test(c)) return 'OGG';
+  if (/FLAC/i.test(c)) return 'FLAC';
+  return c && c !== 'Bilinmiyor' ? c : 'Bilinmiyor';
+}
+async function audioTech(blob, name) {
+  const info = { channels: null, sampleRate: null, bitDepth: null, codec: null, format: audioFormatLabel(name) };
   try {
     const buf = await blob.arrayBuffer();
     const dv = new DataView(buf);
@@ -7666,11 +7688,49 @@ async function audioTech(blob) {
         : t.includes('flac')
           ? 'FLAC'
           : 'Bilinmiyor';
+  // Biçim uzantıdan; uzantı yoksa codec'ten türetilir.
+  info.format = audioFormatLabel(name, info.codec);
   return info;
 }
 function fmtChannels(n) {
-  if (!n) return '—';
-  return n === 1 ? 'Mono (1 kanal)' : n === 2 ? 'Stereo (2 kanal)' : `${n} kanal`;
+  if (!n) return 'Bilinmiyor';
+  return n === 1 ? 'Mono' : n === 2 ? 'Stereo' : `${n} kanal`;
+}
+// Örnekleme hızı: "48.000 Hz" (binlik ayırıcı sabit; yerel ayara bağlı değil).
+function fmtSampleRate(n) {
+  if (!n) return 'Bilinmiyor';
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' Hz';
+}
+// Alan adı iki biçimde olabilir: şema `sizeBytes`/`durationSec`, arayüz
+// `size`/`duration`. Rapor her ikisini de okur; yoksa 0 döner ("Bilinmiyor").
+function matSize(m) {
+  return Number(m && (m.size ?? m.sizeBytes)) || 0;
+}
+function matDuration(m) {
+  return Number(m && (m.duration ?? m.durationSec)) || 0;
+}
+function matFormat(m) {
+  return audioFormatLabel(m && (m.name || m.fileName), m && m.tech && m.tech.codec);
+}
+// Envanter tablosu TEK KAYNAK: HTML, DOCX ve UDF aynı hücreleri kullanır.
+function inventoryRows(c) {
+  const out = [];
+  for (const m of (c && c.materials) || []) {
+    const tech = m.tech || {};
+    const chParts = [fmtChannels(tech.channels)];
+    if (tech.channels === 2) chParts.push('Dinlenen: ' + chanModeText(m));
+    if (m.spectrogramReviewed) chParts.push('Spektrogram incelendi');
+    out.push([
+      m.name || m.fileName || '—',
+      matFormat(m),
+      fmtSize(matSize(m)),
+      matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor',
+      chParts.join(' · '),
+      fmtSampleRate(tech.sampleRate),
+      m.sha256 || 'Hesaplanamadı'
+    ]);
+  }
+  return out;
 }
 async function audioDuration(blob) {
   try {
@@ -7757,7 +7817,7 @@ async function addAudioFiles(files, opts = {}) {
   const intake = opts.synthetic || opts.skipIntake ? null : await askIntake(valid.length);
   for (const file of valid) {
     const id = uid();
-    const tech = await audioTech(file);
+    const tech = await audioTech(file, file.name);
     const m = {
       id,
       name: file.name,
@@ -7950,7 +8010,7 @@ async function importDelilPack(file) {
       size: r.blob.size,
       duration: await audioDuration(r.blob),
       sha256: r.nowHash,
-      tech: await audioTech(r.blob),
+      tech: await audioTech(r.blob, f.name),
       segments: [],
       status: 'pending',
       synthetic: false,
@@ -9338,7 +9398,10 @@ function originPanelHtml(m) {
     <div class="seg-field"><label>Teslim tarihi</label><input type="date" data-origin="${esc(m.id)}" data-origin-key="deliveredAt" value="${esc(o.deliveredAt || '')}"></div>
     <div class="seg-field"><label>Teslim yeri</label><input data-origin="${esc(m.id)}" data-origin-key="deliveryPlace" value="${esc(o.deliveryPlace || '')}" placeholder="Örn. Ankara 3. Sulh Ceza Mahkemesi"></div>
   </div>
-  <div class="seg-field"><label>Kayıt cihazı / kayıt tarihi (varsa)</label><input data-origin="${esc(m.id)}" data-origin-key="deviceInfo" value="${esc(o.deviceInfo || '')}" placeholder="Örn. cep telefonu, 12.03.2026 14:20"></div>`;
+  <div class="seg-row2">
+    <div class="seg-field"><label>Kayıt cihazı (varsa)</label><input data-origin="${esc(m.id)}" data-origin-key="recordingDevice" value="${esc(o.recordingDevice || '')}" placeholder="Örn. cep telefonu, ses kayıt cihazı"></div>
+    <div class="seg-field"><label>Kayıt tarihi (varsa)</label><input type="date" data-origin="${esc(m.id)}" data-origin-key="recordingAt" value="${esc(o.recordingAt || '')}"></div>
+  </div>`;
 }
 function originRows(c) {
   const out = [];
@@ -9353,7 +9416,8 @@ function originRows(c) {
       by || REPORT_TEXT.originEmpty,
       o.deliveredAt ? niceDate(o.deliveredAt) : REPORT_TEXT.originEmpty,
       o.deliveryPlace || REPORT_TEXT.originEmpty,
-      o.deviceInfo || REPORT_TEXT.originEmpty
+      o.recordingDevice || REPORT_TEXT.originUnknown,
+      o.recordingAt ? niceDate(o.recordingAt) : REPORT_TEXT.originUnknown
     ]);
   }
   return out;
@@ -9782,9 +9846,10 @@ function renderReport() {
     html += `<ol class="question-list">${c.questions.map((q) => `<li>${esc(q.question || REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;
   } else html += `<p>${esc(questionsFallbackText(c))}</p>`;
   html += `</div>`;
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${materials.length ? materials.map((m) => `<tr><td>${esc(m.name)}</td><td>${esc(m.tech?.codec || m.type || REPORT_TEXT.codecFallback)} / ${fmtSize(m.size)}</td><td>${fmtTime(m.duration || 0)}</td><td>${esc(fmtChannels(m.tech?.channels))}${m.tech?.sampleRate ? ' · ' + esc(m.tech.sampleRate) + ' Hz' : ''}${m.tech?.bitDepth ? ' · ' + esc(m.tech.bitDepth) + ' bit' : ''}${m.tech?.channels === 2 ? '<br>Dinlenen: ' + esc(chanModeText(m)) : ''}${m.spectrogramReviewed ? '<br>' + esc(REPORT_TEXT.spectrogramLabel) + ' (' + esc(new Date(m.spectrogramReviewed.at).toLocaleString('tr-TR')) + ')' : ''}</td><td class="paper-hash">${esc(m.sha256 || 'Hesaplanamadı')}</td></tr>`).join('') : `<tr><td colspan="5">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
+  const invRows = inventoryRows(c);
+  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
   const orgRows = originRows(c);
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
+  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table></div>`;
   const acqRows = acquisitionRows(c);
   if (acqRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -9796,7 +9861,7 @@ function renderReport() {
   if (materials.length) {
     for (let i = 0; i < materials.length; i++) {
       const m = materials[i];
-      html += `<h4>5.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(m.duration || 0)} · Biçim: ${esc(m.type || REPORT_TEXT.codecFallback)} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+      html += `<h4>5.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
       if (m.hallucinationWarning)
         html += `<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;
       if (m.languageWarning)
@@ -9969,27 +10034,17 @@ function docxXml(c) {
   } else body += wP(questionsFallbackText(c));
   body += headingXml(REPORT_TEXT.sections[2]);
   body += wP(REPORT_TEXT.defaultInventoryIntro);
+  const dInv = inventoryRows(c);
   body += wTable(
-    [
-      [...REPORT_TEXT.inventoryHeaders],
-      ...(c.materials.length
-        ? c.materials.map((m) => [
-            m.name,
-            `${m.tech?.codec || m.type || REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,
-            fmtTime(m.duration || 0),
-            `${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate ? ' · ' + m.tech.sampleRate + ' Hz' : ''}${m.tech?.bitDepth ? ' · ' + m.tech.bitDepth + ' bit' : ''}${m.tech?.channels === 2 ? ' · Dinlenen: ' + chanModeText(m) : ''}${m.spectrogramReviewed ? ' · Spektrogram incelendi' : ''}`,
-            m.sha256 || 'Hesaplanamadı'
-          ])
-        : [REPORT_TEXT.noInventoryRow])
-    ],
-    { widths: [2200, 1500, 900, 1700, 2700], header: true }
+    [[...REPORT_TEXT.inventoryHeaders], ...(dInv.length ? dInv : [REPORT_TEXT.noInventoryRow])],
+    { widths: [1700, 900, 900, 900, 1100, 1100, 2400], header: true }
   );
   body += wP(REPORT_TEXT.inventoryNote, { color: '74869A', size: 17, italic: true });
   const dOrg = originRows(c);
   body += headingXml(REPORT_TEXT.originHeading);
   body += wP(REPORT_TEXT.originIntro);
   body += wTable([[...REPORT_TEXT.originHeaders], ...(dOrg.length ? dOrg : [REPORT_TEXT.noInventoryRow])], {
-    widths: [1400, 1100, 1100, 1100, 1100, 1200, 1200],
+    widths: [1100, 900, 900, 900, 900, 1000, 1100, 1200],
     header: true
   });
   const dAcq = acquisitionRows(c);
@@ -9997,7 +10052,7 @@ function docxXml(c) {
     body += headingXml(REPORT_TEXT.acqHeading);
     body += wP(REPORT_TEXT.acqIntro);
     body += wTable([[...REPORT_TEXT.acqHeaders], ...dAcq], {
-      widths: [1100, 1000, 1000, 1000, 900, 1000, 900, 1000],
+      widths: [950, 850, 800, 850, 850, 850, 900, 850, 900],
       header: true
     });
   }
@@ -10016,7 +10071,7 @@ function docxXml(c) {
     const m = c.materials[i];
     body += headingXml(`5.1.${i + 1}. ${m.name}`, 2);
     body += wP(
-      `Süre: ${fmtTime(m.duration || 0)}  |  Biçim: ${m.type || REPORT_TEXT.codecFallback}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
+      `Süre: ${fmtTime(matDuration(m))}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
       { color: '6F8295', size: 17 }
     );
     if (m.hallucinationWarning)
@@ -10340,20 +10395,14 @@ async function makeUdf() {
   else el.push(paragraph(questionsFallbackText(c)));
   el.push(h(REPORT_TEXT.sections[2]));
   el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
-  const inventory = (c.materials || []).map((m) => [
-    m.name,
-    `${m.tech?.codec || m.type || REPORT_TEXT.codecFallback} / ${fmtSize(m.size)}`,
-    fmtTime(m.duration || 0),
-    `${fmtChannels(m.tech?.channels)}${m.tech?.sampleRate ? ' · ' + m.tech.sampleRate + ' Hz' : ''}${m.tech?.bitDepth ? ' · ' + m.tech.bitDepth + ' bit' : ''}${m.tech?.channels === 2 ? ' · Dinlenen: ' + chanModeText(m) : ''}${m.spectrogramReviewed ? ' · Spektrogram incelendi' : ''}`,
-    m.sha256 || 'Hesaplanamadı'
-  ]);
+  const inventory = inventoryRows(c);
   el.push(
     table(
       [
         [...REPORT_TEXT.inventoryHeaders],
-        ...(inventory.length ? inventory : [[REPORT_TEXT.noInventoryRow[0], '—', '—', '—', '—']])
+        ...(inventory.length ? inventory : [[REPORT_TEXT.noInventoryRow[0], '—', '—', '—', '—', '—', '—']])
       ],
-      [125, 95, 45, 120, 155],
+      [90, 60, 60, 55, 75, 80, 120],
       { header: true }
     )
   );
@@ -10364,7 +10413,7 @@ async function makeUdf() {
   el.push(
     table(
       [[...REPORT_TEXT.originHeaders], ...(uOrg.length ? uOrg : [REPORT_TEXT.noInventoryRow])],
-      [80, 70, 70, 70, 70, 75, 105],
+      [75, 60, 60, 60, 60, 65, 80, 80],
       { header: true }
     )
   );
@@ -10372,7 +10421,7 @@ async function makeUdf() {
   if (uAcq.length) {
     el.push(h(REPORT_TEXT.acqHeading));
     el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
-    el.push(table([[...REPORT_TEXT.acqHeaders], ...uAcq], [85, 70, 65, 70, 60, 65, 60, 65], { header: true }));
+    el.push(table([[...REPORT_TEXT.acqHeaders], ...uAcq], [70, 60, 55, 55, 55, 55, 55, 55, 65], { header: true }));
   }
   const uSpk = speakerRows(c);
   el.push(h('Konuşmacılar'));
@@ -10393,7 +10442,7 @@ async function makeUdf() {
       el.push(paragraph(`5.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
       el.push(
         paragraph(
-          `Süre: ${fmtTime(m.duration || 0)}   |   Biçim: ${m.type || REPORT_TEXT.codecFallback}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
+          `Süre: ${fmtTime(matDuration(m))}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
           { size: 9, color: 'muted', after: 3 }
         )
       );
@@ -11401,7 +11450,7 @@ async function loadSamples() {
         const fr = await fetch(sm.path);
         if (!fr.ok) throw new Error(`${sm.name} yüklenemedi.`);
         const blob = await fr.blob();
-        const tech = await audioTech(blob);
+        const tech = await audioTech(blob, sm.name);
         const m = {
           id: uid(),
           name: sm.name,
@@ -13579,7 +13628,7 @@ async function restoreAudioUrls() {
       if (!m.tech || !m.log) {
         const blob = await getAudioBlob(c, m);
         if (blob) {
-          if (!m.tech) m.tech = await audioTech(blob);
+          if (!m.tech) m.tech = await audioTech(blob, m.name);
           if (!m.log)
             m.log = [
               {
@@ -13749,6 +13798,19 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.213': {
+    title: 'Delil tabloları ayrıldı; Edinim 1.1',
+    body:
+      'Envanter tablosu artık yedi ayrı sütun: dosya adı, biçim, boyut, süre, ' +
+      'ses kanalı, örnekleme hızı, SHA-256. Biçim dosya uzantısından okunur; ' +
+      'kanal ve örnekleme hızı dosya çözülerek ölçülür (uydurulmaz). Köken ' +
+      'tablosunda kayıt cihazı ve kayıt tarihi ayrı sütundur; bilinmiyorsa ' +
+      '"bilinmiyor" yazar ve edinme yöntemi artık bu alana karışmaz. Edinme ' +
+      'tablosunda cihaz ve etiket ayrı sütundadır. Araç adı Edinim v1.1 olarak ' +
+      'yazılır. Edinme aracı artık sorularla ilerler: kaynak, hedef, operatör ve ' +
+      'teslim zincirini sorar, özet gösterip onay ister. Sürücüyü E, E: veya E:\ ' +
+      'diye yazabilirsiniz; Türkçe karakterler düzeltildi.'
+  },
   '2.212': {
     title: 'Teslim zinciri ayrıldı; sürücü harfi raporda yok',
     body:

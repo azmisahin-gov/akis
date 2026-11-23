@@ -4,7 +4,7 @@
 > öneridir ve uygulanmamıştır. Tier 1 çıktısı "adli imaj" değil,
 > "belgelenmiş dosya kopyası"dır.
 >
-> **Güncel sürüm:** v2.211.
+> **Güncel sürüm:** v2.213.
 
 ## 0. v2.209 düzeltmeleri (kullanıcı geri bildirimi)
 
@@ -88,7 +88,7 @@ gerçek delile uygulanır.
     "hardwareWriteBlocker": false,
     "copyType": "logical-file-copy",
     "image": null,
-    "tool": { "name": "edinme.ps1", "version": "1.0", "engine": "PowerShell" }
+    "tool": { "name": "Edinim", "version": "1.1", "engine": "PowerShell" }
   },
   "files": [
     {
@@ -110,9 +110,9 @@ kişi/kurum; `operator` = edinmeyi fiilen yapan kişi. İkisi aynı değildir.
 zarf içinde elden teslim, kargo vb.) ayrı bir alan olarak **henüz yok**; sonraki
 sürümde değerlendirilecektir.
 
-**Alet adı (v2.212):** `method.tool.name` ürün markası değil, çalışan aletin
-kendisidir (`edinme.ps1`). Raporun ARAÇ sütununa `ad + sürüm · motor` yazılır.
-Ürün adı rapora girmez.
+**Alet adı (v2.212/v2.213):** `method.tool.name` ürün markası değil, aletin
+kendisidir (`Edinim`). Raporun ARAÇ sütununa `Edinim v1.1` yazılır; motor bilgisi
+(`PowerShell`/`Rust`) teknik izde kalır. Ürün adı rapora girmez.
 
 `copyType` değerleri:
 

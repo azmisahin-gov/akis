@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.212.**
+yazılır. **Güncel sürüm: v2.213.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,18 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.213 — Delil tabloları ayrıştı, Edinim 1.1 (tamamlandı)
+
+- **Envanter 7 sütun:** biçim · boyut · süre · kanal · örnekleme · SHA-256;
+  tek kaynak `inventoryRows`. Biçim uzantıdan, kanal/örnekleme ölçümden.
+- **Köken 8 sütun:** KAYIT CİHAZI ve KAYIT TARİHİ ayrı; bilinmiyorsa
+  “bilinmiyor”; edinme yöntemi bu alana yazılmaz (göç: gerçek cihaz metni taşınır).
+- **Edinme 9 sütun:** CİHAZ ve ETİKET ayrı; OPERATÖR `Ad · Sicil`.
+- **Alet adı:** `Edinim v1.1`; yöntem “Mantıksal kopya”.
+- **Edinim 1.1:** soru-cevap sihirbazı, özet + onay, ilerleme, `E`/`E:`/`E:\`
+  normalizasyonu, UTF-8 BOM, `İŞLEM DURDURULDU` çıkışı.
+- Koruyan testler: `birim` [78]/[79], `rapor` 14/15, `tasarim` [2bh]/[2bi].
 
 ### v2.212 — Delil teslim zinciri: teslim eden, operatör ve alet (tamamlandı)
 

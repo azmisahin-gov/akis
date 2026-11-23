@@ -487,6 +487,13 @@ export function emptyMaterial(over = {}) {
       // Teslim yeri (ör. mahkeme/merci). Kapalı zarf içinde elden teslim gibi
       // teslim şekli ayrı bir alandır; burada yalnız YER tutulur.
       deliveryPlace: '',
+      // Kaydı yapan CİHAZ ve kayıt TARİHİ (dosya metadata'sından veya uzman
+      // beyanından). Bilinmiyorsa boş kalır; rapora "bilinmiyor" yazılır.
+      // Edinme yöntemi/aracı buraya YAZILMAZ (v2.213).
+      recordingDevice: '',
+      recordingAt: '',
+      // Eski tek alan (v2.212 ve öncesi). Görüntülemede yalnız gerçek cihaz
+      // metni ise kullanılır; edinme metni buraya karışmış kayıtlar yok sayılır.
       deviceInfo: '',
       // Delil paketinden geldiyse edinme tutanağı (v2.208). Cihaz bilgisi
       // EDİNME ARACININ BEYANIDIR; uygulama cihazı görmez.
@@ -813,6 +820,15 @@ export function normalizeMaterial(src = {}) {
       deliveredByRegistry: str(origin.deliveredByRegistry),
       deliveredAt: str(origin.deliveredAt),
       deliveryPlace: str(origin.deliveryPlace),
+      // Göç (v2.213): eski tek `deviceInfo` alanı GERÇEK cihaz metniyse yeni
+      // `recordingDevice` alanına taşınır. v2.208–v2.212'de buraya edinme
+      // yöntemi yazılıyordu; o metin cihaz sanılmaz (görüntülenmez).
+      recordingDevice:
+        str(origin.recordingDevice) ||
+        (str(origin.deviceInfo) && !/Mantıksal|write-blocker|PowerShell|Edinim|edinme\.ps1/i.test(str(origin.deviceInfo))
+          ? str(origin.deviceInfo)
+          : ''),
+      recordingAt: str(origin.recordingAt),
       deviceInfo: str(origin.deviceInfo),
       // Edinme tutanağı bilinmeyen alanlarıyla birlikte korunur; v2.208.
       acquisition: isObj(origin.acquisition) ? { ...origin.acquisition } : null

@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   AKİS Delil Edinme — Tier 1 (yazılımsal salt-okunur + dosya kopyası + SHA-256).
@@ -73,9 +73,9 @@
 #>
 [CmdletBinding()]
 param(
-  [Parameter(Mandatory = $true)][string]$SourcePath,
-  [Parameter(Mandatory = $true)][string]$OutDir,
-  [Parameter(Mandatory = $true)][string]$Operator,
+  [string]$SourcePath = '',
+  [string]$OutDir = '',
+  [string]$Operator = '',
   [string]$Registry = '',
   [string]$Organization = '',
   [string]$OperatorRegistry = '',
@@ -94,10 +94,9 @@ $ErrorActionPreference = 'Stop'
 try { chcp.com 65001 | Out-Null } catch {}
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [System.Text.Encoding]::UTF8
-# Alet adı ÜRÜN MARKASI DEĞİL, çalışan dosyanın kendisidir. Rapor ARAÇ
-# sütununa bu yazılır (ör. "edinme.ps1 1.0 · PowerShell").
-$ToolName = 'edinme.ps1'
-$ToolVersion = '1.0'
+# Alet adı ÜRÜN MARKASI DEĞİL, aletin kendisidir. Raporda "Edinim v1.1".
+$ToolName = 'Edinim'
+$ToolVersion = '1.1'
 $ToolEngine = 'PowerShell'
 $Schema = 'akis.delil.v1'
 $script:LogPath = $null
@@ -117,6 +116,93 @@ function Fail {
   throw $Message
 }
 
+# --- 0. Sihirbaz -----------------------------------------------------------
+# Parametre verilmezse adım adım sorar. Boş bırakılan isteğe bağlı alan boş
+# kalır; hiçbir bilgi uydurulmaz.
+function Normalize-DrivePath {
+  param([string]$Path)
+  $p = [string]$Path
+  if (-not $p) { return '' }
+  $p = $p.Trim().Trim([char[]]@('"', "'"))
+  if ($p -match '^[A-Za-z]$') { return ($p.ToUpperInvariant() + ':\') }
+  if ($p -match '^[A-Za-z]:$') { return ($p.ToUpperInvariant() + '\') }
+  return $p
+}
+
+function Read-Answer {
+  param([string]$Prompt, [string]$Default = '')
+  if ($NonInteractive) { return $Default }
+  $suffix = if ($Default) { " [$Default]" } else { '' }
+  $answer = Read-Host ($Prompt + $suffix)
+  if (-not $answer -and $Default) { return $Default }
+  return [string]$answer
+}
+
+function Read-Required {
+  param([string]$Prompt)
+  if ($NonInteractive) { return '' }
+  while ($true) {
+    $answer = Read-Host $Prompt
+    if ($answer) { return [string]$answer }
+    Write-Host '  Bu alan zorunlu; boş bırakılamaz.' -ForegroundColor Yellow
+  }
+}
+
+function Show-Banner {
+  Write-Host ''
+  Write-Host '==========================================================' -ForegroundColor Cyan
+  Write-Host ("  EDİNİM {0} — Delil Edinme (Tier 1)" -f $ToolVersion) -ForegroundColor Cyan
+  if ($Simulate) { Write-Host '  KURGUSAL TEST — gerçek cihaz okunmaz' -ForegroundColor Yellow }
+  Write-Host '==========================================================' -ForegroundColor Cyan
+  Write-Host '  Kaynak salt-okunur yapılır, dosyalar kopyalanır,' -ForegroundColor Gray
+  Write-Host '  SHA-256 hesaplanır ve delil paketi üretilir.' -ForegroundColor Gray
+  Write-Host ''
+}
+
+if (-not $NonInteractive) {
+  Show-Banner
+  Write-Host '[1/4] Kaynak ve hedef' -ForegroundColor Cyan
+  if (-not $SourcePath) { $SourcePath = Read-Answer '  Kaynak sürücü/klasör (ör. E, E: veya C:\veri)' }
+  if (-not $OutDir) { $OutDir = Read-Answer '  Hedef klasör (ör. D:\delil)' }
+
+  Write-Host ''
+  Write-Host '[2/4] Operatör (edinmeyi yapan kişi)' -ForegroundColor Cyan
+  if (-not $Operator) { $Operator = Read-Required '  Operatör ad soyad' }
+  if (-not ($Registry -or $OperatorRegistry)) { $Registry = Read-Answer '  Operatör sicil no (boş = yok)' }
+  if (-not $Organization) { $Organization = Read-Answer '  Kurum (boş = yok)' }
+
+  Write-Host ''
+  Write-Host '[3/4] Teslim zinciri (isteğe bağlı; boş bırakılabilir)' -ForegroundColor Cyan
+  Write-Host '  Teslim eden = kaydı size veren kişi/kurum (ör. mahkeme kalemi).' -ForegroundColor Gray
+  if (-not $DeliveredBy) { $DeliveredBy = Read-Answer '  Teslim eden ad / birim' }
+  if (-not $DeliveredByRegistry) { $DeliveredByRegistry = Read-Answer '  Teslim edenin sicili/kayıt no (TCKN yazmayın)' }
+  if (-not $DeliveredAt) { $DeliveredAt = Read-Answer '  Teslim tarihi (YYYY-AA-GG veya GG.AA.YYYY)' }
+  if (-not $DeliveryPlace) { $DeliveryPlace = Read-Answer '  Teslim yeri (ör. Ankara 3. Sulh Ceza Mahkemesi)' }
+
+  $opRegShown = if ($OperatorRegistry) { $OperatorRegistry } else { $Registry }
+  Write-Host ''
+  Write-Host '[4/4] Özet' -ForegroundColor Cyan
+  Write-Host ("  Kaynak       : {0}" -f $SourcePath)
+  Write-Host ("  Hedef        : {0}" -f $OutDir)
+  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegShown) { ' · ' + $opRegShown } else { '' }))
+  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' · ' + $DeliveredByRegistry } else { '' }))
+  Write-Host ("  Teslim yeri  : {0}" -f $(if ($DeliveryPlace) { $DeliveryPlace } else { '(bilinmiyor)' }))
+  Write-Host ("  Teslim tarihi: {0}" -f $(if ($DeliveredAt) { $DeliveredAt } else { '(bilinmiyor)' }))
+  Write-Host ("  Kapsam       : {0}" -f $(if ($IncludeAll) { 'TÜM dosyalar' } else { 'yalnız ses dosyaları' }))
+  Write-Host ''
+  $go = Read-Answer 'Başlasın mı? (E/h)' 'E'
+  if ($go -match '^(h|hayir|hayır|n|no)$') {
+    Write-Host 'Vazgeçildi. Hiçbir dosya kopyalanmadı.' -ForegroundColor Yellow
+    exit 0
+  }
+}
+
+$SourcePath = Normalize-DrivePath $SourcePath
+$OutDir = Normalize-DrivePath $OutDir
+if (-not $SourcePath) { Fail 'Kaynak belirtilmedi. Örnek: -SourcePath E' }
+if (-not $OutDir) { Fail 'Hedef klasör belirtilmedi. Örnek: -OutDir D:\delil' }
+if (-not $Operator) { Fail 'Operatör belirtilmedi (-Operator). Boş bırakılamaz.' }
+
 # --- 1. Yollar -------------------------------------------------------------
 $source = (Resolve-Path -LiteralPath $SourcePath).Path.TrimEnd([char[]]@('\', '/'))
 if (-not (Test-Path -LiteralPath $source -PathType Container)) {
@@ -131,12 +217,12 @@ if (-not $Simulate -and $outDir.ToLowerInvariant().StartsWith($source.ToLowerInv
 }
 
 $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$pkgName = "AKIS_Delil_$stamp"
+$pkgName = "Edinim_$stamp"
 $pkgDir = Join-Path $outDir $pkgName
 New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
 $script:LogPath = Join-Path $pkgDir 'delil.log'
 
-Write-Log "AKİS Delil Edinme $ToolVersion başladı."
+Write-Log "Edinim $ToolVersion başladı."
 Write-Log "Kaynak: $source"
 Write-Log "Hedef: $pkgDir"
 Write-Log ("Kip: " + $(if ($Simulate) { 'SİMÜLASYON (kurgusal)' } else { 'GERÇEK (yazılımsal salt-okunur)' }))
@@ -223,26 +309,19 @@ attributes disk
     Write-Log 'Disk salt-okunur: EVET (doğrulandı).'
   }
 
-  # --- 2b. Teslim zinciri (isteğe bağlı) -----------------------------------
-  # Teslim eden = flash'ı bilirkişiye veren kişi/kurum. Operatör = edinmeyi
-  # fiilen yapan. İkisi AYRI kaydedilir. Boş alan UYDURULMAZ.
-  function Read-Optional {
-    param([string]$Value, [string]$Prompt)
-    if ($Value) { return $Value }
-    if ($NonInteractive -or $Simulate) { return '' }
-    try { return [string](Read-Host $Prompt) } catch { return '' }
-  }
-  $deliveredBy = Read-Optional $DeliveredBy "Teslim eden (flash'i veren kisi/kurum; bos = bilinmiyor)"
-  $deliveredByRegistry = Read-Optional $DeliveredByRegistry "Teslim edenin sicili/kayit no (varsa; TCKN yazmayin)"
-  $deliveryPlace = Read-Optional $DeliveryPlace "Teslim yeri (or. Ankara 3. Sulh Ceza Mahkemesi)"
-  $deliveredAtRaw = Read-Optional $DeliveredAt "Teslim tarihi (YYYY-AA-GG veya GG.AA.YYYY; bos = bilinmiyor)"
+  # --- 2b. Teslim tarihi ---------------------------------------------------
+  # Değerler sihirbazdan/parametrelerden gelir; burada yalnız tarih normalize
+  # edilir. Boş alan UYDURULMAZ.
+  $deliveredBy = $DeliveredBy
+  $deliveredByRegistry = $DeliveredByRegistry
+  $deliveryPlace = $DeliveryPlace
   $deliveredAtIso = ''
-  if ($deliveredAtRaw) {
+  if ($DeliveredAt) {
     try {
-      $deliveredAtIso = ([datetime]::Parse($deliveredAtRaw)).ToString('yyyy-MM-dd')
+      $deliveredAtIso = ([datetime]::Parse($DeliveredAt)).ToString('yyyy-MM-dd')
     }
     catch {
-      Write-Log "UYARI: teslim tarihi okunamadi, bos birakildi: $deliveredAtRaw"
+      Write-Log "UYARI: teslim tarihi okunamadı, boş bırakıldı: $DeliveredAt"
     }
   }
   Write-Log ("Teslim: eden='" + $deliveredBy + "' sicil='" + $deliveredByRegistry + "' yer='" + $deliveryPlace + "' tarih='" + $deliveredAtIso + "'")
@@ -262,6 +341,7 @@ attributes disk
   $n = 0
   foreach ($f in $files) {
     $n++
+    Write-Progress -Activity 'Kopyalanıyor' -Status ("{0} / {1}  {2}" -f $n, $files.Count, $f.Name) -PercentComplete (($n / $files.Count) * 100)
     $rel = $f.FullName.Substring($source.Length).TrimStart([char[]]@('\', '/'))
     $relPosix = $rel.Replace('\', '/')
     $dest = Join-Path (Join-Path $pkgDir 'ses') $rel
@@ -350,10 +430,30 @@ attributes disk
   }
   Write-Log "Paket: $zipPath"
 
+  Write-Progress -Activity 'Kopyalanıyor' -Completed
+
+  $opRegOut = if ($OperatorRegistry) { $OperatorRegistry } else { $Registry }
   Write-Host ''
-  Write-Host 'TAMAM.' -ForegroundColor Green
-  Write-Host "Paket: $zipPath"
-  Write-Host 'AKİS → Ses → "Delil paketi yükle" ile açın.'
+  Write-Host '==========================================================' -ForegroundColor Green
+  Write-Host '  TAMAM — Delil paketi hazır' -ForegroundColor Green
+  Write-Host '==========================================================' -ForegroundColor Green
+  Write-Host ("  Paket        : {0}" -f $zipPath)
+  Write-Host ("  Dosya        : {0} (her biri SHA-256 ile)" -f $entries.Count)
+  Write-Host ("  Cihaz        : {0} · seri {1}{2}" -f $device.model, $device.serial, $(if ($device.label) { ' · etiket ' + $device.label } else { '' }))
+  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegOut) { ' · ' + $opRegOut } else { '' }))
+  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' · ' + $DeliveredByRegistry } else { '' }))
+  Write-Host ("  Teslim yeri  : {0}" -f $(if ($DeliveryPlace) { $DeliveryPlace } else { '(bilinmiyor)' }))
+  Write-Host ''
+  Write-Host '  Sonraki adım: AKİS → Ses → "Delil paketi yükle"' -ForegroundColor Cyan
+  Write-Host '==========================================================' -ForegroundColor Green
+}
+catch {
+  Write-Host ''
+  Write-Host 'İŞLEM DURDURULDU.' -ForegroundColor Red
+  Write-Host ('  ' + $_.Exception.Message) -ForegroundColor Red
+  Write-Host '  Ayrıntı: delil.log' -ForegroundColor Yellow
+  if ($script:LogPath) { Write-Log ('DURDURULDU: ' + $_.Exception.Message) }
+  exit 1
 }
 finally {
   if ($readOnlySet -and $diskNumber -ne $null) {

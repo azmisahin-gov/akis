@@ -1,4 +1,4 @@
-# Özellikler (v2.212 — mevcut durum)
+# Özellikler (v2.213 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -640,7 +640,7 @@ uzmanlık alanını gösterir.
 - DOCX çıktısında üst bilgi, alt bilgi ve sayfa numarası.
 - UDF çıktısı `templates/BOS.udf` sayfa ayarları ve stillerini korur.
 
-## Delil paketi (v2.208, teslim zinciri v2.212)
+## Delil paketi (v2.208; teslim zinciri v2.212; tablolar v2.213)
 
 Ayrı edinme aracı + tarayıcıda doğrulama. Tarayıcı USB'yi **görmez**; edinme
 `tools/edinme/edinme.ps1` ile yapılır, AKİS yalnız **doğrular ve belgeler**.
@@ -663,7 +663,18 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
 - **Sürücü harfi raporda yok (v2.212):** `E:`/`D:` kanıt kimliği değildir ve
   platform değişince değişir; yalnız `delil.json` teknik izinde kalır.
 - **Alet adı:** raporun ARAÇ sütunu ürün adını değil aleti yazar
-  (`edinme.ps1 1.0 · PowerShell`). Ürün adı rapora girmez.
+  (`Edinim v1.1`). Ürün adı rapora girmez.
+- **Envanter tablosu 7 ayrı sütun (v2.213):** DOSYA ADI · DOSYA BİÇİMİ ·
+  DOSYA BOYUTU · SÜRE · SES KANALI · ÖRNEKLEME HIZI · SHA-256. Biçim uzantıdan
+  (MP3/WAV/M4A…), kanal ve örnekleme hızı dosya çözülerek **ölçülür**; ölçülemezse
+  “Bilinmiyor” yazar. Tek kaynak: `inventoryRows` (HTML/DOCX/UDF aynı).
+- **Köken tablosu 8 sütun (v2.213):** KAYIT CİHAZI ve KAYIT TARİHİ **ayrı**;
+  bilinmiyorsa “bilinmiyor”. Edinme yöntemi/aracı bu alanlara **yazılmaz**.
+- **Edinme tablosu 9 sütun (v2.213):** CİHAZ ve ETİKET **ayrı**; OPERATÖR
+  `Ad · Sicil`.
+- **Edinim aracı 1.1 (v2.213):** soru-cevap sihirbazı (kaynak, hedef, operatör,
+  teslim zinciri, özet + onay), ilerleme çubuğu, `E`/`E:`/`E:\` kabul,
+  UTF-8 BOM ile düzgün Türkçe, `İŞLEM DURDURULDU` özeti.
 - **Yeniden yükleme:** aynı SHA-256 varsa yeni kayıt açılmaz; mevcut kayıt ve
   düzenlemeler korunur, **yalnız boş alanlar** doldurulur ve günlüğe yazılır.
 - **Uyuşmazlık:** sessizce geçmez; onay istenir, kabul edilirse raporda

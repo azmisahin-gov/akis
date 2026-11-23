@@ -124,7 +124,7 @@ const EXPOSE = [
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
-  'delilToolText', 'originRows', 'REPORT_TEXT',
+  'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3655,7 +3655,12 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     eq('teslim eden boş (operatör edinme tutanağında)', origin.deliveredBy, '');
     eq('teslim tarihi boş (alınma ayrı)', origin.deliveredAt, '');
     eq('operatör edinme tutanağında', origin.acquisition.operator.name, 'Ahmet Yılmaz');
-    eq('yöntem/araç/write-blocker yazılır', /Mantıksal dosya kopyası/.test(origin.deviceInfo) && /AKIS Edinme 1\.0/.test(origin.deviceInfo) && /hayır/.test(origin.deviceInfo), true);
+    // v2.213: edinme yöntemi KAYIT CİHAZI alanına yazılmaz.
+    eq('yöntem cihaz alanına yazılmaz', origin.deviceInfo, '');
+    eq('kayıt cihazı bilinmiyor (uydurulmaz)', origin.recordingDevice, '');
+    eq('kayıt tarihi bilinmiyor (uydurulmaz)', origin.recordingAt, '');
+    eq('yöntem tutanakta korunur', origin.acquisition.method.copyType, 'logical-file-copy');
+    eq('alet tutanakta korunur', origin.acquisition.method.tool.name, 'AKIS Edinme');
     eq('edinme tutanağı korunur', origin.acquisition.device.serial, 'SN123');
 
     eq('kopya türü etiketi', T.delilCopyTypeLabel('full-device-image'), 'Tam DD imajı');
@@ -3693,20 +3698,22 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     c.materials = [m];
     const rows = T.acquisitionRows(c);
     eq('delil kaydı tek satır', rows.length, 1);
+    eq('edinme satırı 9 sütun', rows[0].length, 9);
     eq('satır dosya adı', rows[0][0], 'a.wav');
     // v2.212: sürücü harfi (D:) kanıt kimliği DEĞİLDİR; rapora yazılmaz.
-    // Platform değişince harf de değişir; marka/model/seri kalır.
+    // v2.213: CİHAZ ve ETİKET ayrı sütun.
     eq('satır cihaz (sürücü harfi yok)', rows[0][1], 'SanDisk');
-    eq('satır seri no', rows[0][2], 'SN123');
-    eq('satır yöntem', rows[0][3], 'Mantıksal dosya kopyası');
+    eq('satır etiket ayrı sütun', rows[0][2], '—');
+    eq('satır seri no', rows[0][3], 'SN123');
+    eq('satır yöntem', rows[0][4], 'Mantıksal kopya');
     // Eski paketler alet adını kendi yazar; kanıt tahrif edilmez.
-    eq('eski paket araç adı korunur', rows[0][4], 'AKIS Edinme 1.0');
+    eq('eski paket araç adı korunur', rows[0][5], 'AKIS Edinme v1.0');
     // v2.212: operatör hücresi sicili taşır (Ad Soyad · Sicil).
-    eq('satır operatör + sicil', rows[0][5], 'Ahmet Yılmaz · 1234');
-    eq('satır tarih yıl taşır', /2026/.test(rows[0][6]), true);
-    eq('satır doğrulama durumu', rows[0][7], 'Doğrulandı');
+    eq('satır operatör + sicil', rows[0][6], 'Ahmet Yılmaz · 1234');
+    eq('satır tarih yıl taşır', /2026/.test(rows[0][7]), true);
+    eq('satır doğrulama durumu', rows[0][8], 'Doğrulandı');
     m.origin.acquisition.hashState = 'mismatch';
-    eq('uyuşmuyor satırı', T.acquisitionRows(c)[0][7], 'Uyuşmuyor');
+    eq('uyuşmuyor satırı', T.acquisitionRows(c)[0][8], 'Uyuşmuyor');
     // Paket yoksa bölüm çizilmez.
     const c2 = T.emptyCaseForTest({ id: 'c2' });
     const m2 = T.emptyMaterialForTest({ id: 'm2', fileName: 'b.wav' });
@@ -3717,8 +3724,10 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     const hasV212 = typeof T.delilToolText === 'function' && typeof T.originRows === 'function';
     eq('v2.212 fonksiyonları tanımlı (alet metni, köken satırı)', hasV212, true);
     if (hasV212) {
-    eq('alet metni ad + sürüm + motor', T.delilToolText({ name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' }), 'edinme.ps1 1.0 · PowerShell');
-    eq('alet motoru yoksa yalnız ad', T.delilToolText({ name: 'edinme.ps1', version: '1.0' }), 'edinme.ps1 1.0');
+    // v2.213: alet adı "Edinim v1.1" biçiminde; motor yalnız Rust ise eklenir.
+    eq('alet metni ad + v sürüm', T.delilToolText({ name: 'Edinim', version: '1.1', engine: 'PowerShell' }), 'Edinim v1.1');
+    eq('sürümdeki v tekrarlanmaz', T.delilToolText({ name: 'Edinim', version: 'v1.1' }), 'Edinim v1.1');
+    eq('Rust motoru görünür', T.delilToolText({ name: 'Edinim', version: '2.0', engine: 'Rust' }), 'Edinim v2.0 · Rust');
     eq('alet yoksa tire', T.delilToolText(null), '—');
 
     // --- v2.212: teslim eden ≠ operatör; ikisi ayrı kaydedilir ----------
@@ -3761,9 +3770,39 @@ console.log('\n== [78] Delil paketi: şema, hash, rapor satırı (v2.208)');
     om.origin.deliveryPlace = 'Ankara 3. Sulh Ceza Mahkemesi';
     oc.materials = [om];
     const orow = T.originRows(oc)[0];
-    eq('köken satırı 7 sütun', orow.length, 7);
+    eq('köken satırı 8 sütun', orow.length, 8);
     eq('teslim eden hücresi sicili taşır', orow[3], 'Mehmet Kaya · K-77');
     eq('teslim yeri sütunu', orow[5], 'Ankara 3. Sulh Ceza Mahkemesi');
+    // v2.213: kayıt cihazı ve kayıt tarihi AYRI; bilinmiyorsa "bilinmiyor".
+    eq('kayıt cihazı bilinmiyor', orow[6], 'bilinmiyor');
+    eq('kayıt tarihi bilinmiyor', orow[7], 'bilinmiyor');
+    om.origin.recordingDevice = 'Cep telefonu';
+    om.origin.recordingAt = '2026-03-12';
+    const orow2 = T.originRows(oc)[0];
+    eq('kayıt cihazı ayrı sütun', orow2[6], 'Cep telefonu');
+    eq('kayıt tarihi ayrı sütun', /2026/.test(orow2[7]), true);
+
+    // --- v2.213: envanter tablosu 7 ayrı sütun --------------------------
+    const ic = T.emptyCaseForTest({ id: 'c4' });
+    const im = T.emptyMaterialForTest({ id: 'm4', fileName: '1.mp3' });
+    im.name = '1.mp3';
+    // Şema alan adları (sizeBytes/durationSec) da okunmalı.
+    im.sizeBytes = 21270000;
+    im.durationSec = 1063;
+    im.sha256 = 'a'.repeat(64);
+    im.tech = { channels: 1, sampleRate: 48000, codec: 'MPEG (MP3)', format: 'MP3' };
+    ic.materials = [im];
+    const irow = T.inventoryRows(ic)[0];
+    eq('envanter 7 sütun', irow.length, 7);
+    eq('dosya biçimi ayrı sütun', irow[1], 'MP3');
+    eq('dosya boyutu ayrı sütun', /MB/.test(irow[2]), true);
+    eq('süre ayrı sütun', irow[3], '00:17:43');
+    eq('ses kanalı ayrı sütun', irow[4], 'Mono');
+    eq('örnekleme hızı ayrı sütun', irow[5], '48.000 Hz');
+    eq('hash sütunu', irow[6].length, 64);
+    eq('biçim uzantıdan okunur', T.audioFormatLabel('a.M4A', ''), 'M4A');
+    eq('uzantı yoksa codec', T.audioFormatLabel('', 'MPEG (MP3)'), 'MP3');
+    eq('bilinmeyen biçim', T.audioFormatLabel('x.bin', ''), 'Bilinmiyor');
 
     // --- v2.212: rapor metinleri ürün kimliği taşımaz -------------------
     // v2.208'de acqIntro "Uygulama cihazı görmez" diyordu; bu, "rapor

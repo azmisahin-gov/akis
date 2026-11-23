@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.212.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.213.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4593,3 +4593,60 @@ Sonra **v2.212** ile başla.
 **v2.213 — Disk envanteri + paket v2:** `disk.json`, `icerik/<etiket|seri|marka>/`,
 varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu. Ayrıntı:
 `docs/GELECEK_PLANI.md` §9.
+
+## YENİ OTURUM DEVRİ (v2.213) — Delil tabloları ve Edinim 1.1
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.213** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → birim + 482 şema + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.214 (disk envanteri + paket v2), v2.215 (envanter UI) |
+
+### Ne yapıldı
+
+- **Envanter tablosu 7 ayrı sütun:** DOSYA ADI · DOSYA BİÇİMİ · DOSYA BOYUTU ·
+  SÜRE · SES KANALI · ÖRNEKLEME HIZI · SHA-256. Tek kaynak `inventoryRows(c)`;
+  HTML/DOCX/UDF aynı hücreleri kullanır.
+- **Biçim uzantıdan:** `audioFormatLabel(name, codec)`. Delil paketinde MIME
+  `audio/*` gelir; uzantı asıl kaynaktır. `audioTech(blob, name)` imzası
+  değişti — çağrılarda **adı geçirin**.
+- **Köken tablosu 8 sütun:** KAYIT CİHAZI ve KAYIT TARİHİ **ayrı**. Edinme
+  yöntemi/aracı bu alanlara yazılmaz. Bilinmiyorsa **"bilinmiyor"**.
+- **Edinme tablosu 9 sütun:** CİHAZ ve ETİKET ayrı.
+- **Alet adı:** `Edinim v1.1` (rapor ARAÇ sütunu). Yöntem: "Mantıksal kopya".
+- **Edinim 1.1 (ps1):** soru-cevap sihirbazı, özet+onay, ilerleme çubuğu,
+  `E`/`E:`/`E:\` normalizasyonu, UTF-8 BOM, `İŞLEM DURDURULDU` çıkışı.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Rapor ÜRÜNÜ değil ALETİ adlandırır.** ARAÇ hücresi `Edinim v1.1` gibi
+   `ad vSürüm` biçimindedir. Ürün adı hiçbir çıktıda geçmez.
+2. **"Bilinmiyor" uydurma değer değildir.** Ölçülemeyen/verilmeyen alan
+   "bilinmiyor" (veya "—") yazar; tahmin yazılmaz.
+3. **Edinme yöntemi kayıt cihazı değildir.** `origin.deviceInfo`'ya yöntem/araç
+   yazılmaz; yöntem `acquisition.method`, araç `acquisition.method.tool`'dadır.
+   Eski kayıtlarda `deviceInfo` içindeki gerçek cihaz metni `recordingDevice`'e
+   göç eder; makine metni (Mantıksal/PowerShell/Edinim…) yok sayılır.
+4. **Envanter tek kaynak.** Yeni bir çıktı yolu eklerken `inventoryRows(c)`
+   kullanın; satır biçimini kopyalamayın.
+5. **`audioTech` ad ister.** Uzantı bilgisi olmadan biçim "Bilinmiyor" olur.
+6. **PowerShell betiği UTF-8 BOM ile kaydedilir.** BOM'suz dosyayı Windows
+   PowerShell 5.1 ANSI okur ve Türkçe bozulur (`tasarim` [2bi] denetler).
+7. **Sürücü yolu normalize edilir.** `E`, `E:` ve `E:\` aynı kabul edilir;
+   iki nokta eksikliği hata değildir.
+8. **Sihirbaz = soru-cevap.** Zorunlu alan boşsa tekrar sorulur; isteğe bağlı
+   alan boş bırakılabilir; özet gösterilip onay istenir. `-NonInteractive`
+   betikli kullanım içindir.
+
+### Dürüst sınır
+
+`edinme.ps1` bu ortamda çalıştırılmadı (Linux, USB yok, `pwsh` yok). Windows'ta
+`-Simulate` ve gerçek USB'de denenmelidir.
+
+### Sıradaki iş
+
+**v2.214 — Disk envanteri + paket v2:** `disk.json`, `icerik/<etiket|seri|marka>/`,
+varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu.
+

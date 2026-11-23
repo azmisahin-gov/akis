@@ -1573,7 +1573,7 @@ console.log('\n[2bh] Delil teslim zinciri ve alet deneyimi (v2.212)');
   const appJs = read('assets/app.js');
   const html = read('index.html');
   check('alet metni tek kaynaktan', /function delilToolText\(/.test(appJs));
-  check('araç adı ürün markası değil', /edinme\.ps1/.test(read('tools/edinme/edinme.ps1')));
+  check('araç adı ürün markası değil', /ToolName = 'Edinim'/.test(read('tools/edinme/edinme.ps1')));
   check('köken panelinde sicil alanı', /data-origin-key="deliveredByRegistry"/.test(appJs));
   check('köken panelinde teslim yeri alanı', /data-origin-key="deliveryPlace"/.test(appJs));
   check('teslim alma penceresinde sicil alanı', /id="intakeDeliveredByRegistry"/.test(html));
@@ -1582,6 +1582,27 @@ console.log('\n[2bh] Delil teslim zinciri ve alet deneyimi (v2.212)');
   check('rapor cihaz hücresi sürücü harfi taşımaz', !/vols\.join/.test(appJs) && !/vols\.length \? vols/.test(appJs));
   check('alet indirme düğmesi var', /id="downloadToolBtn"/.test(html));
   check('yardım ekranı v2.212 değişikliğini anar', /Son değişiklikler \(v2\.212\)/.test(html));
+}
+
+console.log('\n[2bi] Delil raporu sütunları ve Edinim aracı (v2.213)');
+{
+  const appJs = read('assets/app.js');
+  const ps1 = read('tools/edinme/edinme.ps1');
+  check('envanter 7 ayrı sütun', /inventoryHeaders: \['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'\]/.test(appJs));
+  check('envanter tek kaynak', /function inventoryRows\(/.test(appJs));
+  check('köken tablosu kayıt cihazı/tarihi ayrı', /'KAYIT CİHAZI', 'KAYIT TARİHİ'\]/.test(appJs));
+  check('edinme tablosu cihaz/etiket ayrı', /'CİHAZ', 'ETİKET', 'SERİ NO'/.test(appJs));
+  check('kayıt cihazı/tarihi ayrı alan', /data-origin-key="recordingDevice"/.test(appJs) && /data-origin-key="recordingAt"/.test(appJs));
+  check('edinme yöntemi cihaz alanına yazılmaz', !/deviceInfo: \[delilCopyTypeLabel/.test(appJs));
+  check('alet adı Edinim', /ToolName = 'Edinim'/.test(ps1));
+  check('alet sürümü 1.1', /ToolVersion = '1\.1'/.test(ps1));
+  check('sürücü yolu normalize edilir', /function Normalize-DrivePath/.test(ps1));
+  check('tek harf sürücü kabul edilir', /\^\[A-Za-z\]\$/.test(ps1));
+  check('Türkçe konsol (UTF-8)', /chcp\.com 65001/.test(ps1));
+  check('sihirbaz/sihirbaz adımı var', /EDİNİM|Edinim 1\.1/.test(ps1));
+  // Windows PowerShell 5.1, BOM'suz UTF-8 dosyayı ANSI okur ve Türkçe bozulur.
+  const raw = fs.readFileSync(path.join(ROOT, 'tools/edinme/edinme.ps1'));
+  check('ps1 UTF-8 BOM taşır', raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

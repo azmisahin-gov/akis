@@ -1,21 +1,32 @@
-# AKİS Delil Edinme — Tier 1 (Windows)
+# Edinim 1.1 — Delil Edinme (Windows, Tier 1)
 
 > **Durum:** Deneysel. Bu araç **doğrulanmış adli araç değildir**. Kurgusal bir
 > USB'de test edilmeden gerçek delile uygulanmamalıdır. Donanım write-blocker
 > yoksa çıktı **"adli imaj" değil**, "belgelenmiş dosya kopyası"dır.
 
-Bu araç, USB/flaş/SD içindeki ses dosyalarını kopyalar, her dosyanın
-**SHA-256** özetini hesaplar ve AKİS'in okuyabileceği bir **delil paketi**
-üretir. Tarayıcı USB'yi göremez; edinme burada yapılır, AKİS yalnız doğrular.
+Bu araç, USB/flaş/SD içindeki dosyaları kopyalar, her dosyanın **SHA-256**
+özetini hesaplar ve AKİS'in okuyabileceği bir **delil paketi** üretir.
+Tarayıcı USB'yi göremez; edinme burada yapılır, AKİS yalnız doğrular.
+
+## Hızlı başlangıç (soru-cevap)
+
+1. Zip'i bir klasöre açın.
+2. **`BASLAT.bat`** dosyasına **sağ tık → Yönetici olarak çalıştır**.
+3. Soruları yanıtlayın: kaynak, hedef, operatör, teslim zinciri.
+4. Özet ekranında **E** (evet) deyin.
+5. Oluşan `.zip` dosyasını AKİS'te **Ses → Delil paketi yükle** ile açın.
+
+Sürücüyü **`E`**, **`E:`** veya **`E:\`** diye yazabilirsiniz; üçü de aynıdır.
+Hedef klasör kaynak sürücüde olamaz (ör. kaynak `E`, hedef `E:\yedek` → durur).
 
 ## Ne üretir?
 
 ```
-AKIS_Delil_20261122_101500/
-  delil.json      # cihaz, etiket, yöntem, operatör, TESLİM zinciri, dosya hash'leri
+Edinim_20261122_101500/
+  delil.json      # cihaz, etiket, yöntem, operatör, teslim zinciri, hash'ler
   delil.log       # adım adım kayıt
   ses/...         # kopyalanan dosyalar
-AKIS_Delil_20261122_101500.zip
+Edinim_20261122_101500.zip
 ```
 
 `delil.json` şeması: [`docs/DELIL_EDINME.md`](../../docs/DELIL_EDINME.md).
@@ -28,11 +39,24 @@ AKIS_Delil_20261122_101500.zip
 - AKİS yalnız **ses** dosyalarını materyal yapar; ses dışı dosyalar doğrulama
   penceresinde **“Ses dışı (atlandı)”** görünür.
 
+## Operatör ≠ teslim eden
+
+| Alan | Kim | Zorunlu |
+|---|---|---|
+| **Operatör** | Edinmeyi fiilen yapan (genellikle bilirkişi) | **Evet** |
+| **Teslim eden** | Kaydı/flash'ı size veren kişi/kurum (ör. mahkeme kalemi) | Hayır |
+| Teslim eden sicili / kayıt no | Kurum sicili veya kayıt no | Hayır |
+| Teslim tarihi / yeri | Ör. 2026-11-21 · Ankara 3. Sulh Ceza Mahkemesi | Hayır |
+
+- **TCKN istenmez.** Kurum sicili veya kayıt numarası yeterlidir.
+- Boş bırakılan alan **uydurulmaz**; raporda “—” veya “bilinmiyor” görünür.
+- Bu bilgiler raporda **ayrı** gösterilir.
+
 ## Aynı dosya zaten dosyada varsa?
 
 AKİS aynı sesi **SHA-256** ile tanır. Paket mevcut dosyaya yüklenirse **yeni
-kayıt açılmaz**; düzenlemeler ve onaylar korunur, edinme bilgisi mevcut kayda
-işlenir. v2.211 öncesi oluşmuş kopyaları **Kaldır** ile temizleyin.
+kayıt açılmaz**; düzenlemeler ve onaylar korunur. **Yalnız boş alanlar**
+doldurulur (teslim bilgisi dahil); elle girdiğiniz değer **ezilmez**.
 
 ## Gereksinimler
 
@@ -40,45 +64,22 @@ işlenir. v2.211 öncesi oluşmuş kopyaları **Kaldır** ile temizleyin.
 - **Yönetici** yetkisi (`diskpart` için)
 - Harici hedef klasör (kaynak sürücüde **olamaz**)
 
-> **Operatör zorunlu:** `-Operator` verilmezse PowerShell sorar. Boş bırakılamaz.
-> Operatör = edinme işlemini fiilen yapan kişi (genellikle bilirkişi).
-
-> **Teslim eden ≠ operatör.** Teslim eden, flash'ı/kaydı bilirkişiye veren
-> kişi veya kurumdur (ör. mahkeme kalemi). İkisi `delil.json` içinde **ayrı**
-> alanlarda tutulur ve raporda ayrı gösterilir. Teslim alanları **isteğe
-> bağlıdır**; boş bırakılırsa **uydurulmaz**.
->
-> **TCKN istenmez.** Teslim edenin kimliği ad + birimle bellidir; kurum sicili
-> veya kayıt numarası yeterlidir.
-
 ## SD kart / SCSI
 
 SD kart okuyucular sık sık `BusType=SCSI` bildirir. Araç yalnız `BusType`'a
 bakmaz: birim **`DriveType=Removable`** ise kabul eder. Sistem/boot diski her
 durumda reddedilir. Log'da `Sürücü türü · BusType` yazılır.
 
-## İndirme
-
-AKİS'te **Ses → Edinme aracını indir** düğmesi bu klasörü **tek zip** olarak
-indirir (`edinme.ps1`, `BASLAT.bat`, `OKUBENI.md`). Ayrıca depodan da alınabilir:
-`tools/edinme/`.
-
-## Kullanım
-
-1. Zip'i bir klasöre açın.
-2. `BASLAT.bat` → **Yönetici olarak** PowerShell açılır (sağ tık → Yönetici
-   olarak çalıştır). Parametreler sorulur; boş bırakılan isteğe bağlı alan boş
-   kalır.
-3. İsterseniz komutu elle çalıştırın:
+## Elle kullanım (parametrelerle)
 
 ```powershell
-.\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234
+.\edinme.ps1 -SourcePath E -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234
 ```
 
 Teslim zinciriyle birlikte:
 
 ```powershell
-.\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234 `
+.\edinme.ps1 -SourcePath E -OutDir D:\delil -Operator "Ad Soyad" -Registry 1234 `
   -DeliveredBy "Mehmet Kaya" -DeliveredByRegistry "K-77" `
   -DeliveredAt 2026-11-21 -DeliveryPlace "Ankara 3. Sulh Ceza Mahkemesi"
 ```
@@ -86,23 +87,10 @@ Teslim zinciriyle birlikte:
 Tüm dosyalar (yalnız ses değil):
 
 ```powershell
-.\edinme.ps1 -SourcePath E:\ -OutDir D:\delil -Operator "Ad Soyad" -IncludeAll
+.\edinme.ps1 -SourcePath E -OutDir D:\delil -Operator "Ad Soyad" -IncludeAll
 ```
 
-4. Oluşan `.zip` dosyasını AKİS'te **Ses → Delil paketi yükle** ile açın.
-
-## Raporda ne görünür?
-
-| Alan | Nereden |
-|---|---|
-| ARAÇ | `edinme.ps1 1.0 · PowerShell` (ürün adı yazılmaz) |
-| OPERATÖR | `Ad Soyad · Sicil` |
-| TESLİM EDEN | `Ad Soyad · Sicil` (köken tablosu) |
-| TESLİM TARİHİ / YERİ | Paketten veya elle |
-| CİHAZ / SERİ | Marka-model, seri no, etiket |
-
-Sürücü harfi (`E:`, `D:`) **rapora yazılmaz**: kanıt kimliği değildir ve işletim
-sistemi değişince değişir. Harf yalnız `delil.json` teknik izinde kalır.
+Soruları atlamak için `-NonInteractive` (zorunlu alan boşsa hata verir).
 
 ## Kurgusal test (gerçek delil değil)
 
@@ -114,13 +102,27 @@ Diskpart ve cihaz bilgisi atlanır; bir klasörden paket üretir:
 
 Gerçek delilde `-Simulate` **kullanılmaz**.
 
+## Raporda ne görünür?
+
+| Alan | Nereden |
+|---|---|
+| ARAÇ | `Edinim v1.1` (ürün adı yazılmaz) |
+| OPERATÖR | `Ad Soyad · Sicil` |
+| TESLİM EDEN | `Ad Soyad · Sicil` (köken tablosu) |
+| TESLİM TARİHİ / YERİ | Paketten veya elle |
+| CİHAZ / ETİKET / SERİ | Marka-model, birim etiketi, seri no |
+| KAYIT CİHAZI / KAYIT TARİHİ | Dosya metadata'sından okunamazsa **bilinmiyor**; uzman girer |
+
+Sürücü harfi (`E:`, `D:`) **rapora yazılmaz**: kanıt kimliği değildir ve işletim
+sistemi değişince değişir. Harf yalnız `delil.json` teknik izinde kalır.
+
 ## Güvenlik kuralları
 
 1. Kaynağa **asla yazmaz**; yalnız okur.
 2. Önce diski `diskpart` ile **salt-okunur** yapar; doğrulayamazsa **durur**.
 3. İş bitince salt-okunurluğu kaldırır (`finally`).
 4. Hedef klasör kaynak sürücüdeyse **durur**.
-5. Hata olursa devam etmez.
+5. Hata olursa devam etmez; `İŞLEM DURDURULDU` yazar.
 6. Orijinali mühürleyin; kopyayla çalışın.
 
 ## Dürüst sınırlar
@@ -132,6 +134,8 @@ Gerçek delilde `-Simulate` **kullanılmaz**.
 - Seri no klonlanabilir; tek başına kimlik kanıtı değildir.
 - Çıktı "adli imaj" diye sunulmaz; raporda **"belgelenmiş dosya kopyası"**
   olarak yazılır.
+- Ses dosyasının metadata'sından **kayıt cihazı** güvenilir biçimde okunamaz;
+  bilinmiyorsa raporda “bilinmiyor” yazar.
 
 ## Test edilmesi gerekenler (gerçek delilden önce)
 
@@ -141,3 +145,4 @@ Gerçek delilde `-Simulate` **kullanılmaz**.
 - [ ] Hash elle bozulunca "uyuşmuyor"
 - [ ] Pakette dosya eksikse "pakette yok"
 - [ ] `finally` sonrası disk yeniden yazılabilir
+- [ ] Sürücü `E` (iki noktasız) yazıldığında çalışır

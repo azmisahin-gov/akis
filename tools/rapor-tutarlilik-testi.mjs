@@ -496,13 +496,13 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208, v2.212)');
       schema: 'akis.delil.v1',
       acquiredAt: '2026-11-22T10:15:00+03:00',
       operator: { name: 'Ahmet Yılmaz', registry: '1234', organization: 'Kurum' },
-      device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', sizeBytes: 16000000000, volumes: ['E:'] },
+      device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', label: 'DELIL-7', sizeBytes: 16000000000, volumes: ['E:'] },
       method: {
         readOnly: 'diskpart',
         hardwareWriteBlocker: false,
         copyType: 'logical-file-copy',
         image: null,
-        tool: { name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' }
+        tool: { name: 'Edinim', version: '1.1', engine: 'PowerShell' }
       },
       hashState: 'verified'
     }
@@ -511,15 +511,24 @@ console.log('\n[Senaryo 14] delil edinme bilgisi (v2.208, v2.212)');
   checkShared('delil başlığı', REPORT_TEXT.acqHeading, H, U, D);
   checkShared('cihaz modeli', 'SanDisk', H, U, D);
   checkShared('seri no', 'SN123', H, U, D);
-  checkShared('yöntem', 'Mantıksal dosya kopyası', H, U, D);
+  checkShared('yöntem', 'Mantıksal kopya', H, U, D);
   checkShared('doğrulama durumu', 'Doğrulandı', H, U, D);
-  // v2.212 — alet adı (ürün markası değil) üç çıktıda aynı.
-  checkShared('alet adı', 'edinme.ps1 1.0 · PowerShell', H, U, D);
+  // v2.212/v2.213 — alet adı (ürün markası değil) üç çıktıda aynı.
+  checkShared('alet adı', 'Edinim v1.1', H, U, D);
   // v2.212 — operatör sicili üç çıktıda aynı.
   checkShared('operatör sicili', 'Ahmet Yılmaz · 1234', H, U, D);
   // v2.212 — teslim zinciri: eden + sicil, yer, tarih.
   checkShared('teslim eden + sicil', 'Mehmet Kaya · K-77', H, U, D);
   checkShared('teslim yeri', 'Ankara 3. Sulh Ceza Mahkemesi', H, U, D);
+  // v2.213 — CİHAZ ve ETİKET ayrı sütun.
+  checkShared('cihaz etiketi ayrı sütun', 'DELIL-7', H, U, D);
+  // v2.213 — kayıt cihazı/tarihi bilinmiyorsa "bilinmiyor" yazılır.
+  checkShared('kayıt cihazı bilinmiyor', 'bilinmiyor', H, U, D);
+  // v2.213 — envanter tablosu 7 ayrı sütun.
+  checkShared('envanter biçim sütunu', 'DOSYA BİÇİMİ', H, U, D);
+  checkShared('envanter örnekleme sütunu', 'ÖRNEKLEME HIZI', H, U, D);
+  checkShared('envanterde biçim WAV', 'WAV', H, U, D);
+  checkShared('envanterde örnekleme', '16.000 Hz', H, U, D);
   // v2.212 — sürücü harfi kanıt kimliği değildir; üç çıktıda da YOK.
   check('sürücü harfi raporda yok (HTML)', !/\bE:/.test(H), 'E: bulundu');
   check('sürücü harfi raporda yok (UDF)', !/\bE:/.test(U), 'E: bulundu');
@@ -546,7 +555,7 @@ console.log('\n[Senaryo 15] delil verisiyle de ürün kimliği yok (v2.212)');
       acquiredAt: '2026-11-22T10:15:00+03:00',
       operator: { name: 'Ahmet Yılmaz', registry: '1234' },
       device: { busType: 'USB', model: 'SanDisk', serial: 'SN123', volumes: ['E:'] },
-      method: { copyType: 'logical-file-copy', tool: { name: 'edinme.ps1', version: '1.0', engine: 'PowerShell' } },
+      method: { copyType: 'logical-file-copy', tool: { name: 'Edinim', version: '1.1', engine: 'PowerShell' } },
       hashState: 'verified'
     }
   };
