@@ -13,6 +13,8 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>"']/g, (c) => ({
 const SECTION_LABELS = {
   cover: 'Kapak başlığı',
   coverFields: 'Dosya künyesi',
+  kunye: 'Rapor künyesi ek alanları',
+  summary: 'Rapor özeti',
   toc: 'İçindekiler',
   s1: 'İncelemenin konusu, kapsamı ve sınırları',
   s2: 'Cevaplanması gereken sorular',
@@ -102,9 +104,11 @@ function renderAnnexes(c) {
     <div class="report-side-heading"><div><b>Eklerin düzeni</b><small>Her eki ayrı açın, adlandırın ve sıralayın.</small></div><button type="button" class="report-small-btn" id="reportAddAnnex">+ Yeni ek</button></div>
     <div class="report-annex-items">${layout.annexes.map((annex, i) => {
       const custom = !DEFAULT_ANNEXES.some((item) => item.key === annex.key);
+      const annexNumber = layout.annexes.slice(0, i + 1).filter((item) => item.enabled !== false).length;
+      const annexLabel = annex.enabled ? (custom ? 'Özel ek · EK-' + annexNumber : 'EK-' + annexNumber) : (custom ? 'Özel ek · kapalı' : 'EK-' + annexNumber + ' · kapalı');
       return `<article class="report-annex-item" data-annex-key="${escapeHtml(annex.key)}">
         <div class="report-annex-top">
-          <label><input type="checkbox" data-annex-enabled="${escapeHtml(annex.key)}" ${annex.enabled ? 'checked' : ''}><b>${custom ? 'Özel ek' : 'EK-' + (i + 1)}</b></label>
+          <label><input type="checkbox" data-annex-enabled="${escapeHtml(annex.key)}" ${annex.enabled ? 'checked' : ''}><b>${annexLabel}</b></label>
           <span><button type="button" data-annex-move="${escapeHtml(annex.key)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="Eki yukarı taşı">↑</button><button type="button" data-annex-move="${escapeHtml(annex.key)}" data-direction="1" ${i === layout.annexes.length - 1 ? 'disabled' : ''} aria-label="Eki aşağı taşı">↓</button>${custom ? `<button type="button" data-annex-remove="${escapeHtml(annex.key)}" aria-label="Eki kaldır">×</button>` : ''}</span>
         </div>
         <label class="report-annex-field"><span>Ek başlığı</span><input type="text" maxlength="120" data-annex-title="${escapeHtml(annex.key)}" value="${escapeHtml(annex.title)}"></label>
