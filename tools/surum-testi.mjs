@@ -127,7 +127,7 @@ for (const moduleName of ['app.js', 'schema.js', 'report-model.js']) {
   check(`report-workspace.js ${moduleName} import'u sürümlü`, workspaceSrc.includes(specifier), specifier);
 }
 const reportModelImport = `from './report-model.js?v=${version}'`;
-check('app.js report-model.js import'u sürümlü', appSrc.includes(reportModelImport), reportModelImport);
+check("app.js report-model.js import'u sürümlü", appSrc.includes(reportModelImport), reportModelImport);
 
 // 4) CHANGELOG: "Güncel sürüm" satırı ve en yeni sürüm başlığı.
 const changelog = read('CHANGELOG.md');
