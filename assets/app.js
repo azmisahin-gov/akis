@@ -11021,6 +11021,7 @@ function renderReport() {
     html += `</div>`;
   }
   if (on('signature')) {
+    html += reportOrderMarker('signature');
     html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
   }
   html += '</div>';
@@ -11405,6 +11406,7 @@ function docxXml(c) {
     }
   }
   if (on('signature')) {
+    body += reportOrderMarker('signature');
     body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
   }
   body = orderReportMarkup(body, c);
@@ -11911,6 +11913,7 @@ async function makeUdf() {
     }
   }
   if (on('signature')) {
+    el.push(reportOrderMarker('signature'));
     el.push(
       paragraph(c.expertName || REPORT_TEXT.defaultExpert, {
         size: 13,
