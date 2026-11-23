@@ -1,4 +1,6 @@
-# Rapor Ekranı ve Şablon Yeniden Planı
+> **UYGULANDI — v2.227, dal: `agent/report-workspace-redesign`.** Üç bölgeli rapor alanı, ortak bölüm sırası, dinamik ana bölüm numaraları, bağımsız EK-1…EK-7 yönetimi, EK-4, son 10 revizyon ve temel model testleri eklendi. Aşağıdaki ilk plan, tasarım kararlarının kaydı olarak korunmuştur.
+
+# Rapor Ekranı ve Şablon Yeniden Tasarımı
 
 Bu belge, **sıradaki oturumun** üzerine kuracağı planı tanımlar. Kaynak:
 kullanıcının 2026-11-23 tarihli devir talimatı ve v2.218–v2.226 arasında
@@ -16,7 +18,7 @@ yapılan ölçümlü çalışma.
 
 ---
 
-## 1. Bugünkü durum (v2.226)
+## 1. Başlangıç durumu (v2.226) — v2.227 ile uygulandı
 
 | | |
 |---|---|
