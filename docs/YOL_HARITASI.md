@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.226.**
+yazılır. **Güncel sürüm: v2.227.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.227 — Rapor ekranı ve şablon yeniden tasarımı (TAMAMLANDI)
+
+- Rapor ekranı **üç bölge**: rapor iskeleti · A4 önizleme · kontrol/revizyon.
+- Tüm bölümler ve **ekler** tek iskelette; ↑↓ sıralama, tek tek aç/kapa.
+- **Numara türetilir** (kapatınca boşluk yok); **TOC gövde sırasını izler**.
+- **Ekler ayrı kayıt**, EK-1…EK-6 bitişik (eski EK-4 boşluğu kapandı).
+- **Rapor revizyonu**: düzen + rapor metinleri (kanıt dışı), en çok 10 kayıt.
+- Üç çıktı (HTML/DOCX/UDF) **aynı sıra ve metni** üretir.
+- Ayrıntı: `CHANGELOG.md` v2.227; plan: `RAPOR_EKRANI_PLANI.md`.
 
 ## Planlanan çalışmalar (uygulanmadı)
 

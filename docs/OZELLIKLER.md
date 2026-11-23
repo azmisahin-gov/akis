@@ -1,4 +1,4 @@
-# Özellikler (v2.226 — mevcut durum)
+# Özellikler (v2.227 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -745,6 +745,34 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
 - **Tier 1 sınırı:** silinmiş dosya/boş alan gelmez; "adli imaj" değil,
   "belgelenmiş dosya kopyası"dır. Yazılımsal salt-okunur, donanım
   write-blocker değildir; yöntem raporda yazılır.
+
+## Rapor ekranı: iskelet · A4 · kontrol/revizyon (v2.227)
+
+Rapor ekranı üç bölgeye ayrıldı; rapor ilk ekranda görünür.
+
+- **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
+  ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller
+  (Yalın · Standart · Tam 56.12) burada.
+- **Numara türetilir:** ana bölüm numaraları **açık ve sıralı** bölümlere göre
+  verilir; bir bölüm kapatılınca numarada **boşluk kalmaz** (3 kapatılınca
+  4 → 3 olur). 5.1/5.2/5.3 alt başlıkları da ana numaradan türetilir.
+- **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
+  çizilen tüm bölümler listelenir.
+- **Ekler ayrı kayıttır:** her ek tek tek açılır/kapanır ve sıralanır; numara
+  **EK-1…EK-6** bitişiktir (eski EK-4 boşluğu kapandı).
+- **A4 önizleme (orta):** kâğıt genişliğinden A4 sayfa kılavuzu; sayfa sayısı
+  (`A4 · N sayfa`) gösterilir. Kılavuz niteliğindedir; kesin kırılma
+  yazdırma/PDF’te oluşur. Kırpma yok.
+- **Rapor kontrolü (sağ):** rapor hazırlığı maddeleri (tıkla → ilgili yere git),
+  teknik ortam, künye ek alanları ve kalite kontrolü panelleri.
+- **Rapor revizyonu (sağ):** “Revizyon kaydet” o anki bölüm düzenini ve rapor
+  metinlerini saklar (en çok 10). “Geri yükle” değişecek alanları söyler.
+  **Ses ve deşifre kanıtı revizyona girmez.**
+- **Tek kaynak:** sıra/numara/başlık/TOC ve üç çıktı (HTML/DOCX/UDF) aynı
+  tanımdan (`REPORT_SECTION_DEFS`, `REPORT_ANNEX_DEFS`, `case.report.layout`)
+  beslenir.
+- **Yazdırma/tam ekran:** yalnız rapor kâğıdı çıkar; iskelet/kontrol/revizyon
+  panelleri gizlenir.
 
 ## Mesleki sınırlar (uygulama bunları yapmaz)
 

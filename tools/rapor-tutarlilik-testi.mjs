@@ -712,7 +712,7 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
   checkShared('ASR modeli', 'Xenova/whisper-small', H, U, D);
   checkShared('EK-1 teslim tutanağı', 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
   checkShared('EK-3 işlem günlüğü', 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
-  checkShared('EK-5 gösterim anahtarı', 'EK-5. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
+  checkShared('EK-4 gösterim anahtarı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
 }
 
 // Senaryo 19: teknik ortam alanları (v2.222). Bölüm varsayılan kapalı;
@@ -771,6 +771,40 @@ console.log('\n[Senaryo 21] kalite kontrolü bölümü (v2.226)');
   checkShared('delil günlüğü satırı', 'Delil günlüğü zinciri', H, U, D);
   checkShared('ikinci kontrolü yapan değeri', 'Uzman Y', H, U, D);
   checkShared('ikinci kontrol kapsamı değeri', 'Tüm bölümler', H, U, D);
+}
+
+// Senaryo 22: rapor sırası, türetilmiş numara ve ekler (v2.227).
+// KURAL: bölüm kapatılınca numara boşluğu OLMAZ; sıra değişince üç çıktı da
+// aynı sırayı ve aynı numarayı verir; EK numarası bitişiktir.
+console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)');
+{
+  const noS3 = baseCase({ report: { sections: { s3: false } } });
+  const H = htmlText(noS3),
+    U = await udfText(noS3),
+    D = await docxText(noS3);
+  checkShared('s3 kapalı: 4. bölüm 3 oldu', '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR', H, U, D);
+  const stale = '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR';
+  check('s3 kapalı: eski 4 numarası kalmadı (H)', !H.includes(stale));
+  check('s3 kapalı: eski 4 numarası kalmadı (U)', !U.includes(stale));
+  check('s3 kapalı: eski 4 numarası kalmadı (D)', !D.includes(stale));
+
+  const reordered = baseCase({ report: { layout: { order: ['s2', 's1'] } } });
+  const H2 = htmlText(reordered),
+    U2 = await udfText(reordered),
+    D2 = await docxText(reordered);
+  const first = '1. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR';
+  const second = '2. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI';
+  for (const [n, txt] of [['H', H2], ['U', U2], ['D', D2]]) {
+    check(`sıra değişti: s2 önce (${n})`, txt.indexOf(first) >= 0 && txt.indexOf(first) < txt.indexOf(second));
+  }
+
+  const annex = baseCase({ report: { sections: { annex: true } } });
+  const HA = htmlText(annex),
+    UA = await udfText(annex),
+    DA = await docxText(annex);
+  checkShared('EK-4 bitişik numaralı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
+  checkShared('EK-6 bitişik numaralı', 'EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
+  check('EK-7 numarası kalmadı (H)', !HA.includes('EK-7.'));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

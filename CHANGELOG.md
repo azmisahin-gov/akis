@@ -6,12 +6,68 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.226.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.227.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.227 — Rapor ekranı ve şablon yeniden tasarımı
+
+Rapor ekranı **üç bölgeye** ayrıldı ve raporun tüm parçaları (ekler dâhil) tek
+iskeletten organize edilebilir hâle geldi.
+
+### KULLANICI NE GÖRECEK
+
+- **Rapor ilk ekranda görünür.** Önizlemenin üstündeki panel yığını kalktı:
+  solda **rapor iskeleti**, ortada **A4 önizleme**, sağda **rapor kontrolü ve
+  revizyon**. (Ölçüm: önizleme üst kenarı 901 → ekran içinde.)
+- **Tek iskelet:** bütün bölümler ve ekler tek listede; **↑↓ ile sıralanır**,
+  tek tek açılıp kapatılır. Kapatılan bölüm rapora ve üç çıktıya da girmez.
+- **Numara boşluğu yok:** ana bölüm numaraları açık ve sıralı bölümlere göre
+  yeniden verilir (ör. 3. bölüm kapatılınca 4 → 3 olur).
+- **İçindekiler gövdeyi izler:** TOC artık yalnız 7 ana başlığı değil, çizilen
+  tüm bölümleri gövde sırasıyla listeler.
+- **Ekler ayrı kayıt:** her ek tek tek açılır/kapanır ve sıralanır. EK numarası
+  **EK-1…EK-6** olarak bitişiktir (eski sürümdeki **EK-4 boşluğu** kapandı).
+- **Rapor revizyonu:** “Revizyon kaydet” o anki bölüm düzenini ve rapor
+  metinlerini saklar; “Geri yükle” farkları söyleyerek geri alır. **Ses ve
+  deşifre kanıtı revizyona girmez.**
+- **A4 önizleme** sayfa sayısını gösterir (`A4 · N sayfa`); kılavuz niteliği
+  korunur (kesin kırılma yazdırma/PDF’te oluşur).
+- Yazdırmada ve tam ekranda yalnız rapor kâğıdı çıkar; iskelet/kontrol/revizyon
+  panelleri gizlenir.
+
+### Teknik
+
+- `assets/schema.js`: `REPORT_SECTION_DEFS` her bölüme **numarasız başlık**
+  (`title`) kazandı; `REPORT_FRONT_KEYS`, `REPORT_MAIN_KEYS`, `REPORT_BODY_ORDER`,
+  `REPORT_ANNEX_DEFS` ve `case.report.layout { order, annexOrder, annexes }`
+  eklendi. `normalizeReportLayout` bozuk/eksik düzeni güvenli hâle getirir
+  (bilinmeyen anahtar düşer, eksik bölüm sona eklenir; veri kaybı yok).
+- `assets/app.js`: rapor HTML/DOCX/UDF üreticileri **blok sözlüğü + tek sıra
+  döngüsü** ile çalışır; sıra/numara/TOC/başlık tek kaynaktan
+  (`reportBodyOrder`, `reportNumberMap`, `reportHeadingText`,
+  `reportTocEntries`). 5.1/5.2/5.3 alt başlıkları da ana numaradan türetilir.
+- Ek blokları `REPORT_ANNEX_DEFS` + `reportAnnexList` ile sıralanır/filtrelenir;
+  EK-4 boşluğu kapatıldı (transkript anahtarı EK-4, son kontrol EK-5, dayanaklar
+  EK-6).
+- Rapor revizyonu `case.report.revisions[]` (en çok 10; yalnız düzen + rapor
+  metinleri). `normalizeCase` korur; kanıt dışıdır.
+- `index.html`: `#reportWorkspace` üç sütun; `#reportSectionsBox` iskelet,
+  `#reportReadiness`/teknik/künye/qc/`#reportRevisions` sağ sütun;
+  `#reportPageViewToggle`/`#reportEmbeddedToggle` sahne çubuğunda.
+- `assets/reading-layer.css`: üç bölgeli ızgara, iskelet satırları, revizyon
+  kartı, yazdırma/tam ekran gizlemeleri. Yeni `!important` eklenmedi.
+
+### Koruyan testler
+
+- `rapor-tutarlilik`: üç çıktı aynı metni üretir; ek numarası testi EK-4’e
+  güncellendi.
+- `tasarim [2bn]`: bölüm kapısı, tek sıra döngüsü, TOC tek kaynağı, tech/qc
+  bloklarının üç çıktıda bulunması yeni mimariye göre sınanır.
+- `surum`: APP_VERSION + dört `?v=` + `version.json` + bootstrap + belgeler.
 
 ## v2.226 — Kalite kontrolü ve denetlenebilirlik
 

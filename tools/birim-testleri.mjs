@@ -129,6 +129,11 @@ const EXPOSE = [
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
   'fileTimesFromEntry', 'inventoryCounts', 'inventoryTree',
   'readEmbeddedMeta', 'parseId3v2', 'parseMp4Meta', 'parseWavMeta', 'parseFlacMeta', 'embeddedSummary', 'embeddedRows', 'mp4EpochToIso',
+  // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
+  'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
+  'reportTocEntries', 'reportAnnexList', 'reportBlockRenders',
+  'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
+  'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -4117,6 +4122,73 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     const normC = __schemaMod.normalizeCase({ ...T.emptyCaseForTest({ id: 'e4' }), report: { includeEmbedded: true } });
     eq('rapor anahtarı korunur', normC.report.includeEmbedded, true);
   }
+}
+
+// --- 82. Rapor iskeleti: sıra, türetilmiş numara, ekler, revizyon (v2.227) --
+// KURAL: numara AÇIK ve SIRALI ana bölümlere göre türetilir; kapatılan bölüm
+// numarada boşluk bırakmaz. TOC gövde sırasını izler. Ekler ayrı kayıttır ve
+// EK numarası bitişiktir. Revizyon yalnız düzen + rapor metinlerini saklar.
+{
+  console.log('\n[82] Rapor iskeleti: sıra, numara, ekler, revizyon (v2.227)');
+  const c = T.emptyCaseForTest({ id: 'cRep' });
+  eq('varsayılan sıra s1 ile başlar', T.reportBodyOrder(c)[0], 's1');
+  eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
+  eq('varsayılan numara s7=7', T.reportNumberMap(c).s7, 7);
+  eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('yardımcı bölüm numarasız', T.reportHeadingText(c, 'origin'), 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
+
+  // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
+  const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
+  eq('s3 kapalı: s4 numarası 3', T.reportNumberMap(c2).s4, 3);
+  eq('s3 kapalı: s7 numarası 6', T.reportNumberMap(c2).s7, 6);
+  eq(
+    's3 kapalı: s4 başlığı yeniden numaralandı',
+    T.reportHeadingText(c2, 's4'),
+    '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'
+  );
+
+  // Sıra değişince numara sıraya göre verilir.
+  const c3 = T.emptyCaseForTest({ id: 'cRep3', report: { layout: { order: ['s2', 's1'] } } });
+  eq('sıra: s2 numarası 1', T.reportNumberMap(c3).s2, 1);
+  eq('sıra: s1 numarası 2', T.reportNumberMap(c3).s1, 2);
+
+  // TOC: ana bölümler + yardımcı bölümler, gövde sırasıyla.
+  const toc = T.reportTocEntries(c);
+  eq('TOC ana bölümü numaralı taşır', toc.includes('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI'), true);
+  eq('TOC köken bölümünü taşır', toc.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
+  eq('TOC imzayı içermez', toc.includes('İmza ve alt bilgi'), false);
+
+  // Düzen normalizasyonu: bilinmeyen atılır, yinelenen tekilleşir, eksik eklenir.
+  const nl = T.normalizeReportLayout({ order: ['s2', 'yok', 's2'], annexes: { ek1: false } });
+  eq('normalize: bilinmeyen anahtar atılır', nl.order.includes('yok'), false);
+  eq('normalize: yinelenen tekilleşir', nl.order.filter((k) => k === 's2').length, 1);
+  eq('normalize: eksik bölümler eklenir', nl.order.length, T.REPORT_BODY_ORDER.length);
+  eq('normalize: kapatılan ek korunur', nl.annexes.ek1, false);
+  eq('normalize: diğer ek açık', nl.annexes.ek2, true);
+
+  // Ekler: sıra + aç/kapa; numara bitişik.
+  const c4 = T.emptyCaseForTest({ id: 'cRep4', report: { layout: { annexOrder: ['ek2', 'ek1'], annexes: { ek1: false } } } });
+  eq('ek listesi sırası ve kapalı ek', T.reportAnnexList(c4).map((a) => a.key).join(','), 'ek2,ek3,ek4,ek5,ek6');
+  eq(
+    'EK numaraları bitişik (EK-4 boşluğu yok)',
+    T.REPORT_ANNEX_DEFS.map((d) => d.title.split('.')[0]).join(','),
+    'EK-1,EK-2,EK-3,EK-4,EK-5,EK-6'
+  );
+
+  // Revizyon: anlık görüntü, fark, geri yükleme. Kanıt (ses/bölüm) dışıdır.
+  const c5 = T.emptyCaseForTest({ id: 'cRep5' });
+  const snap = T.reportSnapshot(c5);
+  eq('anlık görüntü düzen taşır', Array.isArray(snap.layout.order), true);
+  eq('anlık görüntü kanıt taşımaz', 'materials' in snap, false);
+  c5.report.sections.s1 = false;
+  c5.report.methodText = 'Yeni yöntem';
+  const diff = T.reportSnapshotDiff(c5, snap);
+  eq('fark: bölüm görünürlüğü', diff.includes('Bölüm görünürlüğü'), true);
+  eq('fark: inceleme yöntemi', diff.includes('İnceleme yöntemi'), true);
+  T.applyReportSnapshot(c5, snap);
+  eq('geri yükleme s1 açar', c5.report.sections.s1, true);
+  eq('geri yükleme yöntemi temizler', c5.report.methodText, '');
+  eq('revizyon listesi varsayılan boş', Array.isArray(c5.report.revisions), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

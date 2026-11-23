@@ -3165,3 +3165,164 @@ input::placeholder, textarea::placeholder {
   #reportReadiness,
   .report-toggle { display: none; }
 }
+
+/* ============================================================================
+   v2.227 — RAPOR EKRANI: ÜÇ BÖLGE (iskelet · A4 önizleme · kontrol/revizyon)
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.226, 1440×900): önizleme y=901 (ekranın altında); dört panel +
+   hazırlık kartı + iki anahtar önizlemenin ÜSTÜNDE ~850 px yer kaplıyordu.
+   KURAL: rapor kâğıdı ilk ekranda görünür; panel/skeleton ayrı sütunda.
+   Kırpma yok; sığmayan sütun kendi içinde kayar.
+   ============================================================================ */
+.report-workspace {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr) 292px;
+  gap: 12px;
+  align-items: start;
+  min-height: 0;
+}
+.report-skeleton,
+.report-side {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+  align-self: start;
+  position: sticky;
+  top: 58px; /* yapışkan araç çubuğunun altında kal (v2.227) */
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+.report-stage {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.report-stage-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+.report-stage-bar .report-toggle { margin: 0; }
+.report-pagecount {
+  margin-left: auto;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.rs-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.rs-head b { font-size: var(--fs-sm); color: var(--ink); }
+.rs-head small { font-size: var(--fs-2xs); color: var(--ink-3); }
+.rs-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-2xs);
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.report-skeleton .report-sections { margin-top: 0; display: grid; gap: 10px; }
+.rsec-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  border-radius: var(--r-sm);
+}
+.rsec-row:hover { background: var(--surface-2); }
+.rsec-move {
+  display: inline-flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 16px;
+}
+.rsec-mv {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: var(--fs-2xs);
+  line-height: 1;
+  padding: 1px 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+.rsec-mv:hover { background: var(--surface-3); color: var(--ink); }
+.rsec-mv:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.rsec-move-lock { color: var(--line); text-align: center; }
+.report-skeleton .rsec-item {
+  flex: 1 1 auto;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: var(--fs-2xs);
+  line-height: 1.35;
+  padding: 2px 0;
+}
+.rsec-child { margin-left: 14px; }
+.report-side .readiness-card { margin: 0 0 10px; }
+.report-side .report-tech-box { margin: 0 0 10px; }
+.report-revisions {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+}
+.rev-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.rev-head b { font-size: var(--fs-sm); color: var(--ink); }
+.rev-head small { font-size: var(--fs-2xs); color: var(--ink-3); }
+.rev-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-2xs);
+  color: var(--ink-2);
+}
+.rev-row:first-of-type { border-top: 0; }
+.rev-row .rev-time { flex: 1 1 auto; font-variant-numeric: tabular-nums; }
+.rev-row .rev-tag { color: var(--ink-3); }
+.rev-empty { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; }
+.rev-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rev-note { font-size: var(--fs-2xs); color: var(--ink-3); margin-top: 6px; line-height: 1.45; }
+
+/* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
+@media (max-width: 1349px) {
+  .report-workspace { grid-template-columns: 216px minmax(0, 1fr); }
+  .report-side { grid-column: 1 / -1; position: static; max-height: none; }
+}
+/* Dar ekran: tek sütun; önizleme en üstte (rapor önce görünür). */
+@media (max-width: 900px) {
+  .report-workspace { grid-template-columns: minmax(0, 1fr); }
+  .report-stage { order: -1; }
+  .report-skeleton, .report-side { position: static; max-height: none; }
+}
+
+/* Yazdırma: yalnız kâğıt. Paneller ve sahne çubuğu çıkmaz. */
+@media print {
+  .report-workspace { display: block; }
+  .report-skeleton,
+  .report-side,
+  .report-stage-bar { display: none; }
+}
+/* Tam ekran rapor: yalnız kâğıt. */
+body.report-full .report-workspace { display: block; }
+body.report-full .report-skeleton,
+body.report-full .report-side,
+body.report-full .report-stage-bar { display: none; }
+
+/* v2.227 — İçindekiler: metin zaten numaralı; <ol> işareti ikinci numara
+   üretmesin (ölçüm: ekranda "1. 1. …" görünüyordu). */
+.report-paper .toc-section ol.toc-list { list-style: none; padding-left: 0; }

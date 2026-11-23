@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.226.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.227.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,3 +5018,55 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.227) — Rapor ekranı üç bölge (DAL: rapor-ekrani-v3)
+
+Bu sürüm **ayrı bir dalda** (`rapor-ekrani-v3`) hazırlandı; `main`'e doğrudan
+push edilmedi. Amaç: rapor ekranını ve şablon kullanımını yeniden tasarlamak.
+
+### Ne yapıldı
+
+- **Üç bölge:** sol **rapor iskeleti** · orta **A4 önizleme** · sağ **rapor
+  kontrolü + revizyon**. Önizleme üst kenarı 1440×900'de **901 → 279 px**.
+- **Tek iskelet:** 28 bölüm + ekler tek listede; ↑↓ sıralama, tek tek aç/kapa.
+- **Numara türetilir:** kapatılan ana bölüm numarada boşluk bırakmaz
+  (3 kapatılınca 4 → 3). 5.1/5.2/5.3 de türetilir.
+- **TOC gövdeyi izler:** 7 değil, çizilen tüm bölümler (ölçüm: 10 madde).
+- **Ekler ayrı kayıt:** EK-1…EK-6 bitişik; eski **EK-4 boşluğu** kapandı.
+- **Rapor revizyonu:** düzen + rapor metinleri (en çok 10); kanıt dışı.
+- **A4** sayfa sayısı (`A4 · N sayfa`); yazdırma/tam ekranda yalnız kâğıt.
+
+### DEĞİŞMEZ KURALLAR (v2.227)
+
+1. **Sıra/numara/TOC/başlık TEK KAYNAK:** `reportBodyOrder`,
+   `reportNumberMap`, `reportHeadingText`, `reportTocEntries`. Üç çıktı
+   (HTML/DOCX/UDF) aynı döngüden geçer; ayrı sıra kodu yazmayın.
+2. **Ekler `REPORT_ANNEX_DEFS` + `reportAnnexList`.** Başlığı elle yazmayın;
+   numara bitişik kalmalı.
+3. **Revizyon ETKİN durumu saklar:** `reportSnapshot` `sections`/`tech`
+   varsayılanlarını da yazar. Ham `{}` saklamak geri yüklemede sahte fark üretir
+   (ölçüldü ve düzeltildi).
+4. **Revizyon kanıt taşımaz:** ses/bölüm snapshot'a girmez; geri yükleme kanıta
+   dokunmaz.
+5. **Yazdırma/tam ekran** `.report-skeleton`, `.report-side`,
+   `.report-stage-bar` gizler; yalnız kâğıt kalır.
+6. **Sıralama düğmeleri erişilebilir:** `data-report-move`,
+   `data-report-annex-move`; sürükle-bırak zorunlu değil.
+
+### Ölçüm (gerçek Chromium)
+
+1440/1300/1280/1100/900/760/600: yatay taşma **0**, kırpılan öğe **0**,
+JS hatası **0**. Yenileme sonrası sıra/ek/revizyon **korundu**. Revizyon geri
+yükleme gerçek değişikliği **geri aldı** ve farkı doğru yazdı. Yazdırma/tam
+ekran panelleri gizledi.
+
+### Testler
+
+`bash tools/test.sh` → **1304 birim + 517 şema** + rapor (Senaryo 22) + sürüm +
+tasarım yeşil. Yeni: `birim [82]`, `rapor [22]`, `surum` yeni HTML kimlikleri.
+
+### Sıradaki iş (öneri)
+
+- Sürükle-bırak sıralama (düğmeler kalmalı).
+- Raporda "Okuma metni" bölümünün iskelette ayrı gösterimi (şu an 5. içinde).
+- Gerçek A4 sayfa kırılması (şu an kılavuz) — tablo bölme riski ölçülmeli.

@@ -218,7 +218,10 @@ const REQUIRED_IDS = [
   ['dosya bilgileri çekmecesi', 'caseDrawer'],
   ['yardım penceresi', 'helpDialog'],
   ['delil paketi penceresi', 'delilResultDialog'],
-  ['delil paketi düğmesi', 'importDelilBtn']
+  ['delil paketi düğmesi', 'importDelilBtn'],
+  ['rapor çalışma alanı', 'reportWorkspace'],
+  ['rapor revizyon kartı', 'reportRevisions'],
+  ['A4 sayfa sayacı', 'reportPageCount']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));
