@@ -1397,19 +1397,29 @@ input::placeholder, textarea::placeholder {
     min-height: 0;
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
+    /* v2.218 — Üç satır: (1) delil envanteri tam genişlik, (2) yükleme alanı,
+       (3) kayıt listesi + detay. v2.216'da envanter bu ızgaraya yerleştirilmeden
+       eklendiği için örtük satıra düşüyor, 220px sütunda 418px yer kaplayıp
+       listeyi 194px'e sıkıştırıyor ve detayı yarım bırakıyordu (ölçüldü). */
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: 8px;
     overflow: hidden !important; /* v2.129: overflow:visible !important */
   }
+  /* Delil envanteri (v2.216): dosya ağacı derin ve geniş; TAM GENİŞLİK üst
+     satırda durur. Kapalıyken tek satırlık özet; açılınca ağaç okunaklı olur. */
+  #view-audio > .delil-inventory {
+    grid-column: 1 / -1; grid-row: 1;
+    margin: 0; min-height: 0;
+  }
   #view-audio > .upload-zone {
-    grid-column: 1; grid-row: 1;
+    grid-column: 1; grid-row: 2;
     padding: 8px 10px; margin: 0; min-height: 0;
   }
   #view-audio > .upload-zone .upload-icon,
   #view-audio > .upload-zone h3,
   #view-audio > .upload-zone small { display: none; }
   #view-audio > .panel:not(.detail-panel) {
-    grid-column: 1; grid-row: 2;
+    grid-column: 1; grid-row: 3;
     min-height: 0; overflow: auto; margin: 0;
   }
   /* v2.142 — Kayıt sütunu: başlık GÖRÜNÜR (kullanıcı devtools'ta fark etti),
@@ -1423,7 +1433,7 @@ input::placeholder, textarea::placeholder {
   #view-audio > .panel:not(.detail-panel) .panel-heading h3 { font-size: var(--fs-xs); margin: 0; }
 
   #view-audio > .detail-panel {
-    grid-column: 2; grid-row: 1 / span 2;
+    grid-column: 2; grid-row: 2 / span 2;
     min-height: 0; overflow: hidden;
     display: flex; flex-direction: column; margin: 0;
   }
@@ -1771,9 +1781,14 @@ input::placeholder, textarea::placeholder {
      `flex:1 1 auto` kabuğa sığmıyor, metin tekn(inin) ÜSTÜNE taşıyordu
      (ölçüm: metin 745'te bitiyor, dalga çubuğu 595'te başlıyordu → çakışma).
      Kural: gövde/sağ sütun/metin içeriğe göre büyür; sığmazsa PANEL kayar. */
+  /* v2.218 — `min-height:0` sağ sütunu içeriğinden aşağı indiriyordu: panel
+     kısalınca metin alanı (min 260px) kendi kutusunu aşıp ALTTAKİ analiz
+     kutusunun üstüne biniyordu (ölçüm: textarea alt 823 > dalga üst 742).
+     Kural: sağ sütun ve metin İÇERİĞİNDEN aşağı inmez; sığmazsa .seg-detail
+     (overflow-y:auto) KAYAR. Ezme değil kaydırma (v2.179/v2.191 ilkesi). */
   #view-audio .seg-detail .sd-body { flex: 1 1 auto; min-height: 0; }
-  #view-audio .seg-detail .sd-right { flex: 1 1 auto; min-height: 0; }
-  #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: 0; }
+  #view-audio .seg-detail .sd-right { flex: 1 1 auto; min-height: auto; }
+  #view-audio .seg-detail .sd-right .sd-text { flex: 1 1 auto; min-height: auto; }
   #view-audio .seg-detail .sd-right .sd-text textarea {
     flex: 1 1 auto;
     resize: none;
@@ -2950,7 +2965,8 @@ input::placeholder, textarea::placeholder {
 .delil-inventory {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
   padding: 10px 12px;
   margin-bottom: 12px;
 }

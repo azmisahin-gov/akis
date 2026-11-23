@@ -1,4 +1,4 @@
-# Özellikler (v2.217 — mevcut durum)
+# Özellikler (v2.218 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.

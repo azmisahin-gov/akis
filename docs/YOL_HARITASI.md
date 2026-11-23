@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.217.**
+yazılır. **Güncel sürüm: v2.218.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -17,8 +17,10 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 
 1. ~~**Delil edinme — Tier 1**, envanter ve gömülü metadata~~
    **v2.208–v2.217 arasında yapıldı.**
-2. **v2.218 — Tasarım denetimi (İLK İŞ):** delil envanteri eklendikten sonra
-   oluşan görsel tutarsızlıkları **ölçerek** bul ve düzelt. Yeni özellik yok.
+2. ~~**v2.218 — Tasarım denetimi:**~~ **yapıldı.** Delil envanteri masaüstü
+   ızgarasına yerleştirildi (tam genişlik üst satır); kayıt listesi ve detay
+   paneli doğru yüksekliğe döndü; envanter açıkken metin/analiz örtüşmesi
+   giderildi. Yeni özellik yok; `tasarim-testi` [2bm] korur.
 3. **Kanıt tutarlılığı:** dosya zamanı ↔ gömülü metadata çelişkisi, envanterde
    dosya zamanları, hazırlık kartı maddesi.
 4. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,

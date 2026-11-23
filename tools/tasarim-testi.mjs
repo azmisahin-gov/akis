@@ -1235,7 +1235,13 @@ console.log('\n[2aq] Dalga çubuğu: menüler görünür, metinle çakışmaz (v
   const rl = read('assets/reading-layer.css');
   const js = read('assets/app.js');
   check('gövde kalan yüksekliği alır (flex:1, min-height:0)', /#view-audio \.seg-detail \.sd-body \{[^}]*flex:\s*1 1 auto[^}]*min-height:\s*0/.test(rl));
-  check('sağ sütun kalan yüksekliği alır (flex:1, min-height:0)', /#view-audio \.seg-detail \.sd-right \{[^}]*flex:\s*1 1 auto[^}]*min-height:\s*0/.test(rl));
+  // v2.218: sağ sütun esner AMA içeriğinden aşağı inmez (min-height:auto).
+  // `min-height:0` panel kısalınca metin alanını analiz kutusunun üstüne
+  // bindiriyordu (ölçüldü). Ezme değil, .seg-detail kaydırır.
+  check(
+    'sağ sütun esner ama içeriğinden aşağı inmez (min-height:auto)',
+    /#view-audio \.seg-detail \.sd-right \{[^}]*flex:\s*1 1 auto[^}]*min-height:\s*auto/.test(rl)
+  );
   check('metin sütunu kalan yüksekliği alır', /#view-audio \.seg-detail \.sd-right \.sd-text \{[^}]*flex:\s*1 1 auto/.test(rl));
   check('metin alanı kendi içinde kayar (panel kaymaz)', /\.sd-ta-wrap textarea\s*\{[^}]*overflow-y:\s*auto/.test(rl));
   check('satır içi yükseklik dayatılmıyor', !/ta\.style\.height\s*=\s*['"]auto['"]/.test(js));
@@ -1654,6 +1660,45 @@ console.log('\n[2bl] Gömülü metadata (cihaz beyanı) (v2.217)');
   check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /REPORT_TEXT.embeddedHeading/.test(appJs));
   check('gömülü stil token kullanır', /\.origin-embedded[\s\S]{0,200}var\(--ink-2/.test(layer));
   check('yardım gömülü metadata anar', /Gömülü metadata/.test(html));
+}
+
+console.log('\n[2bm] Masaüstü ızgarası: delil envanteri kendi satırında (v2.218)');
+{
+  // ÖLÇÜM (v2.217, 1440×900): `#delilInventory` masaüstü ızgarasına
+  // yerleştirilmemişti; örtük 3. satıra düşüp 220px sütunda 418px yer
+  // kaplıyor, kayıt listesini 194px'e sıkıştırıyor ve detay panelini yarım
+  // bırakıyordu (sağda ~448px boş bant). Ayrıca genişletilince detay paneli
+  // kısalıyor, `.sd-right` `min-height:0` yüzünden metin alanı analiz
+  // kutusunun ÜSTÜNE biniyordu (textarea alt 823 > dalga üst 742).
+  // KURAL: envanter TAM GENİŞLİK kendi satırında; detay 2–3. satırı kaplar;
+  // sağ sütun içeriğinden aşağı inmez (ezme değil, panel kaydırır).
+  const rl = read('assets/reading-layer.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  check(
+    'üç satırlı ızgara (envanter · yükleme · liste)',
+    /#view-audio\.active\s*\{[^}]*grid-template-rows:\s*auto\s+auto\s+minmax\(0,\s*1fr\)/.test(rl)
+  );
+  check(
+    'envanter tam genişlik üst satırda',
+    /#view-audio > \.delil-inventory\s*\{[^}]*grid-column:\s*1\s*\/\s*-1[^}]*grid-row:\s*1/.test(rl)
+  );
+  check('yükleme alanı 2. satırda', /#view-audio > \.upload-zone\s*\{[^}]*grid-row:\s*2/.test(rl));
+  check(
+    'kayıt listesi 3. satırda',
+    /#view-audio > \.panel:not\(\.detail-panel\)\s*\{[^}]*grid-row:\s*3/.test(rl)
+  );
+  check(
+    'detay paneli 2–3. satırı kaplar (tam yükseklik)',
+    /#view-audio > \.detail-panel\s*\{[^}]*grid-row:\s*2\s*\/\s*span\s*2/.test(rl)
+  );
+  check(
+    'detay sağ sütunu içeriğinden aşağı inmez (örtüşme yok)',
+    /#view-audio \.seg-detail \.sd-right\s*\{[^}]*min-height:\s*auto/.test(rl) &&
+      !/#view-audio \.seg-detail \.sd-right\s*\{[^}]*min-height:\s*0\b/.test(rl)
+  );
+  check(
+    'envanter panel diliyle uyumlu (radius + gölge token)',
+    /\.delil-inventory\s*\{[^}]*border-radius:\s*var\(--r-lg\)[^}]*box-shadow:\s*var\(--shadow-sm\)/.test(rl)
+  );
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

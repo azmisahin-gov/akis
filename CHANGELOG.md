@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.217.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.218.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.218 — Tasarım denetimi: delil envanteri yerleşimi
+
+Kullanıcı, delil envanteri eklendikten sonra "bazı tutarsız görünümler olmaya
+başladı" dedi. Ölçüm (gerçek Chromium, 1440×900) tek bir kök gösterdi:
+`#delilInventory` masaüstü ızgarasına **yerleştirilmemişti**.
+
+### Ölçülen hata (v2.217, 1440×900)
+
+- Envanter **220px sol sütunda, örtük 3. satırda**, 418px yüksekliğindeydi.
+- Kayıt listesi **194px'e** sıkışıyordu (3 satır yerine ~2).
+- Detay paneli yalnız **356px** yüksekliğinde kalıyor, sağda **~448px boş bant**
+  bırakıyordu.
+- Envanter genişletilince detay paneli kısalıyor; `.sd-right` `min-height:0`
+  yüzünden metin alanı analiz kutusunun **üstüne biniyordu** (textarea alt 823 >
+  dalga üst 742).
+
+### Düzeltme
+
+- Masaüstü ızgarası **üç satıra** ayrıldı: (1) delil envanteri tam genişlik,
+  (2) yükleme alanı, (3) kayıt listesi; detay paneli 2–3. satırı kaplar.
+- Envanter panel diliyle hizalandı (`--r-lg`, `--shadow-sm`).
+- Sağ sütun **içeriğinden aşağı inmez** (`min-height:auto`); sığmazsa panel
+  kayar, öğe ezilmez (v2.179/v2.191 ilkesi).
+
+### Ölçüm (v2.218, gerçek Chromium)
+
+| Genişlik | Liste | Detay | Yatay taşma | Örtüşme |
+|---|---|---|---|---|
+| 1440 (envanter kapalı) | 580px | **742px** | yok | yok |
+| 1440 (envanter gizli) | 624px | **786px** | yok | yok |
+| 1440 (envanter açık) | 331px | 493px | yok | **yok** |
+| 900 / 600 | dar düzen korunur | — | yok | yok |
+
+Üç temada envanter/köken/rapor yüzeyleri WCAG AA üstü (en düşük 5.93).
+Köken paneli ve rapor 1440/900/600'de kırpılmıyor.
+
+### KULLANICI NE GÖRECEK
+
+- **Delil envanteri artık üstte, tam genişlikte** açılır bir şerittir; dosya
+  ağacı okunaklıdır. Kapalıyken tek satır yer kaplar.
+- **Kayıt listesi ve düzenleme paneli eski (doğru) yüksekliğine döndü**; sağda
+  boş bant kalmaz.
+- Envanteri açtığınızda metin alanı analiz kutusunun üstüne binmez; gerekirse
+  panel kayar.
+
+**Koruyan test:** `tasarim-testi` [2bm] (7 kontrol) — düzeltme yokken KALDI.
 
 ## v2.217 — Gömülü metadata (cihaz beyanı)
 
