@@ -22,8 +22,19 @@ const marked = '<cover><!--AKIS_REPORT_BLOCK:s1-->one<!--AKIS_REPORT_BLOCK:s2-->
 assert.equal(sortMarkedParts(marked, ['s3', 's1', 's2']), '<cover>threeonetwo');
 
 const base = { fileNo: '2026/1', court: 'Mahkeme', report: { conclusionText: 'A', revisions: [{ id: 'x' }] }, questions: [], materials: [] };
-const snapshot = createRevisionSnapshot(base);
+const richCase = {
+  ...base,
+  materials: [{
+    id: 'm1', name: 'kayit.wav', sha256: 'abc', duration: 12,
+    tech: { channels: 2 }, origin: { deliveredBy: 'Kurum' },
+    segments: [{ id: 's1', start: '00:00:01.000', end: '00:00:02.000', text: 'Merhaba', review: 'approved', asrText: 'Meraba', asrModel: 'whisper-small', history: [{ text: 'Meraba' }], obs: { noise: true } }]
+  }]
+};
+const snapshot = createRevisionSnapshot(richCase);
 assert.equal(snapshot.report.revisions, undefined);
+assert.equal(snapshot.materials[0].segments[0].asrText, 'Meraba');
+assert.equal(snapshot.materials[0].segments[0].history[0].text, 'Meraba');
+assert.equal(snapshot.materials[0].origin.deliveredBy, 'Kurum');
 assert.equal(compareRevisionSnapshots(snapshot, snapshot).some(x => x.changed), false);
 const altered = structuredClone(snapshot);
 altered.report.conclusionText = 'B';
