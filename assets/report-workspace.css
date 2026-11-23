@@ -1,4 +1,5 @@
 /* AKİS report workspace v2.227 — three-zone report authoring */
+@page { size: A4 portrait; margin: 0; }
 #view-report.active {
   display: flex;
   flex-direction: column;
