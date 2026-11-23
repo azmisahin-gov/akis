@@ -4,7 +4,8 @@
 > (LLM, rapor, Rust/Tauri, delil Tier 2) **öneridir**; uygulanmamıştır.
 > Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
 >
-> **Güncel sürüm:** v2.211.
+> **Güncel sürüm:** v2.217. Delil paketi, envanter ve gömülü metadata
+> tamamlandı; sıradaki iş **tasarım denetimi**, sonra **rapor**. Ayrıntı: §11.
 
 ## 0. Öncelik sırası (kullanıcı kararı)
 
@@ -218,18 +219,22 @@ Bu sıra **öneridir**; kullanıcı her adımda durdurabilir veya sırayı deği
 | 2026-11-22 | LLM (tarayıcı) | Kaldırıldı | Ölçüm: çöp/sadakatsiz çıktı |
 | 2026-11-22 | Planlama | Bu belge eklendi | Seçenekleri kayda geçirmek |
 
-## 9. Delil envanteri (v2.212–v2.215)
+## 9. Delil envanteri (v2.212–v2.217) — TAMAMLANDI
 
-v2.208–v2.211 ile edinme + doğrulama çalışıyor. Kullanıcı kararı: paket
-**“imaj gibi”** düşünülecek; içinde bilinmeyen dosyalar olabilir. Aşağıdaki
-sıra onaylandı.
+Planlanan sıra uygulama sırasında **beş sürüme** yayıldı; gerçek eşleme:
 
-| Sürüm | İş | Not |
+| Sürüm | İş | Durum |
 |---|---|---|
-| **v2.212** | Teslim/operatör ayrımı + rapor düzeltmesi | `delivery` alanları, operatör sicili, **D: rapora yazılmaz**, marka/model/seri/etiket |
-| **v2.213** | Disk envanteri + paket v2 | `disk.json` (partition/volume anlık görüntüsü), `icerik/<etiket\|seri\|marka>/...`, varsayılan **tüm dosyalar**, `-AudioOnly`; v1 uyumlu |
-| **v2.214** | Envanter arayüzü | ağaç, filtre, paket özeti, “Elle ekle (paketsiz)” ikincil |
-| **v2.215** | Hızlı akış | “Paketten yeni dosya” sihirbazı, ilerleme, hatırlama, toplu |
+| **v2.212** | Teslim/operatör ayrımı, D: rapor dışı, alet adı | ✅ |
+| **v2.213** | Tablolar ayrıldı (7/8/9 sütun), Edinim 1.1 | ✅ |
+| **v2.214** | Zip'te BOM (PowerShell 5.1) | ✅ |
+| **v2.215** | Paket v2: `icerik/<seri>/<kaynak yolu>` + `disk.json` | ✅ |
+| **v2.216** | Envanter ağacı + gözlenen dosya zamanları | ✅ |
+| **v2.217** | Gömülü metadata (cihaz beyanı), rapora isteğe bağlı | ✅ |
+
+**Ertelenen:** “Paketten yeni dosya” sihirbazı, ilerleme/hatırlama/toplu akış
+(§11, D6). “Elle ekle (paketsiz)” ikincil yapılma kararı da envanter UI
+oturduktan sonra ölçümle verilecek.
 
 **Kararlar:**
 
@@ -252,6 +257,104 @@ sıra onaylandı.
 3. Teslim eden sicili zorunlu mu? (öneri: isteğe bağlı).
 4. Teslim yeri/şekli rapora ayrı satır mı? (öneri: evet, isteğe bağlı).
 5. Hukuki usul: kurumun standardı teyit edilecek.
+
+
+## 11. Birleşik yol haritası (v2.218 ve sonrası)
+
+> **Yeni oturum için sıra:** önce **tasarım denetimi** (v2.218), sonra
+> **rapor** (B1/B2). Aradaki maddeler yalnız çok yüksek değerliyse öne alınır.
+
+### 11.0 Önce: tasarım denetimi (v2.218 — zorunlu ilk iş)
+
+Kullanıcı: *“En son delil envanteri eklemesinden sonra bazı tutarsız görünümler
+olmaya başladı.”* Bu yüzden yeni özellik eklemeden **görsel tutarlılık**
+denetlenir ve düzeltilir.
+
+Denetlenecek yüzeyler (gözle değil **ölçerek**):
+
+| Yüzey | Ölçüt |
+|---|---|
+| `#delilInventory` paneli | malzeme paneliyle başlık hiyerarşisi, kenarlık/yarıçap/boşluk, `panel-heading` ile aynı dil |
+| Köken paneli yeni alanları | `recordingDevice`/`recordingAt`/`fileTimes`/`embedded` — etiket hizası, 2 sütun ızgara, uzun metin sarma |
+| Rapor | `originFileTimeNote`, gömülü metadata bölümü, anahtar — 1440/900/600 px kırpma **0** |
+| Envanter ağacı | dar ekran sarma, `overflow` görünür, uzun yol kırpılmıyor |
+| Üç tema | açık/koyu/sepya: yüzey + metin kontrastı, durum renkleri tek anlam |
+| Durum matrisi | `.di-file:hover`, `.delil-inventory > summary`, `.report-toggle` vb. — CDP `CSS.getMatchedStylesForNode` |
+
+Kural: düzeltme **tek sürüm** (v2.218); kapsam yalnız görsel/yerleşim, davranış
+değişmez. Ölçüm tablosu CHANGELOG'a yazılır.
+
+### 11.1 Kanıt derinliği (düşük risk, yüksek değer)
+
+| # | İş | Ne yapar | Emek |
+|---|---|---|---|
+| A1 | Tutarlılık uyarısı | Dosya zamanı ↔ gömülü metadata çelişkisi (ör. mtime < metadata) → çip + readiness maddesi. **Kanıt değil, dikkat.** | Küçük |
+| A2 | Envanterde dosya zamanları | Ağaç satırında oluşturulma/değiştirilme (gözlem) + “kayıt zamanı değil” ipucu | Küçük |
+| A3 | Gömülü metadata tam dosyada | 8 MB sınırı kalkar (büyük dosyada metadata sonda) | Küçük |
+| A4 | Hazırlık kartına ekle | “Gömülü metadata var / çelişki var” maddesi | Küçük |
+
+**Öneri:** v2.219 = A1+A2+A4 (aynı sözleşme: gözlem ≠ beyan); v2.220 = A3.
+
+### 11.2 Rapor (odak)
+
+| # | İş | Ne yapar | Emek | Risk |
+|---|---|---|---|---|
+| B1 | Bölüm/başlık tek kaynak | Başlık, sıra, TOC tek yerden; HTML/DOCX/UDF aynı | Orta | Orta |
+| B2 | Kurumsal kâğıt biçimi | Başlık bandı, sayfa no, imza bloğu, tablo tipografisi | Orta | Düşük |
+| B3 | Case alanları tek kaynak | Etiket/sıra/doğrulama (ALAN_SISTEMI §5B) | Orta | Orta |
+| B4 | Gömülü metadata sütunu | Ayrı bölüm yerine tablo sütunu/grafiği | Küçük | Ölçüm |
+
+**Öneri:** B1 → B2 → (B4 ihtiyaç varsa) → B3.
+
+### 11.3 Hızlı yardımcılar (LLM'siz)
+
+| # | İş | Ne yapar |
+|---|---|---|
+| C1 | Soru ↔ bölüm eşleştirme | Her soruya zaman damgalı ilgili bölümler (deterministik) |
+| C2 | Terim/konu listesi | Sık geçen terimler (`contentWords` altyapısı var) |
+| C3 | Seçmeli özet | Yalnız mevcut cümlelerden seçer; **yeni cümle yazmaz** |
+
+### 11.4 Delil / edinme
+
+| # | İş | Ne yapar | Emek |
+|---|---|---|---|
+| D1 | `-AudioOnly` eşiği | 8 GB üstünde uyarı | Küçük |
+| D2 | Rust CLI edinme (Tier 1) | PowerShell emekli; aynı `delil.json` | Orta |
+| D3 | Tier 2: DD imajı | Raw sektör, silinmiş veri | Orta-yüksek |
+| D4 | Sanal imaj / geri yazma | `icerik/` + `disk.json`'dan imaj üret/gez | Yüksek |
+| D5 | Yerel ajan | Tarayıcıdan “cihazı tara” | Yüksek |
+| D6 | Paket sihirbazı | “Paketten yeni dosya”, ilerleme, hatırlama, toplu | Orta |
+
+### 11.5 LLM (isteğe bağlı, ölçüm şart)
+
+- Tarayıcı 0.5–1.5B: ❌ ölçüldü, kullanılamaz (v2.207).
+- **Ollama 4B:** en hızlı çalışan yol; CORS/PNA ölçülmedi; çıktı **taslak**.
+- Native (Rust/llama.cpp): uzun vade.
+
+### 11.6 Platform / borç
+
+- Tauri kabuğu (mevcut arayüzü sarar), tam Rust yeniden yazım (en son).
+- CSS borcu: nöbetçi eşikleri var; küçük ve kanıtlı adımlar.
+- ≤900 px tek sütun: bilinen tasarım sınırı.
+
+### 11.7 Önerilen sürüm sırası
+
+1. **v2.218** — Tasarım denetimi ve düzeltme (yalnız görsel/yerleşim).
+2. **v2.219** — Kanıt tutarlılığı (A1+A2+A4).
+3. **v2.220** — Gömülü metadata tam dosya (A3).
+4. **v2.221** — Soru ↔ bölüm eşleştirme (C1).
+5. **v2.222** — Terim listesi + seçmeli özet (C2+C3).
+6. **v2.223** — Rapor bölüm/başlık tek kaynak (B1).
+7. **v2.224** — Kurumsal kâğıt biçimi (B2).
+8. Sonra: D1 → D2 → (D3/D4 araştırma) → D6 → B3/B4 → F.
+
+### 11.8 Karar bekleyen sorular
+
+1. Write-blocker alınacak mı?
+2. Ollama kabul edilebilir mi (kurulum + 4B model)?
+3. Tier 2 / sanal imaj gerekli mi, Tier 1 yeterli mi?
+4. Rapor: önce bölüm yapısı (B1) mi, kâğıt biçimi (B2) mi?
+5. Küçük maddeler aynı sözleşmede birleştirilsin mi? (öneri: evet, yalnız aynı sözleşme)
 
 
 ## 10. İlgili belgeler

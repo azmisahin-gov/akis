@@ -4816,3 +4816,98 @@ Metadata değiştirilebilir, cihaz saati yanlış olabilir, çoğu dosyada yoktu
 Rapor sütunu/grafiği; gömülü metadata ile dosya zamanı arasındaki farkı gösteren
 **tutarlılık uyarısı** (ör. mtime < metadata tarihi). Karar kullanıcıda.
 
+## YENİ OTURUM DEVRİ (v2.217 → sıradaki oturum) — ÖNCE TASARIM, SONRA RAPOR
+
+### Durum (2026-11-22)
+
+| | |
+|---|---|
+| Sürüm | **v2.217** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1277 birim + 482 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = **9b9d9d8** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.217** |
+| Plan | `docs/GELECEK_PLANI.md` **§11** (birleşik yol haritası) |
+| Açık konu | **v2.218 tasarım denetimi**, sonra **rapor** |
+
+### KULLANICI TALİMATI (değişmez — bu oturumun sırası)
+
+> “Yeni oturum bunlara başlamadan **önce tasarımı gözden geçirsin**, çünkü en son
+> **delil envanteri** eklemesinden sonra bazı **tutarsız görünümler** olmaya
+> başladı; belki daha iyi şekiller yapabilir. … Eğer çok yüksek değerli ya da çok
+> acil değilse **rapora odaklanacağız**.”
+
+Bu yüzden sıra **kesin**:
+
+1. **v2.218 — Tasarım denetimi ve düzeltme.** Yeni özellik YOK; yalnız görsel/
+   yerleşim tutarlılığı. Ölç, düzelt, ölç.
+2. **v2.219+ — Rapor odağı** (B1 → B2). Aradaki maddeler yalnız gerçekten
+   yüksek değerli/acilse öne alınır.
+
+### 1) İLK İŞ: v2.218 tasarım denetimi (zorunlu)
+
+**Neden:** v2.216'da eklenen `#delilInventory` paneli, v2.212–v2.217'de köken
+paneline eklenen yeni alanlar (`recordingDevice`, `recordingAt`, `fileTimes`,
+`embedded`) ve rapor dipnotları/gömülü metadata bölümü, mevcut panel dilinden
+farklı görünüyor olabilir. Kullanıcı bunu **gözle** fark etti; doğrulama **ölçümle**
+yapılır.
+
+**Denetlenecek yüzeyler ve ölçütler:**
+
+| Yüzey | Ne ölçülür | Aranan |
+|---|---|---|
+| `#delilInventory` | yükseklik, kenarlık/yarıçap, `summary` punto, `panel-heading` ile boşluk | malzeme paneliyle **aynı dil**; başlık hiyerarşisi tutarlı |
+| Köken paneli | alan hizası, 2 sütun ızgara, uzun metin sarma, `mini-button` boyu | etiketler hizalı; taşma yok |
+| Envanter ağacı | satır yüksekliği, girinti, `overflow`, uzun yol | kırpma yok; `overflow-wrap` |
+| Rapor | `originFileTimeNote`, gömülü metadata tablosu, anahtar | 1440/900/600 px **kırpma 0** |
+| Üç tema | yüzey + metin kontrastı; durum renkleri | açık/koyu/sepya aynı okunurluk |
+| Durum matrisi | `:hover`, `.on`, `.is-active`, `[open]` | CDP `CSS.getMatchedStylesForNode` ile **hangi kural kazanıyor** |
+
+**Yöntem (depo kuralı):** `getBoundingClientRect`, `scrollWidth > clientWidth`,
+`elementFromPoint`, CDP matched styles, ekran görüntüsü. Tahminle düzeltme yok.
+
+**Kural:** tek sürüm (v2.218), davranış değişmez, `bash tools/test.sh` yeşil,
+ölçüm tablosu CHANGELOG'a. Yeni özellik eklenmez.
+
+### 2) SONRA: Rapor odağı (B1 → B2)
+
+- **B1 — Bölüm/başlık tek kaynak:** başlık, sıra, TOC tek yerden; HTML/DOCX/UDF
+  aynı metni üretir (`rapor-tutarlilik-testi` korur).
+- **B2 — Kurumsal kâğıt biçimi:** başlık bandı, sayfa no, imza bloğu, tablo
+  tipografisi. **Şart:** üç çıktı birlikte test; uygulama adı geçmez.
+- Sıra kullanıcıya sorulabilir: **B1 mi B2 mi** önce?
+
+### 3) Birleşik plan (kaydedildi)
+
+`docs/GELECEK_PLANI.md` **§11** — tablolar, emek/risk, karar soruları:
+
+| Grup | İçerik |
+|---|---|
+| **A** | Kanıt tutarlılığı: A1 çelişki uyarısı, A2 envanterde dosya zamanları, A3 tam dosya metadata, A4 hazırlık maddesi |
+| **B** | **Rapor:** B1 bölüm/başlık, B2 kâğıt biçimi, B3 case alanları, B4 metadata sütunu |
+| **C** | LLM'siz yardımcılar: C1 soru↔bölüm, C2 terim listesi, C3 seçmeli özet |
+| **D** | Delil: D1 `-AudioOnly` eşiği, D2 Rust CLI, D3 Tier 2 imaj, D4 sanal imaj/geri yazma, D5 yerel ajan, D6 paket sihirbazı |
+| **E** | LLM (Ollama 4B, isteğe bağlı; tarayıcı küçük modeller ❌) |
+| **F** | Platform/borç: Tauri, tam Rust, CSS borcu, ≤900 px sınırı |
+
+Önerilen sıra: **v2.218 tasarım → v2.219 A1+A2+A4 → v2.220 A3 → v2.221 C1 →
+v2.222 C2+C3 → v2.223 B1 → v2.224 B2 → D1 → D2 → (D3/D4) → D6 → B3/B4 → F.**
+
+### 4) Karar bekleyen sorular
+
+1. Write-blocker alınacak mı?
+2. Ollama kabul edilebilir mi (kurulum + 4B model)?
+3. Tier 2 / sanal imaj gerekli mi, Tier 1 yeterli mi?
+4. Rapor: önce **B1** mi, **B2** mi?
+5. Küçük maddeler aynı sözleşmede birleştirilsin mi? (öneri: evet, yalnız aynı sözleşme)
+
+### 5) İlk komutlar
+
+```bash
+bash tools/test.sh
+git log --oneline -3
+curl -s https://azmisahin-gov.github.io/akis/version.json
+```
+
+Beklenen: **1277 birim + 482 şema** yeşil; sürüm **2.217**. Sonra **v2.218
+tasarım denetimi** ile başla; rapor işine ondan sonra geç.
+

@@ -15,14 +15,23 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 
 Öncelik sırası (kullanıcı kararı):
 
-1. ~~**Delil edinme — Tier 1:** PowerShell `edinme.ps1` + `delil.json` + AKİS
-   "Delil paketi yükle" + hash doğrulama.~~ **v2.208'de yapıldı.**
-2. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
+1. ~~**Delil edinme — Tier 1**, envanter ve gömülü metadata~~
+   **v2.208–v2.217 arasında yapıldı.**
+2. **v2.218 — Tasarım denetimi (İLK İŞ):** delil envanteri eklendikten sonra
+   oluşan görsel tutarsızlıkları **ölçerek** bul ve düzelt. Yeni özellik yok.
+3. **Kanıt tutarlılığı:** dosya zamanı ↔ gömülü metadata çelişkisi, envanterde
+   dosya zamanları, hazırlık kartı maddesi.
+4. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,
    seçmeli özet.
-3. **LLM (isteğe bağlı):** tarayıcı küçük modeller kapalı; Ollama/native 4B
+5. **Rapor (ODAK):** bölüm/başlık tek kaynak + kurumsal biçim.
+6. **Delil araçları:** `-AudioOnly` eşiği → Rust CLI → Tier 2 / sanal imaj →
+   yerel ajan.
+7. **LLM (isteğe bağlı):** tarayıcı küçük modeller kapalı; Ollama/native 4B
    ancak ölçümden sonra. Çıktı taslak; rapora kendiliğinden girmez.
-4. **Rapor:** bölüm/başlık tek kaynak + kurumsal biçim.
-5. **Uzun vade:** Rust CLI → yerel ajan → Tauri; tam Rust yeniden yazım en son.
+8. **Uzun vade:** Tauri; tam Rust yeniden yazım en son.
+
+Ayrıntılı tablo, emek/risk ve karar bekleyen sorular:
+[`GELECEK_PLANI.md` §11](GELECEK_PLANI.md).
 
 Kalan maddeler **uygulanmadı**; sürüm numarası verilmedi.
 
