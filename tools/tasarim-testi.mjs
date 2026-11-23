@@ -1595,7 +1595,7 @@ console.log('\n[2bi] Delil raporu sütunları ve Edinim aracı (v2.213)');
   check('kayıt cihazı/tarihi ayrı alan', /data-origin-key="recordingDevice"/.test(appJs) && /data-origin-key="recordingAt"/.test(appJs));
   check('edinme yöntemi cihaz alanına yazılmaz', !/deviceInfo: \[delilCopyTypeLabel/.test(appJs));
   check('alet adı Edinim', /ToolName = 'Edinim'/.test(ps1));
-  check('alet sürümü 1.2', /ToolVersion = '1\.2'/.test(ps1));
+  check('alet sürümü 1.3', /ToolVersion = '1\.3'/.test(ps1));
   check('sürücü yolu normalize edilir', /function Normalize-DrivePath/.test(ps1));
   check('tek harf sürücü kabul edilir', /\^\[A-Za-z\]\$/.test(ps1));
   check('Türkçe konsol (UTF-8)', /chcp\.com 65001/.test(ps1));

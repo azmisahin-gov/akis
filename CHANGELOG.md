@@ -38,7 +38,9 @@ birebir korunması gerekiyor.
   `origin.acquisition.diskId` ile bağlanır. Birleştirmede disk **kimlikle**
   eşleşir; aynı kimlikte farklı içerik **çakışma** bildirir (sessiz ezme yok).
   Önizleme "eklenecek disk" sayısını gösterir.
-- Sürüm: uygulama **2.215**; Edinim aracı **1.2** (aynı araç, yeni paket yapısı).
+- Sürüm: uygulama **2.215**; Edinim aracı **1.3** (paket v2 biçimi).
+  Not: 1.2 = eski (v1) paket biçimi; 1.3 = v2. Rapor ARAÇ sütununda hangi
+  sürümün paket ürettiği görünür.
 
 ### KULLANICI NE GÖRECEK
 

@@ -88,7 +88,7 @@ gerçek delile uygulanır.
     "hardwareWriteBlocker": false,
     "copyType": "logical-file-copy",
     "image": null,
-    "tool": { "name": "Edinim", "version": "1.2", "engine": "PowerShell" }
+    "tool": { "name": "Edinim", "version": "1.3", "engine": "PowerShell" }
   },
   "content": {
     "root": "icerik/4C530001",
@@ -129,7 +129,7 @@ zarf içinde elden teslim, kargo vb.) ayrı bir alan olarak **henüz yok**; sonr
 sürümde değerlendirilecektir.
 
 **Alet adı (v2.212/v2.213):** `method.tool.name` ürün markası değil, aletin
-kendisidir (`Edinim`). Raporun ARAÇ sütununa `Edinim v1.2` yazılır; motor bilgisi
+kendisidir (`Edinim`). Raporun ARAÇ sütununa `Edinim v1.3` yazılır; motor bilgisi
 (`PowerShell`/`Rust`) teknik izde kalır. Ürün adı rapora girmez.
 
 `copyType` değerleri:

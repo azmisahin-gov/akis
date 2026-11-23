@@ -1,4 +1,4 @@
-# Edinim 1.2 — Delil Edinme (Windows, Tier 1)
+# Edinim 1.3 — Delil Edinme (Windows, Tier 1)
 
 > **Durum:** Deneysel. Bu araç **doğrulanmış adli araç değildir**. Kurgusal bir
 > USB'de test edilmeden gerçek delile uygulanmamalıdır. Donanım write-blocker
@@ -121,7 +121,7 @@ Gerçek delilde `-Simulate` **kullanılmaz**.
 
 | Alan | Nereden |
 |---|---|
-| ARAÇ | `Edinim v1.2` (ürün adı yazılmaz) |
+| ARAÇ | `Edinim v1.3` (ürün adı yazılmaz) |
 | OPERATÖR | `Ad Soyad · Sicil` |
 | TESLİM EDEN | `Ad Soyad · Sicil` (köken tablosu) |
 | TESLİM TARİHİ / YERİ | Paketten veya elle |

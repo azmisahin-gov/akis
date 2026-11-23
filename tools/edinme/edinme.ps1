@@ -100,7 +100,7 @@ try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [System.Text.Encoding]::UTF8
 # Alet adı ÜRÜN MARKASI DEĞİL, aletin kendisidir. Raporda "Edinim v1.1".
 $ToolName = 'Edinim'
-$ToolVersion = '1.2'
+$ToolVersion = '1.3'
 $ToolEngine = 'PowerShell'
 $Schema = 'akis.delil.v1'
 $script:LogPath = $null

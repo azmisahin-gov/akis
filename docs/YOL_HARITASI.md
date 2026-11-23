@@ -54,6 +54,7 @@ bakın.
 - `disk.json` (`akis.disk.v1`): disk/bölüm/birim + dizin ağacı; raw sektör yok.
 - AKİS: `case.disks[]`, materyal `origin.acquisition.diskId`; birleştirme
   kimlikle, farklı içerik çakışma.
+- Alet sürümü **1.3** (v1 paket = 1.2).
 - Koruyan testler: `birim` [81], `tasarim` [2bj].
 
 ### v2.214 — Edinim 1.2: zip'te BOM korunur (tamamlandı)
