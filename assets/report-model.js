@@ -5,7 +5,7 @@
 export const DEFAULT_REPORT_ORDER = [
   'cover', 'coverFields', 'kunye', 'summary', 'toc',
   's1', 's2', 's3', 'origin', 'embedded', 'acquisition', 'speakers',
-  's4', 'tech', 'enhance', 'asr', 's5', 'scopeNote',
+  's4', 'tech', 'enhance', 'asr', 's5', 'reading', 'scopeNote',
   's6', 's7', 'wer', 'levels', 'reviewSummary', 'qc', 'privacy', 'annex', 'signature'
 ];
 
