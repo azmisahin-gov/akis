@@ -125,6 +125,7 @@ const EXPOSE = [
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
+  'acquisitionToolFileContent',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3883,6 +3884,24 @@ console.log('\n== [79] Köken/teslim alanları korunur; birleştirme nesneyi oku
   const clash = T.mergeCasesForTest(c3, c4);
   eq('dolu teslim yeri korunur', clash.merged.materials[0].origin.deliveryPlace, 'Yerel Yer');
   eq('dolu teslim yeri çakışma bildirir', (clash.conflicts || []).some((x) => x.field === 'origin.deliveryPlace'), true);
+}
+
+console.log('\n== [80] Edinim aracı zip: BOM korunur (v2.214)');
+{
+  // KÖK NEDEN: fetch().text() UTF-8 BOM'u siler; JSZip BOM'suz yazar;
+  // Windows PowerShell 5.1 dosyayı ANSI okur ve betik sözdizimi hatası verir.
+  const has = typeof T.acquisitionToolFileContent === 'function';
+  eq('BOM yardımcısı tanımlı', has, true);
+  if (has) {
+    const ps1 = T.acquisitionToolFileContent('edinme.ps1', 'Write-Host "İ"');
+    eq('ps1 BOM ile başlar', ps1.charCodeAt(0), 0xfeff);
+    eq('ps1 gövdesi korunur', ps1.slice(1), 'Write-Host "İ"');
+    const twice = T.acquisitionToolFileContent('edinme.ps1', '\uFEFF' + 'x');
+    eq('BOM iki kez eklenmez', twice, '\uFEFFx');
+    eq('bat dosyasına BOM eklenmez', T.acquisitionToolFileContent('BASLAT.bat', 'echo x'), 'echo x');
+    eq('md dosyasına BOM eklenmez', T.acquisitionToolFileContent('OKUBENI.md', '# x'), '# x');
+    eq('boş içerik güvenli', T.acquisitionToolFileContent('edinme.ps1', null), '\uFEFF');
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

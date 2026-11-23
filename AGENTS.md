@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.213.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.214.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -4649,4 +4649,30 @@ varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu. Ayrıntı:
 
 **v2.214 — Disk envanteri + paket v2:** `disk.json`, `icerik/<etiket|seri|marka>/`,
 varsayılan tüm dosyalar, `-AudioOnly`; v1 uyumlu.
+
+## EK DÜZELTME (v2.214) — Zip'te BOM korunur (Edinim 1.2)
+
+**BELİRTİ (canlı, Windows PowerShell 5.1):** `Unexpected token 'Delil'` ve
+ekranda `EDÄ°NÄ°M {0} â€” Delil Edinme`. Dosya UTF-8'ti ama PowerShell ANSI
+okuyordu.
+
+**KÖK NEDEN:** `downloadAcquisitionTool()` içinde `fetch().text()` kullanılıyor.
+**UTF-8 çözücüsü baştaki BOM'u SİLER**; JSZip BOM'suz yazar. Depodaki dosyada
+BOM vardı, indirilen zip'te yoktu. cp1252'de `—` → `”` olur; PowerShell akıllı
+tırnağı **dize sınırı** sanar ve betik erken kapanır.
+
+**DÜZELTME:**
+1. `acquisitionToolFileContent(name, text)` → `.ps1` başına `U+FEFF` ekler
+   (varsa ikizlemez). Zip'e bu içerik yazılır.
+2. `edinme.ps1` içinde tipografik işaret **yok** (`—`, `→`, `≠`, `·`, `…`
+   ASCII'ye çevrildi). BOM yine kaybolsa betik **çalışır**; yalnız Türkçe
+   harfler bozuk görünür.
+3. Alet sürümü **1.2**; uygulama **2.214**.
+
+**KORUYAN TEST:** `birim` [80] (BOM eklenir/ikizlenmez, .bat/.md değişmez) +
+`tasarim` [2bi] (ps1 BOM'lu, tipografik işaret yok, sürüm 1.2).
+
+**DERS:** Tarayıcıda dosya indirirken **baytları** düşünün. `text()` metin
+verir, BOM'u atar; `Blob`/`arrayBuffer` bayt verir. Bir betiğin kodlaması
+önemliyse içeriği metin olarak yeniden paketlerken BOM'u **açıkça** geri koyun.
 

@@ -1,4 +1,4 @@
-# Edinim 1.1 — Delil Edinme (Windows, Tier 1)
+# Edinim 1.2 — Delil Edinme (Windows, Tier 1)
 
 > **Durum:** Deneysel. Bu araç **doğrulanmış adli araç değildir**. Kurgusal bir
 > USB'de test edilmeden gerçek delile uygulanmamalıdır. Donanım write-blocker
@@ -10,7 +10,9 @@ Tarayıcı USB'yi göremez; edinme burada yapılır, AKİS yalnız doğrular.
 
 ## Hızlı başlangıç (soru-cevap)
 
-1. Zip'i bir klasöre açın.
+1. Zip'i bir klasöre açın. **Eski zip'i kullanmayın**; v2.214 öncesi zip'te
+   betiğin UTF-8 işareti kayboluyordu ve PowerShell 5.1 sözdizimi hatası veriyordu.
+   Aracı AKİS'ten yeniden indirin.
 2. **`BASLAT.bat`** dosyasına **sağ tık → Yönetici olarak çalıştır**.
 3. Soruları yanıtlayın: kaynak, hedef, operatör, teslim zinciri.
 4. Özet ekranında **E** (evet) deyin.
@@ -106,7 +108,7 @@ Gerçek delilde `-Simulate` **kullanılmaz**.
 
 | Alan | Nereden |
 |---|---|
-| ARAÇ | `Edinim v1.1` (ürün adı yazılmaz) |
+| ARAÇ | `Edinim v1.2` (ürün adı yazılmaz) |
 | OPERATÖR | `Ad Soyad · Sicil` |
 | TESLİM EDEN | `Ad Soyad · Sicil` (köken tablosu) |
 | TESLİM TARİHİ / YERİ | Paketten veya elle |

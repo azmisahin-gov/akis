@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.213.**
+yazılır. **Güncel sürüm: v2.214.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -44,6 +44,14 @@ Mevcut özelliklerin tam listesi için [`OZELLIKLER.md`](OZELLIKLER.md) dosyası
 bakın.
 
 ## v2 — Sıradaki çalışma
+
+### v2.214 — Edinim 1.2: zip'te BOM korunur (tamamlandı)
+
+- Kök neden: `fetch().text()` BOM'u siler; PowerShell 5.1 ANSI okur; `—` → `”`
+  dize sınırı sanılır → sözdizimi hatası.
+- Düzeltme: zip'e yazarken `.ps1` başına BOM; betikte tipografik işaret yok.
+- Alet sürümü **1.2**; uygulama **2.214**.
+- Koruyan testler: `birim` [80], `tasarim` [2bi].
 
 ### v2.213 — Delil tabloları ayrıştı, Edinim 1.1 (tamamlandı)
 

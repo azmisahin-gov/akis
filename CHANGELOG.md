@@ -6,12 +6,60 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.213.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.214.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.214 — Edinim 1.2: zip'te BOM korunur
+
+Kullanıcı aracı Windows PowerShell 5.1'de çalıştırdı ve **sözdizimi hatası**
+aldı. Ekranda `EDÄ°NÄ°M {0} â€” Delil Edinme` görünüyordu: dosya UTF-8, ama
+PowerShell onu **ANSI** okuyordu.
+
+### KÖK NEDEN (ölçüldü)
+
+Depodaki `edinme.ps1` **UTF-8 BOM** taşıyor. Ancak uygulama zip'i üretirken
+`fetch().text()` kullanıyor; **UTF-8 çözücüsü baştaki BOM'u siler**. JSZip de
+BOM'suz yazınca indirilen dosyada BOM kalmıyordu. PowerShell 5.1 BOM'suz
+dosyayı cp1252 okur; `—` karakteri `”` (akıllı tırnak) olur ve PowerShell onu
+**dize sınırı** sanıp betiği erken kapatır:
+
+```
++ Write-Host ("  EDÄ°NÄ°M {0} â€” Delil Edinme ...")
+Unexpected token 'Delil' in expression or statement.
+```
+
+### DÜZELTME
+
+- **Zip'e yazarken BOM geri konur:** `acquisitionToolFileContent(name, text)`
+  `.ps1` içeriğinin başına `U+FEFF` ekler (varsa ikizlemez); `.bat`/`.md`
+  dosyalarına dokunmaz.
+- **Betikte tipografik işaret kalmadı:** `—`, `→`, `≠`, `·`, `…` ASCII
+  karşılıklarına çevrildi. Böylece BOM bir daha kaybolsa bile betik **çalışır**
+  (yalnız Türkçe harfler bozuk görünür, sözdizimi bozulmaz).
+- **Alet sürümü 1.2.**
+- Uygulama sürümü 2.214; `?v=` parametreleri güncellendi.
+
+### KULLANICI NE GÖRECEK
+
+- **Edinme aracını yeniden indirin** (Ses → Edinme aracını indir). Yeni zip'te
+  `edinme.ps1` BOM'ludur; PowerShell 5.1'de sorunsuz açılır.
+- Eski zip'i kullanmayın.
+
+### KORUYAN TESTLER
+
+- `birim` **[80]** (BOM eklenir, ikizlenmez; `.bat`/`.md` değişmez).
+- `tasarim` **[2bi]** (ps1 BOM taşır, tipografik tire/akıllı tırnak yok,
+  sürüm 1.2, zip BOM yardımcısı var).
+
+### DÜRÜST SINIR
+
+PowerShell bu ortamda çalıştırılamadı (Linux, `pwsh` yok). Düzeltme, zip'in
+**bayt düzeyinde** BOM taşıdığı ölçümüne dayanır; Windows'ta son doğrulama
+kullanıcıya aittir.
 
 ## v2.213 — Delil tabloları ayrıştı, Edinim 1.1
 

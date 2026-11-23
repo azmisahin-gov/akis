@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
-  AKİS Delil Edinme — Tier 1 (yazılımsal salt-okunur + dosya kopyası + SHA-256).
+  AKİS Delil Edinme - Tier 1 (yazılımsal salt-okunur + dosya kopyası + SHA-256).
 
 .DESCRIPTION
   USB/flaş/SD kaynağından ses dosyalarını (varsayılan) kopyalar, her dosyanın
@@ -31,7 +31,7 @@
   Paketin yazılacağı klasör (ör. D:\delil). Kaynak sürücüde OLAMAZ.
 
 .PARAMETER Operator
-  Operatör adı — edinmeyi FİİLEN yapan kişi (genellikle bilirkişi).
+  Operatör adı - edinmeyi FİİLEN yapan kişi (genellikle bilirkişi).
   "Teslim eden" ile aynı kişi DEĞİLDİR; ikisi ayrı kaydedilir.
 
 .PARAMETER Registry
@@ -90,13 +90,13 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # Windows PowerShell 5.1: konsol kod sayfasını UTF-8 yap; aksi hâlde Türkçe
-# karakterler "Ã¼" gibi görünür. Linux'ta chcp yoktur; hata yutulur.
+# karakterler bozuk görünür. Linux'ta chcp yoktur; hata yutulur.
 try { chcp.com 65001 | Out-Null } catch {}
 try { [Console]::OutputEncoding = [System.Text.Encoding]::UTF8 } catch {}
 $OutputEncoding = [System.Text.Encoding]::UTF8
 # Alet adı ÜRÜN MARKASI DEĞİL, aletin kendisidir. Raporda "Edinim v1.1".
 $ToolName = 'Edinim'
-$ToolVersion = '1.1'
+$ToolVersion = '1.2'
 $ToolEngine = 'PowerShell'
 $Schema = 'akis.delil.v1'
 $script:LogPath = $null
@@ -151,8 +151,8 @@ function Read-Required {
 function Show-Banner {
   Write-Host ''
   Write-Host '==========================================================' -ForegroundColor Cyan
-  Write-Host ("  EDİNİM {0} — Delil Edinme (Tier 1)" -f $ToolVersion) -ForegroundColor Cyan
-  if ($Simulate) { Write-Host '  KURGUSAL TEST — gerçek cihaz okunmaz' -ForegroundColor Yellow }
+  Write-Host ("  EDİNİM {0} - Delil Edinme (Tier 1)" -f $ToolVersion) -ForegroundColor Cyan
+  if ($Simulate) { Write-Host '  KURGUSAL TEST - gerçek cihaz okunmaz' -ForegroundColor Yellow }
   Write-Host '==========================================================' -ForegroundColor Cyan
   Write-Host '  Kaynak salt-okunur yapılır, dosyalar kopyalanır,' -ForegroundColor Gray
   Write-Host '  SHA-256 hesaplanır ve delil paketi üretilir.' -ForegroundColor Gray
@@ -184,8 +184,8 @@ if (-not $NonInteractive) {
   Write-Host '[4/4] Özet' -ForegroundColor Cyan
   Write-Host ("  Kaynak       : {0}" -f $SourcePath)
   Write-Host ("  Hedef        : {0}" -f $OutDir)
-  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegShown) { ' · ' + $opRegShown } else { '' }))
-  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' · ' + $DeliveredByRegistry } else { '' }))
+  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegShown) { ' | ' + $opRegShown } else { '' }))
+  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' | ' + $DeliveredByRegistry } else { '' }))
   Write-Host ("  Teslim yeri  : {0}" -f $(if ($DeliveryPlace) { $DeliveryPlace } else { '(bilinmiyor)' }))
   Write-Host ("  Teslim tarihi: {0}" -f $(if ($DeliveredAt) { $DeliveredAt } else { '(bilinmiyor)' }))
   Write-Host ("  Kapsam       : {0}" -f $(if ($IncludeAll) { 'TÜM dosyalar' } else { 'yalnız ses dosyaları' }))
@@ -273,7 +273,7 @@ try {
     $driveType = if ($vol) { [string]$vol.DriveType } else { '' }
     $allowedBus = @('USB', 'SD', 'MMC')
     $isRemovable = ($driveType -eq 'Removable')
-    Write-Log "Sürücü türü: $driveType · BusType: $($disk.BusType)"
+    Write-Log "Sürücü türü: $driveType | BusType: $($disk.BusType)"
     if ($disk.IsBoot -or $disk.IsSystem) {
       Fail 'Kaynak sistem/boot diski. Edinme durduruldu; yanlış diski seçmeyin.'
     }
@@ -289,7 +289,7 @@ try {
     $device.sizeBytes = [int64]$disk.Size
     $device.volumes = @("$driveLetter`:")
     $device.removable = $isRemovable
-    Write-Log "Cihaz: $($device.model) · seri: $($device.serial) · etiket: $($device.label) · $($device.sizeBytes) bayt · $($device.busType)"
+    Write-Log "Cihaz: $($device.model) | seri: $($device.serial) | etiket: $($device.label) | $($device.sizeBytes) bayt | $($device.busType)"
 
     # Önce salt-okunur; başarısızsa devam etme.
     $dp = @"
@@ -358,7 +358,7 @@ attributes disk
         sha256     = $hash
         modifiedAt = $f.LastWriteTime.ToString('o')
       })
-    Write-Log ("[$n/$($files.Count)] $relPosix · SHA-256 $hash")
+    Write-Log ("[$n/$($files.Count)] $relPosix | SHA-256 $hash")
   }
 
   # --- 5. delil.json -------------------------------------------------------
@@ -377,7 +377,7 @@ attributes disk
       registry     = $opRegistry
       organization = $Organization
     }
-    # Teslim zinciri: teslim eden ≠ operatör. Boş alan boş kalır.
+    # Teslim zinciri: teslim eden != operatör. Boş alan boş kalır.
     delivery   = [ordered]@{
       deliveredBy = $deliveredBy
       registry    = $deliveredByRegistry
@@ -435,16 +435,16 @@ attributes disk
   $opRegOut = if ($OperatorRegistry) { $OperatorRegistry } else { $Registry }
   Write-Host ''
   Write-Host '==========================================================' -ForegroundColor Green
-  Write-Host '  TAMAM — Delil paketi hazır' -ForegroundColor Green
+  Write-Host '  TAMAM - Delil paketi hazır' -ForegroundColor Green
   Write-Host '==========================================================' -ForegroundColor Green
   Write-Host ("  Paket        : {0}" -f $zipPath)
   Write-Host ("  Dosya        : {0} (her biri SHA-256 ile)" -f $entries.Count)
-  Write-Host ("  Cihaz        : {0} · seri {1}{2}" -f $device.model, $device.serial, $(if ($device.label) { ' · etiket ' + $device.label } else { '' }))
-  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegOut) { ' · ' + $opRegOut } else { '' }))
-  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' · ' + $DeliveredByRegistry } else { '' }))
+  Write-Host ("  Cihaz        : {0} | seri {1}{2}" -f $device.model, $device.serial, $(if ($device.label) { ' | etiket ' + $device.label } else { '' }))
+  Write-Host ("  Operatör     : {0}{1}" -f $Operator, $(if ($opRegOut) { ' | ' + $opRegOut } else { '' }))
+  Write-Host ("  Teslim eden  : {0}{1}" -f $(if ($DeliveredBy) { $DeliveredBy } else { '(bilinmiyor)' }), $(if ($DeliveredByRegistry) { ' | ' + $DeliveredByRegistry } else { '' }))
   Write-Host ("  Teslim yeri  : {0}" -f $(if ($DeliveryPlace) { $DeliveryPlace } else { '(bilinmiyor)' }))
   Write-Host ''
-  Write-Host '  Sonraki adım: AKİS → Ses → "Delil paketi yükle"' -ForegroundColor Cyan
+  Write-Host '  Sonraki adım: AKİS > Ses > "Delil paketi yükle"' -ForegroundColor Cyan
   Write-Host '==========================================================' -ForegroundColor Green
 }
 catch {

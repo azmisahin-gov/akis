@@ -44,14 +44,14 @@ import {
   assignSpeakerCodes,
   isSecondEyesRole,
   canApproveRole
-} from './schema.js?v=2.213';
+} from './schema.js?v=2.214';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.213';
+const APP_VERSION = '2.214';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8064,6 +8064,13 @@ async function importDelilPack(file) {
 // Edinme aracını TEK zip olarak indirir (v2.212). Tarayıcı USB'yi görmez;
 // araç ayrı çalışır. Zip: edinme.ps1 + BASLAT.bat + OKUBENI.md.
 const ACQ_TOOL_FILES = ['edinme.ps1', 'BASLAT.bat', 'OKUBENI.md'];
+// BOM'u ZIP'e yazarken GERİ KOY (v2.214): fetch().text() UTF-8 çözücüsü
+// baştaki BOM'u SİLER; BOM'suz .ps1'i Windows PowerShell 5.1 ANSI okur,
+// Türkçe ve "-" karakterleri bozulur, betik sözdizimi hatası verir.
+function acquisitionToolFileContent(name, text) {
+  const body = String(text == null ? '' : text).replace(/^\uFEFF/, '');
+  return /\.ps1$/i.test(String(name || '')) ? '\uFEFF' + body : body;
+}
 async function downloadAcquisitionTool() {
   try {
     if (!window.JSZip) throw new Error('paketleme bileşeni yüklenemedi; sayfayı yenileyin');
@@ -8071,7 +8078,7 @@ async function downloadAcquisitionTool() {
     for (const name of ACQ_TOOL_FILES) {
       const res = await fetch(`tools/edinme/${name}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`${name} indirilemedi (${res.status})`);
-      zip.file(name, await res.text());
+      zip.file(name, acquisitionToolFileContent(name, await res.text()));
     }
     const blob = await zip.generateAsync({ type: 'blob' });
     const a = document.createElement('a');
@@ -13798,6 +13805,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.214': {
+    title: "Edinim 1.2: araç Windows PowerShell 5.1'de açılıyor",
+    body:
+      "İndirilen zip'te edinme betiğinin başındaki UTF-8 işareti (BOM) " +
+      "kayboluyordu; Windows PowerShell 5.1 dosyayı yanlış kod sayfasıyla okuyup " +
+      "sözdizimi hatası veriyordu. Artık zip'e yazarken işaret geri konur ve " +
+      "betikte tipografik tire/akıllı tırnak kullanılmaz. Aracı Ses > Edinme " +
+      "aracını indir ile YENİDEN indirin; eski zip'i kullanmayın."
+  },
   '2.213': {
     title: 'Delil tabloları ayrıldı; Edinim 1.1',
     body:

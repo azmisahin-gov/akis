@@ -1595,7 +1595,7 @@ console.log('\n[2bi] Delil raporu sütunları ve Edinim aracı (v2.213)');
   check('kayıt cihazı/tarihi ayrı alan', /data-origin-key="recordingDevice"/.test(appJs) && /data-origin-key="recordingAt"/.test(appJs));
   check('edinme yöntemi cihaz alanına yazılmaz', !/deviceInfo: \[delilCopyTypeLabel/.test(appJs));
   check('alet adı Edinim', /ToolName = 'Edinim'/.test(ps1));
-  check('alet sürümü 1.1', /ToolVersion = '1\.1'/.test(ps1));
+  check('alet sürümü 1.2', /ToolVersion = '1\.2'/.test(ps1));
   check('sürücü yolu normalize edilir', /function Normalize-DrivePath/.test(ps1));
   check('tek harf sürücü kabul edilir', /\^\[A-Za-z\]\$/.test(ps1));
   check('Türkçe konsol (UTF-8)', /chcp\.com 65001/.test(ps1));
@@ -1603,6 +1603,12 @@ console.log('\n[2bi] Delil raporu sütunları ve Edinim aracı (v2.213)');
   // Windows PowerShell 5.1, BOM'suz UTF-8 dosyayı ANSI okur ve Türkçe bozulur.
   const raw = fs.readFileSync(path.join(ROOT, 'tools/edinme/edinme.ps1'));
   check('ps1 UTF-8 BOM taşır', raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf);
+  // BOM kaybolursa cp1252'de "—" -> "”" olur ve PowerShell onu dize sınırı
+  // sanıp sözdizimi hatası verir (v2.213'te canlıda yaşandı). Tipografik
+  // karakter kullanmayız.
+  check('ps1 tipografik tire içermez', !/\u2014/.test(ps1));
+  check('ps1 akıllı tırnak içermez', !/[\u2018\u2019\u201c\u201d]/.test(ps1));
+  check('zip BOM yardımcısı var', /function acquisitionToolFileContent\(/.test(appJs));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
