@@ -247,8 +247,10 @@
   #view-report .report-outline,
   #view-report .report-inspector,
   #view-report .report-canvas-toolbar,
+  #view-report .report-fullbar,
   #view-report .report-export-note,
   #view-report .report-warning { display: none !important; }
+  #view-report .paper-pageguides { display: none !important; }
   #view-report #reportPreview.report-paper {
     display: block !important;
     width: 210mm !important;
