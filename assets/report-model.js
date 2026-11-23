@@ -135,9 +135,9 @@ export function orderUdfDocument(elementsMarkup, bodyText, order) {
 
   let nextOffset = 0;
   const rebuiltText = [];
-  const rewriteContentOffsets = (xml) => xml.replace(/<content\\b[^>]*>/g, (tag) => {
-    const startMatch = tag.match(/\\bstartOffset="(\\d+)"/);
-    const lengthMatch = tag.match(/\\blength="(\\d+)"/);
+  const rewriteContentOffsets = (xml) => xml.replace(/<content\b[^>]*>/g, (tag) => {
+    const startMatch = tag.match(/\bstartOffset="(\d+)"/);
+    const lengthMatch = tag.match(/\blength="(\d+)"/);
     if (!startMatch || !lengthMatch) return tag;
     const oldStart = Number(startMatch[1]);
     const length = Number(lengthMatch[1]);
@@ -145,10 +145,10 @@ export function orderUdfDocument(elementsMarkup, bodyText, order) {
     if (length > 0) {
       const value = codePoints.slice(oldStart, oldStart + length);
       if (value.length !== length) throw new Error('UDF content range exceeds source text.');
-      rebuiltText.push(value.join(''), '\\n');
+      rebuiltText.push(value.join(''), '\n');
       nextOffset += length + 1;
     }
-    return tag.replace(/\\bstartOffset="\\d+"/, 'startOffset="' + newStart + '"');
+    return tag.replace(/\bstartOffset="\d+"/, 'startOffset="' + newStart + '"');
   });
 
   const orderedParts = [prefix, ...chunks.map((chunk) => chunk.xml), suffix];
