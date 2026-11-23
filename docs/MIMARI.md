@@ -26,9 +26,12 @@ index.html              Tek sayfalık uygulama iskeleti (beş görünüm, diyalo
 assets/
   schema.js             v3 veri şeması — TEK GEÇERLİ YAPI (saf fonksiyonlar)
   app.js                Uygulama mantığı (durum, çözümleme, rapor üretimi)
+  report-model.js       Rapor sırası, ekler ve revizyonlar için saf veri yardımcıları
+  report-workspace.js   Üç bölgeli rapor arayüzü ve düzenleme etkileşimleri
   tokens.css            Tasarım tokenları (renk/tipografi/boşluk, 3 tema)
   app.css               Eski stil katmanı (v2.27–v2.49)
-  reading-layer.css     Okuma katmanı (en sonda; yamaları ezer)
+  reading-layer.css     Okuma katmanı (eski stil katmanını dengeler)
+  report-workspace.css  Rapor çalışma alanının duyarlı yerleşimi ve yazdırma stili
   vendor/
     jszip.min.js        ZIP/DOCX/UDF paketleme kitaplığı (pakete gömülü)
     JSZIP_LICENSE.txt   JSZip lisans metni
@@ -136,6 +139,10 @@ kademeli plan: [`ALAN_SISTEMI.md`](ALAN_SISTEMI.md).
 5. **Rapor üretimi.** Üç çıktı yolu: HTML önizleme (`renderReport`),
    DOCX (`docxXml` / `makeDocx`), UDF (`makeUdf`).
 6. **Model yöneticisi.** Cache Storage taraması, bütünlük kontrolü, silme.
+7. **Rapor çalışma alanı.** Bölüm sırası ve ek kayıtları `report-model.js` ile
+   normalleştirilir; `report-workspace.js` üç panelli ekranı yönetir. HTML,
+   DOCX ve UDF çıktıları aynı işaretli gövde bloklarını kullanarak saklanan
+   sıraya göre düzenlenir. Son 10 rapor revizyonu dosya şemasında korunur.
 
 ## Veri akışı
 
