@@ -115,6 +115,18 @@ for (const [, file, v] of cacheParams) {
   check(`${file} ?v= güncel sürümle aynı`, v === version, `?v=${v} · APP_VERSION=${version}`);
 }
 
+// v2.227: rapor çalışma alanı kaynakları da aynı sürüm önbellek anahtarını kullanır.
+const workspaceAssets = [...indexHtml.matchAll(/assets\/(report-workspace\.js|report-workspace\.css)\?v=([0-9.]+)/g)];
+check('rapor çalışma alanı JS/CSS iki önbellek parametresi taşıyor', workspaceAssets.length === 2, `${workspaceAssets.length} bulundu`);
+for (const [, file, v] of workspaceAssets) {
+  check(`${file} ?v= güncel sürümle aynı`, v === version, `?v=${v} · APP_VERSION=${version}`);
+}
+const workspaceSrc = read('assets/report-workspace.js');
+for (const moduleName of ['app.js', 'schema.js', 'report-model.js']) {
+  const m = workspaceSrc.match(new RegExp(`from\\s+'\\./${moduleName.replace('.', '\\\\.')}\\?v=([0-9.]+)'`));
+  check(`report-workspace.js ${moduleName} import'u sürümlü`, !!m && m[1] === version, m ? m[1] : 'bulunamadı');
+}
+
 // 4) CHANGELOG: "Güncel sürüm" satırı ve en yeni sürüm başlığı.
 const changelog = read('CHANGELOG.md');
 const clCurrent = changelog.match(/\*\*Güncel sürüm: v([0-9.]+?)\W*\*\*/);
