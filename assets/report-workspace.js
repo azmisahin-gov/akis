@@ -121,6 +121,7 @@ function renderRevisions(c) {
   const options = revisions.map((rev) => `<option value="${escapeHtml(rev.id)}">${escapeHtml(rev.label || 'Revizyon')} · ${escapeHtml(new Date(rev.createdAt).toLocaleString('tr-TR'))}</option>`).join('');
   host.innerHTML = `
     <div class="report-side-heading"><div><b>Revizyon geçmişi</b><small>${revisions.length}/10 kayıt · son hâller saklanır</small></div></div>
+    <p class="report-empty-note">Revizyonlar rapor metinlerini ve düzenini saklar; ses dosyalarının kendisini yedeklemez. Sesler için “Paket oluştur” kullanın.</p>
     <label class="report-annex-field"><span>Revizyon açıklaması</span><input id="reportRevisionLabel" maxlength="100" placeholder="Örn. İlk kontrol sonrası"></label>
     <button type="button" class="button button-primary report-revision-save" id="reportRevisionSave">Bu rapor hâlini kaydet</button>
     ${revisions.length ? `
