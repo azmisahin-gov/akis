@@ -29,11 +29,16 @@ iskeletten organize edilebilir hâle geldi.
   yeniden verilir (ör. 3. bölüm kapatılınca 4 → 3 olur).
 - **İçindekiler gövdeyi izler:** TOC artık yalnız 7 ana başlığı değil, çizilen
   tüm bölümleri gövde sırasıyla listeler.
-- **Ekler ayrı kayıt:** her ek tek tek açılır/kapanır ve sıralanır. EK numarası
-  **EK-1…EK-6** olarak bitişiktir (eski sürümdeki **EK-4 boşluğu** kapandı).
+- **Ekler ayrı kayıt ve düzenlenebilir:** her ek tek tek açılır/kapanır ve
+  sıralanır. EK numarası **EK-1…EK-N** olarak bitişiktir (eski **EK-4 boşluğu**
+  kapandı; kapalı ek numarada boşluk bırakmaz). Sağdaki **Ekler · başlık /
+  içerik / not** panelinden ek başlığı ve notu düzenlenir; **＋ Yeni ek** ile
+  özel ek eklenir/kaldırılır. Yerleşik ek gövdesi veriden üretilir; boş alan
+  “—” olarak girer, uydurulmaz.
 - **Rapor revizyonu:** “Revizyon kaydet” o anki bölüm düzenini ve rapor
-  metinlerini saklar; “Geri yükle” farkları söyleyerek geri alır. **Ses ve
-  deşifre kanıtı revizyona girmez.**
+  metinlerini saklar; “Geri yükle” farkları söyleyerek geri alır. İki revizyon
+  seçilip **Farkları karşılaştır** ile alan grupları bazında fark görülür.
+  **Ses ve deşifre kanıtı revizyona girmez.**
 - **A4 önizleme** sayfa sayısını gösterir (`A4 · N sayfa`); kılavuz niteliği
   korunur (kesin kırılma yazdırma/PDF’te oluşur).
 - Yazdırmada ve tam ekranda yalnız rapor kâğıdı çıkar; iskelet/kontrol/revizyon
@@ -43,31 +48,46 @@ iskeletten organize edilebilir hâle geldi.
 
 - `assets/schema.js`: `REPORT_SECTION_DEFS` her bölüme **numarasız başlık**
   (`title`) kazandı; `REPORT_FRONT_KEYS`, `REPORT_MAIN_KEYS`, `REPORT_BODY_ORDER`,
-  `REPORT_ANNEX_DEFS` ve `case.report.layout { order, annexOrder, annexes }`
-  eklendi. `normalizeReportLayout` bozuk/eksik düzeni güvenli hâle getirir
-  (bilinmeyen anahtar düşer, eksik bölüm sona eklenir; veri kaybı yok).
+  `REPORT_ANNEX_DEFS` ve `case.report.layout { order, annexOrder, annexes,
+  annexMeta }` eklendi. `normalizeReportLayout` bozuk/eksik düzeni güvenli hâle
+  getirir; yerleşik ek ve **özel ek (x1, x2…)** korunur, geçersiz anahtar düşer,
+  eksik bölüm sona eklenir (veri kaybı yok).
+- **Yeni saf model `assets/report-model.js`:** `moveInList`,
+  `mainSectionNumbers`, `revisionDigest`, `compareRevisionGroups`, `stableJson`.
+  DOM yok; uygulama ve test AYNI dosyayı kullanır (tek kaynak).
 - `assets/app.js`: rapor HTML/DOCX/UDF üreticileri **blok sözlüğü + tek sıra
   döngüsü** ile çalışır; sıra/numara/TOC/başlık tek kaynaktan
   (`reportBodyOrder`, `reportNumberMap`, `reportHeadingText`,
   `reportTocEntries`). 5.1/5.2/5.3 alt başlıkları da ana numaradan türetilir.
-- Ek blokları `REPORT_ANNEX_DEFS` + `reportAnnexList` ile sıralanır/filtrelenir;
-  EK-4 boşluğu kapatıldı (transkript anahtarı EK-4, son kontrol EK-5, dayanaklar
-  EK-6).
+  UDF metni/offsetleri bloklar sırayla üretildiği için yeniden hesaplanmaz.
+- Ek blokları `reportAnnexList` ile **açık eklere göre** numaralanır; her blok
+  başlık + gövde + isteğe bağlı **not** taşır. Özel ek gövdesi kullanıcı
+  içeriğinden, yerleşik ek gövdesi veriden gelir.
 - Rapor revizyonu `case.report.revisions[]` (en çok 10; yalnız düzen + rapor
-  metinleri). `normalizeCase` korur; kanıt dışıdır.
+  metinleri + `digest`). `normalizeCase` korur; kanıt dışıdır. İki revizyon
+  `compareRevisionGroups` ile karşılaştırılır.
 - `index.html`: `#reportWorkspace` üç sütun; `#reportSectionsBox` iskelet,
-  `#reportReadiness`/teknik/künye/qc/`#reportRevisions` sağ sütun;
-  `#reportPageViewToggle`/`#reportEmbeddedToggle` sahne çubuğunda.
-- `assets/reading-layer.css`: üç bölgeli ızgara, iskelet satırları, revizyon
-  kartı, yazdırma/tam ekran gizlemeleri. Yeni `!important` eklenmedi.
+  `#reportReadiness`/teknik/künye/qc/**ek düzenleyici**/`#reportRevisions` sağ
+  sütun; `#reportPageViewToggle`/`#reportEmbeddedToggle` sahne çubuğunda.
+- `assets/reading-layer.css`: üç bölgeli ızgara, iskelet satırları, ek
+  düzenleyici, revizyon ve karşılaştırma kartı, yazdırma/tam ekran gizlemeleri.
+  Yeni `!important` eklenmedi; yüzey/metin renkleri token.
+- **Test koşumu sağlamlaştırıldı:** `node:vm` koşumu `app.js`'in **tüm** ES
+  import bloklarını (`schema.js` + `report-model.js`) sıyırır; sıyrılamayan
+  import kalırsa koşum **açık hatayla durur** (v2.227'de bir taslakta ikinci
+  import sessizce testleri çökertmişti).
 
 ### Koruyan testler
 
-- `rapor-tutarlilik`: üç çıktı aynı metni üretir; ek numarası testi EK-4’e
-  güncellendi.
+- `rapor-tutarlilik`: Senaryo 22 (sıra/numara/ek, üç çıktı) + **Senaryo 23**
+  (özel ek başlık/içerik/not üç çıktıda aynı).
+- `birim [82]` (sıra/numara/TOC/ek/revizyon/özel ek + normalize) ve **[83]**
+  (saf model: moveInList, mainSectionNumbers, revisionDigest,
+  compareRevisionGroups).
 - `tasarim [2bn]`: bölüm kapısı, tek sıra döngüsü, TOC tek kaynağı, tech/qc
   bloklarının üç çıktıda bulunması yeni mimariye göre sınanır.
-- `surum`: APP_VERSION + dört `?v=` + `version.json` + bootstrap + belgeler.
+- `surum`: APP_VERSION + dört `?v=` + `version.json` + bootstrap + belgeler +
+  **`report-model.js` importunun sürümlü olması**.
 
 ## v2.226 — Kalite kontrolü ve denetlenebilirlik
 

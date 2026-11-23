@@ -588,34 +588,62 @@ export const REPORT_BODY_ORDER = [
   'annex'
 ];
 // EKLER AYRI KAYITTIR (v2.227): her ek tek tek açılıp kapatılabilir ve
-// sıralanabilir. Eski sürümde numara 1,2,3,5,6,7 idi (EK-4 yoktu); numara
-// EK-1…EK-6 olarak bitişik hâle getirildi.
+// sıralanabilir. Numara ARTIK AÇIK EKLERE GÖRE TÜRETİLİR (EK-1…EK-N); kapatılan
+// ek numarada boşluk bırakmaz. `title` numarasız temel başlıktır; "EK-n."
+// öneki çizim sırasında eklenir. Kullanıcı özel ek ekleyebilir (x1, x2…).
 export const REPORT_ANNEX_DEFS = [
-  { key: 'ek1', title: 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI' },
-  { key: 'ek2', title: 'EK-2. DOSYA TEKNİK ENVANTERİ' },
-  { key: 'ek3', title: 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ' },
-  { key: 'ek4', title: 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI' },
-  { key: 'ek5', title: 'EK-5. SON KONTROL LİSTESİ' },
-  { key: 'ek6', title: 'EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR' }
+  { key: 'ek1', title: 'MATERYAL TESLİM VE İADE TUTANAĞI' },
+  { key: 'ek2', title: 'DOSYA TEKNİK ENVANTERİ' },
+  { key: 'ek3', title: 'ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ' },
+  { key: 'ek4', title: 'TRANSKRİPT GÖSTERİM ANAHTARI' },
+  { key: 'ek5', title: 'SON KONTROL LİSTESİ' },
+  { key: 'ek6', title: 'HUKUKİ VE YÖNTEMSEL DAYANAKLAR' }
 ];
 export const REPORT_ANNEX_KEYS = REPORT_ANNEX_DEFS.map((d) => d.key);
+export const REPORT_ANNEX_CUSTOM_TITLE = 'YENİ EK';
+/** Yerleşik ek anahtarı ya da kullanıcı eki (x1, x2…). */
+export function isReportAnnexKey(key) {
+  const k = String(key || '');
+  return REPORT_ANNEX_KEYS.includes(k) || /^x[0-9]+$/.test(k);
+}
+/** Sıradaki boş özel ek anahtarı (silinen anahtar yeniden kullanılır). */
+export function newReportAnnexKey(layout) {
+  const used = new Set([
+    ...((layout && Array.isArray(layout.annexOrder)) ? layout.annexOrder : []),
+    ...Object.keys((layout && layout.annexMeta) || {})
+  ]);
+  let n = 1;
+  while (used.has('x' + n)) n++;
+  return 'x' + n;
+}
+/** Ekin numarasız temel başlığı (özel ek için varsayılan). */
+export function reportAnnexBaseTitle(key) {
+  const d = REPORT_ANNEX_DEFS.find((x) => x.key === key);
+  return d ? d.title : REPORT_ANNEX_CUSTOM_TITLE;
+}
 export function emptyReportAnnexes(over = {}) {
   const out = {};
   for (const k of REPORT_ANNEX_KEYS) out[k] = true;
   return { ...out, ...over };
 }
-/** Rapor düzeni: gövde sırası + ek sırası + ek görünürlüğü. */
+/**
+ * Rapor düzeni: gövde sırası + ek sırası + ek görünürlüğü + ek üst verisi.
+ * `annexMeta[key] = { title, content, note }` (özel eklerde ve başlık/not
+ * düzenlemesinde kullanılır; boş alan varsayılanı ezer).
+ */
 export function emptyReportLayout(over = {}) {
   return {
     order: [...REPORT_BODY_ORDER],
     annexOrder: [...REPORT_ANNEX_KEYS],
     annexes: emptyReportAnnexes(),
+    annexMeta: {},
     ...over
   };
 }
 /**
- * Eksik/bozuk düzeni güvenli hâle getirir. Bilinmeyen anahtar düşürülür;
- * eksik bölüm varsayılan sıranın sonuna eklenir (veri kaybı yok).
+ * Eksik/bozuk düzeni güvenli hâle getirir. Gövdede bilinmeyen anahtar
+ * düşürülür; eksik bölüm varsayılan sıranın sonuna eklenir. Eklerde yerleşik
+ * ve özel (xN) anahtarlar korunur; geçersiz anahtar düşürülür (veri kaybı yok).
  */
 export function normalizeReportLayout(src) {
   const base = emptyReportLayout();
@@ -630,20 +658,36 @@ export function normalizeReportLayout(src) {
     }
   }
   for (const k of REPORT_BODY_ORDER) if (!seen.has(k)) order.push(k);
+
+  const srcAnnexes = src.annexes && typeof src.annexes === 'object' ? src.annexes : {};
+  const srcMeta = src.annexMeta && typeof src.annexMeta === 'object' ? src.annexMeta : {};
   const annexSeen = new Set();
   const annexOrder = [];
-  const srcAnnexOrder = Array.isArray(src.annexOrder) ? src.annexOrder : [];
-  for (const k of srcAnnexOrder) {
-    if (REPORT_ANNEX_KEYS.includes(k) && !annexSeen.has(k)) {
+  const pushAnnex = (k) => {
+    if (isReportAnnexKey(k) && !annexSeen.has(k)) {
       annexOrder.push(k);
       annexSeen.add(k);
     }
+  };
+  for (const k of Array.isArray(src.annexOrder) ? src.annexOrder : []) pushAnnex(k);
+  for (const k of REPORT_ANNEX_KEYS) pushAnnex(k);
+  // Özel ekler yalnız annexOrder'da değil, annexes/annexMeta içinde de olabilir.
+  for (const k of Object.keys(srcAnnexes)) pushAnnex(k);
+  for (const k of Object.keys(srcMeta)) pushAnnex(k);
+
+  const annexes = {};
+  const annexMeta = {};
+  for (const k of annexOrder) {
+    annexes[k] = typeof srcAnnexes[k] === 'boolean' ? srcAnnexes[k] : true;
+    const m = srcMeta[k];
+    if (m && typeof m === 'object') {
+      const title = typeof m.title === 'string' ? m.title : '';
+      const content = typeof m.content === 'string' ? m.content : '';
+      const note = typeof m.note === 'string' ? m.note : '';
+      if (title || content || note) annexMeta[k] = { title, content, note };
+    }
   }
-  for (const k of REPORT_ANNEX_KEYS) if (!annexSeen.has(k)) annexOrder.push(k);
-  const annexes = emptyReportAnnexes();
-  const srcAnnexes = src.annexes && typeof src.annexes === 'object' ? src.annexes : {};
-  for (const k of REPORT_ANNEX_KEYS) if (typeof srcAnnexes[k] === 'boolean') annexes[k] = srcAnnexes[k];
-  return { ...src, order, annexOrder, annexes };
+  return { ...src, order, annexOrder, annexes, annexMeta };
 }
 
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------

@@ -197,11 +197,12 @@ Faz planının **v2.227–v2.233** kapsamı tek sürümde uygulandı:
 
 - **Üç bölge** (sol iskelet · orta A4 · sağ kontrol/revizyon) — §3.
 - **Sıra + türetilmiş numara + TOC tek kaynak** — §4; `case.report.layout`.
-- **Ekler ayrı kayıt** (`REPORT_ANNEX_DEFS`); EK-1…EK-6 bitişik (EK-4 boşluğu
-  kapandı) — §2.3.
+- **Ekler ayrı ve düzenlenebilir kayıt** (`REPORT_ANNEX_DEFS` + `annexMeta`);
+  EK-1…EK-N bitişik (EK-4 boşluğu kapandı); başlık/içerik/not + özel ek — §2.3.
 - **A4 önizleme** sayfa sayısı gösterir; kılavuz niteliği korunur — §5.1.
 - **Rapor kontrolü** sağ bölgeye taşındı — §2.6.
-- **Revizyon** (kaydet/geri yükle/sil; en çok 10; kanıt dışı) — §2.7.
+- **Revizyon** (kaydet/geri yükle/sil/karşılaştır; en çok 10; kanıt dışı) — §2.7.
+- **Saf model** `assets/report-model.js`; üç çıktı tek döngüde sırayla üretilir.
 
 Ayrıntı ve ölçümler: `CHANGELOG.md` v2.227; kalıcı kurallar: `AGENTS.md`
 "YENİ OTURUM DEVRİ (v2.227)".

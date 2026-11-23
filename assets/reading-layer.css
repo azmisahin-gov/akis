@@ -3297,6 +3297,28 @@ input::placeholder, textarea::placeholder {
 .rev-empty { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; }
 .rev-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .rev-note { font-size: var(--fs-2xs); color: var(--ink-3); margin-top: 6px; line-height: 1.45; }
+/* v2.227 — iki revizyonu karşılaştırma */
+.rev-compare {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.rev-field { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-2xs); color: var(--ink-3); }
+.rev-field select { font-size: var(--fs-2xs); }
+.rev-diff { display: grid; gap: 2px; font-size: var(--fs-2xs); color: var(--ink-2); }
+.rev-diff-row { display: flex; justify-content: space-between; gap: 8px; }
+.rev-diff-row b { color: var(--ink-3); font-weight: 600; }
+.rev-diff-row b.is-changed { color: var(--gold); }
+/* v2.227 — ek düzenleyici (başlık/içerik/not) */
+.rannex { display: grid; gap: 4px; padding: 6px 0; border-top: 1px solid var(--line); }
+.rannex:first-of-type { border-top: 0; }
+.rannex-field { display: flex; flex-direction: column; gap: 2px; font-size: var(--fs-2xs); color: var(--ink-3); }
+.rannex-field input,
+.rannex-field textarea { font-size: var(--fs-2xs); }
+.rannex-hint { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 0 0 6px; }
+.rsec-del { color: var(--red); }
 
 /* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
 @media (max-width: 1349px) {

@@ -46,14 +46,22 @@ const JSZip = (await import(path.join(ROOT, 'assets/vendor/jszip.min.js'))).defa
 // içinde çalıştırdığı için import bloğu, aynı adları sandbox global'inden alan
 // bir atama bloğuna çevrilir. Böylece testler GERÇEK şemayı kullanır (kopya
 // değil); şema ayrıca tools/sema-testi.mjs ile ayrıntılı sınanır.
+const __importTargets = { 'schema.js': '__schema', 'report-model.js': '__reportModel' };
 const __inlineImports = (src) =>
-  src.replace(/^import\s+\{([\s\S]*?)\}\s+from\s+'[^']+';\s*$/m, function (_m, names) {
+  src.replace(/^import\s+\{([\s\S]*?)\}\s+from\s+'([^']+)';\s*$/gm, function (_m, names, spec) {
+    const file = (spec.match(/([^/]+\.js)/) || [])[1];
+    const target = __importTargets[file];
+    if (!target) return _m;
     const list = names.split(',').map(function (n) { return n.trim(); }).filter(Boolean);
-    return 'const { ' + list.join(', ') + ' } = globalThis.__schema;';
+    return 'const { ' + list.join(', ') + ' } = globalThis.' + target + ';';
   });
 let code = __inlineImports(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8'))
   .replace(/^init\(\)\.catch\([\s\S]*?\);\s*$/m, '')
   .replace(/^init\(\);\s*$/m, '');
+if (/^\s*import\s/m.test(code)) {
+  console.error('KALDI  app.js içinde sıyırılamayan import satırı var; test koşumu güncel değil.');
+  process.exit(1);
+}
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
   + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
 
@@ -61,8 +69,10 @@ const downloads = [];
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
 // okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
 import * as __schemaMod from '../assets/schema.js';
+import * as __reportModelMod from '../assets/report-model.js';
 const sandbox = {
   __schema: __schemaMod,
+  __reportModel: __reportModelMod,
   console, document: documentStub, localStorage: localStorageStub,
   window: {}, navigator: {},
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
@@ -805,6 +815,26 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   checkShared('EK-4 bitişik numaralı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
   checkShared('EK-6 bitişik numaralı', 'EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
   check('EK-7 numarası kalmadı (H)', !HA.includes('EK-7.'));
+}
+
+// Senaryo 23: özel ek (başlık/içerik/not) üç çıktıda aynı (v2.227).
+console.log('\n[Senaryo 23] özel ek başlık/içerik/not üç çıktıda (v2.227)');
+{
+  const custom = baseCase({
+    report: {
+      sections: { annex: true },
+      layout: {
+        annexMeta: { x1: { title: 'UZMAN TEKNİK NOTU', content: 'Gözlenen teknik bulgu.', note: 'Yalnız belgelenmiş bulgu.' } }
+      }
+    }
+  });
+  // x1 yalnız annexMeta'da; normalize onu sıranın sonuna (EK-7) ekler.
+  const H = htmlText(custom),
+    U = await udfText(custom),
+    D = await docxText(custom);
+  checkShared('özel ek başlığı (EK-7)', 'EK-7. UZMAN TEKNİK NOTU', H, U, D);
+  checkShared('özel ek içeriği', 'Gözlenen teknik bulgu.', H, U, D);
+  checkShared('özel ek notu', 'Yalnız belgelenmiş bulgu.', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

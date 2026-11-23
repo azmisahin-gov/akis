@@ -5019,10 +5019,13 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
 
-## YENİ OTURUM DEVRİ (v2.227) — Rapor ekranı üç bölge (DAL: rapor-ekrani-v3)
+## YENİ OTURUM DEVRİ (v2.227) — Rapor çalışma alanı (DAL: rapor-workspace-birlesik)
 
-Bu sürüm **ayrı bir dalda** (`rapor-ekrani-v3`) hazırlandı; `main`'e doğrudan
-push edilmedi. Amaç: rapor ekranını ve şablon kullanımını yeniden tasarlamak.
+Bu sürüm **ayrı bir dalda** (`rapor-workspace-birlesik`) hazırlandı; `main`'e
+doğrudan push edilmedi. Amaç: rapor ekranını ve şablon kullanımını yeniden
+tasaramak. Bu çalışma, aynı konuda üretilen **iki taslak dalın en iyi yanlarını**
+birleştirir: güvenli tek-döngü üretim hattı (A) + saf model modülü ve
+düzenlenebilir/özel ekler (B).
 
 ### Ne yapıldı
 
@@ -5032,17 +5035,27 @@ push edilmedi. Amaç: rapor ekranını ve şablon kullanımını yeniden tasarla
 - **Numara türetilir:** kapatılan ana bölüm numarada boşluk bırakmaz
   (3 kapatılınca 4 → 3). 5.1/5.2/5.3 de türetilir.
 - **TOC gövdeyi izler:** 7 değil, çizilen tüm bölümler (ölçüm: 10 madde).
-- **Ekler ayrı kayıt:** EK-1…EK-6 bitişik; eski **EK-4 boşluğu** kapandı.
-- **Rapor revizyonu:** düzen + rapor metinleri (en çok 10); kanıt dışı.
+- **Ekler ayrı ve düzenlenebilir kayıt:** EK-1…EK-N bitişik; eski **EK-4
+  boşluğu** kapandı. Sağdaki **Ekler · başlık / içerik / not** panelinden başlık
+  ve not düzenlenir; **＋ Yeni ek** ile özel ek (x1, x2…) eklenir/kaldırılır.
+  Yerleşik ek gövdesi veriden üretilir; özel ek gövdesi kullanıcı içeriğinden.
+- **Rapor revizyonu:** düzen + rapor metinleri (en çok 10); kanıt dışı; iki
+  revizyon **Farkları karşılaştır** ile kıyaslanır.
 - **A4** sayfa sayısı (`A4 · N sayfa`); yazdırma/tam ekranda yalnız kâğıt.
+- **Saf model modülü** `assets/report-model.js`: `moveInList`,
+  `mainSectionNumbers`, `revisionDigest`, `compareRevisionGroups`. DOM yok;
+  uygulama ve test aynı dosyayı kullanır.
 
 ### DEĞİŞMEZ KURALLAR (v2.227)
 
 1. **Sıra/numara/TOC/başlık TEK KAYNAK:** `reportBodyOrder`,
    `reportNumberMap`, `reportHeadingText`, `reportTocEntries`. Üç çıktı
    (HTML/DOCX/UDF) aynı döngüden geçer; ayrı sıra kodu yazmayın.
-2. **Ekler `REPORT_ANNEX_DEFS` + `reportAnnexList`.** Başlığı elle yazmayın;
-   numara bitişik kalmalı.
+2. **Ekler `REPORT_ANNEX_DEFS` + `reportAnnexList` + `layout.annexMeta`.**
+   Başlığı elle yazmayın; numara **açık** eklere göre bitişik kalmalı. Özel ek
+   anahtarı `xN`; normalize yerleşik + özel anahtarı korur, geçersiz anahtarı
+   düşürür. Ek başlık/içerik/notu `patchReportAnnexMeta` ile yazın (yazarken
+   yeniden çizmez, odak korunur); `change`te önizleme tazelenir.
 3. **Revizyon ETKİN durumu saklar:** `reportSnapshot` `sections`/`tech`
    varsayılanlarını da yazar. Ham `{}` saklamak geri yüklemede sahte fark üretir
    (ölçüldü ve düzeltildi).
@@ -5052,6 +5065,15 @@ push edilmedi. Amaç: rapor ekranını ve şablon kullanımını yeniden tasarla
    `.report-stage-bar` gizler; yalnız kâğıt kalır.
 6. **Sıralama düğmeleri erişilebilir:** `data-report-move`,
    `data-report-annex-move`; sürükle-bırak zorunlu değil.
+7. **Modül importları sürümlüdür.** `app.js` → `./schema.js?v=` ve
+   `./report-model.js?v=`. `surum` [2b-2] bunu zorunlu kılar (v2.117 dersi).
+8. **Test koşumu TÜM importları sıyırmalı.** `tools/birim-testleri.mjs` ve
+   `tools/rapor-tutarlilik-testi.mjs` `__inlineImports` ile hem `__schema` hem
+   `__reportModel` bağlar; sıyrılamayan import kalırsa koşum **açık hatayla**
+   durur. İkinci bir import eklerseniz koşumu da güncelleyin (v2.227'de bir
+   taslakta bu unutuldu ve `birim`/`rapor` testleri sessizce çöktü).
+9. **Karşılaştırma saf modelde:** `compareRevisionGroups`; önizleme/UI ayrı
+   kural yazmaz.
 
 ### Ölçüm (gerçek Chromium)
 
@@ -5062,11 +5084,14 @@ ekran panelleri gizledi.
 
 ### Testler
 
-`bash tools/test.sh` → **1304 birim + 517 şema** + rapor (Senaryo 22) + sürüm +
-tasarım yeşil. Yeni: `birim [82]`, `rapor [22]`, `surum` yeni HTML kimlikleri.
+`bash tools/test.sh` → **1320 birim + 517 şema** + rapor (Senaryo 22 + 23) +
+sürüm + tasarım yeşil. Yeni: `birim [82]` (sıra/numara/TOC/ek/özel ek/revizyon),
+`birim [83]` (saf model), `rapor [22]` (sıra/numara/ek), `rapor [23]` (özel ek
+üç çıktıda), `surum` `report-model.js` import sürümü.
 
 ### Sıradaki iş (öneri)
 
 - Sürükle-bırak sıralama (düğmeler kalmalı).
 - Raporda "Okuma metni" bölümünün iskelette ayrı gösterimi (şu an 5. içinde).
 - Gerçek A4 sayfa kırılması (şu an kılavuz) — tablo bölme riski ölçülmeli.
+- Özel ek içeriğinde zengin metin (şu an düz metin).

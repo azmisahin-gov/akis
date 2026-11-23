@@ -758,15 +758,18 @@ Rapor ekranı üç bölgeye ayrıldı; rapor ilk ekranda görünür.
   4 → 3 olur). 5.1/5.2/5.3 alt başlıkları da ana numaradan türetilir.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
-- **Ekler ayrı kayıttır:** her ek tek tek açılır/kapanır ve sıralanır; numara
-  **EK-1…EK-6** bitişiktir (eski EK-4 boşluğu kapandı).
+- **Ekler ayrı ve düzenlenebilir kayıttır:** her ek tek tek açılır/kapanır ve
+  sıralanır; numara **EK-1…EK-N** bitişiktir (eski EK-4 boşluğu kapandı). Sağdaki
+  **Ekler · başlık / içerik / not** panelinden başlık ve not düzenlenir; **＋ Yeni
+  ek** ile özel ek eklenir/kaldırılır. Yerleşik ek gövdesi veriden üretilir.
 - **A4 önizleme (orta):** kâğıt genişliğinden A4 sayfa kılavuzu; sayfa sayısı
   (`A4 · N sayfa`) gösterilir. Kılavuz niteliğindedir; kesin kırılma
   yazdırma/PDF’te oluşur. Kırpma yok.
 - **Rapor kontrolü (sağ):** rapor hazırlığı maddeleri (tıkla → ilgili yere git),
   teknik ortam, künye ek alanları ve kalite kontrolü panelleri.
 - **Rapor revizyonu (sağ):** “Revizyon kaydet” o anki bölüm düzenini ve rapor
-  metinlerini saklar (en çok 10). “Geri yükle” değişecek alanları söyler.
+  metinlerini saklar (en çok 10). “Geri yükle” değişecek alanları söyler; iki
+  revizyon **Farkları karşılaştır** ile alan grupları bazında kıyaslanır.
   **Ses ve deşifre kanıtı revizyona girmez.**
 - **Tek kaynak:** sıra/numara/başlık/TOC ve üç çıktı (HTML/DOCX/UDF) aynı
   tanımdan (`REPORT_SECTION_DEFS`, `REPORT_ANNEX_DEFS`, `case.report.layout`)

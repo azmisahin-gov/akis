@@ -13,8 +13,12 @@ başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 - Rapor ekranı **üç bölge**: rapor iskeleti · A4 önizleme · kontrol/revizyon.
 - Tüm bölümler ve **ekler** tek iskelette; ↑↓ sıralama, tek tek aç/kapa.
 - **Numara türetilir** (kapatınca boşluk yok); **TOC gövde sırasını izler**.
-- **Ekler ayrı kayıt**, EK-1…EK-6 bitişik (eski EK-4 boşluğu kapandı).
-- **Rapor revizyonu**: düzen + rapor metinleri (kanıt dışı), en çok 10 kayıt.
+- **Ekler ayrı ve düzenlenebilir kayıt**, EK-1…EK-N bitişik (eski EK-4 boşluğu
+  kapandı); başlık/içerik/not düzenlenir, özel ek eklenir.
+- **Rapor revizyonu**: düzen + rapor metinleri (kanıt dışı), en çok 10 kayıt;
+  iki revizyon karşılaştırılabilir.
+- **Saf model** `assets/report-model.js` (sıra/numara/revizyon); uygulama ve
+  test aynı dosyayı kullanır.
 - Üç çıktı (HTML/DOCX/UDF) **aynı sıra ve metni** üretir.
 - Ayrıntı: `CHANGELOG.md` v2.227; plan: `RAPOR_EKRANI_PLANI.md`.
 

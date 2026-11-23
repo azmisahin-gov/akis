@@ -51,6 +51,10 @@ import {
   REPORT_BODY_ORDER,
   REPORT_ANNEX_DEFS,
   REPORT_ANNEX_KEYS,
+  REPORT_ANNEX_CUSTOM_TITLE,
+  isReportAnnexKey,
+  newReportAnnexKey,
+  reportAnnexBaseTitle,
   emptyReportAnnexes,
   emptyReportLayout,
   normalizeReportLayout,
@@ -59,6 +63,7 @@ import {
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
 } from './schema.js?v=2.227';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.227';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -10363,14 +10368,7 @@ function reportBodyOrder(c) {
   return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k));
 }
 function reportNumberMap(c) {
-  const map = {};
-  let n = 0;
-  for (const key of reportBodyOrder(c)) {
-    if (!REPORT_MAIN_KEYS.includes(key)) continue;
-    if (!reportSectionOn(c, key)) continue;
-    map[key] = ++n;
-  }
-  return map;
+  return mainSectionNumbers(reportBodyOrder(c), (k) => reportSectionOn(c, k), REPORT_MAIN_KEYS);
 }
 function reportSectionTitle(key) {
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
@@ -10422,14 +10420,26 @@ function reportTocEntries(c) {
 }
 // Ekler: sıra + aç/kapa kullanıcı düzeninden gelir. Blok içeriği
 // `reportAnnexBlocks` üretir; burada yalnız hangi eklerin, hangi sırada
-// yazılacağı belirlenir.
+// yazılacağı ve EK numarası belirlenir. Numara AÇIK eklere göre türetilir:
+// bir ek kapatılınca sonrakiler bir öne gelir (EK-1…EK-N bitişik).
 function reportAnnexList(c) {
   const layout = reportLayoutOf(c);
   const out = [];
+  let n = 0;
   for (const key of layout.annexOrder) {
+    if (!isReportAnnexKey(key)) continue;
     if (layout.annexes[key] === false) continue;
-    const def = REPORT_ANNEX_DEFS.find((d) => d.key === key);
-    if (def) out.push({ key, title: def.title });
+    const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
+    const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
+    n += 1;
+    out.push({
+      key,
+      n,
+      title: base,
+      heading: `EK-${n}. ${base}`,
+      custom: !REPORT_ANNEX_DEFS.some((d) => d.key === key),
+      meta
+    });
   }
   return out;
 }
@@ -10445,28 +10455,47 @@ function setReportLayout(mut) {
 }
 function moveReportSection(key, dir) {
   setReportLayout((l) => {
-    const i = l.order.indexOf(key);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= l.order.length) return;
-    const t = l.order[i];
-    l.order[i] = l.order[j];
-    l.order[j] = t;
+    l.order = moveInList(l.order, key, dir);
   });
 }
 function moveReportAnnex(key, dir) {
   setReportLayout((l) => {
-    const i = l.annexOrder.indexOf(key);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= l.annexOrder.length) return;
-    const t = l.annexOrder[i];
-    l.annexOrder[i] = l.annexOrder[j];
-    l.annexOrder[j] = t;
+    l.annexOrder = moveInList(l.annexOrder, key, dir);
   });
 }
 function setReportAnnexOn(key, on) {
   setReportLayout((l) => {
     l.annexes[key] = !!on;
   });
+}
+function addReportAnnex() {
+  setReportLayout((l) => {
+    const key = newReportAnnexKey(l);
+    l.annexOrder.push(key);
+    l.annexes[key] = true;
+    l.annexMeta[key] = { title: REPORT_ANNEX_CUSTOM_TITLE, content: '', note: '' };
+  });
+}
+function removeReportAnnex(key) {
+  if (REPORT_ANNEX_DEFS.some((d) => d.key === key)) return; // yerleşik ek silinemez
+  setReportLayout((l) => {
+    l.annexOrder = l.annexOrder.filter((k) => k !== key);
+    delete l.annexes[key];
+    if (l.annexMeta) delete l.annexMeta[key];
+  });
+}
+// Yazarken yalnız modeli günceller (odak kaybolmasın); önizleme `change`te
+// tazelenir. `setReportLayout` gibi her tuşta yeniden çizmez.
+function patchReportAnnexMeta(key, field, value) {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  const layout = normalizeReportLayout(c.report.layout);
+  layout.annexMeta = layout.annexMeta || {};
+  const cur = layout.annexMeta[key] || { title: '', content: '', note: '' };
+  layout.annexMeta[key] = { ...cur, [field]: String(value == null ? '' : value) };
+  c.report.layout = normalizeReportLayout(layout);
+  persist();
 }
 
 // Arayüz etiketi (kısa). Rapor başlığı `REPORT_SECTION_DEFS.title`ten gelir;
@@ -10530,12 +10559,20 @@ function renderReportSections(c) {
   }
   let annexRows = '';
   if (reportSectionOn(c, 'annex')) {
+    let an = 0;
     for (const key of layout.annexOrder) {
-      const def = REPORT_ANNEX_DEFS.find((d) => d.key === key);
-      if (!def) continue;
+      if (!isReportAnnexKey(key)) continue;
       const on = layout.annexes[key] !== false;
-      annexRows += `<div class="rsec-row rsec-child"><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(def.title)}</span></label></div>`;
+      const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
+      const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
+      const custom = !REPORT_ANNEX_DEFS.some((d) => d.key === key);
+      const label = on ? `EK-${++an}. ${base}` : `(kapalı) ${base}`;
+      const del = custom
+        ? `<button type="button" class="rsec-mv rsec-del" data-report-annex-del="${esc(key)}" aria-label="Eki kaldır" title="Bu özel eki kaldır">×</button>`
+        : '';
+      annexRows += `<div class="rsec-row rsec-child"><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
     }
+    annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
   }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   host.dataset.allOff = JSON.stringify(allOff);
@@ -10580,6 +10617,37 @@ function reportKunyeRows(c) {
     ['Raporun ekleri', (c.report && c.report.annexList) || '—'],
     ['Tarafsızlık / bağımsızlık beyanı', (c.report && c.report.impartiality) || '—']
   ];
+}
+// Ek düzenleyici (v2.227): başlık her eke; içerik özel eke; not tüm eklere.
+// Yerleşik eklerin gövdesi veriden otomatik üretilir; burada yalnız başlık/not
+// ve özel ek içeriği düzenlenir. Boş alan rapora uydurulmaz ("—").
+function renderReportAnnexEditor(c) {
+  const host = $('#reportAnnexFields');
+  if (!host) return;
+  const layout = reportLayoutOf(c);
+  const rows = layout.annexOrder
+    .filter((key) => isReportAnnexKey(key))
+    .map((key) => {
+      const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
+      const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
+      const custom = !REPORT_ANNEX_DEFS.some((d) => d.key === key);
+      const on = layout.annexes[key] !== false;
+      return (
+        `<div class="rannex" data-annex-row="${esc(key)}">` +
+        `<label class="rannex-field"><span>${custom ? 'Özel ek' : 'Ek'} başlığı${on ? '' : ' · kapalı'}</span><input type="text" maxlength="120" data-annex-meta-title="${esc(key)}" value="${esc(base)}"></label>` +
+        (custom
+          ? `<label class="rannex-field"><span>Ek içeriği</span><textarea rows="2" data-annex-meta-content="${esc(key)}" placeholder="Yalnız belgelenmiş teknik bulguları yazın.">${esc(meta.content || '')}</textarea></label>`
+          : '') +
+        `<label class="rannex-field"><span>Ek notu (isteğe bağlı)</span><input type="text" maxlength="300" data-annex-meta-note="${esc(key)}" value="${esc(meta.note || '')}" placeholder="Boş bırakılabilir"></label>` +
+        (custom ? `<button type="button" class="mini-button" data-report-annex-del="${esc(key)}">Eki kaldır</button>` : '') +
+        `</div>`
+      );
+    })
+    .join('');
+  host.innerHTML =
+    `<p class="rannex-hint">Başlığı değiştirin; özel eke içerik yazın. Yerleşik ek gövdesi veriden üretilir; boş alan rapora “—” olarak girer, uydurulmaz.</p>` +
+    rows +
+    `<button type="button" class="mini-button" data-report-annex-add="1">＋ Yeni ek</button>`;
 }
 // v2.225 — Künye ek alanları (elle). Boşsa rapora "—".
 function renderReportKunye(c) {
@@ -10696,9 +10764,15 @@ function reportAnnexBlocks(c) {
     ek5: { kind: 'table', header: false, rows: reportChecklistRows(c) },
     ek6: { kind: 'para', text: REPORT_TEXT.annexLegalText }
   };
-  return reportAnnexList(c)
-    .filter((a) => defs[a.key])
-    .map((a) => ({ key: a.key, heading: a.title, ...defs[a.key] }));
+  return reportAnnexList(c).map((a) => {
+    const meta = a.meta || {};
+    const note = typeof meta.note === 'string' && meta.note.trim() ? meta.note.trim() : '';
+    if (a.custom) {
+      const text = typeof meta.content === 'string' && meta.content.trim() ? meta.content.trim() : '—';
+      return { key: a.key, heading: a.heading, kind: 'para', text, note };
+    }
+    return { key: a.key, heading: a.heading, ...defs[a.key], note };
+  });
 }
 // v2.226 — Kalite kontrolü / denetlenebilirlik: otomatik sayılar + ikinci göz.
 function reportQcRows(c) {
@@ -10814,7 +10888,8 @@ function saveReportRevision() {
   const at = new Date().toISOString();
   const id = 'rv' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
   const label = `Rev ${revs.length + 1} · ${at.replace('T', ' ').slice(0, 16)}`;
-  revs.push({ id, at, label, snapshot: reportSnapshot(c) });
+  const snapshot = reportSnapshot(c);
+  revs.push({ id, at, label, digest: revisionDigest(snapshot), snapshot });
   c.report.revisions = revs.slice(-10);
   persist();
   renderReport();
@@ -10853,15 +10928,28 @@ function renderReportRevisions(c) {
   const host = $('#reportRevisions');
   if (!host) return;
   const revs = (c.report && c.report.revisions) || [];
+  const opts = revs.map((r) => `<option value="${esc(r.id)}">${esc(r.label || r.at || 'Revizyon')}</option>`).join('');
   const rows = revs
+    .slice()
+    .reverse()
     .map(
       (r) =>
         `<div class="rev-row"><span class="rev-time">${esc(r.label || r.at || 'Revizyon')}</span><button type="button" class="mini-button" data-rev-restore="${esc(r.id)}" title="Bu revizyonun rapor düzenini ve metinlerini geri yükler">Geri yükle</button><button type="button" class="mini-button" data-rev-del="${esc(r.id)}" title="Bu revizyon kaydını siler">Sil</button></div>`
     )
     .join('');
+  const compare =
+    revs.length >= 1
+      ? `<div class="rev-compare">` +
+        `<label class="rev-field"><span>Eski sürüm</span><select data-rev-a><option value="">Seçin</option>${opts}</select></label>` +
+        `<label class="rev-field"><span>Yeni sürüm</span><select data-rev-b><option value="">Seçin</option>${opts}</select></label>` +
+        `<button type="button" class="mini-button" data-rev-compare="1">Farkları karşılaştır</button>` +
+        `<div class="rev-diff" id="reportRevDiff" aria-live="polite"></div>` +
+        `</div>`
+      : '';
   host.innerHTML =
     `<div class="rev-head"><b>Rapor revizyonu</b><small>${revs.length}/10</small></div>` +
     `<div class="rev-actions"><button type="button" class="mini-button primary" data-rev-save="1" title="O anki rapor düzenini ve rapor metinlerini saklar">Revizyon kaydet</button></div>` +
+    compare +
     (revs.length
       ? rows
       : `<div class="rev-empty">Henüz revizyon yok. Kaydettiğiniz her revizyon o anki bölüm düzenini ve rapor metinlerini saklar; ses ve deşifre kanıtı değişmez.</div>`) +
@@ -11011,6 +11099,7 @@ function renderReport() {
   renderReportTech(c);
   renderReportKunye(c);
   renderReportQc(c);
+  renderReportAnnexEditor(c);
   renderReportRevisions(c);
   const on = (k) => reportSectionOn(c, k);
   const map = reportNumberMap(c);
@@ -11152,13 +11241,12 @@ function renderReport() {
         out += `<h4>${esc(b.heading)}</h4>`;
         if (b.kind === 'para') {
           out += `<p>${esc(b.text)}</p>`;
-          continue;
-        }
-        if (b.header) {
+        } else if (b.header) {
           out += `<table class="paper-table"><thead><tr>${b.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.length ? b.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${b.headers.length}">${esc(b.empty || '—')}</td></tr>`}</tbody></table>`;
         } else {
           out += `<table class="paper-table cover-fields"><tbody>${b.rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
         }
+        if (b.note) out += `<p class="paper-muted">${esc(b.note)}</p>`;
       }
       return out + `</div>`;
     },
@@ -11519,14 +11607,13 @@ function docxXml(c) {
         out += headingXml(b.heading, 2);
         if (b.kind === 'para') {
           out += wP(b.text);
-          continue;
-        }
-        if (b.header) {
+        } else if (b.header) {
           const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
           out += wTable([[...b.headers], ...rows], { header: true });
         } else {
           out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true });
         }
+        if (b.note) out += wP(b.note, { color: '74869A', size: 17, italic: true });
       }
       return out;
     },
@@ -12023,11 +12110,12 @@ async function makeUdf() {
         el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
         if (b.kind === 'para') {
           el.push(paragraphLines(b.text, { justify: true }));
-          continue;
+        } else {
+          const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
+          const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
+          el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
         }
-        const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
-        const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
-        el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
+        if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
       }
     },
     signature: () => {
@@ -14413,6 +14501,15 @@ $('#reportSections')?.addEventListener('click', (e) => {
     moveReportAnnex(amv.dataset.reportAnnexMove, Number(amv.dataset.dir));
     return;
   }
+  if (e.target.closest('[data-report-annex-add]')) {
+    addReportAnnex();
+    return;
+  }
+  const adel = e.target.closest('[data-report-annex-del]');
+  if (adel) {
+    removeReportAnnex(adel.dataset.reportAnnexDel);
+    return;
+  }
   const preset = e.target.closest('[data-report-preset]');
   if (preset) {
     const c = currentCase();
@@ -14435,10 +14532,52 @@ $('#reportSections')?.addEventListener('click', (e) => {
   persist();
   renderReport();
 });
+// Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
+$('#reportAnnexFields')?.addEventListener('input', (e) => {
+  const t = e.target.closest('[data-annex-meta-title]');
+  if (t) return patchReportAnnexMeta(t.dataset.annexMetaTitle, 'title', t.value);
+  const ct = e.target.closest('[data-annex-meta-content]');
+  if (ct) return patchReportAnnexMeta(ct.dataset.annexMetaContent, 'content', ct.value);
+  const n = e.target.closest('[data-annex-meta-note]');
+  if (n) return patchReportAnnexMeta(n.dataset.annexMetaNote, 'note', n.value);
+});
+$('#reportAnnexFields')?.addEventListener('change', (e) => {
+  if (e.target.closest('[data-annex-meta-title],[data-annex-meta-content],[data-annex-meta-note]')) renderReport();
+});
+$('#reportAnnexFields')?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-report-annex-add]')) {
+    addReportAnnex();
+    return;
+  }
+  const del = e.target.closest('[data-report-annex-del]');
+  if (del) removeReportAnnex(del.dataset.reportAnnexDel);
+});
 // Rapor revizyonu (v2.227) — kaydet / geri yükle / sil.
 $('#reportRevisions')?.addEventListener('click', (e) => {
   if (e.target.closest('[data-rev-save]')) {
     saveReportRevision();
+    return;
+  }
+  if (e.target.closest('[data-rev-compare]')) {
+    const c = currentCase();
+    if (!c) return;
+    const revs = (c.report && c.report.revisions) || [];
+    const a = revs.find((r) => r.id === ($('#reportRevisions [data-rev-a]') || {}).value);
+    const b = revs.find((r) => r.id === ($('#reportRevisions [data-rev-b]') || {}).value);
+    const host = $('#reportRevDiff');
+    if (!host) return;
+    if (!a || !b) {
+      host.textContent = 'Karşılaştırma için iki revizyon seçin.';
+      return;
+    }
+    if (a.id === b.id) {
+      host.textContent = 'Fark görmek için iki farklı revizyon seçin.';
+      return;
+    }
+    const groups = compareRevisionGroups(a.snapshot || {}, b.snapshot || {}, REPORT_SNAPSHOT_LABELS);
+    host.innerHTML = groups
+      .map((g) => `<div class="rev-diff-row"><span>${esc(g.label)}</span><b class="${g.changed ? 'is-changed' : ''}">${g.changed ? 'Değişti' : 'Aynı'}</b></div>`)
+      .join('');
     return;
   }
   const rs = e.target.closest('[data-rev-restore]');

@@ -71,6 +71,18 @@ if (importMatch) {
     check('schema.js import sürümü APP_VERSION ile aynı', q === `?v=${version}`, `import "${q}" · APP_VERSION=${version}`);
   }
 }
+// 2b-2) report-model.js import'u da SÜRÜMLÜ olmalı (v2.227). ?v= verilen bir
+// modülün tüm import zinciri sürümlenmelidir; aksi hâlde tarayıcı karışık
+// sürüm yükler (v2.117 dersi).
+const modelMatch = appSrc.match(/from\s+'\.\/report-model\.js([^']*)'/);
+check('app.js report-model.js import satırı bulundu', !!modelMatch, modelMatch ? modelMatch[0] : 'bulunamadı');
+if (modelMatch) {
+  const q = modelMatch[1];
+  check('report-model.js import SÜRÜMLÜ (?v=)', /^\?v=[0-9.]+$/.test(q), q ? `import "${q}"` : 'sürüm parametresi YOK');
+  if (/^\?v=/.test(q)) {
+    check('report-model.js import sürümü APP_VERSION ile aynı', q === `?v=${version}`, `import "${q}" · APP_VERSION=${version}`);
+  }
+}
 
 // 2c) KENDİ KENDİNE GÜNCELLEME (v2.118): version.json + bootstrap.
 // NEDEN: GitHub Pages HER dosyaya `cache-control: max-age=600` verir —
