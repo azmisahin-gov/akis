@@ -547,11 +547,37 @@ export const REPORT_SECTION_DEFS = [
   { key: 'summary', def: false }, // Raporun kısa özeti
   { key: 'enhance', def: false }, // Ses iyileştirme / filtreleme
   { key: 'asr', def: false }, // Otomatik konuşma tanıma / yapay zekâ
+  { key: 'tech', def: false }, // Teknik özellikler / inceleme ortamı
   { key: 'scopeNote', def: false }, // Görev alanı dışı / sınırlılık beyanı
   { key: 'privacy', def: false }, // Kişisel veri / gizlilik
   { key: 'annex', def: false } // Ekler (EK-1…EK-7)
 ];
 export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
+
+// ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------
+// Bilirkişi elle doldurur; boşsa rapora "—" yazılır (uydurulmaz). Alanlar
+// rapor 4. bölümünü (teknik özellikler/inceleme ortamı) besler.
+export const REPORT_TECH_KEYS = [
+  'workstation',
+  'os',
+  'software',
+  'metaTool',
+  'listening',
+  'environment',
+  'other'
+];
+export function emptyReportTech(over = {}) {
+  const out = {};
+  for (const k of REPORT_TECH_KEYS) out[k] = '';
+  return { ...out, ...over };
+}
+export function normalizeReportTech(src) {
+  const base = emptyReportTech();
+  if (!src || typeof src !== 'object') return base;
+  for (const k of REPORT_TECH_KEYS) if (typeof src[k] === 'string') base[k] = src[k];
+  for (const k of Object.keys(src)) if (!(k in base)) base[k] = src[k];
+  return base;
+}
 /** Tüm bölümler varsayılanla açık; `over` ile tek tek kapatılabilir. */
 export function emptyReportSections(over = {}) {
   const out = {};
@@ -633,7 +659,9 @@ export function emptyCase(over = {}) {
       sections: emptyReportSections(),
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
-      pageView: false
+      pageView: false,
+      // Teknik ortam (v2.222): elle doldurulur; boşsa rapora "—".
+      tech: emptyReportTech()
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1009,7 +1037,9 @@ export function normalizeCase(src = {}) {
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
       sections: normalizeReportSections(report.sections),
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
-      pageView: !!report.pageView
+      pageView: !!report.pageView,
+      // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.
+      tech: normalizeReportTech(report.tech)
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
@@ -1647,6 +1677,15 @@ export function mergeCases(mine, theirs) {
     merged[group] = merged[group] || {};
     for (const k of keys) mergeTextField(merged[group], mg, tg, newer, k, applied, conflicts, `${group}.${k}`);
   }
+  // Teknik ortam (v2.222): boş alan dolar; dolu farklı değer sessizce ezilmez.
+  {
+    const mr = mine.report || {};
+    const tr = theirs.report || {};
+    merged.report = merged.report || {};
+    merged.report.tech = merged.report.tech || {};
+    for (const k of REPORT_TECH_KEYS)
+      mergeTextField(merged.report.tech, mr.tech || {}, tr.tech || {}, newer, k, applied, conflicts, `report.tech.${k}`);
+  }
 
   // Bölümler: id ile eşleşen kayıtlarda metin, düzenleme sayacıyla (textRev)
   // çözülür. Sayaç yüksek olan taraf daha yeni düzenlemedir ve kazanır; kaybeden
@@ -1961,6 +2000,20 @@ export function compareCases(mine, theirs) {
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);
+  }
+  // Teknik ortam (v2.222): önizleme birleştirmeyle aynı kuralı gösterir.
+  {
+    const mt = (mine.report || {}).tech || {};
+    const tt = (theirs.report || {}).tech || {};
+    for (const k of REPORT_TECH_KEYS) {
+      const mv = mt[k] || '';
+      const tv = tt[k] || '';
+      if (!tv || tv === mv) continue;
+      const item = { field: `report.tech.${k}`, mine: mv, theirs: tv };
+      if (!mv) out.caseFields.filled.push(item);
+      else if (newer) out.caseFields.autoResolved.push(item);
+      else out.caseFields.conflicts.push(item);
+    }
   }
 
   // Disk envanteri: yalnız YENİ kimlikler "eklenecek" sayılır.

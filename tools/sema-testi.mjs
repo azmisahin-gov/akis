@@ -87,7 +87,10 @@ import {
   REPORT_SECTION_DEFS,
   REPORT_SECTION_KEYS,
   emptyReportSections,
-  normalizeReportSections
+  normalizeReportSections,
+  REPORT_TECH_KEYS,
+  emptyReportTech,
+  normalizeReportTech
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -1738,6 +1741,21 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('emptyCase.report.pageView varsayılan kapalı', emptyCase().report.pageView === false);
   ok('normalizeCase: pageView=true korunur', normalizeCase({ id: 'cy', report: { pageView: true } }).report.pageView === true);
   ok('normalizeCase: pageView yoksa kapalı', normalizeCase({ id: 'cz', report: {} }).report.pageView === false);
+  // v2.222 — Teknik ortam alanları: boş varsayılan, dolu değer korunur.
+  ok('emptyCase.report.tech tüm alanları boş', REPORT_TECH_KEYS.every((k) => emptyCase().report.tech[k] === ''));
+  const ntc = normalizeCase({ id: 'ct', report: { tech: { os: 'Windows 11', extra: 'x' } } });
+  ok('normalizeCase: tech dolu alan korunur', ntc.report.tech.os === 'Windows 11');
+  ok('normalizeCase: tech eksik alan boş', ntc.report.tech.workstation === '');
+  ok('normalizeCase: tech bilinmeyen alan korunur', ntc.report.tech.extra === 'x');
+  ok('normalizeReportTech bozuk girdiye dayanır', normalizeReportTech(null).os === '');
+  ok('emptyReportTech sadece bilinen anahtarları taşır', Object.keys(emptyReportTech()).sort().join(',') === [...REPORT_TECH_KEYS].sort().join(','));
+  // Birleştirme: bir tarafta boş, diğerinde dolu → dolar (sessiz kayıp yok).
+  const mgc = mergeCases(
+    normalizeCase({ id: 'm1', report: { tech: { os: 'Windows 11' } }, updatedAt: '2026-01-01' }),
+    normalizeCase({ id: 'm1', report: { tech: { workstation: 'PC-1' } }, updatedAt: '2026-01-02' })
+  );
+  ok('birleştirme: tech boş alan dolar (os)', mgc.merged.report.tech.os === 'Windows 11');
+  ok('birleştirme: tech boş alan dolar (workstation)', mgc.merged.report.tech.workstation === 'PC-1');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

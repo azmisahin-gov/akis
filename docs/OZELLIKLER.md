@@ -1,4 +1,4 @@
-# Özellikler (v2.221 — mevcut durum)
+# Özellikler (v2.222 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -575,6 +575,11 @@ uzmanlık alanını gösterir.
   ve "Sayfa N / M" etiketleri çizilir; genişlik değişince yeniden hesaplanır.
   Ekran kılavuzudur (kesin kırılma yazdırma/PDF'te); yazdırmada gizlenir;
   UDF/DOCX etkilenmez.
+- **Teknik ortam alanları (v2.222):** Rapor görünümünde "Teknik özellikler ve
+  inceleme ortamı" paneli; 7 elle doldurulan alan (iş istasyonu, işletim
+  sistemi, ses yazılımı, meta veri aracı, dinleme donanımı, inceleme ortamı,
+  diğer). Boş alan rapora "—" yazılır. Rapor bölümü `tech` varsayılan kapalı;
+  birleştirmede boş alan dolar, dolu farklı değer sessizce ezilmez.
 - **Liste sağa yaslı (v2.187):** rozetler sağda, durum rozeti en sağda; satır
   34 px. Detaydaki "Onayla" düğmesi kaldırıldı: eylem satır menüsünde ve
   Enter'da; durum Kontrol seçicisinde.

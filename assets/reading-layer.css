@@ -3130,3 +3130,27 @@ input::placeholder, textarea::placeholder {
 .rsec-item input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .rsec-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rsec-note { color: var(--ink-3); font-size: var(--fs-2xs); }
+
+/* ===== v2.222 — Teknik ortam alanları ================================= */
+.report-tech-box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+  margin: 8px 0 12px;
+}
+.report-tech-box > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+.report-tech {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 10px 14px;
+}
+.rtech-field > span { font-size: var(--fs-2xs); }
+.rtech-field input { font-size: var(--fs-xs); }

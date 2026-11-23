@@ -4,7 +4,7 @@ Bilirkişiler için ses kaydı inceleme, konuşma çözümleme (deşifre) ve rap
 hazırlama aracı. Tamamen tarayıcıda çalışır; Python veya Node.js kurulumu
 gerektirmez.
 
-**Sürüm:** v2.221 · **Lisans:** özel / kurumsal kullanım
+**Sürüm:** v2.222 · **Lisans:** özel / kurumsal kullanım
 
 > Sürüm numarası tek kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`.
 > Arayüzdeki etiket buradan yazılır. Her güncellemede bu değer, `CHANGELOG.md`

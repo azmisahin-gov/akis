@@ -1756,5 +1756,22 @@ console.log('\n[2bo] Sayfalı önizleme: A4 ekran kılavuzu (v2.221)');
   check('içerik kırpılmıyor (kaplama pointer-events:none)', /\.paper-pageguides\s*\{[^}]*pointer-events:\s*none/.test(layer));
 }
 
+console.log('\n[2bp] Teknik ortam alanları: elle düzenlenir (v2.222)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('teknik alan paneli HTML\'de', /id="reportTechBox"/.test(html) && /id="reportTechFields"/.test(html));
+  check('şema: REPORT_TECH_KEYS + boş varsayılan', /REPORT_TECH_KEYS/.test(schema) && /tech:\s*emptyReportTech\(\)/.test(schema));
+  check('şema: normalize tech', /tech:\s*normalizeReportTech\(report\.tech\)/.test(schema));
+  check('bölüm anahtarı tech VARSAYILAN KAPALI', /\{ key: 'tech', def: false \}/.test(schema));
+  check('çizim fonksiyonu tanımlı', /function renderReportTech\(/.test(js));
+  check('renderReport teknik alanları çizer', /renderReportTech\(c\);/.test(js));
+  check('girdi işleyicisi (yazarken odak kaybolmaz)', /reportTechFields'\)\?\.addEventListener\('input'/.test(js) && /reportTechFields'\)\?\.addEventListener\('change'/.test(js));
+  check('üç çıktı da teknik bölümü basar', (js.match(/on\('tech'\)/g) || []).length >= 3);
+  check('panel stili token kullanır', /\.report-tech-box\s*\{[^}]*var\(--surface\)/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

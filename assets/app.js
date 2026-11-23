@@ -45,15 +45,17 @@ import {
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
-  emptyReportSections
-} from './schema.js?v=2.221';
+  emptyReportSections,
+  REPORT_TECH_KEYS,
+  emptyReportTech
+} from './schema.js?v=2.222';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.221';
+const APP_VERSION = '2.222';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -292,7 +294,11 @@ Object.assign(REPORT_TEXT, {
   annexLegalText:
     'Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.',
   annexNoLog: 'Kayıtlı işlem günlüğü yok.',
-  annexNoInventory: 'Teknik envanter kaydı yok.'
+  annexNoInventory: 'Teknik envanter kaydı yok.',
+  techHeading: 'TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI',
+  techIntro:
+    'İncelemenin yürütüldüğü iş istasyonu, yazılım ve dinleme donanımı aşağıda bilirkişi beyanına göre gösterilmiştir. Boş alan rapora "—" olarak yazılır; uydurulmaz.',
+  techNote: 'Teknik araçların adı ve sürümü yalnız fiilen kullanıldığı ölçüde yazılır; aracın dosyayı açabilmesi tek başına bilimsel doğrulama değildir.'
 });
 // Hızlı etiketler: uzmanın elle yazmadan boş/anlaşılmaz/uzaktan gelen bölümleri
 // işaretlemesini sağlar. Bunlar köşeli parantezle yazılır ve rapora aynen akar;
@@ -10379,6 +10385,7 @@ const REPORT_SECTION_GROUPS = [
       ['summary', 'Raporun kısa özeti'],
       ['enhance', 'Ses iyileştirme / filtreleme'],
       ['asr', 'Otomatik konuşma tanıma / yapay zekâ'],
+      ['tech', 'Teknik özellikler / inceleme ortamı'],
       ['scopeNote', 'Görev alanı dışı / sınırlılık beyanı'],
       ['privacy', 'Kişisel veri / gizlilik'],
       ['annex', 'Ekler (EK-1…EK-7)']
@@ -10539,6 +10546,29 @@ function reportAnnexBlocks(c) {
     { heading: 'EK-7. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', kind: 'para', text: REPORT_TEXT.annexLegalText }
   ];
 }
+// v2.222 — Teknik ortam alanları (elle düzenlenir; boşsa rapora "—").
+const REPORT_TECH_LABELS = {
+  workstation: 'İş istasyonu / bilgisayar',
+  os: 'İşletim sistemi ve sürümü',
+  software: 'Ses çözümleme yazılımı ve sürümü',
+  metaTool: 'Meta veri okuma aracı ve sürümü',
+  listening: 'Dinleme donanımı',
+  environment: 'İnceleme ortamı',
+  other: 'Diğer donanım/yazılım'
+};
+function reportTechRows(c) {
+  const t = (c.report && c.report.tech) || {};
+  return REPORT_TECH_KEYS.map((k) => [REPORT_TECH_LABELS[k] || k, t[k] || '—']);
+}
+function renderReportTech(c) {
+  const host = $('#reportTechFields');
+  if (!host) return;
+  const t = (c.report && c.report.tech) || {};
+  host.innerHTML = REPORT_TECH_KEYS.map(
+    (k) =>
+      `<label class="field rtech-field"><span>${esc(REPORT_TECH_LABELS[k] || k)}</span><input data-report-tech="${esc(k)}" value="${esc(t[k] || '')}" placeholder="Bilinmiyorsa boş bırakın (rapora “—” yazılır)"></label>`
+  ).join('');
+}
 // v2.221 — Sayfalı önizleme (A4). Bu bir EKRAN kılavuzudur: kâğıt sürekli
 // akar, çizgiler A4 sayfa sınırlarını GÖSTERİR. Kesin sayfa kırılması
 // yazdırma/PDF sırasında oluşur; burada "tam sayfa" iddiası yoktur.
@@ -10654,6 +10684,7 @@ function renderReport() {
     warning.innerHTML = '';
   }
   renderReportSections(c);
+  renderReportTech(c);
   const on = (k) => reportSectionOn(c, k);
   const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
   let html = '';
@@ -10712,6 +10743,11 @@ function renderReport() {
   }
   if (on('s4')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
+  }
+  if (on('tech')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.techHeading)}</h3><p>${esc(REPORT_TEXT.techIntro)}</p><table class="paper-table cover-fields"><tbody>${reportTechRows(c)
+      .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.techNote)}</p></div>`;
   }
   if (on('enhance')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.enhanceHeading)}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`;
@@ -11005,6 +11041,12 @@ function docxXml(c) {
   if (on('s4')) {
     body += headingXml(REPORT_TEXT.sections[3]);
     body += wP(c.methodText || DEFAULT_METHOD);
+  }
+  if (on('tech')) {
+    body += headingXml(REPORT_TEXT.techHeading);
+    body += wP(REPORT_TEXT.techIntro);
+    body += wTable(reportTechRows(c), { widths: [3400, 5600], header: false, shadeFirstCol: true });
+    body += wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true });
   }
   if (on('enhance')) {
     body += headingXml(REPORT_TEXT.enhanceHeading);
@@ -11456,6 +11498,12 @@ async function makeUdf() {
   if (on('s4')) {
     el.push(h(REPORT_TEXT.sections[3]));
     el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
+  }
+  if (on('tech')) {
+    el.push(h(REPORT_TEXT.techHeading));
+    el.push(paragraph(REPORT_TEXT.techIntro, { size: 10 }));
+    el.push(table(reportTechRows(c), [170, 340], { header: false, shadeFirstCol: true }));
+    el.push(paragraph(REPORT_TEXT.techNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('enhance')) {
     el.push(h(REPORT_TEXT.enhanceHeading));
@@ -13990,6 +14038,18 @@ $('#reportSections')?.addEventListener('click', (e) => {
   persist();
   renderReport();
 });
+// Teknik ortam alanları (v2.222) — yazarken model güncellenir; alandan
+// çıkınca önizleme tazelenir (böylece yazarken odak kaybolmaz).
+$('#reportTechFields')?.addEventListener('input', (e) => {
+  const inp = e.target.closest('[data-report-tech]');
+  if (!inp) return;
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.tech = { ...(c.report.tech || {}), [inp.dataset.reportTech]: inp.value };
+  persist();
+});
+$('#reportTechFields')?.addEventListener('change', () => renderReport());
 // Sayfalı önizleme (v2.221) — varsayılan kapalı; açınca A4 çizgileri.
 $('#reportPageViewToggle')?.addEventListener('change', (e) => {
   const c = currentCase();
@@ -14959,6 +15019,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.222': {
+    title: 'Teknik ortam alanları eklendi',
+    body:
+      'Rapor görünümüne "Teknik özellikler ve inceleme ortamı" paneli eklendi: ' +
+      'iş istasyonu, işletim sistemi, yazılım sürümleri, meta veri aracı, dinleme ' +
+      'donanımı, inceleme ortamı. Elle doldurulur; boş alan rapora "—" yazılır. ' +
+      'Rapor bölümü VARSAYILAN KAPALI; isterseniz açın. Değerler dosyayla saklanır.'
+  },
   '2.221': {
     title: 'Sayfalı önizleme (A4) eklendi',
     body:

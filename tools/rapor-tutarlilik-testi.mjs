@@ -715,5 +715,26 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
   checkShared('EK-5 gösterim anahtarı', 'EK-5. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
 }
 
+// Senaryo 19: teknik ortam alanları (v2.222). Bölüm varsayılan kapalı;
+// açılınca elle girilen değerler üç çıktıda AYNI görünmeli.
+console.log('\n[Senaryo 19] teknik ortam alanları (v2.222)');
+{
+  const mk = (sections, tech) => baseCase({ report: { sections: sections || {}, tech: tech || {} } });
+  const off = mk({}, { os: 'Windows 11' });
+  const Ho = htmlText(off), Uo = await udfText(off), Do = await docxText(off);
+  check(
+    'varsayılan: teknik bölüm KAPALI (üç çıktıda yok)',
+    !Ho.includes(REPORT_TEXT.techHeading) && !Uo.includes(REPORT_TEXT.techHeading) && !Do.includes(REPORT_TEXT.techHeading)
+  );
+
+  const on = mk({ tech: true }, { workstation: 'PC-1', os: 'Windows 11', software: 'Araç 1.0' });
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('teknik bölüm başlığı', REPORT_TEXT.techHeading, H, U, D);
+  checkShared('iş istasyonu değeri', 'PC-1', H, U, D);
+  checkShared('işletim sistemi değeri', 'Windows 11', H, U, D);
+  checkShared('yazılım değeri', 'Araç 1.0', H, U, D);
+  checkShared('boş alan "—" ile yazılır', 'Meta veri okuma aracı ve sürümü', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

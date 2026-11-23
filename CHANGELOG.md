@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.221.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.222.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.222 — Teknik ortam alanları
+
+56.12 şablonunun 4. bölümünü (teknik özellikler ve inceleme ortamı) besleyen
+**elle düzenlenebilir** alanlar eklendi. Otomatik doldurulmaz; boş alan rapora
+**"—"** yazılır (uydurma yok).
+
+### Ne yapıldı
+
+- **7 alan:** iş istasyonu/bilgisayar, işletim sistemi ve sürümü, ses çözümleme
+  yazılımı ve sürümü, meta veri okuma aracı ve sürümü, dinleme donanımı,
+  inceleme ortamı, diğer donanım/yazılım.
+- Rapor görünümünde **"Teknik özellikler ve inceleme ortamı"** katlanır paneli;
+  yazarken model güncellenir (odak kaybolmaz), alandan çıkınca önizleme tazelenir.
+- **Yeni rapor bölümü `tech`** (varsayılan **KAPALI**). Üç çıktı (HTML/DOCX/UDF)
+  aynı satırları basar.
+- `case.report.tech` şemada; `normalizeCase` korur; **birleştirme** boş alanı
+  doldurur, dolu farklı değeri sessizce ezmez; önizleme aynı kuralı gösterir.
+
+### Ölçüm (gerçek Chromium)
+
+| Adım | Sonuç |
+|---|---|
+| Panel | **7** alan |
+| "Windows 11 Pro" yaz → bölümü aç | önizlemede **göründü** |
+| Sayfa yenile | değer **korundu** |
+| 900 / 600 px | yatay taşma **0** |
+| JS hatası | **0** |
+
+**Koruyan test:** `rapor-tutarlilik-testi` [Senaryo 19], `sema-testi` [3h]
+(505), `tasarim-testi` [2bp].
 
 ## v2.221 — Sayfalı önizleme (A4)
 
