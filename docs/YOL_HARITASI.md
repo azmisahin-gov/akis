@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.223.**
+yazılır. **Güncel sürüm: v2.224.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -38,6 +38,9 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
    ~~**v2.223 — Rapor profilleri:**~~ **yapıldı.** Yalın (7) · Standart (19) ·
    Tam 56.12 (27) hazır bölüm kümeleri; tek tıkla, veri değişmez.
    `sema` [3h], `tasarim` [2bq].
+   ~~**v2.224 — Yazdırma temizliği:**~~ **yapıldı.** Yazdırmada yalnız rapor
+   kâğıdı; bölüm/teknik/hazırlık panelleri ve anahtarlar gizli (print bloğu
+   dosya sonunda). `tasarim` [2br].
 3. **Kanıt tutarlılığı:** dosya zamanı ↔ gömülü metadata çelişkisi, envanterde
    dosya zamanları, hazırlık kartı maddesi.
 4. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,

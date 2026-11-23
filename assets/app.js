@@ -50,14 +50,14 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.223';
+} from './schema.js?v=2.224';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.223';
+const APP_VERSION = '2.224';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15035,6 +15035,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.224': {
+    title: 'Yazdırma yalnız rapor belgesini verir',
+    body:
+      'Yazdır/PDF artık yalnız rapor kâğıdını verir. Ekran araçları (bölüm paneli, ' +
+      'teknik ortam alanları, rapor hazırlığı kartı, anahtarlar) kâğıda basılmaz. ' +
+      'Bu bir görünüm düzeltmesidir; rapor içeriği ve veriler değişmedi.'
+  },
   '2.223': {
     title: 'Rapor profilleri: Yalın · Standart · Tam 56.12',
     body:

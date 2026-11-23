@@ -1752,7 +1752,10 @@ console.log('\n[2bo] Sayfalı önizleme: A4 ekran kılavuzu (v2.221)');
     /reportPageViewToggle'\)\?\.addEventListener\('change'/.test(js) && /c\.report\.pageView = !!e\.target\.checked/.test(js)
   );
   check('kaplama stili token kullanır (ham hex yok)', /\.paper-pg-label\s*\{[^}]*var\(--paper-muted\)/.test(layer) && !/\.paper-pg-label\s*\{[^}]*#[0-9a-fA-F]{3,6}/.test(layer));
-  check('yazdırmada kılavuz gizlenir', /@media print\s*\{\s*\.paper-pageguides\s*\{\s*display:\s*none/.test(layer));
+  check(
+    'yazdırmada kılavuz gizlenir',
+    /@media print[\s\S]*?\.paper-pageguides[^{}]*\{[^}]*display:\s*none/.test(layer)
+  );
   check('içerik kırpılmıyor (kaplama pointer-events:none)', /\.paper-pageguides\s*\{[^}]*pointer-events:\s*none/.test(layer));
 }
 
@@ -1784,6 +1787,26 @@ console.log('\n[2bq] Rapor profilleri: Yalın · Standart · Tam 56.12 (v2.223)'
   check('profil tıklama işleyicisi', /closest\('\[data-report-preset\]'\)/.test(js));
   check('profil yalnız bölüm görünürlüğünü ayarlar', /c\.report\.sections = reportSectionsForPreset\(preset\.dataset\.reportPreset\)/.test(js));
   check('profil satırı token stil', /\.rsec-presets\s*\{[^}]*display:\s*flex/.test(layer));
+}
+
+console.log('\n[2br] Yazdırma: yalnız rapor kâğıdı (v2.224)');
+{
+  // ÖLÇÜM (v2.223, print medya): #reportSectionsBox / #reportTechBox /
+  // #reportReadiness "block", .report-toggle "flex" → yazdırmada UI panelleri
+  // kâğıda basılıyordu. KURAL: yazdırmada yalnız rapor kâğıdı çıkar.
+  const layer = read('assets/reading-layer.css');
+  const printCss = [...layer.matchAll(/@media print\s*\{([\s\S]*?)\}/g)].map((m) => m[1]).join('\n');
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  for (const sel of ['#reportSectionsBox', '#reportTechBox', '#reportReadiness', '.report-toggle', '.paper-pageguides']) {
+    check(`${sel} yazdırmada gizli`, new RegExp(esc(sel) + '[^{}]*\\{[^}]*display:\\s*none').test(printCss));
+  }
+  // Temel .report-toggle kuralı (display:flex) yazdırma bloğundan ÖNCE olmalı;
+  // aksi hâlde aynı özgüllükte sonra gelen kural gizlemeyi ezer.
+  const baseToggle = layer.search(/\.report-toggle\s*\{[^}]*display:\s*flex/);
+  check(
+    'yazdırma bloğu temel .report-toggle tanımından sonra',
+    baseToggle >= 0 && layer.lastIndexOf('@media print') > baseToggle
+  );
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

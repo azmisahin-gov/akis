@@ -6,12 +6,44 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.223.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.224.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.224 — Yazdırma: yalnız rapor kâğıdı
+
+v2.219–v2.223'te rapora eklenen **bölüm paneli, teknik ortam paneli, hazırlık
+kartı ve anahtarlar** yazdırmada gizlenmiyordu. Ölçüm (print medya):
+`#reportSectionsBox`, `#reportTechBox`, `#reportReadiness` **block**;
+`.report-toggle` **flex** → bu araçlar kâğıda basılıyordu.
+
+### Düzeltme
+
+- `@media print` bloğu **dosya sonuna** taşındı (aynı özgüllükteki
+  `.report-toggle` temel kuralı daha önce tanımlı olduğu için bloğu eziyordu).
+- Yazdırmada gizlenenler: bölüm paneli, teknik ortam paneli, hazırlık kartı,
+  anahtarlar ve A4 sayfa kılavuzu. Yalnız `.report-paper` kalır.
+
+### Ölçüm (gerçek Chromium, `Emulation.setEmulatedMedia: print`)
+
+| Öğe | Önce | Sonra |
+|---|---|---|
+| `#reportSectionsBox` | block | **none** |
+| `#reportTechBox` | block | **none** |
+| `#reportReadiness` | block | **none** |
+| `.report-toggle` (2) | flex | **none** |
+| `.paper-pageguides` | — | **none** |
+| `#reportPreview` | block | **block** (kalır) |
+
+### KULLANICI NE GÖRECEK
+
+- **Yazdır / PDF** artık yalnız rapor belgesini verir; ekran araçları (bölüm
+  paneli, teknik alanlar, hazırlık kartı, anahtarlar) kâğıda basılmaz.
+
+**Koruyan test:** `tasarim-testi` [2br] (6 kontrol) — düzeltme yokken KALDI.
 
 ## v2.223 — Rapor profilleri: Yalın · Standart · Tam 56.12
 

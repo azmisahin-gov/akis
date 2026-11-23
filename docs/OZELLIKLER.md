@@ -1,4 +1,4 @@
-# Özellikler (v2.223 — mevcut durum)
+# Özellikler (v2.224 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -583,6 +583,9 @@ uzmanlık alanını gösterir.
 - **Rapor profilleri (v2.223):** Bölümler panelinde **Yalın (7)** · **Standart
   (19)** · **Tam 56.12 (27)** hazır kümeler; tek tıkla bölüm görünürlüğü
   ayarlanır, veri değişmez, sonra ince ayar yapılabilir.
+- **Yazdırma yalnız rapor kâğıdı (v2.224):** Yazdır/PDF çıktısında bölüm
+  paneli, teknik ortam alanları, hazırlık kartı ve anahtarlar gizlenir; yalnız
+  rapor belgesi basılır.
 - **Liste sağa yaslı (v2.187):** rozetler sağda, durum rozeti en sağda; satır
   34 px. Detaydaki "Onayla" düğmesi kaldırıldı: eylem satır menüsünde ve
   Enter'da; durum Kontrol seçicisinde.

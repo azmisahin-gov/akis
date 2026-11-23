@@ -328,9 +328,6 @@ input::placeholder, textarea::placeholder {
   padding: 0 4px;
   border-radius: 4px;
 }
-@media print {
-  .paper-pageguides { display: none; }
-}
 .paper-topline { color: var(--paper-muted); border-bottom-color: var(--paper-head); }
 .paper-title .republic, .paper-title h2 { color: var(--paper-head); }
 .paper-title p { color: var(--paper-muted); }
@@ -3155,3 +3152,16 @@ input::placeholder, textarea::placeholder {
 }
 .rtech-field > span { font-size: var(--fs-2xs); }
 .rtech-field input { font-size: var(--fs-xs); }
+
+
+/* ===== v2.224 — YAZDIRMA: yalnız rapor kâğıdı =========================
+   v2.219–v2.223 panel/anahtarları ölçümde yazdırmada görünür kalmıştı.
+   Bu blok DOSYA SONUNDADIR: aynı özgüllükteki temel kurallar (ör.
+   .report-toggle) daha önce tanımlı olduğu için burada ezilmez. */
+@media print {
+  .paper-pageguides,
+  #reportSectionsBox,
+  #reportTechBox,
+  #reportReadiness,
+  .report-toggle { display: none; }
+}
