@@ -182,9 +182,19 @@ $('#reportSections')?.addEventListener('click', (event) => {
   const key = button.dataset.reportMove;
   const direction = Number(button.dataset.direction);
   updateLayout(c, (layout) => {
-    layout.order = moveItem(layout.order, key, direction);
-    layout.order = layout.order.filter((item) => item !== 'signature').concat('signature');
-    if (!layout.order.includes('cover')) layout.order.unshift('cover');
+    const fixedPrefix = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
+    const fixedSuffix = ['signature'];
+    const body = layout.order.filter((item) => !fixedPrefix.includes(item) && !fixedSuffix.includes(item) && item !== 'reading');
+    const moved = moveItem(body, key, direction);
+    const ordered = [];
+    for (const item of fixedPrefix) if (layout.order.includes(item)) ordered.push(item);
+    for (const item of moved) {
+      ordered.push(item);
+      if (item === 's5' && layout.order.includes('reading')) ordered.push('reading');
+    }
+    if (layout.order.includes('reading') && !ordered.includes('reading')) ordered.push('reading');
+    for (const item of fixedSuffix) if (layout.order.includes(item)) ordered.push(item);
+    layout.order = ordered;
   });
 });
 
