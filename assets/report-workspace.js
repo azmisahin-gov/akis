@@ -75,7 +75,7 @@ function renderOutline(c) {
     `<button type="button" class="report-profile-btn" data-report-preset="${escapeHtml(preset.key)}">${escapeHtml(preset.label)}</button>`
   ).join('');
   const rows = layout.order.map((key, index) => {
-    const pinned = ['cover', 'coverFields', 'toc', 'signature'].includes(key);
+    const pinned = ['cover', 'coverFields', 'kunye', 'summary', 'toc', 'reading', 'signature'].includes(key);
     const sub = key === 'reading';
     return `<div class="report-outline-item ${sub ? 'is-subitem' : ''}" data-report-outline-key="${escapeHtml(key)}">
       <span class="report-outline-number">${index + 1}</span>
