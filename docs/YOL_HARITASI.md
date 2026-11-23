@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.226.**
+yazılır. **Güncel sürüm: v2.227.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -15,12 +15,10 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 
 Öncelik sırası (kullanıcı kararı):
 
-> **SIRADAKİ İŞ (v2.226 sonrası): Rapor ekranı + şablon yeniden tasarımı.**
-> Kullanıcı: "Rapor ekranı kullanışlı olmalı; tüm rapor parçaları **ekler dahil**
-> organize edilebilmeli; rapor tutarlı, düzenli ve okunaklı sırayla hazırlanmalı.
-> Bölümler · A4 önizlemesi · rapor kontrolü · revizyon ayrı ayrı planlanmalı."
-> **Önce plan, sonra kod.** Plan: [`RAPOR_EKRANI_PLANI.md`](RAPOR_EKRANI_PLANI.md)
-> (ekran mimarisi, sıra/ek veri modeli, karar soruları, v2.227+ faz planı).
+> **v2.227 — Rapor çalışma alanı yeniden tasarımı (ayrı dalda uygulandı):**
+> üç bölgeli ekran, ortak bölüm sırası, otomatik numaralandırma, EK-1…EK-7 ayrı
+> yönetimi, EK-4, rapor kontrolü ve son 10 revizyon. Ayrıntı:
+> [`RAPOR_EKRANI_PLANI.md`](RAPOR_EKRANI_PLANI.md).
 
 1. ~~**Delil edinme — Tier 1**, envanter ve gömülü metadata~~
    **v2.208–v2.217 arasında yapıldı.**
