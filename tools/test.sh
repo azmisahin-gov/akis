@@ -8,6 +8,7 @@ cd "$(dirname "$0")/.."
 fail=0
 echo "### Hesaplama birim testleri ###"
 node tools/birim-testleri.mjs || fail=1
+node tools/rapor-workspace-testi.mjs || fail=1
 
 echo
 echo "### Rapor tutarlılık testi ###"
