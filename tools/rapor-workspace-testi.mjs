@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { emptyCase, normalizeCase } from '../assets/schema.js';
 import {
   DEFAULT_REPORT_ORDER, DEFAULT_ANNEXES, normalizeReportLayout, moveItem,
   enabledMainSectionNumbers, sortMarkedParts, createRevisionSnapshot,
@@ -29,3 +30,13 @@ altered.report.conclusionText = 'B';
 assert.equal(compareRevisionSnapshots(snapshot, altered).find(x => x.key === 'report').changed, true);
 assert.notEqual(revisionDigest(snapshot), revisionDigest(altered));
 console.log('Rapor çalışma alanı model testleri: tüm kontroller geçti.');
+
+const legacyCase = emptyCase();
+legacyCase.report.layout = { order: ['s2', 's1'], annexes: [{ key: 'custom-a', title: 'Özel delil', enabled: true, content: 'Metin', note: '' }] };
+legacyCase.report.revisions = Array.from({ length: 12 }, (_, i) => ({ id: 'rev-' + i, createdAt: '2026-11-23T00:00:00.000Z' }));
+const normalized = normalizeCase(legacyCase);
+assert.deepEqual(normalized.report.layout.order.slice(0, 2), ['s2', 's1']);
+assert.equal(normalized.report.layout.annexes[0].key, 'custom-a');
+assert.equal(normalized.report.revisions.length, 10);
+assert.equal(normalized.report.revisions[0].id, 'rev-2');
+console.log('Rapor düzeni şema kalıcılığı: tüm kontroller geçti.');
