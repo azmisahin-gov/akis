@@ -6,12 +6,23 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.226.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.227.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.227 — Rapor çalışma alanı yeniden tasarımı
+
+- Rapor ekranı üç bölgeye ayrıldı: rapor iskeleti, A4 oranlı önizleme ve bütünleşik rapor kontrolü/düzenleme.
+- Bölüm sırası kayda alınır; ana gövde sırası HTML, DOCX ve UDF üreticilerinde ortak işaretler üzerinden uygulanır.
+- Açık ana bölümler 1…N olarak yeniden numaralandırılır; içindekiler aynı sıradan türetilir.
+- EK-1…EK-7 bağımsız yönetilir; EK-4 isteğe bağlı teknik gözlem notu olarak eklendi. Özel ek, başlık, içerik ve not alanları desteklenir.
+- En son 10 rapor revizyonu saklanır; künye, rapor alanları, sorular ve mevcut ses kayıtlarına bağlı deşifre bölümleri alan grupları bazında karşılaştırılabilir.
+- Rapor çalışma alanı saf model yardımcıları için ayrı Node.js test dosyası eklendi.
+
+**Sınır:** A4 ekrandaki sayfa çizgileri yaklaşık kılavuzdur; gerçek sayfalama tarayıcının yazdırma/PDF motorunda oluşur. Revizyon kaydı ses dosyalarının ikili içeriğini yedeklemez.
 
 ## v2.226 — Kalite kontrolü ve denetlenebilirlik
 
