@@ -123,8 +123,8 @@ for (const [, file, v] of workspaceAssets) {
 }
 const workspaceSrc = read('assets/report-workspace.js');
 for (const moduleName of ['app.js', 'schema.js', 'report-model.js']) {
-  const m = workspaceSrc.match(new RegExp(`from\\s+'\\./${moduleName.replace('.', '\\\\.')}\\?v=([0-9.]+)'`));
-  check(`report-workspace.js ${moduleName} import'u sürümlü`, !!m && m[1] === version, m ? m[1] : 'bulunamadı');
+  const specifier = `from './${moduleName}?v=${version}'`;
+  check(`report-workspace.js ${moduleName} import'u sürümlü`, workspaceSrc.includes(specifier), specifier);
 }
 
 // 4) CHANGELOG: "Güncel sürüm" satırı ve en yeni sürüm başlığı.
