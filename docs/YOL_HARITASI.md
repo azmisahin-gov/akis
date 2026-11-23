@@ -15,6 +15,13 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
 
 Öncelik sırası (kullanıcı kararı):
 
+> **SIRADAKİ İŞ (v2.226 sonrası): Rapor ekranı + şablon yeniden tasarımı.**
+> Kullanıcı: "Rapor ekranı kullanışlı olmalı; tüm rapor parçaları **ekler dahil**
+> organize edilebilmeli; rapor tutarlı, düzenli ve okunaklı sırayla hazırlanmalı.
+> Bölümler · A4 önizlemesi · rapor kontrolü · revizyon ayrı ayrı planlanmalı."
+> **Önce plan, sonra kod.** Plan: [`RAPOR_EKRANI_PLANI.md`](RAPOR_EKRANI_PLANI.md)
+> (ekran mimarisi, sıra/ek veri modeli, karar soruları, v2.227+ faz planı).
+
 1. ~~**Delil edinme — Tier 1**, envanter ve gömülü metadata~~
    **v2.208–v2.217 arasında yapıldı.**
 2. ~~**v2.218 — Tasarım denetimi:**~~ **yapıldı.** Delil envanteri masaüstü

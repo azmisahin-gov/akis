@@ -4911,3 +4911,110 @@ curl -s https://azmisahin-gov.github.io/akis/version.json
 Beklenen: **1277 birim + 482 şema** yeşil; sürüm **2.217**. Sonra **v2.218
 tasarım denetimi** ile başla; rapor işine ondan sonra geç.
 
+
+## YENİ OTURUM DEVRİ (v2.226 → sıradaki oturum) — RAPOR EKRANI VE ŞABLON YENİDEN PLANLANACAK
+
+### Durum (2026-11-23)
+
+| | |
+|---|---|
+| Sürüm | **v2.226** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1277 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = `d1cc6da` |
+| Pages | `built` |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.226** |
+| Açık konu | **Rapor ekranı + şablon yeniden tasarımı** (plan: `docs/RAPOR_EKRANI_PLANI.md`) |
+
+### KULLANICI TALİMATI (değişmez — yeni oturumun ilk işi)
+
+> "Rapor sayfasının hem tasarımsal hem de şablonsal sorunları var. Yeni oturuma
+> başlayacak kişi, kullanıcı için **kullanışlı bir rapor ekranı** planlamalı.
+> Ayrıca **tüm rapor parçalarının, ekler de dahil tüm eklerin organize
+> edilebilmesi** gerekiyor. Rapor gerçekten **tutarlı, düzenli ve okunaklı bir
+> sırayla** hazırlanabilmeli. Şu anki yapıda hatalar var: rapor ekranının
+> kullanımı sorunlu; rapor ve rapor şablonlarının kullanımı ve uygulama biçimi
+> tasarımsal. Özetle **rapor bölümleri · A4 önizlemesi · rapor kontrolü ·
+> gerekirse rapor revizyonu** gibi bölümler daha iyi planlanmalı."
+
+**Yeni oturum ÖNCE plan yapar, sonra kod yazar.** Plan belgesi:
+[`docs/RAPOR_EKRANI_PLANI.md`](docs/RAPOR_EKRANI_PLANI.md) — ekran mimarisi
+(3 bölge), veri modeli (sıra + ekler), karar soruları, faz planı (v2.227+).
+
+### Bu oturumda yapılanlar (v2.218–v2.226)
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.218 | Delil envanteri masaüstü ızgara düzeltmesi | `tasarim` [2bm] |
+| v2.219 | Parametrik rapor: 19 bölüm anahtarı + panel | `rapor` 17, `sema` [3h], `tasarim` [2bn] |
+| v2.220 | 56.12 şablon bölümleri (künye, özet, iyileştirme, ASR, sınırlılık, gizlilik, Ekler) | `rapor` 18 |
+| v2.221 | A4 sayfalı önizleme (ekran kılavuzu, varsayılan kapalı) | `sema` [3h], `tasarim` [2bo] |
+| v2.222 | Teknik ortam alanları (7, elle) | `rapor` 19, `tasarim` [2bp] |
+| v2.223 | Rapor profilleri: Yalın 7 · Standart 19 · Tam 56.12 27 | `sema` [3h], `tasarim` [2bq] |
+| v2.224 | Yazdırmada yalnız rapor kâğıdı | `tasarim` [2br] |
+| v2.225 | Künye ek alanları (ekler + tarafsızlık) | `rapor` 20, `tasarim` [2bs] |
+| v2.226 | Kalite kontrolü / denetlenebilirlik (`qc`) | `rapor` 21, `tasarim` [2bt] |
+
+**Eklenen rapor bölüm anahtarları (toplam 27):** 19 varsayılan açık
+(cover, coverFields, toc, s1–s7, origin, embedded, acquisition, speakers,
+reading, wer, levels, reviewSummary, signature) + 8 varsayılan kapalı
+(kunye, summary, enhance, asr, tech, qc, scopeNote, privacy, annex → 9? bkz.
+REPORT_SECTION_DEFS; sayı koda göre doğrulanır).
+
+### Bilinen tasarım/şablon sorunları (yeniden tasarımın gerekçesi)
+
+1. **Rapor ekranı kalabalık:** önizlemenin üstünde 4 panel + hazırlık kartı +
+   2 anahtar yığılı; raporu görmek için kaydırmak gerekiyor.
+2. **Sıralama yok:** bölümler yalnız aç/kapa; sıra değiştirilemiyor. TOC yalnız
+   7 numaralı bölümü listeliyor.
+3. **Ekler tek blok:** `annex` EK-1/2/3/5/6/7'yi birlikte basıyor; **EK-4 yok**
+   (numarada boşluk), imza satırları yok; tek tek organize edilemiyor.
+4. **Numara boşluğu:** bölüm kapatılınca numara boşluğu kalıyor (1,2,4…);
+   numara türetilmeli.
+5. **A4 önizlemesi yaklaşık:** gerçek sayfa kırılması değil; kâğıt genişliğinden
+   hesaplanan kılavuz.
+6. **Rapor kontrolü ayrı kart:** rapor ekranına entegre değil.
+7. **Revizyon yok:** rapor düzeyinde sürüm/karşılaştırma yok.
+8. **Şablon birebir değil:** eklenen 56.12 şablonunun 14 bölüm + 7 ek yapısı
+   çıktıya birebir uygulanmıyor.
+
+### Karar bekleyen sorular (yeni oturum kullanıcıya soracak)
+
+1. A4 önizleme: gerçek sayfa ayırımı mı, yaklaşık kılavuz mu?
+2. Sıralama: sürükle-bırak mı, yukarı/aşağı düğmeleri mi (erişilebilirlik)?
+3. Şablon: çıktı 56.12'nin 14+7 sırasına birebir mi uysun, yoksa mevcut 7
+   bölüm korunup şablon "Tam" profili mi olsun?
+4. Revizyon: kaç sürüm, ne saklanır, karşılaştırma türü?
+5. EK-4: içerik ne olsun / numara EK-1…EK-6'ya mı çekilsin?
+6. İmza: EK-1 imza satırları elle mi, "e-imza üretilmez" notu mu?
+
+### Değişmez kısıtlar (bozulmamalı)
+
+- Rapor **bilirkişi adına**; uygulama adı/sürümü çıktıda geçmez.
+- **Üç çıktı (HTML/DOCX/UDF) aynı metni** üretir.
+- Ölçülmeyen iddia yok; boş alan "—".
+- Kod ≠ etiket; **S1/S2 kayıt-içi, K1/K2 dosya-arası**.
+- Yazdırmada yalnız rapor kâğıdı (v2.224).
+- Kırpma yasak; sığmayan öğe sarar.
+- Tek kaynak: bölüm/ek tanımı, numara, TOC, üç çıktı.
+
+### İlk komutlar
+
+```bash
+bash tools/test.sh
+git log --oneline -3
+git status --short
+curl -s https://azmisahin-gov.github.io/akis/version.json
+```
+
+Beklenen: **1277 birim + 517 şema** yeşil; sürüm **2.226**; `git status` temiz.
+Sonra **`docs/RAPOR_EKRANI_PLANI.md`** okunur, §5 soruları kullanıcıya sorulur
+ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
+
+### Kullanıcı kararları (bu oturumdan, geçerli)
+
+- Write-blocker: **alınmayacak** (56.12 için mevcut sistem yeterli).
+- Ollama/LLM: **şimdilik kullanılmayacak** (WebGPU ile faydalı olanlar
+  değerlendirilecek).
+- Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
+- Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
+- Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
