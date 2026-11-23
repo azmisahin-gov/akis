@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.226.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.227.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,3 +5018,12 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+
+## Rapor çalışma alanı v2.227 — ayrı geliştirme dalı
+
+- Kullanıcı isteği: rapor ekranı ve tüm parçaları yenilensin; eşzamanlı çalışan başka ajanı etkilememek için ayrı dal.
+- Çalışma dalı: `agent/report-workspace-redesign`; `main` üzerinde değişiklik yapılmadı.
+- Uygulama: `assets/report-workspace.js`, `assets/report-workspace.css`, `assets/report-model.js`; bölüm/ek/revizyon veri alanları `schema.js` normalleştirmesinde korunur.
+- Çıktı: ortak sıra işaretleri HTML, DOCX ve UDF üretiminde kullanılır; içindekiler ve ana bölüm numaraları etkin gövde sırasından türetilir.
+- Test: `tools/rapor-workspace-testi.mjs` ve `tools/test.sh` içine eklendi. Canlı UYAP Editörü uyumluluğu ve gerçek tarayıcı görsel testi bu depo otomasyonuyla burada çalıştırılamadı; PR öncesi ayrıca kontrol edilmeli.
