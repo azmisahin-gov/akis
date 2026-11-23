@@ -630,7 +630,10 @@ export function emptyCase(over = {}) {
       limitationsText: '',
       conclusionText: '',
       // Bölüm görünürlüğü (v2.219): anahtar → açık mı. Varsayılan tümü açık.
-      sections: emptyReportSections()
+      sections: emptyReportSections(),
+      // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
+      // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
+      pageView: false
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1004,7 +1007,9 @@ export function normalizeCase(src = {}) {
       limitationsText: str(report.limitationsText ?? c.limitationsText),
       conclusionText: str(report.conclusionText ?? c.conclusionText),
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
-      sections: normalizeReportSections(report.sections)
+      sections: normalizeReportSections(report.sections),
+      // Sayfalı önizleme (v2.221): varsayılan kapalı.
+      pageView: !!report.pageView
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),

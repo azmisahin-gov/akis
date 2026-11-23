@@ -1,4 +1,4 @@
-# Özellikler (v2.220 — mevcut durum)
+# Özellikler (v2.221 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -570,6 +570,11 @@ uzmanlık alanını gösterir.
   ses iyileştirme, ASR/yapay zekâ, görev alanı dışı beyan, gizlilik ve
   EK-1…EK-7 ekleri **varsayılan kapalı** olarak eklendi. Veri yoksa "—" yazılır;
   uydurma yok. Üç çıktı aynı metni üretir.
+- **Sayfalı önizleme — A4 (v2.221):** Rapor görünümünde "Sayfalı önizleme
+  (A4)" anahtarı. Varsayılan kapalı. Açınca kâğıt üzerinde A4 sayfa çizgileri
+  ve "Sayfa N / M" etiketleri çizilir; genişlik değişince yeniden hesaplanır.
+  Ekran kılavuzudur (kesin kırılma yazdırma/PDF'te); yazdırmada gizlenir;
+  UDF/DOCX etkilenmez.
 - **Liste sağa yaslı (v2.187):** rozetler sağda, durum rozeti en sağda; satır
   34 px. Detaydaki "Onayla" düğmesi kaldırıldı: eylem satır menüsünde ve
   Enter'da; durum Kontrol seçicisinde.

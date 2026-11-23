@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.220.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.221.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.221 — Sayfalı önizleme (A4)
+
+Kullanıcı: *"Sayfa önizlemesi A4 yapısı muhtemelen olur; bu alanlarda da
+kullanıcı tarafından ayarlanabilsin; biz en temiz hâlde verelim, parametreden
+açarsa görünsün."*
+
+### Ne yapıldı
+
+- **"Sayfalı önizleme (A4)"** anahtarı (Rapor görünümü). **Varsayılan KAPALI**:
+  en temiz hâl sürekli kâğıttır.
+- Açıldığında kâğıt üzerine **A4 sayfa çizgileri** ve **"Sayfa N / M"**
+  etiketleri çizilir. Sayfa sayısı kâğıt genişliğinden (A4: yükseklik =
+  genişlik × 297/210) hesaplanır; genişlik değişince yeniden hesaplanır.
+- Tercih `case.report.pageView` olarak dosyayla saklanır.
+- **İçerik kırpılmaz:** kılavuz `pointer-events:none` bir kaplamadır; metin
+  akmaz. **Yazdırmada gizlenir** (`@media print`), çünkü kesin sayfa kırılması
+  yazdırma/PDF sırasında oluşur.
+
+### Dürüst sınır
+
+Bu bir **ekran kılavuzudur**: sayfa sınırlarını gösterir, "tam sayfa" iddiası
+yoktur. Kesin kırılma yazdırma/PDF'te oluşur; UDF/DOCX çıktısı etkilenmez.
+
+### Ölçüm (gerçek Chromium, 14 bölümlük kayıt)
+
+| Durum | Sonuç |
+|---|---|
+| Kapalı | çizgi **0**, etiket **0** |
+| Açık | **3 çizgi**, **4 sayfa** ("Sayfa 1/4 … 4/4"), taşma **0** |
+| 900 / 600 px | yeniden hesaplanır (4 / 7 çizgi), yatay taşma **0** |
+| Yeniden kapat | çizgi **0** |
+| JS hatası | **0** |
+
+**Koruyan test:** `sema-testi` [3h] (pageView varsayılan kapalı/korunur),
+`tasarim-testi` [2bo].
 
 ## v2.220 — 56.12 şablon bölümleri (isteğe bağlı)
 

@@ -46,14 +46,14 @@ import {
   canApproveRole,
   REPORT_SECTION_DEFS,
   emptyReportSections
-} from './schema.js?v=2.220';
+} from './schema.js?v=2.221';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.220';
+const APP_VERSION = '2.221';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10539,6 +10539,54 @@ function reportAnnexBlocks(c) {
     { heading: 'EK-7. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', kind: 'para', text: REPORT_TEXT.annexLegalText }
   ];
 }
+// v2.221 — Sayfalı önizleme (A4). Bu bir EKRAN kılavuzudur: kâğıt sürekli
+// akar, çizgiler A4 sayfa sınırlarını GÖSTERİR. Kesin sayfa kırılması
+// yazdırma/PDF sırasında oluşur; burada "tam sayfa" iddiası yoktur.
+function renderPageGuides() {
+  const c = currentCase();
+  const on = !!(c && c.report && c.report.pageView);
+  const paper = $('#reportPreview');
+  if (!paper) return;
+  if (typeof paper.querySelector === 'function') {
+    const old = paper.querySelector('.paper-pageguides');
+    if (old && typeof old.remove === 'function') old.remove();
+  }
+  if (!on) {
+    if (paper.dataset) delete paper.dataset.pageCount;
+    return;
+  }
+  if (typeof paper.getBoundingClientRect !== 'function') return;
+  let rect;
+  try {
+    rect = paper.getBoundingClientRect();
+  } catch (e) {
+    return;
+  }
+  const w = rect.width || 0;
+  const h = paper.scrollHeight || rect.height || 0;
+  if (!w || !h) return;
+  const pageH = Math.round((w * 297) / 210); // A4: yükseklik = genişlik × 297/210
+  if (pageH < 200) return;
+  const pages = Math.max(1, Math.ceil(h / pageH));
+  const layer = document.createElement('div');
+  layer.className = 'paper-pageguides';
+  layer.setAttribute('aria-hidden', 'true');
+  for (let i = 1; i < pages; i++) {
+    const line = document.createElement('div');
+    line.className = 'paper-pg-line';
+    line.style.top = i * pageH + 'px';
+    layer.appendChild(line);
+  }
+  for (let i = 0; i < pages; i++) {
+    const lbl = document.createElement('span');
+    lbl.className = 'paper-pg-label';
+    lbl.style.top = i * pageH + 8 + 'px';
+    lbl.textContent = 'Sayfa ' + (i + 1) + ' / ' + pages;
+    layer.appendChild(lbl);
+  }
+  paper.appendChild(layer);
+  if (paper.dataset) paper.dataset.pageCount = String(pages);
+}
 function renderReportReadiness(c) {
   const el = $('#reportReadiness');
   if (!el) return;
@@ -10754,6 +10802,9 @@ function renderReport() {
   $('#reportPreview').innerHTML = html;
   $('#reportStatus').innerHTML =
     `<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
+  const pvToggle = $('#reportPageViewToggle');
+  if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
+  renderPageGuides();
 }
 function xesc(s = '') {
   return String(s)
@@ -13939,6 +13990,23 @@ $('#reportSections')?.addEventListener('click', (e) => {
   persist();
   renderReport();
 });
+// Sayfalı önizleme (v2.221) — varsayılan kapalı; açınca A4 çizgileri.
+$('#reportPageViewToggle')?.addEventListener('change', (e) => {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.pageView = !!e.target.checked;
+  persist();
+  renderReport();
+});
+let __pageGuideTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(__pageGuideTimer);
+  __pageGuideTimer = setTimeout(() => {
+    const c = currentCase();
+    if (c && c.report && c.report.pageView) renderPageGuides();
+  }, 150);
+});
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
 $('#reportUdfBtn2').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
@@ -14891,6 +14959,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.221': {
+    title: 'Sayfalı önizleme (A4) eklendi',
+    body:
+      'Rapor görünümüne "Sayfalı önizleme (A4)" anahtarı eklendi. Varsayılan ' +
+      'KAPALI. Açınca kâğıt üzerinde A4 sayfa çizgileri ve "Sayfa N / M" ' +
+      'etiketleri görünür. Bu bir ekran kılavuzudur; kesin sayfa kırılması ' +
+      'yazdırma/PDF sırasında oluşur. UDF/DOCX çıktısı etkilenmez.'
+  },
   '2.220': {
     title: '56.12 şablon bölümleri eklendi (isteğe bağlı)',
     body:

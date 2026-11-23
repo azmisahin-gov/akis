@@ -1734,6 +1734,10 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('normalizeCase: bölüm tercihi korunur (origin=false)', nc.report.sections.origin === false);
   ok('normalizeCase: bölüm tercihi korunur (reviewSummary=false)', nc.report.sections.reviewSummary === false);
   ok('normalizeCase: eksik bölüm açık', nc.report.sections.s1 === true);
+  // v2.221 — Sayfalı önizleme: varsayılan kapalı, açık tercih korunur.
+  ok('emptyCase.report.pageView varsayılan kapalı', emptyCase().report.pageView === false);
+  ok('normalizeCase: pageView=true korunur', normalizeCase({ id: 'cy', report: { pageView: true } }).report.pageView === true);
+  ok('normalizeCase: pageView yoksa kapalı', normalizeCase({ id: 'cz', report: {} }).report.pageView === false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

@@ -1733,5 +1733,28 @@ console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
   check('yeni stiller token kullanır (ham hex yok)', /\.rsec-item\s*\{[^}]*var\(--fs-xs\)[^}]*var\(--ink-2\)/.test(layer) && !/\.rsec-item\s*\{[^}]*#[0-9a-fA-F]{3,6}/.test(layer));
 }
 
+console.log('\n[2bo] Sayfalı önizleme: A4 ekran kılavuzu (v2.221)');
+{
+  // KULLANICI: "A4 yapısı muhtemelen olur; en temiz hâli verelim, parametreden
+  // açarsa görünsün." KURAL: varsayılan kapalı; açınca A4 sayfa çizgileri ve
+  // sayfa numarası; içerik kırpılmaz; yazdırmada kılavuz gizlenir.
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('sayfalı önizleme anahtarı HTML\'de', /id="reportPageViewToggle"/.test(html));
+  check('varsayılan KAPALI', /pageView:\s*false/.test(schema));
+  check('normalize pageView tercihini korur', /pageView:\s*!!report\.pageView/.test(schema));
+  check('kılavuz fonksiyonu tanımlı', /function renderPageGuides\(/.test(js));
+  check('renderReport kılavuzu çağırır', /renderPageGuides\(\);/.test(js));
+  check(
+    'aç/kapa işleyicisi tek kapı',
+    /reportPageViewToggle'\)\?\.addEventListener\('change'/.test(js) && /c\.report\.pageView = !!e\.target\.checked/.test(js)
+  );
+  check('kaplama stili token kullanır (ham hex yok)', /\.paper-pg-label\s*\{[^}]*var\(--paper-muted\)/.test(layer) && !/\.paper-pg-label\s*\{[^}]*#[0-9a-fA-F]{3,6}/.test(layer));
+  check('yazdırmada kılavuz gizlenir', /@media print\s*\{\s*\.paper-pageguides\s*\{\s*display:\s*none/.test(layer));
+  check('içerik kırpılmıyor (kaplama pointer-events:none)', /\.paper-pageguides\s*\{[^}]*pointer-events:\s*none/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
