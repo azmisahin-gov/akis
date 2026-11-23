@@ -291,7 +291,7 @@ body.report-full #view-report #reportPreview.report-paper {
     max-width: none !important;
     min-height: 0 !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 18mm 17mm !important;
     border: 0 !important;
     box-shadow: none !important;
   }
