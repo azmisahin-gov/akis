@@ -10390,6 +10390,58 @@ function orderReportMarkup(markup, c) {
       : null;
   return sorter ? sorter(source, c) : source.replace(/<!--AKIS_REPORT_BLOCK:[a-zA-Z0-9_-]+-->/g, '');
 }
+function orderUdfDocument(elementsMarkup, bodyText, c) {
+  const source = String(elementsMarkup || '');
+  const rawText = String(bodyText || '');
+  const codePoints = Array.from(rawText);
+  const markerRe = /<!--AKIS_REPORT_BLOCK:([a-zA-Z0-9_-]+)-->/g;
+  const markers = [...source.matchAll(markerRe)];
+  if (!markers.length) return { elements: source, text: rawText };
+
+  const prefix = source.slice(0, markers[0].index);
+  const suffix = source.slice(markers[markers.length - 1].index + markers[markers.length - 1][0].length);
+  const chunks = markers.map((marker, index) => ({
+    key: marker[1],
+    order: index,
+    xml: source.slice(
+      marker.index + marker[0].length,
+      index + 1 < markers.length ? markers[index + 1].index : source.length
+    )
+  }));
+  const rank = new Map(reportLayoutOrder(c).map((key, index) => [key, index]));
+  chunks.sort((left, right) => {
+    const leftRank = rank.has(left.key) ? rank.get(left.key) : Number.MAX_SAFE_INTEGER;
+    const rightRank = rank.has(right.key) ? rank.get(right.key) : Number.MAX_SAFE_INTEGER;
+    return leftRank - rightRank || left.order - right.order;
+  });
+
+  let nextOffset = 0;
+  const rebuiltText = [];
+  const rewriteContentOffsets = (xml) => xml.replace(/<content\b[^>]*>/g, (tag) => {
+    const startMatch = tag.match(/\bstartOffset="(\d+)"/);
+    const lengthMatch = tag.match(/\blength="(\d+)"/);
+    if (!startMatch || !lengthMatch) return tag;
+    const oldStart = Number(startMatch[1]);
+    const length = Number(lengthMatch[1]);
+    const newStart = nextOffset;
+    if (length > 0) {
+      const value = codePoints.slice(oldStart, oldStart + length);
+      if (value.length !== length) throw new Error('UDF içerik aralığı kaynak metin dışında.');
+      rebuiltText.push(value.join(''), '\n');
+      nextOffset += length + 1;
+    }
+    return tag.replace(/\bstartOffset="\d+"/, 'startOffset="' + newStart + '"');
+  });
+
+  const orderedParts = [prefix, ...chunks.map((chunk) => chunk.xml), suffix];
+  const orderedElements = orderedParts.map(rewriteContentOffsets).join('');
+  const orderedText = rebuiltText.join('');
+  if (nextOffset !== codePoints.length) {
+    throw new Error('UDF metin/biçim eşleşmesi doğrulanamadı: ' + nextOffset + '/' + codePoints.length);
+  }
+  return { elements: orderedElements, text: orderedText };
+}
+
 
 const REPORT_SECTION_GROUPS = [
   {
@@ -11937,9 +11989,10 @@ async function makeUdf() {
     el.push(paragraph(REPORT_TEXT.signatureLabel, { size: 10, color: 'muted', align: 2, after: 0 }));
   }
   el.push(reportOrderMarker('signature'));
-  const bodyText = textParts.join('');
-  const orderedElements = orderReportMarkup(el.join(''), c);
-  const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${orderedElements}</elements>${styles}\n</template>`;
+  const udfDocument = orderUdfDocument(el.join(''), textParts.join(''), c);
+  const orderedElements = udfDocument.elements;
+  const orderedBodyText = udfDocument.text;
+  const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(orderedBodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${orderedElements}</elements>${styles}\n</template>`;
   const parsed = new DOMParser().parseFromString(udfXml, 'application/xml');
   if (parsed.querySelector('parsererror')) throw new Error('UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı.');
   const outZip = new JSZip();
