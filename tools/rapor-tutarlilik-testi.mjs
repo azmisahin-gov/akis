@@ -755,5 +755,23 @@ console.log('\n[Senaryo 20] künye ek alanları (v2.225)');
   checkShared('tarafsızlık beyanı değeri', 'Tarafsızlığı etkileyen hâl yoktur.', H, U, D);
 }
 
+// Senaryo 21: kalite kontrolü / denetlenebilirlik (v2.226).
+console.log('\n[Senaryo 21] kalite kontrolü bölümü (v2.226)');
+{
+  const mk = (sections, extra) => baseCase({ report: { sections: sections || {}, ...(extra || {}) } });
+  const off = mk({}, { qcBy: 'Uzman Y' });
+  const Ho = htmlText(off), Uo = await udfText(off), Do = await docxText(off);
+  check(
+    'varsayılan: kalite bölümü KAPALI (üç çıktıda yok)',
+    !Ho.includes(REPORT_TEXT.qcHeading) && !Uo.includes(REPORT_TEXT.qcHeading) && !Do.includes(REPORT_TEXT.qcHeading)
+  );
+  const on = mk({ qc: true }, { qcBy: 'Uzman Y', qcScope: 'Tüm bölümler', qcDate: '2026-02-10' });
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('kalite bölümü başlığı', REPORT_TEXT.qcHeading, H, U, D);
+  checkShared('delil günlüğü satırı', 'Delil günlüğü zinciri', H, U, D);
+  checkShared('ikinci kontrolü yapan değeri', 'Uzman Y', H, U, D);
+  checkShared('ikinci kontrol kapsamı değeri', 'Tüm bölümler', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

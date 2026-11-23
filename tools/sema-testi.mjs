@@ -1779,6 +1779,15 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
     normalizeCase({ id: 'm1', report: { annexList: 'EK-2' }, updatedAt: '2026-01-02' })
   );
   ok('birleştirme: künye ek alanları dolar', mkc.merged.report.impartiality === 'A' && mkc.merged.report.annexList === 'EK-2');
+  // v2.226 — Kalite kontrolü / ikinci kontrol alanları.
+  ok('emptyCase qc alanları boş', emptyCase().report.qcBy === '' && emptyCase().report.qcScope === '' && emptyCase().report.qcDate === '');
+  const nq = normalizeCase({ id: 'cq', report: { qcBy: 'Uzman Y', qcScope: 'Tüm bölümler', qcDate: '2026-02-10' } });
+  ok('normalizeCase: qc alanları korunur', nq.report.qcBy === 'Uzman Y' && nq.report.qcScope === 'Tüm bölümler' && nq.report.qcDate === '2026-02-10');
+  const mq = mergeCases(
+    normalizeCase({ id: 'm1', report: { qcBy: 'A' }, updatedAt: '2026-01-01' }),
+    normalizeCase({ id: 'm1', report: { qcScope: 'B' }, updatedAt: '2026-01-02' })
+  );
+  ok('birleştirme: qc alanları dolar', mq.merged.report.qcBy === 'A' && mq.merged.report.qcScope === 'B');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

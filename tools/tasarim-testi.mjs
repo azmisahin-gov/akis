@@ -1823,5 +1823,20 @@ console.log('\n[2bs] Künye ek alanları: ekler + tarafsızlık (v2.225)');
   check('kunyeRows iki alanı basar', /Raporun ekleri/.test(js) && /Tarafsızlık \/ bağımsızlık beyanı/.test(js));
 }
 
+console.log('\n[2bt] Kalite kontrolü / denetlenebilirlik (v2.226)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  check('kalite paneli HTML\'de', /id="reportQcBox"/.test(html) && /id="reportQcFields"/.test(html));
+  check('şema: qc alanları boş varsayılan', /qcBy:\s*''/.test(schema) && /qcScope:\s*''/.test(schema) && /qcDate:\s*''/.test(schema));
+  check('şema: normalize qc', /qcBy:\s*str\(report\.qcBy\)/.test(schema));
+  check('bölüm anahtarı qc VARSAYILAN KAPALI', /\{ key: 'qc', def: false \}/.test(schema));
+  check('otomatik sayı + çizim fonksiyonları', /function reportQcRows\(/.test(js) && /function renderReportQc\(/.test(js));
+  check('renderReport kalite alanlarını çizer', /renderReportQc\(c\);/.test(js));
+  check('üç çıktı da qc bölümünü basar', (js.match(/on\('qc'\)/g) || []).length >= 3);
+  check('girdi işleyicisi', /reportQcFields'\)\?\.addEventListener\('input'/.test(js));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

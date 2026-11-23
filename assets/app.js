@@ -50,14 +50,14 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.225';
+} from './schema.js?v=2.226';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.225';
+const APP_VERSION = '2.226';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -300,7 +300,11 @@ Object.assign(REPORT_TEXT, {
   techHeading: 'TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI',
   techIntro:
     'İncelemenin yürütüldüğü iş istasyonu, yazılım ve dinleme donanımı aşağıda bilirkişi beyanına göre gösterilmiştir. Boş alan rapora "—" olarak yazılır; uydurulmaz.',
-  techNote: 'Teknik araçların adı ve sürümü yalnız fiilen kullanıldığı ölçüde yazılır; aracın dosyayı açabilmesi tek başına bilimsel doğrulama değildir.'
+  techNote: 'Teknik araçların adı ve sürümü yalnız fiilen kullanıldığı ölçüde yazılır; aracın dosyayı açabilmesi tek başına bilimsel doğrulama değildir.',
+  qcHeading: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK',
+  qcIntro:
+    'Aşağıdaki sayılar inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Bunlar bir ONAY değil, denetim listesidir; son kararı bilirkişi verir.',
+  qcNote: 'İkinci kontrol (varsa) bilirkişi beyanıdır; boş alan "—" olarak yazılır.'
 });
 // Hızlı etiketler: uzmanın elle yazmadan boş/anlaşılmaz/uzaktan gelen bölümleri
 // işaretlemesini sağlar. Bunlar köşeli parantezle yazılır ve rapora aynen akar;
@@ -10388,6 +10392,7 @@ const REPORT_SECTION_GROUPS = [
       ['enhance', 'Ses iyileştirme / filtreleme'],
       ['asr', 'Otomatik konuşma tanıma / yapay zekâ'],
       ['tech', 'Teknik özellikler / inceleme ortamı'],
+      ['qc', 'Kalite kontrolü / denetlenebilirlik'],
       ['scopeNote', 'Görev alanı dışı / sınırlılık beyanı'],
       ['privacy', 'Kişisel veri / gizlilik'],
       ['annex', 'Ekler (EK-1…EK-7)']
@@ -10562,6 +10567,42 @@ function reportAnnexBlocks(c) {
     { heading: 'EK-7. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', kind: 'para', text: REPORT_TEXT.annexLegalText }
   ];
 }
+// v2.226 — Kalite kontrolü / denetlenebilirlik: otomatik sayılar + ikinci göz.
+function reportQcRows(c) {
+  const materials = c.materials || [];
+  const rows = reportChecklistRows(c);
+  let timeIssues = 0;
+  let gaps = 0;
+  for (const m of materials) {
+    timeIssues += segmentTimeIssueIndexes(m.segments || []).size;
+    const cov = segmentCoverage(m.segments || [], matDuration(m) || 0);
+    if (cov && Array.isArray(cov.gaps)) gaps += cov.gaps.length;
+  }
+  const brokenLogs = materials.filter((m) => logChainState(m.log).state === 'broken').length;
+  const team = (c.team || [])
+    .map((t) => `${t.name || '(ad girilmedi)'} · ${TEAM_ROLE_LABEL[t.role] || t.role}`)
+    .join('; ');
+  const merges = Array.isArray(c.mergeLog) ? c.mergeLog.length : 0;
+  const r = c.report || {};
+  rows.push(['Zaman sorunu olan bölüm', String(timeIssues)]);
+  rows.push(['Bölümlenmemiş ses aralığı', String(gaps)]);
+  rows.push(['Delil günlüğü zinciri', brokenLogs ? `${brokenLogs} kayıtta kırık` : 'kırık yok']);
+  rows.push(['Ekip (görev)', team || '—']);
+  rows.push(['Birleştirme kaydı', String(merges)]);
+  rows.push(['İkinci kontrolü yapan', r.qcBy || '—']);
+  rows.push(['İkinci kontrolün kapsamı', r.qcScope || '—']);
+  rows.push(['İkinci kontrol tarihi', r.qcDate ? niceDate(r.qcDate) : '—']);
+  return rows;
+}
+function renderReportQc(c) {
+  const host = $('#reportQcFields');
+  if (!host) return;
+  const r = c.report || {};
+  host.innerHTML =
+    `<label class="field rtech-field"><span>İkinci kontrolü yapan</span><input data-report-qc="qcBy" value="${esc(r.qcBy || '')}" placeholder="Ad soyad / birim (boşsa “—”)"></label>` +
+    `<label class="field rtech-field"><span>İkinci kontrolün kapsamı</span><input data-report-qc="qcScope" value="${esc(r.qcScope || '')}" placeholder="Hangi kayıt/aralık, ne yapıldı (boşsa “—”)"></label>` +
+    `<label class="field rtech-field"><span>İkinci kontrol tarihi</span><input type="date" data-report-qc="qcDate" value="${esc(r.qcDate || '')}"></label>`;
+}
 // v2.222 — Teknik ortam alanları (elle düzenlenir; boşsa rapora "—").
 const REPORT_TECH_LABELS = {
   workstation: 'İş istasyonu / bilgisayar',
@@ -10702,6 +10743,7 @@ function renderReport() {
   renderReportSections(c);
   renderReportTech(c);
   renderReportKunye(c);
+  renderReportQc(c);
   const on = (k) => reportSectionOn(c, k);
   const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
   let html = '';
@@ -10828,6 +10870,11 @@ function renderReport() {
   }
   if (on('reviewSummary')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  if (on('qc')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.qcHeading)}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
+      .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`;
   }
   if (on('privacy')) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.privacyHeading)}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`;
@@ -11182,6 +11229,12 @@ function docxXml(c) {
       reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
       { widths: [6000, 3000], header: false, shadeFirstCol: true }
     );
+  }
+  if (on('qc')) {
+    body += headingXml(REPORT_TEXT.qcHeading);
+    body += wP(REPORT_TEXT.qcIntro);
+    body += wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true });
+    body += wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true });
   }
   if (on('privacy')) {
     body += headingXml(REPORT_TEXT.privacyHeading);
@@ -11660,6 +11713,12 @@ async function makeUdf() {
         { header: false, shadeFirstCol: true }
       )
     );
+  }
+  if (on('qc')) {
+    el.push(h(REPORT_TEXT.qcHeading));
+    el.push(paragraph(REPORT_TEXT.qcIntro, { size: 10 }));
+    el.push(table(reportQcRows(c), [170, 340], { header: false, shadeFirstCol: true }));
+    el.push(paragraph(REPORT_TEXT.qcNote, { size: 9, italic: true, color: 'muted', after: 7 }));
   }
   if (on('privacy')) {
     el.push(h(REPORT_TEXT.privacyHeading));
@@ -14088,6 +14147,17 @@ $('#reportKunyeFields')?.addEventListener('input', (e) => {
   persist();
 });
 $('#reportKunyeFields')?.addEventListener('change', () => renderReport());
+// Kalite kontrolü ek alanları (v2.226) — aynı desen.
+$('#reportQcFields')?.addEventListener('input', (e) => {
+  const inp = e.target.closest('[data-report-qc]');
+  if (!inp) return;
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report[inp.dataset.reportQc] = inp.value;
+  persist();
+});
+$('#reportQcFields')?.addEventListener('change', () => renderReport());
 // Sayfalı önizleme (v2.221) — varsayılan kapalı; açınca A4 çizgileri.
 $('#reportPageViewToggle')?.addEventListener('change', (e) => {
   const c = currentCase();
@@ -15057,6 +15127,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.226': {
+    title: 'Kalite kontrolü ve denetlenebilirlik bölümü',
+    body:
+      'Rapor bölümlerine "Kalite kontrolü ve denetlenebilirlik" eklendi (varsayılan ' +
+      'kapalı). Otomatik sayaçlar (onaylı/bekleyen/45 sn/zaman/kapsam/delil zinciri/' +
+      'ekip/birleştirme) ve ikinci kontrol alanları (yapan/kapsam/tarih) içerir. ' +
+      'Boş alan "—" yazılır. Üç çıktı aynı metni üretir.'
+  },
   '2.225': {
     title: 'Künye: raporun ekleri ve tarafsızlık beyanı',
     body:

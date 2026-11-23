@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.225.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.226.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.226 — Kalite kontrolü ve denetlenebilirlik
+
+Yeni **isteğe bağlı** rapor bölümü `qc` (varsayılan KAPALI). Otomatik denetim
+sayaçları + **ikinci göz** alanları.
+
+### Otomatik (veriden)
+
+- İncelenen kayıt · toplam bölüm · uzman onaylı · anlaşılmadı · kontrol bekleyen
+  · 45 sn üstü · SHA-256 doğrulanmış kayıt
+- **Zaman sorunu olan bölüm**, **bölümlenmemiş ses aralığı** (kayıt başına toplanır)
+- **Delil günlüğü zinciri** (kırık yok / N kayıtta kırık)
+- **Ekip (görev)** ve **birleştirme kaydı** sayısı
+
+### Elle (ikinci kontrol)
+
+- İkinci kontrolü yapan · kapsamı · tarihi — boşsa rapora "—".
+
+Üç çıktı (HTML/DOCX/UDF) aynı satırları üretir. `case.report.qcBy/qcScope/qcDate`
+şemada; `normalizeCase` korur; birleştirme boş alanı doldurur.
+
+**Ölçüm:** `rapor [Senaryo 21]` üç çıktıda başlık + satırlar + değerler aynı;
+`sema [3h]` (517); `tasarim [2bt]`. `bash tools/test.sh` yeşil.
 
 ## v2.225 — Künye ek alanları: ekler + tarafsızlık
 

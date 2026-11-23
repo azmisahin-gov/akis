@@ -1,4 +1,4 @@
-# Özellikler (v2.225 — mevcut durum)
+# Özellikler (v2.226 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -590,6 +590,9 @@ uzmanlık alanını gösterir.
   paneli; **Raporun ekleri** ve **Tarafsızlık/bağımsızlık beyanı** elle
   doldurulur, boşsa rapora "—" yazılır. Değerler yalnız Rapor künyesi bölümü
   açıkken görünür; üç çıktı aynı.
+- **Kalite kontrolü / denetlenebilirlik (v2.226):** `qc` bölümü (varsayılan
+  kapalı); otomatik sayaçlar (onaylı/bekleyen/45 sn/zaman/kapsam/delil zinciri/
+  ekip/birleştirme) + ikinci kontrol alanları (yapan/kapsam/tarih). Boşsa "—".
 - **Liste sağa yaslı (v2.187):** rozetler sağda, durum rozeti en sağda; satır
   34 px. Detaydaki "Onayla" düğmesi kaldırıldı: eylem satır menüsünde ve
   Enter'da; durum Kontrol seçicisinde.

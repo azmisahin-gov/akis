@@ -549,6 +549,7 @@ export const REPORT_SECTION_DEFS = [
   { key: 'asr', def: false }, // Otomatik konuşma tanıma / yapay zekâ
   { key: 'tech', def: false }, // Teknik özellikler / inceleme ortamı
   { key: 'scopeNote', def: false }, // Görev alanı dışı / sınırlılık beyanı
+  { key: 'qc', def: false }, // Kalite kontrolü / denetlenebilirlik
   { key: 'privacy', def: false }, // Kişisel veri / gizlilik
   { key: 'annex', def: false } // Ekler (EK-1…EK-7)
 ];
@@ -689,7 +690,11 @@ export function emptyCase(over = {}) {
       tech: emptyReportTech(),
       // Künye ek alanları (v2.225): elle doldurulur; boşsa rapora "—".
       impartiality: '',
-      annexList: ''
+      annexList: '',
+      // Kalite kontrolü / ikinci göz (v2.226): elle; boşsa rapora "—".
+      qcBy: '',
+      qcScope: '',
+      qcDate: ''
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1070,7 +1075,11 @@ export function normalizeCase(src = {}) {
       tech: normalizeReportTech(report.tech),
       // Künye ek alanları (v2.225): boş metin varsayılan.
       impartiality: str(report.impartiality),
-      annexList: str(report.annexList)
+      annexList: str(report.annexList),
+      // Kalite kontrolü / ikinci göz (v2.226): boş metin varsayılan.
+      qcBy: str(report.qcBy),
+      qcScope: str(report.qcScope),
+      qcDate: str(report.qcDate)
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
@@ -1701,7 +1710,7 @@ export function mergeCases(mine, theirs) {
     ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
     ['expert', ['name', 'registryNo', 'field']],
     ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
-    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList']]
+    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList', 'qcBy', 'qcScope', 'qcDate']]
   ]) {
     const mg = mine[group] || {};
     const tg = theirs[group] || {};
@@ -2027,7 +2036,7 @@ export function compareCases(mine, theirs) {
   };
   for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
   for (const [g, keys] of [
-    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList']],
+    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList', 'qcBy', 'qcScope', 'qcDate']],
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);
