@@ -105,7 +105,7 @@ function renderAnnexes(c) {
     <div class="report-annex-items">${layout.annexes.map((annex, i) => {
       const custom = !DEFAULT_ANNEXES.some((item) => item.key === annex.key);
       const annexNumber = layout.annexes.slice(0, i + 1).filter((item) => item.enabled !== false).length;
-      const annexLabel = annex.enabled ? (custom ? 'Özel ek · EK-' + annexNumber : 'EK-' + annexNumber) : (custom ? 'Özel ek · kapalı' : 'EK-' + annexNumber + ' · kapalı');
+      const annexLabel = annex.enabled ? (custom ? 'Özel ek · EK-' + annexNumber : 'EK-' + annexNumber) : (custom ? 'Özel ek · kapalı' : 'EK-' + (i + 1) + ' · kapalı');
       return `<article class="report-annex-item" data-annex-key="${escapeHtml(annex.key)}">
         <div class="report-annex-top">
           <label><input type="checkbox" data-annex-enabled="${escapeHtml(annex.key)}" ${annex.enabled ? 'checked' : ''}><b>${annexLabel}</b></label>
