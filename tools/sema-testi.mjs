@@ -90,7 +90,9 @@ import {
   normalizeReportSections,
   REPORT_TECH_KEYS,
   emptyReportTech,
-  normalizeReportTech
+  normalizeReportTech,
+  REPORT_PRESET_DEFS,
+  reportSectionsForPreset
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -1756,6 +1758,18 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   );
   ok('birleştirme: tech boş alan dolar (os)', mgc.merged.report.tech.os === 'Windows 11');
   ok('birleştirme: tech boş alan dolar (workstation)', mgc.merged.report.tech.workstation === 'PC-1');
+  // v2.223 — Rapor profilleri: yalnız bölüm görünürlüğü, veri değişmez.
+  ok('profil tanımları üç tane', REPORT_PRESET_DEFS.length === 3);
+  ok('profil: full tüm bölümler açık', REPORT_SECTION_KEYS.every((k) => reportSectionsForPreset('full')[k] === true));
+  ok(
+    'profil: standard = varsayılan',
+    JSON.stringify(reportSectionsForPreset('standard')) === JSON.stringify(emptyReportSections())
+  );
+  const mn = reportSectionsForPreset('minimal');
+  ok('profil: minimal çekirdek açık', mn.cover === true && mn.s5 === true && mn.signature === true);
+  ok('profil: minimal ayrıntı kapalı', mn.annex === false && mn.origin === false && mn.tech === false);
+  const unk = reportSectionsForPreset('bilinmeyen');
+  ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.annex === false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

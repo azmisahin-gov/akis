@@ -3130,6 +3130,7 @@ input::placeholder, textarea::placeholder {
 .rsec-item input { width: 16px; height: 16px; accent-color: var(--accent); flex: none; }
 .rsec-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .rsec-note { color: var(--ink-3); font-size: var(--fs-2xs); }
+.rsec-presets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 4px; }
 
 /* ===== v2.222 — Teknik ortam alanları ================================= */
 .report-tech-box {

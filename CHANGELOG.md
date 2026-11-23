@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.222.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.223.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.223 — Rapor profilleri: Yalın · Standart · Tam 56.12
+
+27 bölümü tek tek açmak yerine **tek tıkla hazır kümeler**. Profil yalnız bölüm
+görünürlüğünü ayarlar; **veri değişmez**; bilirkişi sonra ince ayar yapabilir.
+
+### Profiller
+
+| Profil | Bölüm | Ne zaman |
+|---|---|---|
+| **Yalın (asgari)** | **7** (kapak, künye, konu, sorular, analiz, sonuç, imza) | en kısa/tek sayfalık sunum |
+| **Standart** | **19** (mevcut varsayılan) | günlük kullanım |
+| **Tam 56.12** | **27** (tüm bölüm + EK-1…EK-7) | ayrıntılı/denetime elverişli rapor |
+
+- Profil tanımları ve saf fonksiyon `schema.js`'te (`reportSectionsForPreset`).
+- Panelde "Hazır profil" satırı; tıklayınca bölüm kutuları ve önizleme anında
+  güncellenir; tercih dosyayla saklanır.
+
+### Ölçüm (gerçek Chromium)
+
+| Profil | İşaretli kutu | Ekler bölümü |
+|---|---|---|
+| Tam 56.12 | **27 / 27** | var |
+| Yalın | **7 / 27** | yok |
+| Standart | **19 / 27** | yok |
+| Yenile (standart) | **19** (korundu) | — |
+
+900 / 600 px taşma **0**; JS hatası **0**.
+
+**Koruyan test:** `sema-testi` [3h] (511), `tasarim-testi` [2bq].
 
 ## v2.222 — Teknik ortam alanları
 

@@ -566,6 +566,31 @@ export const REPORT_TECH_KEYS = [
   'environment',
   'other'
 ];
+// ---- 5d. Rapor profilleri (v2.223) ---------------------------------------
+// Hazır bölüm kümeleri: "en yalın" / "standart" / "tam 56.12". Profil yalnız
+// bölüm görünürlüğünü ayarlar; veriyi DEĞİŞTİRMEZ. Bilirkişi sonra tek tek
+// açıp kapatabilir.
+export const REPORT_PRESET_DEFS = [
+  { key: 'minimal', label: 'Yalın (asgari)' },
+  { key: 'standard', label: 'Standart' },
+  { key: 'full', label: 'Tam 56.12' }
+];
+const REPORT_MINIMAL_KEYS = ['cover', 'coverFields', 's1', 's2', 's5', 's6', 'signature'];
+export function reportSectionsForPreset(name) {
+  if (name === 'full') {
+    const all = {};
+    for (const k of REPORT_SECTION_KEYS) all[k] = true;
+    return all;
+  }
+  if (name === 'minimal') {
+    const off = {};
+    for (const d of REPORT_SECTION_DEFS) off[d.key] = false;
+    const base = emptyReportSections(off);
+    for (const k of REPORT_MINIMAL_KEYS) if (k in base) base[k] = true;
+    return base;
+  }
+  return emptyReportSections(); // 'standard' ve bilinmeyen: varsayılan 19 bölüm
+}
 export function emptyReportTech(over = {}) {
   const out = {};
   for (const k of REPORT_TECH_KEYS) out[k] = '';

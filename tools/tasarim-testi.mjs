@@ -1773,5 +1773,18 @@ console.log('\n[2bp] Teknik ortam alanları: elle düzenlenir (v2.222)');
   check('panel stili token kullanır', /\.report-tech-box\s*\{[^}]*var\(--surface\)/.test(layer));
 }
 
+console.log('\n[2bq] Rapor profilleri: Yalın · Standart · Tam 56.12 (v2.223)');
+{
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('profil tanımları + saf fonksiyon şemada', /REPORT_PRESET_DEFS/.test(schema) && /reportSectionsForPreset/.test(schema));
+  check('üç profil de tanımlı', /key: 'minimal'/.test(schema) && /key: 'standard'/.test(schema) && /key: 'full'/.test(schema));
+  check('panelde hazır profil düğmeleri', /data-report-preset=/.test(js));
+  check('profil tıklama işleyicisi', /closest\('\[data-report-preset\]'\)/.test(js));
+  check('profil yalnız bölüm görünürlüğünü ayarlar', /c\.report\.sections = reportSectionsForPreset\(preset\.dataset\.reportPreset\)/.test(js));
+  check('profil satırı token stil', /\.rsec-presets\s*\{[^}]*display:\s*flex/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

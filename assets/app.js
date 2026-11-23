@@ -47,15 +47,17 @@ import {
   REPORT_SECTION_DEFS,
   emptyReportSections,
   REPORT_TECH_KEYS,
-  emptyReportTech
-} from './schema.js?v=2.222';
+  emptyReportTech,
+  REPORT_PRESET_DEFS,
+  reportSectionsForPreset
+} from './schema.js?v=2.223';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.222';
+const APP_VERSION = '2.223';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10406,7 +10408,11 @@ function renderReportSections(c) {
   }).join('');
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   host.dataset.allOff = JSON.stringify(allOff);
+  const presets = REPORT_PRESET_DEFS.map(
+    (p) => `<button type="button" class="mini-button" data-report-preset="${esc(p.key)}" title="Bölüm kümesini hazır ayarla (veri değişmez)">${esc(p.label)}</button>`
+  ).join('');
   host.innerHTML =
+    `<div class="rsec-presets"><span class="rsec-note">Hazır profil:</span>${presets}</div>` +
     groups +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez.</span></div>`;
 }
@@ -14026,6 +14032,16 @@ $('#reportSections')?.addEventListener('change', (e) => {
   setReportSection(cb.dataset.reportSection, cb.checked);
 });
 $('#reportSections')?.addEventListener('click', (e) => {
+  const preset = e.target.closest('[data-report-preset]');
+  if (preset) {
+    const c = currentCase();
+    if (!c) return;
+    c.report = c.report || {};
+    c.report.sections = reportSectionsForPreset(preset.dataset.reportPreset);
+    persist();
+    renderReport();
+    return;
+  }
   const b = e.target.closest('[data-report-sections-all]');
   if (!b) return;
   const c = currentCase();
@@ -15019,6 +15035,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.223': {
+    title: 'Rapor profilleri: Yalın · Standart · Tam 56.12',
+    body:
+      'Rapor bölümleri panelinde "Hazır profil" düğmeleri eklendi: Yalın (7 bölüm), ' +
+      'Standart (19) ve Tam 56.12 (27). Tek tıkla bölüm kümesi ayarlanır; veri ' +
+      'değişmez, sonra tek tek açıp kapatabilirsiniz. Tercih dosyayla saklanır.'
+  },
   '2.222': {
     title: 'Teknik ortam alanları eklendi',
     body:
