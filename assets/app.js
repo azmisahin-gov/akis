@@ -10659,10 +10659,15 @@ function reportAnnexBlocks(c) {
         : { key, kind: 'para', text: String(item.content || '—') };
       if (key === 'ek4') block.text = String(item.content || '—');
       if (!base && item.content) block.text = String(item.content);
+      const note = String(item.note || '').trim();
+      if (note) {
+        if (block.kind === 'para') block.text = [block.text || '', 'Not: ' + note].filter(Boolean).join('\n\n');
+        else if (block.header) block.rows = [...(block.rows || []), ['Not: ' + note, ...Array(Math.max(0, (block.headers || []).length - 1)).fill('')]];
+        else block.rows = [...(block.rows || []), ['Not', note]];
+      }
       return {
         ...block,
-        heading: `EK-${index + 1}. ${title}`,
-        note: String(item.note || '')
+        heading: `EK-${index + 1}. ${title}`
       };
     });
 }
