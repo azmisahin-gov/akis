@@ -694,7 +694,10 @@ export function emptyCase(over = {}) {
       // Kalite kontrolü / ikinci göz (v2.226): elle; boşsa rapora "—".
       qcBy: '',
       qcScope: '',
-      qcDate: ''
+      qcDate: '',
+      // Rapor çalışma düzeni (v2.227): bölüm sırası ve ayrı ek kayıtları.
+      layout: { order: [], annexes: [] },
+      revisions: []
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1079,7 +1082,14 @@ export function normalizeCase(src = {}) {
       // Kalite kontrolü / ikinci göz (v2.226): boş metin varsayılan.
       qcBy: str(report.qcBy),
       qcScope: str(report.qcScope),
-      qcDate: str(report.qcDate)
+      qcDate: str(report.qcDate),
+      // Rapor düzeni: bilinmeyen ek anahtarları ve özel ekleri kaybetmeden sakla.
+      layout: {
+        order: Array.isArray(report.layout?.order) ? report.layout.order.filter((key) => typeof key === 'string') : [],
+        annexes: Array.isArray(report.layout?.annexes) ? report.layout.annexes.filter(isObj).slice(0, 50) : []
+      },
+      // Son 10 revizyon kaydı dosyanın parçasıdır; IndexedDB/yedekle korunur.
+      revisions: Array.isArray(report.revisions) ? report.revisions.filter(isObj).slice(-10) : []
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
