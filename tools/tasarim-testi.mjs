@@ -1701,5 +1701,37 @@ console.log('\n[2bm] Masaüstü ızgarası: delil envanteri kendi satırında (v
   );
 }
 
+console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
+{
+  // KULLANICI: "raporu tüm alanlarını yani bölümlerini seve seve açıp
+  // kapatabileceğim; hepsini hazır tutalım ama bilirkişi isterse en az
+  // bölüm yapısıyla sunabilsin; çok modüler/esnek olsun." KURAL: her bölüm
+  // tek anahtarla açılır/kapanır; üç çıktı AYNI anahtarı onurlandırır.
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('bölüm paneli HTML\'de', /id="reportSectionsBox"/.test(html) && /id="reportSections"/.test(html));
+  check('bölüm tanımları şemada (tek kaynak)', /REPORT_SECTION_DEFS/.test(schema) && /emptyReportSections/.test(schema));
+  check(
+    'şema: normalize bölüm tercihini korur',
+    /sections:\s*normalizeReportSections\(report\.sections\)/.test(schema)
+  );
+  check('çizim ve karar fonksiyonları var', /function renderReportSections\(/.test(js) && /function setReportSection\(/.test(js));
+  check('bölüm durumu tek kapıdan okunur', /function reportSectionOn\(/.test(js));
+  // Üç çıktı da aynı kapıyı kullanmalı.
+  const onHelpers = (js.match(/const on = \(k\) => reportSectionOn\(c, k\);/g) || []).length;
+  check('üç çıktı da reportSectionOn kullanır', onHelpers >= 3, `bulunan: ${onHelpers}`);
+  for (const key of ['origin', 'reading', 'reviewSummary', 'wer', 'levels', 'signature']) {
+    check(`"${key}" bölümü koşullu`, new RegExp(`on\\('${key}'\\)`).test(js));
+  }
+  check(
+    'içindekiler yalnız açık bölümleri listeler',
+    /REPORT_TEXT\.sections\.filter\(\(_, i\) => on\('s' \+ \(i \+ 1\)\)\)/.test(js)
+  );
+  check('bölüm paneli çizimi renderReport içinde', /renderReportSections\(c\);/.test(js));
+  check('yeni stiller token kullanır (ham hex yok)', /\.rsec-item\s*\{[^}]*var\(--fs-xs\)[^}]*var\(--ink-2\)/.test(layer) && !/\.rsec-item\s*\{[^}]*#[0-9a-fA-F]{3,6}/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

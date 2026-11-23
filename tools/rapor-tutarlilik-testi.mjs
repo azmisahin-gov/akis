@@ -607,5 +607,62 @@ console.log('\n[Senaryo 16] gömülü metadata (cihaz beyanı) aç/kapa');
   );
 }
 
+// Senaryo 17: rapor bölüm görünürlüğü (v2.219) — üç çıktı AYNI anahtarı
+// onurlandırmalı. Kapalı bölüm hiçbir çıktıda olmamalı; açık bölüm kalmalı.
+console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
+{
+  const mk = (report) =>
+    baseCase({
+      questions: [{ id: 'q1', question: 'Soru 1', answer: 'Cevap 1', basis: 'Dayanak' }],
+      materials: [
+        {
+          id: 'm1',
+          name: 'a.wav',
+          type: 'audio/wav',
+          size: 1000,
+          duration: 12.5,
+          sha256: 'abc',
+          tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+          segments: [{ id: 'sg1', start: '00:00:00', end: '00:00:05', speaker: 'S1', text: 'merhaba', review: 'onaylandi' }],
+          origin: { mediumType: 'usb', mediumLabel: 'FLASH-1' },
+          log: []
+        }
+      ],
+      ...(report ? { report } : {})
+    });
+  const on = mk();
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('varsayılan: köken başlığı', REPORT_TEXT.originHeading, H, U, D);
+  checkShared('varsayılan: sonuç başlığı', REPORT_TEXT.sections[5], H, U, D);
+  checkShared('varsayılan: inceleme özeti', REPORT_TEXT.reviewSummaryHeading, H, U, D);
+  checkShared('varsayılan: okuma metni', REPORT_TEXT.readingHeading, H, U, D);
+
+  const off = mk({ sections: { origin: false, reviewSummary: false, s6: false, s7: false, reading: false } });
+  const H2 = htmlText(off), U2 = await udfText(off), D2 = await docxText(off);
+  check(
+    'kapalı köken üç çıktıda da yok',
+    !H2.includes(REPORT_TEXT.originHeading) && !U2.includes(REPORT_TEXT.originHeading) && !D2.includes(REPORT_TEXT.originHeading)
+  );
+  check(
+    'kapalı sonuç üç çıktıda da yok',
+    !H2.includes(REPORT_TEXT.sections[5]) && !U2.includes(REPORT_TEXT.sections[5]) && !D2.includes(REPORT_TEXT.sections[5])
+  );
+  check(
+    'kapalı inceleme özeti üç çıktıda da yok',
+    !H2.includes(REPORT_TEXT.reviewSummaryHeading) &&
+      !U2.includes(REPORT_TEXT.reviewSummaryHeading) &&
+      !D2.includes(REPORT_TEXT.reviewSummaryHeading)
+  );
+  check(
+    'kapalı ekler başlığı üç çıktıda da yok',
+    !H2.includes(REPORT_TEXT.sections[6]) && !U2.includes(REPORT_TEXT.sections[6]) && !D2.includes(REPORT_TEXT.sections[6])
+  );
+  check(
+    'kapalı okuma metni üç çıktıda da yok',
+    !H2.includes(REPORT_TEXT.readingHeading) && !U2.includes(REPORT_TEXT.readingHeading) && !D2.includes(REPORT_TEXT.readingHeading)
+  );
+  checkShared('açık kalan sorular bölümü', REPORT_TEXT.sections[1], H2, U2, D2);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

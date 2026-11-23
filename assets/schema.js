@@ -514,6 +514,50 @@ export function emptyMaterial(over = {}) {
   };
 }
 
+// ---- 5b. Rapor bölüm görünürlüğü (v2.219) --------------------------------
+// RAPOR PARAMETRİKTİR: tüm bölümler hazır tutulur; bilirkişi her birini
+// açıp kapatabilir. Anahtar (key) sabittir, başlık arayüzde `REPORT_TEXT`ten
+// gelir. Varsayılan AÇIK: mevcut rapor görünümü değişmez.
+// DİKKAT: yeni anahtar eklerken hem buraya hem `emptyCase.report.sections`
+// hem `normalizeReportSections` hem arayüz gruplarına ekleyin; aksi hâlde
+// normalize sırasında alan sessizce düşer (v2.212 dersi).
+export const REPORT_SECTION_DEFS = [
+  { key: 'cover', def: true }, // Kapak başlığı (T.C., merci, rapor türü)
+  { key: 'coverFields', def: true }, // Künye alanları tablosu
+  { key: 'toc', def: true }, // İçindekiler
+  { key: 's1', def: true }, // 1. Konu, kapsam ve sınırlar
+  { key: 's2', def: true }, // 2. Bilirkişinin cevaplaması gereken sorular
+  { key: 's3', def: true }, // 3. Maddi unsurlar + dosya envanteri
+  { key: 'origin', def: true }, // Kayıt kökeni ve teslim zinciri
+  { key: 'embedded', def: true }, // Gömülü metadata (beyan)
+  { key: 'acquisition', def: true }, // Delil edinme ve doğrulama
+  { key: 'speakers', def: true }, // Konuşmacılar
+  { key: 's4', def: true }, // 4. İnceleme yöntemi
+  { key: 's5', def: true }, // 5. Analiz, tespit ve değerlendirme
+  { key: 'reading', def: true }, // Okuma metni (5.1 içinde)
+  { key: 'wer', def: true }, // Çözümleme doğruluğu (WER)
+  { key: 'levels', def: true }, // Ses seviyesi ölçümü
+  { key: 'reviewSummary', def: true }, // İnceleme özeti (denetim kaydı)
+  { key: 's6', def: true }, // 6. Gerekçeli sonuç
+  { key: 's7', def: true }, // 7. Ekler
+  { key: 'signature', def: true } // İmza ve alt bilgi
+];
+export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
+/** Tüm bölümler varsayılanla açık; `over` ile tek tek kapatılabilir. */
+export function emptyReportSections(over = {}) {
+  const out = {};
+  for (const d of REPORT_SECTION_DEFS) out[d.key] = d.def;
+  return { ...out, ...over };
+}
+/** Eksik bölüm anahtarını varsayılanla tamamlar; bilinmeyen anahtarı korur. */
+export function normalizeReportSections(src) {
+  const base = emptyReportSections();
+  if (!src || typeof src !== 'object') return base;
+  for (const k of Object.keys(base)) if (typeof src[k] === 'boolean') base[k] = src[k];
+  for (const k of Object.keys(src)) if (!(k in base)) base[k] = src[k];
+  return base;
+}
+
 export function emptyCase(over = {}) {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -575,7 +619,9 @@ export function emptyCase(over = {}) {
       includeEmbedded: false,
       methodText: '',
       limitationsText: '',
-      conclusionText: ''
+      conclusionText: '',
+      // Bölüm görünürlüğü (v2.219): anahtar → açık mı. Varsayılan tümü açık.
+      sections: emptyReportSections()
     },
     questions: [], // emptyQuestion() listesi
 
@@ -947,7 +993,9 @@ export function normalizeCase(src = {}) {
       includeEmbedded: !!report.includeEmbedded,
       methodText: str(report.methodText ?? c.methodText),
       limitationsText: str(report.limitationsText ?? c.limitationsText),
-      conclusionText: str(report.conclusionText ?? c.conclusionText)
+      conclusionText: str(report.conclusionText ?? c.conclusionText),
+      // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
+      sections: normalizeReportSections(report.sections)
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),

@@ -2,7 +2,7 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.218.**
+yazılır. **Güncel sürüm: v2.219.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
@@ -21,6 +21,10 @@ Delil standardı ve `delil.json`: [`DELIL_EDINME.md`](DELIL_EDINME.md).
    ızgarasına yerleştirildi (tam genişlik üst satır); kayıt listesi ve detay
    paneli doğru yüksekliğe döndü; envanter açıkken metin/analiz örtüşmesi
    giderildi. Yeni özellik yok; `tasarim-testi` [2bm] korur.
+   ~~**v2.219 — Parametrik rapor (bölüm aç/kapa):**~~ **yapıldı.** 19 bölüm
+   anahtarı; Rapor görünümünde "Rapor bölümleri" paneli; üç çıktı (HTML/DOCX/
+   UDF) aynı anahtarı onurlandırır; içindekiler açık bölümleri listeler.
+   `rapor-tutarlilik-testi` [Senaryo 17] + `sema-testi` [3h] + `tasarim` [2bn].
 3. **Kanıt tutarlılığı:** dosya zamanı ↔ gömülü metadata çelişkisi, envanterde
    dosya zamanları, hazırlık kartı maddesi.
 4. **Hızlı yardımcılar (LLM'siz):** soru↔bölüm eşleştirme, terim/konu listesi,

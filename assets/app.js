@@ -43,15 +43,17 @@ import {
   assignCaseSpeakerCodes,
   assignSpeakerCodes,
   isSecondEyesRole,
-  canApproveRole
-} from './schema.js?v=2.218';
+  canApproveRole,
+  REPORT_SECTION_DEFS,
+  emptyReportSections
+} from './schema.js?v=2.219';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.218';
+const APP_VERSION = '2.219';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10288,6 +10290,81 @@ function readinessRowsHtml(r) {
     )
     .join('');
 }
+// ---- Rapor bölüm görünürlüğü (v2.219) ------------------------------------
+// PARAMETRİK RAPOR: bütün bölümler hazır tutulur; bilirkişi her birini açar/
+// kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
+// kısa arayüz etiketidir. Eksik anahtar = açık (eski kayıt bozulmaz).
+function reportSectionOn(c, key) {
+  const s = (c && c.report && c.report.sections) || {};
+  return s[key] !== false;
+}
+const REPORT_SECTION_GROUPS = [
+  {
+    title: 'Kapak ve künye',
+    items: [
+      ['cover', 'Kapak başlığı'],
+      ['coverFields', 'Künye alanları'],
+      ['toc', 'İçindekiler']
+    ]
+  },
+  {
+    title: 'Ana bölümler',
+    items: [
+      ['s1', '1 · Konu, kapsam ve sınırlar'],
+      ['s2', '2 · Cevaplanacak sorular'],
+      ['s3', '3 · Maddi unsurlar ve dosya envanteri'],
+      ['s4', '4 · İnceleme yöntemi'],
+      ['s5', '5 · Analiz, tespit ve değerlendirme'],
+      ['s6', '6 · Gerekçeli sonuç'],
+      ['s7', '7 · Ekler']
+    ]
+  },
+  {
+    title: 'Kayıt tabloları',
+    items: [
+      ['origin', 'Kayıt kökeni ve teslim zinciri'],
+      ['embedded', 'Gömülü metadata (cihaz beyanı)'],
+      ['acquisition', 'Delil edinme ve doğrulama'],
+      ['speakers', 'Konuşmacılar']
+    ]
+  },
+  {
+    title: 'Ölçüm ve özet',
+    items: [
+      ['reading', 'Okuma metni'],
+      ['wer', 'Çözümleme doğruluğu (WER)'],
+      ['levels', 'Ses seviyesi ölçümü'],
+      ['reviewSummary', 'İnceleme özeti (denetim kaydı)']
+    ]
+  },
+  { title: 'İmza', items: [['signature', 'İmza ve alt bilgi']] }
+];
+function renderReportSections(c) {
+  const host = $('#reportSections');
+  if (!host) return;
+  const groups = REPORT_SECTION_GROUPS.map((g) => {
+    const items = g.items
+      .map(([key, label]) => {
+        const on = reportSectionOn(c, key);
+        return `<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>`;
+      })
+      .join('');
+    return `<div class="rsec-group"><div class="rsec-title">${esc(g.title)}</div><div class="rsec-items">${items}</div></div>`;
+  }).join('');
+  const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
+  host.dataset.allOff = JSON.stringify(allOff);
+  host.innerHTML =
+    groups +
+    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez.</span></div>`;
+}
+function setReportSection(key, on) {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.sections = { ...(c.report.sections || {}), [key]: !!on };
+  persist();
+  renderReport();
+}
 function renderReportReadiness(c) {
   const el = $('#reportReadiness');
   if (!el) return;
@@ -10354,34 +10431,57 @@ function renderReport() {
     warning.classList.remove('show');
     warning.innerHTML = '';
   }
-  const toc = REPORT_TEXT.sections;
-  let html = `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;
-  if (c.synthetic) html += `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>`;
-  html += `<table class="paper-table cover-fields"><tbody>${reportRows(c)
-    .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
-    .join('')}</tbody></table>`;
-  html += `<div class="paper-section toc-section"><h3>${esc(REPORT_TEXT.tocHeading)}</h3><ol>${toc.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
-  html += `<div class="paper-page-break"><div class="paper-section"><h3>${esc(REPORT_TEXT.sections[0])}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject || '—')}</p></div>`;
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[1])}</h3>`;
-  if (c.questions?.length) {
-    html += `<ol class="question-list">${c.questions.map((q) => `<li>${esc(q.question || REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;
-  } else html += `<p>${esc(questionsFallbackText(c))}</p>`;
-  html += `</div>`;
-  const invRows = inventoryRows(c);
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
-  const orgRows = originRows(c);
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
+  renderReportSections(c);
+  const on = (k) => reportSectionOn(c, k);
+  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  let html = '';
+  if (on('cover')) {
+    html += `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>`;
+    if (c.synthetic) html += `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>`;
+  }
+  if (on('coverFields')) {
+    html += `<table class="paper-table cover-fields"><tbody>${reportRows(c)
+      .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      .join('')}</tbody></table>`;
+  }
+  if (on('toc') && toc.length) {
+    html += `<div class="paper-section toc-section"><h3>${esc(REPORT_TEXT.tocHeading)}</h3><ol>${toc.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>`;
+  }
+  html += '<div class="paper-page-break">';
+  if (on('s1')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[0])}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject || '—')}</p></div>`;
+  }
+  if (on('s2')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[1])}</h3>`;
+    if (c.questions?.length) {
+      html += `<ol class="question-list">${c.questions.map((q) => `<li>${esc(q.question || REPORT_TEXT.defaultQuestion)}</li>`).join('')}</ol>`;
+    } else html += `<p>${esc(questionsFallbackText(c))}</p>`;
+    html += `</div>`;
+  }
+  if (on('s3')) {
+    const invRows = inventoryRows(c);
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[2])}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.inventoryHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${invRows.length ? invRows.map((r) => `<tr>${r.map((x, i) => `<td${i === r.length - 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="7">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
+  }
+  if (on('origin')) {
+    const orgRows = originRows(c);
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.originHeading)}</h3><p>${esc(REPORT_TEXT.originIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.originHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${orgRows.length ? orgRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="8">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
+  }
   const embRows = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
-  if (embRows.length) {
+  if (on('embedded') && embRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.embeddedHeading)}</h3><p>${esc(REPORT_TEXT.embeddedIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
   const acqRows = acquisitionRows(c);
-  if (acqRows.length) {
+  if (on('acquisition') && acqRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.acqHeading)}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.acqHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${acqRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
-  const spkRows = speakerRows(c);
-  html += `<div class="paper-section"><h3>Konuşmacılar</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
+  if (on('speakers')) {
+    const spkRows = speakerRows(c);
+    html += `<div class="paper-section"><h3>Konuşmacılar</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
+  }
+  if (on('s4')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[3])}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`;
+  }
+  if (on('s5')) {
   html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[4])}</h3><h4>${esc(REPORT_TEXT.sub51)}</h4>`;
   if (materials.length) {
     for (let i = 0; i < materials.length; i++) {
@@ -10397,7 +10497,7 @@ function renderReport() {
       // OKUMA METNİ (v2.202): kanıt tablosundan SONRA, ayrı alt bölüm. Yalnız
       // okunabilirlik içindir; bölümler ve zamanlar değişmez.
       const reading = readingGroupsFor(m);
-      if (reading.length) {
+      if (on('reading') && reading.length) {
         html += `<h4>${esc(REPORT_TEXT.readingHeading)}</h4><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>`;
         for (const g of reading) html += `<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`;
       }
@@ -10411,19 +10511,29 @@ function renderReport() {
     }
   } else html += `<p>${esc(evaluationFallbackText(c))}</p>`;
   html += `<h4>${esc(REPORT_TEXT.sub53)}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`;
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
+  }
+  if (on('s6')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[5])}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`;
+  }
+  if (on('s7')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.sections[6])}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`;
+  }
   const rsRows = reviewSummaryRows(c);
   const werRows = measureWerForCase(c);
-  if (werRows.length) {
+  if (on('wer') && werRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.werHeading)}</h3><p>${esc(REPORT_TEXT.werIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.werHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${werRows.map((r) => `<tr><td>${esc(r.material)}</td><td>${esc(r.model || '—')}</td><td>${r.refCount}</td><td>${r.hypCount}</td><td>${r.errors}</td><td>${esc(fmtWer(r.ratio))}</td></tr>`).join('')}</tbody></table></div>`;
   }
   const levelRows = levelRowsForCase(c);
-  if (levelRows.length) {
+  if (on('levels') && levelRows.length) {
     html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.levelHeading)}</h3><p>${esc(REPORT_TEXT.levelIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.levelHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${levelRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
   }
-  html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
-  html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
+  if (on('reviewSummary')) {
+    html += `<div class="paper-section"><h3>${esc(REPORT_TEXT.reviewSummaryHeading)}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
+  }
+  if (on('signature')) {
+    html += `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div></div>`;
+  }
+  html += '</div>';
   $('#reportPreview').innerHTML = html;
   $('#reportStatus').innerHTML =
     `<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
@@ -10504,7 +10614,9 @@ function headingXml(text, level = 1) {
   });
 }
 function docxXml(c) {
+  const on = (k) => reportSectionOn(c, k);
   let body = '';
+  if (on('cover')) {
   body += wP('T.C.', { bold: true, color: '1C426B', size: 24, align: 'center', before: 120, after: 90 });
   body += wP((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR') + '’' + trDative(c.court || 'Mahkemesi'), {
     bold: true,
@@ -10527,54 +10639,67 @@ function docxXml(c) {
   if (c.synthetic) {
     body += `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun(REPORT_TEXT.synthetic, { bold: true, color: '9A6B2D', size: 18 })}</w:p>`;
   }
+  }
   const coverSpec = reportTypeSpec(c.reportType);
-  body += wTable(
-    [
-      [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
-      ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
-    ],
-    { widths: [3000, 6000], header: false, shadeFirstCol: true }
-  );
-  body += headingXml(REPORT_TEXT.tocHeading);
-  const toc = REPORT_TEXT.sections;
-  toc.forEach((t) => {
-    body += wP(t, { size: 20, bold: true, color: '385873', before: 60, after: 120, keep: true });
-  });
-  body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-  body += headingXml(REPORT_TEXT.sections[0]);
-  body += wP(c.assignmentScope || REPORT_TEXT.defaultScope);
-  body += wP(`İnceleme konusu: ${c.subject || '—'}`, { bold: true });
-  body += headingXml(REPORT_TEXT.sections[1]);
-  if (c.questions?.length) {
-    c.questions.forEach((q, i) => {
-      body += wP(`${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
-        size: 21,
-        bold: true,
-        color: '385873',
-        before: 70,
-        after: 80,
-        keep: true
-      });
+  if (on('coverFields')) {
+    body += wTable(
+      [
+        [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
+        ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
+      ],
+      { widths: [3000, 6000], header: false, shadeFirstCol: true }
+    );
+  }
+  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  if (on('toc') && toc.length) {
+    body += headingXml(REPORT_TEXT.tocHeading);
+    toc.forEach((t) => {
+      body += wP(t, { size: 20, bold: true, color: '385873', before: 60, after: 120, keep: true });
     });
-  } else body += wP(questionsFallbackText(c));
-  body += headingXml(REPORT_TEXT.sections[2]);
-  body += wP(REPORT_TEXT.defaultInventoryIntro);
-  const dInv = inventoryRows(c);
-  body += wTable(
-    [[...REPORT_TEXT.inventoryHeaders], ...(dInv.length ? dInv : [REPORT_TEXT.noInventoryRow])],
-    { widths: [1700, 900, 900, 900, 1100, 1100, 2400], header: true }
-  );
-  body += wP(REPORT_TEXT.inventoryNote, { color: '74869A', size: 17, italic: true });
-  const dOrg = originRows(c);
-  body += headingXml(REPORT_TEXT.originHeading);
-  body += wP(REPORT_TEXT.originIntro);
-  body += wTable([[...REPORT_TEXT.originHeaders], ...(dOrg.length ? dOrg : [REPORT_TEXT.noInventoryRow])], {
-    widths: [1100, 900, 900, 900, 900, 1000, 1100, 1200],
-    header: true
-  });
-  body += wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true });
+  }
+  body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  if (on('s1')) {
+    body += headingXml(REPORT_TEXT.sections[0]);
+    body += wP(c.assignmentScope || REPORT_TEXT.defaultScope);
+    body += wP(`İnceleme konusu: ${c.subject || '—'}`, { bold: true });
+  }
+  if (on('s2')) {
+    body += headingXml(REPORT_TEXT.sections[1]);
+    if (c.questions?.length) {
+      c.questions.forEach((q, i) => {
+        body += wP(`${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+          size: 21,
+          bold: true,
+          color: '385873',
+          before: 70,
+          after: 80,
+          keep: true
+        });
+      });
+    } else body += wP(questionsFallbackText(c));
+  }
+  if (on('s3')) {
+    body += headingXml(REPORT_TEXT.sections[2]);
+    body += wP(REPORT_TEXT.defaultInventoryIntro);
+    const dInv = inventoryRows(c);
+    body += wTable(
+      [[...REPORT_TEXT.inventoryHeaders], ...(dInv.length ? dInv : [REPORT_TEXT.noInventoryRow])],
+      { widths: [1700, 900, 900, 900, 1100, 1100, 2400], header: true }
+    );
+    body += wP(REPORT_TEXT.inventoryNote, { color: '74869A', size: 17, italic: true });
+  }
+  if (on('origin')) {
+    const dOrg = originRows(c);
+    body += headingXml(REPORT_TEXT.originHeading);
+    body += wP(REPORT_TEXT.originIntro);
+    body += wTable([[...REPORT_TEXT.originHeaders], ...(dOrg.length ? dOrg : [REPORT_TEXT.noInventoryRow])], {
+      widths: [1100, 900, 900, 900, 900, 1000, 1100, 1200],
+      header: true
+    });
+    body += wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true });
+  }
   const dEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
-  if (dEmb.length) {
+  if (on('embedded') && dEmb.length) {
     body += headingXml(REPORT_TEXT.embeddedHeading);
     body += wP(REPORT_TEXT.embeddedIntro);
     body += wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], {
@@ -10583,7 +10708,7 @@ function docxXml(c) {
     });
   }
   const dAcq = acquisitionRows(c);
-  if (dAcq.length) {
+  if (on('acquisition') && dAcq.length) {
     body += headingXml(REPORT_TEXT.acqHeading);
     body += wP(REPORT_TEXT.acqIntro);
     body += wTable([[...REPORT_TEXT.acqHeaders], ...dAcq], {
@@ -10591,17 +10716,22 @@ function docxXml(c) {
       header: true
     });
   }
-  const dSpk = speakerRows(c);
-  body += headingXml('Konuşmacılar');
-  body += wP(REPORT_TEXT.speakerIntro);
-  body += wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
-    widths: [1500, 1200, 1100, 1200, 1900, 2200],
-    header: true
-  });
-  body += headingXml(REPORT_TEXT.sections[3]);
-  body += wP(c.methodText || DEFAULT_METHOD);
-  body += headingXml(REPORT_TEXT.sections[4]);
-  body += headingXml(REPORT_TEXT.sub51, 2);
+  if (on('speakers')) {
+    const dSpk = speakerRows(c);
+    body += headingXml('Konuşmacılar');
+    body += wP(REPORT_TEXT.speakerIntro);
+    body += wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
+      widths: [1500, 1200, 1100, 1200, 1900, 2200],
+      header: true
+    });
+  }
+  if (on('s4')) {
+    body += headingXml(REPORT_TEXT.sections[3]);
+    body += wP(c.methodText || DEFAULT_METHOD);
+  }
+  if (on('s5')) {
+    body += headingXml(REPORT_TEXT.sections[4]);
+    body += headingXml(REPORT_TEXT.sub51, 2);
   for (let i = 0; i < c.materials.length; i++) {
     const m = c.materials[i];
     body += headingXml(`5.1.${i + 1}. ${m.name}`, 2);
@@ -10630,7 +10760,7 @@ function docxXml(c) {
     } else body += wP(REPORT_TEXT.noTranscript);
     // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
     const reading = readingGroupsFor(m);
-    if (reading.length) {
+    if (on('reading') && reading.length) {
       body += headingXml(REPORT_TEXT.readingHeading, 3);
       body += wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 });
       for (const g of reading) {
@@ -10656,12 +10786,17 @@ function docxXml(c) {
   } else body += wP(evaluationFallbackText(c));
   body += headingXml(REPORT_TEXT.sub53, 2);
   body += wP(c.limitationsText || REPORT_TEXT.defaultLimitations);
-  body += headingXml(REPORT_TEXT.sections[5]);
-  body += wP(c.conclusionText || REPORT_TEXT.defaultConclusion);
-  body += headingXml(REPORT_TEXT.sections[6]);
-  body += wP(REPORT_TEXT.attachmentsText);
+  }
+  if (on('s6')) {
+    body += headingXml(REPORT_TEXT.sections[5]);
+    body += wP(c.conclusionText || REPORT_TEXT.defaultConclusion);
+  }
+  if (on('s7')) {
+    body += headingXml(REPORT_TEXT.sections[6]);
+    body += wP(REPORT_TEXT.attachmentsText);
+  }
   const dWer = measureWerForCase(c);
-  if (dWer.length) {
+  if (on('wer') && dWer.length) {
     body += headingXml(REPORT_TEXT.werHeading);
     body += wP(REPORT_TEXT.werIntro);
     body += wTable(
@@ -10680,7 +10815,7 @@ function docxXml(c) {
     );
   }
   const dLevel = levelRowsForCase(c);
-  if (dLevel.length) {
+  if (on('levels') && dLevel.length) {
     body += headingXml(REPORT_TEXT.levelHeading);
     body += wP(REPORT_TEXT.levelIntro);
     body += wTable([[...REPORT_TEXT.levelHeaders], ...dLevel], {
@@ -10688,13 +10823,17 @@ function docxXml(c) {
       header: true
     });
   }
-  body += headingXml(REPORT_TEXT.reviewSummaryHeading);
-  body += wP(REPORT_TEXT.reviewSummaryIntro);
-  body += wTable(
-    reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
-    { widths: [6000, 3000], header: false, shadeFirstCol: true }
-  );
-  body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
+  if (on('reviewSummary')) {
+    body += headingXml(REPORT_TEXT.reviewSummaryHeading);
+    body += wP(REPORT_TEXT.reviewSummaryIntro);
+    body += wTable(
+      reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
+      { widths: [6000, 3000], header: false, shadeFirstCol: true }
+    );
+  }
+  if (on('signature')) {
+    body += `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`;
+  }
   const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
@@ -10872,6 +11011,8 @@ async function makeUdf() {
     return `<table tableName="Tablo${serial}" columnCount="${colCount}" columnSpans="${safeWidths.join(',')}" border="borderCell" borderColor="${colors.line}" borderWidth="0.3">${rowXml}</table>`;
   }
   const el = [];
+  const on = (k) => reportSectionOn(c, k);
+  if (on('cover')) {
   el.push(paragraph('T.C.', { size: 16, bold: true, color: 'navy', align: 1, after: 4 }));
   el.push(
     paragraph(`${(c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR')}’${trDative(c.court || 'Mahkemesi')}`, {
@@ -10895,88 +11036,106 @@ async function makeUdf() {
   el.push(paragraph(REPORT_TEXT.subtitle, { size: 10, bold: true, color: 'muted', align: 1, after: 15 }));
   if (c.synthetic)
     el.push(paragraph(REPORT_TEXT.synthetic, { size: 10, bold: true, color: 'mid', align: 1, after: 10 }));
+  }
   const coverSpec = reportTypeSpec(c.reportType);
-  el.push(
-    table(
-      [
-        [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
-        ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
-      ],
-      [170, 340],
-      { header: false, shadeFirstCol: true }
-    )
-  );
-  el.push(paragraph(REPORT_TEXT.tocHeading, { size: 16, bold: true, color: 'navy', before: 8, after: 12 }));
-  const toc = REPORT_TEXT.sections;
-  toc.forEach((t) => el.push(paragraph(t, { size: 11, bold: true, color: 'mid', before: 5, after: 8 })));
-  el.push(pageBreak());
-  const h = (t) => paragraph(t, { size: 14, bold: true, color: 'navy', before: 9, after: 5 });
-  el.push(h(REPORT_TEXT.sections[0]));
-  el.push(paragraphLines(c.assignmentScope || REPORT_TEXT.defaultScope, { justify: true }));
-  el.push(paragraph(`İnceleme konusu: ${c.subject || '—'}`, { bold: true, after: 7 }));
-  el.push(h(REPORT_TEXT.sections[1]));
-  if (c.questions?.length)
-    c.questions.forEach((q, i) =>
-      el.push(
-        paragraph(`${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
-          size: 11,
-          bold: true,
-          color: 'mid',
-          before: 4,
-          after: 6
-        })
+  if (on('coverFields')) {
+    el.push(
+      table(
+        [
+          [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
+          ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
+        ],
+        [170, 340],
+        { header: false, shadeFirstCol: true }
       )
     );
-  else el.push(paragraph(questionsFallbackText(c)));
-  el.push(h(REPORT_TEXT.sections[2]));
-  el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
-  const inventory = inventoryRows(c);
-  el.push(
-    table(
-      [
-        [...REPORT_TEXT.inventoryHeaders],
-        ...(inventory.length ? inventory : [[REPORT_TEXT.noInventoryRow[0], '—', '—', '—', '—', '—', '—']])
-      ],
-      [90, 60, 60, 55, 75, 80, 120],
-      { header: true }
-    )
-  );
-  el.push(paragraph(REPORT_TEXT.inventoryNote, { size: 9, italic: true, color: 'muted', after: 7 }));
-  const uOrg = originRows(c);
-  el.push(h(REPORT_TEXT.originHeading));
-  el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
-  el.push(
-    table(
-      [[...REPORT_TEXT.originHeaders], ...(uOrg.length ? uOrg : [REPORT_TEXT.noInventoryRow])],
-      [75, 60, 60, 60, 60, 65, 80, 80],
-      { header: true }
-    )
-  );
-  el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+  }
+  const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
+  if (on('toc') && toc.length) {
+    el.push(paragraph(REPORT_TEXT.tocHeading, { size: 16, bold: true, color: 'navy', before: 8, after: 12 }));
+    toc.forEach((t) => el.push(paragraph(t, { size: 11, bold: true, color: 'mid', before: 5, after: 8 })));
+  }
+  el.push(pageBreak());
+  const h = (t) => paragraph(t, { size: 14, bold: true, color: 'navy', before: 9, after: 5 });
+  if (on('s1')) {
+    el.push(h(REPORT_TEXT.sections[0]));
+    el.push(paragraphLines(c.assignmentScope || REPORT_TEXT.defaultScope, { justify: true }));
+    el.push(paragraph(`İnceleme konusu: ${c.subject || '—'}`, { bold: true, after: 7 }));
+  }
+  if (on('s2')) {
+    el.push(h(REPORT_TEXT.sections[1]));
+    if (c.questions?.length)
+      c.questions.forEach((q, i) =>
+        el.push(
+          paragraph(`${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+            size: 11,
+            bold: true,
+            color: 'mid',
+            before: 4,
+            after: 6
+          })
+        )
+      );
+    else el.push(paragraph(questionsFallbackText(c)));
+  }
+  if (on('s3')) {
+    el.push(h(REPORT_TEXT.sections[2]));
+    el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
+    const inventory = inventoryRows(c);
+    el.push(
+      table(
+        [
+          [...REPORT_TEXT.inventoryHeaders],
+          ...(inventory.length ? inventory : [[REPORT_TEXT.noInventoryRow[0], '—', '—', '—', '—', '—', '—']])
+        ],
+        [90, 60, 60, 55, 75, 80, 120],
+        { header: true }
+      )
+    );
+    el.push(paragraph(REPORT_TEXT.inventoryNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+  }
+  if (on('origin')) {
+    const uOrg = originRows(c);
+    el.push(h(REPORT_TEXT.originHeading));
+    el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
+    el.push(
+      table(
+        [[...REPORT_TEXT.originHeaders], ...(uOrg.length ? uOrg : [REPORT_TEXT.noInventoryRow])],
+        [75, 60, 60, 60, 60, 65, 80, 80],
+        { header: true }
+      )
+    );
+    el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+  }
   const uEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
-  if (uEmb.length) {
+  if (on('embedded') && uEmb.length) {
     el.push(h(REPORT_TEXT.embeddedHeading));
     el.push(paragraph(REPORT_TEXT.embeddedIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.embeddedHeaders], ...uEmb], [130, 130, 150, 130], { header: true }));
   }
   const uAcq = acquisitionRows(c);
-  if (uAcq.length) {
+  if (on('acquisition') && uAcq.length) {
     el.push(h(REPORT_TEXT.acqHeading));
     el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.acqHeaders], ...uAcq], [70, 60, 55, 55, 55, 55, 55, 55, 65], { header: true }));
   }
-  const uSpk = speakerRows(c);
-  el.push(h('Konuşmacılar'));
-  el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
-  el.push(
-    table(
-      [[...REPORT_TEXT.speakerHeaders], ...(uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow])],
-      [90, 80, 70, 70, 110, 150],
-      { header: true }
-    )
-  );
-  el.push(h(REPORT_TEXT.sections[3]));
-  el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
+  if (on('speakers')) {
+    const uSpk = speakerRows(c);
+    el.push(h('Konuşmacılar'));
+    el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
+    el.push(
+      table(
+        [[...REPORT_TEXT.speakerHeaders], ...(uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow])],
+        [90, 80, 70, 70, 110, 150],
+        { header: true }
+      )
+    );
+  }
+  if (on('s4')) {
+    el.push(h(REPORT_TEXT.sections[3]));
+    el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
+  }
+  if (on('s5')) {
   el.push(h(REPORT_TEXT.sections[4]));
   el.push(paragraph(REPORT_TEXT.sub51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
   if (c.materials?.length) {
@@ -11016,7 +11175,7 @@ async function makeUdf() {
       } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
       // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
       const reading = readingGroupsFor(m);
-      if (reading.length) {
+      if (on('reading') && reading.length) {
         el.push(paragraph(REPORT_TEXT.readingHeading, { size: 11, bold: true, color: 'mid', before: 5, after: 3 }));
         el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
         for (const g of reading) {
@@ -11051,12 +11210,17 @@ async function makeUdf() {
   else el.push(paragraph(evaluationFallbackText(c)));
   el.push(paragraph(REPORT_TEXT.sub53, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
   el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
-  el.push(h(REPORT_TEXT.sections[5]));
-  el.push(paragraphLines(c.conclusionText || REPORT_TEXT.defaultConclusion, { justify: true }));
-  el.push(h(REPORT_TEXT.sections[6]));
-  el.push(paragraph(REPORT_TEXT.attachmentsText));
+  }
+  if (on('s6')) {
+    el.push(h(REPORT_TEXT.sections[5]));
+    el.push(paragraphLines(c.conclusionText || REPORT_TEXT.defaultConclusion, { justify: true }));
+  }
+  if (on('s7')) {
+    el.push(h(REPORT_TEXT.sections[6]));
+    el.push(paragraph(REPORT_TEXT.attachmentsText));
+  }
   const uWer = measureWerForCase(c);
-  if (uWer.length) {
+  if (on('wer') && uWer.length) {
     el.push(h(REPORT_TEXT.werHeading));
     el.push(paragraph(REPORT_TEXT.werIntro, { size: 10 }));
     el.push(
@@ -11078,39 +11242,43 @@ async function makeUdf() {
     );
   }
   const uLevel = levelRowsForCase(c);
-  if (uLevel.length) {
+  if (on('levels') && uLevel.length) {
     el.push(h(REPORT_TEXT.levelHeading));
     el.push(paragraph(REPORT_TEXT.levelIntro, { size: 10 }));
     el.push(table([[...REPORT_TEXT.levelHeaders], ...uLevel], [110, 70, 70, 80, 80, 80], { header: true }));
   }
-  el.push(h(REPORT_TEXT.reviewSummaryHeading));
-  el.push(paragraph(REPORT_TEXT.reviewSummaryIntro, { size: 10 }));
-  el.push(
-    table(
-      reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
-      [320, 160],
-      { header: false, shadeFirstCol: true }
-    )
-  );
-  el.push(
-    paragraph(c.expertName || REPORT_TEXT.defaultExpert, {
-      size: 13,
-      bold: true,
-      color: 'navy',
-      align: 2,
-      before: 18,
-      after: 2
-    })
-  );
-  el.push(paragraph(c.expertField || REPORT_TEXT.defaultField, { size: 10, align: 2, after: 2 }));
-  el.push(
-    paragraph(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, {
-      size: 10,
-      align: 2,
-      after: 2
-    })
-  );
-  el.push(paragraph(REPORT_TEXT.signatureLabel, { size: 10, color: 'muted', align: 2, after: 0 }));
+  if (on('reviewSummary')) {
+    el.push(h(REPORT_TEXT.reviewSummaryHeading));
+    el.push(paragraph(REPORT_TEXT.reviewSummaryIntro, { size: 10 }));
+    el.push(
+      table(
+        reviewSummaryRows(c).map((r) => [r[0], String(r[1])]),
+        [320, 160],
+        { header: false, shadeFirstCol: true }
+      )
+    );
+  }
+  if (on('signature')) {
+    el.push(
+      paragraph(c.expertName || REPORT_TEXT.defaultExpert, {
+        size: 13,
+        bold: true,
+        color: 'navy',
+        align: 2,
+        before: 18,
+        after: 2
+      })
+    );
+    el.push(paragraph(c.expertField || REPORT_TEXT.defaultField, { size: 10, align: 2, after: 2 }));
+    el.push(
+      paragraph(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, {
+        size: 10,
+        align: 2,
+        after: 2
+      })
+    );
+    el.push(paragraph(REPORT_TEXT.signatureLabel, { size: 10, color: 'muted', align: 2, after: 0 }));
+  }
   const bodyText = textParts.join('');
   const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${el.join('')}</elements>${styles}\n</template>`;
   const parsed = new DOMParser().parseFromString(udfXml, 'application/xml');
@@ -13444,6 +13612,26 @@ $('#reportEmbeddedToggle')?.addEventListener('change', (e) => {
   persist();
   renderReport();
 });
+// Rapor bölümleri (v2.219) — aç/kapa; önizleme ANINDA tazelenir.
+// Karar tek kapıdan: `setReportSection` (persist + renderReport).
+$('#reportSections')?.addEventListener('change', (e) => {
+  const cb = e.target.closest('[data-report-section]');
+  if (!cb) return;
+  setReportSection(cb.dataset.reportSection, cb.checked);
+});
+$('#reportSections')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-report-sections-all]');
+  if (!b) return;
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.sections =
+    b.dataset.reportSectionsAll === 'on'
+      ? emptyReportSections()
+      : emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
+  persist();
+  renderReport();
+});
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
 $('#reportPrintBtn').addEventListener('click', () => window.print());
 $('#reportUdfBtn2').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
@@ -14396,6 +14584,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.219': {
+    title: 'Rapor bölümlerini açıp kapatabilirsiniz',
+    body:
+      'Rapor görünümüne "Rapor bölümleri (aç/kapa)" paneli eklendi. 19 bölümü ' +
+      'tek tek kapatabilirsiniz; kapalı bölüm rapor önizlemesine ve UDF/DOCX ' +
+      'çıktısına da girmez. Varsayılan hepsi açıktır; mevcut rapor değişmez. ' +
+      '"Tümünü kapat" ile en yalın iskeletten başlayabilirsiniz.'
+  },
   '2.218': {
     title: 'Delil envanteri yerleşimi düzeltildi',
     body:

@@ -83,7 +83,11 @@ import {
   segmentById,
   newId,
   isSecondEyesRole,
-  canApproveRole
+  canApproveRole,
+  REPORT_SECTION_DEFS,
+  REPORT_SECTION_KEYS,
+  emptyReportSections,
+  normalizeReportSections
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -1692,6 +1696,41 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   //    ayrı script gerekmez; ama app.js modül olmalı.)
   const html = read('index.html');
   ok('index.html app.js\'i modül olarak yüklüyor', /type="module"[^>]*app\.js/.test(html));
+}
+
+// [3h] Rapor bölüm görünürlüğü (v2.219) — parametrik rapor.
+{
+  console.log('\n[3h] Rapor bölüm görünürlüğü (v2.219)');
+  ok('REPORT_SECTION_DEFS tanımlı ve dolu', Array.isArray(REPORT_SECTION_DEFS) && REPORT_SECTION_DEFS.length > 0);
+  ok(
+    'her tanımda key + def var',
+    REPORT_SECTION_DEFS.every((d) => typeof d.key === 'string' && d.key && typeof d.def === 'boolean')
+  );
+  ok(
+    'anahtarlar benzersiz',
+    new Set(REPORT_SECTION_KEYS).size === REPORT_SECTION_KEYS.length
+  );
+  const base = emptyReportSections();
+  ok('boş bölüm kümesi tüm anahtarları taşır', REPORT_SECTION_KEYS.every((k) => base[k] === true));
+  ok(
+    'emptyCase.report.sections varsayılanla dolu',
+    REPORT_SECTION_KEYS.every((k) => emptyCase().report.sections[k] === true)
+  );
+  // Eksik anahtar varsayılana döner; kapalı anahtar korunur.
+  const norm = normalizeReportSections({ origin: false, s6: false });
+  ok('normalize: kapalı anahtar korunur', norm.origin === false && norm.s6 === false);
+  ok('normalize: eksik anahtar varsayılan açık', norm.speakers === true && norm.s1 === true);
+  ok('normalize: bozuk girdi varsayılana döner', normalizeReportSections(null).cover === true);
+  // Bilinmeyen anahtar (ileri uyum) silinmez.
+  ok('normalize: bilinmeyen anahtar korunur', normalizeReportSections({ futureKey: false }).futureKey === false);
+  // normalizeCase bölüm tercihini DÜŞÜRMEMELİ (v2.212 dersi).
+  const nc = normalizeCase({
+    id: 'cx',
+    report: { sections: { origin: false, reviewSummary: false } }
+  });
+  ok('normalizeCase: bölüm tercihi korunur (origin=false)', nc.report.sections.origin === false);
+  ok('normalizeCase: bölüm tercihi korunur (reviewSummary=false)', nc.report.sections.reviewSummary === false);
+  ok('normalizeCase: eksik bölüm açık', nc.report.sections.s1 === true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

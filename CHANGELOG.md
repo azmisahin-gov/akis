@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.218.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.219.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.219 — Parametrik rapor: bölümleri aç/kapa
+
+Kullanıcı, eklediği 56.12 rapor şablonunu (HTML + UDF) inceledikten sonra
+raporun **çok modüler** olmasını istedi: *"Raporun tüm bölümlerini seve seve
+açıp kapatabileceğim; hepsini hazır tutalım ama bilirkişi isterse en az bölüm
+yapısıyla sunabilsin, isterse bir sayfalık bölüm bile alabilsin."*
+
+### Ne yapıldı
+
+- **Bölüm modeli tek kaynak:** `schema.js` → `REPORT_SECTION_DEFS` (19 anahtar,
+  varsayılan açık). `emptyReportSections` / `normalizeReportSections` eklendi.
+- **Kalıcı tercih:** `case.report.sections` (anahtar → açık mı). `emptyCase` ve
+  `normalizeCase` güncellendi; eksik anahtar varsayılana döner, bilinmeyen
+  anahtar korunur. (v2.212 dersi: normalize beyaz listesi güncellenmezse alan
+  ilk kaydetmede sessizce düşer — burada düşmüyor.)
+- **Arayüz:** Rapor görünümünde **"Rapor bölümleri (aç/kapa)"** paneli; beş
+  grupta 19 onay kutusu + "Tümünü aç / Tümünü kapat". Kapalı bölüm rapora ve
+  **üç çıktıya da** girmez.
+- **Üç çıktı aynı anahtarı onurlandırır:** HTML önizleme, DOCX ve UDF aynı
+  `reportSectionOn()` kapısını kullanır. İçindekiler yalnız açık bölümleri
+  listeler.
+- **Canlı önizleme:** Bir kutu işaretlenince rapor anında yeniden çizilir.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+
+| Adım | Sonuç |
+|---|---|
+| Panel | **19** onay kutusu, 5 grup, taşma **yok** |
+| "Kayıt kökeni" kapat | Önizlemede **başlık yok**, diğer bölümler duruyor |
+| Yeniden aç | Başlık **geri geldi** |
+| 900 / 600 px | Taşma/kırpılma **0** |
+| JS hatası | **0** |
+
+Üç çıktı için `rapor-tutarlilik-testi` **Senaryo 17**: kapalı bölüm üç çıktıda
+da yok, açık kalan bölüm var. Kıran test kanıtı: `reportSectionOn` daima `true`
+yapılınca 5 kontrol **KALDI**.
+
+### KULLANICI NE GÖRECEK
+
+- Rapor ekranında **"Rapor bölümleri (aç/kapa)"** bölümü var. İstediğiniz
+  bölümü kapatın; rapor önizlemesi ve UDF/DOCX çıktısı **o bölüm olmadan**
+  üretilir.
+- Varsayılan **hepsi açık**: mevcut rapor görünümü değişmez.
+- "Tümünü kapat" ile en yalın iskeletten başlayıp istediğinizi açabilirsiniz.
+- Bölüm tercihi dosyayla birlikte saklanır; paketleyince taşınır.
+
+**Koruyan test:** `rapor-tutarlilik-testi` [Senaryo 17], `sema-testi` [3h],
+`tasarim-testi` [2bn].
 
 ## v2.218 — Tasarım denetimi: delil envanteri yerleşimi
 
