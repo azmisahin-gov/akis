@@ -119,15 +119,9 @@ export function createRevisionSnapshot(caseData) {
     name: m.name || m.fileName || '',
     sha256: m.sha256 || '',
     duration: Number(m.duration) || 0,
-    segments: (Array.isArray(m.segments) ? m.segments : []).map((s) => ({
-      id: s.id,
-      start: s.start,
-      end: s.end,
-      speakerId: s.speakerId || s.speaker || '',
-      text: s.text || '',
-      review: s.review || s.status || '',
-      obs: s.obs || []
-    }))
+    tech: clone(m.tech || {}),
+    origin: clone(m.origin || {}),
+    segments: clone(Array.isArray(m.segments) ? m.segments : [])
   }));
   return {
     case: {
