@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.226'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.227'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 60000; // dakikada bir denetle
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,15 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.226">
-  <link rel="stylesheet" href="assets/app.css?v=2.226">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.227">
+  <link rel="stylesheet" href="assets/app.css?v=2.227">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.226">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.227">
+  <link rel="stylesheet" href="assets/report-workspace.css?v=2.227">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.226"></script>
+  <script type="module" src="assets/app.js?v=2.227"></script>
+  <script type="module" src="assets/report-workspace.js?v=2.227"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -217,18 +219,79 @@
       </section>
 
       <section class="view" id="view-report">
-        <div class="section-intro"><div><div class="eyebrow">04 / RAPORLAMA</div><h2>Rapor önizleme ve çıktı</h2><p>Rapor başlıklarını, ses çözümleme tablolarını ve sonuç bölümünü son kez kontrol edin.</p></div><span class="subtle-pill">UDF ÖNCELİKLİ · DOCX İSTEĞE BAĞLI</span></div>
-        <div class="report-toolbar"><div class="report-status" id="reportStatus"><span class="status-dot"></span> Önizleme güncel</div><div class="toolbar-actions"><button id="reportFullBtn" class="button button-light" title="Tam ekran önizleme (F)">⛶ Tam ekran</button><button id="downloadDocxBtn" class="button button-light">İsteğe bağlı Word kopyası (.docx)</button><button id="downloadUdfBtn" class="button button-primary">Bilirkişi Portalı için UDF indir (.udf)</button></div></div>
-        <div class="report-fullbar" id="reportFullbar" hidden>
-          <button class="button button-light button-small" id="reportBackBtn">← Çalışmaya dön</button>
-          <span class="report-fullbar-title">Rapor önizleme</span>
-          <button class="button button-light button-small" id="reportPrintBtn">🖨 Yazdır</button>
-          <button class="button button-primary button-small" id="reportUdfBtn2">UDF indir</button>
+        <div class="report-workspace-toolbar">
+          <div class="report-workspace-title">
+            <div class="eyebrow">04 / RAPORLAMA</div>
+            <h2>Rapor çalışma alanı</h2>
+          </div>
+          <div class="report-toolbar">
+            <div class="report-status" id="reportStatus"><span class="status-dot"></span> Önizleme güncel</div>
+            <div class="toolbar-actions">
+              <button id="reportFullBtn" class="button button-light" title="Tam ekran önizleme (F)">⛶ Tam ekran</button>
+              <button id="downloadDocxBtn" class="button button-light">Word kopyası (.docx)</button>
+              <button id="downloadUdfBtn" class="button button-primary">UYAP UDF indir (.udf)</button>
+            </div>
+          </div>
         </div>
-        <details class="report-sections-box" id="reportSectionsBox"><summary>Rapor bölümleri (aç/kapa)</summary><div class="report-sections" id="reportSections"></div></details><details class="report-tech-box" id="reportTechBox"><summary>Teknik özellikler ve inceleme ortamı (rapor bölümü)</summary><div class="report-tech" id="reportTechFields"></div></details><details class="report-tech-box" id="reportKunyeBox"><summary>Rapor künyesi ek alanları (ekler · tarafsızlık)</summary><div class="report-tech" id="reportKunyeFields"></div></details><details class="report-tech-box" id="reportQcBox"><summary>Kalite kontrolü ek alanları (ikinci kontrol)</summary><div class="report-tech" id="reportQcFields"></div></details><div class="readiness-card" id="reportReadiness"></div><label class="report-toggle" title="A4 sayfa sınırlarını ekranda gösterir. Kesin sayfa kırılması yazdırma/PDF sırasında oluşur."><input type="checkbox" id="reportPageViewToggle"> <span>Sayfalı önizleme (A4)</span></label><label class="report-toggle" title="Dosyanın kendi metadata’sıdır (ör. MP4 kayıt zamanı, ID3). Cihaz beyanıdır; doğrulanmış kayıt zamanı değildir. Yalnız siz açarsanız rapora girer."><input type="checkbox" id="reportEmbeddedToggle"> <span>Gömülü metadata (cihaz beyanı) raporda görünsün</span></label>
-        <div class="report-warning" id="reportWarning"></div>
-        <div id="reportPreview" class="report-paper"></div>
-        <div class="export-note"><b>Birincil çıktı – UYAP UDF:</b> Uygulama, yüklediğiniz boş UYAP UDF belgesindeki sayfa ayarlarını ve stil tanımlarını temel alarak doğrudan .udf dosyası oluşturur. Word çıktısı yalnızca isteğe bağlı yardımcı kopyadır. İlk kullanımdan önce oluşturulan belgeyi kendi UYAP Doküman Editörü sürümünüzde açıp sayfa düzenini kontrol edin. Uygulama e-imza oluşturmaz ve belgeyi UYAP’a göndermez.</div>
+        <div class="report-workspace-grid">
+          <aside class="report-outline" aria-label="Rapor bölümleri">
+            <div class="report-outline-heading">
+              <h3>Rapor iskeleti</h3>
+              <small>Bölüm ve ek sırasını buradan yönetin. Kapak, içindekiler ve imza alanları sabit tutulur.</small>
+            </div>
+            <div class="report-sections-box" id="reportSectionsBox">
+              <div class="report-sections" id="reportSections"></div>
+            </div>
+          </aside>
+
+          <div class="report-canvas">
+            <div class="report-canvas-toolbar">
+              <label class="report-toggle" title="A4 sayfa oranında önizleme ve yaklaşık sayfa sınır kılavuzlarını gösterir. Kesin sayfa kırılması yazdırma/PDF sırasında oluşur.">
+                <input type="checkbox" id="reportPageViewToggle">
+                <span>A4 sayfa kılavuzu</span>
+              </label>
+              <label class="report-toggle" title="Dosyanın kendi metadata’sıdır (ör. MP4 kayıt zamanı, ID3). Cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.">
+                <input type="checkbox" id="reportEmbeddedToggle">
+                <span>Gömülü metadata raporda görünsün</span>
+              </label>
+              <span class="report-preview-caption">A4 kâğıt görünümü · çıktıdan önce son kontrol</span>
+            </div>
+            <div class="report-fullbar" id="reportFullbar" hidden>
+              <button class="button button-light button-small" id="reportBackBtn">← Çalışmaya dön</button>
+              <span class="report-fullbar-title">Rapor önizleme</span>
+              <button class="button button-light button-small" id="reportPrintBtn">🖨 Yazdır</button>
+              <button class="button button-primary button-small" id="reportUdfBtn2">UDF indir</button>
+            </div>
+            <div class="report-warning" id="reportWarning"></div>
+            <div id="reportPreview" class="report-paper"></div>
+            <div class="report-export-note"><b>Birincil çıktı – UYAP UDF:</b> Uygulama, yüklediğiniz boş UYAP UDF belgesindeki sayfa ayarlarını ve stil tanımlarını temel alarak doğrudan .udf dosyası oluşturur. Word çıktısı yalnızca isteğe bağlı yardımcı kopyadır. İlk kullanımdan önce oluşturulan belgeyi kendi UYAP Doküman Editörü sürümünüzde açıp sayfa düzenini kontrol edin. Uygulama e-imza oluşturmaz ve belgeyi UYAP’a göndermez.</div>
+          </div>
+
+          <aside class="report-inspector" aria-label="Rapor kontrolü ve düzenleme">
+            <section class="report-inspector-section">
+              <div class="report-side-heading"><div><b>Rapor kontrolü</b><small>Eksiklerden ilgili çalışma alanına geçin.</small></div></div>
+              <div class="readiness-card" id="reportReadiness"></div>
+            </section>
+            <details class="report-inspector-section" id="reportTechBox">
+              <summary>Teknik özellikler ve inceleme ortamı</summary>
+              <div class="report-tech" id="reportTechFields"></div>
+            </details>
+            <details class="report-inspector-section" id="reportKunyeBox">
+              <summary>Rapor künyesi · ekler · tarafsızlık</summary>
+              <div class="report-tech" id="reportKunyeFields"></div>
+            </details>
+            <details class="report-inspector-section" id="reportQcBox">
+              <summary>Kalite kontrolü · ikinci göz</summary>
+              <div class="report-tech" id="reportQcFields"></div>
+            </details>
+            <section class="report-inspector-section" aria-label="Ek yönetimi">
+              <div id="reportAnnexList"></div>
+            </section>
+            <section class="report-inspector-section" aria-label="Revizyon geçmişi">
+              <div id="reportRevisionPanel"></div>
+            </section>
+          </aside>
+        </div>
       </section>
 
       <footer class="statusbar" id="statusBar">
