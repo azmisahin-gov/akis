@@ -188,3 +188,25 @@ curl -s https://azmisahin-gov.github.io/akis/version.json
 Beklenen: **1277 birim + 517 şema** + rapor/sürüm/tasarım yeşil; sürüm 2.226.
 Sonra bu belgeyi okuyup **v2.227 rapor ekranı IA** ile başla; §5 sorularını
 kullanıcıya sor.
+
+---
+
+## 9. UYGULAMA DURUMU (v2.227 — TAMAMLANDI)
+
+Faz planının **v2.227–v2.233** kapsamı tek sürümde uygulandı:
+
+- **Üç bölge** (sol iskelet · orta A4 · sağ kontrol/revizyon) — §3.
+- **Sıra + türetilmiş numara + TOC tek kaynak** — §4; `case.report.layout`.
+- **Ekler ayrı ve düzenlenebilir kayıt** (`REPORT_ANNEX_DEFS` + `annexMeta`);
+  EK-1…EK-N bitişik (EK-4 boşluğu kapandı); başlık/içerik/not + özel ek — §2.3.
+- **A4 önizleme** sayfa sayısı gösterir; kılavuz niteliği korunur — §5.1.
+- **Rapor kontrolü** sağ bölgeye taşındı — §2.6.
+- **Revizyon** (kaydet/geri yükle/sil/karşılaştır; en çok 10; kanıt dışı) — §2.7.
+- **Saf model** `assets/report-model.js`; üç çıktı tek döngüde sırayla üretilir.
+
+Ayrıntı ve ölçümler: `CHANGELOG.md` v2.227; kalıcı kurallar: `AGENTS.md`
+"YENİ OTURUM DEVRİ (v2.227)".
+
+**Kalan (bilinçli):** gerçek A4 sayfa kırılması, sürükle-bırak sıralama,
+56.12 şablonunun 14+7 yapısına birebir eşleme (şu an 28 bölüm + 6 ek esnek
+iskelet).

@@ -521,39 +521,174 @@ export function emptyMaterial(over = {}) {
 // DİKKAT: yeni anahtar eklerken hem buraya hem `emptyCase.report.sections`
 // hem `normalizeReportSections` hem arayüz gruplarına ekleyin; aksi hâlde
 // normalize sırasında alan sessizce düşer (v2.212 dersi).
+// `title` = numarasız başlık. Ana bölümlerin (s1…s7) numarası AÇIK ve SIRALI
+// bölümlere göre TÜRETİLİR (v2.227): bölüm kapatılınca numarada boşluk kalmaz.
+// `def` = varsayılan açık mı. Sıra `REPORT_BODY_ORDER` ile verilir; kullanıcı
+// `case.report.layout.order` ile değiştirebilir.
 export const REPORT_SECTION_DEFS = [
-  { key: 'cover', def: true }, // Kapak başlığı (T.C., merci, rapor türü)
-  { key: 'coverFields', def: true }, // Künye alanları tablosu
-  { key: 'toc', def: true }, // İçindekiler
-  { key: 's1', def: true }, // 1. Konu, kapsam ve sınırlar
-  { key: 's2', def: true }, // 2. Bilirkişinin cevaplaması gereken sorular
-  { key: 's3', def: true }, // 3. Maddi unsurlar + dosya envanteri
-  { key: 'origin', def: true }, // Kayıt kökeni ve teslim zinciri
-  { key: 'embedded', def: true }, // Gömülü metadata (beyan)
-  { key: 'acquisition', def: true }, // Delil edinme ve doğrulama
-  { key: 'speakers', def: true }, // Konuşmacılar
-  { key: 's4', def: true }, // 4. İnceleme yöntemi
-  { key: 's5', def: true }, // 5. Analiz, tespit ve değerlendirme
-  { key: 'reading', def: true }, // Okuma metni (5.1 içinde)
-  { key: 'wer', def: true }, // Çözümleme doğruluğu (WER)
-  { key: 'levels', def: true }, // Ses seviyesi ölçümü
-  { key: 'reviewSummary', def: true }, // İnceleme özeti (denetim kaydı)
-  { key: 's6', def: true }, // 6. Gerekçeli sonuç
-  { key: 's7', def: true }, // 7. Ekler
-  { key: 'signature', def: true }, // İmza ve alt bilgi
-  // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI:
-  // mevcut rapor görünümü değişmez; bilirkişi isterse açar.
-  { key: 'kunye', def: false }, // Rapor künyesi (ayrıntılı)
-  { key: 'summary', def: false }, // Raporun kısa özeti
-  { key: 'enhance', def: false }, // Ses iyileştirme / filtreleme
-  { key: 'asr', def: false }, // Otomatik konuşma tanıma / yapay zekâ
-  { key: 'tech', def: false }, // Teknik özellikler / inceleme ortamı
-  { key: 'scopeNote', def: false }, // Görev alanı dışı / sınırlılık beyanı
-  { key: 'qc', def: false }, // Kalite kontrolü / denetlenebilirlik
-  { key: 'privacy', def: false }, // Kişisel veri / gizlilik
-  { key: 'annex', def: false } // Ekler (EK-1…EK-7)
+  { key: 'cover', def: true, title: 'KAPAK' },
+  { key: 'coverFields', def: true, title: 'KÜNYE ALANLARI' },
+  { key: 'toc', def: true, title: 'İÇİNDEKİLER' },
+  { key: 's1', def: true, title: 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI' },
+  { key: 's2', def: true, title: 'BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR' },
+  { key: 's3', def: true, title: 'BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR' },
+  { key: 'origin', def: true, title: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ' },
+  { key: 'embedded', def: true, title: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)' },
+  { key: 'acquisition', def: true, title: 'DELİL EDİNME VE DOĞRULAMA' },
+  { key: 'speakers', def: true, title: 'Konuşmacılar' },
+  { key: 's4', def: true, title: 'İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR' },
+  { key: 's5', def: true, title: 'ANALİZ, TESPİT VE DEĞERLENDİRME' },
+  { key: 'reading', def: true, title: 'Okuma metni' },
+  { key: 'wer', def: true, title: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)' },
+  { key: 'levels', def: true, title: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ' },
+  { key: 'reviewSummary', def: true, title: 'İNCELEME ÖZETİ (denetim kaydı)' },
+  { key: 's6', def: true, title: 'GEREKÇELİ SONUÇ' },
+  { key: 's7', def: true, title: 'EKLER' },
+  { key: 'signature', def: true, title: 'İmza ve alt bilgi' },
+  // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI.
+  { key: 'kunye', def: false, title: 'RAPOR KÜNYESİ' },
+  { key: 'summary', def: false, title: 'RAPORUN KISA ÖZETİ' },
+  { key: 'enhance', def: false, title: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ' },
+  { key: 'asr', def: false, title: 'OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI' },
+  { key: 'tech', def: false, title: 'TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI' },
+  { key: 'scopeNote', def: false, title: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI' },
+  { key: 'qc', def: false, title: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK' },
+  { key: 'privacy', def: false, title: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ' },
+  { key: 'annex', def: false, title: 'EKLER – RAPORUN DENETLENEBİLİRLİĞİ İÇİN' }
 ];
 export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
+
+// ---- 5b-2. Rapor iskeleti: sıra, numara, ekler (v2.227) ------------------
+// KAPAK/ön bölüm ve İMZA yapısaldır: sırası sabittir. Gövde bölümleri
+// kullanıcı tarafından sıralanabilir. `reading` ayrı bir gövde bloğu DEĞİL,
+// 5. bölümün içindedir; bu yüzden sıralama listesinde yoktur.
+export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
+export const REPORT_MAIN_KEYS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'];
+export const REPORT_BODY_ORDER = [
+  's1',
+  's2',
+  's3',
+  'origin',
+  'embedded',
+  'acquisition',
+  'speakers',
+  's4',
+  'tech',
+  'enhance',
+  'asr',
+  's5',
+  'scopeNote',
+  's6',
+  's7',
+  'wer',
+  'levels',
+  'reviewSummary',
+  'qc',
+  'privacy',
+  'annex'
+];
+// EKLER AYRI KAYITTIR (v2.227): her ek tek tek açılıp kapatılabilir ve
+// sıralanabilir. Numara ARTIK AÇIK EKLERE GÖRE TÜRETİLİR (EK-1…EK-N); kapatılan
+// ek numarada boşluk bırakmaz. `title` numarasız temel başlıktır; "EK-n."
+// öneki çizim sırasında eklenir. Kullanıcı özel ek ekleyebilir (x1, x2…).
+export const REPORT_ANNEX_DEFS = [
+  { key: 'ek1', title: 'MATERYAL TESLİM VE İADE TUTANAĞI' },
+  { key: 'ek2', title: 'DOSYA TEKNİK ENVANTERİ' },
+  { key: 'ek3', title: 'ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ' },
+  { key: 'ek4', title: 'TRANSKRİPT GÖSTERİM ANAHTARI' },
+  { key: 'ek5', title: 'SON KONTROL LİSTESİ' },
+  { key: 'ek6', title: 'HUKUKİ VE YÖNTEMSEL DAYANAKLAR' }
+];
+export const REPORT_ANNEX_KEYS = REPORT_ANNEX_DEFS.map((d) => d.key);
+export const REPORT_ANNEX_CUSTOM_TITLE = 'YENİ EK';
+/** Yerleşik ek anahtarı ya da kullanıcı eki (x1, x2…). */
+export function isReportAnnexKey(key) {
+  const k = String(key || '');
+  return REPORT_ANNEX_KEYS.includes(k) || /^x[0-9]+$/.test(k);
+}
+/** Sıradaki boş özel ek anahtarı (silinen anahtar yeniden kullanılır). */
+export function newReportAnnexKey(layout) {
+  const used = new Set([
+    ...((layout && Array.isArray(layout.annexOrder)) ? layout.annexOrder : []),
+    ...Object.keys((layout && layout.annexMeta) || {})
+  ]);
+  let n = 1;
+  while (used.has('x' + n)) n++;
+  return 'x' + n;
+}
+/** Ekin numarasız temel başlığı (özel ek için varsayılan). */
+export function reportAnnexBaseTitle(key) {
+  const d = REPORT_ANNEX_DEFS.find((x) => x.key === key);
+  return d ? d.title : REPORT_ANNEX_CUSTOM_TITLE;
+}
+export function emptyReportAnnexes(over = {}) {
+  const out = {};
+  for (const k of REPORT_ANNEX_KEYS) out[k] = true;
+  return { ...out, ...over };
+}
+/**
+ * Rapor düzeni: gövde sırası + ek sırası + ek görünürlüğü + ek üst verisi.
+ * `annexMeta[key] = { title, content, note }` (özel eklerde ve başlık/not
+ * düzenlemesinde kullanılır; boş alan varsayılanı ezer).
+ */
+export function emptyReportLayout(over = {}) {
+  return {
+    order: [...REPORT_BODY_ORDER],
+    annexOrder: [...REPORT_ANNEX_KEYS],
+    annexes: emptyReportAnnexes(),
+    annexMeta: {},
+    ...over
+  };
+}
+/**
+ * Eksik/bozuk düzeni güvenli hâle getirir. Gövdede bilinmeyen anahtar
+ * düşürülür; eksik bölüm varsayılan sıranın sonuna eklenir. Eklerde yerleşik
+ * ve özel (xN) anahtarlar korunur; geçersiz anahtar düşürülür (veri kaybı yok).
+ */
+export function normalizeReportLayout(src) {
+  const base = emptyReportLayout();
+  if (!src || typeof src !== 'object') return base;
+  const seen = new Set();
+  const order = [];
+  const srcOrder = Array.isArray(src.order) ? src.order : [];
+  for (const k of srcOrder) {
+    if (REPORT_BODY_ORDER.includes(k) && !seen.has(k)) {
+      order.push(k);
+      seen.add(k);
+    }
+  }
+  for (const k of REPORT_BODY_ORDER) if (!seen.has(k)) order.push(k);
+
+  const srcAnnexes = src.annexes && typeof src.annexes === 'object' ? src.annexes : {};
+  const srcMeta = src.annexMeta && typeof src.annexMeta === 'object' ? src.annexMeta : {};
+  const annexSeen = new Set();
+  const annexOrder = [];
+  const pushAnnex = (k) => {
+    if (isReportAnnexKey(k) && !annexSeen.has(k)) {
+      annexOrder.push(k);
+      annexSeen.add(k);
+    }
+  };
+  for (const k of Array.isArray(src.annexOrder) ? src.annexOrder : []) pushAnnex(k);
+  for (const k of REPORT_ANNEX_KEYS) pushAnnex(k);
+  // Özel ekler yalnız annexOrder'da değil, annexes/annexMeta içinde de olabilir.
+  for (const k of Object.keys(srcAnnexes)) pushAnnex(k);
+  for (const k of Object.keys(srcMeta)) pushAnnex(k);
+
+  const annexes = {};
+  const annexMeta = {};
+  for (const k of annexOrder) {
+    annexes[k] = typeof srcAnnexes[k] === 'boolean' ? srcAnnexes[k] : true;
+    const m = srcMeta[k];
+    if (m && typeof m === 'object') {
+      const title = typeof m.title === 'string' ? m.title : '';
+      const content = typeof m.content === 'string' ? m.content : '';
+      const note = typeof m.note === 'string' ? m.note : '';
+      if (title || content || note) annexMeta[k] = { title, content, note };
+    }
+  }
+  return { ...src, order, annexOrder, annexes, annexMeta };
+}
 
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------
 // Bilirkişi elle doldurur; boşsa rapora "—" yazılır (uydurulmaz). Alanlar
@@ -683,6 +818,8 @@ export function emptyCase(over = {}) {
       conclusionText: '',
       // Bölüm görünürlüğü (v2.219): anahtar → açık mı. Varsayılan tümü açık.
       sections: emptyReportSections(),
+      // Rapor iskeleti (v2.227): gövde sırası + ek sırası + ek görünürlüğü.
+      layout: emptyReportLayout(),
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -694,7 +831,10 @@ export function emptyCase(over = {}) {
       // Kalite kontrolü / ikinci göz (v2.226): elle; boşsa rapora "—".
       qcBy: '',
       qcScope: '',
-      qcDate: ''
+      qcDate: '',
+      // Rapor revizyonları (v2.227): yalnız rapor düzeni + rapor metinleri.
+      // Kanıt (ses/bölüm) saklanmaz; en çok 10 kayıt tutulur.
+      revisions: []
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1069,6 +1209,8 @@ export function normalizeCase(src = {}) {
       conclusionText: str(report.conclusionText ?? c.conclusionText),
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
       sections: normalizeReportSections(report.sections),
+      // Rapor iskeleti (v2.227): sıra/ekler; bozuk düzen güvenli hâle getirilir.
+      layout: normalizeReportLayout(report.layout),
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.
@@ -1079,7 +1221,11 @@ export function normalizeCase(src = {}) {
       // Kalite kontrolü / ikinci göz (v2.226): boş metin varsayılan.
       qcBy: str(report.qcBy),
       qcScope: str(report.qcScope),
-      qcDate: str(report.qcDate)
+      qcDate: str(report.qcDate),
+      // Rapor revizyonları (v2.227): en çok 10; bozuk girdi atılır.
+      revisions: (Array.isArray(report.revisions) ? report.revisions : [])
+        .filter(isObj)
+        .slice(-10)
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),

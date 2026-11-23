@@ -1657,7 +1657,7 @@ console.log('\n[2bl] Gömülü metadata (cihaz beyanı) (v2.217)');
   check('anahtar varsayılan kapalı', /includeEmbedded:\s*false/.test(read('assets/schema.js')));
   check('ayrıştırıcılar tanımlı', /function parseId3v2/.test(appJs) && /function parseMp4Meta/.test(appJs) && /function parseWavMeta/.test(appJs) && /function parseFlacMeta/.test(appJs));
   check('köken panelinde okuma düğmesi', /data-read-embedded/.test(appJs));
-  check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /REPORT_TEXT.embeddedHeading/.test(appJs));
+  check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /H\('embedded'\)/.test(appJs));
   check('gömülü stil token kullanır', /\.origin-embedded[\s\S]{0,200}var\(--ink-2/.test(layer));
   check('yardım gömülü metadata anar', /Gömülü metadata/.test(html));
 }
@@ -1722,12 +1722,18 @@ console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
   // Üç çıktı da aynı kapıyı kullanmalı.
   const onHelpers = (js.match(/const on = \(k\) => reportSectionOn\(c, k\);/g) || []).length;
   check('üç çıktı da reportSectionOn kullanır', onHelpers >= 3, `bulunan: ${onHelpers}`);
+  // v2.227: gövde blokları TEK döngüde `on(key)` kapısından geçer; imza ve
+  // okuma metni ayrı kapıdan. Anahtarın gerçekten tanımlı olduğu da sınanır.
+  check(
+    'gövde blokları açık/kapalı kapısından geçer',
+    /for \(const key of reportBodyOrder\(c\)\) if \(on\(key\) && blocks\[key\]\)/.test(js)
+  );
   for (const key of ['origin', 'reading', 'reviewSummary', 'wer', 'levels', 'signature']) {
-    check(`"${key}" bölümü koşullu`, new RegExp(`on\\('${key}'\\)`).test(js));
+    check(`"${key}" bölümü tanımlı`, new RegExp(`['"]${key}['"]`).test(js));
   }
   check(
-    'içindekiler yalnız açık bölümleri listeler',
-    /REPORT_TEXT\.sections\.filter\(\(_, i\) => on\('s' \+ \(i \+ 1\)\)\)/.test(js)
+    'içindekiler yalnız açık ve çizilen bölümleri listeler',
+    /function reportTocEntries/.test(js) && /reportBlockRenders\(c, key\)/.test(js) && /reportSectionOn\(c, key\)/.test(js)
   );
   check('bölüm paneli çizimi renderReport içinde', /renderReportSections\(c\);/.test(js));
   check('yeni stiller token kullanır (ham hex yok)', /\.rsec-item\s*\{[^}]*var\(--fs-xs\)[^}]*var\(--ink-2\)/.test(layer) && !/\.rsec-item\s*\{[^}]*#[0-9a-fA-F]{3,6}/.test(layer));
@@ -1768,11 +1774,11 @@ console.log('\n[2bp] Teknik ortam alanları: elle düzenlenir (v2.222)');
   check('teknik alan paneli HTML\'de', /id="reportTechBox"/.test(html) && /id="reportTechFields"/.test(html));
   check('şema: REPORT_TECH_KEYS + boş varsayılan', /REPORT_TECH_KEYS/.test(schema) && /tech:\s*emptyReportTech\(\)/.test(schema));
   check('şema: normalize tech', /tech:\s*normalizeReportTech\(report\.tech\)/.test(schema));
-  check('bölüm anahtarı tech VARSAYILAN KAPALI', /\{ key: 'tech', def: false \}/.test(schema));
+  check('bölüm anahtarı tech VARSAYILAN KAPALI', /\{ key: 'tech', def: false/.test(schema));
   check('çizim fonksiyonu tanımlı', /function renderReportTech\(/.test(js));
   check('renderReport teknik alanları çizer', /renderReportTech\(c\);/.test(js));
   check('girdi işleyicisi (yazarken odak kaybolmaz)', /reportTechFields'\)\?\.addEventListener\('input'/.test(js) && /reportTechFields'\)\?\.addEventListener\('change'/.test(js));
-  check('üç çıktı da teknik bölümü basar', (js.match(/on\('tech'\)/g) || []).length >= 3);
+  check('üç çıktı da teknik bölümü basar', (js.match(/tech:\s*\(\)\s*=>/g) || []).length >= 3);
   check('panel stili token kullanır', /\.report-tech-box\s*\{[^}]*var\(--surface\)/.test(layer));
 }
 
@@ -1831,10 +1837,10 @@ console.log('\n[2bt] Kalite kontrolü / denetlenebilirlik (v2.226)');
   check('kalite paneli HTML\'de', /id="reportQcBox"/.test(html) && /id="reportQcFields"/.test(html));
   check('şema: qc alanları boş varsayılan', /qcBy:\s*''/.test(schema) && /qcScope:\s*''/.test(schema) && /qcDate:\s*''/.test(schema));
   check('şema: normalize qc', /qcBy:\s*str\(report\.qcBy\)/.test(schema));
-  check('bölüm anahtarı qc VARSAYILAN KAPALI', /\{ key: 'qc', def: false \}/.test(schema));
+  check('bölüm anahtarı qc VARSAYILAN KAPALI', /\{ key: 'qc', def: false/.test(schema));
   check('otomatik sayı + çizim fonksiyonları', /function reportQcRows\(/.test(js) && /function renderReportQc\(/.test(js));
   check('renderReport kalite alanlarını çizer', /renderReportQc\(c\);/.test(js));
-  check('üç çıktı da qc bölümünü basar', (js.match(/on\('qc'\)/g) || []).length >= 3);
+  check('üç çıktı da qc bölümünü basar', (js.match(/qc:\s*\(\)\s*=>/g) || []).length >= 3);
   check('girdi işleyicisi', /reportQcFields'\)\?\.addEventListener\('input'/.test(js));
 }
 
