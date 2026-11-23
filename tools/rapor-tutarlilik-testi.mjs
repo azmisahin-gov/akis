@@ -736,5 +736,24 @@ console.log('\n[Senaryo 19] teknik ortam alanları (v2.222)');
   checkShared('boş alan "—" ile yazılır', 'Meta veri okuma aracı ve sürümü', H, U, D);
 }
 
+// Senaryo 20: künye ek alanları (v2.225). Künye kapalıyken görünmez; açıkken
+// elle girilen ekler/tarafsızlık beyanı üç çıktıda AYNI olmalı.
+console.log('\n[Senaryo 20] künye ek alanları (v2.225)');
+{
+  const mk = (sections, extra) => baseCase({ report: { sections: sections || {}, ...(extra || {}) } });
+  const off = mk({}, { impartiality: 'Engel yok', annexList: 'EK-1' });
+  const Ho = htmlText(off), Uo = await udfText(off), Do = await docxText(off);
+  check(
+    'varsayılan: künye KAPALI (üç çıktıda yok)',
+    !Ho.includes(REPORT_TEXT.kunyeHeading) && !Uo.includes(REPORT_TEXT.kunyeHeading) && !Do.includes(REPORT_TEXT.kunyeHeading)
+  );
+
+  const on = mk({ kunye: true }, { impartiality: 'Tarafsızlığı etkileyen hâl yoktur.', annexList: 'EK-1 teslim tutanağı' });
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('künye başlığı', REPORT_TEXT.kunyeHeading, H, U, D);
+  checkShared('raporun ekleri değeri', 'EK-1 teslim tutanağı', H, U, D);
+  checkShared('tarafsızlık beyanı değeri', 'Tarafsızlığı etkileyen hâl yoktur.', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

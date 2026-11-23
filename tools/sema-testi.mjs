@@ -1770,6 +1770,15 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('profil: minimal ayrıntı kapalı', mn.annex === false && mn.origin === false && mn.tech === false);
   const unk = reportSectionsForPreset('bilinmeyen');
   ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.annex === false);
+  // v2.225 — Künye ek alanları: boş varsayılan, dolu değer korunur, birleşir.
+  ok('emptyCase künye ek alanları boş', emptyCase().report.impartiality === '' && emptyCase().report.annexList === '');
+  const nk = normalizeCase({ id: 'ck', report: { impartiality: 'Engel yok', annexList: 'EK-1' } });
+  ok('normalizeCase: künye ek alanları korunur', nk.report.impartiality === 'Engel yok' && nk.report.annexList === 'EK-1');
+  const mkc = mergeCases(
+    normalizeCase({ id: 'm1', report: { impartiality: 'A' }, updatedAt: '2026-01-01' }),
+    normalizeCase({ id: 'm1', report: { annexList: 'EK-2' }, updatedAt: '2026-01-02' })
+  );
+  ok('birleştirme: künye ek alanları dolar', mkc.merged.report.impartiality === 'A' && mkc.merged.report.annexList === 'EK-2');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);

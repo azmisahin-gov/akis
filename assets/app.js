@@ -50,14 +50,14 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.224';
+} from './schema.js?v=2.225';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.224';
+const APP_VERSION = '2.225';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10440,8 +10440,18 @@ function reportKunyeRows(c) {
     ['Bilirkişilik sicil / liste numarası', c.registryNo || '—'],
     ['Temel ve alt uzmanlık alanı', expertFieldShort(c)],
     ['Rapor tarihi', c.reportDate ? niceDate(c.reportDate) : '—'],
-    ['Tarafsızlık / bağımsızlık beyanı', '—']
+    ['Raporun ekleri', (c.report && c.report.annexList) || '—'],
+    ['Tarafsızlık / bağımsızlık beyanı', (c.report && c.report.impartiality) || '—']
   ];
+}
+// v2.225 — Künye ek alanları (elle). Boşsa rapora "—".
+function renderReportKunye(c) {
+  const host = $('#reportKunyeFields');
+  if (!host) return;
+  const r = c.report || {};
+  host.innerHTML =
+    `<label class="field rtech-field"><span>Raporun ekleri</span><input data-report-kunye="annexList" value="${esc(r.annexList || '')}" placeholder="Örn. EK-1 teslim tutanağı, EK-2 envanter… (boşsa “—”)"></label>` +
+    `<label class="field rtech-field"><span>Tarafsızlık / bağımsızlık beyanı</span><input data-report-kunye="impartiality" value="${esc(r.impartiality || '')}" placeholder="Engel bulunmadığı / varsa açıklama (boşsa “—”)"></label>`;
 }
 function reportSummaryRows(c) {
   const materials = c.materials || [];
@@ -10691,6 +10701,7 @@ function renderReport() {
   }
   renderReportSections(c);
   renderReportTech(c);
+  renderReportKunye(c);
   const on = (k) => reportSectionOn(c, k);
   const toc = REPORT_TEXT.sections.filter((_, i) => on('s' + (i + 1)));
   let html = '';
@@ -14066,6 +14077,17 @@ $('#reportTechFields')?.addEventListener('input', (e) => {
   persist();
 });
 $('#reportTechFields')?.addEventListener('change', () => renderReport());
+// Künye ek alanları (v2.225) — aynı desen: yazarken model, çıkınca önizleme.
+$('#reportKunyeFields')?.addEventListener('input', (e) => {
+  const inp = e.target.closest('[data-report-kunye]');
+  if (!inp) return;
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report[inp.dataset.reportKunye] = inp.value;
+  persist();
+});
+$('#reportKunyeFields')?.addEventListener('change', () => renderReport());
 // Sayfalı önizleme (v2.221) — varsayılan kapalı; açınca A4 çizgileri.
 $('#reportPageViewToggle')?.addEventListener('change', (e) => {
   const c = currentCase();
@@ -15035,6 +15057,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.225': {
+    title: 'Künye: raporun ekleri ve tarafsızlık beyanı',
+    body:
+      'Rapor görünümüne "Rapor künyesi ek alanları" paneli eklendi: Raporun ekleri ' +
+      've Tarafsızlık/bağımsızlık beyanı elle doldurulur; boşsa rapora "—" yazılır. ' +
+      'Değerler Rapor künyesi bölümü açıkken görünür. Üç çıktı aynı metni üretir.'
+  },
   '2.224': {
     title: 'Yazdırma yalnız rapor belgesini verir',
     body:

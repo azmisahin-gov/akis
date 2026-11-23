@@ -6,12 +6,29 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.224.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.225.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.225 — Künye ek alanları: ekler + tarafsızlık
+
+RAPOR KÜNYESİ'nde şu ana kadar "—" duran iki gerçek alan **elle
+doldurulabilir** oldu: **Raporun ekleri** ve **Tarafsızlık / bağımsızlık
+beyanı**. Boş bırakılırsa rapora yine "—" yazılır (uydurma yok).
+
+- Rapor görünümünde **"Rapor künyesi ek alanları (ekler · tarafsızlık)"**
+  paneli; yazarken model güncellenir, alandan çıkınca önizleme tazelenir.
+- `case.report.impartiality` / `case.report.annexList`; `normalizeCase` korur;
+  birleştirme boş alanı doldurur (dolu farklı değer sessizce ezilmez).
+- Değerler yalnız **Rapor künyesi** bölümü açıkken görünür (o bölüm varsayılan
+  kapalı).
+- Üç çıktı (HTML/DOCX/UDF) aynı satırları basar.
+
+**Ölçüm:** `rapor [Senaryo 20]` üç çıktıda ekler + beyan aynı; `sema [3h]` (514);
+`tasarim [2bs]`. `bash tools/test.sh` yeşil.
 
 ## v2.224 — Yazdırma: yalnız rapor kâğıdı
 

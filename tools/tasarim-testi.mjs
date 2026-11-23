@@ -1809,5 +1809,19 @@ console.log('\n[2br] Yazdırma: yalnız rapor kâğıdı (v2.224)');
   );
 }
 
+console.log('\n[2bs] Künye ek alanları: ekler + tarafsızlık (v2.225)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  check('künye ek paneli HTML\'de', /id="reportKunyeBox"/.test(html) && /id="reportKunyeFields"/.test(html));
+  check('şema: künye ek alanları boş varsayılan', /impartiality:\s*''/.test(schema) && /annexList:\s*''/.test(schema));
+  check('şema: normalize künye alanları', /impartiality:\s*str\(report\.impartiality\)/.test(schema) && /annexList:\s*str\(report\.annexList\)/.test(schema));
+  check('çizim fonksiyonu tanımlı', /function renderReportKunye\(/.test(js));
+  check('renderReport künye alanlarını çizer', /renderReportKunye\(c\);/.test(js));
+  check('girdi işleyicisi', /reportKunyeFields'\)\?\.addEventListener\('input'/.test(js) && /reportKunyeFields'\)\?\.addEventListener\('change'/.test(js));
+  check('kunyeRows iki alanı basar', /Raporun ekleri/.test(js) && /Tarafsızlık \/ bağımsızlık beyanı/.test(js));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

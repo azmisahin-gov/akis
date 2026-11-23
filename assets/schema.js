@@ -686,7 +686,10 @@ export function emptyCase(over = {}) {
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
       // Teknik ortam (v2.222): elle doldurulur; boşsa rapora "—".
-      tech: emptyReportTech()
+      tech: emptyReportTech(),
+      // Künye ek alanları (v2.225): elle doldurulur; boşsa rapora "—".
+      impartiality: '',
+      annexList: ''
     },
     questions: [], // emptyQuestion() listesi
 
@@ -1064,7 +1067,10 @@ export function normalizeCase(src = {}) {
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.
-      tech: normalizeReportTech(report.tech)
+      tech: normalizeReportTech(report.tech),
+      // Künye ek alanları (v2.225): boş metin varsayılan.
+      impartiality: str(report.impartiality),
+      annexList: str(report.annexList)
     },
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
@@ -1695,7 +1701,7 @@ export function mergeCases(mine, theirs) {
     ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
     ['expert', ['name', 'registryNo', 'field']],
     ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
-    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText']]
+    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList']]
   ]) {
     const mg = mine[group] || {};
     const tg = theirs[group] || {};
@@ -2021,7 +2027,7 @@ export function compareCases(mine, theirs) {
   };
   for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
   for (const [g, keys] of [
-    ['report', ['methodText', 'limitationsText', 'conclusionText']],
+    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList']],
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);
