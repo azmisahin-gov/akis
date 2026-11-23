@@ -52,7 +52,7 @@ assert.equal(normalized.report.revisions.length, 10);
 assert.equal(normalized.report.revisions[0].id, 'rev-2');
 console.log('Rapor düzeni şema kalıcılığı: tüm kontroller geçti.');
 
-const originalUdfText = 'head\\nalpha\\nbravo\\n';
+const originalUdfText = 'head\nalpha\nbravo\n';
 const originalUdfXml =
   '<content startOffset="0" length="4" />' +
   '<content startOffset="5" length="0" />' +
@@ -60,6 +60,6 @@ const originalUdfXml =
   '<!--AKIS_REPORT_BLOCK:s2--><b><content startOffset="11" length="5" /></b>' +
   '<!--AKIS_REPORT_BLOCK:signature-->';
 const reorderedUdf = orderUdfDocument(originalUdfXml, originalUdfText, ['s2', 's1', 'signature']);
-assert.equal(reorderedUdf.text, 'head\\nbravo\\nalpha\\n');
+assert.equal(reorderedUdf.text, 'head\nbravo\nalpha\n');
 assert.equal(reorderedUdf.elements.includes('<b><content startOffset="5" length="5" /></b>'), true);
 assert.equal(reorderedUdf.elements.includes('<a><content startOffset="11" length="5" /></a>'), true);
