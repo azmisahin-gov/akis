@@ -3,7 +3,7 @@ import { emptyCase, normalizeCase } from '../assets/schema.js';
 import {
   DEFAULT_REPORT_ORDER, DEFAULT_ANNEXES, normalizeReportLayout, moveItem,
   enabledMainSectionNumbers, sortMarkedParts, createRevisionSnapshot,
-  compareRevisionSnapshots, revisionDigest
+  compareRevisionSnapshots, revisionDigest, orderUdfDocument
 } from '../assets/report-model.js';
 
 const layout = normalizeReportLayout({ layout: { order: ['s2', 's1', 's2', 'unknown'], annexes: [{ key: 'ek2', enabled: false, title: 'Envanter' }] } });
@@ -51,3 +51,15 @@ assert.equal(normalized.report.layout.annexes[0].key, 'custom-a');
 assert.equal(normalized.report.revisions.length, 10);
 assert.equal(normalized.report.revisions[0].id, 'rev-2');
 console.log('Rapor düzeni şema kalıcılığı: tüm kontroller geçti.');
+
+const originalUdfText = 'head\\nalpha\\nbravo\\n';
+const originalUdfXml =
+  '<content startOffset="0" length="4" />' +
+  '<content startOffset="5" length="0" />' +
+  '<!--AKIS_REPORT_BLOCK:s1--><a><content startOffset="5" length="5" /></a>' +
+  '<!--AKIS_REPORT_BLOCK:s2--><b><content startOffset="11" length="5" /></b>' +
+  '<!--AKIS_REPORT_BLOCK:signature-->';
+const reorderedUdf = orderUdfDocument(originalUdfXml, originalUdfText, ['s2', 's1', 'signature']);
+assert.equal(reorderedUdf.text, 'head\\nbravo\\nalpha\\n');
+assert.equal(reorderedUdf.elements.includes('<b><content startOffset="5" length="5" /></b>'), true);
+assert.equal(reorderedUdf.elements.includes('<a><content startOffset="11" length="5" /></a>'), true);
