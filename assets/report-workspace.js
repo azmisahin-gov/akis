@@ -74,29 +74,26 @@ function renderOutline(c) {
   const profiles = REPORT_PRESET_DEFS.map((preset) =>
     `<button type="button" class="report-profile-btn" data-report-preset="${escapeHtml(preset.key)}">${escapeHtml(preset.label)}</button>`
   ).join('');
-  const rows = GROUPS.map((group) => {
-    const keys = group.keys.filter((key) => layout.order.includes(key));
-    if (!keys.length) return '';
-    return `<section class="report-outline-group"><h4>${escapeHtml(group.title)}</h4><div class="report-outline-items">${keys.map((key) => {
-      const index = layout.order.indexOf(key);
-      const pinned = key === 'signature' || key === 'cover';
-      const sub = key === 'reading';
-      return `<div class="report-outline-item ${sub ? 'is-subitem' : ''}" data-report-outline-key="${key}">
-        <label class="report-outline-label">
-          <input type="checkbox" data-report-section="${key}" ${sectionEnabled(c, key) ? 'checked' : ''}>
-          <span>${escapeHtml(SECTION_LABELS[key] || key)}</span>
-        </label>
-        <span class="report-outline-tools">
-          <button type="button" data-report-move="${key}" data-direction="-1" ${pinned || index <= 0 ? 'disabled' : ''} aria-label="${escapeHtml(SECTION_LABELS[key] || key)} bölümünü yukarı taşı" title="Yukarı taşı">↑</button>
-          <button type="button" data-report-move="${key}" data-direction="1" ${pinned || index >= layout.order.length - 1 ? 'disabled' : ''} aria-label="${escapeHtml(SECTION_LABELS[key] || key)} bölümünü aşağı taşı" title="Aşağı taşı">↓</button>
-        </span>
-      </div>`;
-    }).join('')}</div></section>`;
+  const rows = layout.order.map((key, index) => {
+    const pinned = ['cover', 'coverFields', 'toc', 'signature'].includes(key);
+    const sub = key === 'reading';
+    return `<div class="report-outline-item ${sub ? 'is-subitem' : ''}" data-report-outline-key="${escapeHtml(key)}">
+      <span class="report-outline-number">${index + 1}</span>
+      <label class="report-outline-label">
+        <input type="checkbox" data-report-section="${escapeHtml(key)}" ${sectionEnabled(c, key) ? 'checked' : ''}>
+        <span>${escapeHtml(SECTION_LABELS[key] || key)}</span>
+      </label>
+      <span class="report-outline-tools">
+        <button type="button" data-report-move="${escapeHtml(key)}" data-direction="-1" ${pinned || index <= 0 ? 'disabled' : ''} aria-label="${escapeHtml(SECTION_LABELS[key] || key)} bölümünü yukarı taşı" title="Yukarı taşı">↑</button>
+        <button type="button" data-report-move="${escapeHtml(key)}" data-direction="1" ${pinned || index >= layout.order.length - 1 ? 'disabled' : ''} aria-label="${escapeHtml(SECTION_LABELS[key] || key)} bölümünü aşağı taşı" title="Aşağı taşı">↓</button>
+      </span>
+    </div>`;
   }).join('');
-  host.innerHTML = `<div class="report-profile-switch"><span>Hazır profil</span>${profiles}</div>${rows}
+  host.innerHTML = `<div class="report-profile-switch"><span>Hazır profil</span>${profiles}</div>
+    <p class="report-outline-hint">Bölüm sırasını oklarla değiştirin. Kapalı bölümler rapora ve dışa aktarılan belgeye alınmaz.</p>
+    <div class="report-outline-items">${rows}</div>
     <div class="report-outline-foot"><button type="button" data-report-sections-all="on">Tümünü aç</button><button type="button" data-report-sections-all="off">Tümünü kapat</button></div>`;
 }
-
 function renderAnnexes(c) {
   const host = $('#reportAnnexList');
   if (!host) return;
