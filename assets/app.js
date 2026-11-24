@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.229';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.229';
+} from './schema.js?v=2.230';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.230';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.229';
+const APP_VERSION = '2.230';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1267,6 +1267,9 @@ function switchView(name) {
   // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  // Görünüm adı body'ye yazılır (v2.230): durum çubuğundaki tekrarları
+  // görünüme göre gizlemek için tek kaynak.
+  document.body.dataset.view = name;
   const labels = {
     overview: 'Genel görünüm',
     case: 'Dosya bilgileri',
@@ -10269,6 +10272,39 @@ function readinessSummary(r) {
   for (const it of items) s[readinessSeverity(it.key)] += 1;
   return s;
 }
+// TEK KAYIT DURUMU (v2.230): rapor ekranındaki tek ve sade durum.
+// Uydurma "yüzde/hazır" YOK: engelleyen > uzman/bekleyen > öneri > temiz.
+// "Hazır" bile DENETİM LİSTESİdir, onay değildir (detail bunu söyler).
+function reportRecordStatus(c) {
+  const summary = readinessSummary(reportReadiness(c));
+  const segs = (c && Array.isArray(c.materials) ? c.materials : []).flatMap((m) => (m && m.segments) || []);
+  const pending = pendingBreakdown(segs).pending;
+  if (summary.blocking > 0) {
+    return {
+      code: 'blocked',
+      tone: 'blocked',
+      label: `Engelleyen eksik: ${summary.blocking}`,
+      detail: `${summary.total} kontrol maddesi · ${pending} bölüm bekliyor`
+    };
+  }
+  if (summary.expert > 0 || pending > 0) {
+    return {
+      code: 'review',
+      tone: 'review',
+      label: `Kontrol bekliyor: ${summary.expert || pending}`,
+      detail: `${pending} bölüm bekliyor · ${summary.total} kontrol maddesi`
+    };
+  }
+  if (summary.advisory > 0) {
+    return {
+      code: 'ready',
+      tone: 'ready',
+      label: `Hazır — ${summary.advisory} öneri`,
+      detail: 'Engelleyen eksik yok; bu bir denetim listesidir, onay değildir.'
+    };
+  }
+  return { code: 'ready', tone: 'ready', label: 'Hazır — eksik görünmüyor', detail: 'Bu bir denetim listesidir, onay değildir.' };
+}
 function reportReadiness(c) {
   const items = [];
   const materials = c && Array.isArray(c.materials) ? c.materials : [];
@@ -10700,7 +10736,7 @@ function renderReportSections(c) {
     const mover = move
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
-    return `<div class="rsec-row${child ? ' rsec-child' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
+    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -10737,7 +10773,7 @@ function renderReportSections(c) {
   host.dataset.allOff = JSON.stringify(allOff);
   const openCount = REPORT_SECTION_DEFS.filter((d) => reportSectionOn(c, d.key)).length;
   const cnt = $('#reportSkeletonCount');
-  if (cnt) cnt.textContent = `${openCount}/${REPORT_SECTION_DEFS.length} açık`;
+  if (cnt) cnt.textContent = `${openCount} dahil · ${REPORT_SECTION_DEFS.length - openCount} hariç`;
   const presets = REPORT_PRESET_DEFS.map(
     (p) => `<button type="button" class="mini-button" data-report-preset="${esc(p.key)}" title="Bölüm kümesini hazır ayarla (veri değişmez)">${esc(p.label)}</button>`
   ).join('');
@@ -11201,7 +11237,9 @@ function renderReportReadiness(c) {
   el.innerHTML =
     `<div class="ready-head"><b>Rapor hazırlığı</b><small>${
       r.ok ? 'Eksik görünmüyor' : `${r.items.length} konu eksik`
-    } · denetim listesidir, onay değildir</small></div>` + readinessRowsHtml(r);
+    } · denetim listesidir, onay değildir</small></div>` +
+    `<p class="ready-concepts"><b>Dahil</b> = rapora girer (iskelet) · <b>Kontrol</b> = bölüm dinlenip onaylandı (ses görünümü).</p>` +
+    readinessRowsHtml(r);
 }
 function renderReport() {
   const c = currentCase();
@@ -11425,8 +11463,14 @@ function renderReport() {
   if (on('signature')) html += body.signature();
   html += '</div>';
   $('#reportPreview').innerHTML = html;
-  $('#reportStatus').innerHTML =
-    `<span class="status-dot"></span>${materials.length} kayıt · ${allSegs.length} deşifre bölümü · ${checked} kontrol edildi`;
+  // TEK kayıt durumu (v2.230) + kısa ayrıntı. Ayrıntı istatistik tekrarı
+  // yapmaz; asıl durum tek çipte.
+  const rec = reportRecordStatus(c);
+  const statusEl = $('#reportStatus');
+  statusEl.innerHTML =
+    `<span class="report-status-chip ${rec.tone}"><span class="status-dot"></span>${esc(rec.label)}</span>` +
+    `<span class="report-status-detail">${materials.length} kayıt · ${allSegs.length} bölüm · ${checked} kontrol</span>`;
+  statusEl.title = rec.detail;
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   renderPageGuides();
@@ -15785,6 +15829,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.230': {
+    title: 'Rapor durumu tek çipte; dahil/kontrol ayrıldı',
+    body:
+      'Rapor ekranında tek ve sade kayıt durumu var: "Engelleyen eksik: N", ' +
+      '"Kontrol bekliyor: N" veya "Hazır". Renk tek başına anlam taşımaz; metin de yazar. ' +
+      'İskelette "dahil / hariç" sayısı ve kapalı bölümlerin soluk görünümü, rapora dahil ' +
+      'olmayı kontrol durumundan ayırır. Alt çubuktaki yinelenen bölüm/denetim sayaçları ' +
+      'rapor görünümünde gizlenir.'
+  },
   '2.229': {
     title: 'Rapor iskeleti: ara, filtrele, yalnız açık',
     body:

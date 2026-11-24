@@ -238,7 +238,8 @@ const REQUIRED_IDS = [
   ['kontrol özet çipi', 'reportCheckChip'],
   ['rapor bölüm arama', 'reportSectionSearch'],
   ['rapor yalnız açık', 'reportOnlyOpen'],
-  ['rapor kategori çipleri', 'reportSectionCats']
+  ['rapor kategori çipleri', 'reportSectionCats'],
+  ['durum çubuğu bölüm sayacı', 'sbSegmentsWrap']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));
