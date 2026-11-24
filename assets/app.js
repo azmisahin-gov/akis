@@ -65,17 +65,18 @@ import {
   REPORT_COLUMN_TABLES,
   REPORT_COLUMN_LABELS,
   REPORT_COLUMN_TABLE_LABELS,
+  REPORT_COLUMN_LOCKED,
   emptyReportColumns,
   normalizeReportColumns
-} from './schema.js?v=2.235';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.235';
+} from './schema.js?v=2.236';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.236';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.235';
+const APP_VERSION = '2.236';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10450,10 +10451,15 @@ function reportColumnOn(c, table, key) {
   if (!t || typeof t[key] !== 'boolean') return true;
   return t[key];
 }
+function reportColumnLocked(table, key) {
+  const list = REPORT_COLUMN_LOCKED[table];
+  return Array.isArray(list) && list.includes(key);
+}
 function reportTableColumns(c, table, headers, rows, widths) {
   const keys = REPORT_COLUMN_TABLES[table] || [];
   const idx = [];
-  for (let i = 0; i < keys.length; i++) if (reportColumnOn(c, table, keys[i])) idx.push(i);
+  // Kanıt tablosunda zaman/metin ZORUNLU; kullanıcı kapatsa da basılır.
+  for (let i = 0; i < keys.length; i++) if (reportColumnLocked(table, keys[i]) || reportColumnOn(c, table, keys[i])) idx.push(i);
   return {
     keys: idx.map((i) => keys[i]),
     headers: idx.map((i) => headers[i]),
@@ -10496,10 +10502,11 @@ function renderReportColumns(c) {
         return (
           `<div class="rcol-group"><div class="rcol-head"><b>${esc(REPORT_COLUMN_TABLE_LABELS[table] || table)}</b><span>${on}/${keys.length}</span></div>` +
           keys
-            .map(
-              (k) =>
-                `<label class="rcol-item"><input type="checkbox" data-rcol-table="${esc(table)}" data-rcol-key="${esc(k)}"${cols[table][k] !== false ? ' checked' : ''}> <span>${esc(labels[k] || k)}</span></label>`
-            )
+            .map((k) => {
+              const locked = reportColumnLocked(table, k);
+              const on = locked || cols[table][k] !== false;
+              return `<label class="rcol-item${locked ? ' is-locked' : ''}"><input type="checkbox" data-rcol-table="${esc(table)}" data-rcol-key="${esc(k)}"${on ? ' checked' : ''}${locked ? ' disabled' : ''} title="${locked ? 'Kanıt için zorunlu; kapatılamaz.' : ''}"> <span>${esc(labels[k] || k)}</span></label>`;
+            })
             .join('') +
           `</div>`
         );
@@ -11207,6 +11214,8 @@ function reportAnnexBlocks(c) {
   for (const m of materials) {
     for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
   }
+  // EK-2 envanteri ANA envanter tablosuyla AYNI sütun seçimini kullanır (v2.236).
+  const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
   const defs = {
     ek1: {
       kind: 'table',
@@ -11221,13 +11230,9 @@ function reportAnnexBlocks(c) {
         ['Açıklama', '—']
       ]
     },
-    ek2: {
-      kind: 'table',
-      header: true,
-      headers: REPORT_TEXT.inventoryHeaders,
-      rows: inventoryRows(c),
-      empty: REPORT_TEXT.annexNoInventory
-    },
+    ek2: invT.empty
+      ? { kind: 'para', text: REPORT_TEXT.noColumns }
+      : { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, empty: REPORT_TEXT.annexNoInventory },
     ek3: {
       kind: 'table',
       header: true,
@@ -11701,7 +11706,9 @@ function renderReport() {
           if (m.languageWarning)
             out += `<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;
           if (m.segments?.length) {
-            out += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${esc(reviewCellText(s))}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
+            const segRows = m.segments.map((s) => [tcRange(s.start, s.end), segSpeakerCell(m, s), s.text || '', reviewCellText(s), segObsText(s)]);
+            const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
+            out += `<table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
         }
       } else out += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -12055,19 +12062,15 @@ function docxXml(c) {
         if (m.languageWarning)
           out += wP(`${REPORT_TEXT.languageWarningPrefix} ${m.languageWarning}`, { color: '9A6B2D', size: 17 });
         if (m.segments?.length) {
-          out += wTable(
-            [
-              [REPORT_TEXT.segmentHeadersObs].flat(),
-              ...m.segments.map((s) => [
-                tcRange(s.start, s.end),
-                segSpeakerCell(m, s),
-                s.text || '',
-                reviewCellText(s),
-                segObsText(s)
-              ])
-            ],
-            { widths: [1300, 1200, 3600, 1100, 900], header: true }
-          );
+          const segRows = m.segments.map((s) => [
+            tcRange(s.start, s.end),
+            segSpeakerCell(m, s),
+            s.text || '',
+            reviewCellText(s),
+            segObsText(s)
+          ]);
+          const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1300, 1200, 3600, 1100, 900]);
+          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
       out += headingXml(sub.s52, 2);
@@ -12546,14 +12549,15 @@ async function makeUdf() {
               })
             );
           if (m.segments?.length) {
-            const segments = m.segments.map((seg) => [
+            const segRows = m.segments.map((seg) => [
               tcRange(seg.start, seg.end),
               segSpeakerCell(m, seg),
               seg.text || '',
               reviewCellText(seg),
               segObsText(seg)
             ]);
-            el.push(table([[...REPORT_TEXT.segmentHeadersObs], ...segments], [70, 68, 235, 75, 62], { header: true }));
+            const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [70, 68, 235, 75, 62]);
+            el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
         });
       } else el.push(paragraph(REPORT_TEXT.noMaterials));
@@ -16231,6 +16235,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.236': {
+    title: 'Kanıt tablosunda da sütun aç/kapa',
+    body:
+      'Analiz/kanıt (deşifre) tablosunun Konuşmacı, Kontrol ve Gözlem sütunları açılıp ' +
+      'kapatılabilir. Zaman aralığı ve çözümlenen konuşma kanıt için ZORUNLU; kapatılamaz. ' +
+      'EK-2 envanter tablosu da ana envanterle aynı sütun seçimini izler.'
+  },
   '2.235': {
     title: 'Rapor alanları: tablo sütunları aç/kapa',
     body:

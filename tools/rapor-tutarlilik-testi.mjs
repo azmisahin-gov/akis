@@ -874,5 +874,30 @@ console.log('\n[Senaryo 24] rapor alanları: tablo sütunu aç/kapa (v2.235)');
   checkShared('tüm sütunlar kapalı → uyarı', REPORT_TEXT.noColumns, H2, U2, D2);
 }
 
+// Senaryo 25: kanıt tablosu sütunları — zaman+metin zorunlu (v2.236).
+console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
+{
+  const c = withMaterial();
+  c.materials[0].segments = [
+    { id: 's1', start: '00:00:00', end: '00:00:05', speaker: 'K', text: 'merhaba', review: 'onaylandi' },
+    { id: 's2', start: '00:00:05', end: '00:00:10', speaker: 'K', text: 'dünya', review: 'onaylandi' }
+  ];
+  c.report = { sections: { s5: true, speakers: false }, columns: { segments: { speaker: false, review: false, obs: false } } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('kanıt: zaman korunur', 'ZAMAN ARALIĞI', H, U, D);
+  checkShared('kanıt: metin korunur', 'ÇÖZÜMLENEN KONUŞMA', H, U, D);
+  check('kanıt: konuşmacı sütunu kapalı (H)', !H.includes('KONUŞMACI'));
+  check('kanıt: kontrol sütunu kapalı (H)', !H.includes('KONTROL DURUMU'));
+  // 'GÖZLEM' başka bir başlıkta (…GÖZLEMLENMESİ…) geçebilir; tam satır aranır.
+  check('kanıt: gözlem sütunu kapalı (H)', !/^\s*GÖZLEM\s*$/m.test(H));
+
+  const c2 = withMaterial();
+  c2.materials[0].segments = c.materials[0].segments;
+  c2.report = { sections: { s5: true, speakers: false }, columns: { segments: { time: false, text: false } } };
+  const H2 = htmlText(c2);
+  check('kilit: zaman yine basılır', H2.includes('ZAMAN ARALIĞI'));
+  check('kilit: metin yine basılır', H2.includes('ÇÖZÜMLENEN KONUŞMA'));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

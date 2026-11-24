@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.235.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.236.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.236 — Kanıt tablosunda da sütun aç/kapa
+
+Kullanıcı: "Analiz tespit değerlendirme tablosuna da yapamıyor muyuz?" Evet.
+
+### KULLANICI NE GÖRECEK
+
+- **Analiz / kanıt tablosu** (deşifre) için de sütun aç/kapa:
+  **Konuşmacı**, **Kontrol durumu**, **Gözlem** isteğe bağlı.
+- **Zaman aralığı** ve **Çözümlenen konuşma** **ZORUNLU**dur; panelde kilitli
+  görünür ve kapatılamaz. Gerekçe: bunlar kanıtın çekirdeğidir; kapatılırsa
+  tablo adli kayıt olarak anlamını yitirir.
+- **EK-2 envanter** tablosu artık ana envanterle **aynı** sütun seçimini izler
+  (ör. SHA-256 kapatıldıysa ekte de yoktur).
+
+### Teknik
+
+- `REPORT_COLUMN_TABLES.segments = ['time','speaker','text','review','obs']`;
+  `REPORT_COLUMN_LOCKED = { segments: ['time','text'] }` (schema.js).
+- `reportColumnLocked()` + `reportTableColumns` kilitli sütunları **her zaman**
+  basar; panelde kilitli onay kutuları `disabled` + ipucu.
+- Kanıt tablosu üç çıktıda (HTML/DOCX/UDF) aynı filtreyi kullanır;
+  `EK-2` (`reportAnnexBlocks`) ana envanter filtresinden beslenir.
+- Test: `birim [91]`, `rapor` Senaryo 25, `tasarim [2cg]`.
 
 ## v2.235 — Rapor alanları: tablo sütunları aç/kapa
 

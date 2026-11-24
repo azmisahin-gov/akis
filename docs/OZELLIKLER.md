@@ -1,4 +1,4 @@
-# Özellikler (v2.235 — mevcut durum)
+# Özellikler (v2.236 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -772,6 +772,9 @@ olsa da tek başına açılıp rapora girebilir; kanıt tablosu değişmez.
 **Rapor alanları** (v2.235): Kontrol → Rapor alanları panelinden envanter,
 köken, edinme, WER ve seviye tablolarının sütunları tek tek açılıp kapatılır
 (ör. SHA-256). Kapatılan alan üç çıktıda da görünmez; veri silinmez.
+**Kanıt tablosu** (v2.236): Konuşmacı/Kontrol/Gözlem sütunları açılıp kapatılır;
+**zaman aralığı ve çözümlenen konuşma zorunludur** (kilitli). EK-2 envanter ana
+envanterle aynı sütun seçimini izler.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller
