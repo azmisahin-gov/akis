@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.262.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.263.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.263 — Konuşmacı atama hızı (klavye + dinleme)
+
+Kullanıcı: *"Birçok dosya olunca konuşmacıları ayırmak hataya açık; daha hızlı, daha
+güvenli, daha doğru ne yapabiliriz?"* Bu sürüm **hız** adımıdır.
+
+### KULLANICI NE GÖRECEK
+
+- **Alt+1…9:** dinlerken aktif bölüme **o sıradaki** konuşmacıyı atar (S1, S2…).
+  Karar tuşları (1…5) değildir; metin alanında çalışmaz; kontrol durumunu
+  **değiştirmez** (onay metne bağlıdır).
+- **▶ Örnek dinle** (konuşmacı kartı): o kişinin **ilk bölümünden en çok 3 sn**
+  çalar — etiketi kulağınızla eşleştirmek için.
+- **▶ Tüm bölümlerini dinle:** o konuşmacının bölümlerini **sırayla** çalar.
+  **Elle** bir bölüm çalarsanız, **⏹** veya **Boşluk** ile durdurursanız kuyruk
+  **iptal** olur (kontrol kullanıcıda kalır).
+- Kartta **bölüm sayısı · toplam süre · ilk–son duyulma** görünür.
+
+### Teknik
+
+- `setSegmentSpeakerByName(m, s, name)` — **TEK KAPI**: adı **ve** kimliği
+  (`speakerId`) birlikte yazar. Bölüm detayındaki seçim de buradan geçer; böylece
+  birleştirme/eşleştirme ada bağımlı kalmaz.
+- `assignSpeakerByIndex(m, seg, spkIdx)` saf fonksiyonu; `speakerIndexList`
+  yalnız **etiketli** konuşmacıları sayar (adsız kişi atanamaz).
+- `speakerQueueIndexes` / `speakerStats` saf; kart ve (sonraki sürümde) rapor aynı
+  kaynaktan beslenir.
+- `spkQueue` **oturumluktur**, kayda yazılmaz. `advanceSpeakerQueue` bölüm bitişinde
+  (`ensureSegStopListener` durma dalı) sıradakine geçer; `playSegmentRange`
+  `restart:false` ile çağrıldığında (elle çalma) kuyruk iptal edilir.
+- `playSegmentRange(..., { seconds })`: örnek dinleme için bitişi
+  `min(bölüm sonu, başlangıç + saniye)` yapar (bölüm sonunu aşmaz).
+
+### Koruyan testler
+
+- `birim` **[108]** (22): tek kapı ad+kimlik, sıra dışı indeksler, adsız kişi,
+  kuyruk indeksleri (ad/kimlik), istatistik (süre/ilk/son).
+- `birim` **[109]** (6): Alt+sayı işleyicisi, dinle düğmeleri, kuyruk fonksiyonları,
+  kuyruğun şemada olmaması, iptal noktaları.
+- `tasarim` **[2ci]** (6): kart düğmeleri/istatistik, sarma, iptal kancaları.
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV 47,7 sn, 3 elle bölüm)
+
+| Adım | Sonuç |
+|---|---|
+| ＋ Bölüm ×3, ＋ konuşmacı | 3 bölüm; S1, S2 |
+| Alt+1 / Alt+2 / Alt+1 | rozetler **S1, S2, S1**; toast "Bölüm 3 → S1 · Konuşmacı 1." |
+| Kart istatistiği | "2 bölüm · 00:10 · 00:00:00.000–00:00:10.000" |
+| Tümünü dinle | 0–5 çaldı, **S2'yi atladı**, 10–15'e geçti (t=10,1; aktif bölüm 3) |
+| ⏹ | durdu, aktif bölümün başına döndü (t=10) |
+| Örnek dinle | 0–3 sn çaldı, **t=3,1'de durdu** |
+| Kırpılma / yatay taşma / JS hatası | **0 / yok / 0** |
 
 ## v2.262 — Konuşmacı kodu güvenliği (salt-okunur + çakışma denetimi)
 

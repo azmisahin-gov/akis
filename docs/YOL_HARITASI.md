@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.262.**
+yazılır. **Güncel sürüm: v2.263.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.263 — Konuşmacı atama hızı (TAMAMLANDI)
+
+- **Alt+1…9** aktif bölüme o sıradaki konuşmacıyı atar; `setSegmentSpeakerByName`
+  TEK KAPI (ad + `speakerId`).
+- Konuşmacı kartı: **▶ Örnek dinle (≤3 sn)** · **▶ Tüm bölümlerini dinle** (oturumluk
+  kuyruk, elle çalma/⏹ iptal eder) · bölüm sayısı/süre/ilk–son duyulma.
+- Koruyan: `birim` [108]/[109], `tasarim` [2ci].
 
 ## v2.262 — Konuşmacı kodu güvenliği (TAMAMLANDI)
 

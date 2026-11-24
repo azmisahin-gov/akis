@@ -1,4 +1,4 @@
-# Özellikler (v2.262 — mevcut durum)
+# Özellikler (v2.263 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -573,6 +573,11 @@ uzmanlık alanını gösterir.
 - **Kod salt-okunur (v2.262):** kod **kimliktir**; panelde düzenlenemez
   (önceden bir giriş alanıydı ve iki kişiye aynı kod yazılabiliyordu — rapor iki
   kez "S1" yazıyordu). Görünen ad "Konuşmacı etiketi" alanından değiştirilir.
+- **Hızlı atama ve dinleme (v2.263):** dinlerken **Alt+1…9** aktif bölüme o
+  sıradaki konuşmacıyı atar (ad + kimlik birlikte yazılır). Kartta
+  **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
+  sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
+  ilk–son duyulma görünür.
 - **Kod çakışması denetimi (v2.262):** eski/elle düzenlenmiş kayıtta aynı kod
   iki kişide ise panelde uyarı + **"Çakışan kodları düzelt"**. Düzeltme onay
   ister, **ilk konuşmacının kodunu korur**, diğerini sıradaki boş koda taşır;

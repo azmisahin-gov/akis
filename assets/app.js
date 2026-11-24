@@ -83,15 +83,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.262';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.262';
+} from './schema.js?v=2.263';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.263';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.262';
+const APP_VERSION = '2.263';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3502,6 +3502,94 @@ function removeSpeaker(m, sp) {
   logEvent(m, 'Konuşmacı silindi', `${sp.name || sp.id}${cleared ? ` · ${cleared} bölümün ataması kaldırıldı` : ''}`);
   return cleared;
 }
+// ---- Konuşmacı atama (v2.263) -------------------------------------------
+// TEK KAPI: adı VE kimliği birlikte yazar. Yalnız ad yazılırsa (eski davranış)
+// birleştirme/eşleştirme ada bağlı kalır; ad değişince bağ kopar.
+function setSegmentSpeakerByName(m, s, name) {
+  const clean = String(name == null ? '' : name);
+  const sp = clean ? (m.speakers || []).find((x) => x.name === clean) || null : null;
+  s.speaker = clean;
+  s.speakerId = sp ? sp.id : '';
+  return sp;
+}
+// Klavye sırası (Alt+1…9) yalnız ETİKETİ olan konuşmacıları sayar; adsız kişi
+// seçilemez (raporda "S1 · " boş görünürdü).
+function speakerIndexList(m) {
+  return (m && m.speakers ? m.speakers : []).filter((sp) => sp && sp.name);
+}
+function assignSpeakerByIndex(m, segIndex, speakerIndex) {
+  const sp = speakerIndexList(m)[speakerIndex];
+  if (!sp) return { ok: false, reason: 'speaker' };
+  const segs = (m && m.segments) || [];
+  const s = segs[segIndex];
+  if (!s) return { ok: false, reason: 'segment' };
+  if ((s.speaker || '') === sp.name && (!sp.id || s.speakerId === sp.id))
+    return { ok: true, same: true, code: sp.code, name: sp.name, index: segIndex };
+  setSegmentSpeakerByName(m, s, sp.name);
+  return { ok: true, same: false, code: sp.code, name: sp.name, index: segIndex };
+}
+// Konuşmacının bölüm indeksleri (ad VEYA kimlik; sıralı).
+function speakerQueueIndexes(m, sp) {
+  const name = (sp && sp.name) || '';
+  const id = (sp && sp.id) || '';
+  if (!name && !id) return [];
+  const out = [];
+  ((m && m.segments) || []).forEach((s, i) => {
+    if ((id && s.speakerId === id) || (name && (s.speaker || '') === name)) out.push(i);
+  });
+  return out;
+}
+// Konuşmacı özeti: bölüm sayısı, toplam süre, ilk/son duyulma. Raporda ve
+// kartta aynı kaynaktan yazılır.
+function speakerStats(m, sp) {
+  const idxs = speakerQueueIndexes(m, sp);
+  let totalSec = 0;
+  let first = '';
+  let last = '';
+  for (const i of idxs) {
+    const s = m.segments[i];
+    totalSec += segDurationSec(s);
+    const a = s.start ? timecode(secondsFromTimecode(s.start)) : '';
+    const b = s.end ? timecode(secondsFromTimecode(s.end)) : '';
+    if (!first && a) first = a;
+    if (b) last = b;
+  }
+  return { count: idxs.length, totalSec: Math.round(totalSec * 10) / 10, first, last };
+}
+// OTURUMLUK konuşmacı dinleme kuyruğu (kayda YAZILMAZ).
+let spkQueue = { on: false, materialId: null, speakerId: '', indexes: [], pos: 0 };
+function stopSpeakerQueue() {
+  spkQueue = { on: false, materialId: null, speakerId: '', indexes: [], pos: 0 };
+}
+function startSpeakerQueue(m, sp) {
+  const indexes = speakerQueueIndexes(m, sp);
+  if (!indexes.length) return { ok: false, count: 0 };
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const s = (m.segments || [])[indexes[0]];
+  if (!card || !s) return { ok: false, count: 0 };
+  spkQueue = { on: true, materialId: m.id, speakerId: sp.id || '', indexes, pos: 0 };
+  playSegmentRange(card, m, s, indexes[0], { restart: true });
+  return { ok: true, count: indexes.length, code: sp.code || '' };
+}
+// Bölüm bitince sıradakine geçer. Döner: true = kuyruk işi devraldı.
+function advanceSpeakerQueue(m, player) {
+  if (!spkQueue.on || spkQueue.materialId !== (m && m.id)) return false;
+  spkQueue.pos += 1;
+  if (spkQueue.pos >= spkQueue.indexes.length) {
+    stopSpeakerQueue();
+    showToast('Konuşmacı dinlemesi bitti.');
+    return true;
+  }
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const i = spkQueue.indexes[spkQueue.pos];
+  const s = (m.segments || [])[i];
+  if (!card || !s) {
+    stopSpeakerQueue();
+    return true;
+  }
+  playSegmentRange(card, m, s, i, { restart: true });
+  return true;
+}
 // Hiçbir bölüme atanmamış konuşmacıları temizler. Raporda görünmeyen ama
 // listede kalan eski etiketler (K, E, S1, S2…) böylece kalkar.
 function unusedSpeakers(m) {
@@ -3901,6 +3989,7 @@ function speakersPanelHtml(m) {
           ? `Bağlı: ${personName(linkedPerson)}`
           : 'Bağlı kişi bulunamadı (kayıt eksik)'
         : '';
+      const stat = speakerStats(m, s);
       return `<div class="spk-card" data-spk-card="${esc(s.id)}">
       <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.">Sil</button></div>
       <div class="seg-row2">
@@ -3919,7 +4008,13 @@ function speakersPanelHtml(m) {
         <div class="seg-field"><label>Aynı kişi (dosyalar arası)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir.">${personOptions(s)}</select></div>
         ${linkedNote ? `<div class="seg-field"><label>Bağlantı</label><small>${esc(linkedNote)}</small></div>` : ''}
       </div>
-      <small>${segs.length ? `${segs.length} bölüm` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
+      <div class="spk-actions">${
+        segs.length
+          ? `<button class="mini-button" data-sample-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacının ilk bölümünden en çok 3 saniye dinle (kimliği kulağınızla eşleştirin).">▶ Örnek dinle</button>` +
+            `<button class="mini-button" data-listen-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacının TÜM bölümlerini sırayla dinle. Elle bir bölüm çalarsanız veya durdurursanız kuyruk iptal olur.">▶ Tüm bölümleri dinle</button>`
+          : ''
+      }</div>
+      <small>${segs.length ? `${segs.length} bölüm · ${fmtShort(stat.totalSec)} · ${stat.first}–${stat.last}` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
     </div>`;
     })
     .join('');
@@ -6149,6 +6244,8 @@ function playWholeRecording(m) {
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player = card && card.querySelector('audio');
   if (!player) return;
+  // Ana oynat konuşmacı dinleme kuyruğunu iptal eder (v2.263).
+  stopSpeakerQueue();
   ensureSegStopListener(player);
   resumeAudioGraph(m);
   player.playbackRate = m.playbackRate || 1;
@@ -6449,6 +6546,30 @@ function focusSegmentRow(el) {
   setActiveSegment(m, Number(el.dataset.segItem), { scroll: false });
   revealSegDetail(m);
 }
+// Sıcak tuşla atama: aktif bölüme konuşmacıyı yazar, listeyi ve detayı
+// YERİNDE tazeler (tam yeniden çizim yok → odak/kaydırma korunur).
+function assignSpeakerHotkey(m, speakerIndex) {
+  const idx = activeSegIndex(m);
+  const res = assignSpeakerByIndex(m, idx, speakerIndex);
+  if (!res.ok) {
+    showToast(
+      res.reason === 'speaker'
+        ? `Bu kayıtta ${speakerIndex + 1}. konuşmacı yok. Bölümdeki ＋ ile ekleyin.`
+        : 'Önce bir bölüm seçin.'
+    );
+    return false;
+  }
+  if (res.same) {
+    showToast(`Bölüm ${idx + 1} zaten ${res.code} · ${res.name}.`);
+    return true;
+  }
+  persist();
+  updateSegListItem(m, idx);
+  syncSegDetailInPlace(m);
+  scheduleLightRefresh(m);
+  showToast(`Bölüm ${idx + 1} → ${res.code} · ${res.name}.`);
+  return true;
+}
 function handleSegKey(e, card, m) {
   const tag = (e.target.tagName || '').toLowerCase();
   const typing = tag === 'textarea' || tag === 'input' || tag === 'select';
@@ -6458,6 +6579,13 @@ function handleSegKey(e, card, m) {
   if ((e.ctrlKey || e.metaKey) && !e.altKey && (e.key === 'z' || e.key === 'Z') && !typing) {
     e.preventDefault();
     undoLast();
+    return true;
+  }
+  // Alt+1…9 — aktif bölüme o sıradaki konuşmacıyı ata (v2.263). Karar
+  // tuşlarından (1…5) AYRIDIR: Alt basılıyken metin alanında da çalışmaz.
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !typing && /^[1-9]$/.test(e.key)) {
+    e.preventDefault();
+    assignSpeakerHotkey(m, Number(e.key) - 1);
     return true;
   }
   if (e.ctrlKey || e.metaKey || e.altKey) return false;
@@ -7006,6 +7134,12 @@ function ensureSegStopListener(player) {
       }
       player.pause();
       st.stopAt = null;
+      // Konuşmacı dinleme kuyruğu (v2.263): sıradaki bölüme geçer. Kuyruk
+      // işi devraldıysa "durdu" durumuna geçilmez.
+      if (st.materialId) {
+        const mmq = currentCase()?.materials.find((x) => x.id === st.materialId);
+        if (mmq && advanceSpeakerQueue(mmq, player)) return;
+      }
       segPlayback.playing = false;
       segPlayback.atEnd = true;
       refreshPlayButtons();
@@ -7572,12 +7706,17 @@ function hideKaraoke(m) {
   const wrap = document.querySelector(`#seg-detail-${CSS.escape(m.id)} .sd-ta-wrap`);
   clearHighlightLayer(wrap);
 }
-function playSegmentRange(card, m, s, index, { restart = false } = {}) {
+function playSegmentRange(card, m, s, index, { restart = false, seconds = 0 } = {}) {
   const player = card.querySelector('audio');
   if (!player) return;
+  // Elle çalma konuşmacı kuyruğunu İPTAL eder (v2.263); kuyruk kendi geçişini
+  // restart:true ile yapar, böylece kendini iptal etmez.
+  if (!restart) stopSpeakerQueue();
   resumeAudioGraph(m);
   const start = secondsFromTimecode(s.start);
-  const end = secondsFromTimecode(s.end);
+  const endFull = secondsFromTimecode(s.end);
+  // Örnek dinleme: en çok `seconds` saniye (bölüm sonunu aşmaz).
+  const end = seconds > 0 ? Math.min(endFull, start + seconds) : endFull;
   ensureSegStopListener(player);
   const same = segPlayback.materialId === m.id && segPlayback.index === index;
   player.playbackRate = m.playbackRate || 1;
@@ -7627,6 +7766,7 @@ function playSegmentRange(card, m, s, index, { restart = false } = {}) {
 }
 // Durdur: çalmayı keser ve bölüm başına sarar.
 function stopSegmentPlayback(m) {
+  stopSpeakerQueue();
   const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
   const player = card?.querySelector('audio');
   if (!player) return;
@@ -15118,6 +15258,32 @@ function setupEvents() {
       renderOverview();
       if ($('#view-report').classList.contains('active')) renderReport();
       showToast(`Konuşmacı silindi${cleared ? `; ${cleared} bölümün ataması kaldırıldı` : ''}.`);
+    } else if (b.dataset.sampleSpk !== undefined) {
+      // v2.263 — kimliği kulakla doğrula: konuşmacının İLK bölümünden ≤3 sn.
+      const [mid, spid] = String(b.dataset.sampleSpk).split('|');
+      const m = c.materials.find((x) => x.id === mid);
+      const sp = m && (m.speakers || []).find((x) => x.id === spid);
+      const card = b.closest('.audio-card');
+      if (!m || !sp || !card) return;
+      const idxs = speakerQueueIndexes(m, sp);
+      if (!idxs.length) {
+        showToast('Bu konuşmacıya atanmış bölüm yok.');
+        return;
+      }
+      stopSpeakerQueue();
+      playSegmentRange(card, m, m.segments[idxs[0]], idxs[0], { restart: true, seconds: 3 });
+    } else if (b.dataset.listenSpk !== undefined) {
+      // v2.263 — konuşmacının tüm bölümlerini sırayla dinle (oturumluk kuyruk).
+      const [mid, spid] = String(b.dataset.listenSpk).split('|');
+      const m = c.materials.find((x) => x.id === mid);
+      const sp = m && (m.speakers || []).find((x) => x.id === spid);
+      if (!m || !sp) return;
+      const res = startSpeakerQueue(m, sp);
+      showToast(
+        res.ok
+          ? `${res.code ? res.code + ' · ' : ''}${sp.name}: ${res.count} bölüm sırayla dinlenecek (⏹ veya elle çalma iptal eder).`
+          : 'Bu konuşmacıya atanmış bölüm yok.'
+      );
     } else if (b.dataset.fixSpkCodes !== undefined) {
       // v2.262 — kod çakışmasını kullanıcı ONAYIYLA düzelt. Sessiz yeniden
       // numaralama yok: hangi kodun taşındığı söylenir, geri alınabilir ve
@@ -15546,7 +15712,11 @@ function setupEvents() {
             '"Kontrol bekliyor"a döndü. Metni dinleyip yeniden onaylayın.'
         );
       }
-    } else if (el.dataset.key === 'speaker') s.speaker = el.value;
+    } else if (el.dataset.key === 'speaker') {
+      // TEK KAPI (v2.263): ad + kimlik birlikte yazılır. Yalnız ad yazılsaydı
+      // birleştirme/eşleştirme ada bağlı kalırdı.
+      setSegmentSpeakerByName(m, s, el.value);
+    }
     else if (el.dataset.key === 'start' || el.dataset.key === 'end') {
       // ZAMAN ALANI (v2.97): yazarken kayda YAZILMAZ. Yarım yazılmış
       // "00:00:0" gibi değer kayda girerse rapor bozulur. Odak kaybında
@@ -17129,6 +17299,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.263': {
+    title: 'Konuşmacı atama hızlandı: Alt+1…9 · örnek dinle · tümünü dinle',
+    body:
+      'Dinlerken Alt+1…9 ile aktif bölüme o sıradaki konuşmacıyı atarsınız (S1, S2…). Atama adı ve ' +
+      'kimliği birlikte yazar; kontrol durumunu değiştirmez. Konuşmacı kartında "▶ Örnek dinle" ilk ' +
+      'bölümden en çok 3 saniye çalar, "▶ Tüm bölümlerini dinle" o konuşmacının bölümlerini sırayla ' +
+      'çalar (elle çalma veya ⏹ iptal eder). Kartta bölüm sayısı, toplam süre ve ilk–son duyulma görünür.'
+  },
   '2.262': {
     title: 'Konuşmacı kodu artık salt-okunur; çakışma engelleniyor',
     body:

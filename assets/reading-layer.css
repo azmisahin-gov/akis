@@ -3715,3 +3715,10 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   font-size: var(--fs-xs);
   letter-spacing: .4px;
 }
+/* v2.263 — Konuşmacı kartı hızlı işlemleri (örnek dinle / tümünü dinle). */
+.spk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 4px;
+}

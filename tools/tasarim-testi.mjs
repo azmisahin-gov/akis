@@ -2030,5 +2030,18 @@ console.log('\n[2ch] Konuşmacı kodu güvenliği (v2.262)');
   check('kod stili token kullanır', /\.spk-code\s*\{[^}]*var\(--surface-/.test(layer));
 }
 
+
+console.log('\n[2ci] Konuşmacı atama hızı (v2.263)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('örnek dinle düğmesi kartta', /data-sample-spk=/.test(js));
+  check('tüm bölümleri dinle düğmesi kartta', /data-listen-spk=/.test(js));
+  check('kart istatistiği (süre + ilk/son)', /fmtShort\(stat\.totalSec\)/.test(js) && /stat\.first/.test(js));
+  check('hızlı işlem satırı sarar (kırpma yok)', /\.spk-actions\s*\{[^}]*flex-wrap:\s*wrap/.test(layer));
+  check('elle çalma kuyruğu iptal eder', /if \(!restart\) stopSpeakerQueue\(\)/.test(js));
+  check('durdur kuyruğu iptal eder', /function stopSegmentPlayback\(m\) \{\s*stopSpeakerQueue\(\)/.test(js));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

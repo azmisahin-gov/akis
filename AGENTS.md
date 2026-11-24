@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.262.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.263.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6046,3 +6046,55 @@ kime ait olduğu okunamıyordu.
 Ses görünümü + panel (kod girişi **0**, rozet `S1`,`S1`); düzelt → `S1, S2`, toast,
 günlük `speaker-code-fix: S1→S2 (B)`; **Ctrl+Z → `S1, S1`**; uyarı/hazırlık maddesi
 kayboldu; kırpılma 0; JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.263) — Konuşmacı atama hızı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.263** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1637 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Sıradaki: tutarlılık denetimi + "doğrulandı" kilidi (v2.264), rapor tablosu (v2.265) |
+
+### Yapılan
+
+- **Alt+1…9** → aktif bölüme o sıradaki konuşmacı atanır (`assignSpeakerHotkey`).
+  Karar tuşlarından (1…5) ayrıdır; metin alanında çalışmaz; onay durumunu değiştirmez.
+- **`setSegmentSpeakerByName` TEK KAPI**: adı ve `speakerId`'yi birlikte yazar.
+  Bölüm detayındaki seçim de buradan geçer (eskiden yalnız ad yazılıyordu).
+- `assignSpeakerByIndex`, `speakerIndexList` (yalnız etiketli kişiler),
+  `speakerQueueIndexes`, `speakerStats` — saf, test edilir.
+- Konuşmacı kartı: **▶ Örnek dinle (≤3 sn)** · **▶ Tüm bölümlerini dinle**
+  (oturumluk `spkQueue`) · **bölüm sayısı · toplam süre · ilk–son duyulma**.
+- `playSegmentRange(..., {seconds})` bitişi `min(bölüm sonu, başlangıç+n)` yapar.
+- Kuyruk iptal noktaları: elle çalma (`restart:false`), ⏹ (`stopSegmentPlayback`),
+  ana oynat (`playWholeRecording`). Kuyruk kendi geçişini `restart:true` ile yapar.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Atama tek kapıdan:** `setSegmentSpeakerByName` (ad + kimlik). Doğrudan
+   `s.speaker = ...` yazmayın; kimlik boş kalır ve ada bağımlılık geri gelir.
+2. **Kuyruk oturumluktur**, şemaya yazılmaz. Yeni bir çalma yolu eklerseniz
+   `playSegmentRange`'i `restart:true` ile çağırın (kuyruğu iptal etmesin).
+3. **Adsız konuşmacıya atama yok**: raporda "S1 · " boş görünürdü.
+4. Örnek dinleme bölüm sonunu AŞMAZ (`seconds` sınırı).
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV, 3 elle bölüm, TEK sekme)
+
+| Adım | Sonuç |
+|---|---|
+| Alt+1 / Alt+2 / Alt+1 | rozetler **S1, S2, S1**; toast "Bölüm 3 → S1 · Konuşmacı 1." |
+| Kart istatistiği | "2 bölüm · 00:10 · 00:00:00.000–00:00:10.000" |
+| Tümünü dinle | 0–5 çaldı, **S2'yi atladı**, 10–15'e geçti |
+| ⏹ | durdu, aktif bölüm başına döndü |
+| Örnek dinle | 0–3 sn, **t=3,1'de durdu** |
+| Kırpılma / taşma / JS hatası | **0 / yok / 0** |
+
+### ÖLÇÜM TUZAĞI (tekrar etmesin)
+
+İki sekme açıkken **sekme koruması** devreye girer ("değişiklikler KAYDEDİLMİYOR")
+ve klavye/DB ölçümleri yanıltıcı olur. Ölçümden önce **tek sekme** kullanın.
+Ayrıca klavye olayını `document.body`'ye göndermek YETMEZ: `onGlobalSegKey`
+kartı `e.target.closest('.audio-card')` ile bulur; olayı **bölüm köküne**
+(`[id^="segments-"]`) gönderin (gerçek kullanımda odak kartın içindedir).

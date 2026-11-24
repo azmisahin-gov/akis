@@ -149,6 +149,7 @@ const EXPOSE = [
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
+  'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -4838,6 +4839,83 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kod salt-okunur gösterim', /class="spk-code"/.test(js), true);
   eq('çakışma düzeltme düğmesi', /data-fix-spk-codes=/.test(js), true);
   eq('panelde çakışma uyarısı', /speakerCodeIssues\(c\)/.test(js), true);
+}
+
+
+// [108] v2.263 — Konuşmacı atama hızı: TEK KAPI + klavye sırası + istatistik.
+// Atama hem ADI hem KİMLİĞİ yazar; kimlik olmadan birleştirme/eşleştirme
+// ada bağlı kalır ve ad değişince bağ kopar.
+{
+  console.log('[108] Konuşmacı atama hızı (v2.263)');
+  const mk = () => ({
+    id: 'm1',
+    name: 'a.wav',
+    speakers: [
+      { id: 'a', code: 'S1', name: 'A', label: 'A' },
+      { id: 'b', code: 'S2', name: 'B', label: 'B' }
+    ],
+    segments: [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: '', speakerId: '' },
+      { id: 'g2', start: '00:00:05.000', end: '00:00:09.000', speaker: 'A', speakerId: 'a' },
+      { id: 'g3', start: '00:00:09.000', end: '00:00:12.000', speaker: 'B', speakerId: 'b' }
+    ]
+  });
+  const m = mk();
+  eq('atanabilir liste (adı olanlar)', T.speakerIndexList(m).map((x) => x.code).join(','), 'S1,S2');
+  const r = T.assignSpeakerByIndex(m, 0, 1);
+  eq('atama ok', r.ok, true);
+  eq('atanan kod', r.code, 'S2');
+  eq('atama adı yazar', m.segments[0].speaker, 'B');
+  eq('atama kimliği yazar', m.segments[0].speakerId, 'b');
+  eq('aynı atama aynı=true', T.assignSpeakerByIndex(m, 0, 1).same, true);
+  eq('konuşmacı aralık dışı → ok=false', T.assignSpeakerByIndex(m, 0, 5).ok, false);
+  eq('bölüm aralık dışı → ok=false', T.assignSpeakerByIndex(m, 9, 0).ok, false);
+  eq('adsız konuşmacı atanamaz', T.speakerIndexList({ speakers: [{ id: 'x', code: 'S1', name: '' }] }).length, 0);
+  eq('atanabilir liste boşsa ok=false', T.assignSpeakerByIndex({ speakers: [], segments: [{ id: 'g' }] }, 0, 0).ok, false);
+
+  // Kalabalıkta sıra: B kimliğine göre bölümler
+  eq('kimliğe göre bölümler', T.speakerQueueIndexes(m, { id: 'b', name: 'B' }).join(','), '0,2');
+  eq('ada göre bölümler', T.speakerQueueIndexes(m, { id: '', name: 'A' }).join(','), '1');
+  eq('boş konuşmacı → boş', T.speakerQueueIndexes(m, { id: '', name: '' }).length, 0);
+
+  const st = T.speakerStats(m, { id: 'b', name: 'B' });
+  eq('istatistik: bölüm sayısı', st.count, 2);
+  eq('istatistik: toplam süre', st.totalSec, 8);
+  eq('istatistik: ilk duyulma', st.first, '00:00:00.000');
+  eq('istatistik: son duyulma', st.last, '00:00:12.000');
+  const none = T.speakerStats(m, { id: '', name: 'yok' });
+  eq('atanmamış: sayı 0', none.count, 0);
+  eq('atanmamış: süre 0', none.totalSec, 0);
+  eq('atanmamış: ilk boş', none.first, '');
+
+  // Ad ile yazma: bilinmeyen ad kimliği TEMİZLER (dangling referans bırakmaz)
+  const m2 = mk();
+  const sp = T.setSegmentSpeakerByName(m2, m2.segments[0], 'A');
+  eq('ad ile atama kimliği bulur', m2.segments[0].speakerId, 'a');
+  eq('ad ile atama kaydı döndürür', sp && sp.code, 'S1');
+  T.setSegmentSpeakerByName(m2, m2.segments[0], 'KayıtlıDeğil');
+  eq('bilinmeyen ad kimliği temizler', m2.segments[0].speakerId, '');
+  eq('bilinmeyen ad metni korunur', m2.segments[0].speaker, 'KayıtlıDeğil');
+  T.setSegmentSpeakerByName(m2, m2.segments[0], '');
+  eq('boş ad → kimlik boş', m2.segments[0].speakerId, '');
+}
+
+// [109] v2.263 — Hız yolları kaynakta: Alt+sayı, dinle, örnek dinle, kuyruk.
+{
+  console.log('[109] Konuşmacı hız yolları (v2.263)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const schema = fs.readFileSync(path.join(ROOT, 'assets/schema.js'), 'utf8');
+  eq(
+    'Alt+sayı atama işleyicisi',
+    /e\.altKey[\s\S]{0,200}assignSpeakerHotkey\(m, Number\(e\.key\) - 1\)/.test(js) &&
+      /function assignSpeakerHotkey[\s\S]{0,300}assignSpeakerByIndex\(/.test(js),
+    true
+  );
+  eq('konuşmacıyı dinle düğmesi', /data-listen-spk=/.test(js), true);
+  eq('örnek dinle düğmesi', /data-sample-spk=/.test(js), true);
+  eq('dinleme kuyruğu var', /function startSpeakerQueue\(/.test(js) && /function advanceSpeakerQueue\(/.test(js), true);
+  eq('kuyruk oturumluk (şemada yok)', /spkQueue/.test(js) && !/spkQueue/.test(schema), true);
+  eq('elle dinleme kuyruğu iptal eder', (js.match(/stopSpeakerQueue\(\)/g) || []).length >= 3, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
