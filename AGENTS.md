@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.272.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.273.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6381,3 +6381,46 @@ hiç oluşmuyordu. Satır yoksa bölüm çizilmez (doğru), ama **nedeni görün
 | ≤600 px | satır gizli, "Gözlem (N)" paneli |
 | Rapor | gözlem metni + EK-5 tanımları var |
 | JS hatası | 0 |
+
+## YENİ OTURUM DEVRİ (v2.273) — Kayıt bazında konuşmacı tablosu
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.273** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1792 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Gömme modeli (veri bekliyor) |
+
+### Yapılan
+
+- **1.1'de her kayıt için konuşmacı TABLOSU** (düz satır kaldırıldı):
+  `KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON`; kişi bağı varsa
+  **DOSYALAR ARASI KİŞİ** sütunu eklenir; bağ yoksa sütun çizilmez.
+- Tek kaynak `materialSpeakerRows(c, m)` → `{ headers, rows, hasPerson }`.
+- **Yinelenen S/K cümlesi** `speakerIntro`dan çıkarıldı (tek paragraf: `speakerCodeNote`).
+- Okuma metni **kısa satırı** korur (tablo orada akışı bozar).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Tabloda süre/aralık `speakerStats`ten** gelir; ayrı hesap yazmayın.
+2. **Boş sütun çizilmez**: kişi bağı yoksa "DOSYALAR ARASI KİŞİ" eklenmez.
+3. **Aynı bilgi tek yerde**: S/K açıklaması yalnız `speakerCodeNote`;
+   `speakerIntro` eşleştirme cümlesini TEKRARLAMAZ (test [2cq]/Senaryo 36).
+4. Raporda kişi etiketi **tablo başına bir kez** görünür; kayıt sayısı kadar çoğalmaz.
+
+### Ölçüm (gerçek Chromium + CDP, `01-dikey.mp4`)
+
+| Ölçüm | Sonuç |
+|---|---|
+| 1.1 tablo | `KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON` + 2 satır |
+| Kırpılan tablo (1440/900/600) | 0 |
+| S/K cümlesi | 1 |
+| JS hatası | 0 |
+
+### DİKKAT — kök dizine medya dosyası koymayın
+
+Kullanıcı `01-dikey.mp4` dosyasını **depo köküne** koydu. Kök dizin GitHub Pages'te
+**herkese açık** yayınlanır; gerçek dava kaydı olabilir. Bu dosya **commit edilmedi**.
+Kural: gerçek/olasi dava medyası depoya (özellikle köke) konmaz; gerekirse
+`sample_data/` altında ve **kurgusal** olarak tutulur ya da `.gitignore`'a eklenir.

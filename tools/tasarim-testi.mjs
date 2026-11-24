@@ -2141,5 +2141,15 @@ console.log('\n[2cp] Yeni gözlem bayrakları tek kaynaktan (v2.272)');
   check('index.html sabit gözlem etiketi taşımaz', !/kesinti \/ kopukluk/.test(html) && !/oda akustiği/.test(html));
 }
 
+
+console.log('\n[2cq] Kayıt bazında konuşmacı tablosu (v2.273)');
+{
+  const js = read('assets/app.js');
+  check('tablo üreteci', /function materialSpeakerRows\(c, m\)/.test(js));
+  check('üç çıktıda kullanılır', (js.match(/materialSpeakerRows\(c, m\)/g) || []).length >= 3);
+  check('kişi sütunu koşullu', /if \(hasPerson\) headers\.push\('DOSYALAR ARASI KİŞİ'\)/.test(js));
+  check('S/K açıklaması tek paragrafta', !/Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir/.test(js));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

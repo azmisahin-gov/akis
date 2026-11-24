@@ -516,13 +516,13 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   checkShared('iki kayıt tek satırda (B)', 'b.wav: S1 · 1 bölüm', H, U, D);
   checkShared('uzman eşleştirmesi notu', 'uzman eşleştirmesi', H, U, D);
   checkShared('konuşmacı açıklaması', REPORT_TEXT.speakerIntro, H, U, D);
-  // Aynı kişi KAYIT BAŞINA satıra düşmemeli. v2.268'den beri iki tablo var
-  // (konuşmacı künyesi + süre tablosu); bu yüzden etiket her çıktıda TAM 2 kez
-  // görünür (her tabloda bir kez), kayıt sayısı kadar değil.
+  // Kişi etiketi TABLO BAŞINA bir kez görünür: künye (1) + süre (1) +
+  // kayıt bazında konuşmacı tablosu (v2.273; her kayıt için 1 → 2 kayıt = 2).
+  // Toplam 4. Kural: aynı kişi tek bir tabloda KAYIT SAYISI kadar çoğalmaz.
   const count = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
-  check('kişi kayıt başına çoğalmaz (HTML)', count(H) === 2, String(count(H)));
-  check('kişi kayıt başına çoğalmaz (UDF)', count(U) === 2, String(count(U)));
-  check('kişi kayıt başına çoğalmaz (DOCX)', count(D) === 2, String(count(D)));
+  check('kişi tablo başına bir kez (HTML)', count(H) === 4, String(count(H)));
+  check('kişi tablo başına bir kez (UDF)', count(U) === 4, String(count(U)));
+  check('kişi tablo başına bir kez (DOCX)', count(D) === 4, String(count(D)));
 }
 
 // Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
@@ -1264,6 +1264,49 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   for (const d of __schemaMod.OBS_DEFS) checkShared(`gözlem: ${d.key}`, d.label, H, U, D);
   // Okuma metninde kayıt konuşmacı satırı
   checkShared('okuma metni kayıt satırı', 'Bu kaydın konuşmacıları: S1 · Kiracı (2 bölüm)', H, U, D);
+}
+
+
+// Senaryo 36: kayıt bazında KONUŞMACI TABLOSU (v2.273). Düz metin yerine tablo;
+// "kim konuştu" tek bakışta görünür. Kişi sütunu yalnız bağ varsa eklenir.
+{
+  console.log('\n[Senaryo 36] kayıt bazında konuşmacı tablosu (v2.273)');
+  const c = withMaterial();
+  c.materials[0].speakers = [
+    { id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' },
+    { id: 'sp2', code: 'S2', name: 'Ev sahibi', label: 'Ev sahibi', role: 'defendant', gender: 'unspecified' }
+  ];
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' },
+    { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Ev sahibi', speakerId: 'sp2', text: 'iki', review: 'approved' }
+  ];
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  for (const h of ['KOD', 'KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON']) checkShared(`kayıt tablosu sütunu ${h}`, h, H, U, D);
+  checkShared('kayıt tablosu S1 satırı', 'S1', H, U, D);
+  checkShared('kayıt tablosu etiket', 'Ev sahibi', H, U, D);
+  // Kişi bağı YOKKEN "dosyalar arası kişi" sütunu çizilmez.
+  check(
+    'bağ yokken kişi sütunu yok',
+    !H.includes('DOSYALAR ARASI KİŞİ') && !U.includes('DOSYALAR ARASI KİŞİ') && !D.includes('DOSYALAR ARASI KİŞİ')
+  );
+
+  // Bağ VARSA sütun eklenir ve kişi kodu yazılır.
+  const c2 = withMaterial();
+  c2.speakers = [{ id: 'p1', code: 'K1', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+  c2.materials[0].speakers = [
+    { id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified', personId: 'p1' }
+  ];
+  c2.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' }
+  ];
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  checkShared('bağ varsa kişi sütunu', 'DOSYALAR ARASI KİŞİ', H2, U2, D2);
+
+  // S/K açıklaması TEK paragraf: eşleştirme cümlesi bir kez.
+  const one = (t) => (String(t).match(/otomatik kimlik tespiti değildir/g) || []).length;
+  check('S/K açıklaması tekrar etmez (H)', one(H) === 1, String(one(H)));
+  check('S/K açıklaması tekrar etmez (U)', one(U) === 1, String(one(U)));
+  check('S/K açıklaması tekrar etmez (D)', one(D) === 1, String(one(D)));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

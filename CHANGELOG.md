@@ -6,12 +6,63 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.272.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.273.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.273 — Her kaydın konuşmacıları TABLO olarak
+
+Kullanıcı: *"Madem her kaydın konuşmacılarını da yazıyoruz, komple tablo olarak sunalım;
+mahkemedeki hâkim incelerken 'bu ses kaydında kim konuştu' anlasın."*
+
+**Önce (v2.272):** 1.1'de her kayıt için **tek satır** yazı vardı:
+`Bu kaydın konuşmacıları: S1 · Konuşmacı 1 (5 bölüm) · S2 · …` — hâkim için okunur ama
+**ölçülemez**; süre/aralık yok, satır uzadıkça taranamıyor.
+
+### KULLANICI NE GÖRECEK
+
+Her kaydın altında **tablo**:
+
+| KOD | KONUŞMACI | BÖLÜM | SÜRE | İLK – SON |
+|---|---|---|---|---|
+| S1 | Konuşmacı 1 | 5 bölüm | 00:06 | 00:00:00.000 – 00:00:14.420 |
+| S2 | Konuşmacı 2 | 3 bölüm | 00:04 | 00:00:03.700 – 00:00:16.860 |
+
+- Dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (`K1 · Kiracı`);
+  bağ **yoksa sütun çizilmez** (boş sütun gürültüdür).
+- Konuşmacı yoksa tablo çizilmez.
+- **Yinelenen S/K cümlesi kaldırıldı:** `speakerIntro` içindeki "Birden çok kayıtta aynı
+  kişi… uzman kanaatidir…" cümlesi silindi; açıklama tek paragrafta (`speakerCodeNote`).
+  Rapor başına "otomatik kimlik tespiti değildir" **1 kez** geçer.
+
+### Teknik
+
+- `materialSpeakerRows(c, m)` — saf üretici: `{ headers, rows, hasPerson }`.
+  Sıra `speakerLegendItems` (koda göre); süre/aralık `speakerStats`ten (tek kaynak).
+- Üç çıktı (HTML/DOCX/UDF) **aynı** tabloyu basar.
+- Okuma metni (ayrı bölüm) **kısa satırı** korur: orada tablo akışı bozar.
+
+### Koruyan testler
+
+- `birim` **[119]** (12): sütunlar, koda göre sıra, bölüm/süre/aralık, kişi sütununun
+  koşullu eklenmesi, bağsız satırda `—`, konuşmacı yoksa satır yok, üç çıktı kullanımı.
+- `rapor` **Senaryo 36** (13): beş sütun + etiket + **bağ yokken sütun yok / bağ varken var**
+  + **S/K cümlesi rapor başına 1 kez**.
+- `rapor` 13/33 güncellendi (kişi etiketi artık 3 tabloda birer kez → 4).
+- `tasarim` **[2cq]** (4).
+
+### Ölçüm (gerçek Chromium + CDP, `01-dikey.mp4`)
+
+| Ölçüm | Sonuç |
+|---|---|
+| 1.1 tablo başlıkları | `KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON` |
+| Satırlar | `S1 / 1 bölüm / 00:05 / 00:00:00.000 – 00:00:05.000` · `S2 / 2 bölüm / 00:10 / …15.000` |
+| Kırpılan tablo (1440/900/600) | **0** |
+| S/K cümlesi sayısı | **1** |
+| JS hatası | **0** |
 
 ## v2.272 — İki yeni gözlem işareti: yankı ve kesinti
 

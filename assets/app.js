@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.272';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.272';
+} from './schema.js?v=2.273';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.273';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.272';
+const APP_VERSION = '2.273';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -225,8 +225,10 @@ const REPORT_TEXT = {
   noAttachments: 'Bu raporla ek sunulmamıştır.',
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
+  // v2.273 — S/K ve dosyalar arası eşleştirme açıklaması TEK paragrafta
+  // (`speakerCodeNote`). Burada TEKRARLANMAZ (aynı bilgi iki yerde gösterilmez).
   speakerIntro:
-    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
@@ -3660,6 +3662,34 @@ function refreshSpeakerLegend(m) {
   const items = speakerLegendItems(m);
   el.hidden = !items.length;
   el.innerHTML = speakerLegendHtml(m);
+}
+// KAYIT BAZINDA KONUŞMACI TABLOSU (v2.273). Mahkeme dosyayı incelerken
+// "bu kayıtta kim konuştu" sorusunu TEK BAKIŞTA görsün diye düz metin yerine
+// tablo verilir. Sütunlar sabit; "dosyalar arası kişi" sütunu YALNIZ en az bir
+// konuşmacı bir kişiye bağlıysa eklenir (boş sütun gürültüdür).
+function materialSpeakerRows(c, m) {
+  const items = speakerLegendItems(m);
+  const spById = new Map(((m && m.speakers) || []).map((sp) => [sp.id, sp]));
+  const persons = new Map(((c && c.speakers) || []).map((p) => [p.id, p]));
+  let hasPerson = false;
+  const rows = items.map((it) => {
+    const sp = spById.get(it.id);
+    const st = speakerStats(m, sp);
+    const person = sp && sp.personId ? persons.get(sp.personId) : null;
+    if (person) hasPerson = true;
+    return {
+      code: it.code || '—',
+      name: it.name || '—',
+      count: `${it.count} bölüm`,
+      total: st.totalSec ? fmtShort(st.totalSec) : '—',
+      span: st.first && st.last ? tcRange(st.first, st.last) : '—',
+      person: person ? `${person.code ? person.code + ' · ' : ''}${person.label || person.name || '—'}` : '—'
+    };
+  });
+  const headers = ['KOD', 'KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON'];
+  if (hasPerson) headers.push('DOSYALAR ARASI KİŞİ');
+  const cells = rows.map((r) => [r.code, r.name, r.count, r.total, r.span].concat(hasPerson ? [r.person] : []));
+  return { headers, rows: cells, hasPerson };
 }
 // OTURUMLUK konuşmacı dinleme kuyruğu (kayda YAZILMAZ).
 let spkQueue = { on: false, materialId: null, speakerId: '', indexes: [], pos: 0 };
@@ -12956,8 +12986,14 @@ function renderReport() {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
           out += `<h4>${n5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
-          const spkLine = materialSpeakerLine(m);
-          if (spkLine) out += `<p class="paper-muted">${esc(spkLine)}</p>`;
+          {
+            const spkTable = materialSpeakerRows(c, m);
+            if (spkTable.rows.length) {
+              out += `<table class="paper-table"><thead><tr>${spkTable.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkTable.rows
+                .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
+                .join('')}</tbody></table>`;
+            }
+          }
           if (m.hallucinationWarning)
             out += `<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;
           if (m.languageWarning)
@@ -13408,8 +13444,8 @@ function docxXml(c) {
           { color: '6F8295', size: 17 }
         );
         {
-          const spkLine = materialSpeakerLine(m);
-          if (spkLine) out += wP(spkLine, { color: '6F8295', size: 17 });
+          const spkTable = materialSpeakerRows(c, m);
+          if (spkTable.rows.length) out += wTable([[...spkTable.headers], ...spkTable.rows], { header: true });
         }
         if (m.hallucinationWarning)
           out += wP(`${REPORT_TEXT.evidenceWarningPrefix} ${m.hallucinationWarning}`, { color: '9A6B2D', size: 17 });
@@ -13969,8 +14005,11 @@ async function makeUdf() {
             )
           );
           {
-            const spkLine = materialSpeakerLine(m);
-            if (spkLine) el.push(paragraph(spkLine, { size: 9, color: 'muted', after: 3 }));
+            const spkTable = materialSpeakerRows(c, m);
+            if (spkTable.rows.length) {
+              const w = spkTable.headers.map(() => Math.floor(510 / spkTable.headers.length));
+              el.push(table([[...spkTable.headers], ...spkTable.rows], w, { header: true }));
+            }
           }
           if (m.hallucinationWarning)
             el.push(
@@ -17895,6 +17934,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.273': {
+    title: 'Her kaydın konuşmacıları artık TABLO (kim konuştu tek bakışta)',
+    body:
+      'Raporun "Kayıt bazında bulgular" bölümünde her kayıt için konuşmacı TABLOSU verilir: ' +
+      'KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON (dosyalar arası kişi bağlıysa ayrıca KİŞİ sütunu). ' +
+      'Böylece mahkeme dosyayı incelerken o kayıtta kimin konuştuğunu düz metinden değil tablodan görür. ' +
+      'Ayrıca Konuşmacılar bölümündeki yinelenen S/K cümlesi kaldırıldı: açıklama tek paragraf.'
+  },
   '2.272': {
     title: 'İki yeni gözlem işareti: yankı ve kesinti',
     body:

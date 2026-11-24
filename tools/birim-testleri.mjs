@@ -150,7 +150,7 @@ const EXPOSE = [
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
-  'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups',
+  'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups', 'materialSpeakerRows',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
@@ -5323,6 +5323,52 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Arayüzde etiket KOPYASI yok: bayrak metinleri yalnız şemada.
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('app.js te yankı etiketi kopyası yok', /yankı \/ oda akustiği/.test(js), false);
+}
+
+
+// [119] v2.273 — Kayıt bazında konuşmacı TABLOSU (mahkeme için tek bakış).
+{
+  console.log('[119] Kayıt konuşmacı tablosu (v2.273)');
+  const m = {
+    id: 'm1',
+    name: 'a.wav',
+    speakers: [
+      { id: 'b', code: 'S2', name: 'Ev sahibi', label: 'Ev sahibi' },
+      { id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı' }
+    ],
+    segments: [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'a' },
+      { id: 'g2', start: '00:00:09.000', end: '00:00:12.000', speaker: 'Ev sahibi', speakerId: 'b' },
+      { id: 'g3', start: '00:00:20.000', end: '00:00:24.000', speaker: 'Kiracı', speakerId: 'a' }
+    ]
+  };
+  const c = { id: 'c1', materials: [m], speakers: [] };
+  const t = T.materialSpeakerRows(c, m);
+  eq('beş sütun (kişi bağı yok)', t.headers.join('|'), 'KOD|KONUŞMACI|BÖLÜM|SÜRE|İLK – SON');
+  eq('kişi bayrağı yok', t.hasPerson, false);
+  eq('iki satır', t.rows.length, 2);
+  eq('koda göre sıralı', t.rows.map((r) => r[0]).join(','), 'S1,S2');
+  eq('S1 bölüm sayısı', t.rows[0][2], '2 bölüm');
+  eq('S1 toplam süre', t.rows[0][3], '00:09');
+  eq('S1 ilk–son', t.rows[0][4], '00:00:00.000 – 00:00:24.000');
+  eq('S2 süre', t.rows[1][3], '00:03');
+
+  // Kişi bağı varsa ALTINCI sütun eklenir ve kişi kodu yazılır.
+  const m2 = JSON.parse(JSON.stringify(m));
+  m2.speakers[0].personId = 'p1';
+  const c2 = { id: 'c2', materials: [m2], speakers: [{ id: 'p1', code: 'K1', label: 'Kiracı' }] };
+  const t2 = T.materialSpeakerRows(c2, m2);
+  eq('altı sütun (bağ var)', t2.headers.length, 6);
+  eq('kişi sütunu adı', t2.headers[5], 'DOSYALAR ARASI KİŞİ');
+  eq('kişi hücresi', t2.rows.find((r) => r[0] === 'S2')[5], 'K1 · Kiracı');
+  eq('bağsız satır tire', t2.rows.find((r) => r[0] === 'S1')[5], '—');
+
+  // Konuşmacı yoksa tablo çizilmez (boş başlık yok).
+  const empty = T.materialSpeakerRows({ id: 'c', speakers: [] }, { id: 'm', speakers: [], segments: [] });
+  eq('konuşmacı yok → satır yok', empty.rows.length, 0);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('üç çıktı tabloyu kullanır', (js.match(/materialSpeakerRows\(c, m\)/g) || []).length >= 3, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

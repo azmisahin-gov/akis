@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.272.**
+yazılır. **Güncel sürüm: v2.273.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.273 — Kayıt bazında konuşmacı tablosu (TAMAMLANDI)
+
+- 1.1'de her kayıt için **tablo**: KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON.
+- Kişi bağı varsa **DOSYALAR ARASI KİŞİ** sütunu; yoksa çizilmez.
+- Yinelenen S/K cümlesi kaldırıldı (rapor başına 1 kez).
+- Tek kaynak: `materialSpeakerRows(c, m)`; okuma metni kısa satırı korur.
+- Koruyan: `birim` [119], `rapor` 36, `tasarim` [2cq].
 
 ## v2.272 — İki yeni gözlem işareti (TAMAMLANDI)
 
