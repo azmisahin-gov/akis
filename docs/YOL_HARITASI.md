@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.228.**
+yazılır. **Güncel sürüm: v2.229.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.229 — Rapor iskeleti: arama, kategori, yalnız açık (TAMAMLANDI)
+
+- İskelette **bölüm arama**, **kategori çipleri** (Kapak · Ana · Teknik · Beyan ·
+  Kapanış) ve **"Yalnız açık"** anahtarı. Yalnız görünürlüğü süzer; **rapor
+  sırası/içeriği değişmez**. Filtre oturumluktur.
+- Kategoriye göre **yeniden sıralama YOK** (çıktı sırasını bozardı).
+- Koruyan test: `birim [84]`, `tasarim [2bz]`, `surum` kimlikleri.
 
 ## v2.228 — Rapor çalışma alanı: Düzenle / Kontrol (TAMAMLANDI)
 

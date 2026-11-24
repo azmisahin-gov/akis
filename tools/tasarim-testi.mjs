@@ -1862,5 +1862,22 @@ console.log('\n[2by] Rapor çalışma modları + önem gruplu kontrol (v2.228)')
   check('mod punto tabanı ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(modeCss));
 }
 
+console.log('\n[2bz] Rapor iskeleti: arama + kategori + yalnız açık (v2.229)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('arama kutusu HTML\'de', /id="reportSectionSearch"/.test(html));
+  check('yalnız açık anahtarı HTML\'de', /id="reportOnlyOpen"/.test(html));
+  check('kategori çipleri HTML\'de', /id="reportSectionCats"/.test(html) && /data-rsec-cat="main"/.test(html));
+  check('kategori haritası + oturum durumu', /const REPORT_SECTION_CATEGORY = \{/.test(js) && /const reportOutlineState = \{/.test(js));
+  check('filtre fonksiyonu + kullanım', /function reportOutlineMatch\(/.test(js) && /reportOutlineMatch\(c, key/.test(js));
+  check('renderReportSections filtre uygular', /syncReportOutlineControls\(\);/.test(js) && /reportOutlineState\.cat/.test(js));
+  check('olay işleyicileri', /reportSectionSearch'\)\?\.addEventListener\('input'/.test(js) && /reportOnlyOpen'\)\?\.addEventListener\('change'/.test(js) && /reportSectionCats'\)\?\.addEventListener\('click'/.test(js));
+  const css = layer.slice(layer.indexOf('/* v2.229 — Rapor iskeleti'), layer.indexOf('/* Orta genişlik'));
+  check('iskelet filtre stilleri ham hex kullanmaz', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+  check('iskelet filtre punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

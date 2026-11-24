@@ -130,7 +130,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4253,6 +4253,18 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const groups = M.compareRevisionGroups({ a: 1 }, { a: 2 }, { a: 'A', b: 'B' });
   eq('compareRevisionGroups: değişen', groups.find((g) => g.key === 'a').changed, true);
   eq('compareRevisionGroups: aynı', groups.find((g) => g.key === 'b').changed, false);
+}
+
+// [84] Rapor iskeleti kategori haritası (v2.229) — filtre yalnız görünürlük.
+{
+  eq('reportSectionCategory tanımlı', typeof T.reportSectionCategory, 'function');
+  eq('kapak bölümü front', T.reportSectionCategory('cover'), 'front');
+  eq('s3 main', T.reportSectionCategory('s3'), 'main');
+  eq('reading main (5. içinde)', T.reportSectionCategory('reading'), 'main');
+  eq('origin tech', T.reportSectionCategory('origin'), 'tech');
+  eq('qc statement', T.reportSectionCategory('qc'), 'statement');
+  eq('signature closing', T.reportSectionCategory('signature'), 'closing');
+  eq('bilinmeyen bölüm tech', T.reportSectionCategory('bilinmeyen'), 'tech');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

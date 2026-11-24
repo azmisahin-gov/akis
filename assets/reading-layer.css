@@ -3367,6 +3367,32 @@ input::placeholder, textarea::placeholder {
 .ready-group-hint { margin: 2px 0 4px; font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.4; }
 .ready-blocking .ready-group-head b,
 .ready-blocking .ready-n { color: var(--gold); }
+/* v2.229 — Rapor iskeleti: arama + kategori + yalnız açık */
+.rs-tools { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; flex-wrap: wrap; }
+.rs-search {
+  flex: 1 1 120px;
+  min-width: 0;
+  font-size: var(--fs-2xs);
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+}
+.rs-onlyopen { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-2xs); color: var(--ink-3); white-space: nowrap; }
+.rsec-cats { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 8px; }
+.rsec-cat {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+  padding: 3px 8px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.rsec-cat[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.rsec-cat:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.rsec-empty { font-size: var(--fs-2xs); color: var(--ink-3); padding: 8px 2px; line-height: 1.45; }
 
 /* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
 @media (max-width: 1349px) {

@@ -6,12 +6,33 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.228.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.229.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.229 — Rapor iskeleti: arama, kategori filtresi, yalnız açık
+
+Uzun rapor iskeleti yönetilebilir hâle geldi.
+
+### KULLANICI NE GÖRECEK
+
+- **Bölüm arama** kutusu: yazdıkça liste süzülür (odak kaybolmaz).
+- **Kategori çipleri:** Tümü · Kapak · Ana · Teknik · Beyan · Kapanış.
+- **"Yalnız açık"** anahtarı: yalnız rapora giren bölümleri gösterir.
+- Bunlar yalnız **görünürlüğü** süzer; **rapor sırası ve içeriği değişmez**.
+  Sıra yine ↑↓ ile belirlenir. Filtreler oturumluktur; dosyaya yazılmaz.
+
+### Teknik
+
+- `REPORT_SECTION_CATEGORY` (kategori haritası), `reportOutlineState`
+  (oturumluk filtre), `reportOutlineMatch`, `syncReportOutlineControls`.
+- `renderReportSections` filtreyi uygular; arama kutusu statik HTML'de olduğu
+  için yeniden çizimde odak korunur. Kategoriye göre **yeniden sıralama
+  yapılmaz** (çıktı sırasını sessizce bozardı).
+- Test: `birim [84]` (kategori), `tasarim [2bz]`, `surum` kimlikleri.
 
 ## v2.228 — Rapor çalışma alanı: Düzenle / Kontrol modları ve önem gruplu kontrol
 

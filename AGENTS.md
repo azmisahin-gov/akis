@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.228.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.229.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,23 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.229) — Rapor iskeleti: arama + kategori + yalnız açık
+
+Uzun iskelet (28 bölüm + ekler) için **arama**, **kategori çipleri** ve
+**"Yalnız açık"** anahtarı eklendi.
+
+### DEĞİŞMEZ KURALLAR (v2.229)
+
+1. **Filtre yalnız GÖRÜNÜRLÜK.** Kategoriye göre **yeniden sıralama YOK**;
+   rapor sırası tek kaynak `case.report.layout.order` ve ↑↓ ile belirlenir.
+   Kategoriye göre sıralamak çıktı sırasını sessizce bozardı.
+2. `REPORT_SECTION_CATEGORY` yalnız filtre içindir; yeni bölüm eklerken
+   kategori yazın (yoksa `tech`).
+3. `reportOutlineState` **oturumluktur**, kayda yazılmaz.
+4. Arama kutusu statik HTML'de; yeniden çizimde odak korunur. Yalnız
+   `#reportSections` yeniden çizilir.
+5. Test: `birim [84]`, `tasarim [2bz]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.228) — Rapor çalışma modları + önem gruplu kontrol
 
