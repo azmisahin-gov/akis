@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.283.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.284.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.284 — Numaralandırma kullanıcıya bırakıldı; "Git" onarıldı
+
+**Kullanıcı:** *"Numara bilinçli yapıldıysa kaldıralım; raporu sıfırdan istediğim
+gibi tasarlayayım. İster numaralı, ister numarasız, ister A B C'li. Şablon/profil
+yapısı olmasın… Ayrıca Git düğmeleri işe yaramıyor; seçmediğim bölümlere işlem
+yapamıyor muyum?"*
+
+### Neden böyleydi? (dokümanlardaki dayanak)
+
+- 56.12 bölümleri **v2.220**, rapor profilleri (Yalın/Standart/Tam 56.12)
+  **v2.223**, numaranın boşluk bırakmaması **v2.228**, "ana bölümler numaralı,
+  alt bloklar numarasız" **v2.259** kararıdır (resmî şablona yakınlık için).
+  Ayrıntı ve serbest tasarıma geçiş planı: **`docs/RAPOR_SERBEST_TASARIM.md`**.
+
+### Bu sürümde
+
+- **Numaralar anahtarı** (rapor iskeletinin üstünde): kapatınca **tüm başlıklar
+  ve İÇİNDEKİLER numarasız**; açıkken ana bölümler 1…N, alt bloklar TOC'ta "–".
+  `case.report.numbering = 'auto' | 'none'` (varsayılan `auto`; eski kayıtlar
+  değişmez).
+- **Git onarıldı:** panel "Kayıt bilgileri"/"Analiz" sekmesindeyken tıklanınca
+  **Deşifre sekmesine geçilir**, bölüm açılır ve satıra odaklanılır
+  (`goToSegment`). Hem perde ("⚠ ses") hem gömme ("⚠ gömme") satırlarında geçerli.
+- **Kayıt altı blok etiketleri:** "Konuşmacılar (bu kayıt)" ve "Deşifre (zaman
+  damgalı)"; uzun açıklama bölüm başında **bir kez** (her dosyada yinelenmez).
+  Üç çıktıda da aynı.
+- Konuşmacı tabloları zaten **ayrı ayrı** seçilebilir: *Rapor alanları* →
+  **Konuşmacı tablosu (8) · Konuşmacı süreleri (6) · Kayıt konuşmacı tablosu (6)**.
+- Sütun **başlıklarını değiştirme**, A/B/C numaralandırma, serbest blok ekleme ve
+  profil düğmelerinin kaldırılması **v2.285–v2.288 planına** alındı
+  (`docs/RAPOR_SERBEST_TASARIM.md`).
+
+### Doğrulama
+
+`bash tools/test.sh` → **1929 birim + 522 şema** + rapor/sürüm/tasarım yeşil;
+`birim [126]` yeni sözleşmeleri (numaralandırma, Git, etiketler) denetler.
 
 ## v2.283 — Rapor bütünlüğü (gerçek uçtan uca raporda ölçüldü)
 

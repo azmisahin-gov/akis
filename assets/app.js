@@ -70,6 +70,7 @@ import {
   emptyReportSections,
   REPORT_FRONT_KEYS,
   REPORT_MAIN_KEYS,
+  REPORT_NUMBERING,
   REPORT_BODY_ORDER,
   REPORT_ANNEX_DEFS,
   REPORT_ANNEX_KEYS,
@@ -103,15 +104,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.283';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.283';
+} from './schema.js?v=2.284';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.284';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.283';
+const APP_VERSION = '2.284';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -387,6 +388,13 @@ Object.assign(REPORT_TEXT, {
   speakerCodeNote:
     'Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.',
   recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
+  // v2.284 — kayıt altı blokları KISA etiketle tanıtılır; uzun açıklama
+  // bölüm başında BİR KEZ verilir (her dosyada yinelenmez).
+  s5Intro:
+    'Her kayıt için sırasıyla: (a) kısa kayıt bilgisi, (b) o kayıtta konuşanların tablosu, (c) zaman damgalı deşifre tablosu verilir. Bu açıklama her kayıtta yinelenmez.',
+  recordSpeakersHeading: 'Konuşmacılar (bu kayıt)',
+  recordTranscriptHeading: 'Deşifre (zaman damgalı)',
+
   // v2.268 — süre/aralık AYRI tabloda; ana tablo sıkışmaz.
   speakerDurationHeading: 'Konuşmacı süreleri',
   speakerDurationHeaders: ['KOD', 'ETİKET', 'KAYIT', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
@@ -7293,6 +7301,24 @@ function focusSegmentRow(el) {
   setActiveSegment(m, Number(el.dataset.segItem), { scroll: false });
   revealSegDetail(m);
 }
+// GİT: panel hangi sekmede olursa olsun Deşifre sekmesine geçip bölümü açar
+// (v2.284). Önce yalnız activeSeg yazılıyordu; panel "Kayıt bilgileri"/"Analiz"
+// sekmesindeyken kullanıcı hiçbir şey görmüyordu ("Git çalışmıyor").
+function goToSegment(m, idx, card) {
+  if (!m) return;
+  const c = card || $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  const tab = [...(c ? c.querySelectorAll('[data-card-tab]') : [])].find(
+    (x) => x.dataset.cardTab === `${m.id}|transcript`
+  );
+  if (tab) tab.click();
+  m.activeSeg = idx;
+  persist();
+  renderSegments(m, c);
+  renderSegDetail(m);
+  const row = c?.querySelector(`.seg-item[data-seg-item="${idx}"]`);
+  if (row && typeof focusSegmentRow === 'function') focusSegmentRow(row);
+}
+
 // Sıcak tuşla atama: aktif bölüme konuşmacıyı yazar, listeyi ve detayı
 // YERİNDE tazeler (tam yeniden çizim yok → odak/kaydırma korunur).
 function assignSpeakerHotkey(m, speakerIndex) {
@@ -12271,8 +12297,14 @@ function reportSectionTitle(key) {
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
   return (def && def.title) || key;
 }
+// Numaralandırma kipi (v2.284): 'auto' | 'none'. Tek kaynak: case.report.numbering.
+function reportNumbering(c) {
+  const v = c && c.report && c.report.numbering;
+  return v === 'none' ? 'none' : 'auto';
+}
 function reportHeadingText(c, key, map) {
   const title = reportSectionTitle(key);
+  if (reportNumbering(c) === 'none') return title;
   if (REPORT_MAIN_KEYS.includes(key)) {
     const n = (map || reportNumberMap(c))[key];
     return n ? `${n}. ${title}` : title;
@@ -12322,6 +12354,10 @@ function reportTocEntries(c) {
     // içeriğidir ve "–" ile gösterilir. Kullanıcı "neden bazıları numarasız"
     // diye sordu; artık TOC'ta fark görünür.
     const text = reportHeadingText(c, key, map);
+    if (reportNumbering(c) === 'none') {
+      out.push(text);
+      continue;
+    }
     out.push(REPORT_MAIN_KEYS.includes(key) ? text : `– ${text}`);
   }
   return out;
@@ -12507,6 +12543,9 @@ function syncReportOutlineControls() {
   );
   const cb = $('#reportOnlyOpen');
   if (cb) cb.checked = reportOutlineState.onlyOpen;
+  const nb = $('#reportNumberingToggle');
+  const c0 = currentCase();
+  if (nb) nb.checked = reportNumbering(c0) === 'auto';
 }
 
 // RAPOR İSKELETİ (v2.227): tüm parçalar TEK listede; gövde ve ekler
@@ -13405,7 +13444,7 @@ function renderReport() {
       return out + `<p class="paper-muted">${esc(REPORT_TEXT.asrLocal)} ${esc(REPORT_TEXT.asrVerify)}</p></div>`;
     },
     s5: () => {
-      let out = `<div class="paper-section"><h3>${esc(H('s5'))}</h3><h4>${esc(sub.s51)}</h4>`;
+      let out = `<div class="paper-section"><h3>${esc(H('s5'))}</h3><h4>${esc(sub.s51)}</h4><p class="paper-muted">${esc(REPORT_TEXT.s5Intro)}</p>`;
       if (materials.length) {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
@@ -13416,7 +13455,7 @@ function renderReport() {
               const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
               out += st.empty
                 ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
-                : `<table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows
+                : `<p class="paper-muted"><b>${esc(REPORT_TEXT.recordSpeakersHeading)}</b></p><table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows
                     .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
                     .join('')}</tbody></table>`;
             }
@@ -13431,7 +13470,7 @@ function renderReport() {
               return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
-            out += `<table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+            out += `<p class="paper-muted"><b>${esc(REPORT_TEXT.recordTranscriptHeading)}</b></p><table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
         }
       } else out += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -13871,7 +13910,7 @@ function docxXml(c) {
       );
     },
     s5: () => {
-      let out = headingXml(H('s5')) + headingXml(sub.s51, 2);
+      let out = headingXml(H('s5')) + headingXml(sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17 });
       for (let i = 0; i < c.materials.length; i++) {
         const m = c.materials[i];
         out += headingXml(`${n5}.1.${i + 1}. ${m.name}`, 2);
@@ -13885,7 +13924,8 @@ function docxXml(c) {
             const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
             out += st.empty
               ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-              : wTable([[...st.headers], ...st.rows], { header: true });
+              : wP(REPORT_TEXT.recordSpeakersHeading, { bold: true, color: '6F8295', size: 17 }) +
+                wTable([[...st.headers], ...st.rows], { header: true });
           }
         }
         if (m.hallucinationWarning)
@@ -13898,6 +13938,7 @@ function docxXml(c) {
             return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
           });
           const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1200, 900, 1100, 3100, 1000, 800]);
+          out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17 });
           out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
@@ -14434,6 +14475,7 @@ async function makeUdf() {
     s5: () => {
       el.push(h(H('s5')));
       el.push(paragraph(sub.s51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
+      el.push(paragraph(REPORT_TEXT.s5Intro, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (c.materials?.length) {
         c.materials.forEach((m, i) => {
           el.push(paragraph(`${n5}.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
@@ -14449,6 +14491,7 @@ async function makeUdf() {
               const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
               if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
               else {
+                el.push(paragraph(REPORT_TEXT.recordSpeakersHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
                 const w = st.headers.map(() => Math.floor(510 / st.headers.length));
                 el.push(table([[...st.headers], ...st.rows], w, { header: true }));
               }
@@ -14476,6 +14519,7 @@ async function makeUdf() {
               return [tcRange(seg.start, seg.end), sp.code, sp.label, seg.text || '', reviewCellText(seg), segObsText(seg)];
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [62, 46, 56, 200, 62, 50]);
+            el.push(paragraph(REPORT_TEXT.recordTranscriptHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
             el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
         });
@@ -16370,13 +16414,7 @@ function setupEvents() {
       // v2.265 — işaretli bölüme git (atama DEĞİŞMEZ; yalnız odak).
       const idx = Number(b.dataset.voiceGoto);
       const mm = c.materials.find((x) => (x.segments || []).length > idx) || null;
-      if (!mm) return;
-      mm.activeSeg = idx;
-      persist();
-      renderSegments(mm, b.closest('.audio-card'));
-      renderSegDetail(mm);
-      const row = document.querySelector(`.seg-item[data-seg-item="${idx}"]`);
-      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+      goToSegment(mm, idx, b.closest('.audio-card'));
     } else if (b.dataset.measureAll !== undefined) {
       // v2.269 — tek düğme: seviye → perde → tutarlılık (sıralı, çift çalışmaz).
       const mm = c.materials.find((x) => x.id === b.dataset.measureAll);
@@ -16388,13 +16426,7 @@ function setupEvents() {
     } else if (b.dataset.voiceEmbedGoto !== undefined) {
       const idx = Number(b.dataset.voiceEmbedGoto);
       const mm = c.materials.find((x) => (x.segments || []).length > idx) || null;
-      if (!mm) return;
-      mm.activeSeg = idx;
-      persist();
-      renderSegments(mm, b.closest('.audio-card'));
-      renderSegDetail(mm);
-      const row = document.querySelector(`.seg-item[data-seg-item="${idx}"]`);
-      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+      goToSegment(mm, idx, b.closest('.audio-card'));
     } else if (b.dataset.voiceCheck !== undefined) {
       // v2.265 — bölüm bazında perde ölçümü + konuşmacı profili karşılaştırması.
       const mm = c.materials.find((x) => x.id === b.dataset.voiceCheck);
@@ -17205,6 +17237,17 @@ $('#reportOnlyOpen')?.addEventListener('change', (e) => {
   reportOutlineState.onlyOpen = !!e.target.checked;
   const c = currentCase();
   if (c) renderReportSections(c);
+});
+// v2.284 — Numaralandırma aç/kapa: başlıklar ve İÇİNDEKİLER birlikte değişir.
+$('#reportNumberingToggle')?.addEventListener('change', (e) => {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.numbering = e.target.checked ? 'auto' : 'none';
+  persist();
+  renderReport();
+  renderReportSections(c);
+  showToast(e.target.checked ? 'Bölüm numaraları açık.' : 'Bölüm numaraları kapalı; başlıklar numarasız yazılır.');
 });
 $('#reportSectionCats')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-rsec-cat]');
@@ -18369,6 +18412,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.284': {
+    title: 'Rapor numaraları artık sizin elinizde; "Git" düğmeleri çalışıyor',
+    body:
+      'Rapor iskeletinin üstünde "Numaralar" anahtarı var: kapatırsanız tüm başlıklar ve ' +
+      'İÇİNDEKİLER numarasız yazılır (isterseniz numarayı bölüm metnine kendiniz yazarsınız). ' +
+      'Açıkken ana bölümler 1,2,3… numara alır; alt bloklar içindekilerde "–" ile gösterilir. ' +
+      'Ayrıca "Git" düğmeleri onarıldı: hangi sekmede olursanız olun Deşifre sekmesine geçip ' +
+      'bölümü açar. Her kaydın altındaki tablolar artık kısa etiketlerle tanıtılır ' +
+      '("Konuşmacılar (bu kayıt)" · "Deşifre (zaman damgalı)").'
+  },
   '2.283': {
     title: 'Rapor bütünlüğü: numara boşluğu, atanmamış bölüm, KAYIT sütunu',
     body:

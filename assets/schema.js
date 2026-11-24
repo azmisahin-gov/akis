@@ -593,6 +593,10 @@ export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 // KAPAK/ön bölüm ve İMZA yapısaldır: sırası sabittir. Gövde bölümleri
 // kullanıcı tarafından sıralanabilir; sıra `case.report.layout.order`'dadır.
 export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
+// Bölüm numaralandırma (v2.284): 'auto' = ana bölümler 1,2,3…; 'none' = hiç
+// numara yok (kullanıcı başlıkları kendi düzenine göre yazar). Varsayılan auto
+// (mevcut raporlar değişmesin); kullanıcı panelden kapatabilir.
+export const REPORT_NUMBERING = ['auto', 'none'];
 // Numaralı bölümler (1…N). Numara SIRAYA göre türetilir; bu dizinin sırası
 // önemli değildir, yalnız "hangi bölüm numara alır" sorusunu yanıtlar.
 // v2.261: cevaplar / sınırlılıklar / bütünlük de numaralı ana bölümdür.
@@ -1139,6 +1143,8 @@ export function emptyCase(over = {}) {
       layout: emptyReportLayout(),
       // Tablo sütun görünürlüğü (v2.235): tümü açık.
       columns: emptyReportColumns(),
+      // Numaralandırma (v2.284): 'auto' | 'none'.
+      numbering: 'auto',
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -1925,6 +1931,8 @@ export function normalizeCase(src = {}) {
       layout: normalizeReportLayout(report.layout),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
+      // Numaralandırma (v2.284): bilinmeyen/boş değer 'auto' olur.
+      numbering: REPORT_NUMBERING.includes(report.numbering) ? report.numbering : 'auto',
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.

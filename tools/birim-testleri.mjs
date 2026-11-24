@@ -160,7 +160,7 @@ const EXPOSE = [
   'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
-  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments',
+  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -5750,6 +5750,33 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Üç çıktıda "bilinmiyor" süre dili TEK: en az 3 yerde matDuration koşulu.
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('üç çıktıda süre "Bilinmiyor" koşulu', (js.match(/matDuration\(m\) \? fmtTime\(matDuration\(m\)\) : 'Bilinmiyor'/g) || []).length >= 3, true);
+}
+
+
+// [126] v2.284 — Numaralandırma aç/kapa + Git sekme geçişi + kayıt altı etiketleri.
+{
+  console.log('[126] Numaralandırma kipi ve Git (v2.284)');
+  const S = __schemaMod;
+  const c0 = T.emptyCaseForTest({ id: 'cN0' });
+  eq('varsayılan numaralandırma auto', c0.report.numbering, 'auto');
+  eq('numaralandırma none korunur', S.normalizeCase({ report: { numbering: 'none' } }).report.numbering, 'none');
+  eq('bilinmeyen kip auto olur', S.normalizeCase({ report: { numbering: 'x' } }).report.numbering, 'auto');
+  eq('reportNumbering tanımlı', typeof T.reportNumbering, 'function');
+
+  const auto = T.emptyCaseForTest({ id: 'cN1' });
+  eq('auto: başlık numaralı', T.reportHeadingText(auto, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('auto: TOC alt blok "–"', T.reportTocEntries(auto).some((x) => x.startsWith('– KAYIT KÖKENİ')), true);
+  const none = T.emptyCaseForTest({ id: 'cN2', report: { numbering: 'none' } });
+  eq('none: başlık numarasız', T.reportHeadingText(none, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('none: TOC numarasız ve işaretsiz', T.reportTocEntries(none).some((x) => x.startsWith('1.') || x.startsWith('–')), false);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('numaralandırma anahtarı arayüzde', /reportNumberingToggle/.test(js), true);
+  eq('Git sekme geçişi tek kapı', /function goToSegment\(/.test(js) && (js.match(/goToSegment\(/g) || []).length >= 3, true);
+  eq('Git önce Deşifre sekmesine geçer', /function goToSegment[\s\S]{0,600}\|transcript/.test(js), true);
+  eq('kayıt altı konuşmacı etiketi var', /recordSpeakersHeading/.test(js), true);
+  eq('kayıt altı deşifre etiketi var', /recordTranscriptHeading/.test(js), true);
+  eq('s5 girişi bir kez (üç çıktı)', (js.match(/REPORT_TEXT\.s5Intro/g) || []).length >= 3, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

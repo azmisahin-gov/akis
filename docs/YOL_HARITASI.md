@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.283.**
+yazılır. **Güncel sürüm: v2.284.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.284 — Numaralandırma seçenekli; Git onarıldı (TAMAMLANDI)
+
+- `case.report.numbering`: `auto` | `none`; iskelette **Numaralar** anahtarı.
+- **Git** düğmeleri Deşifre sekmesine geçip bölümü açar (`goToSegment`).
+- Kayıt altı kısa etiketler (konuşmacı tablosu / deşifre tablosu), üç çıktıda.
+- Serbest tasarım planı: `docs/RAPOR_SERBEST_TASARIM.md` (v2.285–v2.288).
+- Koruyan: `birim` [126].
 
 ## v2.283 — Rapor bütünlüğü (TAMAMLANDI)
 

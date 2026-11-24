@@ -1,4 +1,4 @@
-# Özellikler (v2.283 — mevcut durum)
+# Özellikler (v2.284 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -586,6 +586,11 @@ uzmanlık alanını gösterir.
   konuşmacıyı kullanır (gereksiz "Konuşmacı 2" uydurmaz). Eski sürümlerde bozulmuş kayıtlar
   açılışta onarılır (`reconcileSpeakerRefs`); paketten yükleme arşivle aynı normalize kuralını
   kullanır. Raporda aynı bölüm iki satırda görünmez.
+- **Numaralandırma seçenekli (v2.284):** rapor iskeletinde **Numaralar** anahtarı;
+  kapatınca tüm başlıklar ve İÇİNDEKİLER numarasız yazılır (kullanıcı kendi
+  numarasını metne yazar). Açıkken ana bölümler 1…N, alt bloklar TOC'ta "–".
+- **"Git" düğmeleri (v2.284):** perde/gömme işaretli bölüme giderken **Deşifre**
+  sekmesine geçer, bölümü açar ve satıra odaklanır.
 - **Rapor sütunları: konuşmacı KODU ve ETİKETİ ayrı (v2.281):** kanıt tablosunda
   `ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA ·
   KONTROL DURUMU · GÖZLEM`; konuşmacı tablolarında `KOD · ETİKET …`. "Rapor alanları"

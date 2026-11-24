@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.283.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.284.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6866,3 +6866,38 @@ kontrol bekliyor. Paylaşılan `2026_TEST.udf` / `2026_TEST.docx` incelendi.
 - **Numaralandırma politikası:** ana bölümler 1..N, alt bloklar "–" olarak
   işaretli. Kullanıcı isterse **her başlık** (13 bölüm) numaralanabilir; bu,
   56.12'nin 9 bölüm + alt blok yapısından ayrılmak olur (karar bekliyor).
+
+## YENİ OTURUM DEVRİ (v2.284) — Numaralandırma seçenekli; Git onarıldı
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.284** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1929 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | **Serbest tasarım planı** (`docs/RAPOR_SERBEST_TASARIM.md`): v2.285 başlık düzenleme + numara biçimi, v2.286 profil düğmelerinin kaldırılması, v2.287 serbest blok, v2.288 kullanıcı profilleri. Gömme kümeleme (atamasız) ve Kişiler panelinin taşınması. |
+
+### Ölçülen kullanıcı şikâyetleri ve karşılıkları
+
+1. **"Her şeyi kapattım, yalnız kökeni açtım → numara yok."** Kök: numara
+   yalnız `REPORT_MAIN_KEYS`'e veriliyordu (v2.259 kararı). **Çözüm:** numaralar
+   kullanıcıya bırakıldı (`report.numbering`); kapatınca hiç numara yok.
+2. **"Git düğmeleri işe yaramıyor."** Kök: panel "Kayıt bilgileri"/"Analiz"
+   sekmesinde; `activeSeg` yazılıyor ama sekme değişmiyordu. **Çözüm:**
+   `goToSegment()` → Deşifre sekmesine geçer, bölümü açar, satıra odaklanır.
+3. **"Konuşmacılar ve süreleri ayrı seçilemiyor."** Aslında *Rapor alanları*nda
+   üç ayrı grup var (8/6/6); **bölüm** düzeyinde hâlâ birlikte. İstenirse
+   "Konuşmacı süreleri" ayrı bölüm yapılabilir (plan).
+4. **"Kayıt altında tablo nedir?"** Kısa etiketler eklendi; uzun açıklama bölüm
+   başında bir kez (üç çıktıda aynı).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Numara bir TERCİHTİR**, zorunlu şablon değil: `reportNumbering(c)` tek
+   kaynak; başlık ve TOC aynı kipten türetilir.
+2. **"Git" tek kapıdan:** `goToSegment` (sekme + aktif bölüm + odak). Yeni bir
+   "işarete git" düğmesi eklerken bunu kullanın; yoksa kullanıcı panelde kalır.
+3. **Kayıt altı etiketler üç çıktıda aynı** (`recordSpeakersHeading`,
+   `recordTranscriptHeading`); açıklama her dosyada YİNELENMEZ.
+4. Serbest tasarım ilkeleri: rapor bilirkişi adına, üç çıktı aynı metin,
+   ölçülmeyen değer yazılmaz, kanıtta zaman+metin zorunlu.
