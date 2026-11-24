@@ -577,6 +577,7 @@ export const REPORT_BODY_ORDER = [
   'enhance',
   'asr',
   's5',
+  'reading',
   'scopeNote',
   's6',
   's7',
@@ -658,6 +659,17 @@ export function normalizeReportLayout(src) {
     }
   }
   for (const k of REPORT_BODY_ORDER) if (!seen.has(k)) order.push(k);
+  // v2.234: `reading` artık BAĞIMSIZ gövde bölümü. Eski kayıtlarda sırada yok;
+  // sona değil, 5. bölümün (s5) hemen ardına yerleştir. Kullanıcı sonradan
+  // taşırsa (srcOrder'da varsa) konumu KORUNUR.
+  if (!srcOrder.includes('reading')) {
+    const ri = order.indexOf('reading');
+    if (ri >= 0) {
+      order.splice(ri, 1);
+      const si = order.indexOf('s5');
+      order.splice(si >= 0 ? si + 1 : order.length, 0, 'reading');
+    }
+  }
 
   const srcAnnexes = src.annexes && typeof src.annexes === 'object' ? src.annexes : {};
   const srcMeta = src.annexMeta && typeof src.annexMeta === 'object' ? src.annexMeta : {};

@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.233';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.233';
+} from './schema.js?v=2.234';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.234';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.233';
+const APP_VERSION = '2.234';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10747,6 +10747,8 @@ function reportBlockRenders(c, key) {
       return measureWerForCase(c).length > 0;
     case 'levels':
       return levelRowsForCase(c).length > 0;
+    case 'reading':
+      return (c.materials || []).some((m) => readingGroupsFor(m).length > 0);
     default:
       return true;
   }
@@ -10869,7 +10871,7 @@ const REPORT_UI_LABELS = {
   qc: 'Kalite kontrolü',
   privacy: 'Kişisel veri / gizlilik',
   annex: 'Ekler (denetlenebilirlik)',
-  reading: 'Okuma metni (5. bölüm içinde)',
+  reading: 'Okuma metni',
   signature: 'İmza ve alt bilgi'
 };
 function reportUiLabel(c, key) {
@@ -10956,10 +10958,8 @@ function renderReportSections(c) {
     .join('');
   let body = '';
   for (const key of layout.order) {
-    const showSelf = reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key));
-    const showReading = key === 's5' && reportOutlineMatch(c, 'reading', reportUiLabel(c, 'reading'), reportSectionOn(c, 'reading'));
-    if (showSelf || showReading) body += row(key, { move: true });
-    if (showReading) body += row('reading', { child: true });
+    // v2.234: `reading` artık kendi satırı olan bağımsız gövde bölümü.
+    if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
   let annexRows = '';
   if (reportSectionOn(c, 'annex')) {
@@ -11614,12 +11614,6 @@ function renderReport() {
           if (m.segments?.length) {
             out += `<table class="paper-table"><thead><tr>${REPORT_TEXT.segmentHeadersObs.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${m.segments.map((s) => `<tr><td>${esc(tcRange(s.start, s.end))}</td><td>${esc(segSpeakerCell(m, s))}</td><td>${esc(s.text || '')}</td><td>${esc(reviewCellText(s))}</td><td>${esc(segObsText(s))}</td></tr>`).join('')}</tbody></table>`;
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
-          // OKUMA METNİ (v2.202): kanıt tablosundan SONRA, ayrı alt bölüm.
-          const reading = readingGroupsFor(m);
-          if (on('reading') && reading.length) {
-            out += `<h4>${esc(REPORT_TEXT.readingHeading)}</h4><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>`;
-            for (const g of reading) out += `<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`;
-          }
         }
       } else out += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
       out += `<h4>${esc(sub.s52)}</h4>`;
@@ -11631,6 +11625,18 @@ function renderReport() {
       } else out += `<p>${esc(evaluationFallbackText(c))}</p>`;
       out += `<h4>${esc(sub.s53)}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
       return out;
+    },
+    // BAĞIMSIZ OKUMA METNİ (v2.234): s5 kapalı olsa da tek başına açılabilir.
+    reading: () => {
+      const parts = [];
+      for (const m of c.materials || []) {
+        const groups = readingGroupsFor(m);
+        if (!groups.length) continue;
+        parts.push(`<h4>${esc(m.name || '')}</h4>`);
+        for (const g of groups) parts.push(`<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`);
+      }
+      if (!parts.length) return '';
+      return `<div class="paper-section"><h3>${esc(H('reading'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>${parts.join('')}</div>`;
     },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`,
     s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`,
@@ -11960,16 +11966,6 @@ function docxXml(c) {
             { widths: [1300, 1200, 3600, 1100, 900], header: true }
           );
         } else out += wP(REPORT_TEXT.noTranscript);
-        // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
-        const reading = readingGroupsFor(m);
-        if (on('reading') && reading.length) {
-          out += headingXml(REPORT_TEXT.readingHeading, 3);
-          out += wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 });
-          for (const g of reading) {
-            out += wP(g.head, { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
-            out += wP(g.text);
-          }
-        }
       }
       out += headingXml(sub.s52, 2);
       if (c.questions?.length) {
@@ -11989,6 +11985,21 @@ function docxXml(c) {
       out += headingXml(sub.s53, 2);
       out += wP(c.limitationsText || REPORT_TEXT.defaultLimitations);
       return out;
+    },
+    // BAĞIMSIZ OKUMA METNİ (v2.234).
+    reading: () => {
+      let out = '';
+      for (const m of c.materials || []) {
+        const groups = readingGroupsFor(m);
+        if (!groups.length) continue;
+        out += wP(m.name || '', { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
+        for (const g of groups) {
+          out += wP(g.head, { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
+          out += wP(g.text);
+        }
+      }
+      if (!out) return '';
+      return headingXml(H('reading')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 }) + out;
     },
     scopeNote: () => headingXml(H('scopeNote')) + wP(REPORT_TEXT.scopeNoteText),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || REPORT_TEXT.defaultConclusion),
@@ -12443,16 +12454,6 @@ async function makeUdf() {
             ]);
             el.push(table([[...REPORT_TEXT.segmentHeadersObs], ...segments], [70, 68, 235, 75, 62], { header: true }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
-          // OKUMA METNİ (v2.202): kanıt tablosundan sonra, ayrı alt bölüm.
-          const reading = readingGroupsFor(m);
-          if (on('reading') && reading.length) {
-            el.push(paragraph(REPORT_TEXT.readingHeading, { size: 11, bold: true, color: 'mid', before: 5, after: 3 }));
-            el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
-            for (const g of reading) {
-              el.push(paragraph(g.head, { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
-              el.push(paragraphLines(g.text, { justify: true }));
-            }
-          }
         });
       } else el.push(paragraph(REPORT_TEXT.noMaterials));
       el.push(paragraph(sub.s52, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
@@ -12480,6 +12481,22 @@ async function makeUdf() {
       else el.push(paragraph(evaluationFallbackText(c)));
       el.push(paragraph(sub.s53, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
       el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
+    },
+    // BAĞIMSIZ OKUMA METNİ (v2.234).
+    reading: () => {
+      const groupsByMat = (c.materials || [])
+        .map((m) => ({ m, groups: readingGroupsFor(m) }))
+        .filter((x) => x.groups.length);
+      if (!groupsByMat.length) return;
+      el.push(h(H('reading')));
+      el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+      for (const { m, groups } of groupsByMat) {
+        el.push(paragraph(m.name || '', { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
+        for (const g of groups) {
+          el.push(paragraph(g.head, { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
+          el.push(paragraphLines(g.text, { justify: true }));
+        }
+      }
     },
     scopeNote: () => {
       el.push(h(H('scopeNote')));
@@ -16119,6 +16136,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.234': {
+    title: 'Okuma metni artık bağımsız bölüm',
+    body:
+      'Okuma metni 5. bölümün içinden çıkarıldı; iskelette kendi satırı var. 5. bölüm kapalı ' +
+      'olsa bile tek başına açılıp rapora girebilir. Kanıt tablosu ve cümle zamanları değişmedi; ' +
+      'üç çıktı (HTML/DOCX/UDF) aynı metni üretir.'
+  },
   '2.233': {
     title: 'Rapor: sayfa görüntüleyici',
     body:

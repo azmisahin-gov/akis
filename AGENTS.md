@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.233.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.234.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,20 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.234) — Okuma metni bağımsız bölüm
+
+### DEĞİŞMEZ KURALLAR (v2.234)
+
+1. **`reading` artık gövde bölümü:** `REPORT_BODY_ORDER` içinde (`s5` sonrası).
+   Üç çıktıda ayrı `reading` bloğu; `s5` içinde okuma metni ÜRETİLMEZ.
+2. **Eski kayıt göçü:** `normalizeReportLayout`, sırada olmayan `reading`'i
+   **sonda değil `s5` hemen ardına** koyar. `srcOrder`'da varsa konum korunur.
+3. **Bağımsız aç/kapa:** `s5` kapalı + `reading` açık → okuma metni görünür;
+   tersi de olur. `reportBlockRenders('reading')` grup yoksa bloğu çizmez.
+4. Okuma metni **türetilmiş sunumdur**; bölümleri birleştirmez/bölmez. Kanıt
+   tablosu ve cümle zamanları değişmez.
+5. Test: `rapor` Senaryo 12, `birim [89]`, `tasarim [2ce]`.
 
 ## YENİ OTURUM DEVRİ (v2.233) — Rapor sayfa görüntüleyici
 
