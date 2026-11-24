@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.251.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.252.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5723,3 +5723,28 @@ etiket gizliydi.
 ### SIRADAKİ
 1. Kullanıcı gerçek mp4 + deşifre ile yeni UDF üretip ZWSP'siz doğrulasın.
 2. (İstenirse) isteğe bağlı video önizleme / kodek genişletme / rapor kâğıt biçimi.
+
+## YENİ OTURUM DEVRİ (v2.252) — UDF ZWSP yalnız SHA-256 içinde
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.252** |
+| Testler | `bash tools/test.sh` → **1544 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [103]` |
+| Bulgu | `Bilirkisi_Raporu_Tumunu_Sec.udf` (Tümünü seç) 173 ZWSP; bir kısmı **saat/kelimede** |
+
+### Ne yapıldı
+- `zwspWrapLongHex(text)`: YALNIZ `\b[0-9a-fA-F]{48,}\b` (SHA-256) içine 16'da bir ZWSP.
+  `makeUdf` tablo hücresi bunu kullanır. Metin/saat/tarih/sözcük **değişmez**.
+- v2.251'in `\S{24,}` kuralı uzun zaman aralığı ve uzun sözcükleri de sarıyordu → düzeltildi.
+
+### DEĞİŞMEZ
+- **Deşifre metni = çıktı metni.** Görünmez karakter yalnız saf uzun hex'te. Başka hiçbir
+  hücre metni değiştirilmez. Yeni bir "wrap" ihtiyacı doğarsa önce metni bozmadan çöz.
+- Hash kopyalama uyarısı: ZWSP nedeniyle hash'i tercihen uygulamadan kopyala.
+
+### SIRADAKİ
+- Kullanıcı yeni UDF üretip saat/kelime ZWSP'siz doğrulasın.
+- İsteğe bağlı: video önizleme / kodek genişletme / rapor kâğıt biçimi.

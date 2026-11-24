@@ -6,12 +6,33 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.251.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.252.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.252 — UDF ZWSP: yalnız SHA-256 içinde (metin/saat/sözcük kesinlikle temiz)
+
+v2.251 kuralı hâlâ "24+ karakterlik herhangi bir kesintisiz dizi"yi sarıyordu. Yeni
+gerçek UDF (`Bilirkisi_Raporu_Tumunu_Sec.udf`) incelendi: 173 ZWSP; bir kısmı
+**zaman kodunda** (`:59␣:48`) ve **uzun sözcükte** (`ılı␣kla`) idi — yani metne
+hâlâ görünmez karakter giriyordu.
+
+### KULLANICI NE GÖRECEK
+- UDF'te **zaman kodları, tarihler, deşifre metni ve uzun sözcükler TAMAMEN temiz**.
+- Görünmez karakter (ZWSP) **yalnız 48+ karakterlik saf hex dizilerde** (SHA-256)
+  satır kırma amacıyla; oradan kopyalanan hash'te görünmez karakter olabileceğini
+  unutmayın (hash'i tercihen uygulamadan kopyalayın).
+
+### Ne değişti
+- `zwspWrapLongHex(text)`: `\b[0-9a-fA-F]{48,}\b` eşleşen tokenların içine 16'da bir
+  ZWSP; **başka hiçbir metne dokunmaz**. `makeUdf` tablo hücresi bunu kullanır.
+
+### Koruyan test
+- `birim [103]`: zaman aralığı + uzun sözcük + kısa metin **değişmez**; hash ZWSP
+  içerir ama ZWSP'ler atılınca **orijinalle aynı**.
 
 ## v2.251 — UDF'te deşifre metnine görünmez karakter (ZWSP) enjeksiyonu kaldırıldı
 

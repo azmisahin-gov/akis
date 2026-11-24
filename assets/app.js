@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.251';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.251';
+} from './schema.js?v=2.252';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.252';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.251';
+const APP_VERSION = '2.252';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -8145,6 +8145,15 @@ function videoNoteSuffix(c) {
   const n = reportVideoNote(c);
   return n ? ' ' + n : '';
 }
+// UDF tablo hücresi için GÜVENLİ satır kırma: YALNIZ saf uzun hex dizileri
+// (ör. 64 karakterlik SHA-256) içine ZWSP koyar. Deşifre metni, zaman kodları,
+// tarihler ve uzun sözcükler DEĞİŞMEZ. (v2.252: v2.251 hâlâ uzun zaman
+// aralıklarını ve uzun sözcükleri sarıyordu → metne görünmez karakter giriyordu.)
+function zwspWrapLongHex(text) {
+  return String(text == null ? '' : text).replace(/\b[0-9a-fA-F]{48,}\b/g, (tok) =>
+    tok.replace(/(.{16})(?=.)/g, '$1\u200B')
+  );
+}
 // Aynı ses (aynı SHA-256) dosyada zaten varsa yeni kayıt AÇILMAZ; mevcut
 // kayıt korunur (düzenlemeler/onaylar kaybolmaz).
 function delilDuplicateOf(materials, hash) {
@@ -12891,15 +12900,10 @@ async function makeUdf() {
         const cells = row
           .map((value, ci) => {
             let cellText = String(value ?? '');
-            // v2.251 — GÖRÜNMEZ KARAKTER ENJEKSİYONU KALDIRILDI. Önceki kod her
-            // 8 karakterde bir U+200B (zero-width space) ekliyordu: "Belirtil\u200Bmemiş",
-            // "00:00:00\u200B.000", "24.11.20\u200B26". Bu, deşifre metnine görünmez
-            // karakter sokar; adli metin bütünlüğü ve kopyala/ara için sakıncalıdır.
-            // Artık ZWSP YALNIZCA çok uzun KESİNTİSİZ tokenlarda (ör. 64 karakterlik
-            // SHA-256) satır kırılabilsin diye, o tokenın içine konur.
-            if (!isHeader) {
-              cellText = cellText.replace(/\S{24,}/g, (tok) => tok.replace(/(.{16})(?=.)/g, '$1\u200B'));
-            }
+            // v2.252 — ZWSP YALNIZ saf uzun hex (SHA-256) içinde. Metin/zaman/tarih/
+            // sözcük DEĞİŞMEZ (v2.251 hâlâ uzun zaman aralığı ve uzun sözcükleri
+            // sarıyordu; bu, deşifre metnine görünmez karakter sokuyordu).
+            if (!isHeader) cellText = zwspWrapLongHex(cellText);
             const fill = isHeader
               ? colors.pale
               : shadeFirstCol && ci === 0
@@ -16842,6 +16846,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.252': {
+    title: 'UDF: saat/metin/sözcük artık kesinlikle görünmez karaktersiz',
+    body:
+      'UDF tablolarında görünmez karakter (U+200B) artık YALNIZ 48+ karakterlik saf hex ' +
+      'dizilerde (SHA-256) satır kırma için bulunur. Zaman kodları, tarihler, deşifre metni ve ' +
+      'uzun sözcükler tamamen temizdir. (Hash\'i tercihen uygulamadan kopyalayın.)'
+  },
   '2.251': {
     title: 'UDF\'te deşifre metnindeki görünmez karakterler temizlendi',
     body:

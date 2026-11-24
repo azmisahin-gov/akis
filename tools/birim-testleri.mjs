@@ -136,7 +136,7 @@ const EXPOSE = [
   'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
-  'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial', 'reportVideoNote', 'videoNoteSuffix',
+  'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial', 'reportVideoNote', 'videoNoteSuffix', 'zwspWrapLongHex',
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
   'acquisitionToolFileContent',
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
@@ -4662,6 +4662,24 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('video yoksa boş', T.reportVideoNote(aud), '');
   eq('suffix boşluklu', T.videoNoteSuffix(vid).startsWith(' '), true);
   eq('suffix video yoksa boş', T.videoNoteSuffix(aud), '');
+}
+
+// [103] v2.252 — ZWSP yalnız saf uzun hex (SHA-256) içinde; metin/saat/sözcük değişmez.
+{
+  console.log('[103] ZWSP yalnız hash içinde (v2.252)');
+  const f = T.zwspWrapLongHex;
+  eq('tanımlı', typeof f, 'function');
+  const tRange = '00:59:48.000–01:01:33.000';
+  eq('zaman aralığı değişmez', f(tRange), tRange);
+  eq('zaman aralığında ZWSP yok', f(tRange).includes('\u200B'), false);
+  const word = 'değerlendirilememektedir';
+  eq('uzun sözcük değişmez', f(word), word);
+  eq('kısa metin değişmez', f('Belirtilmemiş'), 'Belirtilmemiş');
+  const hash = 'a'.repeat(64);
+  const fh = f(hash);
+  eq('hash ZWSP içerir', fh.includes('\u200B'), true);
+  eq('hash ZWSP temizlenince orijinal', fh.replace(/\u200B/g, ''), hash);
+  eq('boş güvenli', f(null), '');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
