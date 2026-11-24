@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.242';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.242';
+} from './schema.js?v=2.243';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.243';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.242';
+const APP_VERSION = '2.243';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1536,6 +1536,178 @@ function readQuestionsForm() {
   c.conclusionText = $('#conclusionText').value;
   persist();
 }
+// ---- İŞ YÜKÜ ÖZETİ (v2.243) ---------------------------------------------
+// Kullanıcı: "İş yükü nasıl ölçülür?" Cevap: TAHMİNLE değil, KAYITLI ve
+// ÖLÇÜLEBİLİR sayılarla. Süre saniye olarak tutulur; gösterimde sa/dk/sn'ye
+// çevrilir. Burada ücret/süre TAHMİNİ üretilmez; yalnız gerçek sayımlar gelir.
+function formatWorkloadDuration(sec) {
+  const n = Math.max(0, Math.round(Number(sec) || 0));
+  if (n < 60) return `${n} sn`;
+  const h = Math.floor(n / 3600);
+  const m = Math.floor((n % 3600) / 60);
+  const s = n % 60;
+  if (h > 0) return `${h} sa ${m} dk`;
+  return `${m} dk ${s} sn`;
+}
+function caseWorkload(c) {
+  const mats = (c && c.materials) || [];
+  let audioSeconds = 0;
+  let durKnown = false;
+  let segmentCount = 0;
+  let editedSegments = 0;
+  let speakerLabels = 0;
+  let quick = 0;
+  let needsWork = 0;
+  const review = { approved: 0, inaudible: 0, relisten: 0, ambiguous: 0, machine: 0, pending: 0 };
+  const flags = {
+    overlap: 0,
+    inaudibleObs: 0,
+    noSpeech: 0,
+    phone: 0,
+    music: 0,
+    noise: 0,
+    time: 0,
+    long: 0,
+    merge: 0,
+    coverageGaps: 0,
+    coverageUnknown: 0
+  };
+  for (const m of mats) {
+    const segs = m.segments || [];
+    segmentCount += segs.length;
+    // Süre: dosyanın çözülmüş süresi varsa o; yoksa bölüm zamanlarından topla.
+    if (Number.isFinite(m.duration) && m.duration > 0) {
+      audioSeconds += m.duration;
+      durKnown = true;
+    } else {
+      let sd = 0;
+      for (const s of segs) {
+        const a = parseTimecodeStrict(s.start);
+        const b = parseTimecodeStrict(s.end);
+        if (a != null && b != null && b > a) sd += b - a;
+      }
+      if (sd > 0) {
+        audioSeconds += sd;
+        durKnown = true;
+      }
+    }
+    // Kayıt içi konuşmacı ETİKETLERİ (dosya geneli kişilerden ayrı; bkz. K1/K2).
+    const labels = new Set();
+    for (const s of segs) {
+      const sp = String(s.speaker || '').trim();
+      if (sp && sp !== 'Belirtilmedi') labels.add(sp);
+      if ((Number(s.textRev) || 0) > 0) editedSegments++;
+      const o = s.obs || {};
+      if (o.noSpeech) flags.noSpeech++;
+      if (o.phone) flags.phone++;
+      if (o.music) flags.music++;
+      if (o.noise) flags.noise++;
+      // Kontrol dağılımı KARŞILIKLI-DIŞLAYAN durumlarla (toplam = bölüm sayısı):
+      // approved/inaudible/relisten/ambiguous/machine/pending(hiç dokunulmadı).
+      const r = segReview(s);
+      if (r === 'approved') review.approved++;
+      else if (r === 'inaudible') review.inaudible++;
+      else if (r === 'relisten') review.relisten++;
+      else if (r === 'ambiguous') review.ambiguous++;
+      else if (r === 'machine') review.machine++;
+      else review.pending++;
+    }
+    speakerLabels += labels.size;
+    // Sayaçlar TEK KAYNAKTAN (segCounts) — filtre/rozetle aynı.
+    const k = segCounts(m);
+    quick += k.quick;
+    needsWork += k.pending; // "Kontrol bekleyen" TOPLAMI (onaylanmamışlar)
+    flags.overlap += k.overlap;
+    flags.inaudibleObs += k.inaudibleObs;
+    flags.time += k.time;
+    flags.long += k.long;
+    flags.merge += k.merge;
+    const cov = segmentCoverage(segs, m.duration);
+    if (cov && cov.ok) flags.coverageGaps += cov.gaps.length;
+    else flags.coverageUnknown++;
+  }
+  const reviewed = review.approved + review.inaudible;
+  const qs = (c && c.questions) || [];
+  return {
+    audioSeconds,
+    durKnown,
+    materialCount: mats.length,
+    segmentCount,
+    speakerLabels,
+    review,
+    quick,
+    editedSegments,
+    flags,
+    reviewed,
+    needsWork,
+    reviewPct: segmentCount ? Math.round((reviewed / segmentCount) * 100) : 0,
+    editPct: segmentCount ? Math.round((editedSegments / segmentCount) * 100) : 0,
+    questionsTotal: qs.length,
+    questionsAnswered: qs.filter((q) => q && q.answer && String(q.answer).trim()).length,
+    hasData: segmentCount > 0 || mats.length > 0
+  };
+}
+function workloadSummaryHtml(w) {
+  if (!w || !w.hasData) {
+    return `<div class="panel-heading"><div><div class="eyebrow">İŞ YÜKÜ</div><h3>İş yükü göstergeleri (ölçülen)</h3></div></div><p class="wl-note">Henüz ölçülecek veri yok. Ses kaydı ekleyip bölümlere ayırdıkça gerçek sayımlar burada görünür.</p>`;
+  }
+  const kpi = (label, value, hint) =>
+    `<div class="wl-kpi"${hint ? ` title="${esc(hint)}"` : ''}><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+  const chip = (label, n, hint, tone) =>
+    `<span class="wl-chip${tone ? ' ' + tone : ''}"${hint ? ` title="${esc(hint)}"` : ''}>${esc(label)} <b>${n}</b></span>`;
+  const dur = w.durKnown ? formatWorkloadDuration(w.audioSeconds) : 'bilinmiyor';
+  const r = w.review;
+  const reviewChips =
+    chip('Onaylandı', r.approved) +
+    chip('Anlaşılmadı', r.inaudible) +
+    chip('Yeniden dinle', r.relisten) +
+    chip('Belirsiz', r.ambiguous) +
+    chip('Çözümlendi (makine)', r.machine, 'Makine çözümledi; bilirkişi onayı YOK.') +
+    chip('Hiç dokunulmadı', r.pending, 'Henüz dinlenmedi (kontrol bekliyor).');
+  const flagItems = [
+    ['Üst üste gözlem', w.flags.overlap],
+    ['Anlaşılmayan gözlem', w.flags.inaudibleObs],
+    ['Sessizlik gözlem', w.flags.noSpeech],
+    ['Telefon gözlem', w.flags.phone],
+    ['Müzik gözlem', w.flags.music],
+    ['Gürültü gözlem', w.flags.noise],
+    ['Zaman sorunu', w.flags.time],
+    ['Uzun bölüm (45 sn+)', w.flags.long],
+    ['Birleştirme adayı', w.flags.merge],
+    ['Kapsam boşluğu', w.flags.coverageGaps]
+  ].filter((x) => x[1] > 0);
+  const flagChips = flagItems.length
+    ? flagItems.map(([label, n]) => chip(label, n)).join('')
+    : `<span class="wl-note">Zorluk işareti yok.</span>`;
+  const covNote = w.flags.coverageUnknown
+    ? `<span class="wl-chip" title="Süre bilinmeyen kayıtlarda kapsam hesaplanamaz.">Kapsam hesaplanamayan kayıt <b>${w.flags.coverageUnknown}</b></span>`
+    : '';
+  return (
+    `<div class="panel-heading"><div><div class="eyebrow">İŞ YÜKÜ</div><h3>İş yükü göstergeleri (ölçülen)</h3></div><span class="subtle-pill">tahmin değil · gerçek sayım</span></div>` +
+    `<div class="wl-grid">` +
+    kpi('Toplam ses süresi', dur, 'Kayıtların çözülmüş süresi; yoksa bölüm zamanlarından toplanır.') +
+    kpi('Kayıt', w.materialCount) +
+    kpi('Bölüm', w.segmentCount) +
+    kpi('Kontrol bekleyen', w.needsWork, 'Onaylanmamış TOPLAM bölüm (makine + belirsiz + yeniden dahil).') +
+    kpi('Konuşmacı etiketi', w.speakerLabels, 'Kayıt içi etiket toplamı (S1, S2…). Dosya geneli kişilerden ayrıdır.') +
+    kpi('Sorular', `${w.questionsAnswered}/${w.questionsTotal}`, 'Yanıtlanan / toplam soru.') +
+    `</div>` +
+    `<div class="wl-section"><h4>Kontrol dağılımı</h4><div class="wl-chips">${reviewChips}</div></div>` +
+    `<div class="wl-section"><h4>Emek göstergeleri</h4><div class="wl-chips">` +
+    chip('Onay oranı', `%${w.reviewPct}`, 'Onaylandı + Anlaşılmadı oranı.') +
+    chip('Elle düzeltilen bölüm', `${w.editedSegments} (%${w.editPct})`, 'Metni insan eliyle değiştirilmiş bölümler (textRev>0).') +
+    chip('Hızlı onaya uygun', w.quick, 'Gözlemlenebilir ölçütü geçen bekleyen bölümler.') +
+    `</div></div>` +
+    `<div class="wl-section"><h4>Zorluk işaretleri</h4><div class="wl-chips">${flagChips}${covNote}</div></div>` +
+    `<p class="wl-note">Bu sayılar <b>ölçümdür</b>: gerçek ses süresi, bölüm sayısı, onay/düzeltme sayısı ve gözlem işaretleri. <b>Süre veya ücret tahmini değildir;</b> iş yükünün göstergesidir. Karar bilirkişinindir.</p>`
+  );
+}
+function renderWorkload(c) {
+  const host = $('#workloadPanel');
+  if (!host) return;
+  host.innerHTML = workloadSummaryHtml(caseWorkload(c));
+}
+
 function renderOverview() {
   refreshSampleAction();
   const c = currentCase();
@@ -1549,7 +1721,7 @@ function renderOverview() {
   const segments = mats.flatMap((m) => m.segments || []);
   const checked = segments.filter((s) => isReviewed(s)).length;
   $('#statAudio').textContent = mats.length;
-  $('#statDuration').textContent = fmtShort(total);
+  $('#statDuration').textContent = formatWorkloadDuration(total);
   $('#statSegments').textContent = segments.length;
   $('#statChecked').textContent = segments.length ? `${Math.round((checked / segments.length) * 100)}%` : '0%';
   $('#audioCount').textContent = mats.length;
@@ -1565,6 +1737,7 @@ function renderOverview() {
   ]
     .map((x) => `<div class="overview-item"><small>${x[1].toUpperCase()}</small><b>${esc(x[2] || '—')}</b></div>`)
     .join('');
+  renderWorkload(c);
   renderStatusBar();
 }
 // Alt durum çubuğu: hangi dosyada olduğumuzu ve genel durumu her an gösterir.
@@ -16572,6 +16745,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.243': {
+    title: 'İş yükü özeti eklendi (ölçülen göstergeler)',
+    body:
+      'Özet (dashboard) sayfasına "İş yükü göstergeleri (ölçülen)" kartı geldi: toplam ses süresi ' +
+      '(sa/dk/sn), kayıt/bölüm sayısı, kontrol bekleyen, kontrol dağılımı (onaylandı/anlaşılmadı/' +
+      'yeniden/belirsiz/makine/hiç dokunulmadı), emek göstergeleri (onay oranı, elle düzeltilen ' +
+      'bölüm) ve zorluk işaretleri. Bunlar gerçek sayımlardır; süre veya ücret TAHMİNİ değildir.'
+  },
   '2.242': {
     title: 'Karar rehberi: üst üste · belirsiz · tek kelime',
     body:

@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.242.**
+yazılır. **Güncel sürüm: v2.243.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.243 — İş yükü özeti (ölçülen göstergeler) (TAMAMLANDI)
+
+- Özet/dashboard'a "İş yükü göstergeleri (ölçülen)": toplam süre (sa/dk/sn), kayıt,
+  bölüm, kontrol bekleyen, konuşmacı etiketi, sorular; kontrol dağılımı; emek
+  (onay %, elle düzeltme, hızlı onay); zorluk işaretleri.
+- Süre **saniye** tutulur, "sa/dk/sn" gösterilir. **Süre/ücret tahmini YOK.**
+- Saf `caseWorkload` + `formatWorkloadDuration`; `birim [97]`.
 
 ## v2.242 — Karar rehberi: üst üste · belirsiz · tek kelime (TAMAMLANDI)
 

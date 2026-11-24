@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.242'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.243'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 60000; // dakikada bir denetle
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.242">
-  <link rel="stylesheet" href="assets/app.css?v=2.242">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.243">
+  <link rel="stylesheet" href="assets/app.css?v=2.243">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.242">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.243">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.242"></script>
+  <script type="module" src="assets/app.js?v=2.243"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -181,6 +181,7 @@
           </div>
         </div>
         <div class="panel recent-panel"><div class="panel-heading"><div><div class="eyebrow">DOSYA DURUMU</div><h3>Mevcut inceleme</h3></div><button class="text-button" id="overviewEditBtn">Bilgileri düzenle →</button></div><div id="overviewCase" class="overview-case"></div></div>
+        <div class="panel workload-panel" id="workloadPanel" aria-label="İş yükü göstergeleri (ölçülen)"></div>
       </section>
 
 

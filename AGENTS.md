@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.242.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.243.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5455,3 +5455,35 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 ### SIRADAKİ İŞLER
 1. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
 2. **Video (56.12)** ses çıkarma ölçümü.
+
+## YENİ OTURUM DEVRİ (v2.243) — İş yükü özeti
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.243** |
+| Testler | `bash tools/test.sh` → **1499 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [97]` |
+| Açık konu | UDF yatay, video (56.12) |
+
+### Ne yapıldı
+- Özet/dashboard'a **"İş yükü göstergeleri (ölçülen)"** kartı (`#workloadPanel`).
+- `caseWorkload(c)` saf: toplam ses süresi (saniye; `m.duration` yoksa bölüm zamanları),
+  kayıt/bölüm, kontrol bekleyen toplam (`segCounts.pending` toplamı), konuşmacı etiketi,
+  kontrol dağılımı (KARŞILIKLI-DIŞLAYAN: approved/inaudible/relisten/ambiguous/machine/pending),
+  emek (onay %, `textRev>0` elle düzeltme), zorluk işaretleri (segCounts + obs), sorular.
+- `formatWorkloadDuration(sec)` → "sa/dk/sn"; "TOPLAM SÜRE" kartı da bunu kullanır.
+
+### DEĞİŞMEZ KURALLAR
+1. **Süre/ücret TAHMİNİ YOK.** Yalnız ölçülen sayılar; kartın içinde bu yazılı.
+2. **Süre birimi saniye**; gösterim sa/dk/sn. `m.duration` yoksa bölüm zamanlarından topla
+   (`parseTimecodeStrict`); ikisi de yoksa "bilinmiyor"/kapsam hesaplanamaz.
+3. **Kontrol dağılımı karşılıklı-dışlayandır** (toplam = bölüm sayısı). "Kontrol bekleyen
+   toplam" AYRI KPI'dır (= !isReviewed toplamı). İkisini karıştırma.
+4. Sayımlar `segCounts` ile **tek kaynak** (makine/belirsiz/yeniden/gözlemler filtreyle tutarlı).
+
+### SIRADAKİ İŞLER
+1. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
+2. **Video (56.12)** ses çıkarma ölçümü.
+3. İş yükü özetini istenirse **rapora ayrı bölüm** olarak eklemek (şu an yalnız ekran).

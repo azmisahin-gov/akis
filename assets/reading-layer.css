@@ -3598,3 +3598,44 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   letter-spacing: .3px;
 }
 #view-audio .st-chip.work { font-weight: 600; color: var(--ink); }
+
+/* ===== v2.243 — İş yükü göstergeleri (Özet/dashboard) ==================
+   Yalnız ÖLÇÜLEN sayılar gösterilir; süre/ücret tahmini yoktur. Dar ekranda
+   ızgara sütunları sarar; kırpma yok. */
+.workload-panel { margin-top: 15px; }
+.wl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin: 8px 0 12px;
+}
+.wl-kpi {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+}
+.wl-kpi small {
+  display: block;
+  font-size: var(--fs-2xs);
+  color: var(--ink-3);
+  letter-spacing: .3px;
+  margin-bottom: 3px;
+}
+.wl-kpi b { font-size: var(--fs-lg); color: var(--ink); font-variant-numeric: tabular-nums; }
+.wl-section { margin: 8px 0; }
+.wl-section > h4 { font-size: var(--fs-xs); color: var(--ink-2); margin: 0 0 6px; }
+.wl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.wl-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+}
+.wl-chip b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.wl-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: var(--lh-body); margin: 8px 0 0; }

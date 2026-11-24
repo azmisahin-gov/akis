@@ -117,6 +117,7 @@ const EXPOSE = [
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'segmentWorkSummary',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
+  'caseWorkload', 'formatWorkloadDuration',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
@@ -4523,6 +4524,65 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const ob = T.segmentWorkSummary(seg({ review: 'pending', obs: { overlap: true, inaudible: true, noSpeech: true, phone: true } }));
   eq('gözlem bayrakları 4', ob.flags.filter((f) => ['overlap', 'inaudibleObs', 'noSpeech', 'phone'].includes(f.key)).length, 4);
   eq('onaylıda gözlem bile olsa done', T.segmentWorkSummary(seg({ review: 'approved', obs: { overlap: true } })).done, true);
+}
+
+// [97] v2.243 — İş yükü özeti: ÖLÇÜLEN sayılar (süre sa/dk/sn, dağılım, emek).
+{
+  console.log('[97] İş yükü özeti (v2.243)');
+  eq('süre 0', T.formatWorkloadDuration(0), '0 sn');
+  eq('süre 47 sn', T.formatWorkloadDuration(47), '47 sn');
+  eq('süre 60 → 1 dk 0 sn', T.formatWorkloadDuration(60), '1 dk 0 sn');
+  eq('süre 90 → 1 dk 30 sn', T.formatWorkloadDuration(90), '1 dk 30 sn');
+  eq('süre 3599 → 59 dk 59 sn', T.formatWorkloadDuration(3599), '59 dk 59 sn');
+  eq('süre 3600 → 1 sa 0 dk', T.formatWorkloadDuration(3600), '1 sa 0 dk');
+  eq('süre 3660 → 1 sa 1 dk', T.formatWorkloadDuration(3660), '1 sa 1 dk');
+  eq('süre 8100 → 2 sa 15 dk', T.formatWorkloadDuration(8100), '2 sa 15 dk');
+  eq('süre null → 0 sn', T.formatWorkloadDuration(null), '0 sn');
+
+  const mk = (o) => Object.assign(T.emptySegmentForTest({}), o);
+  const m1segs = [
+    mk({ id: 'a1', start: '00:00:00.000', end: '00:00:05.000', review: 'approved', speaker: 'S1', text: 'Bir cümle.' }),
+    mk({ id: 'a2', start: '00:00:05.000', end: '00:00:10.000', review: 'pending', speaker: 'S1', text: 'düzeltildi', textRev: 2, obs: { overlap: true } }),
+    mk({ id: 'a3', start: '00:00:10.000', end: '00:00:15.000', review: 'machine', speaker: 'S2', text: 'makine' }),
+    mk({ id: 'a4', start: '00:00:15.000', end: '00:00:20.000', review: 'ambiguous', text: 'belki', reading1: 'geldi', reading2: 'kaldı', chosen: '' }),
+    mk({ id: 'a5', start: '00:00:20.000', end: '00:00:25.000', review: 'relisten', text: 'tekrar' }),
+    mk({ id: 'a6', start: '00:00:25.000', end: '00:00:30.000', review: 'inaudible', text: '' }),
+    mk({ id: 'a7', start: '00:50:00.000', end: '00:50:50.000', review: 'pending', text: 'uzun bölüm' })
+  ];
+  const m2segs = [
+    mk({ id: 'b1', start: '00:00:00.000', end: '00:00:30.000', review: 'approved', speaker: 'S1', text: 'Bir cümle.' }),
+    mk({ id: 'b2', start: '00:00:30.000', end: '00:00:40.000', review: 'pending', text: 'yeni', obs: { phone: true } })
+  ];
+  const c = { id: 'cw', materials: [
+    { id: 'm1', duration: 3600, segments: m1segs },
+    { id: 'm2', segments: m2segs } // duration yok → bölüm zamanlarından (40 sn) toplanır
+  ], questions: [{ answer: 'x' }, { answer: '' }] };
+  const w = T.caseWorkload(c);
+  eq('toplam süre 3600 + 40 = 3640', w.audioSeconds, 3640);
+  eq('süre biliniyor', w.durKnown, true);
+  eq('kayıt 2', w.materialCount, 2);
+  eq('bölüm 9', w.segmentCount, 9);
+  eq('onaylandı 2', w.review.approved, 2);
+  eq('anlaşılmadı 1', w.review.inaudible, 1);
+  eq('yeniden 1', w.review.relisten, 1);
+  eq('belirsiz 1', w.review.ambiguous, 1);
+  eq('makine 1', w.review.machine, 1);
+  eq('hiç dokunulmadı = a2,a7,b2 = 3', w.review.pending, 3);
+  eq('kontrol bekleyen TOPLAM 6', w.needsWork, 6);
+  eq('dağılım toplamı = bölüm (2+1+1+1+1+3=9)', w.review.approved + w.review.inaudible + w.review.relisten + w.review.ambiguous + w.review.machine + w.review.pending, 9);
+  eq('onay oranı %33', w.reviewPct, 33);
+  eq('elle düzeltilen 1', w.editedSegments, 1);
+  eq('düzeltme oranı %11', w.editPct, 11);
+  eq('üst üste gözlem 1', w.flags.overlap, 1);
+  eq('telefon gözlem 1', w.flags.phone, 1);
+  eq('uzun bölüm 1', w.flags.long, 1);
+  eq('konuşmacı etiketi 3 (S1,S2 + S1)', w.speakerLabels, 3);
+  eq('sorular 1/2', `${w.questionsAnswered}/${w.questionsTotal}`, '1/2');
+  eq('veri var', w.hasData, true);
+  // Boş dosya güvenli
+  const e = T.caseWorkload({ materials: [] });
+  eq('boş: hasData false', e.hasData, false);
+  eq('boş: süre 0', e.audioSeconds, 0);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

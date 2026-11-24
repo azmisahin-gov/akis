@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.242.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.243.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.243 — İş yükü özeti (ölçülen göstergeler)
+
+Kullanıcı: "Raporlarımızda/dashboard'da iş yükünü gösteriyor muyuz? Süreler hangi
+birimde, nasıl ölçülür?" — Özet sayfasına **ölçülen** iş yükü göstergeleri eklendi.
+
+### KULLANICI NE GÖRECEK
+- **Özet (dashboard)** sayfasına **"İş yükü göstergeleri (ölçülen)"** kartı.
+- **KPI'lar:** Toplam ses süresi (**sa/dk/sn** biçiminde; ör. "1 sa 12 dk"),
+  kayıt sayısı, bölüm sayısı, **kontrol bekleyen toplam**, konuşmacı etiketi,
+  yanıtlanan/toplam soru.
+- **Kontrol dağılımı** (karşılıklı-dışlayan; toplamı bölüm sayısı): Onaylandı ·
+  Anlaşılmadı · Yeniden dinle · Belirsiz · Çözümlendi (makine) · Hiç dokunulmadı.
+- **Emek göstergeleri:** onay oranı %, **elle düzeltilen bölüm** sayısı/%, hızlı
+  onaya uygun sayısı. **Zorluk işaretleri:** üst üste, anlaşılmayan, sessizlik,
+  telefon, müzik, gürültü, zaman sorunu, uzun bölüm, birleştirme adayı, kapsam
+  boşluğu (yalnız >0).
+- **Dürüst sınır yazılı:** "Bu sayılar ölçümdür; **süre veya ücret tahmini
+  değildir**."
+
+### Ölçüm birimi
+- Süreler kayıtta **saniye** olarak tutulur (`material.duration`, yoksa bölüm
+  zamanlarından toplanır). Gösterimde `formatWorkloadDuration` → "sa/dk/sn".
+  "TOPLAM SÜRE" kartı da artık bu net biçimi kullanır.
+
+### Ne değişti
+- `caseWorkload(c)` + `formatWorkloadDuration(sec)` saf fonksiyonları;
+  `workloadSummaryHtml`/`renderWorkload`. Sayaçlar `segCounts` ile **tek kaynak**
+  (makine/belirsiz/yeniden ve gözlemler tutarlı). Yeni test `birim [97]`.
 
 ## v2.242 — Karar rehberi: üst üste · belirsiz · tek kelime
 

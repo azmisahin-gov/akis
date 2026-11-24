@@ -1,4 +1,4 @@
-# Özellikler (v2.242 — mevcut durum)
+# Özellikler (v2.243 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -255,6 +255,14 @@ tuşları bozulmaz.
   = dinleyip doğrulama (çakışmayı gizlemez); belirsiz ayrı bir durumdur (okuma seç);
   anlaşılmaz bölümdeki tek kelimede Onaylandı/Anlaşılmadı/Belirsiz seçimi açıklanır.
   Belgede: [`STANDARTLAR.md` §12](../docs/STANDARTLAR.md).
+- **İş yükü özeti (v2.243):** Özet (dashboard) sayfasında **ölçülen** göstergeler:
+  toplam ses süresi (**sa/dk/sn**; saniye tutulur), kayıt/bölüm sayısı, **kontrol
+  bekleyen toplam**, konuşmacı etiketi, yanıtlanan/toplam soru; **kontrol dağılımı**
+  (karşılıklı-dışlayan: onaylandı/anlaşılmadı/yeniden/belirsiz/makine/hiç
+  dokunulmadı); **emek** (onay oranı, elle düzeltilen bölüm sayısı/%) ve **zorluk
+  işaretleri** (üst üste, anlaşılmayan, sessizlik, telefon, müzik, gürültü, zaman,
+  uzun bölüm, birleştirme adayı, kapsam boşluğu). **Süre/ücret tahmini üretilmez**;
+  yalnız gerçek sayımlar gösterilir (`birim [97]`).
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,
