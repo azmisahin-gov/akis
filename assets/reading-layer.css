@@ -3393,6 +3393,32 @@ input::placeholder, textarea::placeholder {
 .rsec-cat[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
 .rsec-cat:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .rsec-empty { font-size: var(--fs-2xs); color: var(--ink-3); padding: 8px 2px; line-height: 1.45; }
+/* v2.230 — tek kayıt durumu + dahil/kontrol ayrımı */
+.report-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.report-status-chip .status-dot { background: currentColor; }
+.report-status-chip.blocked { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.report-status-chip.review { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.report-status-chip.ready { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.report-status-detail { font-size: var(--fs-2xs); color: var(--ink-3); white-space: nowrap; }
+#view-report .report-status { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.rsec-row.is-excluded .rsec-item span { color: var(--ink-3); }
+.rsec-row.is-excluded .rsec-item input { opacity: 0.7; }
+.ready-concepts { margin: 0 0 8px; font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.4; }
+/* Rapor görünümünde alt çubuktaki yinelenen istatistikleri gizle (v2.230). */
+body[data-view="report"] #sbSegmentsWrap,
+body[data-view="report"] #sbCheckWrap { display: none; }
 
 /* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
 @media (max-width: 1349px) {

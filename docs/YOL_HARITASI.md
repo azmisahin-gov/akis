@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.229.**
+yazılır. **Güncel sürüm: v2.230.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.230 — Tek kayıt durumu + dahil/kontrol ayrımı (TAMAMLANDI)
+
+- Araç çubuğunda **tek durum çipi**: "Engelleyen eksik: N" / "Kontrol bekliyor: N"
+  / "Hazır" (renk + metin). `reportRecordStatus` tek kaynak.
+- İskelet başlığı **"N dahil · M hariç"**; kapalı bölüm soluk. Kontrol panelinde
+  "Dahil = rapora girer · Kontrol = dinlenip onaylandı" açıklaması.
+- Rapor görünümünde alt çubuktaki yinelenen bölüm/denetim sayaçları gizli.
+- Koruyan test: `birim [85]`, `tasarim [2ca]`, `surum` kimlikleri.
 
 ## v2.229 — Rapor iskeleti: arama, kategori, yalnız açık (TAMAMLANDI)
 

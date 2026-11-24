@@ -1,4 +1,4 @@
-# Özellikler (v2.229 — mevcut durum)
+# Özellikler (v2.230 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -755,6 +755,10 @@ engelleyen · uzman kontrolü · iyileştirme. Geniş sarı uyarı belgeden kald
 uyarılar Kontrol panelindedir. İskelette **bölüm arama**, **kategori çipleri**
 (Kapak · Ana · Teknik · Beyan · Kapanış) ve **"Yalnız açık"** anahtarı vardır;
 bunlar yalnız görünürlüğü süzer, **rapor sırasını değiştirmez** (v2.229).
+Araç çubuğunda **tek durum çipi** vardır ("Engelleyen eksik: N" · "Kontrol
+bekliyor: N" · "Hazır"); iskelet "N dahil · M hariç" der, kapalı bölüm soluk
+görünür (v2.230). **Dahil** (rapora girer) ile **Kontrol** (dinlenip onaylandı)
+ayrı kavramlardır.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller

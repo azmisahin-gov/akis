@@ -130,7 +130,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4265,6 +4265,26 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('qc statement', T.reportSectionCategory('qc'), 'statement');
   eq('signature closing', T.reportSectionCategory('signature'), 'closing');
   eq('bilinmeyen bölüm tech', T.reportSectionCategory('bilinmeyen'), 'tech');
+}
+
+// [85] Tek kayıt durumu (v2.230) — engelleyen > kontrol > hazır.
+{
+  eq('reportRecordStatus tanımlı', typeof T.reportRecordStatus, 'function');
+  const sha = 'a'.repeat(64);
+  const seg = (o) => Object.assign({ id: 's1', start: '00:00:00.000', end: '00:00:10.000', text: 'merhaba', review: 'approved', speaker: 'Tanık' }, o);
+  const mat = (o) => Object.assign({ id: 'm1', name: 'a.wav', duration: 10, sha256: sha, origin: { mediumType: 'usb', deliveredBy: 'X', deliveredAt: '2026-01-01' }, speakers: [{ id: 'sp1', code: 'S1', label: 'Tanık' }], segments: [seg()], log: [] }, o);
+  const base = (o) => Object.assign({ id: 'c1', fileNo: '2026/1', court: 'A', expertName: 'B', questions: [{ id: 'q1', question: 'x', answer: 'y' }], materials: [mat()] }, o);
+  eq('tam dosya ready', T.reportRecordStatus(base({})).code, 'ready');
+  const blocked = T.reportRecordStatus(base({ fileNo: '' }));
+  eq('dosya no boş blocked', blocked.code, 'blocked');
+  eq('engelleyen tonu', blocked.tone, 'blocked');
+  const pend = T.reportRecordStatus(base({ materials: [mat({ segments: [seg({ review: 'pending' })] })] }));
+  eq('bekleyen bölüm review', pend.code, 'review');
+  const longSeg = seg({ start: '00:00:00.000', end: '00:00:50.000' });
+  const adv = T.reportRecordStatus(base({ materials: [mat({ duration: 50, segments: [longSeg] })] }));
+  eq('yalnız öneri ready', adv.code, 'ready');
+  eq('öneri etiketi', /öneri/.test(adv.label), true);
+  eq('hazır ipucu onay değil der', /onay değildir/.test(adv.detail), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

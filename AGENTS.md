@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.229.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.230.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,24 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.230) — Tek kayıt durumu + dahil/kontrol ayrımı
+
+Rapor ekranındaki dağınık durum göstergeleri tek çipte toplandı; "rapora dahil"
+ile "dinlenip onaylandı" kavramları ayrıldı.
+
+### DEĞİŞMEZ KURALLAR (v2.230)
+
+1. **Tek durum kaynağı:** `reportRecordStatus(c)` → `blocked|review|ready`.
+   Uydurma yüzde yok; "Hazır" bile denetim listesidir (ipucu söyler).
+2. **Renk tek başına anlam taşımaz:** durum çipi metin de taşır.
+3. **Dahil ≠ Kontrol:** Dahil = iskelet onay kutusu (rapora girer);
+   Kontrol = bölümün dinlenip onaylanması (ses görünümü). İskelet "N dahil ·
+   M hariç" der, kapalı satır `is-excluded` ile soluk.
+4. **Görünüm adı `body.dataset.view`** ile yazılır; alt çubuktaki yinelenen
+   bölüm/denetim sayaçları rapor görünümünde gizlenir. Yeni bir görünüm-özel
+   gizleme eklerken bu dataset'i kullanın.
+5. Test: `birim [85]`, `tasarim [2ca]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.229) — Rapor iskeleti: arama + kategori + yalnız açık
 

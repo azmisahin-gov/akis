@@ -1879,5 +1879,24 @@ console.log('\n[2bz] Rapor iskeleti: arama + kategori + yalnız açık (v2.229)'
   check('iskelet filtre punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
 }
 
+console.log('\n[2ca] Tek kayıt durumu + dahil/kontrol (v2.230)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const html = read('index.html');
+  check('reportRecordStatus tanımlı', /function reportRecordStatus\(/.test(js));
+  check('durum çipi render', /report-status-chip \$\{rec\.tone\}/.test(js) && /report-status-detail/.test(js));
+  check('dahil/hariç sayacı', /dahil · \$\{REPORT_SECTION_DEFS\.length - openCount\} hariç/.test(js));
+  check('is-excluded sınıfı', /is-excluded/.test(js));
+  check('dahil/kontrol açıklaması', /ready-concepts/.test(js) && /Dahil<\/b> = rapora girer/.test(js));
+  check('body dataset view', /document\.body\.dataset\.view = name/.test(js));
+  check('durum çipi tonları token', /\.report-status-chip\.blocked/.test(layer) && /\.report-status-chip\.review/.test(layer) && /\.report-status-chip\.ready/.test(layer));
+  check('rapor görünümünde tekrar gizli', /body\[data-view="report"\] #sbSegmentsWrap/.test(layer) && /#sbCheckWrap/.test(layer));
+  check('sbSegmentsWrap HTML\'de', /id="sbSegmentsWrap"/.test(html));
+  const css = layer.slice(layer.indexOf('/* v2.230'), layer.indexOf('/* Orta genişlik'));
+  check('v2.230 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+  check('v2.230 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

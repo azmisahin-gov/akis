@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.229.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.230.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.230 — Tek kayıt durumu + dahil/kontrol ayrımı
+
+Rapor ekranındaki dağınık durum/istatistik göstergeleri sadeleştirildi.
+
+### KULLANICI NE GÖRECEK
+
+- **Tek ve sade durum çipi:** "Engelleyen eksik: N" · "Kontrol bekliyor: N" ·
+  "Hazır". Renk tek başına anlam taşımaz; metin de yazar (renk körlüğü).
+- **Dahil / kontrol ayrıldı:** İskelet başlığı **"N dahil · M hariç"**; rapora
+  girmeyen bölümler **soluk** görünür. Kontrol panelinde kısa açıklama:
+  *Dahil = rapora girer (iskelet) · Kontrol = bölüm dinlenip onaylandı (ses
+  görünümü).*
+- **Tekrar azaldı:** Rapor görünümünde alt çubuktaki yinelenen bölüm/denetim
+  sayaçları gizlenir; durum tek yerde (araç çubuğu çipi).
+
+### Teknik
+
+- `reportRecordStatus(c)` saf fonksiyon: `readinessSummary` + `pendingBreakdown`
+  ile `blocked` / `review` / `ready`. Uydurma yüzde yok; "Hazır" bile denetim
+  listesidir (ipucu bunu söyler).
+- `switchView` artık `document.body.dataset.view` yazar; CSS rapor görünümünde
+  `#sbSegmentsWrap` / `#sbCheckWrap` gizler.
+- İskelet satırına `is-excluded` sınıfı; başlık sayacı "dahil/hariç".
+- Test: `birim [85]`, `tasarim [2ca]`, `surum` kimlikleri.
 
 ## v2.229 — Rapor iskeleti: arama, kategori filtresi, yalnız açık
 
