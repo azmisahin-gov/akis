@@ -1,4 +1,4 @@
-# Özellikler (v2.237 — mevcut durum)
+# Özellikler (v2.238 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -352,6 +352,12 @@ tuşları bozulmaz.
   değişiklik testi kırar. Görünür davranış değişmez.
 - **Rapor dar ekranda kırpılmaz (v2.137):** ≤900 px'te kâğıt iç boşluğu azalır,
   tablo hücreleri sarar; sağ kenar görünür. Çıktı (UDF/DOCX) değişmez.
+- **Rapor biçimi (v2.238):** Kontrol → Rapor biçimi panelinden yazı tipi, gövde
+  puntosu (11–14), kenar boşluğu (10–50 mm) ve yön (dikey/yatay) seçilir. Seçim
+  ekran önizlemesine, yazdırma/PDF'e (A4 + ölçülü marj, `@page`) ve Word
+  (DOCX) çıktısına uygulanır. **UYAP UDF resmî olarak Times New Roman + dikey
+  A4** üretir; UDF'te yalnız punto ve kenar boşluğu uygulanır. Tek kaynak:
+  `case.report.format`.
 - **Sekme simgesi (v2.136):** SVG + ICO; konsolda favicon 404 yok.
 - **Kritik uyarılar duyurulur (v2.135):** kayıt/depolama hataları ekran
   okuyucuya kesintili (`role=alert`), normal bilgiler bekleyen işi bölmeden

@@ -3545,3 +3545,37 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.227 — İçindekiler: metin zaten numaralı; <ol> işareti ikinci numara
    üretmesin (ölçüm: ekranda "1. 1. …" görünüyordu). */
 .report-paper .toc-section ol.toc-list { list-style: none; padding-left: 0; }
+
+/* ===== v2.238 — RAPOR BİÇİMİ: punto ölçeği + yazdırma kâğıdı ==========
+   Önizleme metni `--paper-scale` (punto/11) ile ölçeklenir. Varsayılan 1 =
+   mevcut görünüm. Gövde puntosu 11–14 olduğu için ekran metni 11px altına
+   inmez (depo kuralı). Kenar boşluğu `--paper-margin`den gelir; yazdırmada
+   @page devralır, kâğıt iç dolgusu sıfırlanır (çift marj olmaz). */
+/* Çift sınıf seçici: app.css `.report-paper{padding}` kuralını ezer ama CSS
+   borcu nöbetçisi (tam-seçici eşleşmesi) artmaz. Kenar boşluğu değişkeni
+   JS'ten gelir; yazdırmada @page devralır. */
+.report-paper { --paper-scale: 1; }
+.report-paper.report-paper { padding: var(--paper-margin, 58px 66px); }
+.report-paper .paper-table,
+.report-paper .paper-section p,
+.report-paper .paper-muted,
+.report-paper .paper-footer,
+.report-paper .paper-topline,
+.report-paper .paper-section h4,
+.report-paper .paper-title p,
+.report-paper .paper-title .republic {
+  font-size: calc(11px * var(--paper-scale));
+}
+.report-paper .paper-section h3 { font-size: calc(13px * var(--paper-scale)); }
+.report-paper .paper-title h2 { font-size: calc(22px * var(--paper-scale)); }
+/* Seçilen yazı tipi başlıklara da uygulanır (app.css `font:` kısayolu Arial
+   sabitliyordu; bu kural aileyi seçime bağlar). */
+.report-paper .paper-title h2,
+.report-paper .paper-title .republic,
+.report-paper .paper-title p,
+.report-paper .paper-section h3,
+.report-paper .paper-section h4,
+.report-paper .paper-topline { font-family: var(--paper-font); }
+@media print {
+  .report-paper.report-paper { padding: 0; }
+}

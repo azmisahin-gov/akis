@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.237.**
+yazılır. **Güncel sürüm: v2.238.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.238 — Rapor biçimi: sayfa · font · punto · marj · yön (TAMAMLANDI)
+
+- `case.report.format` TEK KAYNAK: ekran önizlemesi + yazdırma/PDF (`@page`) +
+  DOCX + UDF. Font, gövde puntosu (11–14), kenar boşluğu (mm), yön.
+- UDF resmî olarak Times New Roman + dikey A4 korunur.
+- Kontrol → **Rapor biçimi** paneli.
+- Koruyan test: `birim [93]`, `rapor` 26.
 
 ## v2.237 — Bölüm listesi etkileşimi: hız ve satır menüsü (TAMAMLANDI)
 

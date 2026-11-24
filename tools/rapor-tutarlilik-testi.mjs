@@ -899,5 +899,32 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('kilit: metin yine basılır', H2.includes('ÇÖZÜMLENEN KONUŞMA'));
 }
 
+// Senaryo 26: rapor biçimi (v2.238) — font · punto · marj · yön üç çıktıya.
+{
+  console.log('[Senaryo 26] rapor biçimi: font · punto · marj · yön');
+  const c = withMaterial();
+  c.report = {
+    format: {
+      fontFamily: 'times',
+      fontSizePt: 13,
+      orientation: 'landscape',
+      marginsMm: { top: 30, right: 25, bottom: 30, left: 25 }
+    }
+  };
+  downloads.length = 0; setCase(c); await makeDocx();
+  const dZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const dx = await dZ.file('word/document.xml').async('string');
+  check('DOCX yatay yön', /w:orient="landscape"/.test(dx) && /w:pgSz w:w="16838" w:h="11906"/.test(dx));
+  check('DOCX Times New Roman', /w:rFonts w:ascii="Times New Roman"/.test(dx));
+  check('DOCX marj (30/25 mm → 1701/1417)', /w:pgMar w:top="1701" w:right="1417" w:bottom="1701" w:left="1417"/.test(dx));
+
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uZ.file('content.xml').async('string');
+  check('UDF sol marj 25.0 mm', /leftMargin="25\.0"/.test(ux));
+  check('UDF üst marj 30.0 mm', /topMargin="30\.0"/.test(ux));
+  check('UDF punto ölçekli (13 pt gövde)', /family="Times New Roman" size="13"/.test(ux));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

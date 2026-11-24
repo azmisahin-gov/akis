@@ -116,6 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition',
+  'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
@@ -4411,6 +4412,38 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('hız dalı bulundu', speedBranch.length > 0, true);
   eq('hız dalı renderSegments() ÇAĞIRMAZ', /renderSegments\s*\(/.test(speedCode), false);
   eq('hız dalı hız göstergesini günceller', /data-seg-speed/.test(speedCode), true);
+}
+
+// [93] v2.238 — Rapor biçimi şeması (font · punto · marj · yön).
+{
+  console.log('[93] Rapor biçimi şeması (v2.238)');
+  const d = T.emptyReportFormat();
+  eq('varsayılan punto 11', d.fontSizePt, 11);
+  eq('varsayılan font arial', d.fontFamily, 'arial');
+  eq('varsayılan marj 20 mm', d.marginsMm, { top: 20, right: 20, bottom: 20, left: 20 });
+  eq('varsayılan dikey', d.orientation, 'portrait');
+  const n = T.normalizeReportFormat({ fontFamily: 'times', fontSizePt: 13, orientation: 'landscape', marginsMm: { top: 30, right: 25, bottom: 30, left: 25 } });
+  eq('font korunur', n.fontFamily, 'times');
+  eq('punto 13', n.fontSizePt, 13);
+  eq('yön landscape', n.orientation, 'landscape');
+  eq('marj sağ 25', n.marginsMm.right, 25);
+  const bad = T.normalizeReportFormat({ fontFamily: 'x', fontSizePt: 99, orientation: 'y', marginsMm: { top: 1, right: 999, bottom: 'a', left: 25 } });
+  eq('geçersiz font → arial', bad.fontFamily, 'arial');
+  eq('punto üst sınır 14', bad.fontSizePt, 14);
+  eq('yön geçersiz → portrait', bad.orientation, 'portrait');
+  eq('marj alt sınır 10', bad.marginsMm.top, 10);
+  eq('marj üst sınır 50', bad.marginsMm.right, 50);
+  eq('marj bozuk → varsayılan 20', bad.marginsMm.bottom, 20);
+  eq('punto yarım adıma yuvarlanır', T.normalizeReportFormat({ fontSizePt: 12.3 }).fontSizePt, 12.5);
+  eq('reportFormat(c) varsayılan', T.reportFormat({ report: {} }).fontSizePt, 11);
+  eq('reportFormat(null) güvenli', T.reportFormat(null).orientation, 'portrait');
+  eq('font seçenekleri 3', T.REPORT_FONT_KEYS.length, 3);
+  eq('docx font eşlemesi (times)', T.REPORT_FONT_DOCX.times, 'Times New Roman');
+  eq('yön seçenekleri 2', T.REPORT_ORIENTATIONS.length, 2);
+  // Yazdırma/PDF sayfa ayarı @page ile üretilmeli (önceden HİÇ yoktu).
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('yazdırma @page kuralı üretilir', /@page \{ size: A4/.test(src), true);
+  eq('renk çıktısı UDF ORTAM fontu', /family="Times New Roman"/.test(src), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

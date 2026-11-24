@@ -793,6 +793,65 @@ export function normalizeReportColumns(src) {
   return { ...base, ...out };
 }
 
+// ---- 5b-2. Rapor biçimi: sayfa · font · punto (v2.238) -------------------
+// TEK KAYNAK. Ekran önizlemesi, yazdırma/PDF (@page), DOCX ve UDF bu değerleri
+// okur. UYAP UDF (birincil resmî çıktı) yazı tipi olarak her zaman Times New
+// Roman kullanır (resmî standart); `fontFamily` ekran ve Word içindir.
+export const REPORT_FONT_DEFS = [
+  { key: 'arial', label: 'Arial (sans-serif)', css: "Arial, 'Helvetica Neue', Helvetica, sans-serif", docx: 'Arial' },
+  { key: 'times', label: 'Times New Roman (serif)', css: "'Times New Roman', Times, serif", docx: 'Times New Roman' },
+  { key: 'segoe', label: 'Segoe UI (sans-serif)', css: "'Segoe UI', Tahoma, sans-serif", docx: 'Segoe UI' }
+];
+const REPORT_FONT_OPT = defineOptions(REPORT_FONT_DEFS);
+export const REPORT_FONT_KEYS = REPORT_FONT_OPT.keys;
+export const REPORT_FONT_LABEL = REPORT_FONT_OPT.label;
+export const REPORT_FONT_CSS = Object.fromEntries(REPORT_FONT_DEFS.map((d) => [d.key, d.css]));
+export const REPORT_FONT_DOCX = Object.fromEntries(REPORT_FONT_DEFS.map((d) => [d.key, d.docx]));
+
+export const REPORT_ORIENTATIONS = ['portrait', 'landscape'];
+export const REPORT_ORIENTATION_LABEL = { portrait: 'Dikey', landscape: 'Yatay' };
+export const REPORT_MARGIN_MIN_MM = 10;
+export const REPORT_MARGIN_MAX_MM = 50;
+// Gövde puntosu 11–14: depo kuralı ekran metnini 11px altına indirmez; 11 taban
+// mevcut görünümle aynıdır (ölçek 1), üstü daha okunaklıdır.
+export const REPORT_FONT_SIZE_MIN = 11;
+export const REPORT_FONT_SIZE_MAX = 14;
+export const REPORT_FONT_SIZE_DEFAULT = 11; // DOCX/UDF gövde tabanı 11 pt
+
+/** Varsayılan rapor biçimi — 20 mm simetrik kenar boşluğu, 11 pt, dikey A4. */
+export function emptyReportFormat(over = {}) {
+  const base = {
+    fontFamily: 'arial',
+    fontSizePt: REPORT_FONT_SIZE_DEFAULT,
+    marginsMm: { top: 20, right: 20, bottom: 20, left: 20 },
+    orientation: 'portrait'
+  };
+  return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };
+}
+function fmtClamp(v, min, max, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
+/** Eksik/bozuk biçimi güvenli hâle getirir; bilinmeyen alan korunur. */
+export function normalizeReportFormat(src) {
+  const base = emptyReportFormat();
+  if (!src || typeof src !== 'object') return base;
+  const fontFamily = REPORT_FONT_KEYS.includes(src.fontFamily) ? src.fontFamily : base.fontFamily;
+  let size = Number(src.fontSizePt);
+  if (!Number.isFinite(size)) size = base.fontSizePt;
+  size = Math.min(REPORT_FONT_SIZE_MAX, Math.max(REPORT_FONT_SIZE_MIN, Math.round(size * 2) / 2));
+  const m = src.marginsMm && typeof src.marginsMm === 'object' ? src.marginsMm : {};
+  const marginsMm = {
+    top: fmtClamp(m.top, REPORT_MARGIN_MIN_MM, REPORT_MARGIN_MAX_MM, base.marginsMm.top),
+    right: fmtClamp(m.right, REPORT_MARGIN_MIN_MM, REPORT_MARGIN_MAX_MM, base.marginsMm.right),
+    bottom: fmtClamp(m.bottom, REPORT_MARGIN_MIN_MM, REPORT_MARGIN_MAX_MM, base.marginsMm.bottom),
+    left: fmtClamp(m.left, REPORT_MARGIN_MIN_MM, REPORT_MARGIN_MAX_MM, base.marginsMm.left)
+  };
+  const orientation = REPORT_ORIENTATIONS.includes(src.orientation) ? src.orientation : base.orientation;
+  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation };
+}
+
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------
 // Bilirkişi elle doldurur; boşsa rapora "—" yazılır (uydurulmaz). Alanlar
 // rapor 4. bölümünü (teknik özellikler/inceleme ortamı) besler.
@@ -930,6 +989,9 @@ export function emptyCase(over = {}) {
       pageView: false,
       // Teknik ortam (v2.222): elle doldurulur; boşsa rapora "—".
       tech: emptyReportTech(),
+      // Rapor biçimi (v2.238): sayfa · font · punto · yön. TEK KAYNAK; ekran,
+      // yazdırma/PDF (@page), DOCX ve UDF bu değerleri okur.
+      format: emptyReportFormat(),
       // Künye ek alanları (v2.225): elle doldurulur; boşsa rapora "—".
       impartiality: '',
       annexList: '',
@@ -1322,6 +1384,8 @@ export function normalizeCase(src = {}) {
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.
       tech: normalizeReportTech(report.tech),
+      // Rapor biçimi (v2.238): eksik/bozuk güvenli varsayılana çekilir.
+      format: normalizeReportFormat(report.format),
       // Künye ek alanları (v2.225): boş metin varsayılan.
       impartiality: str(report.impartiality),
       annexList: str(report.annexList),

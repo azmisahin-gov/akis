@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.237.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.238.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.238 — Rapor biçimi: sayfa · font · punto · marj · yön
+
+Kullanıcı: "Raporun hem ekranda hem UDF/DOCX/PDF çıktısında daha iyi görünmesi
+için font, punto, sayfa marjı ve yatay/dikey ayarlanabilsin."
+
+### KULLANICI NE GÖRECEK
+- **Kontrol → Rapor biçimi** panelinden yazı tipi (Arial/Times New Roman/Segoe
+  UI), gövde puntosu (11–14), kenar boşlukları (10–50 mm) ve yön (dikey/yatay)
+  seçilir.
+- Seçim **ekran önizlemesinde**, **yazdırma/PDF'te** ve **Word (DOCX)** çıktısında
+  uygulanır. PDF/yazdırma artık **A4 + ölçülü kenar boşluğu** ile çıkar (önceden
+  sayfa ayarı yoktu; tarayıcı varsayılanı kullanılıyordu).
+- **UDF (UYAP) resmî çıktı**: yazı tipi **Times New Roman**, yön **dikey A4**
+  olarak korunur (resmî standart); yalnız gövde puntosu ve kenar boşlukları
+  biçimden gelir.
+- **Varsayılan** 11 pt · 20 mm simetrik kenar boşluğu · dikey. UDF kenar
+  boşluğu önceki 60 mm'den 20 mm'ye çekildi (çok genişti); gerekirse panelden
+  ayarlanır.
+
+### Ne değişti
+- `case.report.format` TEK KAYNAK (fontFamily, fontSizePt, marginsMm, orientation).
+- HTML: `--paper-font`, `--paper-scale`, `--paper-margin`; A4 kılavuz/sığdırma
+  yönü dikkate alır. Yazdırma: dinamik `@page { size: A4 <yön>; margin: …mm }`.
+- DOCX: `w:rFonts`, `w:sz` (ölçek), `w:pgSz` (yatay), `w:pgMar` (mm→twip).
+- UDF: gövde `size` ölçeklenir, `pageFormat` marjları mm'den; font/yön resmî.
+
+### Koruyan test
+- `birim [93]` (şema/aralık/@page), `rapor` Senaryo 26 (üç çıktıya yansır).
 
 ## v2.237 — Bölüm listesi etkileşimi: hız ve satır menüsü
 

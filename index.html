@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.237'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.238'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 60000; // dakikada bir denetle
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.237">
-  <link rel="stylesheet" href="assets/app.css?v=2.237">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.238">
+  <link rel="stylesheet" href="assets/app.css?v=2.238">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.237">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.238">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.237"></script>
+  <script type="module" src="assets/app.js?v=2.238"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -253,6 +253,7 @@
             <details class="report-tech-box" id="reportKunyeBox"><summary>Rapor künyesi ek alanları (ekler · tarafsızlık)</summary><div class="report-tech" id="reportKunyeFields"></div></details>
             <details class="report-tech-box" id="reportQcBox"><summary>Kalite kontrolü ek alanları (ikinci kontrol)</summary><div class="report-tech" id="reportQcFields"></div></details>
             <details class="report-tech-box" id="reportColumnsBox"><summary>Rapor alanları · tablo sütunları</summary><div class="report-tech" id="reportColumnsFields"></div></details>
+            <details class="report-tech-box" id="reportFormatBox"><summary>Rapor biçimi · sayfa · font · punto</summary><div id="reportFormatFields"></div></details>
             <details class="report-tech-box" id="reportAnnexBox"><summary>Ekler · başlık / içerik / not</summary><div class="report-tech" id="reportAnnexFields"></div></details>
             <div class="report-revisions" id="reportRevisions"></div>
           </aside>

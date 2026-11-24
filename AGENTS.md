@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.237.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.238.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5282,3 +5282,52 @@ sürüm + tasarım yeşil. Yeni: `birim [82]` (sıra/numara/TOC/ek/özel ek/revi
 `case.report.format` (font + punto + marj + yön) → HTML + yazdırma(`@page`) +
 DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soruları:
 `docs/DENETIM_VE_PLAN.md` §1 (marj mm, UDF font, yatay, PDF yöntemi, punto aralığı).
+
+## YENİ OTURUM DEVRİ (v2.238) — Rapor biçimi (font · punto · marj · yön)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.238** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1422 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni testler | `birim [93]`, `rapor` Senaryo 26 |
+| Açık konu | UDF yön (yatay) doğrulanamadı; imleç konumuna etiket; video (56.12) |
+
+### Ne yapıldı
+- `case.report.format` (schema.js): `{ fontFamily, fontSizePt(11–14), marginsMm(10–50), orientation }`.
+  TEK KAYNAK. `emptyReportFormat`/`normalizeReportFormat` ile doğrulanır; bilinmeyen korunur.
+- **Ekran:** `--paper-font`, `--paper-scale`, `--paper-margin`; A4 kılavuz/sığdırma yönü
+  (`reportFitWidth(availH, orientation)`, `reportPageHeight`, `renderPageGuides`) dikkate alır.
+- **Yazdırma/PDF:** `applyReportFormat` dinamik `<style id="reportPrintStyle">@page { size: A4 <yön>;
+  margin: …mm }</style>` üretir. **Önceden @page HİÇ yoktu** — en somut eksik kapandı.
+- **DOCX:** `docxFormatInit` → `__docxFmt`; wRun (font+sz ölçeği), styles.xml, `w:pgSz`/`w:pgMar`/`w:orient`.
+- **UDF:** gövde `size` `fontSizePt/11` ile ölçeklenir; `pageFormat` marjları mm'den. **Font/yön resmî
+  (Times New Roman + dikey A4) DEĞİŞMEZ** (UYAP standardı).
+- Panel: Kontrol → **Rapor biçimi · sayfa · font · punto** (`#reportFormatBox`/`#reportFormatFields`).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **UDF resmî çıktı font/yön KİLİTLİ** (Times New Roman + dikey A4). `fontFamily`/`orientation`
+   yalnız ekran + yazdırma + DOCX içindir. UDF'e yalnız punto ve kenar boşluğu uygulanır.
+2. **Varsayılan biçim:** 11 pt · 20 mm simetrik marj · dikey. UDF marjı 60 mm'den 20 mm'ye çekildi
+   (çok genişti); panelden 10–50 mm arası ayarlanır.
+3. **Punto 11–14.** Depo kuralı ekran metnini 11px altına indirmez; 11 taban = mevcut görünüm (ölçek 1).
+4. **Yazdırma çift marj olmaz:** ekran `--paper-margin` (kâğıt dolgusu); yazdırmada `@page` marjı +
+   kâğıt dolgusu `0` (`.report-paper.report-paper{padding:0}`).
+5. **CSS borcu nöbetçisi:** `.report-paper.report-paper` (çift sınıf) kullanılır ki `.report-paper{padding}`
+   app.css ile TAM eşleşip borç sayacını (app→layer ≤500) artırmasın. Yeni override eklerken aynı desen.
+6. **tek kaynak:** üç çıktı + yazdırma `reportFormat(c)`/`__docxFmt`/UDF `fmt` üzerinden okur; kopya yok.
+
+### Dürüst sınırlar
+- **UDF yatay (landscape) DESTEKLENMİYOR:** depoda doğrulanmış `paperOrientation` yatay kodu yok;
+  resmî çıktıda tahmin edilmedi (dikey kalır). Gerekirse UYAP editöründe doğrulanıp eklenir.
+- **Etkileşim gerçek tarayıcıda tıklanarak ölçülmedi** (bu ortamda WS/CDP istemcisi yok). Fonksiyonel
+  yol `rapor` Senaryo 26 + headless yükleme (v2.238, JS hatası 0) ile doğrulandı.
+- PDF = tarayıcı yazdırma (ayrı PDF motoru yok; depo "harici paket yok" ilkesi).
+
+### SIRADAKİ İŞLER
+1. **UDF yatay** (doğrulanmış kod ile) + gerçek tarayıcıda biçim paneli tıklama ölçümü.
+2. **C1 — Hızlı etiket imleç konumuna eklenmeli** (eski not #9).
+3. **C2 — "Bekleyen" ↔ "Çözümlendi"(machine) netleştirme** (eski not #5).
+4. **Video (56.12)** desteği: mp4/mov sesi demux/decode edilebilir mi (eski not #16).
+5. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).

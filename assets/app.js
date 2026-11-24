@@ -67,16 +67,29 @@ import {
   REPORT_COLUMN_TABLE_LABELS,
   REPORT_COLUMN_LOCKED,
   emptyReportColumns,
-  normalizeReportColumns
-} from './schema.js?v=2.237';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.237';
+  normalizeReportColumns,
+  REPORT_FONT_DEFS,
+  REPORT_FONT_KEYS,
+  REPORT_FONT_LABEL,
+  REPORT_FONT_CSS,
+  REPORT_FONT_DOCX,
+  REPORT_ORIENTATIONS,
+  REPORT_ORIENTATION_LABEL,
+  REPORT_MARGIN_MIN_MM,
+  REPORT_MARGIN_MAX_MM,
+  REPORT_FONT_SIZE_MIN,
+  REPORT_FONT_SIZE_MAX,
+  emptyReportFormat,
+  normalizeReportFormat
+} from './schema.js?v=2.238';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.238';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.237';
+const APP_VERSION = '2.238';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10594,10 +10607,13 @@ function reportFitPref() {
     return false;
   }
 }
-function reportFitWidth(availH) {
+function reportFitWidth(availH, orientation) {
   const h = Number(availH) || 0;
   if (h <= 0) return 900;
-  return Math.max(320, Math.min(900, Math.round(((h - 8) * 210) / 297)));
+  // Dikey A4: genişlik = yükseklik × 210/297. Yatay: × 297/210 (v2.238).
+  const ratio = orientation === 'landscape' ? 297 / 210 : 210 / 297;
+  const cap = orientation === 'landscape' ? 1200 : 900;
+  return Math.max(320, Math.min(cap, Math.round((h - 8) * ratio)));
 }
 function applyReportFit() {
   const ws = $('#reportWorkspace');
@@ -10617,7 +10633,7 @@ function applyReportFit() {
   const introH = intro && getComputedStyle(intro).display !== 'none' ? intro.getBoundingClientRect().height : 0;
   const barH = bar ? bar.getBoundingClientRect().height : 0;
   const avail = (v ? v.clientHeight : 0) - introH - barH - 24;
-  paper.style.maxWidth = reportFitWidth(avail) + 'px';
+  paper.style.maxWidth = reportFitWidth(avail, reportFormat(currentCase()).orientation) + 'px';
 }
 function setReportFit(on) {
   try {
@@ -10645,7 +10661,9 @@ function reportPageHeight() {
   if (!paper) return 0;
   const w = paper.getBoundingClientRect().width || 0;
   if (!w) return 0;
-  return Math.round((w * 297) / 210);
+  const o = reportFormat(currentCase()).orientation;
+  const ratio = o === 'landscape' ? 210 / 297 : 297 / 210;
+  return Math.round(w * ratio);
 }
 function reportPageCountFor(contentH, pageH) {
   const h = Number(contentH) || 0;
@@ -11529,7 +11547,8 @@ function renderPageGuides() {
   const w = rect.width || 0;
   const h = paper.scrollHeight || rect.height || 0;
   if (!w || !h) return;
-  const pageH = Math.round((w * 297) / 210); // A4: yükseklik = genişlik × 297/210
+  const __o = reportFormat(currentCase()).orientation;
+  const pageH = Math.round(w * (__o === 'landscape' ? 210 / 297 : 297 / 210)); // A4 oranı (yön)
   if (pageH < 200) return;
   const pages = Math.max(1, Math.ceil(h / pageH));
   // Kılavuz çizgileri yalnız "Sayfalı önizleme" açıkken çizilir; "Sayfaya
@@ -11568,6 +11587,107 @@ function renderReportReadiness(c) {
     `<p class="ready-concepts"><b>Dahil</b> = rapora girer (iskelet) · <b>Kontrol</b> = bölüm dinlenip onaylandı (ses görünümü).</p>` +
     readinessRowsHtml(r);
 }
+// ---- Rapor biçimi (v2.238) ----------------------------------------------
+// TEK KAYNAK: case.report.format. Ekran önizlemesi + yazdırma/PDF (@page) +
+// DOCX + UDF buradan beslenir. UYAP UDF yazı tipi resmî olarak Times New Roman
+// ve dikey A4 kalır; `fontFamily` ekran/Word içindir.
+const MM_TO_PX = 96 / 25.4;
+function reportFormat(c) {
+  return normalizeReportFormat(c && c.report && c.report.format);
+}
+function ensureReportPrintStyle() {
+  if (!document.head || typeof document.getElementById !== 'function') return null;
+  let st = document.getElementById('reportPrintStyle');
+  if (!st) {
+    st = document.createElement('style');
+    st.id = 'reportPrintStyle';
+    document.head.appendChild(st);
+  }
+  return st;
+}
+function applyReportFormat(c) {
+  const fmt = reportFormat(c);
+  const paper = $('#reportPreview');
+  if (paper && paper.style) {
+    if (typeof paper.style.setProperty === 'function') {
+      paper.style.setProperty('--paper-font', REPORT_FONT_CSS[fmt.fontFamily] || "Arial, sans-serif");
+      paper.style.setProperty('--paper-scale', String(fmt.fontSizePt / 11));
+      const m = fmt.marginsMm;
+      // Kenar boşluğu CSS değişkeniyle verilir; yazdırmada @page devralır
+      // (kâğıt iç dolgusu sıfırlanır), böylece çift marj oluşmaz.
+      paper.style.setProperty(
+        '--paper-margin',
+        `${Math.round(m.top * MM_TO_PX)}px ${Math.round(m.right * MM_TO_PX)}px ` +
+          `${Math.round(m.bottom * MM_TO_PX)}px ${Math.round(m.left * MM_TO_PX)}px`
+      );
+    }
+    if (paper.dataset) paper.dataset.orientation = fmt.orientation;
+  }
+  // Yazdırma/PDF için GERÇEK sayfa ayarı: A4 + yön + ölçülü kenar boşluğu.
+  try {
+    const st = ensureReportPrintStyle();
+    if (st) {
+      const m = fmt.marginsMm;
+      st.textContent = `@page { size: A4 ${fmt.orientation}; margin: ${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm; }`;
+    }
+  } catch (e) {}
+}
+function renderReportFormat(c) {
+  const host = $('#reportFormatFields');
+  if (!host) return;
+  const f = reportFormat(c);
+  const fontOpts = REPORT_FONT_DEFS.map(
+    (d) => `<option value="${esc(d.key)}"${d.key === f.fontFamily ? ' selected' : ''}>${esc(d.label)}</option>`
+  ).join('');
+  const sizeOpts = [];
+  for (let s = REPORT_FONT_SIZE_MIN; s <= REPORT_FONT_SIZE_MAX + 0.001; s += 0.5) {
+    const v = Math.round(s * 2) / 2;
+    sizeOpts.push(`<option value="${v}"${Math.abs(v - f.fontSizePt) < 0.01 ? ' selected' : ''}>${v} pt</option>`);
+  }
+  const orOpts = REPORT_ORIENTATIONS.map(
+    (o) => `<option value="${o}"${o === f.orientation ? ' selected' : ''}>${esc(REPORT_ORIENTATION_LABEL[o] || o)}</option>`
+  ).join('');
+  const mx = (k, lab) =>
+    `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="1" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
+  host.innerHTML =
+    `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4) ve Word (DOCX) bu biçimi kullanır. ` +
+    `UYAP UDF resmî olarak Times New Roman ve dikey A4 üretir; UDF yazı tipi/yönü buradan değişmez.</p>` +
+    `<div class="report-tech">` +
+    `<label class="field rtech-field"><span>Yazı tipi (ekran/Word)</span><select data-fmt-font>${fontOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
+    `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
+    `</div>` +
+    `<div class="report-tech">` +
+    mx('top', 'Üst') +
+    mx('right', 'Sağ') +
+    mx('bottom', 'Alt') +
+    mx('left', 'Sol') +
+    `</div>`;
+}
+// Biçim paneli değişikliğini modelden okuyup uygular; kâğıt/kilavuz tazelenir.
+function readReportFormatPanel(c) {
+  const host = $('#reportFormatFields');
+  if (!host || !c) return;
+  const font = host.querySelector('[data-fmt-font]');
+  const size = host.querySelector('[data-fmt-size]');
+  const orient = host.querySelector('[data-fmt-orient]');
+  const marginsMm = {};
+  host.querySelectorAll('[data-fmt-margin]').forEach((el) => {
+    marginsMm[el.dataset.fmtMargin] = el.value;
+  });
+  c.report = c.report || {};
+  c.report.format = normalizeReportFormat({
+    fontFamily: font ? font.value : undefined,
+    fontSizePt: size ? size.value : undefined,
+    orientation: orient ? orient.value : undefined,
+    marginsMm
+  });
+  applyReportFormat(c);
+  applyReportFit();
+  applyReportPageView();
+  renderPageGuides();
+}
+
 function renderReport() {
   const c = currentCase();
   if (!c) return;
@@ -11630,6 +11750,7 @@ function renderReport() {
   renderReportQc(c);
   renderReportAnnexEditor(c);
   renderReportColumns(c);
+  renderReportFormat(c);
   renderReportRevisions(c);
   const on = (k) => reportSectionOn(c, k);
   const map = reportNumberMap(c);
@@ -11838,6 +11959,7 @@ function renderReport() {
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   applyReportMode();
+  applyReportFormat(c);
   applyReportFit();
   applyReportPageView();
   const wsEl = $('#reportWorkspace');
@@ -11854,8 +11976,25 @@ function xesc(s = '') {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
 }
+// DOCX biçimi (v2.238): font + punto ölçeği + sayfa/yön/marj. docxXml/makeDocx
+// başında `docxFormatInit(c)` ile doldurulur; wRun/wP/cell bu değerleri okur.
+let __docxFmt = { font: 'Arial', scale: 1, margins: { top: 20, right: 20, bottom: 20, left: 20 }, orientation: 'portrait' };
+function docxFormatInit(c) {
+  const f = reportFormat(c);
+  __docxFmt = {
+    font: REPORT_FONT_DOCX[f.fontFamily] || 'Arial',
+    scale: f.fontSizePt / 11,
+    margins: f.marginsMm,
+    orientation: f.orientation
+  };
+  return __docxFmt;
+}
+function docxSz(v) {
+  const n = Math.round(Number(v) * __docxFmt.scale);
+  return Number.isFinite(n) ? Math.max(8, n) : v;
+}
 function wRun(text, { bold = false, color = null, size = 20, italic = false } = {}) {
-  return `<w:r><w:rPr>${bold ? '<w:b/>' : ''}${italic ? '<w:i/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}<w:sz w:val="${size}"/><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial"/></w:rPr><w:t xml:space="preserve">${xesc(text)}</w:t></w:r>`;
+  return `<w:r><w:rPr>${bold ? '<w:b/>' : ''}${italic ? '<w:i/>' : ''}${color ? `<w:color w:val="${color}"/>` : ''}<w:sz w:val="${docxSz(size)}"/><w:rFonts w:ascii="${__docxFmt.font}" w:hAnsi="${__docxFmt.font}" w:eastAsia="${__docxFmt.font}"/></w:rPr><w:t xml:space="preserve">${xesc(text)}</w:t></w:r>`;
 }
 function wP(
   text = '',
@@ -11922,6 +12061,7 @@ function headingXml(text, level = 1) {
   });
 }
 function docxXml(c) {
+  docxFormatInit(c);
   const on = (k) => reportSectionOn(c, k);
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
@@ -12202,7 +12342,15 @@ function docxXml(c) {
   body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   for (const key of reportBodyOrder(c)) if (on(key) && blocks[key]) body += blocks[key]();
   if (on('signature')) body += blocks.signature();
-  const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1276" w:bottom="1134" w:left="1276" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
+  // Sayfa geometrisi biçimden gelir (v2.238): A4, yön, mm→twip marj.
+  const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
+  const landscape = __docxFmt.orientation === 'landscape';
+  const A4W = 11906,
+    A4H = 16838;
+  const pgW = landscape ? A4H : A4W;
+  const pgH = landscape ? A4W : A4H;
+  const dm = __docxFmt.margins;
+  const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="${pgW}" w:h="${pgH}"${landscape ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${mmToTw(dm.top)}" w:right="${mmToTw(dm.right)}" w:bottom="${mmToTw(dm.bottom)}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
 async function makeDocx() {
@@ -12210,6 +12358,7 @@ async function makeDocx() {
   if (!window.JSZip) {
     throw new Error('DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
   }
+  docxFormatInit(c);
   const zip = new JSZip();
   zip.file(
     '[Content_Types].xml',
@@ -12229,7 +12378,7 @@ async function makeDocx() {
   );
   w.file(
     'styles.xml',
-    `<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial"/><w:sz w:val="22"/><w:lang w:val="tr-TR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="90" w:line="276"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="Heading 1"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="280" w:after="100"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1C426B"/><w:sz w:val="24"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="Heading 2"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="180" w:after="70"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="385873"/><w:sz w:val="20"/></w:rPr></w:style></w:styles>`
+    `<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${__docxFmt.font}" w:hAnsi="${__docxFmt.font}"/><w:sz w:val="${docxSz(22)}"/><w:lang w:val="tr-TR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="90" w:line="276"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="Heading 1"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="280" w:after="100"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1C426B"/><w:sz w:val="${docxSz(24)}"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="Heading 2"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="180" w:after="70"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="385873"/><w:sz w:val="${docxSz(20)}"/></w:rPr></w:style></w:styles>`
   );
   w.file(
     'header1.xml',
@@ -12281,6 +12430,10 @@ function udfSignedColor(hex) {
 }
 async function makeUdf() {
   const c = currentCase();
+  // Rapor biçimi (v2.238): UDF resmî olarak Times New Roman + dikey A4 kalır;
+  // gövde puntosu ve kenar boşlukları rapor biçiminden gelir.
+  const fmt = reportFormat(c);
+  const udfScale = fmt.fontSizePt / 11;
   if (!window.JSZip) throw new Error('UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
   const templateResponse = await fetch('templates/BOS.udf');
   if (!templateResponse.ok)
@@ -12292,12 +12445,13 @@ async function makeUdf() {
   const formatId = (templateXml.match(/<template\s+format_id="([^"]+)"/i) || [])[1] || '1.8';
   const resolver = (templateXml.match(/<elements\s+resolver="([^"]+)"/i) || [])[1] || 'hvl-default';
   if (!properties || !styles) throw new Error('Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı.');
-  // Match the DOCX page geometry: balanced A4 margins, no horizontal drift.
+  // Kenar boşlukları rapor biçiminden gelir (v2.238); mm cinsinden.
+  const mmStr = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
   properties = properties
-    .replace(/leftMargin="[^"]+"/, 'leftMargin="60.0"')
-    .replace(/rightMargin="[^"]+"/, 'rightMargin="60.0"')
-    .replace(/topMargin="[^"]+"/, 'topMargin="56.7"')
-    .replace(/bottomMargin="[^"]+"/, 'bottomMargin="56.7"');
+    .replace(/leftMargin="[^"]+"/, `leftMargin="${mmStr(fmt.marginsMm.left)}"`)
+    .replace(/rightMargin="[^"]+"/, `rightMargin="${mmStr(fmt.marginsMm.right)}"`)
+    .replace(/topMargin="[^"]+"/, `topMargin="${mmStr(fmt.marginsMm.top)}"`)
+    .replace(/bottomMargin="[^"]+"/, `bottomMargin="${mmStr(fmt.marginsMm.bottom)}"`);
   const textParts = [];
   let codePointOffset = 0;
   let serial = 0;
@@ -12327,8 +12481,9 @@ async function makeUdf() {
   ) {
     const ref = addText(text);
     const fg = colors[color] ?? colors.body;
+    const szEf = Math.round(size * udfScale * 10) / 10; // punto ölçeği (v2.238)
     const formatted = ref
-      .replace('size="11"', `size="${size}"`)
+      .replace('size="11"', `size="${szEf}"`)
       .replace('bold="false"', `bold="${bold ? 'true' : 'false'}"`)
       .replace('italic="false"', `italic="${italic ? 'true' : 'false'}"`)
       .replace('underline="false"', 'underline="false"')
@@ -12369,7 +12524,7 @@ async function makeUdf() {
             const formatted = ref
               .replace('bold="false"', `bold="${bold ? 'true' : 'false'}"`)
               .replace(`foreground="${colors.body}"`, `foreground="${fg}"`)
-              .replace('size="11"', `size="${isHeader ? 9.5 : 9.5}"`);
+              .replace('size="11"', `size="${Math.round(9.5 * udfScale * 10) / 10}"`);
             return `<cell colspan="1" align="top" fillColor="${fill}" border="borderCell" borderSpec="3" paddingTop="3" paddingBottom="3" paddingLeft="4" paddingRight="4"><paragraph Alignment="0" SpaceBefore="1" SpaceAfter="1" LineSpacing="1.05">${formatted}</paragraph></cell>`;
           })
           .join('');
@@ -15256,6 +15411,15 @@ $('#reportTechFields')?.addEventListener('input', (e) => {
   persist();
 });
 $('#reportTechFields')?.addEventListener('change', () => renderReport());
+// Rapor biçimi (v2.238) — ekran önizlemesi + yazdırma/PDF + DOCX biçimi.
+// Değişince model güncellenir, kâğıt ve A4 kılavuzları tazelenir.
+$('#reportFormatFields')?.addEventListener('change', () => {
+  const c = currentCase();
+  if (!c) return;
+  readReportFormatPanel(c);
+  persist();
+  renderReportFormat(c);
+});
 // Künye ek alanları (v2.225) — aynı desen: yazarken model, çıkınca önizleme.
 $('#reportKunyeFields')?.addEventListener('input', (e) => {
   const inp = e.target.closest('[data-report-kunye]');
@@ -16271,6 +16435,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.238': {
+    title: 'Rapor biçimi: font, punto, kenar boşluğu, yön',
+    body:
+      'Kontrol → Rapor biçimi panelinden yazı tipi, gövde puntosu (11–14), kenar boşlukları (mm) ve ' +
+      'yön (dikey/yatay) seçebilirsiniz. Seçim ekran önizlemesine, yazdırma/PDF sayfasına (A4 + ' +
+      'ölçülü kenar boşluğu) ve Word (DOCX) çıktısına uygulanır. UYAP UDF resmî olarak Times New ' +
+      'Roman ve dikey A4 üretir; UDF yazı tipi/yönü buradan değişmez, yalnız punto ve kenar boşluğu ' +
+      'uygulanır.'
+  },
   '2.237': {
     title: 'Hız değişimi listeyi bozmuyor; menü ekranda kalıyor',
     body:
