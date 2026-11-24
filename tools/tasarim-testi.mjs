@@ -1966,5 +1966,33 @@ console.log('\n[2ce] Okuma metni bağımsız bölüm (v2.234)');
   check('etiket bağımsız (5. bölüm içinde değil)', /reading: 'Okuma metni'/.test(js) && !/Okuma metni \(5\. bölüm içinde\)/.test(js));
 }
 
+console.log('\n[2cf] Rapor alanları: tablo sütunları (v2.235)');
+{
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('panel HTML\'de', /id="reportColumnsBox"/.test(html) && /id="reportColumnsFields"/.test(html));
+  check(
+    'şema: sütun tanımları tek kaynak',
+    /REPORT_COLUMN_TABLES = \{/.test(schema) && /REPORT_COLUMN_LABELS = \{/.test(schema) && /function normalizeReportColumns/.test(schema) && /function emptyReportColumns/.test(schema)
+  );
+  check(
+    'case.report.columns varsayılan + normalize',
+    /columns: emptyReportColumns\(\)/.test(schema) && /columns: normalizeReportColumns\(report\.columns\)/.test(schema)
+  );
+  check(
+    'filtre + panel fonksiyonları',
+    /function reportTableColumns\(/.test(js) && /function renderReportColumns\(/.test(js) && /function setReportColumn\(/.test(js)
+  );
+  check(
+    'üç çıktı da filtreyi kullanır',
+    ['inventory', 'origin', 'acquisition', 'wer', 'levels'].every((t) => new RegExp(`reportTableColumns\\(c, '${t}'`).test(js))
+  );
+  check('revizyona dâhil', /columns: normalizeReportColumns\(r\.columns\)/.test(js) && /columns: 'Rapor alanları/.test(js));
+  const css = layer.slice(layer.indexOf('/* v2.235'), layer.indexOf('/* v2.233'));
+  check('v2.235 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

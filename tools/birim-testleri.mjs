@@ -131,7 +131,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4334,6 +4334,29 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('okuma grubu varsa blok çizilir', T.reportBlockRenders(c, 'reading'), true);
   c.materials = [{ id: 'm1', name: 'a.wav', segments: [] }];
   eq('bölüm yoksa okuma bloğu çizilmez', T.reportBlockRenders(c, 'reading'), false);
+}
+
+// [90] Rapor alanları: tablo sütun görünürlüğü (v2.235).
+{
+  eq('reportColumnOn tanımlı', typeof T.reportColumnOn, 'function');
+  eq('varsayılan açık', T.reportColumnOn({ report: {} }, 'inventory', 'sha256'), true);
+  const c = T.emptyCaseForTest({ id: 'cCols' });
+  c.report.columns = { inventory: { sha256: false } };
+  eq('kapatılan sütun false', T.reportColumnOn(c, 'inventory', 'sha256'), false);
+  const t = T.reportTableColumns(c, 'inventory', T.REPORT_TEXT.inventoryHeaders, [[1, 2, 3, 4, 5, 6, 7]], [10, 20, 30, 40, 50, 60, 70]);
+  eq('SHA-256 başlığı süzüldü', t.headers.includes('SHA-256'), false);
+  eq('sütun sayısı 6', t.headers.length, 6);
+  eq('satır 6 hücre', t.rows[0].length, 6);
+  eq('genişlik 6', t.widths.length, 6);
+  eq('anahtarlar süzüldü', t.keys.join(','), 'name,format,size,duration,channels,sampleRate');
+  const allOff = T.emptyReportColumns();
+  for (const k of T.REPORT_COLUMN_TABLES.inventory) allOff.inventory[k] = false;
+  c.report.columns = allOff;
+  eq('hepsi kapalı → empty', T.reportTableColumns(c, 'inventory', T.REPORT_TEXT.inventoryHeaders, [], null).empty, true);
+  const n = T.normalizeReportColumns({ inventory: { sha256: false } });
+  eq('normalize: kapatma korunur', n.inventory.sha256, false);
+  eq('normalize: eksik alan açık', n.inventory.name, true);
+  eq('emptyReportColumns tümü açık', T.emptyReportColumns().inventory.sha256, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

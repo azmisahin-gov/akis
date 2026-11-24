@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.234.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.235.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,22 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.235) — Rapor alanları (tablo sütunları)
+
+### DEĞİŞMEZ KURALLAR (v2.235)
+
+1. **TEK KAYNAK:** `REPORT_COLUMN_TABLES` + `REPORT_COLUMN_LABELS` (schema.js).
+   Yeni bir tablo/sütun eklerken buraya yazın; panel, filtre ve üç çıktı aynı
+   kaynaktan beslenir.
+2. **Filtre tek fonksiyon:** `reportTableColumns(c, table, headers, rows, widths)`
+   başlık/satır/genişlik üçlüsünü birlikte süzer. Çıktılarda ayrı sütun seçme
+   mantığı yazmayın.
+3. **Veri SİLİNMEZ:** yalnız gösterim. Tüm sütunlar kapalıysa boş tablo yerine
+   `REPORT_TEXT.noColumns` yazılır.
+4. `case.report.columns` varsayılan tümü açık; eksik alan açık varsayılır;
+   bilinmeyen tablo korunur. **Rapor revizyonuna dâhildir** (`columns`).
+5. Test: `birim [90]`, `rapor` 24, `tasarim [2cf]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.234) — Okuma metni bağımsız bölüm
 

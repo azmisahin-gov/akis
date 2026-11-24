@@ -854,5 +854,25 @@ console.log('\n[Senaryo 23] özel ek başlık/içerik/not üç çıktıda (v2.22
   checkShared('özel ek notu', 'Yalnız belgelenmiş bulgu.', H, U, D);
 }
 
+// Senaryo 24: rapor alanları — tablo sütunu aç/kapa (v2.235).
+console.log('\n[Senaryo 24] rapor alanları: tablo sütunu aç/kapa (v2.235)');
+{
+  const c = withMaterial();
+  c.report = { sections: { s3: true }, columns: { inventory: { sha256: false } } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  check('SHA-256 sütunu kapalı (H): değer yok', !H.includes('abc123'));
+  check('SHA-256 sütunu kapalı (U): değer yok', !U.includes('abc123'));
+  check('SHA-256 sütunu kapalı (D): değer yok', !D.includes('abc123'));
+  checkShared('diğer envanter sütunu korunur', 'DOSYA BİÇİMİ', H, U, D);
+
+  const off = withMaterial();
+  off.report = {
+    sections: { s3: true },
+    columns: { inventory: { name: false, format: false, size: false, duration: false, channels: false, sampleRate: false, sha256: false } }
+  };
+  const H2 = htmlText(off), U2 = await udfText(off), D2 = await docxText(off);
+  checkShared('tüm sütunlar kapalı → uyarı', REPORT_TEXT.noColumns, H2, U2, D2);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);
