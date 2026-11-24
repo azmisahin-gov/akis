@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.243.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.244.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.244 — İş yükü özeti: anlamlı hâle getirildi
+
+Kullanıcı geri bildirimi: "Sayılar var ama tam olarak bir şey ifade etmiyor;
+2 saatlik kayıt ama bir haftadır uğraşıyorum." — Buna göre panel **hikâye** anlatır
+hâle geldi ve yanıltıcı öğe ayrıldı.
+
+### KULLANICI NE GÖRECEK
+- Panelin başında **tek satır özet**: *"2 sa 40 dk ses · 9 kayıt · 645 bölüm ·
+  %99 kontrol edildi · kalan 5 bölüm."*
+- Yeni KPI'lar: **Ortalama bölüm** (hedef 15–30 sn) ve **Kapsam %**.
+- **"Kapsam boşluğu" artık "Zorluk"ta değil, ayrı "Kapsam" bölümünde.** Açıklama:
+  *bölümlenmemiş aralık = bölümler arası süre (çoğu zaman sessizlik); "konuşma
+  yok" demek değildir; otomatik düzeltilmez.* (Önceki "300 boşluk = 300 sorun"
+  izlenimi yanıltıcıydı.)
+- "Kontrol bekleyen" → **"Kalan iş (bölüm)"** olarak öne çıktı; kalan yoksa özet
+  satırı "kalan yok" der.
+
+### Ne değişti
+- `caseWorkload` → `avgSegmentSec`, `coveragePct`, `coverageUnknown`;
+  `workloadSummaryHtml` başlık satırı + kapsam ayrımı. Test `birim [97]` genişledi.
+
+### Dürüst sınır
+- Bu panel **ingredients** gösterir, **harcanan takvim/zaman** göstergesi DEĞİL.
+  Gerçek "kaç saat uğraştım" ancak **etkin çalışma süresi** izlenerek ölçülür;
+  o ayrı bir özellik olarak planlanabilir (geçmiş geri kazanılamaz).
 
 ## v2.243 — İş yükü özeti (ölçülen göstergeler)
 

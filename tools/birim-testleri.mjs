@@ -4579,6 +4579,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('konuşmacı etiketi 3 (S1,S2 + S1)', w.speakerLabels, 3);
   eq('sorular 1/2', `${w.questionsAnswered}/${w.questionsTotal}`, '1/2');
   eq('veri var', w.hasData, true);
+  near('ortalama bölüm ≈ 404,4 sn', w.avgSegmentSec, 3640 / 9, 0.5);
+  eq('kapsam %2 (m1 80/3600; m2 süre yok)', w.coveragePct, 2);
+  eq('kapsam hesaplanamayan kayıt 1 (m2)', w.flags.coverageUnknown, 1);
   // Boş dosya güvenli
   const e = T.caseWorkload({ materials: [] });
   eq('boş: hasData false', e.hasData, false);

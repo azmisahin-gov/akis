@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.243.**
+yazılır. **Güncel sürüm: v2.244.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.244 — İş yükü özeti: anlamlı hâle getirildi (TAMAMLANDI)
+
+- Tek satır özet başlığı; Ortalama bölüm + Kapsam % KPI'ları.
+- "Kapsam boşluğu" ayrı **Kapsam** bölümüne taşındı (yanıltıcı "sorun" izlenimi kalktı).
+- "Kalan iş (bölüm)" öne çıktı. Dürüst sınır: harcanan zamanı göstermez.
+- Koruyan test: `birim [97]` (genişledi).
 
 ## v2.243 — İş yükü özeti (ölçülen göstergeler) (TAMAMLANDI)
 

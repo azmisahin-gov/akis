@@ -1,4 +1,4 @@
-# Özellikler (v2.243 — mevcut durum)
+# Özellikler (v2.244 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -263,6 +263,11 @@ tuşları bozulmaz.
   işaretleri** (üst üste, anlaşılmayan, sessizlik, telefon, müzik, gürültü, zaman,
   uzun bölüm, birleştirme adayı, kapsam boşluğu). **Süre/ücret tahmini üretilmez**;
   yalnız gerçek sayımlar gösterilir (`birim [97]`).
+  **v2.244:** panelin başında **tek satır özet** (ses · kayıt · bölüm · kontrol % ·
+  kalan iş); **Ortalama bölüm** ve **Kapsam %** KPI'ları; "kapsam boşluğu" artık
+  "zorluk" değil ayrı **Kapsam** bölümünde (bölümlenmemiş aralık = çoğu zaman
+  sessizlik; "konuşma yok" demek değildir). Panel **göstergedir**, harcanan
+  takvim/zamanı göstermez.
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,

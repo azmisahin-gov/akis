@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.243';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.243';
+} from './schema.js?v=2.244';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.244';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.243';
+const APP_VERSION = '2.244';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1558,6 +1558,8 @@ function caseWorkload(c) {
   let speakerLabels = 0;
   let quick = 0;
   let needsWork = 0;
+  let coverageCovered = 0;
+  let coverageTotal = 0;
   const review = { approved: 0, inaudible: 0, relisten: 0, ambiguous: 0, machine: 0, pending: 0 };
   const flags = {
     overlap: 0,
@@ -1623,8 +1625,11 @@ function caseWorkload(c) {
     flags.long += k.long;
     flags.merge += k.merge;
     const cov = segmentCoverage(segs, m.duration);
-    if (cov && cov.ok) flags.coverageGaps += cov.gaps.length;
-    else flags.coverageUnknown++;
+    if (cov && cov.ok) {
+      flags.coverageGaps += cov.gaps.length;
+      coverageCovered += Number(cov.coveredSec) || 0;
+      coverageTotal += Number(cov.totalSec) || 0;
+    } else flags.coverageUnknown++;
   }
   const reviewed = review.approved + review.inaudible;
   const qs = (c && c.questions) || [];
@@ -1640,6 +1645,8 @@ function caseWorkload(c) {
     flags,
     reviewed,
     needsWork,
+    avgSegmentSec: segmentCount ? audioSeconds / segmentCount : 0,
+    coveragePct: coverageTotal > 0 ? Math.round((coverageCovered / coverageTotal) * 100) : null,
     reviewPct: segmentCount ? Math.round((reviewed / segmentCount) * 100) : 0,
     editPct: segmentCount ? Math.round((editedSegments / segmentCount) * 100) : 0,
     questionsTotal: qs.length,
@@ -1664,6 +1671,8 @@ function workloadSummaryHtml(w) {
     chip('Belirsiz', r.ambiguous) +
     chip('Çözümlendi (makine)', r.machine, 'Makine çözümledi; bilirkişi onayı YOK.') +
     chip('Hiç dokunulmadı', r.pending, 'Henüz dinlenmedi (kontrol bekliyor).');
+  // "Zorluk" = gerçekten çalışmayı zorlaştıran işaretler. KAPSAM ayrı bölümdedir:
+  // bölümler arası küçük boşluklar normaldir; "300 boşluk" 300 sorun değildir.
   const flagItems = [
     ['Üst üste gözlem', w.flags.overlap],
     ['Anlaşılmayan gözlem', w.flags.inaudibleObs],
@@ -1673,24 +1682,29 @@ function workloadSummaryHtml(w) {
     ['Gürültü gözlem', w.flags.noise],
     ['Zaman sorunu', w.flags.time],
     ['Uzun bölüm (45 sn+)', w.flags.long],
-    ['Birleştirme adayı', w.flags.merge],
-    ['Kapsam boşluğu', w.flags.coverageGaps]
+    ['Birleştirme adayı', w.flags.merge]
   ].filter((x) => x[1] > 0);
   const flagChips = flagItems.length
     ? flagItems.map(([label, n]) => chip(label, n)).join('')
     : `<span class="wl-note">Zorluk işareti yok.</span>`;
-  const covNote = w.flags.coverageUnknown
-    ? `<span class="wl-chip" title="Süre bilinmeyen kayıtlarda kapsam hesaplanamaz.">Kapsam hesaplanamayan kayıt <b>${w.flags.coverageUnknown}</b></span>`
-    : '';
+  const avg = formatWorkloadDuration(w.avgSegmentSec);
+  const covText = w.coveragePct != null ? `%${w.coveragePct}` : 'hesaplanamadı';
+  const kalanText = w.needsWork === 0 ? 'kalan yok' : `kalan ${w.needsWork} bölüm`;
+  const headline = `${dur} ses · ${w.materialCount} kayıt · ${w.segmentCount} bölüm · %${w.reviewPct} kontrol edildi · ${kalanText}`;
+  const covChips =
+    (w.coveragePct != null ? chip('Kapsam', `%${w.coveragePct}`) : chip('Kapsam', 'hesaplanamadı')) +
+    (w.flags.coverageGaps ? chip('Bölümlenmemiş aralık', w.flags.coverageGaps) : '') +
+    (w.flags.coverageUnknown ? chip('Kapsam hesaplanamayan kayıt', w.flags.coverageUnknown) : '');
   return (
     `<div class="panel-heading"><div><div class="eyebrow">İŞ YÜKÜ</div><h3>İş yükü göstergeleri (ölçülen)</h3></div><span class="subtle-pill">tahmin değil · gerçek sayım</span></div>` +
+    `<p class="wl-headline">${esc(headline)}</p>` +
     `<div class="wl-grid">` +
     kpi('Toplam ses süresi', dur, 'Kayıtların çözülmüş süresi; yoksa bölüm zamanlarından toplanır.') +
     kpi('Kayıt', w.materialCount) +
     kpi('Bölüm', w.segmentCount) +
-    kpi('Kontrol bekleyen', w.needsWork, 'Onaylanmamış TOPLAM bölüm (makine + belirsiz + yeniden dahil).') +
-    kpi('Konuşmacı etiketi', w.speakerLabels, 'Kayıt içi etiket toplamı (S1, S2…). Dosya geneli kişilerden ayrıdır.') +
-    kpi('Sorular', `${w.questionsAnswered}/${w.questionsTotal}`, 'Yanıtlanan / toplam soru.') +
+    kpi('Ortalama bölüm', avg, 'Ses süresi / bölüm sayısı. Hedef 1–3 cümle veya 15–30 sn.') +
+    kpi('Kalan iş (bölüm)', w.needsWork, 'Onaylanmamış TOPLAM bölüm (makine + belirsiz + yeniden dahil).') +
+    kpi('Kapsam', covText, 'Bölümlerin kapladığı ses oranı. Bölümlenmemiş aralık "konuşma yok" demek değildir.') +
     `</div>` +
     `<div class="wl-section"><h4>Kontrol dağılımı</h4><div class="wl-chips">${reviewChips}</div></div>` +
     `<div class="wl-section"><h4>Emek göstergeleri</h4><div class="wl-chips">` +
@@ -1698,7 +1712,8 @@ function workloadSummaryHtml(w) {
     chip('Elle düzeltilen bölüm', `${w.editedSegments} (%${w.editPct})`, 'Metni insan eliyle değiştirilmiş bölümler (textRev>0).') +
     chip('Hızlı onaya uygun', w.quick, 'Gözlemlenebilir ölçütü geçen bekleyen bölümler.') +
     `</div></div>` +
-    `<div class="wl-section"><h4>Zorluk işaretleri</h4><div class="wl-chips">${flagChips}${covNote}</div></div>` +
+    `<div class="wl-section"><h4>Zorluk işaretleri</h4><div class="wl-chips">${flagChips}</div></div>` +
+    `<div class="wl-section"><h4>Kapsam</h4><div class="wl-chips">${covChips}</div><p class="wl-note">Bölümlenmemiş aralık = bölümlerin arasında kalan süre (çoğu zaman sessizlik); <b>&#34;konuşma yok&#34; demek değildir.</b> Otomatik düzeltilmez.</p></div>` +
     `<p class="wl-note">Bu sayılar <b>ölçümdür</b>: gerçek ses süresi, bölüm sayısı, onay/düzeltme sayısı ve gözlem işaretleri. <b>Süre veya ücret tahmini değildir;</b> iş yükünün göstergesidir. Karar bilirkişinindir.</p>`
   );
 }
@@ -16745,6 +16760,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.244': {
+    title: 'İş yükü özeti anlamlı hâle getirildi',
+    body:
+      'İş yükü kartının başına tek satır özet eklendi (ör. "2 sa 40 dk ses · 9 kayıt · 645 bölüm · ' +
+      '%99 kontrol edildi · kalan 5 bölüm"). Ortalama bölüm süresi ve Kapsam % görünür. ' +
+      '"Kapsam boşluğu" artık "zorluk" değil ayrı "Kapsam" bölümünde; bölümlenmemiş aralığın ' +
+      'çoğu zaman sessizlik olduğu ve "konuşma yok" demek olmadığı yazılı. Bu panel ölçülen ' +
+      'göstergeleri verir; harcadığınız takvim/zamanı göstermez.'
+  },
   '2.243': {
     title: 'İş yükü özeti eklendi (ölçülen göstergeler)',
     body:

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.243.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.244.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5487,3 +5487,33 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 1. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
 2. **Video (56.12)** ses çıkarma ölçümü.
 3. İş yükü özetini istenirse **rapora ayrı bölüm** olarak eklemek (şu an yalnız ekran).
+
+## YENİ OTURUM DEVRİ (v2.244) — İş yükü özeti anlamlandırma
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.244** |
+| Testler | `bash tools/test.sh` → **1502 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni/updated test | `birim [97]` genişledi |
+| Açık konu | UDF yatay, video (56.12), **etkin çalışma süresi (öneri)** |
+
+### Ne yapıldı (kullanıcı geri bildirimi: "sayılar anlam ifade etmiyor")
+- Panel başına **tek satır özet** (ses · kayıt · bölüm · kontrol % · kalan iş).
+- **Ortalama bölüm** (ses/bölüm) ve **Kapsam %** KPI'ları; `avgSegmentSec`, `coveragePct`,
+  `coverageUnknown` (`caseWorkload`).
+- **"Kapsam boşluğu" zorluktan ÇIKARILDI** → ayrı **Kapsam** bölümü + açıklama
+  (bölümlenmemiş aralık = çoğu zaman sessizlik; "konuşma yok" değil; otomatik düzeltilmez).
+- "Kontrol bekleyen" → **"Kalan iş (bölüm)"**.
+
+### DERS / SINIR (önemli)
+- Panel **girdileri** (ingredients) gösterir; **harcanan takvim/zamanı** göstermez.
+  "1 sa ses ≈ kaç sa emek" ancak **etkin çalışma süresi izlenerek** ölçülür; geçmiş
+  geri kazanılamaz. İstenirse v2.245: aktif süre sayacı (görünür+etkileşim; boşta >1-2 dk
+  sayılmaz; `case.worklog.workSeconds`), "yaklaşık" etiketiyle.
+
+### SIRADAKİ İŞLER
+1. **Etkin çalışma süresi** (kullanıcı onayına bağlı; geçmiş sayılmaz).
+2. **UDF yatay** (doğrulanmış `paperOrientation`).
+3. **Video (56.12)** ölçümü.
