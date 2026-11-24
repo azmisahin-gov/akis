@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.227';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.227';
+} from './schema.js?v=2.228';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.228';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.227';
+const APP_VERSION = '2.228';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10235,6 +10235,40 @@ function reportRows(c) {
 // yüzdesi" YOK; yalnız madde + sayı. Her madde nereye gidileceğini söyler.
 // Bu bir DENETİM LİSTESİDİR, onay değildir; raporu yine de okuyun.
 const READINESS_TARGETS = ['case', 'audio', 'questions', 'report'];
+// ÖNEM DERECESİ (v2.228): kontrol maddeleri tek düz liste olmaz.
+// blocking = raporu eksik/yanıltıcı bırakır; expert = uzman kararı gerekir;
+// advisory = iyileştirme önerisi (raporu engellemez). TEK KAYNAK: bu harita.
+const READINESS_SEVERITY = {
+  fileNo: 'blocking',
+  court: 'blocking',
+  expert: 'blocking',
+  materials: 'blocking',
+  log: 'blocking',
+  noSegments: 'expert',
+  pending: 'expert',
+  ambiguous: 'expert',
+  speaker: 'expert',
+  time: 'expert',
+  coverage: 'expert',
+  hash: 'expert',
+  origin: 'advisory',
+  longSegments: 'advisory',
+  questions: 'advisory'
+};
+const READINESS_GROUPS = [
+  ['blocking', 'Engelleyen eksikler', 'Rapor eksik veya yanıltıcı olur; önce bunları giderin.'],
+  ['expert', 'Uzman kontrolü gerekli', 'Otomatik karar verilmez; bilirkişi inceleyip karar verir.'],
+  ['advisory', 'İyileştirme önerileri', 'Raporu engellemez; kaliteyi artırır.']
+];
+function readinessSeverity(key) {
+  return READINESS_SEVERITY[key] || 'expert';
+}
+function readinessSummary(r) {
+  const items = (r && Array.isArray(r.items)) ? r.items : [];
+  const s = { blocking: 0, expert: 0, advisory: 0, total: items.length };
+  for (const it of items) s[readinessSeverity(it.key)] += 1;
+  return s;
+}
 function reportReadiness(c) {
   const items = [];
   const materials = c && Array.isArray(c.materials) ? c.materials : [];
@@ -10242,7 +10276,16 @@ function reportReadiness(c) {
   const txt = (v) => String(v == null ? '' : v).trim();
   const add = (key, label, count, target, detail, filter, action) => {
     if (!(count > 0)) return;
-    items.push({ key, label, count, target, detail: detail || '', filter: filter || '', action: action || '' });
+    items.push({
+      key,
+      label,
+      count,
+      target,
+      detail: detail || '',
+      filter: filter || '',
+      action: action || '',
+      severity: readinessSeverity(key)
+    });
   };
   add('fileNo', 'Dosya numarası boş', txt(c && c.fileNo) ? 0 : 1, 'case', 'Kapak ve alt bilgi boş kalır.');
   add('court', 'Mahkeme boş', txt(c && c.court) ? 0 : 1, 'case', 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
@@ -10334,17 +10377,68 @@ function reportReadiness(c) {
   );
   return { ok: items.length === 0, items };
 }
+function readinessRowHtml(it) {
+  return `<button class="ready-row" data-ready-goto="${esc(it.target)}"${it.filter ? ` data-ready-filter="${esc(it.filter)}"` : ''}${it.action ? ` data-ready-action="${esc(it.action)}"` : ''} title="${esc(it.detail || '')}"><span class="ready-n">${it.count}</span><span class="ready-l">${esc(it.label)}</span><span class="ready-go">git ›</span></button>`;
+}
+// v2.228 — Kontrol maddeleri ÖNEM SIRASINA göre gruplanır. Böylece "zorunlu
+// alan boş" ile "597 konuşmacı atanmamış" aynı ağırlıkta görünmez.
 function readinessRowsHtml(r) {
   const items = (r && r.items) || [];
   if (!items.length)
     return '<div class="ready-empty">Eksik görünmüyor. Bu bir denetim listesidir, onay değildir — raporu yine de okuyun.</div>';
-  return items
-    .map(
-      (it) =>
-        `<button class="ready-row" data-ready-goto="${esc(it.target)}"${it.filter ? ` data-ready-filter="${esc(it.filter)}"` : ''}${it.action ? ` data-ready-action="${esc(it.action)}"` : ''} title="${esc(it.detail || '')}"><span class="ready-n">${it.count}</span><span class="ready-l">${esc(it.label)}</span><span class="ready-go">git ›</span></button>`
-    )
-    .join('');
+  return READINESS_GROUPS.map(([sev, title, hint]) => {
+    const list = items.filter((it) => readinessSeverity(it.key) === sev);
+    if (!list.length) return '';
+    return (
+      `<div class="ready-group ready-${sev}">` +
+      `<div class="ready-group-head"><b>${esc(title)}</b><span>${list.length}</span></div>` +
+      `<p class="ready-group-hint">${esc(hint)}</p>` +
+      list.map(readinessRowHtml).join('') +
+      `</div>`
+    );
+  }).join('');
 }
+
+// ---- Rapor çalışma modu (v2.228) -----------------------------------------
+// Düzenle = belge + iskelet, kontrol paneli KAPALI. Kontrol = kontrol paneli
+// AÇIK (önem gruplu). Mod bir UI tercihidir; kayda yazılmaz (localStorage).
+const REPORT_MODES = ['edit', 'check'];
+function reportModePref() {
+  try {
+    const v = localStorage.getItem('akis.reportMode');
+    return REPORT_MODES.includes(v) ? v : 'edit';
+  } catch (e) {
+    return 'edit';
+  }
+}
+function applyReportMode() {
+  const mode = reportModePref();
+  const ws = $('#reportWorkspace');
+  if (ws) ws.dataset.mode = mode;
+  $$('#reportModes [data-report-mode]').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.reportMode === mode))
+  );
+  const chip = $('#reportCheckChip');
+  if (chip) {
+    const c = currentCase();
+    const s = readinessSummary(c ? reportReadiness(c) : { items: [] });
+    chip.hidden = mode !== 'edit' || s.total === 0;
+    if (!chip.hidden) {
+      chip.classList.toggle('is-blocking', s.blocking > 0);
+      chip.textContent = s.blocking
+        ? `⚠ ${s.blocking} engelleyen eksik`
+        : `${s.expert + s.advisory} kontrol maddesi`;
+    }
+  }
+}
+function setReportMode(mode) {
+  const m = REPORT_MODES.includes(mode) ? mode : 'edit';
+  try {
+    localStorage.setItem('akis.reportMode', m);
+  } catch (e) {}
+  applyReportMode();
+}
+
 // ---- Rapor bölüm görünürlüğü (v2.219) ------------------------------------
 // PARAMETRİK RAPOR: bütün bölümler hazır tutulur; bilirkişi her birini açar/
 // kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
@@ -11266,6 +11360,7 @@ function renderReport() {
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   renderPageGuides();
+  applyReportMode();
 }
 function xesc(s = '') {
   return String(s)
@@ -14480,6 +14575,12 @@ $('#reportEmbeddedToggle')?.addEventListener('change', (e) => {
 });
 // Rapor bölümleri (v2.219) — aç/kapa; önizleme ANINDA tazelenir.
 // Karar tek kapıdan: `setReportSection` (persist + renderReport).
+// Rapor çalışma modu (v2.228): Düzenle / Kontrol. Mod UI tercihidir.
+$('#reportModes')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-report-mode]');
+  if (b) setReportMode(b.dataset.reportMode);
+});
+$('#reportCheckChip')?.addEventListener('click', () => setReportMode('check'));
 $('#reportSections')?.addEventListener('change', (e) => {
   const acb = e.target.closest('[data-report-annex]');
   if (acb) {
@@ -15594,6 +15695,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.228': {
+    title: 'Rapor ekranı: Düzenle / Kontrol modları',
+    body:
+      'Rapor ekranı iki çalışma moduna ayrıldı: Düzenle (belge odakta, kontrol paneli ' +
+      'kapalı) ve Kontrol (panel açık). Kontrol maddeleri önem sırasına göre gruplanır: ' +
+      'engelleyen eksikler, uzman kontrolü gerekli, iyileştirme önerileri. Böylece zorunlu ' +
+      'bir eksik ile bir öneri aynı ağırlıkta görünmez. Geniş sarı uyarı belgeden kaldırıldı; ' +
+      'uyarılar Kontrol panelindedir. Düzenle modunda "⚠ N engelleyen eksik" çipi tek tıkla ' +
+      'Kontrol’e götürür. Mod tercihi hatırlanır; dosyaya yazılmaz.'
+  },
   '2.227': {
     title: 'Rapor ekranı yeniden tasarlandı',
     body:

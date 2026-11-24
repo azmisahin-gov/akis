@@ -130,7 +130,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -2991,6 +2991,14 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
     const broken = T.reportReadiness(base({ materials: [mat({ log: [{ at: '2026-01-01T00:00:00.000Z', event: 'x', prevHash: 'b', hash: 'c' }] })] }));
     eq('kırık delil zinciri yakalanır', keys(broken).includes('log'), true);
 
+    // v2.228 — önem derecesi (engelleyen / uzman / iyileştirme)
+    eq('dosya no engelleyici', noFile.items.find((x) => x.key === 'fileNo').severity, 'blocking');
+    eq('konuşmacı uzman kontrolü', noSpk.items.find((x) => x.key === 'speaker').severity, 'expert');
+    eq('bilinmeyen anahtar expert sayılır', T.readinessSeverity('bilinmeyen'), 'expert');
+    const sumNoFile = T.readinessSummary(noFile);
+    eq('özet engelleyen sayısı', sumNoFile.blocking, noFile.items.length);
+    eq('özet toplam = madde sayısı', sumNoFile.total, noFile.items.length);
+
     const targets = new Set(['case', 'audio', 'questions', 'report']);
     const all = T.reportReadiness(base({ fileNo: '', court: '', expertName: '', materials: [] }));
     eq('her maddenin geçerli hedefi var', all.items.every((x) => targets.has(x.target)), true);
@@ -3003,6 +3011,9 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
     const some = T.readinessRowsHtml({ ok: false, items: [{ key: 'pending', label: 'Kontrol edilmemiş bölüm', count: 3, target: 'audio', filter: 'pending' }] });
     eq('madde satırı sayı taşır', some.includes('>3<') || some.includes('3'), true);
     eq('madde satırı tıklanabilir', some.includes('data-ready-goto="audio"'), true);
+    // v2.228 — gruplu gösterim: 'pending' uzman kontrolü grubuna düşer.
+    eq('gruplu gösterim başlığı', some.includes('Uzman kontrolü gerekli'), true);
+    eq('grup sınıfı taşınır', some.includes('ready-group ready-expert'), true);
   }
 }
 

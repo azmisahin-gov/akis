@@ -233,7 +233,9 @@ const REQUIRED_IDS = [
   ['delil paketi düğmesi', 'importDelilBtn'],
   ['rapor çalışma alanı', 'reportWorkspace'],
   ['rapor revizyon kartı', 'reportRevisions'],
-  ['A4 sayfa sayacı', 'reportPageCount']
+  ['A4 sayfa sayacı', 'reportPageCount'],
+  ['rapor mod düğmeleri', 'reportModes'],
+  ['kontrol özet çipi', 'reportCheckChip']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

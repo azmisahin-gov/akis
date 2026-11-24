@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.227.**
+yazılır. **Güncel sürüm: v2.228.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.228 — Rapor çalışma alanı: Düzenle / Kontrol (TAMAMLANDI)
+
+- **İki mod:** Düzenle (belge + iskelet, kontrol paneli kapalı) · Kontrol
+  (panel açık). Mod hatırlanır; dosyaya yazılmaz.
+- **Kontrol maddeleri önem sırasına göre gruplanır:** engelleyen · uzman
+  kontrolü · iyileştirme. `READINESS_SEVERITY` tek kaynak.
+- **Geniş sarı uyarı belgeden kalktı**; uyarılar Kontrol panelinde. Düzenle
+  modunda "⚠ N engelleyen eksik" çipi Kontrol'e götürür.
+- Koruyan test: `birim [60]`, `tasarim [2by]`, `surum` kimlikleri.
 
 ## v2.227 — Rapor ekranı ve şablon yeniden tasarımı (TAMAMLANDI)
 
