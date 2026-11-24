@@ -1,4 +1,4 @@
-# Özellikler (v2.240 — mevcut durum)
+# Özellikler (v2.241 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -244,6 +244,12 @@ tuşları bozulmaz.
   **Uzun · bölünmeli** (45 sn üstü) böl, **Üst üste (gözlem)** / **Anlaşılmayan
   (gözlem)** gözlem işaretlerini bul. Bu çiplerin hepsi yalnız sayı > 0 iken
   görünür ve **sayaç = filtre** tek kaynaktan gelir (`birim [95]`).
+- **Bölüm iş durumu satırı (v2.241):** seçili bölümün detayında teknik "Durum"
+  satırının üstünde **"İş"** satırı: durum → **tek önerilen eylem** ("Dinleyip
+  onayla (makine çözümledi)", "İki okumadan birini seç", "Yeniden dinle",
+  "Tamam — onaylandı") + birleştirilebilir / zaman sorunu / üst üste / anlaşılmayan
+  gözlem / okuma seçilmedi işaretleri. `segmentWorkSummary` saf fonksiyon; durum
+  değişince satır **yerinde** tazelenir (`birim [96]`).
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,

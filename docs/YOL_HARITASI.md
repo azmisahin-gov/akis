@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.240.**
+yazılır. **Güncel sürüm: v2.241.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.241 — Aktif bölümde "İş durumu" satırı (TAMAMLANDI)
+
+- Detayda "İş" satırı: durum → tek eylem (onayla/dinle/seç) + birleştir/zaman/
+  gözlem/belirsiz işaretleri; `segmentWorkSummary` saf + yerinde tazelenir.
+- Koruyan test: `birim [96]`.
 
 ## v2.240 — Bölüm iş durumu: eksik filtreler + "Bekleyen" netliği (TAMAMLANDI)
 

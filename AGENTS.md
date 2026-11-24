@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.240.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.241.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5395,3 +5395,34 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 2. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
 3. **Video (56.12).**
 4. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).
+
+## YENİ OTURUM DEVRİ (v2.241) — Aktif bölümde "İş durumu" satırı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.241** |
+| Testler | `bash tools/test.sh` → **1467 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [96]` |
+| Açık konu | UDF yatay, video (56.12), STANDARTLAR rehberi |
+
+### Ne yapıldı
+- `segmentWorkSummary(s, opts)` saf fonksiyon: durum → tek **eylem** + **işaretler**
+  (birleştirilebilir, zaman sorunu, üst üste/anlaşılmayan/sessizlik/telefon gözlem,
+  belirsizde okuma seçilmedi). `done` = approved/inaudible.
+- `workStatusHtml(m,s,i)` bunu `.sd-work` satırı olarak çizer (teknik `.sd-status`'un
+  ÜSTÜNDE). `segDetailHtml`'e eklendi; `syncSegDetailInPlace` `.sd-work`'ü **yerinde** tazeler.
+
+### DEĞİŞMEZ KURALLAR
+1. **İş durumu satırı yalnız GÖRÜNÜRLÜK**; veri/karar yazmaz. Eylem metni + title ipucu taşır
+   (renk tek başına anlam vermez).
+2. **Yerinde tazeleme:** yeni bir "öneri" alanı eklersen hem `segDetailHtml` (tam çizim) hem
+   `syncSegDetailInPlace` (yerinde) yollarında güncelle; aksi hâlde takip sırasında eski kalır
+   (v2.78 dersi).
+3. Tek kaynak: eylem/işaretler `segmentWorkSummary`; başka yerde kopya metin yazma.
+
+### SIRADAKİ İŞLER
+1. **UDF yatay** (doğrulanmış `paperOrientation` kodu) + gerçek tarayıcı tıklama ölçümü.
+2. **Video (56.12)** ses çıkarma ölçümü.
+3. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11) — öneri sunulacak.

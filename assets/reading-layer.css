@@ -3579,3 +3579,22 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 @media print {
   .report-paper.report-paper { padding: 0; }
 }
+
+/* ===== v2.241 — Bölüm iş durumu satırı (aktif bölüm) ==================
+   "Bu bölüm ne istiyor?" tek satır. Durum satırının (teknik) üstünde; metin
+   taşır, renk tek başına anlam vermez. Sığmazsa SARAR (kırpma yok). */
+#view-audio .sd-work {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  margin: 2px 0 2px;
+}
+#view-audio .sd-work-label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--ink-3);
+  letter-spacing: .3px;
+}
+#view-audio .st-chip.work { font-weight: 600; color: var(--ink); }

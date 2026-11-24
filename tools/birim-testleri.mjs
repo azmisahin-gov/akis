@@ -115,7 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
-  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt',
+  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'segmentWorkSummary',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
@@ -4498,6 +4498,31 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     const n = segs.filter((s, i) => T.segMatchesFilter(s, key, segs[i - 1], i, issueSet, mergeSet)).length;
     eq(`sayaç = filtre · ${key}`, c[key], n);
   }
+}
+
+// [96] v2.241 — Bölüm iş durumu: "bu bölüm ne istiyor?" tek satır.
+{
+  console.log('[96] segmentWorkSummary (v2.241)');
+  const seg = (o) => Object.assign(T.emptySegmentForTest({}), o);
+  const a = T.segmentWorkSummary(seg({ review: 'approved' }));
+  eq('onaylı → tamam', a.done, true);
+  eq('onaylı eylem', a.action, 'Tamam — onaylandı');
+  eq('onaylı needsWork yok', a.needsWork, false);
+  eq('anlaşılmadı → tamam', T.segmentWorkSummary(seg({ review: 'inaudible' })).done, true);
+  const p = T.segmentWorkSummary(seg({ review: 'pending' }));
+  eq('bekleyen needsWork', p.needsWork, true);
+  eq('bekleyen eylem', p.action, 'Dinle ve kontrol et');
+  eq('makine eylemi', T.segmentWorkSummary(seg({ review: 'machine' })).action, 'Dinleyip onayla (makine çözümledi)');
+  eq('yeniden dinle eylemi', T.segmentWorkSummary(seg({ review: 'relisten' })).action, 'Yeniden dinle');
+  eq('belirsiz eylemi', T.segmentWorkSummary(seg({ review: 'ambiguous' })).action, 'İki okumadan birini seç');
+  eq('belirsiz seçilmedi bayrağı', T.segmentWorkSummary(seg({ review: 'ambiguous', chosen: '' })).flags.some((f) => f.key === 'ambiguous'), true);
+  eq('belirsiz seçildi → bayrak yok', T.segmentWorkSummary(seg({ review: 'ambiguous', chosen: 'reading1' })).flags.some((f) => f.key === 'ambiguous'), false);
+  eq('birleştir bayrağı', T.segmentWorkSummary(seg({ review: 'pending' }), { merge: { ok: true } }).flags.some((f) => f.key === 'merge'), true);
+  eq('birleştir değilse yok', T.segmentWorkSummary(seg({ review: 'pending' }), { merge: { ok: false } }).flags.some((f) => f.key === 'merge'), false);
+  eq('zaman bayrağı', T.segmentWorkSummary(seg({ review: 'pending' }), { timeIssue: { kind: 'overlap' } }).flags.some((f) => f.key === 'time'), true);
+  const ob = T.segmentWorkSummary(seg({ review: 'pending', obs: { overlap: true, inaudible: true, noSpeech: true, phone: true } }));
+  eq('gözlem bayrakları 4', ob.flags.filter((f) => ['overlap', 'inaudibleObs', 'noSpeech', 'phone'].includes(f.key)).length, 4);
+  eq('onaylıda gözlem bile olsa done', T.segmentWorkSummary(seg({ review: 'approved', obs: { overlap: true } })).done, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

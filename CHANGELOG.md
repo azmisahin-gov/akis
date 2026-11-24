@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.240.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.241.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.241 — Aktif bölümde "İş durumu" satırı
+
+Kullanıcı: "Çalışırken bu bölüm ne istiyor? Bekle mi, onayla mı, birleştir mi,
+böl mı?" — filtreler toplu çalışmayı sağlıyor; bu sürüm **seçili bölümün** ne
+istediğini tek satırda söyler.
+
+### KULLANICI NE GÖRECEK
+- Bölüm detayında, teknik "Durum" satırının üstünde **"İş"** satırı: önerilen tek
+  eylemi yazar (ör. **"Dinleyip onayla (makine çözümledi)"**, **"İki okumadan
+  birini seç"**, **"Yeniden dinle"**, **"Tamam — onaylandı"**).
+- Yanında bağlama göre **işaretler**: **Birleştirilebilir**, **Zaman sorunu**,
+  **Üst üste gözlem**, **Anlaşılmayan gözlem**, **Sessizlik/Telefon gözlem**,
+  belirsizde **Okuma seçilmedi**. Her birinin ipucu (title) ne yapılacağını yazar.
+- Durum/öneri değişince (onayla, gözlem ekle, zaman düzelt) satır **yerinde**
+  güncellenir.
+
+### Ne değişti
+- `segmentWorkSummary(s, opts)` saf fonksiyonu (durum → eylem + işaretler);
+  `workStatusHtml` onu çizer; `syncSegDetailInPlace` `.sd-work`'ü yerinde tazeler.
+
+### Koruyan test
+- `birim [96]`: her durum için eylem + işaret bayrakları (birleştir/zaman/gözlem).
 
 ## v2.240 — Bölüm iş durumu: eksik filtreler + "Bekleyen" netliği
 

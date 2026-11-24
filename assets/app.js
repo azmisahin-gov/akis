@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.240';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.240';
+} from './schema.js?v=2.241';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.241';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.240';
+const APP_VERSION = '2.241';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4553,6 +4553,47 @@ function materialTranscribed(m) {
 // "gizli bir şey olmasın, yeri dursun, ne işe yaradığı ekranda yazsın."
 // KURAL: satır her bölümde çizilir; içinde en az "Ses: …" çipi vardır.
 // Böylece satır kaybolmaz, yükseklik zıplamaz ve durum adı görünür olur.
+// BÖLÜM İŞ DURUMU (v2.241) — "Bu bölüm ne istiyor?" tek satırda. SAF fonksiyon;
+// kontrol durumu + önerilen eylem + ek işaretler (birleştir/zaman/üst üste…).
+// Renk tek başına anlam taşımaz: eylem ve işaretler METİN olarak da yazılır.
+function segmentWorkSummary(s, opts = {}) {
+  const state = segReview(s);
+  const done = state === 'approved' || state === 'inaudible';
+  let action;
+  if (state === 'approved') action = 'Tamam — onaylandı';
+  else if (state === 'inaudible') action = 'Tamam — anlaşılmadı işaretli';
+  else if (state === 'machine') action = 'Dinleyip onayla (makine çözümledi)';
+  else if (state === 'relisten') action = 'Yeniden dinle';
+  else if (state === 'ambiguous') action = 'İki okumadan birini seç';
+  else action = 'Dinle ve kontrol et';
+  const flags = [];
+  const o = (s && s.obs) || {};
+  if (opts.merge && opts.merge.ok)
+    flags.push({
+      key: 'merge',
+      label: 'Birleştirilebilir',
+      hint: 'Sonraki bölümle birleştirmeye uygun (aynı konuşmacı, kısa, cümle bitmemiş). Birleştirme ⋮ menüsü/M tuşu ile yapılır.',
+      tone: 'info'
+    });
+  if (opts.timeIssue)
+    flags.push({ key: 'time', label: 'Zaman sorunu', hint: segmentTimeIssueLabel(opts.timeIssue.kind), tone: 'warn' });
+  if (o.overlap) flags.push({ key: 'overlap', label: 'Üst üste gözlem', hint: 'Bu aralıkta üst üste konuşma gözlem işareti konmuş.', tone: 'warn' });
+  if (o.inaudible) flags.push({ key: 'inaudibleObs', label: 'Anlaşılmayan gözlem', hint: 'Bu aralık anlaşılmayan gözlem işaretiyle işaretlenmiş.', tone: 'warn' });
+  if (o.noSpeech) flags.push({ key: 'noSpeech', label: 'Sessizlik gözlem', hint: 'Konuşma yok olarak işaretlenmiş (ölçülen sessizlik oranından ayrıdır).', tone: 'info' });
+  if (o.phone) flags.push({ key: 'phone', label: 'Telefon gözlem', hint: 'Telefon görüşmesi olarak işaretlenmiş.', tone: 'info' });
+  if (state === 'ambiguous' && !(s && s.chosen))
+    flags.push({ key: 'ambiguous', label: 'Okuma seçilmedi', hint: 'Belirsiz okumada iki okumadan birini seçip onaylayın.', tone: 'warn' });
+  return { state, action, done, needsWork: !done, flags };
+}
+function workStatusHtml(m, s, i) {
+  if (!s) return '';
+  const w = segmentWorkSummary(s, {
+    merge: mergeCandidateAt(m.segments || [], i),
+    timeIssue: segmentTimeIssueAt(m.segments || [], i)
+  });
+  const flags = w.flags.map((f) => `<span class="st-chip ${f.tone || 'info'}" title="${esc(f.hint)}">${esc(f.label)}</span>`).join('');
+  return `<div class="sd-work" role="status" aria-label="Bölüm iş durumu"><span class="sd-work-label">İş</span><span class="st-chip work" title="${esc(w.action)}">${esc(w.action)}</span>${flags}</div>`;
+}
 function statusRowHtml(m, s, i) {
   const chips = [
     `<span class="st-chip" data-status-audio title="Bu ses dosyası tarayıcıda var mı?">Ses: kontrol ediliyor…</span>`
@@ -4708,6 +4749,7 @@ function segDetailHtml(m) {
       ? `<div class="sd-meta">${ambiguousPanelHtml(s, i)}</div>`
       : ''}
 
+  ${workStatusHtml(m, s, i)}
   ${statusRowHtml(m, s, i)}
 
   ${proposalBandHtml(s, i)}
@@ -7009,6 +7051,10 @@ function syncSegDetailInPlace(m, idx) {
   // tazelenmezse önceki bölümün çipleri/düğmesi kalır (yanlış bilgi).
   const statusEl = q('.sd-status');
   if (statusEl) statusEl.outerHTML = statusRowHtml(m, s, idx);
+  // İş durumu satırı da YERİNDE tazelenir (v2.241): durum/öneri değişince
+  // (onayla, gözlem ekle, zaman düzelt) satır anında güncellenir.
+  const workEl = q('.sd-work');
+  if (workEl) workEl.outerHTML = workStatusHtml(m, s, idx);
   const topEl = q('.sd-editor-top');
   if (topEl) topEl.innerHTML = `<span class="sd-editor-label">Deşifre metni</span>${asrPopoverHtml(m, s, idx)}`;
   const sel = meta[1]?.querySelector('select');
@@ -16526,6 +16572,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.241': {
+    title: 'Aktif bölümde "İş durumu" satırı',
+    body:
+      'Bölüm detayında teknik "Durum" satırının üstünde "İş" satırı eklendi: seçili bölümün ne ' +
+      'istediğini tek cümlede söyler (ör. "Dinleyip onayla (makine çözümledi)", "İki okumadan ' +
+      'birini seç", "Yeniden dinle", "Tamam — onaylandı") ve yanında birleştirilebilir / zaman ' +
+      'sorunu / üst üste gözlem / anlaşılmayan gözlem / okuma seçilmedi gibi işaretleri gösterir. ' +
+      'Durum değişince (onayla, gözlem ekle) satır yerinde güncellenir.'
+  },
   '2.240': {
     title: 'Bölüm filtreleri netleşti, eksik olanlar eklendi',
     body:
