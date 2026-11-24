@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.246.**
+yazılır. **Güncel sürüm: v2.247.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.247 — "Sayfaya sığdır" düğmesi çalışıyor (TAMAMLANDI)
+
+- Ölçüm: tek-sayfa modda düğme ölüydü (`applyReportPageView` zorla `setReportFit(true)`).
+- Zorlama kaldırıldı; `reportFitPref` varsayılan açık. Aç→507 px, kapat→900 px.
+- Sürekli modda gizli; "Sürekli"yi kapatınca A4 + sığdır. Koruyan: `birim [99]`.
 
 ## v2.246 — Rapor ekranı: sürekli okuma varsayılan (TAMAMLANDI)
 

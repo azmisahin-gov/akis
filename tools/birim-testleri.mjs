@@ -4603,5 +4603,20 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('applyReportFit sürekli modu dikkate alır', /const fit = !continuous && reportFitPref\(\)/.test(src), true);
 }
 
+// [99] v2.247 — "Sayfaya sığdır" düğmesi gerçekten aç/kapa olmalı.
+{
+  console.log('[99] Sayfaya sığdır düğmesi (v2.247)');
+  eq('reportFitPref tanımlı', typeof T.reportFitPref, 'function');
+  T.store.removeItem('akis.reportFit');
+  eq('sığdır varsayılan AÇIK', T.reportFitPref(), true);
+  T.store.setItem('akis.reportFit', '0');
+  eq("'0' → kapalı", T.reportFitPref(), false);
+  T.store.setItem('akis.reportFit', '1');
+  eq("'1' → açık", T.reportFitPref(), true);
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  // applyReportPageView artık her çizimde zorla sığdırma AÇMAZ (düğme ölüydü).
+  eq('zorla setReportFit(true) kaldırıldı', /if \(!reportFitPref\(\)\) \{\s*setReportFit\(true\)/.test(src), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

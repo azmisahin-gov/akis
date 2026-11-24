@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.246.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.247.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5583,3 +5583,34 @@ fit `maxWidth` temizlenmiyordu → ince-uzun şerit.
 1. **Video (56.12)** ölçümü (kullanıcı istedi).
 2. Etkin çalışma süresi (opsiyonel).
 3. Tek-sayfa modunda gerçek sayfa kırılması (satır kesmesini giderme) — zor, ancak opt-in.
+
+## YENİ OTURUM DEVRİ (v2.247) — "Sayfaya sığdır" düğmesi çalışıyor
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.247** |
+| Testler | `bash tools/test.sh` → **1512 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [99]` |
+| Ölçüm | Gerçek Chromium: tek-sayfa fit ON=507px, OFF=900px (önceden ikisi de 507 → ölü) |
+
+### Kök neden
+`applyReportPageView` tek-sayfa modunda her çizimde `if(!reportFitPref()) setReportFit(true)`
+diyordu → "Sayfaya sığdır" aç/kapa düğmesi **hiçbir şeyi değiştirmiyordu**. Ayrıca sürekli modda
+etiket gizliydi.
+
+### Düzeltme
+- `reportFitPref()` varsayılan **açık** (`'0'` → kapalı).
+- Zorla `setReportFit(true)` **kaldırıldı** → kullanıcı seçimi geçerli; tek-sayfa `pageH`/pencere
+  kâğıt genişliğinden yeniden hesaplanır.
+
+### DEĞİŞMEZ
+- "Sayfaya sığdır" **yalnız A4/tek-sayfa** modunda görünür; sürekli modda gizli (anlamsız).
+  "Sürekli"yi kapatınca A4 + sığdır gelir. Yeni bir "mod" eklerken bu iki anahtarın ilişkisini koru.
+- Bir tercih düğmesi her çizimde **zorla set edilmemeli**; aksi hâlde ölü düğme olur (v2.247 dersi).
+
+### SIRADAKİ İŞLER
+1. **Video (56.12)** ölçümü (kullanıcı istedi).
+2. Etkin çalışma süresi (opsiyonel).
+3. Sürekli modda istenirse **zoom/ölçek** (%/sığdır) ayrı kontrol.

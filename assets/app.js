@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.246';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.246';
+} from './schema.js?v=2.247';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.247';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.246';
+const APP_VERSION = '2.247';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10908,10 +10908,13 @@ function setReportMode(mode) {
 // Tek bir A4 sayfası ekrana sığacak şekilde kâğıt genişliği küçültülür.
 // Genişlik, A4 oranıyla (297/210) mevcut yükseklikten türetilir; uydurma yok.
 function reportFitPref() {
+  // VARSAYILAN: açık (tek-sayfa A4 moduna girildiğinde sayfa ekrana sığsın).
+  // Kullanıcı kapatırsa ('0') kâğıt doğal genişlikte gösterilir. (v2.247: eski
+  // kod tek-sayfa modunda her çizimde zorla açıyordu → aç/kapa düğmesi ölüydü.)
   try {
-    return localStorage.getItem('akis.reportFit') === '1';
+    return localStorage.getItem('akis.reportFit') !== '0';
   } catch (e) {
-    return false;
+    return true;
   }
 }
 function reportFitWidth(availH, orientation) {
@@ -11009,10 +11012,10 @@ function applyReportPageView() {
     if (nav) nav.hidden = true;
     return;
   }
-  // Sayfa modu tek A4 sayfasının tam görünmesini gerektirir → sığdır açık olmalı.
-  if (!reportFitPref()) {
-    setReportFit(true);
-  }
+  // NOT (v2.247): Burada eskiden `if(!reportFitPref()) setReportFit(true)` vardı;
+  // her çizimde sığdırmayı zorla açtığı için "Sayfaya sığdır" düğmesi ölüydü
+  // (aç/kapa hiçbir şey değiştirmiyordu). Artık kullanıcı seçimi geçerlidir:
+  // sığdır açıkken sayfa ekrana sığar; kapalıyken doğal genişlikte gösterilir.
   const pageH = reportPageHeight();
   const pages = reportPageCountValue();
   reportPageIndex = Math.max(0, Math.min(pages - 1, reportPageIndex));
@@ -16779,6 +16782,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.247': {
+    title: '"Sayfaya sığdır" artık gerçekten çalışıyor',
+    body:
+      'Tek-sayfa A4 görünümünde (Sürekli\'yi kapatınca) "Sayfaya sığdır" artık aç/kapa ' +
+      'çalışıyor: açıkken sayfa ekrana sığar, kapalıyken doğal genişlikte gösterilir. ' +
+      'Varsayılan açıktır. Sürekli (normal kaydırma) modunda bu düğme gizlidir; sürekli ' +
+      'yüksekliği olan belgede "sayfaya sığdırma" anlamsız olduğu için. A4 istiyorsanız ' +
+      '"Sürekli" anahtarını kapatın.'
+  },
   '2.246': {
     title: 'Rapor ekranı artık normal kayıyor (sürekli varsayılan)',
     body:

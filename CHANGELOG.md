@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.246.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.247.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.247 — "Sayfaya sığdır" düğmesi gerçekten çalışıyor
+
+Kullanıcı: "Sayfaya sığdır çalışmıyor gibi." **Gerçek Chromium ölçümü** haklı
+gösterdi: tek-sayfa A4 modunda düğme **ölüydü** — `applyReportPageView` her
+çizimde `if(!reportFitPref()) setReportFit(true)` diyerek sığdırmayı **zorla
+açıyordu**; aç/kapa hiçbir şeyi değiştirmiyordu. Ayrıca sürekli modda etiket
+gizliydi.
+
+### KULLANICI NE GÖRECEK
+- **Tek-sayfa A4 görünümünde** (Sürekli'yi kapatınca) **"Sayfaya sığdır"** artık
+  gerçekten aç/kapa: **açık** → sayfa ekrana sığar (kâğıt ~507 px); **kapalı** →
+  kâğıt doğal genişlikte (~900 px) gösterilir. (Ölçüm: kapatınca 507→900, açınca
+  900→507.)
+- **Varsayılan: sığdır AÇIK** (A4 moduna girince sayfa ekrana sığar).
+- **Sürekli modda gizli** (sürekli yüksekliği olan belgede "sayfaya sığdırma"
+  anlamsızdır); "Sürekli" anahtarının ipucu bunu söyler: kapatınca A4 + sığdır.
+
+### Ne değişti
+- `reportFitPref()` varsayılan **açık** (`'0'` → kapalı).
+- `applyReportPageView` içindeki **zorla `setReportFit(true)` kaldırıldı**;
+  kullanıcı seçimi geçerli. Tek-sayfa `pageH`/pencere yüksekliği kâğıt
+  genişliğinden yeniden hesaplanır (sığdır açık/kapalı fark eder).
+
+### Koruyan test
+- `birim [99]`: tercih varsayılanı + "zorla setReportFit(true)" kalıbının
+  bulunmadığı davranış sözleşmesi.
 
 ## v2.246 — Rapor ekranı: sürekli okuma varsayılan
 

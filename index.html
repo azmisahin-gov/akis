@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.246'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.247'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 60000; // dakikada bir denetle
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.246">
-  <link rel="stylesheet" href="assets/app.css?v=2.246">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.247">
+  <link rel="stylesheet" href="assets/app.css?v=2.247">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.246">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.247">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.246"></script>
+  <script type="module" src="assets/app.js?v=2.247"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -240,7 +240,7 @@
               <label class="report-toggle" title="Tek bir A4 sayfası ekrana sığacak şekilde kâğıdı küçültür (okumak için kapatın)."><input type="checkbox" id="reportFitToggle"> <span>Sayfaya sığdır</span></label>
               <label class="report-toggle" title="Dosyanın kendi metadata’sıdır (ör. MP4 kayıt zamanı, ID3). Cihaz beyanıdır; doğrulanmış kayıt zamanı değildir. Yalnız siz açarsanız rapora girer."><input type="checkbox" id="reportEmbeddedToggle"> <span>Gömülü metadata (cihaz beyanı) raporda görünsün</span></label>
               <span class="report-page-nav" id="reportPageNav" hidden><button type="button" class="report-pg-btn" id="reportPagePrev" aria-label="Önceki sayfa" title="Önceki sayfa (PageUp)">‹</button><span class="report-pg-label" id="reportPageLabel">Sayfa 1 / 1</span><button type="button" class="report-pg-btn" id="reportPageNext" aria-label="Sonraki sayfa" title="Sonraki sayfa (PageDown)">›</button></span>
-              <label class="report-toggle" title="Sürekli kaydırma (sayfa penceresi yerine uzun kâğıt). Okumak için uygundur."><input type="checkbox" id="reportContinuousToggle"> <span>Sürekli</span></label>
+              <label class="report-toggle" title="Sürekli kaydırma (normal belge gibi). Kapatınca tek-sayfa A4 görünümü ve 'Sayfaya sığdır' açılır."><input type="checkbox" id="reportContinuousToggle"> <span>Sürekli</span></label>
               <span class="report-pagecount" id="reportPageCount"></span>
               <span class="report-edit-hint">Düzenlemek için belgede bir bölüme tıklayın.</span>
             </div>
