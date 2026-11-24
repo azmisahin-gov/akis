@@ -1727,7 +1727,8 @@ console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
   // okuma metni ayrı kapıdan. Anahtarın gerçekten tanımlı olduğu da sınanır.
   check(
     'gövde blokları açık/kapalı kapısından geçer',
-    /for \(const key of reportBodyOrder\(c\)\) if \(on\(key\) && blocks\[key\]\)/.test(js)
+    // Tek satır ya da çok satır (v2.258) — ölçüt DAVRANIŞ: reportBodyOrder döngüsü on(key)'den geçer.
+    /for \(const key of reportBodyOrder\(c\)\)[\s\S]{0,200}?on\(key\)/.test(js)
   );
   for (const key of ['origin', 'reading', 'reviewSummary', 'wer', 'levels', 'signature']) {
     check(`"${key}" bölümü tanımlı`, new RegExp(`['"]${key}['"]`).test(js));

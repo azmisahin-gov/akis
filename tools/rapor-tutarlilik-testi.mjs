@@ -978,5 +978,23 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('uzun SHA-256 ZWSP ile sarılır', /a{16}\u200B/.test(ux));
 }
 
+// Senaryo 29: sayfa ayırımı — DOCX tablo satırı bölünmez, ekler yeni sayfadan (v2.258).
+{
+  console.log('[Senaryo 29] sayfa ayırımı (v2.258)');
+  const c = withMaterial();
+  c.report = { sections: { annex: true } };
+
+  downloads.length = 0; setCase(c); await makeDocx();
+  const dZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const dx = await dZ.file('word/document.xml').async('string');
+  check('DOCX tablo satırı bölünmez (cantSplit)', /<w:cantSplit\/>/.test(dx));
+  check('DOCX ekler yeni sayfa (>=2 sayfa sonu)', (dx.match(/w:type="page"/g) || []).length >= 2);
+
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uZ.file('content.xml').async('string');
+  check('UDF ekler yeni sayfa (>=2 page-break)', (ux.match(/<page-break>/g) || []).length >= 2);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

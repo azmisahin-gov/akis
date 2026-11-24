@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.257';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.257';
+} from './schema.js?v=2.258';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.258';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.257';
+const APP_VERSION = '2.258';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12328,7 +12328,10 @@ function renderReport() {
   for (const key of reportBodyOrder(c)) {
     if (!on(key) || !body[key]) continue;
     const piece = body[key]();
-    if (piece) html += wrapBlock(key, piece);
+    if (!piece) continue;
+    // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
+    if (key === 'annex') html += '<div class="paper-page-break"></div>';
+    html += wrapBlock(key, piece);
   }
   if (on('signature')) html += wrapBlock('signature', body.signature());
   html += '</div>';
@@ -12416,7 +12419,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = 
   const r = rows
     .map(
       (row, ri) =>
-        `<w:tr>${header && ri === 0 ? '<w:trPr><w:tblHeader w:val="true"/></w:trPr>' : ''}${row
+        `<w:tr><w:trPr><w:cantSplit/>${header && ri === 0 ? '<w:tblHeader w:val="true"/>' : ''}</w:trPr>${row
           .map((t, ci) => {
             const isHead = header && ri === 0;
             const shade = isHead ? '1C426B' : shadeFirstCol && ci === 0 ? 'EAF0F6' : ri % 2 === 0 ? 'F8FAFC' : null;
@@ -12725,7 +12728,12 @@ function docxXml(c) {
   let body = '';
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) body += front[key]();
   body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-  for (const key of reportBodyOrder(c)) if (on(key) && blocks[key]) body += blocks[key]();
+  // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
+  for (const key of reportBodyOrder(c)) {
+    if (!on(key) || !blocks[key]) continue;
+    if (key === 'annex') body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    body += blocks[key]();
+  }
   if (on('signature')) body += blocks.signature();
   // Sayfa geometrisi biçimden gelir (v2.238): A4, yön, mm→twip marj.
   const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
@@ -13276,7 +13284,12 @@ async function makeUdf() {
 
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) front[key]();
   el.push(pageBreak());
-  for (const key of reportBodyOrder(c)) if (on(key) && blocks[key]) blocks[key]();
+  // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
+  for (const key of reportBodyOrder(c)) {
+    if (!on(key) || !blocks[key]) continue;
+    if (key === 'annex') el.push(pageBreak());
+    blocks[key]();
+  }
   if (on('signature')) blocks.signature();
   const bodyText = textParts.join('');
   const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${el.join('')}</elements>${styles}\n</template>`;
@@ -16852,6 +16865,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.258': {
+    title: 'Sayfa ayırımı: tablo satırı bölünmez + ekler yeni sayfadan',
+    body:
+      'Word (DOCX) tablolarında satırlar sayfa sonunda bölünmez (hücre ortadan kesilmez); tablo ' +
+      'başlığı yeni sayfada yinelenir. Ekler (EK-1…) DOCX, UDF ve yazdırmada yeni sayfadan başlar. ' +
+      'Kapak zaten ayrı sayfadadır. Sayfa kırılması yine UYAP/Word/tarayıcı motoruna bağlıdır; biz ' +
+      'yalnız mantıklı noktalara sayfa sonu koyarız.'
+  },
   '2.257': {
     title: 'UDF kenar boşluğu birim hatası düzeltildi (mm → punto)',
     body:

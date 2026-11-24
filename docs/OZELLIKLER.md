@@ -1,4 +1,4 @@
-# Özellikler (v2.257 — mevcut durum)
+# Özellikler (v2.258 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -633,6 +633,10 @@ uzmanlık alanını gösterir.
   bölünmez, tablo başlığı yinelenir, başlık yalnız kalmaz. **Yalnız görsel**; metin
   ve üç çıktı değişmez (`birim [104]`). Sayfa numarası: DOCX `PAGE` alanı; HTML/UDF
   için tarayıcı/UYAP editörüne bağlı.
+- **Sayfa ayırımı (v2.258):** DOCX tablo satırları **bölünmez** (`cantSplit`); tablo
+  başlığı yeni sayfada yinelenir. **Ekler (EK-1…)** DOCX/UDF/yazdırmada **yeni
+  sayfadan** başlar; kapak ayrı sayfa. Sayfa kırılmasının kendisi motora (UYAP/Word/
+  tarayıcı) aittir; biz yalnız mantıklı sayfa sonlarını koyarız (`rapor` 29).
 - **Parametrik rapor — bölüm aç/kapa (v2.219):** Rapor görünümünde "Rapor
   bölümleri" paneli; **19 bölüm** (kapak, künye, içindekiler, 1–7, kayıt kökeni,
   gömülü metadata, delil edinme, konuşmacılar, okuma metni, WER, seviye,

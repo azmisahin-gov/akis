@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.257.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.258.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.258 — Sayfa ayırımı: tablo satırı bölünmez + ekler yeni sayfadan
+
+Kullanıcı: "Marjlar tamam; sadece düzenli bir sayfa ayırımı yok." **Ölçüm:** her iki
+çıktıda da yalnız **1 sayfa sonu** (kapak→gövde) vardı; gövde tek akış, tablo
+satırları sayfa arasında bölünebiliyordu.
+
+### KULLANICI NE GÖRECEK
+- **Word (DOCX):** tablo satırları sayfa sonunda **bölünmez** (`cantSplit`) → hücre
+  ortadan kesilmez. Tablo başlığı yeni sayfada yinelenir.
+- **Ekler (EK-1…)** DOCX, UDF ve yazdırmada **yeni sayfadan** başlar.
+- Kapak zaten ayrı sayfada (kapak→gövde sayfa sonu korunur).
+
+### Dürüst sınır
+- Sayfa kırılması **motorun** işidir (UYAP/Word/tarayıcı). Biz yalnız **mantıklı
+  noktalara** sayfa sonu koyar ve tablo satırının bölünmesini engelleriz; her
+  satır/sayfa düzenini motordan motora birebir denetleyemeyiz.
+- **UDF:** `<page-break>` (ekler öncesi) ve kapak sonrası var; satır-içi bölünme
+  UYAP editörünün satır düzenine bağlıdır.
+
+### Koruyan test
+- `rapor` Senaryo 29: DOCX `cantSplit` + ≥2 sayfa sonu; UDF ≥2 page-break.
 
 ## v2.257 — UDF kenar boşluğu BİRİM hatası düzeltildi (mm → punto)
 

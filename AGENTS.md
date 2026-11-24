@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.257.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.258.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5852,3 +5852,26 @@ etiket gizliydi.
 
 ### SIRADAKİ
 - Kullanıcı yeni UDF üretip UYAP'ta **1,5 cm** göründüğünü doğrulasın (leftMargin ≈ 42.52).
+
+## YENİ OTURUM DEVRİ (v2.258) — Sayfa ayırımı (cantSplit + ekler yeni sayfa)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.258** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Bulgu | Her iki çıktıda yalnız 1 sayfa sonu (kapak→gövde); tablo satırları bölünebiliyordu |
+
+### Ne yapıldı
+- DOCX `wTable`: her satıra `<w:cantSplit/>` (satır sayfa arasında bölünmez).
+- Ekler (annex) DOCX/UDF/HTML-yazdırma: **yeni sayfadan** başlar (page break önce).
+- Kapak ayrı sayfa (korunur).
+
+### DEĞİŞMEZ
+- Sayfa kırılması **motora** aittir; biz yalnız mantıklı sayfa sonları + satır bölünmezliği veririz.
+  Motor düzenini birebir denetleyemeyiz.
+- UDF `<page-break>`, DOCX `w:br type=page`, HTML `.paper-page-break`. Üçünde de ekler öncesi.
+
+### SIRADAKİ (kullanıcı kararı)
+- İstenirse her ana bölüm yeni sayfadan; imza ayrı sayfa; tablo başlık tekrarı UDF'te.
