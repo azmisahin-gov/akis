@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.228';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.228';
+} from './schema.js?v=2.229';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.229';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.228';
+const APP_VERSION = '2.229';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10632,6 +10632,63 @@ function reportUiLabel(c, key) {
   }
   return base;
 }
+
+// ---- Rapor iskeleti: kategori + arama + yalnız açık (v2.229) --------------
+// KATEGORİ yalnız GÖRÜNÜRLÜK/filtre içindir; rapor SIRASINI değiştirmez.
+// Sıra tek kaynak: `case.report.layout.order`. Kategoriye göre yeniden
+// sıralamak çıktı sırasını sessizce bozardı; bu yüzden yapılmaz.
+const REPORT_SECTION_CATEGORY = {
+  cover: 'front',
+  coverFields: 'front',
+  kunye: 'front',
+  summary: 'front',
+  toc: 'front',
+  s1: 'main',
+  s2: 'main',
+  s3: 'main',
+  s4: 'main',
+  s5: 'main',
+  s6: 'main',
+  s7: 'main',
+  reading: 'main',
+  origin: 'tech',
+  embedded: 'tech',
+  acquisition: 'tech',
+  speakers: 'tech',
+  tech: 'tech',
+  enhance: 'tech',
+  asr: 'tech',
+  wer: 'tech',
+  levels: 'tech',
+  reviewSummary: 'tech',
+  scopeNote: 'statement',
+  qc: 'statement',
+  privacy: 'statement',
+  annex: 'closing',
+  signature: 'closing'
+};
+function reportSectionCategory(key) {
+  return REPORT_SECTION_CATEGORY[key] || 'tech';
+}
+// Oturumluk filtre durumu (kayda yazılmaz).
+const reportOutlineState = { q: '', cat: 'all', onlyOpen: false };
+function reportOutlineMatch(c, key, label, on) {
+  const st = reportOutlineState;
+  if (st.cat !== 'all' && reportSectionCategory(key) !== st.cat) return false;
+  if (st.onlyOpen && !on) return false;
+  const q = String(st.q || '').trim().toLocaleLowerCase('tr-TR');
+  if (!q) return true;
+  const hay = `${label || ''} ${reportSectionTitle(key)}`.toLocaleLowerCase('tr-TR');
+  return hay.includes(q);
+}
+function syncReportOutlineControls() {
+  $$('#reportSectionCats [data-rsec-cat]').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.rsecCat === reportOutlineState.cat))
+  );
+  const cb = $('#reportOnlyOpen');
+  if (cb) cb.checked = reportOutlineState.onlyOpen;
+}
+
 // RAPOR İSKELETİ (v2.227): tüm parçalar TEK listede; gövde ve ekler
 // sıralanabilir, her parça aç/kapanabilir. Numara açık bölümlerden türetilir.
 function renderReportSections(c) {
@@ -10645,11 +10702,16 @@ function renderReportSections(c) {
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
     return `<div class="rsec-row${child ? ' rsec-child' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
   };
-  const front = REPORT_FRONT_KEYS.map((k) => row(k)).join('');
+  syncReportOutlineControls();
+  const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
+    .map((k) => row(k))
+    .join('');
   let body = '';
   for (const key of layout.order) {
-    body += row(key, { move: true });
-    if (key === 's5') body += row('reading', { child: true });
+    const showSelf = reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key));
+    const showReading = key === 's5' && reportOutlineMatch(c, 'reading', reportUiLabel(c, 'reading'), reportSectionOn(c, 'reading'));
+    if (showSelf || showReading) body += row(key, { move: true });
+    if (showReading) body += row('reading', { child: true });
   }
   let annexRows = '';
   if (reportSectionOn(c, 'annex')) {
@@ -10661,12 +10723,15 @@ function renderReportSections(c) {
       const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
       const custom = !REPORT_ANNEX_DEFS.some((d) => d.key === key);
       const label = on ? `EK-${++an}. ${base}` : `(kapalı) ${base}`;
+      if (!reportOutlineMatch(c, key, base, on)) continue;
       const del = custom
         ? `<button type="button" class="rsec-mv rsec-del" data-report-annex-del="${esc(key)}" aria-label="Eki kaldır" title="Bu özel eki kaldır">×</button>`
         : '';
       annexRows += `<div class="rsec-row rsec-child"><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
     }
-    annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
+    if (reportOutlineState.cat === 'all' || reportOutlineState.cat === 'closing') {
+      annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
+    }
   }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   host.dataset.allOff = JSON.stringify(allOff);
@@ -10676,12 +10741,17 @@ function renderReportSections(c) {
   const presets = REPORT_PRESET_DEFS.map(
     (p) => `<button type="button" class="mini-button" data-report-preset="${esc(p.key)}" title="Bölüm kümesini hazır ayarla (veri değişmez)">${esc(p.label)}</button>`
   ).join('');
+  const sig = reportOutlineMatch(c, 'signature', reportUiLabel(c, 'signature'), reportSectionOn(c, 'signature'))
+    ? row('signature')
+    : '';
+  const groups =
+    (front ? `<div class="rsec-group"><div class="rsec-title">Ön bölüm · sırası sabit</div>${front}</div>` : '') +
+    (body ? `<div class="rsec-group"><div class="rsec-title">Gövde · sıralanabilir</div>${body}</div>` : '') +
+    (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
+    (sig ? `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${sig}</div>` : '');
   host.innerHTML =
     `<div class="rsec-presets"><span class="rsec-note">Hazır profil:</span>${presets}</div>` +
-    `<div class="rsec-group"><div class="rsec-title">Ön bölüm · sırası sabit</div>${front}</div>` +
-    `<div class="rsec-group"><div class="rsec-title">Gövde · sıralanabilir</div>${body}</div>` +
-    (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
-    `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${row('signature')}</div>` +
+    (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Numaralar açık bölümlere göre yeniden verilir.</span></div>`;
 }
 function setReportSection(key, on) {
@@ -14581,6 +14651,26 @@ $('#reportModes')?.addEventListener('click', (e) => {
   if (b) setReportMode(b.dataset.reportMode);
 });
 $('#reportCheckChip')?.addEventListener('click', () => setReportMode('check'));
+// İskelet filtresi (v2.229): arama / kategori / yalnız açık. Oturumluk; kayda
+// yazılmaz. Yalnız #reportSections yeniden çizilir; arama kutusu statik kalır
+// (odak kaybolmaz).
+$('#reportSectionSearch')?.addEventListener('input', (e) => {
+  reportOutlineState.q = e.target.value;
+  const c = currentCase();
+  if (c) renderReportSections(c);
+});
+$('#reportOnlyOpen')?.addEventListener('change', (e) => {
+  reportOutlineState.onlyOpen = !!e.target.checked;
+  const c = currentCase();
+  if (c) renderReportSections(c);
+});
+$('#reportSectionCats')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rsec-cat]');
+  if (!b) return;
+  reportOutlineState.cat = b.dataset.rsecCat;
+  const c = currentCase();
+  if (c) renderReportSections(c);
+});
 $('#reportSections')?.addEventListener('change', (e) => {
   const acb = e.target.closest('[data-report-annex]');
   if (acb) {
@@ -15695,6 +15785,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.229': {
+    title: 'Rapor iskeleti: ara, filtrele, yalnız açık',
+    body:
+      'Rapor iskeleti uzun listeyi yönetmek için araçlar kazandı: bölüm arama kutusu, ' +
+      'kategori çipleri (Kapak · Ana · Teknik · Beyan · Kapanış) ve "Yalnız açık" anahtarı. ' +
+      'Bunlar yalnız GÖRÜNÜRLÜĞÜ süzer; rapor sırasını ve içeriğini DEĞİŞTİRMEZ. ' +
+      'Sıra yine ↑↓ ile belirlenir. Filtreler oturumluktur; dosyaya yazılmaz.'
+  },
   '2.228': {
     title: 'Rapor ekranı: Düzenle / Kontrol modları',
     body:
