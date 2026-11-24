@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.231.**
+yazılır. **Güncel sürüm: v2.232.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.232 — Tam A4 + tam ekran kontrolleri + sabit iskelet (TAMAMLANDI)
+
+- **Sayfaya sığdır**: tek A4 sayfası ekrana sığar (A4 oranı korunur).
+- **Tam ekranda kontroller** (dön/yazdır/UDF + A4/sığdır) görünür ve sticky.
+- **Sol iskelet** kaydırırken görünür kalır (workspace `flex:0 0 auto` düzeltmesi).
+- Koruyan test: `birim [87]`, `tasarim [2cc]`, `surum` kimlikleri.
 
 ## v2.231 — Belge odaklı bölüm düzenleme (TAMAMLANDI)
 

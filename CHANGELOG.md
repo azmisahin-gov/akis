@@ -6,12 +6,51 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.231.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.232.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.232 — Tam A4 görünümü, tam ekran kontrolleri, sabit iskelet
+
+Kullanıcı geri bildirimi: "tam A4 göremiyorum, sol menü yukarıda kalıyor, tam
+ekranda hiç kontrol yok." Üçü de ölçülüp düzeltildi.
+
+### KULLANICI NE GÖRECEK
+
+- **Sayfaya sığdır** anahtarı (A4 kâğıt çubuğunda): tek bir **A4 sayfası
+  ekrana sığar**; okumak için kapatın. A4 oranı (297/210) korunur; kâğıt
+  ortalanır. Sayfa sayısı (`A4 · N sayfa`) görünür.
+- **Tam ekranda kontroller var:** üstte **← Çalışmaya dön · Yazdır · UDF**;
+  ayrıca **A4 / Sayfaya sığdır** anahtarları görünür ve kaydırırken kaybolmaz.
+- **Sol rapor iskeleti kaydırırken görünür kalır** (kendi içinde kayar); artık
+  yukarı kayıp gitmiyor.
+
+### Teknik (ölçüm)
+
+- **Kök neden 1:** `#view-report` flex; `.report-workspace` `flex:0 1 auto`
+  olduğu için **573 px'e sıkışıyordu** (içerik 3180). Sticky iskeletin kabı
+  573 px olduğundan yapışma çalışmıyordu (500 px kaydırınca üst **202 → −298**).
+  Düzeltme: `.report-workspace { flex: 0 0 auto; height: auto }` → kaydırınca
+  iskelet üstü **126** (görünür) kalıyor.
+- **Kök neden 2:** tam ekranda kaydırma `#view-report`'ta; `window.scrollTo`
+  etkisizdi ve çubuk ekran dışına çıkıyordu. Düzeltme: `setReportFull`
+  `#view-report.scrollTop = 0`; `#reportFullbar` **sticky top:0**; tam ekranda
+  `.report-stage-bar` **gizlenmiyor** (kontroller kalır).
+- **Sığdır:** `reportFitWidth(availH)` = `clamp(320, 900, (availH-8)×210/297)`.
+  Ölçüm 1440×900: normal **486 px** (sayfa 687 ≤ 695); tam ekran **578 px**
+  (817 ≤ 826). Kâğıt genişliği görünüm yüksekliğinden türetilir, uydurulmaz.
+- Tercih `localStorage('akis.reportFit')`; dosyaya yazılmaz.
+
+### Koruyan testler
+
+- `birim [87]`: `reportFitWidth` oran/kırpma.
+- `tasarim [2cc]`: çalışma alanı flex düzeltmesi, fullbar sticky, tam ekranda
+  stage-bar gizlenmez, sığdır anahtarı, `setReportFull` kaydırma sıfırlama,
+  token stil.
+- `surum`: `reportFitToggle` kimliği.
 
 ## v2.231 — Belge odaklı bölüm düzenleme
 

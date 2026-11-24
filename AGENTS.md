@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.231.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.232.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,23 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.232) — Tam A4, tam ekran kontrolleri, sabit iskelet
+
+### DEĞİŞMEZ KURALLAR (v2.232)
+
+1. **Kaydırma kabı `#view-report`.** `window.scrollTo` burada etkisizdir;
+   kaydırmayı `#view-report.scrollTop` ile sıfırlayın (tam ekran girişi).
+2. **`.report-workspace` `flex:0 0 auto; height:auto`** olmalı. `flex:0 1 auto`
+   verilirse 573 px'e sıkışır, içerik taşar ve **sticky iskelet çalışmaz**
+   (ölçüm: 500 px kaydırınca üst 202 → −298). Bu satırı kaldırmayın.
+3. **Tam ekranda kontroller kalır:** `#reportFullbar` sticky top:0;
+   `.report-stage-bar` tam ekranda **gizlenmez** (A4/sığdır). Yalnız iskelet/
+   yan panel/düzenleyici gizlenir.
+4. **Sayfaya sığdır** kâğıt genişliğini görünüm yüksekliğinden türetir:
+   `reportFitWidth = clamp(320, 900, (availH-8)×210/297)`. Uydurma sabit yok.
+   Tercih `akis.reportFit` (dosyaya yazılmaz).
+5. Test: `birim [87]`, `tasarim [2cc]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.231) — Belge odaklı bölüm düzenleme
 

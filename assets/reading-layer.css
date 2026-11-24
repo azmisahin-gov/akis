@@ -3420,6 +3420,16 @@ input::placeholder, textarea::placeholder {
 body[data-view="report"] #sbSegmentsWrap,
 body[data-view="report"] #sbCheckWrap { display: none; }
 
+/* v2.232 — rapor görünümü: sticky iskelet + tam ekran kontrolleri + sığdır */
+/* ÖLÇÜM (v2.231, 1440×900): #view-report flex; .report-workspace flex:0 1 auto
+   olduğu için 573 px'e sıkışıyordu (içerik 3180 px taşıyordu). Sticky iskeletin
+   kabı 573 px olduğu için 500 px kaydırınca üstü 202 → −298 oluyordu (yapışma
+   yok). KURAL: çalışma alanı içeriği kadar uzar; kaydırma #view-report'ta kalır. */
+#view-report .report-workspace { flex: 0 0 auto; height: auto; }
+/* Tam ekran çubuğu: kaydırma sırasında kaybolmaz (kontroller hep erişilebilir). */
+#reportFullbar { position: sticky; top: 0; z-index: 6; background: var(--bg); }
+body.report-full .report-edit-hint { display: none; }
+
 /* v2.231 — belge odaklı bölüm düzenleme */
 .paper-block { display: contents; }
 .paper-block.is-selected > * { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
@@ -3490,8 +3500,9 @@ body[data-view="report"] #sbCheckWrap { display: none; }
 body.report-full .report-workspace { display: block; }
 body.report-full .report-skeleton,
 body.report-full .report-side,
-body.report-full .report-editor,
-body.report-full .report-stage-bar { display: none; }
+body.report-full .report-editor { display: none; }
+/* Tam ekranda A4/sığdır kontrolleri KALIR (v2.232): kullanıcı kaybolmasın. */
+body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; background: var(--bg); }
 
 /* v2.227 — İçindekiler: metin zaten numaralı; <ol> işareti ikinci numara
    üretmesin (ölçüm: ekranda "1. 1. …" görünüyordu). */

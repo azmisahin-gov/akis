@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.231';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.231';
+} from './schema.js?v=2.232';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.232';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.231';
+const APP_VERSION = '2.232';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10475,6 +10475,49 @@ function setReportMode(mode) {
   applyReportMode();
 }
 
+// ---- Sayfaya sığdır (v2.232) ---------------------------------------------
+// Tek bir A4 sayfası ekrana sığacak şekilde kâğıt genişliği küçültülür.
+// Genişlik, A4 oranıyla (297/210) mevcut yükseklikten türetilir; uydurma yok.
+function reportFitPref() {
+  try {
+    return localStorage.getItem('akis.reportFit') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function reportFitWidth(availH) {
+  const h = Number(availH) || 0;
+  if (h <= 0) return 900;
+  return Math.max(320, Math.min(900, Math.round(((h - 8) * 210) / 297)));
+}
+function applyReportFit() {
+  const ws = $('#reportWorkspace');
+  const paper = $('#reportPreview');
+  const fit = reportFitPref();
+  if (ws) ws.dataset.fit = fit ? 'page' : 'full';
+  const cb = $('#reportFitToggle');
+  if (cb) cb.checked = fit;
+  if (!paper) return;
+  if (!fit) {
+    paper.style.maxWidth = '';
+    return;
+  }
+  const v = $('#view-report');
+  const bar = $('.report-stage-bar');
+  const intro = $('#view-report .section-intro');
+  const introH = intro && getComputedStyle(intro).display !== 'none' ? intro.getBoundingClientRect().height : 0;
+  const barH = bar ? bar.getBoundingClientRect().height : 0;
+  const avail = (v ? v.clientHeight : 0) - introH - barH - 24;
+  paper.style.maxWidth = reportFitWidth(avail) + 'px';
+}
+function setReportFit(on) {
+  try {
+    localStorage.setItem('akis.reportFit', on ? '1' : '0');
+  } catch (e) {}
+  applyReportFit();
+  renderPageGuides();
+}
+
 // ---- Belge odaklı bölüm düzenleme (v2.231) -------------------------------
 // Belgede bir bölüme tıklanınca sağda ODAKLI düzenleyici açılır. A4 kâğıdı
 // contentEditable DEĞİL; serbest metin alanları aynı modeli yazar, üç çıktı
@@ -11268,6 +11311,7 @@ function renderReportTech(c) {
 function renderPageGuides() {
   const c = currentCase();
   const on = !!(c && c.report && c.report.pageView);
+  const fit = reportFitPref();
   const paper = $('#reportPreview');
   if (!paper) return;
   const pc = $('#reportPageCount');
@@ -11275,7 +11319,7 @@ function renderPageGuides() {
     const old = paper.querySelector('.paper-pageguides');
     if (old && typeof old.remove === 'function') old.remove();
   }
-  if (!on) {
+  if (!on && !fit) {
     if (paper.dataset) delete paper.dataset.pageCount;
     if (pc) pc.textContent = '';
     return;
@@ -11293,23 +11337,27 @@ function renderPageGuides() {
   const pageH = Math.round((w * 297) / 210); // A4: yükseklik = genişlik × 297/210
   if (pageH < 200) return;
   const pages = Math.max(1, Math.ceil(h / pageH));
-  const layer = document.createElement('div');
-  layer.className = 'paper-pageguides';
-  layer.setAttribute('aria-hidden', 'true');
-  for (let i = 1; i < pages; i++) {
-    const line = document.createElement('div');
-    line.className = 'paper-pg-line';
-    line.style.top = i * pageH + 'px';
-    layer.appendChild(line);
+  // Kılavuz çizgileri yalnız "Sayfalı önizleme" açıkken çizilir; "Sayfaya
+  // sığdır" yalnız sayfa SAYISINI gösterir (v2.232).
+  if (on) {
+    const layer = document.createElement('div');
+    layer.className = 'paper-pageguides';
+    layer.setAttribute('aria-hidden', 'true');
+    for (let i = 1; i < pages; i++) {
+      const line = document.createElement('div');
+      line.className = 'paper-pg-line';
+      line.style.top = i * pageH + 'px';
+      layer.appendChild(line);
+    }
+    for (let i = 0; i < pages; i++) {
+      const lbl = document.createElement('span');
+      lbl.className = 'paper-pg-label';
+      lbl.style.top = i * pageH + 8 + 'px';
+      lbl.textContent = 'Sayfa ' + (i + 1) + ' / ' + pages;
+      layer.appendChild(lbl);
+    }
+    paper.appendChild(layer);
   }
-  for (let i = 0; i < pages; i++) {
-    const lbl = document.createElement('span');
-    lbl.className = 'paper-pg-label';
-    lbl.style.top = i * pageH + 8 + 'px';
-    lbl.textContent = 'Sayfa ' + (i + 1) + ' / ' + pages;
-    layer.appendChild(lbl);
-  }
-  paper.appendChild(layer);
   if (paper.dataset) paper.dataset.pageCount = String(pages);
   if (pc) pc.textContent = `A4 · ${pages} sayfa`;
 }
@@ -11565,11 +11613,12 @@ function renderReport() {
   statusEl.title = rec.detail;
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
-  renderPageGuides();
   applyReportMode();
+  applyReportFit();
   const wsEl = $('#reportWorkspace');
   if (wsEl) wsEl.dataset.edit = reportEditKey ? 'open' : 'closed';
   renderReportSectionEditor(c);
+  renderPageGuides();
 }
 function xesc(s = '') {
   return String(s)
@@ -13379,12 +13428,17 @@ function setReportFull(on) {
   document.body.classList.toggle('report-full', on);
   const bar = $('#reportFullbar');
   if (bar) bar.hidden = !on;
-  if (on) {
-    switchView('report');
-    try {
-      window.scrollTo(0, 0);
-    } catch (e) {}
-  }
+  if (on) switchView('report');
+  // Kaydırma #view-report'ta; window.scrollTo yetmez (v2.232 ölçümü).
+  const v = $('#view-report');
+  if (v) v.scrollTop = 0;
+  const ma = $('.main-area');
+  if (ma) ma.scrollTop = 0;
+  try {
+    window.scrollTo(0, 0);
+  } catch (e) {}
+  applyReportFit();
+  renderPageGuides();
 }
 // Dosya bilgileri çekmecesi. Form artık ayrı sayfa değil; çalışma alanının
 // üzerine sağdan açılır. Aynı anda yalnızca bir çekmece açık olur.
@@ -14992,12 +15046,15 @@ $('#reportPageViewToggle')?.addEventListener('change', (e) => {
   persist();
   renderReport();
 });
+// Sayfaya sığdır (v2.232): kâğıt genişliği görünüm yüksekliğine göre türetilir.
+$('#reportFitToggle')?.addEventListener('change', (e) => setReportFit(!!e.target.checked));
 let __pageGuideTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(__pageGuideTimer);
   __pageGuideTimer = setTimeout(() => {
     const c = currentCase();
-    if (c && c.report && c.report.pageView) renderPageGuides();
+    if (reportFitPref()) applyReportFit();
+    if (c && ((c.report && c.report.pageView) || reportFitPref())) renderPageGuides();
   }, 150);
 });
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
@@ -15952,6 +16009,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.232': {
+    title: 'Tam A4 görünümü ve tam ekran kontrolleri',
+    body:
+      'Rapor ekranına "Sayfaya sığdır" eklendi: tek bir A4 sayfası ekrana sığar (okumak ' +
+      'için kapatın). Tam ekranda artık üstte "Çalışmaya dön / Yazdır / UDF" ve A4/sığdır ' +
+      'kontrolleri görünür; kaybolmaz. Sol rapor iskeleti kaydırırken görünür kalır ve kendi ' +
+      'içinde kayar.'
+  },
   '2.231': {
     title: 'Belgede bölüme tıklayıp düzenle',
     body:

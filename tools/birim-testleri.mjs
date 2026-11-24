@@ -130,7 +130,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4300,6 +4300,15 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('bilinmeyen hedef yok', T.reportSectionDerivedTarget('bilinmeyen'), '');
   eq('tech kontrol panelinde', T.reportSectionInspectorKey('tech'), 'tech');
   eq('s4 kontrol paneli değil', T.reportSectionInspectorKey('s4'), '');
+}
+
+// [87] Sayfaya sığdır genişliği (v2.232) — A4 oranı + kırpma.
+{
+  eq('reportFitWidth tanımlı', typeof T.reportFitWidth, 'function');
+  eq('900 yükseklik → ~631 (A4 oranı)', T.reportFitWidth(900), 631);
+  eq('küçük yükseklik taban 320', T.reportFitWidth(200), 320);
+  eq('büyük yükseklik tavan 900', T.reportFitWidth(2000), 900);
+  eq('geçersiz yükseklik 900', T.reportFitWidth(0), 900);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
