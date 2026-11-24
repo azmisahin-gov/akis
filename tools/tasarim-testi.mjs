@@ -1917,5 +1917,22 @@ console.log('\n[2cb] Belge odaklı bölüm düzenleme (v2.231)');
   check('v2.231 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
 }
 
+console.log('\n[2cc] Tam A4 + tam ekran kontrolleri + sabit iskelet (v2.232)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const html = read('index.html');
+  check('sığdır anahtarı HTML\'de', /id="reportFitToggle"/.test(html));
+  check('çalışma alanı içeriği kadar uzar', /#view-report \.report-workspace\s*\{\s*flex:\s*0 0 auto;\s*height:\s*auto/.test(layer));
+  check('tam ekran çubuğu sticky', /#reportFullbar\s*\{\s*position:\s*sticky;\s*top:\s*0/.test(layer));
+  check('tam ekranda stage-bar gizlenmez', /body\.report-full \.report-stage-bar\s*\{\s*position:\s*sticky/.test(layer) && !/body\.report-full \.report-stage-bar\s*\{\s*display:\s*none/.test(layer));
+  check('sığdır fonksiyonları', /function reportFitPref\(/.test(js) && /function reportFitWidth\(/.test(js) && /function applyReportFit\(/.test(js) && /function setReportFit\(/.test(js));
+  const full = js.slice(js.indexOf('function setReportFull('), js.indexOf('function setReportFull(') + 700);
+  check('tam ekran kaydırmayı sıfırlar (#view-report)', /#view-report/.test(full) && /scrollTop = 0/.test(full));
+  const css = layer.slice(layer.indexOf('/* v2.232'), layer.indexOf('/* v2.231'));
+  check('v2.232 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+  check('v2.232 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
