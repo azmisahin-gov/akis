@@ -131,7 +131,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4357,6 +4357,23 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('normalize: kapatma korunur', n.inventory.sha256, false);
   eq('normalize: eksik alan açık', n.inventory.name, true);
   eq('emptyReportColumns tümü açık', T.emptyReportColumns().inventory.sha256, true);
+}
+
+// [91] Kanıt tablosu sütunları (v2.236) — zaman + metin zorunlu.
+{
+  eq('reportColumnLocked tanımlı', typeof T.reportColumnLocked, 'function');
+  eq('zaman kilitli', T.reportColumnLocked('segments', 'time'), true);
+  eq('metin kilitli', T.reportColumnLocked('segments', 'text'), true);
+  eq('konuşmacı kilitli değil', T.reportColumnLocked('segments', 'speaker'), false);
+  const c = T.emptyCaseForTest({ id: 'cSegCols' });
+  c.report.columns = { segments: { time: false, text: false, speaker: false, review: false, obs: false } };
+  const t = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5]], [10, 20, 30, 40, 50]);
+  eq('kullanıcı kapatsa da zaman+metin basılır', t.headers.length, 2);
+  eq('anahtarlar time,text', t.keys.join(','), 'time,text');
+  c.report.columns = { segments: { obs: false } };
+  const t2 = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5]], null);
+  eq('gözlem kapalı → 4 sütun', t2.headers.length, 4);
+  eq('gözlem başlığı yok', t2.headers.includes('GÖZLEM'), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

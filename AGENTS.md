@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.235.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.236.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,19 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.236) — Kanıt tablosu sütunları
+
+### DEĞİŞMEZ KURALLAR (v2.236)
+
+1. **Kanıt tablosunda zaman + metin ZORUNLU.** `REPORT_COLUMN_LOCKED.segments =
+   ['time','text']`; `reportTableColumns` kilitli sütunları her zaman basar.
+   Panelde kilitli kutu `disabled` + ipucu. Bunları kapatılabilir yapmayın:
+   tablo adli kanıt niteliğini yitirir.
+2. `REPORT_COLUMN_TABLES.segments = ['time','speaker','text','review','obs']`.
+3. **EK-2 envanteri** `reportTableColumns(c,'inventory',...)` kullanır; ana
+   envanterle aynı sütun seçimi (SHA-256 kapatıldıysa ekte de yok).
+4. Test: `birim [91]`, `rapor` 25, `tasarim [2cg]`.
 
 ## YENİ OTURUM DEVRİ (v2.235) — Rapor alanları (tablo sütunları)
 

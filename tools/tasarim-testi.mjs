@@ -1994,5 +1994,17 @@ console.log('\n[2cf] Rapor alanları: tablo sütunları (v2.235)');
   check('v2.235 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
 }
 
+console.log('\n[2cg] Kanıt tablosu sütunları (v2.236)');
+{
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  check('segments sütun tanımı', /segments: \['time', 'speaker', 'text', 'review', 'obs'\]/.test(schema));
+  check('zaman+metin kilitli', /REPORT_COLUMN_LOCKED = \{ segments: \['time', 'text'\] \}/.test(schema));
+  check('kilit fonksiyonu', /function reportColumnLocked\(/.test(js));
+  check('panel kilitli kutu ipucu', /Kanıt için zorunlu/.test(js));
+  check('üç çıktı segments filtresi', (js.match(/reportTableColumns\(c, 'segments'/g) || []).length >= 3);
+  check('EK-2 envanter filtresi', /reportTableColumns\(c, 'inventory', REPORT_TEXT\.inventoryHeaders, inventoryRows\(c\)\)/.test(js));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

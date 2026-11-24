@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.235.**
+yazılır. **Güncel sürüm: v2.236.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.236 — Kanıt tablosunda da sütun aç/kapa (TAMAMLANDI)
+
+- Analiz/kanıt tablosu: Konuşmacı/Kontrol/Gözlem aç/kapa; **zaman + metin
+  ZORUNLU** (kilitli). EK-2 envanter ana envanter filtresini izler.
+- Koruyan test: `birim [91]`, `rapor` 25, `tasarim [2cg]`.
 
 ## v2.235 — Rapor alanları: tablo sütunları aç/kapa (TAMAMLANDI)
 

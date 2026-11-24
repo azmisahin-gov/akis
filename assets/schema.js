@@ -710,7 +710,8 @@ export const REPORT_COLUMN_TABLES = {
   origin: ['name', 'mediumType', 'mediumLabel', 'deliveredBy', 'deliveredAt', 'deliveryPlace', 'recordingDevice', 'recordingAt'],
   acquisition: ['name', 'device', 'label', 'serial', 'method', 'tool', 'operator', 'acquiredAt', 'hashState'],
   wer: ['material', 'model', 'ref', 'hyp', 'errors', 'wer'],
-  levels: ['name', 'peak', 'rms', 'clipped', 'noiseFloor', 'snr', 'extra']
+  levels: ['name', 'peak', 'rms', 'clipped', 'noiseFloor', 'snr', 'extra'],
+  segments: ['time', 'speaker', 'text', 'review', 'obs']
 };
 export const REPORT_COLUMN_LABELS = {
   inventory: {
@@ -752,14 +753,24 @@ export const REPORT_COLUMN_LABELS = {
     noiseFloor: 'GÜRÜLTÜ TABANI',
     snr: 'SİNYAL / GÜRÜLTÜ',
     extra: 'EK ÖLÇÜMLER'
+  },
+  segments: {
+    time: 'ZAMAN ARALIĞI',
+    speaker: 'KONUŞMACI',
+    text: 'ÇÖZÜMLENEN KONUŞMA',
+    review: 'KONTROL DURUMU',
+    obs: 'GÖZLEM'
   }
 };
+// Kanıt tablosunda ZORUNLU sütunlar: gizlenemez (adli kayıt bütünlüğü).
+export const REPORT_COLUMN_LOCKED = { segments: ['time', 'text'] };
 export const REPORT_COLUMN_TABLE_LABELS = {
   inventory: 'Envanter tablosu',
   origin: 'Kayıt kökeni tablosu',
   acquisition: 'Delil edinme tablosu',
   wer: 'WER tablosu',
-  levels: 'Ses seviyesi tablosu'
+  levels: 'Ses seviyesi tablosu',
+  segments: 'Analiz / kanıt tablosu'
 };
 /** Tüm sütunlar AÇIK. */
 export function emptyReportColumns(over = {}) {
