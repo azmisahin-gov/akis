@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.278.**
+yazılır. **Güncel sürüm: v2.279.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.279 — Konuşmacı gömme (embedding) benzerliği (TAMAMLANDI)
+
+- Model: **Xenova/wavlm-base-plus-sv** (q8, ~97 MB, 512 boyut, 16 kHz).
+- Fizibilite ölçüldü: yükleme 3,7 sn · pencere 2,1 sn · aynı 0,963/0,917 ·
+  farklı 0,786/0,678/0,764/0,664 → eşik **0,88 / 0,72** (arası belirsiz).
+- Panelde "Modeli indir ve ölç" (onay + ilerleme), **⚠ gömme** rozeti,
+  atanmamış için öneri, rapor QC satırı.
+- **Atama yapmaz**, vektör saklamaz; yalnız kullanıcı tetikler.
+- E2E: yanlış etiketli bölüm **yakalandı** (kendi 0,67 · S1 0,99); yanlış
+  pozitif 0; yenileme sonrası korunuyor.
+- Koruyan: `birim` [123].
 
 ## v2.278 — Kalan düşük kontrast metinler (TAMAMLANDI)
 

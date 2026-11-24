@@ -210,7 +210,8 @@ const HELP_TOPICS = [
   ['gözlem işaretleri', /Gözlem işaretleri/],
   ['sınıflandırma/rol tek kaynak', /Sınıflandırma ve rol etiketleri artık tek kaynaktan/],
   ['dosyalar arası kişiler', /Dosyalar arası kişiler/],
-  ['delil paketi', /Delil paketi \(Tier 1\)/]
+  ['delil paketi', /Delil paketi \(Tier 1\)/],
+  ['ses gömme ölçümü', /Ses gömme ölçümü/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));

@@ -3863,3 +3863,15 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 #view-questions .split-item small { color: var(--ink-2); }
 #view-questions .split-n { color: var(--ink-2); }
 #view-report .export-note b { color: var(--ink); }
+
+/* v2.279 — Konuşmacı gömme ölçümü (model isteğe bağlı). Panel, mevcut
+   "ses tutarlılığı" diliyle aynı; eylem satırı + ilerleme metni eklenir. */
+#view-audio .voice-embed { margin-top: var(--sp-2); }
+#view-audio .voice-embed .vc-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin: 6px 0;
+}
+#view-audio .voice-embed .vc-actions .ms-note { color: var(--ink-2); }

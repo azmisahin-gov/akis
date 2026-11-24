@@ -1,4 +1,4 @@
-# Özellikler (v2.278 — mevcut durum)
+# Özellikler (v2.279 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -586,6 +586,13 @@ uzmanlık alanını gösterir.
   konuşmacıyı kullanır (gereksiz "Konuşmacı 2" uydurmaz). Eski sürümlerde bozulmuş kayıtlar
   açılışta onarılır (`reconcileSpeakerRefs`); paketten yükleme arşivle aynı normalize kuralını
   kullanır. Raporda aynı bölüm iki satırda görünmez.
+- **Ses gömme (embedding) benzerliği (v2.279):** konuşmacı doğrulama modeli
+  (**WavLM-SV**, q8, ~97 MB; isteğe bağlı, bir kez indirilir) her bölümün atandığı
+  konuşmacıya benzerliğini ölçer. Eşikler **ölçüldü**: ≥ 0,88 aynı · < 0,72 farklı;
+  arası belirsiz sayılır ve işaretlenmez. Belirgin çelişki **⚠ gömme** rozetiyle
+  görünür; atanmamış bölüm için "hangi konuşmacıya benziyor" önerisi yazılır.
+  **Kimlik tespiti değildir**, hiçbir atama otomatik değişmez; ölçüm yalnız
+  kullanıcı tetiklediğinde çalışır.
 - **Kayıt bazında konuşmacı tablosu (v2.273):** her kayıt için **KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON**;
   dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (boş sütun çizilmez). Tek kaynak:
   `materialSpeakerRows(c, m)`; üç çıktı aynı tabloyu basar.

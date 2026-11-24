@@ -152,6 +152,11 @@ const EXPOSE = [
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups', 'materialSpeakerRows',
   'addManualSegment', 'addSpeakerAndAssign',
+  'speakerEmbeddingProfiles',
+  'embeddingOutliers', 'embeddingChangeSuspects', 'embeddingSuggestions',
+  'VOICE_EMBED_SCHEMA', 'VOICE_EMBED_MODEL', 'VOICE_EMBED_BYTES', 'VOICE_EMBED_DIM',
+  'VOICE_EMBED_SR', 'VOICE_EMBED_SAME', 'VOICE_EMBED_DIFF', 'VOICE_EMBED_MIN_MARGIN',
+  'VOICE_EMBED_MIN_PROFILE', 'VOICE_EMBED_WINDOW_SEC', 'VOICE_EMBED_MIN_SEC',
   'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
@@ -217,6 +222,9 @@ vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });
 const T = sandbox.__t;
 T.reconcileSpeakerRefsForTest = __schemaMod.reconcileSpeakerRefs;
+T.l2Normalize = __schemaMod.l2Normalize;
+T.cosineSimilarity = __schemaMod.cosineSimilarity;
+T.embeddingCentroid = __schemaMod.embeddingCentroid;
 T.revoked = revoked;
 
 // --- Test altyapısı -------------------------------------------------------
@@ -5542,6 +5550,108 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ölü undoDepth kaldırıldı', /function undoDepth/.test(js), false);
   // Yerine geçen tek kaynak duruyor olmalı (yanlışlıkla onu da silmeyelim).
   eq('durum satırı tek kaynağı yerinde', /function workStatusHtml|function segmentWorkSummary/.test(js), true);
+}
+
+
+// [123] v2.279 — Konuşmacı GÖMME (embedding) benzerliği.
+// Ölçülen gerçek model: Xenova/wavlm-base-plus-sv (q8). Aynı konuşmacı
+// çiftleri 0.963/0.917, farklı konuşmacılar 0.786/0.678/0.764/0.664.
+// Eşikler bu ölçümden: SAME=0.88, DIFF=0.72; arası BELİRSİZ (işaretlenmez).
+// Bu blok SAF matematiği sınar; model indirme/ağ gerektirmez.
+{
+  console.log('[123] Konuşmacı gömme benzerliği (v2.279)');
+  for (const f of ['l2Normalize', 'cosineSimilarity', 'embeddingCentroid', 'speakerEmbeddingProfiles',
+    'embeddingOutliers', 'embeddingChangeSuspects', 'embeddingSuggestions']) {
+    eq(`${f} tanımlı`, typeof T[f], 'function');
+  }
+  if (typeof T.l2Normalize === 'function') {
+    eq('birim vektör', T.l2Normalize([3, 4]).map((x) => +x.toFixed(3)), [0.6, 0.8]);
+    eq('sıfIR vektör güvenli', T.l2Normalize([0, 0]), [0, 0]);
+    eq('boş girdi güvenli', T.l2Normalize(null), []);
+    near('aynı vektör kosinüs 1', T.cosineSimilarity([1, 2, 3], [1, 2, 3]), 1, 1e-9);
+    near('dik vektör kosinüs 0', T.cosineSimilarity([1, 0], [0, 1]), 0, 1e-9);
+    eq('boş kosinüs 0', T.cosineSimilarity([], [1]), 0);
+    eq('sıfır vektör kosinüs 0', T.cosineSimilarity([0, 0], [1, 0]), 0);
+    eq('merkez iki vektörün ortalaması (birim)', T.embeddingCentroid([[1, 0], [0, 1]]).map((x) => +x.toFixed(3)), [0.707, 0.707]);
+    eq('boş merkez boş', T.embeddingCentroid([]), []);
+  }
+  eq('eşikler ölçümle tutarlı', T.VOICE_EMBED_SAME > T.VOICE_EMBED_DIFF, true);
+  eq('model kimliği wavlm-sv', /wavlm-base-plus-sv/.test(T.VOICE_EMBED_MODEL), true);
+  eq('model boyutu ~97 MB', T.VOICE_EMBED_BYTES > 90e6 && T.VOICE_EMBED_BYTES < 120e6, true);
+  eq('gömme boyutu 512', T.VOICE_EMBED_DIM, 512);
+  eq('örnekleme 16 kHz', T.VOICE_EMBED_SR, 16000);
+  eq('pencere 5 sn', T.VOICE_EMBED_WINDOW_SEC, 5);
+  eq('en kısa bölüm 1,2 sn', T.VOICE_EMBED_MIN_SEC, 1.2);
+
+  if (typeof T.embeddingOutliers === 'function') {
+    // 2B oyunca vektörler: A yönü [1,0], B yönü [0,1].
+    const points = [
+      { index: 0, speakerId: 'a', vec: [1, 0] },
+      { index: 1, speakerId: 'a', vec: [0.97, 0.24] },
+      { index: 2, speakerId: 'a', vec: [0.25, 0.97] }, // YANLIŞ atanmış (B gibi)
+      { index: 3, speakerId: 'b', vec: [0.1, 0.995] },
+      { index: 4, speakerId: 'b', vec: [0, 1] },
+      { index: 5, speakerId: '', vec: [0.05, 0.999] } // atanmamış
+    ];
+    const profiles = T.speakerEmbeddingProfiles(points);
+    eq('iki profil', profiles.length, 2);
+    eq('profil sayıları', profiles.map((p) => p.speakerId + p.count).sort(), ['a3', 'b2']);
+    const out = T.embeddingOutliers(points, profiles);
+    eq('tek şüpheli', out.length, 1);
+    eq('şüpheli bölüm indeksi', out[0].index, 2);
+    eq('en yakın konuşmacı B', out[0].nearestSpeakerId, 'b');
+    eq('kendi benzerliği düşük', out[0].ownSim < T.VOICE_EMBED_DIFF, true);
+    eq('en yakın benzerliği yüksek', out[0].nearestSim >= T.VOICE_EMBED_SAME, true);
+
+    // BELİRSİZ bölge işaretlenmez: kendi 0.80, en yakın diğer 0.80.
+    const amb = [
+      { index: 0, speakerId: 'a', vec: [1, 0] },
+      { index: 1, speakerId: 'a', vec: [0.8, 0.6] },
+      { index: 2, speakerId: 'a', vec: [0.8, 0.6] },
+      { index: 3, speakerId: 'a', vec: [0.6, 0.8] },
+      { index: 4, speakerId: 'b', vec: [0.8, 0.6] },
+      { index: 5, speakerId: 'b', vec: [0.8, 0.6] }
+    ];
+    eq('belirsiz bölge işaretlenmez', T.embeddingOutliers(amb, T.speakerEmbeddingProfiles(amb)).length, 0);
+
+    // Tek örnekli konuşmacı değerlendirilemez (leave-one-out yok).
+    const single = [
+      { index: 0, speakerId: 'a', vec: [1, 0] },
+      { index: 1, speakerId: 'a', vec: [0.9, 0.1] },
+      { index: 2, speakerId: 'b', vec: [0, 1] }
+    ];
+    eq('tek örneklite değerlendirme yok', T.embeddingOutliers(single, T.speakerEmbeddingProfiles(single)).length, 0);
+
+    // Ardışık aynı konuşmacıda büyük sıçrama → değişim şüphesi.
+    const seq = [
+      { index: 0, speakerId: 'a', vec: [1, 0] },
+      { index: 1, speakerId: 'a', vec: [0.2, 0.98] },
+      { index: 2, speakerId: 'b', vec: [0.2, 0.98] }
+    ];
+    const ch = T.embeddingChangeSuspects(seq);
+    eq('değişim şüphesi 1', ch.length, 1);
+    eq('değişim komşu indeksleri', [ch[0].prevIndex, ch[0].index], [0, 1]);
+    eq('farklı konuşmacı komşuluğu şüphe değil', T.embeddingChangeSuspects([
+      { index: 0, speakerId: 'a', vec: [1, 0] },
+      { index: 1, speakerId: 'b', vec: [0.2, 0.98] }
+    ]).length, 0);
+
+    // Atanmamış bölüm için ÖNERİ (işaret değil).
+    const sug = T.embeddingSuggestions(points, profiles);
+    eq('atanmamış için öneri', sug.length, 1);
+    eq('öneri indeksi', sug[0].index, 5);
+    eq('öneri konuşmacı B', sug[0].speakerId, 'b');
+  }
+
+  // Kaynak sözleşmesi: gömme ölçümü ATAMA YAPMAZ; düğme kullanıcıya açıktır.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const embStart = js.indexOf('async function measureSpeakerEmbeddings');
+  eq('gömme ölçümü fonksiyonu var', embStart >= 0, true);
+  const block = embStart >= 0 ? js.slice(embStart, embStart + 6000) : '';
+  eq('gömme ölçümü bloğu okunur', block.length > 1000, true);
+  eq('gömme ölçümü atama YAPMAZ', block.length > 1000 && !/setSegmentSpeakerByName\s*\(/.test(block), true);
+  eq('gömme düğmesi var', /data-voice-embed/.test(js), true);
+  eq('model indirme onayı sorulur', /askConfirm\(/.test(block), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

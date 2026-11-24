@@ -494,6 +494,7 @@ export function emptyMaterial(over = {}) {
     // KONUŞMACI SES TUTARLILIĞI (v2.265): bölüm bazında ölçülen perde + profil
     // + işaretler. Türetilmiş ölçümdür; kimlik tespiti DEĞİLDİR. Yoksa null.
     voiceCheck: null,
+    voiceEmbed: null, // konuşmacı gömme ölçümü ÖZETİ (vektör saklanmaz; v2.279)
     spectrogramReviewedAt: null,
 
     // Delil
@@ -1375,6 +1376,176 @@ export function voiceChangeSuspects(points, ratio = VOICE_CHANGE_RATIO) {
   return out;
 }
 
+// ---- Konuşmacı GÖMME (embedding) benzerliği (v2.279) ---------------------
+// NEDEN: perde (f0) ayrımı zayıftır; benzer perdeli iki kişi ayrışmaz
+// (v2.265'in dürüst sınırı). Konuşmacı doğrulama modeli (WavLM-SV) konuşmacı
+// parmak izi (x-vector) üretir; bölümün ATANDIĞI konuşmacıya ne kadar
+// benzediğini ölçer. KİMLİK TESPİTİ DEĞİLDİR: yalnız benzerlik; atama
+// otomatik DEĞİŞMEZ, kararı uzman verir.
+export const VOICE_EMBED_SCHEMA = 'akis.voice-embed.v1';
+export const VOICE_EMBED_MODEL = 'Xenova/wavlm-base-plus-sv';
+export const VOICE_EMBED_DTYPE = 'q8';
+export const VOICE_EMBED_BYTES = 101683453; // onnx/model_quantized.onnx (ölçüldü)
+export const VOICE_EMBED_DIM = 512;
+export const VOICE_EMBED_SR = 16000;
+export const VOICE_EMBED_WINDOW_SEC = 5;
+export const VOICE_EMBED_MIN_SEC = 1.2; // çok kısa bölüm güvenilir değil
+export const VOICE_EMBED_MIN_PROFILE = 3;
+// EŞİKLER ÖLÇÜLDÜ (v2.279, gerçek Chromium + model, VoxCeleb çiftleri):
+//   aynı konuşmacı: 0.963 · 0.917
+//   farklı konuşmacı: 0.786 · 0.678 · 0.764 · 0.664
+//   aynı TTS kaydın iki penceresi: 0.876 · perde kaydırılmış varyant: 0.576
+// Bu yüzden ≥ 0.88 "aynı", < 0.72 "farklı"; ARASI BELİRSİZ → işaretlenmez.
+export const VOICE_EMBED_SAME = 0.88;
+export const VOICE_EMBED_DIFF = 0.72;
+export const VOICE_EMBED_MIN_MARGIN = 0.1;
+
+const roundSim = (v) => Math.round(v * 1000) / 1000;
+
+/** L2 birim vektör (boş/sıfır güvenli). */
+export function l2Normalize(vec) {
+  const a = Array.isArray(vec) ? vec.map(Number) : [];
+  const n = Math.sqrt(a.reduce((s, v) => s + (Number.isFinite(v) ? v * v : 0), 0));
+  if (!n) return a.map(() => 0);
+  return a.map((v) => (Number.isFinite(v) ? v / n : 0));
+}
+
+/** Kosinüs benzerliği; boyut/boş/sıfır uyuşmazlığında 0 (uydurma yok). */
+export function cosineSimilarity(a, b) {
+  const x = Array.isArray(a) ? a : [];
+  const y = Array.isArray(b) ? b : [];
+  if (!x.length || x.length !== y.length) return 0;
+  let d = 0,
+    nx = 0,
+    ny = 0;
+  for (let i = 0; i < x.length; i++) {
+    const p = Number(x[i]),
+      q = Number(y[i]);
+    if (!Number.isFinite(p) || !Number.isFinite(q)) return 0;
+    d += p * q;
+    nx += p * p;
+    ny += q * q;
+  }
+  if (!nx || !ny) return 0;
+  return d / (Math.sqrt(nx) * Math.sqrt(ny));
+}
+
+/** Vektörlerin ortalamasının birim hâli (profil merkezi). */
+export function embeddingCentroid(vectors) {
+  const list = (Array.isArray(vectors) ? vectors : []).filter((v) => Array.isArray(v) && v.length);
+  if (!list.length) return [];
+  const dim = list[0].length;
+  const sum = new Array(dim).fill(0);
+  let n = 0;
+  for (const v of list) {
+    if (v.length !== dim) continue;
+    for (let i = 0; i < dim; i++) sum[i] += Number(v[i]) || 0;
+    n++;
+  }
+  if (!n) return [];
+  return l2Normalize(sum.map((x) => x / n));
+}
+
+/** Konuşmacı profilleri: { speakerId, count, centroid, reliable }. */
+export function speakerEmbeddingProfiles(points) {
+  const by = new Map();
+  for (const p of Array.isArray(points) ? points : []) {
+    if (!p || !p.speakerId || !Array.isArray(p.vec) || !p.vec.length) continue;
+    if (!by.has(p.speakerId)) by.set(p.speakerId, []);
+    by.get(p.speakerId).push(p);
+  }
+  const out = [];
+  for (const [speakerId, list] of by) {
+    out.push({
+      speakerId,
+      count: list.length,
+      centroid: embeddingCentroid(list.map((p) => p.vec)),
+      reliable: list.length >= VOICE_EMBED_MIN_PROFILE
+    });
+  }
+  return out;
+}
+
+/**
+ * Atandığı konuşmacıya benzemeyip BAŞKA konuşmacıya belirgin biçimde benzeyen
+ * bölümler. Kural (ölçülmüş eşikler):
+ *   own < DIFF  VE  enYakınDiğer ≥ SAME  VE  fark ≥ 0,1.
+ * Kendi merkezi "leave-one-out" ile hesaplanır: bölüm kendi ortalamasını
+ * şişirmez. Tek örneklik konuşmacı değerlendirilmez (kanıt yok).
+ */
+export function embeddingOutliers(points, profiles) {
+  const list = Array.isArray(points) ? points : [];
+  const byId = new Map();
+  for (const p of list) {
+    if (!p || !p.speakerId || !Array.isArray(p.vec) || !p.vec.length) continue;
+    if (!byId.has(p.speakerId)) byId.set(p.speakerId, []);
+    byId.get(p.speakerId).push(p);
+  }
+  const prof = (Array.isArray(profiles) ? profiles : []).filter((q) => q && q.centroid && q.centroid.length);
+  const out = [];
+  for (const p of list) {
+    if (!p || !p.speakerId || !Array.isArray(p.vec) || !p.vec.length) continue;
+    const own = byId.get(p.speakerId) || [];
+    if (own.length < 2) continue;
+    const ownCentroid = embeddingCentroid(own.filter((q) => q !== p).map((q) => q.vec));
+    if (!ownCentroid.length) continue;
+    const ownSim = cosineSimilarity(p.vec, ownCentroid);
+    let best = null;
+    for (const q of prof) {
+      if (q.speakerId === p.speakerId || q.count < 2) continue;
+      const sim = cosineSimilarity(p.vec, q.centroid);
+      if (!best || sim > best.sim) best = { speakerId: q.speakerId, sim };
+    }
+    if (!best) continue;
+    if (!(ownSim < VOICE_EMBED_DIFF && best.sim >= VOICE_EMBED_SAME && best.sim - ownSim >= VOICE_EMBED_MIN_MARGIN)) continue;
+    out.push({
+      index: p.index,
+      speakerId: p.speakerId,
+      ownSim: roundSim(ownSim),
+      nearestSpeakerId: best.speakerId,
+      nearestSim: roundSim(best.sim),
+      kind: 'nearest-other'
+    });
+  }
+  return out.sort((a, b) => a.index - b.index);
+}
+
+/** Aynı konuşmacıya atanmış ARDIŞIK bölümlerde büyük benzerlik düşüşü. */
+export function embeddingChangeSuspects(points) {
+  const list = (Array.isArray(points) ? points : [])
+    .filter((p) => p && Array.isArray(p.vec) && p.vec.length)
+    .slice()
+    .sort((a, b) => a.index - b.index);
+  const out = [];
+  for (let i = 1; i < list.length; i++) {
+    const a = list[i - 1],
+      b = list[i];
+    if (!a.speakerId || a.speakerId !== b.speakerId) continue;
+    if (b.index !== a.index + 1) continue;
+    const sim = cosineSimilarity(a.vec, b.vec);
+    if (sim >= VOICE_EMBED_DIFF) continue;
+    out.push({ prevIndex: a.index, index: b.index, speakerId: a.speakerId, sim: roundSim(sim) });
+  }
+  return out;
+}
+
+/** Atanmamış bölüm için "hangi konuşmacıya benziyor" ÖNERİSİ (işaret değil). */
+export function embeddingSuggestions(points, profiles) {
+  const prof = (Array.isArray(profiles) ? profiles : []).filter((p) => p && p.count >= 2 && p.centroid && p.centroid.length);
+  const out = [];
+  for (const p of Array.isArray(points) ? points : []) {
+    if (!p || p.speakerId || !Array.isArray(p.vec) || !p.vec.length) continue;
+    let best = null;
+    for (const q of prof) {
+      const sim = cosineSimilarity(p.vec, q.centroid);
+      if (!best || sim > best.sim) best = { speakerId: q.speakerId, sim };
+    }
+    if (!best || best.sim < VOICE_EMBED_SAME) continue;
+    out.push({ index: p.index, speakerId: best.speakerId, sim: roundSim(best.sim) });
+  }
+  return out.sort((a, b) => a.index - b.index);
+}
+
 // ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
 // Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
 // yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK
@@ -1582,6 +1753,7 @@ export function normalizeMaterial(src = {}) {
     expectedText: str(m.expectedText),
     levels: isObj(m.levels) ? m.levels : null,
     voiceCheck: isObj(m.voiceCheck) ? m.voiceCheck : null,
+    voiceEmbed: isObj(m.voiceEmbed) ? m.voiceEmbed : null,
     spectrogramReviewedAt: m.spectrogramReviewedAt || null,
     origin: {
       mediumType: pick(normalizeMediumType(origin.mediumType), MEDIUM_TYPE, 'unspecified'),

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.278.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.279.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6663,3 +6663,73 @@ Tarama sonrası: **0 ihlal** (boş durumlar dâhil).
    çalıştırın; ihlal 0 olmadan sürüm çıkarmayın.
 
 Koruyan test: `tasarim` [2cs] (9 kontrol).
+
+## YENİ OTURUM DEVRİ (v2.279) — Konuşmacı gömme (embedding) benzerliği
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.279** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1874 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Yok (gömme ölçümü kapandı; kalan sınırlar aşağıda) |
+
+### Model ve ÖLÇÜLEN fizibilite (gerçek Chromium, transformers.js 3.7.2)
+
+| | |
+|---|---|
+| Model | `Xenova/wavlm-base-plus-sv` (transformers.js uyumlu ONNX, `audio-xvector`) |
+| Dosya | `onnx/model_quantized.onnx` = **101.683.453 bayt** (fp32 402 MB — kullanılmıyor) |
+| Gömme | **512** boyut · 16 kHz mono · 5 sn pencere |
+| Yükleme | **3,7 sn** (profil önbelleği boş; sonra tarayıcı önbelleği) |
+| Hız | pencere başına **~2,1 sn** (CPU) |
+| Eşik (ölçüldü) | aynı **0,963 / 0,917** · farklı **0,786 / 0,678 / 0,764 / 0,664** |
+| Karar | **≥ 0,88 aynı**, **< 0,72 farklı**, arası **belirsiz** (işaretlenmez) |
+
+### Yapılan
+
+- `schema.js`: `l2Normalize`, `cosineSimilarity`, `embeddingCentroid`,
+  `speakerEmbeddingProfiles`, `embeddingOutliers`, `embeddingChangeSuspects`,
+  `embeddingSuggestions` + `VOICE_EMBED_*` sabitleri. **Saf**; test edilir.
+- `app.js`: `loadSpeakerEmbedder` (dinamik import, dtype q8), `resampleTo16k`,
+  `measureSpeakerEmbeddings`, panel (`voiceEmbedPanelHtml`), `⚠ gömme` rozeti,
+  rapor QC satırı, `data-voice-embed` / `data-voice-embed-goto` işleyicileri.
+- `emptyMaterial.voiceEmbed` + `normalizeMaterial` korur. **Vektör saklanmaz**;
+  yalnız özet (outliers/changes/suggestions/profiles sayıları).
+- Yardım ekranı + OZELLIKLER + CHANGELOG/YOL; `surum` yardım konusu kontrolü.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Kimlik tespiti değildir.** Yalnız benzerlik; hiçbir atama otomatik değişmez
+   (`setSegmentSpeakerByName` gömme kodunda YOK — test [123] denetler).
+2. **İndirme sessiz olmaz:** model bellekte yoksa her oturumda onay sorulur.
+3. **Vektör kayda yazılmaz** (şişme/veri sızıntısı); yeniden ölçüm gerekir.
+4. **Belirsiz bölge işaretlenmez** (0,72–0,88). Eşik değişecekse YENİ ölçüm yapılır.
+5. Ölçüm yalnız kullanıcı tetiklediğinde çalışır; "tüm ölçümleri yap" zincirine
+   **eklenmez** (indirme gerektirir).
+
+### Ölçüm (uçtan uca, etiketli ses)
+
+| Senaryo | Sonuç |
+|---|---|
+| 5 bölüm (2×S1, 3×S2); son bölüm yanlış S2 | **1 şüpheli** "kendi 0,67 · S1 0,99" + rozet |
+| Aynı ölçümde değişim | **1 değişim şüphesi** |
+| Yanlış etiket yok | **0 şüpheli** |
+| Yenileme | özet + rozet **korundu** |
+| Model + 5 bölüm | **~12 sn** |
+
+### TEST VERİSİ DERSİ (pahalı)
+
+`sample_data/audio/*` kayıtları **konuşma (iki kişi)** — tek konuşmacılı test
+verisi DEĞİL. İlk denemede 0–20 sn "aynı kişi" sanıldı; ölçüm 0,51–0,65 çıktı.
+Etiketli doğrulama için `Xenova/transformers.js-docs` `sv_speaker-*` çiftleri
+kullanıldı (**indirilmez, depoya girmez**; test paketi /tmp'de üretilir).
+Tek konuşmacılı veri gerekiyorsa gerçek/etiketli kayıt kullanın.
+
+### Bilinen sınırlar
+
+- Model konuşma/şarkı ayrımı yapmaz; müzikli bölümde gömme yanıltıcı olabilir.
+- Çok kısa bölüm (<1,2 sn) ölçülmez (sayılır, "kısa bölüm atlandı" yazılır).
+- Profil için en az **2** ölçülmüş bölüm gerekir (leave-one-out); tek bölümlü
+  konuşmacı değerlendirilmez.
+- Kuantize model (q8) fp32'ye göre küçük farklar üretir; eşikler q8 ile ölçüldü.

@@ -6,12 +6,50 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.278.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.279.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.279 — Konuşmacı gömme (embedding) benzerliği
+
+**Neden:** Perde (f0) ayrımı zayıftır; benzer perdeli iki kişi ayrışmaz (v2.265'in
+dürüst sınırı). Konuşmacı doğrulama modeli konuşmacı parmak izi (x-vector) üretir.
+
+**Fizibilite ÖLÇÜLDÜ (gerçek Chromium + transformers.js 3.7.2, uygulamanın
+kullandığı sürüm):** model **q8** (101.683.453 bayt) **3,7 sn**'de yüklendi,
+gömme boyutu **512**, 5 sn'lik pencere **~2,1 sn**'de ölçüldü. Etiketli
+konuşmacı çiftlerinde kosinüs: **aynı** 0,963 / 0,917 · **farklı**
+0,786 / 0,678 / 0,764 / 0,664. Bu yüzden eşikler **≥ 0,88 aynı**,
+**< 0,72 farklı**, arası **belirsiz** (işaretlenmez).
+
+### KULLANICI NE GÖRECEK
+
+- Konuşmacılar panelinde **Ses gömme ölçümü (konuşmacı benzerliği)** bloğu:
+  **Modeli indir ve ölç** (yaklaşık 97 MB; indirme **her oturumda onay ister**),
+  ilerleme yüzdesi, sonuç özeti ve ölçüm zamanı.
+- Bölüm atandığı kişiye benzemiyorsa listede **⚠ gömme** rozeti; panelde
+  *"kendi profiline 0,67 · S1 profiline 0,99 — atama gözden geçirilmeli"*.
+- Atanmamış bölüm için **"hangi konuşmacıya benziyor" önerisi**.
+- Rapor **Kalite kontrolü** tablosunda satır (yalnız ölçüm yapıldıysa).
+- **Kimlik tespiti değildir; hiçbir atama otomatik değişmez.** Ölçüm yalnız
+  kullanıcı tetiklediğinde çalışır; vektörler kayda **yazılmaz** (yalnız özet).
+
+### Ölçüm (uçtan uca, gerçek Chromium + gerçek model + etiketli ses)
+
+| Senaryo | Sonuç |
+|---|---|
+| 5 bölüm (2×S1, 3×S2); son bölüm **yanlış** S2 | **1 şüpheli**: "kendi 0,67 · S1 0,99"; rozet **⚠ gömme** |
+| Aynı ölçümde konuşmacı değişen ardışık bölüm | **1 değişim şüphesi** |
+| Aynı ses, yanlış etiket yok | **0 şüpheli** (yanlış pozitif yok) |
+| Yenileme sonrası | özet + rozet **korundu** |
+| Model indirme | **her oturumda onay** (sessiz indirme yok) |
+| Süre | model + 5 bölüm ≈ **12 sn**; bölüm başına ~1–2 sn |
+| JS hatası | **0** |
+
+Koruyan test: `birim` [123] (matematik + eşik + atama yapmama sözleşmesi).
 
 ## v2.278 — Koyu temada okunmayan metinler (ölçümle)
 

@@ -50,6 +50,20 @@ import {
   voiceOutliers,
   voiceChangeSuspects,
   VOICE_SCHEMA,
+  speakerEmbeddingProfiles,
+  embeddingOutliers,
+  embeddingChangeSuspects,
+  embeddingSuggestions,
+  VOICE_EMBED_SCHEMA,
+  VOICE_EMBED_MODEL,
+  VOICE_EMBED_DTYPE,
+  VOICE_EMBED_BYTES,
+  VOICE_EMBED_DIM,
+  VOICE_EMBED_SR,
+  VOICE_EMBED_WINDOW_SEC,
+  VOICE_EMBED_MIN_SEC,
+  VOICE_EMBED_SAME,
+  VOICE_EMBED_DIFF,
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
@@ -89,15 +103,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.278';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.278';
+} from './schema.js?v=2.279';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.279';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.278';
+const APP_VERSION = '2.279';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3950,6 +3964,190 @@ async function measureSpeakerConsistency(m) {
       'İşaretler öneridir; karar sizindir.'
   );
 }
+// ---- Konuşmacı GÖMME (embedding) ölçümü (v2.279) ------------------------
+// Model İSTEĞE BAĞLI indirilir (tek sefer ~97 MB, q8; transformers.js zaten
+// ASR için kullanılıyor). Ölçüm yalnız kullanıcı tetiklediğinde çalışır ve
+// ATAMA YAPMAZ: yalnız "bu bölüm atandığı kişiye ne kadar benziyor" işareti
+// ve atanmamışlar için öneri üretir. Kimlik tespiti değildir.
+let speakerEmbedder = null;
+let speakerEmbedderLoading = null;
+let voiceEmbedRunning = false;
+
+async function loadSpeakerEmbedder(onProgress) {
+  if (speakerEmbedder) return speakerEmbedder;
+  if (speakerEmbedderLoading) return speakerEmbedderLoading;
+  speakerEmbedderLoading = (async () => {
+    const { AutoProcessor, AutoModel } = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.7.2');
+    const processor = await AutoProcessor.from_pretrained(VOICE_EMBED_MODEL);
+    const model = await AutoModel.from_pretrained(VOICE_EMBED_MODEL, {
+      dtype: VOICE_EMBED_DTYPE,
+      progress_callback: (p) => {
+        if (typeof onProgress === 'function') onProgress(p);
+      }
+    });
+    speakerEmbedder = { processor, model, modelId: VOICE_EMBED_MODEL };
+    return speakerEmbedder;
+  })();
+  try {
+    return await speakerEmbedderLoading;
+  } finally {
+    speakerEmbedderLoading = null;
+  }
+}
+
+// Model 16 kHz ister; kayıt genelde başka hızdadır → çevrimdışı yeniden örnekle.
+async function resampleTo16k(f32, srcRate) {
+  if (!f32 || !f32.length || !(srcRate > 0)) return f32;
+  if (Math.round(srcRate) === VOICE_EMBED_SR) return f32;
+  const len = Math.max(1, Math.ceil((f32.length * VOICE_EMBED_SR) / srcRate));
+  const off = new OfflineAudioContext(1, len, VOICE_EMBED_SR);
+  const buf = off.createBuffer(1, f32.length, srcRate);
+  buf.copyToChannel(f32, 0);
+  const src = off.createBufferSource();
+  src.buffer = buf;
+  src.connect(off.destination);
+  src.start();
+  const out = await off.startRendering();
+  return out.getChannelData(0);
+}
+
+function voiceEmbedIsMeasured(m) {
+  return !!(m && m.voiceEmbed && m.voiceEmbed.ok && m.voiceEmbed.schema === VOICE_EMBED_SCHEMA);
+}
+
+async function measureSpeakerEmbeddings(m) {
+  const c = currentCase();
+  const segs = (m && m.segments) || [];
+  if (!segs.length) {
+    showToast('Önce bölümleyin; ölçülecek bölüm yok.');
+    return;
+  }
+  if (voiceEmbedRunning) {
+    showToast('Gömme ölçümü zaten sürüyor; bitmesini bekleyin.');
+    return;
+  }
+  const blob = await getAudioBlob(c, m);
+  if (!blob) {
+    showToast('Ses dosyası bulunamadı.');
+    return;
+  }
+  if (!speakerEmbedder) {
+    const ok = await askConfirm(
+      'Konuşmacı gömme modeli',
+      `Konuşmacı doğrulama modeli (WavLM-SV, q8) yaklaşık <b>${esc(fmtBytes(VOICE_EMBED_BYTES))}</b> indirilir. ` +
+        'İndirme bir kez yapılır ve tarayıcı önbelleğinde kalır. Ölçüm konuşmacı <b>benzerliği</b> verir; ' +
+        '<b>kimlik tespiti değildir</b> ve hiçbir atama otomatik değişmez. Devam edilsin mi?'
+    );
+    if (!ok) return;
+  }
+  const progressEl = document.getElementById(`ve-progress-${m.id}`);
+  const setProgress = (text) => {
+    if (progressEl) progressEl.textContent = text;
+  };
+  voiceEmbedRunning = true;
+  try {
+    if (!speakerEmbedder) {
+      setProgress('Model indiriliyor…');
+      await loadSpeakerEmbedder((p) => {
+        if (p && p.status === 'progress' && p.total) {
+          setProgress(`Model indiriliyor… %${Math.round((p.loaded / p.total) * 100)}`);
+        }
+      });
+    }
+    setProgress('Ses çözümleniyor…');
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    let audio;
+    try {
+      audio = await ctx.decodeAudioData(await blob.arrayBuffer());
+    } catch (e) {
+      await ctx.close();
+      showToast('Ses çözümlenemedi.');
+      return;
+    }
+    const sr = audio.sampleRate;
+    const channels = [];
+    for (let ch = 0; ch < audio.numberOfChannels; ch++) channels.push(audio.getChannelData(ch));
+    const points = [];
+    let skipped = 0;
+    for (let i = 0; i < segs.length; i++) {
+      const s = segs[i];
+      const st = secondsFromTimecode(s.start);
+      const en = secondsFromTimecode(s.end);
+      const dur = en - st;
+      if (!(dur >= VOICE_EMBED_MIN_SEC)) {
+        skipped++;
+        continue;
+      }
+      const span = Math.min(VOICE_EMBED_WINDOW_SEC, dur);
+      const mid = st + dur / 2;
+      const a = Math.max(0, Math.floor((mid - span / 2) * sr));
+      const b = Math.min(channels[0].length, Math.floor((mid + span / 2) * sr));
+      if (b - a < sr * VOICE_EMBED_MIN_SEC) {
+        skipped++;
+        continue;
+      }
+      const segCh = channels.map((ch) => ch.subarray(a, b));
+      const pick = pickActiveChannel(segCh);
+      const f32 = await resampleTo16k(segCh[pick.index], sr);
+      const inputs = await speakerEmbedder.processor(f32);
+      const out = await speakerEmbedder.model(inputs);
+      const sp = speakerForSegment(m, s);
+      points.push({ index: i, speakerId: sp ? sp.id : '', vec: Array.from(out.embeddings.data) });
+      // Vektörler KAYDA YAZILMAZ: yalnız özet saklanır (boyut). Yeniden
+      // değerlendirme gerekirse ölçüm tekrar çalıştırılır.
+      setProgress(`Ölçülüyor… ${points.length} bölüm`);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    await ctx.close();
+    if (!points.length) {
+      showToast(`Ölçülecek yeterli uzunlukta bölüm yok (en az ${VOICE_EMBED_MIN_SEC} sn).`);
+      return;
+    }
+    const profiles = speakerEmbeddingProfiles(points);
+    const outliers = embeddingOutliers(points, profiles);
+    const changes = embeddingChangeSuspects(points);
+    const suggestions = embeddingSuggestions(points, profiles);
+    m.voiceEmbed = {
+      ok: true,
+      schema: VOICE_EMBED_SCHEMA,
+      at: new Date().toISOString(),
+      model: VOICE_EMBED_MODEL,
+      dtype: VOICE_EMBED_DTYPE,
+      dim: VOICE_EMBED_DIM,
+      windowSec: VOICE_EMBED_WINDOW_SEC,
+      same: VOICE_EMBED_SAME,
+      diff: VOICE_EMBED_DIFF,
+      measured: points.length,
+      skipped,
+      profiles: profiles.map((p) => ({ speakerId: p.speakerId, count: p.count })),
+      outliers,
+      changes,
+      suggestions
+    };
+    logEvent(
+      m,
+      'Ses gömme ölçümü yapıldı',
+      `${points.length} bölüm · ${outliers.length} şüpheli · ${changes.length} değişim şüphesi (kimlik tespiti değildir)`
+    );
+    persist();
+    const scroll = captureSegScroll(m);
+    await renderAudioList();
+    restoreSegScroll(m, scroll, activeSegIndex(m));
+    renderSpeakersPanel(m);
+    renderOverview();
+    showToast(
+      `Gömme ölçümü: ${points.length} bölüm · ${outliers.length} şüpheli · ${changes.length} değişim şüphesi. ` +
+        'İşaretler öneridir; atama değiştirilmedi.'
+    );
+  } catch (e) {
+    showToast(`Gömme ölçümü başarısız: ${e && e.message ? e.message : 'bilinmeyen hata'}`);
+    if (progressEl) progressEl.textContent = 'Ölçüm başarısız.';
+  } finally {
+    voiceEmbedRunning = false;
+  }
+}
+
 // Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
 // birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
 // yapılır ve kayda bağlı saklanır.
@@ -4459,7 +4657,75 @@ function speakersPanelHtml(m) {
     </div>`;
     })
     .join('');
-  return `${codeNote}${personBlock}${voiceBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  const embedBlock = voiceEmbedPanelHtml(m);
+  return `${codeNote}${personBlock}${voiceBlock}${embedBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+}
+// v2.279 — Gömme ölçümü paneli (Konuşmacılar bölümünde).
+function voiceEmbedInnerHtml(m) {
+  const ve = voiceEmbedIsMeasured(m) ? m.voiceEmbed : null;
+  const codeOf = (id) => {
+    const rec = (m.speakers || []).find((x) => x.id === id);
+    return rec ? rec.code || rec.name || '' : '';
+  };
+  const when = ve && ve.at ? new Date(ve.at).toLocaleString('tr-TR') : '';
+  const rows = ve
+    ? [
+        ...(ve.outliers || []).map(
+          (o) =>
+            `<div class="vc-row"><span class="vc-idx">Bölüm ${o.index + 1}</span><span class="vc-txt">kendi profiline <b>${o.ownSim.toFixed(
+              2
+            )}</b> · ${esc(codeOf(o.nearestSpeakerId))} profiline <b>${o.nearestSim.toFixed(
+              2
+            )}</b> — atama gözden geçirilmeli</span><button class="mini-button" data-voice-embed-goto="${o.index}" title="Bu bölüme git (atama DEĞİŞMEZ)">Git</button></div>`
+        ),
+        ...(ve.changes || []).map(
+          (c) =>
+            `<div class="vc-row"><span class="vc-idx">Bölüm ${c.index + 1}</span><span class="vc-txt">önceki bölümle benzerlik <b>${c.sim.toFixed(
+              2
+            )}</b> — konuşmacı değişmiş olabilir</span><button class="mini-button" data-voice-embed-goto="${c.prevIndex}" title="Bu bölüme git (atama DEĞİŞMEZ)">Git</button></div>`
+        ),
+        ...(ve.suggestions || []).map(
+          (s) =>
+            `<div class="vc-row"><span class="vc-idx">Bölüm ${s.index + 1}</span><span class="vc-txt">atanmamış · ${esc(
+              codeOf(s.speakerId)
+            )} profiline <b>${s.sim.toFixed(2)}</b> benziyor (öneri)</span><button class="mini-button" data-voice-embed-goto="${
+              s.index
+            }" title="Bu bölüme git">Git</button></div>`
+        )
+      ].join('')
+    : '';
+  return `<div class="vc-head"><b>Ses gömme ölçümü (konuşmacı benzerliği)</b><small>${
+    ve
+      ? `ölçüm: ${esc(ve.model)} (${esc(ve.dtype)})`
+      : speakerEmbedder
+        ? 'model bu oturumda yüklü'
+        : `model ~${fmtBytes(VOICE_EMBED_BYTES)} · bir kez indirilir`
+  }</small></div>
+    <p class="spk-person-note">Konuşmacı doğrulama modeli (WavLM-SV) <b>benzerlik</b> ölçer; <b>kimlik tespiti değildir</b>. Eşikler ölçüldü: ≥ ${VOICE_EMBED_SAME} aynı · &lt; ${VOICE_EMBED_DIFF} farklı; arası belirsiz sayılır ve işaretlenmez. Hiçbir atama otomatik değişmez.</p>
+    <div class="vc-actions"><button class="mini-button" data-voice-embed="${esc(
+      m.id
+    )}" title="Modeli (gerekirse indirip) bölümleri ölçer. Model ~${esc(
+      fmtBytes(VOICE_EMBED_BYTES)
+    )}; indirme bir kez yapılır. Ölçüm uzun sürebilir (bölüm başına ~1–3 sn).">${
+    ve ? 'Yeniden ölç' : 'Modeli indir ve ölç'
+  }</button><span class="ms-note" id="ve-progress-${esc(m.id)}">${
+    ve
+      ? `${ve.measured} bölüm ölçüldü · ${(ve.outliers || []).length} şüpheli · ${(ve.changes || []).length} değişim şüphesi${
+          ve.skipped ? ` · ${ve.skipped} kısa bölüm atlandı` : ''
+        } · ${esc(when)}`
+      : ''
+  }</span></div>${rows}${
+    ve && (ve.outliers || []).length > 20
+      ? `<div class="vc-row"><span class="vc-txt">… ${ve.outliers.length - 20} şüpheli daha (listede ⚠ gömme)</span></div>`
+      : ''
+  }`;
+}
+function voiceEmbedPanelHtml(m) {
+  return `<div class="voice-check voice-embed" id="ve-panel-${esc(m.id)}">${voiceEmbedInnerHtml(m)}</div>`;
+}
+function refreshVoiceEmbedPanel(m) {
+  const host = document.getElementById(`ve-panel-${m.id}`);
+  if (host) host.innerHTML = voiceEmbedInnerHtml(m);
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -5157,6 +5423,14 @@ function segItemHtml(m, s, i, prev, issue) {
         voiceHit.expectedHz
       )} Hz). Karar sizindir; atama değiştirilmedi.">⚠ ses</span>`
     : '';
+  // GÖMME BENZERLİĞİ (v2.279): yalnız işaret; atama değişmez.
+  const embedHit =
+    m && voiceEmbedIsMeasured(m) && Array.isArray(m.voiceEmbed.outliers)
+      ? m.voiceEmbed.outliers.find((o) => o.index === i)
+      : null;
+  const embedBadge = embedHit
+    ? `<span class="badge warn" title="Gömme ölçümü: bu bölüm atandığı konuşmacıya benzemiyor (kendi ${embedHit.ownSim}; en yakın diğer ${embedHit.nearestSim}). Karar sizindir; atama değiştirilmedi.">⚠ gömme</span>`
+    : '';
   // Öneri varsa listede görünmeli; yoksa bilirkişi hangi bölümde bekleyen
   // öneri olduğunu ancak tek tek gezinerek bulabilir.
   const propBadge = s.proposal
@@ -5185,7 +5459,7 @@ function segItemHtml(m, s, i, prev, issue) {
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${lenBadge}${voiceBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-badges">${timeBadge}${lenBadge}${voiceBadge}${embedBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
     <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
@@ -12490,6 +12764,17 @@ function reportQcRows(c) {
     );
     rows.push(['Konuşmacı ses tutarlılığı (şüpheli bölüm)', `${vOut} · perde ölçümü, kimlik tespiti değildir`]);
   }
+  const embedMeasured = materials.some((mm) => voiceEmbedIsMeasured(mm));
+  if (embedMeasured) {
+    const eOut = materials.reduce(
+      (n, mm) => n + (voiceEmbedIsMeasured(mm) && Array.isArray(mm.voiceEmbed.outliers) ? mm.voiceEmbed.outliers.length : 0),
+      0
+    );
+    rows.push([
+      'Konuşmacı gömme benzerliği (şüpheli bölüm)',
+      `${eOut} · WavLM-SV (q8) benzerlik ölçümü; kimlik tespiti değildir`
+    ]);
+  }
   rows.push(['Zaman sorunu olan bölüm', String(timeIssues)]);
   rows.push(['Bölümlenmemiş ses aralığı', String(gaps)]);
   rows.push(['Delil günlüğü zinciri', brokenLogs ? `${brokenLogs} kayıtta kırık` : 'kırık yok']);
@@ -15974,6 +16259,20 @@ function setupEvents() {
       // v2.269 — tek düğme: seviye → perde → tutarlılık (sıralı, çift çalışmaz).
       const mm = c.materials.find((x) => x.id === b.dataset.measureAll);
       if (mm) measureAllFor(mm);
+    } else if (b.dataset.voiceEmbed !== undefined) {
+      // v2.279 — konuşmacı gömme benzerliği (model isteğe bağlı indirilir).
+      const mm = c.materials.find((x) => x.id === b.dataset.voiceEmbed);
+      if (mm) measureSpeakerEmbeddings(mm);
+    } else if (b.dataset.voiceEmbedGoto !== undefined) {
+      const idx = Number(b.dataset.voiceEmbedGoto);
+      const mm = c.materials.find((x) => (x.segments || []).length > idx) || null;
+      if (!mm) return;
+      mm.activeSeg = idx;
+      persist();
+      renderSegments(mm, b.closest('.audio-card'));
+      renderSegDetail(mm);
+      const row = document.querySelector(`.seg-item[data-seg-item="${idx}"]`);
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
     } else if (b.dataset.voiceCheck !== undefined) {
       // v2.265 — bölüm bazında perde ölçümü + konuşmacı profili karşılaştırması.
       const mm = c.materials.find((x) => x.id === b.dataset.voiceCheck);
@@ -17948,6 +18247,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.279': {
+    title: 'Konuşmacı gömme ölçümü: "bu bölüm gerçekten bu kişi mi?"',
+    body:
+      'Konuşmacılar panelinde yeni "Ses gömme ölçümü" bloğu var. Konuşmacı doğrulama modeli ' +
+      '(WavLM-SV, q8, yaklaşık 97 MB; isteğe bağlı, bir kez indirilir ve her oturumda onay sorulur) ' +
+      'her bölümün atandığı konuşmacıya benzerliğini ölçer. Belirgin çelişki listede "⚠ gömme" rozetiyle, ' +
+      'panelde "kendi profiline 0,67 · S1 profiline 0,99" satırıyla görünür; atanmamış bölüm için öneri ' +
+      'yazılır. Bu bir BENZERLİK ölçümüdür, kimlik tespiti değildir ve hiçbir atama otomatik değişmez. ' +
+      'Perde ölçümünün aksine benzer perdeli iki kişiyi ayırabilir; yine de karar sizindir.'
+  },
   '2.278': {
     title: 'Koyu temada okunmayan metinler düzeltildi',
     body:
