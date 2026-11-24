@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.273';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.273';
+} from './schema.js?v=2.274';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.274';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.273';
+const APP_VERSION = '2.274';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3573,6 +3573,34 @@ function setSegmentSpeakerByName(m, s, name) {
   s.speaker = clean;
   s.speakerId = sp ? sp.id : '';
   return sp;
+}
+// ＋ Yeni konuşmacı (v2.274): sıradaki BOŞ adı/kodu verir ve AKTİF bölüme
+// atar. Atama tek kapıdan yapılır (ad + kimlik); yalnız ad yazılırsa bölümün
+// eski `speakerId`si kalır ve rapor aynı bölümü iki konuşmacıda gösterir.
+function addSpeakerAndAssign(m) {
+  if (!m) return null;
+  ensureSpeakers(m);
+  const used = new Set((m.speakers || []).map((x) => x.name));
+  let n = (m.speakers || []).length + 1;
+  while (used.has(`Konuşmacı ${n}`)) n++;
+  const rec = {
+    id: uid(),
+    code: '',
+    name: `Konuşmacı ${n}`,
+    label: `Konuşmacı ${n}`,
+    role: 'unspecified',
+    gender: 'unspecified',
+    ageRange: '',
+    notes: '',
+    pitch: null,
+    pitchAt: null
+  };
+  m.speakers.push(rec);
+  assignSpeakerCodes(m.speakers);
+  const index = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
+  const seg = (m.segments || [])[index];
+  if (seg) setSegmentSpeakerByName(m, seg, rec.name);
+  return { rec, index };
 }
 // Klavye sırası (Alt+1…9) yalnız ETİKETİ olan konuşmacıları sayar; adsız kişi
 // seçilemez (raporda "S1 · " boş görünürdü).
@@ -10799,31 +10827,42 @@ function addManualSegment(id) {
   // Konuşmacı kaydı yoksa oluştur; aksi hâlde bölüm, listede olmayan bir
   // konuşmacıya bağlanır ve seçim kutusu "(kayıtlı değil)" gösterir.
   ensureSpeakers(m);
-  const spk = (m.speakers || []).find((x) => x.name === 'Konuşmacı 1') || null;
+  // Yeni bölüm ÖNCEKİ bölümün konuşmacısını sürdürür; yoksa ilk etiketli
+  // konuşmacıyı alır. Böylece "＋ Bölüm" yeni konuşmacı UYDURMAZ (v2.274:
+  // konuşmacı listesi zaten varsa ikinci bir "Konuşmacı 1" oluşuyordu).
+  const lastSeg = m.segments[m.segments.length - 1] || null;
+  let spk = lastSeg ? speakerForSegment(m, lastSeg) : null;
+  if (!spk) spk = speakerIndexList(m)[0] || null;
   if (!spk) {
-    m.speakers.push({
+    spk = {
       id: uid(),
       code: '',
       name: 'Konuşmacı 1',
+      label: 'Konuşmacı 1',
       role: 'unspecified',
       gender: 'unspecified',
       ageRange: '',
       notes: '',
       pitch: null,
       pitchAt: null
-    });
+    };
+    m.speakers.push(spk);
     assignSpeakerCodes(m.speakers);
   }
-  m.segments.push({
+  const seg = {
     id: newId('sg'),
     start,
     end,
-    speaker: 'Konuşmacı 1',
+    speaker: '',
+    speakerId: '',
     text: '',
     checked: false,
     review: 'pending',
     textRev: 0
-  });
+  };
+  // TEK KAPI: ad ve kimlik birlikte yazılır (v2.274).
+  setSegmentSpeakerByName(m, seg, spk.name);
+  m.segments.push(seg);
   m.activeSeg = m.segments.length - 1;
   persist();
   const card = $(`[data-transcribe="${CSS.escape(id)}"]`)?.closest('.audio-card');
@@ -14962,7 +15001,11 @@ async function importProject(file) {
   const pack = JSON.parse(await meta.async('string'));
   const err = validateProjectPack(pack);
   if (err) throw new Error(err);
-  const c = pack.case;
+  // TEK SÖZLEŞME (v2.274): tekil paket de arşiv gibi normalize edilir. Aksi
+  // hâlde bayat konuşmacı kimliği / eski onay kodu paketten ham hâliyle
+  // belleğe girer; rapor sayfa yenilenene kadar yanlış sayar (arşiv yolu
+  // zaten normalize ediyordu — iki yol ayrışmamalı).
+  const c = normalizeCase(pack.case);
   // Aynı dosya zaten açıksa kopya açmak veri karışıklığına yol açar.
   // Kullanıcı "İçe aktar" ile "Birleştir"i karıştırabilir; burada durup sorarız.
   const same = (appState.cases || []).find(
@@ -15777,28 +15820,16 @@ function setupEvents() {
       // sonra yazar; kayıt anında kod hazır olur, rapor tutarlı kalır.
       const m = c.materials.find((x) => x.id === b.dataset.addSpk);
       if (!m) return;
-      ensureSpeakers(m);
-      const n = (m.speakers || []).length + 1;
-      const rec = {
-        id: uid(),
-        code: '',
-        name: `Konuşmacı ${n}`,
-        role: 'unspecified',
-        gender: 'unspecified',
-        ageRange: '',
-        notes: '',
-        pitch: null,
-        pitchAt: null
-      };
-      m.speakers.push(rec);
-      assignSpeakerCodes(m.speakers);
-      // Yeni konuşmacı aktif bölüme atanır: uzman genellikle bu niyetle ekler.
-      const idx = Number.isInteger(m.activeSeg) ? m.activeSeg : 0;
-      if (m.segments?.[idx]) m.segments[idx].speaker = rec.name;
+      // Atama tek kapıdan (ad + kimlik); aksi hâlde bölümün eski `speakerId`si
+      // kalır ve rapor aynı bölümü iki konuşmacıda gösterir (v2.274).
+      const res = addSpeakerAndAssign(m);
+      const rec = res.rec;
+      const idx = res.index;
       persist();
       renderSegDetail(m);
       updateSegListItem(m, idx);
       renderSpeakersPanel(m);
+      refreshSpeakerLegend(m);
       renderOverview();
       showToast(`${rec.code} eklendi ve bu bölüme atandı. Etiketini konuşmacı panelinden yazın.`);
     } else if (b.dataset.delSpk !== undefined) {
@@ -17934,6 +17965,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.274': {
+    title: 'Aynı bölüm artık iki konuşmacıda görünmüyor',
+    body:
+      'Bölüm S1\'e atanmışken "＋ Yeni konuşmacı" düğmesi bölümün ADINI yeni kişiye yazıyor, ' +
+      'KİMLİĞİNİ eskisinde bırakıyordu. Bu yüzden rapor tek bir bölümü hem S1 hem S2 satırında ' +
+      'gösteriyor, "bölüm" sayıları toplamı gerçek sayıyı aşıyordu (yenilemeden sonra da kalıcı). ' +
+      'Artık atama ad + kimlik birlikte yazılır: her bölüm TEK konuşmacıda görünür. "＋ Bölüm" de ' +
+      'mevcut konuşmacıyı kullanır (gereksiz "Konuşmacı 2" satırı oluşmaz). Eski sürümlerde bozulmuş ' +
+      'kayıtlar açılışta onarılır; paketten yükleme arşivle aynı normalize kuralını kullanır.'
+  },
   '2.273': {
     title: 'Her kaydın konuşmacıları artık TABLO (kim konuştu tek bakışta)',
     body:

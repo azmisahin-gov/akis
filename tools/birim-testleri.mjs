@@ -151,6 +151,7 @@ const EXPOSE = [
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups', 'materialSpeakerRows',
+  'addManualSegment', 'addSpeakerAndAssign',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
@@ -191,6 +192,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });
 const T = sandbox.__t;
+T.reconcileSpeakerRefsForTest = __schemaMod.reconcileSpeakerRefs;
 
 // --- Test altyapısı -------------------------------------------------------
 let failures = 0, passed = 0;
@@ -5369,6 +5371,87 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('üç çıktı tabloyu kullanır', (js.match(/materialSpeakerRows\(c, m\)/g) || []).length >= 3, true);
+}
+
+
+// [120] v2.274 — Konuşmacı kimliği tutarlılığı.
+// Ölçülen hata: "＋ Yeni konuşmacı" bölümün ADINI yazıyor, `speakerId` eski
+// kişide kalıyordu; `speakerSegments` ad VEYA kimlikle eşleştiği için aynı
+// bölüm raporda İKİ konuşmacıda görünüyordu (yenilemeden sonra da).
+{
+  console.log('[120] Konuşmacı kimliği tutarlılığı (v2.274)');
+  const reconcile = T.reconcileSpeakerRefsForTest;
+  eq('reconcileSpeakerRefs tanımlı', typeof reconcile, 'function');
+  if (typeof reconcile === 'function') {
+    const speakers = [
+      { id: 'a', code: 'S1', label: 'Konuşmacı 1', name: 'Konuşmacı 1' },
+      { id: 'b', code: 'S2', label: 'Konuşmacı 2', name: 'Konuşmacı 2' }
+    ];
+    const out = reconcile(speakers, [
+      { id: 'g1', speaker: 'Konuşmacı 2', speakerId: 'a' },
+      { id: 'g2', speaker: 'Konuşmacı 9', speakerId: 'zzz' },
+      { id: 'g3', speaker: 'Konuşmacı 1', speakerId: '' }
+    ]);
+    eq('bayat kimlik ada göre düzeltilir', out[0].speakerId, 'b');
+    eq('tanınmayan kimlik temizlenir', out[1].speakerId, '');
+    eq('boş kimlik addan doldurulur', out[2].speakerId, 'a');
+
+    const out2 = reconcile(speakers, [{ id: 'g', speaker: 'Yanlış ad', speakerId: 'b' }]);
+    eq('ad listede yoksa kimliğin adı yazılır', out2[0].speaker, 'Konuşmacı 2');
+
+    const out3 = reconcile(speakers, [{ id: 'g', speaker: 'Konuşmacı 1', _legacySpeaker: 'Konuşmacı 1' }]);
+    eq('eski kayıt göçü korunur', [out3[0].speakerId, out3[0].speaker, out3[0]._legacySpeaker], ['a', 'Konuşmacı 1', undefined]);
+
+    // normalizeMaterial aynı uzlaştırmayı uygular (dosya açılışında onarım).
+    const nm = __schemaMod.normalizeMaterial({
+      id: 'm1',
+      speakers,
+      segments: [{ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Konuşmacı 2', speakerId: 'a' }]
+    });
+    const s2 = nm.speakers.find((x) => x.code === 'S2');
+    const s1 = nm.speakers.find((x) => x.code === 'S1');
+    eq('normalizeMaterial bayat kimliği onarır', nm.segments[0].speakerId, s2.id);
+    eq('S1 bölüm sayısı 0 (çift sayım yok)', T.speakerSegments(nm, s1).length, 0);
+    eq('S2 bölüm sayısı 1', T.speakerSegments(nm, s2).length, 1);
+  }
+
+  // "＋ Bölüm" mevcut konuşmacıyı kullanır ve kimliği yazar.
+  eq('addManualSegment tanımlı', typeof T.addManualSegment, 'function');
+  if (typeof T.addManualSegment === 'function') {
+    const m = {
+      id: 'mm', name: 'a.wav', durationSec: 30,
+      speakers: [{ id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'unspecified', gender: 'unspecified' }],
+      segments: [], log: [], tech: {}
+    };
+    T.setAppState({ cases: [{ id: 'cc', materials: [m], report: {}, questions: [] }], activeCaseId: 'cc' });
+    T.addManualSegment('mm');
+    eq('yeni konuşmacı uydurulmaz', m.speakers.length, 1);
+    eq('bölüm kimliği yazılır', m.segments[0].speakerId, 'a');
+    eq('bölüm adı mevcut konuşmacı', m.segments[0].speaker, 'Kiracı');
+    eq('ardışık eklemede de aynı konuşmacı', (T.addManualSegment('mm'), m.segments[1].speakerId), 'a');
+    eq('konuşmacı sayısı değişmedi', m.speakers.length, 1);
+  }
+
+  // "＋ Yeni konuşmacı" aktif bölüme TEK KAPIDAN atar (ad + kimlik).
+  eq('addSpeakerAndAssign tanımlı', typeof T.addSpeakerAndAssign, 'function');
+  if (typeof T.addSpeakerAndAssign === 'function') {
+    const m2 = {
+      id: 'm2', name: 'b.wav',
+      speakers: [{ id: 'a', code: 'S1', name: 'Konuşmacı 1', label: 'Konuşmacı 1', role: 'unspecified', gender: 'unspecified' }],
+      segments: [{ id: 'g', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Konuşmacı 1', speakerId: 'a', review: 'pending' }],
+      activeSeg: 0, log: []
+    };
+    const res = T.addSpeakerAndAssign(m2);
+    eq('yeni konuşmacı eklendi', m2.speakers.length, 2);
+    eq('aktif bölüm yeni kimliğe geçti', m2.segments[0].speakerId, res.rec.id);
+    eq('eski konuşmacıda bölüm kalmadı', T.speakerSegments(m2, m2.speakers[0]).length, 0);
+    eq('yeni konuşmacıda 1 bölüm', T.speakerSegments(m2, m2.speakers[1]).length, 1);
+  }
+
+  // Kaynak sözleşmesi: iki yazma noktası tek kapıyı kullanmalı.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('＋ konuşmacı doğrudan ad yazmaz', /segments\[idx\]\.speaker = rec\.name/.test(js), false);
+  eq('tekil paket de normalize edilir (arşivle aynı sözleşme)', /const c = normalizeCase\(pack\.case\)/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

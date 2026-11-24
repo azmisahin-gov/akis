@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.273.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.274.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6424,3 +6424,55 @@ Kullanıcı `01-dikey.mp4` dosyasını **depo köküne** koydu. Kök dizin GitHu
 **herkese açık** yayınlanır; gerçek dava kaydı olabilir. Bu dosya **commit edilmedi**.
 Kural: gerçek/olasi dava medyası depoya (özellikle köke) konmaz; gerekirse
 `sample_data/` altında ve **kurgusal** olarak tutulur ya da `.gitignore`'a eklenir.
+
+## YENİ OTURUM DEVRİ (v2.274) — Konuşmacı kimliği tutarlılığı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.274** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1814 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.275 (silmede bellek temizliği), v2.276 (depo hijyeni + belge) |
+
+### Ölçülen hata (v2.273)
+
+Bölüm S1'e atanmışken **＋ Yeni konuşmacı** yalnız `speaker` adını yazıyordu;
+`speakerId` eski kişide kalıyordu. `speakerSegments` **ad VEYA kimlik** ile
+eşleştiği için tek bir 5 sn'lik bölüm raporda **hem S1 hem S2** satırında
+görünüyordu (yenilemeden sonra da kalıcı). **＋ Bölüm** de materyalde konuşmacı
+varken ikinci bir "Konuşmacı 1" uyduruyordu (ölçüm: S1 "Kiracı" iken S2).
+
+### Yapılan
+
+- `schema.js` → **`reconcileSpeakerRefs(speakers, segments)`** (saf) ve
+  `normalizeMaterial` içinde kullanımı: bayat/tanınmayan kimlik onarılır; ad ile
+  kimlik çelişirse **ad** (uzmanın açık seçimi) kazanır, ad listede yoksa ad
+  kimlikten yazılır (tek kaynak).
+- `addSpeakerAndAssign(m)` — ＋ konuşmacı: sıradaki **boş** adı verir ve aktif
+  bölüme **tek kapıdan** (`setSegmentSpeakerByName`) atar.
+- `addManualSegment` — mevcut konuşmacıyı kullanır (önceki bölümün konuşmacısı →
+  ilk etiketli konuşmacı → yoksa "Konuşmacı 1") ve `speakerId` yazar.
+- `importProject` — tekil paket de arşiv gibi **`normalizeCase`** ile açılır
+  (önce ham `pack.case` belleğe giriyor, bozuk kimlik ancak yenilemede düzeliyordu).
+
+### DEĞİŞMEZ KURALLAR
+
+1. Konuşmacı ataması **yalnız** `setSegmentSpeakerByName` ile yapılır (ad + kimlik).
+2. `speakerId` **kimliktir**; ad yalnız görünür addır. Çelişki varsa normalize
+   onarır; raporda çift sayım kalmaz.
+3. İki paket yolu (`case.json` / `archive.json`) **aynı** normalize sözleşmesini
+   kullanır (v2.132 dersi: iki yol ayrışmaz).
+4. Yeni bir "bölüme kişi ata" yolu eklerken tek kapıyı kullanın; doğrudan
+   `s.speaker = ...` yazmayın.
+
+### Ölçüm (gerçek Chromium + CDP + gerçek WAV)
+
+| Adım | Önce | Sonra |
+|---|---|---|
+| Elle bölüm → ＋ konuşmacı → rapor | S1 1 + S2 1 (aynı 5 sn) | **yalnız S2 · 1 bölüm** |
+| ＋ Bölüm (S1 "Kiracı") | yeni S2 "Konuşmacı 1" | **S1'e atanır** |
+| Bayat kimlikli paket | S1 2 · S2 1 | **S1 1 · S2 1** |
+| JS hatası | 0 | **0** |
+
+Koruyan test: `birim` [120] (20 kontrol).

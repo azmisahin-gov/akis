@@ -1492,20 +1492,64 @@ export function normalizeCaseSpeaker(src = {}) {
   return out;
 }
 
+/**
+ * Bölümün konuşmacı referansını konuşmacı listesiyle UZLAŞTIRIR.
+ *
+ * Kural: `speakerId` KİMLİKTİR, ad yalnız görünür addır. Bayat bir kimlik
+ * (ad değişmiş, kimlik eskisinde kalmış) `speakerSegments`in ad VEYA kimlik
+ * eşleştirmesi yüzünden aynı bölümü İKİ konuşmacıda gösterebiliyordu —
+ * raporda çift sayım. Burada:
+ *  - kimlik boşsa ad ile doldurulur (v2 eski kayıt göçü dâhil),
+ *  - kimlik tanınmıyorsa ad ile çözülür, çözülemezse boşaltılır,
+ *  - kimliğin adı ile bölümdeki ad çelişirse ve ad listede VARSA ad kazanır
+ *    (uzmanın açık seçimi), yoksa ad kimlikten yazılır (tek kaynak).
+ */
+export function reconcileSpeakerRefs(speakers, segments) {
+  const list = Array.isArray(speakers) ? speakers.filter(isObj) : [];
+  const byLabel = new Map();
+  const byId = new Map();
+  for (const sp of list) {
+    if (sp.id) byId.set(sp.id, sp);
+    const label = str(sp.label || sp.name);
+    if (label && !byLabel.has(label)) byLabel.set(label, sp.id);
+  }
+  const segs = Array.isArray(segments) ? segments : [];
+  for (const s of segs) {
+    if (!isObj(s)) continue;
+    const legacy = str(s._legacySpeaker);
+    delete s._legacySpeaker;
+    if (!str(s.speaker) && legacy) s.speaker = legacy;
+    const label = str(s.speaker);
+    if (!s.speakerId) {
+      s.speakerId = (label && byLabel.get(label)) || '';
+      continue;
+    }
+    const rec = byId.get(s.speakerId);
+    if (!rec) {
+      s.speakerId = (label && byLabel.get(label)) || '';
+      continue;
+    }
+    const recName = str(rec.label || rec.name);
+    if (label && recName && label !== recName) {
+      const id = byLabel.get(label);
+      if (id) s.speakerId = id;
+      else s.speaker = recName;
+    } else if (!label && recName) {
+      s.speaker = recName;
+    }
+  }
+  return segs;
+}
+
 export function normalizeMaterial(src = {}) {
   const m = isObj(src) ? src : {};
   const tech = isObj(m.tech) ? m.tech : {};
   const origin = isObj(m.origin) ? m.origin : {};
   const speakers = assignSpeakerCodes((Array.isArray(m.speakers) ? m.speakers : []).map(normalizeSpeaker));
-  const byLabel = new Map(speakers.map((s) => [s.label, s.id]));
-  const segments = (Array.isArray(m.segments) ? m.segments : []).map((raw) => {
-    const s = normalizeSegment(raw);
-    if (!s.speakerId && s._legacySpeaker) {
-      s.speakerId = byLabel.get(s._legacySpeaker) || '';
-      delete s._legacySpeaker;
-    }
-    return s;
-  });
+  const segments = reconcileSpeakerRefs(
+    speakers,
+    (Array.isArray(m.segments) ? m.segments : []).map(normalizeSegment)
+  );
   return {
     ...m,
     id: m.id || newId('mt'),

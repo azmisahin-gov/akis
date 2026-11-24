@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.273.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.274.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.274 — Konuşmacı kimliği: aynı bölüm iki kişide görünmüyor
+
+**Ölçülen hata (v2.273, canlı akış):** Bölüm S1'e atanmışken **＋ Yeni konuşmacı**
+düğmesine basılınca bölümün **adı** yeni kişiye yazılıyor, **kimliği**
+(`speakerId`) eski kişide kalıyordu. `speakerSegments` ad VEYA kimlikle
+eşleştiği için **tek bir 5 sn'lik bölüm raporda hem S1 hem S2 satırında**
+görünüyordu (yenilemeden sonra da kalıcı). Aynı sınıf hata **＋ Bölüm**'de de
+vardı: materyalde konuşmacı varken ikinci bir "Konuşmacı 1" uyduruluyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Raporda **her bölüm tek konuşmacıda** görünür; konuşmacı tablosundaki bölüm
+  sayılarının toplamı bölüm sayısını aşmaz.
+- **＋ Bölüm** artık **mevcut konuşmacıyı** kullanır (önceki bölümün konuşmacısı;
+  yoksa ilk konuşmacı). Gereksiz "Konuşmacı 2" satırı oluşmaz.
+- Eski sürümlerde bozulmuş kayıtlar **açılışta onarılır**: bölümün adı ile kimliği
+  çelişiyorsa **ad** (uzmanın açık seçimi) kazanır; raporda çift sayım kalmaz.
+- **Paketten yükle** artık arşivle **aynı** normalize sözleşmesini kullanır;
+  bozuk kimlikler paket açılır açılmaz düzeltilir (önce yalnız sayfa yenilenince
+  düzeliyordu).
+
+### Ölçüm (gerçek Chromium + CDP + gerçek WAV, 47,7 sn)
+
+| Adım | Önce (v2.273) | Sonra (v2.274) |
+|---|---|---|
+| Elle bölüm → ＋ yeni konuşmacı → rapor | S1 1 bölüm **+** S2 1 bölüm (aynı 5 sn) | **yalnız S2 · 1 bölüm** |
+| Konuşmacı süreleri tablosu | iki satırda aynı 00:05 | **tek satır 00:05** |
+| ＋ Bölüm (S1 "Kiracı" iken) | yeni "Konuşmacı 1" (S2) uydurulur | **S1'e atanır** |
+| Bayat kimlikli paket (eski sürümde oluşmuş) | S1 2 bölüm · S2 1 bölüm | **S1 1 · S2 1** (05–10 / 00–05) |
+| JS hatası | 0 | **0** |
+
+**Tek kaynak:** `reconcileSpeakerRefs(speakers, segments)` (`assets/schema.js`)
+`normalizeMaterial` içinde çalışır; atama `setSegmentSpeakerByName` ile yapılır.
+Koruyan test: `birim` [120] (20 kontrol).
 
 ## v2.273 — Her kaydın konuşmacıları TABLO olarak
 

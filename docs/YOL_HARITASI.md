@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.273.**
+yazılır. **Güncel sürüm: v2.274.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.274 — Konuşmacı kimliği tutarlılığı (TAMAMLANDI)
+
+- **＋ Yeni konuşmacı** ataması tek kapıdan (`setSegmentSpeakerByName`): ad + kimlik.
+- **＋ Bölüm** mevcut konuşmacıyı kullanır; yeni konuşmacı uydurmaz.
+- `reconcileSpeakerRefs` (schema): bayat/tanınmayan kimlik onarılır; ad ↔ kimlik
+  çelişkisinde ad (uzman seçimi) kazanır → raporda çift sayım yok.
+- Tekil paket (`case.json`) de arşiv gibi `normalizeCase` ile açılır.
+- Koruyan: `birim` [120].
 
 ## v2.273 — Kayıt bazında konuşmacı tablosu (TAMAMLANDI)
 
