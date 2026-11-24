@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.256.**
+yazılır. **Güncel sürüm: v2.257.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.257 — UDF kenar boşluğu birim hatası (mm→punto) (TAMAMLANDI)
+
+- UDF marjı **punto** saklar (boş şablon 42,525 pt = 15 mm = 1,5 cm). Biz mm'yi ham
+  yazıyorduk → 20 pt = 7 mm → dar. Artık `mm × 72/25,4` punto yazılır.
+- Varsayılan 15 mm (1,5 cm) = boş şablon; üç çıktı aynı. Koruyan: `rapor` 26, `birim [93]`.
 
 ## v2.256 — Kenar boşluğu UYAP boş dokümanıyla aynı (42,5 mm) (TAMAMLANDI)
 

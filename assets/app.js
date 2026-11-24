@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.256';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.256';
+} from './schema.js?v=2.257';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.257';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.256';
+const APP_VERSION = '2.257';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12036,7 +12036,7 @@ function renderReportFormat(c) {
   host.innerHTML =
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
     `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
-    `Kenar boşluğu varsayılan 42,5 mm (UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır.</p>` +
+    `Kenar boşluğu varsayılan 15 mm (1,5 cm, UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır. UDF bu değeri punto olarak saklar.</p>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
@@ -12834,14 +12834,16 @@ async function makeUdf() {
   const resolver = (templateXml.match(/<elements\s+resolver="([^"]+)"/i) || [])[1] || 'hvl-default';
   if (!properties || !styles) throw new Error('Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı.');
   // Kenar boşlukları rapor biçiminden gelir (v2.238); mm cinsinden.
-  const mmStr = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
-  // Yön: UYAP UDF'te paperOrientation "1" = dikey, "0" = yatay (doğrulandı:
-  // yatay.udf). mediaSizeName A4 olarak kalır. (v2.245)
+  // UDF `pageFormat` KENAR BOŞLUKLARI **PUNTO** (1/72 inç) cinsindendir, mm değil!
+  // Kanıt: UYAP boş dokümanı leftMargin="42.525" = 42.525 pt × 0.3528 = 15 mm = 1,5 cm.
+  // (v2.257: önce mm'yi ham yazıyorduk → UYAP 20 pt = 7 mm sanıp DAR gösteriyordu.)
+  const mmToPt = (v) => (Math.round((Number(v) || 0) * (72 / 25.4) * 100) / 100).toFixed(2);
+  // Yön: paperOrientation "1" = dikey, "0" = yatay (yatay.udf ile doğrulandı). (v2.245)
   properties = properties
-    .replace(/leftMargin="[^"]+"/, `leftMargin="${mmStr(fmt.marginsMm.left)}"`)
-    .replace(/rightMargin="[^"]+"/, `rightMargin="${mmStr(fmt.marginsMm.right)}"`)
-    .replace(/topMargin="[^"]+"/, `topMargin="${mmStr(fmt.marginsMm.top)}"`)
-    .replace(/bottomMargin="[^"]+"/, `bottomMargin="${mmStr(fmt.marginsMm.bottom)}"`)
+    .replace(/leftMargin="[^"]+"/, `leftMargin="${mmToPt(fmt.marginsMm.left)}"`)
+    .replace(/rightMargin="[^"]+"/, `rightMargin="${mmToPt(fmt.marginsMm.right)}"`)
+    .replace(/topMargin="[^"]+"/, `topMargin="${mmToPt(fmt.marginsMm.top)}"`)
+    .replace(/bottomMargin="[^"]+"/, `bottomMargin="${mmToPt(fmt.marginsMm.bottom)}"`)
     .replace(
       /paperOrientation="[^"]*"/,
       `paperOrientation="${fmt.orientation === 'landscape' ? '0' : '1'}"`
@@ -16850,6 +16852,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.257': {
+    title: 'UDF kenar boşluğu birim hatası düzeltildi (mm → punto)',
+    body:
+      'UDF kenar boşluklarını punto (1/72 inç) saklar: boş doküman 42,525 pt = 15 mm = 1,5 cm. ' +
+      'Biz mm değerini ham yazıyorduk; UYAP "20" değerini 20 pt = 7 mm sanıp dar gösteriyordu. ' +
+      'Artık mm puntoya çevriliyor; varsayılan 15 mm (1,5 cm) = boş dokümanla aynı. Mevcut ' +
+      'dosyada değer ne ise doğru genişlikte görünür; boş şablonla birebir için panelden 15 yapın.'
+  },
   '2.256': {
     title: 'Kenar boşluğu artık UYAP boş dokümanıyla aynı (42,5 mm)',
     body:

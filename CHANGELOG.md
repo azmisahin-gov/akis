@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.256.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.257.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.257 — UDF kenar boşluğu BİRİM hatası düzeltildi (mm → punto)
+
+Kullanıcı: "UDF hâlâ dar; UYAP'da kenar boşlukları 1,5 cm görünüyor, biz mm
+veriyoruz ondan mı?" — **Tam isabet.** Kanıt:
+- Gerçek UYAP boş dokümanı `leftMargin="42.525"` → bu **punto**: `42.525 pt × 0,3528
+  = 15 mm = 1,5 cm`. Yani UDF kenar boşluğunu **punto (1/72 inç)** saklar.
+- Biz **mm değerini ham yazıyorduk**: "20" → UYAP bunu **20 pt = 7 mm** sanıp **dar**
+  gösteriyordu. (İndirdiğin `Bilirkisi_Raporu (7).udf` içinde `leftMargin="20.0"`.)
+
+### KULLANICI NE GÖRECEK
+- UDF kenar boşluğu artık **mm → punto çevrilerek** yazılır. Örnek: 15 mm → 42,52 pt
+  (boş şablonun 42,525 pt'siyle aynı) → **UYAP'ta 1,5 cm görünür**.
+- **Varsayılan 15 mm (1,5 cm)** = UYAP boş dokümanıyla aynı. Üç çıktı da (UDF/DOCX/PDF)
+  15 mm.
+- Mevcut kayıtlı dosyada değer ne ise (ör. 20 mm) artık **doğru genişlikte** (20 mm =
+  2 cm) görünür; boş şablonla birebir istiyorsan panelden **15** yap.
+
+### Ne değişti
+- `makeUdf`: marjlar `mmToPt = mm × 72/25,4` ile punto yazılır (2 ondalık).
+- `emptyReportFormat` varsayılan marj **15 mm**; panel notu güncellendi.
+
+### Koruyan test
+- `rapor` Senaryo 26: 25 mm → `leftMargin="70.87"`, 30 mm → `topMargin="85.04"`,
+  varsayılan 15 mm → `42.52`. `birim [93]` varsayılan 15 mm.
 
 ## v2.256 — Kenar boşluğu artık UYAP boş dokümanıyla AYNI (42,5 mm)
 

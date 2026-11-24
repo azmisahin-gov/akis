@@ -921,8 +921,9 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   downloads.length = 0; setCase(c); await makeUdf();
   const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux = await uZ.file('content.xml').async('string');
-  check('UDF sol marj 25.0 mm', /leftMargin="25\.0"/.test(ux));
-  check('UDF üst marj 30.0 mm', /topMargin="30\.0"/.test(ux));
+  // UDF marjları PUNTO: 25 mm → 70.87 pt, 30 mm → 85.04 pt (mm değil!).
+  check('UDF sol marj 25 mm → 70.87 pt', /leftMargin="70\.87"/.test(ux));
+  check('UDF üst marj 30 mm → 85.04 pt', /topMargin="85\.04"/.test(ux));
   check('UDF punto ölçekli (13 pt gövde)', /family="Times New Roman" size="13"/.test(ux));
   check('UDF yatay yön (paperOrientation=0)', /paperOrientation="0"/.test(ux));
 
@@ -933,8 +934,8 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const uZ2 = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux2 = await uZ2.file('content.xml').async('string');
   check('UDF dikey yön (paperOrientation=1)', /paperOrientation="1"/.test(ux2));
-  // Varsayılan marj, UYAP boş şablonuyla aynı (42,5 mm) → boş dokümandan farklı değil.
-  check('UDF varsayılan marj 42,5 (boş şablon)', /leftMargin="42\.5"/.test(ux2));
+  // Varsayılan 15 mm = 42.52 pt ≈ UYAP boş şablonu (42.525 pt) → boş dokümanla aynı.
+  check('UDF varsayılan marj 15 mm → 42.52 pt (boş şablon)', /leftMargin="42\.5/.test(ux2));
 
   // Font ayarı UDF'e de uygulanır (v2.254): Arial seçilirse UDF Arial üretir.
   const ca = withMaterial();

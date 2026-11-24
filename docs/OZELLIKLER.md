@@ -1,4 +1,4 @@
-# Özellikler (v2.256 — mevcut durum)
+# Özellikler (v2.257 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -409,9 +409,10 @@ tuşları bozulmaz.
   (DOCX) çıktısına uygulanır. **Yazı tipi ÜÇ çıktıya da uygulanır** (v2.254);
   varsayılan **Times New Roman** (resmî) → UDF/DOCX/PDF aynı tipografi. Yön
   (dikey/yatay), punto ve kenar boşluğu da UDF'e uygulanır (v2.245:
-  `paperOrientation` dikey=1, yatay=0). **Kenar boşluğu varsayılan 42,5 mm** (v2.256;
-  UYAP boş dokümanıyla aynı; 0,5 adım, 10–50 mm). Tek kaynak: `case.report.format`.
-  Motorlar farklı olduğundan pixel-pixel aynılık beklenmez.
+  `paperOrientation` dikey=1, yatay=0). **Kenar boşluğu varsayılan 15 mm (1,5 cm)**;
+  UDF bunu **punto** olarak saklar (15 mm = 42,52 pt ≈ boş dokümanın 42,525'i) — v2.257.
+  0,5 adım, 10–50 mm. Tek kaynak: `case.report.format`. Motorlar farklı olduğundan
+  pixel-pixel aynılık beklenmez.
 - **Sekme simgesi (v2.136):** SVG + ICO; konsolda favicon 404 yok.
 - **Kritik uyarılar duyurulur (v2.135):** kayıt/depolama hataları ekran
   okuyucuya kesintili (`role=alert`), normal bilgiler bekleyen işi bölmeden

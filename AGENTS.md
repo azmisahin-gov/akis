@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.256.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.257.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5832,3 +5832,23 @@ etiket gizliydi.
 - **Boş UYAP dokümanının marjı ~42,5 mm'dir.** Uygulama bu değeri "Rapor biçimi" ile
   eziyordu; artık varsayılan aynı. Mevcut kayıtlı dosya eski değerini korur (panelden ayarla).
 - Marj yalnız değişebilir; şablon marjını "otomatik koru" modu YOK (tek değer ilkesi).
+
+## YENİ OTURUM DEVRİ (v2.257) — UDF kenar boşluğu BİRİMİ: punto
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.257** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Kanıt | bos.udf leftMargin=42.525 → **punto** = 15 mm = 1,5 cm; bizim dosya 20.0 → 20 pt = 7 mm (dar) |
+
+### DEĞİŞMEZ (kritik birim)
+- **UDF `pageFormat` kenar boşlukları PUNTO (1/72 inç).** mm DEĞİL.
+  - `mm → pt`: `mm × 72/25,4` (15 mm = 42,52 pt).
+  - Boş UYAP dokümanı 42,525 pt = 15 mm = 1,5 cm.
+- `makeUdf` artık `mmToPt` ile yazıyor; varsayılan marj **15 mm** (1,5 cm) = boş şablon.
+- DOCX `pgMar` **twip** (mm→twip ayrı), HTML mm→px. Her motorun birimi ayrı; karıştırma.
+
+### SIRADAKİ
+- Kullanıcı yeni UDF üretip UYAP'ta **1,5 cm** göründüğünü doğrulasın (leftMargin ≈ 42.52).

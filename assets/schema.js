@@ -821,16 +821,16 @@ export const REPORT_FONT_SIZE_MAX = 14;
 export const REPORT_FONT_SIZE_DEFAULT = 11; // DOCX/UDF gövde tabanı 11 pt
 
 /**
- * Varsayılan rapor biçimi — 42,5 mm kenar boşluğu, 11 pt, dikey A4.
- * Bu değer, **gerçek UYAP boş dokümanının** (bos.udf / templates/BOS.udf) sayfa
- * marjıyla (42,525 mm) aynıdır → üretilen UDF boş dokümanla aynı genişlikte olur.
- * Üç çıktıya (UDF/DOCX/PDF) uygulanır. Panelden 10–50 mm (0,5 adım) ayarlanır. (v2.256)
+ * Varsayılan rapor biçimi — 15 mm (1,5 cm) kenar boşluğu, 11 pt, dikey A4.
+ * **Gerçek UYAP boş dokümanı** 1,5 cm marj kullanır; UDF bunu **punto** olarak
+ * saklar (`42.525 pt = 15 mm`). Biz mm tutup UDF'e punto yazıyoruz (v2.257).
+ * Üç çıktı (UDF/DOCX/PDF) aynı 15 mm'yi kullanır. Panelden 10–50 mm ayarlanır.
  */
 export function emptyReportFormat(over = {}) {
   const base = {
     fontFamily: 'times',
     fontSizePt: REPORT_FONT_SIZE_DEFAULT,
-    marginsMm: { top: 42.5, right: 42.5, bottom: 42.5, left: 42.5 },
+    marginsMm: { top: 15, right: 15, bottom: 15, left: 15 },
     orientation: 'portrait'
   };
   return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };
