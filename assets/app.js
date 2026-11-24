@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.274';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.274';
+} from './schema.js?v=2.275';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.275';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.274';
+const APP_VERSION = '2.275';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1328,6 +1328,30 @@ async function deleteBlob(key) {
 }
 function blobKey(c, m) {
   return `${c.id}::${m.id}`;
+}
+// Bir materyalin bellekteki medya kaynaklarını BIRAKIR (v2.275): AudioContext
+// kapanır, object URL iptal edilir, blob kalıcı silinir. Üç silme yolu da
+// (kayıt kaldır · dosya kalıcı sil · test dosyalarını kaldır) BUNU kullanır.
+// Kopya temizlik kodu bir yolda eksik kalınca silinen ses sayfa yenilenene
+// kadar çalınabiliyor, kullanıcı "kayıt geri geldi" sanıyordu.
+async function discardMaterialMedia(c, m) {
+  if (!c || !m) return false;
+  closeAudioGraph(m);
+  const key = blobKey(c, m);
+  const url = objectUrls.get(key);
+  if (url) {
+    try {
+      URL.revokeObjectURL(url);
+    } catch (e) {}
+    objectUrls.delete(key);
+  }
+  try {
+    await deleteBlob(key);
+  } catch (e) {}
+  return true;
+}
+async function purgeCaseMedia(c) {
+  for (const m of (c && c.materials) || []) await discardMaterialMedia(c, m);
 }
 // `urgent` = kritik uyarı (kayıt okunamadı, dosya atlandı, yazma hatası):
 // ekran okuyucu bekleyen işi kesip okur (role=alert, assertive). Normal bilgi
@@ -15085,13 +15109,9 @@ async function removeSamples() {
       'Gerçek dosyalarınıza dokunulmaz. Devam edilsin mi?'
   );
   if (!ok) return;
-  for (const c of samples) {
-    for (const m of c.materials || []) {
-      try {
-        await deleteBlob(blobKey(c, m));
-      } catch (e) {}
-    }
-  }
+  // Test dosyaları sesleriyle birlikte gider; bellekteki URL/AudioContext de
+  // bırakılır (v2.275: aynı yardımcı, kopya kod yok).
+  for (const c of samples) await purgeCaseMedia(c);
   const ids = new Set(samples.map((c) => c.id));
   appState.cases = (appState.cases || []).filter((c) => !ids.has(c.id));
   if (ids.has(appState.activeCaseId)) {
@@ -15497,11 +15517,7 @@ function setupEvents() {
       // gidiyor, Ctrl+Z yalnız kaydı geri getiriyor, ses gelmiyordu.
       if (!(await askConfirm('Ses kaydını kaldır', removeAudioWarning(m)))) return;
       snapshotForUndo(`kayıt kaldırıldı: ${m.fileName || m.name || ''}`);
-      closeAudioGraph(m);
-      await deleteBlob(blobKey(c, m));
-      const url = objectUrls.get(blobKey(c, m));
-      if (url) URL.revokeObjectURL(url);
-      objectUrls.delete(blobKey(c, m));
+      await discardMaterialMedia(c, m);
       c.materials = c.materials.filter((x) => x.id !== m.id);
       persist();
       renderAudioList();
@@ -17442,12 +17458,9 @@ async function purgeCaseById(id) {
   });
   if (!ok2) return showToast('Kalıcı silme iptal edildi. Dosya arşivde duruyor.');
   snapshotForUndo('dosya kalıcı silindi');
-  // Ses bloblarını KALICI sil (deleteBlob geri dönüşü yoktur).
-  for (const m of c.materials || []) {
-    try {
-      await deleteBlob(blobKey(c, m));
-    } catch (e) {}
-  }
+  // Ses blobları KALICI silinir; object URL ve AudioContext de bırakılır
+  // (v2.275). Aksi hâlde silinen ses, sayfa yenilenene kadar çalınabiliyordu.
+  await purgeCaseMedia(c);
   appState.cases = (appState.cases || []).filter((x) => x.id !== id);
   if (appState.activeCaseId === id) appState.activeCaseId = (visibleCases(appState.cases)[0] || appState.cases[0] || {}).id || null;
   persist();
@@ -17965,6 +17978,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.275': {
+    title: 'Silinen ses artık bellekte kalmıyor',
+    body:
+      '"Kalıcı sil" ses dosyasını diskten siliyordu ama tarayıcıdaki çalma adresini (blob URL) bırakmıyordu; ' +
+      'silinen ses, sayfa yenilenene kadar çalınabiliyor ve "kayıt geri geldi" izlenimi veriyordu. Artık silme ' +
+      'ses motorunu kapatır, adresi iptal eder ve veriyi siler. "Test dosyalarını kaldır" da aynı temizliği yapar.'
+  },
   '2.274': {
     title: 'Aynı bölüm artık iki konuşmacıda görünmüyor',
     body:

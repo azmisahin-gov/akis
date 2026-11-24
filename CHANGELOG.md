@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.274.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.275.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.275 — Silinen ses artık bellekte kalmıyor
+
+**Ölçülen risk (v2.274, kod + tarayıcı):** **Kalıcı sil** ses blob'unu IndexedDB'den
+siliyordu ama **object URL iptal edilmiyor, AudioContext kapatılmıyordu**. Silinen
+dosyanın sesi sayfa yenilenene kadar **çalınabiliyordu**; kullanıcı "kayıt geri
+geldi" sanabiliyordu. Aynı eksik **Test dosyalarını kaldır** yolunda da vardı;
+yalnız **Kaldır** doğru temizliyordu (üç ayrı silme yolu, üç ayrı kod).
+
+### KULLANICI NE GÖRECEK
+
+- Dosya kalıcı silindiğinde sesi **gerçekten** bırakılır: oynatıcı yok olur,
+  bellekteki `blob:` adresi iptal edilir, ses motoru kapatılır.
+- **Test dosyalarını kaldır** da aynı temizliği yapar; sesleri bellekte kalmaz.
+- Ekran davranışı değişmez; yalnız silme sonrası bellek/oynatıcı durumu tutarlı olur.
+
+### Ölçüm (gerçek Chromium + CDP + gerçek WAV, 47,7 sn)
+
+| Adım | Önce (v2.274) | Sonra (v2.275) |
+|---|---|---|
+| Kalıcı sil → `URL.revokeObjectURL` çağrısı | **0** | **1** |
+| Kalıcı sil → IndexedDB blob silme | 1 | 1 |
+| Kayıt kaldır → revoke | 1 | 1 (aynı yardımcı) |
+| Silme sonrası `blob:` oynatıcı | 0 (adres canlı kalıyordu) | 0 (adres iptal) |
+| Arşiv sayısı (silme sonrası) | 1 → 0 | 1 → **0** |
+| JS hatası | 0 | **0** |
+
+**Tek kaynak:** `discardMaterialMedia(c, m)` + `purgeCaseMedia(c)`; üç silme yolu
+(kaldır · kalıcı sil · test dosyaları) aynı yardımcıyı kullanır.
+Koruyan test: `birim` [121] (12 kontrol).
 
 ## v2.274 — Konuşmacı kimliği: aynı bölüm iki kişide görünmüyor
 

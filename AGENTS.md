@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.274.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.275.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6476,3 +6476,50 @@ varken ikinci bir "Konuşmacı 1" uyduruyordu (ölçüm: S1 "Kiracı" iken S2).
 | JS hatası | 0 | **0** |
 
 Koruyan test: `birim` [120] (20 kontrol).
+
+## YENİ OTURUM DEVRİ (v2.275) — Silmede medya temizliği
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.275** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1827 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.276 (depo hijyeni + belge + ölü kod) |
+
+### Ölçülen risk (v2.274)
+
+**Kalıcı sil** ses blob'unu IndexedDB'den siliyordu ama **object URL iptal
+edilmiyor, AudioContext kapatılmıyordu**. Silinen ses, sayfa yenilenene kadar
+çalınabiliyor; kullanıcı "kayıt geri geldi" sanıyordu. Aynı eksik **Test
+dosyalarını kaldır** yolunda da vardı; yalnız **Kaldır** doğru temizliyordu
+(üç ayrı silme yolu, üç ayrı kod).
+
+### Yapılan
+
+- `discardMaterialMedia(c, m)` — AudioContext kapat · object URL iptal · blob sil
+  (idempotent; kayıt yoksa güvenli).
+- `purgeCaseMedia(c)` — dosyadaki tüm materyaller için yukarıdakini çağırır.
+- **Üç yol tek yardımcı:** `removeAudio` · `purgeCaseById` · `removeSamples`.
+- Test koşumunda sahte IndexedDB **işlem tamamlanacak** biçimde düzeltildi;
+  aksi hâlde `await deleteBlob()` asılı kalıyordu (testte "unsettled top-level
+  await").
+
+### DEĞİŞMEZ KURALLAR
+
+1. Bir materyalin medyası **yalnız** `discardMaterialMedia` ile bırakılır;
+   `deleteBlob` doğrudan çağrılmaz (URL/AudioContext unutulur).
+2. Yeni bir silme yolu eklerken `purgeCaseMedia`/`discardMaterialMedia` kullanın.
+3. `speakerId` (v2.274) gibi, "tek kapı" kuralı silme için de geçerlidir:
+   kopya temizlik kodu bir yolda eksik kalır.
+
+### Ölçüm (gerçek Chromium + CDP + gerçek WAV)
+
+| Adım | Önce | Sonra |
+|---|---|---|
+| Kalıcı sil → `revokeObjectURL` | **0** | **1** |
+| Kalıcı sil → IndexedDB delete | 1 | 1 |
+| Arşiv sayısı | 1 → 0 | 1 → **0** |
+| JS hatası | 0 | **0** |
+
+Koruyan test: `birim` [121] (12 kontrol).

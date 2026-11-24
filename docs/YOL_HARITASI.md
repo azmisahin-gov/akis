@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.274.**
+yazılır. **Güncel sürüm: v2.275.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.275 — Silmede medya temizliği (TAMAMLANDI)
+
+- `discardMaterialMedia(c, m)`: AudioContext kapat · object URL iptal · blob sil.
+- `purgeCaseMedia(c)`; **üç silme yolu** (kaldır · kalıcı sil · test dosyaları) AYNI
+  yardımcıyı kullanır (kopya temizlik kodu yok).
+- Ölçüm: kalıcı silmede revoke **0 → 1**; silinen ses sayfa yenilenene kadar
+  çalınamıyor.
+- Koruyan: `birim` [121].
 
 ## v2.274 — Konuşmacı kimliği tutarlılığı (TAMAMLANDI)
 

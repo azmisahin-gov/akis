@@ -152,6 +152,7 @@ const EXPOSE = [
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups', 'materialSpeakerRows',
   'addManualSegment', 'addSpeakerAndAssign',
+  'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
@@ -167,21 +168,44 @@ globalThis.__t.setAppState = (s) => { appState = s; };
 globalThis.__t.store = localStorage;
 globalThis.__t.mergeCasesForTest = (a, b) => globalThis.__schema.mergeCases(a, b);
 globalThis.__t.compareCasesForTest = (a, b) => globalThis.__schema.compareCases(a, b);
+globalThis.__t.resetDb = () => { dbPromise = undefined; };
 `;
 
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
 // okur. Kopya tanım yok — test edilen şema ile üretimdeki şema aynı dosya.
 import * as __schemaMod from '../assets/schema.js';
 import * as __reportModelMod from '../assets/report-model.js';
+const revoked = [];
 const sandbox = {
   __schema: __schemaMod,
   __reportModel: __reportModelMod,
   console, document: documentStub, localStorage: localStorageStub, window: {}, navigator: {},
   getComputedStyle: () => ({ display: 'block', height: '0px', marginLeft: '0px', overflowX: 'visible' }),
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
-  URL: { createObjectURL: () => 'blob:x', revokeObjectURL: noop },
+  URL: { createObjectURL: () => 'blob:x', revokeObjectURL: (u) => revoked.push(String(u)) },
   Blob, TextEncoder, TextDecoder, setTimeout, clearTimeout,
-  indexedDB: { open: () => ({}) }, DOMParser: class { parseFromString() { return { querySelector: () => null }; } },
+  indexedDB: {
+    // Silme yolları gerçek bir işlem (transaction) bekler; sahte DB
+    // tamamlanmazsa `await deleteBlob()` sonsuza kadar asılı kalır (v2.275).
+    open: () => {
+      const req = {};
+      setTimeout(() => {
+        const store = { delete: noop, put: noop, get: () => ({}) };
+        req.result = {
+          objectStoreNames: { contains: () => true, length: 2 },
+          transaction: () => {
+            const tx = { objectStore: () => store, error: null };
+            setTimeout(() => { if (typeof tx.oncomplete === 'function') tx.oncomplete(); }, 0);
+            return tx;
+          },
+          close: noop
+        };
+        if (typeof req.onsuccess === 'function') req.onsuccess();
+      }, 0);
+      return req;
+    }
+  },
+  DOMParser: class { parseFromString() { return { querySelector: () => null }; } },
   fetch: async () => ({ ok: false }),
   JSZip: { file() { return this; }, folder() { return this; }, async generateAsync() { return new Blob([]); } },
 };
@@ -193,6 +217,7 @@ vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });
 const T = sandbox.__t;
 T.reconcileSpeakerRefsForTest = __schemaMod.reconcileSpeakerRefs;
+T.revoked = revoked;
 
 // --- Test altyapısı -------------------------------------------------------
 let failures = 0, passed = 0;
@@ -3110,7 +3135,9 @@ console.log('\n== [63] Test verisi koruması (v2.157)');
   eq('yükleme ONAY ister', /async function loadSamples\(\)[\s\S]{0,900}askConfirm/.test(jsSrc), true);
   eq('kaldırma yolu var', /async function removeSamples\(\)/.test(jsSrc), true);
   eq('kaldırma da onay ister', /async function removeSamples\(\)[\s\S]{0,600}askConfirm/.test(jsSrc), true);
-  eq('kaldırma ses bloblarını siler', /async function removeSamples\(\)[\s\S]{0,1200}deleteBlob/.test(jsSrc), true);
+  // v2.275: silme tek yardımcıda; test yazımı değil DAVRANIŞI sınar.
+  eq('kaldırma ses bloblarını siler (ortak yardımcı)', /async function removeSamples\(\)[\s\S]{0,1200}purgeCaseMedia\(/.test(jsSrc), true);
+  eq('ortak yardımcı blobu siler', /async function discardMaterialMedia[\s\S]{0,900}deleteBlob\(/.test(jsSrc), true);
   eq('düğme iki modu bildirir (load/remove)', /dataset\.mode/.test(jsSrc), true);
 }
 
@@ -3162,7 +3189,7 @@ console.log('\n== [65] Ses kaydını kaldırma: onay + kalıcılık (v2.166)');
   const jsSrc = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   const branch = jsSrc.slice(jsSrc.indexOf('b.dataset.removeAudio'), jsSrc.indexOf("showToast('Ses kaydı kaldırıldı.')"));
   eq('kaldırma dalı bulundu', branch.length > 100, true);
-  eq('silmeden ÖNCE onay istenir', /askConfirm\(/.test(branch) && branch.indexOf('askConfirm(') < branch.indexOf('deleteBlob('), true);
+  eq('silmeden ÖNCE onay istenir', /askConfirm\(/.test(branch) && branch.indexOf('askConfirm(') < branch.indexOf('discardMaterialMedia('), true);
   eq('kaldırma düğmesi uyarıyı kullanır', /removeAudioWarning\(/.test(branch), true);
 }
 
@@ -5452,6 +5479,55 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('＋ konuşmacı doğrudan ad yazmaz', /segments\[idx\]\.speaker = rec\.name/.test(js), false);
   eq('tekil paket de normalize edilir (arşivle aynı sözleşme)', /const c = normalizeCase\(pack\.case\)/.test(js), true);
+}
+
+
+// [121] v2.275 — Silmede bellekteki medya kaynakları bırakılır.
+// Ölçülen risk: kalıcı silmede ses blob'u IndexedDB'den gidiyor ama object URL
+// iptal edilmiyordu; ses sayfa yenilenene kadar çalınabiliyor, kullanıcı
+// "silinen kayıt geri geldi" sanıyordu. Aynı eksik "test dosyalarını kaldır"da
+// da vardı. Üç silme yolu tek yardımcıyı kullanmalı.
+{
+  console.log('[121] Silmede medya temizliği (v2.275)');
+  if (typeof T.resetDb === 'function') T.resetDb();
+  eq('discardMaterialMedia tanımlı', typeof T.discardMaterialMedia, 'function');
+  eq('purgeCaseMedia tanımlı', typeof T.purgeCaseMedia, 'function');
+
+  if (typeof T.discardMaterialMedia === 'function') {
+    const c = { id: 'cX', materials: [] };
+    const m = { id: 'mX', name: 'a.wav' };
+    c.materials.push(m);
+    const key = T.blobKey(c, m);
+    T.objectUrls.set(key, 'blob:fake-url');
+    T.revoked.length = 0;
+    let closed = false;
+    T.audioGraphs.set(m.id, { ctx: { close() { closed = true; } }, gateTimer: null });
+    await T.discardMaterialMedia(c, m);
+    eq('object URL iptal edildi', T.revoked, ['blob:fake-url']);
+    eq('objectUrls kaydı temizlendi', T.objectUrls.has(key), false);
+    eq('AudioContext kapatıldı', closed, true);
+    eq('audioGraphs kaydı temizlendi', T.audioGraphs.has(m.id), false);
+
+    // Kayıt yoksa da patlamaz (idempotent).
+    T.revoked.length = 0;
+    await T.discardMaterialMedia(c, m);
+    eq('ikinci çağrı güvenli', T.revoked, []);
+  }
+
+  if (typeof T.purgeCaseMedia === 'function') {
+    const c = { id: 'cY', materials: [{ id: 'm1', name: 'a.wav' }, { id: 'm2', name: 'b.wav' }] };
+    ['m1', 'm2'].forEach((id) => T.objectUrls.set(T.blobKey(c, { id }), 'blob:' + id));
+    T.revoked.length = 0;
+    await T.purgeCaseMedia(c);
+    eq('dosyadaki tüm URL ler iptal edildi', T.revoked.sort(), ['blob:m1', 'blob:m2']);
+    eq('objectUrls boş', T.objectUrls.has('cY::m1') || T.objectUrls.has('cY::m2'), false);
+  }
+
+  // Üç silme yolu aynı yardımcıyı kullanmalı (kopya temizlik kodu yasak).
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('kayıt kaldırma ortak yardımcıyı kullanır', /dataset\.removeAudio[\s\S]{0,600}discardMaterialMedia\(c, m\)/.test(js), true);
+  eq('kalıcı silme ortak yardımcıyı kullanır', /async function purgeCaseById[\s\S]{0,2500}purgeCaseMedia\(c\)/.test(js), true);
+  eq('test dosyası kaldırma ortak yardımcıyı kullanır', /async function removeSamples[\s\S]{0,1500}purgeCaseMedia\(c\)/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
