@@ -1252,6 +1252,66 @@ export function assignCaseSpeakerCodes(speakers) {
   return speakers || [];
 }
 
+// ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
+// Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
+// yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK
+// bildirilir; yüklemede sessizce yeniden numaralanmaz (kod değişikliği
+// kullanıcının bilerek verdiği bir karardır — v2.261 "sessiz değişiklik yok").
+export function speakerCodeIssues(caseObj) {
+  const out = [];
+  for (const m of (caseObj && caseObj.materials) || []) {
+    const byCode = new Map();
+    for (const sp of (m && m.speakers) || []) {
+      const code = str(sp && sp.code).trim();
+      if (!code) continue; // boş kod çakışma değildir; assignSpeakerCodes doldurur
+      if (!byCode.has(code)) byCode.set(code, []);
+      byCode.get(code).push(sp);
+    }
+    for (const [code, list] of byCode) {
+      if (list.length < 2) continue;
+      out.push({
+        materialId: m.id,
+        materialName: m.name || m.fileName || '',
+        code,
+        speakerIds: list.map((s) => s.id),
+        names: list.map((s) => s.name || s.label || '')
+      });
+    }
+  }
+  return out;
+}
+/**
+ * Çakışan kodları sıradaki BOŞ koda taşır. İlk konuşmacının kodu KORUNUR
+ * (bölümler ve rapor o koda göre okunur); sonrakiler S(n) alır.
+ * `materialId` verilirse yalnız o kayıt düzeltilir. Değişenler döner;
+ * çağıran taraf günlüğe yazar ve kullanıcıya bildirir.
+ */
+export function fixSpeakerCodeConflicts(caseObj, materialId) {
+  const changed = [];
+  const issues = speakerCodeIssues(caseObj).filter((i) => !materialId || i.materialId === materialId);
+  for (const issue of issues) {
+    const m = ((caseObj && caseObj.materials) || []).find((x) => x && x.id === issue.materialId);
+    if (!m) continue;
+    const list = m.speakers || [];
+    for (let i = 1; i < issue.speakerIds.length; i++) {
+      const sp = list.find((x) => x && x.id === issue.speakerIds[i]);
+      if (!sp) continue;
+      const from = str(sp.code);
+      sp.code = '';
+      assignSpeakerCodes(list);
+      changed.push({
+        materialId: m.id,
+        materialName: issue.materialName,
+        speakerId: sp.id,
+        name: sp.name || sp.label || '',
+        from,
+        to: sp.code
+      });
+    }
+  }
+  return changed;
+}
+
 export function normalizeSpeaker(src = {}) {
   const s = isObj(src) ? src : {};
   const out = {

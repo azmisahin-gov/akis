@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.261.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.262.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5998,3 +5998,51 @@ tutuyordu; "Tam 56.12" profili **sırayı değiştirmiyordu**.
 2. **Soru bazında ayrı kalem:** "yalnız 1. sorunun cevabı".
 3. **Parçayı eke taşı** (gövde ↔ ek).
 4. Gerçek sürükle-bırak sıralama (↑↓ korunur).
+
+## YENİ OTURUM DEVRİ (v2.262) — Konuşmacı kodu güvenliği
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.262** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1606 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Sıradaki konuşmacı işleri: hız (klavye/aralık atama), dinleme, tutarlılık denetimi |
+
+### Ölçülen hata (kullanıcı sorusu üzerine)
+
+Kullanıcı: *"S1/S2 kodlarını değiştirmemeliyiz değil mi? Çok dosyada yanlış tanımlama
+istemiyoruz."* Ölçüm: panelde **"Standart kod" bir giriş alanıydı**; iki konuşmacıya
+`S1` yazmak mümkündü ve **kalıcıydı** (`S1/A | S1/B`), geçersiz kod (`SX`) ise sessizce
+düzeltiliyordu → koruma yarım. Sonuç: rapor **iki kez "S1"** yazıyor, hangi bölümün
+kime ait olduğu okunamıyordu.
+
+### Yapılan
+
+- **Kod salt-okunur** (`<span class="spk-code">`); etiket düzenlenebilir kalır.
+- `schema.js`: `speakerCodeIssues(case)` (kayıt başına çakışma) +
+  `fixSpeakerCodeConflicts(case, materialId?)` (ilk kodu KORUR, sonrakini boş koda taşır).
+  **Yüklemede sessiz yeniden numaralama YOK.**
+- Panel: çakışma uyarısı + "Çakışan kodları düzelt" → `askConfirm` → `snapshotForUndo`
+  → `logEvent('speaker-code-fix')` → toast. Metin/ses değişmez.
+- `READINESS_SEVERITY.speakerCodes = 'blocking'` + hazırlık satırı
+  (`target:'audio'`, `action:'speakerCodes'` → Dinleme sekmesindeki panel).
+- Rapor: `speakerCodeConflictText(c)` tek kaynak; **üç çıktı** aynı uyarıyı basar.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Kod kimliktir, etiket görünür addır.** Kod kullanıcıya açılmaz; yeni bir
+   görünen-alan eklerken kodu değiştirmeyin.
+2. **Çakışma sessizce düzeltilmez.** Veri olarak bildirilir; düzeltme kullanıcı
+   kararıdır, onay + geri alma + günlük ister.
+3. **Kayıtlar arası S1 çakışma DEĞİLDİR** (kod kayıt başınadır). Dedektör kayıt
+   içinde bakar.
+4. Yeni bir "kimlik" alanı eklerken aynı desen: salt-okunur + çakışma dedektörü +
+   hazırlık maddesi.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+Çakışma enjekte → Durum **Engelleyen eksik: 1**; rapor uyarısı **var**; satıra tıkla →
+Ses görünümü + panel (kod girişi **0**, rozet `S1`,`S1`); düzelt → `S1, S2`, toast,
+günlük `speaker-code-fix: S1→S2 (B)`; **Ctrl+Z → `S1, S1`**; uyarı/hazırlık maddesi
+kayboldu; kırpılma 0; JS hatası **0**.

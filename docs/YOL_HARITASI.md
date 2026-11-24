@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.261.**
+yazılır. **Güncel sürüm: v2.262.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.262 — Konuşmacı kodu güvenliği (TAMAMLANDI)
+
+- Kod **salt-okunur** (kimlik); görünen ad düzenlenebilir.
+- `speakerCodeIssues` + `fixSpeakerCodeConflicts`: çakışma **bildirilir**, sessiz
+  yeniden numaralama YOK. Düzeltme onay + geri alma + `logEvent('speaker-code-fix')`.
+- Hazırlıkta **engelleyen** madde + rapor uyarısı (üç çıktı).
+- Koruyan: `birim` [106]/[107], `rapor` 31, `tasarim` [2ch].
 
 ## v2.261 — Rapor parçaları ayrı ayrı alınabilir (TAMAMLANDI)
 

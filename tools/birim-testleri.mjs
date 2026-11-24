@@ -4771,5 +4771,74 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('profil: kullanıcı sırası korunur (standart profil sıra yazmaz)', T.reportPresetLayout('standard').order, null);
 }
 
+
+// [106] v2.262 — Konuşmacı kodu KİMLİKTİR: çakışma bildirilir, sessizce
+// yeniden numaralanmaz. Düzeltme kullanıcı isteğiyle ve günlüğe yazılarak.
+{
+  console.log('[106] Konuşmacı kodu çakışması (v2.262)');
+  const mkCase = (speakers) => ({ id: 'c1', materials: [{ id: 'm1', name: 'a.wav', speakers, segments: [] }] });
+  const sp = (id, code, name) => ({ id, code, name, label: name });
+
+  eq('speakerCodeIssues tanımlı', typeof __schemaMod.speakerCodeIssues, 'function');
+  eq('çakışma yok → boş', __schemaMod.speakerCodeIssues(mkCase([sp('a', 'S1', 'A'), sp('b', 'S2', 'B')])).length, 0);
+  const dup = __schemaMod.speakerCodeIssues(mkCase([sp('a', 'S1', 'A'), sp('b', 'S1', 'B')]));
+  eq('çift kod bildirilir', dup.length, 1);
+  eq('çift kod adı', dup[0].code, 'S1');
+  eq('çift kod kişileri', dup[0].speakerIds.length, 2);
+  eq('çift kod kişi adları', dup[0].names.join(','), 'A,B');
+  // Boş kod çakışma DEĞİLDİR: assignSpeakerCodes doldurur.
+  eq('boş kod çakışma sayılmaz', __schemaMod.speakerCodeIssues(mkCase([sp('a', '', 'A'), sp('b', '', 'B')])).length, 0);
+  // Kayıtlar arası aynı kod çakışma değildir (S1 kayıt başınadır).
+  const twoMaterials = {
+    id: 'c2',
+    materials: [
+      { id: 'm1', name: 'a.wav', speakers: [sp('a', 'S1', 'A')], segments: [] },
+      { id: 'm2', name: 'b.wav', speakers: [sp('c', 'S1', 'C')], segments: [] }
+    ]
+  };
+  eq('kayıtlar arası S1 çakışma değil', __schemaMod.speakerCodeIssues(twoMaterials).length, 0);
+
+  // Düzeltme: ilk konuşmacı kodunu KORUR, sonraki sıradaki boş kodu alır.
+  const c = mkCase([sp('a', 'S1', 'A'), sp('b', 'S1', 'B'), sp('c', 'S3', 'C')]);
+  const changed = __schemaMod.fixSpeakerCodeConflicts(c);
+  eq('düzeltme bir değişiklik bildirir', changed.length, 1);
+  eq('düzeltme: değişen kişi', changed[0].speakerId, 'b');
+  eq('düzeltme: eski kod', changed[0].from, 'S1');
+  eq('düzeltme: yeni kod (boş olan S2)', changed[0].to, 'S2');
+  eq('düzeltme sonrası çakışma yok', __schemaMod.speakerCodeIssues(c).length, 0);
+  eq('düzeltme sonrası kodlar', c.materials[0].speakers.map((x) => x.code).join(','), 'S1,S2,S3');
+  eq('düzeltme idempotent', __schemaMod.fixSpeakerCodeConflicts(c).length, 0);
+
+  // Hazırlık: çakışma ENGELSEYEN maddedir (rapor iki kez S1 yazarsa yanıltır).
+  const rc = T.reportReadiness({
+    ...T.emptyCaseForTest({ id: 'cR' }),
+    fileNo: '2026/1', court: 'Mahkeme', expertName: 'Uzman',
+    materials: [{ id: 'm1', name: 'a.wav', duration: 5, sha256: 'a'.repeat(64), speakers: [sp('a', 'S1', 'A'), sp('b', 'S1', 'B')], segments: [{ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'A', text: 'x', review: 'approved' }], log: [], origin: { mediumType: 'usb' } }]
+  });
+  const item = rc.items.find((x) => x.key === 'speakerCodes');
+  eq('hazırlıkta konuşmacı kodu maddesi var', !!item, true);
+  eq('konuşmacı kodu maddesi engelleyen', item && item.severity, 'blocking');
+  eq('konuşmacı kodu sayısı', item && item.count, 1);
+  eq('maddede eylem var', item && item.action, 'speakerCodes');
+
+  // Çakışma yoksa madde ÇIKMAZ.
+  const rc2 = T.reportReadiness({
+    ...T.emptyCaseForTest({ id: 'cR2' }),
+    fileNo: '2026/1', court: 'Mahkeme', expertName: 'Uzman',
+    materials: [{ id: 'm1', name: 'a.wav', duration: 5, sha256: 'a'.repeat(64), speakers: [sp('a', 'S1', 'A'), sp('b', 'S2', 'B')], segments: [{ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'A', text: 'x', review: 'approved' }], log: [], origin: { mediumType: 'usb' } }]
+  });
+  eq('çakışma yoksa madde yok', rc2.items.some((x) => x.key === 'speakerCodes'), false);
+}
+
+// [107] v2.262 — Kod alanı SALT-OKUNUR: kullanıcı kimliği yanlışlıkla bozamaz.
+{
+  console.log('[107] Konuşmacı kodu salt-okunur (v2.262)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('kod girişi kaldırıldı', /data-spk-key="code"/.test(js), false);
+  eq('kod salt-okunur gösterim', /class="spk-code"/.test(js), true);
+  eq('çakışma düzeltme düğmesi', /data-fix-spk-codes=/.test(js), true);
+  eq('panelde çakışma uyarısı', /speakerCodeIssues\(c\)/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

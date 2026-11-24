@@ -1,4 +1,4 @@
-# Özellikler (v2.261 — mevcut durum)
+# Özellikler (v2.262 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -570,6 +570,14 @@ uzmanlık alanını gösterir.
   Kod bir kez verilir ve **değişmez**; etiket ("Kiracı", "Ev sahibi") sonradan
   değişse bile aynı kişi raporda aynı kodla görünür. Silinen konuşmacının kodu
   yeniden kullanılır; raporda `S1, S3` gibi boşluk oluşmaz.
+- **Kod salt-okunur (v2.262):** kod **kimliktir**; panelde düzenlenemez
+  (önceden bir giriş alanıydı ve iki kişiye aynı kod yazılabiliyordu — rapor iki
+  kez "S1" yazıyordu). Görünen ad "Konuşmacı etiketi" alanından değiştirilir.
+- **Kod çakışması denetimi (v2.262):** eski/elle düzenlenmiş kayıtta aynı kod
+  iki kişide ise panelde uyarı + **"Çakışan kodları düzelt"**. Düzeltme onay
+  ister, **ilk konuşmacının kodunu korur**, diğerini sıradaki boş koda taşır;
+  metin/ses değişmez, **geri alınabilir** ve delil günlüğüne yazılır. Rapor
+  hazırlığında **engelleyen** madde; raporda uyarı satırı (üç çıktı).
 - **Bölümde konuşmacı seçimi listedir** (serbest metin değil): `S2 · Kiracı`.
   Yeni kişi için bölüm detayındaki **＋** düğmesi kullanılır; yeni konuşmacı
   sıradaki boş kodu alır ve o bölüme atanır.

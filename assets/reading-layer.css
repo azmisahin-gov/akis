@@ -3700,3 +3700,18 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 @media print {
   .report-paper .paper-list { break-inside: avoid; }
 }
+/* v2.262 — Konuşmacı kodu SALT-OKUNUR rozet. Kod kimliktir; kullanıcı
+   yanlışlıkla değiştiremez (görünen ad "Konuşmacı etiketi" alanındadır). */
+.spk-code {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  letter-spacing: .4px;
+}

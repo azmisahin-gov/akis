@@ -1129,5 +1129,39 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('bütünlük kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü', H4, U4, D4);
 }
 
+
+// Senaryo 31: konuşmacı kodu çakışması (v2.262). Çakışma varsa üç çıktı da
+// UYARIR; yoksa uyarı çıkmaz. Kod sessizce yeniden numaralanmaz.
+{
+  console.log('\n[Senaryo 31] konuşmacı kodu çakışması (v2.262)');
+  const mk = (codes) => {
+    const c = withMaterial();
+    c.materials[0].speakers = codes.map((code, i) => ({
+      id: 'sp' + i,
+      code,
+      name: i === 0 ? 'A' : 'B',
+      label: i === 0 ? 'A' : 'B',
+      role: 'unspecified',
+      gender: 'unspecified'
+    }));
+    c.materials[0].segments = [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'A', text: 'merhaba', review: 'approved' }
+    ];
+    return c;
+  };
+  const dup = mk(['S1', 'S1']);
+  const H = htmlText(dup), U = await udfText(dup), D = await docxText(dup);
+  checkShared('çakışma uyarısı', REPORT_TEXT.speakerCodeConflict, H, U, D);
+
+  const ok = mk(['S1', 'S2']);
+  const H2 = htmlText(ok), U2 = await udfText(ok), D2 = await docxText(ok);
+  check(
+    'çakışma yoksa uyarı yok',
+    !H2.includes(REPORT_TEXT.speakerCodeConflict) &&
+      !U2.includes(REPORT_TEXT.speakerCodeConflict) &&
+      !D2.includes(REPORT_TEXT.speakerCodeConflict)
+  );
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

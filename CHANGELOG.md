@@ -6,12 +6,70 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.261.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.262.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.262 — Konuşmacı kodu güvenliği (salt-okunur + çakışma denetimi)
+
+Kullanıcı sordu: *"S1/S2 kodlarını değiştiremiyoruz ya da değiştirmemeliyiz, değil mi?
+Birçok dosya olunca konuşmacıları ayırmak hataya açık; yanlış beyan vermek istemiyoruz."*
+
+**Ölçüm (düzeltme öncesi):** Konuşmacılar panelinde "Standart kod" bir **giriş alanıydı**.
+Şema testi: iki konuşmacıya da `S1` yazılırsa kayıt `S1/A | S1/B` olarak **kalıcı**
+kalıyordu; geçersiz kod (`SX`) ise sessizce düzeltiliyordu. Yani koruma **yarımdı**:
+kullanıcı farkında olmadan iki kişiye aynı kodu verebiliyordu ve rapor **iki kez
+"S1"** yazıyordu — hangi bölümün kime ait olduğu okunamıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Kod artık salt-okunur.** S1/S2 kimliktir; panelde değiştirilemez. Görünen adı
+  ("Konuşmacı etiketi") değiştirmeye devam edersiniz — rapor `S1 · Kiracı` yazar.
+- **Çakışma varsa** (eski/elle düzenlenmiş kayıt): Konuşmacılar panelinde uyarı —
+  `S1 → A, B` — ve **"Çakışan kodları düzelt"** düğmesi.
+- Düzeltme **onay ister**, **ilk konuşmacının kodunu korur**, diğerini sıradaki boş
+  koda taşır, **geri alınabilir** (Ctrl+Z) ve **delil günlüğüne** yazılır.
+- **Rapor hazırlığında ENGELSEYEN madde:** "Aynı kod birden çok konuşmacıda".
+  Satıra tıklayınca doğrudan Konuşmacılar paneline gidersiniz.
+- **Rapor da uyarır:** Konuşmacılar bölümünde "UYARI: Aynı konuşmacı kodu birden çok
+  kişiye verilmiş…" satırı üç çıktıda (HTML/DOCX/UDF) basılır.
+
+### Teknik
+
+- `schema.js`: `speakerCodeIssues(case)` (kayıt başına çakışma listesi) ve
+  `fixSpeakerCodeConflicts(case, materialId?)` (ilk kodu korur, sonrakileri boş koda
+  taşır; değişenleri döndürür). **Yüklemede sessiz yeniden numaralama YOK** — kod
+  değişikliği kullanıcı kararıdır.
+- `app.js`: kod alanı `<span class="spk-code">` oldu; panel uyarısı + düzeltme
+  işleyicisi (`askConfirm` → `snapshotForUndo` → `logEvent('speaker-code-fix')`);
+  `READINESS_SEVERITY.speakerCodes = 'blocking'`; hazırlık maddesi + `target:'audio'`,
+  `action:'speakerCodes'` (Dinleme sekmesindeki konuşmacı panelini açar).
+- Rapor: `speakerCodeConflictText(c)` tek kaynak; üç çıktı aynı cümleyi basar.
+
+### Koruyan testler
+
+- `birim` **[106]** (20 kontrol): çakışma tespiti, kayıtlar arası S1'in çakışma
+  sayılmaması, düzeltmenin ilk kodu koruması, idempotentlik, hazırlık maddesi.
+- `birim` **[107]** (4): kod girişi kaldırıldı, rozet, düzeltme düğmesi, panel uyarısı.
+- `rapor` **Senaryo 31**: çakışma varsa üç çıktı uyarır; yoksa uyarı çıkmaz.
+- `tasarim` **[2ch]**: salt-okunur kod, düzeltme onayı + geri alma, token stil.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+
+| Adım | Sonuç |
+|---|---|
+| Çakışma enjekte (S1, S1) → yenile | Durum: **Engelleyen eksik: 1**; hazırlık satırı `speakerCodes` |
+| Rapor uyarısı | **var** ("Aynı konuşmacı kodu…") |
+| Satıra tıkla | Ses görünümü + Konuşmacılar paneli; kod girişi **0**, rozet `S1`, `S1` |
+| Panel uyarısı | "Kod çakışması: S1 → A, B"; düğme var; kırpılma **0** |
+| Düzelt | Onay metni net → kodlar `S1, S2`; uyarı kalktı; toast "1 konuşmacı kodu düzeltildi: S1→S2." |
+| Günlük | `speaker-code-fix: S1→S2 (B)` yazıldı |
+| Ctrl+Z | `S1, S2` → **`S1, S1`** (geri alındı) |
+| Rapor/hazırlık (düzeltme sonrası) | uyarı **yok**, madde **yok** |
+| JS hatası | **0** |
 
 ## v2.261 — Rapor parçaları ayrı ayrı alınabilir (56.12 sırası)
 

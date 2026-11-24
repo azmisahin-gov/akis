@@ -42,6 +42,8 @@ import {
   emptyCaseSpeaker,
   assignCaseSpeakerCodes,
   assignSpeakerCodes,
+  speakerCodeIssues,
+  fixSpeakerCodeConflicts,
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
@@ -81,15 +83,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.261';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.261';
+} from './schema.js?v=2.262';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.262';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.261';
+const APP_VERSION = '2.262';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -353,6 +355,10 @@ Object.assign(REPORT_TEXT, {
   integrityHeaders: ['KAYIT', 'SHA-256', 'DOĞRULAMA', 'DELİL GÜNLÜĞÜ'],
   integrityNoHash: 'hesaplanmadı',
   integrityNotVerified: 'Doğrulanmadı',
+  // v2.262 — kod çakışması: rapor iki kez "S1" yazarsa kod hangi kişiyi
+  // gösterdiği belirsizleşir. Uyarı üç çıktıda da basılır (gizlenmez).
+  speakerCodeConflict:
+    'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.',
   integrityNote:
     'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
 });
@@ -3874,6 +3880,14 @@ function speakersPanelHtml(m) {
   const mergeNote = merges.length
     ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map((g) => g.map((s) => esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`
     : '';
+  // v2.262 — kod çakışması: aynı kod iki kişide. Rapor iki kez "S1" yazar;
+  // sessizce düzeltilmez, kullanıcı tek tıkla düzeltir (onay + geri alma).
+  const codeConf = speakerCodeIssues(currentCase()).filter((i) => i.materialId === m.id);
+  const codeBar = codeConf.length
+    ? `<div class="warn-box spk-code-warn"><b>Kod çakışması:</b> ${codeConf
+        .map((i) => `${esc(i.code)} → ${esc(i.names.join(', '))}`)
+        .join(' · ')}. Rapor iki kez aynı kodu yazar; hangi bölümün kime ait olduğu okunamaz.<br><button class="mini-button" data-fix-spk-codes="${esc(m.id)}" title="Çakışan kodları sıradaki boş koda taşır. İlk konuşmacının kodu korunur; işlem geri alınabilir ve günlüğe yazılır.">Çakışan kodları düzelt (${codeConf.reduce((n, i) => n + i.speakerIds.length - 1, 0)})</button></div>`
+    : '';
   const unused = unusedSpeakers(m);
   const cleanBar = unused.length
     ? `<div class="spk-toolbar"><span>${unused.length} konuşmacı hiçbir bölüme atanmamış; raporda görünmez.</span><button class="mini-button" data-clean-spk="${esc(m.id)}" title="Hiçbir bölüme atanmamış konuşmacıları listeden kaldır. Ses ve metinler silinmez.">Kullanılmayanları temizle (${unused.length})</button></div>`
@@ -3890,7 +3904,7 @@ function speakersPanelHtml(m) {
       return `<div class="spk-card" data-spk-card="${esc(s.id)}">
       <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.">Sil</button></div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Standart kod</label><input data-spk="${esc(s.id)}" data-spk-key="code" value="${esc(s.code || '')}" placeholder="S1" title="Raporda ve bölüm listesinde bu kod görünür. Etiket değişse de aynı kişi aynı kodla kalır."></div>
+        <div class="seg-field"><label>Standart kod</label><span class="spk-code" title="Kod KİMLİKTİR: bölümler ve rapor bu kodla okunur; bu yüzden değiştirilemez. Görünen adı (etiket) aşağıdan değiştirebilirsiniz.">${esc(s.code || '—')}</span></div>
         <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"></div>
       </div>
       <div class="seg-row2">
@@ -3909,7 +3923,7 @@ function speakersPanelHtml(m) {
     </div>`;
     })
     .join('');
-  return `${personBlock}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${personBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -10674,6 +10688,7 @@ const READINESS_SEVERITY = {
   expert: 'blocking',
   materials: 'blocking',
   log: 'blocking',
+  speakerCodes: 'blocking',
   noSegments: 'expert',
   pending: 'expert',
   ambiguous: 'expert',
@@ -10767,6 +10782,18 @@ function reportReadiness(c) {
   add('ambiguous', 'Belirsiz okumada seçim yok', amb, 'audio', 'Rapora "seçilmedi" olarak girer; belirsizlik gizlenmez.');
   const noSpk = segs.filter((s) => !txt(s.speaker) || txt(s.speaker) === 'Belirtilmedi').length;
   add('speaker', 'Konuşmacı atanmamış bölüm', noSpk, 'audio', 'Raporda konuşmacı sütunu boş kalır.');
+  // KOD ÇAKIŞMASI (v2.262): kod KİMLİKTİR; iki kişi aynı kodu taşırsa rapor
+  // iki kez "S1" yazar ve hangi bölümün kime ait olduğu okunamaz.
+  const codeConf = speakerCodeIssues(c).reduce((n, i) => n + (i.speakerIds.length - 1), 0);
+  add(
+    'speakerCodes',
+    'Aynı kod birden çok konuşmacıda',
+    codeConf,
+    'audio',
+    'Rapor iki kez aynı kodu yazar; hangi bölümün kime ait olduğu okunamaz. Konuşmacılar panelinden "Çakışan kodları düzelt" ile giderin.',
+    '',
+    'speakerCodes'
+  );
   // KAPSAMA (v2.156): "Kapsam" düğmesi ile "Rapor hazırlığı" AYNI gerçeği
   // söyler. Boşluk = bölümlenmemiş aralık; süre bilinmiyorsa boşluk üretilmez
   // (uydurma yok). Dürüst sınır: boşluk "konuşma yok" demek değildir.
@@ -11716,6 +11743,10 @@ function reportAnnexBlocks(c) {
     return { key: a.key, heading: a.heading, ...defs[a.key], note };
   });
 }
+// v2.262 — kod çakışması varsa rapor UYARIR (üç çıktıda aynı cümle).
+function speakerCodeConflictText(c) {
+  return speakerCodeIssues(c).length ? REPORT_TEXT.speakerCodeConflict : '';
+}
 // v2.261 — "EKLER" bölümü, gerçekten çizilecek ekleri listeler. Ek yoksa
 // "ek sunulmamıştır" yazar; "burada gösterilir" deyip boş bırakmaz.
 function reportAttachmentLines(c) {
@@ -12288,7 +12319,8 @@ function renderReport() {
     },
     speakers: () => {
       const spkRows = speakerRows(c);
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
+      const conf = speakerCodeConflictText(c);
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
@@ -12705,9 +12737,11 @@ function docxXml(c) {
     },
     speakers: () => {
       const dSpk = speakerRows(c);
+      const conf = speakerCodeConflictText(c);
       return (
         headingXml(H('speakers')) +
         wP(REPORT_TEXT.speakerIntro) +
+        (conf ? wP(conf, { bold: true, color: '9A6B2D', size: 18 }) : '') +
         wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
           widths: [1500, 1200, 1100, 1200, 1900, 2200],
           header: true
@@ -13236,8 +13270,10 @@ async function makeUdf() {
     },
     speakers: () => {
       const uSpk = speakerRows(c);
+      const conf = speakerCodeConflictText(c);
       el.push(h(H('speakers')));
       el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
+      if (conf) el.push(paragraph(conf, { size: 10, bold: true, color: 'gold', after: 4 }));
       el.push(
         table(
           [[...REPORT_TEXT.speakerHeaders], ...(uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow])],
@@ -15082,6 +15118,35 @@ function setupEvents() {
       renderOverview();
       if ($('#view-report').classList.contains('active')) renderReport();
       showToast(`Konuşmacı silindi${cleared ? `; ${cleared} bölümün ataması kaldırıldı` : ''}.`);
+    } else if (b.dataset.fixSpkCodes !== undefined) {
+      // v2.262 — kod çakışmasını kullanıcı ONAYIYLA düzelt. Sessiz yeniden
+      // numaralama yok: hangi kodun taşındığı söylenir, geri alınabilir ve
+      // delil günlüğüne yazılır.
+      const m = c.materials.find((x) => x.id === b.dataset.fixSpkCodes);
+      if (!m) return;
+      const issues = speakerCodeIssues(c).filter((i) => i.materialId === m.id);
+      const n = issues.reduce((t, i) => t + i.speakerIds.length - 1, 0);
+      if (!n) return;
+      const ok = await askConfirm(
+        'Konuşmacı kodlarını düzelt',
+        `${issues.map((i) => `${i.code} → ${i.names.join(', ')}`).join(' · ')} aynı kodu paylaşıyor. ` +
+          `${n} konuşmacı sıradaki boş koda taşınacak (ilk konuşmacının kodu KORUNUR). ` +
+          'Bölüm metinleri ve ses kayıtları DEĞİŞMEZ. İşlem geri alınabilir ve delil günlüğüne yazılır. Devam edilsin mi?'
+      );
+      if (!ok) return;
+      snapshotForUndo('Konuşmacı kodları düzeltildi');
+      const changed = fixSpeakerCodeConflicts(c, m.id);
+      if (!changed.length) {
+        showToast('Düzeltilecek kod çakışması kalmadı.');
+        return;
+      }
+      logEvent(m, 'speaker-code-fix', changed.map((x) => `${x.from}→${x.to} (${x.name})`).join('; '));
+      persist();
+      renderSpeakersPanel(m);
+      renderSegments(m, b.closest('.audio-card'));
+      renderOverview();
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast(`${changed.length} konuşmacı kodu düzeltildi: ${changed.map((x) => `${x.from}→${x.to}`).join(', ')}.`);
     } else if (b.dataset.cleanSpk !== undefined) {
       // Kullanılmayan (hiçbir bölüme atanmamış) konuşmacıları tek tıkla temizle.
       const m = c.materials.find((x) => x.id === b.dataset.cleanSpk);
@@ -15812,6 +15877,21 @@ if (readyBox)
               renderCoveragePanel(mm);
               const panel = document.getElementById(`coverage-panel-${mm.id}`);
               if (panel) panel.scrollIntoView({ block: 'nearest' });
+            }
+          }
+          // v2.262 — kod çakışması: konuşmacı paneli "Dinleme" sekmesindedir;
+          // kullanıcı ikinci bir tıklama yapmadan oraya gelir.
+          if (action === 'speakerCodes') {
+            const mm = activeMaterial();
+            if (mm) {
+              mm.uiTab = 'listen';
+              persist();
+              renderAudioList()
+                .then(() => {
+                  const panel = document.getElementById(`spk-panel-${mm.id}`);
+                  if (panel && panel.scrollIntoView) panel.scrollIntoView({ block: 'nearest' });
+                })
+                .catch(() => {});
             }
           }
         })
@@ -17049,6 +17129,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.262': {
+    title: 'Konuşmacı kodu artık salt-okunur; çakışma engelleniyor',
+    body:
+      'S1/S2 kodu KİMLİKTİR ve artık düzenlenemez; görünen adı (etiket) değiştirmeye devam edersiniz. ' +
+      'Aynı kod iki konuşmacıya verilmişse (eski/elle düzenlenmiş kayıt) Konuşmacılar panelinde kırmızı ' +
+      'uyarı çıkar ve "Çakışan kodları düzelt" ile tek tıkla giderilir: ilk konuşmacının kodu korunur, ' +
+      'diğerleri sıradaki boş koda taşınır. İşlem geri alınabilir (Ctrl+Z) ve delil günlüğüne yazılır. ' +
+      'Rapor hazırlığında "Aynı kod birden çok konuşmacıda" ENGELSEYEN madde olarak görünür; rapor da uyarır.'
+  },
   '2.261': {
     title: 'Rapor parçaları ayrı ayrı alınabilir',
     body:

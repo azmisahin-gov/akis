@@ -2018,5 +2018,17 @@ console.log('\n[2cg] Kanıt tablosu sütunları (v2.236)');
   check('EK-2 envanter filtresi', /reportTableColumns\(c, 'inventory', REPORT_TEXT\.inventoryHeaders, inventoryRows\(c\)\)/.test(js));
 }
 
+
+console.log('\n[2ch] Konuşmacı kodu güvenliği (v2.262)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('kod alanı salt-okunur (giriş yok)', !/data-spk-key="code"/.test(js));
+  check('kod rozet olarak gösterilir', /class="spk-code"/.test(js));
+  check('çakışma düzeltme düğmesi', /data-fix-spk-codes=/.test(js));
+  check('düzeltme onay ister + geri alınabilir', /snapshotForUndo\('Konuşmacı kodları düzeltildi'\)/.test(js) && /askConfirm\(/.test(js));
+  check('kod stili token kullanır', /\.spk-code\s*\{[^}]*var\(--surface-/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
