@@ -6,12 +6,52 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.270.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.272.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.272 — İki yeni gözlem işareti: yankı ve kesinti
+
+Kullanıcı, dış bir "etiketleme ve gözlem standardı" önerisi paylaştı. Karşılaştırma
+sonucu **iki nesnel gözlem eksikti**: *yankı/oda akustiği* ve *kesinti/kopukluk*.
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm gözlem düğmelerinde **yankı** ve **kesinti** (toplam **8** işaret).
+- Raporda **GÖZLEM** sütununda `yankı / oda akustiği`, `kesinti / kopukluk` yazar.
+- **EK-5 gösterim anahtarındaki gözlem tablosu** bu iki satırı **kendiliğinden**
+  gösterir (tablo `OBS_DEFS`ten üretilir).
+- Eski kayıtlar işaretsiz (`false`) açılır; **veri kaybı yok**, uydurma değer yok.
+
+### Teknik (tek satır yeter)
+
+`OBS_DEFS`'e iki satır eklendi; `OBS_KEYS/OBS_LABEL/OBS_SHORT/OBS_HINT` ve
+`emptyObs()` türetildiği için düğmeler, yardım listesi (`#obsHelpList`), rapor
+sütunu ve **EK-5 tablosu** aynı anda güncellendi. `normalizeSegment` yeni
+anahtarları tamamlar, bilinmeyen (ileri sürüm) anahtarı **silmez**;
+`mergeCases` gözlemleri **OR**'lar.
+
+### Koruyan testler
+
+- `birim` **[118]** (20): 8 bayrak, etiket/ipucu, `emptyObs`, `normalizeSegment`
+  (bilinmeyen korunur), birleştirmede OR, **rapor gözlem metni**, **EK-5 satır
+  sayısı = OBS_DEFS**, `app.js`te etiket kopyası olmaması.
+- `sema` [3e]: `echo`/`dropout` anahtarları.
+- `tasarim` **[2cp]** (6): tanım yalnız şemada; düğmeler, yardım listesi ve EK-5
+  `OBS_DEFS`ten üretilir; `index.html` sabit etiket taşımaz.
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Gözlem düğmeleri | **8** (gürültü · üst üste · anlaşılmaz · müzik · telefon · sessizlik · **yankı** · **kesinti**) |
+| Satır yüksekliği / kırpma (1440, 900) | **19 px / 0** |
+| ≤600 px | satır gizlenir, **“Gözlem (N)”** paneli açılır |
+| Yatay taşma / JS hatası | **yok / 0** |
+| Rapor | gözlem metni + EK-5 tanımları **var** |
 
 ## v2.270 — WER referans alanı (neden ölçülemediği artık yazılı)
 

@@ -152,7 +152,7 @@ const EXPOSE = [
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
-  'werStatus', 'werStatusText', 'werPanelHtml',
+  'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -5254,6 +5254,75 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('referans girişi var', /data-wer-ref=/.test(js), true);
   eq('expectedText e yazılır', /mm\.expectedText = String\(el\.value/.test(js), true);
   eq('durum satırı tek kaynak', /werStatusText\(werStatus\(m\)\)/.test(js), true);
+}
+
+
+// [118] v2.272 — Gözlem bayrakları: yankı ve kesinti (tek tanım noktası).
+{
+  console.log('[118] Yeni gözlem bayrakları: yankı / kesinti (v2.272)');
+  eq('OBS_KEYS sekiz bayrak', __schemaMod.OBS_KEYS.length, 8);
+  eq('yankı anahtarı var', __schemaMod.OBS_KEYS.includes('echo'), true);
+  eq('kesinti anahtarı var', __schemaMod.OBS_KEYS.includes('dropout'), true);
+  eq('yankı etiketi', __schemaMod.OBS_LABEL.echo, 'yankı / oda akustiği');
+  eq('kesinti etiketi', __schemaMod.OBS_LABEL.dropout, 'kesinti / kopukluk');
+  eq('kısa etiket yankı', __schemaMod.OBS_SHORT.echo, 'yankı');
+  eq('ipucu var (yankı)', __schemaMod.OBS_HINT.echo.length > 10, true);
+  eq('ipucu var (kesinti)', __schemaMod.OBS_HINT.dropout.length > 10, true);
+
+  const eo = __schemaMod.emptyObs();
+  eq('emptyObs yeni anahtarları taşır', eo.echo === false && eo.dropout === false, true);
+  const nseg = __schemaMod.normalizeSegment({ id: 'g', text: 'x' });
+  eq('normalizeSegment yeni bayrakları tamamlar', nseg.obs.echo === false && nseg.obs.dropout === false, true);
+  // Bilinmeyen (ileri sürüm) anahtar SİLİNMEZ.
+  const fseg = __schemaMod.normalizeSegment({ id: 'g', obs: { futureFlag: true, echo: true } });
+  eq('bilinmeyen anahtar korunur', fseg.obs.futureFlag, true);
+  eq('bilinen yeni anahtar korunur', fseg.obs.echo, true);
+
+  // Birleştirme gözlemleri OR'lar (hiçbiri kaybolmaz).
+  const mk = (obs) => ({
+    id: 'c1',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        speakers: [],
+        segments: [{ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', text: 'x', obs, review: 'approved' }],
+        log: []
+      }
+    ]
+  });
+  const mm = __schemaMod.mergeCases(mk({ echo: true }), mk({ dropout: true })).merged;
+  eq('birleştirme: yankı korunur', mm.materials[0].segments[0].obs.echo, true);
+  eq('birleştirme: kesinti korunur', mm.materials[0].segments[0].obs.dropout, true);
+
+  // Rapor gözlem metni ve EK-5 anahtarı yeni etiketleri taşır.
+  const c = {
+    id: 'c2',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        speakers: [],
+        segments: [
+          { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: '', text: 'x', obs: { echo: true, dropout: true }, review: 'approved' }
+        ],
+        log: []
+      }
+    ]
+  };
+  const obsText = T.segObsText(c.materials[0].segments[0]);
+  eq('gözlem metni yankıyı yazar', /yankı/.test(obsText), true);
+  eq('gözlem metni kesintiyi yazar', /kesinti/.test(obsText), true);
+  const blocks = T.reportAnnexBlocks({ ...c, report: { sections: { annex: true } } });
+  const ek5 = blocks.find((x) => /GÖSTERİM ANAHTARI/.test(x.heading));
+  const labels = ek5.tables[2].rows.map((r) => r[0]);
+  eq('EK-5 yankı satırı', labels.includes('yankı / oda akustiği'), true);
+  eq('EK-5 kesinti satırı', labels.includes('kesinti / kopukluk'), true);
+  eq('EK-5 satır sayısı = OBS_DEFS', ek5.tables[2].rows.length, __schemaMod.OBS_DEFS.length);
+
+  // Arayüzde etiket KOPYASI yok: bayrak metinleri yalnız şemada.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('app.js te yankı etiketi kopyası yok', /yankı \/ oda akustiği/.test(js), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

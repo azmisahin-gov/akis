@@ -195,6 +195,9 @@ console.log('\n[3e] Alan tanımlama: gözlem bayrakları (v2.203)');
   ok('OBS_LABEL OBS_DEFS ile aynı', OBS_KEYS.every((k) => OBS_LABEL[k] === OBS_DEFS.find((d) => d.key === k).label));
   ok('telefon anahtarı var', OBS_KEYS.includes('phone'));
   ok('sessizlik anahtarı var', OBS_KEYS.includes('noSpeech'));
+  // v2.272 — dış standart karşılaştırmasında eklenen iki nesnel gözlem.
+  ok('yankı anahtarı var', OBS_KEYS.includes('echo'));
+  ok('kesinti anahtarı var', OBS_KEYS.includes('dropout'));
   const eo = emptyObs();
   ok('emptyObs tüm anahtarları taşır', OBS_KEYS.every((k) => eo[k] === false));
   ok('emptyObs bilinmeyen anahtarı yok sayar', emptyObs({ future: true }).future === undefined);

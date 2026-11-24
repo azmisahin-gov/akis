@@ -225,6 +225,19 @@ export const OBS_DEFS = [
     label: 'sessizlik (konuşma yok)',
     short: 'sessizlik',
     hint: 'Bu aralıkta konuşma yok; sessizlik. Ölçülen sessizlik oranından AYRIDIR.'
+  },
+  // v2.272 — dış standartla karşılaştırmada eksik kalan iki nesnel gözlem.
+  {
+    key: 'echo',
+    label: 'yankı / oda akustiği',
+    short: 'yankı',
+    hint: 'Belirgin yankı veya oda akustiği; anlaşılırlığı düşürebilir. Ölçüm değil, uzman gözlemidir.'
+  },
+  {
+    key: 'dropout',
+    label: 'kesinti / kopukluk',
+    short: 'kesinti',
+    hint: 'Kayıtta kopma/kesinti; içeriğin bir bölümü eksik olabilir. Kayıt kalitesi gözlemidir.'
   }
 ];
 

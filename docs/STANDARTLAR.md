@@ -63,7 +63,8 @@ satır satır"** denir.
 ## 6. Gözlemler ve hızlı etiketler
 
 Gözlem düğmeleri: **gürültü · üst üste · anlaşılmayan · müzik · telefon ·
-sessizlik**.
+sessizlik · yankı · kesinti** (v2.272'de **yankı/oda akustiği** ve
+**kesinti/kopukluk** eklendi).
 
 Hızlı etiketler: `[sessizlik]`, `[anlaşılmaz]`, `[uzaktan konuşma]`,
 `[gürültülü]`, `[üst üste]`, `[müzik/ses]`, `[telefonda konuşma]`. Hızlı etiket
@@ -72,7 +73,9 @@ yazılır.
 
 Örnekler:
 - **Uzaktan gelen kadın sesi:** `[uzaktan konuşma]` + gerekirse gözlem
-  "gürültü"/"anlaşılmaz" + konuşmacı notu *"uzak/mesafeli, yankılı"*.
+  **"yankı"**/"gürültü"/"anlaşılmayan" + konuşmacı notu *"uzak/mesafeli"*.
+- **Kayıtta kopma:** gözlem **"kesinti"**; içeriğin eksik olabileceği
+  zaman aralığıyla birlikte yazılır.
 - **Telefon görüşmesi:** `[telefonda konuşma]`; karşı tarafın sesi duyuluyorsa
   metne yazılır, duyulmuyorsa not düşülür.
 - **Sessizlik:** `[sessizlik]` etiketi + "Sessizlik ölç" sonucu.

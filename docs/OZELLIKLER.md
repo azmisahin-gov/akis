@@ -1,4 +1,4 @@
-# Özellikler (v2.270 — mevcut durum)
+# Özellikler (v2.272 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -578,6 +578,9 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **İki yeni gözlem bayrağı (v2.272):** **yankı / oda akustiği** (`echo`) ve **kesinti / kopukluk**
+  (`dropout`). Tek kaynak `OBS_DEFS`; düğmeler, yardım listesi, rapor gözlem sütunu ve **EK-5 gözlem
+  tablosu** otomatik güncellenir. Eski kayıtlar `false` ile açılır (veri kaybı yok).
 - **WER referans alanı (v2.270):** Dinleme sekmesinde **“WER — çözümleme doğruluğu (referans varsa)”**
   paneli; **referans metin** yazılınca WER kendiliğinden hesaplanır (hipotez = modelin **HAM çıktısı**
   `asrText`). Referans yok / model çıktısı yok ise tablo çizilmez ve **nedeni yazılır**; ölçümler

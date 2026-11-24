@@ -2127,5 +2127,19 @@ console.log('\n[2co] WER referans paneli (v2.270)');
   check('giriş alanı punto token', /\.wer-ref-input\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
 }
 
+
+console.log('\n[2cp] Yeni gözlem bayrakları tek kaynaktan (v2.272)');
+{
+  const js = read('assets/app.js');
+  const html = read('index.html');
+  const schema = read('assets/schema.js');
+  check('bayrak tanımı yalnız şemada', /key: 'echo'/.test(schema) && /key: 'dropout'/.test(schema));
+  check('uygulama etiket kopyası taşımaz', !/yankı \/ oda akustiği/.test(js) && !/kesinti \/ kopukluk/.test(js));
+  check('düğmeler OBS_DEFS ten üretilir', /const obsBtns = OBS_DEFS\.map\(/.test(js));
+  check('yardım listesi OBS_DEFS ten doldurulur', /el\.innerHTML = OBS_DEFS\.map\(\(d\) => `<b>/.test(js));
+  check('EK-5 gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(js));
+  check('index.html sabit gözlem etiketi taşımaz', !/kesinti \/ kopukluk/.test(html) && !/oda akustiği/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

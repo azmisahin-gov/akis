@@ -34,6 +34,8 @@ v2.203'te gözlem bayrakları için tek kaynak:
 export const OBS_DEFS = [
   { key: 'noise', label: 'arka plan gürültüsü', short: 'gürültü', hint: '…' },
   …
+  { key: 'echo', label: 'yankı / oda akustiği', short: 'yankı', hint: '…' },   // v2.272
+  { key: 'dropout', label: 'kesinti / kopukluk', short: 'kesinti', hint: '…' }  // v2.272
 ];
 ```
 
@@ -66,7 +68,9 @@ Tüketiciler:
 
 ### Yeni bir gözlem bayrağı eklemek
 
-**Tek zorunlu değişiklik:** `OBS_DEFS`'e bir satır.
+**Tek zorunlu değişiklik:** `OBS_DEFS`'e bir satır. (v2.272'de tam olarak bu
+yapıldı: `echo` ve `dropout` eklendi; düğmeler, yardım listesi, rapor sütunu ve
+**EK-5 gözlem tablosu** kendiliğinden güncellendi.)
 
 ```js
 { key: 'lineNoise', label: 'hat gürültüsü', short: 'hat', hint: 'Telefon hattı gürültüsü' }

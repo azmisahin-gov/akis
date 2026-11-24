@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.270.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.272.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6347,3 +6347,37 @@ hiç oluşmuyordu. Satır yoksa bölüm çizilmez (doğru), ama **nedeni görün
 | Referans + asrText | `Ölçüldü: %50,0 · referans 2 kelime · çıktı 1 kelime` |
 | Rapor | WER bölümü var, `%50,0` |
 | Kırpılma / JS hatası | 0 / 0 |
+
+## YENİ OTURUM DEVRİ (v2.272) — İki yeni gözlem işareti
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.272** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1778 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Gömme modeli (veri bekliyor); Pages derleme kuyruğu (GitHub tarafı) |
+
+### Yapılan
+
+- `OBS_DEFS` +2: **`echo` (yankı / oda akustiği)** ve **`dropout` (kesinti / kopukluk)**.
+  Düğmeler, `#obsHelpList`, rapor GÖZLEM sütunu ve **EK-5 gözlem tablosu** otomatik.
+- Eski kayıtlar `false` ile açılır; `normalizeSegment` bilinmeyen anahtarı silmez;
+  `mergeCases` gözlemleri OR'lar.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Bayrak metni yalnız `OBS_DEFS`'te.** Uygulamaya/HTML'e tam etiket kopyası yazmayın;
+   kullanıcı metninde **kısa ad** kullanın ("yankı", "kesinti"). `tasarim` [2cp] ve
+   `birim` [118] tam etiketin app.js/index.html'de bulunmasını **hata** sayar.
+2. Yeni bayrak eklerken **tek zorunlu değişiklik** `OBS_DEFS`'e satır; EK-5 satır sayısı
+   testte `OBS_DEFS.length` ile karşılaştırılır.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Gözlem düğmesi | 8 (satır 19 px, kırpma 0) |
+| ≤600 px | satır gizli, "Gözlem (N)" paneli |
+| Rapor | gözlem metni + EK-5 tanımları var |
+| JS hatası | 0 |

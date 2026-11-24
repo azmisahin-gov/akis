@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.270';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.270';
+} from './schema.js?v=2.272';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.272';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.270';
+const APP_VERSION = '2.272';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -17895,6 +17895,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.272': {
+    title: 'İki yeni gözlem işareti: yankı ve kesinti',
+    body:
+      'Bölüm gözlem düğmelerine "yankı" ve "kesinti" işaretleri eklendi (tam adları yardım listesinde). Bu işaretler ' +
+      'raporun GÖZLEM sütununa yazılır ve EK-5 gösterim anahtarında tanımları otomatik görünür. ' +
+      'İşaretler ölçüm değil, uzman gözlemidir; eski kayıtlar işaretsiz (false) açılır.'
+  },
   '2.270': {
     title: 'WER artık ölçülebilir: referans metin alanı ve neden-ölçülemedi açıklaması',
     body:

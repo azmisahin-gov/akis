@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.270.**
+yazılır. **Güncel sürüm: v2.272.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.272 — İki yeni gözlem işareti (TAMAMLANDI)
+
+- `OBS_DEFS` +2: **yankı / oda akustiği** (`echo`), **kesinti / kopukluk** (`dropout`).
+- Düğmeler, yardım listesi, rapor GÖZLEM sütunu ve **EK-5 gözlem tablosu** otomatik.
+- Eski kayıtlar `false` ile açılır; bilinmeyen anahtar korunur; birleştirmede OR.
+- Koruyan: `birim` [118], `sema` [3e], `tasarim` [2cp].
 
 ## v2.270 — WER referans alanı (TAMAMLANDI)
 
