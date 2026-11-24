@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.266';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.266';
+} from './schema.js?v=2.267';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.267';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.266';
+const APP_VERSION = '2.267';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -226,7 +226,7 @@ const REPORT_TEXT = {
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   speakerIntro:
-    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir; bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
@@ -364,6 +364,11 @@ Object.assign(REPORT_TEXT, {
   // v2.262 — kod çakışması: rapor iki kez "S1" yazarsa kod hangi kişiyi
   // gösterdiği belirsizleşir. Uyarı üç çıktıda da basılır (gizlenmez).
   // v2.264 — doğrulanmış konuşmacı künyesi (bölüm onayı DEĞİL).
+  // v2.267 — S/K AYRIMI (tek kaynak). Rapor okuyan kişi "iki dosyada da S1 var"
+  // sorusunu bu paragrafla yanıtlar.
+  speakerCodeNote:
+    'Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.',
+  recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
   speakerVerifiedSuffix: 'doğrulandı',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
@@ -3566,6 +3571,51 @@ function speakerStats(m, sp) {
   }
   return { count: idxs.length, totalSec: Math.round(totalSec * 10) / 10, first, last };
 }
+// S KODLARI KAYIT BAŞINADIR (v2.267): "bu kayıtta kim, kaç bölümde" sorusunun
+// TEK kaynağı. Ekrandaki açıklama satırı ve rapor satırı buradan beslenir.
+function speakerLegendItems(m) {
+  return (m && m.speakers ? m.speakers : [])
+    .map((sp) => ({
+      id: sp.id,
+      code: sp.code || '',
+      name: sp.name || sp.label || '',
+      count: speakerSegments(m, sp).length
+    }))
+    .filter((x) => x.count > 0 && (x.code || x.name))
+    .sort((a, b) => {
+      const na = Number(String(a.code).replace(/\D/g, '')) || 0;
+      const nb = Number(String(b.code).replace(/\D/g, '')) || 0;
+      return na - nb || String(a.code).localeCompare(String(b.code), 'tr');
+    });
+}
+function materialSpeakerLine(m) {
+  const items = speakerLegendItems(m);
+  if (!items.length) return '';
+  return (
+    REPORT_TEXT.recordSpeakersPrefix +
+    items.map((x) => `${x.code ? x.code + ' · ' : ''}${x.name} (${x.count} bölüm)`).join(' · ')
+  );
+}
+// Liste başındaki açıklama satırı: "Bu kaydın konuşmacıları: S1 · Kiracı (12)".
+// S kodları kayıt başına olduğu için bu satır olmadan S1 bağlamsız kalıyordu.
+function speakerLegendHtml(m) {
+  const items = speakerLegendItems(m);
+  if (!items.length) return '';
+  return (
+    `<b>Bu kaydın konuşmacıları:</b> ` +
+    items
+      .map((x) => `<span class="spk-legend-item" title="${esc(x.code ? x.code + ' · ' : '')}${esc(x.name)} — bu kayda özgü kod">${esc(x.code ? x.code + ' · ' : '')}${esc(x.name)} <span class="spk-legend-n">${x.count}</span></span>`)
+      .join('')
+  );
+}
+// Etiket/kod değişince satırı YERİNDE tazele (tam liste çizimi gerekmez).
+function refreshSpeakerLegend(m) {
+  const el = document.getElementById(`spk-legend-${m.id}`);
+  if (!el) return;
+  const items = speakerLegendItems(m);
+  el.hidden = !items.length;
+  el.innerHTML = speakerLegendHtml(m);
+}
 // OTURUMLUK konuşmacı dinleme kuyruğu (kayda YAZILMAZ).
 let spkQueue = { on: false, materialId: null, speakerId: '', indexes: [], pos: 0 };
 function stopSpeakerQueue() {
@@ -4056,8 +4106,9 @@ function speakersPanelHtml(m) {
     </div>`;
     })
     .join('');
+  const codeNote = `<p class="spk-code-note"><b>S1, S2…</b> yalnız <b>BU kayıt</b> içinde geçerlidir; her kayıtta S1'den başlar. Aynı kişi birden çok kayıtta konuşuyorsa <b>K</b> koduyla (dosyalar arası kişi) bağlayın.</p>`;
   const personBlock = `<div class="person-panel">
-    <div class="pane-title">Dosyalar arası kişiler<span class="info-i" tabindex="0" data-tip="Aynı kişi birden çok kayıtta görünüyorsa burada TEK kayıt olarak tutulur. Eşleştirme uzman kanaatidir; uygulama kimlik tespiti yapmaz. Kayıt içi S1/S2 kodları ayrı kalır.">i</span></div>
+    <div class="pane-title">Dosyalar arası kişiler (K)<span class="info-i" tabindex="0" data-tip="Aynı kişi birden çok kayıtta görünüyorsa burada TEK kayıt olarak tutulur. Eşleştirme uzman kanaatidir; uygulama kimlik tespiti yapmaz. Kayıt içi S1/S2 kodları ayrı kalır.">i</span></div>
     <p class="spk-person-note">Aynı kişi birden çok kayıtta görünüyorsa aşağıdaki kişiye bağlayın. Bu bir <b>uzman eşleştirmesidir</b>; otomatik kimlik tespiti değildir.</p>
     ${personCards || '<div class="seg-empty-note">Henüz dosya geneli kişi yok. Bir konuşmacıyı “＋ Yeni kişi” ile bağlayın.</div>'}
     <button class="mini-button" data-add-person="${esc(m.id)}" title="Boş bir dosya geneli kişi oluştur; sonra konuşmacıları bağlayın.">＋ Kişi ekle</button>
@@ -4134,7 +4185,7 @@ function speakersPanelHtml(m) {
       return `<div class="spk-card${ver ? ' is-verified' : ''}" data-spk-card="${esc(s.id)}">
       <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><label class="spk-verify" title="Bu kişinin etiketi/rolü doğruysa işaretleyin: kart kilitlenir ve raporda 'doğrulandı' notu çıkar. Bu bir BÖLÜM ONAYI değildir. Kilidi açmak için işareti kaldırın."><input type="checkbox" data-spk-verify="${esc(s.id)}"${ver ? ' checked' : ''}> ${verifyLabel}</label><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}"${dis} title="${esc(delTitle)}">Sil</button></div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Standart kod</label><span class="spk-code" title="Kod KİMLİKTİR: bölümler ve rapor bu kodla okunur; bu yüzden değiştirilemez. Görünen adı (etiket) aşağıdan değiştirebilirsiniz.">${esc(s.code || '—')}</span></div>
+        <div class="seg-field"><label>Kayıt içi kod (S)</label><span class="spk-code" title="Kod KİMLİKTİR: bölümler ve rapor bu kodla okunur; bu yüzden değiştirilemez. Görünen adı (etiket) aşağıdan değiştirebilirsiniz.">${esc(s.code || '—')}</span></div>
         <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"${dis}></div>
       </div>
       <div class="seg-row2">
@@ -4146,7 +4197,7 @@ function speakersPanelHtml(m) {
         <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"${dis}></div>
       </div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Aynı kişi (dosyalar arası)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir."${dis}>${personOptions(s)}</select></div>
+        <div class="seg-field"><label>Dosyalar arası kişi (K)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir."${dis}>${personOptions(s)}</select></div>
         ${linkedNote ? `<div class="seg-field"><label>Bağlantı</label><small>${esc(linkedNote)}</small></div>` : ''}
       </div>
       <div class="spk-actions">${
@@ -4159,7 +4210,7 @@ function speakersPanelHtml(m) {
     </div>`;
     })
     .join('');
-  return `${personBlock}${voiceBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${codeNote}${personBlock}${voiceBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -4822,7 +4873,7 @@ function segItemHtml(m, s, i, prev, issue) {
   const spkRec = s.speaker ? speakerByName(m, s.speaker) : null;
   const spk =
     s.speaker && s.speaker !== 'Belirtilmedi'
-      ? `<span class="badge spk" title="Konuşmacı: ${esc(s.speaker)}">${esc(spkRec?.code ? spkRec.code : s.speaker)}</span>`
+      ? `<span class="badge spk" title="Konuşmacı: ${esc(spkRec?.code ? spkRec.code + ' · ' : '')}${esc(s.speaker)} — bu kayda özgü kod">${esc(spkRec?.code ? spkRec.code : s.speaker)}</span>`
       : '';
   // KISA etiket + İPUCU (v2.106). Liste sade kalmalı: uzun açıklama rozetin
   // içine değil `title` ipucuna yazılır. `machine` = otomatik çözümlendi,
@@ -6193,6 +6244,7 @@ function renderSegments(m, card) {
       <div class="tb-progress" title="${reviewed}/${segs.length} denetlendi"><div class="bar"><span style="width:${pct}%"></span></div><small>%${pct}</small></div>
       <div class="group tb-more"><button class="seg-tool" data-jump-prio="1" title="En yüksek inceleme öncelikli bölüme git">⚠</button><button class="seg-tool" data-paragraph="1" title="Paragraf görünümü (salt okunur) — bölümleri değiştirmez" aria-label="Paragraf görünümü (salt okunur)">¶</button><button class="seg-tool" data-terms="1" title="Terim tutarlılığı">Aa</button>${coverageButtonHtml(m)}${quickBulkBtn(counts, isSecondEyesEditor())}</div>
     </div>
+    <div class="spk-legend" id="spk-legend-${esc(m.id)}"${speakerLegendItems(m).length ? '' : ' hidden'}>${speakerLegendHtml(m)}</div>
     <div id="term-panel-${esc(m.id)}" class="term-panel" hidden></div>
     <div id="coverage-panel-${esc(m.id)}" class="coverage-panel" hidden></div>
     <datalist id="spk-options-${esc(m.id)}">${spkOptions.map((x) => `<option value="${esc(x)}"></option>`).join('')}</datalist>
@@ -12052,6 +12104,8 @@ function reportAnnexBlocks(c) {
       header: true,
       headers: ['İŞARET', 'ANLAMI'],
       rows: [
+        ['S1, S2…', 'Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1\'den başlar; kişi kimliği değildir.'],
+        ['K1, K2…', 'Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir.'],
         ['[anlaşılmıyor]', 'Ses güvenilir biçimde çözümlenemedi.'],
         ['[kısmen anlaşılmıyor]', 'Bir bölüm veya sözcük çözümlenemedi.'],
         ['[eşzamanlı konuşma]', 'Üst üste konuşma; ayrıştırılamadı.'],
@@ -12656,7 +12710,7 @@ function renderReport() {
     speakers: () => {
       const spkRows = speakerRows(c);
       const conf = speakerCodeConflictText(c);
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
@@ -12679,6 +12733,8 @@ function renderReport() {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
           out += `<h4>${n5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+          const spkLine = materialSpeakerLine(m);
+          if (spkLine) out += `<p class="paper-muted">${esc(spkLine)}</p>`;
           if (m.hallucinationWarning)
             out += `<p class="paper-muted">${esc(REPORT_TEXT.evidenceWarningPrefix)} ${esc(m.hallucinationWarning)}</p>`;
           if (m.languageWarning)
@@ -13077,6 +13133,7 @@ function docxXml(c) {
       return (
         headingXml(H('speakers')) +
         wP(REPORT_TEXT.speakerIntro) +
+        wP(REPORT_TEXT.speakerCodeNote, { color: '6F8295', size: 17 }) +
         (conf ? wP(conf, { bold: true, color: '9A6B2D', size: 18 }) : '') +
         wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
           widths: [1500, 1200, 1100, 1200, 1900, 2200],
@@ -13111,6 +13168,10 @@ function docxXml(c) {
           `Süre: ${fmtTime(matDuration(m))}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
           { color: '6F8295', size: 17 }
         );
+        {
+          const spkLine = materialSpeakerLine(m);
+          if (spkLine) out += wP(spkLine, { color: '6F8295', size: 17 });
+        }
         if (m.hallucinationWarning)
           out += wP(`${REPORT_TEXT.evidenceWarningPrefix} ${m.hallucinationWarning}`, { color: '9A6B2D', size: 17 });
         if (m.languageWarning)
@@ -13609,6 +13670,7 @@ async function makeUdf() {
       const conf = speakerCodeConflictText(c);
       el.push(h(H('speakers')));
       el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
+      el.push(paragraph(REPORT_TEXT.speakerCodeNote, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (conf) el.push(paragraph(conf, { size: 10, bold: true, color: 'gold', after: 4 }));
       el.push(
         table(
@@ -13652,6 +13714,10 @@ async function makeUdf() {
               { size: 9, color: 'muted', after: 3 }
             )
           );
+          {
+            const spkLine = materialSpeakerLine(m);
+            if (spkLine) el.push(paragraph(spkLine, { size: 9, color: 'muted', after: 3 }));
+          }
           if (m.hallucinationWarning)
             el.push(
               paragraph(`${REPORT_TEXT.evidenceWarningPrefix} ${m.hallucinationWarning}`, {
@@ -16019,6 +16085,7 @@ function setupEvents() {
       }
     }
     persist();
+    refreshSpeakerLegend(m);
   });
   $('#view-audio').addEventListener('change', (e) => {
     const el = e.target;
@@ -17539,6 +17606,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.267': {
+    title: 'S ve K kodları artık açıklanıyor (kayıt içi / dosyalar arası)',
+    body:
+      'S1, S2… KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar, kayıtlar arasında aynı kişiyi ' +
+      'göstermez. Bölüm listesinin üstünde "Bu kaydın konuşmacıları: S1 · Kiracı (12) · S2 · …" satırı ' +
+      'çıkar; konuşmacı panelinde alanlar "Kayıt içi kod (S)" ve "Dosyalar arası kişi (K)" olarak ' +
+      'adlandırıldı. Raporda hem Konuşmacılar bölümünde S/K paragrafı hem her kaydın başında o kaydın ' +
+      'konuşmacı listesi yazılır; EK-5 gösterim anahtarına S ve K tanımları eklendi.'
+  },
   '2.266': {
     title: 'Rapor konuşmacı tablosu: süre ve ilk–son duyulma',
     body:

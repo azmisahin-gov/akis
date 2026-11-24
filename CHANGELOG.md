@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.266.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.267.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.267 — S ve K kodları artık açıklanıyor (kayıt içi / dosyalar arası)
+
+Kullanıcı: *"Her dosyada S1 var, konuşmacılar bölümünde K1 diye birleştiriyoruz;
+raporu inceleyen için kafa karışıklığı. Bunu nasıl çözeceğiz?"*
+
+**Sorun:** S kodları **kayıt başınaydı** ama bunu ne ekran ne rapor söylüyordu.
+Aynı belgede iki "S1" görünüyor, hangisinin kim olduğu okunamıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Bölüm listesinin üstünde açıklama satırı:** `Bu kaydın konuşmacıları: S1 · Kiracı (12) · S2 · Ev sahibi (8)`
+  → `S1` artık bağlamsız görünmez; satır, etiket değişince **yerinde** tazelenir.
+- **Konuşmacı panelinde alan adları:** **Kayıt içi kod (S)** ve **Dosyalar arası kişi (K)**;
+  panelin başında "S1, S2… yalnız BU kayıt içinde geçerlidir; her kayıtta S1'den başlar" notu.
+- **Rozet ipucu:** `Konuşmacı: S1 · Kiracı — bu kayda özgü kod`.
+- **Raporda:**
+  - Konuşmacılar bölümüne **S/K paragrafı** (S = kayıt içi, her kayıtta S1'den başlar; K = dosyalar
+    arası, uzman eşleştirmesi; kimlik tespiti değildir),
+  - **her kaydın başında** o kaydın konuşmacı listesi (`Bu kaydın konuşmacıları: S1 · Kiracı (12 bölüm) · …`),
+  - **EK-5 gösterim anahtarına** `S1, S2…` ve `K1, K2…` tanımları.
+
+### Teknik
+
+- `speakerLegendItems(m)` ve `materialSpeakerLine(m)` — **tek kaynak**: ekran satırı ve rapor satırı
+  aynı fonksiyondan beslenir (bölüm sayısı `speakerSegments` ile).
+- `speakerLegendHtml` / `refreshSpeakerLegend` — liste başındaki satır; etiket/kod değişiminde
+  tam liste çizmeden tazelenir.
+- `REPORT_TEXT.speakerCodeNote` + `recordSpeakersPrefix` — üç çıktı (HTML/DOCX/UDF) aynı metni basar.
+- EK-5 (`ek4`) satırlarına S/K tanımları eklendi; ek numarası değişmedi.
+
+### Koruyan testler
+
+- `birim` **[113]** (14): liste öğeleri (yalnız atanmış, koda göre sıralı, bölüm sayısı), satır metni,
+  S/K paragrafı (Türkçe büyük İ tuzağına karşı büyük harfle aranır).
+- `birim` **[114]** (6): panel etiketleri, açıklama satırı, rozet ipucu, EK-5 tanımları.
+- `rapor` **Senaryo 34**: üç çıktıda S/K paragrafı + kayıt başına satır + EK-5 tanımları.
+- `tasarim` **[2cl]**: etiketler, açıklama satırı, sarma, punto token.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Liste açıklama satırı | `Bu kaydın konuşmacıları: S1 · Konuşmacı 1 1` |
+| Panel etiketleri | `Kayıt içi kod (S)` · `Dosyalar arası kişi (K)` |
+| Rozet ipucu | `Konuşmacı: S2 · Konuşmacı 2 — bu kayda özgü kod` |
+| Rapor | S/K paragrafı **var**, kayıt başına satır **var** |
+| Kırpılma / yatay taşma (1440/1280/1100/900) | **0 / yok** |
+| JS hatası | **0** |
 
 ## v2.266 — Rapor konuşmacı tablosu: süre ve ilk–son duyulma
 

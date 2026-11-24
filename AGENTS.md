@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.266.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.267.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6186,3 +6186,41 @@ kartı `e.target.closest('.audio-card')` ile bulur; olayı **bölüm köküne**
 Perde ayrımı zayıftır: benzer perdedeki iki kişi ayrışmaz. **İşaret yokluğu**
 atamaların doğru olduğu anlamına gelmez. Gerçek ayrıştırma için konuşmacı gömme
 (embedding) modeli gerekir; ölçülmeden ürüne alınmaz.
+
+## YENİ OTURUM DEVRİ (v2.267) — S/K ayrımı ve açıklamalar
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.267** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1699 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Analiz sayfası düzeni (v2.269), WER referans alanı (v2.270), gömme modeli (v2.271) |
+
+### Yapılan
+
+- **S = kayıt içi** (her kayıtta S1'den başlar), **K = dosyalar arası kişi** — bu ayrım artık her yerde yazılı.
+- **Liste başı satırı:** `Bu kaydın konuşmacıları: S1 · Kiracı (12) · S2 · Ev sahibi (8)`.
+  `speakerLegendItems` + `speakerLegendHtml`; etiket değişince `refreshSpeakerLegend` (tam çizim yok).
+- Panel etiketleri: **Kayıt içi kod (S)** / **Dosyalar arası kişi (K)** + panel başında S/K notu.
+- Rozet ipucu: `S1 · Kiracı — bu kayda özgü kod`.
+- Rapor: `REPORT_TEXT.speakerCodeNote` (Konuşmacılar bölümü, üç çıktı), her kaydın başında
+  `materialSpeakerLine(m)`, **EK-5**'e S/K tanımları.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **S kodları kayıt başınadır**; rapor/ekran bunu her yerde söyler. İki kaydın S1'i aynı kişi değildir.
+2. **K yalnız uzman eşleştirmesidir**; kimlik tespiti değildir.
+3. Liste başı satırı ve rapor satırı **aynı fonksiyondan** (`materialSpeakerLine`) beslenir; kopya metin yok.
+4. **Türkçe büyük İ** tuzağı: `KAYIT İÇİ` gibi metinleri `/i` bayrağıyla ARAMAYIN (v2.100).
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Liste satırı | `Bu kaydın konuşmacıları: S1 · Konuşmacı 1 1` |
+| Panel | `Kayıt içi kod (S)` · `Dosyalar arası kişi (K)` · S/K notu |
+| Rozet ipucu | `Konuşmacı: S2 · Konuşmacı 2 — bu kayda özgü kod` |
+| Rapor | S/K paragrafı + `Bu kaydın konuşmacıları: S2 · Konuşmacı 2 (1 bölüm)` |
+| Kırpılma / taşma (1440/1280/1100/900) | 0 / yok |
+| JS hatası | 0 |

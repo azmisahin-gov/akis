@@ -150,6 +150,7 @@ const EXPOSE = [
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
+  'speakerLegendItems', 'materialSpeakerLine',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -5044,6 +5045,59 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('otomatik atama YOK (yalnız işaret)', !/voiceCheck[\s\S]{0,200}setSegmentSpeakerByName/.test(js), true);
   eq('hazırlık maddesi', /'Ses tutarlılığı: şüpheli bölüm'/.test(js), true);
   eq('şema alanı', /voiceCheck: null/.test(fs.readFileSync(path.join(ROOT, 'assets/schema.js'), 'utf8')), true);
+}
+
+
+// [113] v2.267 — S/K ayrımı: kayıt içi konuşmacı açıklaması (TEK KAYNAK).
+// S kodları kayıt başınadır; her kaydın kendi listesi gösterilir. K ayrıdır.
+{
+  console.log('[113] S/K ayrımı ve kayıt konuşmacı satırı (v2.267)');
+  const m = {
+    id: 'm1',
+    name: 'a.wav',
+    speakers: [
+      { id: 'b', code: 'S2', name: 'Ev sahibi', label: 'Ev sahibi' },
+      { id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı' },
+      { id: 'c', code: 'S3', name: 'Boş', label: 'Boş' }
+    ],
+    segments: [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'a' },
+      { id: 'g2', start: '00:00:05.000', end: '00:00:09.000', speaker: 'Ev sahibi', speakerId: 'b' },
+      { id: 'g3', start: '00:00:09.000', end: '00:00:12.000', speaker: 'Kiracı', speakerId: 'a' }
+    ]
+  };
+  eq('speakerLegendItems tanımlı', typeof T.speakerLegendItems, 'function');
+  const items = T.speakerLegendItems(m);
+  eq('yalnız atanmış konuşmacılar', items.length, 2);
+  eq('koda göre sıralı', items.map((x) => x.code).join(','), 'S1,S2');
+  eq('bölüm sayısı', items.map((x) => x.count).join(','), '2,1');
+  eq('etiket taşınır', items[0].name, 'Kiracı');
+  eq('boş kayıtta satır yok', T.materialSpeakerLine({ id: 'x', name: 'x', speakers: [], segments: [] }), '');
+  const line = T.materialSpeakerLine(m);
+  eq('satır S/K açıklamasını taşır', /Bu kaydın konuşmacıları/.test(line), true);
+  eq('satır kodu ve etiketi yazar', /S1 · Kiracı \(2 bölüm\)/.test(line), true);
+  eq('satır ikinci kişiyi yazar', /S2 · Ev sahibi \(1 bölüm\)/.test(line), true);
+
+  // Rapor metni: S/K ayrımı AÇIKÇA yazılır (tek kaynak).
+  // TÜRKÇE BÜYÜK İ tuzağı: `/i` bayrağı "İ" ile eşleşmez (v2.100 dersi).
+  // Bu yüzden metin parçaları olduğu gibi (büyük harfle) aranır.
+  const note = T.REPORT_TEXT.speakerCodeNote || '';
+  eq('S/K notu var', /KAYIT İÇİ/.test(note), true);
+  eq('K dosyalar arası denir', /dosyalar arası eşleştirme/.test(note), true);
+  eq('S yeniden başlar denir', /her kayıtta S1'den başlar/.test(note), true);
+  eq('kimlik tespiti değildir denir', /kimlik tespiti değildir/.test(note), true);
+}
+
+// [114] v2.267 — Arayüz terimleri ve ek açıklamaları (kaynakta).
+{
+  console.log('[114] S/K arayüz terimleri (v2.267)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('panel: kayıt içi kod etiketi', /Kayıt içi kod \(S\)/.test(js), true);
+  eq('panel: dosyalar arası kişi (K)', /Dosyalar arası kişi \(K\)/.test(js), true);
+  eq('liste açıklama satırı', /spk-legend/.test(js), true);
+  eq('rozet ipucu kayda özgü der', /bu kayda özgü kod/i.test(js), true);
+  eq('EK-5 S tanımı', /Kayıt içi konuşmacı kodu/.test(js), true);
+  eq('EK-5 K tanımı', /Dosyalar arası kişi kodu/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

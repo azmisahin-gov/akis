@@ -2069,5 +2069,18 @@ console.log('\n[2ck] Konuşmacı ses tutarlılığı (v2.265)');
   check('uyarı rengi token (altın)', /\.voice-check\s*\{[^}]*border-left:\s*3px solid var\(--gold\)/.test(layer));
 }
 
+
+console.log('\n[2cl] S/K ayrımı ve açıklamalar (v2.267)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('panel etiketi: Kayıt içi kod (S)', /Kayıt içi kod \(S\)/.test(js));
+  check('panel etiketi: Dosyalar arası kişi (K)', /Dosyalar arası kişi \(K\)/.test(js));
+  check('liste başı açıklama satırı', /class="spk-legend"/.test(js) && /Bu kaydın konuşmacıları/.test(js));
+  check('rozet ipucu: bu kayda özgü kod', /bu kayda özgü kod/.test(js));
+  check('açıklama satırı sarar', /\.spk-legend\s*\{[^}]*flex-wrap:\s*wrap/.test(layer));
+  check('açıklama punto token', /\.spk-legend\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

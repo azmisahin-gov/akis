@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.266.**
+yazılır. **Güncel sürüm: v2.267.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.267 — S/K ayrımı ve açıklamalar (TAMAMLANDI)
+
+- **S = kayıt içi** (her kayıtta S1'den başlar), **K = dosyalar arası kişi** (uzman eşleştirmesi).
+- Liste başı: `Bu kaydın konuşmacıları: S1 · Kiracı (12) · …`; panel alanları
+  **Kayıt içi kod (S)** / **Dosyalar arası kişi (K)**; rozet ipucu "bu kayda özgü kod".
+- Rapor: Konuşmacılar bölümünde S/K paragrafı + **her kaydın başında** konuşmacı listesi;
+  EK-5'e S/K tanımları.
+- Tek kaynak: `speakerLegendItems` / `materialSpeakerLine`.
+- Koruyan: `birim` [113]/[114], `rapor` 34, `tasarim` [2cl].
 
 ## v2.266 — Rapor konuşmacı tablosu: süre + ilk/son (TAMAMLANDI)
 

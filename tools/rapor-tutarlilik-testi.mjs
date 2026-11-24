@@ -1214,5 +1214,26 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('bölüm sayısı korunur', 'a.wav: 2 bölüm', H, U, D);
 }
 
+
+// Senaryo 34: S/K ayrımı (v2.267). S kodları kayıt başınadır; rapor bunu
+// AÇIKÇA yazar ve her kaydın başında o kaydın konuşmacılarını listeler.
+{
+  console.log('\n[Senaryo 34] S/K ayrımı ve kayıt konuşmacıları (v2.267)');
+  const c = withMaterial();
+  c.materials[0].speakers = [
+    { id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }
+  ];
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' }
+  ];
+  c.report = { sections: { annex: true } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('S/K açıklaması', 'KAYIT İÇİ', H, U, D);
+  checkShared('K dosyalar arası', 'dosyalar arası eşleştirme', H, U, D);
+  checkShared('kayıt başına konuşmacı satırı', 'Bu kaydın konuşmacıları: S1 · Kiracı (1 bölüm)', H, U, D);
+  checkShared('EK-5 S tanımı', 'Kayıt içi konuşmacı kodu', H, U, D);
+  checkShared('EK-5 K tanımı', 'Dosyalar arası kişi kodu', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

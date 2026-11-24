@@ -1,4 +1,4 @@
-# Özellikler (v2.266 — mevcut durum)
+# Özellikler (v2.267 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -578,6 +578,10 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **S/K ayrımı ve açıklamalar (v2.267):** **S1, S2… kayıt içi** etikettir; her kayıtta S1'den başlar.
+  Bölüm listesinin üstünde **“Bu kaydın konuşmacıları: S1 · Kiracı (12) · …”** satırı çıkar; panelde alanlar
+  **Kayıt içi kod (S)** ve **Dosyalar arası kişi (K)** adını taşır. Raporda Konuşmacılar bölümünde S/K paragrafı,
+  **her kaydın başında** o kaydın konuşmacı listesi ve **EK-5** gösterim anahtarında S/K tanımları vardır.
 - **Konuşmacı tablosunda süre (v2.266):** BÖLÜM/NOT hücresi `a.wav: 5 bölüm · toplam 00:25 ·
   00:00:00.000 – 00:01:10.000` biçiminde süre ve ilk–son duyulmayı taşır; dosyalar arası kişide
   bağlı kayıtların toplamıdır.
