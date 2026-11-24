@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.238';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.238';
+} from './schema.js?v=2.239';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.239';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.238';
+const APP_VERSION = '2.239';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -352,6 +352,29 @@ const QUICK_TAGS = [
   { label: '[müzik/ses]', text: '[müzik/ses efekti]', hint: 'Müzik veya ses efekti; konuşma değil.' },
   { label: '[telefonda konuşma]', text: '[telefonda konuşma]', hint: 'Konuşmacı telefonla görüşüyor; karşı tarafın sesi duyuluyor veya duyulmuyor olabilir.' }
 ];
+// Hızlı etiketi İMLECİN olduğu yere ekler (v2.239). Önceden her zaman metnin
+// SONUNA ekliyordu; cümle ortasına etiket koymak imkânsızdı (kullanıcı isteği).
+// Seçim varsa seçili metnin yerine yazılır. Komşu karakter boşluk değilse tek
+// boşluk eklenir. Konum geçersizse (imleç bilgisi yok) eski davranış: sona ekle.
+// SAF fonksiyon; dönüş { text, caret, mode }.
+function insertTagAt(full, token, start, end) {
+  const src = String(full == null ? '' : full);
+  const tok = String(token == null ? '' : token);
+  let s = Number.isInteger(start) ? start : null;
+  let e = Number.isInteger(end) ? end : null;
+  if (s == null || s < 0 || s > src.length) {
+    const cur = src.trim();
+    const out = cur ? cur + ' ' + tok : tok;
+    return { text: out, caret: out.length, mode: 'end' };
+  }
+  e = e == null || e < s ? s : Math.min(e, src.length);
+  const before = src.slice(0, s);
+  const after = src.slice(e);
+  const needBefore = before.length > 0 && !/\s$/.test(before);
+  const needAfter = after.length > 0 && !/^\s/.test(after);
+  const ins = (needBefore ? ' ' : '') + tok + (needAfter ? ' ' : '');
+  return { text: before + ins + after, caret: s + ins.length, mode: 'cursor' };
+}
 // Eski sürümlerin varsayılan yöntem metni (iki paragraf). Kayıtlı dosyalarda
 // aracın kendisini anan ifadeler kalmasın diye birebir karşılaştırmayla
 // değiştirilir; bilirkişinin kendi yazdığı metne dokunulmaz.
@@ -14690,8 +14713,9 @@ function setupEvents() {
     clearDropMarks(segDrag.card);
     segDrag = null;
   });
-  // Hızlı etiket: metnin sonuna gözlem ifadesi ekler (varsa boşlukla). Temizle
-  // yalnızca metni boşaltır; geçmiş kaydı odak değişiminde tutulur.
+  // Hızlı etiket: gözlem ifadesini İMLECİN olduğu yere ekler (seçim varsa
+  // yerine) — v2.239. Temizle yalnızca metni boşaltır; geçmiş kaydı odak
+  // değişiminde tutulur.
   $('#view-audio').addEventListener('click', (e) => {
     const tag = e.target.closest('[data-quick-tag]');
     const clear = e.target.closest('[data-quick-clear]');
@@ -14705,16 +14729,33 @@ function setupEvents() {
       const [ix, text] = tag.dataset.quickTag.split('|');
       const s = m.segments[Number(ix)];
       if (!s) return;
-      const cur = (s.text || '').trim();
+      // İmleç konumunu yeniden çizimden ÖNCE oku (v2.239). Etiket önceden hep
+      // sona ekleniyordu; artık imlecin olduğu yere (seçim varsa yerine) girer.
+      const ta = card.querySelector('.sd-text textarea');
+      const at = ta && typeof ta.selectionStart === 'number' ? ta.selectionStart : null;
+      const en = ta && typeof ta.selectionEnd === 'number' ? ta.selectionEnd : null;
       const prev = s.text;
-      applyTextEdit(s, cur ? cur + ' ' + text : text);
+      const ins = insertTagAt(s.text || '', text, at, en);
+      applyTextEdit(s, ins.text);
       pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
+      // Yeniden çizimden sonra odağı ve imleci eklenen etiketin SONUNA koy.
+      if (ins.mode === 'cursor') {
+        const ta2 = card.querySelector('.sd-text textarea');
+        if (ta2) {
+          requestAnimationFrame(() => {
+            try {
+              ta2.focus();
+              ta2.setSelectionRange(ins.caret, ins.caret);
+            } catch (e) {}
+          });
+        }
+      }
       updateSegListItem(m, Number(ix));
       refreshSegChips(m);
       renderOverview();
-      showToast('Etiket eklendi.');
+      showToast(ins.mode === 'cursor' ? 'Etiket imleç konumuna eklendi.' : 'Etiket sona eklendi.');
       return;
     }
     if (clear) {
@@ -16435,6 +16476,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.239': {
+    title: 'Hızlı etiket artık imleç konumuna ekleniyor',
+    body:
+      '+ Hızlı ekle etiketleri (ör. [anlaşılmaz], [üst üste konuşma]) artık metnin sonuna değil, ' +
+      'imlecin olduğu yere eklenir; bir kelimeyi seçtiyseniz etiket seçimin yerine yazılır. ' +
+      'Ekleme sonrası imleç etiketin hemen ardına konur. İmleç bilgisi yoksa eski davranış ' +
+      '(sona ekleme) korunur.'
+  },
   '2.238': {
     title: 'Rapor biçimi: font, punto, kenar boşluğu, yön',
     body:

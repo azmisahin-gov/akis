@@ -1,4 +1,4 @@
-# Özellikler (v2.238 — mevcut durum)
+# Özellikler (v2.239 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -410,8 +410,10 @@ tuşları bozulmaz.
   basınca duraklar, duraklatılmışken kaldığı yerden devam eder. "Durdur" çalmayı
   keser ve bölüm başına sarar. Bölüm bitişinde otomatik durur.
 - **Hızlı etiketler:** [sessizlik], [anlaşılmaz], [uzaktan konuşma], [gürültülü],
-  [üst üste], [müzik/ses] düğmeleri ve "Temizle". Boş veya anlaşılmaz bölümler
-  elle yazmadan işaretlenir; uygulama uydurma metin üretmez.
+  [üst üste], [müzik/ses], [telefonda konuşma] düğmeleri ve "Temizle". Boş veya
+  anlaşılmaz bölümler elle yazmadan işaretlenir; uygulama uydurma metin üretmez.
+  Etiket **imlecin olduğu yere** eklenir (seçim varsa yerine) — v2.239; imleç
+  bilgisi yoksa sona eklenir.
 - **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
   inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde

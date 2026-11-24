@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.238.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.239.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5331,3 +5331,31 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 3. **C2 — "Bekleyen" ↔ "Çözümlendi"(machine) netleştirme** (eski not #5).
 4. **Video (56.12)** desteği: mp4/mov sesi demux/decode edilebilir mi (eski not #16).
 5. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).
+
+## YENİ OTURUM DEVRİ (v2.239) — Hızlı etiket imleç konumuna
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.239** |
+| Testler | `bash tools/test.sh` → **1432 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [94]` |
+| Açık konu | C2 (Bekleyen↔Çözümlendi), UDF yatay, video (56.12), STANDARTLAR rehberi |
+
+### Ne yapıldı
+- `insertTagAt(full, token, start, end)` saf fonksiyon: etiket **imleç konumuna** (seçim varsa
+  yerine), yoksa sona. Komşu boşluk değilse tek boşluk. Dönüş `{ text, caret, mode }`.
+- Tıklama işleyicisi imleci **yeniden çizimden ÖNCE** okur; `renderSegDetail` sonrası
+  `requestAnimationFrame` + `setSelectionRange` ile odağı/imleci geri verir.
+- Eski not **#9** kapandı.
+
+### DEĞİŞMEZ KURAL
+- Hızlı etiket metni `applyTextEdit` ile yazılır (adli ayrım/`asrText` korunur); imleç bilgisi
+  yoksa bile **veri kaybı yok** (sona ekleme yedeği).
+
+### SIRADAKİ İŞLER
+1. **C2:** "Bekleyen" filtresi ↔ "Çözümlendi"(machine) ilişkisini netleştir (etiket/ipucu veya ayırma — karar).
+2. **UDF yatay** (doğrulanmış `paperOrientation` koduyla) + gerçek tarayıcıda biçim/etiket tıklama ölçümü.
+3. **Video (56.12):** mp4/mov sesinin tarayıcıda çözülüp çözülemeyeceğini ölç.
+4. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).

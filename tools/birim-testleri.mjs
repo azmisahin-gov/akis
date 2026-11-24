@@ -115,7 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
-  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition',
+  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
@@ -4444,6 +4444,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('yazdırma @page kuralı üretilir', /@page \{ size: A4/.test(src), true);
   eq('renk çıktısı UDF ORTAM fontu', /family="Times New Roman"/.test(src), true);
+}
+
+// [94] v2.239 — Hızlı etiket imleç konumuna eklenir (sona değil).
+{
+  console.log('[94] insertTagAt — imleç konumuna etiket');
+  eq('tanımlı', typeof T.insertTagAt, 'function');
+  eq('sonda imleç → sona ekle + boşluk', T.insertTagAt('abc', '[x]', 3, 3), { text: 'abc [x]', caret: 7, mode: 'cursor' });
+  eq('başta imleç → başa ekle', T.insertTagAt('abc', '[x]', 0, 0), { text: '[x] abc', caret: 4, mode: 'cursor' });
+  eq('ortada (boşluk yok) iki yana boşluk', T.insertTagAt('ab cd', '[x]', 2, 2), { text: 'ab [x] cd', caret: 6, mode: 'cursor' });
+  eq('seçim varsa yerine yaz', T.insertTagAt('hello world', '[x]', 6, 11), { text: 'hello [x]', caret: 9, mode: 'cursor' });
+  eq('boş metne ekle', T.insertTagAt('', '[x]', 0, 0), { text: '[x]', caret: 3, mode: 'cursor' });
+  eq('imleç yoksa sona ekle (eski davranış)', T.insertTagAt('  abc  ', '[x]', null, null), { text: 'abc [x]', caret: 7, mode: 'end' });
+  eq('aralık dışı başlangıç → sona', T.insertTagAt('abc', '[x]', 99, null), { text: 'abc [x]', caret: 7, mode: 'end' });
+  eq('bitiş < başlangıç → başlangıca indir', T.insertTagAt('abcd', '[x]', 2, 1), { text: 'ab [x] cd', caret: 7, mode: 'cursor' });
+  eq('null metin güvenli', T.insertTagAt(null, '[x]', null, null), { text: '[x]', caret: 3, mode: 'end' });
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

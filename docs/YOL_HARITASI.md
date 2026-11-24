@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.238.**
+yazılır. **Güncel sürüm: v2.239.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.239 — Hızlı etiket imleç konumuna eklenir (TAMAMLANDI)
+
+- `insertTagAt` saf fonksiyonu: etiket imlecin olduğu yere (seçim varsa yerine);
+  yoksa sona. Ekledikten sonra imleç etiketin ardına konur.
+- Koruyan test: `birim [94]`.
 
 ## v2.238 — Rapor biçimi: sayfa · font · punto · marj · yön (TAMAMLANDI)
 

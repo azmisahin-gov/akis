@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.238.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.239.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.239 — Hızlı etiket imleç konumuna eklenir
+
+Kullanıcı: "Bu etiketler her zaman sona konuyor; cümle içine, farenin olduğu
+noktaya koymak istesek yapamıyoruz."
+
+### KULLANICI NE GÖRECEK
+- **+ Hızlı ekle** etiketleri (ör. `[anlaşılmaz]`, `[üst üste konuşma]`) artık
+  metnin **sonuna değil, imlecin olduğu yere** eklenir. Bir kelimeyi seçtiyseniz
+  etiket seçimin **yerine** yazılır.
+- Ekledikten sonra imleç etiketin **hemen ardına** konur; yazmaya kaldığınız
+  yerden devam edersiniz.
+- İmleç bilgisi yoksa (ör. yeni bölüm) eski davranış korunur: sona eklenir.
+
+### Ne değişti
+- `insertTagAt(full, token, start, end)` saf fonksiyonu (v2.239): seçim/konum
+  varsa oraya, yoksa sona ekler; komşu karakter boşluk değilse tek boşluk koyar.
+- Tıklama işleyicisi imleci yeniden çizimden ÖNCE okur, sonra odağı ve imleci
+  geri verir (`requestAnimationFrame` + `setSelectionRange`).
+
+### Koruyan test
+- `birim [94]`: sona/başa/ortaya/seçim/boş/metin yok/aralık dışı/bitiş<başlangıç.
 
 ## v2.238 — Rapor biçimi: sayfa · font · punto · marj · yön
 
