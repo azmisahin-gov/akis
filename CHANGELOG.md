@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.244.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.245.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.245 — UDF yatay/dikey yön (doğrulandı)
+
+Kullanıcı, UYAP Doküman Editörü'nde boş sayfayı **yatay** yapıp kaydetti
+(`yatay.udf`). `content.xml`'de `paperOrientation` değeri **"0"** çıktı; dikey
+**"1"** (mediaSizeName A4 = "1" sabit). Böylece UDF yönü **tahmin olmadan**
+uygulanabilir hâle geldi.
+
+### KULLANICI NE GÖRECEK
+- **Kontrol → Rapor biçimi → Yön = Yatay** seçilince üretilen **UDF de yatay**
+  olur (önceden yalnız ekran/PDF/Word etkileniyordu; UDF dikey kalıyordu).
+- Dikey seçim `paperOrientation="1"`, yatay `"0"` yazar. UDF yazı tipi yine
+  resmî **Times New Roman**'dır; punto ve kenar boşluğu da biçimden gelir.
+
+### Ne değişti
+- `makeUdf` `paperOrientation` değerini `case.report.format.orientation`'dan
+  yazar. Panel notu ve şema yorumu güncellendi.
+
+### Koruyan test
+- `rapor` Senaryo 26: UDF yatay `paperOrientation="0"`, dikey `"1"`.
 
 ## v2.244 — İş yükü özeti: anlamlı hâle getirildi
 

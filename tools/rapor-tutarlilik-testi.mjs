@@ -924,6 +924,15 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('UDF sol marj 25.0 mm', /leftMargin="25\.0"/.test(ux));
   check('UDF üst marj 30.0 mm', /topMargin="30\.0"/.test(ux));
   check('UDF punto ölçekli (13 pt gövde)', /family="Times New Roman" size="13"/.test(ux));
+  check('UDF yatay yön (paperOrientation=0)', /paperOrientation="0"/.test(ux));
+
+  // Dikey: paperOrientation="1" (v2.245 — yatay.udf ile doğrulandı).
+  const cp = withMaterial();
+  cp.report = { format: { orientation: 'portrait' } };
+  downloads.length = 0; setCase(cp); await makeUdf();
+  const uZ2 = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux2 = await uZ2.file('content.xml').async('string');
+  check('UDF dikey yön (paperOrientation=1)', /paperOrientation="1"/.test(ux2));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.244.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.245.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5517,3 +5517,30 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 1. **Etkin çalışma süresi** (kullanıcı onayına bağlı; geçmiş sayılmaz).
 2. **UDF yatay** (doğrulanmış `paperOrientation`).
 3. **Video (56.12)** ölçümü.
+
+## YENİ OTURUM DEVRİ (v2.245) — UDF yatay/dikey (doğrulandı)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.245** |
+| Testler | `bash tools/test.sh` → tümü yeşil |
+| Doğrulama | `yatay.udf` (kullanıcı, UYAP editörü) → `paperOrientation="0"` yatay, `"1"` dikey |
+
+### Ne yapıldı
+- `makeUdf` artık `paperOrientation` değerini `case.report.format.orientation`'dan yazar
+  (yatay "0", dikey "1"); mediaSizeName A4 ("1") sabit. Rapor biçimi → Yön seçimi **UDF'e
+  de** uygulanır. Font resmî Times New Roman kalır.
+- Panel notu + şema yorumu güncellendi.
+
+### DEĞİŞMEZ
+- `paperOrientation` kodu **doğrulanmıştır** (tahmin değil). Yeni bir UYAP alanı eklerken
+  aynı yöntemi kullan: UYAP Doküman Editörü'nde örnek üret, `content.xml`'i oku, kodu sabitle.
+- Yatayda tablo `columnSpans` (≈510) portre için ölçülmüştü; yatayda tablolar daha dar
+  görünebilir (kırpılmaz, sığar). Gerekirse genişlik ölçeklemesi ayrı iş.
+
+### SIRADAKİ İŞLER
+1. **Etkin çalışma süresi** (kullanıcı onayı).
+2. **Video (56.12)** ölçümü.
+3. Yatay UDF tablo genişliklerini sayfa genişliğine göre ölçekleme (gerekirse).

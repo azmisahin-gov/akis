@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.244.**
+yazılır. **Güncel sürüm: v2.245.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.245 — UDF yatay/dikey yön (doğrulandı) (TAMAMLANDI)
+
+- `paperOrientation`: "1" dikey, "0" yatay (yatay.udf ile doğrulandı). Rapor biçimi
+  → Yön seçimi artık **UDF'e de** uygulanır (font resmî Times New Roman kalır).
+- Koruyan test: `rapor` 26 (yatay "0", dikey "1").
 
 ## v2.244 — İş yükü özeti: anlamlı hâle getirildi (TAMAMLANDI)
 

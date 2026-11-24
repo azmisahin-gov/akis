@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.244';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.244';
+} from './schema.js?v=2.245';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.245';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.244';
+const APP_VERSION = '2.245';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11957,8 +11957,8 @@ function renderReportFormat(c) {
   const mx = (k, lab) =>
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="1" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
-    `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4) ve Word (DOCX) bu biçimi kullanır. ` +
-    `UYAP UDF resmî olarak Times New Roman ve dikey A4 üretir; UDF yazı tipi/yönü buradan değişmez.</p>` +
+    `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
+    `UYAP UDF yazı tipi resmî olarak Times New Roman&#39;dır; yön (dikey/yatay) ve kenar boşluğu buradan uygulanır.</p>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Yazı tipi (ekran/Word)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
@@ -12754,11 +12754,17 @@ async function makeUdf() {
   if (!properties || !styles) throw new Error('Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı.');
   // Kenar boşlukları rapor biçiminden gelir (v2.238); mm cinsinden.
   const mmStr = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1);
+  // Yön: UYAP UDF'te paperOrientation "1" = dikey, "0" = yatay (doğrulandı:
+  // yatay.udf). mediaSizeName A4 olarak kalır. (v2.245)
   properties = properties
     .replace(/leftMargin="[^"]+"/, `leftMargin="${mmStr(fmt.marginsMm.left)}"`)
     .replace(/rightMargin="[^"]+"/, `rightMargin="${mmStr(fmt.marginsMm.right)}"`)
     .replace(/topMargin="[^"]+"/, `topMargin="${mmStr(fmt.marginsMm.top)}"`)
-    .replace(/bottomMargin="[^"]+"/, `bottomMargin="${mmStr(fmt.marginsMm.bottom)}"`);
+    .replace(/bottomMargin="[^"]+"/, `bottomMargin="${mmStr(fmt.marginsMm.bottom)}"`)
+    .replace(
+      /paperOrientation="[^"]*"/,
+      `paperOrientation="${fmt.orientation === 'landscape' ? '0' : '1'}"`
+    );
   const textParts = [];
   let codePointOffset = 0;
   let serial = 0;
@@ -16760,6 +16766,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.245': {
+    title: 'UDF yatay/dikey yön artık uygulanıyor',
+    body:
+      'Kontrol → Rapor biçimi → Yön = Yatay seçilince üretilen UYAP UDF de yatay olur (önceden ' +
+      'yalnız ekran/PDF/Word etkileniyordu, UDF dikey kalıyordu). Yön kodu UYAP editöründe ' +
+      'doğrulandı: dikey=1, yatay=0. UDF yazı tipi resmî olarak Times New Roman kalır; punto ve ' +
+      'kenar boşluğu da biçimden gelir.'
+  },
   '2.244': {
     title: 'İş yükü özeti anlamlı hâle getirildi',
     body:
