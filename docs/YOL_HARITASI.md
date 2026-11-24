@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.230.**
+yazılır. **Güncel sürüm: v2.231.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.231 — Belge odaklı bölüm düzenleme (TAMAMLANDI)
+
+- Belgede bölüme tıkla → sağda **odaklı düzenleyici**; belge görünür kalır,
+  seçili bölüm vurgulanır.
+- **Yöntem (4) · Sınırlılıklar (5) · Sonuç (6)** serbest metinleri burada.
+  Diğer bölümler veriden üretilir; "ilgili yeri aç" yönlendirir.
+- **A4 kâğıdı contentEditable DEĞİL**; üç çıktı aynı metni üretir.
+- Koruyan test: `birim [86]`, `tasarim [2cb]`, `surum` kimlikleri.
 
 ## v2.230 — Tek kayıt durumu + dahil/kontrol ayrımı (TAMAMLANDI)
 

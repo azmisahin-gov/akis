@@ -1,4 +1,4 @@
-# Özellikler (v2.230 — mevcut durum)
+# Özellikler (v2.231 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -758,7 +758,10 @@ bunlar yalnız görünürlüğü süzer, **rapor sırasını değiştirmez** (v2
 Araç çubuğunda **tek durum çipi** vardır ("Engelleyen eksik: N" · "Kontrol
 bekliyor: N" · "Hazır"); iskelet "N dahil · M hariç" der, kapalı bölüm soluk
 görünür (v2.230). **Dahil** (rapora girer) ile **Kontrol** (dinlenip onaylandı)
-ayrı kavramlardır.
+ayrı kavramlardır. Belgede bir bölüme tıklayınca sağda **odaklı düzenleyici**
+açılır (v2.231): **Yöntem (4) · Sınırlılıklar (5) · Sonuç (6)** serbest metinleri
+burada yazılır; diğer bölümler veriden üretilir. **A4 kâğıdı contentEditable
+değildir**; üç çıktı aynı metni üretir.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller

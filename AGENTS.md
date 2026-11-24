@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.230.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.231.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,26 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.231) — Belge odaklı bölüm düzenleme
+
+Rapor belgesinde bölüme tıklayınca sağda odaklı düzenleyici açılır.
+
+### DEĞİŞMEZ KURALLAR (v2.231)
+
+1. **A4 kâğıdı contentEditable DEĞİL.** Düzenleme, aynı model alanlarını yazan
+   bir panelde olur; üç çıktı (HTML/DOCX/UDF) aynı metni üretmeye devam eder.
+   Kâğıdı doğrudan düzenlenebilir yapmak bu garantiyi bozar; yapmayın.
+2. **Serbest metin yalnız s4/s5/s6** (`methodText`, `limitationsText`,
+   `conclusionText`). Diğer bölümler veriden üretilir; düzenleyici ilgili yere
+   yönlendirir. Yeni bir serbest metin alanı eklerseniz
+   `REPORT_NARRATIVE_FIELDS`'e yazın ve üç çıktıya bağlandığını doğrulayın.
+3. **Blok sarmalayıcı `data-report-key` + `display:contents`** kullanılır;
+   yerleşim değişmez. Tıklama `#reportPreview` delegasyonunda çözülür.
+4. **Seçim oturumluktur** (`reportEditKey`); kayda yazılmaz.
+5. Yazarken model güncellenir (`input`), önizleme `change`te tazelenir (odak
+   korunur). Doğrudan `renderReport()` çağırıp her tuşta yeniden çizmeyin.
+6. Test: `birim [86]`, `tasarim [2cb]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.230) — Tek kayıt durumu + dahil/kontrol ayrımı
 

@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.230';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.230';
+} from './schema.js?v=2.231';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.231';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.230';
+const APP_VERSION = '2.231';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10475,6 +10475,90 @@ function setReportMode(mode) {
   applyReportMode();
 }
 
+// ---- Belge odaklı bölüm düzenleme (v2.231) -------------------------------
+// Belgede bir bölüme tıklanınca sağda ODAKLI düzenleyici açılır. A4 kâğıdı
+// contentEditable DEĞİL; serbest metin alanları aynı modeli yazar, üç çıktı
+// (HTML/DOCX/UDF) aynı metni üretir.
+let reportEditKey = null;
+const REPORT_NARRATIVE_FIELDS = {
+  s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
+  s5: [{ field: 'limitationsText', label: 'Teknik değerlendirme ve sınırlılıklar', rows: 6 }],
+  s6: [{ field: 'conclusionText', label: 'Sonuç ve kanaat (bilirkişi yazar)', rows: 6 }]
+};
+function reportSectionEditableFields(key) {
+  return REPORT_NARRATIVE_FIELDS[key] || null;
+}
+function reportSectionDerivedTarget(key) {
+  const map = {
+    cover: 'case',
+    coverFields: 'case',
+    s1: 'case',
+    s2: 'questions',
+    s3: 'case',
+    origin: 'audio',
+    embedded: 'audio',
+    acquisition: 'audio',
+    speakers: 'audio',
+    reading: 'audio',
+    wer: 'audio',
+    levels: 'audio',
+    reviewSummary: 'audio',
+    signature: 'case'
+  };
+  return map[key] || '';
+}
+function reportSectionInspectorKey(key) {
+  return ['tech', 'kunye', 'qc'].includes(key) ? key : '';
+}
+function renderReportSectionEditor(c) {
+  const host = $('#reportSectionEditorFields');
+  if (!host) return;
+  const key = reportEditKey;
+  if (!key) {
+    host.innerHTML =
+      `<div class="rse-head"><b>Bölüm düzenle</b><small>Seçim yok</small></div>` +
+      `<p class="rse-note">Düzenlemek için belgede bir bölüme tıklayın. Serbest metin yalnız <b>Yöntem (4)</b>, <b>Sınırlılıklar (5)</b> ve <b>Sonuç (6)</b> bölümlerinde vardır; diğerleri veriden üretilir.</p>`;
+    return;
+  }
+  const head = `<div class="rse-head"><b>Bölüm düzenle</b><small>${esc(reportUiLabel(c, key))}</small><button type="button" class="rse-close" data-rse-close="1" aria-label="Düzenleyiciyi kapat" title="Kapat">×</button></div>`;
+  const fields = reportSectionEditableFields(key);
+  if (fields) {
+    host.innerHTML =
+      head +
+      fields
+        .map((f) => {
+          const val = c[f.field] || (f.field === 'methodText' ? DEFAULT_METHOD : '');
+          return `<label class="rse-field"><span>${esc(f.label)}</span><textarea rows="${f.rows}" data-rse-field="${f.field}">${esc(val)}</textarea></label>`;
+        })
+        .join('') +
+      `<p class="rse-note">Yazarken model güncellenir; alandan çıkınca önizleme tazelenir. Üç çıktı (HTML/DOCX/UDF) aynı metni üretir.</p>`;
+    return;
+  }
+  if (reportSectionInspectorKey(key)) {
+    host.innerHTML =
+      head +
+      `<p class="rse-note">Bu bölümün alanları <b>Kontrol</b> panelinde düzenlenir.</p>` +
+      `<button type="button" class="mini-button" data-rse-check="1">Kontrol panelini aç ›</button>`;
+    return;
+  }
+  const target = reportSectionDerivedTarget(key);
+  host.innerHTML =
+    head +
+    `<p class="rse-note">Bu bölüm <b>veriden üretilir</b>; burada serbest metin yok.${target ? ' İlgili alanı açıp düzenleyin.' : ''}</p>` +
+    (target ? `<button type="button" class="mini-button" data-rse-goto="${target}">İlgili yeri aç ›</button>` : '');
+}
+function setReportEditSection(key) {
+  reportEditKey = key || null;
+  const ws = $('#reportWorkspace');
+  if (ws) ws.dataset.edit = reportEditKey ? 'open' : 'closed';
+  if (reportEditKey && reportModePref() !== 'edit') {
+    try {
+      localStorage.setItem('akis.reportMode', 'edit');
+    } catch (e) {}
+  }
+  renderReport();
+}
+
 // ---- Rapor bölüm görünürlüğü (v2.219) ------------------------------------
 // PARAMETRİK RAPOR: bütün bölümler hazır tutulur; bilirkişi her birini açar/
 // kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
@@ -10736,7 +10820,7 @@ function renderReportSections(c) {
     const mover = move
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
-    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
+    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -11456,11 +11540,19 @@ function renderReport() {
       `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div>`
   };
 
+  // Her bölüm `data-report-key` ile sarılır (v2.231): belgede tıklayınca
+  // odaklı düzenleyici açılır. `display:contents` sayesinde yerleşim değişmez.
+  const wrapBlock = (key, piece) =>
+    piece ? `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}">${piece}</div>` : '';
   let html = '';
-  for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) html += front[key]();
+  for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) html += wrapBlock(key, front[key]());
   html += '<div class="paper-page-break">';
-  for (const key of reportBodyOrder(c)) if (on(key) && body[key]) html += body[key]();
-  if (on('signature')) html += body.signature();
+  for (const key of reportBodyOrder(c)) {
+    if (!on(key) || !body[key]) continue;
+    const piece = body[key]();
+    if (piece) html += wrapBlock(key, piece);
+  }
+  if (on('signature')) html += wrapBlock('signature', body.signature());
   html += '</div>';
   $('#reportPreview').innerHTML = html;
   // TEK kayıt durumu (v2.230) + kısa ayrıntı. Ayrıntı istatistik tekrarı
@@ -11475,6 +11567,9 @@ function renderReport() {
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   renderPageGuides();
   applyReportMode();
+  const wsEl = $('#reportWorkspace');
+  if (wsEl) wsEl.dataset.edit = reportEditKey ? 'open' : 'closed';
+  renderReportSectionEditor(c);
 }
 function xesc(s = '') {
   return String(s)
@@ -14695,6 +14790,34 @@ $('#reportModes')?.addEventListener('click', (e) => {
   if (b) setReportMode(b.dataset.reportMode);
 });
 $('#reportCheckChip')?.addEventListener('click', () => setReportMode('check'));
+// Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
+$('#reportPreview')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-report-key]');
+  if (b) setReportEditSection(b.dataset.reportKey);
+});
+$('#reportSectionEditorFields')?.addEventListener('input', (e) => {
+  const f = e.target.closest('[data-rse-field]');
+  if (!f) return;
+  const c = currentCase();
+  if (!c) return;
+  c[f.dataset.rseField] = f.value;
+  persist();
+});
+$('#reportSectionEditorFields')?.addEventListener('change', (e) => {
+  if (e.target.closest('[data-rse-field]')) renderReport();
+});
+$('#reportSectionEditorFields')?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-rse-close]')) {
+    setReportEditSection(null);
+    return;
+  }
+  if (e.target.closest('[data-rse-check]')) {
+    setReportMode('check');
+    return;
+  }
+  const g = e.target.closest('[data-rse-goto]');
+  if (g) switchView(g.dataset.rseGoto);
+});
 // İskelet filtresi (v2.229): arama / kategori / yalnız açık. Oturumluk; kayda
 // yazılmaz. Yalnız #reportSections yeniden çizilir; arama kutusu statik kalır
 // (odak kaybolmaz).
@@ -15829,6 +15952,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.231': {
+    title: 'Belgede bölüme tıklayıp düzenle',
+    body:
+      'Rapor belgesinde bir bölüme tıklayınca sağda odaklı düzenleyici açılır. Serbest metin ' +
+      'Yöntem (4), Sınırlılıklar (5) ve Sonuç (6) bölümlerinde yazılır; diğer bölümler veriden ' +
+      'üretilir ve sizi ilgili yere yönlendirir. A4 kâğıdı doğrudan düzenlenebilir DEĞİLDİR; ' +
+      'böylece HTML/DOCX/UDF aynı metni üretmeye devam eder.'
+  },
   '2.230': {
     title: 'Rapor durumu tek çipte; dahil/kontrol ayrıldı',
     body:

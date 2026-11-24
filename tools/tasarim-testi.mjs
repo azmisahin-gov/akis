@@ -1898,5 +1898,24 @@ console.log('\n[2ca] Tek kayıt durumu + dahil/kontrol (v2.230)');
   check('v2.230 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
 }
 
+console.log('\n[2cb] Belge odaklı bölüm düzenleme (v2.231)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const html = read('index.html');
+  check('bölüm düzenleyici HTML\'de', /id="reportSectionEditor"/.test(html) && /id="reportSectionEditorFields"/.test(html));
+  check('belge blokları data-report-key ile sarılır', /data-report-key="\$\{esc\(key\)\}"/.test(js) && /paper-block/.test(js));
+  check('düzenleyici fonksiyonları', /function setReportEditSection\(/.test(js) && /function renderReportSectionEditor\(/.test(js));
+  check('serbest metin + yönlendirme', /function reportSectionEditableFields\(/.test(js) && /function reportSectionDerivedTarget\(/.test(js));
+  check('belge tıklama işleyicisi', /reportPreview'\)\?\.addEventListener\('click'/.test(js));
+  check('contentEditable KULLANILMAZ', !/contentEditable\s*=\s*true/.test(js));
+  check('paper-block display:contents', /\.paper-block\s*\{\s*display:\s*contents/.test(layer));
+  check('düzenleyici sütunu (edit+open)', /#reportWorkspace\[data-mode="edit"\]\[data-edit="open"\]/.test(layer) && /\.report-editor/.test(layer));
+  check('yazdırmada düzenleyici gizli', /\.report-editor,\s*\n\s*\.report-stage-bar\s*\{\s*display:\s*none/.test(layer));
+  const css = layer.slice(layer.indexOf('/* v2.231'), layer.indexOf('/* Orta genişlik'));
+  check('v2.231 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+  check('v2.231 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
