@@ -1,4 +1,4 @@
-# Özellikler (v2.263 — mevcut durum)
+# Özellikler (v2.264 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -578,6 +578,9 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **“Doğrulandı” kilidi (v2.264):** kartta işaretlenince künye (etiket/rol/cinsiyet/yaş/not/kişi bağı)
+  ve **Sil** kilitlenir; kart yeşil kenarla işaretlenir, raporda **“doğrulandı”** yazar. Bölüm onayı
+  değildir; “Kontrol” sütununu etkilemez. Geri alınabilir, günlüğe yazılır, birleştirmede aktarılır.
 - **Kod çakışması denetimi (v2.262):** eski/elle düzenlenmiş kayıtta aynı kod
   iki kişide ise panelde uyarı + **"Çakışan kodları düzelt"**. Düzeltme onay
   ister, **ilk konuşmacının kodunu korur**, diğerini sıradaki boş koda taşır;

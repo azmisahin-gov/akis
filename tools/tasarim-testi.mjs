@@ -2043,5 +2043,17 @@ console.log('\n[2ci] Konuşmacı atama hızı (v2.263)');
   check('durdur kuyruğu iptal eder', /function stopSegmentPlayback\(m\) \{\s*stopSpeakerQueue\(\)/.test(js));
 }
 
+
+console.log('\n[2cj] Konuşmacı doğrulandı kilidi (v2.264)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('kartta doğrulama anahtarı', /data-spk-verify=/.test(js));
+  check('kilitli alanlar devre dışı', /const dis = ver \? ' disabled' : ''/.test(js));
+  check('kilitliyken silme kapalı', /data-del-spk="\$\{esc\(m\.id\)\}\|\$\{esc\(s\.id\)\}"\$\{dis\}/.test(js));
+  check('kilit görsel işareti (renk + metin)', /\.spk-card\.is-verified\s*\{[^}]*border-left/.test(layer));
+  check('doğrulama etiketi token punto', /\.spk-verify\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

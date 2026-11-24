@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.263.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.264.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6098,3 +6098,44 @@ ve klavye/DB ölçümleri yanıltıcı olur. Ölçümden önce **tek sekme** kul
 Ayrıca klavye olayını `document.body`'ye göndermek YETMEZ: `onGlobalSegKey`
 kartı `e.target.closest('.audio-card')` ile bulur; olayı **bölüm köküne**
 (`[id^="segments-"]`) gönderin (gerçek kullanımda odak kartın içindedir).
+
+## YENİ OTURUM DEVRİ (v2.264) — Konuşmacı "doğrulandı" kilidi
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.264** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1650 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Ölçülen tutarlılık denetimi (ses tabanlı) ve rapor konuşmacı tablosu |
+
+### Yapılan
+
+- `emptySpeaker.verifiedAt/verifiedBy` + `normalizeSpeaker` korur + `isSpeakerVerified`.
+- Kart: **"Doğrulandı (kilitle)"** → `data-spk-key` alanları ve **Sil** `disabled`;
+  `.spk-card.is-verified` yeşil kenar; etiket **"✓ doğrulandı · <kim>"**.
+- `snapshotForUndo` + `logEvent('Konuşmacı doğrulandı' / 'Konuşmacı kilidi açıldı')`.
+- Rapor: `REPORT_TEXT.speakerVerifiedSuffix` bağsız satırda ve bağlı kişi satırında
+  (bağlı konuşmacılardan biri doğrulanmışsa) NOT hücresine eklenir.
+- `mergeCases`: doğrulama devralınır; iki tarafta da varsa **daha yeni tarih** korunur.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Kilit ≠ onay.** Konuşmacı doğrulaması raporun **Kontrol** sütununu ve onay
+   sayacını ETKİLEMEZ; metinle de böyle söylenir.
+2. **Doğrulayan kimliği uydurulmaz:** kimlik girilmemişse `verifiedBy` boş kalır
+   (günlükte "bilinmiyor" yazar). Ad uydurmayın.
+3. **Kilitli kayıt silinemez**: silme düğmesi devre dışı; önce işaret kaldırılır.
+4. Yeni bir "kilit" alanı eklerken aynı üçlü: şema alanı + normalize + birleştirme
+   (daha yeni kazanır) + rapor notu.
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Adım | Sonuç |
+|---|---|
+| Doğrula | **6** alan `disabled`, Sil kapalı, `.is-verified` var |
+| Etiket | "✓ doğrulandı" (kimlik yoksa ad eklenmez) |
+| Toast | "S1 · Konuşmacı 1 doğrulandı: künye kilitlendi. (Bölüm onayı değildir.)" |
+| Rapor | "doğrulandı" notu **var** |
+| Ctrl+Z | kilit açıldı (0 disabled, sınıf yok) |
+| Kırpılma / taşma / JS hatası | **0 / yok / 0** |

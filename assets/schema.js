@@ -378,6 +378,11 @@ export function emptySpeaker(over = {}) {
     pitchHz: null,
     pitchSamples: 0,
     measuredAt: null,
+    // DOĞRULANDI KİLİDİ (v2.264): uzman "bu kişi şu etiketle doğrudur" dediğinde
+    // kart kilitlenir (yanlışlıkla değişmez). Boş = doğrulanmadı. Rapora
+    // "doğrulandı" notu olarak yazılır; onay DEĞİLDİR (bölüm onayı ayrıdır).
+    verifiedAt: '',
+    verifiedBy: '',
     ...over
   };
 }
@@ -1331,12 +1336,24 @@ export function normalizeSpeaker(src = {}) {
     personId: str(s.personId),
     pitchHz: Number.isFinite(Number(s.pitchHz ?? s.pitch)) ? Number(s.pitchHz ?? s.pitch) : null,
     pitchSamples: num(s.pitchSamples),
-    measuredAt: s.measuredAt || s.pitchAt || null
+    measuredAt: s.measuredAt || s.pitchAt || null,
+    verifiedAt: str(s.verifiedAt),
+    verifiedBy: str(s.verifiedBy)
   };
   // `name` alanı `label` ile AYNI tutulur (tek kaynak). Arayüz `name`,
   // şema `label` okuyor; ayrışırlarsa konuşmacı bağı kopar (v2.85).
   out.name = out.label;
   return out;
+}
+
+/**
+ * Konuşmacı DOĞRULANDI mı (v2.264). Doğrulanmış kayıt kilidlidir: etiket/rol/
+ * cinsiyet/yaş/not alanları arayüzde değiştirilemez ve silinemez.
+ * DİKKAT: bu bir BÖLÜM ONAYI değildir; yalnız konuşmacı künyesinin
+ * doğruluğudur. Rapor "Kontrol" sütununu etkilemez.
+ */
+export function isSpeakerVerified(sp) {
+  return !!(sp && str(sp.verifiedAt));
 }
 
 // Dosya geneli kişi normalleştirmesi (v2.205). Kayıt içi konuşmacıdan farkı:
@@ -2015,6 +2032,22 @@ function mergeMaterialFields(mm, tm, applied, conflicts) {
     // Kod çakışması olmasın: iki makinede ayrı id ile eklenen kişiler
     // aynı kodu almış olabilir.
     assignSpeakerCodes(mm.speakers);
+    // DOĞRULAMA KİLİDİ (v2.264): gelen dosyada doğrulanmış kişi bende boşsa
+    // devralınır. İkisi de doğrulanmışsa daha YENİ tarih korunur; eski kayıt
+    // sessizce ezilmez (uygulananlar listesine yazılır).
+    for (const sp of tm.speakers) {
+      const mineSp = byId.get(sp.id);
+      if (!mineSp || !isSpeakerVerified(sp)) continue;
+      if (!isSpeakerVerified(mineSp)) {
+        mineSp.verifiedAt = str(sp.verifiedAt);
+        mineSp.verifiedBy = str(sp.verifiedBy);
+        applied.push(`konuşmacı doğrulaması gelen dosyadan alındı: ${name} · ${sp.code || sp.id}`);
+      } else if (str(sp.verifiedAt) > str(mineSp.verifiedAt)) {
+        mineSp.verifiedAt = str(sp.verifiedAt);
+        mineSp.verifiedBy = str(sp.verifiedBy);
+        applied.push(`konuşmacı doğrulaması yenilendi: ${name} · ${sp.code || sp.id}`);
+      }
+    }
     // DOSYA GENELİ KİŞİ BAĞI (v2.205): aynı konuşmacı id'sinde gelen bağ
     // boşsa doldurulur; iki farklı bağ sessizce ezilmez, çakışma bildirilir.
     for (const sp of tm.speakers) {

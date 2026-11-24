@@ -1163,5 +1163,40 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   );
 }
 
+
+// Senaryo 32: konuşmacı "doğrulandı" kilidi (v2.264). Doğrulanmış kişinin
+// künyesi raporda işaretlenir; doğrulanmamışta not ÇIKMAZ.
+{
+  console.log('\n[Senaryo 32] konuşmacı doğrulandı kilidi (v2.264)');
+  const mk = (verifiedAt) => {
+    const c = withMaterial();
+    c.materials[0].speakers = [
+      {
+        id: 'sp1',
+        code: 'S1',
+        name: 'Kiracı',
+        label: 'Kiracı',
+        role: 'complainant',
+        gender: 'unspecified',
+        verifiedAt: verifiedAt || '',
+        verifiedBy: verifiedAt ? 'Uzman' : ''
+      }
+    ];
+    c.materials[0].segments = [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'merhaba', review: 'approved' }
+    ];
+    return c;
+  };
+  const on = mk('2026-01-01T10:00:00Z');
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('doğrulanmış künye notu', REPORT_TEXT.speakerVerifiedSuffix, H, U, D);
+  const off = mk('');
+  const H2 = htmlText(off), U2 = await udfText(off), D2 = await docxText(off);
+  check(
+    'doğrulanmamışta not yok',
+    !H2.includes(REPORT_TEXT.speakerVerifiedSuffix) && !U2.includes(REPORT_TEXT.speakerVerifiedSuffix) && !D2.includes(REPORT_TEXT.speakerVerifiedSuffix)
+  );
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

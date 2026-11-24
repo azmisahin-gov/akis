@@ -6,12 +6,54 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.263.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.264.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.264 — Konuşmacı "doğrulandı" kilidi
+
+Kullanıcı: *"Yanlış beyan vermek istemiyoruz."* Künye bir kez doğrulandıktan sonra
+yanlışlıkla değişmemeli.
+
+### KULLANICI NE GÖRECEK
+
+- Konuşmacı kartında **"Doğrulandı (kilitle)"** işareti. İşaretlenince:
+  - etiket, rol, cinsiyet, yaş, not ve **dosya geneli kişi** alanları **kilitlenir**,
+  - **Sil** düğmesi devre dışı kalır (önce kilidi açın),
+  - kart **yeşil kenarla** işaretlenir ve etikette **"✓ doğrulandı · <kim>"** yazar,
+  - **raporda** konuşmacı satırının NOT hücresine **"doğrulandı"** eklenir (üç çıktı).
+- İşlem **geri alınabilir** (Ctrl+Z) ve **delil günlüğüne** yazılır
+  (`Konuşmacı doğrulandı` / `Konuşmacı kilidi açıldı`).
+- **Bu bir bölüm onayı DEĞİLDİR:** raporun "Kontrol" sütununu ve onay sayacını
+  etkilemez. Kilit yalnız **künyeyi** korur.
+- **Paket birleştirmede** doğrulama aktarılır; iki tarafta da doğrulanmışsa
+  **daha yeni tarih** korunur (eski kayıt sessizce ezilmez, uygulananlar listesine yazılır).
+
+### Teknik
+
+- `schema.js`: `emptySpeaker.verifiedAt/verifiedBy`, `normalizeSpeaker` korur,
+  `isSpeakerVerified(sp)` saf yardımcı, `mergeCases` doğrulamayı devralır/yeniler.
+- `app.js`: kart `data-spk-verify` anahtarı; kilitliyken `disabled`
+  (`data-spk-key` alanları ve `data-del-spk`); `snapshotForUndo` + `logEvent`.
+- Rapor: `REPORT_TEXT.speakerVerifiedSuffix` tek kaynak; bağlı kişi satırında
+  bağlı konuşmacılardan biri doğrulanmışsa not eklenir.
+- `REPORT_TEXT.speakerVerifiedNote` (kilit ≠ onay) ipucu metni olarak tanımlı.
+
+### Koruyan testler
+
+- `birim` **[110]** (13): şema varsayılanı, normalize, `isSpeakerVerified`,
+  birleştirmede devralma ve **yeni tarih** kuralı, kaynak kancaları.
+- `rapor` **Senaryo 32**: doğrulanmış künye üç çıktıda işaretlenir; doğrulanmamışta **yok**.
+- `tasarim` **[2cj]**: anahtar, `disabled`, silme kilidi, kenar işareti, token punto.
+
+### Dürüst sınır
+
+Kilit **veri bütünlüğü** korumasıdır, hukuki onay değildir; doğrulanmış künye de
+yanlış olabilir. Bu yüzden rapora "doğrulandı" yazılırken **kim** ve **ne zaman**
+bilgisi kayda geçer; raporda "bölüm onayı" anlamına gelmediği metinle söylenir.
 
 ## v2.263 — Konuşmacı atama hızı (klavye + dinleme)
 

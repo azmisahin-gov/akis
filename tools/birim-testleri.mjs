@@ -4918,5 +4918,44 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('elle dinleme kuyruğu iptal eder', (js.match(/stopSpeakerQueue\(\)/g) || []).length >= 3, true);
 }
 
+
+// [110] v2.264 — Konuşmacı "doğrulandı" kilidi: şema, göç, birleştirme.
+{
+  console.log('[110] Konuşmacı doğrulandı kilidi (v2.264)');
+  eq('isSpeakerVerified tanımlı', typeof __schemaMod.isSpeakerVerified, 'function');
+  eq('boş kayıt doğrulanmadı', __schemaMod.isSpeakerVerified(__schemaMod.emptySpeaker()), false);
+  eq('emptySpeaker verifiedAt boş', __schemaMod.emptySpeaker().verifiedAt, '');
+  const nv = __schemaMod.normalizeSpeaker({ id: 's1', label: 'A', verifiedAt: '2026-01-01T10:00:00Z', verifiedBy: 'Uzman' });
+  eq('normalize doğrulamayı korur', __schemaMod.isSpeakerVerified(nv), true);
+  eq('normalize doğrulayanı korur', nv.verifiedBy, 'Uzman');
+  eq('normalize boş alanı boş tutar', __schemaMod.normalizeSpeaker({ id: 's2' }).verifiedAt, '');
+
+  // Birleştirme: gelen doğrulanmış → devralınır; ikisi de doğrulanmışsa YENİ tarih.
+  const base = (verifiedAt, label) => ({
+    id: 'c1',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        speakers: [{ id: 'sp1', code: 'S1', label, verifiedAt, verifiedBy: verifiedAt ? 'U' : '' }],
+        segments: [],
+        log: []
+      }
+    ]
+  });
+  const m1 = __schemaMod.mergeCases(base('', 'A'), base('2026-02-02T10:00:00Z', 'A'));
+  eq('birleştirme: doğrulama devralınır', __schemaMod.isSpeakerVerified(m1.merged.materials[0].speakers[0]), true);
+  const m2 = __schemaMod.mergeCases(base('2026-03-03T10:00:00Z', 'A'), base('2026-02-02T10:00:00Z', 'A'));
+  eq('birleştirme: daha yeni doğrulama korunur', m2.merged.materials[0].speakers[0].verifiedAt, '2026-03-03T10:00:00Z');
+
+  // Kilit anahtarı ve rapor notu kaynakta
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('kart doğrulama anahtarı', /data-spk-verify=/.test(js), true);
+  eq('kilitli alanlar disabled', /const dis = ver \? ' disabled' : ''/.test(js), true);
+  eq('kilitliyken silme devre dışı', /data-del-spk="\$\{esc\(m\.id\)\}\|\$\{esc\(s\.id\)\}"\$\{dis\}/.test(js), true);
+  eq('günlüğe yazılır', /logEvent\(m, on \? 'Konuşmacı doğrulandı'/.test(js), true);
+  eq('rapor notu var', /speakerVerifiedSuffix/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

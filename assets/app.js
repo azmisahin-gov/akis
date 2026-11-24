@@ -44,6 +44,7 @@ import {
   assignSpeakerCodes,
   speakerCodeIssues,
   fixSpeakerCodeConflicts,
+  isSpeakerVerified,
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
@@ -83,15 +84,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.263';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.263';
+} from './schema.js?v=2.264';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.264';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.263';
+const APP_VERSION = '2.264';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -357,6 +358,10 @@ Object.assign(REPORT_TEXT, {
   integrityNotVerified: 'Doğrulanmadı',
   // v2.262 — kod çakışması: rapor iki kez "S1" yazarsa kod hangi kişiyi
   // gösterdiği belirsizleşir. Uyarı üç çıktıda da basılır (gizlenmez).
+  // v2.264 — doğrulanmış konuşmacı künyesi (bölüm onayı DEĞİL).
+  speakerVerifiedSuffix: 'doğrulandı',
+  speakerVerifiedNote:
+    'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
   speakerCodeConflict:
     'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.',
   integrityNote:
@@ -3990,22 +3995,31 @@ function speakersPanelHtml(m) {
           : 'Bağlı kişi bulunamadı (kayıt eksik)'
         : '';
       const stat = speakerStats(m, s);
-      return `<div class="spk-card" data-spk-card="${esc(s.id)}">
-      <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.">Sil</button></div>
+      // v2.264 — DOĞRULANDI KİLİDİ: künye doğrulanınca alanlar ve silme kilitlenir.
+      const ver = isSpeakerVerified(s);
+      const dis = ver ? ' disabled' : '';
+      const verifyLabel = ver
+        ? `✓ ${esc(REPORT_TEXT.speakerVerifiedSuffix)}${s.verifiedBy ? ` · ${esc(s.verifiedBy)}` : ''}`
+        : 'Doğrulandı (kilitle)';
+      const delTitle = ver
+        ? 'Kilitli: silmek için önce doğrulama işaretini kaldırın.'
+        : "Bu konuşmacıyı listeden ve rapor tablosundan kaldır. Ona atanmış bölümler 'Konuşmacı seçilmedi' olur; ses ve metin silinmez.";
+      return `<div class="spk-card${ver ? ' is-verified' : ''}" data-spk-card="${esc(s.id)}">
+      <div class="spk-card-head"><b>${esc(s.code || '')}${s.code ? ' · ' : ''}${esc(s.name)}</b><label class="spk-verify" title="Bu kişinin etiketi/rolü doğruysa işaretleyin: kart kilitlenir ve raporda 'doğrulandı' notu çıkar. Bu bir BÖLÜM ONAYI değildir. Kilidi açmak için işareti kaldırın."><input type="checkbox" data-spk-verify="${esc(s.id)}"${ver ? ' checked' : ''}> ${verifyLabel}</label><button class="mini-button danger" data-del-spk="${esc(m.id)}|${esc(s.id)}"${dis} title="${esc(delTitle)}">Sil</button></div>
       <div class="seg-row2">
         <div class="seg-field"><label>Standart kod</label><span class="spk-code" title="Kod KİMLİKTİR: bölümler ve rapor bu kodla okunur; bu yüzden değiştirilemez. Görünen adı (etiket) aşağıdan değiştirebilirsiniz.">${esc(s.code || '—')}</span></div>
-        <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"></div>
+        <div class="seg-field"><label>Konuşmacı etiketi</label><input data-spk="${esc(s.id)}" data-spk-key="name" value="${esc(s.name)}" placeholder="Örn. Kiracı, Ev sahibi"${dis}></div>
       </div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role">${roleOptions(s.role)}</select></div>
-        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender">${genderOptions(s.gender)}</select></div>
+        <div class="seg-field"><label>Rol</label><select data-spk="${esc(s.id)}" data-spk-key="role"${dis}>${roleOptions(s.role)}</select></div>
+        <div class="seg-field"><label>Cinsiyet (uzman beyanı)</label><select data-spk="${esc(s.id)}" data-spk-key="gender"${dis}>${genderOptions(s.gender)}</select></div>
       </div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"></div>
-        <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"></div>
+        <div class="seg-field"><label>Yaş aralığı</label><input data-spk="${esc(s.id)}" data-spk-key="ageRange" value="${esc(s.ageRange || '')}" placeholder="Örn. 30-40"${dis}></div>
+        <div class="seg-field"><label>Not / gözlem</label><input data-spk="${esc(s.id)}" data-spk-key="notes" value="${esc(s.notes || '')}" placeholder="Örn. aksanlı, kısık ses"${dis}></div>
       </div>
       <div class="seg-row2">
-        <div class="seg-field"><label>Aynı kişi (dosyalar arası)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir.">${personOptions(s)}</select></div>
+        <div class="seg-field"><label>Aynı kişi (dosyalar arası)</label><select data-spk="${esc(s.id)}" data-spk-key="personId" title="Bu konuşmacıyı dosya geneli bir kişiye bağlar. Eşleştirme uzman kanaatidir; otomatik kimlik tespiti değildir."${dis}>${personOptions(s)}</select></div>
         ${linkedNote ? `<div class="seg-field"><label>Bağlantı</label><small>${esc(linkedNote)}</small></div>` : ''}
       </div>
       <div class="spk-actions">${
@@ -10627,7 +10641,8 @@ function speakerRows(c) {
         const parts = links
           .map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`)
           .join(' · ');
-        const note = [p.notes, 'uzman eşleştirmesi'].filter(Boolean).join(' · ');
+        const verified = links.some((x) => isSpeakerVerified(x.sp)) ? REPORT_TEXT.speakerVerifiedSuffix : '';
+        const note = [p.notes, 'uzman eşleştirmesi', verified].filter(Boolean).join(' · ');
         out.push([
           `${p.code ? p.code + ' · ' : ''}${label}`,
           SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
@@ -10640,7 +10655,9 @@ function speakerRows(c) {
         // Bağsız: eski davranış (tek kayıt satırı).
         if (!sp.name || sp.name === 'Belirtilmedi') continue;
         const dur = `${m.name}: ${segs.length} bölüm`;
-        const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : ''].filter(Boolean).join(' · ');
+        const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : '', isSpeakerVerified(sp) ? REPORT_TEXT.speakerVerifiedSuffix : '']
+          .filter(Boolean)
+          .join(' · ');
         const code = sp.code ? `${sp.code} · ` : '';
         out.push([
           `${code}${sp.name}`,
@@ -15755,6 +15772,35 @@ function setupEvents() {
       persist();
       return;
     }
+    // v2.264 — DOĞRULANDI KİLİDİ aç/kapa. Onay ister, günlüğe yazılır,
+    // geri alınabilir. Kilit yalnız KÜNYEyı korur; bölüm onayına dokunmaz.
+    if (el.dataset && el.dataset.spkVerify !== undefined) {
+      const card = el.closest('.audio-card');
+      const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
+      const m = currentCase().materials.find((x) => x.id === id);
+      const rec = m && (m.speakers || []).find((x) => x.id === el.dataset.spkVerify);
+      if (!rec) return;
+      const on = !!el.checked;
+      snapshotForUndo(on ? 'Konuşmacı doğrulandı' : 'Konuşmacı kilidi açıldı');
+      if (on) {
+        rec.verifiedAt = new Date().toISOString();
+        // Kimlik girilmemişse uydurma ad yazmayız; boş kalır (günlükte "bilinmiyor").
+        rec.verifiedBy = editorName() || '';
+      } else {
+        rec.verifiedAt = '';
+        rec.verifiedBy = '';
+      }
+      logEvent(m, on ? 'Konuşmacı doğrulandı' : 'Konuşmacı kilidi açıldı', `${rec.code ? rec.code + ' · ' : ''}${rec.name || rec.id}`);
+      persist();
+      renderSpeakersPanel(m);
+      if ($('#view-report').classList.contains('active')) renderReport();
+      showToast(
+        on
+          ? `${rec.code ? rec.code + ' · ' : ''}${rec.name} doğrulandı: künye kilitlendi. (Bölüm onayı değildir.)`
+          : `${rec.code ? rec.code + ' · ' : ''}${rec.name} kilidi açıldı.`
+      );
+      return;
+    }
     if (!el.dataset || el.dataset.spk === undefined) return;
     const card = el.closest('.audio-card');
     const id = card?.querySelector('[data-transcribe]')?.dataset.transcribe;
@@ -17299,6 +17345,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.264': {
+    title: 'Konuşmacı "doğrulandı" kilidi',
+    body:
+      'Konuşmacı kartında "Doğrulandı (kilitle)" işareti var. İşaretlenince etiket/rol/cinsiyet/yaş/not ' +
+      'alanları ve Sil düğmesi kilitlenir; raporda "doğrulandı" notu çıkar, kart yeşil kenarla işaretlenir. ' +
+      'Kilit yalnız KÜNYEyı korur: bölüm onayı değildir ve "Kontrol" sütununu etkilemez. İşlem geri ' +
+      'alınabilir (Ctrl+Z) ve delil günlüğüne yazılır. Paket birleştirmede doğrulama aktarılır.'
+  },
   '2.263': {
     title: 'Konuşmacı atama hızlandı: Alt+1…9 · örnek dinle · tümünü dinle',
     body:
