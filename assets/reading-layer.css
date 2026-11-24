@@ -3642,3 +3642,16 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* v2.244 — İş yükü: tek satır özet başlığı */
 .wl-headline { font-size: var(--fs-sm); color: var(--ink); margin: 0 0 8px; line-height: var(--lh-body); }
+
+/* ===== v2.249 — Analiz / Kayıt bilgileri sekmeleri kendi içinde kayar =====
+   Ölçüm (1440×900): .card-pane[data-pane=listen] içerik 810 / görünür 673,
+   overflow visible; #audioDetail overflow:hidden → alttaki "Konuşmacılar ve ses
+   özellikleri" (725–988) KIRPILIYOR, kaydırma yok.
+   v2.129'un `#view-audio .card-pane.on { overflow:visible }` kuralı bu iki
+   sekmeyi de kapsıyordu. Daha yüksek özgüllükle yalnız bu iki sekmeyi kaydırırız;
+   DEŞİFRE sekmesi DEĞİŞMEZ (kendi iç kaydırması korunur). */
+#view-audio .card-pane.on[data-pane="listen"],
+#view-audio .card-pane.on[data-pane="record"] {
+  max-height: 100%;
+  overflow-y: auto;
+}

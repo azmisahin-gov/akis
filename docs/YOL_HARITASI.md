@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.248.**
+yazılır. **Güncel sürüm: v2.249.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.249 — Analiz sekmesi kırpılmıyor, kendi içinde kayar (TAMAMLANDI)
+
+- Ölçüm: Analiz içeriği 810/görünür 673; `#audioDetail overflow:hidden` alttaki
+  "Konuşmacılar" bölümünü kesiyordu.
+- Yalnız `[data-pane=listen]/[data-pane=record]` sekmelerine `overflow-y:auto`.
+  Deşifre sekmesi değişmedi. Koruyan: `birim [101]`.
 
 ## v2.248 — Video dosyalarından ses çözümü (yalnız ses) (TAMAMLANDI)
 

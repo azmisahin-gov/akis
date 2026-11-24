@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.248';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.248';
+} from './schema.js?v=2.249';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.249';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.248';
+const APP_VERSION = '2.249';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16821,6 +16821,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.249': {
+    title: 'Analiz sekmesinin altı artık görünüyor',
+    body:
+      'Analiz sekmesinde "Konuşmacılar ve ses özellikleri" bölümünün altı görünmüyordu (içerik ' +
+      'kartın altında kalıp kırpılıyordu). Artık Analiz ve Kayıt bilgileri sekmeleri kendi içinde ' +
+      'kayar; en alttaki içeriğe ulaşılır. Deşifre sekmesi değişmedi.'
+  },
   '2.248': {
     title: 'Video dosyalarından ses çözümü (yalnız ses)',
     body:

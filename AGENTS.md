@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.248.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.249.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5642,3 +5642,33 @@ etiket gizliydi.
 ### Fizibilite tarifi (tekrar)
 `ffmpeg` (imageio-ffmpeg) ile WAV→`out.mp4/.mov/.webm`; CDP `Runtime.evaluate` (awaitPromise) ile
 `fetch→decodeAudioData` ve `<audio>.duration` ölç. Bu ortamda üçü de çözüldü.
+
+## YENİ OTURUM DEVRİ (v2.249) — Analiz sekmesi kırpılması
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.249** |
+| Testler | `bash tools/test.sh` → **1531 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [101]` |
+| Ölçüm | CDP 1440×900: Analiz içerik 810/görünür 673 → sonra kaydırınca son bölüm görünür |
+
+### Kök neden
+`#view-audio .card-pane.on { overflow:visible }` (v2.129) Analiz/Kayıt sekmelerini de kapsıyordu;
+`#audioDetail { overflow:hidden }` alttaki "Konuşmacılar ve ses özellikleri"ni kesiyordu.
+
+### Düzeltme
+- Yalnız `#view-audio .card-pane.on[data-pane="listen"], [data-pane="record"] { max-height:100%; overflow-y:auto }`
+  (daha yüksek özgüllük). **Deşifre sekmesi değişmez** (kendi iç kaydırması korunur).
+
+### DEĞİŞMEZ
+- Deşifre/hızlı kontrol ekranının iç kaydırma düzenine DOKUNMA. Yeni bir sekme/panel eklerken
+  kırpılma ölçütü: `scrollHeight > clientHeight` + ata zincirinde `overflow:hidden` var mı.
+- `overflow:hidden` + taşan çocuk = sessiz kırpma; çözüm o paneli kaydırmak.
+
+### SIRADAKİ (video IA + rapor, kullanıcı kararı bekliyor)
+- Video **ayrı sayfa mı** yoksa **Ses** başlığını "Ses/Video" mu yapmalı? (öneri: ayrı sayfa YOK;
+  video bir konteynerdir; "Ses"i "Ses/Video" yap. Video oynatma varsayılan değil, isteğe bağlı.)
+- Rapora "video kaydından yalnız ses çözülmüştür" notu (üç çıktı).
+- Desteklenen video kodekleri genişletme (gerçek dosyalarla ölçerek).

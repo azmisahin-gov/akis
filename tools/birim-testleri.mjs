@@ -4641,5 +4641,16 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('biçim M4A (ses)', T.audioFormatLabel('a.m4a', ''), 'M4A');
 }
 
+// [101] v2.249 — Analiz/Kayıt bilgileri sekmeleri kırpılmaz, kendi içinde kayar.
+{
+  console.log('[101] Analiz sekmesi kaydırma (v2.249)');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq(
+    'Analiz/Kayıt sekmeleri overflow-y auto',
+    /#view-audio \.card-pane\.on\[data-pane="listen"\][\s\S]{0,200}overflow-y:\s*auto/.test(css),
+    true
+  );
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

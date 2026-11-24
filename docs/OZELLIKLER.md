@@ -1,4 +1,4 @@
-# Özellikler (v2.248 — mevcut durum)
+# Özellikler (v2.249 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -187,6 +187,11 @@ Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
 - Elle bölüm ekleme.
 
 ## Deşifre ve kontrol çalışma alanı
+
+- **Analiz / Kayıt bilgileri sekmeleri kendi içinde kayar (v2.249):** bu sekmelerin
+  altındaki içerik (ör. "Konuşmacılar ve ses özellikleri") daha önce kartın
+  `overflow:hidden`'ı ile kırpılıyordu; artık kaydırılarak erişilir. **Deşifre
+  sekmesi değişmez.** (Ölçüm: içerik 810 / görünür 673 → kaydırınca son bölüm görünür.)
 
 Uzmanın en çok zaman geçirdiği alan olduğu için hızlı ve hatasız kontrol
 hedefiyle tasarlanmıştır. **İki panel** kullanır: solda bölüm listesi (gezinme),

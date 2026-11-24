@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.248.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.249.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.249 — Analiz sekmesi kırpılmıyor (kendi içinde kayar)
+
+Kullanıcı: "Analiz kısmında 'Konuşmacılar ve ses özellikleri' etiketini görüyorum,
+altını göremiyorum; boş alan var ama sığmamış." **Gerçek Chromium ölçümü (1440×900)**
+kanıtladı: içerik 810 px, görünür 673 px, `overflow: visible`; `#audioDetail
+overflow:hidden` alttaki bölümü (725–988) **kesiyordu**, kaydırma yoktu.
+
+### KULLANICI NE GÖRECEK
+- **Analiz** ve **Kayıt bilgileri** sekmeleri artık **kendi içinde kayar**; en
+  alttaki **Konuşmacılar ve ses özellikleri** içeriğine ulaşılır.
+- **Deşifre sekmesi DEĞİŞMEDİ** (kendi iç kaydırması korunur).
+
+### Ne değişti
+- v2.129'un `#view-audio .card-pane.on { overflow:visible }` kuralı bu iki sekmeyi
+  de kapsıyordu. Daha yüksek özgüllükle **yalnız** `[data-pane="listen"]` ve
+  `[data-pane="record"]` sekmelerine `overflow-y:auto; max-height:100%` verildi.
+
+### Ölçüm (sonra)
+- Analiz sekmesi: `overflow-y:auto`, 673/810; aşağı kaydırınca son bölüm
+  **görünür** (`lastBottomVisible=true`). Deşifre: pane `overflow hidden`, liste
+  `overflow auto` (492/492) → bozulmadı.
+
+### Koruyan test
+- `birim [101]`.
 
 ## v2.248 — Video dosyalarından ses çözümü (yalnız ses)
 
