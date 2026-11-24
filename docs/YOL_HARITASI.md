@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.267.**
+yazılır. **Güncel sürüm: v2.268.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.268 — Rapor netliği (TAMAMLANDI)
+
+- Konuşmacı künyesi tablosu sade; süre/aralık **ayrı** "Konuşmacı süreleri" tablosunda
+  (KONUŞMACI · BÖLÜM · SÜRE · İLK – SON) + dipnot. Tek kaynak: `speakerGroups`.
+- **EK-5 üç tablo:** konuşmacı kodları · metin işaretleri · **gözlem işaretleri (OBS_DEFS'ten)**.
+  Ek blok türü `tables` üç çıktıda desteklenir.
+- Okuma metni + ¶ penceresi kayıt konuşmacı satırını taşır.
+- Koruyan: `birim` [115], `rapor` 35, `tasarim` [2cm].
 
 ## v2.267 — S/K ayrımı ve açıklamalar (TAMAMLANDI)
 

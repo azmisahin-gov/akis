@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.267.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.268.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6223,4 +6223,44 @@ atamaların doğru olduğu anlamına gelmez. Gerçek ayrıştırma için konuşm
 | Rozet ipucu | `Konuşmacı: S2 · Konuşmacı 2 — bu kayda özgü kod` |
 | Rapor | S/K paragrafı + `Bu kaydın konuşmacıları: S2 · Konuşmacı 2 (1 bölüm)` |
 | Kırpılma / taşma (1440/1280/1100/900) | 0 / yok |
+| JS hatası | 0 |
+
+## YENİ OTURUM DEVRİ (v2.268) — Rapor netliği
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.268** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1716 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Analiz sayfası düzeni (v2.269), WER referans alanı (v2.270), gömme modeli (v2.271) |
+
+### Yapılan
+
+- **Konuşmacı künyesi tablosu sadeleşti**; süre/aralık **ayrı** "Konuşmacı süreleri"
+  tablosunda: `KONUŞMACI · BÖLÜM · SÜRE · İLK – SON` + altında tek satır dipnot.
+  **TEK KAYNAK:** `speakerGroups(c)` → `speakerRows` + `speakerDurationRows`.
+- **EK-5 üç tablo:** Konuşmacı kodları · Metin işaretleri · **Gözlem işaretleri**.
+  Gözlem satırları `OBS_DEFS`ten **otomatik**; yeni bayrak eklenince anahtar kendiliğinden güncellenir.
+- Ek blok türü **`tables`** (HTML/DOCX/UDF). Yeni bir "çok tablolu ek" gerekirse bu türü kullanın.
+- **Okuma metni + ¶ penceresi** kayıt konuşmacı satırını (`materialSpeakerLine`) taşır.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **İki tablo tek kaynaktan:** künye ve süre tabloları `speakerGroups`tan üretilir; ayrı hesap yazmayın.
+2. **Gözlem anahtarı elle yazılmaz:** `OBS_DEFS.map(d => [d.label, d.hint])`. Yeni bayrakta
+   rapor anahtarı otomatik güncellenir (test [115] satır sayısını OBS_DEFS ile karşılaştırır).
+3. **Ek blok türleri:** `para` · `table` · `tables`. Üç çıktı da (`b.kind === 'tables'`) destekler;
+   test [2cm] sayısını denetler.
+4. Raporda ölçülmeyen süre/aralık **"—"**; uydurma yok.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Konuşmacılar bölümünde tablo | 2 (künye + süre) |
+| Süre başlığı/dipnot | var |
+| EK-5 üç tablo + 6 gözlem etiketi | var |
+| "Bu kaydın konuşmacıları" | 2 kez (bulgular + okuma) |
+| Kırpılan tablo (1440/1280/1100/900) | 0 |
 | JS hatası | 0 |

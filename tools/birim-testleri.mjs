@@ -150,7 +150,7 @@ const EXPOSE = [
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
-  'speakerLegendItems', 'materialSpeakerLine',
+  'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -5098,6 +5098,54 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('rozet ipucu kayda özgü der', /bu kayda özgü kod/i.test(js), true);
   eq('EK-5 S tanımı', /Kayıt içi konuşmacı kodu/.test(js), true);
   eq('EK-5 K tanımı', /Dosyalar arası kişi kodu/.test(js), true);
+}
+
+
+// [115] v2.268 — Rapor netliği: süre tablosu + EK-5 üç tablo (tek kaynak).
+{
+  console.log('[115] Süre tablosu ve gösterim anahtarı (v2.268)');
+  const c = {
+    id: 'c1',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        speakers: [
+          { id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }
+        ],
+        segments: [
+          { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'a' },
+          { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'a' }
+        ]
+      }
+    ]
+  };
+  eq('speakerDurationRows tanımlı', typeof T.speakerDurationRows, 'function');
+  const rows = T.speakerDurationRows(c);
+  eq('bir satır', rows.length, 1);
+  eq('etiket', rows[0][0], 'S1 · Kiracı');
+  eq('bölüm sayısı', rows[0][1], '2 bölüm');
+  eq('süre', rows[0][2], '00:10');
+  eq('ilk–son', rows[0][3], '00:00:00.000 – 00:00:10.000');
+  // Bölümü olmayan konuşmacı süre tablosuna GİRMEZ.
+  const c2 = JSON.parse(JSON.stringify(c));
+  c2.materials[0].speakers.push({ id: 'z', code: 'S2', name: 'Boş', label: 'Boş' });
+  eq('atanmamış kişi süre tablosunda yok', T.speakerDurationRows(c2).length, 1);
+
+  // EK-5: ÜÇ tablo ve gözlem satırları OBS_DEFS'ten (tek kaynak).
+  // Normalizasyon eksik ekleri sona ekler; bu yüzden EK-5'i BAŞLIĞINDAN bul.
+  const blocks = T.reportAnnexBlocks({ ...c, report: { sections: { annex: true } } });
+  const b = blocks.find((x) => /GÖSTERİM ANAHTARI/.test(x.heading));
+  eq('EK-5 bulundu', !!b, true);
+  eq('tables türü', b.kind, 'tables');
+  eq('üç tablo', b.tables.length, 3);
+  eq('tablo 1 başlığı', b.tables[0].title, 'Konuşmacı kodları');
+  eq('tablo 2 başlığı', b.tables[1].title, 'Metin işaretleri');
+  eq('tablo 3 başlığı', b.tables[2].title, 'Gözlem işaretleri');
+  eq('gözlem satırı sayısı = OBS_DEFS', b.tables[2].rows.length, __schemaMod.OBS_DEFS.length);
+  eq('gözlem satırı etiketi', b.tables[2].rows[0][0], __schemaMod.OBS_DEFS[0].label);
+  eq('gözlem satırı ipucu', b.tables[2].rows[0][1], __schemaMod.OBS_DEFS[0].hint);
+  eq('S/K satırları var', b.tables[0].rows.length, 2);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

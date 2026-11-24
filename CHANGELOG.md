@@ -6,12 +6,60 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.267.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.268.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.268 — Rapor netliği: süre tablosu ayrıldı, anahtar üç tablo
+
+Kullanıcı iki şeyi fark etti: (1) konuşmacı tablosunun NOT hücresi süre/aralıkla
+**sıkıştı**, (2) **EK-5 gösterim anahtarı eksik** — uygulamada 6 gözlem bayrağı var
+ama anahtarda hiçbiri yazmıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Konuşmacılar** tablosunun NOT hücresi sade: kayıt + bölüm sayısı + not/doğrulama.
+- Hemen altında **“Konuşmacı süreleri”** tablosu: `KONUŞMACI · BÖLÜM · SÜRE · İLK – SON`
+  (dosyalar arası kişide bağlı kayıtların **toplamı**).
+- Tabloların altında **tek satır açıklama** (S kayıt içi / K dosyalar arası; süre=toplam,
+  ilk–son=duyulma aralığı; ölçülmeyen “—”).
+- **EK-5 üç tablo:**
+  1. **Konuşmacı kodları** — S1/S2 (kayıt içi) ve K1/K2 (dosyalar arası)
+  2. **Metin işaretleri** — `[anlaşılmıyor]`, `[kısmen…]`, `[eşzamanlı konuşma]`, `[konuşma dışı ses]`
+  3. **Gözlem işaretleri** — **uygulamadaki 6 bayrağın tamamı** (`OBS_DEFS`'ten **otomatik** üretilir)
+- **Okuma metninde** de her kaydın başında “Bu kaydın konuşmacıları: S1 · Kiracı (12) · …”.
+
+### Teknik
+
+- `speakerGroups(c)` — **tek kaynak**; `speakerRows` (künye) ve `speakerDurationRows`
+  (süre) aynı gruptan üretilir. Böylece iki tablo asla ayrışmaz.
+- `REPORT_TEXT.speakerDurationHeading/Headers/Footnote`.
+- Ek blok türü **`tables`** eklendi (HTML/DOCX/UDF üçünde); `ek4` artık 3 tablo döndürür,
+  gözlem satırları `OBS_DEFS.map(d => [d.label, d.hint])` ile üretilir.
+- Okuma metni (HTML/DOCX/UDF) ve ¶ penceresi `materialSpeakerLine(m)` satırını taşır.
+
+### Koruyan testler
+
+- `birim` **[115]** (16): süre satırları (etiket/bölüm/süre/aralık), atanmamış kişi girmez,
+  EK-5 üç tablo, gözlem satırı sayısı **= OBS_DEFS**, S/K iki satır.
+- `rapor` **Senaryo 35**: üç çıktıda süre tablosu + dipnot + üç anahtar tablosu +
+  **tüm gözlem etiketleri** + okuma metni kayıt satırı.
+- `rapor` 13/33 güncellendi (iki tablo düzeni: kişi her tabloda bir kez).
+- `tasarim` **[2cm]** (6): ayrı süre tablosu, sade NOT hücresi, `tables` desteği üç çıktıda.
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Konuşmacılar bölümünde tablo | **2** (künye + süre) |
+| “Konuşmacı süreleri” / dipnot | **var** |
+| EK-5 üç tablo + 6 gözlem etiketi | **var** |
+| “Bu kaydın konuşmacıları” | **2 kez** (bulgular + okuma metni) |
+| Kırpılan tablo (1440/1280/1100/900) | **0** |
+| Yatay taşma / JS hatası | **yok / 0** |
 
 ## v2.267 — S ve K kodları artık açıklanıyor (kayıt içi / dosyalar arası)
 

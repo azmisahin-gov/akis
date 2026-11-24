@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.267';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.267';
+} from './schema.js?v=2.268';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.268';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.267';
+const APP_VERSION = '2.268';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -369,6 +369,11 @@ Object.assign(REPORT_TEXT, {
   speakerCodeNote:
     'Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.',
   recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
+  // v2.268 — süre/aralık AYRI tabloda; ana tablo sıkışmaz.
+  speakerDurationHeading: 'Konuşmacı süreleri',
+  speakerDurationHeaders: ['KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
+  speakerFootnote:
+    'S kodları kayıt içidir (her kayıtta S1\'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.',
   speakerVerifiedSuffix: 'doğrulandı',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
@@ -8258,9 +8263,11 @@ function openParagraphView(m) {
   if (!dlg || !body) return;
   const groups = paragraphGroups(m.segments || []);
   if (note) {
+    const spkLine = materialSpeakerLine(m);
     note.textContent =
       'Salt okunur: bölümleri değiştirmez; raporda ayrıntılı (zaman damgalı) bölüm tablosu aynen kalır. ' +
-      'Önerilen bölüm uzunluğu: 1–3 cümle veya 15–30 sn.';
+      'Önerilen bölüm uzunluğu: 1–3 cümle veya 15–30 sn.' +
+      (spkLine ? ' ' + spkLine : '');
   }
   body.innerHTML = groups.length
     ? groups
@@ -10791,10 +10798,23 @@ function originRows(c) {
   return out;
 }
 function speakerRows(c) {
-  // DOSYA GENELİ KİŞİLER (v2.205): aynı kişi birden çok kayıtta
-  // eşleştirilmişse TEK satırda gösterilir. Eşleştirme UZMAN KANAATİDİR;
-  // otomatik kimlik tespiti değildir. Bağsız konuşmacılar eski davranışla
-  // (her kayıt için ayrı satır) gösterilir.
+  // v2.268 — TEK KAYNAK: tablo satırları `speakerGroups`tan üretilir.
+  // Süre/aralık artık AYRI tabloda (aşağıda) gösterilir; ana tablonun
+  // "BÖLÜM / NOT" hücresi sıkışmaz.
+  return speakerGroups(c).map((g) => [
+    g.label,
+    g.role,
+    g.gender,
+    g.age,
+    g.pitches || '—',
+    `${g.parts}${g.note ? ' · ' + g.note : ''}`
+  ]);
+}
+/**
+ * Konuşmacı grupları (v2.268) — ana tablo ve süre tablosunun ORTAK kaynağı.
+ * Dosya geneli kişi bağlıysa tek grup; bağsız konuşmacı kayıt başına ayrı grup.
+ */
+function speakerGroups(c) {
   const out = [];
   const persons = new Map((c.speakers || []).map((p) => [p.id, p]));
   const linksByPerson = new Map();
@@ -10828,57 +10848,74 @@ function speakerRows(c) {
           .filter((x) => x.sp.pitch)
           .map((x) => `${x.m.name}: ${fmtHz(x.sp.pitch)}`)
           .join('; ');
-        // v2.266 — süre ve ilk/son duyulma: bağlı kayıtların TOPLAMI.
         let totalSec = 0;
+        let count = 0;
         let firstAt = '';
         let lastAt = '';
         for (const l of links) {
           const st = speakerStats(l.m, l.sp);
           totalSec += st.totalSec;
+          count += st.count;
           if (st.first && (!firstAt || st.first < firstAt)) firstAt = st.first;
           if (st.last && st.last > lastAt) lastAt = st.last;
         }
-        const parts = links
-          .map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`)
-          .join(' · ');
-        const span = firstAt && lastAt ? tcRange(firstAt, lastAt) : '';
-        const summary = [parts, totalSec ? `toplam ${fmtShort(totalSec)}` : '', span].filter(Boolean).join(' · ');
+        const parts = links.map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`).join(' · ');
         const verified = links.some((x) => isSpeakerVerified(x.sp)) ? REPORT_TEXT.speakerVerifiedSuffix : '';
         const note = [p.notes, 'uzman eşleştirmesi', verified].filter(Boolean).join(' · ');
-        out.push([
-          `${p.code ? p.code + ' · ' : ''}${label}`,
-          SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
-          SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
+        out.push({
+          label: `${p.code ? p.code + ' · ' : ''}${label}`,
+          role: SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
+          gender: SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
           age,
-          pitches || '—',
-          `${summary}${note ? ' · ' + note : ''}`
-        ]);
+          pitches,
+          parts,
+          note,
+          count,
+          totalSec,
+          first: firstAt,
+          last: lastAt
+        });
       } else {
-        // Bağsız: eski davranış (tek kayıt satırı).
         if (!sp.name || sp.name === 'Belirtilmedi') continue;
-        // v2.266 — süre ve ilk/son duyulma (tek kayıt).
         const stat = speakerStats(m, sp);
-        const span = stat.first && stat.last ? tcRange(stat.first, stat.last) : '';
-        const dur = [m.name + ': ' + segs.length + ' bölüm', stat.totalSec ? 'toplam ' + fmtShort(stat.totalSec) : '', span]
+        const note = [
+          sp.notes,
+          sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : '',
+          isSpeakerVerified(sp) ? REPORT_TEXT.speakerVerifiedSuffix : ''
+        ]
           .filter(Boolean)
           .join(' · ');
-        const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : '', isSpeakerVerified(sp) ? REPORT_TEXT.speakerVerifiedSuffix : '']
-          .filter(Boolean)
-          .join(' · ');
-        const code = sp.code ? `${sp.code} · ` : '';
-        out.push([
-          `${code}${sp.name}`,
-          SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
-          SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
-          sp.ageRange || '—',
-          pitchCellText(sp),
-          `${dur}${note ? ' · ' + note : ''}`
-        ]);
+        out.push({
+          label: `${sp.code ? sp.code + ' · ' : ''}${sp.name}`,
+          role: SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
+          gender: SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
+          age: sp.ageRange || '—',
+          pitches: pitchCellText(sp) === 'Ölçülmedi' ? '' : pitchCellText(sp),
+          parts: `${m.name}: ${segs.length} bölüm`,
+          note,
+          count: stat.count,
+          totalSec: stat.totalSec,
+          first: stat.first,
+          last: stat.last
+        });
       }
     }
   }
   return out;
 }
+/**
+ * Süre tablosu satırları (v2.268): KONUŞMACI · BÖLÜM · SÜRE · İLK – SON.
+ * Ölçülmemiş değer uydurulmaz; süre 0 ise "—" yazılır.
+ */
+function speakerDurationRows(c) {
+  return speakerGroups(c).map((g) => [
+    g.label,
+    `${g.count} bölüm`,
+    g.totalSec ? fmtShort(g.totalSec) : '—',
+    g.first && g.last ? tcRange(g.first, g.last) : '—'
+  ]);
+}
+
 // Rapor tablosunda zaman aralığını TEK biçimde yazar. Bölüm sınırı elle
 // girilmiş eski kayıtta "00:00:00" (ms'siz) olabilir; yanında ".000" varsa
 // sütun tutarsız görünür. Bu yardımcı her iki ucu aynı biçime çeker.
@@ -12099,17 +12136,35 @@ function reportAnnexBlocks(c) {
       rows: logRows,
       empty: REPORT_TEXT.annexNoLog
     },
+    // v2.268 — GÖSTERİM ANAHTARI ÜÇ TABLO: konuşmacı kodları · metin işaretleri ·
+    // gözlem işaretleri. Gözlem satırları OBS_DEFS'ten ÜRETİLİR (tek kaynak);
+    // yeni bir bayrak eklendiğinde anahtar kendiliğinden güncellenir.
     ek4: {
-      kind: 'table',
-      header: true,
-      headers: ['İŞARET', 'ANLAMI'],
-      rows: [
-        ['S1, S2…', 'Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1\'den başlar; kişi kimliği değildir.'],
-        ['K1, K2…', 'Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir.'],
-        ['[anlaşılmıyor]', 'Ses güvenilir biçimde çözümlenemedi.'],
-        ['[kısmen anlaşılmıyor]', 'Bir bölüm veya sözcük çözümlenemedi.'],
-        ['[eşzamanlı konuşma]', 'Üst üste konuşma; ayrıştırılamadı.'],
-        ['[konuşma dışı ses]', 'Gülme, öksürme, kapı vb. gözlenebilir ses.']
+      kind: 'tables',
+      tables: [
+        {
+          title: 'Konuşmacı kodları',
+          headers: ['KOD', 'ANLAMI'],
+          rows: [
+            ['S1, S2…', 'Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1\'den başlar; kişi kimliği değildir.'],
+            ['K1, K2…', 'Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir.']
+          ]
+        },
+        {
+          title: 'Metin işaretleri',
+          headers: ['İŞARET', 'ANLAMI'],
+          rows: [
+            ['[anlaşılmıyor]', 'Ses güvenilir biçimde çözümlenemedi.'],
+            ['[kısmen anlaşılmıyor]', 'Bir bölüm veya sözcük çözümlenemedi.'],
+            ['[eşzamanlı konuşma]', 'Üst üste konuşma; ayrıştırılamadı.'],
+            ['[konuşma dışı ses]', 'Gülme, öksürme, kapı vb. gözlenebilir ses.']
+          ]
+        },
+        {
+          title: 'Gözlem işaretleri',
+          headers: ['İŞARET', 'ANLAMI'],
+          rows: OBS_DEFS.map((d) => [d.label, d.hint])
+        }
       ]
     },
     ek5: { kind: 'table', header: false, rows: reportChecklistRows(c) },
@@ -12710,7 +12765,11 @@ function renderReport() {
     speakers: () => {
       const spkRows = speakerRows(c);
       const conf = speakerCodeConflictText(c);
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table></div>`;
+      const durRows = speakerDurationRows(c);
+      const durTable = durRows.length
+        ? `<h4>${esc(REPORT_TEXT.speakerDurationHeading)}</h4><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerDurationHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${durRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+        : '';
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table>${durTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
@@ -12787,6 +12846,12 @@ function renderReport() {
         const groups = readingGroupsFor(m);
         if (!groups.length) continue;
         parts.push(`<h4>${esc(m.name || '')}</h4>`);
+        {
+          // v2.268 — S kodları kayıt içidir; okuma metninde de kaydın
+          // konuşmacıları yazılır (bulgular bölümüyle aynı satır).
+          const spkLine = materialSpeakerLine(m);
+          if (spkLine) parts.push(`<p class="paper-muted">${esc(spkLine)}</p>`);
+        }
         for (const g of groups) parts.push(`<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`);
       }
       if (!parts.length) return '';
@@ -12834,6 +12899,10 @@ function renderReport() {
         out += `<h4>${esc(b.heading)}</h4>`;
         if (b.kind === 'para') {
           out += `<p>${esc(b.text)}</p>`;
+        } else if (b.kind === 'tables') {
+          for (const t of b.tables) {
+            out += `<p class="paper-muted"><b>${esc(t.title)}</b></p><table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          }
         } else if (b.header) {
           out += `<table class="paper-table"><thead><tr>${b.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.length ? b.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${b.headers.length}">${esc(b.empty || '—')}</td></tr>`}</tbody></table>`;
         } else {
@@ -13129,6 +13198,7 @@ function docxXml(c) {
     },
     speakers: () => {
       const dSpk = speakerRows(c);
+      const dDur = speakerDurationRows(c);
       const conf = speakerCodeConflictText(c);
       return (
         headingXml(H('speakers')) +
@@ -13138,7 +13208,12 @@ function docxXml(c) {
         wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
           widths: [1500, 1200, 1100, 1200, 1900, 2200],
           header: true
-        })
+        }) +
+        (dDur.length
+          ? headingXml(REPORT_TEXT.speakerDurationHeading, 2) +
+            wTable([[...REPORT_TEXT.speakerDurationHeaders], ...dDur], { widths: [2600, 1400, 1400, 3600], header: true })
+          : '') +
+        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
       );
     },
     s4: () => headingXml(H('s4')) + wP(c.methodText || DEFAULT_METHOD),
@@ -13231,6 +13306,10 @@ function docxXml(c) {
         const groups = readingGroupsFor(m);
         if (!groups.length) continue;
         out += wP(m.name || '', { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
+        {
+          const spkLine = materialSpeakerLine(m);
+          if (spkLine) out += wP(spkLine, { color: '6F8295', size: 17 });
+        }
         for (const g of groups) {
           out += wP(g.head, { bold: true, color: '385873', size: 18, before: 60, after: 20, keep: true });
           out += wP(g.text);
@@ -13295,6 +13374,11 @@ function docxXml(c) {
         out += headingXml(b.heading, 2);
         if (b.kind === 'para') {
           out += wP(b.text);
+        } else if (b.kind === 'tables') {
+          for (const t of b.tables) {
+            out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
+            out += wTable([[...t.headers], ...t.rows], { header: true });
+          }
         } else if (b.header) {
           const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
           out += wTable([[...b.headers], ...rows], { header: true });
@@ -13679,6 +13763,12 @@ async function makeUdf() {
           { header: true }
         )
       );
+      const uDur = speakerDurationRows(c);
+      if (uDur.length) {
+        el.push(paragraph(REPORT_TEXT.speakerDurationHeading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+        el.push(table([[...REPORT_TEXT.speakerDurationHeaders], ...uDur], [120, 70, 70, 200], { header: true }));
+      }
+      el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
     s4: () => {
       el.push(h(H('s4')));
@@ -13799,6 +13889,10 @@ async function makeUdf() {
       el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       for (const { m, groups } of groupsByMat) {
         el.push(paragraph(m.name || '', { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
+        {
+          const spkLine = materialSpeakerLine(m);
+          if (spkLine) el.push(paragraph(spkLine, { size: 9, color: 'muted', after: 2 }));
+        }
         for (const g of groups) {
           el.push(paragraph(g.head, { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
           el.push(paragraphLines(g.text, { justify: true }));
@@ -13865,6 +13959,11 @@ async function makeUdf() {
         el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
         if (b.kind === 'para') {
           el.push(paragraphLines(b.text, { justify: true }));
+        } else if (b.kind === 'tables') {
+          for (const t of b.tables) {
+            el.push(paragraph(t.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
+            el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true }));
+          }
         } else {
           const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
           const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
@@ -17606,6 +17705,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.268': {
+    title: 'Rapor netliği: süre tablosu ayrıldı, gösterim anahtarı üç tablo',
+    body:
+      'Konuşmacı tablosunun NOT hücresi artık sıkışmıyor: süre ve ilk–son duyulma AYRI "Konuşmacı süreleri" ' +
+      'tablosunda (KONUŞMACI · BÖLÜM · SÜRE · İLK – SON) ve altında tek satır açıklama var. EK-5 gösterim ' +
+      'anahtarı üç tabloya ayrıldı: konuşmacı kodları (S/K) · metin işaretleri · gözlem işaretleri. Gözlem ' +
+      'tablosu uygulamadaki bayraklardan OTOMATİK üretilir; yeni bayrak eklenince anahtar kendiliğinden güncellenir. ' +
+      'Okuma metninde de her kaydın başında "Bu kaydın konuşmacıları" satırı yazılır.'
+  },
   '2.267': {
     title: 'S ve K kodları artık açıklanıyor (kayıt içi / dosyalar arası)',
     body:

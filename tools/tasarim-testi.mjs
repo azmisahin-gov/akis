@@ -2082,5 +2082,17 @@ console.log('\n[2cl] S/K ayrımı ve açıklamalar (v2.267)');
   check('açıklama punto token', /\.spk-legend\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
 }
 
+
+console.log('\n[2cm] Rapor netliği: süre tablosu + üç anahtar tablosu (v2.268)');
+{
+  const js = read('assets/app.js');
+  check('süre tablosu ayrı', /function speakerDurationRows\(/.test(js) && /REPORT_TEXT\.speakerDurationHeading/.test(js));
+  check('ana tablo sade (süre/aralık taşımaz)', /g\.parts\}\$\{g\.note/.test(js));
+  check('EK-5 üç tablo', /tables: \[/.test(js) && /Konuşmacı kodları/.test(js) && /Metin işaretleri/.test(js) && /Gözlem işaretleri/.test(js));
+  check('gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(js));
+  check('üç çıktı tables destekler', (js.match(/b\.kind === 'tables'/g) || []).length === 3);
+  check('okuma metninde kayıt satırı', (js.match(/materialSpeakerLine\(m\)/g) || []).length >= 5);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

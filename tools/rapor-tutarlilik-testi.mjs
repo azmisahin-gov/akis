@@ -516,11 +516,13 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   checkShared('iki kayıt tek satırda (B)', 'b.wav: S1 · 1 bölüm', H, U, D);
   checkShared('uzman eşleştirmesi notu', 'uzman eşleştirmesi', H, U, D);
   checkShared('konuşmacı açıklaması', REPORT_TEXT.speakerIntro, H, U, D);
-  // Aynı kişi iki kez satıra düşmemeli: her çıktıda tek "K1 · Kiracı".
+  // Aynı kişi KAYIT BAŞINA satıra düşmemeli. v2.268'den beri iki tablo var
+  // (konuşmacı künyesi + süre tablosu); bu yüzden etiket her çıktıda TAM 2 kez
+  // görünür (her tabloda bir kez), kayıt sayısı kadar değil.
   const count = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
-  check('kişi tek satır (HTML)', count(H) === 1, String(count(H)));
-  check('kişi tek satır (UDF)', count(U) === 1, String(count(U)));
-  check('kişi tek satır (DOCX)', count(D) === 1, String(count(D)));
+  check('kişi kayıt başına çoğalmaz (HTML)', count(H) === 2, String(count(H)));
+  check('kişi kayıt başına çoğalmaz (UDF)', count(U) === 2, String(count(U)));
+  check('kişi kayıt başına çoğalmaz (DOCX)', count(D) === 2, String(count(D)));
 }
 
 // Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
@@ -1209,9 +1211,13 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'iki', review: 'approved' }
   ];
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('satırda toplam süre', 'toplam 00:10', H, U, D);
-  checkShared('satırda ilk/son duyulma', '00:00:10.000', H, U, D);
-  checkShared('bölüm sayısı korunur', 'a.wav: 2 bölüm', H, U, D);
+  // v2.268: süre/aralık AYRI tabloda; ana tablonun NOT hücresi sıkışmaz.
+  checkShared('süre tablosu başlığı', REPORT_TEXT.speakerDurationHeading, H, U, D);
+  checkShared('süre tablosu sütunları', REPORT_TEXT.speakerDurationHeaders[2], H, U, D);
+  checkShared('süre değeri', '00:10', H, U, D);
+  checkShared('ilk/son duyulma', '00:00:10.000', H, U, D);
+  checkShared('ana tabloda bölüm sayısı', 'a.wav: 2 bölüm', H, U, D);
+  checkShared('süre tablosu dipnotu', REPORT_TEXT.speakerFootnote, H, U, D);
 }
 
 
@@ -1233,6 +1239,31 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('kayıt başına konuşmacı satırı', 'Bu kaydın konuşmacıları: S1 · Kiracı (1 bölüm)', H, U, D);
   checkShared('EK-5 S tanımı', 'Kayıt içi konuşmacı kodu', H, U, D);
   checkShared('EK-5 K tanımı', 'Dosyalar arası kişi kodu', H, U, D);
+}
+
+
+// Senaryo 35: rapor netliği (v2.268) — süre tablosu, EK-5 üç tablo,
+// okuma metninde kayıt konuşmacıları. Üç çıktı AYNI metni vermeli.
+{
+  console.log('\n[Senaryo 35] süre tablosu + gösterim anahtarı + okuma metni (v2.268)');
+  const c = withMaterial();
+  c.materials[0].speakers = [{ id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' },
+    { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'iki', review: 'approved' }
+  ];
+  c.report = { sections: { annex: true, reading: true } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('süre tablosu', REPORT_TEXT.speakerDurationHeading, H, U, D);
+  checkShared('süre/tarih dipnotu', REPORT_TEXT.speakerFootnote, H, U, D);
+  // EK-5 üç alt tablo
+  checkShared('anahtar: konuşmacı kodları', 'Konuşmacı kodları', H, U, D);
+  checkShared('anahtar: metin işaretleri', 'Metin işaretleri', H, U, D);
+  checkShared('anahtar: gözlem işaretleri', 'Gözlem işaretleri', H, U, D);
+  // Gözlem etiketlerinin HEPSİ anahtarda (OBS_DEFS tek kaynak)
+  for (const d of __schemaMod.OBS_DEFS) checkShared(`gözlem: ${d.key}`, d.label, H, U, D);
+  // Okuma metninde kayıt konuşmacı satırı
+  checkShared('okuma metni kayıt satırı', 'Bu kaydın konuşmacıları: S1 · Kiracı (2 bölüm)', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
