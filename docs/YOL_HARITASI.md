@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.276.**
+yazılır. **Güncel sürüm: v2.277.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.277 — Kayıt adı: kırpma ve koyu tema (TAMAMLANDI)
+
+- `.mc-name` **sarar** (nowrap + ellipsis kaldırıldı): ad tam görünür.
+- Renk **token**a bağlandı; koyu tema kontrastı **1.38 → 12.73**.
+- `.mc-top` `flex-start`: çok satırlı adda numara üstte hizalı.
+- Ölçüm: kırpma **evet → hayır**; yatay taşma yok; rozet görünür.
+- Koruyan: `tasarim` [2cr].
 
 ## v2.276 — Depo hijyeni, belge, ölü kod (TAMAMLANDI)
 

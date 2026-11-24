@@ -3830,3 +3830,19 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   resize: vertical;
 }
 .wer-state { font-weight: 600; }
+
+/* v2.277 — Kayıt adı: KIRPILMAZ ve temaya bağlı.
+   Ölçüm (v2.276, gerçek Chromium): .mc-name 147 px kutu / 368 px içerik →
+   dosya adının %60'ı gizliydi (app.css: nowrap + ellipsis). Renk de ham hex
+   (app.css'teki eski ham renk) olduğu için KOYU temada 1.38:1 idi: ad
+   okunmuyordu. Ad sarar
+   (satır içeriği kadar uzar), renk token'dan gelir. */
+#view-audio .mc-top { align-items: flex-start; }
+#view-audio .mc-name {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  line-height: 1.3;
+}

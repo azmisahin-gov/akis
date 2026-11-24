@@ -2151,5 +2151,21 @@ console.log('\n[2cq] Kayıt bazında konuşmacı tablosu (v2.273)');
   check('S/K açıklaması tek paragrafta', !/Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir/.test(js));
 }
 
+
+console.log('\n[2cr] Kayıt adı kırpılmaz ve temaya bağlıdır (v2.277)');
+{
+  const layer = read('assets/reading-layer.css');
+  // ÖLÇÜM (v2.276, gerçek Chromium): .mc-name 147 px kutu / 368 px içerik →
+  // dosya adının %60'ı gizliydi (nowrap + ellipsis). Rengi de ham hex olduğu
+  // için KOYU temada 1.38:1 (okunmuyor) idi.
+  const nameBlock = (layer.match(/#view-audio \.mc-name\s*\{[^}]*\}/) || [''])[0];
+  check('kayıt adı bloğu var', !!nameBlock);
+  check('ad sarar (white-space normal)', /white-space:\s*normal/.test(nameBlock));
+  check('kırpma kapalı (text-overflow clip)', /text-overflow:\s*clip/.test(nameBlock));
+  check('uzun sözcük sarılır (overflow-wrap anywhere)', /overflow-wrap:\s*anywhere/.test(nameBlock));
+  check('renk token ile (ham hex değil)', /color:\s*var\(--ink(-2|-3)?\)/.test(nameBlock));
+  const topBlock = (layer.match(/#view-audio \.mc-top\s*\{[^}]*\}/) || [''])[0];
+  check('çok satırda numara üstte hizalanır', /align-items:\s*flex-start/.test(topBlock));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

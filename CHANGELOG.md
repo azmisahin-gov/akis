@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.276.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.277.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.277 — Kayıt adı tam görünüyor (kırpma ve koyu tema)
+
+**Ölçülen durum (v2.276, gerçek Chromium + 55 karakterlik gerçek dosya adı):**
+Ses/video listesinde `.mc-name` **147 px kutu / 368 px içerik** ile çiziliyordu —
+dosya adının **%60'ı gizliydi** (app.css: `nowrap + ellipsis`). Üstelik rengi ham
+hex olduğu için **koyu temada 1.38:1** kontrast vardı: ad **okunmuyordu**
+(light 10.2 / sepia 9.2 idi).
+
+### KULLANICI NE GÖRECEK
+
+- Kayıt adı **tam** görünür: uzun ad üç noktayla kısalmak yerine **sarar**.
+  Satır, adın uzunluğu kadar uzar (ölçüm: 55 karakterde 51 → 91 px).
+- Ad **koyu temada da okunur** (12.7:1); renk artık token'dan gelir.
+- Numara rozeti çok satırlı adda **üst satırda** hizalanır; süre/durum satırı
+  altta kalır, rozet görünür.
+- Kırpma yok: yatay taşma 0, liste kendi alanında kayar.
+
+### Ölçüm (1440/900 px, üç tema)
+
+| Ölçüm | Önce (v2.276) | Sonra (v2.277) |
+|---|---|---|
+| Ad kırpıldı mı | **evet** (147/368 px) | **hayır** (147/147) |
+| Ad yüksekliği (55 karakter) | 17 px (1 satır, kırpık) | **57 px** (tam) |
+| Satır yüksekliği | 51 px | 91 px (içerik kadar) |
+| Koyu tema kontrastı | **1.38:1** | **12.73:1** |
+| Açık / sepya kontrastı | 10.16 / 9.16 | 14.28 / 12.25 |
+| Yatay taşma · rozet | yok · görünür | **yok · görünür** |
+
+Koruyan test: `tasarim` [2cr] (6 kontrol).
 
 ## v2.276 — Depo hijyeni, belge doğruluğu, ölü kod
 

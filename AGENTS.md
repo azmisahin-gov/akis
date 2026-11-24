@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.276.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.277.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6575,3 +6575,43 @@ v2.252 öncesi kodla üretilmişti (63 ZWSP). Üç ölü fonksiyon; üç belgede
 | Örnek UDF ZWSP token | 63 | **0** |
 | Ölü fonksiyon | 3 | **0** |
 | Testler | 1827 | **1831 + 522** |
+
+## YENİ OTURUM DEVRİ (v2.277) — Kayıt adı: kırpma ve koyu tema
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.277** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1831 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Koyu/sepya temada kalan düşük kontrast metinler (ayrı sürüm adayı) |
+
+### Ölçülen hata (v2.276, gerçek Chromium + 55 karakterlik gerçek dosya adı)
+
+`.mc-name` **147 px kutu / 368 px içerik**: dosya adının **%60'ı gizliydi**
+(app.css `nowrap + ellipsis`). Rengi ham hex olduğu için **koyu temada 1.38:1**
+(okunmuyordu); açık 10.16 / sepya 9.16.
+
+### Yapılan (yalnız `reading-layer.css`)
+
+- `#view-audio .mc-name`: `white-space: normal; overflow: visible;
+  text-overflow: clip; overflow-wrap: anywhere; color: var(--ink); line-height: 1.3`.
+- `#view-audio .mc-top { align-items: flex-start }` — çok satırlı adda numara üstte.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Liste adı kimliktir, kırpılmaz.** Uzun ad sarar; satır uzar (kabul edilen bedel).
+2. Bir metin rengi **ham hex** ile yazılmaz; token kullanılır (koyu tema).
+3. Yeni bir liste/madde öğesi eklerken `text-overflow: ellipsis` yazmayın;
+   sarma veya görünür kaydırma kullanın (v2.130 dersi).
+
+### Ölçüm
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Ad kırpıldı mı | evet (147/368) | **hayır** (147/147) |
+| Ad yüksekliği / satır | 17 / 51 px | **57 / 91 px** |
+| Koyu tema kontrastı | **1.38** | **12.73** |
+| Yatay taşma · rozet | yok · görünür | yok · görünür |
+
+Koruyan test: `tasarim` [2cr] (6 kontrol).

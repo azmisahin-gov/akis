@@ -1,4 +1,4 @@
-# Özellikler (v2.276 — mevcut durum)
+# Özellikler (v2.277 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -146,6 +146,9 @@ Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
   adı, süre/boyut, durum, kontrol ilerlemesi; sabit yükseklikte, kendi içinde
   kayar), altta yalnızca **seçili** kaydın tam detayı. Böylece çok kayıtlı
   dosyalarda sayfa uzamaz; seçili kayıt çalışma dosyasında saklanır.
+- **Kayıt adı kırpılmaz (v2.277):** listede dosya adı üç noktayla kısaltılmaz;
+  uzun ad **sarar** (satır, adın uzunluğu kadar uzar). Ad rengi temaya bağlıdır;
+  koyu temada da okunur (kontrast 12.7:1). Numara rozeti çok satırlı adda üstte hizalanır.
 - Sürükle-bırak veya dosya seçme; WAV, MP3, M4A, OGG, FLAC, AAC.
 - Toplu dosya ekleme.
 - Kayıt başına teknik envanter: dosya adı, biçim, boyut, süre, codec, kanal
