@@ -3420,16 +3420,60 @@ input::placeholder, textarea::placeholder {
 body[data-view="report"] #sbSegmentsWrap,
 body[data-view="report"] #sbCheckWrap { display: none; }
 
+/* v2.231 — belge odaklı bölüm düzenleme */
+.paper-block { display: contents; }
+.paper-block.is-selected > * { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.report-edit-hint { font-size: var(--fs-2xs); color: var(--ink-3); margin-left: auto; }
+#reportWorkspace[data-mode="check"] .report-edit-hint { display: none; }
+.report-editor {
+  display: none;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 10px 12px;
+  align-self: start;
+  position: sticky;
+  top: 58px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+#reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: 232px minmax(0, 1fr) 320px; }
+#reportWorkspace[data-mode="edit"][data-edit="open"] .report-editor { display: block; }
+.rse-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
+.rse-head b { font-size: var(--fs-sm); color: var(--ink); }
+.rse-head small { font-size: var(--fs-2xs); color: var(--ink-3); text-align: right; }
+.rse-close { margin-left: auto; border: 0; background: transparent; color: var(--ink-3); font-size: var(--fs-sm); line-height: 1; cursor: pointer; padding: 0 2px; }
+.rse-close:hover { color: var(--ink); }
+.rse-field { display: flex; flex-direction: column; gap: 3px; font-size: var(--fs-2xs); color: var(--ink-3); margin-bottom: 8px; }
+.rse-field textarea { font-size: var(--fs-xs); line-height: 1.5; min-height: 80px; }
+.rse-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 0 0 6px; }
+.rsec-row.is-selected { background: var(--accent-soft); }
+
 /* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
 @media (max-width: 1349px) {
   .report-workspace { grid-template-columns: 216px minmax(0, 1fr); }
   .report-side { grid-column: 1 / -1; position: static; max-height: none; }
+  #reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: 216px minmax(0, 1fr); }
+  /* Dar/orta ekranda düzenleyici ALT SHEET olur (belge görünür kalır). */
+  .report-editor {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(var(--status-h) + 12px);
+    top: auto;
+    max-height: 45vh;
+    overflow-y: auto;
+    z-index: 20;
+    box-shadow: var(--shadow-lg);
+  }
 }
 /* Dar ekran: tek sütun; önizleme en üstte (rapor önce görünür). */
 @media (max-width: 900px) {
   .report-workspace { grid-template-columns: minmax(0, 1fr); }
   /* Düzenle modunda da dar ekranda tek sütun (ID kuralını ez). */
   #reportWorkspace[data-mode="edit"] { grid-template-columns: minmax(0, 1fr); }
+  #reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: minmax(0, 1fr); }
   .report-stage { order: -1; }
   .report-skeleton, .report-side { position: static; max-height: none; }
 }
@@ -3439,12 +3483,14 @@ body[data-view="report"] #sbCheckWrap { display: none; }
   .report-workspace { display: block; }
   .report-skeleton,
   .report-side,
+  .report-editor,
   .report-stage-bar { display: none; }
 }
 /* Tam ekran rapor: yalnız kâğıt. */
 body.report-full .report-workspace { display: block; }
 body.report-full .report-skeleton,
 body.report-full .report-side,
+body.report-full .report-editor,
 body.report-full .report-stage-bar { display: none; }
 
 /* v2.227 — İçindekiler: metin zaten numaralı; <ol> işareti ikinci numara

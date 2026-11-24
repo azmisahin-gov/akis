@@ -130,7 +130,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -4285,6 +4285,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('yalnız öneri ready', adv.code, 'ready');
   eq('öneri etiketi', /öneri/.test(adv.label), true);
   eq('hazır ipucu onay değil der', /onay değildir/.test(adv.detail), true);
+}
+
+// [86] Belge odaklı bölüm düzenleme (v2.231) — serbest metin ve yönlendirme.
+{
+  eq('reportSectionEditableFields tanımlı', typeof T.reportSectionEditableFields, 'function');
+  eq('s4 methodText düzenlenir', T.reportSectionEditableFields('s4')[0].field, 'methodText');
+  eq('s5 limitationsText düzenlenir', T.reportSectionEditableFields('s5')[0].field, 'limitationsText');
+  eq('s6 conclusionText düzenlenir', T.reportSectionEditableFields('s6')[0].field, 'conclusionText');
+  eq('s1 serbest metin yok', T.reportSectionEditableFields('s1'), null);
+  eq('cover hedefi case', T.reportSectionDerivedTarget('cover'), 'case');
+  eq('s2 hedefi questions', T.reportSectionDerivedTarget('s2'), 'questions');
+  eq('origin hedefi audio', T.reportSectionDerivedTarget('origin'), 'audio');
+  eq('bilinmeyen hedef yok', T.reportSectionDerivedTarget('bilinmeyen'), '');
+  eq('tech kontrol panelinde', T.reportSectionInspectorKey('tech'), 'tech');
+  eq('s4 kontrol paneli değil', T.reportSectionInspectorKey('s4'), '');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

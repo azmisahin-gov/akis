@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.230.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.231.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.231 — Belge odaklı bölüm düzenleme
+
+Rapor belgesi artık düzenleme için giriş noktası: bölüme tıkla, sağda düzenle.
+
+### KULLANICI NE GÖRECEK
+
+- **Belgede bir bölüme tıklayın:** sağda **odaklı düzenleyici** açılır; belge
+  görünür kalır. Seçili bölüm iskelette ve belgede **vurgulanır**.
+- **Yöntem (4)**, **Sınırlılıklar (5)** ve **Sonuç (6)** serbest metinleri
+  burada yazılır; alandan çıkınca önizleme tazelenir. Üç çıktı (HTML/DOCX/UDF)
+  aynı metni üretir.
+- **Diğer bölümler veriden üretilir:** düzenleyici "İlgili yeri aç" der
+  (Dosya / İnceleme / Ses). Teknik, künye ve kalite alanları Kontrol panelinde.
+- **A4 kâğıdı doğrudan düzenlenebilir DEĞİLDİR.** Böylece üç çıktının aynı
+  metni üretmesi korunur (contentEditable riski alınmadı).
+
+### Teknik
+
+- Belge blokları `data-report-key` ile sarılır; `.paper-block { display:contents }`
+  sayesinde yerleşim **değişmez**, tıklama olayı kabarcıklanır.
+- `reportEditKey` (oturumluk), `reportSectionEditableFields`,
+  `reportSectionDerivedTarget`, `renderReportSectionEditor`,
+  `setReportEditSection`.
+- `#reportSectionEditor` sağ aside; Düzenle modunda seçim varsa 3. sütun;
+  ≤1349 px'te alta iner, ≤900 px'te tek sütun. Yazdırma/tam ekranda gizli.
+- Test: `birim [86]`, `tasarim [2cb]`, `surum` kimlikleri.
 
 ## v2.230 — Tek kayıt durumu + dahil/kontrol ayrımı
 
