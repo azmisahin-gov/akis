@@ -820,12 +820,17 @@ export const REPORT_FONT_SIZE_MIN = 11;
 export const REPORT_FONT_SIZE_MAX = 14;
 export const REPORT_FONT_SIZE_DEFAULT = 11; // DOCX/UDF gövde tabanı 11 pt
 
-/** Varsayılan rapor biçimi — 20 mm simetrik kenar boşluğu, 11 pt, dikey A4. */
+/**
+ * Varsayılan rapor biçimi — 25 mm simetrik kenar boşluğu, 11 pt, dikey A4.
+ * NOT: Bu değer UYAP boş şablonunun kendi kenar boşluğunu (~42,5 mm) GEÇERSİZ
+ * KILAR; üç çıktıya (UDF/DOCX/PDF) aynı değer uygulanır. 25 mm okunaklı ve
+ * resmî yazışmada yaygın bir dengedir; panelden 10–50 mm ayarlanır. (v2.255)
+ */
 export function emptyReportFormat(over = {}) {
   const base = {
     fontFamily: 'times',
     fontSizePt: REPORT_FONT_SIZE_DEFAULT,
-    marginsMm: { top: 20, right: 20, bottom: 20, left: 20 },
+    marginsMm: { top: 25, right: 25, bottom: 25, left: 25 },
     orientation: 'portrait'
   };
   return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };

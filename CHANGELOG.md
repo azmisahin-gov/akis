@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.254.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.255.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.255 — Kenar boşluğu: varsayılan 25 mm + şablon ilişkisi netleşti
+
+Kullanıcı: "UDF'de kenar boşlukları, boş bıraktığımdan farklı; böyle mi olmalı?"
+**Açıklama:** UDF kenar boşluğu, **"Rapor biçimi → kenar boşluğu"** değerinden gelir
+ve **boş UYAP şablonunun kendi marjını (~42,5 mm) geçersiz kılar**. Bu yüzden boş
+şablondan farklı görünür — beklenen davranış, ama değer seçimi önemli.
+
+### KULLANICI NE GÖRECEK
+- **Varsayılan kenar boşluğu 20 mm → 25 mm** (yeni dosyalar için). 25 mm resmî
+  yazışmada yaygın, okunaklı bir dengedir; **üç çıktıya da** (UDF/DOCX/PDF) uygulanır.
+- Panelde not: "Kenar boşluğu, UYAP boş şablonunun kendi marjını geçersiz kılar
+  (varsayılan 25 mm)."
+- **Mevcut kayıtlı dosyada** değer eskisi gibi kalır (20 mm). Değiştirmek için
+  **Rapor biçimi → kenar boşluğu** alanlarını 25 yap; **hemen** UDF/DOCX/PDF'e yansır.
+
+### Neden 42,5 mm (şablon) değil?
+- Boş UYAP şablonunun ~42,5 mm marjı çok geniştir (metin alanı daralır). Resmî
+  yazışmada yaygın **~2,5 cm (25 mm)** daha okunaklı. İsterseniz panelden 10–50 mm
+  arası (ör. 42) ayarlayabilirsiniz.
+
+### Koruyan test
+- `birim [93]` (varsayılan marj 25 mm).
 
 ## v2.254 — Üç çıktı aynı yazı tipi (varsayılan Times New Roman)
 

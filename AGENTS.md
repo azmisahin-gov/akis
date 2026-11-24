@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.254.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.255.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5793,3 +5793,22 @@ etiket gizliydi.
 - Üç motor (UYAP/Word/tarayıcı) **pixel-pixel aynı olamaz**; hedef aynı içerik + font + marj +
   başlık hiyerarşisi. Üst/alt bilgi ve sayfa numarası motora bağlı (DOCX PAGE; HTML/UDF editör).
 - `fontFamily` artık ÜÇ çıktıya da uygulanır (önceki "UDF font sabit" notu geçersiz).
+
+## YENİ OTURUM DEVRİ (v2.255) — Kenar boşluğu 25 mm + şablon netliği
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.255** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+
+### Bulgu / açıklama
+- UDF marjı "Rapor biçimi → kenar boşluğu"ndan gelir ve **boş UYAP şablonunun ~42,5 mm'sini ezer**.
+  "Boş şablondan farklı" görünmesinin nedeni budur.
+- Varsayılan 20→**25 mm** (yeni dosyalar). Mevcut kayıtlı dosya 20'de kalır; panelden ayarlanır.
+
+### DEĞİŞMEZ
+- Kenar boşluğu **üç çıktıya da** uygulanır; değer `case.report.format.marginsMm`.
+- Şablon marjını (42,5) istiyorsa kullanıcı panelden ~42 seçer; kodda şablonu otomatik koruma YOK
+  (tek değer ilkesi). Gerekirse ileride "şablondan" modu eklenebilir.

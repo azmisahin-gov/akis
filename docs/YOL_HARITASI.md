@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.254.**
+yazılır. **Güncel sürüm: v2.255.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.255 — Kenar boşluğu varsayılanı 25 mm + şablon netliği (TAMAMLANDI)
+
+- UDF marjı "Rapor biçimi → kenar boşluğu"ndan gelir ve boş şablonun ~42,5 mm'sini ezer.
+- Varsayılan 20→25 mm (yeni dosyalar). Mevcut dosya 20'de kalır; panelden 25 yap.
+- Panel notu eklendi. Koruyan: `birim [93]`.
 
 ## v2.254 — Üç çıktı aynı yazı tipi (TAMAMLANDI)
 

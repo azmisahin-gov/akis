@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.254';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.254';
+} from './schema.js?v=2.255';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.255';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.254';
+const APP_VERSION = '2.255';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12035,7 +12035,8 @@ function renderReportFormat(c) {
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="1" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
-    `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır.</p>` +
+    `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
+    `Kenar boşluğu, UYAP boş şablonunun kendi marjını geçersiz kılar (varsayılan 25 mm).</p>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
@@ -16849,6 +16850,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.255': {
+    title: 'Kenar boşluğu: varsayılan 25 mm, üç çıktıya uygulanır',
+    body:
+      'UDF kenar boşluğu "Rapor biçimi → kenar boşluğu"ndan gelir ve boş UYAP şablonunun kendi ' +
+      'marjını (~42,5 mm) geçersiz kılar; boş şablondan farklı görünmesinin nedeni budur. Yeni ' +
+      'dosyalarda varsayılan 25 mm oldu (okunaklı/resmî denge) ve UDF/DOCX/PDF aynı değeri kullanır. ' +
+      'Mevcut dosyada değer eskisi gibi kalır; Rapor biçimi panelinden 10–50 mm ayarlayın.'
+  },
   '2.254': {
     title: 'UDF/DOCX/PDF artık aynı yazı tipinde (varsayılan Times New Roman)',
     body:

@@ -4429,7 +4429,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const d = T.emptyReportFormat();
   eq('varsayılan punto 11', d.fontSizePt, 11);
   eq('varsayılan font times (resmî)', d.fontFamily, 'times');
-  eq('varsayılan marj 20 mm', d.marginsMm, { top: 20, right: 20, bottom: 20, left: 20 });
+  eq('varsayılan marj 25 mm', d.marginsMm, { top: 25, right: 25, bottom: 25, left: 25 });
   eq('varsayılan dikey', d.orientation, 'portrait');
   const n = T.normalizeReportFormat({ fontFamily: 'times', fontSizePt: 13, orientation: 'landscape', marginsMm: { top: 30, right: 25, bottom: 30, left: 25 } });
   eq('font korunur', n.fontFamily, 'times');
@@ -4442,7 +4442,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('yön geçersiz → portrait', bad.orientation, 'portrait');
   eq('marj alt sınır 10', bad.marginsMm.top, 10);
   eq('marj üst sınır 50', bad.marginsMm.right, 50);
-  eq('marj bozuk → varsayılan 20', bad.marginsMm.bottom, 20);
+  eq('marj bozuk → varsayılan 25', bad.marginsMm.bottom, 25);
   eq('punto yarım adıma yuvarlanır', T.normalizeReportFormat({ fontSizePt: 12.3 }).fontSizePt, 12.5);
   eq('reportFormat(c) varsayılan', T.reportFormat({ report: {} }).fontSizePt, 11);
   eq('reportFormat(null) güvenli', T.reportFormat(null).orientation, 'portrait');
