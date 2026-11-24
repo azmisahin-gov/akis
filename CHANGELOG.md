@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.258.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.259.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.259 — Resmîleştirme: DOCX tablo genişliği, ana bölümler yeni sayfa, PDF düğmesi
+
+Kullanıcı: "DOCX'te tablolar biraz dışarıdan başlıyor (UDF normal); her ana bölüm
+yeni sayfa olsun; PDF koyalım." Üç iş:
+
+### KULLANICI NE GÖRECEK
+- **DOCX tabloları artık metin genişliğine oturur.** Hata: tablo genişliği sabit
+  **9000 twip**'ti; 15 mm marjda metin genişliği **10206 twip** → tablo metinden
+  dar/dışarıda kalıyordu. Artık `contentTw = sayfa − sol/sağ marj`; tablo bu
+  genişliğe oturur, sol girinti **0**. (UDF'te böyle bir sorun yoktu.)
+- **Her ANA bölüm (1–7) ve ekler yeni sayfadan** başlar (DOCX/UDF/yazdırma).
+  Kapak zaten ayrı sayfada.
+- **PDF düğmesi netleşti:** "🖨 Yazdır" → **"🖨 PDF / Yazdır"**; ipucunda
+  "Hedef: PDF olarak kaydet; üst bilgi/alt bilgi (site adı/URL) KAPALI olsun".
+
+### Dürüst sınırlar
+- **Ayrı PDF motoru YOK.** Gerçek `.pdf` dosyası üretmek için PDF kütüphanesi +
+  Türkçe font gömme gerekir (büyük iş). Şu an PDF = **tarayıcı Yazdır → PDF olarak
+  kaydet**. Tarayıcının üst/alt bilgisi (site adı, URL) CSS ile kaldırılamaz; yazdırma
+  penceresindeki "Üst bilgi ve alt bilgi" seçeneği kapatılmalıdır.
+- **Numaralandırma:** ana bölümler **1–7** numaralı; kayıt kökeni, konuşmacılar,
+  okuma metni, WER, seviye, inceleme özeti, kalite, gizlilik, ekler **alt parça**
+  olduğu için numarasız başlıkla ve içindekilerde gövde sırasıyla listelenir. Tümüne
+  numara vermek ayrı bir şema kararıdır (5.1 gibi atıflar yeniden numaralanır).
+
+### Koruyan test
+- `rapor` Senaryo 29: DOCX `tblW=10206`, `tblInd=0`, `cantSplit`, ≥7 sayfa sonu; UDF ≥7 page-break.
 
 ## v2.258 — Sayfa ayırımı: tablo satırı bölünmez + ekler yeni sayfadan
 

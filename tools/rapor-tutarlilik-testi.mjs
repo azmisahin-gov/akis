@@ -988,12 +988,16 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const dZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const dx = await dZ.file('word/document.xml').async('string');
   check('DOCX tablo satırı bölünmez (cantSplit)', /<w:cantSplit\/>/.test(dx));
-  check('DOCX ekler yeni sayfa (>=2 sayfa sonu)', (dx.match(/w:type="page"/g) || []).length >= 2);
+  // Tablo metin genişliğine oturur: 15 mm marjda A4 içerik = 10206 twip.
+  check('DOCX tablo metin genişliğine oturur (10206)', /w:tblW w:w="10206"/.test(dx));
+  check('DOCX tablo sol girinti 0', /w:tblInd w:w="0"/.test(dx));
+  // Her ana bölüm (1–7) yeni sayfa + kapak + ekler → en az 7 sayfa sonu.
+  check('DOCX ana bölümler yeni sayfa (>=7)', (dx.match(/w:type="page"/g) || []).length >= 7);
 
   downloads.length = 0; setCase(c); await makeUdf();
   const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux = await uZ.file('content.xml').async('string');
-  check('UDF ekler yeni sayfa (>=2 page-break)', (ux.match(/<page-break>/g) || []).length >= 2);
+  check('UDF ana bölümler yeni sayfa (>=7)', (ux.match(/<page-break>/g) || []).length >= 7);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

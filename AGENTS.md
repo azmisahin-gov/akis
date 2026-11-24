@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.258.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.259.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5875,3 +5875,31 @@ etiket gizliydi.
 
 ### SIRADAKİ (kullanıcı kararı)
 - İstenirse her ana bölüm yeni sayfadan; imza ayrı sayfa; tablo başlık tekrarı UDF'te.
+
+## YENİ OTURUM DEVRİ (v2.259) — Resmîleştirme (DOCX tablo, ana bölüm sayfa, PDF düğmesi)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.259** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+
+### Ne yapıldı
+- **DOCX tablo genişliği:** sabit 9000 twip → `contentTw = sayfa − sol/sağ marj` (15mm'de 10206);
+  `tblInd=0`. Tablo metin genişliğine oturur.
+- **Her ana bölüm (1–7) + ekler yeni sayfa** (DOCX `w:br page`, UDF `<page-break>`, HTML
+  `.paper-page-break`). İlk gövde hariç (kapak→gövde zaten ayrı).
+- **PDF:** "Yazdır" → "PDF / Yazdır"; ipucunda "Hedef: PDF; üst/alt bilgi kapalı".
+
+### DEĞİŞMEZ / DÜRÜST SINIR
+- **Gerçek PDF motoru YOK.** `.pdf` üretmek için PDF kütüphanesi + Türkçe font gömme gerekir
+  (büyük iş). PDF = tarayıcı Yazdır → PDF kaydet. Tarayıcı üst/alt bilgisi CSS ile kaldırılamaz.
+- **Numaralandırma:** ana 1–7 numaralı; alt parçalar (köken/konuşmacı/okuma/WER/seviye/özet/
+  kalite/gizlilik/ekler) numarasız başlık + TOC'te gövde sırası. Tümüne numara = ayrı şema kararı.
+- DOCX tablo genişliği `__docxFmt.contentTw`'den; marj/yön değişince otomatik.
+
+### SIRADAKİ (karar)
+- Gerçek PDF (pdf-lib/jsPDF + font) — büyük iş; onay gerekir.
+- Alt bölümlere numara (3.1 gibi) — 5.1 atıfları yeniden numaralanır; karar gerekir.
+- "UI'de başka ekler" — hangi ekran/öğe olduğu netleşince tutarlılaştırılır.

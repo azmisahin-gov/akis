@@ -1,4 +1,4 @@
-# Özellikler (v2.258 — mevcut durum)
+# Özellikler (v2.259 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -637,6 +637,10 @@ uzmanlık alanını gösterir.
   başlığı yeni sayfada yinelenir. **Ekler (EK-1…)** DOCX/UDF/yazdırmada **yeni
   sayfadan** başlar; kapak ayrı sayfa. Sayfa kırılmasının kendisi motora (UYAP/Word/
   tarayıcı) aittir; biz yalnız mantıklı sayfa sonlarını koyarız (`rapor` 29).
+- **Resmîleştirme (v2.259):** DOCX tabloları **metin genişliğine oturur**
+  (`tblW=contentTw`, `tblInd=0`; önce sabit 9000 twip idi). Her **ana bölüm (1–7)**
+  ve **ekler** yeni sayfadan başlar. "Yazdır" → **"PDF / Yazdır"** (tarayıcı
+  yazdırma → PDF olarak kaydet; üst/alt bilgi kapalı). **Ayrı PDF motoru yoktur.**
 - **Parametrik rapor — bölüm aç/kapa (v2.219):** Rapor görünümünde "Rapor
   bölümleri" paneli; **19 bölüm** (kapak, künye, içindekiler, 1–7, kayıt kökeni,
   gömülü metadata, delil edinme, konuşmacılar, okuma metni, WER, seviye,

@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.258';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.258';
+} from './schema.js?v=2.259';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.259';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.258';
+const APP_VERSION = '2.259';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12325,13 +12325,16 @@ function renderReport() {
   let html = '';
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) html += wrapBlock(key, front[key]());
   html += '<div class="paper-page-break">';
+  let firstBody = true;
   for (const key of reportBodyOrder(c)) {
     if (!on(key) || !body[key]) continue;
     const piece = body[key]();
     if (!piece) continue;
-    // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
-    if (key === 'annex') html += '<div class="paper-page-break"></div>';
+    // Her ana bölüm (1–7) ve ekler yeni sayfadan (v2.259; ilk gövde hariç).
+    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody))
+      html += '<div class="paper-page-break"></div>';
     html += wrapBlock(key, piece);
+    firstBody = false;
   }
   if (on('signature')) html += wrapBlock('signature', body.signature());
   html += '</div>';
@@ -12369,11 +12372,17 @@ function xesc(s = '') {
 let __docxFmt = { font: 'Arial', scale: 1, margins: { top: 20, right: 20, bottom: 20, left: 20 }, orientation: 'portrait' };
 function docxFormatInit(c) {
   const f = reportFormat(c);
+  const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
+  const pageW = f.orientation === 'landscape' ? 16838 : 11906; // A4 genişliği (twip)
+  // Metin genişliği = sayfa − sol/sağ marj. Tablolar bu genişliğe oturur (v2.259;
+  // önce sabit 9000 twip idi → 15 mm marjda metinden dar/dışarıda kalıyordu).
+  const contentTw = Math.max(3000, pageW - mmToTw(f.marginsMm.left) - mmToTw(f.marginsMm.right));
   __docxFmt = {
     font: REPORT_FONT_DOCX[f.fontFamily] || 'Arial',
     scale: f.fontSizePt / 11,
     margins: f.marginsMm,
-    orientation: f.orientation
+    orientation: f.orientation,
+    contentTw
   };
   return __docxFmt;
 }
@@ -12413,7 +12422,17 @@ function cell(text, { header = false, shade = null, bold = false, width = 2200, 
 }
 function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = {}) {
   const n = rows[0]?.length || 1;
-  const ws = widths || Array(n).fill(Math.floor(9000 / n));
+  // Tablo, metin genişliğine (contentTw) oturur; sütun oranları korunur. (v2.259)
+  const contentTw = (__docxFmt && __docxFmt.contentTw) || 9000;
+  const base = widths && widths.length === n ? widths : Array(n).fill(1);
+  const sum = base.reduce((a, b) => a + (Number(b) || 0), 0) || 1;
+  let acc = 0;
+  const ws = base.map((w, i) => {
+    if (i === base.length - 1) return Math.max(300, contentTw - acc);
+    const v = Math.max(300, Math.round((Number(w) || 1) * (contentTw / sum)));
+    acc += v;
+    return v;
+  });
   const borders =
     '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
   const r = rows
@@ -12435,7 +12454,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = 
           .join('')}</w:tr>`
     )
     .join('');
-  return `<w:tbl><w:tblPr><w:tblW w:w="9000" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="95" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="95" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="${contentTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="95" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="95" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
 }
 function headingXml(text, level = 1) {
   return wP(text, {
@@ -12728,11 +12747,15 @@ function docxXml(c) {
   let body = '';
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) body += front[key]();
   body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
-  // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
+  // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç,
+  // çünkü kapak→gövde zaten sayfa sonuyla ayrıldı).
+  const pageBreakPara = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  let firstBody = true;
   for (const key of reportBodyOrder(c)) {
     if (!on(key) || !blocks[key]) continue;
-    if (key === 'annex') body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) body += pageBreakPara;
     body += blocks[key]();
+    firstBody = false;
   }
   if (on('signature')) body += blocks.signature();
   // Sayfa geometrisi biçimden gelir (v2.238): A4, yön, mm→twip marj.
@@ -13284,11 +13307,13 @@ async function makeUdf() {
 
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) front[key]();
   el.push(pageBreak());
-  // Ekler yeni sayfadan başlar (düzenli sayfa ayırımı, v2.258).
+  // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç).
+  let firstBody = true;
   for (const key of reportBodyOrder(c)) {
     if (!on(key) || !blocks[key]) continue;
-    if (key === 'annex') el.push(pageBreak());
+    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) el.push(pageBreak());
     blocks[key]();
+    firstBody = false;
   }
   if (on('signature')) blocks.signature();
   const bodyText = textParts.join('');
@@ -16865,6 +16890,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.259': {
+    title: 'DOCX tablo hizası, ana bölümler yeni sayfa, PDF düğmesi',
+    body:
+      'Word (DOCX) tabloları artık metin genişliğine oturur (önceden sabit 9000 twip idi; 15 mm ' +
+      'marjda metinden dardı). Her ana bölüm (1–7) ve ekler yeni sayfadan başlar. "Yazdır" düğmesi ' +
+      '"PDF / Yazdır" oldu: yazdırma penceresinde Hedef: PDF olarak kaydet; üst bilgi/alt bilgi ' +
+      '(site adı, URL) kapalı olsun. Ayrı PDF motoru yoktur (dürüst sınır).'
+  },
   '2.258': {
     title: 'Sayfa ayırımı: tablo satırı bölünmez + ekler yeni sayfadan',
     body:

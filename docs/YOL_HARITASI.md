@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.258.**
+yazılır. **Güncel sürüm: v2.259.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.259 — Resmîleştirme: DOCX tablo genişliği + ana bölüm yeni sayfa + PDF (TAMAMLANDI)
+
+- DOCX tablo `tblW=contentTw` (15mm'de 10206) + `tblInd=0` → metin genişliğine oturur.
+- Her ana bölüm (1–7) + ekler yeni sayfa (DOCX/UDF/yazdırma).
+- "Yazdır" → "PDF / Yazdır" (üst/alt bilgi kapat notu). Gerçek PDF motoru YOK (dürüst sınır).
+- Koruyan: `rapor` 29.
 
 ## v2.258 — Sayfa ayırımı: cantSplit + ekler yeni sayfa (TAMAMLANDI)
 
