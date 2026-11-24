@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.236.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.237.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5253,3 +5253,32 @@ sürüm + tasarım yeşil. Yeni: `birim [82]` (sıra/numara/TOC/ek/özel ek/revi
 - Raporda "Okuma metni" bölümünün iskelette ayrı gösterimi (şu an 5. içinde).
 - Gerçek A4 sayfa kırılması (şu an kılavuz) — tablo bölme riski ölçülmeli.
 - Özel ek içeriğinde zengin metin (şu an düz metin).
+
+## YENİ OTURUM DEVRİ (v2.237) — Rapor biçimi denetimi + liste etkileşimi
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.237** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1400 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Git | yerel değişiklik (commit/push kullanıcı onayı bekliyor) |
+| Denetim/plan | [`docs/DENETIM_VE_PLAN.md`](docs/DENETIM_VE_PLAN.md) |
+| Açık konu | **Rapor biçimi (v2.238)** — 5 karar sorusu kullanıcıda |
+
+### Bu sürümde yapılan (tek konu: liste etkileşimi)
+- Oynatma hızı düğmesi artık **tam yeniden çizim yapmaz**; kaydırma/odak korunur.
+- Satır (⋮) menüsü **ekranda kalır** (`clampSegMenuPosition`; alt satırda yukarı açılır).
+- Koruyan test: `birim [92]`.
+
+### Denetim sonucu (koddan, ölçüm değil) — özet
+- **Rapor biçimi kullanıcıya kapalı:** font/punto/marj/yön sabit; üç çıktı farklı
+  (HTML/DOCX Arial, UDF Times; DOCX 2cm/2.25cm, UDF 60/60/56.7/56.7mm).
+- **Yazdırma/PDF `@page` YOK** → A4 + ölçülü marj garanti değil (en somut eksik).
+- Eski notlar: 1/3/6 düzeltildi; 9 (imleç konumuna etiket) yok; 16 (video) yok;
+  5/7/8/10/11 rehber/karar bekliyor; 12 kısmen; 13/14/15 mevcut.
+
+### SIRADAKİ İŞ — v2.238 Rapor biçimi (kullanıcı kararı gerek)
+`case.report.format` (font + punto + marj + yön) → HTML + yazdırma(`@page`) +
+DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soruları:
+`docs/DENETIM_VE_PLAN.md` §1 (marj mm, UDF font, yatay, PDF yöntemi, punto aralığı).

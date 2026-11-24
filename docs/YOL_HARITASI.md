@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.236.**
+yazılır. **Güncel sürüm: v2.237.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.237 — Bölüm listesi etkileşimi: hız ve satır menüsü (TAMAMLANDI)
+
+- Oynatma hızı değişince liste yeniden çizilmez; kaydırma ve odak korunur.
+- Satır (⋮) menüsü ekranda kalır: alt satırda yukarı açılır, dikey kırpılmaz.
+- Koruyan test: `birim [92]`.
 
 ## v2.236 — Kanıt tablosunda da sütun aç/kapa (TAMAMLANDI)
 

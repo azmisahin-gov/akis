@@ -115,7 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
-  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText',
+  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
@@ -4374,6 +4374,43 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const t2 = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5]], null);
   eq('gözlem kapalı → 4 sütun', t2.headers.length, 4);
   eq('gözlem başlığı yok', t2.headers.includes('GÖZLEM'), false);
+}
+
+// [92] v2.237 — Satır menüsü ekranda kalır + hız düğmesi listeyi yeniden çizmez.
+{
+  console.log('[92] Satır menüsü konumu ve hız düğmesi');
+  eq('clampSegMenuPosition tanımlı', typeof T.clampSegMenuPosition, 'function');
+  // Ekranın ortasında: menü bağlantının ALTINA, soluna hizalı açılır.
+  let p = T.clampSegMenuPosition({ top: 100, bottom: 130, left: 50 }, 230, 200, 1000, 800);
+  eq('orta satır: altına açılır', p, { top: 134, left: 50 });
+  // Listenin SONUNDA (alt kenara yakın): menü YUKARI açılır, ekranda kalır.
+  p = T.clampSegMenuPosition({ top: 740, bottom: 770, left: 50 }, 230, 200, 1000, 800);
+  eq('alt satır: yukarı açılır', p.top, 740 - 200 - 4);
+  eq('alt satır: alt kenarı aşmaz', p.top + 200 + 8 <= 800, true);
+  // Menü ekrana sığmıyorsa (çok yüksek) üst kenara kırpılır, eksi olmaz.
+  p = T.clampSegMenuPosition({ top: 790, bottom: 820, left: 50 }, 230, 900, 1000, 800);
+  eq('aşırı yüksek menü: üst kenara kırpılır', p.top >= 8, true);
+  // Sağ kenara yakın: yatayda ekran içine kırpılır.
+  p = T.clampSegMenuPosition({ top: 100, bottom: 130, left: 900 }, 230, 100, 1000, 800);
+  eq('sağ kenar: yatay kırpılır', p.left, 1000 - 230 - 8);
+  // Sol kenara taşmaz.
+  p = T.clampSegMenuPosition({ top: 100, bottom: 130, left: 2 }, 230, 100, 1000, 800);
+  eq('sol kenar: en az 8px', p.left, 8);
+  // Beklenen sınır: menü kutusu viewport içinde.
+  const r = { top: 700, bottom: 730, left: 80 };
+  const q = T.clampSegMenuPosition(r, 230, 240, 1000, 800);
+  eq('sonuç viewport içinde', q.top >= 8 && q.top + 240 + 8 <= 800 && q.left >= 8 && q.left + 230 + 8 <= 1000, true);
+
+  // KAYNAK SÖZLEŞMESİ: hız düğmesi dalında renderSegments ÇAĞRILMAMALI.
+  // (Çağrılırsa liste yeniden kurulur, kaydırma başa döner — v2.237 hatası.)
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const speedBranch = (src.match(/b\.dataset\.segSpeed !== undefined\)\s*\{([\s\S]*?)\n\s*\}\s*else if/) || [])[1] || '';
+  // Yorumları ayıkla: "renderSegments" yalnız açıklamada anılabilir; ölçüt
+  // gerçek bir ÇAĞRI olup olmadığıdır.
+  const speedCode = speedBranch.replace(/\/\/[^\n]*/g, '');
+  eq('hız dalı bulundu', speedBranch.length > 0, true);
+  eq('hız dalı renderSegments() ÇAĞIRMAZ', /renderSegments\s*\(/.test(speedCode), false);
+  eq('hız dalı hız göstergesini günceller', /data-seg-speed/.test(speedCode), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

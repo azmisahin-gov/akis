@@ -68,15 +68,15 @@ import {
   REPORT_COLUMN_LOCKED,
   emptyReportColumns,
   normalizeReportColumns
-} from './schema.js?v=2.236';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.236';
+} from './schema.js?v=2.237';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.237';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.236';
+const APP_VERSION = '2.237';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4197,6 +4197,24 @@ function closeSegMenu() {
     segMenuEl = null;
   }
 }
+// Menü konumu SAF fonksiyonla hesaplanır (v2.237; test edilir). `r` = bağlantı
+// öğesinin viewport dikdörtgeni. Menü alt kenarı ekranı aşacaksa önce yukarı
+// açılır; o da sığmazsa alt kenara kırpılır. Yatayda her iki yönde kırpılır.
+function clampSegMenuPosition(r, menuW, menuH, vw, vh) {
+  const gap = 4;
+  const pad = 8;
+  const w = Math.max(0, Number(menuW) || 0);
+  const h = Math.max(0, Number(menuH) || 0);
+  let left = Math.round(Number(r && r.left) || 0);
+  if (left + w + pad > vw) left = vw - w - pad;
+  if (left < pad) left = pad;
+  let top = Math.round((Number(r && r.bottom) || 0) + gap);
+  if (top + h + pad > vh) {
+    const up = Math.round((Number(r && r.top) || 0) - h - gap);
+    top = up >= pad ? up : Math.max(pad, vh - h - pad);
+  }
+  return { top, left };
+}
 function openSegMenu(m, index, anchor) {
   closeSegMenu();
   const card = anchor.closest('.audio-card');
@@ -4216,11 +4234,22 @@ function openSegMenu(m, index, anchor) {
     (hist ? `<button role="menuitem" data-history="${index}">Metin geçmişi (${hist})</button>` : '') +
     `<button role="menuitem" data-silence="${index}">Sessizlik ölç</button>` +
     `<button role="menuitem" class="danger" data-delete-seg="${index}">Bölümü sil</button>`;
+  // Satır menüsü EKRANDA kalmalı (v2.237). Eski kod yalnız yatayı kırpıyordu;
+  // listenin sonundaki bir satırda menünün alt yarısı ekran dışına taşıyor,
+  // "hızlı çözümleme" gibi öğelere tıklanamıyordu. Artık menü önce eklenir,
+  // GERÇEK boyutu ölçülür, sonra viewport'a göre konumlanır; sığmazsa yukarı
+  // açılır. `position:fixed` olduğu için ölçüm viewport koordinatındadır.
   const r = anchor.getBoundingClientRect();
   menu.style.position = 'fixed';
-  menu.style.top = Math.round(r.bottom + 4) + 'px';
-  menu.style.left = Math.round(Math.max(8, Math.min(r.left, window.innerWidth - 260))) + 'px';
+  menu.style.visibility = 'hidden';
+  menu.style.top = '0px';
+  menu.style.left = '0px';
   card.appendChild(menu);
+  const mr = menu.getBoundingClientRect();
+  const pos = clampSegMenuPosition(r, mr.width || 230, mr.height || 0, window.innerWidth, window.innerHeight);
+  menu.style.top = pos.top + 'px';
+  menu.style.left = pos.left + 'px';
+  menu.style.visibility = '';
   segMenuEl = menu;
   // Menü öğesine tıklanınca olay ÖNCE #view-audio'ya ulaşsın; kapatma sonra.
   menu.addEventListener('click', (e) => {
@@ -14000,7 +14029,14 @@ function setupEvents() {
         m.playbackRate = Number(b.dataset.segSpeed);
         const pl = card.querySelector('audio');
         if (pl) pl.playbackRate = m.playbackRate;
-        renderSegments(m, card);
+        // TAM yeniden çizim YOK (v2.237). Eski kod `renderSegments` çağırıyordu;
+        // liste yeniden kurulunca kaydırma BAŞA dönüyor, seçili bölüm ve odak
+        // kayboluyordu (kullanıcı: "hız değiştirince liste başa atıyor, dinlediğim
+        // yeri kaybediyorum"). Artık yalnız hız göstergelerinin `on` sınıfı
+        // güncellenir — `cycleSpeed` ile aynı davranış, kaydırma korunur.
+        card
+          .querySelectorAll('[data-seg-speed]')
+          .forEach((x) => x.classList.toggle('on', Number(x.dataset.segSpeed) === m.playbackRate));
         persist();
       }
     } else if (b.dataset.segApprove !== undefined) {
@@ -16235,6 +16271,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.237': {
+    title: 'Hız değişimi listeyi bozmuyor; menü ekranda kalıyor',
+    body:
+      'Dinlerken oynatma hızını değiştirmek artık bölüm listesini başa sarmıyor; seçili bölüm ve ' +
+      'kaydırma yerinde kalıyor. Listenin en altındaki bir bölümün ⋮ menüsü de artık ekranda tam ' +
+      'görünür; ekranın altına taşarsa menü yukarı açılır, böylece "Bu aralığı çözümle" gibi ' +
+      'öğelere her satırda erişebilirsiniz.'
+  },
   '2.236': {
     title: 'Kanıt tablosunda da sütun aç/kapa',
     body:

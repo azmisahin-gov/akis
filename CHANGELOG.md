@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.236.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.237.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.237 — Bölüm listesi etkileşimi: hız ve satır menüsü
+
+Kullanıcı (canlı kullanım): "Hız göstergesine basınca liste başa atıyor,
+dinlediğim yeri kaybediyorum." ve "Listenin sonundaki satıra sağ tıklayınca
+menünün yarısı görünmüyor; hızlı çözümlemeye tıklanamıyor."
+
+### KULLANICI NE GÖRECEK
+- Dinlerken **oynatma hızını** değiştirmek artık bölüm listesini başa
+  sarmıyor; seçili bölüm ve kaydırma yerinde kalıyor. Dinlediğiniz yeri
+  kaybetmezsiniz.
+- Listenin en altındaki bir bölümün **⋮ menüsü** artık ekranda tam görünür;
+  ekranın altına taşarsa menü **yukarı açılır**. "Bu aralığı çözümle" gibi
+  öğelere her satırda erişilir.
+
+### Ne değişti
+- Hız düğmesi dalı artık tam yeniden çizim (`renderSegments`) YAPMAZ; yalnız
+  hız göstergelerinin `on` sınıfını günceller (`cycleSpeed` ile aynı).
+- Satır menüsü konumu saf `clampSegMenuPosition` fonksiyonuyla viewport'a göre
+  hesaplanır (önce ölç, sonra konumla).
+
+### Koruyan test
+- `birim [92]`: menü konumu (orta/alt/aşırı/sağ/sol) + hız dalının
+  `renderSegments()` çağırmadığı kaynak sözleşmesi.
 
 ## v2.236 — Kanıt tablosunda da sütun aç/kapa
 
