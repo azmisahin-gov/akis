@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.239.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.240.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.240 — Bölüm iş durumu: eksik filtreler + "Bekleyen" netliği
+
+Kullanıcı: "Çalışırken kararsız kalıyorum: beklesin mi, çözümlendi mi, yeniden mi
+dinleyecek, birleştirilsin mi, bölünsün mü, ses üst üste mi biniyor, anlaşılmaz
+mı? Filtreden dolayı bölümler yanlış listelenmesin, doğru tanımlayalım."
+
+### KULLANICI NE GÖRECEK
+- **"Bekleyen" → "Kontrol bekleyen"**: bu çipin ipucu, makine **"Çözümlendi"** ve
+  **"Belirsiz"** bölümlerin de onay gerektirdiği için burada olduğunu söyler
+  (kafa karışıklığının kaynağı buydu).
+- **Yeni filtreler** (yalnız sayı > 0 iken görünür, sığmazsa sarar):
+  **Çözümlendi (makine)**, **Belirsiz okuma**, **Uzun · bölünmeli** (45 sn üstü),
+  **Üst üste (gözlem)**, **Anlaşılmayan (gözlem)**. Böylece "onay bekleyenleri",
+  "belirsizleri", "bölünmesi gerekenleri", "üst üste konuşmaları" tek tıkla
+  listeleyebilirsiniz.
+- Her çipin **ipucu (title)** ne anlama geldiğini ve ne yapılacağını yazar.
+
+### Ne değişti
+- `SEG_FILTERS` genişledi; `CONDITIONAL_FILTERS` = machine/ambiguous/merge/long/
+  overlap/inaudibleObs/time. Sayaç (`segCounts`) ve filtre (`segMatchesFilter`)
+  **TEK KAYNAK** (`segmentHasObs`, `segmentIsLong`); ayrışırsa test kırar.
+
+### Koruyan test
+- `birim [95]`: her filtre anahtarı için **sayaç = eşleşen bölüm sayısı**.
 
 ## v2.239 — Hızlı etiket imleç konumuna eklenir
 

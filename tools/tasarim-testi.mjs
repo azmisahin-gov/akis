@@ -1423,7 +1423,7 @@ console.log('\n[2aw] Birleştirme adayı rozeti ve filtresi (v2.198)');
   check('aday rozeti accent yazı kullanıyor', !!candRule && /color:\s*var\(--accent\)/.test(candRule[1]));
   check('aday rozeti ham hex taşımıyor', !!candRule && !/#[0-9a-f]{3,8}/i.test(candRule[1]));
   // Filtre anahtarı ve etiketi koddan gelmeli.
-  check("SEG_FILTERS 'merge' anahtarını taşıyor", /\['merge', 'Birleştirme adayı'\]/.test(appJs));
+  check("SEG_FILTERS 'merge' anahtarını taşıyor", /\['merge', 'Birleştirme adayı'/.test(appJs));
   check('sayaç, filtre ve rozet aynı kaynağı kullanıyor',
     /mergeCandidateIndexes\(segs\)/.test(appJs) && /mergeCandidateAt\(m\.segments, i\)/.test(appJs));
   check('aday rozeti buton DEĞİL (yanlışlıkla birleştirmez)',

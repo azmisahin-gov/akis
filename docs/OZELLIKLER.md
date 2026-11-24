@@ -1,4 +1,4 @@
-# Özellikler (v2.239 — mevcut durum)
+# Özellikler (v2.240 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -224,8 +224,8 @@ tuşları bozulmaz.
   yapışkan çubukta **▶ Dinle · Kontrol · ↑/↓ · ✓ Onayla** vardır. Karar
   (Onaylandı / Anlaşılmadı / Yeniden dinle / Belirsiz) kaydırmadan verilir;
   çubuk sığmazsa **alt satıra sarar**. Karar tek kapıdan (`applyReviewChoice`)
-  işlenir: "Bekleyen" filtresindeki satır onaylanınca listeden düşer ve başlık
-  anında güncellenir.
+  işlenir: "Kontrol bekleyen" filtresindeki satır onaylanınca listeden düşer ve
+  başlık anında güncellenir.
 - **Birleştirme adayı (v2.198):** Aynı konuşmacı + kısa bölüm (<2 sn veya
   <5 kelime) + cümle sonu noktalaması yok + sonrakiyle boşluk ≤0,5 sn koşullarını
   sağlayan satırlar listede **⇄** rozetiyle işaretlenir; araç çubuğunda
@@ -236,6 +236,14 @@ tuşları bozulmaz.
   filtre kendiliğinden **Tümü**'ye döner. Klavyeden **5** aday filtresini
   açıp kapatır (karar değildir; veri değiştirmez). 6–9 tanımlı değildir;
   birleştirme kısayolu **M**'dir.
+- **Bölüm iş durumu filtreleri (v2.240):** "Kontrol bekleyen" çipi onaylanmamış
+  TÜM bölümleri toplar; ipucu, makine **"Çözümlendi"** ve **"Belirsiz"** bölümlerin
+  de onay beklediği için burada olduğunu söyler. Çalışırken "bu bölüm ne istiyor?"
+  sorusu filtreden yanıtlanır: **Çözümlendi (makine)** onayla, **Belirsiz okuma**
+  okuma seç, **Yeniden dinlenecek** dinle, **Birleştirme adayı** birleştir,
+  **Uzun · bölünmeli** (45 sn üstü) böl, **Üst üste (gözlem)** / **Anlaşılmayan
+  (gözlem)** gözlem işaretlerini bul. Bu çiplerin hepsi yalnız sayı > 0 iken
+  görünür ve **sayaç = filtre** tek kaynaktan gelir (`birim [95]`).
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,

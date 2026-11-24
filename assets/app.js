@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.239';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.239';
+} from './schema.js?v=2.240';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.240';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.239';
+const APP_VERSION = '2.240';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -3722,18 +3722,34 @@ function renderSpeakersPanel(m) {
 //  3) Model güven skoru vermediği için uydurma skor üretilmez; bunun yerine
 //     şeffaf, gerekçeli bir "inceleme önceliği" hesaplanır (bkz. segPriority).
 // Filtre anahtarları v3 kontrol kodlarıyla aynıdır; Türkçe yalnız etikettir.
+// Bölüm filtreleri (v2.240). Kullanıcı çalışırken "bu bölüm bekle mi, çözümlendi
+// mi (onayla), yeniden mi dinle, belirsiz mi (okuma seç), birleştir mi, böl mü,
+// üst üste mi, anlaşılmaz mı" sorusunu FİLTREYLE bulabilmeli. Her çipin `title`
+// ipucu tanımı söyler. Üçüncü öğe = ipucu (isteğe bağlı).
 const SEG_FILTERS = [
   ['all', 'Tümü'],
-  ['pending', 'Bekleyen'],
-  ['quick', 'Hızlı onaya uygun'],
+  [
+    'pending',
+    'Kontrol bekleyen',
+    'Onaylanmamış TÜM bölümler. Makine "Çözümlendi" ve "Belirsiz" de onay gerektirdiği için buradadır; "Çözümlendi"/"Belirsiz" çiplerinden tek tek bulunur.'
+  ],
   ['approved', REVIEW_LABEL.approved],
   ['inaudible', REVIEW_LABEL.inaudible],
   ['relisten', REVIEW_LABEL.relisten],
-  ['time', 'Zaman sorunları'],
-  ['merge', 'Birleştirme adayı']
+  ['quick', 'Hızlı onaya uygun', 'Gözlemlenebilir işaretlere göre hızlı onaya uygun; onay yine dinlemeyle verilir.'],
+  // Aşağıdakiler KOŞULLU: yalnız sayı > 0 iken çip çizilir (v2.146/v2.240).
+  ['machine', REVIEW_LABEL.machine, 'Makine çözümledi — bilirkişi onayı YOK. Dinleyip onaylayın.'],
+  ['ambiguous', REVIEW_LABEL.ambiguous, 'İki okuma var; birini seçip onaylayın.'],
+  ['merge', 'Birleştirme adayı', 'Aynı konuşmacı, kısa, cümle sonu yok, boşluk ≤0,5 sn — birleştirmeye uygun (işaret; otomatik birleştirmez).'],
+  ['long', 'Uzun · bölünmeli', 'Tek bölüm 45 sn üstünde; bölmeyi düşünün.'],
+  ['overlap', 'Üst üste (gözlem)', 'Gözlem işareti: üst üste konuşma.'],
+  ['inaudibleObs', 'Anlaşılmayan (gözlem)', 'Gözlem işareti: anlaşılmayan bölüm.'],
+  ['time', 'Zaman sorunları', 'Çakışma/yinelenen/sıfır süre gibi zaman sorunları (kayıt başına).']
 ];
-// Koşullu filtreler: yalnız sayı > 0 iken çip çizilir (v2.146 kuralı).
-const CONDITIONAL_FILTERS = new Set(['time', 'merge']);
+// Koşullu filtreler: yalnız sayı > 0 iken çip çizilir (v2.146 kuralı). Sıra,
+// dinamik eklemenin görünür sırayla aynı olması için SEG_FILTERS sonundaki
+// sırayla eşleşir.
+const CONDITIONAL_FILTERS = new Set(['machine', 'ambiguous', 'merge', 'long', 'overlap', 'inaudibleObs', 'time']);
 // BİRLEŞTİRME ADAYI (v2.198). Kullanıcı bölümleri sık birleştiriyor; hangi
 // satırların birleştirmeye uygun olduğunu görmek istiyor. Uydurma bir skor
 // YOKTUR; ölçüt yalnız GÖZLENEBİLİR ve gerekçesi yazılabilir işaretlerdir:
@@ -4042,6 +4058,16 @@ function pendingSummaryText(segments) {
   if (b.ambiguous) parts.push(`${b.ambiguous} belirsiz okuma`);
   return `${b.total} bölüm eksik: ${parts.join(' · ')}`;
 }
+// Gözlem işareti / uzun bölüm — FİLTRE ve SAYAÇ aynı kaynağı kullanır (v2.240).
+function segmentHasObs(s, key) {
+  return !!(s && s.obs && s.obs[key]);
+}
+function segmentIsLong(s) {
+  const a = parseTimecodeStrict(s && s.start);
+  const b = parseTimecodeStrict(s && s.end);
+  if (a == null || b == null) return false;
+  return segmentLengthInfo(b - a).level === 'long';
+}
 function segMatchesFilter(s, filter, prev, idx, issueSet, mergeSet) {
   const r = segReview(s);
   if (filter === 'all') return true;
@@ -4049,18 +4075,40 @@ function segMatchesFilter(s, filter, prev, idx, issueSet, mergeSet) {
   if (filter === 'quick') return !isReviewed(s) && segQuickCheck(s, prev).ok;
   if (filter === 'time') return !!(issueSet && issueSet.has(idx));
   if (filter === 'merge') return !!(mergeSet && mergeSet.has(idx));
-  return r === filter;
+  if (filter === 'long') return segmentIsLong(s);
+  if (filter === 'overlap') return segmentHasObs(s, 'overlap');
+  if (filter === 'inaudibleObs') return segmentHasObs(s, 'inaudible');
+  return r === filter; // approved/inaudible/relisten/ambiguous/machine
 }
 function segCounts(m) {
   const segs = m.segments || [];
-  const c = { all: segs.length, pending: 0, quick: 0, approved: 0, inaudible: 0, relisten: 0, time: 0, merge: 0 };
+  const c = {
+    all: segs.length,
+    pending: 0,
+    quick: 0,
+    approved: 0,
+    inaudible: 0,
+    relisten: 0,
+    ambiguous: 0,
+    machine: 0,
+    time: 0,
+    merge: 0,
+    long: 0,
+    overlap: 0,
+    inaudibleObs: 0
+  };
   for (let i = 0; i < segs.length; i++) {
     const s = segs[i];
     const r = segReview(s);
     if (r === 'approved') c.approved++;
     else if (r === 'inaudible') c.inaudible++;
     else if (r === 'relisten') c.relisten++;
+    else if (r === 'ambiguous') c.ambiguous++;
+    else if (r === 'machine') c.machine++;
     if (!isReviewed(s)) c.pending++;
+    if (segmentHasObs(s, 'overlap')) c.overlap++;
+    if (segmentHasObs(s, 'inaudible')) c.inaudibleObs++;
+    if (segmentIsLong(s)) c.long++;
   }
   // Hızlı onay sayısı TEK KAYNAKTAN gelir (filtre ve toplu onayla aynı).
   c.quick = quickApproveTargets(m).length;
@@ -5973,10 +6021,12 @@ function scheduleLightRefresh(m) {
 // "Birleştirme adayı") yalnız sayı > 0 iken görünür; sayı sıfıra düşerse çip
 // kaldırılır (v2.198'de birleştirme adayı eklendi).
 function segFilterChipsHtml(counts, filter) {
-  return SEG_FILTERS.filter(([k]) => !CONDITIONAL_FILTERS.has(k) || counts[k] > 0)
+  return SEG_FILTERS.filter(([k]) => !CONDITIONAL_FILTERS.has(k) || (counts[k] || 0) > 0)
     .map(
-      ([k, label]) =>
-        `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}">${label} <span class="n">${counts[k]}</span></button>`
+      ([k, label, title]) =>
+        `<button class="filter-chip ${filter === k ? 'on' : ''}" data-seg-filter="${k}"${
+          title ? ` title="${esc(title)}"` : ''
+        }>${label} <span class="n">${counts[k] || 0}</span></button>`
     )
     .join('');
 }
@@ -16476,6 +16526,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.240': {
+    title: 'Bölüm filtreleri netleşti, eksik olanlar eklendi',
+    body:
+      '"Bekleyen" çipi "Kontrol bekleyen" oldu; ipucu, makine "Çözümlendi" ve "Belirsiz" bölümlerin ' +
+      'de onay beklediği için burada olduğunu söyler. Yeni filtreler (sayı > 0 iken görünür): ' +
+      'Çözümlendi (makine), Belirsiz okuma, Uzun · bölünmeli (45 sn üstü), Üst üste (gözlem), ' +
+      'Anlaşılmayan (gözlem). Böylece onay bekleyenleri, belirsizleri, bölünmesi gerekenleri ve üst ' +
+      'üste konuşmaları tek tıkla listeleyebilirsiniz; her çipin ipucu ne yapılacağını yazar.'
+  },
   '2.239': {
     title: 'Hızlı etiket artık imleç konumuna ekleniyor',
     body:

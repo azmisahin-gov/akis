@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.239.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.240.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5358,4 +5358,40 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 1. **C2:** "Bekleyen" filtresi ↔ "Çözümlendi"(machine) ilişkisini netleştir (etiket/ipucu veya ayırma — karar).
 2. **UDF yatay** (doğrulanmış `paperOrientation` koduyla) + gerçek tarayıcıda biçim/etiket tıklama ölçümü.
 3. **Video (56.12):** mp4/mov sesinin tarayıcıda çözülüp çözülemeyeceğini ölç.
+4. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).
+
+## YENİ OTURUM DEVRİ (v2.240) — Bölüm iş durumu: eksik filtreler + netlik
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.240** |
+| Testler | `bash tools/test.sh` → **1451 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni/updated test | `birim [95]`; `birim [70]` conditional küme; `tasarim [2ax]` regex |
+| Açık konu | UDF yatay, video (56.12), STANDARTLAR rehberi, detay "iş durumu" satırı |
+
+### Ne yapıldı (C2)
+- `SEG_FILTERS` genişledi; "Bekleyen" → **"Kontrol bekleyen"** (ipucu: machine/ambiguous
+  de onay beklediği için buradadır). Yeni KOŞULLU çipler (sayı>0):
+  `machine` (Çözümlendi), `ambiguous` (Belirsiz), `long` (Uzun·bölünmeli 45 sn),
+  `overlap` (Üst üste gözlem), `inaudibleObs` (Anlaşılmayan gözlem). Her çipin `title` ipucu var.
+- `CONDITIONAL_FILTERS = {machine,ambiguous,merge,long,overlap,inaudibleObs,time}`.
+- TEK KAYNAK: `segmentHasObs(s,key)` + `segmentIsLong(s)`; `segCounts` ve `segMatchesFilter`
+  aynı yardımcıları kullanır. `segFilterChipsHtml` üçüncü öğe (title) ve `counts[k]||0`.
+
+### DEĞİŞMEZ KURALLAR
+1. **Sayaç = filtre.** Yeni bir filtre eklerken `segCounts`'a da ekle ve `segMatchesFilter` ile
+   AYNI yardımcıyı kullan; aksi hâlde kullanıcı "sayı tutmuyor" görür (v2.99/[95] dersi).
+2. **"Kontrol bekleyen" = !isReviewed** (machine/ambiguous/relisten/pending). Bu kasıtlıdır
+   (hiçbiri bilirkişi onayı değildir); "Çözümlendi"/"Belirsiz" ayrı çiplerle bulunur.
+3. Koşullu çipler `SEG_FILTERS` sonunda, `CONDITIONAL_FILTERS` ile aynı sırada olmalı
+   (dinamik ekleme görünür sırayı bozmasın).
+4. Ham `s.obs[...]` yerine `segmentHasObs`; süre için `segmentIsLong` kullan.
+
+### SIRADAKİ İŞLER
+1. **Detay "iş durumu" satırı:** aktif bölümde birleştir/böl/üst üste/belirsiz için tek satırlık
+   yönlendirme (filtreler zaten var; bu ek görünürlük). 
+2. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
+3. **Video (56.12).**
 4. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11).

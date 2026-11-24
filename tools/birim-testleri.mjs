@@ -3413,7 +3413,15 @@ console.log('\n== [70] Birleştirme adayı: deterministik ölçüt (v2.198)');
   eq('aday çipi var (>0)', chipHtml.includes('data-seg-filter="merge"'), true);
   eq('çip etiketi "Birleştirme adayı"', /Birleştirme adayı/.test(chipHtml), true);
   eq('aktif çip işaretli', /filter-chip on" data-seg-filter="merge"/.test(chipHtml), true);
-  eq('koşullu filtre kümesi', [...T.CONDITIONAL_FILTERS].sort(), ['merge', 'time']);
+  eq('koşullu filtre kümesi', [...T.CONDITIONAL_FILTERS].sort(), [
+    'ambiguous',
+    'inaudibleObs',
+    'long',
+    'machine',
+    'merge',
+    'overlap',
+    'time'
+  ]);
   eq('eşikler: süre 2 sn', T.MERGE_CANDIDATE.maxDurSec, 2);
   eq('eşikler: 5 kelime', T.MERGE_CANDIDATE.maxWords, 5);
   eq('eşikler: 0,5 sn boşluk', T.MERGE_CANDIDATE.maxGapSec, 0.5);
@@ -4459,6 +4467,37 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('aralık dışı başlangıç → sona', T.insertTagAt('abc', '[x]', 99, null), { text: 'abc [x]', caret: 7, mode: 'end' });
   eq('bitiş < başlangıç → başlangıca indir', T.insertTagAt('abcd', '[x]', 2, 1), { text: 'ab [x] cd', caret: 7, mode: 'cursor' });
   eq('null metin güvenli', T.insertTagAt(null, '[x]', null, null), { text: '[x]', caret: 3, mode: 'end' });
+}
+
+// [95] v2.240 — Bölüm filtreleri: eksik durum/gözlem filtreleri + TEK KAYNAK.
+{
+  console.log('[95] Bölüm filtreleri tek kaynak (v2.240)');
+  const mk = (o) => Object.assign(T.emptySegmentForTest({}), o);
+  const segs = [
+    mk({ id: 's1', start: '00:00:00.000', end: '00:00:05.000', review: 'approved', text: 'Bir cümle.' }),
+    mk({ id: 's2', start: '00:00:05.000', end: '00:00:10.000', review: 'inaudible', text: '' }),
+    mk({ id: 's3', start: '00:00:10.000', end: '00:00:15.000', review: 'relisten', text: 'tekrar' }),
+    mk({ id: 's4', start: '00:00:15.000', end: '00:00:20.000', review: 'ambiguous', text: 'belki', reading1: 'geldi', reading2: 'kaldı', chosen: '' }),
+    mk({ id: 's5', start: '00:00:20.000', end: '00:00:25.000', review: 'machine', text: 'makine metni' }),
+    mk({ id: 's6', start: '00:00:25.000', end: '00:00:30.000', review: 'pending', text: 'yeni', obs: { overlap: true } }),
+    mk({ id: 's7', start: '00:00:30.000', end: '00:01:20.000', review: 'pending', text: 'uzun bölüm', obs: { inaudible: true } })
+  ];
+  const m = { id: 'mF', segments: segs };
+  const c = T.segCounts(m);
+  eq('pending = onay/anlaşılmadı dışı (5)', c.pending, 5);
+  eq('ambiguous 1', c.ambiguous, 1);
+  eq('machine 1', c.machine, 1);
+  eq('overlap gözlem 1', c.overlap, 1);
+  eq('inaudible gözlem 1', c.inaudibleObs, 1);
+  eq('long 1 (50 sn)', c.long, 1);
+  // TEK KAYNAK: her SEG_FILTERS anahtarı için sayaç == eşleşen bölüm sayısı.
+  // (Sayaç ile filtre ayrışırsa kullanıcı "sayı tutmuyor" görür — v2.99 dersi.)
+  const issueSet = T.segmentTimeIssueIndexes(segs);
+  const mergeSet = T.mergeCandidateIndexes(segs);
+  for (const [key] of T.SEG_FILTERS) {
+    const n = segs.filter((s, i) => T.segMatchesFilter(s, key, segs[i - 1], i, issueSet, mergeSet)).length;
+    eq(`sayaç = filtre · ${key}`, c[key], n);
+  }
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

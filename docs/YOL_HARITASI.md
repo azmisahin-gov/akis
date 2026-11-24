@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.239.**
+yazılır. **Güncel sürüm: v2.240.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.240 — Bölüm iş durumu: eksik filtreler + "Bekleyen" netliği (TAMAMLANDI)
+
+- "Bekleyen" → "Kontrol bekleyen" (ipucu: makine "Çözümlendi" ve "Belirsiz" de
+  onay beklediği için buradadır).
+- Yeni koşullu filtreler: Çözümlendi(machine), Belirsiz(ambiguous),
+  Uzun·bölünmeli(long), Üst üste(overlap), Anlaşılmayan(inaudibleObs).
+- Sayaç = filtre TEK KAYNAK (`segmentIsLong`/`segmentHasObs`).
+- Koruyan test: `birim [95]`.
 
 ## v2.239 — Hızlı etiket imleç konumuna eklenir (TAMAMLANDI)
 
