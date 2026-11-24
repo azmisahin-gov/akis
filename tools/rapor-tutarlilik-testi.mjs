@@ -950,5 +950,22 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('video yoksa not yok (H)', !H2.includes(REPORT_TEXT.videoAudioNote));
 }
 
+// Senaryo 28: UDF'te deşifre metnine görünmez karakter (ZWSP) enjekte edilmez;
+// yalnız çok uzun kesintisiz token (SHA-256) satır kırılsın diye sarılır (v2.251).
+{
+  console.log('[Senaryo 28] UDF görünmez karakter enjeksiyonu (v2.251)');
+  const c = withMaterial();
+  c.materials[0].sha256 = 'a'.repeat(64);
+  c.materials[0].segments = [
+    { start: '00:00:00.000', end: '00:00:05.000', speaker: 'Belirtilmemiş', text: 'Oturmak.', review: 'pending' }
+  ];
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uz = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uz.file('content.xml').async('string');
+  check('deşifre metninde ZWSP yok (Belirtil…)', !/Belirtil\u200B/.test(ux));
+  check('zaman kodunda ZWSP yok (00:00:00…)', !/00:00:00\u200B/.test(ux));
+  check('uzun SHA-256 ZWSP ile sarılır', /a{16}\u200B/.test(ux));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

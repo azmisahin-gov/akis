@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.250.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.251.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5698,3 +5698,28 @@ etiket gizliydi.
 1. **İsteğe bağlı video önizleme** (Analiz sekmesinde, katlanır; deşifre bölünmez) — istenirse.
 2. **Desteklenen video kodekleri** — gerçek dosyalarla ölçerek (mkv/avi genelde çözülmez).
 3. Video raporunu gerçek bir mp4 ile uçtan uca dene (kullanıcı).
+
+## YENİ OTURUM DEVRİ (v2.251) — UDF ZWSP temizliği + uçtan uca doğrulama
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.251** |
+| Testler | `bash tools/test.sh` → tümü yeşil (rapor Senaryo 28 eklendi) |
+| E2E | Temiz profil + CDP: örnek kanıt → Rapor → **UDF indi** (`2026_214_E.udf`); A4 dikey 20mm |
+
+### Bulgu (kullanıcının gerçek UDF'i)
+`Bilirkisi_Raporu.udf` (video+deşifre) içinde **377 U+200B**. Eski `makeUdf` tablo hücresinde
+`(\S{8})(?=\S)` ile her 8 karakterde ZWSP ekliyordu → deşifre metni/saat/tarih görünmez karakterli.
+**Adli metin bütünlüğü ihlali.** Düzeltildi: yalnız `\S{24,}` (SHA-256 vb.) içinde ZWSP.
+
+### DEĞİŞMEZ
+- **Deşifre metnine/saatine görünmez karakter enjekte etme.** Yalnız uzun kesintisiz token sarılır.
+- UDF tablo hücresi metnini değiştiren her yeni kural, "çıktı metni = girdi metni (+görünür
+  biçim)" ilkesini korumalı; `rapor` testiyle denetle.
+- Kullanıcı raporu (`Bilirkisi_Raporu.udf`) **depoya commit edilmez** (gerçek dava verisi olabilir).
+
+### SIRADAKİ
+1. Kullanıcı gerçek mp4 + deşifre ile yeni UDF üretip ZWSP'siz doğrulasın.
+2. (İstenirse) isteğe bağlı video önizleme / kodek genişletme / rapor kâğıt biçimi.

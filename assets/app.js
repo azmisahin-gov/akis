@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.250';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.250';
+} from './schema.js?v=2.251';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.251';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.250';
+const APP_VERSION = '2.251';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12891,7 +12891,15 @@ async function makeUdf() {
         const cells = row
           .map((value, ci) => {
             let cellText = String(value ?? '');
-            if (!isHeader) cellText = cellText.replace(/(\S{8})(?=\S)/g, '$1\u200B');
+            // v2.251 — GÖRÜNMEZ KARAKTER ENJEKSİYONU KALDIRILDI. Önceki kod her
+            // 8 karakterde bir U+200B (zero-width space) ekliyordu: "Belirtil\u200Bmemiş",
+            // "00:00:00\u200B.000", "24.11.20\u200B26". Bu, deşifre metnine görünmez
+            // karakter sokar; adli metin bütünlüğü ve kopyala/ara için sakıncalıdır.
+            // Artık ZWSP YALNIZCA çok uzun KESİNTİSİZ tokenlarda (ör. 64 karakterlik
+            // SHA-256) satır kırılabilsin diye, o tokenın içine konur.
+            if (!isHeader) {
+              cellText = cellText.replace(/\S{24,}/g, (tok) => tok.replace(/(.{16})(?=.)/g, '$1\u200B'));
+            }
             const fill = isHeader
               ? colors.pale
               : shadeFirstCol && ci === 0
@@ -16834,6 +16842,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.251': {
+    title: 'UDF\'te deşifre metnindeki görünmez karakterler temizlendi',
+    body:
+      'UDF tablo hücrelerinde her 8 karakterde bir görünmez karakter (U+200B) ekleniyordu; ' +
+      'deşifre metni, saatler ve tarihler bu yüzden görünmez karakter içeriyordu. Artık normal ' +
+      'metin/saat/tarih temizdir; yalnız çok uzun kesintisiz diziler (ör. SHA-256) satır kırılsın ' +
+      'diye içeriden sarılır.'
+  },
   '2.250': {
     title: '"Ses ve video kayıtları" + raporda "yalnız ses" notu',
     body:

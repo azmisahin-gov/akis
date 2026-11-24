@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.250.**
+yazılır. **Güncel sürüm: v2.251.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.251 — UDF ZWSP enjeksiyonu kaldırıldı (TAMAMLANDI)
+
+- Gerçek UDF'te 377 U+200B (her 8 karakterde) → deşifre metni/saat/tarih kirleniyordu.
+- Artık yalnız `\S{24,}` (ör. SHA-256) içinde satır kırma ZWSP'si; metin/saat temiz.
+- Koruyan: `rapor` 28.
 
 ## v2.250 — "Ses / Video" başlığı + raporda "yalnız ses" notu (TAMAMLANDI)
 

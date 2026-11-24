@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.250.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.251.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.251 — UDF'te deşifre metnine görünmez karakter (ZWSP) enjeksiyonu kaldırıldı
+
+Gerçek bir uçtan uca UDF (`Bilirkisi_Raporu.udf`, video + deşifre) incelendi:
+içinde **377 adet U+200B (zero-width space)** vardı — `Belirtil\u200Bmemiş`,
+`00:00:00\u200B.000`, `24.11.20\u200B26`. Eski kod UDF tablo hücrelerinde **her 8
+karakterde bir** görünmez karakter ekliyordu (satır kırma için). Bu, **deşifre
+metnine görünmez karakter sokar**; adli metin bütünlüğü, kopyala/ara için sakıncalı.
+
+### KULLANICI NE GÖRECEK
+- UDF'te **deşifre metni, zaman kodları ve tarihler artık temiz** (görünmez karakter
+  yok). Yalnız **çok uzun kesintisiz tokenlar** (ör. 64 karakterlik SHA-256) satır
+  kırılabilsin diye içeriden sarılır.
+
+### Ne değişti
+- `makeUdf` tablo hücresi: `(\S{8})(?=\S)` → **yalnız `\S{24,}`** içinde ZWSP.
+  Normal sözcük/zaman/tarih dokunulmadan bırakılır.
+
+### Ölçüm
+- Gerçek UDF: 377 ZWSP → düzeltme sonrası yalnız hash'lerde (örnek e2e: 17, hepsi
+  hash). **Deşifre metni/saat temiz.**
+
+### Koruyan test
+- `rapor` Senaryo 28: deşifre metni/zaman kodunda ZWSP yok; uzun SHA-256 sarılır.
 
 ## v2.250 — "Ses / Video" başlığı + raporda "yalnız ses" notu
 

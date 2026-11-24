@@ -1,4 +1,4 @@
-# Özellikler (v2.250 — mevcut durum)
+# Özellikler (v2.251 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -620,6 +620,10 @@ uzmanlık alanını gösterir.
 ## Rapor
 
 - Üç çıktı yolu: HTML önizleme, DOCX, UDF.
+- **UDF metin bütünlüğü (v2.251):** deşifre metni, saat ve tarih hücrelerinde
+  **görünmez karakter (U+200B) yoktur**; yalnız çok uzun kesintisiz diziler (ör.
+  SHA-256) satır kırma için içeriden sarılır. (Gerçek bir UDF'te 377 ZWSP bulundu;
+  düzeltildi. `rapor` 28.)
 - **Parametrik rapor — bölüm aç/kapa (v2.219):** Rapor görünümünde "Rapor
   bölümleri" paneli; **19 bölüm** (kapak, künye, içindekiler, 1–7, kayıt kökeni,
   gömülü metadata, delil edinme, konuşmacılar, okuma metni, WER, seviye,
