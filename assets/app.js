@@ -45,6 +45,11 @@ import {
   speakerCodeIssues,
   fixSpeakerCodeConflicts,
   isSpeakerVerified,
+  medianOf,
+  speakerVoiceProfiles,
+  voiceOutliers,
+  voiceChangeSuspects,
+  VOICE_SCHEMA,
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
@@ -84,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.264';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.264';
+} from './schema.js?v=2.265';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.265';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.264';
+const APP_VERSION = '2.265';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2106,7 +2111,7 @@ function materialCardHtml(m) {
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
         <div class="pane-section"><div class="pane-title">Seviye ölçümü<span class="info-i" tabindex="0" data-tip="Tepe ve RMS düzeyi, tepe kırpılma oranı, gürültü tabanı ve sinyal/gürültü oranı kaydın örneklerinden hesaplanır. Ölçüm yapılmadan rapora yazılmaz.">i</span></div><div id="level-panel-${esc(m.id)}">${levelPanelHtml(m)}</div><div class="evidence-actions"><button class="mini-button" data-measure-levels="${esc(m.id)}">Seviye ölçümü yap</button></div></div>
         <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
-        <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}">Konuşmacı perdesini ölç</button></div></div>
+        <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
       </div>
       <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
@@ -3679,6 +3684,97 @@ function detectPitchAmbiguity(samples, sampleRate, measuredHz) {
   const ambiguous = ratioDb > -30;
   return { ambiguous, octaveHz: ambiguous ? fHalf : null, ratioDb };
 }
+// Bölüm → konuşmacı kaydı (kimlik VEYA ad). Ölçüm ve işaretler bunu kullanır.
+function speakerForSegment(m, s) {
+  if (!m || !s) return null;
+  const id = String(s.speakerId || '');
+  const byId = id ? (m.speakers || []).find((x) => x.id === id) : null;
+  if (byId) return byId;
+  const name = String(s.speaker || '');
+  return name ? (m.speakers || []).find((x) => x.name === name) || null : null;
+}
+// KONUŞMACI SES TUTARLILIĞI (v2.265): bölüm bazında perde ölçer, konuşmacı
+// profilleriyle karşılaştırır. İŞARET üretir; otomatik değiştirmez.
+// Ölçüm yalnız kullanıcı tetiklediğinde çalışır (ağır decode).
+async function measureSpeakerConsistency(m) {
+  const c = currentCase();
+  const segs = (m && m.segments) || [];
+  if (!segs.length) {
+    showToast('Önce bölümleyin; ölçülecek bölüm yok.');
+    return;
+  }
+  const blob = await getAudioBlob(c, m);
+  if (!blob) {
+    showToast('Ses dosyası bulunamadı.');
+    return;
+  }
+  showToast('Konuşmacı ses tutarlılığı ölçülüyor…');
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  let audio;
+  try {
+    audio = await ctx.decodeAudioData(await blob.arrayBuffer());
+  } catch (e) {
+    await ctx.close();
+    showToast('Ses çözümlenemedi.');
+    return;
+  }
+  const sr = audio.sampleRate;
+  const channels = [];
+  for (let ch = 0; ch < audio.numberOfChannels; ch++) channels.push(audio.getChannelData(ch));
+  const points = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    const sp = speakerForSegment(m, s);
+    if (!sp) continue;
+    const st = secondsFromTimecode(s.start);
+    const en = secondsFromTimecode(s.end);
+    if (!(en > st)) continue;
+    // Bölümün iki noktasından 0,25 sn'lik pencere: tek pencereye göre daha
+    // dayanıklı; tüm bölümü taramak 300 bölümde dakikalar alırdı.
+    const vals = [];
+    for (const frac of [0.3, 0.7]) {
+      const mid = st + (en - st) * frac;
+      const a = Math.max(0, Math.floor((mid - 0.125) * sr));
+      const b = Math.min(channels[0].length, Math.floor((mid + 0.125) * sr));
+      if (b - a < sr * 0.05) continue;
+      const segCh = channels.map((ch) => ch.subarray(a, b));
+      const pick = pickActiveChannel(segCh);
+      const f = detectPitchHz(segCh[pick.index], sr);
+      if (!f) continue;
+      const amb = detectPitchAmbiguity(segCh[pick.index], sr, f);
+      vals.push({ hz: f, ambiguous: !!(amb && amb.ambiguous) });
+    }
+    const good = vals.filter((v) => !v.ambiguous).map((v) => v.hz);
+    const hz = medianOf(good);
+    // Oktav belirsiz ölçüm profile girmez; ama "ölçülemedi" de yazılmaz.
+    points.push({ index: i, speakerId: sp.id, hz, ambiguous: vals.length > 0 && good.length === 0 });
+  }
+  await ctx.close();
+  const profiles = speakerVoiceProfiles(points);
+  const outliers = voiceOutliers(points, profiles);
+  const changes = voiceChangeSuspects(points);
+  m.voiceCheck = {
+    ok: true,
+    schema: VOICE_SCHEMA,
+    at: new Date().toISOString(),
+    points,
+    profiles,
+    outliers,
+    changes
+  };
+  logEvent(
+    m,
+    'Konuşmacı tutarlılığı ölçüldü',
+    `${points.length} bölüm · ${outliers.length} şüpheli · ${changes.length} değişim şüphesi (kimlik tespiti değildir)`
+  );
+  persist();
+  await renderAudioList();
+  showToast(
+    `Tutarlılık ölçüldü: ${outliers.length} bölüm şüpheli, ${changes.length} değişim şüphesi. ` +
+      'İşaretler öneridir; karar sizindir.'
+  );
+}
 // Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
 // birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
 // yapılır ve kayda bağlı saklanır.
@@ -3981,6 +4077,37 @@ function speakersPanelHtml(m) {
         .map((i) => `${esc(i.code)} → ${esc(i.names.join(', '))}`)
         .join(' · ')}. Rapor iki kez aynı kodu yazar; hangi bölümün kime ait olduğu okunamaz.<br><button class="mini-button" data-fix-spk-codes="${esc(m.id)}" title="Çakışan kodları sıradaki boş koda taşır. İlk konuşmacının kodu korunur; işlem geri alınabilir ve günlüğe yazılır.">Çakışan kodları düzelt (${codeConf.reduce((n, i) => n + i.speakerIds.length - 1, 0)})</button></div>`
     : '';
+  // v2.265 — SES TUTARLILIĞI özeti: yalnız ölçüm yapıldıysa görünür.
+  const vc = m.voiceCheck && m.voiceCheck.ok ? m.voiceCheck : null;
+  const codeOf = (id) => {
+    const rec = (m.speakers || []).find((x) => x.id === id);
+    return rec ? rec.code || rec.name || '' : '';
+  };
+  const voiceBlock = vc
+    ? `<div class="voice-check">
+      <div class="vc-head"><b>Ses tutarlılığı</b><small>${vc.points.length} bölüm ölçüldü · ${vc.outliers.length} şüpheli · ${vc.changes.length} değişim şüphesi</small></div>
+      <p class="spk-person-note">İşaretler yalnız <b>perde (f0)</b> ölçümüne dayanır; <b>kimlik tespiti değildir</b> ve hiçbir atama otomatik değiştirilmedi.</p>
+      ${vc.outliers
+        .slice(0, 20)
+        .map(
+          (o) =>
+            `<div class="vc-row"><span class="vc-idx">Bölüm ${o.index + 1}</span><span class="vc-txt">${Math.round(o.hz)} Hz · atandığı profili ${Math.round(
+              o.expectedHz
+            )} Hz${o.nearestSpeakerId ? ` · en yakın: ${esc(codeOf(o.nearestSpeakerId))}` : ''}</span><button class="mini-button" data-voice-goto="${o.index}" title="Bu bölüme git">Git</button></div>`
+        )
+        .join('')}
+      ${vc.changes
+        .slice(0, 10)
+        .map(
+          (ch) =>
+            `<div class="vc-row"><span class="vc-idx">Bölüm ${ch.index + 1}</span><span class="vc-txt">önceki ${Math.round(
+              ch.prevHz
+            )} Hz → ${Math.round(ch.hz)} Hz · konuşmacı değişmiş olabilir</span><button class="mini-button" data-voice-goto="${ch.prevIndex}" title="Bu bölüme git">Git</button></div>`
+        )
+        .join('')}
+      ${vc.outliers.length > 20 ? `<div class="vc-row"><span class="vc-txt">… ${vc.outliers.length - 20} şüpheli daha (filtre: listede ⚠ ses)</span></div>` : ''}
+    </div>`
+    : '';
   const unused = unusedSpeakers(m);
   const cleanBar = unused.length
     ? `<div class="spk-toolbar"><span>${unused.length} konuşmacı hiçbir bölüme atanmamış; raporda görünmez.</span><button class="mini-button" data-clean-spk="${esc(m.id)}" title="Hiçbir bölüme atanmamış konuşmacıları listeden kaldır. Ses ve metinler silinmez.">Kullanılmayanları temizle (${unused.length})</button></div>`
@@ -4032,7 +4159,7 @@ function speakersPanelHtml(m) {
     </div>`;
     })
     .join('');
-  return `${personBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${personBlock}${voiceBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 function renderSpeakersPanel(m) {
   const root = $(`#spk-panel-${CSS.escape(m.id)}`);
@@ -4719,6 +4846,17 @@ function segItemHtml(m, s, i, prev, issue) {
         issue.j != null && issue.j !== i ? ` (bölüm ${issue.j + 1})` : ''
       }">⚠</span>`
     : '';
+  // SES TUTARLILIĞI (v2.265): ölçüm yapıldıysa ve bu bölüm atandığı
+  // konuşmacıdan sapıyorsa listede GÖRÜNÜR. Yalnız işarettir; atama değişmez.
+  const voiceHit =
+    m && m.voiceCheck && m.voiceCheck.ok && Array.isArray(m.voiceCheck.outliers)
+      ? m.voiceCheck.outliers.find((o) => o.index === i)
+      : null;
+  const voiceBadge = voiceHit
+    ? `<span class="badge warn" title="Ses ölçümü: bu bölüm atandığı konuşmacıdan sapıyor (${Math.round(voiceHit.hz)} Hz; profili ${Math.round(
+        voiceHit.expectedHz
+      )} Hz). Karar sizindir; atama değiştirilmedi.">⚠ ses</span>`
+    : '';
   // Öneri varsa listede görünmeli; yoksa bilirkişi hangi bölümde bekleyen
   // öneri olduğunu ancak tek tek gezinerek bulabilir.
   const propBadge = s.proposal
@@ -4747,7 +4885,7 @@ function segItemHtml(m, s, i, prev, issue) {
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${lenBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-badges">${timeBadge}${lenBadge}${voiceBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
     <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
@@ -10846,6 +10984,7 @@ const READINESS_SEVERITY = {
   materials: 'blocking',
   log: 'blocking',
   speakerCodes: 'blocking',
+  voice: 'expert',
   noSegments: 'expert',
   pending: 'expert',
   ambiguous: 'expert',
@@ -10942,6 +11081,21 @@ function reportReadiness(c) {
   // KOD ÇAKIŞMASI (v2.262): kod KİMLİKTİR; iki kişi aynı kodu taşırsa rapor
   // iki kez "S1" yazar ve hangi bölümün kime ait olduğu okunamaz.
   const codeConf = speakerCodeIssues(c).reduce((n, i) => n + (i.speakerIds.length - 1), 0);
+  // SES TUTARLILIĞI (v2.265): yalnız ÖLÇÜM YAPILDIYSA madde çıkar; ölçülmemiş
+  // kayıt "0 şüpheli" diye gösterilmez (ölçüm yok ≠ sorun yok).
+  const voiceOut = materials.reduce(
+    (n, mm) => n + (mm && mm.voiceCheck && mm.voiceCheck.ok && Array.isArray(mm.voiceCheck.outliers) ? mm.voiceCheck.outliers.length : 0),
+    0
+  );
+  add(
+    'voice',
+    'Ses tutarlılığı: şüpheli bölüm',
+    voiceOut,
+    'audio',
+    'Ölçülen perde, atandığı konuşmacının profilinden sapıyor. Kimlik tespiti değildir; kontrol edin. Hiçbir atama otomatik değiştirilmedi.',
+    '',
+    'voiceCheck'
+  );
   add(
     'speakerCodes',
     'Aynı kod birden çok konuşmacıda',
@@ -11975,6 +12129,14 @@ function reportQcRows(c) {
     .join('; ');
   const merges = Array.isArray(c.mergeLog) ? c.mergeLog.length : 0;
   const r = c.report || {};
+  const voiceMeasured = materials.some((mm) => mm && mm.voiceCheck && mm.voiceCheck.ok);
+  if (voiceMeasured) {
+    const vOut = materials.reduce(
+      (n, mm) => n + (mm && mm.voiceCheck && mm.voiceCheck.ok && Array.isArray(mm.voiceCheck.outliers) ? mm.voiceCheck.outliers.length : 0),
+      0
+    );
+    rows.push(['Konuşmacı ses tutarlılığı (şüpheli bölüm)', `${vOut} · perde ölçümü, kimlik tespiti değildir`]);
+  }
   rows.push(['Zaman sorunu olan bölüm', String(timeIssues)]);
   rows.push(['Bölümlenmemiş ses aralığı', String(gaps)]);
   rows.push(['Delil günlüğü zinciri', brokenLogs ? `${brokenLogs} kayıtta kırık` : 'kırık yok']);
@@ -15395,6 +15557,21 @@ function setupEvents() {
     } else if (b.dataset.spec !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.spec);
       if (mm) toggleSpectrogram(mm);
+    } else if (b.dataset.voiceGoto !== undefined) {
+      // v2.265 — işaretli bölüme git (atama DEĞİŞMEZ; yalnız odak).
+      const idx = Number(b.dataset.voiceGoto);
+      const mm = c.materials.find((x) => (x.segments || []).length > idx) || null;
+      if (!mm) return;
+      mm.activeSeg = idx;
+      persist();
+      renderSegments(mm, b.closest('.audio-card'));
+      renderSegDetail(mm);
+      const row = document.querySelector(`.seg-item[data-seg-item="${idx}"]`);
+      if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    } else if (b.dataset.voiceCheck !== undefined) {
+      // v2.265 — bölüm bazında perde ölçümü + konuşmacı profili karşılaştırması.
+      const mm = c.materials.find((x) => x.id === b.dataset.voiceCheck);
+      if (mm) measureSpeakerConsistency(mm);
     } else if (b.dataset.measurePitch !== undefined) {
       const mm = c.materials.find((x) => x.id === b.dataset.measurePitch);
       if (mm) measureSpeakerPitch(mm);
@@ -17345,6 +17522,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.265': {
+    title: 'Ses tutarlılığı ölçümü: yanlış etiketlenen bölüm görünür',
+    body:
+      'Konuşmacılar panelindeki "Ses tutarlılığını ölç" bölüm bazında perde (f0) ölçer ve atandığı ' +
+      'konuşmacının profiliyle karşılaştırır. Atandığından belirgin sapan bölümler listede "⚠ ses" ve ' +
+      'panelde "Bölüm N · 210 Hz · atandığı profili 110 Hz · en yakın: S2" olarak görünür; "Git" ile ' +
+      'bölüme gidilir. Ardışık bölümlerde ani perde sıçraması "konuşmacı değişmiş olabilir" diye ' +
+      'işaretlenir. HİÇBİR ATAMA OTOMATİK DEĞİŞTİRİLMEZ; bu kimlik tespiti değil, perde tahminidir.'
+  },
   '2.264': {
     title: 'Konuşmacı "doğrulandı" kilidi',
     body:

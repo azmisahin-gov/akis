@@ -3736,3 +3736,17 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   cursor: pointer;
 }
 .spk-card.is-verified .spk-verify { color: var(--green); font-weight: 600; }
+/* v2.265 — Konuşmacı ses tutarlılığı özeti (yalnız ölçüm yapıldıysa). */
+.voice-check {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  padding: 8px 10px;
+  margin: 6px 0;
+}
+.vc-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.vc-head small { color: var(--ink-3); font-size: var(--fs-2xs); }
+.vc-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 4px; }
+.vc-idx { font-family: var(--font-mono); font-size: var(--fs-2xs); color: var(--ink-2); }
+.vc-txt { flex: 1 1 220px; font-size: var(--fs-xs); color: var(--ink-2); }

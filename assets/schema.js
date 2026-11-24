@@ -478,6 +478,9 @@ export function emptyMaterial(over = {}) {
 
     // Ölçüm
     levels: null, // emptyLevels() veya null
+    // KONUŞMACI SES TUTARLILIĞI (v2.265): bölüm bazında ölçülen perde + profil
+    // + işaretler. Türetilmiş ölçümdür; kimlik tespiti DEĞİLDİR. Yoksa null.
+    voiceCheck: null,
     spectrogramReviewedAt: null,
 
     // Delil
@@ -1257,6 +1260,108 @@ export function assignCaseSpeakerCodes(speakers) {
   return speakers || [];
 }
 
+
+// ---- Konuşmacı ses tutarlılığı (v2.265) ----------------------------------
+// AMAÇ: "bu bölüm S1'e atanmış ama ölçülen ses S2'ye daha yakın" gibi
+// İŞARETLERİ görünür kılmak. Kimlik tespiti DEĞİLDİR; ölçüm yalnız perde
+// (f0) tahminine dayanır ve kararı uzman verir. Otomatik DEĞİŞTİRME yok.
+export const VOICE_SCHEMA = 1;
+export const VOICE_RATIO = 0.28; // ~4 yarım ton: "farklı olabilir" eşiği
+export const VOICE_CHANGE_RATIO = 0.35; // ardışık bölümlerde değişim şüphesi
+export const VOICE_MIN_SAMPLES = 3; // profil için en az bölüm sayısı
+
+/** Sayı dizisinin ortancası (NaN/boş yok sayılır). */
+export function medianOf(values) {
+  const nums = (Array.isArray(values) ? values : []).filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+  if (!nums.length) return null;
+  const mid = Math.floor(nums.length / 2);
+  return nums.length % 2 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+}
+
+/**
+ * Ölçülen bölümlerden konuşmacı profilleri (ortanca perde).
+ * `points` = [{ index, speakerId, hz, ambiguous }]
+ * Döner: [{ speakerId, count, medianHz, reliable }]
+ * `reliable` = yeterli sayıda GÜVENİLİR (oktav belirsiz olmayan) ölçüm var mı.
+ */
+export function speakerVoiceProfiles(points) {
+  const by = new Map();
+  for (const p of Array.isArray(points) ? points : []) {
+    if (!p || !p.speakerId) continue;
+    if (p.ambiguous) continue; // oktav belirsiz ölçüm profile girmez
+    if (!Number.isFinite(p.hz) || p.hz <= 0) continue;
+    if (!by.has(p.speakerId)) by.set(p.speakerId, []);
+    by.get(p.speakerId).push(p.hz);
+  }
+  const out = [];
+  for (const [speakerId, hz] of by) {
+    out.push({
+      speakerId,
+      count: hz.length,
+      medianHz: medianOf(hz),
+      reliable: hz.length >= VOICE_MIN_SAMPLES
+    });
+  }
+  return out;
+}
+
+/**
+ * Atanan konuşmacıdan ölçülen perdeye göre uzaklaşan bölümler.
+ * Döner: [{ index, speakerId, hz, expectedHz, ratio, nearestSpeakerId, nearestHz, kind }]
+ * KURAL: yalnız GÜVENİLİR profiller karşılaştırılır; eşik altındaki fark
+ * işaretlenmez. Otomatik düzeltme YOK.
+ */
+export function voiceOutliers(points, profiles, ratio = VOICE_RATIO) {
+  const prof = new Map((Array.isArray(profiles) ? profiles : []).map((p) => [p.speakerId, p]));
+  const out = [];
+  for (const p of Array.isArray(points) ? points : []) {
+    if (!p || !p.speakerId || p.ambiguous) continue;
+    if (!Number.isFinite(p.hz) || p.hz <= 0) continue;
+    const mine = prof.get(p.speakerId);
+    if (!mine || !mine.reliable || !mine.medianHz) continue;
+    const dev = Math.abs(Math.log(p.hz / mine.medianHz));
+    if (dev <= Math.log(1 + ratio)) continue;
+    // En yakın DİĞER konuşmacı profili (bilgi amaçlı; karar uzmanın).
+    let nearest = null;
+    for (const q of prof.values()) {
+      if (q.speakerId === p.speakerId || !q.reliable || !q.medianHz) continue;
+      const d = Math.abs(Math.log(p.hz / q.medianHz));
+      if (!nearest || d < nearest.d) nearest = { speakerId: q.speakerId, hz: q.medianHz, d };
+    }
+    out.push({
+      index: p.index,
+      speakerId: p.speakerId,
+      hz: p.hz,
+      expectedHz: mine.medianHz,
+      ratio: Math.exp(dev) - 1,
+      nearestSpeakerId: nearest ? nearest.speakerId : '',
+      nearestHz: nearest ? nearest.hz : 0,
+      kind: nearest && nearest.d < dev ? 'nearest-other' : 'deviation'
+    });
+  }
+  return out;
+}
+
+/**
+ * Aynı konuşmacıya atanmış ARDIŞIK bölümlerde ani perde sıçraması.
+ * "Burada konuşmacı değişmiş olabilir" işaretidir; bölme/sınır kontrolü için.
+ */
+export function voiceChangeSuspects(points, ratio = VOICE_CHANGE_RATIO) {
+  const list = (Array.isArray(points) ? points : []).filter((p) => p && !p.ambiguous && Number.isFinite(p.hz) && p.hz > 0);
+  list.sort((a, b) => a.index - b.index);
+  const out = [];
+  for (let i = 1; i < list.length; i++) {
+    const a = list[i - 1];
+    const b = list[i];
+    if (!a.speakerId || a.speakerId !== b.speakerId) continue;
+    if (b.index !== a.index + 1) continue; // yalnız komşu bölüm
+    const dev = Math.abs(Math.log(b.hz / a.hz));
+    if (dev <= Math.log(1 + ratio)) continue;
+    out.push({ prevIndex: a.index, index: b.index, speakerId: a.speakerId, prevHz: a.hz, hz: b.hz, ratio: Math.exp(dev) - 1 });
+  }
+  return out;
+}
+
 // ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
 // Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
 // yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK
@@ -1419,6 +1524,7 @@ export function normalizeMaterial(src = {}) {
     referenceSegments: Array.isArray(m.referenceSegments) ? m.referenceSegments.filter(isObj) : [],
     expectedText: str(m.expectedText),
     levels: isObj(m.levels) ? m.levels : null,
+    voiceCheck: isObj(m.voiceCheck) ? m.voiceCheck : null,
     spectrogramReviewedAt: m.spectrogramReviewedAt || null,
     origin: {
       mediumType: pick(normalizeMediumType(origin.mediumType), MEDIUM_TYPE, 'unspecified'),

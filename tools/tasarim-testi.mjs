@@ -2055,5 +2055,19 @@ console.log('\n[2cj] Konuşmacı doğrulandı kilidi (v2.264)');
   check('doğrulama etiketi token punto', /\.spk-verify\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
 }
 
+
+console.log('\n[2ck] Konuşmacı ses tutarlılığı (v2.265)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('ölçüm düğmesi panelde', /data-voice-check=/.test(js));
+  check('özet bloğu yalnız ölçümde', /const vc = m\.voiceCheck && m\.voiceCheck\.ok \? m\.voiceCheck : null/.test(js));
+  check('işaretli bölüme git', /data-voice-goto=/.test(js));
+  check('liste rozeti (⚠ ses)', /⚠ ses/.test(js));
+  check('özet kutusu sarar (kırpma yok)', /\.vc-row\s*\{[^}]*flex-wrap:\s*wrap/.test(layer));
+  check('özet punto token', /\.vc-txt\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
+  check('uyarı rengi token (altın)', /\.voice-check\s*\{[^}]*border-left:\s*3px solid var\(--gold\)/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

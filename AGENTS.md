@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.264.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.265.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6139,3 +6139,50 @@ kartı `e.target.closest('.audio-card')` ile bulur; olayı **bölüm köküne**
 | Rapor | "doğrulandı" notu **var** |
 | Ctrl+Z | kilit açıldı (0 disabled, sınıf yok) |
 | Kırpılma / taşma / JS hatası | **0 / yok / 0** |
+
+## YENİ OTURUM DEVRİ (v2.265) — Ses tutarlılığı ölçümü
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.265** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1680 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Rapor konuşmacı tablosu (süre + ilk/son + listede etiket) — v2.266 adayı |
+
+### Yapılan
+
+- `schema.js`: `VOICE_SCHEMA/1`, `VOICE_RATIO .28`, `VOICE_CHANGE_RATIO .35`,
+  `VOICE_MIN_SAMPLES 3`; saf `medianOf`, `speakerVoiceProfiles`, `voiceOutliers`,
+  `voiceChangeSuspects`.
+- `emptyMaterial.voiceCheck` (türetilmiş ölçüm) + `normalizeMaterial` korur.
+- `measureSpeakerConsistency(m)`: dosyanın kendi örnekleme hızında **tek decode**;
+  her bölümde 2 pencere (0,25 sn) → `detectPitchHz` + `detectPitchAmbiguity` →
+  ortanca. `m.voiceCheck = {ok, schema, at, points, profiles, outliers, changes}`.
+- Arayüz: panelde **Ses tutarlılığını ölç** düğmesi; özet kutusu (`.voice-check`,
+  `.vc-row`, **Git** = `data-voice-goto`); listede **⚠ ses** rozeti.
+- Hazırlık: `voice` maddesi (**expert**, yalnız ölçüm varsa). QC tablosuna satır
+  (yalnız ölçüm varsa; `perde ölçümü, kimlik tespiti değildir`).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **İşaret ≠ düzeltme.** Hiçbir atama otomatik değişmez (`setSegmentSpeakerByName`
+   çağrısı YOK); test [112] bunu negatif aramayla denetler.
+2. **Oktav belirsiz ölçüm profile girmez** (v2.101); aksi hâlde yanlış yöne işaret eder.
+3. **Profil ≥3 güvenilir bölüm** ister; az örnekte karşılaştırma yapılmaz.
+4. **Ölçülmemiş ≠ 0 şüpheli**: hazırlık/QC yalnız ölçüm varsa görünür.
+5. Ölçüm ağır iş: **yalnız kullanıcı tetikler**; kendiliğinden çalışmaz.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Senaryo | Sonuç |
+|---|---|
+| Paket örnek kayıt (2 konuşmacı) | profiller 100,9 / 99,5 Hz → **0 şüpheli** (sesler ayrışmıyor) |
+| İki perdeli test WAV (110/210 Hz) + bilinçli yanlış etiket | **1 şüpheli**: "Bölüm 4 · 210 Hz · atandığı profili 110 Hz"; liste **⚠ ses 1** |
+| Kırpılma / taşma / JS hatası | **0 / yok / 0** |
+
+### DÜRÜST SINIR
+
+Perde ayrımı zayıftır: benzer perdedeki iki kişi ayrışmaz. **İşaret yokluğu**
+atamaların doğru olduğu anlamına gelmez. Gerçek ayrıştırma için konuşmacı gömme
+(embedding) modeli gerekir; ölçülmeden ürüne alınmaz.

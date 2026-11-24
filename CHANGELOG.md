@@ -6,12 +6,61 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.264.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.265.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.265 — Ses tutarlılığı ölçümü (yanlış etiketlenen bölüm görünür)
+
+Kullanıcı: *"Yanlış tanımlama istemiyoruz."* v2.263 hızı, v2.264 künye kilidini
+getirdi; bu sürüm **ölçümle yakalama** adımıdır.
+
+### KULLANICI NE GÖRECEK
+
+- Konuşmacılar panelinde **"Ses tutarlılığını ölç"** düğmesi (yalnız siz basınca çalışır).
+- Bölüm bazında **perde (f0)** ölçülür; her konuşmacının **ortanca** profili çıkarılır.
+- Atandığından **belirgin sapan** bölümler:
+  - listede **⚠ ses** rozeti (ipucunda "210 Hz; profili 110 Hz"),
+  - panelde **"Bölüm 4 · 210 Hz · atandığı profili 110 Hz · en yakın: S2"** + **Git**.
+- Aynı konuşmacıda **ardışık** iki bölüm arasında ani sıçrama →
+  **"konuşmacı değişmiş olabilir"** (bölme/sınır kontrolü için).
+- Rapor **hazırlığında** (yalnız ölçüm yapıldıysa) **uzman kontrolü** maddesi;
+  **Kalite kontrolü** tablosunda sayı (`perde ölçümü, kimlik tespiti değildir`).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Hiçbir atama otomatik değiştirilmez.** İşaret öneridir; karar uzmanın.
+2. **Kimlik tespiti değildir**: yalnız perde tahmini; kayıt koşullarına duyarlıdır.
+3. **Oktav belirsiz ölçüm profile girmez** (v2.101 kuralı) — yanlış yönlendirme olmasın.
+4. **En az 3 güvenilir bölüm** yoksa profil "güvenilir" sayılmaz ve karşılaştırma yapılmaz.
+5. **Ölçülmemiş ≠ 0 şüpheli**: hazırlık maddesi ve QC satırı yalnız ölçüm varsa çıkar.
+
+### Teknik
+
+- `schema.js`: `VOICE_SCHEMA`, `VOICE_RATIO` (0,28 ≈ 4 yarım ton), `VOICE_CHANGE_RATIO` (0,35),
+  `VOICE_MIN_SAMPLES` (3); `medianOf`, `speakerVoiceProfiles`, `voiceOutliers`,
+  `voiceChangeSuspects` (saf, test edilir).
+- `emptyMaterial.voiceCheck` (türetilmiş ölçüm; `normalizeMaterial` korur).
+- `measureSpeakerConsistency(m)`: tek decode (dosyanın kendi örnekleme hızı), her bölümde
+  2 pencere (0,25 sn) → `detectPitchHz` + `detectPitchAmbiguity` → ortanca;
+  `logEvent('Konuşmacı tutarlılığı ölçüldü', …)`.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Senaryo | Sonuç |
+|---|---|
+| Paket örnek kayıt (2 "konuşmacı") | perde profilleri **100,9 / 99,5 Hz** → **0 şüpheli** (sesler ayrışmıyor; dürüst sonuç) |
+| **İki perdeli test WAV** (110 / 210 Hz, 6 bölüm) + **bilinçli yanlış etiket** | **1 şüpheli**: "Bölüm 4 · 210 Hz · atandığı profili 110 Hz"; listede **⚠ ses 1** |
+| Kırpılma / yatay taşma / JS hatası | **0 / yok / 0** |
+
+### Dürüst sınır
+
+Perde tek başına güvenilir bir ayrım değildir: aynı cinsiyet/benzer perdedeki iki kişi
+ayrışmayabilir (örnek kayıtta olduğu gibi 0 işaret çıkar). İşaret **yokluğu**, atamaların
+doğru olduğu anlamına **gelmez**; yalnız "ölçüm belirgin bir sapma görmedi" demektir.
 
 ## v2.264 — Konuşmacı "doğrulandı" kilidi
 

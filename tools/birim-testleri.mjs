@@ -4957,5 +4957,94 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('rapor notu var', /speakerVerifiedSuffix/.test(js), true);
 }
 
+
+// [111] v2.265 — Konuşmacı ses tutarlılığı: SAF karşılaştırma.
+// KURAL: yalnız güvenilir profiller karşılaştırılır; oktav belirsiz ölçüm
+// profile girmez; hiçbir atama otomatik değiştirilmez (yalnız işaret).
+{
+  console.log('[111] Konuşmacı ses tutarlılığı (v2.265)');
+  eq('medianOf tek', __schemaMod.medianOf([5]), 5);
+  eq('medianOf çift', __schemaMod.medianOf([2, 4]), 3);
+  eq('medianOf boş', __schemaMod.medianOf([]), null);
+  eq('medianOf geçersizleri atar', __schemaMod.medianOf([0, -1, NaN, 10]), 10);
+  eq('VOICE_SCHEMA sürümlü', __schemaMod.VOICE_SCHEMA >= 1, true);
+
+  const pts = [
+    { index: 0, speakerId: 'a', hz: 120 },
+    { index: 1, speakerId: 'a', hz: 122 },
+    { index: 2, speakerId: 'a', hz: 118 },
+    { index: 3, speakerId: 'b', hz: 210 },
+    { index: 4, speakerId: 'b', hz: 208 },
+    { index: 5, speakerId: 'b', hz: 212 },
+    { index: 6, speakerId: 'a', hz: 200 }
+  ];
+  const prof = __schemaMod.speakerVoiceProfiles(pts);
+  eq('iki profil', prof.length, 2);
+  // Ortanca, TEK aykırı değerden (200 Hz) etkilenmez: [118,120,122,200] → 121.
+  eq('A ortancası (aykırıya dayanıklı)', Math.round(prof.find((x) => x.speakerId === 'a').medianHz), 121);
+  eq('B ortancası', Math.round(prof.find((x) => x.speakerId === 'b').medianHz), 210);
+  eq('güvenilir profil', prof.every((x) => x.reliable), true);
+
+  const out = __schemaMod.voiceOutliers(pts, prof);
+  eq('tek aykırı bölüm', out.length, 1);
+  eq('aykırı bölüm indeksi', out[0].index, 6);
+  eq('en yakın konuşmacı B', out[0].nearestSpeakerId, 'b');
+  eq('aykırı türü nearest-other', out[0].kind, 'nearest-other');
+
+  // Oktav belirsiz ölçüm profile GİRMEZ (yanlış yönlendirme olmasın).
+  const ambPts = [
+    { index: 0, speakerId: 'a', hz: 120 },
+    { index: 1, speakerId: 'a', hz: 122 },
+    { index: 2, speakerId: 'a', hz: 118 },
+    { index: 3, speakerId: 'a', hz: 240, ambiguous: true }
+  ];
+  eq('belirsiz ölçüm profile girmez', __schemaMod.speakerVoiceProfiles(ambPts)[0].count, 3);
+  eq('belirsiz ölçüm aykırı sayılmaz', __schemaMod.voiceOutliers(ambPts, __schemaMod.speakerVoiceProfiles(ambPts)).length, 0);
+
+  // Yetersiz örnek (2 bölüm) → profil güvenilir değil; karşılaştırma yapılmaz.
+  const few = [
+    { index: 0, speakerId: 'a', hz: 120 },
+    { index: 1, speakerId: 'a', hz: 400 }
+  ];
+  const fewProf = __schemaMod.speakerVoiceProfiles(few);
+  eq('az örnek güvenilir değil', fewProf[0].reliable, false);
+  eq('güvenilmez profilde aykırı yok', __schemaMod.voiceOutliers(few, fewProf).length, 0);
+
+  // Değişim şüphesi: aynı konuşmacıda ARDIŞIK ve büyük sıçrama.
+  const chg = [
+    { index: 0, speakerId: 'a', hz: 120 },
+    { index: 1, speakerId: 'a', hz: 200 },
+    { index: 2, speakerId: 'b', hz: 210 },
+    { index: 3, speakerId: 'b', hz: 214 }
+  ];
+  const sus = __schemaMod.voiceChangeSuspects(chg);
+  eq('değişim şüphesi sayısı', sus.length, 1);
+  eq('değişim şüphesi indeksi', sus[0].index, 1);
+  eq('farklı konuşmacıya geçiş şüphe değil', sus.some((x) => x.index === 2), false);
+
+  // Eşik altındaki küçük fark işaretlenmez (gürültü yok).
+  const near = [
+    { index: 0, speakerId: 'a', hz: 120 },
+    { index: 1, speakerId: 'a', hz: 130 },
+    { index: 2, speakerId: 'a', hz: 125 }
+  ];
+  eq('küçük fark işaretlenmez', __schemaMod.voiceOutliers(near, __schemaMod.speakerVoiceProfiles(near)).length, 0);
+}
+
+// [112] v2.265 — Ölçüm ve işaret yolları kaynakta.
+{
+  console.log('[112] Ses tutarlılığı ölçüm yolu (v2.265)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('ölçüm düğmesi', /data-voice-check=/.test(js), true);
+  eq('ölçüm fonksiyonu', /async function measureSpeakerConsistency\(/.test(js), true);
+  eq('ölçüm kayda yazılır', /m\.voiceCheck = \{/.test(js), true);
+  eq('ölçüm günlüğe yazılır', /Konuşmacı tutarlılığı ölçüldü/.test(js), true);
+  eq('listedeki işaret', /⚠ ses/.test(js), true);
+  eq('panele git düğmesi', /data-voice-goto=/.test(js), true);
+  eq('otomatik atama YOK (yalnız işaret)', !/voiceCheck[\s\S]{0,200}setSegmentSpeakerByName/.test(js), true);
+  eq('hazırlık maddesi', /'Ses tutarlılığı: şüpheli bölüm'/.test(js), true);
+  eq('şema alanı', /voiceCheck: null/.test(fs.readFileSync(path.join(ROOT, 'assets/schema.js'), 'utf8')), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

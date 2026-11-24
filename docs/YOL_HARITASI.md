@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.264.**
+yazılır. **Güncel sürüm: v2.265.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.265 — Ses tutarlılığı ölçümü (TAMAMLANDI)
+
+- Bölüm bazında perde + konuşmacı profili (ortanca) → **sapan bölüm** işareti
+  (liste ⚠ ses, panel "Bölüm N · … Hz · en yakın: S2" + Git).
+- Ardışık bölümlerde ani sıçrama → "konuşmacı değişmiş olabilir".
+- **Otomatik atama YOK**; oktav belirsiz ölçüm profile girmez; profil ≥3 bölüm ister.
+- Hazırlık (uzman) + QC satırı yalnız ölçüm yapıldıysa.
+- Koruyan: `birim` [111]/[112], `tasarim` [2ck].
 
 ## v2.264 — Konuşmacı "doğrulandı" kilidi (TAMAMLANDI)
 
