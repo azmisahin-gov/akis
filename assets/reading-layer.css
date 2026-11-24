@@ -3655,3 +3655,37 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   max-height: 100%;
   overflow-y: auto;
 }
+
+/* ===== v2.253 — RAPOR KÂĞIDI BİÇİMİ (kurumsal görünüm; ekran + yazdırma) ====
+   Yalnız GÖRSEL. Metin DEĞİŞMEZ → üç çıktı (HTML/DOCX/UDF) aynı metni üretir.
+   Seçiciler `.report-paper` önekli: app.css kurallarını özgüllükle ezer, CSS
+   borcu nöbetçisini (tam-seçici eşleşmesi) artırmaz. */
+/* Kapak: çerçeveli başlık bandı */
+.report-paper .paper-title {
+  border: 1px solid var(--paper-line);
+  border-top: 4px solid var(--paper-head);
+  border-radius: 4px;
+  padding: 22px 18px 18px;
+  margin: 26px 0 20px;
+  background: var(--paper-band);
+}
+.report-paper .paper-title .republic { letter-spacing: 2px; font-weight: 800; }
+.report-paper .paper-title h2 { margin: 10px 0 6px; }
+/* Üst şerit: hafif vurgu */
+.report-paper .paper-topline { font-weight: 700; letter-spacing: .6px; }
+/* Bölüm başlığı: sol vurgu çubuğu + alt kural (mevcut border-bottom korunur) */
+.report-paper .paper-section h3 { border-left: 4px solid var(--paper-head); padding-left: 10px; }
+/* Tablo tipografisi: başlık bandı + zebra + ilk sütun */
+.report-paper .paper-table th { letter-spacing: .3px; }
+.report-paper .paper-table tbody tr:nth-child(even) td:not(:first-child) { background: var(--paper-band); }
+/* İmza: ad üstünde çizgi (yalnız görsel) */
+.report-paper .paper-signature div { border-top: 1px solid var(--paper-line); padding-top: 8px; }
+/* Alt bilgi vurgusu */
+.report-paper .paper-footer { font-weight: 600; }
+/* Yazdırma: bölünmeyi azalt, başlık yalnız kalmasın, tablo başlığı tekrar */
+@media print {
+  .report-paper .paper-title { background: var(--paper); }
+  .report-paper .paper-section h3 { break-after: avoid; }
+  .report-paper .paper-table tr { break-inside: avoid; }
+  .report-paper .paper-table thead { display: table-header-group; }
+}

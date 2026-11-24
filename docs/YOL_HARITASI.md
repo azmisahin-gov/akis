@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.252.**
+yazılır. **Güncel sürüm: v2.253.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.253 — Rapor kâğıdı biçimi (TAMAMLANDI)
+
+- Görsel: kapak bandı, bölüm sol vurgu, tablo zebra, imza çizgisi, alt bilgi.
+- Yazdırma: tablo satırı bölünmez, thead yinelenir, başlık yalnız kalmaz.
+- Metin değişmedi (üç çıktı aynı). Ölçüm: 4px bant/çizgi, zebra farklı. Koruyan: `birim [104]`.
+- Sayfa no: DOCX PAGE var; HTML/UDF editöre bağlı (dürüst sınır).
 
 ## v2.252 — UDF ZWSP yalnız SHA-256 içinde (TAMAMLANDI)
 

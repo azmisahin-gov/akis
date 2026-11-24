@@ -4682,5 +4682,17 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('boş güvenli', f(null), '');
 }
 
+// [104] v2.253 — Rapor kâğıdı biçimi (kapak bandı, bölüm vurgusu, tablo zebra, yazdırma).
+{
+  console.log('[104] Rapor kâğıdı biçimi (v2.253)');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('kapak bandı (4px üst çizgi)', /\.report-paper \.paper-title \{[\s\S]*?border-top:\s*4px solid/.test(css), true);
+  eq('kapak zemini paper-band', /\.report-paper \.paper-title \{[\s\S]*?background:\s*var\(--paper-band\)/.test(css), true);
+  eq('bölüm başlığı sol vurgu (4px)', /\.report-paper \.paper-section h3 \{[\s\S]*?border-left:\s*4px solid/.test(css), true);
+  eq('tablo zebra (çift satır)', /\.report-paper \.paper-table tbody tr:nth-child\(even\)/.test(css), true);
+  eq('yazdırma: tablo satırı bölünmez', css.includes('.report-paper .paper-table tr { break-inside: avoid'), true);
+  eq('yazdırma: başlık yalnız kalmaz', css.includes('.report-paper .paper-section h3 { break-after: avoid'), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -1,4 +1,4 @@
-# Özellikler (v2.252 — mevcut durum)
+# Özellikler (v2.253 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -625,6 +625,11 @@ uzmanlık alanını gösterir.
   saf hex (SHA-256)** içinde satır kırma için bulunur (hash'i tercihen uygulamadan
   kopyalayın). (Gerçek UDF'lerde 377 → 173 → yalnız hash; düzeltildi. `birim [103]`,
   `rapor` 28.)
+- **Rapor kâğıdı biçimi (v2.253):** kapakta çerçeveli başlık bandı, bölüm başlığında
+  sol vurgu, tablolarda zebra satırlar, imza üstünde çizgi. Yazdırmada tablo satırı
+  bölünmez, tablo başlığı yinelenir, başlık yalnız kalmaz. **Yalnız görsel**; metin
+  ve üç çıktı değişmez (`birim [104]`). Sayfa numarası: DOCX `PAGE` alanı; HTML/UDF
+  için tarayıcı/UYAP editörüne bağlı.
 - **Parametrik rapor — bölüm aç/kapa (v2.219):** Rapor görünümünde "Rapor
   bölümleri" paneli; **19 bölüm** (kapak, künye, içindekiler, 1–7, kayıt kökeni,
   gömülü metadata, delil edinme, konuşmacılar, okuma metni, WER, seviye,

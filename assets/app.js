@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.252';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.252';
+} from './schema.js?v=2.253';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.253';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.252';
+const APP_VERSION = '2.253';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16846,6 +16846,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.253': {
+    title: 'Rapor kâğıdı daha resmî görünüyor',
+    body:
+      'Rapor önizlemesi/yazdırma kurumsal biçime yaklaştı: kapakta çerçeveli başlık bandı, bölüm ' +
+      'başlıklarında sol vurgu, tablolarda zebra satırlar, imza üstünde çizgi. Yazdırmada tablo ' +
+      'satırları bölünmez, tablo başlığı her sayfada yinelenir. Metin değişmedi; UDF/DOCX aynı metni ' +
+      'üretmeye devam eder.'
+  },
   '2.252': {
     title: 'UDF: saat/metin/sözcük artık kesinlikle görünmez karaktersiz',
     body:

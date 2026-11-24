@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.252.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.253.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5748,3 +5748,28 @@ etiket gizliydi.
 ### SIRADAKİ
 - Kullanıcı yeni UDF üretip saat/kelime ZWSP'siz doğrulasın.
 - İsteğe bağlı: video önizleme / kodek genişletme / rapor kâğıt biçimi.
+
+## YENİ OTURUM DEVRİ (v2.253) — Rapor kâğıdı biçimi (görsel)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.253** |
+| Testler | `bash tools/test.sh` → **1550 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [104]` |
+| Ölçüm | CDP: kapak 4px bant + paper-band zemin + 4px radius; h3 sol 4px; zebra farklı; footer 600 |
+
+### Ne yapıldı (yalnız GÖRSEL; metin değişmedi)
+- `.report-paper` önekli kurallar (app.css'i özgüllükle ezer; CSS borcu nöbetçisini artırmaz):
+  kapak bandı, bölüm sol vurgu, tablo zebra, imza çizgisi, alt bilgi.
+- Yazdırma: `paper-table tr {break-inside:avoid}`, `thead {table-header-group}`,
+  `h3 {break-after:avoid}`, kapak zemini yazdırmada `--paper`.
+
+### DEĞİŞMEZ
+- **Kâğıt biçimi METNİ değiştirmez.** Üç çıktı aynı metni üretir (`rapor` testi). Yeni bir
+  görsel kural eklerken `.report-paper` öneki kullan (tam-seçici çakışmasını/borcu önler).
+- Sayfa numarası: DOCX `PAGE`; HTML yazdırma tarayıcıya, UDF UYAP editörüne bağlı — uydurma.
+
+### SIRADAKİ
+- İstenirse DOCX başlık/alt bilgi ve UDF kapak görselini ayrıca iyileştirme; sayfa no denemesi.

@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.252.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.253.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.253 — Rapor kâğıdı biçimi (kurumsal görünüm)
+
+Rapor önizlemesi/yazdırma daha resmî ve okunaklı görünür. **Yalnız GÖRSEL**: metin
+değişmez → üç çıktı (HTML/DOCX/UDF) aynı metni üretmeye devam eder.
+
+### KULLANICI NE GÖRECEK
+- **Kapak bandı:** T.C. / mahkeme / "BİLİRKİŞİ RAPORU" bloğu çerçeveli, üstten kalın
+  çizgili, hafif zeminli bir bant olarak çizilir.
+- **Bölüm başlıkları:** sol tarafta kalın vurgu çubuğu; alt kural korunur.
+- **Tablolar:** başlık bandı (lacivert) + **çift satır zebra**; ilk sütun vurgusu.
+- **İmza:** ad üstünde ince çizgi.
+- **Yazdırma/PDF:** tablo satırları bölünmez, tablo başlığı her sayfada yinelenir,
+  bölüm başlığı tek başına sayfa sonunda kalmaz; kapak zemini yazdırmada beyaz.
+
+### Ölçüm (gerçek Chromium, 1440×900)
+- Kapak: `border-top 4px solid`, zemin `rgb(246,248,251)`, `radius 4px`.
+- Bölüm başlığı: `border-left 4px`, `padding-left 10px`.
+- Tablo zebra: tek satır beyaz, çift satır `paper-band` (farklı).
+- Alt bilgi `font-weight 600`. **Metin içeriği değişmedi** (`rapor` testi yeşil).
+
+### Dürüst sınır (sayfa numarası)
+- **DOCX:** alt bilgide `PAGE` alanı var (Word/PDF sayfa numarası basar).
+- **HTML/yazdırma:** tarayıcı `@page` çoğu sürümde sayfa numarası kutusu desteklemez;
+  numara tarayıcının yazdırma başlık/altlık ayarına bağlıdır. Ekranda "Sayfa N/M"
+  A4 penceresinde görünür.
+- **UDF:** sayfa numarası UYAP editörünün sayfa düzenine bırakılır.
+
+### Koruyan test
+- `birim [104]` (kapak bandı, bölüm vurgusu, zebra, yazdırma kuralları).
 
 ## v2.252 — UDF ZWSP: yalnız SHA-256 içinde (metin/saat/sözcük kesinlikle temiz)
 
