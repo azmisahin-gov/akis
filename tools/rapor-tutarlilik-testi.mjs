@@ -28,6 +28,7 @@ function makeEl(sel) {
     addEventListener: noop, removeEventListener: noop,
     querySelector: () => null, querySelectorAll: () => [], closest: () => null,
     appendChild: noop, remove: noop, showModal: noop, close: noop,
+    getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
     getContext: () => ({ clearRect: noop, fillRect: noop, fillStyle: '' }),
   };
 }
@@ -75,6 +76,7 @@ const sandbox = {
   __reportModel: __reportModelMod,
   console, document: documentStub, localStorage: localStorageStub,
   window: {}, navigator: {},
+  getComputedStyle: () => ({ display: 'block', height: '0px', marginLeft: '0px', overflowX: 'visible' }),
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
   URL: { createObjectURL: () => 'blob:x', revokeObjectURL: noop },
   Blob, TextEncoder, TextDecoder, setTimeout, clearTimeout,

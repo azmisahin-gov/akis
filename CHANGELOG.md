@@ -6,12 +6,49 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.232.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.233.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.233 — Rapor: sayfa görüntüleyici (Word/PDF gibi)
+
+Sürekli uzun kâğıt + sayfa kaydırma yerine **tek A4 sayfa penceresi** ve
+**sayfa sayfa gezinme**.
+
+### KULLANICI NE GÖRECEK
+
+- Rapor **tek A4 sayfa** hâlinde görünür; **‹ ›** ve **PageUp/PageDown** ile
+  sayfalar arasında dolaşılır; **"Sayfa N / M"** görünür.
+- **"Sürekli"** anahtarı eski uzun kâğıt akışını korur (okumak/yazmak için).
+- Üstteki **A4 / Sığdır / sayfa gezinme** çubuğu **kaymaz** (sabit).
+- **"04 / RAPORLAMA"** tanıtımı rapor görünümünde **gizlendi** (kaymıyor,
+  yer kazandırıyor).
+- **Tablolar sayfaya sığar**: sabit düzen + hücre sarma; sağdan taşma yok.
+- Tam ekranda da aynı kontroller ve sayfa gezinme çalışır.
+
+### Teknik
+
+- Kâğıt DOM'u **bölünmez** (risk); `.report-page-window` sabit yükseklikte
+  kırpar, kâğıt `translateY(-sayfa×pageH)` ile kaydırılır.
+- `reportPageHeight` (A4: genişlik×297/210), `reportPageCountFor`,
+  `reportPageCountValue`, `applyReportPageView`, `setReportPage`,
+  `setReportContinuous`; sayfa indeksi **oturumluk**.
+- Sayfa modu **sığdırmayı gerektirir** (tek sayfa tam görünsün diye); okumak
+  için "Sürekli" + istenirse sığdırma kapatılır.
+- Tercih `akis.reportContinuous`; dosyaya yazılmaz.
+- `.report-stage-bar` `top: var(--report-toolbar-h)` ile araç çubuğunun altında
+  yapışır; `syncReportToolbarHeight` yüksekliği ölçer.
+- Tablolar: `table-layout: fixed; width:100%` + `overflow-wrap:anywhere`.
+
+### Koruyan testler
+
+- `birim [88]`: `reportPageCountFor` (sayfa sayısı, geçersiz pageH → 1).
+- `tasarim [2cd]`: sayfa penceresi/nav/sürekli anahtarı, sabit stage-bar,
+  tanıtım gizli, tablo sabit düzen + sarma, token stil.
+- `surum`: `reportPageWindow` / `reportPageNav` / `reportContinuousToggle`.
 
 ## v2.232 — Tam A4 görünümü, tam ekran kontrolleri, sabit iskelet
 

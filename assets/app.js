@@ -62,15 +62,15 @@ import {
   emptyReportTech,
   REPORT_PRESET_DEFS,
   reportSectionsForPreset
-} from './schema.js?v=2.232';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.232';
+} from './schema.js?v=2.233';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.233';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.232';
+const APP_VERSION = '2.233';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10515,7 +10515,92 @@ function setReportFit(on) {
     localStorage.setItem('akis.reportFit', on ? '1' : '0');
   } catch (e) {}
   applyReportFit();
+  applyReportPageView();
   renderPageGuides();
+}
+
+// ---- Sayfa görüntüleyici (v2.233) ----------------------------------------
+// Sürekli uzun kâğıt yerine tek A4 sayfa penceresi; ‹ › ile sayfa sayfa gezinme.
+// Kâğıt DOM'u BÖLÜNMEZ (risk); pencere sabit yükseklikte kırpar, kâğıt
+// translateY ile kaydırılır. "Sürekli" modu eski davranışı korur.
+let reportPageIndex = 0;
+function reportContinuousPref() {
+  try {
+    return localStorage.getItem('akis.reportContinuous') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function reportPageHeight() {
+  const paper = $('#reportPreview');
+  if (!paper) return 0;
+  const w = paper.getBoundingClientRect().width || 0;
+  if (!w) return 0;
+  return Math.round((w * 297) / 210);
+}
+function reportPageCountFor(contentH, pageH) {
+  const h = Number(contentH) || 0;
+  const ph = Number(pageH) || 0;
+  if (!ph) return 1;
+  return Math.max(1, Math.ceil(h / ph));
+}
+function reportPageCountValue() {
+  const paper = $('#reportPreview');
+  return reportPageCountFor(paper ? paper.scrollHeight : 0, reportPageHeight());
+}
+function applyReportPageView() {
+  const ws = $('#reportWorkspace');
+  const paper = $('#reportPreview');
+  const win = $('#reportPageWindow');
+  if (!ws || !paper || !win) return;
+  const continuous = reportContinuousPref();
+  const cb = $('#reportContinuousToggle');
+  if (cb) cb.checked = continuous;
+  ws.dataset.page = continuous ? 'continuous' : 'single';
+  const nav = $('#reportPageNav');
+  if (continuous) {
+    win.style.height = '';
+    paper.style.transform = '';
+    if (nav) nav.hidden = true;
+    return;
+  }
+  // Sayfa modu tek A4 sayfasının tam görünmesini gerektirir → sığdır açık olmalı.
+  if (!reportFitPref()) {
+    setReportFit(true);
+  }
+  const pageH = reportPageHeight();
+  const pages = reportPageCountValue();
+  reportPageIndex = Math.max(0, Math.min(pages - 1, reportPageIndex));
+  if (pageH) {
+    win.style.height = pageH + 'px';
+    paper.style.transform = `translateY(-${reportPageIndex * pageH}px)`;
+  }
+  if (nav) nav.hidden = false;
+  const lbl = $('#reportPageLabel');
+  if (lbl) lbl.textContent = `Sayfa ${reportPageIndex + 1} / ${pages}`;
+  const prev = $('#reportPagePrev');
+  if (prev) prev.disabled = reportPageIndex <= 0;
+  const next = $('#reportPageNext');
+  if (next) next.disabled = reportPageIndex >= pages - 1;
+}
+function setReportPage(idx) {
+  const pages = reportPageCountValue();
+  reportPageIndex = Math.max(0, Math.min(pages - 1, Number(idx) || 0));
+  applyReportPageView();
+}
+function setReportContinuous(on) {
+  try {
+    localStorage.setItem('akis.reportContinuous', on ? '1' : '0');
+  } catch (e) {}
+  reportPageIndex = 0;
+  applyReportPageView();
+}
+function syncReportToolbarHeight() {
+  const tb = $('.report-toolbar');
+  const v = $('#view-report');
+  if (tb && v && v.style && typeof v.style.setProperty === 'function') {
+    v.style.setProperty('--report-toolbar-h', Math.round(tb.getBoundingClientRect().height) + 'px');
+  }
 }
 
 // ---- Belge odaklı bölüm düzenleme (v2.231) -------------------------------
@@ -11615,10 +11700,12 @@ function renderReport() {
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   applyReportMode();
   applyReportFit();
+  applyReportPageView();
   const wsEl = $('#reportWorkspace');
   if (wsEl) wsEl.dataset.edit = reportEditKey ? 'open' : 'closed';
   renderReportSectionEditor(c);
   renderPageGuides();
+  syncReportToolbarHeight();
 }
 function xesc(s = '') {
   return String(s)
@@ -13438,7 +13525,9 @@ function setReportFull(on) {
     window.scrollTo(0, 0);
   } catch (e) {}
   applyReportFit();
+  applyReportPageView();
   renderPageGuides();
+  syncReportToolbarHeight();
 }
 // Dosya bilgileri çekmecesi. Form artık ayrı sayfa değil; çalışma alanının
 // üzerine sağdan açılır. Aynı anda yalnızca bir çekmece açık olur.
@@ -15048,13 +15137,34 @@ $('#reportPageViewToggle')?.addEventListener('change', (e) => {
 });
 // Sayfaya sığdır (v2.232): kâğıt genişliği görünüm yüksekliğine göre türetilir.
 $('#reportFitToggle')?.addEventListener('change', (e) => setReportFit(!!e.target.checked));
+// Sayfa görüntüleyici (v2.233): sürekli/sayfa modu + ‹ › gezinme.
+$('#reportContinuousToggle')?.addEventListener('change', (e) => setReportContinuous(!!e.target.checked));
+$('#reportPagePrev')?.addEventListener('click', () => setReportPage(reportPageIndex - 1));
+$('#reportPageNext')?.addEventListener('click', () => setReportPage(reportPageIndex + 1));
+document.addEventListener('keydown', (e) => {
+  const view = document.querySelector('#view-report');
+  if (!view || !view.classList.contains('active')) return;
+  if (reportContinuousPref()) return;
+  const t = e.target;
+  if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+  if (document.querySelector('dialog[open]')) return;
+  if (e.key === 'PageDown') {
+    e.preventDefault();
+    setReportPage(reportPageIndex + 1);
+  } else if (e.key === 'PageUp') {
+    e.preventDefault();
+    setReportPage(reportPageIndex - 1);
+  }
+});
 let __pageGuideTimer = null;
 window.addEventListener('resize', () => {
   clearTimeout(__pageGuideTimer);
   __pageGuideTimer = setTimeout(() => {
     const c = currentCase();
     if (reportFitPref()) applyReportFit();
+    applyReportPageView();
     if (c && ((c.report && c.report.pageView) || reportFitPref())) renderPageGuides();
+    syncReportToolbarHeight();
   }, 150);
 });
 $('#reportBackBtn').addEventListener('click', () => setReportFull(false));
@@ -16009,6 +16119,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.233': {
+    title: 'Rapor: sayfa görüntüleyici',
+    body:
+      'Rapor artık Word/PDF gibi tek A4 sayfa penceresinde: üstte sabit çubuk, ‹ › ve ' +
+      'PageUp/PageDown ile sayfa sayfa gezinme, "Sayfa N/M". "Sürekli" anahtarı eski uzun ' +
+      'kâğıt akışını korur. Tablolar sayfaya sığar (sabit düzen + hücre sarma). ' +
+      '"04 / RAPORLAMA" tanıtımı rapor görünümünde gizlendi.'
+  },
   '2.232': {
     title: 'Tam A4 görünümü ve tam ekran kontrolleri',
     body:

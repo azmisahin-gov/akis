@@ -1934,5 +1934,24 @@ console.log('\n[2cc] Tam A4 + tam ekran kontrolleri + sabit iskelet (v2.232)');
   check('v2.232 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
 }
 
+console.log('\n[2cd] Rapor sayfa görüntüleyici (v2.233)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const html = read('index.html');
+  check('sayfa penceresi HTML\'de', /id="reportPageWindow"/.test(html));
+  check('sayfa gezinme HTML\'de', /id="reportPageNav"/.test(html) && /id="reportPagePrev"/.test(html) && /id="reportPageNext"/.test(html));
+  check('sürekli anahtarı HTML\'de', /id="reportContinuousToggle"/.test(html));
+  check('sayfa fonksiyonları', /function reportPageHeight\(/.test(js) && /function reportPageCountFor\(/.test(js) && /function applyReportPageView\(/.test(js) && /function setReportPage\(/.test(js) && /function setReportContinuous\(/.test(js) && /function syncReportToolbarHeight\(/.test(js));
+  check('tanıtım rapor görünümünde gizli', /#view-report \.section-intro\s*\{\s*display:\s*none/.test(layer));
+  check('stage-bar sabit çubuk', /\.report-stage-bar\s*\{[^}]*position:\s*sticky/.test(layer) && /top:\s*var\(--report-toolbar-h/.test(layer));
+  check('sayfa penceresi kırpar', /\.report-page-window\s*\{[^}]*overflow:\s*hidden/.test(layer));
+  check('sürekli mod penceresi', /data-page="continuous"\] \.report-page-window/.test(layer));
+  check('tablolar sabit düzen + sarma', /#reportPreview \.paper-table\s*\{[^}]*table-layout:\s*fixed/.test(layer) && /#reportPreview \.paper-table th,[\s\S]{0,80}overflow-wrap:\s*anywhere/.test(layer));
+  const css = layer.slice(layer.indexOf('/* v2.233'), layer.indexOf('/* v2.231'));
+  check('v2.233 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
+  check('v2.233 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
