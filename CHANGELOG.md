@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.255.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.256.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.256 — Kenar boşluğu artık UYAP boş dokümanıyla AYNI (42,5 mm)
+
+Kullanıcı: "Normalde UYAP editörden boş doküman açınca şu çıkıyor ama bizim
+kaptığımızın kenarları daha dar — neden?" **Kanıt:** gerçek boş doküman (`bos.udf`)
+marjı **42,525 mm** (bizim `templates/BOS.udf` ile birebir aynı); bizim ürettiğimiz
+UDF ise **20 mm** idi — çünkü uygulama, boş şablonun marjını "Rapor biçimi" değeriyle
+**eziyordu**.
+
+### KULLANICI NE GÖRECEK
+- **Varsayılan kenar boşluğu = 42,5 mm** (UYAP boş dokümanıyla aynı). Üretilen UDF
+  artık boş dokümanla **aynı genişlikte**; üç çıktı da (UDF/DOCX/PDF) 42,5 mm.
+- Kenar boşluğu **0,5 mm adımlarla 10–50 mm** ayarlanır (isterseniz daraltın).
+- **Mevcut kayıtlı dosyada** değer eskisi gibi (20 mm) kalır; **Rapor biçimi →
+  kenar boşluğu** alanlarını 42,5 yapın → UDF/DOCX/PDF'e **hemen** yansır.
+
+### Neden böyle
+- UYAP boş dokümanının standart marjı ~42,5 mm'dir (geniş). Daha önce bunu 20/25 mm
+  ile eziyorduk; "daha dar" görünmesinin nedeni buydu. Artık varsayılan **boş
+  dokümanla aynı**.
+
+### Koruyan test
+- `birim [93]` (varsayılan 42,5 mm) + `rapor` Senaryo 26 (`leftMargin="42.5"`).
 
 ## v2.255 — Kenar boşluğu: varsayılan 25 mm + şablon ilişkisi netleşti
 

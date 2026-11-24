@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.255.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.256.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5812,3 +5812,23 @@ etiket gizliydi.
 - Kenar boşluğu **üç çıktıya da** uygulanır; değer `case.report.format.marginsMm`.
 - Şablon marjını (42,5) istiyorsa kullanıcı panelden ~42 seçer; kodda şablonu otomatik koruma YOK
   (tek değer ilkesi). Gerekirse ileride "şablondan" modu eklenebilir.
+
+## YENİ OTURUM DEVRİ (v2.256) — Kenar boşluğu UYAP boş dokümanıyla aynı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.256** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Kanıt | `bos.udf` (gerçek UYAP boş doküman) = **42,525 mm** = `templates/BOS.udf`; bizimki 20 idi (override) |
+
+### Ne yapıldı
+- Varsayılan kenar boşluğu **42,5 mm** (UYAP boş dokümanıyla aynı), üç çıktıya uygulanır.
+- Marj 0,5 mm adımla 10–50 mm (fmtClamp `Math.round(n*2)/2`; input `step=0.5`).
+- Panel notu: "varsayılan 42,5 mm (UYAP boş şablonuyla aynı)".
+
+### DEĞİŞMEZ
+- **Boş UYAP dokümanının marjı ~42,5 mm'dir.** Uygulama bu değeri "Rapor biçimi" ile
+  eziyordu; artık varsayılan aynı. Mevcut kayıtlı dosya eski değerini korur (panelden ayarla).
+- Marj yalnız değişebilir; şablon marjını "otomatik koru" modu YOK (tek değer ilkesi).

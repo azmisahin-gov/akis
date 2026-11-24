@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.255.**
+yazılır. **Güncel sürüm: v2.256.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.256 — Kenar boşluğu UYAP boş dokümanıyla aynı (42,5 mm) (TAMAMLANDI)
+
+- Kanıt: bos.udf = 42,525 mm (= templates/BOS.udf); bizimki 20 idi (override).
+- Varsayılan 42,5 mm (üç çıktı); 0,5 adım, 10–50 mm. Mevcut dosya panelden ayarlanır.
+- Koruyan: `birim [93]`, `rapor` 26 (`leftMargin="42.5"`).
 
 ## v2.255 — Kenar boşluğu varsayılanı 25 mm + şablon netliği (TAMAMLANDI)
 

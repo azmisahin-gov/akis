@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.255';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.255';
+} from './schema.js?v=2.256';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.256';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.255';
+const APP_VERSION = '2.256';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12032,11 +12032,11 @@ function renderReportFormat(c) {
     (o) => `<option value="${o}"${o === f.orientation ? ' selected' : ''}>${esc(REPORT_ORIENTATION_LABEL[o] || o)}</option>`
   ).join('');
   const mx = (k, lab) =>
-    `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="1" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
+    `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="0.5" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
     `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
-    `Kenar boşluğu, UYAP boş şablonunun kendi marjını geçersiz kılar (varsayılan 25 mm).</p>` +
+    `Kenar boşluğu varsayılan 42,5 mm (UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır.</p>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
@@ -16850,6 +16850,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.256': {
+    title: 'Kenar boşluğu artık UYAP boş dokümanıyla aynı (42,5 mm)',
+    body:
+      'UYAP editörden açılan boş dokümanın kenar boşluğu 42,5 mm; bizim ürettiğimiz UDF 20 mm idi ' +
+      '(uygulama boş şablonun marjını eziyordu). Artık varsayılan 42,5 mm ve UDF/DOCX/PDF aynı ' +
+      'genişlikte. Mevcut dosyada değer eskisi gibi kalır; Rapor biçimi panelinden 42,5 yapın. ' +
+      '0,5 mm adımlarla 10–50 mm ayarlanabilir.'
+  },
   '2.255': {
     title: 'Kenar boşluğu: varsayılan 25 mm, üç çıktıya uygulanır',
     body:

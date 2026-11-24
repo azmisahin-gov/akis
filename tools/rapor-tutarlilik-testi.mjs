@@ -933,6 +933,8 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const uZ2 = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux2 = await uZ2.file('content.xml').async('string');
   check('UDF dikey yön (paperOrientation=1)', /paperOrientation="1"/.test(ux2));
+  // Varsayılan marj, UYAP boş şablonuyla aynı (42,5 mm) → boş dokümandan farklı değil.
+  check('UDF varsayılan marj 42,5 (boş şablon)', /leftMargin="42\.5"/.test(ux2));
 
   // Font ayarı UDF'e de uygulanır (v2.254): Arial seçilirse UDF Arial üretir.
   const ca = withMaterial();
