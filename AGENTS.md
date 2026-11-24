@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.241.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.242.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5426,3 +5426,32 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 1. **UDF yatay** (doğrulanmış `paperOrientation` kodu) + gerçek tarayıcı tıklama ölçümü.
 2. **Video (56.12)** ses çıkarma ölçümü.
 3. `docs/STANDARTLAR.md`: üst üste / belirsiz / tek kelime rehberi (#7/#8/#10/#11) — öneri sunulacak.
+
+## YENİ OTURUM DEVRİ (v2.242) — Karar rehberi (belge + yardım)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.242** |
+| Testler | `bash tools/test.sh` → tümü yeşil |
+| Açık konu | UDF yatay, video (56.12) |
+
+### Ne yapıldı (eski not #7/#8/#10/#11)
+- `docs/STANDARTLAR.md` **§12 "Karar rehberi"**: kontrol durumu ≠ gözlem işareti;
+  "Onaylandı" = dinleyip doğrulama (çakışmayı gizlemez); belirsiz = ayrı durum (iki okuma
+  + seçim); anlaşılmaz bölümdeki tek kelimede Onaylandı/Anlaşılmadı/Belirsiz seçimi;
+  birleştir/böl ölçütü.
+- Aynı rehber **Yardım (?) ekranına** kısa biçimde eklendi (index.html, `<h3>Gözlem
+  işaretleri</h3>` öncesi).
+- `STANDARTLAR.md` §6 gözlem listesi 6 işarete çekildi (telefon + sessizlik); hızlı
+  etiketin **imleç konumuna** eklendiği yazıldı.
+- **Davranış değişmedi** (yalnız belge + yardım metni).
+
+### DEĞİŞMEZ
+- Rehber **iç çalışma standardıdır**, hukuki zorunluluk değil. "Onaylandı" tanımı:
+  dinleyip doğrulama; belirsizliği gizlemez. Belirsiz = Belirsiz okuma durumu (gözlem değil).
+
+### SIRADAKİ İŞLER
+1. **UDF yatay** (doğrulanmış `paperOrientation` kodu).
+2. **Video (56.12)** ses çıkarma ölçümü.

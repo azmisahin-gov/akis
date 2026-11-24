@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.241';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.241';
+} from './schema.js?v=2.242';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.242';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.241';
+const APP_VERSION = '2.242';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16572,6 +16572,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.242': {
+    title: 'Karar rehberi: üst üste · belirsiz · tek kelime',
+    body:
+      'Yardım (?) ekranına "Karar rehberi" eklendi: kontrol durumu (Onaylandı / Anlaşılmadı / ' +
+      'Yeniden dinle / Belirsiz okuma / Çözümlendi) ile gözlem işaretini (üst üste, gürültü…) ' +
+      'ayırır. "Onaylandı"nın ne demek olduğunu, üst üste gözlemiyle çelişmediğini, belirsizin ayrı ' +
+      'bir durum olduğunu ve anlaşılmaz bölümdeki tek kelimede ne yapılacağını açıklar. Aynı rehber ' +
+      'docs/STANDARTLAR.md §12 içinde. Kod davranışı değişmedi.'
+  },
   '2.241': {
     title: 'Aktif bölümde "İş durumu" satırı',
     body:

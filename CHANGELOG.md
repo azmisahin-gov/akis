@@ -6,12 +6,33 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.241.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.242.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.242 — Karar rehberi: üst üste · belirsiz · tek kelime
+
+Kullanıcı: "Üst üste konuşmaya Onaylandı demek doğru mu? Belirsiz kelimeyi nasıl
+işaretleyeyim? Anlaşılmaz bölümde tek kelime varsa ne yapayım?" — Bunlar
+uygulamanın içinde **yazılı rehber** hâline getirildi (davranış değişmedi).
+
+### KULLANICI NE GÖRECEK
+- **Yardım (?)** ekranında yeni **"Karar rehberi: üst üste · belirsiz · tek
+  kelime"** bölümü: kontrol durumu ile gözlem işaretini ayırır; "Onaylandı"nın
+  ne demek olduğunu, üst üste ile çelişmediğini, belirsizin ayrı bir durum
+  olduğunu, tek kelimede Onaylandı/Anlaşılmadı/Belirsiz seçimini açıklar.
+- Aynı rehber belgede: [`docs/STANDARTLAR.md`](docs/STANDARTLAR.md) **§12**.
+- `STANDARTLAR.md` §6 gözlem listesi güncel 6 işarete çekildi (telefon +
+  sessizlik eklendi) ve hızlı etiketin **imleç konumuna** eklendiği yazıldı.
+
+### Ne değişti
+- Yalnız belge + yardım metni. Kod davranışı ve veri değişmedi.
+
+### Koruyan
+- `surum-testi` (yardım/doküman sürüm tutarlılığı) ve mevcut tüm testler.
 
 ## v2.241 — Aktif bölümde "İş durumu" satırı
 

@@ -1,4 +1,4 @@
-# Özellikler (v2.241 — mevcut durum)
+# Özellikler (v2.242 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -250,6 +250,11 @@ tuşları bozulmaz.
   "Tamam — onaylandı") + birleştirilebilir / zaman sorunu / üst üste / anlaşılmayan
   gözlem / okuma seçilmedi işaretleri. `segmentWorkSummary` saf fonksiyon; durum
   değişince satır **yerinde** tazelenir (`birim [96]`).
+- **Karar rehberi (v2.242):** Yardım (?) ekranında "üst üste · belirsiz · tek
+  kelime" rehberi. Kontrol durumu (karar) ile gözlem işaretini ayırır; "Onaylandı"
+  = dinleyip doğrulama (çakışmayı gizlemez); belirsiz ayrı bir durumdur (okuma seç);
+  anlaşılmaz bölümdeki tek kelimede Onaylandı/Anlaşılmadı/Belirsiz seçimi açıklanır.
+  Belgede: [`STANDARTLAR.md` §12](../docs/STANDARTLAR.md).
 - **Belirsiz okuma rapor hücresi (v2.197):** Hücrede tekrar yok:
   `Belirsiz okuma: "okuma1" / "okuma2" (seçilen: …)`. İki okuma korunur.
 - **Hızlı karar (v2.196):** Kontrol seçicisi Dinle'nin yanında; **1** onay,
