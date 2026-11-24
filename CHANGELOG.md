@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.249.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.250.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.250 — "Ses / Video" başlığı + raporda "yalnız ses" notu
+
+Video hikâyesini 56.12 kapsamında tutarlı kapatır: adı kapsayıcı, raporu dürüst.
+
+### KULLANICI NE GÖRECEK
+- Sol raydaki **"Ses"** bölümünün başlığı **"Ses ve video kayıtları"** oldu (nav
+  ipucu + panel başlığı). Davranış aynı.
+- **Video** materyal varsa raporun **envanter** bölümünün notuna şu cümle eklenir:
+  *"Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü
+  incelenmemiştir."* **Üç çıktıda (HTML/DOCX/UDF) aynı metin.**
+- Video yoksa bu cümle **girmez** (gereksiz yer kaplamaz).
+
+### Ne değişti
+- `REPORT_TEXT.videoAudioNote` + `reportVideoNote(c)`/`videoNoteSuffix(c)` (tek
+  kaynak); HTML/DOCX/UDF envanter notu bu eki birlikte kullanır.
+
+### Koruyan test
+- `birim [102]` (video varsa not, yoksa boş) + `rapor` Senaryo 27 (üç çıktı aynı,
+  video yoksa yok).
 
 ## v2.249 — Analiz sekmesi kırpılmıyor (kendi içinde kayar)
 

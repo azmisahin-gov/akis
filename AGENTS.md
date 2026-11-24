@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.249.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.250.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5672,3 +5672,29 @@ etiket gizliydi.
   video bir konteynerdir; "Ses"i "Ses/Video" yap. Video oynatma varsayılan değil, isteğe bağlı.)
 - Rapora "video kaydından yalnız ses çözülmüştür" notu (üç çıktı).
 - Desteklenen video kodekleri genişletme (gerçek dosyalarla ölçerek).
+
+## YENİ OTURUM DEVRİ (v2.250) — "Ses/Video" başlığı + rapor "yalnız ses" notu
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.250** |
+| Testler | `bash tools/test.sh` → **1536 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [102]`, `rapor` Senaryo 27 |
+
+### Ne yapıldı
+- Sol ray/başlık **"Ses ve video kayıtları"** (nav ipucu + panel h3).
+- `REPORT_TEXT.videoAudioNote` + `reportVideoNote(c)` / `videoNoteSuffix(c)` (tek kaynak).
+  Envanter notuna **video materyal varsa** eklenir (HTML/DOCX/UDF aynı metin); yoksa girmez.
+
+### DEĞİŞMEZ
+- Video = yalnız ses; görüntü incelenmez. Bu, rapor metninde de yazılı (envanter notu).
+- Üç çıktı tek kaynak `videoNoteSuffix` kullanır (kopya metin yazma).
+- Yeni bir "yalnız ses" benzeri koşullu not eklerken aynı desen: REPORT_TEXT anahtarı + helper +
+  üç çıktıda aynı ek + `rapor` testi.
+
+### SIRADAKİ (kullanıcı "gerekli olanı yap" dedi; mantıklı adaylar)
+1. **İsteğe bağlı video önizleme** (Analiz sekmesinde, katlanır; deşifre bölünmez) — istenirse.
+2. **Desteklenen video kodekleri** — gerçek dosyalarla ölçerek (mkv/avi genelde çözülmez).
+3. Video raporunu gerçek bir mp4 ile uçtan uca dene (kullanıcı).

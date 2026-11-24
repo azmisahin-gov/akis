@@ -1,4 +1,4 @@
-# Özellikler (v2.249 — mevcut durum)
+# Özellikler (v2.250 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -160,6 +160,9 @@ Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
   envanter biçimi "MP4 (video)" gibi görünür. Tarayıcının çözebildiği ses kodekleri
   (AAC/Opus/MP3) desteklenir; çözemezse açık hata verir. (Fizibilite gerçek
   Chromium'da ölçüldü; `birim [100]`.)
+  **v2.250:** Bölüm başlığı **"Ses ve video kayıtları"**; video içeren dosyalarda
+  raporun envanter notuna *"video dosyalarından yalnızca ses kanalı çözümlenmiştir;
+  görüntü incelenmemiştir"* eklenir (üç çıktı aynı metin; video yoksa girmez).
 
 ## Konuşma çözümleme (deşifre)
 

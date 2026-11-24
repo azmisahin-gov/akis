@@ -935,5 +935,20 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('UDF dikey yön (paperOrientation=1)', /paperOrientation="1"/.test(ux2));
 }
 
+// Senaryo 27: video materyal → envanter notuna "yalnız ses" eklenir (üç çıktı).
+{
+  console.log('[Senaryo 27] video "yalnız ses" notu (üç çıktı)');
+  const c = withMaterial();
+  c.materials[0].name = 'kamera.mp4';
+  c.materials[0].type = 'video/mp4';
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('video yalnız ses notu', REPORT_TEXT.videoAudioNote, H, U, D);
+
+  // Video yoksa not GİRMEZ.
+  const c2 = withMaterial();
+  const H2 = htmlText(c2);
+  check('video yoksa not yok (H)', !H2.includes(REPORT_TEXT.videoAudioNote));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

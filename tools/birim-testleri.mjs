@@ -136,7 +136,7 @@ const EXPOSE = [
   'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
-  'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial',
+  'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial', 'reportVideoNote', 'videoNoteSuffix',
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
   'acquisitionToolFileContent',
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
@@ -4650,6 +4650,18 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     /#view-audio \.card-pane\.on\[data-pane="listen"\][\s\S]{0,200}overflow-y:\s*auto/.test(css),
     true
   );
+}
+
+// [102] v2.250 — Raporda "yalnız ses" video notu (video varsa eklenir).
+{
+  console.log('[102] Rapor video "yalnız ses" notu (v2.250)');
+  eq('reportVideoNote tanımlı', typeof T.reportVideoNote, 'function');
+  const vid = { materials: [{ name: 'kamera.mp4', type: 'video/mp4' }] };
+  const aud = { materials: [{ name: 'a.wav', type: 'audio/wav' }] };
+  eq('video varsa not', T.reportVideoNote(vid), T.REPORT_TEXT.videoAudioNote);
+  eq('video yoksa boş', T.reportVideoNote(aud), '');
+  eq('suffix boşluklu', T.videoNoteSuffix(vid).startsWith(' '), true);
+  eq('suffix video yoksa boş', T.videoNoteSuffix(aud), '');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.249'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.250'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 60000; // dakikada bir denetle
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.249">
-  <link rel="stylesheet" href="assets/app.css?v=2.249">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.250">
+  <link rel="stylesheet" href="assets/app.css?v=2.250">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.249">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.250">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.249"></script>
+  <script type="module" src="assets/app.js?v=2.250"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -127,7 +127,7 @@
       </div>
       <nav class="rail-nav">
         <button class="nav-item active" data-view="overview" title="Genel görünüm" aria-label="Genel görünüm"><span class="nav-icon">▦</span><span class="rail-label">Özet</span></button>
-        <button class="nav-item" data-view="audio" title="Ses kayıtları" aria-label="Ses kayıtları"><span class="nav-icon">◖</span><span class="rail-label">Ses</span><span class="nav-count" id="audioCount">0</span></button>
+        <button class="nav-item" data-view="audio" title="Ses ve video kayıtları" aria-label="Ses ve video kayıtları"><span class="nav-icon">◖</span><span class="rail-label">Ses</span><span class="nav-count" id="audioCount">0</span></button>
         <button class="nav-item" data-view="questions" title="İnceleme ve sorular" aria-label="İnceleme ve sorular"><span class="nav-icon">☷</span><span class="rail-label">İnceleme</span></button>
         <button class="nav-item" data-view="report" title="Rapor oluştur" aria-label="Rapor oluştur"><span class="nav-icon">▧</span><span class="rail-label">Rapor</span></button>
       </nav>
@@ -187,7 +187,7 @@
 
       <section class="view" id="view-audio">
         <div class="upload-zone compact" id="dropZone"><span class="upload-icon">⇧</span><span class="upload-text">Ses/video kayıtlarını buraya bırakın veya</span><label class="button button-primary button-small upload-label">dosya seç<input type="file" id="audioInput" accept="audio/*,video/*,.wav,.mp3,.m4a,.ogg,.flac,.aac,.mp4,.m4v,.mov,.webm,.ogv" multiple hidden></label><button id="importDelilBtn" class="button button-light button-small" title="Delil paketi (.zip): delil.json + ses dosyaları; her dosyanın SHA-256 özeti yeniden hesaplanıp doğrulanır. Cihaz bilgisi edinme tutanağının beyanıdır.">Delil paketi yükle</button><button id="downloadToolBtn" class="button button-light button-small" title="Edinme aracını tek zip olarak indir (edinme.ps1 + BASLAT.bat + OKUBENI.md). Windows'ta BASLAT.bat'a sağ tıklayıp Yönetici olarak çalıştırın.">Edinme aracını indir</button><input type="file" id="importDelilInput" accept=".zip,application/zip" hidden><small>WAV · MP3 · M4A · OGG · FLAC · AAC · MP4/MOV/WEBM (yalnız ses) · delil paketi (.zip)</small></div>
-        <details id="delilInventory" class="delil-inventory" hidden><summary><span class="di-title">Delil envanteri</span><span class="di-sub" id="delilInventorySummary"></span></summary><div class="di-body" id="delilInventoryBody"></div></details><div class="panel"><div class="panel-heading"><div><div class="eyebrow">MATERYAL LİSTESİ</div><h3>Ses kayıtları<span class="info-i" tabindex="0" data-tip="Satıra tıklayınca kayıt sağdaki panelde açılır. Liste kendi sütununda kayar; 100 kayıtta da sayfa uzamaz.">i</span></h3></div><span class="subtle-pill" id="audioListLabel">0 kayıt</span></div><div id="audioList" class="audio-list empty-list"><div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div></div></div>
+        <details id="delilInventory" class="delil-inventory" hidden><summary><span class="di-title">Delil envanteri</span><span class="di-sub" id="delilInventorySummary"></span></summary><div class="di-body" id="delilInventoryBody"></div></details><div class="panel"><div class="panel-heading"><div><div class="eyebrow">MATERYAL LİSTESİ</div><h3>Ses ve video kayıtları<span class="info-i" tabindex="0" data-tip="Satıra tıklayınca kayıt sağdaki panelde açılır. Liste kendi sütununda kayar; 100 kayıtta da sayfa uzamaz.">i</span></h3></div><span class="subtle-pill" id="audioListLabel">0 kayıt</span></div><div id="audioList" class="audio-list empty-list"><div class="empty-state"><div class="empty-symbol">♫</div><b>Henüz ses kaydı eklenmedi</b><span>İncelemeye sunulan ses dosyalarını ekleyin.</span></div></div></div>
         <div class="panel detail-panel"><div class="panel-heading"><div><div class="eyebrow">SEÇİLİ KAYIT</div><h3 id="audioDetailTitle">Kayıt detayı</h3></div><span class="detail-head-actions"><span class="subtle-pill">Dinleme ve deşifre araçları</span></span></div><div id="audioDetail" class="audio-detail"></div></div>
       </section>
 

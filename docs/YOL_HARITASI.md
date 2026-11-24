@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.249.**
+yazılır. **Güncel sürüm: v2.250.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.250 — "Ses / Video" başlığı + raporda "yalnız ses" notu (TAMAMLANDI)
+
+- Sol ray/başlık "Ses ve video kayıtları" oldu.
+- Video materyal varsa envanter notuna "yalnız ses, görüntü incelenmedi" eklenir;
+  üç çıktı aynı metin. Video yoksa girmez.
+- Koruyan: `birim [102]`, `rapor` 27.
 
 ## v2.249 — Analiz sekmesi kırpılmıyor, kendi içinde kayar (TAMAMLANDI)
 

@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.249';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.249';
+} from './schema.js?v=2.250';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.250';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.249';
+const APP_VERSION = '2.250';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -210,6 +210,9 @@ const REPORT_TEXT = {
   noTranscript: 'Bu kayıt için henüz deşifre metni oluşturulmamıştır.',
   inventoryNote:
     'Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
+  // Video materyal varsa envanter notuna eklenir (yalnız ses; görüntü incelenmez).
+  videoAudioNote:
+    'Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü incelenmemiştir.',
   // v2.235: tablo sütunları kapatılırsa boş tablo yerine bu satır yazılır.
   noColumns: 'Bu tablo için alan seçilmedi.',
   attachmentsText:
@@ -8132,6 +8135,16 @@ function isVideoMaterial(m) {
   const t = String((m && m.type) || '').toLowerCase();
   return t.startsWith('video/') || isVideoFileName(m && m.name);
 }
+// Rapor: envanter notuna "yalnız ses" ekini döndürür (video materyal varsa).
+// Üç çıktı (HTML/DOCX/UDF) AYNI metni üretmeli → tek kaynak.
+function reportVideoNote(c) {
+  const any = ((c && c.materials) || []).some((m) => isVideoMaterial(m));
+  return any ? REPORT_TEXT.videoAudioNote : '';
+}
+function videoNoteSuffix(c) {
+  const n = reportVideoNote(c);
+  return n ? ' ' + n : '';
+}
 // Aynı ses (aynı SHA-256) dosyada zaten varsa yeni kayıt AÇILMAZ; mevcut
 // kayıt korunur (düzenlemeler/onaylar kaybolmaz).
 function delilDuplicateOf(materials, hash) {
@@ -12164,7 +12177,7 @@ function renderReport() {
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
         : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.length ? t.rows.map((r) => `<tr>${r.map((x, i) => `<td${t.keys[i] === 'sha256' ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${t.headers.length}">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('s3'))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.inventoryNote)}</p></div>`;
+      return `<div class="paper-section"><h3>${esc(H('s3'))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.inventoryNote + videoNoteSuffix(c))}</p></div>`;
     },
     origin: () => {
       const orgRows = originRows(c);
@@ -12511,7 +12524,7 @@ function docxXml(c) {
               widths: t.widths,
               header: true
             })) +
-        wP(REPORT_TEXT.inventoryNote, { color: '74869A', size: 17, italic: true })
+        wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true })
       );
     },
     origin: () => {
@@ -13004,7 +13017,7 @@ async function makeUdf() {
             { header: true }
           )
         );
-      el.push(paragraph(REPORT_TEXT.inventoryNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+      el.push(paragraph(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     origin: () => {
       const uOrg = originRows(c);
@@ -16821,6 +16834,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.250': {
+    title: '"Ses ve video kayıtları" + raporda "yalnız ses" notu',
+    body:
+      'Ses bölümünün başlığı "Ses ve video kayıtları" oldu. Video dosyası içeren dosyalarda ' +
+      'raporun envanter notuna "video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü ' +
+      'incelenmemiştir" cümlesi eklenir (HTML/DOCX/UDF aynı metin). Video yoksa bu cümle girmez.'
+  },
   '2.249': {
     title: 'Analiz sekmesinin altı artık görünüyor',
     body:
