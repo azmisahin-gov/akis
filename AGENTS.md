@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.260.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.261.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5925,3 +5925,76 @@ etiket gizliydi.
   ayrı ve büyük bir özellik (sıradaki aday).
 - **PDF motoru:** gerçek `.pdf` = PDF kütüphanesi + Türkçe font gömme → **yüksek maliyet**;
   öneri: OpenOffice/Word "PDF olarak dışa aktar" kullan (tablo hizası düzeltildi).
+
+## YENİ OTURUM DEVRİ (v2.261) — Rapor parçaları ayrı ayrı alınabilir
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.261** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1582 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Git | commit + push sonrası `main` = `origin/main` doğrulanacak |
+| Açık konu | Gerçek sürükle-bırak; kayıt/soru bazında ayrı kalem (v2.262 adayı) |
+
+### Neden (kullanıcı sorusu)
+
+Kullanıcı ChatGPT'nin hazırladığı `56_12_ana_bilirkisi_rapor_sablonu.udf` dosyasını
+gösterdi: *"bizde bunlar var mı, kolayca ekleyebilir miyiz, bizimki karışık mı?"*
+**Ölçüm:** içerik zaten vardı (v2.220); sorun **sıra ve gruplamaydı**. Varsayılan
+raporda **GEREKÇELİ SONUÇ ve EKLER**, WER/seviye/özet ölçümlerinden ÖNCE
+geliyordu; "EKLER" başlığı "burada gösterilir" diyordu ama **ekler kapalıydı**
+(altında hiçbir şey yok); `s5` bulgular+cevaplar+sınırlılıkları birlikte
+tutuyordu; "Tam 56.12" profili **sırayı değiştirmiyordu**.
+
+### Yapılan
+
+- `answers`, `limits`, `integrity` bölümleri; üçü de **numaralı ana bölüm**.
+  Varsayılan: cevaplar/sınırlılıklar AÇIK, bütünlük KAPALI.
+- `REPORT_BODY_ORDER` mantıklı sıraya çekildi: ölçümler + özet **sonuçtan önce**,
+  sonuç sonda, ekler en sonda.
+- `REPORT_SABLON_ORDER` + `reportPresetLayout(name)` → profil **sıra da** yazar;
+  diğer profiller `order: null` (kullanıcı sırası korunur).
+- Göç: `insertMissingInCanonicalOrder(order, REPORT_BODY_ORDER)` — eksik bölüm
+  **kanonik komşusunun yanına** girer (sona atılsa eklerden sonra çıkardı).
+  `reading` özel durumu kaldırıldı.
+- `reportBlockRenders` **gövde döngüsünde de** kullanılıyor → TOC ile gövde
+  ayrışamaz; soru yoksa cevaplar bölümü hiç çizilmez.
+- **EKLER** bölümü `reportAttachmentLines(c)` ile gerçek ek başlıklarını listeler;
+  ekler bloğu kapalıysa "Bu raporla ek sunulmamıştır".
+- Serbest metin (sınırlılıklar) `s5`'ten `limits`'e taşındı; düzenleyici ve
+  `reportSectionDerivedTarget` güncellendi.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Yeni bölüm eklerken göç kuralı hazır:** anahtarı `REPORT_SECTION_DEFS` +
+   `REPORT_BODY_ORDER` + (numaralıysa) `REPORT_MAIN_KEYS` listelerine yazın.
+   `normalizeReportLayout` eksik anahtarı kanonik komşusuna yerleştirir;
+   **elle "sonda ekle" mantığı yazmayın** (v2.261'de bu hata ölçüldü).
+2. **Profil iki şeyi yazabilir:** bölüm kümesi **ve** sıra. Sıra yazmayan profil
+   `order: null` döndürmeli; aksi hâlde kullanıcının düzeni sessizce ezilir.
+3. **TOC = gövde:** hangi bölüm çiziliyorsa TOC'ta o var. Yeni bir koşullu blok
+   eklerken `reportBlockRenders`'a yazın; gövde döngüsü aynı ölçütü kullanır.
+4. **"Burada gösterilir" diyen bir başlık boş bırakılamaz.** Ya içerik listelenir
+   ya "yok" denir (EKLER dersi).
+5. **Soru yoksa cevaplar bölümü çizilmez** (boş başlık/fallback yok).
+6. `limits` ölçülen özeti (`limitsMeasuredText`) **yalnız bölüm işaretlerinden**
+   üretir; işaret yoksa satır yazılmaz.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900, örnek dosyalar)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Varsayılan sıra | 1 kapsam · 2 sorular · 3 envanter · … · 5 bulgular · 6 cevaplar · 7 sınırlılıklar · 8 sonuç · 9 EKLER |
+| 56.12 profili | 1..8 bitişik; bulgular → sınırlılıklar → kalite → cevaplar → … → sonuç |
+| Cevap kapat → sınırlılık | **duruyor** (bağımsız) |
+| EK yokken | "Bu raporla ek sunulmamıştır" |
+| Kırpma / yatay taşma | 1280/1100/900/760 → **0 / yok** |
+| JS hatası | **0** |
+
+### Sıradaki (aday)
+
+1. **Kayıt bazında ayrı kalem:** "yalnız 2. kaydın transkripti" (dinamik kalem).
+2. **Soru bazında ayrı kalem:** "yalnız 1. sorunun cevabı".
+3. **Parçayı eke taşı** (gövde ↔ ek).
+4. Gerçek sürükle-bırak sıralama (↑↓ korunur).

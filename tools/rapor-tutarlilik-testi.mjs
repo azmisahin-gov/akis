@@ -98,6 +98,8 @@ sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
 const { setCase, makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
+// Bölüm başlıkları TEK KAYNAK: şema. Testte sabit başlık kopyası tutulmaz.
+const SEC_TITLE = Object.fromEntries(__schemaMod.REPORT_SECTION_DEFS.map((d) => [d.key, d.title]));
 
 // --- Çıktı metinlerini çıkar ----------------------------------------------
 function htmlText(c) {
@@ -119,7 +121,16 @@ async function docxText(c) {
   const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
   const zip = await JSZip.loadAsync(buf);
   const xml = await zip.file('word/document.xml').async('string');
-  return [...xml.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join('\n');
+  // XML varlıkları çözülür: metin karşılaştırması ham kaçışla değil, okunan
+  // metinle yapılır (HTML çıktısıyla aynı ölçüt).
+  return [...xml.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)]
+    .map((m) => m[1])
+    .join('\n')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&amp;/g, '&');
 }
 
 // --- Test verisi -----------------------------------------------------------
@@ -184,7 +195,11 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   console.log('\n[Senaryo 2] malzeme yok, soru yok, mahkeme boş');
   checkShared('mahkeme yer tutucusu', REPORT_TEXT.emptyCourt.replace(/\s+$/, ''), H, U, D);
   checkShared('malzeme yok metni', REPORT_TEXT.noMaterials, H, U, D);
-  checkShared('5.2 değerlendirme fallback', REPORT_TEXT.defaultEvaluation, H, U, D);
+  // v2.261: soru yoksa "Cevaplar" bölümü HİÇ çizilmez (boş başlık/fallback yok).
+  check(
+    'soru yokken cevaplar bölümü çizilmez',
+    !H.includes(SEC_TITLE.answers) && !U.includes(SEC_TITLE.answers) && !D.includes(SEC_TITLE.answers)
+  );
   // Soru fallback metni artık mercie göre üretilir (mahkeme/savcılık/icra).
   // hukuk türünde "Mahkemece bilirkişiye yöneltilen sorular…" beklenir.
   checkShared('bölüm 2 soru fallback', 'Mahkemece bilirkişiye yöneltilen sorular', H, U, D);
@@ -471,9 +486,9 @@ console.log('\n[Senaryo 12] okuma metni (v2.202)');
   const HR = htmlText(onlyReading), UR = await udfText(onlyReading), DR = await docxText(onlyReading);
   checkShared('s5 kapalı + okuma açık: başlık görünür', REPORT_TEXT.readingHeading, HR, UR, DR);
   checkShared('s5 kapalı + okuma açık: grup metni', 'merhaba dünya', HR, UR, DR);
-  check('s5 kapalı: 5. bölüm başlığı yok (H)', !HR.includes(REPORT_TEXT.sections[4]));
-  check('s5 kapalı: 5. bölüm başlığı yok (U)', !UR.includes(REPORT_TEXT.sections[4]));
-  check('s5 kapalı: 5. bölüm başlığı yok (D)', !DR.includes(REPORT_TEXT.sections[4]));
+  check('s5 kapalı: bölüm başlığı yok (H)', !HR.includes(SEC_TITLE.s5));
+  check('s5 kapalı: bölüm başlığı yok (U)', !UR.includes(SEC_TITLE.s5));
+  check('s5 kapalı: bölüm başlığı yok (D)', !DR.includes(SEC_TITLE.s5));
 }
 
 // Senaryo 13: dosyalar arası kişi (v2.205) — üç çıktı aynı satırı üretmeli.
@@ -660,7 +675,7 @@ console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
   const on = mk();
   const H = htmlText(on), U = await udfText(on), D = await docxText(on);
   checkShared('varsayılan: köken başlığı', REPORT_TEXT.originHeading, H, U, D);
-  checkShared('varsayılan: sonuç başlığı', REPORT_TEXT.sections[5], H, U, D);
+  checkShared('varsayılan: sonuç gövdesi', REPORT_TEXT.defaultConclusion, H, U, D);
   checkShared('varsayılan: inceleme özeti', REPORT_TEXT.reviewSummaryHeading, H, U, D);
   checkShared('varsayılan: okuma metni', REPORT_TEXT.readingHeading, H, U, D);
 
@@ -672,7 +687,9 @@ console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
   );
   check(
     'kapalı sonuç üç çıktıda da yok',
-    !H2.includes(REPORT_TEXT.sections[5]) && !U2.includes(REPORT_TEXT.sections[5]) && !D2.includes(REPORT_TEXT.sections[5])
+    !H2.includes(REPORT_TEXT.defaultConclusion) &&
+      !U2.includes(REPORT_TEXT.defaultConclusion) &&
+      !D2.includes(REPORT_TEXT.defaultConclusion)
   );
   check(
     'kapalı inceleme özeti üç çıktıda da yok',
@@ -682,13 +699,13 @@ console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
   );
   check(
     'kapalı ekler başlığı üç çıktıda da yok',
-    !H2.includes(REPORT_TEXT.sections[6]) && !U2.includes(REPORT_TEXT.sections[6]) && !D2.includes(REPORT_TEXT.sections[6])
+    !H2.includes(REPORT_TEXT.attachmentsText) && !U2.includes(REPORT_TEXT.attachmentsText) && !D2.includes(REPORT_TEXT.attachmentsText)
   );
   check(
     'kapalı okuma metni üç çıktıda da yok',
     !H2.includes(REPORT_TEXT.readingHeading) && !U2.includes(REPORT_TEXT.readingHeading) && !D2.includes(REPORT_TEXT.readingHeading)
   );
-  checkShared('açık kalan sorular bölümü', REPORT_TEXT.sections[1], H2, U2, D2);
+  checkShared('açık kalan sorular bölümü', SEC_TITLE.s2, H2, U2, D2);
 }
 
 // Senaryo 18: 56.12 şablon bölümleri (v2.220). Yeni bölümler VARSAYILAN
@@ -815,7 +832,13 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   check('s3 kapalı: eski 4 numarası kalmadı (U)', !U.includes(stale));
   check('s3 kapalı: eski 4 numarası kalmadı (D)', !D.includes(stale));
 
-  const reordered = baseCase({ report: { layout: { order: ['s2', 's1'] } } });
+  // Kullanıcı TAM sıra üzerinde s1/s2 yerini değiştirir (UI de bunu üretir).
+  const swapOrder = __schemaMod.REPORT_BODY_ORDER.slice();
+  const iS1 = swapOrder.indexOf('s1');
+  const iS2 = swapOrder.indexOf('s2');
+  swapOrder[iS1] = 's2';
+  swapOrder[iS2] = 's1';
+  const reordered = baseCase({ report: { layout: { order: swapOrder } } });
   const H2 = htmlText(reordered),
     U2 = await udfText(reordered),
     D2 = await docxText(reordered);
@@ -825,6 +848,13 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
     check(`sıra değişti: s2 önce (${n})`, txt.indexOf(first) >= 0 && txt.indexOf(first) < txt.indexOf(second));
   }
 
+  // v2.261 — "EKLER" bölümü ekleri LİSTELER; ek yoksa bunu söyler.
+  const noAnnex = baseCase({ report: { sections: { annex: false } } });
+  const HN = htmlText(noAnnex),
+    UN = await udfText(noAnnex),
+    DN = await docxText(noAnnex);
+  checkShared('ek yokken "ek sunulmamıştır"', REPORT_TEXT.noAttachments, HN, UN, DN);
+
   const annex = baseCase({ report: { sections: { annex: true } } });
   const HA = htmlText(annex),
     UA = await udfText(annex),
@@ -832,6 +862,14 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   checkShared('EK-4 bitişik numaralı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
   checkShared('EK-6 bitişik numaralı', 'EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
   check('EK-7 numarası kalmadı (H)', !HA.includes('EK-7.'));
+  check(
+    'EKLER bölümü ekleri listeler (H)',
+    HA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && HA.includes('EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR')
+  );
+  check(
+    "EKLER listesi UDF ve DOCX'te de var",
+    UA.includes('• EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('• EK-1. MATERYAL TESLİM VE İADE TUTANAĞI')
+  );
 }
 
 // Senaryo 23: özel ek (başlık/içerik/not) üç çıktıda aynı (v2.227).
@@ -1002,6 +1040,93 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux = await uZ.file('content.xml').async('string');
   check('UDF ana bölümler yeni sayfa (>=7)', (ux.match(/<page-break>/g) || []).length >= 7);
+}
+
+// Senaryo 30: parçalar ayrı — cevaplar · sınırlılıklar · bütünlük (v2.261).
+// KURAL: her parça TEK BAŞINA açılıp kapanabilir; üç çıktı aynı metni verir;
+// sıra numarası açık bölümlere göre türetilir.
+{
+  console.log('\n[Senaryo 30] parçalar ayrı: cevaplar · sınırlılıklar · bütünlük (v2.261)');
+  const sha = 'b'.repeat(64);
+  const mk = (report, extra = {}) =>
+    baseCase({
+      questions: [{ id: 'q1', question: 'Kayıtta ne konuşuldu?', answer: 'Depozito tartışıldı.', basis: '00:00:00-00:00:05' }],
+      limitationsText: 'Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.',
+      materials: [
+        {
+          id: 'm1',
+          name: 'a.wav',
+          type: 'audio/wav',
+          size: 1000,
+          duration: 12.5,
+          sha256: sha,
+          tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+          segments: [
+            { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba', review: 'approved' },
+            { id: 'sg2', start: '00:00:05.000', end: '00:00:09.000', speaker: 'S1', text: '[anlaşılmıyor]', review: 'inaudible' }
+          ],
+          log: [],
+          ...extra
+        }
+      ],
+      ...(report ? { report } : {})
+    });
+
+  // (a) Üç parça da açık: cevap, sınırlılık, bütünlük üç çıktıda aynı.
+  const on = mk({ sections: { integrity: true } });
+  const H = htmlText(on),
+    U = await udfText(on),
+    D = await docxText(on);
+  checkShared('cevaplar başlığı', SEC_TITLE.answers, H, U, D);
+  checkShared('soru metni (aynen)', 'Kayıtta ne konuşuldu?', H, U, D);
+  checkShared('cevap metni', 'Depozito tartışıldı.', H, U, D);
+  checkShared('sınırlılıklar başlığı', SEC_TITLE.limits, H, U, D);
+  checkShared('sınırlılık metni', 'Arka plan gürültüsü', H, U, D);
+  checkShared('ölçülen sınırlılık özeti', REPORT_TEXT.limitsMeasuredPrefix, H, U, D);
+  checkShared('bütünlük başlığı', SEC_TITLE.integrity, H, U, D);
+  checkShared('bütünlük SHA-256 değeri', sha, H, U, D);
+  checkShared('bütünlük notu', REPORT_TEXT.integrityNote, H, U, D);
+  // Sıra: bulgular → cevaplar → sınırlılıklar (üç çıktıda aynı).
+  for (const [n, txt] of [['H', H], ['U', U], ['D', D]]) {
+    const iF = txt.indexOf(SEC_TITLE.s5),
+      iA = txt.indexOf(SEC_TITLE.answers),
+      iL = txt.indexOf(SEC_TITLE.limits);
+    check(`sıra: bulgular → cevaplar → sınırlılıklar (${n})`, iF >= 0 && iF < iA && iA < iL);
+  }
+
+  // (b) Cevaplar kapatılır: sınırlılıklar KALIR (parçalar bağımsız).
+  const noAns = mk({ sections: { answers: false, integrity: true } });
+  const H2 = htmlText(noAns),
+    U2 = await udfText(noAns),
+    D2 = await docxText(noAns);
+  check(
+    'cevaplar kapalı: cevap metni yok',
+    !H2.includes('Depozito tartışıldı.') && !U2.includes('Depozito tartışıldı.') && !D2.includes('Depozito tartışıldı.')
+  );
+  checkShared('cevaplar kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü', H2, U2, D2);
+
+  // (c) Sınırlılıklar kapatılır: cevaplar KALIR.
+  const noLim = mk({ sections: { limits: false, integrity: true } });
+  const H3 = htmlText(noLim),
+    U3 = await udfText(noLim),
+    D3 = await docxText(noLim);
+  check(
+    'sınırlılıklar kapalı: metin yok',
+    !H3.includes('Arka plan gürültüsü') && !U3.includes('Arka plan gürültüsü') && !D3.includes('Arka plan gürültüsü')
+  );
+  checkShared('sınırlılıklar kapalı: cevaplar duruyor', 'Depozito tartışıldı.', H3, U3, D3);
+
+  // (d) Bütünlük kapatılır: SHA-256 satırı yok.
+  const noInt = mk({ sections: { integrity: false } });
+  const H4 = htmlText(noInt),
+    U4 = await udfText(noInt),
+    D4 = await docxText(noInt);
+  check('bütünlük kapalı: başlık yok', !H4.includes(SEC_TITLE.integrity) && !U4.includes(SEC_TITLE.integrity) && !D4.includes(SEC_TITLE.integrity));
+  check(
+    'bütünlük kapalı: not yok',
+    !H4.includes(REPORT_TEXT.integrityNote) && !U4.includes(REPORT_TEXT.integrityNote) && !D4.includes(REPORT_TEXT.integrityNote)
+  );
+  checkShared('bütünlük kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü', H4, U4, D4);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

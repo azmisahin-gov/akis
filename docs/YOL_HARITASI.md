@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.260.**
+yazılır. **Güncel sürüm: v2.261.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.261 — Rapor parçaları ayrı ayrı alınabilir (TAMAMLANDI)
+
+- `s5` üçe ayrıldı: **bulgular** (s5) · **cevaplar** (answers) · **sınırlılıklar** (limits).
+  Üçü de numaralı ana bölüm; tek tek aç/kapa + sırala.
+- Yeni **bütünlük** bölümü (varsayılan kapalı): SHA-256 + doğrulama + delil zinciri.
+- **56.12 Ana Şablon** profili artık **sırayı da** yazar (`reportPresetLayout`).
+- Varsayılan sıra: ölçümler/özet **sonuçtan önce**; sonuç sonda; ekler en sonda.
+- **EKLER** bölümü gerçek ekleri listeler; ek yoksa "ek sunulmamıştır".
+- Göç: `insertMissingInCanonicalOrder` (eksik bölüm kanonik komşusuna girer).
+- Koruyan: `birim` [105], `rapor` 30, `sema` [3h], `tasarim` [2bq]/[2ce].
 
 ## v2.260 — DOCX tablo sola çıkıntı (OpenOffice) giderildi (TAMAMLANDI)
 

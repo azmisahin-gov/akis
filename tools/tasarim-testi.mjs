@@ -1790,10 +1790,17 @@ console.log('\n[2bq] Rapor profilleri: Yalın · Standart · Tam 56.12 (v2.223)'
   const schema = read('assets/schema.js');
   const layer = read('assets/reading-layer.css');
   check('profil tanımları + saf fonksiyon şemada', /REPORT_PRESET_DEFS/.test(schema) && /reportSectionsForPreset/.test(schema));
-  check('üç profil de tanımlı', /key: 'minimal'/.test(schema) && /key: 'standard'/.test(schema) && /key: 'full'/.test(schema));
+  check('dört profil de tanımlı', /key: 'minimal'/.test(schema) && /key: 'standard'/.test(schema) && /key: 'full'/.test(schema) && /key: 'sablon'/.test(schema));
   check('panelde hazır profil düğmeleri', /data-report-preset=/.test(js));
   check('profil tıklama işleyicisi', /closest\('\[data-report-preset\]'\)/.test(js));
-  check('profil yalnız bölüm görünürlüğünü ayarlar', /c\.report\.sections = reportSectionsForPreset\(preset\.dataset\.reportPreset\)/.test(js));
+  // v2.261: profil bölüm kümesini VE (56.12 için) SIRAYI yazar; veri değişmez.
+  check(
+    'profil bölüm kümesi + sıra yazar (veri değişmez)',
+    /reportPresetLayout\(preset\.dataset\.reportPreset\)/.test(js) &&
+      /c\.report\.sections = p\.sections/.test(js) &&
+      /Array\.isArray\(p\.order\)/.test(js) &&
+      /c\.report\.layout = normalizeReportLayout/.test(js)
+  );
   check('profil satırı token stil', /\.rsec-presets\s*\{[^}]*display:\s*flex/.test(layer));
 }
 
@@ -1959,8 +1966,12 @@ console.log('\n[2ce] Okuma metni bağımsız bölüm (v2.234)');
 {
   const js = read('assets/app.js');
   const schema = read('assets/schema.js');
-  check('reading gövde sırasında (s5 sonrası)', /'s5',\s*'reading'/.test(schema));
-  check('eski kayıt göçü: reading s5 ardına', /srcOrder\.includes\('reading'\)/.test(schema) && /order\.indexOf\('s5'\)/.test(schema));
+  check('reading gövde sırasında (s5 sonrası)', /REPORT_BODY_ORDER = \[[\s\S]*?'s5',[\s\S]*?'reading'/.test(schema));
+  // v2.261: göç tek kural — eksik anahtar kanonik komşusuna girer.
+  check(
+    'eski kayıt göçü: eksik bölüm kanonik komşusuna girer',
+    /insertMissingInCanonicalOrder\(order, REPORT_BODY_ORDER\)/.test(schema)
+  );
   check('iskelette reading alt çocuk DEĞİL', !/row\('reading',\s*\{\s*child:\s*true\s*\}\)/.test(js));
   check('üç çıktıda ayrı reading bloğu', (js.match(/reading:\s*\(\)\s*=>/g) || []).length >= 3);
   check('reading koşullu blok', /case 'reading':/.test(js) && /readingGroupsFor\(m\)\.length/.test(js));

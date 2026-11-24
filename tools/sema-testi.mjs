@@ -92,7 +92,9 @@ import {
   emptyReportTech,
   normalizeReportTech,
   REPORT_PRESET_DEFS,
-  reportSectionsForPreset
+  reportSectionsForPreset,
+  REPORT_SABLON_ORDER,
+  reportPresetLayout
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -1759,7 +1761,12 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('birleştirme: tech boş alan dolar (os)', mgc.merged.report.tech.os === 'Windows 11');
   ok('birleştirme: tech boş alan dolar (workstation)', mgc.merged.report.tech.workstation === 'PC-1');
   // v2.223 — Rapor profilleri: yalnız bölüm görünürlüğü, veri değişmez.
-  ok('profil tanımları üç tane', REPORT_PRESET_DEFS.length === 3);
+  // v2.261: dört profil (Yalın · Standart · Tümü · 56.12 Ana Şablon).
+  ok('profil tanımları dört tane', REPORT_PRESET_DEFS.length === 4);
+  ok('profil: 56.12 sırası şemada', Array.isArray(REPORT_SABLON_ORDER) && REPORT_SABLON_ORDER.length >= 20);
+  const sab = reportPresetLayout('sablon');
+  ok('profil: 56.12 sıra yazar', Array.isArray(sab.order) && sab.order.indexOf('s5') < sab.order.indexOf('limits'));
+  ok('profil: 56.12 soru listesini kapatır', sab.sections.s2 === false && sab.sections.annex === true);
   ok('profil: full tüm bölümler açık', REPORT_SECTION_KEYS.every((k) => reportSectionsForPreset('full')[k] === true));
   ok(
     'profil: standard = varsayılan',

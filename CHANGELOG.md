@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.260.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.261.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.261 — Rapor parçaları ayrı ayrı alınabilir (56.12 sırası)
+
+Kullanıcı, ChatGPT'nin hazırladığı 56.12 ana şablonunu gösterdi ve şunu sordu:
+"bizde bunlar var mı, kolayca ekleyebilir miyiz, bizimki karışık mı?" Ölçüm
+şunu gösterdi: **içerik bizde zaten vardı** (v2.220'de aktarılmıştı); sorun
+**sıra ve gruplamaydı**:
+
+- Varsayılan raporda **"GEREKÇELİ SONUÇ" ve "EKLER" başlıkları, WER/seviye/
+  inceleme özeti ölçümlerinden ÖNCE** geliyordu (sonuç ortada kalıyordu).
+- **"EKLER"** bölümü "ekler burada gösterilir" diyordu ama **ekler varsayılan
+  kapalı** olduğu için altında hiçbir şey yoktu.
+- `s5` tek bölümdü; içinde **bulgular + cevaplar + sınırlılıklar** vardı →
+  hiçbiri tek tek açılıp kapatılamıyordu.
+- "Tam 56.12" profili yalnız bölüm **görünürlüğünü** ayarlıyordu; **sırayı
+  değiştirmiyordu** (bu yüzden basınca "aynı kaldı" görünüyordu).
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletinde **üç ayrı satır**: **Kayıt bazında bulgular** ·
+  **Soruların cevapları** · **Teknik sınırlılıklar**. Her biri tek tek açılır/
+  kapanır, sırası değiştirilir.
+- Yeni **"Orijinalin korunması ve bütünlük kaydı"** bölümü (varsayılan kapalı):
+  her kaydın **SHA-256** özeti, **doğrulama durumu** (Doğrulandı / Uyuşmuyor /
+  Doğrulanamadı) ve **delil günlüğü zinciri**. Ölçülmemişse "hesaplanmadı"
+  yazar; uydurulmaz.
+- **"56.12 Ana Şablon"** düğmesi artık **sırayı da** uygular: görevlendirme →
+  materyal/envanter → bütünlük → teknik → yöntem → iyileştirme → ASR →
+  bulgular → sınırlılıklar → kalite kontrolü → cevaplar → kapsam dışı →
+  gizlilik → sonuç → ekler.
+- **EKLER** bölümü artık **gerçekten basılan ekleri listeler** (EK-1, EK-2…);
+  ek yoksa **"Bu raporla ek sunulmamıştır"** yazar.
+- **Varsayılan sıra düzeltildi:** ölçümler (WER, seviye) ve inceleme özeti
+  artık **sonuçtan önce** gelir; sonuç sonda, ekler en sonda.
+- **Soru yoksa** "Cevaplar" bölümü hiç çizilmez (boş başlık kalmaz).
+
+### Teknik
+
+- `schema.js`: `answers`, `limits`, `integrity` bölümleri; `REPORT_MAIN_KEYS`
+  genişledi (üçü de numaralı ana bölüm); `REPORT_BODY_ORDER` mantıklı sıraya
+  çekildi; `REPORT_SABLON_ORDER` + `reportPresetLayout()` (profil **sıra** da
+  yazar; diğer profiller `order: null` → kullanıcı sırası korunur).
+- **Göç tek kural:** `insertMissingInCanonicalOrder(order, REPORT_BODY_ORDER)` —
+  eski kayıtta eksik bölüm **kanonik komşusunun yanına** girer, sona atılmaz
+  (yoksa eklerden/imzadan sonra çıkardı). `reading` özel durumu kaldırıldı.
+- Üç çıktı (HTML/DOCX/UDF) yeni bölümleri aynı metinle basar; **TOC ile gövde
+  aynı ölçütü** kullanır (`reportBlockRenders`), böylece içindekiler ile belge
+  ayrışamaz.
+- `limits`: serbest metin + **bölüm işaretlerinden ölçülen** özet
+  ("3 bölüm anlaşılmadı · 1 bölüm belirsiz okuma"). İşaret yoksa satır yazılmaz.
+- `integrity`: `SHA-256 · doğrulama · zincir` tablosu; kaynak yalnız kayıtlı
+  değerler.
+- Belge odaklı düzenleyicide serbest metin artık **Teknik sınırlılıklar**
+  bölümünde (eskiden s5 içindeydi).
+
+### Koruyan testler
+
+- `birim` **[105]** (25 kontrol): bölümler tanımlı, varsayılanlar, göç yeri,
+  56.12 sırası, numara bitişikliği.
+- `rapor` **Senaryo 30** (18 kontrol): üç parça bağımsız aç/kapa; üç çıktı aynı
+  metni verir; sıra bulgular → cevaplar → sınırlılıklar; EKLER listesi.
+- `sema` **[3h]**: dört profil + 56.12 sırası; `tasarim` **[2bq]/[2ce]**:
+  profil sıra yazar, göç tek kural.
 
 ## v2.260 — DOCX tablo sola çıkıntısı giderildi (OpenOffice/LibreOffice)
 

@@ -3689,3 +3689,14 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   .report-paper .paper-table tr { break-inside: avoid; }
   .report-paper .paper-table thead { display: table-header-group; }
 }
+/* v2.261 — "EKLER" bölümü gerçek ek başlıklarını listeler (düz liste).
+   Kâğıt bağlamına özgüdür; ekran/tema tokenlarını kullanır. */
+.report-paper .paper-list {
+  margin: 6px 0 2px;
+  padding-left: 20px;
+  color: var(--paper-ink);
+}
+.report-paper .paper-list li { margin: 3px 0; }
+@media print {
+  .report-paper .paper-list { break-inside: avoid; }
+}

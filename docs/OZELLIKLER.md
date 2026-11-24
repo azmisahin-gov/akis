@@ -1,4 +1,4 @@
-# Özellikler (v2.260 — mevcut durum)
+# Özellikler (v2.261 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -843,8 +843,8 @@ Araç çubuğunda **tek durum çipi** vardır ("Engelleyen eksik: N" · "Kontrol
 bekliyor: N" · "Hazır"); iskelet "N dahil · M hariç" der, kapalı bölüm soluk
 görünür (v2.230). **Dahil** (rapora girer) ile **Kontrol** (dinlenip onaylandı)
 ayrı kavramlardır. Belgede bir bölüme tıklayınca sağda **odaklı düzenleyici**
-açılır (v2.231): **Yöntem (4) · Sınırlılıklar (5) · Sonuç (6)** serbest metinleri
-burada yazılır; diğer bölümler veriden üretilir. **A4 kâğıdı contentEditable
+açılır (v2.231): **İnceleme yöntemi · Teknik sınırlılıklar · Sonuç** serbest
+metinleri burada yazılır; diğer bölümler veriden üretilir. **A4 kâğıdı contentEditable
 değildir**; üç çıktı aynı metni üretir. **Sayfaya sığdır** anahtarı tek bir A4
 sayfasını ekrana sığdırır (v2.232); tam ekranda dön/yazdır/UDF ve A4/sığdır
 kontrolleri görünür kalır; sol iskelet kaydırırken görünür kalır. **Sayfa
@@ -862,10 +862,24 @@ envanterle aynı sütun seçimini izler.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller
-  (Yalın · Standart · Tam 56.12) burada.
+  (Yalın · Standart · Tümü · **56.12 Ana Şablon**) burada.
+- **Parçalar ayrı ayrı (v2.261):** **kayıt bazında bulgular**, **soruların
+  cevapları** ve **teknik sınırlılıklar** ayrı bölümdür; her biri tek başına
+  açılıp kapatılır ve sıralanır. **Soru yoksa** "Cevaplar" bölümü hiç çizilmez.
+- **Orijinalin korunması ve bütünlük (v2.261):** varsayılan **kapalı** bölüm;
+  her kaydın **SHA-256** özetini, **doğrulama durumunu** (Doğrulandı /
+  Uyuşmuyor / Doğrulanamadı) ve **delil günlüğü zincirini** yazar. Özet yoksa
+  "hesaplanmadı" der; uydurma değer yazmaz.
+- **56.12 Ana Şablon (v2.261):** tek tıkla bölüm kümesini **ve sırayı** yazar
+  (görevlendirme → materyal/envanter → bütünlük → teknik → yöntem → iyileştirme
+  → ASR → bulgular → sınırlılıklar → kalite → cevaplar → kapsam → gizlilik →
+  sonuç → ekler). Diğer profiller kullanıcının sırasını **korur**.
+- **EKLER bölümü (v2.261):** gerçekten basılan ekleri listeler (EK-1, EK-2…);
+  ek yoksa **"Bu raporla ek sunulmamıştır"** yazar. Boş vaat bırakmaz.
 - **Numara türetilir:** ana bölüm numaraları **açık ve sıralı** bölümlere göre
   verilir; bir bölüm kapatılınca numarada **boşluk kalmaz** (3 kapatılınca
-  4 → 3 olur). 5.1/5.2/5.3 alt başlıkları da ana numaradan türetilir.
+  4 → 3 olur). **Cevaplar** ve **sınırlılıklar** da numaralı ana bölümdür
+  (v2.261). 5.1 alt başlığı ana numaradan türetilir.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
 - **Ekler ayrı ve düzenlenebilir kayıttır:** her ek tek tek açılır/kapanır ve

@@ -61,7 +61,7 @@ import {
   REPORT_TECH_KEYS,
   emptyReportTech,
   REPORT_PRESET_DEFS,
-  reportSectionsForPreset,
+  reportPresetLayout,
   REPORT_COLUMN_TABLES,
   REPORT_COLUMN_LABELS,
   REPORT_COLUMN_TABLE_LABELS,
@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.260';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.260';
+} from './schema.js?v=2.261';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.261';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.260';
+const APP_VERSION = '2.261';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -184,8 +184,6 @@ const REPORT_TEXT = {
   readingHeading: 'Okuma metni',
   readingIntro:
     'Aşağıdaki okuma metni, aynı konuşmacının ardışık bölümlerinden türetilmiş salt okunur bir okuma biçimidir. Ayrıntılı (zaman damgalı) bölüm tablosu ve cümle zamanları değişmez; bu bölüm yalnız okunabilirliği artırır.',
-  sub52: '5.2. Görevlendiren merci sorularına ilişkin teknik değerlendirme',
-  sub53: '5.3. Teknik sınırlılıklar',
   emptyCourt: '……………………………… MAHKEMESİ',
   emptyFileNo: '—',
   defaultScope: 'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.',
@@ -215,8 +213,8 @@ const REPORT_TEXT = {
     'Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü incelenmemiştir.',
   // v2.235: tablo sütunları kapatılırsa boş tablo yerine bu satır yazılır.
   noColumns: 'Bu tablo için alan seçilmedi.',
-  attachmentsText:
-    'Raporla birlikte sunulan ekler, gerçekten eklenen materyallere göre numaralandırılarak bu bölümde gösterilir.',
+  attachmentsText: 'Raporla birlikte sunulan ekler, aşağıda numaralarıyla listelenmiştir.',
+  noAttachments: 'Bu raporla ek sunulmamıştır.',
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
   speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   speakerIntro:
@@ -341,7 +339,22 @@ Object.assign(REPORT_TEXT, {
   qcHeading: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK',
   qcIntro:
     'Aşağıdaki sayılar inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Bunlar bir ONAY değil, denetim listesidir; son kararı bilirkişi verir.',
-  qcNote: 'İkinci kontrol (varsa) bilirkişi beyanıdır; boş alan "—" olarak yazılır.'
+  qcNote: 'İkinci kontrol (varsa) bilirkişi beyanıdır; boş alan "—" olarak yazılır.',
+  // v2.261 — s5'ten AYRILAN parçalar: cevaplar ve sınırlılıklar kendi
+  // bölümleri. Metinler tek kaynak; üç çıktı aynı cümleyi basar.
+  answersIntro:
+    'Görevlendirme kararındaki sorular, sorulma sırası korunarak aşağıda cevaplanmıştır. Her cevap, ilgili kayıt ve zaman aralığıyla ilişkilendirilir; cevaplanamayan sorunun nedeni açıkça yazılır. Sorular metni değiştirilmeden aktarılır.',
+  limitsIntro:
+    'Aşağıda inceleme sırasında gerçekten karşılaşılan teknik sınırlılıklar açıklanmıştır. Sınırlılık yoksa bu açıkça belirtilir; ölçülmeyen değer yazılmaz ve konuşmanın anlamı bağlamdan tamamlanmaz.',
+  limitsMeasuredPrefix: 'Bölüm işaretlerinden ölçülen: ',
+  // Orijinalin korunması / bütünlük (v2.261): veriden üretilir, uydurulmaz.
+  integrityIntro:
+    'Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içeriğin bit düzeyinde bütünlüğünü gösterir.',
+  integrityHeaders: ['KAYIT', 'SHA-256', 'DOĞRULAMA', 'DELİL GÜNLÜĞÜ'],
+  integrityNoHash: 'hesaplanmadı',
+  integrityNotVerified: 'Doğrulanmadı',
+  integrityNote:
+    'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
 });
 // Hızlı etiketler: uzmanın elle yazmadan boş/anlaşılmaz/uzaktan gelen bölümleri
 // işaretlemesini sağlar. Bunlar köşeli parantezle yazılır ve rapora aynen akar;
@@ -10613,10 +10626,6 @@ function questionsFallbackText(c) {
   const spec = reportTypeSpec(c.reportType);
   return `${spec.questionSource} bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.`;
 }
-function evaluationFallbackText(c) {
-  const spec = reportTypeSpec(c.reportType);
-  return `Teknik sorulara ilişkin değerlendirme, ${spec.assignmentLabel.toLowerCase()}nda yer alan sorular doğrultusunda eklenir.`;
-}
 function reportTypeSpec(t) {
   return REPORT_TYPES[t] || REPORT_TYPES.hukuk;
 }
@@ -11121,7 +11130,7 @@ function syncReportToolbarHeight() {
 let reportEditKey = null;
 const REPORT_NARRATIVE_FIELDS = {
   s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
-  s5: [{ field: 'limitationsText', label: 'Teknik değerlendirme ve sınırlılıklar', rows: 6 }],
+  limits: [{ field: 'limitationsText', label: 'Teknik sınırlılıklar', rows: 6 }],
   s6: [{ field: 'conclusionText', label: 'Sonuç ve kanaat (bilirkişi yazar)', rows: 6 }]
 };
 function reportSectionEditableFields(key) {
@@ -11142,6 +11151,8 @@ function reportSectionDerivedTarget(key) {
     wer: 'audio',
     levels: 'audio',
     reviewSummary: 'audio',
+    answers: 'questions',
+    integrity: 'audio',
     signature: 'case'
   };
   return map[key] || '';
@@ -11156,7 +11167,7 @@ function renderReportSectionEditor(c) {
   if (!key) {
     host.innerHTML =
       `<div class="rse-head"><b>Bölüm düzenle</b><small>Seçim yok</small></div>` +
-      `<p class="rse-note">Düzenlemek için belgede bir bölüme tıklayın. Serbest metin yalnız <b>Yöntem (4)</b>, <b>Sınırlılıklar (5)</b> ve <b>Sonuç (6)</b> bölümlerinde vardır; diğerleri veriden üretilir.</p>`;
+      `<p class="rse-note">Düzenlemek için belgede bir bölüme tıklayın. Serbest metin yalnız <b>İnceleme yöntemi</b>, <b>Teknik sınırlılıklar</b> ve <b>Sonuç</b> bölümlerinde vardır; diğerleri veriden üretilir.</p>`;
     return;
   }
   const head = `<div class="rse-head"><b>Bölüm düzenle</b><small>${esc(reportUiLabel(c, key))}</small><button type="button" class="rse-close" data-rse-close="1" aria-label="Düzenleyiciyi kapat" title="Kapat">×</button></div>`;
@@ -11235,14 +11246,13 @@ function reportHeadingText(c, key, map) {
   }
   return title;
 }
-// 5.1/5.2/5.3 alt başlıkları ana bölüm numarasından türetilir.
+// Alt başlıklar ana bölüm numarasından türetilir (5.1 …). v2.261: cevaplar ve
+// sınırlılıklar ayrı bölüm olduğu için s5'in tek alt başlığı kaldı.
 function reportSubHeadings(c) {
   const n = reportNumberMap(c).s5 || 0;
   const p = n ? `${n}.` : '5.';
   return {
-    s51: `${p}1. Ses kayıtlarının çözümlenmesi`,
-    s52: `${p}2. Görevlendiren merci sorularına ilişkin teknik değerlendirme`,
-    s53: `${p}3. Teknik sınırlılıklar`
+    s51: `${p}1. Ses kayıtlarının çözümlenmesi`
   };
 }
 // TOC'a girecek blok gerçekten çizilecek mi? Koşullu bloklar (veri yoksa
@@ -11254,6 +11264,11 @@ function reportBlockRenders(c, key) {
       return !!(c.report && c.report.includeEmbedded) && embeddedRows(c).length > 0;
     case 'acquisition':
       return acquisitionRows(c).length > 0;
+    case 'answers':
+      // Soru yoksa "Cevaplar" bölümü çizilmez (boş başlık/fallback yerine hiç).
+      return Array.isArray(c.questions) && c.questions.length > 0;
+    case 'integrity':
+      return integrityRows(c).length > 0;
     case 'wer':
       return measureWerForCase(c).length > 0;
     case 'levels':
@@ -11365,7 +11380,10 @@ const REPORT_UI_LABELS = {
   s2: 'Cevaplanacak sorular',
   s3: 'Maddi unsurlar ve dosya envanteri',
   s4: 'İnceleme yöntemi',
-  s5: 'Analiz, tespit ve değerlendirme',
+  s5: 'Kayıt bazında bulgular',
+  answers: 'Soruların cevapları',
+  limits: 'Teknik sınırlılıklar',
+  integrity: 'Orijinalin korunması / bütünlük',
   s6: 'Gerekçeli sonuç',
   s7: 'Ekler',
   origin: 'Kayıt kökeni ve teslim zinciri',
@@ -11409,6 +11427,9 @@ const REPORT_SECTION_CATEGORY = {
   s3: 'main',
   s4: 'main',
   s5: 'main',
+  answers: 'main',
+  limits: 'main',
+  integrity: 'tech',
   s6: 'main',
   s7: 'main',
   reading: 'main',
@@ -11694,6 +11715,60 @@ function reportAnnexBlocks(c) {
     }
     return { key: a.key, heading: a.heading, ...defs[a.key], note };
   });
+}
+// v2.261 — "EKLER" bölümü, gerçekten çizilecek ekleri listeler. Ek yoksa
+// "ek sunulmamıştır" yazar; "burada gösterilir" deyip boş bırakmaz.
+function reportAttachmentLines(c) {
+  // Ekler bloğu kapalıysa ek BASILMIYOR; liste de verilmez (yanıltıcı olur).
+  if (!reportSectionOn(c, 'annex')) return [];
+  return reportAnnexList(c).map((a) => a.heading);
+}
+// v2.261 — Orijinalin korunması / bütünlük: satırlar YALNIZ ölçülmüş/kayıtlı
+// değerlerden üretilir. Özet yoksa "hesaplanmadı", doğrulama yapılmadıysa
+// "Doğrulanmadı" yazılır; uydurma değer yok.
+function integrityRows(c) {
+  const chainText = (m) => {
+    const st = logChainState(m && m.log);
+    return (
+      {
+        verified: 'Zincir doğrulandı',
+        legacy: 'Eski kayıt (hash yok)',
+        broken: 'ZİNCİR KIRIK',
+        empty: 'Günlük boş'
+      }[st.state] || '—'
+    );
+  };
+  const verifyText = (m) => {
+    const lv = m && m.lastVerify;
+    if (lv && lv.state) return delilStateLabel(lv.state);
+    const acq = m && m.origin && m.origin.acquisition;
+    if (acq && acq.hashState) return delilStateLabel(acq.hashState);
+    return REPORT_TEXT.integrityNotVerified;
+  };
+  const out = [];
+  for (const m of (c && c.materials) || []) {
+    out.push([
+      m.name || m.fileName || '—',
+      isSha256Hex(m.sha256) ? m.sha256 : REPORT_TEXT.integrityNoHash,
+      verifyText(m),
+      chainText(m)
+    ]);
+  }
+  return out;
+}
+// Bölüm işaretlerinden ÖLÇÜLEN sınırlılık özeti. İşaret yoksa boş döner ve
+// rapora satır yazılmaz (uydurma yok).
+function limitsMeasuredText(c) {
+  const segs = ((c && c.materials) || []).flatMap((m) => (m && m.segments) || []);
+  const count = (code) => segs.filter((s) => segReview(s) === code).length;
+  const parts = [];
+  const inaudible = count('inaudible');
+  const ambiguous = count('ambiguous');
+  const relisten = count('relisten');
+  if (inaudible) parts.push(`${inaudible} bölüm anlaşılmadı`);
+  if (ambiguous) parts.push(`${ambiguous} bölüm belirsiz okuma`);
+  if (relisten) parts.push(`${relisten} bölüm yeniden dinlenecek`);
+  return parts.join(' · ');
 }
 // v2.226 — Kalite kontrolü / denetlenebilirlik: otomatik sayılar + ikinci göz.
 function reportQcRows(c) {
@@ -12247,15 +12322,39 @@ function renderReport() {
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
         }
       } else out += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
-      out += `<h4>${esc(sub.s52)}</h4>`;
-      if (c.questions?.length) {
-        for (let i = 0; i < c.questions.length; i++) {
-          const q = c.questions[i];
-          out += `<h4>${n5}.2.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis || REPORT_TEXT.defaultBasis)}</p>`;
-        }
-      } else out += `<p>${esc(evaluationFallbackText(c))}</p>`;
-      out += `<h4>${esc(sub.s53)}</h4><p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p></div>`;
-      return out;
+      return out + `</div>`;
+    },
+    // v2.261 — s5'ten ayrılan CEVAPLAR bölümü. Soru yoksa çizilmez
+    // (`reportBlockRenders`), boş başlık bırakılmaz.
+    answers: () => {
+      const na = map.answers || 0;
+      let out = `<div class="paper-section"><h3>${esc(H('answers'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.answersIntro)}</p>`;
+      for (let i = 0; i < c.questions.length; i++) {
+        const q = c.questions[i];
+        out += `<h4>${na}.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis || REPORT_TEXT.defaultBasis)}</p>`;
+      }
+      return out + `</div>`;
+    },
+    // v2.261 — SINIRLILIKLAR: serbest metin + bölüm işaretlerinden ölçülen özet.
+    limits: () => {
+      const meas = limitsMeasuredText(c);
+      return (
+        `<div class="paper-section"><h3>${esc(H('limits'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.limitsIntro)}</p>` +
+        `<p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p>` +
+        (meas ? `<p class="paper-muted">${esc(REPORT_TEXT.limitsMeasuredPrefix)}${esc(meas)}</p>` : '') +
+        `</div>`
+      );
+    },
+    // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK: SHA-256 + doğrulama + zincir.
+    integrity: () => {
+      const rows = integrityRows(c);
+      return (
+        `<div class="paper-section"><h3>${esc(H('integrity'))}</h3><p>${esc(REPORT_TEXT.integrityIntro)}</p>` +
+        `<table class="paper-table"><thead><tr>${REPORT_TEXT.integrityHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows
+          .map((r) => `<tr>${r.map((x, i) => `<td${i === 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`)
+          .join('')}</tbody></table>` +
+        `<p class="paper-muted">${esc(REPORT_TEXT.integrityNote)}</p></div>`
+      );
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234): s5 kapalı olsa da tek başına açılabilir.
     reading: () => {
@@ -12271,7 +12370,13 @@ function renderReport() {
     },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`,
     s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`,
-    s7: () => `<div class="paper-section"><h3>${esc(H('s7'))}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p></div>`,
+    s7: () => {
+      const lines = reportAttachmentLines(c);
+      const body = lines.length
+        ? `<ul class="paper-list">${lines.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+        : `<p class="paper-muted">${esc(REPORT_TEXT.noAttachments)}</p>`;
+      return `<div class="paper-section"><h3>${esc(H('s7'))}</h3><p>${esc(REPORT_TEXT.attachmentsText)}</p>${body}</div>`;
+    },
     wer: () => {
       const werRows = werTableRows(c);
       if (!werRows.length) return '';
@@ -12327,7 +12432,8 @@ function renderReport() {
   html += '<div class="paper-page-break">';
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
-    if (!on(key) || !body[key]) continue;
+    // TOC ile gövde AYNI ölçütü kullanır (v2.261): veri yoksa bölüm çizilmez.
+    if (!on(key) || !body[key] || !reportBlockRenders(c, key)) continue;
     const piece = body[key]();
     if (!piece) continue;
     // Her ana bölüm (1–7) ve ekler yeni sayfadan (v2.259; ilk gövde hariç).
@@ -12651,25 +12757,42 @@ function docxXml(c) {
           out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
-      out += headingXml(sub.s52, 2);
-      if (c.questions?.length) {
-        c.questions.forEach((q, i) => {
-          out += wP(`${n5}.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
-            bold: true,
-            color: '385873',
-            size: 20,
-            before: 80,
-            after: 60,
-            keep: true
-          });
-          out += wP(q.answer || REPORT_TEXT.defaultAnswer);
-          out += wP(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, { color: '657D92', size: 17, italic: true });
-        });
-      } else out += wP(evaluationFallbackText(c));
-      out += headingXml(sub.s53, 2);
-      out += wP(c.limitationsText || REPORT_TEXT.defaultLimitations);
       return out;
     },
+    // v2.261 — CEVAPLAR ayrı bölüm (soru yoksa çizilmez).
+    answers: () => {
+      const na = map.answers || 0;
+      let out = headingXml(H('answers')) + wP(REPORT_TEXT.answersIntro, { color: '6F8295', size: 17 });
+      c.questions.forEach((q, i) => {
+        out += wP(`${na}.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+          bold: true,
+          color: '385873',
+          size: 20,
+          before: 80,
+          after: 60,
+          keep: true
+        });
+        out += wP(q.answer || REPORT_TEXT.defaultAnswer);
+        out += wP(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, { color: '657D92', size: 17, italic: true });
+      });
+      return out;
+    },
+    // v2.261 — SINIRLILIKLAR ayrı bölüm.
+    limits: () => {
+      const meas = limitsMeasuredText(c);
+      return (
+        headingXml(H('limits')) +
+        wP(REPORT_TEXT.limitsIntro, { color: '6F8295', size: 17 }) +
+        wP(c.limitationsText || REPORT_TEXT.defaultLimitations) +
+        (meas ? wP(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { color: '6F8295', size: 17, italic: true }) : '')
+      );
+    },
+    // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK.
+    integrity: () =>
+      headingXml(H('integrity')) +
+      wP(REPORT_TEXT.integrityIntro) +
+      wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true }) +
+      wP(REPORT_TEXT.integrityNote, { color: '74869A', size: 17, italic: true }),
     // BAĞIMSIZ OKUMA METNİ (v2.234).
     reading: () => {
       let out = '';
@@ -12687,7 +12810,16 @@ function docxXml(c) {
     },
     scopeNote: () => headingXml(H('scopeNote')) + wP(REPORT_TEXT.scopeNoteText),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || REPORT_TEXT.defaultConclusion),
-    s7: () => headingXml(H('s7')) + wP(REPORT_TEXT.attachmentsText),
+    s7: () => {
+      const lines = reportAttachmentLines(c);
+      return (
+        headingXml(H('s7')) +
+        wP(REPORT_TEXT.attachmentsText) +
+        (lines.length
+          ? lines.map((x) => wP('• ' + x, { after: 40 })).join('')
+          : wP(REPORT_TEXT.noAttachments, { color: '74869A', size: 17, italic: true }))
+      );
+    },
     wer: () => {
       const dWer = werTableRows(c);
       if (!dWer.length) return '';
@@ -12754,7 +12886,7 @@ function docxXml(c) {
   const pageBreakPara = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
-    if (!on(key) || !blocks[key]) continue;
+    if (!on(key) || !blocks[key] || !reportBlockRenders(c, key)) continue;
     if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) body += pageBreakPara;
     body += blocks[key]();
     firstBody = false;
@@ -13177,31 +13309,47 @@ async function makeUdf() {
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
         });
       } else el.push(paragraph(REPORT_TEXT.noMaterials));
-      el.push(paragraph(sub.s52, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
-      if (c.questions?.length)
-        c.questions.forEach((q, i) => {
-          el.push(
-            paragraph(`${n5}.2.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
-              size: 11,
-              bold: true,
-              color: 'mid',
-              before: 5,
-              after: 3
-            })
-          );
-          el.push(paragraphLines(q.answer || REPORT_TEXT.defaultAnswer, { justify: true }));
-          el.push(
-            paragraph(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, {
-              size: 9,
-              italic: true,
-              color: 'muted',
-              after: 5
-            })
-          );
-        });
-      else el.push(paragraph(evaluationFallbackText(c)));
-      el.push(paragraph(sub.s53, { size: 12, bold: true, color: 'mid', before: 7, after: 4 }));
+    },
+    // v2.261 — CEVAPLAR ayrı bölüm (soru yoksa çizilmez).
+    answers: () => {
+      const na = map.answers || 0;
+      el.push(h(H('answers')));
+      el.push(paragraph(REPORT_TEXT.answersIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+      c.questions.forEach((q, i) => {
+        el.push(
+          paragraph(`${na}.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
+            size: 11,
+            bold: true,
+            color: 'mid',
+            before: 5,
+            after: 3
+          })
+        );
+        el.push(paragraphLines(q.answer || REPORT_TEXT.defaultAnswer, { justify: true }));
+        el.push(
+          paragraph(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, {
+            size: 9,
+            italic: true,
+            color: 'muted',
+            after: 5
+          })
+        );
+      });
+    },
+    // v2.261 — SINIRLILIKLAR ayrı bölüm.
+    limits: () => {
+      const meas = limitsMeasuredText(c);
+      el.push(h(H('limits')));
+      el.push(paragraph(REPORT_TEXT.limitsIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
+      if (meas) el.push(paragraph(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { size: 9, italic: true, color: 'muted', after: 5 }));
+    },
+    // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK.
+    integrity: () => {
+      el.push(h(H('integrity')));
+      el.push(paragraphLines(REPORT_TEXT.integrityIntro, { justify: true }));
+      el.push(table([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], [100, 230, 105, 120], { header: true }));
+      el.push(paragraph(REPORT_TEXT.integrityNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234).
     reading: () => {
@@ -13230,6 +13378,9 @@ async function makeUdf() {
     s7: () => {
       el.push(h(H('s7')));
       el.push(paragraph(REPORT_TEXT.attachmentsText));
+      const lines = reportAttachmentLines(c);
+      if (lines.length) for (const x of lines) el.push(paragraph('• ' + x, { size: 10, after: 2 }));
+      else el.push(paragraph(REPORT_TEXT.noAttachments, { size: 9, italic: true, color: 'muted' }));
     },
     wer: () => {
       const uWer = werTableRows(c);
@@ -13312,7 +13463,7 @@ async function makeUdf() {
   // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç).
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
-    if (!on(key) || !blocks[key]) continue;
+    if (!on(key) || !blocks[key] || !reportBlockRenders(c, key)) continue;
     if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) el.push(pageBreak());
     blocks[key]();
     firstBody = false;
@@ -15774,7 +15925,13 @@ $('#reportSections')?.addEventListener('click', (e) => {
     const c = currentCase();
     if (!c) return;
     c.report = c.report || {};
-    c.report.sections = reportSectionsForPreset(preset.dataset.reportPreset);
+    const p = reportPresetLayout(preset.dataset.reportPreset);
+    c.report.sections = p.sections;
+    // v2.261: profil SIRAYI da yazabilir (56.12 ana şablonu). Diğer profiller
+    // kullanıcının sırasını korur (order: null).
+    if (Array.isArray(p.order)) {
+      c.report.layout = normalizeReportLayout({ ...(c.report.layout || {}), order: p.order });
+    }
     persist();
     renderReport();
     return;
@@ -16892,6 +17049,16 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.261': {
+    title: 'Rapor parçaları ayrı ayrı alınabilir',
+    body:
+      'Rapor iskeletinde "kayıt bazında bulgular", "soruların cevapları" ve "teknik sınırlılıklar" ' +
+      'artık ayrı bölümlerdir: her birini tek tek açıp kapatabilir, sırasını değiştirebilirsiniz. ' +
+      'Yeni "Orijinalin korunması ve bütünlük kaydı" bölümü (kapalı) SHA-256, doğrulama durumu ve ' +
+      'delil zincirini yazar. "56.12 Ana Şablon" düğmesi artık sırayı da uygular. Varsayılan sırada ' +
+      'ölçümler ve inceleme özeti sonuçtan ÖNCE gelir; EKLER bölümü gerçek ekleri listeler. ' +
+      'Numaralar değişti: sonuç artık sonda.'
+  },
   '2.260': {
     title: 'OpenOffice/LibreOffice tablo sola çıkıntısı giderildi',
     body:

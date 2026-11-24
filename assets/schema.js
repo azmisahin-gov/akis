@@ -537,8 +537,17 @@ export const REPORT_SECTION_DEFS = [
   { key: 'acquisition', def: true, title: 'DELİL EDİNME VE DOĞRULAMA' },
   { key: 'speakers', def: true, title: 'Konuşmacılar' },
   { key: 's4', def: true, title: 'İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR' },
-  { key: 's5', def: true, title: 'ANALİZ, TESPİT VE DEĞERLENDİRME' },
+  { key: 's5', def: true, title: 'KAYIT BAZINDA BULGULAR VE TRANSKRİPT' },
   { key: 'reading', def: true, title: 'Okuma metni' },
+  // v2.261 — s5'in içindeki iki parça AYRI bölüm oldu: her parça tek tek
+  // açılıp kapatılabilir, sırası değiştirilebilir. Varsayılan AÇIK: mevcut
+  // raporun içeriği korunur (yalnız numara/sıra değişir).
+  { key: 'answers', def: true, title: 'GÖREVLENDİRME SORULARINA CEVAPLAR' },
+  { key: 'limits', def: true, title: 'ANLAŞILABİLİRLİK VE TEKNİK SINIRLILIKLAR' },
+  // v2.261 — Orijinalin korunması / bütünlük kaydı (veriden üretilir:
+  // SHA-256 + doğrulama durumu + delil günlüğü zinciri). Yeni içerik olduğu
+  // için VARSAYILAN KAPALI; mevcut rapor kendiliğinden değişmez.
+  { key: 'integrity', def: false, title: 'ORİJİNALİN KORUNMASI VE BÜTÜNLÜK KAYDI' },
   { key: 'wer', def: true, title: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)' },
   { key: 'levels', def: true, title: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ' },
   { key: 'reviewSummary', def: true, title: 'İNCELEME ÖZETİ (denetim kaydı)' },
@@ -560,10 +569,12 @@ export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 
 // ---- 5b-2. Rapor iskeleti: sıra, numara, ekler (v2.227) ------------------
 // KAPAK/ön bölüm ve İMZA yapısaldır: sırası sabittir. Gövde bölümleri
-// kullanıcı tarafından sıralanabilir. `reading` ayrı bir gövde bloğu DEĞİL,
-// 5. bölümün içindedir; bu yüzden sıralama listesinde yoktur.
+// kullanıcı tarafından sıralanabilir; sıra `case.report.layout.order`'dadır.
 export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
-export const REPORT_MAIN_KEYS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7'];
+// Numaralı bölümler (1…N). Numara SIRAYA göre türetilir; bu dizinin sırası
+// önemli değildir, yalnız "hangi bölüm numara alır" sorusunu yanıtlar.
+// v2.261: cevaplar / sınırlılıklar / bütünlük de numaralı ana bölümdür.
+export const REPORT_MAIN_KEYS = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 'answers', 'limits', 'integrity'];
 export const REPORT_BODY_ORDER = [
   's1',
   's2',
@@ -571,21 +582,25 @@ export const REPORT_BODY_ORDER = [
   'origin',
   'embedded',
   'acquisition',
+  'integrity',
   'speakers',
   's4',
   'tech',
   'enhance',
   'asr',
   's5',
+  'answers',
+  'limits',
   'reading',
-  'scopeNote',
-  's6',
-  's7',
+  // Ölçümler ve denetim özeti BULGULARDAN sonra, SONUÇTAN önce gelir (v2.261).
   'wer',
   'levels',
   'reviewSummary',
   'qc',
+  'scopeNote',
   'privacy',
+  's6',
+  's7',
   'annex'
 ];
 // EKLER AYRI KAYITTIR (v2.227): her ek tek tek açılıp kapatılabilir ve
@@ -642,9 +657,35 @@ export function emptyReportLayout(over = {}) {
   };
 }
 /**
+ * Kullanıcı sırasında EKSİK kanonik anahtarları kanonik komşularına yerleştirir.
+ * Yeni bölüm eklendiğinde eski kayıtta anahtar yoktur; sona eklemek bölümü
+ * eklerden/imzadan SONRA çıkarır (sessiz sıra bozulması). Bu yüzden her eksik
+ * anahtar, kanonik sırada kendisinden önce gelen ve listede BULUNAN ilk
+ * anahtarın hemen ardına girer; böyle bir komşu yoksa başa.
+ */
+export function insertMissingInCanonicalOrder(order, canonical) {
+  const list = (Array.isArray(order) ? order : []).filter((k) => typeof k === 'string');
+  const canon = Array.isArray(canonical) ? canonical : [];
+  for (let ci = 0; ci < canon.length; ci++) {
+    const key = canon[ci];
+    if (list.includes(key)) continue;
+    let at = 0;
+    for (let j = ci - 1; j >= 0; j--) {
+      const idx = list.indexOf(canon[j]);
+      if (idx >= 0) {
+        at = idx + 1;
+        break;
+      }
+    }
+    list.splice(at, 0, key);
+  }
+  return list;
+}
+/**
  * Eksik/bozuk düzeni güvenli hâle getirir. Gövdede bilinmeyen anahtar
- * düşürülür; eksik bölüm varsayılan sıranın sonuna eklenir. Eklerde yerleşik
- * ve özel (xN) anahtarlar korunur; geçersiz anahtar düşürülür (veri kaybı yok).
+ * düşürülür; eksik bölüm kanonik komşusunun yanına eklenir (sona değil).
+ * Eklerde yerleşik ve özel (xN) anahtarlar korunur; geçersiz anahtar
+ * düşürülür (veri kaybı yok).
  */
 export function normalizeReportLayout(src) {
   const base = emptyReportLayout();
@@ -658,18 +699,12 @@ export function normalizeReportLayout(src) {
       seen.add(k);
     }
   }
-  for (const k of REPORT_BODY_ORDER) if (!seen.has(k)) order.push(k);
-  // v2.234: `reading` artık BAĞIMSIZ gövde bölümü. Eski kayıtlarda sırada yok;
-  // sona değil, 5. bölümün (s5) hemen ardına yerleştir. Kullanıcı sonradan
-  // taşırsa (srcOrder'da varsa) konumu KORUNUR.
-  if (!srcOrder.includes('reading')) {
-    const ri = order.indexOf('reading');
-    if (ri >= 0) {
-      order.splice(ri, 1);
-      const si = order.indexOf('s5');
-      order.splice(si >= 0 ? si + 1 : order.length, 0, 'reading');
-    }
-  }
+  // v2.261: eksik anahtarlar kanonik komşusunun yanına girer. Böylece yeni
+  // bölüm (answers/limits/integrity) eski kayıtta da doğru yerde çıkar;
+  // sona eklenirse eklerden ve imzadan sonra görünürdü.
+  const filled = insertMissingInCanonicalOrder(order, REPORT_BODY_ORDER);
+  order.length = 0;
+  order.push(...filled);
 
   const srcAnnexes = src.annexes && typeof src.annexes === 'object' ? src.annexes : {};
   const srcMeta = src.annexMeta && typeof src.annexMeta === 'object' ? src.annexMeta : {};
@@ -872,16 +907,63 @@ export const REPORT_TECH_KEYS = [
   'environment',
   'other'
 ];
-// ---- 5d. Rapor profilleri (v2.223) ---------------------------------------
-// Hazır bölüm kümeleri: "en yalın" / "standart" / "tam 56.12". Profil yalnız
-// bölüm görünürlüğünü ayarlar; veriyi DEĞİŞTİRMEZ. Bilirkişi sonra tek tek
-// açıp kapatabilir.
+// ---- 5d. Rapor profilleri (v2.223 / v2.261) ------------------------------
+// Hazır bölüm kümeleri. Profil yalnız bölüm görünürlüğünü (ve `sablon` için
+// SIRAYI) ayarlar; veriyi DEĞİŞTİRMEZ. Bilirkişi sonra tek tek açıp kapatır.
+//
+// `sablon` = 56.12 ana şablonunun sırası. Diğerleri kullanıcının sırasını
+// KORUR (order: null) — mevcut dosyanın düzeni kendiliğinden değişmez.
 export const REPORT_PRESET_DEFS = [
   { key: 'minimal', label: 'Yalın (asgari)' },
   { key: 'standard', label: 'Standart' },
-  { key: 'full', label: 'Tam 56.12' }
+  { key: 'full', label: 'Tümü' },
+  { key: 'sablon', label: '56.12 Ana Şablon' }
 ];
 const REPORT_MINIMAL_KEYS = ['cover', 'coverFields', 's1', 's2', 's5', 's6', 'signature'];
+// 56.12 ana şablon sırası: görevlendirme → materyal/envanter → orijinalin
+// korunması → teknik ortam → yöntem → iyileştirme → ASR → bulgular →
+// (ölçümler) → sınırlılıklar → kalite kontrolü → cevaplar → kapsam dışı →
+// gizlilik → sonuç → ekler. Sorular 1. bölümde değil, cevaplar bölümünde
+// (soru + cevap birlikte) verildiği için ayrı soru listesi kapatılır.
+export const REPORT_SABLON_ORDER = [
+  's1',
+  's3',
+  'origin',
+  'embedded',
+  'acquisition',
+  'integrity',
+  'speakers',
+  'tech',
+  's4',
+  'enhance',
+  'asr',
+  's5',
+  'reading',
+  'wer',
+  'levels',
+  'limits',
+  'qc',
+  'reviewSummary',
+  'answers',
+  'scopeNote',
+  'privacy',
+  's6',
+  's7',
+  'annex'
+];
+/**
+ * Profil → { sections, order }. `order` null ise kullanıcının sırası korunur.
+ * `sections` her anahtarı AÇIKÇA taşır (eksik anahtar varsayılana düşmesin).
+ */
+export function reportPresetLayout(name) {
+  const key = String(name || '');
+  if (key === 'sablon') {
+    const sections = {};
+    for (const k of REPORT_SECTION_KEYS) sections[k] = k !== 's2' && k !== 's7';
+    return { sections, order: [...REPORT_SABLON_ORDER] };
+  }
+  return { sections: reportSectionsForPreset(key), order: null };
+}
 export function reportSectionsForPreset(name) {
   if (name === 'full') {
     const all = {};

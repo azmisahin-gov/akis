@@ -148,6 +148,8 @@ const EXPOSE = [
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
+  'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
+  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -4169,14 +4171,18 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const c = T.emptyCaseForTest({ id: 'cRep' });
   eq('varsayılan sıra s1 ile başlar', T.reportBodyOrder(c)[0], 's1');
   eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
-  eq('varsayılan numara s7=7', T.reportNumberMap(c).s7, 7);
+  // v2.261: cevaplar (6) ve sınırlılıklar (7) de numaralı ana bölüm; s6=8, s7=9.
+  eq('varsayılan numara s7=9', T.reportNumberMap(c).s7, 9);
+  eq('varsayılan numara answers=6', T.reportNumberMap(c).answers, 6);
+  eq('varsayılan numara limits=7', T.reportNumberMap(c).limits, 7);
+  eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
   eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
   eq('yardımcı bölüm numarasız', T.reportHeadingText(c, 'origin'), 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
 
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
   const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
   eq('s3 kapalı: s4 numarası 3', T.reportNumberMap(c2).s4, 3);
-  eq('s3 kapalı: s7 numarası 6', T.reportNumberMap(c2).s7, 6);
+  eq('s3 kapalı: s7 numarası 8', T.reportNumberMap(c2).s7, 8);
   eq(
     's3 kapalı: s4 başlığı yeniden numaralandı',
     T.reportHeadingText(c2, 's4'),
@@ -4184,7 +4190,13 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   );
 
   // Sıra değişince numara sıraya göre verilir.
-  const c3 = T.emptyCaseForTest({ id: 'cRep3', report: { layout: { order: ['s2', 's1'] } } });
+  // Tam sıra üzerinde takas: kullanıcı s1/s2 yerini değiştirir.
+  const swap = T.REPORT_BODY_ORDER.slice();
+  const i1 = swap.indexOf('s1');
+  const i2 = swap.indexOf('s2');
+  swap[i1] = 's2';
+  swap[i2] = 's1';
+  const c3 = T.emptyCaseForTest({ id: 'cRep3', report: { layout: { order: swap } } });
   eq('sıra: s2 numarası 1', T.reportNumberMap(c3).s2, 1);
   eq('sıra: s1 numarası 2', T.reportNumberMap(c3).s1, 2);
 
@@ -4303,11 +4315,15 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 {
   eq('reportSectionEditableFields tanımlı', typeof T.reportSectionEditableFields, 'function');
   eq('s4 methodText düzenlenir', T.reportSectionEditableFields('s4')[0].field, 'methodText');
-  eq('s5 limitationsText düzenlenir', T.reportSectionEditableFields('s5')[0].field, 'limitationsText');
+  // v2.261: sınırlılıklar s5'ten ayrıldı; serbest metin artık `limits` bölümünde.
+  eq('limits limitationsText düzenlenir', T.reportSectionEditableFields('limits')[0].field, 'limitationsText');
+  eq('s5 serbest metin yok (veriden üretilir)', T.reportSectionEditableFields('s5'), null);
   eq('s6 conclusionText düzenlenir', T.reportSectionEditableFields('s6')[0].field, 'conclusionText');
   eq('s1 serbest metin yok', T.reportSectionEditableFields('s1'), null);
   eq('cover hedefi case', T.reportSectionDerivedTarget('cover'), 'case');
   eq('s2 hedefi questions', T.reportSectionDerivedTarget('s2'), 'questions');
+  eq('answers hedefi questions', T.reportSectionDerivedTarget('answers'), 'questions');
+  eq('integrity hedefi audio', T.reportSectionDerivedTarget('integrity'), 'audio');
   eq('origin hedefi audio', T.reportSectionDerivedTarget('origin'), 'audio');
   eq('bilinmeyen hedef yok', T.reportSectionDerivedTarget('bilinmeyen'), '');
   eq('tech kontrol panelinde', T.reportSectionInspectorKey('tech'), 'tech');
@@ -4336,7 +4352,10 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 {
   eq('reading gövde sırasında', T.REPORT_BODY_ORDER.includes('reading'), true);
   const nl = T.normalizeReportLayout({ order: ['s1', 's2', 's3', 's4', 's5', 's6', 's7'] });
-  eq('eski kayıt: reading s5 hemen ardında', nl.order.indexOf('reading'), nl.order.indexOf('s5') + 1);
+  // v2.261: s5'ten sonra cevaplar ve sınırlılıklar gelir; okuma metni onların ardında.
+  eq('eski kayıt: cevaplar s5 ardında', nl.order.indexOf('answers'), nl.order.indexOf('s5') + 1);
+  eq('eski kayıt: okuma metni sınırlılıklar ardında', nl.order.indexOf('reading'), nl.order.indexOf('limits') + 1);
+  eq('eski kayıt: okuma metni sonuçtan önce', nl.order.indexOf('reading') < nl.order.indexOf('s6'), true);
   const custom = T.normalizeReportLayout({ order: ['reading', 's1', 's2', 's3', 's4', 's5'] });
   eq('kullanıcı reading konumunu korur', custom.order.indexOf('reading'), 0);
   const c = T.emptyCaseForTest({ id: 'cReading' });
@@ -4694,6 +4713,62 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('tablo zebra (çift satır)', /\.report-paper \.paper-table tbody tr:nth-child\(even\)/.test(css), true);
   eq('yazdırma: tablo satırı bölünmez', css.includes('.report-paper .paper-table tr { break-inside: avoid'), true);
   eq('yazdırma: başlık yalnız kalmaz', css.includes('.report-paper .paper-section h3 { break-after: avoid'), true);
+}
+
+// [105] v2.261 — Rapor parçaları ayrı ayrı alınabilir: bulgular (s5) ·
+// cevaplar (answers) · sınırlılıklar (limits) · bütünlük (integrity) ayrı
+// bölümler; 56.12 profili SIRAYI da yazar (yalnız aç/kapa değil).
+{
+  console.log('[105] Rapor parçaları ayrı + 56.12 sıra profili (v2.261)');
+  const keys = T.REPORT_SECTION_DEFS.map((d) => d.key);
+  eq('cevaplar bölümü tanımlı', keys.includes('answers'), true);
+  eq('sınırlılıklar bölümü tanımlı', keys.includes('limits'), true);
+  eq('bütünlük bölümü tanımlı', keys.includes('integrity'), true);
+  eq('cevaplar numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('answers'), true);
+  eq('sınırlılıklar numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('limits'), true);
+  eq('bütünlük numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('integrity'), true);
+  const def = T.emptyReportSections();
+  eq('cevaplar varsayılan AÇIK', def.answers, true);
+  eq('sınırlılıklar varsayılan AÇIK', def.limits, true);
+  eq('bütünlük varsayılan KAPALI', def.integrity, false);
+
+  // Göç: eski kayıtta yeni anahtarlar yok. Kanonik komşusunun yanına girmeli;
+  // sona eklenirse eklerden/imzadan SONRA çıkardı (sessiz sıra bozulması).
+  const old = [
+    's1', 's2', 's3', 'origin', 'embedded', 'acquisition', 'speakers', 's4', 'tech', 'enhance',
+    'asr', 's5', 'reading', 'scopeNote', 's6', 's7', 'wer', 'levels', 'reviewSummary', 'qc',
+    'privacy', 'annex'
+  ];
+  const mig = T.normalizeReportLayout({ order: old }).order;
+  const iS5 = mig.indexOf('s5');
+  const iAns = mig.indexOf('answers');
+  const iLim = mig.indexOf('limits');
+  const iRead = mig.indexOf('reading');
+  eq('göç: cevaplar s5 sonrası, okuma metninden önce', iAns > iS5 && iAns < iRead, true);
+  eq('göç: sınırlılıklar cevaplardan sonra', iLim > iAns, true);
+  eq('göç: bütünlük teslim/edinme sonrası', mig.indexOf('integrity') > mig.indexOf('acquisition'), true);
+  eq('göç: mevcut sıra korunur (s6 yeri)', mig.indexOf('s6') > mig.indexOf('reading'), true);
+
+  // 56.12 profili: sıra + görünürlük birlikte yazılır.
+  const p = T.reportPresetLayout('sablon');
+  eq('profil: 56.12 tanımlı', T.REPORT_PRESET_DEFS.some((x) => x.key === 'sablon'), true);
+  eq('profil: soru listesi kapalı (cevaplarda tekrar)', p.sections.s2, false);
+  eq('profil: boş "EKLER" başlığı kapalı', p.sections.s7, false);
+  eq('profil: ekler açık', p.sections.annex, true);
+  eq('profil: bütünlük açık', p.sections.integrity, true);
+  const ord = p.order;
+  const at = (k) => ord.indexOf(k);
+  eq(
+    'profil sırası: bulgular → sınırlılıklar → QC → cevaplar',
+    at('s5') < at('limits') && at('limits') < at('qc') && at('qc') < at('answers'),
+    true
+  );
+  eq('profil sırası: sonuç en sonda (eklerden önce)', at('s6') > at('answers') && at('s6') < at('annex'), true);
+  eq('profil sırası: bütünlük teslim sonrası, yöntem öncesi', at('integrity') > at('acquisition') && at('integrity') < at('s4'), true);
+  const map = T.mainSectionNumbers(ord, (k) => p.sections[k] !== false, T.REPORT_MAIN_KEYS);
+  const nums = Object.values(map).sort((a, b) => a - b);
+  eq('profil numaraları bitişik (boşluksuz)', nums.every((n, i) => n === i + 1), true);
+  eq('profil: kullanıcı sırası korunur (standart profil sıra yazmaz)', T.reportPresetLayout('standard').order, null);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
