@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.247';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.247';
+} from './schema.js?v=2.248';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.248';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.247';
+const APP_VERSION = '2.248';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1878,7 +1878,7 @@ function audioStatusZoneHtml(m) {
   const status = materialStatusLabel(m);
   const stCode = materialStatus(m);
   const stCls = stCode === 'error' || stCode === 'empty' || stCode === 'cancelled' || stCode === 'partial' ? 'bad' : stCode === 'review' ? 'good' : '';
-  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(matSize(m))} · ${fmtShort(matDuration(m))}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check" title="${esc(pendingSummaryText(segs) || 'Tüm bölümler kontrol edildi.')}">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
+  return `<div class="audio-card-top"><div class="audio-file-icon">♫</div><div class="audio-file-main"><b title="${esc(m.name)}">${esc(m.name)}</b><small>${esc(m.type || 'Ses dosyası')} · ${fmtSize(matSize(m))} · ${fmtShort(matDuration(m))}</small></div><span class="head-state ${stCls}">${esc(status)}</span><span class="head-check" title="${esc(pendingSummaryText(segs) || 'Tüm bölümler kontrol edildi.')}">${checked}/${segs.length}</span>${m.transcribedWithModel ? `<span class="head-model">${esc(modelShortName(m.transcribedWithModel))}</span>` : ''}${m.transcribedWithProfile ? `<span class="head-profile" title="Bu kayıt bu çözümleme profiliyle çözümlendi. Profil yalnız dil ipucu/bağlam istemini değiştirir; rapora yazılmaz. Yeni çözümleme, Ayarlar'daki GÜNCEL profili kullanır.">${esc(profileRunLabel(m.transcribedWithProfile))}</span>` : ''}<div class="audio-actions">${materialStatus(m) === 'transcribing' ? `<button class="mini-button danger" data-cancel="${esc(m.id)}">İptal</button>` : `<button class="mini-button primary" data-transcribe="${esc(m.id)}">${segs.length ? 'Yeniden çözümle' : 'Çözümle'}</button>`}<button class="mini-button" data-manual="${esc(m.id)}">＋ Bölüm</button><button class="mini-button" data-remove-audio="${esc(m.id)}">Kaldır</button></div></div>${m.synthetic ? '<div class="synthetic-flag">Kurgusal sentetik kayıt</div>' : ''}${isVideoMaterial(m) ? '<div class="warn-box">Video dosyası: yalnızca SES çözülür; görüntü incelenmez.</div>' : ''}${m.lastVerify && m.lastVerify.state === 'mismatch' ? `<div class="warn-box">Son SHA-256 doğrulaması FARKLI: dosya değişmiş olabilir. Ayrıntı "Kayıt bilgileri" sekmesinde.</div>` : ''}${m.lastVerify && m.lastVerify.state === 'unavailable' ? `<div class="warn-box">Son SHA-256 doğrulaması YAPILAMADI: bu tarayıcıda özet hesaplanamıyor (güvenli bağlantı gerekir). Dosya doğrulanmış sayılmaz.</div>` : ''}${typeof m.progress === 'number' ? `<div class="progress-wrap"><div class="progress-bar"><span style="width:${m.progress}%"></span></div><small>Çözümleme ilerlemesi: %${m.progress}</small></div>` : ''}${m.hallucinationWarning ? `<div class="warn-box">${esc(m.hallucinationWarning)}</div>` : ''}${m.languageWarning ? `<div class="warn-box">${esc(m.languageWarning)}</div>` : ''}`;
 }
 // Yalnızca durum bölgesini tazeler; oynatıcı, dalga formu ve deşifre korunur.
 function refreshAudioStatusZone(m) {
@@ -8110,6 +8110,28 @@ function delilFileState(file, nowHash) {
 function isAudioFileName(name) {
   return /\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(String(name || ''));
 }
+// VİDEO KONTEYNERLERİ (v2.248) — 56.12 kapsamında YALNIZCA SES çözülür; görüntü
+// incelenmez. Tarayıcının çözebildiği ses kodekleri (AAC/Opus/MP3) desteklenir
+// (mp4/mov/webm ile doğrulandı). Çözemezse transcribe açık hata verir; "yapıldı"
+// denmez.
+function isVideoFileName(name) {
+  return /\.(mp4|m4v|mov|webm|ogv)$/i.test(String(name || ''));
+}
+function isMediaFileName(name) {
+  return isAudioFileName(name) || isVideoFileName(name);
+}
+function isVideoFileObject(f) {
+  const t = String((f && f.type) || '').toLowerCase();
+  return t.startsWith('video/') || isVideoFileName(f && f.name);
+}
+function isMediaFileObject(f) {
+  const t = String((f && f.type) || '').toLowerCase();
+  return t.startsWith('audio/') || t.startsWith('video/') || isMediaFileName(f && f.name);
+}
+function isVideoMaterial(m) {
+  const t = String((m && m.type) || '').toLowerCase();
+  return t.startsWith('video/') || isVideoFileName(m && m.name);
+}
 // Aynı ses (aynı SHA-256) dosyada zaten varsa yeni kayıt AÇILMAZ; mevcut
 // kayıt korunur (düzenlemeler/onaylar kaybolmaz).
 function delilDuplicateOf(materials, hash) {
@@ -8232,7 +8254,20 @@ function acquisitionRows(c) {
 // güvenilmez (delil paketinde `audio/*` gelir); uzantı asıl kaynaktır.
 function audioFormatLabel(name, codec) {
   const ext = (String(name || '').match(/\.([a-z0-9]+)$/i) || [])[1];
-  const byExt = { wav: 'WAV', mp3: 'MP3', m4a: 'M4A', ogg: 'OGG', flac: 'FLAC', aac: 'AAC' };
+  const byExt = {
+    wav: 'WAV',
+    mp3: 'MP3',
+    m4a: 'M4A',
+    ogg: 'OGG',
+    flac: 'FLAC',
+    aac: 'AAC',
+    // Video konteynerleri: yalnız ses çözülür; etiket bunu açıkça söyler (v2.248).
+    mp4: 'MP4 (video)',
+    m4v: 'M4V (video)',
+    mov: 'MOV (video)',
+    webm: 'WEBM (video)',
+    ogv: 'OGV (video)'
+  };
   if (ext && byExt[ext.toLowerCase()]) return byExt[ext.toLowerCase()];
   const c = String(codec || '');
   if (/WAV/i.test(c)) return 'WAV';
@@ -8625,11 +8660,10 @@ async function addAudioFiles(files, opts = {}) {
   if (!c) return;
   // Geçerli ses dosyalarını önce ayıkla; teslim bilgisi kaç dosya için
   // sorulacağını bilmek gerekir.
-  const valid = files.filter(
-    (f) => f.type.startsWith('audio/') || /\.(wav|mp3|m4a|ogg|flac|aac)$/i.test(f.name)
-  );
-  for (const f of files) if (!valid.includes(f)) showToast(`${f.name}: ses dosyası değil, atlandı.`);
+  const valid = files.filter((f) => isMediaFileObject(f));
+  for (const f of files) if (!valid.includes(f)) showToast(`${f.name}: ses/video dosyası değil, atlandı.`);
   if (!valid.length) return;
+  const videoCount = valid.filter((f) => isVideoFileObject(f)).length;
   // Teslim bilgisi: yalnız kullanıcıdan gelen dosyalarda sorulur (test paketi
   // hariç). "Sonra dolduracağım" denirse boş kalır; rapor "—" yazar.
   const intake = opts.synthetic || opts.skipIntake ? null : await askIntake(valid.length);
@@ -8639,7 +8673,7 @@ async function addAudioFiles(files, opts = {}) {
     const m = {
       id,
       name: file.name,
-      type: file.type || 'audio',
+      type: file.type || (isVideoFileObject(file) ? 'video' : 'audio'),
       size: file.size,
       duration: await audioDuration(file),
       sha256: await sha256(file),
@@ -8660,6 +8694,8 @@ async function addAudioFiles(files, opts = {}) {
       'Kayıt eklendi',
       `${file.name} · ${file.size} bayt · ${m.sha256 ? 'SHA-256 hesaplandı' : 'SHA-256 HESAPLANAMADI (güvenli bağlantı gerekir)'}`
     );
+    if (isVideoFileObject(file))
+      logEvent(m, 'Video (yalnız ses)', 'Video konteynerinden YALNIZCA ses çözülecek; görüntü incelenmez.');
     if (intake) {
       logEvent(
         m,
@@ -8678,10 +8714,11 @@ async function addAudioFiles(files, opts = {}) {
   persist();
   renderOverview();
   renderAudioList();
+  const vNote = videoCount ? ` (${videoCount} video: yalnız ses çözülecek, görüntü incelenmez)` : '';
   showToast(
     intake
-      ? `${valid.length} ses dosyası teslim bilgisiyle eklendi.`
-      : `${valid.length} ses dosyası eklendi. Teslim bilgisi sonra doldurulabilir.`
+      ? `${valid.length} kayıt teslim bilgisiyle eklendi.${vNote}`
+      : `${valid.length} kayıt eklendi. Teslim bilgisi sonra doldurulabilir.${vNote}`
   );
 }
 // Delil paketi (v2.208): delil.json + ses dosyaları. Tarayıcı cihazı görmez;
@@ -8764,9 +8801,9 @@ async function importDelilPack(file) {
   const baseDir = mp.includes('/') ? mp.slice(0, mp.lastIndexOf('/') + 1) : '';
   const results = [];
   for (const f of pack.files) {
-    // Ses dışı dosyalar (bilgi.txt, video vb.) AKİS'e materyal olarak girmez;
-    // manifestte kayıtlı kalır ve "ses dışı (atlandı)" olarak gösterilir.
-    if (!isAudioFileName(f.name)) {
+    // Ses ve VİDEO konteynerleri materyal olur (v2.248: videodan yalnız ses
+    // çözülür). Diğer dosyalar (bilgi.txt vb.) manifestte kalır, "ses dışı atlandı".
+    if (!isMediaFileName(f.name)) {
       results.push({ file: f, state: 'skipped', blob: null, nowHash: null });
       continue;
     }
@@ -8786,7 +8823,9 @@ async function importDelilPack(file) {
       continue;
     }
     const raw = await zf.async('blob');
-    const mime = raw.type || (/\.wav$/i.test(f.name) ? 'audio/wav' : 'audio/*');
+    const mime =
+      raw.type ||
+      (isVideoFileName(f.name) ? 'video/*' : /\.wav$/i.test(f.name) ? 'audio/wav' : 'audio/*');
     const blob = new Blob([raw], { type: mime });
     const nowHash = await sha256(blob);
     const state = delilFileState(f, nowHash);
@@ -8951,7 +8990,7 @@ async function importDelilPack(file) {
         packagePath: f.packagePath || '',
         sizeBytes: Number(f.sizeBytes) || 0,
         sha256: f.sha256 || '',
-        role: isAudioFileName(f.name) ? 'audio' : 'other',
+        role: isVideoFileName(f.name) ? 'video' : isAudioFileName(f.name) ? 'audio' : 'other',
         state: r ? r.state : '',
         materialId: r && r.material ? r.material.id : ''
       };
@@ -16782,6 +16821,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.248': {
+    title: 'Video dosyalarından ses çözümü (yalnız ses)',
+    body:
+      'Ses dosyası eklerken artık MP4/MOV/M4V/WEBM/OGV (video) da kabul edilir. 56.12 kapsamında ' +
+      'video konteynerindeki YALNIZCA ses metne dönüştürülür; görüntü incelenmez. Kartta ve günlükte ' +
+      'bu açıkça yazar. Tarayıcının çözebildiği ses kodekleri (AAC/Opus/MP3) desteklenir; çözemezse ' +
+      'açık hata verir. Envanter biçiminde "MP4 (video)" gibi görünür.'
+  },
   '2.247': {
     title: '"Sayfaya sığdır" artık gerçekten çalışıyor',
     body:

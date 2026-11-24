@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.247.**
+yazılır. **Güncel sürüm: v2.248.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.248 — Video dosyalarından ses çözümü (yalnız ses) (TAMAMLANDI)
+
+- mp4/mov/m4v/webm/ogv kabul edilir; yalnız **ses** çözülür (görüntü incelenmez).
+- Fizibilite: Chromium mp4/mov(AAC)/webm(Opus) sesini decodeAudioData ile çözdü.
+- UI: kart uyarısı + günlük "Video (yalnız ses)" + biçim "MP4 (video)".
+- Sınır: kodek çözülemezse açık hata; raporda ayrı "yalnız ses" notu sıradaki adım.
+- Koruyan test: `birim [100]`.
 
 ## v2.247 — "Sayfaya sığdır" düğmesi çalışıyor (TAMAMLANDI)
 

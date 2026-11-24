@@ -1,4 +1,4 @@
-# Özellikler (v2.247 — mevcut durum)
+# Özellikler (v2.248 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -154,6 +154,12 @@ Ayrıntılı yapı ve kurallar: [`MIMARI.md`](MIMARI.md).
 - Canvas tabanlı dalga formu: tıklayarak konuma gitme, bölüm aralıklarının
   görsel işaretlenmesi, oynatma imleci.
 - Kayıt kaldırma.
+- **Video dosyalarından ses (v2.248):** "Ses dosyası ekle" MP4 · MOV · M4V · WEBM ·
+  OGV kabul eder. 56.12 kapsamında video konteynerindeki **yalnızca ses** metne
+  dönüştürülür; **görüntü incelenmez.** Kartta ve delil günlüğünde bu yazar;
+  envanter biçimi "MP4 (video)" gibi görünür. Tarayıcının çözebildiği ses kodekleri
+  (AAC/Opus/MP3) desteklenir; çözemezse açık hata verir. (Fizibilite gerçek
+  Chromium'da ölçüldü; `birim [100]`.)
 
 ## Konuşma çözümleme (deşifre)
 

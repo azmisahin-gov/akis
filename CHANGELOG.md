@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.247.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.248.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.248 — Video dosyalarından ses çözümü (yalnız ses)
+
+56.12 kapsamında video konteynerindeki **ses** metne dönüştürülür. **Görüntü
+incelenmez.** Fizibilite **gerçek Chromium'da ölçüldü**: mp4/mov (AAC) ve webm
+(Opus) dosyalarının sesi `decodeAudioData` ile çözüldü (süre/kanal/örnekleme
+alındı). Yetki aşılmaz: sessizce "yapıldı" denmez.
+
+### KULLANICI NE GÖRECEK
+- "Ses dosyası ekle" artık **MP4 · MOV · M4V · WEBM · OGV** da kabul eder (video).
+- Video eklenince kayıt **materyal** olur; **çözümle/deşifre** ses üzerinden
+  çalışır. **Görüntü analiz edilmez.**
+- Envanterde **DOSYA BİÇİMİ** "MP4 (video)" gibi açıkça yazar; materyal kartında
+  **"Video dosyası: yalnızca SES çözülür; görüntü incelenmez."** uyarısı ve delil
+  günlüğüne "Video (yalnız ses)" kaydı düşer.
+- Delil paketindeki video dosyaları da materyal olur (yalnız ses).
+
+### Dürüst sınır
+- **Tarayıcının çözebildiği ses kodekleri** desteklenir (AAC/Opus/MP3…). Kodek
+  çözülemezse çözümleme **açık hata** verir; "çözüldü" denmez.
+- Video konteynerinde ses yoksa deşifre edilemez.
+- **Rapor:** envanter biçimi "(video)" der; raporda ayrıca "yalnız ses" notu
+  eklemek bir sonraki adımdır (şu an UI + günlük + biçim sütunu).
+
+### Ne değişti
+- `isVideoFileName/isMediaFileName/isMediaFileObject/isVideoMaterial`; kabul
+  filtresi ve delil sınıflandırması medyayı (ses+video) kapsar; biçim etiketleri
+  video konteynerlerini gösterir. Test `birim [100]`.
 
 ## v2.247 — "Sayfaya sığdır" düğmesi gerçekten çalışıyor
 

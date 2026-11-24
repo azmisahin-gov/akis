@@ -136,7 +136,7 @@ const EXPOSE = [
   'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
-  'isAudioFileName', 'delilDuplicateOf',
+  'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial',
   'delilToolText', 'originRows', 'inventoryRows', 'audioFormatLabel', 'REPORT_TEXT',
   'acquisitionToolFileContent',
   'findDelilDiskPath', 'validateDiskDoc', 'delilFilePath', 'DELIL_DISK_SCHEMA',
@@ -4616,6 +4616,29 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   // applyReportPageView artık her çizimde zorla sığdırma AÇMAZ (düğme ölüydü).
   eq('zorla setReportFit(true) kaldırıldı', /if \(!reportFitPref\(\)\) \{\s*setReportFit\(true\)/.test(src), false);
+}
+
+// [100] v2.248 — Video konteynerleri: yalnız ses çözülür (sınıflandırma).
+{
+  console.log('[100] Video dosyası sınıflandırma (v2.248)');
+  eq('mp4 video', T.isVideoFileName('a.mp4'), true);
+  eq('m4v video', T.isVideoFileName('a.m4v'), true);
+  eq('mov video', T.isVideoFileName('a.mov'), true);
+  eq('webm video', T.isVideoFileName('a.webm'), true);
+  eq('m4a video DEĞİL (ses)', T.isVideoFileName('a.m4a'), false);
+  eq('media mp4', T.isMediaFileName('a.mp4'), true);
+  eq('media wav', T.isMediaFileName('a.wav'), true);
+  eq('media txt değil', T.isMediaFileName('a.txt'), false);
+  eq('dosya nesnesi video/mp4', T.isMediaFileObject({ type: 'video/mp4', name: 'x' }), true);
+  eq('dosya nesnesi audio/wav', T.isMediaFileObject({ type: 'audio/wav', name: 'x' }), true);
+  eq('dosya nesnesi text', T.isMediaFileObject({ type: 'text/plain', name: 'x.txt' }), false);
+  eq('video materyal', T.isVideoMaterial({ type: 'video/mp4', name: 'a' }), true);
+  eq('ses materyal video değil', T.isVideoMaterial({ type: 'audio/wav', name: 'a.wav' }), false);
+  eq('biçim MP4 (video)', T.audioFormatLabel('a.mp4', ''), 'MP4 (video)');
+  eq('biçim MOV (video)', T.audioFormatLabel('a.mov', ''), 'MOV (video)');
+  eq('biçim WEBM (video)', T.audioFormatLabel('a.webm', ''), 'WEBM (video)');
+  eq('biçim WAV', T.audioFormatLabel('a.wav', ''), 'WAV');
+  eq('biçim M4A (ses)', T.audioFormatLabel('a.m4a', ''), 'M4A');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

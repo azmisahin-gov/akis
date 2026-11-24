@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.247.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.248.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5614,3 +5614,31 @@ etiket gizliydi.
 1. **Video (56.12)** ölçümü (kullanıcı istedi).
 2. Etkin çalışma süresi (opsiyonel).
 3. Sürekli modda istenirse **zoom/ölçek** (%/sığdır) ayrı kontrol.
+
+## YENİ OTURUM DEVRİ (v2.248) — Video: yalnız ses (56.12 kapsamı)
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.248** |
+| Testler | `bash tools/test.sh` → **1530 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [100]` |
+| Fizibilite | **Gerçek Chromium**: mp4/mov(AAC)/webm(Opus) sesi `decodeAudioData` ile çözüldü (15 sn, 1 kanal, 44100). |
+
+### Ne yapıldı
+- `isVideoFileName/isMediaFileName/isMediaFileObject/isVideoMaterial`. Kabul filtresi ve delil
+  sınıflandırması **ses+video** medyayı kapsar; biçim etiketleri "MP4 (video)" vb.
+- Video materyal: kartta **"Video: yalnızca SES çözülür; görüntü incelenmez"** uyarısı + delil
+  günlüğü "Video (yalnız ses)". Deşifre **ses** üzerinden çalışır (mevcut decodeAudioData hattı).
+
+### DEĞİŞMEZ SINIRLAR (yetki/payload)
+1. **YALNIZ SES.** Video görüntüsü/çerçevesi analiz EDİLMEZ; "video analizi" iddiası yok.
+2. **Tarayıcının çözebildiği kodek** (AAC/Opus/MP3). Çözemezse açık hata; "çözüldü" denmez.
+3. Kapsam: 56.12 = sesin metne dönüştürülmesi; video yalnız bir **konteyner**dir.
+4. **SIRADAKİ:** rapora ayrıca "video kaydından yalnız ses çözülmüştür" notu (şu an UI+günlük+biçim
+   sütunu söylüyor). Eklerken üç çıktı (HTML/DOCX/UDF) aynı metni üretmeli + `rapor` testi.
+
+### Fizibilite tarifi (tekrar)
+`ffmpeg` (imageio-ffmpeg) ile WAV→`out.mp4/.mov/.webm`; CDP `Runtime.evaluate` (awaitPromise) ile
+`fetch→decodeAudioData` ve `<audio>.duration` ölç. Bu ortamda üçü de çözüldü.
