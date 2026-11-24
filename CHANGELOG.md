@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.253.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.254.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.254 — Üç çıktı aynı yazı tipi (varsayılan Times New Roman)
+
+Kullanıcı: "UDF farklı, DOCX farklı, PDF farklı çıkıyor." Üç dosya incelendi:
+**içerik aynı** (aynı bölüm kümesi), ama **yazı tipi farklıydı**: UDF **Times New
+Roman**, DOCX/PDF **Arial**. Kenar boşlukları zaten 20 mm'de eşitti.
+
+### KULLANICI NE GÖRECEK
+- **Yazı tipi ayarı artık ÜÇ çıktıya da uygulanır** (UDF/DOCX/PDF/ekran).
+- **Varsayılan: Times New Roman** (resmî UYAP standardı) → UDF/DOCX/PDF aynı
+  tipografiyle gelir. İsterseniz Arial/Segoe seçin; üçü de değişir.
+- Ekran önizlemesi de varsayılan serif (Times) olduğundan UDF ile aynı görünür.
+
+### Ne değişti
+- `emptyReportFormat().fontFamily` varsayılanı `'times'`.
+- `makeUdf` yazı tipini `REPORT_FONT_DOCX[fmt.fontFamily]` ile yazar (sabit Times
+  değil). Böylece Arial seçilirse UDF de Arial üretir.
+
+### Dürüst sınır
+- Üç motor (UYAP/Word/tarayıcı) **pixel-pixel aynı** olamaz; hedef **aynı içerik +
+  aynı yazı tipi + aynı 20 mm marj + aynı başlık hiyerarşisi**. Üst/alt bilgi ve
+  sayfa numarası motora göre değişir (DOCX `PAGE`; HTML/UDF editöre bağlı).
+
+### Koruyan test
+- `birim [93]` (varsayılan Times) + `rapor` Senaryo 26 (Arial seçilince UDF Arial).
 
 ## v2.253 — Rapor kâğıdı biçimi (kurumsal görünüm)
 

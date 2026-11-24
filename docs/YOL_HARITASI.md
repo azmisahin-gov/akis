@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.253.**
+yazılır. **Güncel sürüm: v2.254.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.254 — Üç çıktı aynı yazı tipi (TAMAMLANDI)
+
+- Fark: UDF Times, DOCX/PDF Arial idi. Artık `fontFamily` **üç çıktıya da** uygulanır;
+  varsayılan **Times New Roman** (resmî). Arial seçilirse UDF de Arial.
+- Marjl 20 mm eşit; pixel-pixel aynılık motorlara bağlı (dürüst sınır).
+- Koruyan: `birim [93]`, `rapor` 26.
 
 ## v2.253 — Rapor kâğıdı biçimi (TAMAMLANDI)
 

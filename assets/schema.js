@@ -795,9 +795,9 @@ export function normalizeReportColumns(src) {
 
 // ---- 5b-2. Rapor biçimi: sayfa · font · punto (v2.238) -------------------
 // TEK KAYNAK. Ekran önizlemesi, yazdırma/PDF (@page), DOCX ve UDF bu değerleri
-// okur. UYAP UDF (birincil resmî çıktı) yazı tipi olarak her zaman Times New
-// Roman kullanır (resmî standart); `fontFamily` ekran ve Word içindir. Yön ve
-// kenar boşluğu UDF'e de uygulanır (paperOrientation: "1" dikey, "0" yatay —
+// okur. `fontFamily` ÜÇ çıktıya da uygulanır (v2.254): varsayılan **Times New
+// Roman** (resmî UYAP standardı) → UDF/DOCX/PDF aynı tipografiyle gelir. Yön ve
+// kenar boşluğu da UDF'e uygulanır (paperOrientation: "1" dikey, "0" yatay —
 // yatay.udf ile doğrulandı, v2.245).
 export const REPORT_FONT_DEFS = [
   { key: 'arial', label: 'Arial (sans-serif)', css: "Arial, 'Helvetica Neue', Helvetica, sans-serif", docx: 'Arial' },
@@ -823,7 +823,7 @@ export const REPORT_FONT_SIZE_DEFAULT = 11; // DOCX/UDF gövde tabanı 11 pt
 /** Varsayılan rapor biçimi — 20 mm simetrik kenar boşluğu, 11 pt, dikey A4. */
 export function emptyReportFormat(over = {}) {
   const base = {
-    fontFamily: 'arial',
+    fontFamily: 'times',
     fontSizePt: REPORT_FONT_SIZE_DEFAULT,
     marginsMm: { top: 20, right: 20, bottom: 20, left: 20 },
     orientation: 'portrait'

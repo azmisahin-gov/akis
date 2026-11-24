@@ -4428,7 +4428,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   console.log('[93] Rapor biçimi şeması (v2.238)');
   const d = T.emptyReportFormat();
   eq('varsayılan punto 11', d.fontSizePt, 11);
-  eq('varsayılan font arial', d.fontFamily, 'arial');
+  eq('varsayılan font times (resmî)', d.fontFamily, 'times');
   eq('varsayılan marj 20 mm', d.marginsMm, { top: 20, right: 20, bottom: 20, left: 20 });
   eq('varsayılan dikey', d.orientation, 'portrait');
   const n = T.normalizeReportFormat({ fontFamily: 'times', fontSizePt: 13, orientation: 'landscape', marginsMm: { top: 30, right: 25, bottom: 30, left: 25 } });
@@ -4437,7 +4437,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('yön landscape', n.orientation, 'landscape');
   eq('marj sağ 25', n.marginsMm.right, 25);
   const bad = T.normalizeReportFormat({ fontFamily: 'x', fontSizePt: 99, orientation: 'y', marginsMm: { top: 1, right: 999, bottom: 'a', left: 25 } });
-  eq('geçersiz font → arial', bad.fontFamily, 'arial');
+  eq('geçersiz font → times (varsayılan)', bad.fontFamily, 'times');
   eq('punto üst sınır 14', bad.fontSizePt, 14);
   eq('yön geçersiz → portrait', bad.orientation, 'portrait');
   eq('marj alt sınır 10', bad.marginsMm.top, 10);
@@ -4452,7 +4452,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Yazdırma/PDF sayfa ayarı @page ile üretilmeli (önceden HİÇ yoktu).
   const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('yazdırma @page kuralı üretilir', /@page \{ size: A4/.test(src), true);
-  eq('renk çıktısı UDF ORTAM fontu', /family="Times New Roman"/.test(src), true);
+  // UDF font ailesi artık ayardan gelir (varsayılan Times); kaynakta `${udfFamily}`.
+  eq('UDF font ailesi ayardan gelir', /family="\$\{udfFamily\}"/.test(src), true);
+  eq('UDF font varsayılanı Times', /udfFamily = REPORT_FONT_DOCX\[fmt\.fontFamily\] \|\| 'Times New Roman'/.test(src), true);
 }
 
 // [94] v2.239 — Hızlı etiket imleç konumuna eklenir (sona değil).

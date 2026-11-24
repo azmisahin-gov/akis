@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.253.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.254.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5773,3 +5773,23 @@ etiket gizliydi.
 
 ### SIRADAKİ
 - İstenirse DOCX başlık/alt bilgi ve UDF kapak görselini ayrıca iyileştirme; sayfa no denemesi.
+
+## YENİ OTURUM DEVRİ (v2.254) — Üç çıktı tek yazı tipi
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.254** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Bulgu | UDF Times, DOCX/PDF Arial idi (içerik aynı, font farklı). Marjl 20 mm eşitti. |
+
+### Ne yapıldı
+- `emptyReportFormat().fontFamily` varsayılanı **'times'** (resmî).
+- `makeUdf` font ailesini `REPORT_FONT_DOCX[fmt.fontFamily]` ile yazar → Arial seçilirse UDF de
+  Arial; varsayılan Times. Böylece UDF/DOCX/PDF/ekran aynı tipografi.
+
+### DEĞİŞMEZ
+- Üç motor (UYAP/Word/tarayıcı) **pixel-pixel aynı olamaz**; hedef aynı içerik + font + marj +
+  başlık hiyerarşisi. Üst/alt bilgi ve sayfa numarası motora bağlı (DOCX PAGE; HTML/UDF editör).
+- `fontFamily` artık ÜÇ çıktıya da uygulanır (önceki "UDF font sabit" notu geçersiz).

@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.253';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.253';
+} from './schema.js?v=2.254';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.254';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.253';
+const APP_VERSION = '2.254';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11971,10 +11971,10 @@ function renderReportReadiness(c) {
     `<p class="ready-concepts"><b>Dahil</b> = rapora girer (iskelet) · <b>Kontrol</b> = bölüm dinlenip onaylandı (ses görünümü).</p>` +
     readinessRowsHtml(r);
 }
-// ---- Rapor biçimi (v2.238) ----------------------------------------------
+// ---- Rapor biçimi (v2.238, üç çıktıya uygulanır v2.254) -------------------
 // TEK KAYNAK: case.report.format. Ekran önizlemesi + yazdırma/PDF (@page) +
-// DOCX + UDF buradan beslenir. UYAP UDF yazı tipi resmî olarak Times New Roman
-// ve dikey A4 kalır; `fontFamily` ekran/Word içindir.
+// DOCX + UDF buradan beslenir. `fontFamily` ÜÇ çıktıya da uygulanır; varsayılan
+// Times New Roman (resmî). Yön/marj da UDF'e uygulanır.
 const MM_TO_PX = 96 / 25.4;
 function reportFormat(c) {
   return normalizeReportFormat(c && c.report && c.report.format);
@@ -12035,9 +12035,9 @@ function renderReportFormat(c) {
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="1" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
-    `UYAP UDF yazı tipi resmî olarak Times New Roman&#39;dır; yön (dikey/yatay) ve kenar boşluğu buradan uygulanır.</p>` +
+    `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır.</p>` +
     `<div class="report-tech">` +
-    `<label class="field rtech-field"><span>Yazı tipi (ekran/Word)</span><select data-fmt-font>${fontOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
     `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
     `</div>` +
@@ -12814,10 +12814,13 @@ function udfSignedColor(hex) {
 }
 async function makeUdf() {
   const c = currentCase();
-  // Rapor biçimi (v2.238): UDF resmî olarak Times New Roman + dikey A4 kalır;
-  // gövde puntosu ve kenar boşlukları rapor biçiminden gelir.
+  // Rapor biçimi: font + gövde puntosu + kenar boşluğu + yön UDF'e uygulanır.
+  // Varsayılan font Times New Roman (resmî); kullanıcı değiştirirse UDF de izler.
   const fmt = reportFormat(c);
   const udfScale = fmt.fontSizePt / 11;
+  // Yazı tipi ÜÇ çıktıya da uygulanır (v2.254). Varsayılan Times New Roman (resmî);
+  // kullanıcı değiştirirse UDF de aynı aileyi kullanır → UDF/DOCX/PDF tutarlı.
+  const udfFamily = REPORT_FONT_DOCX[fmt.fontFamily] || 'Times New Roman';
   if (!window.JSZip) throw new Error('UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
   const templateResponse = await fetch('templates/BOS.udf');
   if (!templateResponse.ok)
@@ -12863,7 +12866,7 @@ async function makeUdf() {
       start = codePointOffset;
     textParts.push(text, '\n');
     codePointOffset += length + 1;
-    return `<content startOffset="${start}" length="${length}" family="Times New Roman" size="11" bold="false" italic="false" underline="false" foreground="${colors.body}" background="-1" />`;
+    return `<content startOffset="${start}" length="${length}" family="${udfFamily}" size="11" bold="false" italic="false" underline="false" foreground="${colors.body}" background="-1" />`;
   }
   function paragraph(
     text,
@@ -12888,7 +12891,7 @@ async function makeUdf() {
       .join('');
   }
   function pageBreak() {
-    return `<page-break><paragraph><content startOffset="${codePointOffset}" length="0" family="Times New Roman" size="11" underline="false" /></paragraph></page-break>`;
+    return `<page-break><paragraph><content startOffset="${codePointOffset}" length="0" family="${udfFamily}" size="11" underline="false" /></paragraph></page-break>`;
   }
   function table(rows, widths, { header = true, shadeFirstCol = false } = {}) {
     if (!rows?.length) return '';
@@ -16846,6 +16849,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.254': {
+    title: 'UDF/DOCX/PDF artık aynı yazı tipinde (varsayılan Times New Roman)',
+    body:
+      'Üç çıktıdaki en görünür fark yazı tipiydi (UDF Times, DOCX/PDF Arial). Artık rapor ' +
+      'biçimindeki yazı tipi ÜÇ çıktıya da uygulanır ve varsayılan Times New Roman\'dır (resmî). ' +
+      'İsterseniz Arial/Segoe seçin; üçü de değişir. Kenar boşlukları zaten 20 mm. ' +
+      'Motorlar farklı olduğu için pixel-pixel aynılık beklenmez; hedef aynı içerik + aynı font + ' +
+      'aynı marj + aynı başlık hiyerarşisidir.'
+  },
   '2.253': {
     title: 'Rapor kâğıdı daha resmî görünüyor',
     body:
