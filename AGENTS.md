@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.227.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.228.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,31 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.228) — Rapor çalışma modları + önem gruplu kontrol
+
+Rapor ekranı **belge merkezli** hâle getirildi: **Düzenle** (belge + iskelet,
+kontrol paneli kapalı) ve **Kontrol** (panel açık) modları. Kontrol maddeleri
+tek düz liste değil; **engelleyen / uzman kontrolü / iyileştirme** grupları.
+
+### DEĞİŞMEZ KURALLAR (v2.228)
+
+1. **Mod bir UI tercihidir**, dosyaya yazılmaz (`localStorage('akis.reportMode')`).
+   Varsayılan **Düzenle**; sağ panel kendiliğinden açılmaz.
+2. **Önem derecesi TEK KAYNAK:** `READINESS_SEVERITY` haritası. Yeni bir kontrol
+   maddesi eklerken buraya da yazın; bilinmeyen anahtar `expert` sayılır.
+3. **Gruplu gösterim `readinessRowsHtml`** içinde; ayrı liste kopyası yazmayın.
+4. **Geniş sarı uyarı belgede değil** sağ panelde (`#reportWarning`).
+   Düzenle modunda `#reportCheckChip` yalnız engelleyen sayısını gösterir.
+5. **Yazdırma/tam ekran** yalnız kâğıt (değişmedi); ≤900 px tek sütun korunur.
+6. "Çıktı" ayrı mod DEĞİL: UDF/DOCX/yazdır her an erişilebilir eylemdir.
+   Mod yapmak ekranı boşaltır; bu bilinçli karardır.
+
+### Ölçüm (gerçek Chromium)
+
+1440/1100/900/760: Düzenle modunda sağ panel gizli, belge genişler; kırpma 0,
+yatay taşma 0, JS hatası 0. Kontrol modunda gruplar görünür; çip engelleyen
+sayısını doğru verir. Testler: `birim [60]`, `tasarim [2by]`, `surum`.
 
 ## YENİ OTURUM DEVRİ (v2.227) — Rapor çalışma alanı (DAL: rapor-workspace-birlesik)
 

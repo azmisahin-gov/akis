@@ -1,4 +1,4 @@
-# Özellikler (v2.227 — mevcut durum)
+# Özellikler (v2.228 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -748,7 +748,11 @@ Araç **Ses → Edinme aracını indir** ile tek zip olarak iner
 
 ## Rapor ekranı: iskelet · A4 · kontrol/revizyon (v2.227)
 
-Rapor ekranı üç bölgeye ayrıldı; rapor ilk ekranda görünür.
+Rapor ekranı üç bölgeye ayrıldı; rapor ilk ekranda görünür. **İki çalışma
+modu** vardır (v2.228): **Düzenle** (belge + iskelet; kontrol paneli kapalı) ve
+**Kontrol** (panel açık). Kontrol maddeleri **önem sırasına göre** gruplanır:
+engelleyen · uzman kontrolü · iyileştirme. Geniş sarı uyarı belgeden kaldırıldı;
+uyarılar Kontrol panelindedir.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller

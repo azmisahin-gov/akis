@@ -6,12 +6,51 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.227.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.228.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.228 — Rapor çalışma alanı: Düzenle / Kontrol modları ve önem gruplu kontrol
+
+Rapor ekranı artık **iki çalışma modu** ve **önem sırasına göre gruplanmış**
+kontrol maddeleri sunar.
+
+### KULLANICI NE GÖRECEK
+
+- **İki mod:** **Düzenle** (belge + bölüm iskeleti; kontrol paneli **kapalı**) ve
+  **Kontrol** (kontrol paneli açık). Rapor açılınca belge odakta kalır; sağdaki
+  kontrol paneli kendiliğinden açılmaz.
+- **Kontrol maddeleri önem sırasına göre gruplanır:** **Engelleyen eksikler** ·
+  **Uzman kontrolü gerekli** · **İyileştirme önerileri**. Böylece "dosya numarası
+  boş" (engelleyici) ile "konuşmacı atanmamış" (uzman kontrolü) aynı ağırlıkta
+  görünmez.
+- **Geniş sarı uyarı belgenin üstünden kalktı.** Uyarılar Kontrol panelinde.
+  Düzenle modunda küçük **"⚠ N engelleyen eksik"** çipi tek tıkla Kontrol'e
+  götürür.
+- **Mod tercihi hatırlanır** (dosyaya yazılmaz; yalnız bu tarayıcıda).
+
+### Teknik
+
+- `#reportModes` (Düzenle/Kontrol) + `#reportCheckChip`; `#reportWorkspace`
+  `data-mode` ile düzenlenir. `setReportMode`/`applyReportMode`;
+  tercih `localStorage('akis.reportMode')`.
+- `READINESS_SEVERITY` **tek kaynak**; `reportReadiness` her maddeye `severity`
+  yazar; `readinessSummary` sayar; `readinessRowsHtml` üç gruba böler.
+  Bilinmeyen madde `expert` sayılır (ileri uyum).
+- `#reportWarning` sahne üstünden **sağ panele** taşındı; belge alanı temiz.
+- Düzenle modunda sağ panel gizlenir; ≤900 px'te tek sütun korunur; yazdırma/
+  tam ekranda yalnız kâğıt (değişmedi).
+
+### Koruyan testler
+
+- `birim [60]`: her maddenin `severity` taşıması, `readinessSummary` sayımı,
+  `readinessRowsHtml` grup başlıkları.
+- `tasarim [2by]`: mod düğmeleri HTML'de, `data-mode="edit"` paneli gizler,
+  gruplu kontrol stilleri token kullanır, ham hex yok.
+- `surum`: `reportModes` / `reportCheckChip` kimlikleri; sürüm v2.228.
 
 ## v2.227 — Rapor ekranı ve şablon yeniden tasarımı
 

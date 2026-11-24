@@ -3319,6 +3319,54 @@ input::placeholder, textarea::placeholder {
 .rannex-field textarea { font-size: var(--fs-2xs); }
 .rannex-hint { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 0 0 6px; }
 .rsec-del { color: var(--red); }
+/* v2.228 — Rapor çalışma modu: Düzenle / Kontrol */
+#view-report .report-toolbar { flex-wrap: wrap; gap: 8px; }
+.report-modes {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+  flex: 0 0 auto;
+}
+.report-mode-btn {
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.report-mode-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.report-mode-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.report-check-chip {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+  padding: 5px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.report-check-chip.is-blocking { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+/* Düzenle modu: kontrol paneli kapalı; iki sütun (iskelet + belge). */
+#reportWorkspace[data-mode="edit"] { grid-template-columns: 232px minmax(0, 1fr); }
+#reportWorkspace[data-mode="edit"] .report-side { display: none; }
+/* Kontrol maddeleri önem grupları (v2.228) */
+.ready-group { margin: 0 0 10px; }
+.ready-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: var(--fs-2xs);
+  color: var(--ink);
+}
+.ready-group-head span { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ready-group-hint { margin: 2px 0 4px; font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.4; }
+.ready-blocking .ready-group-head b,
+.ready-blocking .ready-n { color: var(--gold); }
 
 /* Orta genişlik: kontrol/revizyon sütunu alta iner; önizleme geniş kalır. */
 @media (max-width: 1349px) {
@@ -3328,6 +3376,8 @@ input::placeholder, textarea::placeholder {
 /* Dar ekran: tek sütun; önizleme en üstte (rapor önce görünür). */
 @media (max-width: 900px) {
   .report-workspace { grid-template-columns: minmax(0, 1fr); }
+  /* Düzenle modunda da dar ekranda tek sütun (ID kuralını ez). */
+  #reportWorkspace[data-mode="edit"] { grid-template-columns: minmax(0, 1fr); }
   .report-stage { order: -1; }
   .report-skeleton, .report-side { position: static; max-height: none; }
 }

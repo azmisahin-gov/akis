@@ -1844,5 +1844,23 @@ console.log('\n[2bt] Kalite kontrolü / denetlenebilirlik (v2.226)');
   check('girdi işleyicisi', /reportQcFields'\)\?\.addEventListener\('input'/.test(js));
 }
 
+console.log('\n[2by] Rapor çalışma modları + önem gruplu kontrol (v2.228)');
+{
+  const html = read('index.html');
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('mod düğmeleri HTML\'de', /id="reportModes"/.test(html) && /data-report-mode="edit"/.test(html) && /data-report-mode="check"/.test(html));
+  check('kontrol özet çipi HTML\'de', /id="reportCheckChip"/.test(html));
+  check('mod fonksiyonları', /function setReportMode\(/.test(js) && /function applyReportMode\(/.test(js) && /function reportModePref\(/.test(js));
+  check('önem haritası tek kaynak', /const READINESS_SEVERITY = \{/.test(js) && /function readinessSeverity\(/.test(js) && /function readinessSummary\(/.test(js));
+  check('readiness maddesi severity taşır', /severity: readinessSeverity\(key\)/.test(js));
+  check('gruplu gösterim', /ready-group ready-\$\{sev\}|ready-group/.test(js) && /Engelleyen eksikler/.test(js) && /Uzman kontrolü gerekli/.test(js));
+  check('geniş uyarı sağ panele taşındı', html.indexOf('id="reportSide"') < html.indexOf('id="reportWarning"'));
+  check('Düzenle modu sağ paneli gizler', /#reportWorkspace\[data-mode="edit"\]\s*\{[^}]*grid-template-columns/.test(layer) && /#reportWorkspace\[data-mode="edit"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer));
+  const modeCss = layer.slice(layer.indexOf('/* v2.228 — Rapor çalışma modu'), layer.indexOf('/* Orta genişlik'));
+  check('mod stilleri ham hex kullanmaz', modeCss.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(modeCss));
+  check('mod punto tabanı ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(modeCss));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
