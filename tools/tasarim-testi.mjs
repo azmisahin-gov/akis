@@ -2114,5 +2114,18 @@ console.log('\n[2cn] Analiz sekmesi düzeni: ölçüm çipleri + beyan taşınd�
   check('çipler sarar (kırpma yok)', /\.ms-chips\s*\{[^}]*flex-wrap:\s*wrap/.test(layer));
 }
 
+
+console.log('\n[2co] WER referans paneli (v2.270)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('WER bölümü katlanır', /class="pane-section wer-ref"/.test(js) && /<summary>WER/.test(js));
+  check('referans girişi', /data-wer-ref=/.test(js));
+  check('durum satırı', /class="ms-note wer-state"/.test(js));
+  check('referans metni kayda yazılır', /mm\.expectedText = String\(el\.value/.test(js));
+  check('giriş alanı token kullanır', /\.wer-ref-input\s*\{[^}]*border:\s*1px solid var\(--line\)/.test(layer));
+  check('giriş alanı punto token', /\.wer-ref-input\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

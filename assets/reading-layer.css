@@ -3810,3 +3810,23 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .ms-chip.manual { background: var(--surface-3); }
 .ms-note { color: var(--ink-3); font-size: var(--fs-2xs); }
 .measure-block .evidence-actions { align-items: center; gap: 8px; flex-wrap: wrap; }
+/* v2.270 — WER referans paneli (referans varsa ölçülür; yoksa neden yazılır). */
+.wer-ref summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.wer-ref-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
+  resize: vertical;
+}
+.wer-state { font-weight: 600; }

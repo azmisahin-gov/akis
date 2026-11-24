@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.269.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.270.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.270 — WER referans alanı (neden ölçülemediği artık yazılı)
+
+Kullanıcı: *"WER ölçümlerini rapora koymuşuz ama çıkmıyor; nerede yapıyoruz?"*
+
+**Kök neden:** `measureWerForCase` referans metni (`m.expectedText`) ve modelin ham
+çıktısını (`s.asrText`) ister. **Referans girilecek alan arayüzde YOKTU**; bu yüzden
+gerçek dosyalarda tablo hiç oluşmuyordu (satır yoksa bölüm çizilmez — bu doğru davranış,
+ama nedeni görünmüyordu).
+
+### KULLANICI NE GÖRECEK
+
+- Dinleme sekmesinde **“WER — çözümleme doğruluğu (referans varsa)”** katlanır paneli:
+  **referans metni** alanı + **durum satırı**.
+- Durum üç hâlli, her biri **açık metinle**:
+  1. `Referans metin yok — WER ölçülemez; raporda bu tablo çıkmaz.`
+  2. `Model çıktısı yok — önce kaydı çözümleyin (WER modelin HAM çıktısını ölçer).`
+  3. `Ölçüldü: %50,0 · referans 2 kelime · çıktı 1 kelime`
+- **Ölçümler** bloğuna **WER (referans)** çipi: `yapılmadı · referans yok` / `%50,0`.
+- Referans yazıp odaktan çıkınca kaydedilir; rapor **kendiliğinden** güncellenir.
+
+### Teknik
+
+- `werStatus(m)` — saf: `{ready, reason, refWords, asrWords, result}`. Referans olarak
+  `expectedText` yoksa `referenceSegments` metinleri birleştirilir (test kayıtları).
+  Hipotez **yalnız** `asrText`ten gelir (bilirkişi düzeltmesi ölçülmez — v2.90 kuralı).
+- `werStatusText(st)` — TEK KAYNAK metin.
+- `expectedText` zaten şemada vardı ve `mergeCases` alan alan birleştiriyordu (v3 uyumlu).
+- Girişte `input` yalnız **durum metnini** tazeler (uzun metinde her tuşta yazma yok);
+  kayıt `change` (odak kaybı) anında yapılır.
+
+### Koruyan testler
+
+- `birim` **[117]** (14): üç durum, `referenceSegments` yedeği, WER oranı (%33 / %0 / %67),
+  **hipotezin asrText'ten geldiği**, kaynak kancaları.
+- `birim` **[116]** güncellendi: durum satırı 5 (WER çipi), `wer.manual=true`.
+- `tasarim` **[2co]** (6): katlanır panel, referans girişi, durum satırı, token stil.
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Adım | Sonuç |
+|---|---|
+| Referans yok | `Referans metin yok — WER ölçülemez…`; çip `yapılmadı · referans yok` |
+| Referans yazıldı, model çıktısı yok | `Model çıktısı yok — önce kaydı çözümleyin…` |
+| Referans + `asrText` | `Ölçüldü: %50,0 · referans 2 kelime · çıktı 1 kelime`; çip `%50,0` |
+| Rapor | WER bölümü **var**, `%50,0` yazılı |
+| Kırpılma / JS hatası | **0 / 0** |
 
 ## v2.269 — Analiz sekmesi düzeni + sessiz "spektrogram incelendi" düzeltmesi
 

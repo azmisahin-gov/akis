@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.269.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.270.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6305,3 +6305,45 @@ atamaların doğru olduğu anlamına gelmez. Gerçek ayrıştırma için konuşm
 | Bölüm açma | spektrogram çipi **yapılmadı** kalır |
 | Spektrogramı göster | çip `19:42 · uzman beyanı` |
 | Kırpılma / taşma / JS hatası | 0 / yok / 0 |
+
+## YENİ OTURUM DEVRİ (v2.270) — WER referans alanı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.270** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1758 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Gömme modeli (v2.271), yeni gözlem bayrakları (v2.272) |
+
+### Kök neden (kullanıcı: "WER rapora koymuşuz ama çıkmıyor")
+
+`measureWerForCase` **referans metni** (`m.expectedText`) + modelin **ham çıktısını**
+(`s.asrText`) ister. **Referans girilecek alan arayüzde yoktu** → gerçek dosyalarda tablo
+hiç oluşmuyordu. Satır yoksa bölüm çizilmez (doğru), ama **nedeni görünmüyordu**.
+
+### Yapılan
+
+- Dinleme sekmesinde katlanır **“WER — çözümleme doğruluğu (referans varsa)”** paneli:
+  referans textarea (`data-wer-ref`), **durum satırı**, açıklama.
+- `werStatus(m)` (saf) + `werStatusText(st)` (tek kaynak metin). Üç durum:
+  `no-reference` · `no-asr` · hazır (oran + kelime sayıları).
+- Ölçümler bloğuna **WER (referans)** çipi (`manual:true`; düğmeyle ölçülmez).
+- `input` yalnız durum metnini tazeler; kayıt `change`te (uzun metinde her tuşta yazma yok).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Hipotez yalnız `asrText`** (modelin ham çıktısı). Bilirkişi metni WER'e GİRMEZ (v2.90).
+2. **Referans yoksa tablo çizilmez** ve **nedeni yazılır** (sessiz boşluk yok).
+3. `expectedText` şemada ve birleştirmede mevcut (v3); yeni alan eklemeye gerek yok.
+4. Her yeni "ölçüm" eklerken: `measurementStatus` satırı + çip + (varsa) panel + test.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Adım | Sonuç |
+|---|---|
+| Referans yok | `Referans metin yok — WER ölçülemez…`; çip `yapılmadı · referans yok` |
+| Referans var, model çıktısı yok | `Model çıktısı yok — önce kaydı çözümleyin…` |
+| Referans + asrText | `Ölçüldü: %50,0 · referans 2 kelime · çıktı 1 kelime` |
+| Rapor | WER bölümü var, `%50,0` |
+| Kırpılma / JS hatası | 0 / 0 |

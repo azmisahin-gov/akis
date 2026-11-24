@@ -1,4 +1,4 @@
-# Özellikler (v2.269 — mevcut durum)
+# Özellikler (v2.270 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -578,6 +578,10 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **WER referans alanı (v2.270):** Dinleme sekmesinde **“WER — çözümleme doğruluğu (referans varsa)”**
+  paneli; **referans metin** yazılınca WER kendiliğinden hesaplanır (hipotez = modelin **HAM çıktısı**
+  `asrText`). Referans yok / model çıktısı yok ise tablo çizilmez ve **nedeni yazılır**; ölçümler
+  bloğunda **WER (referans)** çipi vardır.
 - **Analiz sekmesi düzeni (v2.269):** **Ölçümler** bloğunda durum çipleri (yapıldı · saat / yapılmadı) ve
   **“Tüm ölçümleri yap”** (seviye → perde → tutarlılık; sıralı, çift çalışmaz). Spektrogram **beyandır**,
   toplu ölçüme katılmaz ve **bölüm açmakla işaretlenmez** (yalnız “Spektrogramı göster”). Köken/teslim

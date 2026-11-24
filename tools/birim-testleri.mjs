@@ -152,6 +152,7 @@ const EXPOSE = [
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
+  'werStatus', 'werStatusText', 'werPanelHtml',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -5155,10 +5156,11 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   console.log('[116] Ölçüm durumu ve toplu ölçüm (v2.269)');
   const base = { id: 'm1', name: 'a.wav', speakers: [], segments: [] };
   const empty = T.measurementStatus(base);
-  eq('dört durum satırı', empty.length, 4);
-  eq('anahtarlar', empty.map((x) => x.key).join(','), 'levels,pitch,voice,spec');
+  eq('beş durum satırı (WER dâhil)', empty.length, 5);
+  eq('anahtarlar', empty.map((x) => x.key).join(','), 'levels,pitch,voice,wer,spec');
   eq('hiçbiri yapılmadı', empty.every((x) => !x.done), true);
   eq('spektrogram MANUEL', empty.find((x) => x.key === 'spec').manual, true);
+  eq('WER düğmeyle ölçülmez (referans varsa kendiliğinden)', empty.find((x) => x.key === 'wer').manual, true);
   eq('seviye manuel değil', empty.find((x) => x.key === 'levels').manual, false);
   eq('toplu ölçüm adımları', T.MEASURE_ALL_STEPS.join(','), 'levels,pitch,voice');
   eq('yapılmadı metni', T.measurementStatusText(empty[0]), 'yapılmadı');
@@ -5202,6 +5204,56 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('açık düğme işaretler', /Spektrogram incelendiği rapora yansıtılır/.test(js), true);
   eq('beyandan sonra çip tazelenir', /spectrogramReviewed = \{ at[\s\S]{0,400}refreshMeasurementPanel\(m\)/.test(js), true);
   eq('perde bulunamadı ayrımı', /perde ölçülemedi \(ölçüm yapıldı\)/.test(js), true);
+}
+
+
+// [117] v2.270 — WER: neden ölçülemediği yazılır, ölçülebiliyorsa hesaplanır.
+{
+  console.log('[117] WER referans durumu (v2.270)');
+  const noRef = T.werStatus({ id: 'm', expectedText: '', segments: [{ id: 'g', asrText: 'bir iki' }] });
+  eq('referans yok → hazır değil', noRef.ready, false);
+  eq('referans yok nedeni', noRef.reason, 'no-reference');
+  eq('referans yok metni', T.werStatusText(noRef), 'Referans metin yok — WER ölçülemez; raporda bu tablo çıkmaz.');
+
+  const noAsr = T.werStatus({ id: 'm', expectedText: 'bir iki üç', segments: [{ id: 'g', text: 'elle yazıldı' }] });
+  eq('model çıktısı yok → hazır değil', noAsr.ready, false);
+  eq('model çıktısı yok nedeni', noAsr.reason, 'no-asr');
+  eq('model çıktısı yok metni', T.werStatusText(noAsr), 'Model çıktısı yok — önce kaydı çözümleyin (WER modelin HAM çıktısını ölçer).');
+
+  const ok = T.werStatus({
+    id: 'm',
+    expectedText: 'bir iki üç',
+    segments: [{ id: 'g', asrText: 'bir iki' }]
+  });
+  eq('ölçülebilir', ok.ready, true);
+  eq('referans kelime', ok.refWords, 3);
+  eq('çıktı kelime', ok.asrWords, 2);
+  eq('WER oranı', Math.round(ok.result.ratio * 100), 33);
+  eq('durum metni WER içerir', /Ölçüldü: %33,3/.test(T.werStatusText(ok)), true);
+
+  // referenceSegments yedeği (test kayıtları) referans sayılır.
+  const segRef = T.werStatus({
+    id: 'm',
+    expectedText: '',
+    referenceSegments: [{ text: 'a b' }, { text: 'c' }],
+    segments: [{ id: 'g', asrText: 'a b c' }]
+  });
+  eq('referenceSegments referans sayılır', segRef.ready, true);
+  eq('birleşik referans kelime', segRef.refWords, 3);
+  eq('tam eşleşme WER 0', Math.round(segRef.result.ratio * 100), 0);
+
+  // Hipotez MODEL çıktısıdır: bilirkişi metni referansa eşitse WER 0 olmamalı.
+  const notExpert = T.werStatus({
+    id: 'm',
+    expectedText: 'bir iki üç',
+    segments: [{ id: 'g', text: 'bir iki üç', asrText: 'bir' }]
+  });
+  eq('hipotez asrText ten gelir', Math.round(notExpert.result.ratio * 100), 67);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('referans girişi var', /data-wer-ref=/.test(js), true);
+  eq('expectedText e yazılır', /mm\.expectedText = String\(el\.value/.test(js), true);
+  eq('durum satırı tek kaynak', /werStatusText\(werStatus\(m\)\)/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

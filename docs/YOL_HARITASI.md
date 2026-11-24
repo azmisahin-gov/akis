@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.269.**
+yazılır. **Güncel sürüm: v2.270.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.270 — WER referans alanı (TAMAMLANDI)
+
+- Referans metni arayüzde girilir (`expectedText`); WER kendiliğinden hesaplanır.
+- Üç durum açık metinle: referans yok / model çıktısı yok / ölçüldü (%).
+- Hipotez yalnız `asrText` (modelin ham çıktısı) — v2.90 kuralı korunur.
+- Ölçümler bloğunda **WER (referans)** çipi.
+- Koruyan: `birim` [117] (+[116] güncellendi), `tasarim` [2co].
 
 ## v2.269 — Analiz sekmesi düzeni (TAMAMLANDI)
 

@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.269';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.269';
+} from './schema.js?v=2.270';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.270';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.269';
+const APP_VERSION = '2.270';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2119,6 +2119,7 @@ function materialCardHtml(m) {
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
         <div id="measure-panel-${esc(m.id)}">${measurementPanelHtml(m)}</div>
+        <details class="pane-section wer-ref"><summary>WER — çözümleme doğruluğu (referans varsa)</summary><div id="wer-panel-${esc(m.id)}">${werPanelHtml(m)}</div></details>
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
         <div class="pane-section"><div class="pane-title">Seviye ölçümü<span class="info-i" tabindex="0" data-tip="Tepe ve RMS düzeyi, tepe kırpılma oranı, gürültü tabanı ve sinyal/gürültü oranı kaydın örneklerinden hesaplanır. Ölçüm yapılmadan rapora yazılmaz.">i</span></div><div id="level-panel-${esc(m.id)}">${levelPanelHtml(m)}</div><div class="evidence-actions"><button class="mini-button" data-measure-levels="${esc(m.id)}">Seviye ölçümü yap</button></div></div>
         <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
@@ -3212,6 +3213,41 @@ function fmtWer(r) {
   // Depo kuralı: biçimlendirme tek kaynaktan (bkz. fmtDb, fmtPct).
   return Number.isFinite(r) ? `%${(r * 100).toFixed(1).replace('.', ',')}` : '—';
 }
+// ---- WER durumu (v2.270) -------------------------------------------------
+// WER yalnız REFERANS METNİ olan kayıtlarda hesaplanabilir (test/kontrol
+// kayıtları). Referans yoksa tablo çizilmez; neden çizilmediği ARAYÜZDE
+// yazılır (sessiz boşluk yok). Hipotez daima modelin ham çıktısıdır (asrText).
+function werStatus(m) {
+  const ref = String((m && m.expectedText) || '').trim() ||
+    ((m && m.referenceSegments) || [])
+      .map((s) => String((s && s.text) || '').trim())
+      .filter(Boolean)
+      .join(' ');
+  const refWords = werWords(ref).length;
+  const asrParts = ((m && m.segments) || []).map((s) => String((s && s.asrText) || '').trim()).filter(Boolean);
+  if (!refWords) return { ready: false, reason: 'no-reference', refWords: 0, asrWords: 0, result: null };
+  if (!asrParts.length) return { ready: false, reason: 'no-asr', refWords, asrWords: 0, result: null };
+  const r = computeWer(ref, asrParts.join(' '));
+  return { ready: true, reason: '', refWords: r.refCount, asrWords: r.hypCount, result: r };
+}
+// Tek kaynak metin: arayüzde ve ipuçlarında aynı cümle.
+function werStatusText(st) {
+  if (!st) return 'WER durumu bilinmiyor.';
+  if (st.ready) return `Ölçüldü: ${fmtWer(st.result.ratio)} · referans ${st.refWords} kelime · çıktı ${st.asrWords} kelime`;
+  if (st.reason === 'no-reference') return 'Referans metin yok — WER ölçülemez; raporda bu tablo çıkmaz.';
+  return 'Model çıktısı yok — önce kaydı çözümleyin (WER modelin HAM çıktısını ölçer).';
+}
+// WER paneli (v2.270): referans metni girişi + durum. Referans yoksa neden
+// ölçülemediği YAZILIR; sessiz boşluk bırakılmaz.
+function werPanelHtml(m) {
+  const st = werStatus(m);
+  return `<textarea class="wer-ref-input" data-wer-ref="${esc(m.id)}" rows="4" spellcheck="false" placeholder="Referans metin (yalnız referansı olan test/kontrol kaydı için). Boş bırakılabilir.">${esc((m && m.expectedText) || '')}</textarea><p class="ms-note wer-state" id="wer-state-${esc(m.id)}">${esc(werStatusText(st))}</p><p class="ms-note">WER, modelin <b>HAM çıktısını</b> (asrText) referansla karşılaştırır; sizin düzeltmelerinizi ölçmez. Referans yoksa tablo rapora girmez.</p>`;
+}
+function refreshWerPanel(m) {
+  refreshMeasurementPanel(m);
+  const state = document.getElementById(`wer-state-${m.id}`);
+  if (state) state.textContent = werStatusText(werStatus(m));
+}
 // Referans metni olan tüm kayıtlar için WER ölçer. Yalnızca gerçekten
 // çözümlenmiş bölümler kullanılır; çözümlenmemiş kayıt atlanır.
 // WER: MODELİN çıktısını ölçer (v2.90).
@@ -3947,11 +3983,19 @@ function measurementStatus(m) {
       manual: false
     },
     {
+      key: 'wer',
+      label: 'WER (referans)',
+      done: werStatus(m).ready,
+      at: '',
+      detail: werStatus(m).ready ? fmtWer(werStatus(m).result.ratio) : 'referans yok',
+      manual: true // düğmeyle ölçülmez: referans varsa kendiliğinden hesaplanır
+    },
+    {
       key: 'spec',
       label: 'Spektrogram incelemesi',
       done: !!(m && m.spectrogramReviewed),
       at: (m && m.spectrogramReviewed && m.spectrogramReviewed.at) || '',
-      detail: 'uzman beyanı',
+      detail: '',
       manual: true
     }
   ];
@@ -3959,7 +4003,7 @@ function measurementStatus(m) {
 // Toplu ölçüm sırası. Spektrogram YOK (beyan); sessizlik bölüm bazındadır.
 const MEASURE_ALL_STEPS = ['levels', 'pitch', 'voice'];
 function measurementStatusText(item) {
-  if (!item.done) return 'yapılmadı';
+  if (!item.done) return item.detail ? `yapılmadı · ${item.detail}` : 'yapılmadı';
   const t = item.at ? new Date(item.at) : null;
   const clock = t && !isNaN(t) ? t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
   return [clock, item.detail].filter(Boolean).join(' · ');
@@ -16162,6 +16206,17 @@ function setupEvents() {
   });
   $('#view-audio').addEventListener('input', (e) => {
     const el = e.target;
+    // v2.270 — WER referans metni: yazarken yalnız DURUM metni tazelenir;
+    // kayda yazma odak kaybında (change) yapılır (uzun metinde her tuşta yazma yok).
+    if (el.dataset && el.dataset.werRef !== undefined) {
+      const id = el.dataset.werRef;
+      const mm = currentCase().materials.find((x) => x.id === id);
+      if (!mm) return;
+      const st = werStatus({ ...mm, expectedText: el.value });
+      const state = document.getElementById(`wer-state-${id}`);
+      if (state) state.textContent = werStatusText(st);
+      return;
+    }
     if (el.dataset.seg === undefined) return;
     // BELİRSİZ OKUMA alanları (v2.115): iki okuma + seçim.
     if (el.dataset.amb) {
@@ -16282,6 +16337,17 @@ function setupEvents() {
           ? `${rec.code ? rec.code + ' · ' : ''}${rec.name} doğrulandı: künye kilitlendi. (Bölüm onayı değildir.)`
           : `${rec.code ? rec.code + ' · ' : ''}${rec.name} kilidi açıldı.`
       );
+      return;
+    }
+    // v2.270 — WER referans metni kaydı (odak kaybında).
+    if (el.dataset && el.dataset.werRef !== undefined) {
+      const id = el.dataset.werRef;
+      const mm = currentCase().materials.find((x) => x.id === id);
+      if (!mm) return;
+      mm.expectedText = String(el.value || '');
+      persist();
+      refreshWerPanel(mm);
+      if ($('#view-report').classList.contains('active')) renderReport();
       return;
     }
     if (!el.dataset || el.dataset.spk === undefined) return;
@@ -17829,6 +17895,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.270': {
+    title: 'WER artık ölçülebilir: referans metin alanı ve neden-ölçülemedi açıklaması',
+    body:
+      'Dinleme sekmesinde "WER — çözümleme doğruluğu (referans varsa)" bölümü var. Referans metni yazınca ' +
+      'WER kendiliğinden hesaplanır (modelin HAM çıktısı ile karşılaştırılır). Referans yoksa ya da kayıt ' +
+      'henüz çözümlenmediyse tablo çizilmez ve NEDENİ yazılır. Ölçümler bloğuna "WER (referans)" çipi eklendi. ' +
+      'Eskiden referans girilecek alan olmadığı için WER tablosu gerçek dosyalarda hiç oluşmuyordu.'
+  },
   '2.269': {
     title: 'Analiz sekmesi düzenlendi: tek düğme, durum çipleri, spektrogram beyanı',
     body:
