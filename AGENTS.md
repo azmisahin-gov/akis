@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.245.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.246.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5544,3 +5544,42 @@ DOCX + UDF. **Resmî UDF varsayılanı sessizce DEĞİŞTİRİLMEZ.** Karar soru
 1. **Etkin çalışma süresi** (kullanıcı onayı).
 2. **Video (56.12)** ölçümü.
 3. Yatay UDF tablo genişliklerini sayfa genişliğine göre ölçekleme (gerekirse).
+
+## YENİ OTURUM DEVRİ (v2.246) — Rapor ekranı: sürekli okuma varsayılan
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.246** |
+| Testler | `bash tools/test.sh` → **1507 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+| Yeni test | `birim [98]` |
+| Ölçüm | **Gerçek Chromium + CDP** (1440×900), örnek dosyalar yüklendi |
+
+### ÖLÇÜM (kök neden)
+Eski varsayılan **tek-sayfa + zorla sayfaya sığdır** idi → kâğıt **320 px** (min),
+`translateY` ile sayfalama, satırlar sınırda kesiliyor; "Sürekli"ye geçilince bile
+fit `maxWidth` temizlenmiyordu → ince-uzun şerit.
+
+### DÜZELTME (kanıtlı)
+- `reportContinuousPref()` varsayılan **true** (yalnız `'0'` → tek-sayfa).
+- `applyReportFit`: sürekli modda fit UYGULANMAZ (maxWidth temizlenir).
+- `applyReportPageView`: sürekli modda eski genişliği temizler + "Sayfaya sığdır"
+  etiketini gizler; `setReportContinuous` fit+guide tazeler.
+- Ölçüm SONRA (default): `continuous`, paper **900 px**, `#view-report` kayar
+  (4753/804), yatay taşma 0. Tek-sayfa opt-in: Sayfa 1/10, genişlik 507.
+
+### DEĞİŞMEZ
+- Tek-sayfa A4 penceresi + `translateY` **satır keser** (gerçek pagination değil);
+  bu yüzden **varsayılan olamaz**, yalnız opt-in olur.
+- Sürekli modda tek kaydırma `#view-report`'tadır; `.main-area`/body kaymaz (900/900).
+
+### CDP DENETİM TARİFİ (tekrar kullanılabilir)
+`python3 -m http.server 8800` + `chromium --headless=new --remote-debugging-port=9230
+--remote-allow-origins=*` → `websocket-client` ile Runtime.evaluate: `#loadSamplesBtn`→
+`#confirmOk`→`[data-view=report]` tıkla → ölç. (Geçici dosyalar /tmp; depoya girmez.)
+
+### SIRADAKİ İŞLER
+1. **Video (56.12)** ölçümü (kullanıcı istedi).
+2. Etkin çalışma süresi (opsiyonel).
+3. Tek-sayfa modunda gerçek sayfa kırılması (satır kesmesini giderme) — zor, ancak opt-in.

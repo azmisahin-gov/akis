@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.245.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.246.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.246 — Rapor ekranı: sürekli okuma varsayılan
+
+Kullanıcı: "Rapor sayfası web'de çok garip; kaydırma, sayfa kesmeleri, ölçek."
+**Gerçek Chromium (1440×900) ölçümü** kök nedeni gösterdi: varsayılan **tek-sayfa
++ zorla "Sayfaya sığdır"** idi; kâğıt **320 px**'e (min) sıkışıyor, ince-uzun bir
+şerit oluyor ve satırlar sayfa sınırında kesiliyordu.
+
+### KULLANICI NE GÖRECEK
+- Rapor **artık normal bir belge gibi kayar** (varsayılan **Sürekli**). Kâğıt
+  **900 px** genişlikte okunaklı; `#view-report` içinde tek kaydırma.
+- **Sayfaya sığdırma yalnız tek-sayfa (A4) modunda** anlamlıdır; sürekli modda
+  gizlenir (boşuna küçültmez).
+- **A4 sayfa görünümü isteğe bağlı:** "Sürekli" anahtarını kapatınca tek-sayfa A4
+  penceresi + ‹ › sayfa gezinme açılır (ölçüm: Sayfa 1/10, genişlik 507).
+- Yatay/dikey biçim de sürekli modda doğru; yatay taşma yok.
+
+### Ne değişti
+- `reportContinuousPref()` VARSAYILAN `true` (yalnız `'0'` tek-sayfa yapar).
+- `applyReportFit` sürekli modda `maxWidth` temizler (fit uygulamaz);
+  `applyReportPageView` sürekli modda sığdırma etiketini gizler ve eski genişliği
+  temizler; `setReportContinuous` mod değişiminde fit+guide'ı tazeler.
+
+### Koruyan test
+- `birim [98]`: tercih varsayılanı + sürekli modda fit uygulanmadığı sözleşmesi.
 
 ## v2.245 — UDF yatay/dikey yön (doğrulandı)
 

@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.245';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.245';
+} from './schema.js?v=2.246';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.246';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.245';
+const APP_VERSION = '2.246';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10925,10 +10925,14 @@ function reportFitWidth(availH, orientation) {
 function applyReportFit() {
   const ws = $('#reportWorkspace');
   const paper = $('#reportPreview');
-  const fit = reportFitPref();
+  // Sürekli (normal kaydırma) modda "sayfaya sığdırma" UYGULANMAZ: aksi hâlde
+  // kâğıt min genişliğe (320px) sıkışıp ince-uzun bir şerit oluyordu (v2.246
+  // ölçümü). Sığdırma yalnız tek-sayfa (A4 penceresi) modunda anlamlıdır.
+  const continuous = reportContinuousPref();
+  const fit = !continuous && reportFitPref();
   if (ws) ws.dataset.fit = fit ? 'page' : 'full';
   const cb = $('#reportFitToggle');
-  if (cb) cb.checked = fit;
+  if (cb) cb.checked = reportFitPref();
   if (!paper) return;
   if (!fit) {
     paper.style.maxWidth = '';
@@ -10957,10 +10961,13 @@ function setReportFit(on) {
 // translateY ile kaydırılır. "Sürekli" modu eski davranışı korur.
 let reportPageIndex = 0;
 function reportContinuousPref() {
+  // VARSAYILAN: SÜREKLİ (normal kaydırma). Kullanıcı "Sürekli" anahtarını
+  // kapatırsa ('0') tek-sayfa A4 penceresine geçilir. (v2.246: tek-sayfa + zorla
+  // sığdırma varsayılanı rapor ekranını "garip/ince" gösteriyordu.)
   try {
-    return localStorage.getItem('akis.reportContinuous') === '1';
+    return localStorage.getItem('akis.reportContinuous') !== '0';
   } catch (e) {
-    return false;
+    return true;
   }
 }
 function reportPageHeight() {
@@ -10992,9 +10999,13 @@ function applyReportPageView() {
   if (cb) cb.checked = continuous;
   ws.dataset.page = continuous ? 'continuous' : 'single';
   const nav = $('#reportPageNav');
+  // "Sayfaya sığdır" yalnız tek-sayfa modunda anlamlıdır; sürekli modda gizle.
+  const fitLabel = $('#reportFitToggle')?.closest('label');
+  if (fitLabel) fitLabel.style.display = continuous ? 'none' : '';
   if (continuous) {
     win.style.height = '';
     paper.style.transform = '';
+    paper.style.maxWidth = ''; // eski sığdırma genişliğini temizle
     if (nav) nav.hidden = true;
     return;
   }
@@ -11027,7 +11038,9 @@ function setReportContinuous(on) {
     localStorage.setItem('akis.reportContinuous', on ? '1' : '0');
   } catch (e) {}
   reportPageIndex = 0;
+  applyReportFit();
   applyReportPageView();
+  renderPageGuides();
 }
 function syncReportToolbarHeight() {
   const tb = $('.report-toolbar');
@@ -16766,6 +16779,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.246': {
+    title: 'Rapor ekranı artık normal kayıyor (sürekli varsayılan)',
+    body:
+      'Rapor önizlemesi artık varsayılan olarak SÜREKLİ akar: normal belge gibi okunur ve kayar, ' +
+      'kâğıt 900 px genişlikte. Önceden tek-sayfa + zorla "Sayfaya sığdır" varsayılandı; kâğıt 320 ' +
+      'px’e sıkışıp ince-uzun bir şerit oluyordu. A4 sayfa görünümü isteğe bağlıdır: "Sürekli" ' +
+      'anahtarını kapatınca tek-sayfa A4 penceresi ve ‹ › sayfa gezinme açılır. Sayfaya sığdırma ' +
+      'yalnız o modda görünür.'
+  },
   '2.245': {
     title: 'UDF yatay/dikey yön artık uygulanıyor',
     body:

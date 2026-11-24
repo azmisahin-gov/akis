@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.245.**
+yazılır. **Güncel sürüm: v2.246.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.246 — Rapor ekranı: sürekli okuma varsayılan (TAMAMLANDI)
+
+- Ölçüm (1440×900): varsayılan tek-sayfa+fit kâğıdı 320px'e sıkıştırıyordu.
+- Artık varsayılan **Sürekli** (900px, normal kaydırma); A4/‹ › isteğe bağlı.
+- Sürekli modda "Sayfaya sığdır" gizli (uygulanmıyor). Koruyan: `birim [98]`.
 
 ## v2.245 — UDF yatay/dikey yön (doğrulandı) (TAMAMLANDI)
 

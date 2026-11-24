@@ -4588,5 +4588,20 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('boş: süre 0', e.audioSeconds, 0);
 }
 
+// [98] v2.246 — Rapor varsayılanı SÜREKLİ; sığdırma tek-sayfa moduna özgü.
+{
+  console.log('[98] Rapor görünümü varsayılanı (v2.246)');
+  eq('reportContinuousPref tanımlı', typeof T.reportContinuousPref, 'function');
+  T.store.removeItem('akis.reportContinuous');
+  eq('tercih yoksa sürekli (true)', T.reportContinuousPref(), true);
+  T.store.setItem('akis.reportContinuous', '0');
+  eq("'0' → tek-sayfa (false)", T.reportContinuousPref(), false);
+  T.store.setItem('akis.reportContinuous', '1');
+  eq("'1' → sürekli (true)", T.reportContinuousPref(), true);
+  // Kaynak sözleşmesi: applyReportFit sürekli modda fit UYGULAMAZ (maxWidth temizlenir).
+  const src = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('applyReportFit sürekli modu dikkate alır', /const fit = !continuous && reportFitPref\(\)/.test(src), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
