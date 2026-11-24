@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.234.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.235.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.235 — Rapor alanları: tablo sütunları aç/kapa
+
+Kullanıcı: "bazı tablolardaki alanları bilirkişi istemeyebilir; açıp kapatabilsek
+daha temiz olur." Uygulandı.
+
+### KULLANICI NE GÖRECEK
+
+- **Kontrol → Rapor alanları** panelinde **5 tablo** için sütun aç/kapa:
+  **Envanter** (ör. SHA-256, örnekleme hızı), **Kayıt kökeni**, **Delil edinme**,
+  **WER**, **Ses seviyesi**.
+- Kapatılan sütun **üç çıktıda da** (HTML/DOCX/UDF) görünmez; tablo kalan
+  sütunlarla yeniden düzenlenir.
+- **Veri silinmez**; yalnız gösterim değişir. Tüm sütunlar kapatılırsa boş tablo
+  yerine "Bu tablo için alan seçilmedi." yazılır.
+- Tercih dosyayla saklanır ve **rapor revizyonuna** dâhil edilir (geri yükleme
+  sütun seçimini de geri alır).
+
+### Teknik
+
+- `assets/schema.js` → **TEK KAYNAK**: `REPORT_COLUMN_TABLES`,
+  `REPORT_COLUMN_LABELS`, `REPORT_COLUMN_TABLE_LABELS`, `emptyReportColumns`,
+  `normalizeReportColumns`; `case.report.columns` alanı eklendi (varsayılan tümü
+  açık, eksik alan açık varsayılır, bilinmeyen tablo korunur).
+- `app.js` → `reportColumnOn`, `reportTableColumns` (başlık/satır/genişlik
+  filtreleme), `werTableRows`, `setReportColumn`, `renderReportColumns`;
+  HTML/DOCX/UDF üreticileri aynı filtreyi kullanır.
+- Rapor revizyonu: `reportSnapshot`/`applyReportSnapshot` + `REPORT_SNAPSHOT_LABELS`
+  artık `columns` alanını taşır.
+- Test: `birim [90]`, `rapor` Senaryo 24, `tasarim [2cf]`, `surum` kimlikleri.
 
 ## v2.234 — Okuma metni bağımsız bölüm
 

@@ -3430,6 +3430,13 @@ body[data-view="report"] #sbCheckWrap { display: none; }
 #reportFullbar { position: sticky; top: 0; z-index: 6; background: var(--bg); }
 body.report-full .report-edit-hint { display: none; }
 
+/* v2.235 — rapor alanları: tablo sütunları aç/kapa */
+.rcol-group { margin: 0 0 8px; }
+.rcol-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; font-size: var(--fs-2xs); color: var(--ink); }
+.rcol-head span { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.rcol-item { display: flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); color: var(--ink-2); padding: 2px 0; }
+.rcol-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 6px 0 0; }
+
 /* v2.233 — sayfa görüntüleyici: sabit çubuk, tek A4 penceresi, tablo sığdırma */
 #view-report .section-intro { display: none; }
 #view-report .report-stage-bar {

@@ -702,6 +702,86 @@ export function normalizeReportLayout(src) {
   return { ...src, order, annexOrder, annexes, annexMeta };
 }
 
+// ---- 5b-3. Rapor tabloları: sütun görünürlüğü (v2.235) --------------------
+// TEK KAYNAK: tablo → sütun anahtarları ve Türkçe etiketler. Kapatılan alan
+// üç çıktıda da (HTML/DOCX/UDF) basılmaz. VERİ SİLİNMEZ; yalnız gösterim.
+export const REPORT_COLUMN_TABLES = {
+  inventory: ['name', 'format', 'size', 'duration', 'channels', 'sampleRate', 'sha256'],
+  origin: ['name', 'mediumType', 'mediumLabel', 'deliveredBy', 'deliveredAt', 'deliveryPlace', 'recordingDevice', 'recordingAt'],
+  acquisition: ['name', 'device', 'label', 'serial', 'method', 'tool', 'operator', 'acquiredAt', 'hashState'],
+  wer: ['material', 'model', 'ref', 'hyp', 'errors', 'wer'],
+  levels: ['name', 'peak', 'rms', 'clipped', 'noiseFloor', 'snr', 'extra']
+};
+export const REPORT_COLUMN_LABELS = {
+  inventory: {
+    name: 'DOSYA ADI',
+    format: 'DOSYA BİÇİMİ',
+    size: 'DOSYA BOYUTU',
+    duration: 'SÜRE',
+    channels: 'SES KANALI',
+    sampleRate: 'ÖRNEKLEME HIZI',
+    sha256: 'SHA-256'
+  },
+  origin: {
+    name: 'KAYIT',
+    mediumType: 'ORTAM TÜRÜ',
+    mediumLabel: 'ORTAM ETİKETİ',
+    deliveredBy: 'TESLİM EDEN',
+    deliveredAt: 'TESLİM TARİHİ',
+    deliveryPlace: 'TESLİM YERİ',
+    recordingDevice: 'KAYIT CİHAZI',
+    recordingAt: 'KAYIT TARİHİ'
+  },
+  acquisition: {
+    name: 'KAYIT',
+    device: 'CİHAZ',
+    label: 'ETİKET',
+    serial: 'SERİ NO',
+    method: 'YÖNTEM',
+    tool: 'ARAÇ',
+    operator: 'OPERATÖR',
+    acquiredAt: 'ALINMA',
+    hashState: 'DOĞRULAMA'
+  },
+  wer: { material: 'KAYIT', model: 'MODEL', ref: 'REFERANS KELİME', hyp: 'ÇIKTI KELİME', errors: 'HATA', wer: 'WER' },
+  levels: {
+    name: 'KAYIT',
+    peak: 'TEPE (dBFS)',
+    rms: 'RMS (dBFS)',
+    clipped: 'TEPE KIRPILMA',
+    noiseFloor: 'GÜRÜLTÜ TABANI',
+    snr: 'SİNYAL / GÜRÜLTÜ',
+    extra: 'EK ÖLÇÜMLER'
+  }
+};
+export const REPORT_COLUMN_TABLE_LABELS = {
+  inventory: 'Envanter tablosu',
+  origin: 'Kayıt kökeni tablosu',
+  acquisition: 'Delil edinme tablosu',
+  wer: 'WER tablosu',
+  levels: 'Ses seviyesi tablosu'
+};
+/** Tüm sütunlar AÇIK. */
+export function emptyReportColumns(over = {}) {
+  const out = {};
+  for (const table of Object.keys(REPORT_COLUMN_TABLES)) {
+    out[table] = {};
+    for (const key of REPORT_COLUMN_TABLES[table]) out[table][key] = true;
+  }
+  return { ...out, ...over };
+}
+/** Eksik/bozuk sütun tercihini güvenli hâle getirir (bilinmeyen tablo korunur). */
+export function normalizeReportColumns(src) {
+  const base = src && typeof src === 'object' ? src : {};
+  const out = {};
+  for (const table of Object.keys(REPORT_COLUMN_TABLES)) {
+    const s = base[table] && typeof base[table] === 'object' ? base[table] : {};
+    out[table] = {};
+    for (const key of REPORT_COLUMN_TABLES[table]) out[table][key] = typeof s[key] === 'boolean' ? s[key] : true;
+  }
+  return { ...base, ...out };
+}
+
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------
 // Bilirkişi elle doldurur; boşsa rapora "—" yazılır (uydurulmaz). Alanlar
 // rapor 4. bölümünü (teknik özellikler/inceleme ortamı) besler.
@@ -832,6 +912,8 @@ export function emptyCase(over = {}) {
       sections: emptyReportSections(),
       // Rapor iskeleti (v2.227): gövde sırası + ek sırası + ek görünürlüğü.
       layout: emptyReportLayout(),
+      // Tablo sütun görünürlüğü (v2.235): tümü açık.
+      columns: emptyReportColumns(),
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -1223,6 +1305,8 @@ export function normalizeCase(src = {}) {
       sections: normalizeReportSections(report.sections),
       // Rapor iskeleti (v2.227): sıra/ekler; bozuk düzen güvenli hâle getirilir.
       layout: normalizeReportLayout(report.layout),
+      // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
+      columns: normalizeReportColumns(report.columns),
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.

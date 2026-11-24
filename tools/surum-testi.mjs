@@ -245,7 +245,9 @@ const REQUIRED_IDS = [
   ['sayfaya sığdır anahtarı', 'reportFitToggle'],
   ['sayfa penceresi', 'reportPageWindow'],
   ['sayfa gezinme', 'reportPageNav'],
-  ['sürekli mod anahtarı', 'reportContinuousToggle']
+  ['sürekli mod anahtarı', 'reportContinuousToggle'],
+  ['rapor alanları paneli', 'reportColumnsBox'],
+  ['rapor alanları listesi', 'reportColumnsFields']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));
