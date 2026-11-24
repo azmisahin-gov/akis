@@ -1,4 +1,4 @@
-# Özellikler (v2.282 — mevcut durum)
+# Özellikler (v2.283 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -598,7 +598,7 @@ uzmanlık alanını gösterir.
   görünür; atanmamış bölüm için "hangi konuşmacıya benziyor" önerisi yazılır.
   **Kimlik tespiti değildir**, hiçbir atama otomatik değişmez; ölçüm yalnız
   kullanıcı tetiklediğinde çalışır.
-- **Kayıt bazında konuşmacı tablosu (v2.273; sütunlar v2.281):** her kayıt için **KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON**;
+- **Kayıt bazında konuşmacı tablosu (v2.273; sütunlar v2.281/v2.283):** her kayıt için **KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON**; **atanmamış bölümler** ayrı satırda (— Konuşmacı belirtilmedi);
   dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (boş sütun çizilmez). Tek kaynak:
   `materialSpeakerRows(c, m)`; üç çıktı aynı tabloyu basar.
 - **İki yeni gözlem bayrağı (v2.272):** **yankı / oda akustiği** (`echo`) ve **kesinti / kopukluk**
@@ -613,7 +613,7 @@ uzmanlık alanını gösterir.
   toplu ölçüme katılmaz ve **bölüm açmakla işaretlenmez** (yalnız “Spektrogramı göster”). Köken/teslim
   alanları **Kayıt bilgileri** sekmesine taşındı.
 - **Süre tablosu ve üçlü gösterim anahtarı (v2.268):** konuşmacı künyesi tablosunun yanında
-  **“Konuşmacı süreleri”** tablosu (KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON) + tek satır açıklama;
+  **“Konuşmacı süreleri”** tablosu (KOD · ETİKET · KAYIT · BÖLÜM · SÜRE · İLK – SON) + tek satır açıklama;
   **EK-5** üç tablodur (konuşmacı kodları · metin işaretleri · **gözlem işaretleri = uygulamadaki
   bayraklardan otomatik**). Okuma metninde de kayıt başına “Bu kaydın konuşmacıları” satırı vardır.
 - **S/K ayrımı ve açıklamalar (v2.267):** **S1, S2… kayıt içi** etikettir; her kayıtta S1'den başlar.

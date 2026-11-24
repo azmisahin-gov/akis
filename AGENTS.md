@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.282.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.283.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6807,3 +6807,62 @@ Koruyan test: `birim` [124], `rapor` 13/25/36, `tasarim` [2cq]/[2cs].
   doğrulaması gerekir.
 - Kalan adım: dalga kutusunu **Analiz** sekmesine taşımak (metin ~+219 px) —
   kullanıcı kararı bekliyor.
+
+## YENİ OTURUM DEVRİ (v2.283) — Rapor bütünlüğü (canlı rapor denetimi)
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.283** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1915 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Konuşmacı kişi birleştirmenin yeri (kullanıcı önerisi), tam numaralandırma kararı |
+
+### Kullanıcının gerçek uçtan uca testi (ölçüm kaynağı)
+
+2 delil paketi (USB Kingston: `00-bozuk.aac` 0 bayt + `02-iki-konuşmacı.mp3`;
+SD Realtek: `01-dikey.mp4`, `02-yatay.mp4` 2:37), 4 kayıt, 82 bölüm; 68 bölüm
+kontrol bekliyor. Paylaşılan `2026_TEST.udf` / `2026_TEST.docx` incelendi.
+
+**Doğru çıkanlar:** SHA-256'lar edinme günlüğüyle birebir; 0 bayt dosya
+"Bilinmiyor/0 B" + çözümleme hatası (uydurma bölüm yok); atanmamış bölümler
+`— / Belirtilmemiş / Kontrol bekliyor`; UDF'te ZWSP yalnız SHA-256'da.
+
+### Bulunan ve düzeltilen hatalar
+
+1. **Numara boşluğu (5 → 7).** `reportNumberMap` "bölüm AÇIK mı" ölçütü
+   kullanıyordu; `answers` açık ama soru yokken `reportBlockRenders` false →
+   numara verilip blok atlanıyordu. Artık numara **çizilen** bölüme göre.
+2. **Konuşmacı tablosu eksik bölüm gösteriyordu.** 68 bölümün 55'i atanmamış;
+   tablo yalnız atanmış 13'ü listeliyordu. `materialSpeakerRows` artık
+   **"— Konuşmacı belirtilmedi"** satırı ekler; `materialSpeakerLine` da yazar.
+3. **S kodları kayıt başına ama tabloda kayıt yoktu.** Konuşmacı ve süre
+   tablolarına **KAYIT** sütunu (schema `material` anahtarı).
+4. **Bilinmeyen süre "00:00:00" yazılıyordu** → "Bilinmiyor"; tarayıcının
+   İngilizce çözme hatası `decodeErrorText()` ile Türkçeleşti.
+5. **Ek:** TOC'ta numarasız satırlar **"–"** (alt blok); özet etiketi
+   "Konuşmacı etiketi (kayıt içi)" + "Konuşmacı atanmamış bölüm"; hazırlıkta
+   "Gerekçeli sonuç yazılmadı" (expert); `.docx/.pdf` kökte ignore.
+
+### DEĞİŞMEZ KURALLAR (yeni)
+
+1. **Numara = çizilecek blok.** `reportSectionOn` (kullanıcı tercihi) ile
+   `reportBlockRenders` (gerçek çıktı) ayrıdır; numaralandırma İKİNCİSİNİ
+   kullanmalı. Aksi hâlde numarada boşluk oluşur (v2.283'te canlıda ölçüldü).
+2. **Konuşmacı tablosu tüm bölümleri kapsar.** Yalnız atanmışları listelemek
+   "kayıtta 13 bölüm var" izlenimi verir; atanmamış satırı zorunludur.
+3. **S kodu kayıt başınadır** → tabloda KAYIT sütunu olmadan aynı S1'ler
+   ayırt edilemez.
+4. **Ölçülemeyen süre "00:00:00" değildir**; "Bilinmiyor" yazılır.
+5. Tabloya sütun eklerken üç çıktının genişliklerini + `REPORT_COLUMN_TABLES`
+   anahtarını birlikte güncelleyin (`birim [125]` indeks kaymasını yakalar).
+
+### Bilinen açık konular
+
+- **Kişi birleştirme yeri:** "Dosyalar arası kişiler (K)" şu an Analiz sekmesinde.
+  Kullanıcı "orada kaybolmuş gibi" dedi; **dosya (case) düzeyinde** bir yere
+  (ör. Dosya bilgileri çekmecesi veya ayrı bir "Kişiler" paneli) taşınması
+  değerlendirilecek (karar bekliyor).
+- **Numaralandırma politikası:** ana bölümler 1..N, alt bloklar "–" olarak
+  işaretli. Kullanıcı isterse **her başlık** (13 bölüm) numaralanabilir; bu,
+  56.12'nin 9 bölüm + alt blok yapısından ayrılmak olur (karar bekliyor).

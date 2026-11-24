@@ -160,7 +160,7 @@ const EXPOSE = [
   'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
-  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells',
+  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -2973,6 +2973,7 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
     const base = (o) => Object.assign({
       id: 'c1', fileNo: '2026/1', court: 'Ankara 1. Asliye Hukuk Mahkemesi', expertName: 'A. Bilirkişi',
       questions: [{ id: 'q1', question: 'Ne oldu?', answer: 'x' }],
+      conclusionText: 'Kanaat metni.',
       materials: [mat()]
     }, o);
     const keys = (r) => r.items.map((x) => x.key);
@@ -3041,7 +3042,7 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
     eq('konuşmacı uzman kontrolü', noSpk.items.find((x) => x.key === 'speaker').severity, 'expert');
     eq('bilinmeyen anahtar expert sayılır', T.readinessSeverity('bilinmeyen'), 'expert');
     const sumNoFile = T.readinessSummary(noFile);
-    eq('özet engelleyen sayısı', sumNoFile.blocking, noFile.items.length);
+    eq('özet engelleyen sayısı', sumNoFile.blocking, noFile.items.filter((x) => x.severity === 'blocking').length);
     eq('özet toplam = madde sayısı', sumNoFile.total, noFile.items.length);
 
     const targets = new Set(['case', 'audio', 'questions', 'report']);
@@ -3342,7 +3343,7 @@ console.log('\n== [69] Konuşmacı silme ve rapor filtresi (v2.192)');
   eq('raporda tek satır (S1)', rows.length, 1);
   eq('satır kodu S1', rows[0][0], 'S1');
   eq('satır etiketi S1', rows[0][1], 'S1');
-  eq('satır bölüm sayısı', /2 bölüm/.test(rows[0][6]), true);
+  eq('satır bölüm sayısı', /2 bölüm/.test(rows[0][7]), true);
   // Atanmamış K silinir: bölümlere dokunmaz.
   const clearedK = T.removeSpeaker(m, m.speakers[1]);
   eq('K silindi, bölüm ataması yok', clearedK, 0);
@@ -3677,14 +3678,14 @@ console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
   eq('eşleşen kişi tek satır + bağsız = 2', rows.length, 2);
   eq('ilk satır kişi kodu', rows[0][0], 'K1');
   eq('ilk satır kişi etiketi', rows[0][1], 'Kiracı');
-  eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][6]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][6]), true);
-  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][6]), true);
-  eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][5]) && /B\.wav: 118/.test(rows[0][5]), true);
+  eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][7]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][7]), true);
+  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][7]), true);
+  eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][6]) && /B\.wav: 118/.test(rows[0][6]), true);
   eq('bağsız konuşmacı ayrı satır (kod)', rows[1][0], 'S2');
   eq('bağsız konuşmacı ayrı satır (etiket)', rows[1][1], 'Tanık');
   // Özet sayacı TABLO ile aynı: 2 (3 değil).
   const rs = T.reviewSummaryRows(c);
-  const speakerRow = rs.find((r) => r[0] === 'Etiketlenen konuşmacı');
+  const speakerRow = rs.find((r) => r[0] === __schemaMod.REPORT_TEXT?.rsSpeaker || r[0] === 'Konuşmacı etiketi (kayıt içi)');
   eq('özet konuşmacı sayısı = tablo satırı', speakerRow && speakerRow[1], 2);
 
   // Bağ yoksa eski davranış: her kayıt için ayrı satır (3).
@@ -4215,10 +4216,15 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const c = T.emptyCaseForTest({ id: 'cRep' });
   eq('varsayılan sıra s1 ile başlar', T.reportBodyOrder(c)[0], 's1');
   eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
-  // v2.261: cevaplar (6) ve sınırlılıklar (7) de numaralı ana bölüm; s6=8, s7=9.
-  eq('varsayılan numara s7=9', T.reportNumberMap(c).s7, 9);
-  eq('varsayılan numara answers=6', T.reportNumberMap(c).answers, 6);
-  eq('varsayılan numara limits=7', T.reportNumberMap(c).limits, 7);
+  // v2.283: numara YALNIZ ÇİZİLEN bölüme verilir. Soru yoksa "Cevaplar"
+  // çizilmez → numara almaz ve numarada boşluk kalmaz (eski hata: 5 → 7).
+  eq('varsayılan numara s7=8 (cevaplar çizilmiyor)', T.reportNumberMap(c).s7, 8);
+  eq('soru yoksa answers numara almaz', T.reportNumberMap(c).answers, undefined);
+  eq('varsayılan numara limits=6', T.reportNumberMap(c).limits, 6);
+  // Soru VARSA cevaplar çizilir ve numara alır (s7 yeniden 9).
+  const cq = T.emptyCaseForTest({ id: 'cRepQ', questions: [{ id: 'q1', question: 'x', answer: 'y' }] });
+  eq('soru varsa answers=6', T.reportNumberMap(cq).answers, 6);
+  eq('soru varsa s7=9', T.reportNumberMap(cq).s7, 9);
   eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
   eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
   eq('yardımcı bölüm numarasız', T.reportHeadingText(c, 'origin'), 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
@@ -4226,7 +4232,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
   const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
   eq('s3 kapalı: s4 numarası 3', T.reportNumberMap(c2).s4, 3);
-  eq('s3 kapalı: s7 numarası 8', T.reportNumberMap(c2).s7, 8);
+  eq('s3 kapalı: s7 numarası 7', T.reportNumberMap(c2).s7, 7);
   eq(
     's3 kapalı: s4 başlığı yeniden numaralandı',
     T.reportHeadingText(c2, 's4'),
@@ -4247,7 +4253,8 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // TOC: ana bölümler + yardımcı bölümler, gövde sırasıyla.
   const toc = T.reportTocEntries(c);
   eq('TOC ana bölümü numaralı taşır', toc.includes('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI'), true);
-  eq('TOC köken bölümünü taşır', toc.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
+  eq('TOC köken bölümünü taşır', toc.some((x) => x.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ')), true);
+  eq('TOC köken satırı alt blok olarak işaretli', toc.includes('– KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
   eq('TOC imzayı içermez', toc.includes('İmza ve alt bilgi'), false);
 
   // Düzen normalizasyonu: bilinmeyen atılır, yinelenen tekilleşir, eksik eklenir.
@@ -4341,7 +4348,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const sha = 'a'.repeat(64);
   const seg = (o) => Object.assign({ id: 's1', start: '00:00:00.000', end: '00:00:10.000', text: 'merhaba', review: 'approved', speaker: 'Tanık' }, o);
   const mat = (o) => Object.assign({ id: 'm1', name: 'a.wav', duration: 10, sha256: sha, origin: { mediumType: 'usb', deliveredBy: 'X', deliveredAt: '2026-01-01' }, speakers: [{ id: 'sp1', code: 'S1', label: 'Tanık' }], segments: [seg()], log: [] }, o);
-  const base = (o) => Object.assign({ id: 'c1', fileNo: '2026/1', court: 'A', expertName: 'B', questions: [{ id: 'q1', question: 'x', answer: 'y' }], materials: [mat()] }, o);
+  const base = (o) => Object.assign({ id: 'c1', fileNo: '2026/1', court: 'A', expertName: 'B', conclusionText: 'Kanaat.', questions: [{ id: 'q1', question: 'x', answer: 'y' }], materials: [mat()] }, o);
   eq('tam dosya ready', T.reportRecordStatus(base({})).code, 'ready');
   const blocked = T.reportRecordStatus(base({ fileNo: '' }));
   eq('dosya no boş blocked', blocked.code, 'blocked');
@@ -5168,9 +5175,10 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('bir satır', rows.length, 1);
   eq('kod', rows[0][0], 'S1');
   eq('etiket', rows[0][1], 'Kiracı');
-  eq('bölüm sayısı', rows[0][2], '2 bölüm');
-  eq('süre', rows[0][3], '00:10');
-  eq('ilk–son', rows[0][4], '00:00:00.000 – 00:00:10.000');
+  eq('kayıt', rows[0][2], 'a.wav');
+  eq('bölüm sayısı', rows[0][3], '2 bölüm');
+  eq('süre', rows[0][4], '00:10');
+  eq('ilk–son', rows[0][5], '00:00:00.000 – 00:00:10.000');
   // Bölümü olmayan konuşmacı süre tablosuna GİRMEZ.
   const c2 = JSON.parse(JSON.stringify(c));
   c2.materials[0].speakers.push({ id: 'z', code: 'S2', name: 'Boş', label: 'Boş' });
@@ -5669,8 +5677,8 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const S = __schemaMod;
   eq('kanıt sütunları kod+etiket ayrı', S.REPORT_COLUMN_TABLES.segments.join(','), 'time,speakerCode,speakerLabel,text,review,obs');
   eq('eski birleşik sütun etiketi yok', 'speaker' in S.REPORT_COLUMN_LABELS.segments, false);
-  eq('konuşmacı tablosu sütunları', S.REPORT_COLUMN_TABLES.speakers.join(','), 'code,label,role,gender,age,pitch,parts');
-  eq('süre tablosu sütunları', S.REPORT_COLUMN_TABLES.speakerDurations.join(','), 'code,label,chapters,duration,span');
+  eq('konuşmacı tablosu sütunları', S.REPORT_COLUMN_TABLES.speakers.join(','), 'code,label,material,role,gender,age,pitch,parts');
+  eq('süre tablosu sütunları', S.REPORT_COLUMN_TABLES.speakerDurations.join(','), 'code,label,material,chapters,duration,span');
   eq('kayıt tablosu sütunları', S.REPORT_COLUMN_TABLES.materialSpeakers.join(','), 'code,label,chapters,duration,span,person');
   eq('her tablonun görünen adı var', Object.keys(S.REPORT_COLUMN_TABLE_LABELS).length, Object.keys(S.REPORT_COLUMN_TABLES).length);
 
@@ -5699,6 +5707,49 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   // Kişi bağı olmayan kayıtta "DOSYALAR ARASI KİŞİ" sütunu istenmez.
   eq('kişi sütunu anahtarı koşullu', mt.keys.includes('person'), false);
+}
+
+
+// [125] v2.283 — Rapor bütünlüğü: numara boşluğu, atanmamış bölüm, KAYIT sütunu.
+// Kullanıcının gerçek raporunda ölçüldü: numaralar 1,2,3,4,5,**7** (6 yok),
+// 68 bölümlük kayıtta konuşmacı tablosu yalnız 13 bölüm gösteriyordu.
+{
+  console.log('[125] Rapor bütünlüğü (v2.283)');
+  const base = T.emptyCaseForTest({ id: 'c1' });
+  const map = T.reportNumberMap(base);
+  eq('soru yok: answers numara almaz', map.answers, undefined);
+  eq('soru yok: s7 numarası 8', map.s7, 8);
+  const nums = Object.values(map).sort((a, b) => a - b);
+  eq('numaralar bitişik (1..N)', nums.every((n, i) => n === i + 1), true);
+
+  const seg = (o) => Object.assign({ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', text: 'x', review: 'pending' }, o);
+  const m = {
+    id: 'm1', name: 'a.wav', duration: 20, sha256: 'a'.repeat(64),
+    speakers: [{ id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı' }],
+    segments: [seg({ id: 'g1', speaker: 'Kiracı', speakerId: 'a' }), seg({ id: 'g2', speaker: '', speakerId: '' })],
+    log: []
+  };
+  const c = { id: 'c', materials: [m], speakers: [] };
+  const t = T.materialSpeakerRows(c, m);
+  eq('atanmamış satırı var', t.rows.some((r) => r[1] === 'Konuşmacı belirtilmedi'), true);
+  eq('atanmamış bölüm sayısı', t.rows.find((r) => r[1] === 'Konuşmacı belirtilmedi')[2], '1 bölüm');
+  eq('konuşmacı satırı KAYIT taşır', T.speakerRows(c)[0][2], 'a.wav');
+  eq('süre satırı KAYIT taşır', T.speakerDurationRows(c)[0][2], 'a.wav');
+  const rs = T.reviewSummaryRows(c);
+  eq('özet: atanmamış bölüm satırı', rs.find((r) => r[0] === T.REPORT_TEXT.rsUnassignedSegs)[1], 1);
+  eq('özet: etiket (kayıt içi)', T.REPORT_TEXT.rsSpeaker, 'Konuşmacı etiketi (kayıt içi)');
+
+  eq('decodeErrorText tanımlı', typeof T.decodeErrorText, 'function');
+  if (typeof T.decodeErrorText === 'function') {
+    eq('İngilizce çözme hatası Türkçeleşir', /Ses verisi çözümlenemedi/.test(T.decodeErrorText({ message: 'Unable to decode audio data' })), true);
+    eq('bilinmeyen hata metni korunur', T.decodeErrorText({ message: 'başka' }), 'başka');
+  }
+  eq('unassignedSegments tanımlı', typeof T.unassignedSegments, 'function');
+  if (typeof T.unassignedSegments === 'function') eq('unassigned sayısı', T.unassignedSegments(m).length, 1);
+
+  // Üç çıktıda "bilinmiyor" süre dili TEK: en az 3 yerde matDuration koşulu.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('üç çıktıda süre "Bilinmiyor" koşulu', (js.match(/matDuration\(m\) \? fmtTime\(matDuration\(m\)\) : 'Bilinmiyor'/g) || []).length >= 3, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

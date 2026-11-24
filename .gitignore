@@ -19,3 +19,7 @@ desktop.ini
 # kökte tutulmaz; kullanıcı raporu yerelde kalır (v2.276).
 /2026_1.udf
 /*.udf
+
+# Kök dizin yayınlanır: rapor çıktıları izlenmez (v2.283)
+/*.docx
+/*.pdf

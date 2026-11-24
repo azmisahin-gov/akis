@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.282.**
+yazılır. **Güncel sürüm: v2.283.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.283 — Rapor bütünlüğü (TAMAMLANDI)
+
+- **Numara boşluğu** (5 → 7) giderildi: numara **çizilen** bölüme göre verilir.
+- **Atanmamış bölüm** satırı: "— Konuşmacı belirtilmedi (55 bölüm)".
+- Konuşmacı/süre tablolarına **KAYIT** sütunu (S kodları kayıt başına).
+- Bilinmeyen süre **"Bilinmiyor"**; çözme hatası **Türkçe**.
+- TOC'ta alt bloklar **"–"**; özet "Konuşmacı etiketi (kayıt içi)" + atanmamış
+  bölüm satırı; hazırlıkta "Gerekçeli sonuç yazılmadı".
+- Koruyan: `birim` [125].
 
 ## v2.282 — KOD/ETİKET sütunları + analiz sadeleştirme (TAMAMLANDI)
 

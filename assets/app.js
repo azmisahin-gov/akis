@@ -103,15 +103,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.282';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.282';
+} from './schema.js?v=2.283';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.283';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.282';
+const APP_VERSION = '2.283';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -238,12 +238,12 @@ const REPORT_TEXT = {
   attachmentsText: 'Raporla birlikte sunulan ekler, aşağıda numaralarıyla listelenmiştir.',
   noAttachments: 'Bu raporla ek sunulmamıştır.',
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
-  speakerHeaders: ['KOD', 'ETİKET', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
+  speakerHeaders: ['KOD', 'ETİKET', 'KAYIT', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   // v2.273 — S/K ve dosyalar arası eşleştirme açıklaması TEK paragrafta
   // (`speakerCodeNote`). Burada TEKRARLANMAZ (aynı bilgi iki yerde gösterilmez).
   speakerIntro:
     'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
-  noSpeakerRow: ['—', 'Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
+  noSpeakerRow: ['—', 'Konuşmacı etiketi girilmemiştir.', '', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
   segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
@@ -304,7 +304,9 @@ const REPORT_TEXT = {
   rsSilence: 'Sessizlik oranı ölçülen bölüm',
   rsSpectrogram: 'Spektrogram incelenen kayıt',
   rsChannel: 'Kanal ayrımı yapılan kayıt',
-  rsSpeaker: 'Etiketlenen konuşmacı',
+  rsSpeaker: 'Konuşmacı etiketi (kayıt içi)',
+  rsUnassignedSegs: 'Konuşmacı atanmamış bölüm',
+  unassignedSpeaker: 'Konuşmacı belirtilmedi',
   rsPitch: 'Perdesi ölçülen konuşmacı',
   rsOriginFilled: 'Kökeni belgelenen kayıt',
   rsOriginMedium: 'Ortam türü belirtilen kayıt',
@@ -387,7 +389,7 @@ Object.assign(REPORT_TEXT, {
   recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
   // v2.268 — süre/aralık AYRI tabloda; ana tablo sıkışmaz.
   speakerDurationHeading: 'Konuşmacı süreleri',
-  speakerDurationHeaders: ['KOD', 'ETİKET', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
+  speakerDurationHeaders: ['KOD', 'ETİKET', 'KAYIT', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
   speakerFootnote:
     'S kodları kayıt içidir (her kayıtta S1\'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.',
   speakerVerifiedSuffix: 'doğrulandı',
@@ -3700,11 +3702,11 @@ function speakerLegendItems(m) {
 }
 function materialSpeakerLine(m) {
   const items = speakerLegendItems(m);
-  if (!items.length) return '';
-  return (
-    REPORT_TEXT.recordSpeakersPrefix +
-    items.map((x) => `${x.code ? x.code + ' · ' : ''}${x.name} (${x.count} bölüm)`).join(' · ')
-  );
+  const un = unassignedSegments(m).length;
+  if (!items.length && !un) return '';
+  const parts = items.map((x) => `${x.code ? x.code + ' · ' : ''}${x.name} (${x.count} bölüm)`);
+  if (un) parts.push(`${REPORT_TEXT.unassignedSpeaker} (${un} bölüm)`);
+  return REPORT_TEXT.recordSpeakersPrefix + parts.join(' · ');
 }
 // Liste başındaki açıklama satırı: "Bu kaydın konuşmacıları: S1 · Kiracı (12)".
 // S kodları kayıt başına olduğu için bu satır olmadan S1 bağlamsız kalıyordu.
@@ -3730,6 +3732,10 @@ function refreshSpeakerLegend(m) {
 // "bu kayıtta kim konuştu" sorusunu TEK BAKIŞTA görsün diye düz metin yerine
 // tablo verilir. Sütunlar sabit; "dosyalar arası kişi" sütunu YALNIZ en az bir
 // konuşmacı bir kişiye bağlıysa eklenir (boş sütun gürültüdür).
+// Atanmamış (konuşmacısı boş) bölümler. Tablo ve satır aynı kaynağı kullanır.
+function unassignedSegments(m) {
+  return ((m && m.segments) || []).filter((sg) => !speakerForSegment(m, sg));
+}
 function materialSpeakerRows(c, m) {
   const items = speakerLegendItems(m);
   const spById = new Map(((m && m.speakers) || []).map((sp) => [sp.id, sp]));
@@ -3756,6 +3762,30 @@ function materialSpeakerRows(c, m) {
     keys.push('person');
   }
   const cells = rows.map((r) => [r.code, r.name, r.count, r.total, r.span].concat(hasPerson ? [r.person] : []));
+  // ATANMAMIŞ BÖLÜMLER (v2.283): tablo yalnız ATANMIŞ konuşmacıları listeliyordu;
+  // 68 bölümlük kayıtta 13 bölüm görünüyor, kalan 55 bölüm "yok" sanılıyordu.
+  const un = unassignedSegments(m);
+  if (un.length) {
+    let total = 0;
+    let first = '';
+    let last = '';
+    for (const sg of un) {
+      total += segDurationSec(sg);
+      const a = sg.start ? timecode(secondsFromTimecode(sg.start)) : '';
+      const b = sg.end ? timecode(secondsFromTimecode(sg.end)) : '';
+      if (a && (!first || a < first)) first = a;
+      if (b && b > last) last = b;
+    }
+    const row = {
+      code: '—',
+      name: REPORT_TEXT.unassignedSpeaker,
+      count: `${un.length} bölüm`,
+      total: total ? fmtShort(total) : '—',
+      span: first && last ? tcRange(first, last) : '—',
+      person: '—'
+    };
+    cells.push([row.code, row.name, row.count, row.total, row.span].concat(hasPerson ? [row.person] : []));
+  }
   return { headers, keys, rows: cells, hasPerson };
 }
 // OTURUMLUK konuşmacı dinleme kuyruğu (kayda YAZILMAZ).
@@ -11075,12 +11105,21 @@ async function transcribe(id, opts = {}) {
     m.hallucinationWarning = isLoad
       ? 'Model yüklenemedi. "Çözümleme ve model ayarları"ndan modeli yeniden yükleyip tekrar deneyin. Ayrıntı: ' +
         String(e && e.message)
-      : 'Çözümleme sırasında hata oluştu: ' + String(e && e.message);
+      : 'Çözümleme sırasında hata oluştu: ' + decodeErrorText(e);
     delete m.progress;
     persist();
     refreshAudioStatusZone(m);
     showToast(`${m.name}: ${isLoad ? 'model yüklenemedi' : 'çözümleme başarısız'} — ${e.message}`);
   }
+}
+// Tarayıcının İngilizce çözme hatası kullanıcıya Türkçe söylenir (v2.283):
+// "Unable to decode audio data" tek başına ne olduğunu anlatmıyordu.
+function decodeErrorText(e) {
+  const raw = String((e && e.message) || e || '');
+  if (/unable to decode|decodeAudioData|EncodingError/i.test(raw)) {
+    return 'Ses verisi çözümlenemedi (dosya bozuk, boş veya desteklenmeyen biçimde olabilir).';
+  }
+  return raw || 'bilinmeyen hata';
 }
 // A new manual segment starts where the previous one ended, or at the player's
 // current position, so the expert does not have to type timecodes by hand while
@@ -11319,6 +11358,7 @@ function speakerRows(c) {
   return speakerGroups(c).map((g) => [
     g.code || '—',
     g.name,
+    g.material || '—',
     g.role,
     g.gender,
     g.age,
@@ -11381,6 +11421,7 @@ function speakerGroups(c) {
         out.push({
           code: p.code || '',
           name: label,
+          material: [...new Set(links.map((l) => l.m.name))].join(', '),
           role: SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
           gender: SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
           age,
@@ -11405,6 +11446,7 @@ function speakerGroups(c) {
         out.push({
           code: sp.code || '',
           name: sp.name,
+          material: m.name,
           role: SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
           gender: SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
           age: sp.ageRange || '—',
@@ -11429,6 +11471,7 @@ function speakerDurationRows(c) {
   return speakerGroups(c).map((g) => [
     g.code || '—',
     g.name,
+    g.material || '—',
     `${g.count} bölüm`,
     g.totalSec ? fmtShort(g.totalSec) : '—',
     g.first && g.last ? tcRange(g.first, g.last) : '—'
@@ -11523,7 +11566,10 @@ function reviewSummaryRows(c) {
   // eşleştirilmişse TEK sayılır (v2.205).
   const speakerRowsForCount = speakerRows(c);
   const speakers = speakerRowsForCount.length;
-  const pitched = speakerRowsForCount.filter((r) => r[4] && r[4] !== '—').length;
+  // İndeks yerine TEK KAYNAK (v2.283): sütun eklendiğinde sayaç kaymasın.
+  const pitched = speakerGroups(c).filter((g) => g.pitches && g.pitches !== '—').length;
+  const spkName = (sg) => String((sg && sg.speaker) || '').trim();
+  const unassignedSegs = segs.filter((sg) => !spkName(sg) || spkName(sg) === 'Belirtilmedi').length;
   const levelMeasured = mats.filter((m) => m.levels && m.levels.ok && m.levels.schema === LEVELS_SCHEMA).length;
   // Köken belgelenmiş sayılır: ortam türü 'Belirtilmedi' dışında bir değer ve
   // en az bir teslim bilgisi (eden veya tarih) girilmişse.
@@ -11549,6 +11595,7 @@ function reviewSummaryRows(c) {
     [REPORT_TEXT.rsSpectrogram, spec],
     [REPORT_TEXT.rsChannel, chan],
     [REPORT_TEXT.rsSpeaker, speakers],
+    [REPORT_TEXT.rsUnassignedSegs, unassignedSegs],
     [REPORT_TEXT.rsPitch, pitched],
     [REPORT_TEXT.rsLevel, levelMeasured],
     [REPORT_TEXT.rsOriginMedium, originMedium],
@@ -11612,6 +11659,7 @@ const READINESS_SEVERITY = {
   materials: 'blocking',
   log: 'blocking',
   speakerCodes: 'blocking',
+  conclusion: 'expert',
   voice: 'expert',
   noSegments: 'expert',
   pending: 'expert',
@@ -11774,6 +11822,15 @@ function reportReadiness(c) {
     longSegs.length,
     'audio',
     `En uzun ${fmtShort(longest)}. Önerilen 1–3 cümle veya 15–30 sn; üst sınır 45 sn. Birleştirme engellenmez; gerekirse bölün.`
+  );
+  // GEREKÇELİ SONUÇ (v2.283): boşsa bölüm VARSAYILAN metinle yazılır; rapor
+  // bilirkişi kanaati olmadan çıkmamalı (engellemez, uzman maddesidir).
+  add(
+    'conclusion',
+    'Gerekçeli sonuç yazılmadı',
+    txt(c && c.conclusionText) ? 0 : 1,
+    'report',
+    'Bölüm varsayılan açıklama metniyle yazılır; bilirkişi kanaatini yazın.'
   );
   add(
     'hash',
@@ -12205,7 +12262,10 @@ function reportBodyOrder(c) {
   return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k));
 }
 function reportNumberMap(c) {
-  return mainSectionNumbers(reportBodyOrder(c), (k) => reportSectionOn(c, k), REPORT_MAIN_KEYS);
+  // v2.283 — NEDEN: numara yalnız AÇIK bölüme göre veriliyordu; "Cevaplar"
+  // açık ama soru yoksa çizilmiyordu → numarada BOŞLUK kalıyordu (1,2,3,4,5,7).
+  // Numaralandırma artık "çizilecek mi" ölçütünü kullanır (reportBlockRenders).
+  return mainSectionNumbers(reportBodyOrder(c), (k) => reportBlockRenders(c, k), REPORT_MAIN_KEYS);
 }
 function reportSectionTitle(key) {
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
@@ -12257,7 +12317,12 @@ function reportTocEntries(c) {
   const out = [];
   for (const key of reportBodyOrder(c)) {
     if (!reportBlockRenders(c, key)) continue;
-    out.push(reportHeadingText(c, key, map));
+    // v2.283 — NUMARASIZ SATIR AÇIKÇA ALT BLOK: ana bölümler 1,2,3… numara
+    // alır; köken/delil/konuşmacılar/okuma/özet gibi bloklar ana bölümün
+    // içeriğidir ve "–" ile gösterilir. Kullanıcı "neden bazıları numarasız"
+    // diye sordu; artık TOC'ta fark görünür.
+    const text = reportHeadingText(c, key, map);
+    out.push(REPORT_MAIN_KEYS.includes(key) ? text : `– ${text}`);
   }
   return out;
 }
@@ -13344,7 +13409,7 @@ function renderReport() {
       if (materials.length) {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
-          out += `<h4>${n5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${fmtTime(matDuration(m))} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+          out += `<h4>${n5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
           {
             const spkTable = materialSpeakerRows(c, m);
             if (spkTable.rows.length) {
@@ -13811,7 +13876,7 @@ function docxXml(c) {
         const m = c.materials[i];
         out += headingXml(`${n5}.1.${i + 1}. ${m.name}`, 2);
         out += wP(
-          `Süre: ${fmtTime(matDuration(m))}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
+          `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
           { color: '6F8295', size: 17 }
         );
         {
@@ -14374,7 +14439,7 @@ async function makeUdf() {
           el.push(paragraph(`${n5}.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
           el.push(
             paragraph(
-              `Süre: ${fmtTime(matDuration(m))}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
+              `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
               { size: 9, color: 'muted', after: 3 }
             )
           );
@@ -18304,6 +18369,17 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.283': {
+    title: 'Rapor bütünlüğü: numara boşluğu, atanmamış bölüm, KAYIT sütunu',
+    body:
+      'Gerçek uçtan uca raporda ölçülen dört sorun giderildi: (1) numaralar 5 → 7 atlıyordu ' +
+      '("Cevaplar" açık ama soru yokken çizilmiyordu); artık numaralar bitişik. (2) 68 bölümlük kayıtta ' +
+      'konuşmacı tablosu yalnız 13 bölüm gösteriyordu; artık "— Konuşmacı belirtilmedi (55 bölüm)" satırı var. ' +
+      '(3) Aynı S1/S2 kodları kayıtlar arasında tekrarlandığı için konuşmacı tablolarına KAYIT sütunu eklendi. ' +
+      '(4) Süresi bilinmeyen dosyada "00:00:00" yerine "Bilinmiyor" yazılır; ses çözme hatası Türkçe açıklanır. ' +
+      'Ayrıca içindekilerde numarasız satırlar "–" ile alt blok olarak işaretlenir ve boş gerekçeli sonuç ' +
+      'için hazırlık uyarısı çıkar.'
+  },
   '2.282': {
     title: 'Rapor sütunlarında KOD/ETİKET ayrıldı; analiz alanı sadeleşti',
     body:

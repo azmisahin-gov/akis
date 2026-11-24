@@ -772,8 +772,8 @@ export const REPORT_COLUMN_TABLES = {
   // Tek hücrede "S1 · Kiracı" yazmak, mahkemenin kodu ve adı ayrı okumasını
   // ve ayrı açıp kapatmasını engelliyordu.
   segments: ['time', 'speakerCode', 'speakerLabel', 'text', 'review', 'obs'],
-  speakers: ['code', 'label', 'role', 'gender', 'age', 'pitch', 'parts'],
-  speakerDurations: ['code', 'label', 'chapters', 'duration', 'span'],
+  speakers: ['code', 'label', 'material', 'role', 'gender', 'age', 'pitch', 'parts'],
+  speakerDurations: ['code', 'label', 'material', 'chapters', 'duration', 'span'],
   materialSpeakers: ['code', 'label', 'chapters', 'duration', 'span', 'person']
 };
 export const REPORT_COLUMN_LABELS = {
@@ -828,6 +828,7 @@ export const REPORT_COLUMN_LABELS = {
   speakers: {
     code: 'KOD',
     label: 'ETİKET',
+    material: 'KAYIT',
     role: 'ROL',
     gender: 'CİNSİYET',
     age: 'YAŞ ARALIĞI',
@@ -837,6 +838,7 @@ export const REPORT_COLUMN_LABELS = {
   speakerDurations: {
     code: 'KOD',
     label: 'ETİKET',
+    material: 'KAYIT',
     chapters: 'BÖLÜM',
     duration: 'SÜRE',
     span: 'İLK – SON'

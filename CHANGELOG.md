@@ -6,12 +6,75 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.282.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.283.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.283 — Rapor bütünlüğü (gerçek uçtan uca raporda ölçüldü)
+
+Kullanıcı iki delil paketi (USB Kingston 2 dosya + SD Realtek 2 dosya), 4 kayıt,
+bir bozuk (0 bayt) dosya ile uçtan uca denedi; UDF/DOCX paylaştı. Bulgular ve
+yapılanlar:
+
+### Doğru çıkanlar (değişmedi)
+
+- **SHA-256'lar tutuyor**: USB dosyaları `775ed349…`, `e3b0c442…` (0 bayt dosyanın
+  SHA-256'sı tam olarak boş girdinin özeti), SD dosyaları `509a100e…`,
+  `c6ec83a2…`; edinme günlüğüyle **birebir**.
+- **0 baytlık dosya dürüst**: envanterde `0 B / Bilinmiyor`, 5.1.1'de çözümleme
+  hatası ve "deşifre metni oluşturulmamış" yazıyor; uydurma bölüm yok.
+- **Atanmamış bölümler** kanıt tablosunda `—` / `Belirtilmemiş` ve
+  **Kontrol bekliyor** olarak görünüyor; "onaylandı" gibi gösterilmiyor.
+- Üç çıktı (HTML/DOCX/UDF) aynı metni üretiyor; UDF'te görünmez karakter yalnız
+  SHA-256 içinde (5 jeton, kelime/saat/tarihte 0).
+
+### Düzeltilen dört sorun
+
+1. **Numara boşluğu (1,2,3,4,5,7).** Numaralandırma "bölüm açık mı" ölçütüne
+   bakıyordu; "Cevaplar" **açık** ama soru olmadığı için **çizilmiyordu** →
+   numara verilip blok atlanıyordu. Artık numara **çizilecek** bölüme göre
+   verilir (`reportBlockRenders`). Ölçüm: `s1..s7 + limits` → **1..8 bitişik**;
+   soru varsa "Cevaplar" yine 6 olur.
+2. **Konuşmacı tablosu eksik bölüm gösteriyordu.** 68 bölümün 55'i atanmamıştı
+   ama tablo yalnız atanmış 13 bölümü listeliyordu. Artık **"— Konuşmacı
+   belirtilmedi"** satırı (bölüm sayısı, süre, ilk–son) eklenir; okuma metnindeki
+   "Bu kaydın konuşmacıları" satırı da atanmamışı yazar.
+3. **Aynı S1/S2 kodları kayıtlar arasında tekrarlanıyordu** (S kodları kayıt
+   başınadır) ama tabloda kayıt yazmıyordu. Konuşmacı ve konuşmacı süreleri
+   tablolarına **KAYIT** sütunu eklendi (7/8 ve 5/6 sütun; rapor alanlarından
+   açılıp kapanır).
+4. **Süre bilinmiyor ama "00:00:00" yazıyordu** (5.1.x). Envanterle aynı dil:
+   **"Bilinmiyor"**. Ayrıca tarayıcının İngilizce hatası
+   (`Unable to decode audio data`) **Türkçe** açıklanır: *"Ses verisi
+   çözümlenemedi (dosya bozuk, boş veya desteklenmeyen biçimde olabilir)."*
+
+### Ek iyileştirmeler
+
+- **İçindekiler:** numarasız satırlar (köken, delil edinme, konuşmacılar, okuma
+  metni, inceleme özeti) artık **"–"** ile **alt blok** olarak işaretli. Ana
+  bölümler 1,2,3… numara taşır. (Kullanıcı "neden bazıları numarasız" diye sordu;
+  bu, 56.12 yapısında ana bölüm/alt blok ayrımıdır.)
+- **İnceleme özeti:** "Etiketlenen konuşmacı" → **"Konuşmacı etiketi (kayıt içi)"**
+  (7 satır, 3 kişi değil) ve yeni **"Konuşmacı atanmamış bölüm: 55"** satırı.
+- **Rapor hazırlığı:** **"Gerekçeli sonuç yazılmadı"** maddesi (uzman kontrolü).
+  Boş sonuç bölümü varsayılan metinle yazıldığı için rapordan önce görülmeli.
+- **Depo hijyeni:** kök dizine konan `.docx`/`.pdf` çıktıları `.gitignore`'a
+  alındı (kök herkese açık yayınlanır).
+
+### Ölçüm
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Numaralı başlıklar | 1..5, **7**, 8, 9 | **1..8 bitişik** |
+| 68 bölümlük kayıtta tablo | 13 bölüm | **13 + 55 atanmamış** |
+| Konuşmacı tablolarında kayıt | yok | **KAYIT sütunu** |
+| Bilinmeyen süre | 00:00:00 | **Bilinmiyor** |
+| Çözme hatası dili | İngilizce | **Türkçe** |
+
+Koruyan test: `birim` [125]; `birim`/`rapor`/`tasarim` tümü yeşil.
 
 ## v2.282 — Konuşmacı KOD/ETİKET ayrı sütunlar + analiz alanı sadeleşti
 
