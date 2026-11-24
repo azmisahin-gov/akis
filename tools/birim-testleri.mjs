@@ -5652,6 +5652,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('gömme ölçümü atama YAPMAZ', block.length > 1000 && !/setSegmentSpeakerByName\s*\(/.test(block), true);
   eq('gömme düğmesi var', /data-voice-embed/.test(js), true);
   eq('model indirme onayı sorulur', /askConfirm\(/.test(block), true);
+  eq('konuşmacı yokken de gömme paneli çizilir', /Konuşmacı etiketi girilmedi[\s\S]{0,200}voiceEmbedPanelHtml\(m\)|voiceEmbedPanelHtml\(m\)[\s\S]{0,200}Konuşmacı etiketi girilmedi/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.279.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.280.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6733,3 +6733,14 @@ Tek konuşmacılı veri gerekiyorsa gerçek/etiketli kayıt kullanın.
 - Profil için en az **2** ölçülmüş bölüm gerekir (leave-one-out); tek bölümlü
   konuşmacı değerlendirilmez.
 - Kuantize model (q8) fp32'ye göre küçük farklar üretir; eşikler q8 ile ölçüldü.
+
+## EK DÜZELTME (v2.280) — Gömme paneli konuşmacı yokken de görünür
+
+**Ölçülen eksik:** `speakersPanelHtml` konuşmacı listesi boşken **erken
+dönüyordu**; `.voice-embed` paneli hiç çizilmiyordu (canlı ölçüm: 0). Oysa
+öneri üretimi tam o durumda gerekli. Erken dönüşe panel eklendi; profil yoksa
+"bölümlere konuşmacı atayıp yeniden ölçün" yazar.
+
+**DERS:** "Panel yalnız veri varsa çizilir" varsayımı, o panelin **veri
+oluşturma** işi varsa yanlıştır. Boş durum = panelin en gerekli olduğu durum
+olabilir.

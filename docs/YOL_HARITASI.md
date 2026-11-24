@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.279.**
+yazılır. **Güncel sürüm: v2.280.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.280 — Gömme paneli her durumda görünür (TAMAMLANDI)
+
+- Konuşmacı listesi boşken panel gizleniyordu (canlı ölçüm: `.voice-embed` = 0).
+- Erken dönüşe `voiceEmbedPanelHtml(m)` eklendi; profil yoksa açıklama yazılır.
+- Koruyan: `birim` [123].
 
 ## v2.279 — Konuşmacı gömme (embedding) benzerliği (TAMAMLANDI)
 

@@ -103,15 +103,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.279';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.279';
+} from './schema.js?v=2.280';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.280';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.279';
+const APP_VERSION = '2.280';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4562,7 +4562,10 @@ function speakersPanelHtml(m) {
   </div>`;
 
   if (!sp.length)
-    return `${personBlock}<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>`;
+    // Konuşmacı YOKKEN de gömme paneli görünür: ölçüm, atanmamış bölümler için
+    // "hangi konuşmacıya benziyor" önerisi üretir (v2.280). Panel gizlenirse
+    // öneriden hiç haberdar olunmaz.
+    return `${personBlock}${voiceEmbedPanelHtml(m)}<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>`;
   const merges = suggestSpeakerMerges(m);
   const mergeNote = merges.length
     ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map((g) => g.map((s) => esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`
@@ -4715,6 +4718,10 @@ function voiceEmbedInnerHtml(m) {
         } · ${esc(when)}`
       : ''
   }</span></div>${rows}${
+    ve && !(ve.profiles || []).length
+      ? `<div class="vc-row"><span class="vc-txt">Karşılaştırılacak konuşmacı profili yok: bölümlere konuşmacı atayıp yeniden ölçün (konuşmacı başına en az 2 bölüm).</span></div>`
+      : ''
+  }${
     ve && (ve.outliers || []).length > 20
       ? `<div class="vc-row"><span class="vc-txt">… ${ve.outliers.length - 20} şüpheli daha (listede ⚠ gömme)</span></div>`
       : ''
@@ -18247,6 +18254,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.280': {
+    title: 'Gömme paneli konuşmacı yokken de görünüyor',
+    body:
+      'Konuşmacı etiketi henüz girilmemiş kayıtta "Ses gömme ölçümü" paneli gizleniyordu; oysa panelin ' +
+      'bir işi de atanmamış bölümler için "hangi konuşmacıya benziyor" önerisi üretmek. Artık panel her ' +
+      'durumda görünür; karşılaştırma için konuşmacı gerektiğini açıkça söyler. Ölçüm yine yalnız sizin ' +
+      'tetiklemenizle çalışır; indirme onayı sorulur ve hiçbir atama otomatik değişmez.'
+  },
   '2.279': {
     title: 'Konuşmacı gömme ölçümü: "bu bölüm gerçekten bu kişi mi?"',
     body:
