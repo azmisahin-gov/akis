@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.277.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.278.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.278 — Koyu temada okunmayan metinler (ölçümle)
+
+**Yöntem (v2.277 sonrası):** Üç tema × dört görünümde **her metin düğümünün
+hesaplanan rengi** ve **alfa birleştirilmiş zemini** okunup WCAG oranı
+hesaplandı. Yedi öğe 4.5:1 altında kaldı; hepsi app.css'te **ham hex** metin
+rengi taşıyordu (tema token'ı olmadığı için koyu/sepya temada okunmuyordu).
+
+### KULLANICI NE GÖRECEK
+
+- Soru sekmeleri (**Görevlendirme kapsamı / Cevaplanacak sorular**), **klavye
+  kısayolları** başlığı, **referans kutusu**, **yükleme alanı ipucu**, **boş
+  durum** başlıkları ve **dışa aktarma notu** üç temada da okunur.
+- Satır yükseklikleri ve yerleşim değişmedi; yalnız metin renkleri token'a bağlandı.
+
+### Ölçüm (hesaplanan renk, WCAG)
+
+| Öğe | Önce | Sonra |
+|---|---|---|
+| Soru sekmesi etiketi (koyu) | **1.53:1** | **9.65:1** |
+| Soru sekmesi açıklaması (açık/koyu) | **2.30 / 2.16** | **7.51 / 8.21** |
+| Soru sekmesi sayacı (koyu) | **2.34:1** | **7.75:1** |
+| Klavye etiketi (koyu) | **1.94:1** | **8.75:1** |
+| Yükleme ipucu (koyu) | **3.13:1** | **6.44:1** |
+| Dışa aktarma notu (koyu) | **1.91:1** | **14.05:1** |
+| Referans kutusu başlığı/kalın metni (koyu) | **3.02:1** | token (`--ink-2`) |
+| **Tarama toplamı (3 tema × 4 görünüm)** | **10 ihlal** | **0** |
+
+Koruyan test: `tasarim` [2cs] (9 kontrol) + CSS borç nöbetçisi (eşik artmadı).
 
 ## v2.277 — Kayıt adı tam görünüyor (kırpma ve koyu tema)
 

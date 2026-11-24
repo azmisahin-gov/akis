@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.277.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.278.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6615,3 +6615,51 @@ v2.252 öncesi kodla üretilmişti (63 ZWSP). Üç ölü fonksiyon; üç belgede
 | Yatay taşma · rozet | yok · görünür | yok · görünür |
 
 Koruyan test: `tasarim` [2cr] (6 kontrol).
+
+## YENİ OTURUM DEVRİ (v2.278) — Kalan düşük kontrast metinler
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.278** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1831 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Yok (v2.277–v2.278 tema turu kapandı) |
+
+### Ölçüm yöntemi (TEKRAR KULLANILABİLİR — bu turun en değerli çıktısı)
+
+Üç tema × dört görünümde **her metin düğümü** için:
+1. `getComputedStyle(el).color` (alfa dâhil),
+2. ata zinciri boyunca `background-color` **alfa birleştirilerek** gerçek zemin,
+3. WCAG kontrast oranı; `el.closest('[aria-hidden="true"]')`, `[hidden]`,
+   `.report-paper` dışlanır; yalnız **harf içeren** yaprak düğümler sayılır.
+
+Bu yöntem, CSS dosyasını taramaktan farklıdır: **hangi kuralın kazandığını** ve
+gerçek zemini ölçer. v2.277 sonrası **10 ihlal** bulundu (v2.161/v2.162
+denetimlerinin kaçırdığı öğeler).
+
+### Bulunan ve düzeltilen (hepsi app.css'te HAM HEX metin rengi)
+
+| Öğe | Koyu tema önce | Sonra |
+|---|---|---|
+| Soru sekmesi etiketi | **1.53** | 9.65 |
+| Soru sekmesi açıklaması | 2.30 (açık) | 7.51 / 8.21 |
+| Soru sekmesi sayacı | 2.34 | 7.75 |
+| Klavye etiketi | 1.94 | 8.75 |
+| Yükleme ipucu | 3.13 | 6.44 |
+| Dışa aktarma notu | 1.91 | 14.05 |
+| Referans kutusu başlığı/kalın | 3.02 | token |
+
+Tarama sonrası: **0 ihlal** (boş durumlar dâhil).
+
+### DEĞİŞMEZ KURALLAR
+
+1. Metin rengi **ham hex** yazılmaz; `--ink/--ink-2/--ink-3` kullanılır.
+2. Tema denetimi **hesaplanan renkle** yapılır; "token var" yeterli değildir.
+3. Yeni bir kural eklerken **CSS borç nöbetçisi** (app.css→layer ≤500) artmamalı:
+   aynı seçici+özellik çifti yazmak yerine kapsamlı seçici kullanın
+   (ör. `.app-shell .empty-state b`).
+4. Ocak 2026'ya kadar: yeni bir panel/rozet eklediğinizde yukarıdaki taramayı
+   çalıştırın; ihlal 0 olmadan sürüm çıkarmayın.
+
+Koruyan test: `tasarim` [2cs] (9 kontrol).

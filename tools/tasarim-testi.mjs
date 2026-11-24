@@ -2167,5 +2167,25 @@ console.log('\n[2cr] Kayıt adı kırpılmaz ve temaya bağlıdır (v2.277)');
   const topBlock = (layer.match(/#view-audio \.mc-top\s*\{[^}]*\}/) || [''])[0];
   check('çok satırda numara üstte hizalanır', /align-items:\s*flex-start/.test(topBlock));
 }
+
+console.log('\n[2cs] Kalan düşük kontrast metinler (v2.278)');
+{
+  const layer = read('assets/reading-layer.css');
+  // ÖLÇÜM (v2.277, üç tema × dört görünüm, hesaplanan renk): yedi öğe AA altı
+  // kaldı — hepsi app.css'te HAM HEX metin rengi taşıyordu.
+  // Sorun: tema token'ı yerine sabit renk → koyu temada okunmuyor.
+  const must = [
+    ['klavye etiketi', /#view-audio \.kbd-hint b[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['referans kutusu başlığı', /#view-audio \.reference-box summary[\s\S]{0,200}color:\s*var\(--ink-2\)/],
+    ['referans kutusu kalın metni', /#view-audio \.reference-box b[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['yükleme ipucu', /#view-audio \.upload-text[\s\S]{0,120}color:\s*var\(--ink-3\)/],
+    ['soru sekmesi etiketi', /#view-questions \.split-item:not\(\.on\) b[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['soru sekmesi açıklaması', /#view-questions \.split-item small[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['soru sekmesi sayacı', /#view-questions \.split-n[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['boş durum başlığı', /\.empty-state b[\s\S]{0,80}color:\s*var\(--ink-2\)/],
+    ['dışa aktarma notu', /#view-report \.export-note b[\s\S]{0,80}color:\s*var\(--ink\)/]
+  ];
+  for (const [label, rx] of must) check(label + ' token rengi kullanır', rx.test(layer));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

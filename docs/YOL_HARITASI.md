@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.277.**
+yazılır. **Güncel sürüm: v2.278.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.278 — Kalan düşük kontrast metinler (TAMAMLANDI)
+
+- Ölçüm: 3 tema × 4 görünüm, **hesaplanan renk + alfa birleşik zemin** → 10 ihlal.
+- Yedi öğe token'a bağlandı (soru sekmeleri, klavye etiketi, referans kutusu,
+  yükleme ipucu, boş durum, dışa aktarma notu).
+- Yeni tarama: **0 ihlal**; satır yüksekliği/yerleşim değişmedi.
+- Koruyan: `tasarim` [2cs].
 
 ## v2.277 — Kayıt adı: kırpma ve koyu tema (TAMAMLANDI)
 

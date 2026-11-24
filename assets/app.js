@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.277';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.277';
+} from './schema.js?v=2.278';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.278';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.277';
+const APP_VERSION = '2.278';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -17948,6 +17948,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.278': {
+    title: 'Koyu temada okunmayan metinler düzeltildi',
+    body:
+      'Üç tema × dört görünümde her metnin HESAPLANAN rengi ölçüldü: yedi öğe WCAG AA altındaydı ' +
+      '(ör. soru sekmesi etiketi koyu temada 1.53:1, klavye etiketi 1.94:1, dışa aktarma notu 1.91:1). ' +
+      'Hepsi sabit renk taşıyordu; artık tema token\'ı kullanıyor. Yeni tarama: ihlal 0. Görünür ' +
+      'davranış değişmedi; yalnız bu metinler üç temada da okunur.'
+  },
   '2.277': {
     title: 'Kayıt adı artık tam görünüyor (ve koyu temada okunuyor)',
     body:

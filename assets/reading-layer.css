@@ -3846,3 +3846,20 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   color: var(--ink);
   line-height: 1.3;
 }
+
+/* v2.278 — KALAN düşük kontrast metinler (ÖLÇÜMLE bulundu).
+   Yöntem: üç tema × dört görünümde her metin düğümünün HESAPLANAN rengi ve
+   (alfa birleştirilmiş) zemini okunup WCAG oranı hesaplandı. v2.277 sonrası
+   yedi öğe 4.5:1 altında kaldı; hepsi app.css'te HAM HEX metin rengi taşıyordu
+   (tema token'ı olmadığı için koyu temada okunmuyordu). */
+#view-audio .kbd-hint b,
+#view-audio .reference-box summary,
+#view-audio .reference-box b { color: var(--ink-2); }
+#view-audio .reference-box p,
+#view-audio .upload-text,
+#view-audio .empty-symbol { color: var(--ink-3); }
+.app-shell .empty-state b { color: var(--ink-2); }
+#view-questions .split-item:not(.on) b { color: var(--ink-2); }
+#view-questions .split-item small { color: var(--ink-2); }
+#view-questions .split-n { color: var(--ink-2); }
+#view-report .export-note b { color: var(--ink); }
