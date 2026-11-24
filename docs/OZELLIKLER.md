@@ -1,4 +1,4 @@
-# Özellikler (v2.265 — mevcut durum)
+# Özellikler (v2.266 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -578,6 +578,9 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **Konuşmacı tablosunda süre (v2.266):** BÖLÜM/NOT hücresi `a.wav: 5 bölüm · toplam 00:25 ·
+  00:00:00.000 – 00:01:10.000` biçiminde süre ve ilk–son duyulmayı taşır; dosyalar arası kişide
+  bağlı kayıtların toplamıdır.
 - **Ses tutarlılığı ölçümü (v2.265):** **Ses tutarlılığını ölç** → bölüm bazında perde ölçer, atandığı
   konuşmacının profiliyle (ortanca) karşılaştırır. Sapan bölüm listede **⚠ ses**, panelde “Bölüm N · … Hz ·
   atandığı profili … Hz · en yakın: S2” + **Git**. Ardışık bölümlerde ani sıçrama → “konuşmacı değişmiş

@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.265';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.265';
+} from './schema.js?v=2.266';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.266';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.265';
+const APP_VERSION = '2.266';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10776,9 +10776,21 @@ function speakerRows(c) {
           .filter((x) => x.sp.pitch)
           .map((x) => `${x.m.name}: ${fmtHz(x.sp.pitch)}`)
           .join('; ');
+        // v2.266 — süre ve ilk/son duyulma: bağlı kayıtların TOPLAMI.
+        let totalSec = 0;
+        let firstAt = '';
+        let lastAt = '';
+        for (const l of links) {
+          const st = speakerStats(l.m, l.sp);
+          totalSec += st.totalSec;
+          if (st.first && (!firstAt || st.first < firstAt)) firstAt = st.first;
+          if (st.last && st.last > lastAt) lastAt = st.last;
+        }
         const parts = links
           .map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`)
           .join(' · ');
+        const span = firstAt && lastAt ? tcRange(firstAt, lastAt) : '';
+        const summary = [parts, totalSec ? `toplam ${fmtShort(totalSec)}` : '', span].filter(Boolean).join(' · ');
         const verified = links.some((x) => isSpeakerVerified(x.sp)) ? REPORT_TEXT.speakerVerifiedSuffix : '';
         const note = [p.notes, 'uzman eşleştirmesi', verified].filter(Boolean).join(' · ');
         out.push([
@@ -10787,12 +10799,17 @@ function speakerRows(c) {
           SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
           age,
           pitches || '—',
-          `${parts}${note ? ' · ' + note : ''}`
+          `${summary}${note ? ' · ' + note : ''}`
         ]);
       } else {
         // Bağsız: eski davranış (tek kayıt satırı).
         if (!sp.name || sp.name === 'Belirtilmedi') continue;
-        const dur = `${m.name}: ${segs.length} bölüm`;
+        // v2.266 — süre ve ilk/son duyulma (tek kayıt).
+        const stat = speakerStats(m, sp);
+        const span = stat.first && stat.last ? tcRange(stat.first, stat.last) : '';
+        const dur = [m.name + ': ' + segs.length + ' bölüm', stat.totalSec ? 'toplam ' + fmtShort(stat.totalSec) : '', span]
+          .filter(Boolean)
+          .join(' · ');
         const note = [sp.notes, sp.pitchSamples ? `perde ${sp.pitchSamples} örnek` : '', isSpeakerVerified(sp) ? REPORT_TEXT.speakerVerifiedSuffix : '']
           .filter(Boolean)
           .join(' · ');
@@ -17522,6 +17539,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.266': {
+    title: 'Rapor konuşmacı tablosu: süre ve ilk–son duyulma',
+    body:
+      'Raporun "Konuşmacılar" tablosunda BÖLÜM / NOT hücresi artık kayıt adı ve bölüm sayısının yanında ' +
+      '"toplam 00:25 · 00:00:00.000 – 00:01:10.000" bilgisini taşır. Dosyalar arası kişide bu değerler ' +
+      'bağlı kayıtların TOPLAMIDIR. Böylece rapor, konuşmacıların hangi aralıkta ve ne kadar duyulduğunu ' +
+      'kendi içinde açıklar; ayrıntılı kanıt tablosu değişmez.'
+  },
   '2.265': {
     title: 'Ses tutarlılığı ölçümü: yanlış etiketlenen bölüm görünür',
     body:

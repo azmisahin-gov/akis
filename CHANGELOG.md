@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.265.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.266.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.266 — Rapor konuşmacı tablosu: süre ve ilk–son duyulma
+
+Kullanıcı: *"Raporda konuşmacılar alanı var ama emin olmak istiyorum."* Tablo zaten
+vardı; eksik olan **ne kadar** ve **hangi aralıkta** duyulduğu bilgisiydi.
+
+### KULLANICI NE GÖRECEK
+
+- **Konuşmacılar** tablosunun BÖLÜM / NOT hücresi artık:
+  `a.wav: 5 bölüm · toplam 00:25 · 00:00:00.000 – 00:01:10.000`
+- **Dosyalar arası kişide** (K1) bu değerler **bağlı kayıtların toplamıdır**;
+  bölüm dökümü yine kayıt kayıt yazılır.
+- Ayrıntılı kanıt tablosu, sütunlar ve diğer bölümler **değişmedi**.
+
+### Teknik
+
+- `speakerStats(m, sp)` tek kaynak (v2.263'te eklendi); rapor satırı artık onu
+  kullanıyor: `count`, `totalSec` (bir ondalık), `first`, `last`.
+- Süre biçimi `fmtShort` (dk:sn), aralık `tcRange` (milisaniyeli, depo kuralı).
+- Kişi satırında `first = min`, `last = max`, `totalSec = Σ`.
+
+### Koruyan test
+
+- `rapor` **Senaryo 33**: üç çıktıda `toplam 00:10`, `00:00:10.000` ve
+  `a.wav: 2 bölüm` birlikte bulunur.
 
 ## v2.265 — Ses tutarlılığı ölçümü (yanlış etiketlenen bölüm görünür)
 

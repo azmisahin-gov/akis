@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.265.**
+yazılır. **Güncel sürüm: v2.266.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.266 — Rapor konuşmacı tablosu: süre + ilk/son (TAMAMLANDI)
+
+- BÖLÜM/NOT: `a.wav: 5 bölüm · toplam 00:25 · 00:00:00.000 – 00:01:10.000`.
+- Kişi satırında toplam/ilk/son bağlı kayıtlardan hesaplanır.
+- Koruyan: `rapor` 33.
 
 ## v2.265 — Ses tutarlılığı ölçümü (TAMAMLANDI)
 

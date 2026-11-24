@@ -1198,5 +1198,21 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   );
 }
 
+
+// Senaryo 33: konuşmacı tablosunda süre + ilk/son duyulma (v2.266).
+{
+  console.log('\n[Senaryo 33] konuşmacı tablosu: süre + ilk/son (v2.266)');
+  const c = withMaterial();
+  c.materials[0].speakers = [{ id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' },
+    { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'iki', review: 'approved' }
+  ];
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('satırda toplam süre', 'toplam 00:10', H, U, D);
+  checkShared('satırda ilk/son duyulma', '00:00:10.000', H, U, D);
+  checkShared('bölüm sayısı korunur', 'a.wav: 2 bölüm', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);
