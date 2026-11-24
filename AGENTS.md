@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.259.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.260.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5903,3 +5903,25 @@ etiket gizliydi.
 - Gerçek PDF (pdf-lib/jsPDF + font) — büyük iş; onay gerekir.
 - Alt bölümlere numara (3.1 gibi) — 5.1 atıfları yeniden numaralanır; karar gerekir.
 - "UI'de başka ekler" — hangi ekran/öğe olduğu netleşince tutarlılaştırılır.
+
+## YENİ OTURUM DEVRİ (v2.260) — OpenOffice/LibreOffice tablo sola çıkıntı
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.260** |
+| Testler | `bash tools/test.sh` → **1551 birim + 517 şema** + rapor/sürüm/tasarım yeşil |
+
+### Kök neden / düzeltme
+- Tablo hücresi **yatay dolgu 110 twip (~0,19cm)** → LibreOffice tablo metnini marja hizalayıp
+  **kenarlığı sola taşırıyordu**. Düzeltme: `tblCellMar left/right=0` + hücre paragrafına
+  `w:ind left/right=90`. Kenarlık metin marjıyla hizalı.
+- **LibreOffice bu ortamda YOK** → görsel doğrulama kullanıcıda. Hâlâ çıkıntı varsa `tblInd=110`.
+
+### Kullanıcı istekleri (açık, karar/sıradaki)
+- **Serbest düzen / sürükle-bırak:** bölüm ve ekleri istediği yere sürükleyip koymak istiyor.
+  Şu an iskelet ↑↓ + aç/kapa + ek sıralama var; gerçek **drag-drop** ve "bölümü ekler'e taşı"
+  ayrı ve büyük bir özellik (sıradaki aday).
+- **PDF motoru:** gerçek `.pdf` = PDF kütüphanesi + Türkçe font gömme → **yüksek maliyet**;
+  öneri: OpenOffice/Word "PDF olarak dışa aktar" kullan (tablo hizası düzeltildi).

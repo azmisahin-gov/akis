@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.259.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.260.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.260 — DOCX tablo sola çıkıntısı giderildi (OpenOffice/LibreOffice)
+
+Kullanıcı: "OpenOffice'ta DOCX'i açıyorum; tablolar metne göre biraz sola çıkıntılı
+duruyor. Düzgün olsa PDF'i buradan alırım."
+
+**Kök neden:** Tablo hücrelerinde **yatay dolgu 110 twip (~0,19 cm)** vardı.
+LibreOffice, tablo **metnini** marja hizalayıp **kenarlığı** sola taşırıyor →
+çıkıntı. (UDF'te bu ayar yok, o yüzden orada sorun görünmüyordu.)
+
+### Düzeltme
+- `w:tblCellMar` sol/sağ **110 → 0**.
+- Hücre dolgusu artık **paragraf girintisiyle** (`w:ind left/right=90`) verilir.
+  Böylece **tablo kenarlığı metin marjıyla aynı hizada** başlar; metin hücre
+  içinde yine nefes alır. Hem Word hem LibreOffice'te çıkıntı beklenmez.
+
+### Dürüst sınır
+- Bu ortamda **LibreOffice yok**; çıktı **kural olarak** düzeltildi (testle denetlenir),
+  ama **görsel doğrulama sende**. Hâlâ çıkıntı görürsen çözüm `tblInd = 110` (tabloyu
+  sağa kaydır) olur; söyle, uygularım.
+
+### Koruyan test
+- `rapor` Senaryo 29: `tblCellMar left=0` + `w:ind left=90` + `tblInd=0` + `tblW=contentTw`.
 
 ## v2.259 — Resmîleştirme: DOCX tablo genişliği, ana bölümler yeni sayfa, PDF düğmesi
 

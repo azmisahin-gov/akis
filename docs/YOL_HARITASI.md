@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.259.**
+yazılır. **Güncel sürüm: v2.260.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.260 — DOCX tablo sola çıkıntı (OpenOffice) giderildi (TAMAMLANDI)
+
+- Hücre yatay dolgusu 110→0; dolgu paragraf girintisiyle (90). Kenarlık metinle hizalı.
+- LibreOffice yok → kural düzeltildi, görsel doğrulama kullanıcıda; gerekirse `tblInd=110`.
+- Koruyan: `rapor` 29.
 
 ## v2.259 — Resmîleştirme: DOCX tablo genişliği + ana bölüm yeni sayfa + PDF (TAMAMLANDI)
 

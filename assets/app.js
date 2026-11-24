@@ -81,15 +81,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.259';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.259';
+} from './schema.js?v=2.260';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.260';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.259';
+const APP_VERSION = '2.260';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12417,7 +12417,9 @@ function wP(
 function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null } = {}) {
   const sh = shade ? `<w:shd w:fill="${shade}"/>` : '';
   const col = header ? 'FFFFFF' : color || '24384D';
-  const p = `<w:p><w:pPr><w:spacing w:after="50" w:line="240"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
+  // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
+  // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
+  const p = `<w:p><w:pPr><w:spacing w:after="50" w:line="240"/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
 function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = {}) {
@@ -12454,7 +12456,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = 
           .join('')}</w:tr>`
     )
     .join('');
-  return `<w:tbl><w:tblPr><w:tblW w:w="${contentTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="95" w:type="dxa"/><w:left w:w="110" w:type="dxa"/><w:bottom w:w="95" w:type="dxa"/><w:right w:w="110" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="${contentTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="95" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="95" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
 }
 function headingXml(text, level = 1) {
   return wP(text, {
@@ -16890,6 +16892,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.260': {
+    title: 'OpenOffice/LibreOffice tablo sola çıkıntısı giderildi',
+    body:
+      'Word (DOCX) tablolarında hücre yatay dolgusu 0 yapıldı; dolgu paragraf girintisiyle verilir. ' +
+      'Böylece tablo kenarlığı metin marjıyla aynı hizada başlar (LibreOffice/OpenOffice\'ta "sola ' +
+      'çıkıntı" beklenmez). UDF zaten hizalıydı.'
+  },
   '2.259': {
     title: 'DOCX tablo hizası, ana bölümler yeni sayfa, PDF düğmesi',
     body:

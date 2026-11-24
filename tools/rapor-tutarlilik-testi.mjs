@@ -991,6 +991,10 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   // Tablo metin genişliğine oturur: 15 mm marjda A4 içerik = 10206 twip.
   check('DOCX tablo metin genişliğine oturur (10206)', /w:tblW w:w="10206"/.test(dx));
   check('DOCX tablo sol girinti 0', /w:tblInd w:w="0"/.test(dx));
+  // LibreOffice/Word "tablo sola çıkıntı" olmasın: hücre yatay dolgusu 0,
+  // dolgu paragraf girintisiyle (v2.260).
+  check('DOCX hücre sol dolgusu 0', /<w:tblCellMar><w:top w:w="95" w:type="dxa"\/><w:left w:w="0"/.test(dx));
+  check('DOCX hücre paragraf girintisi (kenarlık hizalı)', /<w:ind w:left="90"/.test(dx));
   // Her ana bölüm (1–7) yeni sayfa + kapak + ekler → en az 7 sayfa sonu.
   check('DOCX ana bölümler yeni sayfa (>=7)', (dx.match(/w:type="page"/g) || []).length >= 7);
 
