@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.232.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.233.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -5018,6 +5018,24 @@ ve **v2.227 — Rapor ekranı IA (3 bölge)** ile başlanır.
 - Tier 2 / sanal imaj: **emin değil; gerekirse planlanacak**.
 - Rapor: **örnek/şablon önce incelenecek**, sonra karar (bu oturumda yapıldı).
 - Küçük maddeler **aynı sözleşmede birleştirilmeyecek** (hata riski).
+
+## YENİ OTURUM DEVRİ (v2.233) — Rapor sayfa görüntüleyici
+
+### DEĞİŞMEZ KURALLAR (v2.233)
+
+1. **Kâğıt DOM'u BÖLÜNMEZ.** Sayfalama `.report-page-window` (sabit yükseklik,
+   overflow hidden) + kâğıt `translateY(-sayfa×pageH)` ile yapılır. DOM'u A4
+   sayfalara bölmek riskli; yapmayın.
+2. **Sayfa modu sığdırmayı gerektirir:** tek sayfa tam görünsün diye
+   `applyReportPageView` fit'i açar. Okumak için "Sürekli" anahtarı.
+3. **Sayfa indeksi oturumluk** (`reportPageIndex`); kayda yazılmaz. Tercih
+   `akis.reportContinuous`.
+4. **Sabit çubuk:** `.report-stage-bar` `top: var(--report-toolbar-h)` ile araç
+   çubuğunun altında yapışır; `syncReportToolbarHeight` yüksekliği ölçer.
+   Rapor görünümünde `.section-intro` gizli.
+5. **Tablo sığdırma:** `table-layout:fixed; width:100%` + `overflow-wrap:anywhere`.
+   Ölçüt: taşan tablo 0.
+6. Test: `birim [88]`, `tasarim [2cd]`, `surum` kimlikleri.
 
 ## YENİ OTURUM DEVRİ (v2.232) — Tam A4, tam ekran kontrolleri, sabit iskelet
 

@@ -32,6 +32,7 @@ function makeEl(sel) {
     addEventListener: noop, removeEventListener: noop,
     querySelector: () => null, querySelectorAll: () => [], closest: () => null,
     appendChild: noop, remove: noop, showModal: noop, close: noop,
+    getBoundingClientRect: () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0 }),
     getContext: () => ({ clearRect: noop, fillRect: noop, fillStyle: '', strokeStyle: '', lineWidth: 0, beginPath: noop, moveTo: noop, lineTo: noop, stroke: noop, font: '' }),
   };
 }
@@ -130,7 +131,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf',
@@ -167,6 +168,7 @@ const sandbox = {
   __schema: __schemaMod,
   __reportModel: __reportModelMod,
   console, document: documentStub, localStorage: localStorageStub, window: {}, navigator: {},
+  getComputedStyle: () => ({ display: 'block', height: '0px', marginLeft: '0px', overflowX: 'visible' }),
   crypto: { subtle: { digest: async () => new ArrayBuffer(32) } },
   URL: { createObjectURL: () => 'blob:x', revokeObjectURL: noop },
   Blob, TextEncoder, TextDecoder, setTimeout, clearTimeout,
@@ -4309,6 +4311,15 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('küçük yükseklik taban 320', T.reportFitWidth(200), 320);
   eq('büyük yükseklik tavan 900', T.reportFitWidth(2000), 900);
   eq('geçersiz yükseklik 900', T.reportFitWidth(0), 900);
+}
+
+// [88] Sayfa sayısı (v2.233) — A4 sayfa penceresi.
+{
+  eq('reportPageCountFor tanımlı', typeof T.reportPageCountFor, 'function');
+  eq('3000/700 → 5', T.reportPageCountFor(3000, 700), 5);
+  eq('2800/700 → 4', T.reportPageCountFor(2800, 700), 4);
+  eq('boş içerik → 1', T.reportPageCountFor(0, 700), 1);
+  eq('geçersiz pageH → 1', T.reportPageCountFor(3000, 0), 1);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

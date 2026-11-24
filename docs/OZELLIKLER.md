@@ -1,4 +1,4 @@
-# Özellikler (v2.232 — mevcut durum)
+# Özellikler (v2.233 — mevcut durum)
 
 Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -763,7 +763,10 @@ açılır (v2.231): **Yöntem (4) · Sınırlılıklar (5) · Sonuç (6)** serbe
 burada yazılır; diğer bölümler veriden üretilir. **A4 kâğıdı contentEditable
 değildir**; üç çıktı aynı metni üretir. **Sayfaya sığdır** anahtarı tek bir A4
 sayfasını ekrana sığdırır (v2.232); tam ekranda dön/yazdır/UDF ve A4/sığdır
-kontrolleri görünür kalır; sol iskelet kaydırırken görünür kalır.
+kontrolleri görünür kalır; sol iskelet kaydırırken görünür kalır. **Sayfa
+görüntüleyici** (v2.233): rapor tek A4 sayfa penceresinde; ‹ › ve
+PageUp/PageDown ile sayfalar arası gezinme, "Sayfa N/M"; "Sürekli" anahtarı
+uzun kâğıt akışını korur. Tablolar sayfaya sığar (sabit düzen + sarma).
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller

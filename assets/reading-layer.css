@@ -3430,6 +3430,37 @@ body[data-view="report"] #sbCheckWrap { display: none; }
 #reportFullbar { position: sticky; top: 0; z-index: 6; background: var(--bg); }
 body.report-full .report-edit-hint { display: none; }
 
+/* v2.233 — sayfa görüntüleyici: sabit çubuk, tek A4 penceresi, tablo sığdırma */
+#view-report .section-intro { display: none; }
+#view-report .report-stage-bar {
+  position: sticky;
+  top: var(--report-toolbar-h, 0px);
+  z-index: 3;
+  background: var(--bg);
+  padding-block: 4px;
+  flex-wrap: wrap;
+}
+.report-page-window { position: relative; overflow: hidden; margin: 0 auto; max-width: 100%; }
+#reportWorkspace[data-page="continuous"] .report-page-window { overflow: visible; height: auto; }
+.report-page-nav { display: inline-flex; align-items: center; gap: 4px; }
+.report-pg-btn {
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: var(--r-sm);
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  line-height: 1;
+}
+.report-pg-btn:disabled { opacity: 0.45; cursor: default; }
+.report-pg-label { font-size: var(--fs-2xs); color: var(--ink-3); white-space: nowrap; }
+/* Tablolar sayfaya sığar: sabit düzen + hücre sarma (taşma yok). */
+#reportPreview .paper-table { table-layout: fixed; width: 100%; }
+#reportPreview .paper-table th,
+#reportPreview .paper-table td { overflow-wrap: anywhere; word-break: break-word; }
+
 /* v2.231 — belge odaklı bölüm düzenleme */
 .paper-block { display: contents; }
 .paper-block.is-selected > * { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
