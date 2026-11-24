@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.233.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.234.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.234 — Okuma metni bağımsız bölüm
+
+Kullanıcı: "okuma metni üst bölüm (5) açılmadan açılamıyor; tek başına
+gösterilebilmeli." Düzeltildi.
+
+### KULLANICI NE GÖRECEK
+
+- **Okuma metni** artık **kendi satırı** olan bağımsız bir rapor bölümü.
+- **5. bölüm kapalı olsa bile** okuma metni tek başına açılıp rapora girebilir
+  (ve tersi: yalnız 5. bölüm açık, okuma metni kapalı olabilir).
+- Kanıt tablosu ve cümle zamanları **değişmedi**; okuma metni yine türetilmiş
+  sunumdur (bölümleri birleştirmez/bölmez).
+- Üç çıktı (HTML/DOCX/UDF) aynı metni üretir.
+
+### Teknik
+
+- `reading` **`REPORT_BODY_ORDER`** içine alındı (`s5`'ten hemen sonra). Eski
+  kayıtlarda sırada yoktur; `normalizeReportLayout` onu **sonda değil, `s5`
+  hemen ardına** yerleştirir. Kullanıcı sonradan taşırsa konumu korunur.
+- Okuma metni üç çıktıda `s5` bloğundan **çıkarıldı**, ayrı `reading` bloğu
+  oldu (çok kayıtta kayıt adı alt başlığı ile).
+- `reportBlockRenders('reading')`: okuma grubu yoksa blok ve TOC satırı
+  çizilmez.
+- İskelette `reading` artık `s5`'in alt çocuğu değil, normal gövde satırı
+  (↑↓ ile sıralanır).
+- Test: `rapor` Senaryo 12 (bağımsız okuma), `birim [89]`, `tasarim [2ce]`.
 
 ## v2.233 — Rapor: sayfa görüntüleyici (Word/PDF gibi)
 

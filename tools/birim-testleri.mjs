@@ -4322,5 +4322,19 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('geçersiz pageH → 1', T.reportPageCountFor(3000, 0), 1);
 }
 
+// [89] Okuma metni bağımsız bölüm (v2.234).
+{
+  eq('reading gövde sırasında', T.REPORT_BODY_ORDER.includes('reading'), true);
+  const nl = T.normalizeReportLayout({ order: ['s1', 's2', 's3', 's4', 's5', 's6', 's7'] });
+  eq('eski kayıt: reading s5 hemen ardında', nl.order.indexOf('reading'), nl.order.indexOf('s5') + 1);
+  const custom = T.normalizeReportLayout({ order: ['reading', 's1', 's2', 's3', 's4', 's5'] });
+  eq('kullanıcı reading konumunu korur', custom.order.indexOf('reading'), 0);
+  const c = T.emptyCaseForTest({ id: 'cReading' });
+  c.materials = [{ id: 'm1', name: 'a.wav', segments: [{ id: 's1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'K', text: 'merhaba', review: 'approved' }] }];
+  eq('okuma grubu varsa blok çizilir', T.reportBlockRenders(c, 'reading'), true);
+  c.materials = [{ id: 'm1', name: 'a.wav', segments: [] }];
+  eq('bölüm yoksa okuma bloğu çizilmez', T.reportBlockRenders(c, 'reading'), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

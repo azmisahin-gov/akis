@@ -1505,7 +1505,8 @@ console.log('\n[2bb] Raporda okuma metni (v2.202)');
   check('okuma metni başlığı REPORT_TEXT te', /readingHeading: 'Okuma metni'/.test(appJs) && /readingIntro:/.test(appJs));
   check(
     'HTML raporu okuma metnini ekliyor',
-    /readingGroupsFor\(m\)[\s\S]{0,400}REPORT_TEXT\.readingHeading/.test(appJs)
+    // v2.234: okuma metni ayrı `reading` bloğunda (s5 içinde değil).
+    /reading:\s*\(\)\s*=>[\s\S]{0,600}readingGroupsFor\(m\)/.test(appJs)
   );
   const uses = (appJs.match(/readingGroupsFor\(m\)/g) || []).length;
   check('üç çıktı da okuma metnini üretiyor', uses >= 3, String(uses));
@@ -1951,6 +1952,18 @@ console.log('\n[2cd] Rapor sayfa görüntüleyici (v2.233)');
   const css = layer.slice(layer.indexOf('/* v2.233'), layer.indexOf('/* v2.231'));
   check('v2.233 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
   check('v2.233 punto ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(css));
+}
+
+console.log('\n[2ce] Okuma metni bağımsız bölüm (v2.234)');
+{
+  const js = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  check('reading gövde sırasında (s5 sonrası)', /'s5',\s*'reading'/.test(schema));
+  check('eski kayıt göçü: reading s5 ardına', /srcOrder\.includes\('reading'\)/.test(schema) && /order\.indexOf\('s5'\)/.test(schema));
+  check('iskelette reading alt çocuk DEĞİL', !/row\('reading',\s*\{\s*child:\s*true\s*\}\)/.test(js));
+  check('üç çıktıda ayrı reading bloğu', (js.match(/reading:\s*\(\)\s*=>/g) || []).length >= 3);
+  check('reading koşullu blok', /case 'reading':/.test(js) && /readingGroupsFor\(m\)\.length/.test(js));
+  check('etiket bağımsız (5. bölüm içinde değil)', /reading: 'Okuma metni'/.test(js) && !/Okuma metni \(5\. bölüm içinde\)/.test(js));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

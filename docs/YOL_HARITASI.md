@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.233.**
+yazılır. **Güncel sürüm: v2.234.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.234 — Okuma metni bağımsız bölüm (TAMAMLANDI)
+
+- `reading` `REPORT_BODY_ORDER` içinde (`s5` sonrası); 5. bölüm kapalı olsa da
+  tek başına açılır. Üç çıktı ayrı `reading` bloğu üretir.
+- Eski kayıtlarda normalize onu `s5` hemen ardına koyar.
+- Koruyan test: `rapor` Senaryo 12, `birim [89]`, `tasarim [2ce]`.
 
 ## v2.233 — Rapor: sayfa görüntüleyici (TAMAMLANDI)
 

@@ -459,6 +459,21 @@ console.log('\n[Senaryo 12] okuma metni (v2.202)');
   checkShared('okuma metni bölüm sayısı', '2 bölüm', H, U, D);
   // Kanıt tablosu DEĞİŞMEDİ: ayrıntılı tablo başlığı duruyor.
   checkShared('kanıt tablosu başlığı korunur', REPORT_TEXT.segmentHeadersObs[0], H, U, D);
+
+  // v2.234: `reading` BAĞIMSIZ. s5 KAPALI olsa da okuma metni görünmeli.
+  const onlyReading = withMaterial();
+  onlyReading.materials[0].segments = [
+    { start: '00:00:00', end: '00:00:05', speaker: 'K', text: 'merhaba', review: 'onaylandi' },
+    { start: '00:00:05', end: '00:00:10', speaker: 'K', text: 'dünya', review: 'onaylandi' },
+    { start: '00:00:10', end: '00:00:15', speaker: 'E', text: 'evet', review: 'onaylandi' }
+  ];
+  onlyReading.report = { sections: { s5: false, reading: true } };
+  const HR = htmlText(onlyReading), UR = await udfText(onlyReading), DR = await docxText(onlyReading);
+  checkShared('s5 kapalı + okuma açık: başlık görünür', REPORT_TEXT.readingHeading, HR, UR, DR);
+  checkShared('s5 kapalı + okuma açık: grup metni', 'merhaba dünya', HR, UR, DR);
+  check('s5 kapalı: 5. bölüm başlığı yok (H)', !HR.includes(REPORT_TEXT.sections[4]));
+  check('s5 kapalı: 5. bölüm başlığı yok (U)', !UR.includes(REPORT_TEXT.sections[4]));
+  check('s5 kapalı: 5. bölüm başlığı yok (D)', !DR.includes(REPORT_TEXT.sections[4]));
 }
 
 // Senaryo 13: dosyalar arası kişi (v2.205) — üç çıktı aynı satırı üretmeli.
