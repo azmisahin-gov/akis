@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.280.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.282.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6744,3 +6744,66 @@ dönüyordu**; `.voice-embed` paneli hiç çizilmiyordu (canlı ölçüm: 0). Oy
 **DERS:** "Panel yalnız veri varsa çizilir" varsayımı, o panelin **veri
 oluşturma** işi varsa yanlıştır. Boş durum = panelin en gerekli olduğu durum
 olabilir.
+
+## YENİ OTURUM DEVRİ (v2.281) — Konuşmacı KOD/ETİKET ayrı sütunlar
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.281** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1896 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | **Ses detayındaki analiz alanı sadeleştirme** (ölçüm alındı, adım planlanıyor) |
+
+### Ölçülen durum (v2.280)
+
+- Kanıt tablosunda `S1 · Kiracı` **tek hücre**; konuşmacı ve süre tablolarında da
+  tek hücre.
+- "Rapor alanları" panelinde **6 tablo** vardı; konuşmacı tabloları (3) **yoktu** →
+  sütunlar açılıp kapatılamıyordu.
+- Analiz alanı (Deşifre sekmesindeki dalga kutusu): **10 kontrol**, 219 px;
+  detay paneli 385 px görünür / 543 px içerik → **158 px kaydırma**.
+
+### Yapılan (yalnız sütunlar)
+
+- `REPORT_COLUMN_TABLES`: `segments` → `time, speakerCode, speakerLabel, text,
+  review, obs`; yeni `speakers`, `speakerDurations`, `materialSpeakers`.
+- `normalizeReportColumns`: **göç** (`segments.speaker` → kod+etiket, kapalı kalır).
+- **Okuma anında göç:** `reportTableColumns` normalize edilmiş tercihleri okur
+  (`reportColumnOn` ham değeri okusaydı kapalı sütun geri açılıyordu — ölçüldü).
+- `speakerGroups` → `code` + `name`; `speakerRows`/`speakerDurationRows`/
+  `materialSpeakerRows` KOD ve ETİKET'i **ayrı** döndürür; `segSpeakerCells`.
+- Üç çıktı (HTML/DOCX/UDF) `reportTableColumns` ile filtrelenir; genişlikler
+  6/7/5 sütuna göre güncellendi; kişi sütunu **koşullu** (`keys` override).
+- **DOCX test kusuru:** `<w:t[^>]*>` deseni `<w:tblPr>`/`<w:tblW>` etiketlerini
+  yakalıyor, XML metne sızıyordu → `/<w:t(?:\s[^>]*)?>/` ile sınırlandı.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **KOD = kimlik, ETİKET = görünen ad.** Tablolarda ayrı sütun; tek hücrede
+   birleştirmeyin (mahkeme ayrı okur, kullanıcı ayrı kapatır).
+2. Yeni bir tablo eklerken `REPORT_COLUMN_TABLES` + `REPORT_COLUMN_LABELS` +
+   `REPORT_COLUMN_TABLE_LABELS` üçlüsüne yazın; panel otomatik listeler.
+3. Koşullu sütunda `reportTableColumns(..., keysOverride)` kullanın (person).
+4. Tercih göçü **okuma anında** da çalışmalı (`reportTableColumns` normalize eder).
+5. Sütun başlığı eklerken üç çıktının **genişlik dizilerini** de güncelleyin
+   (DOCX twip, UDF relatif); yoksa hücreler kayar.
+
+Koruyan test: `birim` [124], `rapor` 13/25/36, `tasarim` [2cq]/[2cs].
+
+## EK: v2.282 — Analiz alanı sadeleştirme (aynı sürümde)
+
+- Dalga çubuğu **59 → 34 px**; görünür ipucu satırı → `title`; imleç zamanı,
+  zoom, **Sığdır** tuvalin üst kaplamasına taşındı (`pointer-events:none`,
+  yalnız Sığdır `auto`).
+- Döngü metni → **🔁**; ayrı **İş** satırı **Durum** satırına katıldı
+  (`workChipsHtml`; `workStatusHtml` kaldırıldı).
+- Ölçüm: panel kaydırması 1440'ta **158 → 0**, 1280/1100'de **95/99**; yatay
+  taşma yok; JS hatası 0.
+- **DÜRÜST SINIR:** Bu ortamda dalga tuvalinin **çizimi** doğrulanamadı (v2.280
+  tabanında da aynı: `fillRect` sayacı artmıyor, tuval 900/619). Değişiklik
+  yalnız **HTML/CSS**; işleyiciler `closest('.sd-wave')` + `querySelector` ile
+  arıyor (kaydırılan öğeler aynı ağaçta) ve JS hatası yok. Gerçek kullanıcı
+  doğrulaması gerekir.
+- Kalan adım: dalga kutusunu **Analiz** sekmesine taşımak (metin ~+219 px) —
+  kullanıcı kararı bekliyor.

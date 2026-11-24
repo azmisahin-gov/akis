@@ -768,7 +768,13 @@ export const REPORT_COLUMN_TABLES = {
   acquisition: ['name', 'device', 'label', 'serial', 'method', 'tool', 'operator', 'acquiredAt', 'hashState'],
   wer: ['material', 'model', 'ref', 'hyp', 'errors', 'wer'],
   levels: ['name', 'peak', 'rms', 'clipped', 'noiseFloor', 'snr', 'extra'],
-  segments: ['time', 'speaker', 'text', 'review', 'obs']
+  // KANIT: konuşmacı KİMLİK (kod) ve ETİKET ayrı sütunlardır (v2.281).
+  // Tek hücrede "S1 · Kiracı" yazmak, mahkemenin kodu ve adı ayrı okumasını
+  // ve ayrı açıp kapatmasını engelliyordu.
+  segments: ['time', 'speakerCode', 'speakerLabel', 'text', 'review', 'obs'],
+  speakers: ['code', 'label', 'role', 'gender', 'age', 'pitch', 'parts'],
+  speakerDurations: ['code', 'label', 'chapters', 'duration', 'span'],
+  materialSpeakers: ['code', 'label', 'chapters', 'duration', 'span', 'person']
 };
 export const REPORT_COLUMN_LABELS = {
   inventory: {
@@ -813,10 +819,35 @@ export const REPORT_COLUMN_LABELS = {
   },
   segments: {
     time: 'ZAMAN ARALIĞI',
-    speaker: 'KONUŞMACI',
+    speakerCode: 'KONUŞMACI KODU',
+    speakerLabel: 'KONUŞMACI ETİKETİ',
     text: 'ÇÖZÜMLENEN KONUŞMA',
     review: 'KONTROL DURUMU',
     obs: 'GÖZLEM'
+  },
+  speakers: {
+    code: 'KOD',
+    label: 'ETİKET',
+    role: 'ROL',
+    gender: 'CİNSİYET',
+    age: 'YAŞ ARALIĞI',
+    pitch: 'ÖLÇÜLEN PERDE',
+    parts: 'BÖLÜM / NOT'
+  },
+  speakerDurations: {
+    code: 'KOD',
+    label: 'ETİKET',
+    chapters: 'BÖLÜM',
+    duration: 'SÜRE',
+    span: 'İLK – SON'
+  },
+  materialSpeakers: {
+    code: 'KOD',
+    label: 'ETİKET',
+    chapters: 'BÖLÜM',
+    duration: 'SÜRE',
+    span: 'İLK – SON',
+    person: 'DOSYALAR ARASI KİŞİ'
   }
 };
 // Kanıt tablosunda ZORUNLU sütunlar: gizlenemez (adli kayıt bütünlüğü).
@@ -827,7 +858,10 @@ export const REPORT_COLUMN_TABLE_LABELS = {
   acquisition: 'Delil edinme tablosu',
   wer: 'WER tablosu',
   levels: 'Ses seviyesi tablosu',
-  segments: 'Analiz / kanıt tablosu'
+  segments: 'Analiz / kanıt tablosu',
+  speakers: 'Konuşmacı tablosu',
+  speakerDurations: 'Konuşmacı süreleri',
+  materialSpeakers: 'Kayıt konuşmacı tablosu'
 };
 /** Tüm sütunlar AÇIK. */
 export function emptyReportColumns(over = {}) {
@@ -843,7 +877,14 @@ export function normalizeReportColumns(src) {
   const base = src && typeof src === 'object' ? src : {};
   const out = {};
   for (const table of Object.keys(REPORT_COLUMN_TABLES)) {
-    const s = base[table] && typeof base[table] === 'object' ? base[table] : {};
+    let s = base[table] && typeof base[table] === 'object' ? base[table] : {};
+    // GÖÇ (v2.281): kanıt tablosunda eski BİRLEŞİK `speaker` tercihi iki yeni
+    // sütuna (kod + etiket) taşınır; aksi hâlde kullanıcının kapattığı sütun
+    // sessizce geri açılırdı.
+    if (table === 'segments' && typeof s.speaker === 'boolean') {
+      s = { ...s, speakerCode: s.speaker, speakerLabel: s.speaker };
+      delete s.speaker;
+    }
     out[table] = {};
     for (const key of REPORT_COLUMN_TABLES[table]) out[table][key] = typeof s[key] === 'boolean' ? s[key] : true;
   }

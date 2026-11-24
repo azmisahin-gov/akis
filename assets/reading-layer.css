@@ -620,19 +620,13 @@ input::placeholder, textarea::placeholder {
    araç düğmeleri (tek satır, kaymaz). v2.82'de hepsi tek flex satırındaydı ve
    dar panelde BEŞ satıra kadar kırılıyordu (ölçüldü: 84px yükseklik) —
    çirkin ve dalgayı aşağı itiyordu. */
+/* v2.282 — TEK SATIR araç çubuğu. İpucu görünür satırdan kalktı (title'da);
+   imleç zamanı, zoom ve "Sığdır" tuvalin üst kaplamasında. */
 #view-audio .sd-wave-bar {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-areas: "hint meta" "tools tools";
-  align-items: center; gap: 2px var(--sp-2);
-  padding: 4px var(--sp-2); border-bottom: 1px solid var(--line);
+  display: flex; align-items: center; gap: var(--sp-2);
+  padding: 3px var(--sp-2); border-bottom: 1px solid var(--line);
   background: var(--surface); font-size: var(--fs-2xs); color: var(--ink-3);
 }
-#view-audio .sd-wave-hint {
-  grid-area: hint; min-width: 0;
-  overflow: visible; text-overflow: clip; white-space: normal; line-height: 1.35;
-}
-#view-audio .sd-cursor-time { grid-area: meta; justify-self: end; }
 /* Araç satırı: SIĞMAYAN DÜĞME ALT SATIRA İNER (v2.190).
    NEDEN: v2.82'de tek satır + `overflow-x:auto` + gizli kaydırma çubuğu
    kullanıldı. Ölçüm: 1100 px'te araç satırı 470 px, kap 372 px → "Dalga /
@@ -3875,3 +3869,32 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   margin: 6px 0;
 }
 #view-audio .voice-embed .vc-actions .ms-note { color: var(--ink-2); }
+
+/* v2.282 — SADE ANALİZ ALANI.
+   Ölçüm (v2.281, 1440×900): dalga çubuğunda 10 kontrol + görünür ipucu;
+   detay panelinde 27 görünür kontrol ve 385 px görünür / 543 px içerik
+   (158 px kaydırma). İki benzer tek satır (Durum + İş) 55 px yiyordu.
+   Yapılan: ipucu → title; imleç/zoom/Sığdır → tuval üst kaplaması;
+   Döngü metni → 🔁; İş satırı → Durum satırına çip olarak katıldı. */
+#view-audio .sd-canvas-top {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  right: 6px;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  pointer-events: none;
+  font-size: var(--fs-2xs);
+  color: var(--ink-2);
+}
+#view-audio .sd-canvas-top-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+#view-audio .sd-canvas-top-tools .seg-tool { padding: 2px 7px; }
+#view-audio .sd-status .st-chip.work { border-style: dashed; }

@@ -1,4 +1,4 @@
-# Özellikler (v2.280 — mevcut durum)
+# Özellikler (v2.282 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -586,6 +586,11 @@ uzmanlık alanını gösterir.
   konuşmacıyı kullanır (gereksiz "Konuşmacı 2" uydurmaz). Eski sürümlerde bozulmuş kayıtlar
   açılışta onarılır (`reconcileSpeakerRefs`); paketten yükleme arşivle aynı normalize kuralını
   kullanır. Raporda aynı bölüm iki satırda görünmez.
+- **Rapor sütunları: konuşmacı KODU ve ETİKETİ ayrı (v2.281):** kanıt tablosunda
+  `ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA ·
+  KONTROL DURUMU · GÖZLEM`; konuşmacı tablolarında `KOD · ETİKET …`. "Rapor alanları"
+  panelinde **9 grup** (konuşmacı tablosu · konuşmacı süreleri · kayıt konuşmacı
+  tablosu dâhil); her sütun tek tek açılıp kapanır, üç çıktıda da geçerlidir.
 - **Ses gömme (embedding) benzerliği (v2.279):** konuşmacı doğrulama modeli
   (**WavLM-SV**, q8, ~97 MB; isteğe bağlı, bir kez indirilir) her bölümün atandığı
   konuşmacıya benzerliğini ölçer. Eşikler **ölçüldü**: ≥ 0,88 aynı · < 0,72 farklı;
@@ -593,7 +598,7 @@ uzmanlık alanını gösterir.
   görünür; atanmamış bölüm için "hangi konuşmacıya benziyor" önerisi yazılır.
   **Kimlik tespiti değildir**, hiçbir atama otomatik değişmez; ölçüm yalnız
   kullanıcı tetiklediğinde çalışır.
-- **Kayıt bazında konuşmacı tablosu (v2.273):** her kayıt için **KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON**;
+- **Kayıt bazında konuşmacı tablosu (v2.273; sütunlar v2.281):** her kayıt için **KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON**;
   dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (boş sütun çizilmez). Tek kaynak:
   `materialSpeakerRows(c, m)`; üç çıktı aynı tabloyu basar.
 - **İki yeni gözlem bayrağı (v2.272):** **yankı / oda akustiği** (`echo`) ve **kesinti / kopukluk**
@@ -608,7 +613,7 @@ uzmanlık alanını gösterir.
   toplu ölçüme katılmaz ve **bölüm açmakla işaretlenmez** (yalnız “Spektrogramı göster”). Köken/teslim
   alanları **Kayıt bilgileri** sekmesine taşındı.
 - **Süre tablosu ve üçlü gösterim anahtarı (v2.268):** konuşmacı künyesi tablosunun yanında
-  **“Konuşmacı süreleri”** tablosu (KONUŞMACI · BÖLÜM · SÜRE · İLK – SON) + tek satır açıklama;
+  **“Konuşmacı süreleri”** tablosu (KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON) + tek satır açıklama;
   **EK-5** üç tablodur (konuşmacı kodları · metin işaretleri · **gözlem işaretleri = uygulamadaki
   bayraklardan otomatik**). Okuma metninde de kayıt başına “Bu kaydın konuşmacıları” satırı vardır.
 - **S/K ayrımı ve açıklamalar (v2.267):** **S1, S2… kayıt içi** etikettir; her kayıtta S1'den başlar.

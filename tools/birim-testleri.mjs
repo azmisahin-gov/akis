@@ -160,7 +160,7 @@ const EXPOSE = [
   'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
-  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
+  'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -3340,8 +3340,9 @@ console.log('\n== [69] Konuşmacı silme ve rapor filtresi (v2.192)');
   // Rapor yalnız ATANMIŞ konuşmacıyı listeler.
   const rows = T.speakerRows(c);
   eq('raporda tek satır (S1)', rows.length, 1);
-  eq('satır kodu S1', rows[0][0], 'S1 · S1');
-  eq('satır bölüm sayısı', /2 bölüm/.test(rows[0][5]), true);
+  eq('satır kodu S1', rows[0][0], 'S1');
+  eq('satır etiketi S1', rows[0][1], 'S1');
+  eq('satır bölüm sayısı', /2 bölüm/.test(rows[0][6]), true);
   // Atanmamış K silinir: bölümlere dokunmaz.
   const clearedK = T.removeSpeaker(m, m.speakers[1]);
   eq('K silindi, bölüm ataması yok', clearedK, 0);
@@ -3674,11 +3675,13 @@ console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
   ];
   const rows = T.speakerRows(c);
   eq('eşleşen kişi tek satır + bağsız = 2', rows.length, 2);
-  eq('ilk satır kişi kodu + etiket', rows[0][0], 'K1 · Kiracı');
-  eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][5]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][5]), true);
-  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][5]), true);
-  eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][4]) && /B\.wav: 118/.test(rows[0][4]), true);
-  eq('bağsız konuşmacı ayrı satır', rows[1][0], 'S2 · Tanık');
+  eq('ilk satır kişi kodu', rows[0][0], 'K1');
+  eq('ilk satır kişi etiketi', rows[0][1], 'Kiracı');
+  eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][6]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][6]), true);
+  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][6]), true);
+  eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][5]) && /B\.wav: 118/.test(rows[0][5]), true);
+  eq('bağsız konuşmacı ayrı satır (kod)', rows[1][0], 'S2');
+  eq('bağsız konuşmacı ayrı satır (etiket)', rows[1][1], 'Tanık');
   // Özet sayacı TABLO ile aynı: 2 (3 değil).
   const rs = T.reviewSummaryRows(c);
   const speakerRow = rs.find((r) => r[0] === 'Etiketlenen konuşmacı');
@@ -4434,15 +4437,16 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('reportColumnLocked tanımlı', typeof T.reportColumnLocked, 'function');
   eq('zaman kilitli', T.reportColumnLocked('segments', 'time'), true);
   eq('metin kilitli', T.reportColumnLocked('segments', 'text'), true);
-  eq('konuşmacı kilitli değil', T.reportColumnLocked('segments', 'speaker'), false);
+  eq('konuşmacı kodu kilitli değil', T.reportColumnLocked('segments', 'speakerCode'), false);
+  eq('konuşmacı etiketi kilitli değil', T.reportColumnLocked('segments', 'speakerLabel'), false);
   const c = T.emptyCaseForTest({ id: 'cSegCols' });
-  c.report.columns = { segments: { time: false, text: false, speaker: false, review: false, obs: false } };
-  const t = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5]], [10, 20, 30, 40, 50]);
+  c.report.columns = { segments: { time: false, text: false, speakerCode: false, speakerLabel: false, review: false, obs: false } };
+  const t = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5, 6]], [5, 4, 5, 20, 6, 5]);
   eq('kullanıcı kapatsa da zaman+metin basılır', t.headers.length, 2);
   eq('anahtarlar time,text', t.keys.join(','), 'time,text');
   c.report.columns = { segments: { obs: false } };
-  const t2 = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5]], null);
-  eq('gözlem kapalı → 4 sütun', t2.headers.length, 4);
+  const t2 = T.reportTableColumns(c, 'segments', T.REPORT_TEXT.segmentHeadersObs, [[1, 2, 3, 4, 5, 6]], null);
+  eq('gözlem kapalı → 5 sütun', t2.headers.length, 5);
   eq('gözlem başlığı yok', t2.headers.includes('GÖZLEM'), false);
 }
 
@@ -5162,10 +5166,11 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('speakerDurationRows tanımlı', typeof T.speakerDurationRows, 'function');
   const rows = T.speakerDurationRows(c);
   eq('bir satır', rows.length, 1);
-  eq('etiket', rows[0][0], 'S1 · Kiracı');
-  eq('bölüm sayısı', rows[0][1], '2 bölüm');
-  eq('süre', rows[0][2], '00:10');
-  eq('ilk–son', rows[0][3], '00:00:00.000 – 00:00:10.000');
+  eq('kod', rows[0][0], 'S1');
+  eq('etiket', rows[0][1], 'Kiracı');
+  eq('bölüm sayısı', rows[0][2], '2 bölüm');
+  eq('süre', rows[0][3], '00:10');
+  eq('ilk–son', rows[0][4], '00:00:00.000 – 00:00:10.000');
   // Bölümü olmayan konuşmacı süre tablosuna GİRMEZ.
   const c2 = JSON.parse(JSON.stringify(c));
   c2.materials[0].speakers.push({ id: 'z', code: 'S2', name: 'Boş', label: 'Boş' });
@@ -5381,7 +5386,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   };
   const c = { id: 'c1', materials: [m], speakers: [] };
   const t = T.materialSpeakerRows(c, m);
-  eq('beş sütun (kişi bağı yok)', t.headers.join('|'), 'KOD|KONUŞMACI|BÖLÜM|SÜRE|İLK – SON');
+  eq('beş sütun (kişi bağı yok)', t.headers.join('|'), 'KOD|ETİKET|BÖLÜM|SÜRE|İLK – SON');
   eq('kişi bayrağı yok', t.hasPerson, false);
   eq('iki satır', t.rows.length, 2);
   eq('koda göre sıralı', t.rows.map((r) => r[0]).join(','), 'S1,S2');
@@ -5549,7 +5554,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ölü sessizlik notu kaldırıldı', /function silenceNoteHtml/.test(js), false);
   eq('ölü undoDepth kaldırıldı', /function undoDepth/.test(js), false);
   // Yerine geçen tek kaynak duruyor olmalı (yanlışlıkla onu da silmeyelim).
-  eq('durum satırı tek kaynağı yerinde', /function workStatusHtml|function segmentWorkSummary/.test(js), true);
+  eq('durum satırı tek kaynağı yerinde', /function workChipsHtml|function segmentWorkSummary/.test(js), true);
 }
 
 
@@ -5653,6 +5658,47 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('gömme düğmesi var', /data-voice-embed/.test(js), true);
   eq('model indirme onayı sorulur', /askConfirm\(/.test(block), true);
   eq('konuşmacı yokken de gömme paneli çizilir', /Konuşmacı etiketi girilmedi[\s\S]{0,200}voiceEmbedPanelHtml\(m\)|voiceEmbedPanelHtml\(m\)[\s\S]{0,200}Konuşmacı etiketi girilmedi/.test(js), true);
+}
+
+
+// [124] v2.281 — Rapor sütunları: konuşmacı KOD ve ETİKET ayrı.
+// Kullanıcı: "konuşmacı diye sütun belirlemişiz ama id/etiket diye
+// ayrıştırmamışız; rapor alanlarında da sütunlarını eklememişiz."
+{
+  console.log('[124] Konuşmacı kodu/etiketi ayrı sütunlar (v2.281)');
+  const S = __schemaMod;
+  eq('kanıt sütunları kod+etiket ayrı', S.REPORT_COLUMN_TABLES.segments.join(','), 'time,speakerCode,speakerLabel,text,review,obs');
+  eq('eski birleşik sütun etiketi yok', 'speaker' in S.REPORT_COLUMN_LABELS.segments, false);
+  eq('konuşmacı tablosu sütunları', S.REPORT_COLUMN_TABLES.speakers.join(','), 'code,label,role,gender,age,pitch,parts');
+  eq('süre tablosu sütunları', S.REPORT_COLUMN_TABLES.speakerDurations.join(','), 'code,label,chapters,duration,span');
+  eq('kayıt tablosu sütunları', S.REPORT_COLUMN_TABLES.materialSpeakers.join(','), 'code,label,chapters,duration,span,person');
+  eq('her tablonun görünen adı var', Object.keys(S.REPORT_COLUMN_TABLE_LABELS).length, Object.keys(S.REPORT_COLUMN_TABLES).length);
+
+  // GÖÇ: eski "speaker" tercihi iki yeni sütuna taşınır (kapalı kalır).
+  const mig = S.normalizeReportColumns({ segments: { speaker: false } });
+  eq('göç: kod kapalı', mig.segments.speakerCode, false);
+  eq('göç: etiket kapalı', mig.segments.speakerLabel, false);
+  eq('göç: eski anahtar kalmadı', 'speaker' in mig.segments, false);
+  const mig2 = S.normalizeReportColumns({ segments: { speakerCode: false } });
+  eq('yalnız kod kapalıysa etiket açık', mig2.segments.speakerLabel, true);
+
+  // Uygulama: üç tablo da kodu ve etiketi AYRI üretir.
+  const m = {
+    id: 'm1', name: 'a.wav',
+    speakers: [{ id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'unspecified', gender: 'unspecified' }],
+    segments: [{ id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'a' }]
+  };
+  const c = { id: 'c1', materials: [m], speakers: [] };
+  const cell = T.segSpeakerCells(m, m.segments[0]);
+  eq('kanıt hücreleri ayrı', [cell.code, cell.label].join('|'), 'S1|Kiracı');
+  eq('konuşmacı satırı kod+etiket', T.speakerRows(c)[0].slice(0, 2).join('|'), 'S1|Kiracı');
+  eq('süre satırı kod+etiket', T.speakerDurationRows(c)[0].slice(0, 2).join('|'), 'S1|Kiracı');
+  const mt = T.materialSpeakerRows(c, m);
+  eq('kayıt tablosu başlıkları', mt.headers.slice(0, 2).join('|'), 'KOD|ETİKET');
+  eq('kayıt tablosu anahtarları', mt.keys.join(','), 'code,label,chapters,duration,span');
+
+  // Kişi bağı olmayan kayıtta "DOSYALAR ARASI KİŞİ" sütunu istenmez.
+  eq('kişi sütunu anahtarı koşullu', mt.keys.includes('person'), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

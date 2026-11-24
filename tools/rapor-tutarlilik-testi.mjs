@@ -123,7 +123,9 @@ async function docxText(c) {
   const xml = await zip.file('word/document.xml').async('string');
   // XML varlıkları çözülür: metin karşılaştırması ham kaçışla değil, okunan
   // metinle yapılır (HTML çıktısıyla aynı ölçüt).
-  return [...xml.matchAll(/<w:t[^>]*>([\s\S]*?)<\/w:t>/g)]
+  // `<w:t` önekı `<w:tblPr>`/`<w:tblW>`/`<w:tc>` gibi etiketleri de yakalıyordu
+  // ve XML gövdesi metne sızıyordu (v2.281'de ölçüldü). Yalnız gerçek `w:t`.
+  return [...xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)]
     .map((m) => m[1])
     .join('\n')
     .replace(/&lt;/g, '<')
@@ -511,7 +513,9 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   c.materials.push(m2);
 
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('dosya geneli kişi kodu', 'K1 · Kiracı', H, U, D);
+  // v2.281: ana/süre tablolarında kod ve etiket AYRI hücre; kayıt tablosunda
+  // "DOSYALAR ARASI KİŞİ" tek sütun ("K1 · Kiracı").
+  checkShared('kayıt tablosunda kişi kodu', 'K1 · Kiracı', H, U, D);
   checkShared('iki kayıt tek satırda (A)', 'a.wav: S1 · 1 bölüm', H, U, D);
   checkShared('iki kayıt tek satırda (B)', 'b.wav: S1 · 1 bölüm', H, U, D);
   checkShared('uzman eşleştirmesi notu', 'uzman eşleştirmesi', H, U, D);
@@ -519,10 +523,14 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   // Kişi etiketi TABLO BAŞINA bir kez görünür: künye (1) + süre (1) +
   // kayıt bazında konuşmacı tablosu (v2.273; her kayıt için 1 → 2 kayıt = 2).
   // Toplam 4. Kural: aynı kişi tek bir tabloda KAYIT SAYISI kadar çoğalmaz.
-  const count = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
-  check('kişi tablo başına bir kez (HTML)', count(H) === 4, String(count(H)));
-  check('kişi tablo başına bir kez (UDF)', count(U) === 4, String(count(U)));
-  check('kişi tablo başına bir kez (DOCX)', count(D) === 4, String(count(D)));
+  // KOD sütunu (ana + süre tablosu): K1 kendi HÜCRESİNDE, 2 kez.
+  const countCode = (t) => (String(t).match(/^K1$/gm) || []).length;
+  check('kişi kodu KOD sütununda 2 kez (HTML)', countCode(H) === 2, String(countCode(H)));
+  check('kişi kodu KOD sütununda 2 kez (UDF)', countCode(U) === 2, String(countCode(U)));
+  check('kişi kodu KOD sütununda 2 kez (DOCX)', countCode(D) === 2, String(countCode(D)));
+  // Birleşik "K1 · Kiracı" yalnız KAYIT tablolarında (2 kayıt) görünür.
+  const countCombined = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
+  check('birleşik kişi etiketi yalnız kayıt tablosunda', countCombined(H) === 2, String(countCombined(H)));
 }
 
 // Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
@@ -926,7 +934,8 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('kanıt: zaman korunur', 'ZAMAN ARALIĞI', H, U, D);
   checkShared('kanıt: metin korunur', 'ÇÖZÜMLENEN KONUŞMA', H, U, D);
-  check('kanıt: konuşmacı sütunu kapalı (H)', !H.includes('KONUŞMACI'));
+  check('kanıt: konuşmacı kodu kapalı (H)', !H.includes('KONUŞMACI KODU'));
+  check('kanıt: konuşmacı etiketi kapalı (H)', !H.includes('KONUŞMACI ETİKETİ'));
   check('kanıt: kontrol sütunu kapalı (H)', !H.includes('KONTROL DURUMU'));
   // 'GÖZLEM' başka bir başlıkta (…GÖZLEMLENMESİ…) geçebilir; tam satır aranır.
   check('kanıt: gözlem sütunu kapalı (H)', !/^\s*GÖZLEM\s*$/m.test(H));
@@ -1281,7 +1290,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Ev sahibi', speakerId: 'sp2', text: 'iki', review: 'approved' }
   ];
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  for (const h of ['KOD', 'KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON']) checkShared(`kayıt tablosu sütunu ${h}`, h, H, U, D);
+  for (const h of ['KOD', 'ETİKET', 'BÖLÜM', 'SÜRE', 'İLK – SON']) checkShared(`kayıt tablosu sütunu ${h}`, h, H, U, D);
   checkShared('kayıt tablosu S1 satırı', 'S1', H, U, D);
   checkShared('kayıt tablosu etiket', 'Ev sahibi', H, U, D);
   // Kişi bağı YOKKEN "dosyalar arası kişi" sütunu çizilmez.

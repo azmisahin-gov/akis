@@ -895,11 +895,10 @@ console.log('\n[Yerleşim] Taşma ve seçici sızıntısı');
   // (v2.190): 1100 px'te araç satırı 470 px, kap 372 px → "Dalga/Spek/İkisi"
   // düğmeleri görünmüyordu. Görünmez kaydırma sessiz kesmedir. Artık SARAR.
   const waveBar = rl.match(/#view-audio \.sd-wave-bar \{[^}]*\}/g) || [];
-  check(
-    'sd-wave-bar iki satırlı grid (ipucu + araçlar)',
-    waveBar.some((r) => /display:\s*grid/.test(r) && /grid-template-areas/.test(r)),
-    waveBar.join(' | ')
-  );
+  // v2.282: ipucu title'a, imleç/zoom/Sığdır tuval kaplamasına taşındı;
+  // çubuk TEK satır. Kural: yatay GİZLİ kaydırma yok, taşan düğme SARAR.
+  check('sd-wave-bar tek satır (grid değil)', waveBar.length > 0 && waveBar.every((r) => !/display:\s*grid/.test(r)), waveBar.join(' | '));
+  check('sd-wave-bar gizli yatay kaydırma yok', !/#view-audio \.sd-wave-bar \{[^}]*overflow-x:\s*auto/.test(rl));
   check(
     'araç satırı sığmayan düğmeyi SARAR (kesmez)',
     /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) &&
@@ -1245,7 +1244,9 @@ console.log('\n[2aq] Dalga çubuğu: menüler görünür, metinle çakışmaz (v
   check('metin sütunu kalan yüksekliği alır', /#view-audio \.seg-detail \.sd-right \.sd-text \{[^}]*flex:\s*1 1 auto/.test(rl));
   check('metin alanı kendi içinde kayar (panel kaymaz)', /\.sd-ta-wrap textarea\s*\{[^}]*overflow-y:\s*auto/.test(rl));
   check('satır içi yükseklik dayatılmıyor', !/ta\.style\.height\s*=\s*['"]auto['"]/.test(js));
-  check('ipucu kısa metin + tam metin title', /sd-wave-hint" title="Tıkla: konuma git/.test(js));
+  // v2.282: ipucu görünür satırdan KALKTI; tam metin dalga kutusunun title'ında.
+  check('dalga ipucu title ile verilir', /class="sd-wave" title="Tıkla: konuma git/.test(js));
+  check('görünür ipucu satırı kaldırıldı', !/sd-wave-hint"/.test(js));
   check('araç satırı sarar (gizli kaydırma yok)', /sd-wave-tools \{[^}]*flex-wrap:\s*wrap/.test(rl) && !/sd-wave-tools \{[^}]*overflow-x:\s*auto/.test(rl));
 }
 
@@ -2010,7 +2011,7 @@ console.log('\n[2cg] Kanıt tablosu sütunları (v2.236)');
 {
   const js = read('assets/app.js');
   const schema = read('assets/schema.js');
-  check('segments sütun tanımı', /segments: \['time', 'speaker', 'text', 'review', 'obs'\]/.test(schema));
+  check('segments sütun tanımı (kod+etiket ayrı)', /segments: \['time', 'speakerCode', 'speakerLabel', 'text', 'review', 'obs'\]/.test(schema));
   check('zaman+metin kilitli', /REPORT_COLUMN_LOCKED = \{ segments: \['time', 'text'\] \}/.test(schema));
   check('kilit fonksiyonu', /function reportColumnLocked\(/.test(js));
   check('panel kilitli kutu ipucu', /Kanıt için zorunlu/.test(js));
@@ -2147,7 +2148,7 @@ console.log('\n[2cq] Kayıt bazında konuşmacı tablosu (v2.273)');
   const js = read('assets/app.js');
   check('tablo üreteci', /function materialSpeakerRows\(c, m\)/.test(js));
   check('üç çıktıda kullanılır', (js.match(/materialSpeakerRows\(c, m\)/g) || []).length >= 3);
-  check('kişi sütunu koşullu', /if \(hasPerson\) headers\.push\('DOSYALAR ARASI KİŞİ'\)/.test(js));
+  check('kişi sütunu koşullu', /if \(hasPerson\) \{\s*headers\.push\('DOSYALAR ARASI KİŞİ'\)/.test(js));
   check('S/K açıklaması tek paragrafta', !/Birden çok kayıtta aynı kişi olarak eşleştirilen konuşmacılar tek satırda gösterilir/.test(js));
 }
 

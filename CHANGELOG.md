@@ -6,12 +6,101 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.280.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.282.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.282 — Konuşmacı KOD/ETİKET ayrı sütunlar + analiz alanı sadeleşti
+
+**Kullanıcı:** *"Kayıt bazında bulgularda konuşmacı sütunu var ama id/etiket diye
+ayrıştırmamışız; konuşmacılar tablolarında da aynı; rapor alanlarında sütunlarını
+eklememişiz. Ayrıca deşifre bölümünün yanındaki analiz alanı çok karmaşıklaştı."*
+
+### A) Rapor sütunları (v2.281 çalışması, aynı sürümde yayınlandı)
+
+Ölçüm (v2.280): kanıt/konuşmacı/süre tablolarında `S1 · Kiracı` **tek hücre**;
+"Rapor alanları" panelinde **6 tablo** (konuşmacı tabloları yok).
+
+- Kanıt: `ZAMAN · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA · KONTROL · GÖZLEM`.
+- Konuşmacı: `KOD · ETİKET · ROL · CİNSİYET · YAŞ · PERDE · BÖLÜM/NOT` (7).
+- Süre: `KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON` (5).
+- Kayıt: `KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON` (+ kişi bağı varsa kişi sütunu).
+- **Rapor alanları 6 → 9 grup**; her sütun tek tek açılır/kapanır (üç çıktıda).
+- Göç: eski birleşik `speaker` tercihi iki yeni sütuna taşınır, **kapalı kalır**
+  (okuma anında da uygulanır).
+- **Test kusuru düzeltildi:** DOCX metin çıkarımı `<w:tblPr>` etiketlerini de
+  yakalıyordu; desen gerçek `w:t` ile sınırlandı.
+
+### B) Analiz alanı sadeleştirme
+
+Ölçüm (v2.280, 1440×900, 3 bölüm): dalga çubuğu **59 px**, içinde **10 kontrol** +
+görünür ipucu satırı; detay panelinde **27 görünür kontrol**, **543 px içerik /
+385 px görünür → 158 px kaydırma**; ayrıca **iki benzer tek satır** (Durum 28 +
+İş 27).
+
+- Görünür ipucu satırı kaldırıldı; tam metin dalga kutusunun **title**'ında.
+- İmleç zamanı, zoom göstergesi ve **Sığdır** tuvalin **üst kaplamasına** taşındı
+  (`pointer-events:none`; yalnız Sığdır tıklanır → dalga sürükleme bozulmaz).
+- **Döngü** metin düğmesi → **🔁** (ipucu: A–B aralığını dinle, K).
+- Ayrı **İş** satırı **Durum** satırına çip olarak katıldı (tek durum satırı).
+
+| Ölçüm | Önce (v2.280) | Sonra (v2.282) |
+|---|---|---|
+| Dalga çubuğu | 59 px, 10 kontrol + ipucu | **34 px**, tek satır |
+| Durum/İş satırı | 2 satır (28 + 27 px) | **1 satır** (1440'ta 56, 900'de 28) |
+| Metin alanı | 178 px | **184 px** (1440) |
+| Panel kaydırması (1440) | 158 px | **0** |
+| Panel kaydırması (1280/1100) | 158 px | **95 / 99 px** |
+| Yatay taşma / JS hatası | yok / 0 | **yok / 0** |
+
+**Koruyan test:** `birim` [124] + `rapor` 13/25/36 + `tasarim` [2cq]/[2cs].
+Kalan büyük adım (dalga kutusunun **Analiz** sekmesine taşınması; kazanç: metin
+~+219 px) kullanıcı kararına bırakıldı.
+
+**Kullanıcı:** *"Kayıt bazında bulgular kısmında konuşmacı diye sütun belirlemişiz ama
+id/etiket diye ayrıştırmamışız; konuşmacılar kısmındaki tablolarda da aynı; rapor
+alanları kısmında da sütunlarını eklememişiz."*
+
+**Ölçülen durum (v2.280):** Kanıt tablosunda tek hücre `S1 · Kiracı`; konuşmacı
+tablosunda tek hücre `S1 · Kiracı`; süre tablosunda `S1 · Kiracı`. "Rapor alanları"
+panelinde yalnız **6 tablo** vardı; konuşmacı tabloları (3) **hiç yoktu** → o
+sütunlar açılıp kapatılamıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Kanıt tablosu:** `ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ ·
+  ÇÖZÜMLENEN KONUŞMA · KONTROL DURUMU · GÖZLEM`.
+- **Konuşmacı tablosu:** `KOD · ETİKET · ROL · CİNSİYET · YAŞ ARALIĞI ·
+  ÖLÇÜLEN PERDE · BÖLÜM / NOT`.
+- **Konuşmacı süreleri:** `KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON`.
+- **Kayıt konuşmacı tablosu:** `KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON`
+  (+ kişi bağı varsa `DOSYALAR ARASI KİŞİ`; bağ yoksa sütun çizilmez).
+- **Rapor alanları** paneline üç grup: **Konuşmacı tablosu (7) · Konuşmacı
+  süreleri (5) · Kayıt konuşmacı tablosu (6)**; her sütun tek tek açılır/kapanır.
+- **Göç:** eski kayıtta kapatılmış birleşik `speaker` sütunu iki yeni sütuna
+  taşınır ve **kapalı kalır** (sessizce geri açılmaz). Okuma anında da uygulanır.
+- Üç çıktı (HTML/DOCX/UDF) aynı başlık ve sütunları üretir; sütun kapatma üçünde
+  de geçerlidir.
+
+### Ölçüm (gerçek Chromium, kurgusal dosya)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Kanıt başlıkları | 6 sütun, kod+etiket **ayrı** |
+| Konuşmacı / süre / kayıt tabloları | `KOD | ETİKET` ayrı |
+| Rapor alanları grupları | **6 → 9** |
+| Etiket sütunu kapat | yalnız o sütun kalkar, **KOD durur** |
+| Kod+etiket kapat | ikisi kalkar, zaman/metin **durur** |
+| Kişi sütunu kapat | sütun kalkar, tablo bozulmaz |
+| JS hatası | **0** |
+
+**Not (ölçüm sırasında bulunan test kusuru):** DOCX metin çıkarımı
+`<w:t[^>]*>` ile `<w:tblPr>`/`<w:tblW>` etiketlerini de yakalıyor ve XML
+gövdesini metne sızdırıyordu; desen gerçek `w:t` ile sınırlandı.
+Koruyan test: `birim` [124], `rapor` Senaryo 13/25/36, `tasarim`.
 
 ## v2.280 — Gömme paneli konuşmacı yokken de görünür
 

@@ -2,11 +2,29 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.280.**
+yazılır. **Güncel sürüm: v2.282.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.282 — KOD/ETİKET sütunları + analiz sadeleştirme (TAMAMLANDI)
+
+**A) Sütunlar:** kanıt 6, konuşmacı 7, süre 5, kayıt 5(+kişi); rapor alanları
+6 → **9 grup**; göç (eski `speaker` → kod+etiket, kapalı).
+**B) Analiz alanı:** dalga çubuğu **59 → 34 px**; görünür ipucu → title;
+imleç/zoom/Sığdır tuval üstünde; Döngü → 🔁; İş satırı Durum'a katıldı;
+panel kaydırması **158 → 0** (1440), 1280/1100'de **95/99**.
+- Koruyan: `birim` [124], `rapor` 13/25/36, `tasarim`.
+
+## v2.281 — Konuşmacı KOD/ETİKET ayrı sütunlar (TAMAMLANDI)
+
+- Kanıt tablosu: `ZAMAN · KONUŞMACI KODU · KONUŞMACI ETİKETİ · METİN · KONTROL · GÖZLEM`.
+- Konuşmacı tablosu 7 sütun, süre tablosu 5, kayıt tablosu 5(+kişi).
+- **Rapor alanları** 6 → **9 grup** (konuşmacı tabloları eklendi).
+- Göç: eski `speaker` tercihi kod+etikete taşınır, kapalı kalır (okuma anında).
+- Üç çıktı (HTML/DOCX/UDF) aynı sütunları ve filtreyi kullanır.
+- Koruyan: `birim` [124], `rapor` 13/25/36, `tasarim`.
 
 ## v2.280 — Gömme paneli her durumda görünür (TAMAMLANDI)
 

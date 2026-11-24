@@ -103,15 +103,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.280';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.280';
+} from './schema.js?v=2.282';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.282';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.280';
+const APP_VERSION = '2.282';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -238,15 +238,15 @@ const REPORT_TEXT = {
   attachmentsText: 'Raporla birlikte sunulan ekler, aşağıda numaralarıyla listelenmiştir.',
   noAttachments: 'Bu raporla ek sunulmamıştır.',
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
-  speakerHeaders: ['KONUŞMACI', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
+  speakerHeaders: ['KOD', 'ETİKET', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   // v2.273 — S/K ve dosyalar arası eşleştirme açıklaması TEK paragrafta
   // (`speakerCodeNote`). Burada TEKRARLANMAZ (aynı bilgi iki yerde gösterilmez).
   speakerIntro:
     'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
-  noSpeakerRow: ['Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
+  noSpeakerRow: ['—', 'Konuşmacı etiketi girilmemiştir.', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
-  segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
+  segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
   spectrogramLabel: 'Spektrogram incelendi',
   werHeading: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
   werIntro:
@@ -309,7 +309,7 @@ const REPORT_TEXT = {
   rsOriginFilled: 'Kökeni belgelenen kayıt',
   rsOriginMedium: 'Ortam türü belirtilen kayıt',
   rsWerMeasured: 'WER ölçümü yapılan kayıt',
-  segmentHeaders: ['ZAMAN ARALIĞI', 'KONUŞMACI', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU'],
+  segmentHeaders: ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU'],
   emptySpeaker: 'Belirtilmemiş',
   timeDash: '—',
   signatureLabel: 'İmza',
@@ -387,7 +387,7 @@ Object.assign(REPORT_TEXT, {
   recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
   // v2.268 — süre/aralık AYRI tabloda; ana tablo sıkışmaz.
   speakerDurationHeading: 'Konuşmacı süreleri',
-  speakerDurationHeaders: ['KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
+  speakerDurationHeaders: ['KOD', 'ETİKET', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
   speakerFootnote:
     'S kodları kayıt içidir (her kayıtta S1\'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.',
   speakerVerifiedSuffix: 'doğrulandı',
@@ -3749,10 +3749,14 @@ function materialSpeakerRows(c, m) {
       person: person ? `${person.code ? person.code + ' · ' : ''}${person.label || person.name || '—'}` : '—'
     };
   });
-  const headers = ['KOD', 'KONUŞMACI', 'BÖLÜM', 'SÜRE', 'İLK – SON'];
-  if (hasPerson) headers.push('DOSYALAR ARASI KİŞİ');
+  const headers = ['KOD', 'ETİKET', 'BÖLÜM', 'SÜRE', 'İLK – SON'];
+  const keys = ['code', 'label', 'chapters', 'duration', 'span'];
+  if (hasPerson) {
+    headers.push('DOSYALAR ARASI KİŞİ');
+    keys.push('person');
+  }
   const cells = rows.map((r) => [r.code, r.name, r.count, r.total, r.span].concat(hasPerson ? [r.person] : []));
-  return { headers, rows: cells, hasPerson };
+  return { headers, keys, rows: cells, hasPerson };
 }
 // OTURUMLUK konuşmacı dinleme kuyruğu (kayda YAZILMAZ).
 let spkQueue = { on: false, materialId: null, speakerId: '', indexes: [], pos: 0 };
@@ -5604,14 +5608,16 @@ function segmentWorkSummary(s, opts = {}) {
     flags.push({ key: 'ambiguous', label: 'Okuma seçilmedi', hint: 'Belirsiz okumada iki okumadan birini seçip onaylayın.', tone: 'warn' });
   return { state, action, done, needsWork: !done, flags };
 }
-function workStatusHtml(m, s, i) {
+// İŞ DURUMU çipleri (v2.282): ayrı satır DEĞİL — Durum satırına katılır.
+// İki benzer tek satır (Durum + İş) dikey yer yiyor ve paneli kaydırıyordu.
+function workChipsHtml(m, s, i) {
   if (!s) return '';
   const w = segmentWorkSummary(s, {
     merge: mergeCandidateAt(m.segments || [], i),
     timeIssue: segmentTimeIssueAt(m.segments || [], i)
   });
   const flags = w.flags.map((f) => `<span class="st-chip ${f.tone || 'info'}" title="${esc(f.hint)}">${esc(f.label)}</span>`).join('');
-  return `<div class="sd-work" role="status" aria-label="Bölüm iş durumu"><span class="sd-work-label">İş</span><span class="st-chip work" title="${esc(w.action)}">${esc(w.action)}</span>${flags}</div>`;
+  return `<span class="st-chip work" title="${esc(w.action)}">${esc(w.action)}</span>${flags}`;
 }
 function statusRowHtml(m, s, i) {
   const chips = [
@@ -5648,7 +5654,7 @@ function statusRowHtml(m, s, i) {
       `<button class="st-chip info action" data-asr-open="${i}" title="Modelin ham çıktısı sizin metninizden farklı. Karşılaştırma metin kutusunun sağ üstündeki düğmede açılır; metin değişmez.">Model çıktısı farklı — karşılaştır</button>`
     );
   }
-  return `<div class="sd-status" role="status" aria-label="Bölüm durumu"><span class="sd-status-label">Durum</span>${chips.join('')}</div>`;
+  return `<div class="sd-status" role="status" aria-label="Bölüm durumu ve iş"><span class="sd-status-label">Durum</span>${chips.join('')}${workChipsHtml(m, s, i)}</div>`;
 }
 // ASR KÖKENİ — METİN KUTUSUNUN SAĞ ÜST KÖŞESİ (v2.188).
 // Eski katlanır blok metnin ALTINDA (Teknik içinde) duruyordu ve yer kaplıyordu.
@@ -5768,23 +5774,21 @@ function segDetailHtml(m) {
       ? `<div class="sd-meta">${ambiguousPanelHtml(s, i)}</div>`
       : ''}
 
-  ${workStatusHtml(m, s, i)}
   ${statusRowHtml(m, s, i)}
 
   ${proposalBandHtml(s, i)}
 
   <div class="sd-body">
     <div class="sd-left sd-tech">
-      <div class="sd-wave">
+      <!-- v2.282 — SADE DALGA ÇUBUĞU: ipucu artık TITLE'da; imleç zamanı,
+           zoom göstergesi ve "Sığdır" tuvalin ÜST kaplamasında. Araç satırında
+           yalnız günlük işler kalır (A · B · döngü · böl · görünüm). -->
+      <div class="sd-wave" title="Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom">
         <div class="sd-wave-bar">
-          <span class="sd-wave-hint" title="Tıkla: konuma git · Sınır: sürükle · Alt+tıkla: sınır · Shift+sürükle: kaydır · Tekerlek: zoom">Tıkla: git · Sürükle: sınır · Tekerlek: zoom</span>
-          <span class="sd-cursor-time" data-sd-cursor>—</span>
           <div class="sd-wave-tools">
-            <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
-            <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
             <button class="seg-tool" data-loop-a title="Döngü başlangıcını (A) oynatıcının olduğu ana ayarla (kısayol: A)">A</button>
             <button class="seg-tool" data-loop-b title="Döngü bitişini (B) oynatıcının olduğu ana ayarla (kısayol: B)">B</button>
-            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)">Döngü</button>
+            <button class="seg-tool" data-loop-toggle title="A–B aralığını tekrar tekrar dinle (sınırları değiştirmez, kısayol: K)" aria-label="A–B döngüsü">🔁</button>
             <span class="sd-loop-span" data-loop-span></span>
             <button class="seg-tool" data-sd-split title="AKTİF bölümü, imlecin olduğu yerden ikiye ayırır. Metin yeniden çözümlenmez; mevcut metin kesim noktasına göre paylaştırılır. Ctrl+Z ile geri alınabilir.">Böl</button>
             <span class="sd-view-modes" role="group" aria-label="Analiz görünümü">
@@ -5797,6 +5801,13 @@ function segDetailHtml(m) {
         <!-- TEK GÖRÜNÜM ALANI (v2.121): dalga ve spektrogram AYNI kutuda geçişir.
              Böylece düğme dalga araç çubuğunda kalır ve sağ panel uzamaz. -->
         <div class="sd-canvas-wrap mode-both" id="sdwrap-${esc(m.id)}">
+          <div class="sd-canvas-top">
+            <span class="sd-cursor-time" data-sd-cursor>—</span>
+            <span class="sd-canvas-top-tools">
+              <span class="sd-zoom" data-sd-zoom-span>±0,5 sn</span>
+              <button class="seg-tool" data-sd-zoom="fit" title="Bölüme sığdır">Sığdır</button>
+            </span>
+          </div>
           <canvas class="sd-wave-canvas" id="sdwave-${esc(m.id)}" width="900" height="48" aria-label="Bölüm dalga formu — başlangıç ve bitiş sınırlarını sürükleyin"></canvas>
           <canvas class="sd-spec-canvas" id="sdspec-${esc(m.id)}" width="900" height="112" aria-label="Bölüm spektrogramı — tıkla: konuma git, sürükle: A–B seç, Alt+tıkla: sınırı taşı" hidden></canvas>
           <canvas class="sd-spec-overlay" id="sdspecov-${esc(m.id)}" aria-hidden="true" hidden></canvas>
@@ -8109,10 +8120,6 @@ function syncSegDetailInPlace(m, idx) {
   // tazelenmezse önceki bölümün çipleri/düğmesi kalır (yanlış bilgi).
   const statusEl = q('.sd-status');
   if (statusEl) statusEl.outerHTML = statusRowHtml(m, s, idx);
-  // İş durumu satırı da YERİNDE tazelenir (v2.241): durum/öneri değişince
-  // (onayla, gözlem ekle, zaman düzelt) satır anında güncellenir.
-  const workEl = q('.sd-work');
-  if (workEl) workEl.outerHTML = workStatusHtml(m, s, idx);
   const topEl = q('.sd-editor-top');
   if (topEl) topEl.innerHTML = `<span class="sd-editor-label">Deşifre metni</span>${asrPopoverHtml(m, s, idx)}`;
   const sel = meta[1]?.querySelector('select');
@@ -11310,7 +11317,8 @@ function speakerRows(c) {
   // Süre/aralık artık AYRI tabloda (aşağıda) gösterilir; ana tablonun
   // "BÖLÜM / NOT" hücresi sıkışmaz.
   return speakerGroups(c).map((g) => [
-    g.label,
+    g.code || '—',
+    g.name,
     g.role,
     g.gender,
     g.age,
@@ -11371,7 +11379,8 @@ function speakerGroups(c) {
         const verified = links.some((x) => isSpeakerVerified(x.sp)) ? REPORT_TEXT.speakerVerifiedSuffix : '';
         const note = [p.notes, 'uzman eşleştirmesi', verified].filter(Boolean).join(' · ');
         out.push({
-          label: `${p.code ? p.code + ' · ' : ''}${label}`,
+          code: p.code || '',
+          name: label,
           role: SPEAKER_ROLE_LABEL[role] || role || 'Belirtilmedi',
           gender: SPEAKER_GENDER_LABEL[gender] || gender || 'Belirtilmedi',
           age,
@@ -11394,7 +11403,8 @@ function speakerGroups(c) {
           .filter(Boolean)
           .join(' · ');
         out.push({
-          label: `${sp.code ? sp.code + ' · ' : ''}${sp.name}`,
+          code: sp.code || '',
+          name: sp.name,
           role: SPEAKER_ROLE_LABEL[sp.role] || sp.role || 'Belirtilmedi',
           gender: SPEAKER_GENDER_LABEL[sp.gender] || sp.gender || 'Belirtilmedi',
           age: sp.ageRange || '—',
@@ -11417,7 +11427,8 @@ function speakerGroups(c) {
  */
 function speakerDurationRows(c) {
   return speakerGroups(c).map((g) => [
-    g.label,
+    g.code || '—',
+    g.name,
     `${g.count} bölüm`,
     g.totalSec ? fmtShort(g.totalSec) : '—',
     g.first && g.last ? tcRange(g.first, g.last) : '—'
@@ -11452,11 +11463,14 @@ function renderObsHelp() {
 // Raporun ÜÇ çıktısı (HTML/DOCX/UDF) aynı hücreyi kullanır. Aksi hâlde aynı
 // bölüm bir çıktıda "S1 · Kiracı", diğerinde "Kiracı" görünür ve tutarlılık
 // testi haklı olarak kalır.
-function segSpeakerCell(m, s) {
+// Kanıt tablosu için KOD ve ETİKET AYRI döner (v2.281). Tek hücrede
+// "S1 · Kiracı" yazmak kodu/adı ayrı okumayı ve ayrı sütun açıp kapatmayı
+// engelliyordu.
+function segSpeakerCells(m, s) {
   const name = s.speaker || REPORT_TEXT.emptySpeaker;
-  if (!s.speaker) return name;
+  if (!s.speaker) return { code: '—', label: name };
   const rec = speakerByName(m, s.speaker);
-  return rec?.code ? `${rec.code} · ${name}` : name;
+  return { code: (rec && rec.code) || '—', label: name };
 }
 function chanModeText(m) {
   const mode = channelMode(m);
@@ -11826,11 +11840,18 @@ function reportColumnLocked(table, key) {
   const list = REPORT_COLUMN_LOCKED[table];
   return Array.isArray(list) && list.includes(key);
 }
-function reportTableColumns(c, table, headers, rows, widths) {
-  const keys = REPORT_COLUMN_TABLES[table] || [];
+function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
+  // `keysOverride`: sütun kümesi KOŞULLU ise (ör. yalnız kişi bağı varsa
+  // eklenen sütun) çağıran taraf gerçek anahtarları verir (v2.281).
+  const keys = Array.isArray(keysOverride) ? keysOverride : REPORT_COLUMN_TABLES[table] || [];
+  // MIGRATION READ-TIME: eski kayıtta `segments.speaker` varsa kod+etikete
+  // çevrilir. `reportColumnOn` ham değeri okusaydı, kullanıcının kapattığı
+  // sütun sessizce geri açılırdı (v2.281'de ölçüldü).
+  const cols = normalizeReportColumns((c && c.report && c.report.columns) || {});
+  const on = (k) => (cols[table] && typeof cols[table][k] === 'boolean' ? cols[table][k] : true);
   const idx = [];
   // Kanıt tablosunda zaman/metin ZORUNLU; kullanıcı kapatsa da basılır.
-  for (let i = 0; i < keys.length; i++) if (reportColumnLocked(table, keys[i]) || reportColumnOn(c, table, keys[i])) idx.push(i);
+  for (let i = 0; i < keys.length; i++) if (reportColumnLocked(table, keys[i]) || on(keys[i])) idx.push(i);
   return {
     keys: idx.map((i) => keys[i]),
     headers: idx.map((i) => headers[i]),
@@ -13285,10 +13306,23 @@ function renderReport() {
       const spkRows = speakerRows(c);
       const conf = speakerCodeConflictText(c);
       const durRows = speakerDurationRows(c);
-      const durTable = durRows.length
-        ? `<h4>${esc(REPORT_TEXT.speakerDurationHeading)}</h4><table class="paper-table"><thead><tr>${REPORT_TEXT.speakerDurationHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${durRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-        : '';
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}<table class="paper-table"><thead><tr>${REPORT_TEXT.speakerHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkRows.length ? spkRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="6">${esc(REPORT_TEXT.noSpeakerRow[0])}</td></tr>`}</tbody></table>${durTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
+      const spk = reportTableColumns(
+        c,
+        'speakers',
+        REPORT_TEXT.speakerHeaders,
+        spkRows.length ? spkRows : [REPORT_TEXT.noSpeakerRow]
+      );
+      const spkTable = spk.empty
+        ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
+        : `<table class="paper-table"><thead><tr>${spk.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spk.rows
+            .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
+            .join('')}</tbody></table>`;
+      const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, durRows);
+      const durTable =
+        durRows.length && !d.empty
+          ? `<h4>${esc(REPORT_TEXT.speakerDurationHeading)}</h4><table class="paper-table"><thead><tr>${d.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+          : '';
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}${durTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
@@ -13314,9 +13348,12 @@ function renderReport() {
           {
             const spkTable = materialSpeakerRows(c, m);
             if (spkTable.rows.length) {
-              out += `<table class="paper-table"><thead><tr>${spkTable.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spkTable.rows
-                .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
-                .join('')}</tbody></table>`;
+              const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
+              out += st.empty
+                ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
+                : `<table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows
+                    .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
+                    .join('')}</tbody></table>`;
             }
           }
           if (m.hallucinationWarning)
@@ -13324,7 +13361,10 @@ function renderReport() {
           if (m.languageWarning)
             out += `<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;
           if (m.segments?.length) {
-            const segRows = m.segments.map((s) => [tcRange(s.start, s.end), segSpeakerCell(m, s), s.text || '', reviewCellText(s), segObsText(s)]);
+            const segRows = m.segments.map((s) => {
+              const sp = segSpeakerCells(m, s);
+              return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
+            });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
             out += `<table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
@@ -13730,13 +13770,19 @@ function docxXml(c) {
         wP(REPORT_TEXT.speakerIntro) +
         wP(REPORT_TEXT.speakerCodeNote, { color: '6F8295', size: 17 }) +
         (conf ? wP(conf, { bold: true, color: '9A6B2D', size: 18 }) : '') +
-        wTable([[...REPORT_TEXT.speakerHeaders], ...(dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow])], {
-          widths: [1500, 1200, 1100, 1200, 1900, 2200],
-          header: true
-        }) +
+        (() => {
+          const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow], [800, 1400, 1000, 1000, 1000, 1800, 2206]);
+          return st.empty
+            ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
+            : wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
+        })() +
         (dDur.length
-          ? headingXml(REPORT_TEXT.speakerDurationHeading, 2) +
-            wTable([[...REPORT_TEXT.speakerDurationHeaders], ...dDur], { widths: [2600, 1400, 1400, 3600], header: true })
+          ? (() => {
+              const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, dDur, [800, 1800, 1200, 1400, 3600]);
+              return d.empty
+                ? ''
+                : headingXml(REPORT_TEXT.speakerDurationHeading, 2) + wTable([[...d.headers], ...d.rows], { widths: d.widths, header: true });
+            })()
           : '') +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
       );
@@ -13770,21 +13816,23 @@ function docxXml(c) {
         );
         {
           const spkTable = materialSpeakerRows(c, m);
-          if (spkTable.rows.length) out += wTable([[...spkTable.headers], ...spkTable.rows], { header: true });
+          if (spkTable.rows.length) {
+            const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
+            out += st.empty
+              ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
+              : wTable([[...st.headers], ...st.rows], { header: true });
+          }
         }
         if (m.hallucinationWarning)
           out += wP(`${REPORT_TEXT.evidenceWarningPrefix} ${m.hallucinationWarning}`, { color: '9A6B2D', size: 17 });
         if (m.languageWarning)
           out += wP(`${REPORT_TEXT.languageWarningPrefix} ${m.languageWarning}`, { color: '9A6B2D', size: 17 });
         if (m.segments?.length) {
-          const segRows = m.segments.map((s) => [
-            tcRange(s.start, s.end),
-            segSpeakerCell(m, s),
-            s.text || '',
-            reviewCellText(s),
-            segObsText(s)
-          ]);
-          const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1300, 1200, 3600, 1100, 900]);
+          const segRows = m.segments.map((s) => {
+            const sp = segSpeakerCells(m, s);
+            return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
+          });
+          const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1200, 900, 1100, 3100, 1000, 800]);
           out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
@@ -14281,17 +14329,18 @@ async function makeUdf() {
       el.push(paragraph(REPORT_TEXT.speakerIntro, { size: 10 }));
       el.push(paragraph(REPORT_TEXT.speakerCodeNote, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (conf) el.push(paragraph(conf, { size: 10, bold: true, color: 'gold', after: 4 }));
-      el.push(
-        table(
-          [[...REPORT_TEXT.speakerHeaders], ...(uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow])],
-          [90, 80, 70, 70, 110, 150],
-          { header: true }
-        )
-      );
+      {
+        const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow], [46, 80, 62, 58, 58, 96, 160]);
+        if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
+        else el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+      }
       const uDur = speakerDurationRows(c);
       if (uDur.length) {
-        el.push(paragraph(REPORT_TEXT.speakerDurationHeading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
-        el.push(table([[...REPORT_TEXT.speakerDurationHeaders], ...uDur], [120, 70, 70, 200], { header: true }));
+        const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, uDur, [46, 120, 60, 60, 200]);
+        if (!d.empty) {
+          el.push(paragraph(REPORT_TEXT.speakerDurationHeading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+          el.push(table([[...d.headers], ...d.rows], d.widths, { header: true }));
+        }
       }
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
@@ -14332,8 +14381,12 @@ async function makeUdf() {
           {
             const spkTable = materialSpeakerRows(c, m);
             if (spkTable.rows.length) {
-              const w = spkTable.headers.map(() => Math.floor(510 / spkTable.headers.length));
-              el.push(table([[...spkTable.headers], ...spkTable.rows], w, { header: true }));
+              const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
+              if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
+              else {
+                const w = st.headers.map(() => Math.floor(510 / st.headers.length));
+                el.push(table([[...st.headers], ...st.rows], w, { header: true }));
+              }
             }
           }
           if (m.hallucinationWarning)
@@ -14353,14 +14406,11 @@ async function makeUdf() {
               })
             );
           if (m.segments?.length) {
-            const segRows = m.segments.map((seg) => [
-              tcRange(seg.start, seg.end),
-              segSpeakerCell(m, seg),
-              seg.text || '',
-              reviewCellText(seg),
-              segObsText(seg)
-            ]);
-            const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [70, 68, 235, 75, 62]);
+            const segRows = m.segments.map((seg) => {
+              const sp = segSpeakerCells(m, seg);
+              return [tcRange(seg.start, seg.end), sp.code, sp.label, seg.text || '', reviewCellText(seg), segObsText(seg)];
+            });
+            const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [62, 46, 56, 200, 62, 50]);
             el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
         });
@@ -18254,6 +18304,24 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.282': {
+    title: 'Rapor sütunlarında KOD/ETİKET ayrıldı; analiz alanı sadeleşti',
+    body:
+      'Kanıt ve konuşmacı tablolarında "S1 · Kiracı" tek hücredeydi; artık KOD ve ETİKET ayrı sütunlar ' +
+      've "Rapor alanları" panelinde 3 yeni grup var (konuşmacı tablosu · konuşmacı süreleri · kayıt ' +
+      'konuşmacı tablosu). Ayrıca Deşifre sekmesindeki analiz alanı sadeleşti: görünür ipucu satırı ' +
+      'kalktı (tam metin ipucunda), imleç zamanı/zoom/"Sığdır" tuvalin üstüne taşındı, Döngü düğmesi ' +
+      '🔁 oldu ve ayrı "İş" satırı "Durum" satırına katıldı. Metin alanı büyüdü, panel kaydırması azaldı.'
+  },
+  '2.281': {
+    title: 'Raporda konuşmacı KODU ve ETİKETİ ayrı sütunlar',
+    body:
+      'Kanıt tablosunda ve konuşmacı tablolarında "S1 · Kiracı" tek hücredeydi; artık KOD ve ETİKET ' +
+      'AYRI sütunlar. Böylece mahkeme kodu ve adı ayrı okur, siz de ayrı açıp kapatabilirsiniz. ' +
+      '"Rapor alanları" paneline üç yeni grup eklendi: Konuşmacı tablosu · Konuşmacı süreleri · ' +
+      'Kayıt konuşmacı tablosu. Eski kayıtlarda kapatılmış "konuşmacı" sütunu iki yeni sütuna ' +
+      'taşınır (kapalı kalır). Veri değişmez; yalnız gösterim/sütun tercihi.'
+  },
   '2.280': {
     title: 'Gömme paneli konuşmacı yokken de görünüyor',
     body:
