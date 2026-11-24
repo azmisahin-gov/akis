@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.268.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.269.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6264,3 +6264,44 @@ atamaların doğru olduğu anlamına gelmez. Gerçek ayrıştırma için konuşm
 | "Bu kaydın konuşmacıları" | 2 kez (bulgular + okuma) |
 | Kırpılan tablo (1440/1280/1100/900) | 0 |
 | JS hatası | 0 |
+
+## YENİ OTURUM DEVRİ (v2.269) — Analiz sekmesi düzeni + sessiz beyan düzeltmesi
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.269** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1739 birim + 520 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | WER referans alanı (v2.270), gömme modeli (v2.271), yeni bayraklar (v2.272) |
+
+### Yapılan
+
+- **Ölçümler bloğu** (Dinleme sekmesinin başı): 4 durum çipi (seviye · perde · tutarlılık ·
+  spektrogram) + **“Tüm ölçümleri yap”** (sıralı, çift çalışma kilidi, hata → dur ve söyle).
+- **Köken/teslim alanları** (beyan) **Kayıt bilgileri** sekmesine taşındı.
+- **SESSİZ HATA DÜZELTİLDİ:** `refreshSegmentSpectrogram` her çizimde `spectrogramReviewed`
+  yazıyordu → bölümü yalnız açan uzman “spektrogram incelendi” beyanı vermiş görünüyordu.
+  Otomatik işaret kaldırıldı; beyan yalnız **“Spektrogramı göster”** düğmesiyle; çip yerinde tazelenir.
+- Konuşmacı kartı: “perde ölçülmedi” ↔ **“perde ölçülemedi (ölçüm yapıldı)”** ayrımı.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Ölçüm durumu TEK KAYNAK:** `measurementStatus(m)`. Eski şema ölçümü (`schema !== LEVELS_SCHEMA`)
+   “yapılmadı” sayılır. Yeni bir ölçüm eklerken buraya da satır ekleyin.
+2. **Beyan ≠ ölçüm.** Spektrogram incelemesi (`spectrogramReviewed`) **yalnız açık kullanıcı
+   eylemiyle** yazılır. Bir görünümün çizilmesi beyan DEĞİLDİR (v2.269 dersi).
+3. **Toplu ölçüm sıralıdır ve çift çalışmaz**; atlanan adım **söylenir**.
+4. Ölçüm sonunda **çipler tazelenir** (`refreshMeasurementPanel`); aksi hâlde beyan verildiği
+   hâlde “yapılmadı” görünür (v2.269'da ölçüldü).
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Başlangıç | 4 çip × `yapılmadı` |
+| Tüm ölçümleri yap | 3/3 adım; `19:41`, `1/1 konuşmacı`, `0 şüpheli` |
+| Köken paneli | Dinleme'de yok, Kayıt bilgileri'nde var |
+| Bölüm açma | spektrogram çipi **yapılmadı** kalır |
+| Spektrogramı göster | çip `19:42 · uzman beyanı` |
+| Kırpılma / taşma / JS hatası | 0 / yok / 0 |

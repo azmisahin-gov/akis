@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.268.**
+yazılır. **Güncel sürüm: v2.269.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.269 — Analiz sekmesi düzeni (TAMAMLANDI)
+
+- **Ölçümler** bloğu: durum çipleri + **"Tüm ölçümleri yap"** (seviye → perde → tutarlılık;
+  sıralı, çift çalışma kilidi). Spektrogram **beyan**, toplu ölçüme katılmaz.
+- **Sessiz hata düzeltildi:** bölüm spektrogramı çizilince `spectrogramReviewed` otomatik
+  yazılıyordu → kaldırıldı; beyan yalnız "Spektrogramı göster" ile.
+- Köken/teslim alanları **Kayıt bilgileri** sekmesine taşındı.
+- Koruyan: `birim` [116], `tasarim` [2cn].
 
 ## v2.268 — Rapor netliği (TAMAMLANDI)
 

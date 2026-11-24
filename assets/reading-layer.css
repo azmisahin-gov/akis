@@ -3784,3 +3784,29 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   font-size: var(--fs-2xs);
   line-height: 1.5;
 }
+/* v2.269 — Ölçüm durumu çipleri (tek bakışta "ne yapıldı / ne eksik").
+   Renk tek başına anlam taşımaz: çip metni "yapılmadı" veya saat yazar. */
+.ms-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.ms-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: var(--fs-2xs);
+}
+.ms-chip .ms-state { color: var(--ink-3); }
+.ms-chip.done { border-color: var(--green); }
+.ms-chip.done .ms-state { color: var(--green); }
+.ms-chip.todo { border-style: dashed; }
+.ms-chip.manual { background: var(--surface-3); }
+.ms-note { color: var(--ink-3); font-size: var(--fs-2xs); }
+.measure-block .evidence-actions { align-items: center; gap: 8px; flex-wrap: wrap; }

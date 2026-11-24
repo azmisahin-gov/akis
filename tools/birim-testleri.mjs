@@ -151,6 +151,7 @@ const EXPOSE = [
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
   'speakerIndexList', 'assignSpeakerByIndex', 'speakerQueueIndexes', 'speakerStats', 'setSegmentSpeakerByName',
   'speakerLegendItems', 'materialSpeakerLine', 'speakerDurationRows', 'speakerGroups',
+  'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -5146,6 +5147,61 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('gözlem satırı etiketi', b.tables[2].rows[0][0], __schemaMod.OBS_DEFS[0].label);
   eq('gözlem satırı ipucu', b.tables[2].rows[0][1], __schemaMod.OBS_DEFS[0].hint);
   eq('S/K satırları var', b.tables[0].rows.length, 2);
+}
+
+
+// [116] v2.269 — Ölçüm durumu: hangi ölçüm yapıldı, ne zaman (tek kaynak).
+{
+  console.log('[116] Ölçüm durumu ve toplu ölçüm (v2.269)');
+  const base = { id: 'm1', name: 'a.wav', speakers: [], segments: [] };
+  const empty = T.measurementStatus(base);
+  eq('dört durum satırı', empty.length, 4);
+  eq('anahtarlar', empty.map((x) => x.key).join(','), 'levels,pitch,voice,spec');
+  eq('hiçbiri yapılmadı', empty.every((x) => !x.done), true);
+  eq('spektrogram MANUEL', empty.find((x) => x.key === 'spec').manual, true);
+  eq('seviye manuel değil', empty.find((x) => x.key === 'levels').manual, false);
+  eq('toplu ölçüm adımları', T.MEASURE_ALL_STEPS.join(','), 'levels,pitch,voice');
+  eq('yapılmadı metni', T.measurementStatusText(empty[0]), 'yapılmadı');
+
+  const done = {
+    ...base,
+    levels: { ok: true, schema: 3, at: '2026-01-01T10:00:00Z' },
+    speakers: [
+      { id: 'a', code: 'S1', name: 'A', pitchAt: '2026-01-01T10:01:00Z' },
+      { id: 'b', code: 'S2', name: 'B', pitchAt: '' }
+    ],
+    segments: [{ id: 'g', start: '00:00:00.000', end: '00:00:05.000', speaker: 'A', speakerId: 'a' }],
+    voiceCheck: { ok: true, at: '2026-01-01T10:02:00Z', outliers: [{ index: 0 }, { index: 1 }] },
+    spectrogramReviewed: { at: '2026-01-01T10:03:00Z' }
+  };
+  const st = T.measurementStatus(done);
+  eq('seviye yapıldı', st.find((x) => x.key === 'levels').done, true);
+  eq('seviye saati taşınır', st.find((x) => x.key === 'levels').at, '2026-01-01T10:00:00Z');
+  // Perde: konuşmacıların HEPSİ ölçülmüşse tamam sayılır.
+  eq('perde eksik (1/2)', st.find((x) => x.key === 'pitch').done, false);
+  eq('perde ayrıntısı', st.find((x) => x.key === 'pitch').detail, '1/2 konuşmacı');
+  eq('tutarlılık yapıldı', st.find((x) => x.key === 'voice').done, true);
+  eq('tutarlılık şüpheli sayısı', st.find((x) => x.key === 'voice').detail, '2 şüpheli');
+  eq('spektrogram işaretlendi', st.find((x) => x.key === 'spec').done, true);
+
+  // Eski/bozuk ölçüm "yapıldı" sayılmaz (şema uyuşmazlığı).
+  const stale = { ...base, levels: { ok: true, schema: 1, at: '2026-01-01T10:00:00Z' } };
+  eq('eski şema yapılmadı sayılır', T.measurementStatus(stale).find((x) => x.key === 'levels').done, false);
+
+  // Konuşmacı yoksa perde satırı "konuşmacı yok" der (uydurma yüzde yok).
+  eq('konuşmacı yok', empty.find((x) => x.key === 'pitch').detail, 'konuşmacı yok');
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('toplu ölçüm sıralı (await)', /for \(let i = 0; i < steps\.length; i\+\+\)[\s\S]{0,400}await fn\(m\)/.test(js), true);
+  eq('çift çalışma koruması', /if \(measureAllRunning\)/.test(js), true);
+  eq('panel kimliği', /id="measure-panel-/.test(js), true);
+  // v2.269 — SESSİZ BEYAN DÜZELTMESİ: bölüm spektrogramı çizilince
+  // "incelendi" işareti KONMAZ; beyan yalnız açık düğmeyle verilir.
+  const autoMark = /refreshSegmentSpectrogram[\s\S]{0,1200}spectrogramReviewed = \{/.test(js);
+  eq('spektrogram otomatik işaretlenmez', autoMark, false);
+  eq('açık düğme işaretler', /Spektrogram incelendiği rapora yansıtılır/.test(js), true);
+  eq('beyandan sonra çip tazelenir', /spectrogramReviewed = \{ at[\s\S]{0,400}refreshMeasurementPanel\(m\)/.test(js), true);
+  eq('perde bulunamadı ayrımı', /perde ölçülemedi \(ölçüm yapıldı\)/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

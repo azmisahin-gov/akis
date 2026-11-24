@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.268';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.268';
+} from './schema.js?v=2.269';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.269';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.268';
+const APP_VERSION = '2.269';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2118,13 +2118,14 @@ function materialCardHtml(m) {
         </div>
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
+        <div id="measure-panel-${esc(m.id)}">${measurementPanelHtml(m)}</div>
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
         <div class="pane-section"><div class="pane-title">Seviye ölçümü<span class="info-i" tabindex="0" data-tip="Tepe ve RMS düzeyi, tepe kırpılma oranı, gürültü tabanı ve sinyal/gürültü oranı kaydın örneklerinden hesaplanır. Ölçüm yapılmadan rapora yazılmaz.">i</span></div><div id="level-panel-${esc(m.id)}">${levelPanelHtml(m)}</div><div class="evidence-actions"><button class="mini-button" data-measure-levels="${esc(m.id)}">Seviye ölçümü yap</button></div></div>
-        <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
         <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
       </div>
       <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
+        <div class="pane-section"><div class="pane-title">Kayıt kökeni ve teslim zinciri (beyan)<span class="info-i" tabindex="0" data-tip="Kaydın hangi ortamdan geldiğini ve nasıl teslim edildiğini belgeler. Uzman beyanına dayanır; uygulama ortamı kendiliğinden tespit etmez. Bu alanlar bir ölçüm değildir.">i</span></div><div id="origin-panel-${esc(m.id)}">${originPanelHtml(m)}</div></div>
       </div>
     </div>
     ${narrowBarHtml(m)}`;
@@ -2729,10 +2730,13 @@ async function toggleSpectrogram(m) {
   }
   m.__specData = spec;
   drawSpectrogram(canvas, spec, m);
-  // Spektrogram incelendiği rapora yansıtılır (yalnızca gerçekten açıldıysa).
+  // Spektrogram incelendiği rapora yansıtılır (YALNIZ bu açık düğmeyle).
+  // v2.269: durum çipi de yerinde tazelenir; aksi hâlde beyan verildiği hâlde
+  // çip "yapılmadı" gösteriyordu.
   m.spectrogramReviewed = { at: new Date().toISOString() };
   logEvent(m, 'Spektrogram incelendi', `${spec.cols} zaman sütunu, ${spec.bins} frekans kutusu, FFT ${spec.fftSize}`);
   persist();
+  refreshMeasurementPanel(m);
   renderOverview();
   showToast('Spektrogram hazır.');
 }
@@ -3824,6 +3828,7 @@ async function measureSpeakerConsistency(m) {
     `${points.length} bölüm · ${outliers.length} şüpheli · ${changes.length} değişim şüphesi (kimlik tespiti değildir)`
   );
   persist();
+  refreshMeasurementPanel(m);
   await renderAudioList();
   showToast(
     `Tutarlılık ölçüldü: ${outliers.length} bölüm şüpheli, ${changes.length} değişim şüphesi. ` +
@@ -3900,9 +3905,124 @@ async function measureSpeakerPitch(m) {
   await ctx.close();
   logEvent(m, 'Konuşmacı perde ölçümü', `${m.speakers.length} konuşmacı için perde tahmini hesaplandı`);
   persist();
+  refreshMeasurementPanel(m);
   renderSpeakersPanel(m); // Perde ölçümü tüm ses listesini yeniden çizmez; yalnızca konuşmacı paneli
   // güncellenir. Böylece sayfa yerinde kalır, kaydırma ve odak korunur.
   showToast('Konuşmacı perde ölçümü tamamlandı.');
+}
+// ---- Ölçüm durumu (v2.269) ----------------------------------------------
+// TEK KAYNAK: hangi ölçüm yapıldı, ne zaman. Ekrandaki durum çipleri ve
+// "Tüm ölçümleri yap" bu listeden beslenir; ölçüm fonksiyonları da aynı
+// anahtarları yazar (levels.at, speaker.pitchAt, voiceCheck.at).
+// Spektrogram bir ÖLÇÜM değil, İNCELEME BEYANIDIR (spectrogramReviewed):
+// toplu ölçüme DAHİL EDİLMEZ, elle işaretlenir.
+function measurementStatus(m) {
+  const lv = m && m.levels;
+  const speakers = (m && m.speakers) || [];
+  const withPitch = speakers.filter((sp) => sp && sp.pitchAt);
+  const vc = m && m.voiceCheck;
+  return [
+    {
+      key: 'levels',
+      label: 'Seviye ve kırpılma',
+      done: !!(lv && lv.ok && lv.schema === LEVELS_SCHEMA),
+      at: (lv && lv.at) || '',
+      detail: '',
+      manual: false
+    },
+    {
+      key: 'pitch',
+      label: 'Konuşmacı perdesi',
+      done: withPitch.length > 0 && withPitch.length === speakers.length,
+      at: withPitch.length ? withPitch.map((sp) => sp.pitchAt).sort().slice(-1)[0] : '',
+      detail: speakers.length ? `${withPitch.length}/${speakers.length} konuşmacı` : 'konuşmacı yok',
+      manual: false
+    },
+    {
+      key: 'voice',
+      label: 'Ses tutarlılığı',
+      done: !!(vc && vc.ok),
+      at: (vc && vc.at) || '',
+      detail: vc && vc.ok ? `${(vc.outliers || []).length} şüpheli` : '',
+      manual: false
+    },
+    {
+      key: 'spec',
+      label: 'Spektrogram incelemesi',
+      done: !!(m && m.spectrogramReviewed),
+      at: (m && m.spectrogramReviewed && m.spectrogramReviewed.at) || '',
+      detail: 'uzman beyanı',
+      manual: true
+    }
+  ];
+}
+// Toplu ölçüm sırası. Spektrogram YOK (beyan); sessizlik bölüm bazındadır.
+const MEASURE_ALL_STEPS = ['levels', 'pitch', 'voice'];
+function measurementStatusText(item) {
+  if (!item.done) return 'yapılmadı';
+  const t = item.at ? new Date(item.at) : null;
+  const clock = t && !isNaN(t) ? t.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+  return [clock, item.detail].filter(Boolean).join(' · ');
+}
+function measurementPanelHtml(m) {
+  const items = measurementStatus(m);
+  const chips = items
+    .map(
+      (it) =>
+        `<span class="ms-chip ${it.done ? 'done' : 'todo'}${it.manual ? ' manual' : ''}" title="${esc(it.label)}: ${esc(measurementStatusText(it))}${it.manual ? ' — toplu ölçüme dâhil değildir' : ''}">${esc(it.label)}<span class="ms-state">${esc(measurementStatusText(it))}</span></span>`
+    )
+    .join('');
+  return `<div class="pane-section measure-block"><div class="pane-title">Ölçümler<span class="info-i" tabindex="0" data-tip="Tepe/RMS, kırpılma, gürültü tabanı, konuşmacı perdesi ve ses tutarlılığı ses dosyasından hesaplanır. Ölçülmeyen değer rapora yazılmaz. Spektrogram incelemesi bir uzman beyanıdır; toplu ölçüme dâhil değildir.">i</span></div><div class="ms-chips">${chips}</div><div class="evidence-actions"><button class="mini-button primary" data-measure-all="${esc(m.id)}" title="Seviye/kırpılma + konuşmacı perdesi + ses tutarlılığını sırayla yeniden ölçer. Uzun kayıtta birkaç dakika sürebilir; ilerleme bildirilir.">Tüm ölçümleri yap</button><span class="ms-note">Sırayla: seviye → konuşmacı perdesi → ses tutarlılığı. Spektrogram incelemesi elle işaretlenir.</span></div></div>`;
+}
+function refreshMeasurementPanel(m) {
+  const host = document.getElementById(`measure-panel-${m.id}`);
+  if (!host) return;
+  host.innerHTML = measurementPanelHtml(m);
+}
+// TOPLU ÖLÇÜM (v2.269): tek düğme, sıralı çalışır, her adımı bildirir.
+// Aynı anda iki kez çalışmaz (çift decode yok). Hata olursa DURUR ve söyler.
+let measureAllRunning = false;
+async function measureAllFor(m) {
+  if (measureAllRunning) {
+    showToast('Ölçüm zaten sürüyor; bitmesini bekleyin.');
+    return;
+  }
+  measureAllRunning = true;
+  const steps = [
+    ['levels', 'Seviye ve kırpılma', measureLevels],
+    ['pitch', 'Konuşmacı perdesi', measureSpeakerPitch],
+    ['voice', 'Ses tutarlılığı', measureSpeakerConsistency]
+  ];
+  let okCount = 0;
+  try {
+    for (let i = 0; i < steps.length; i++) {
+      const [key, label, fn] = steps[i];
+      if (key === 'voice' && !((m.segments || []).length)) {
+        showToast(`${label}: bölüm yok, atlandı.`);
+        continue;
+      }
+      if (key === 'pitch' && !((m.speakers || []).length)) {
+        showToast(`${label}: konuşmacı yok, atlandı.`);
+        continue;
+      }
+      showToast(`Ölçüm ${i + 1}/${steps.length}: ${label}…`);
+      await fn(m);
+      okCount++;
+      refreshMeasurementPanel(m);
+    }
+  } catch (e) {
+    showToast(`Ölçüm sırasında hata: ${e && e.message ? e.message : 'bilinmeyen'}`, true);
+  } finally {
+    measureAllRunning = false;
+    refreshMeasurementPanel(m);
+  }
+  const st = measurementStatus(m);
+  const todo = st.filter((x) => !x.manual && !x.done).map((x) => x.label);
+  showToast(
+    todo.length
+      ? `Ölçüm tamamlandı (${okCount}/${steps.length}); eksik: ${todo.join(', ')}.`
+      : `Ölçümler tamam: ${okCount}/${steps.length} adım çalıştı.`
+  );
 }
 // Kaydın tamamı için seviye ölçümü: tepe/RMS, tepe kırpılma, gürültü tabanı ve
 // sinyal/gürültü oranı. Sonuç kayda bağlanır ve rapora "Seviye ölçümü" satırı
@@ -3971,6 +4091,7 @@ async function measureLevels(m) {
   const clipInfo = lv.clippedSamples > 0 ? ` (kanal ${lv.clipChannel})` : '';
   logEvent(m, 'Seviye ölçümü', `Tepe ${lv.peakDb.toFixed(1)} dBFS · RMS ${lv.rmsDb.toFixed(1)} dBFS · kırpılma %${(lv.clippedRatio * 100).toFixed(3)}${clipInfo}${chInfo}`);
   persist();
+  refreshMeasurementPanel(m);
   renderAudioList();
   renderOverview();
   showToast('Seviye ölçümü tamamlandı.');
@@ -4211,7 +4332,7 @@ function speakersPanelHtml(m) {
             `<button class="mini-button" data-listen-spk="${esc(m.id)}|${esc(s.id)}" title="Bu konuşmacının TÜM bölümlerini sırayla dinle. Elle bir bölüm çalarsanız veya durdurursanız kuyruk iptal olur.">▶ Tüm bölümleri dinle</button>`
           : ''
       }</div>
-      <small>${segs.length ? `${segs.length} bölüm · ${fmtShort(stat.totalSec)} · ${stat.first}–${stat.last}` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : 'perde ölçülmedi'}</small>
+      <small>${segs.length ? `${segs.length} bölüm · ${fmtShort(stat.totalSec)} · ${stat.first}–${stat.last}` : '<b class="spk-unused">hiçbir bölüme atanmamış — raporda görünmez</b>'} · ${s.pitch ? `ölçülen perde ≈ <b>${fmtHz(s.pitch)}</b> — ${esc(pitchHint(s.pitch))}${s.pitchSamples ? ` (${s.pitchSamples} örnek)` : ''}` : s.pitchAt ? 'perde ölçülemedi (ölçüm yapıldı)' : 'perde ölçülmedi'}</small>
     </div>`;
     })
     .join('');
@@ -5627,12 +5748,11 @@ async function refreshSegmentSpectrogram(m, index, opts = {}) {
   canvas.__specView = { a, b };
   attachSegmentSpectrogram(m, index);
   paintSpecOverlay(m, index, null);
-  if (!m.spectrogramReviewed) {
-    m.spectrogramReviewed = { at: new Date().toISOString() };
-    logEvent(m, 'Spektrogram incelendi', `Bölüm ${index + 1}: ${s.start}–${s.end}`);
-    persist();
-    renderOverview();
-  }
+  // v2.269 — OTOMATİK "İNCELENDİ" İŞARETİ KALDIRILDI.
+  // v2.128'den beri analiz kutusu varsayılan olarak spektrogramı çiziyor;
+  // burada işaret koymak, bölümü yalnız AÇAN uzmanı "spektrogramı inceledi"
+  // diye beyan etmiş gibi gösteriyordu (sessiz ve yanıltıcı). Beyan yalnız
+  // "Spektrogramı göster" düğmesiyle (data-spec) verilir.
 }
 
 // Spektrogram üzerinde analiz: tıkla = konuma git · sürükle = A–B seç ·
@@ -15750,6 +15870,10 @@ function setupEvents() {
       renderSegDetail(mm);
       const row = document.querySelector(`.seg-item[data-seg-item="${idx}"]`);
       if (row && row.scrollIntoView) row.scrollIntoView({ block: 'nearest' });
+    } else if (b.dataset.measureAll !== undefined) {
+      // v2.269 — tek düğme: seviye → perde → tutarlılık (sıralı, çift çalışmaz).
+      const mm = c.materials.find((x) => x.id === b.dataset.measureAll);
+      if (mm) measureAllFor(mm);
     } else if (b.dataset.voiceCheck !== undefined) {
       // v2.265 — bölüm bazında perde ölçümü + konuşmacı profili karşılaştırması.
       const mm = c.materials.find((x) => x.id === b.dataset.voiceCheck);
@@ -17705,6 +17829,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.269': {
+    title: 'Analiz sekmesi düzenlendi: tek düğme, durum çipleri, spektrogram beyanı',
+    body:
+      'Dinleme sekmesinin başında "Ölçümler" bloğu var: her ölçümün durumu (yapıldı · saat / yapılmadı) ve ' +
+      'tek "Tüm ölçümleri yap" düğmesi (seviye → konuşmacı perdesi → ses tutarlılığı, sırayla). ' +
+      'Spektrogram bir ÖLÇÜM değil UZMAN BEYANIDIR; toplu ölçüme katılmaz. ' +
+      'ÖNEMLİ DÜZELTME: bölümü açmak spektrogramı artık "incelendi" diye işaretlemiyor; beyan yalnız ' +
+      '"Spektrogramı göster" düğmesiyle verilir. Köken/teslim alanları (beyan) "Kayıt bilgileri" sekmesine taşındı.'
+  },
   '2.268': {
     title: 'Rapor netliği: süre tablosu ayrıldı, gösterim anahtarı üç tablo',
     body:

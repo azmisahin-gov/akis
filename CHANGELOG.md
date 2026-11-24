@@ -6,12 +6,70 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.268.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.269.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.269 — Analiz sekmesi düzeni + sessiz "spektrogram incelendi" düzeltmesi
+
+Kullanıcı: *"Analiz kısmında birçok tuşa basıyoruz; bunlar otomatik değil mi, her
+seferinde mi yapmalıyız? Sayfa karışık."*
+
+### KULLANICI NE GÖRECEK
+
+- Dinleme sekmesinin **en başında “Ölçümler”** bloğu:
+  `Seviye ve kırpılma · Konuşmacı perdesi · Ses tutarlılığı · Spektrogram incelemesi`
+  için **durum çipleri** (`yapıldı · 19:41` / `yapılmadı`; perde için `1/1 konuşmacı`,
+  tutarlılık için `0 şüpheli`).
+- **Tek düğme: “Tüm ölçümleri yap”** → sırayla seviye → konuşmacı perdesi → ses tutarlılığı.
+  Aynı anda iki kez çalışmaz; her adımı bildirir; hata olursa **durur ve söyler**; sonunda
+  eksik kalanları yazar.
+- **Spektrogram ölçüm değil, BEYANDIR:** toplu ölçüme katılmaz, elle işaretlenir.
+- **Köken/teslim alanları** (beyan) Dinleme sekmesinden **Kayıt bilgileri** sekmesine taşındı;
+  Dinleme sekmesi artık yalnız ölçüm + konuşmacı taşır.
+
+### BULUNAN SESSİZ HATA (bu sürümde düzeltildi)
+
+`refreshSegmentSpectrogram` (bölüm detayındaki katmanlı analiz kutusu) **her çizimde**
+`spectrogramReviewed` yazıyordu. Kutu v2.128'den beri **varsayılan olarak** spektrogramı
+çizdiği için, **bölümü yalnız açan** uzman raporda **“Spektrogram incelendi”** beyanı vermiş
+gibi görünüyordu. Ölçüm: yeni profilde dosya açılıp bölüm tıklanınca çip `yapılmadı` yerine
+`uzman beyanı` gösteriyordu.
+
+Düzeltme: otomatik işaret **kaldırıldı**; beyan yalnız **“Spektrogramı göster”** düğmesiyle
+verilir ve çip yerinde tazelenir (`refreshMeasurementPanel`). Ayrıca konuşmacı kartı
+“perde ölçülmedi” ile **“perde ölçülemedi (ölçüm yapıldı)”** arasını ayırır.
+
+### Teknik
+
+- `measurementStatus(m)` / `measurementStatusText` / `measurementPanelHtml` / `refreshMeasurementPanel`
+  — TEK KAYNAK. Eski şema ölçümü (`schema !== LEVELS_SCHEMA`) **yapılmadı** sayılır.
+- `measureAllFor(m)`: `MEASURE_ALL_STEPS = ['levels','pitch','voice']`; çift çalışma kilidi
+  (`measureAllRunning`); bölüm/konuşmacı yoksa adım atlanır ve **söylenir**.
+- Ölçüm fonksiyonları (`measureLevels`, `measureSpeakerPitch`, `measureSpeakerConsistency`)
+  ve spektrogram beyanı sonunda çipler tazelenir.
+
+### Koruyan testler
+
+- `birim` **[116]** (22): durum modeli (4 satır, manual bayrağı, eski şema = yapılmadı,
+  perde 1/2, şüpheli sayısı), sıralı toplu ölçüm kaynağı, çift çalışma kilidi,
+  **spektrogramın otomatik işaretlenmemesi** (negatif arama), beyandan sonra çip tazeleme.
+- `tasarim` **[2cn]** (9): ölçüm paneli, tek düğme, çipler, **kökenin Dinleme'de olmaması /
+  Kayıt bilgileri'nde olması**, çip stilleri (token + sarma).
+
+### Ölçüm (gerçek Chromium + CDP, gerçek WAV)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Başlangıç çipleri | 4 × `yapılmadı` |
+| “Tüm ölçümleri yap” | **3/3 adım**; çipler `19:41`, `1/1 konuşmacı`, `0 şüpheli` |
+| Köken paneli | Dinleme'de **yok**, Kayıt bilgileri'nde **var** (tek panel) |
+| Bölüm açma (spektrogram) | çip **yapılmadı** kalır (eski: otomatik işaret) |
+| “Spektrogramı göster” | çip `19:42 · uzman beyanı` |
+| Kırpılma / taşma / JS hatası | **0 / yok / 0** |
 
 ## v2.268 — Rapor netliği: süre tablosu ayrıldı, anahtar üç tablo
 

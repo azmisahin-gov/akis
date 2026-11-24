@@ -2094,5 +2094,25 @@ console.log('\n[2cm] Rapor netliği: süre tablosu + üç anahtar tablosu (v2.26
   check('okuma metninde kayıt satırı', (js.match(/materialSpeakerLine\(m\)/g) || []).length >= 5);
 }
 
+
+console.log('\n[2cn] Analiz sekmesi düzeni: ölçüm çipleri + beyan taşındı (v2.269)');
+{
+  const js = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('ölçüm paneli kimliği', /id="measure-panel-/.test(js));
+  check('tek düğme: Tüm ölçümleri yap', /data-measure-all=/.test(js) && /Tüm ölçümleri yap/.test(js));
+  check('durum çipleri', /class="ms-chip/.test(js));
+  check('spektrogram manuel işaretli', /manual: true/.test(js));
+  // Beyanlar (köken/teslim) Dinleme sekmesinde DEĞİL, Kayıt bilgileri sekmesinde.
+  const listen = js.slice(js.indexOf('data-pane="listen"'), js.indexOf('data-pane="record"'));
+  // Şablonun SONUNDAKİ `${narrowBarHtml(m)}` işaretini kullan; fonksiyon
+  // tanımı dosyanın daha ÖNÜNDE olabilir (ilk index yanlış keser).
+  const record = js.slice(js.indexOf('data-pane="record"'), js.lastIndexOf('${narrowBarHtml(m)}'));
+  check('köken Dinleme sekmesinde değil', !/origin-panel/.test(listen));
+  check('köken Kayıt bilgileri sekmesinde', /origin-panel/.test(record));
+  check('çip stili token kullanır', /\.ms-chip\s*\{[^}]*var\(--surface-2\)/.test(layer) && /\.ms-chip\s*\{[^}]*font-size:\s*var\(--fs-/.test(layer));
+  check('çipler sarar (kırpma yok)', /\.ms-chips\s*\{[^}]*flex-wrap:\s*wrap/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
