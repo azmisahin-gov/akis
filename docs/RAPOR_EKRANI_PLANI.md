@@ -64,7 +64,7 @@ yapılan ölçümlü çalışma.
 7. **Revizyon yok.** Rapor düzeyinde sürüm/revizyon/karşılaştırma yok; yalnız
    20 adımlık bellek içi geri alma ve birleştirme kaydı var.
 8. **Şablon kullanımı gerçek şablon motoru değil.** Eklenen
-   `56_12_ana_bilirkisi_rapor_sablonu.html/.udf` referans alındı; ancak çıktı
+   `docs/kaynak/56_12_ana_bilirkisi_rapor_sablonu.html/.udf` referans alındı; ancak çıktı
    hâlâ AKİS'in kendi 7 bölümlük iskeleti + isteğe bağlı bölümler. Şablonun
    14 bölüm + 7 ek yapısıyla **birebir** eşleme/uygulama biçimi tasarlanmalı.
 

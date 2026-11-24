@@ -16,6 +16,7 @@
  * Çıkış kodu 0 = tutarlı, 1 = sapma var.
  */
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -344,6 +345,35 @@ console.log('\n[11] Terim tutarlılığı (paket / dosya / birleştir / arşiv)'
   check('uygulama "Paket yok" der', /'Paket yok'/.test(appJs));
   check('uygulama "Son paket" der', /Son paket/.test(appJs));
   check('kaydetme hatası paket oluşturmayı önerir', /Paket oluştur/.test(appJs));
+}
+
+
+// 12) KÖK DİZİN HİJYENİ (v2.276). Kök dizin GitHub Pages'te HERKESE AÇIK
+// yayınlanır. Uygulama dışı belge/medya (rapor çıktısı, ses, video) kökte
+// durursa kullanıcı dosyası farkında olmadan yayınlanır. AGENTS kuralı:
+// "Kök dizine eklenecek her dosya canlı siteye çıkar."
+{
+  const ROOT_ALLOW = new Set([
+    '.gitignore', '.nojekyll', '.prettierrc.json',
+    'AGENTS.md', 'CHANGELOG.md', 'README.md',
+    'START.bat', 'favicon.ico', 'index.html', 'run.ps1', 'version.json',
+    'assets', 'docs', 'sample_data', 'templates', 'tools'
+  ]);
+  // YAYINLANAN = git'e İZLENEN. Yerelde kalan ama `.gitignore`da olan dosya
+  // (ör. kullanıcı raporu) yayınlanmaz; onu suçlamak yanlış pozitif olur.
+  let rootEntries = null;
+  try {
+    const out = execFileSync('git', ['ls-files', '-z'], { cwd: ROOT, encoding: 'utf8' });
+    rootEntries = [...new Set(out.split('\u0000').filter(Boolean).map((p) => p.split('/')[0]))];
+  } catch (e) {
+    rootEntries = fs.readdirSync(ROOT, { withFileTypes: true })
+      .filter((e) => e.name !== '.git')
+      .map((e) => e.name);
+  }
+  const unexpected = rootEntries.filter((n) => !ROOT_ALLOW.has(n));
+  check('kök dizinde yalnız uygulama dosyaları var', unexpected.length === 0, unexpected.join(', '));
+  const media = rootEntries.filter((n) => /\.(udf|docx|pdf|wav|mp3|mp4|mov|webm|akis|zip)$/i.test(n));
+  check('kök dizinde rapor/medya dosyası yok', media.length === 0, media.join(', '));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'SÜRÜM TUTARLI' : failures + ' SAPMA VAR'} ==`);

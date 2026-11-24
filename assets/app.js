@@ -89,15 +89,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.275';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.275';
+} from './schema.js?v=2.276';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.276';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.275';
+const APP_VERSION = '2.276';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -684,9 +684,6 @@ function snapshotForUndo(label) {
   } catch (e) {
     console.warn('Geri alma kaydı alınamadı', e);
   }
-}
-function undoDepth() {
-  return undoStack.length;
 }
 async function undoLast() {
   if (!undoStack.length) {
@@ -5240,33 +5237,6 @@ function updateSegListItem(m, i) {
 // ---- Detay (sağ panel) ----
 // Bölümde model tekrarı (aynı ifadenin yinelenmesi) varsa gösterilir. Uydurma
 // yoktur; yalnızca metindeki gerçek tekrar ölçülür.
-function repetitionNoteHtml(s) {
-  const f = segmentRepetitionFlag(s);
-  if (!f) return '';
-  const info = f.info;
-  const msg =
-    info.maxRun >= 3
-      ? `Aynı ifade ${info.maxRun} kez arka arkaya yinelenmiş görünüyor.`
-      : `Aynı ifade bölüm içinde ${info.topCount} kez geçiyor.`;
-  return `<div class="halluc-note">Model tekrarı olasılığı: ${esc(msg)} Kaydı dinleyerek doğrulayın; tekrar gerçek konuşma değilse düzeltin.</div>`;
-}
-// Ölçülmüş sessizlik sonucunu gösteren not. Yalnızca gerçekten ölçüldüyse
-// görünür; ölçüm yapılmadıysa hiçbir şey gösterilmez (uydurma yok).
-function silenceNoteHtml(s, i) {
-  const st = s.silence;
-  // Eski şemalı (kanal 0) ölçüm gösterilmez (v2.92).
-  if (!st || !st.ok || st.schema !== SILENCE_SCHEMA) return '';
-  const pct = Math.round(st.ratio * 100);
-  const lvl = st.ratio >= 0.8 ? 'yüksek' : st.ratio >= 0.55 ? 'orta' : 'düşük';
-  const cls = st.ratio >= 0.55 ? '' : ' style="background:#f4f8fb;border-color:#d6e4f2;color:#2f6f95"';
-  const hasText = !isHallucination(s.text);
-  let hint = '';
-  if (st.ratio >= 0.55 && !hasText)
-    hint = ' Bu bölüm büyük ölçüde sessiz; metin yerine [sessizlik] etiketi uygun olabilir.';
-  else if (st.ratio >= 0.55 && hasText)
-    hint = ' Sessizlik oranı yüksek ama metin girilmiş; kaydı dinleyerek doğrulayın.';
-  return `<div class="halluc-note"${cls}>Ölçülen sessizlik: %${pct} (${lvl}) · sessiz süre ${st.silentSec.toFixed(1)} sn / ${st.durationSec.toFixed(1)} sn.${hint}</div>`;
-}
 // İkinci göz öneri bandı. Kabul edilene kadar ana metin değişmez; bölüm
 // "Onaylandı" sayılmaz. Bilirkişi kabul/reddeder.
 function proposalBandHtml(s, i) {
@@ -17978,6 +17948,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.276': {
+    title: 'Depo hijyeni: kökte rapor/medya yayınlanmaz',
+    body:
+      'Kök dizin herkese açık yayınlandığı için rapor çıktıları ve referans şablonlar oradan ' +
+      'çıkarıldı (şablonlar docs/kaynak/ altına taşındı; sizin rapor dosyanız bilgisayarınızdan ' +
+      'SİLİNMEDİ, yalnız depodan çıkarıldı). Yeni bir nöbetçi test, köke rapor/medya dosyası ' +
+      'eklenirse sürümü durdurur. Örnek UDF güncel kodla yeniden üretildi (kelime/tarih içinde ' +
+      'görünmez karakter yok) ve üç ölü fonksiyon kaldırıldı. Görünür davranış değişmedi.'
+  },
   '2.275': {
     title: 'Silinen ses artık bellekte kalmıyor',
     body:

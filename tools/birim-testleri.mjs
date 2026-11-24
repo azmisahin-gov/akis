@@ -5530,5 +5530,19 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('test dosyası kaldırma ortak yardımcıyı kullanır', /async function removeSamples[\s\S]{0,1500}purgeCaseMedia\(c\)/.test(js), true);
 }
 
+
+// [122] v2.276 — Ölü kod temizliği.
+// Ölçüm: v2.184'te birleşik durum satırına geçilince iki eski not üreticisi ve
+// bir sayaç yardımcısı hiç çağrılmaz oldu (biri ham hex renk taşıyordu).
+{
+  console.log('[122] Ölü kod temizliği (v2.276)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('ölü tekrar notu kaldırıldı', /function repetitionNoteHtml/.test(js), false);
+  eq('ölü sessizlik notu kaldırıldı', /function silenceNoteHtml/.test(js), false);
+  eq('ölü undoDepth kaldırıldı', /function undoDepth/.test(js), false);
+  // Yerine geçen tek kaynak duruyor olmalı (yanlışlıkla onu da silmeyelim).
+  eq('durum satırı tek kaynağı yerinde', /function workStatusHtml|function segmentWorkSummary/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

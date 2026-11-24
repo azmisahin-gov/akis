@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.275.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.276.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6523,3 +6523,55 @@ dosyalarını kaldır** yolunda da vardı; yalnız **Kaldır** doğru temizliyor
 | JS hatası | 0 | **0** |
 
 Koruyan test: `birim` [121] (12 kontrol).
+
+## YENİ OTURUM DEVRİ (v2.276) — Depo hijyeni, belge, ölü kod
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.276** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1831 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Yok (v2.274–v2.276 turu kapandı) |
+
+### Ölçülen durum (v2.275)
+
+Kök dizin GitHub Pages'te **herkese açık** yayınlanır (ölçüm: `2026_1.udf` →
+HTTP **200**, depo **public**). Kökte eski ZWSP hatalı rapor (541 kelime/tarih
+içinde U+200B) + referans şablonlar vardı. `sample_data/outputs/UDF_Yapi_Testi_Kurgusal.udf`
+v2.252 öncesi kodla üretilmişti (63 ZWSP). Üç ölü fonksiyon; üç belgede eski ifade.
+
+### Yapılan
+
+- **Kök dizin nöbetçisi** (`surum` **[12]**): git'e İZLENEN kök girdileri beyaz
+  listede olmalı; `*.udf|docx|pdf|wav|mp3|mp4|mov|webm|akis|zip` yasak.
+  "Yayınlanan = izlenen" ölçütü kullanılır (`.gitignore`daki yerel dosya yanlış
+  pozitif üretmez).
+- `2026_1.udf` → `git rm --cached` + `.gitignore` (`/2026_1.udf`, `/*.udf`).
+  **Dosya yerelde SİLİNMEDİ**; yalnız yayından çıktı.
+- `56_12_ana_bilirkisi_rapor_sablonu.{udf,html}` → `docs/kaynak/` (git mv).
+- `sample_data/outputs/UDF_Yapi_Testi_Kurgusal.udf` **güncel kodla yeniden
+  üretildi**: ZWSP'li token **63 → 0**.
+- Ölü kod silindi: `repetitionNoteHtml`, `silenceNoteHtml` (ham hex renk
+  taşıyordu), `undoDepth` → `birim` [122].
+- Belgeler: README "yedi bölümlü" → **dokuz ana bölüm**; OZELLIKLER girişi
+  (v2.127 ifadesi) ve v2.274 notu; `DENETIM_VE_PLAN.md` #5/#9/#16 kapandı +
+  v2.276 güncelleme notu; `RAPOR_EKRANI_PLANI.md` şablon yolu.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Kök = yayın.** Köke rapor/medya koymayın; `surum` [12] kalır.
+2. Kullanıcı dosyasını **silmeden** yayından çıkarmak için `git rm --cached` +
+   `.gitignore` kullanın; yerel dosya korunur.
+3. Referans/örnek belgeler `docs/kaynak/` veya `sample_data/` altında durur.
+4. Ölü kod silmeden önce kullanımını ölçün (grep + testler); silinen davranışın
+   yerine geçen tek kaynağın durduğunu test edin.
+
+### Ölçüm
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Kökte izlenen rapor/medya | 3 | **0** |
+| Örnek UDF ZWSP token | 63 | **0** |
+| Ölü fonksiyon | 3 | **0** |
+| Testler | 1827 | **1831 + 522** |

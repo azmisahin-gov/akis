@@ -14,3 +14,8 @@ desktop.ini
 # Geçici rapor çıktıları (uygulama bunları tarayıcıdan indirir)
 *.akis
 *.mihenk
+
+# Kök dizin herkese açık yayınlanır (GitHub Pages). Rapor/medya çıktıları
+# kökte tutulmaz; kullanıcı raporu yerelde kalır (v2.276).
+/2026_1.udf
+/*.udf

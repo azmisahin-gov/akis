@@ -9,6 +9,11 @@ alınan **eski notların** uygulanıp uygulanmadığını kanıtla göstermek, (
 > Her madde "ÖLÇÜLDÜ" değil, "KAYNAKTAN SAPTANDI" olarak okunmalıdır. Bu
 > oturumda tarayıcı ölçümü yalnız temel yükleme için yapıldı; piksel ölçümleri
 > bir sonraki kod sürümünde (v2.238+) yapılacaktır.
+>
+> **Güncelleme (v2.276):** §1'deki biçim ayarları paneli v2.238'de eklendi
+> (font · punto · marj · yön; UDF `paperOrientation` doğrulandı). §2 tablosunda
+> #5 (v2.240), #9 (v2.239) ve #16 (v2.248) kapatıldı; durum sütunları buna göre
+> güncellendi.
 
 ---
 
@@ -95,18 +100,18 @@ Kaynak kodundan saptandı. "✅ Var", "⚠️ Kısmen", "❌ Yok" olarak işaret
 | 2 | Wave'a tıklayıp yavaş dinleyince wave kayboluyor, başa gidiyor | **⚠️ Kısmen** | Wave/spek artık her zaman görünür (v2.186); tıklama `currentTime` ayarlar. "Başa gitme" yeniden üretilemedi; v2.238'de ölçülecek. |
 | 3 | Listenin sonundaki satırda sağ-tık menüsünün yarısı görünmüyor | **✅ v2.237'de düzeltildi** | Menü konumu yalnız yatay kırpılıyordu; dikey taşıyordu. `clampSegMenuPosition` + ölçümle düzeltildi. |
 | 4 | Üst üste konuşma "üst üste" gözlem etiketi doğru mu? | **✅ Mevcut** | `OBS_DEFS` içinde `overlap` ("üst üste konuşma") var. Kullanım doğru; ayrıca zaman çakışması `segmentTimeIssues` ile de bildirilir. |
-| 5 | "Bekleyen" filtresinde "Çözümlendi" (makine) de görünüyor | **⚠️ Tasarım** | `segMatchesFilter('pending') = !isReviewed`; `machine` onay sayılmaz → "Bekleyen"de görünür. Kafa karıştırıcı; ayrım/etiket iyileştirmesi önerilir (karar gerek). |
+| 5 | "Bekleyen" filtresinde "Çözümlendi" (makine) de görünüyor | **✅ v2.240** | Filtre adı **"Kontrol bekleyen"** oldu (ipucu nedenini yazar); `machine`/`ambiguous`/`long`/`overlap`/`inaudibleObs` için ayrı koşullu çipler eklendi. |
 | 6 | Anlaşılmaz bölümü düzeltirken hız değişti, bölüm "gitti" | **✅ v2.237 (kök)** | Hız değişimi tam yeniden çizim yapıyordu; kaydırma/odak kaybı nedeniyle "kayıp" görünüyordu. #1 ile aynı kök düzeltildi. |
 | 7 | Üst üste konuşmaya "Onaylandı" demek doğru mu? | **⚠️ Rehber** | Onay = metni dinleyip doğrulama; üst üste ayrıca gözlem etiketi. İkisi çelişmez; `docs/STANDARTLAR.md`'ye açıklama eklenmeli. |
 | 8 | "enişteyi [belirsiz] …" → belirsiz mi işaretlenir, okuma 1'e mi yazılır? | **✅ Mevcut** | `ambiguous` durumu + `reading1/reading2/chosen`. Öneri: iki aday okuma yazılır, biri seçilir. Rehber eklenmeli. |
-| 9 | Etiketler hep sona ekleniyor; imleç konumuna eklenebilir mi? | **❌ Yok** | Hızlı etiket `cur + ' ' + text` ile **sona** ekler. İmleç konumuna ekleme yapılmıyor. (v2.238 adayı.) |
+| 9 | Etiketler hep sona ekleniyor; imleç konumuna eklenebilir mi? | **✅ v2.239** | `insertTagAt()` etiketi **imleç konumuna** (seçim varsa yerine) ekler; yeniden çizim sonrası imleç geri verilir. |
 | 10 | Tek kelime kısmen anlaşılıyor → belirsiz mi, gözlem mi? | **⚠️ Rehber** | `ambiguous` iki okuma içindir; hızlı etiket/gözlemde "belirsiz" yok. Rehber + istenirse `OBS_DEFS`'e "belirsiz sözcük" eklenebilir (şema göçü). |
 | 11 | Anlaşılmaz bölümde tek kelime: "anlaşılmadı" mı, "onaylandı" mı? | **⚠️ Rehber** | Karar bilirkişide: metin çoğu anlaşılmazsa `inaudible` + gözlem; tek kelime netleşmişse o kelime yazılıp `ambiguous`/`approved`. Rehber eklenmeli. |
 | 12 | Deşifre yanındaki analiz paneli taşıyor, alanlar düzensiz, boş alanlar boşa gidiyor | **⚠️ Kısmen** | v2.190 (menü sarma) + v2.191 (panel kendi içinde kayar) iyileştirdi; "boş alan" ve düzen hâlâ iyileştirilebilir. |
 | 13 | Raporda "belirsiz okuma" nasıl görünmeli? | **✅ v2.197** | `reviewCellText` yalnız `ambiguousReportText` basar: `Belirsiz okuma: "a" / "b" (seçilen: a)`. Yinelenen etiket kaldırıldı. |
 | 14 | "Maddi unsur" genelde kapalı zarfta bir flash disk; köken zincirinde işleniyor mu? | **✅ Mevcut** | Ortam türü (USB/hafıza kartı), teslim eden/operatör, `delil.json` köken zinciri; `origin` tablosu. Bilinçli yapılandırılmış. |
 | 15 | Bir vakada birden çok flash disk olursa işlenebilir mi? | **✅ Mevcut** | `case.disks[]` çoklu paket destekler (v2.215); her paket ayrı disk kaydı + materyaller. |
-| 16 | Edinim aracı yalnız ses alıyor; video da gelebilir (56.12 kapsar mı?), eklenmeli mi? | **❌ Yok** | `isAudioFileName` yalnız wav/mp3/m4a/ogg/flac/aac. Video (mp4/mov/…) "Ses dışı (atlandı)" olur; materyal/deşifre edilmez. `-IncludeAll` videoyu **pakete alır** ama çözümlemez. Karar + ses çıkarma (demux) gerekir. |
+| 16 | Edinim aracı yalnız ses alıyor; video da gelebilir (56.12 kapsar mı?), eklenmeli mi? | **✅ v2.248/v2.250** | Video konteynerleri materyal olur; **yalnız SES** çözülür (görüntü incelenmez). Raporda "video kaydından yalnız ses çözülmüştür" notu (üç çıktı) yazılır. |
 
 ---
 

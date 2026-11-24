@@ -1,6 +1,6 @@
-# Özellikler (v2.275 — mevcut durum)
+# Özellikler (v2.276 — mevcut durum)
 
-Bu belge, AKİS v2.127'de **hâlihazırda çalışan** özellikleri listeler. Yol haritası
+Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 ## Arayüz düzeni (v2.27–v2.31)
@@ -578,6 +578,11 @@ uzmanlık alanını gösterir.
   **▶ Örnek dinle** (ilk bölümden ≤3 sn) ve **▶ Tüm bölümlerini dinle** (bölümleri
   sırayla; elle çalma/⏹ iptal eder) vardır; kartta bölüm sayısı, toplam süre ve
   ilk–son duyulma görünür.
+- **Konuşmacı kimliği tutarlılığı (v2.274):** bir bölüm **tek** konuşmacıya aittir.
+  "＋ Yeni konuşmacı" adı ve **kimliği** (`speakerId`) birlikte yazar; "＋ Bölüm" mevcut
+  konuşmacıyı kullanır (gereksiz "Konuşmacı 2" uydurmaz). Eski sürümlerde bozulmuş kayıtlar
+  açılışta onarılır (`reconcileSpeakerRefs`); paketten yükleme arşivle aynı normalize kuralını
+  kullanır. Raporda aynı bölüm iki satırda görünmez.
 - **Kayıt bazında konuşmacı tablosu (v2.273):** her kayıt için **KOD · KONUŞMACI · BÖLÜM · SÜRE · İLK – SON**;
   dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (boş sütun çizilmez). Tek kaynak:
   `materialSpeakerRows(c, m)`; üç çıktı aynı tabloyu basar.

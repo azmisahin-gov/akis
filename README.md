@@ -4,7 +4,7 @@ Bilirkişiler için ses kaydı inceleme, konuşma çözümleme (deşifre) ve rap
 hazırlama aracı. Tamamen tarayıcıda çalışır; Python veya Node.js kurulumu
 gerektirmez.
 
-**Sürüm:** v2.275 · **Lisans:** özel / kurumsal kullanım
+**Sürüm:** v2.276 · **Lisans:** özel / kurumsal kullanım
 
 > Sürüm numarası tek kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`.
 > Arayüzdeki etiket buradan yazılır. Her güncellemede bu değer, `CHANGELOG.md`
@@ -57,7 +57,7 @@ başlatır ve Microsoft Edge'i açar. Bu yol internet olmadan çalışmak içind
   (temel frekans) ölçümü ve konuşmacı eşleştirme önerisi.
 - **Dijital delil güvenliği:** SHA-256, teknik envanter, delil işlem günlüğü,
   kayıt kökeni ve teslim zinciri.
-- **Rapor:** yedi bölümlü yapı, konuşmacılar tablosu, gözlem sütunu, WER ölçümü
+- **Rapor:** dokuz ana bölüm (kapsam · sorular · envanter · yöntem · bulgular · cevaplar · sınırlılıklar · sonuç · ekler), konuşmacı tabloları, gözlem sütunu, WER ölçümü
   ve inceleme özeti (denetim kaydı). UDF birincil, DOCX yardımcı çıktı.
 
 ## Belgeler

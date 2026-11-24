@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.275.**
+yazılır. **Güncel sürüm: v2.276.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.276 — Depo hijyeni, belge, ölü kod (TAMAMLANDI)
+
+- **Kök dizin nöbetçisi** (`surum` [12]): yalnız uygulama dosyaları; rapor/medya
+  yayınlanmaz (kök herkese açık).
+- Kullanıcı raporu `2026_1.udf` depodan çıkarıldı (yerelde kalır, `.gitignore`).
+- Referans şablonlar `docs/kaynak/` altına taşındı.
+- Örnek UDF güncel kodla yeniden üretildi (ZWSP'li token 63 → **0**).
+- Ölü kod: `repetitionNoteHtml`, `silenceNoteHtml`, `undoDepth` silindi.
+- Belgeler: README (dokuz ana bölüm), OZELLIKLER, DENETIM_VE_PLAN güncel.
+- Koruyan: `surum` [12], `birim` [122].
 
 ## v2.275 — Silmede medya temizliği (TAMAMLANDI)
 

@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.275.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.276.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.276 — Depo hijyeni, belge doğruluğu, ölü kod
+
+**Ölçülen durum (v2.275):** Kök dizin GitHub Pages'te **herkese açık** yayınlanır
+(ölçüm: `2026_1.udf` → HTTP **200**). Kökte **eski ZWSP hatalı** bir rapor çıktısı
+(541 kelime/tarih içinde U+200B) ve referans şablon dosyaları vardı.
+`sample_data/outputs/UDF_Yapi_Testi_Kurgusal.udf` v2.252 öncesi kodla üretilmişti
+(63 ZWSP kelime/tarih içinde). Ayrıca üç ölü fonksiyon ve üç belgede eski ifade vardı.
+
+### KULLANICI NE GÖRECEK
+
+- Kökte **uygulama dosyalarından başka** dosya yayınlanmaz: rapor/medya çıktısı
+  köke konursa **test kalır** (yeni nöbetçi). Sizin rapor dosyanız (`2026_1.udf`)
+  depodan çıkarıldı ama **bilgisayarınızda silinmedi** (`.gitignore`).
+- Referans şablonlar `docs/kaynak/` altına taşındı.
+- `sample_data/outputs/UDF_Yapi_Testi_Kurgusal.udf` **güncel kodla** yeniden
+  üretildi: kelime/tarih içinde görünmez karakter **0**.
+- Üç ölü fonksiyon kaldırıldı (biri ham hex renk taşıyordu); davranış değişmedi.
+- Belgeler güncellendi: README "dokuz ana bölüm", OZELLIKLER girişi, denetim
+  tablosunda #5 (v2.240), #9 (v2.239), #16 (v2.248) **kapandı**.
+
+### Ölçüm
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Kökte yayınlanan rapor/medya | 3 dosya (HTTP 200) | **0** |
+| `2026_1.udf` ZWSP'li token | 541 | **(depoda yok; yerelde duruyor)** |
+| Örnek UDF ZWSP'li token | 63 | **0** |
+| Ölü fonksiyon | 3 | **0** |
+| Testler | 1827 birim | **1831 birim + 522 şema** |
+
+**Nöbetçi:** `surum-testi` [12] kök dizin beyaz listesi + rapor/medya yasağı;
+`birim` [122] ölü kod.
 
 ## v2.275 — Silinen ses artık bellekte kalmıyor
 
