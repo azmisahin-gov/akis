@@ -90,7 +90,46 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
 | 56.12 uyumu | Profil **isteğe bağlı** kalır; varsayılan dayatılmaz |
 | Test borcu | Her adımda `birim` + `rapor` + `tasarim` yeşil olmadan sürüm çıkmaz |
 
-## 5. Karar bekleyen sorular
+## 5. Kullanıcı kararı (2026-11-25)
+
+> "Tamam, yukarıda söylediklerini yapalım; ne ise onlar. Şimdi oturumu kapatıyorum,
+> diğer oturumda devam edeceğiz."
+
+**Karar:** Plan **olduğu gibi onaylandı**; sıra **v2.285 → v2.288**.
+Belirsiz kalan seçenekler için (aşağıdaki sorular) **güvenli varsayılan** uygulanır:
+
+| Soru | Güvenli varsayılan |
+|---|---|
+| Numara biçimleri | `auto` (1,2,3) · `none` · **`letters` (A,B,C)** — üçü de; `manual` yok (başlık düzenleme zaten var) |
+| Varsayılan (yeni dosya) | **`auto`** (mevcut raporlar ve 56.12 alışkanlığı bozulmaz); kullanıcı kapatabilir |
+| Profil düğmeleri | **v2.286'da kaldırılır**; istenirse "Şablonlar" altında saklanır, varsayılan uygulanmaz |
+| Serbest blok | **v2.287**: başlık + metin; tablo desteği sonraki adım |
+| Sürükle-bırak | v2.286 sonrası ayrı sürüm (↑↓ korunur) |
+
+## 5b. Uygulama haritası (v2.285 için teknik giriş noktaları)
+
+- **Başlık düzenleme:** `reportSectionTitle(key)` → `reportSectionTitle(c, key)`
+  yapıp `c.report.titles[key]` varsa onu döndür. Çağrı yerleri:
+  `reportHeadingText`, `reportUiLabel` (12481), `reportOutlineMatch` (12537),
+  `renderReportSections` satır etiketi. Üç çıktı `H(k) = reportHeadingText(...)`
+  kullandığı için başlık **tek yerden** değişir (HTML 13338, DOCX 13745, UDF ~14298).
+- **Numara biçimi:** `REPORT_NUMBERING = ['auto','none','letters']`; `auto`/`letters`
+  `mainSectionNumbers` sonucunu `1.` / `A.` biçimine çevirir. `reportNumbering`,
+  `reportHeadingText`, `reportTocEntries` üçü birlikte güncellenir.
+- **Panel:** iskelet satırına kalem düğmesi (`data-report-title`) + küçük giriş
+  (Enter=uygula, Esc=vazgeç). Kaydetme `persist()` + `renderReport()`.
+- **Şema:** `emptyReport.titles = {}`; `normalizeCase`: yalnız `REPORT_SECTION_KEYS`
+  içindeki anahtarları koru (bilinmeyen anahtar veri şişirmesin), boş değeri at.
+- **Konuşmacı süreleri ayrı bölüm:** `REPORT_SECTION_DEFS`'e `{key:'speakerDurations'}`
+  + `REPORT_BODY_ORDER`'da `speakers` hemen ardından; `speakers` renderer'ından
+  süre tablosu çıkarılır; `reportBlockRenders` satır yoksa false.
+- **Sütun başlığı değiştirme:** `case.report.labels[table][key]` + panelde küçük
+  giriş; `REPORT_COLUMN_LABELS` yalnız varsayılan.
+- **Testler:** `birim [127]` (titles/numbering letters/section split/labels);
+  `rapor` üç çıktıda başlık ve süre bölümü; `surum` yeni kimlikler
+  (`#reportNumberingToggle` zaten var; `data-report-title` için kimlik kontrolü).
+
+## 6. Karar bekleyen sorular (güvenli varsayılanlar yukarıda)
 
 1. **Numara biçimi** hangi seçenekler olsun: `auto` / `none` / `A,B,C` / `elle`?
 2. **Varsayılan** hangisi olsun: `auto` (bugünkü) mu, `none` mu? (Yeni dosyalar)

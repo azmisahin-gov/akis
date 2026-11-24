@@ -6901,3 +6901,81 @@ kontrol bekliyor. Paylaşılan `2026_TEST.udf` / `2026_TEST.docx` incelendi.
    `recordTranscriptHeading`); açıklama her dosyada YİNELENMEZ.
 4. Serbest tasarım ilkeleri: rapor bilirkişi adına, üç çıktı aynı metin,
    ölçülmeyen değer yazılmaz, kanıtta zaman+metin zorunlu.
+
+## YENİ OTURUM DEVRİ (2026-11-25, v2.284 sonrası) — SIRADAKİ İŞ: v2.285
+
+Kullanıcı planı **onayladı** ve oturumu kapattı: *"Yukarıda söylediklerini
+yapalım; diğer oturumda devam edeceğiz."* Sıra: **v2.285 → v2.288**, sonra
+konuşmacı kümeleme ve Kişiler panelinin taşınması.
+
+### Durum
+
+| | |
+|---|---|
+| Sürüm | **v2.284** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1929 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = **7519eed** |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.284** |
+| Plan | [`docs/RAPOR_SERBEST_TASARIM.md`](docs/RAPOR_SERBEST_TASARIM.md) (onaylandı) |
+
+### v2.285 — Başlık düzenleme + numara biçimi (İLK İŞ)
+
+1. **Başlık düzenleme:** `reportSectionTitle(key)` → `reportSectionTitle(c, key)`;
+   `c.report.titles[key]` varsa onu döndür. `emptyReport.titles = {}` +
+   `normalizeCase` yalnız `REPORT_SECTION_KEYS` anahtarlarını korusun.
+   Üç çıktı `H(k) = reportHeadingText(c, k, map)` kullandığı için başlık tek
+   yerden değişir (HTML ~13338, DOCX ~13745, UDF ~14298).
+2. **Numara biçimi:** `REPORT_NUMBERING = ['auto','none','letters']`;
+   `auto` → `1.` · `letters` → `A.` · `none` → numarasız. `reportNumbering`,
+   `reportHeadingText`, `reportTocEntries` birlikte.
+3. **Panel:** iskelet satırına **kalem** (`data-report-title`) + küçük giriş;
+   Enter uygula / Esc vazgeç; `persist()` + `renderReport()`.
+4. **Konuşmacı süreleri ayrı bölüm:** `REPORT_SECTION_DEFS` + `REPORT_BODY_ORDER`
+   (`speakers` sonrası), `speakers` renderer'ından süre tablosunu çıkar.
+5. **Sütun başlığı değiştirme:** `case.report.columns.labels` yerine ayrı
+   `case.report.labels[table][key]`; panelde küçük giriş.
+6. **Testler:** `birim [127]` + `rapor` (üç çıktıda başlık/süre bölümü) +
+   `surum` kimlik kontrolü (`reportSectionTitle` imzası **davranışa** çevrilsin;
+   v2.103/v2.111 dersi: imza testi kırılgan).
+
+### v2.286 — Profil düğmelerinin kaldırılması
+
+- "Yalın / Standart / Tam 56.12" düğmeleri kaldırılır. `REPORT_PRESET_DEFS`
+  silinmez (testler/geri uyum), yalnız **panel düğmeleri** kaldırılır; istenirse
+  "Şablonlar" altında saklanır ve **varsayılan uygulanmaz**.
+- Varsayılan bölüm kümesi **olduğu gibi** kalır (mevcut rapor değişmez).
+
+### v2.287 — Serbest blok
+
+- "＋ Bölüm ekle": `{kind:'free', title, text}`. `REPORT_BODY_ORDER`'a dinamik
+  anahtar (`free:<id>`) eklenir; `reportBodyOrder` sıralamayı korur; üç çıktı
+  aynı bloğu basar. Boş başlık/metin → blok çizilmez; "—" uydurulmaz.
+
+### v2.288 — Kullanıcı profilleri
+
+- "Bu düzeni profil olarak kaydet" (`case.report.userProfiles[]`),
+  "Profili uygula" (yalnız kullanıcı tanımlı). Yerleşik 56.12 profili yok.
+
+### Konuşmacı işleri (v2.289 önerisi)
+
+- **Kümeleme (atamasız):** yeni saf fonksiyonlar
+  `embeddingClusters(points, {threshold:0.88, minSize:2})` → `[{key:'A',
+  count, first, last}]`; `m.voiceEmbed.clusters` **özet** olarak saklanır
+  (vektör yok). Liste satırında **≈A** rozeti; panelde grup listesi + **Git**
+  (`goToSegment`). **"Grubu S1'e ata"** onay ister, `snapshotForUndo` +
+  `logEvent`, geri alınır. Otomatik atama **yok**.
+- **Kişiler (K) taşıma:** "Dosyalar arası kişiler" paneli **Dosya bilgileri
+  çekmecesine** (case düzeyi). Per-kayıt "Aynı kişi" seçici yerinde kalır.
+  Uygulama: `personBlock` HTML'i `caseDrawer` içindeki yeni konağa taşınır;
+  `renderCasePersons()` + kova değişiminde `refreshCasePersons()`.
+
+### DEĞİŞMEZ (bu turda doğdu)
+
+1. **Numara/başlık bir TERCİHTİR**, şablon zorunlu değil; tek kaynak
+   `reportHeadingText` + `reportSectionTitle(c,key)`.
+2. **"Git" tek kapı:** `goToSegment` (sekme + bölüm + odak). Yeni işaret
+   düğmeleri bunu kullanmalı.
+3. **Kayıt altı etiketler üç çıktıda aynı**; uzun açıklama her dosyada yinelenmez.
+4. Üç çıktı aynı metni üretmeli; her adımda `bash tools/test.sh` yeşil olmadan
+   push yok.
+5. Kökteki `.udf/.docx/.pdf` çıktıları **ignore**; rapor dosyaları depoya girmez.
