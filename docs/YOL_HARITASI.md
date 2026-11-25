@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.319.**
+yazılır. **Güncel sürüm: v2.320.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.320 — Etiket menüsünde 30 etiket + kapatma garantisi (TAMAMLANDI)
+
+- Etiket menüsünde **30 etiket** (12 gözlem kavramı dâhil); başlık “Etiket ekle · 30”.
+- Alt **Kapat** sticky; kapatma yakalama aşamasında da bağlı (üst ×, alt Kapat, Esc, backdrop).
+- Menü `max-height: min(72vh,560px)`, kaydırılır; EK-5 30+12.
+- Test `birim [154]/[155]/[157]`, `tasarim [2cu]/[2cy]`; gerçek fare kapatma ✓.
 
 ## v2.319 — Görünür sürüm + tek tık yenile (TAMAMLANDI)
 

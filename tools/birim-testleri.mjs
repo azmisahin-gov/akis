@@ -6684,26 +6684,29 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   console.log('[154] Hızlı etiket sözlüğü (v2.316)');
   const tags = T.QUICK_TAGS || [];
   const texts = tags.map((t) => t.text);
-  eq('en az 18 etiket', tags.length >= 18, true);
+  eq('en az 30 etiket', tags.length >= 30, true);
   eq('etiketler benzersiz', new Set(texts).size, texts.length);
   eq('hepsi köşeli parantezli', texts.every((t) => /^\[.+\]$/.test(t)), true);
   eq('label = text (tek biçim)', tags.every((t) => t.label === t.text), true);
   const groups = new Set((T.QUICK_TAG_GROUPS || []).map((g) => g.key));
   eq('her etiketin grubu tanımlı', tags.every((t) => groups.has(t.group)), true);
   const need = [
-    '[şüpheli]', '[tahmin]', '[kesik]', '[fısıltı]', '[bağırma]', '[gülüşme]',
-    '[öksürük]', '[ağlama]', '[alkış]', '[karşı taraf]', '[mikrofon teması]',
-    '[rüzgar]', '[trafik/araç]', '[isim belirsiz]', '[yer belirsiz]',
+    '[duyulmuyor]', '[anlaşılmaz]', '[şüpheli]', '[tahmin]', '[kesik]', '[bozuk ses]',
+    '[gürültü]', '[üst üste]', '[yankı]', '[kesinti]', '[sessizlik]', '[müzik/ses]',
+    '[telefon]', '[uzaktan konuşma]', '[fısıltı]', '[bağırma]', '[gülüşme]',
+    '[öksürük]', '[ağlama]', '[alkış]', '[karşı taraf]', '[dil değişimi]',
+    '[mikrofon teması]', '[rüzgar]', '[trafik/araç]', '[isim belirsiz]', '[yer belirsiz]',
     '[rakam belirsiz]', '[tarih belirsiz]', '[küfür]'
   ];
   for (const x of need) eq('metin etiketi: ' + x, texts.includes(x), true);
-  // GÖZLEM işaretleri burada TEKRARLANMAZ (sağdaki "Gözlem işaretle" menüsünde).
-  const obsDuplicates = [
+  // GÖZLEM kavramları Etiket menüsünde de bulunur (metne eklenir); ayrıca
+  // sağdaki "Gözlem işaretle" panelinde yapısal işaret olarak durur.
+  const obsAlso = [
     '[duyulmuyor]', '[anlaşılmaz]', '[gürültü]', '[üst üste]', '[yankı]',
     '[kesinti]', '[sessizlik]', '[müzik/ses]', '[telefon]', '[uzaktan konuşma]',
     '[bozuk ses]', '[dil değişimi]'
   ];
-  for (const x of obsDuplicates) eq('gözlem etiketi tekrarlanmaz: ' + x, texts.includes(x), false);
+  for (const x of obsAlso) eq('gözlem etiketi Etiket menüsünde: ' + x, texts.includes(x), true);
   // Standart §12.2: "belirsiz" bir etiket DEĞİL, kontrol durumudur.
   eq('[belirsiz] etiketi YOK', texts.includes('[belirsiz]'), false);
   // Son kullanılan: tekil, sıralı, en çok 5, bilinmeyen süzülür.
@@ -6798,7 +6801,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // v2.316: gözlem işaretleri hızlı etiketlerde TEKRARLANMAZ.
   eq('hızlı etiketlerde obsKey yok', (T.QUICK_TAGS || []).every((t) => !t.obsKey), true);
   for (const x of ['[duyulmuyor]', '[uzaktan konuşma]', '[bozuk ses]', '[dil değişimi]'])
-    eq('gözlem hızlı etikette yok: ' + x, !(T.QUICK_TAGS || []).some((t) => t.text === x), true);
+    eq('gözlem Etiket menüsünde de var: ' + x, (T.QUICK_TAGS || []).some((t) => t.text === x), true);
   // Gözlem tıklaması "İş" durum satırını yerinde tazeler (sessiz eski durum yok).
   const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('gözlem tıklaması durum satırını tazeler', /statusEl\.outerHTML = statusRowHtml\(m, sg/.test(appJs), true);
@@ -6852,7 +6855,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const S = __schemaMod;
   const quick = T.QUICK_TAGS || [];
   const obs = S.OBS_DEFS || [];
-  eq('metin etiketi 18', quick.length, 18);
+  eq('metin etiketi 30', quick.length, 30);
   eq('gözlem işareti 12', obs.length, 12);
   const menu = T.quickMenuHtml(0);
   eq('menüde her metin etiketi seçilebilir', quick.every((t) => menu.includes(`data-quick-tag="0|${t.text}"`)), true);

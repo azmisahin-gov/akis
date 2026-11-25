@@ -1,4 +1,4 @@
-# Özellikler (v2.319 — mevcut durum)
+# Özellikler (v2.320 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -470,12 +470,14 @@ tuşları bozulmaz.
 - **Dinle / Duraklat / Durdur:** "Dinle" düğmesi akıllıdır; aynı bölümde tekrar
   basınca duraklar, duraklatılmışken kaldığı yerden devam eder. "Durdur" çalmayı
   keser ve bölüm başına sarar. Bölüm bitişinde otomatik durur.
-- **Hızlı etiketler (v2.316):** soldaki **“Etiket ekle”** menüsü **gruplu ve aranabilir** — Anlaşılırlık · Ortam/teknik · Konuşma biçimi · İçerik notu. **18 metin etiketi:**
-  `[şüpheli]`, `[tahmin]`, `[kesik]`, `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`,
-  `[fısıltı]`, `[bağırma]`, `[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`,
-  `[karşı taraf]`, `[isim belirsiz]`, `[yer belirsiz]`, `[rakam belirsiz]`,
-  `[tarih belirsiz]`, `[küfür]` + “Temizle”.
-  **Gözlem işaretleri (duyulmuyor, anlaşılmaz, gürültü, üst üste, yankı, kesinti, sessizlik, müzik, telefon, uzaktan, bozuk ses, dil değişimi) ayrı “Gözlem işaretle” menüsündedir; hızlı etiketlerde tekrarlanmaz.** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
+- **Hızlı etiketler (v2.320):** soldaki **“Etiket ekle · 30”** menüsü **gruplu ve aranabilir** — Anlaşılırlık · Ortam/teknik · Konuşma biçimi · İçerik notu. **30 metin etiketi:**
+  `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`, `[kesik]`, `[bozuk ses]`,
+  `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`, `[sessizlik]`, `[müzik/ses]`,
+  `[telefon]`, `[uzaktan konuşma]`, `[fısıltı]`, `[bağırma]`, `[gülüşme]`,
+  `[öksürük]`, `[ağlama]`, `[alkış]`, `[karşı taraf]`, `[dil değişimi]`,
+  `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`, `[isim belirsiz]`,
+  `[yer belirsiz]`, `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]` + “Metni temizle”.
+  **12 gözlem kavramı hem bu menüde (metne) hem “Gözlem işaretle” panelinde (rapora) bulunur.** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
 - **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
   inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
@@ -999,8 +1001,9 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **30 etiket geri + kapatma garantisi (v2.320):** Etiket menüsünde **30 etiketin tamamı** (12 gözlem kavramı dâhil) görünür; başlıkta **“Etiket ekle · 30”**. Alt **Kapat** şeridi sabittir; kapatma **yakalama aşamasında** da bağlanır. Menü yüksekliği 30 etikete göre büyütüldü, kaydırılır.
 - **Görünür sürüm + tek tık yenile (v2.319):** üst barda **⟳ vX.Y** düğmesi; tıklayınca sayfa `?t=` ile önbelleği kırarak yenilenir. İlk sürüm denetimi **hemen**, sonra 30 sn’de bir ve sekmeye dönüşte. Eski sürümde “Yeni sürüm hazır” şeridi.
-- **Envanter bütünlüğü (v2.318):** EK-5 “Metin işaretleri” anahtarı **menüdeki 18 etiketten** (`QUICK_TAG_DEFS`), “Gözlem işaretleri” **12 bayraktan** (`OBS_DEFS`) üretilir; eski/olmayan etiketler kaldırıldı. Etiket/Gözlem menülerinde **üst/alt Kapat + backdrop + Esc**; tarayıcının arama ×’i gizli; gözlem panelinde **Kapat ×**.
+- **Envanter bütünlüğü (v2.318):** EK-5 “Metin işaretleri” anahtarı **o sürümde menüdeki 18 etiketten** (`QUICK_TAG_DEFS`), “Gözlem işaretleri” **12 bayraktan** (`OBS_DEFS`) üretilir; eski/olmayan etiketler kaldırıldı. Etiket/Gözlem menülerinde **üst/alt Kapat + backdrop + Esc**; tarayıcının arama ×’i gizli; gözlem panelinde **Kapat ×**.
 - **Etiket menüsü kapatma + onaylı temizleme (v2.317):** “Etiket ekle” menüsünde sağ üstte **× Kapat**; **Esc**, dış tıklama ve düğmeye tekrar basma da kapatır. **“Metni temizle”** artık **onay ister** (yanlışlıkla silme yok). Metin alanı **~3 satır** (min ~87 px); uzun metin kendi içinde kayar.
 - **Menü kırpılması düzeltildi (v2.316):** “Etiket ekle” ve “Gözlem işaretle” menüleri artık **`position:fixed`** ve görünür alana oturtulur; `.seg-detail`/`.audio-card` gibi ataların `overflow:hidden` kutusuna hapsolmaz, sağa taşmaz. **Solda Etiket, sağda Gözlem** (rapor tablosunun GÖZLEM sütunuyla uyumlu); düğmeler ne işe yaradığını yazar. Menü dışarı tıklama/kaydırma/pencere boyutunda kapanır.
 - **Dosya görünümü (v2.315):** soldaki **Dosya** ayrı bir **sayfa** açar — künye, taraflar, teslim durumu ve **tamamlanacaklar** tek ekranda. Düzenleme sağdaki **çekmecede** yapılır (form kimlikleri çoğaltılmaz). **✎ Düzenle** çekmeceyi açar; **Git ›** ilgili görünüme geçer; **Rapor kontrolü →** raporu Kontrol modunda açar.

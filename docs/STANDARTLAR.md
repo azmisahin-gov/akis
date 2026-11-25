@@ -84,28 +84,29 @@ Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütunu
 (Belirsiz okuma, klavye `4`); tek kelime şüphesinde `[şüpheli]` / `[tahmin]`
 kullanılır.
 
-### 6.2 Hızlı etiket sözlüğü (v2.316)
+### 6.2 Hızlı etiket sözlüğü (v2.320)
 
-**Anlaşılırlık (metin):** `[şüpheli]`, `[tahmin]`, `[kesik]`
+**Anlaşılırlık (6):** `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`,
+`[kesik]`, `[bozuk ses]`
 
-**Ortam / teknik (metin):** `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`
+**Ortam / teknik (9):** `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`,
+`[sessizlik]`, `[müzik/ses]`, `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`
 
-**Konuşma biçimi (metin):** `[fısıltı]`, `[bağırma]`, `[gülüşme]`, `[öksürük]`,
-`[ağlama]`, `[alkış]`, `[karşı taraf]`
+**Konuşma biçimi (10):** `[telefon]`, `[uzaktan konuşma]`, `[fısıltı]`,
+`[bağırma]`, `[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`, `[karşı taraf]`,
+`[dil değişimi]`
 
-**İçerik notu (yorum değil, belirsizlik):** `[isim belirsiz]`, `[yer belirsiz]`,
-`[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]`
+**İçerik notu (5):** `[isim belirsiz]`, `[yer belirsiz]`, `[rakam belirsiz]`,
+`[tarih belirsiz]`, `[küfür]`
 
-
-**Rapor anahtarı (EK-5):** “Metin işaretleri” tablosu menüdeki **18 etiketten**
+**Rapor anahtarı (EK-5):** “Metin işaretleri” tablosu menüdeki **30 etiketten**
 (`QUICK_TAG_DEFS`), “Gözlem işaretleri” tablosu **12 bayraktan** (`OBS_DEFS`)
-üretilir; anahtar ile menü ayrışmaz (v2.318).
+üretilir; anahtar ile menü ayrışmaz (v2.320).
 
-**Gözlem işaretleri ayrı menüdedir (v2.316):** gürültü · üst üste · anlaşılmayan ·
-duyulmuyor · müzik · telefon · sessizlik · kesinti · yankı · uzaktan/zayıf ·
-bozuk ses · dil değişimi. Bunlar **“Gözlem işaretle”** menüsündedir ve hızlı
-etiketlerde **tekrarlanmaz**. Hızlı etiket **metne** girer; gözlem işareti
-**rapora** (GÖZLEM sütunu) gider.
+**Gözlem işaretleri (v2.320):** 12 gözlem kavramı **hem Etiket menüsünde**
+(metne eklenir) **hem “Gözlem işaretle” panelinde** (rapora işaret olur) bulunur.
+Etiket metni, gözlem işareti raporun GÖZLEM sütununu değiştirir; ikisi ayrı
+katmandır.
 
 **Kural:** Etiket **imlecin olduğu yere** eklenir (v2.239); bir kelimeyi
 seçtiyseniz seçimin yerine yazılır. `label` ve metne giren değer **aynıdır**

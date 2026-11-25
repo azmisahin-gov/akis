@@ -2214,14 +2214,14 @@ console.log('\n[2cu] Hızlı etiket sözlüğü (v2.316)');
   const std = read('docs/STANDARTLAR.md');
   // Sözlük: 18 metin etiketi; gözlem işaretleri AYRI menüde.
   const tagCount = (appJs.match(/\{ text: '\[/g) || []).length;
-  check('en az 18 hızlı etiket', tagCount >= 18, String(tagCount));
+  check('en az 30 hızlı etiket', tagCount >= 30, String(tagCount));
   check('label = text (tek biçim)', /label: t\.text/.test(appJs));
   check('şüpheli/tahmin/kesik var', /\{ text: '\[şüpheli\]'/.test(appJs) && /\{ text: '\[tahmin\]'/.test(appJs) && /\{ text: '\[kesik\]'/.test(appJs));
   check('fısıltı/bağırma var', /\{ text: '\[fısıltı\]'/.test(appJs) && /\{ text: '\[bağırma\]'/.test(appJs));
   check('[belirsiz] etiketi YOK (durumdur)', !/\{ text: '\[belirsiz\]'/.test(appJs));
   const qdefs = (appJs.match(/\{ text: '\[[^\]]+\]'/g) || []).join(' ');
-  const dup = ['duyulmuyor', 'anlaşılmaz', 'gürültü', 'yankı', 'kesinti', 'telefon', 'müzik/ses'];
-  check('gözlem etiketleri hızlı etikette TEKRARLANMAZ', dup.every((x) => !qdefs.includes('[' + x + ']')));
+  const obsAlso = ['duyulmuyor', 'anlaşılmaz', 'gürültü', 'yankı', 'kesinti', 'telefon', 'müzik/ses'];
+  check('gözlem etiketleri Etiket menüsünde de var', obsAlso.every((x) => qdefs.includes('[' + x + ']')));
   // Gruplu + aranabilir menü.
   check('menü gruplu üretilir (quickMenuHtml)', /function quickMenuHtml\(/.test(appJs) && /\$\{quickMenuHtml\(i\)\}/.test(appJs));
   check('menüde arama kutusu', /class="qt-search"/.test(appJs));

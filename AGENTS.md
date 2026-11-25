@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.319.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.320.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8303,4 +8303,54 @@ Kullanıcı hangi sürümde olduğunu göremediği için sorun “kod bozuk” s
 | Üst bar sürüm düğmesi | **⟳ v2.319** |
 | Tıklama | URL `?t=...`, sayfa yenilendi |
 | İlk denetim | **0 sn** |
+| JS hatası | **0** |
+
+## EK DÜZELTME (v2.320) — Etiket menüsünde 30 etiket + kapatma garantisi
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.320** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2366 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### KÖK NEDEN
+
+Kullanıcı v2.319’da Etiket menüsünde **18 etiket** görünce “yeni etiketler
+eksik” dedi. Plan **30 etiket** içeriyordu; v2.316’da “gözlemde varsa kaldır”
+yorumuyla **12 gözlem kavramı** Etiket menüsünden çıkarılmıştı. Ayrıca menü
+uzun olduğunda **alt Kapat** görünür alandan çıkabiliyordu.
+
+### Yapılan
+
+- `QUICK_TAG_DEFS` → **30** (Anlaşılırlık 6 · Ortam/teknik 9 · Konuşma biçimi
+  10 · İçerik 5). 12 gözlem kavramı **Etiket menüsünde de** var.
+- Başlık: **“Etiket ekle · 30”** (kullanıcı sayıyı görür).
+- `.sd-quick-menu` `max-height: min(72vh, 560px)`; **`.qt-foot` sticky bottom**
+  → alt Kapat her an görünür.
+- **Yakalama aşamasında kapatma:** `document.addEventListener('click', …,
+  true)` → `[data-quick-close]` / `[data-obs-close]` her katmanda çalışır.
+- EK-5 metin tablosu `QUICK_TAG_DEFS` (30), gözlem `OBS_DEFS` (12).
+- Test: `birim [154]/[155]/[157]`, `tasarim [2cu]/[2cy]`.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Planın tamamı görünür:** 30 metin etiketi Etiket menüsünde; 12 gözlem
+   işareti Gözlem panelinde. Aynı kavramın iki katmanda olması **bilinçlidir**
+   (Etiket = metne, Gözlem = rapora).
+2. **Başlıkta sayı:** “Etiket ekle · 30”; eksik olduğu izlenimi doğmaz.
+3. **Alt Kapat sticky:** menü kaydırılsa da kapatma görünür.
+4. **Kapatma yakalama aşamasında:** başka dinleyici olayı yutsa bile çalışır.
+5. Yeni etiket eklerken `QUICK_TAG_DEFS` + EK-5 otomatik + test sayıları.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Etiket menüsü | **30/30** |
+| Gözlem paneli | **12/12** |
+| EK-5 metin / gözlem | **30 / 12** |
+| Kapatma (gerçek fare) | üst × ✓ · alt Kapat ✓ · backdrop ✓ |
+| Alt Kapat görünür | **sticky** (kaydırmada sabit) |
 | JS hatası | **0** |

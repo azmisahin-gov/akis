@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.319';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.319';
+} from './schema.js?v=2.320';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.320';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.319';
+const APP_VERSION = '2.320';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -442,15 +442,26 @@ const QUICK_TAG_GROUPS = [
   { key: 'content', label: 'İçerik notu' }
 ];
 const QUICK_TAG_DEFS = [
-  // --- Anlaşılırlık (gözlem işaretleri ayrı menüdedir) ---
+  // --- Anlaşılırlık (6) ---
+  { text: '[duyulmuyor]', group: 'clarity', hint: 'Ses yok veya çok kısık; işitilmiyor. "Anlaşılmaz"dan farklıdır.' },
+  { text: '[anlaşılmaz]', group: 'clarity', hint: 'Ses duyuluyor ama kelimeler seçilemiyor.' },
   { text: '[şüpheli]', group: 'clarity', hint: 'Okuma şüpheli; dinleyip doğrulayın. (Belirsiz okuma ayrı bir DURUMDUR.)' },
   { text: '[tahmin]', group: 'clarity', hint: 'En iyi tahmin; kesin değil.' },
   { text: '[kesik]', group: 'clarity', hint: 'Kelime veya cümle yarım kaldı.' },
-  // --- Ortam / teknik ---
+  { text: '[bozuk ses]', group: 'clarity', hint: 'Bozulma/artefakt; ses çözülemiyor.' },
+  // --- Ortam / teknik (9) ---
+  { text: '[gürültü]', group: 'environment', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
+  { text: '[üst üste]', group: 'environment', hint: 'İki veya daha fazla konuşma çakışıyor.' },
+  { text: '[yankı]', group: 'environment', hint: 'Belirgin yankı veya oda akustiği.' },
+  { text: '[kesinti]', group: 'environment', hint: 'Kayıtta kopma/kesinti; içeriğin bir bölümü eksik olabilir.' },
+  { text: '[sessizlik]', group: 'environment', hint: 'Bu aralıkta konuşma yok; sessizlik.' },
+  { text: '[müzik/ses]', group: 'environment', hint: 'Müzik veya ses efekti; konuşma değil.' },
   { text: '[mikrofon teması]', group: 'environment', hint: 'Mikrofon teması/hışırtı; konuşmayı bozabilir.' },
   { text: '[rüzgar]', group: 'environment', hint: 'Rüzgar sesi.' },
   { text: '[trafik/araç]', group: 'environment', hint: 'Trafik/araç sesi.' },
-  // --- Konuşma biçimi / konuşmacı ---
+  // --- Konuşma biçimi / konuşmacı (10) ---
+  { text: '[telefon]', group: 'speech', hint: 'Telefon görüşmesi; karşı taraf duyuluyor veya duyulmuyor olabilir.' },
+  { text: '[uzaktan konuşma]', group: 'speech', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
   { text: '[fısıltı]', group: 'speech', hint: 'Fısıltıyla konuşma.' },
   { text: '[bağırma]', group: 'speech', hint: 'Yüksek ses/bağırma.' },
   { text: '[gülüşme]', group: 'speech', hint: 'Gülüşme.' },
@@ -458,7 +469,8 @@ const QUICK_TAG_DEFS = [
   { text: '[ağlama]', group: 'speech', hint: 'Ağlama.' },
   { text: '[alkış]', group: 'speech', hint: 'Alkış.' },
   { text: '[karşı taraf]', group: 'speech', hint: 'Telefonun karşı tarafındaki ses.' },
-  // --- İçerik notu (yorum değil; doğrulanması gereken belirsizlik) ---
+  { text: '[dil değişimi]', group: 'speech', hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir.' },
+  // --- İçerik notu (5) ---
   { text: '[isim belirsiz]', group: 'content', hint: 'Özel isim belirsiz; doğrulanmalı.' },
   { text: '[yer belirsiz]', group: 'content', hint: 'Yer adı belirsiz; doğrulanmalı.' },
   { text: '[rakam belirsiz]', group: 'content', hint: 'Rakam/sayı belirsiz; doğrulanmalı.' },
@@ -509,7 +521,7 @@ function quickMenuHtml(i) {
   }).join('');
   return (
     `<div class="sd-quick-menu" role="group" aria-label="Etiket ekle" hidden>` +
-    `<div class="qt-head"><div class="qt-head-row"><b>Etiket ekle</b><button type="button" class="mini-button qt-close" data-quick-close="${i}" aria-label="Kapat" title="Menüyü kapat (Esc)">Kapat ×</button></div><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
+    `<div class="qt-head"><div class="qt-head-row"><b>Etiket ekle · ${QUICK_TAGS.length}</b><button type="button" class="mini-button qt-close" data-quick-close="${i}" aria-label="Kapat" title="Menüyü kapat (Esc)">Kapat ×</button></div><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
     recentHtml +
     `<div class="qt-groups">${groups}</div>` +
     `<div class="qt-empty" hidden>Eşleşen etiket yok.</div>` +
@@ -18809,6 +18821,19 @@ function setupEvents() {
   });
   window.addEventListener('resize', () => closeFloatingMenus(null));
   $('#sdPopBackdrop')?.addEventListener('click', () => closeFloatingMenus(null));
+  // KAPATMA GARANTİSİ (v2.320): menü hangi katmanda olursa olsun, yakalama
+  // aşamasında kapat. Böylece başka bir dinleyici olayı yutsa bile çalışır.
+  document.addEventListener(
+    'click',
+    (e) => {
+      const close = e.target && e.target.closest ? e.target.closest('[data-quick-close], [data-obs-close]') : null;
+      if (!close) return;
+      const details = close.closest('.sd-obs-menu');
+      if (details) details.open = false;
+      closeFloatingMenus(null);
+    },
+    true
+  );
   document.addEventListener(
     'scroll',
     (e) => {
@@ -20772,6 +20797,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.320': {
+    title: 'Etiket menüsünde 30 etiket',
+    body:
+      'Etiket menüsünde 30 etiketin tamamı var (12 gözlem kavramı dâhil); başlıkta “Etiket ekle · 30” yazar. Alt “Kapat” sabittir; üst ×, alt Kapat, Esc ve dış tıklama her durumda kapatır. 12 gözlem kavramı hem Etiket menüsünde (metne) hem “Gözlem işaretle” panelinde (rapora) bulunur.'
+  },
   '2.319': {
     title: 'Görünür sürüm + tek tık yenile',
     body:

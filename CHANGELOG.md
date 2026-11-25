@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.319.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.320.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.320 — Etiket menüsünde 30 etiket + kapatma garantisi
+
+**Neden:** Kullanıcı v2.319’da Etiket menüsünde **18 etiket** görünce “yeni
+etiketler eksik” dedi. Plan 30 etiketi içeriyordu; v2.316’da “gözlemde varsa
+kaldır” yorumuyla 12 gözlem kavramı Etiket menüsünden çıkarılmıştı. Ayrıca
+menü uzun olduğunda alt **Kapat** görünür alandan çıkabiliyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Etiket menüsünde 30 etiketin tamamı** (12 gözlem kavramı dâhil).
+  Başlıkta **“Etiket ekle · 30”** yazar; hiçbir etiket gizli değildir.
+- 12 gözlem kavramı **iki katmanda** durur:
+  - **Etiket menüsü** → metne `[gürültü]`, `[duyulmuyor]`… ekler.
+  - **Gözlem işaretle** → raporun **GÖZLEM** sütununa işaret koyar.
+- **Alt “Kapat” şeridi sabittir**; menü kaydırılsa da görünür.
+- **Kapatma yakalama aşamasında** da bağlıdır: üst `Kapat ×`, alt `Kapat`,
+  **Esc**, **dış tıklama/backdrop** her durumda kapatır.
+- Menü yüksekliği 30 etikete göre büyütüldü; gerekirse **kendi içinde kayar**.
+- **EK-5 anahtarı** 30 metin etiketi + 12 gözlem işareti listeler.
+
+### Teknik
+
+- `QUICK_TAG_DEFS` → **30** (6 + 9 + 10 + 5); başlık `QUICK_TAGS.length`.
+- `.sd-quick-menu` `max-height: min(72vh, 560px)`; `.qt-foot` **sticky bottom**.
+- `document.addEventListener('click', …, true)` → `[data-quick-close]` /
+  `[data-obs-close]` her katmanda kapatır.
+- EK-5 metin tablosu `QUICK_TAG_DEFS` (30), gözlem tablosu `OBS_DEFS` (12).
+- Test: `birim [154]/[155]/[157]`, `tasarim [2cu]/[2cy]`.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Etiket menüsü | **30/30** |
+| Gözlem paneli | **12/12** |
+| EK-5 metin / gözlem | **30 / 12** |
+| Kapatma (gerçek fare) | üst × ✓ · alt Kapat ✓ · backdrop ✓ |
+| Menü kaydırma | var; alt Kapat **sabit** |
+| JS hatası | **0** |
+
+### Dürüst sınır
+
+- Aynı kavram iki katmanda görünür (Etiket = metne, Gözlem = rapora). Bu
+  bilinçli bir seçimdir; kullanıcı “30 etiketin tamamı”nı istedi.
+- Menü 30 etiketle uzundur; kaydırma gerekebilir. Alt Kapat sabit olduğu için
+  kapatma her an erişilebilir.
 
 ## v2.319 — Görünür sürüm + tek tık “Yenile”
 
