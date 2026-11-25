@@ -6372,5 +6372,16 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('panel çiziminde tablo tazelenir', /renderSpeakersPanel\(m\);\s*\n\s*renderSpeakerSegmentTable\(m\);/.test(js), true);
 }
 
+// [147] v2.306 — Satır ⋮ menüsünde konuşmacı işlemleri (ASR ile aynı yerde).
+{
+  console.log('[147] Satır menüsünde konuşmacı işlemleri (v2.306)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('menüde ≈ Konuşmacıyı tahmin et', /data-suggest-speaker="\$\{index\}">≈ Konuşmacıyı tahmin et/.test(js), true);
+  eq('menüde Konuşmacı ata (seçici)', /seg-menu-spk[\s\S]{0,160}data-key="speaker"/.test(js), true);
+  eq('menü seçicisi tek kapıyı kullanır', /data-seg="\$\{index\}" data-key="speaker"/.test(js), true);
+  eq('menü seçici CSS', /\.seg-menu-spk/.test(css), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

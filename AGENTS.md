@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.305.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.306.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7658,3 +7658,31 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 ### Sıradaki iş (v2.306)
 - Satır **⋮** menüsüne “≈ Konuşmacıyı tahmin et” + “Konuşmacı ata ▸ S1/S2…”;
   toplu ön-atama (dosya başına).
+
+## YENİ OTURUM DEVRİ (v2.306) — Satır ⋮ menüsünde konuşmacı işlemleri
+
+| | |
+|---|---|
+| Sürüm | **v2.306** |
+| Testler | `bash tools/test.sh` → **2155 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Konuşmacı UX arc (v2.304–v2.306) KAPANDI |
+
+- Bölüm satırı **⋮** menüsüne: **“≈ Konuşmacıyı tahmin et”** (`data-suggest-speaker`)
+  + **Konuşmacı** seçicisi (`.seg-menu-spk` içinde `data-seg`/`data-key="speaker"`).
+- Mevcut işleyiciler/tek kapı kullanılır; yeni mantık yok. CSS `.seg-menu-spk`.
+- Test `birim [147]` (4).
+
+### ÖLÇÜM DERSİ (tekrar etmesin)
+- Bölüm alanı değişiklikleri **`input`** olayıyla işlenir (satır 17987). Gerçek
+  `<select>` hem `input` hem `change` üretir; sentetik testte **yalnız `change`**
+  göndermek atamayı tetiklemez → yanlış "çalışmıyor" sonucu. Test ederken `input`
+  da gönder.
+
+### Konuşmacı UX durumu (kapandı)
+- **v2.304:** Konuşmacılar kendi sekmesinde (Analiz→Ölçümler).
+- **v2.305:** Bölüm ↔ konuşmacı tablosu (Konuşmacılar sekmesi; filtre).
+- **v2.306:** Satır ⋮ menüsünde tahmin + atama (çözümlemeyle aynı yerde).
+- Ön-atama (v2.301) · bölüm tahmini (v2.302) · yöntem notu (v2.303) korunur.
+
+### Sıradaki iş (öneri)
+- Deterministik **soru↔bölüm önerisi**; terim listesi (C2); kanıt tutarlılığı A1+A3.

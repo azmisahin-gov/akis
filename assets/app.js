@@ -119,15 +119,15 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   embeddingCentroid
-} from './schema.js?v=2.305';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.305';
+} from './schema.js?v=2.306';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.306';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.305';
+const APP_VERSION = '2.306';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -5920,6 +5920,8 @@ function openSegMenu(m, index, anchor) {
     `<button role="menuitem" data-merge-next="${index}">Sonrakine ekle (birleştir)</button>` +
     `<button role="menuitem" data-split-seg="${index}">Oynatıcı konumundan böl</button>` +
     `<button role="menuitem" data-retranscribe-seg="${index}">↻ Bu aralığı çözümle</button>` +
+    `<button role="menuitem" data-suggest-speaker="${index}">≈ Konuşmacıyı tahmin et</button>` +
+    `<label class="seg-menu-spk"><span>Konuşmacı</span><select data-seg="${index}" data-key="speaker" aria-label="Konuşmacı ata">${spkSelectOptions(m, s.speaker)}</select></label>` +
     (hist ? `<button role="menuitem" data-history="${index}">Metin geçmişi (${hist})</button>` : '') +
     `<button role="menuitem" data-silence="${index}">Sessizlik ölç</button>` +
     `<button role="menuitem" class="danger" data-delete-seg="${index}">Bölümü sil</button>`;
@@ -19847,6 +19849,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.306': {
+    title: 'Satır menüsünde konuşmacı işlemleri',
+    body:
+      'Bir bölüm satırının ⋮ menüsünde artık “≈ Konuşmacıyı tahmin et” ve “Konuşmacı” seçicisi var; çözümleme işlemleriyle aynı yerde. Tahmin öneridir; onaylamadan atama değişmez.'
+  },
   '2.305': {
     title: 'Bölüm ↔ konuşmacı tablosu',
     body:

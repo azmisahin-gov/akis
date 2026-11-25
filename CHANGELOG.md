@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.305.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.306.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.306 — Satır ⋮ menüsünde konuşmacı işlemleri (ASR ile aynı yerde)
+
+**Kullanıcı:** "Çözümlemede satır ⋮ menüsünden 'bu aralığı çözümle' gibi
+konuşmacı işlemleri de aynı yerde olsun."
+
+### KULLANICI NE GÖRECEK
+
+- Bir bölüm satırının **⋮** menüsünde (Deşifre sekmesi):
+  - **“≈ Konuşmacıyı tahmin et”** — o bölümün konuşmacısını ses benzerliğiyle
+    önerir (≈ S2); onaylamadan atama değişmez.
+  - **“Konuşmacı” seçicisi** — menüden doğrudan **S1 / S2 …** atanır.
+- Böylece konuşmacı işlemleri, çözümleme işlemleriyle **aynı yerde** ve aynı
+  akışla erişilir.
+
+### Teknik
+
+- `openSegMenu` iki öğe ekler: `data-suggest-speaker` (mevcut tahmin işleyicisi)
+  ve `.seg-menu-spk` içinde `data-seg`/`data-key="speaker"` seçici (**mevcut tek
+  kapı**; yeni mantık yok).
+- CSS: `.seg-menu-spk` (punto ölçeği/token).
+- Koruyan: `birim` [147] (4 kontrol).
 
 ## v2.305 — Bölüm ↔ konuşmacı tablosu (Konuşmacılar sekmesi)
 
