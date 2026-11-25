@@ -4168,3 +4168,45 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    kipinde `.report-side` gizlenir; üst yazı bir düzenleme iskeleti değildir. */
 #view-report[data-doc="letter"] .letter-side { display: block; }
 #view-report[data-doc="letter"] .report-editor { display: none; }
+/* v2.324 — Belge ekleri: düzenlenebilir liste (ekle · sırala · düzenle ·
+   indir · kaldır). Liste satırı SARAR; düğmeler erişilebilir kalır. */
+.la-row { align-items: center; }
+.la-row.is-editing { border-color: var(--accent); background: var(--accent-soft); }
+.la-label { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.la-tools { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.la-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: var(--r-sm);
+  min-width: 24px;
+  height: 24px;
+  padding: 0 4px;
+  font-size: var(--fs-2xs);
+  line-height: 1;
+  cursor: pointer;
+}
+.la-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.la-btn:disabled { opacity: .45; cursor: default; }
+.la-add { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 10px; }
+.la-editor { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.la-ed-title { font-size: var(--fs-2xs); font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.la-checks { display: flex; flex-direction: column; gap: 3px; margin: 4px 0 0; }
+.la-checks .letter-check { align-items: flex-start; }
+.la-editor .field { margin-bottom: 6px; }
+.la-editor textarea { min-height: 90px; font-size: var(--fs-xs); }
+/* v2.324 — `hidden` NİTELİĞİNİ EZME (v2.322 dersi): rapor/üst yazı panelleri
+   `hidden` ile kapatılıyor; yazar `display` kuralı bunu ezip paneli görünür
+   bırakıyordu (grid 4 öğeye çıkıp sağ panel alt satıra düşüyordu). */
+#view-report [hidden] { display: none; }
+/* v2.324 — Üst yazıda ızgara ÜÇ sütun: sol alanlar · kâğıt · belge ekleri.
+   "Düzenle" kipi ızgarayı iki sütuna düşürdüğü için sağ panel alt satıra
+   kayıyordu (ölçüldü: letterSide x=82, y=812). */
+#view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 232px minmax(0, 1fr) 292px; }
+@media (max-width: 1280px) {
+  #view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 216px minmax(0, 1fr) 268px; }
+}
+@media (max-width: 1100px) {
+  #view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 216px minmax(0, 1fr); }
+  #view-report[data-doc="letter"] .letter-side { grid-column: 1 / -1; }
+}

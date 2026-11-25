@@ -2417,5 +2417,32 @@ console.log('\n[2dc] Üst yazı sekmesi ve ayrı belge (v2.323)');
   check('LETTER_TEXT uygulama adı taşımaz', !!lt && !/AKİS/.test(lt));
 }
 
+console.log('\n[2dd] Belge ekleri: düzenleme ve tek kopya (v2.324)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const noComments = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const code = noComments(app);
+  check('ek ekle düğmeleri (3 tür)', /data-letter-annex-add="sections"/.test(html) && /data-letter-annex-add="reportAnnex"/.test(html) && /data-letter-annex-add="custom"/.test(html));
+  check('ek düzenleyici var', /id="letterAnnexEditor"/.test(html));
+  check('ek işlemleri tanımlı', /function addLetterAnnex\(/.test(code) && /function removeLetterAnnex\(/.test(code) && /function moveLetterAnnex\(/.test(code) && /function toggleLetterAnnexSection\(/.test(code) && /function exportLetterAnnex\(/.test(code));
+  // TEK KOPYA: bölüm/ek raporda yeniden açılınca belge ekinden çıkar.
+  check('bölüm açılınca ekten çıkar', /letterMovedSectionKeys\(c\.letterAnnexes\)\.has\(key\)/.test(code) && /removeSectionsFromLetterAnnexes/.test(code));
+  check('rapor içi ek açılınca ekten çıkar', /letterMovedAnnexKeys\(c\.letterAnnexes\)\.has\(key\)/.test(code) && /removeAnnexKeyFromLetterAnnexes/.test(code));
+  // EK BELGESİ: kapak/içindekiler/imza yok + kompakt akış.
+  const annexFn = (code.match(/function annexDocumentCase\([\s\S]*?\n\}/) || [''])[0];
+  check('ek belgesi: kapak/toc/imza kapatılır', !!annexFn && /'cover', 'coverFields', 'toc', 'signature'/.test(annexFn));
+  check('ek belgesi: kompakt akış', /__annexDoc = true/.test(annexFn));
+  check('ek belgesi: kapak yoksa baş sayfa sonu yok', /if \(frontRendered\) el\.push\(pageBreak\(\)\)/.test(code));
+  // Dışa aktarma geçici kopyayı kullanır (rapor kaydı değişmez).
+  check('dışa aktarma opts.case kullanır', /const c = \(opts && opts\.case\) \|\| currentCase\(\);/.test(code));
+  // `hidden` niteliği yazar display kuralınca ezilmez; üst yazı ızgarası 3 sütun.
+  check('hidden niteliği korunur', /#view-report \[hidden\] \{ display: none; \}/.test(layer));
+  check('üst yazı ızgarası 3 sütun', /#view-report\[data-doc="letter"\] #reportWorkspace \{ grid-template-columns: 232px minmax\(0, 1fr\) 292px; \}/.test(layer));
+  check('ek listesi satırı sarar', /\.la-label \{[^}]*overflow-wrap: anywhere/.test(layer));
+  check('ek düğmeleri var', /\.la-btn \{/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -126,16 +126,20 @@ import {
   normalizeLetter,
   emptyLetterAnnexes,
   normalizeLetterAnnexes,
-  letterAnnexNumbering
-} from './schema.js?v=2.323';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.323';
+  letterAnnexNumbering,
+  letterMovedSectionKeys,
+  letterMovedAnnexKeys,
+  removeSectionsFromLetterAnnexes,
+  removeAnnexKeyFromLetterAnnexes
+} from './schema.js?v=2.324';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.324';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.323';
+const APP_VERSION = '2.324';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -13961,6 +13965,13 @@ function moveReportAnnex(key, dir) {
   });
 }
 function setReportAnnexOn(key, on) {
+  const c = currentCase();
+  // v2.324: rapor içi ek yeniden AÇILIYORSA belge ekinden çıkarılır (tek kopya).
+  if (on && c && letterMovedAnnexKeys(c.letterAnnexes).has(key)) {
+    c.letterAnnexes = removeAnnexKeyFromLetterAnnexes(c.letterAnnexes, key);
+    persist();
+    showToast('Ek raporda açıldı; belge ekinden çıkarıldı.');
+  }
   setReportLayout((l) => {
     l.annexes[key] = !!on;
   });
@@ -14229,6 +14240,12 @@ function setReportSection(key, on) {
   const c = currentCase();
   if (!c) return;
   c.report = c.report || {};
+  // v2.324: bölüm belge ekine taşınmışsa ve raporda yeniden AÇILIYORSA, ekten
+  // çıkarılır. Aynı içerik hem raporda hem ekte bulunmaz.
+  if (on && letterMovedSectionKeys(c.letterAnnexes).has(key)) {
+    c.letterAnnexes = removeSectionsFromLetterAnnexes(c.letterAnnexes, [key]);
+    showToast(`“${reportUiLabel(c, key)}” raporda açıldı; belge ekinden çıkarıldı.`);
+  }
   c.report.sections = { ...(c.report.sections || {}), [key]: !!on };
   persist();
   renderReport();
@@ -15309,6 +15326,8 @@ function letterPaperHtml(c) {
 // `reportDocMode` OTURUMLUKTUR (kayda yazılmaz): yalnız hangi belgenin
 // görüntülendiğini tutar. Veri `case.letter` / `case.letterAnnexes` içindedir.
 let reportDocMode = 'report';
+// Düzenlenen belge eki (OTURUMLUK; kayda yazılmaz).
+let letterAnnexEditId = null;
 
 function letterFieldHtml(label, field, value, opts = {}) {
   const type = opts.type || 'text';
@@ -15353,19 +15372,295 @@ function renderLetterFields(c) {
     `<p class="letter-hint">Gövdeyi boş bırakırsanız yukarıdaki varsayılan metin yazılır. <b>Boş alan satır üretmez.</b></p>`;
 }
 
+// ---- BELGE EKİ BELGESİ (v2.324) ------------------------------------------
+// Ek belgesi, RAPORUN kendi üreticisiyle üretilir: geçici bir kopyada yalnız
+// ilgili içerik açık bırakılır. Böylece HTML/DOCX/UDF aynı kuralı izler;
+// kopya biçimlendirme kodu YOKTUR. Taşınan içerik raporda ÇİZİLMEZ (çift üretim
+// yok): bölüm `report.sections[k]=false`, rapor içi ek `layout.annexes[k]=false`.
+const LETTER_ANNEX_SECTIONS = [
+  'origin',
+  'embedded',
+  'acquisition',
+  'levels',
+  'wer',
+  'qc',
+  'integrity',
+  'tech',
+  'speakerDurations',
+  'reviewSummary'
+];
+const LETTER_ANNEX_DEFAULT_SECTIONS = ['origin', 'embedded', 'acquisition', 'levels', 'wer', 'qc', 'integrity', 'tech'];
+
+/** Ek belgesi için geçici dosya kopyası (yalnız ilgili içerik açık). */
+function annexDocumentCase(c, annex) {
+  const base = JSON.parse(JSON.stringify(c || {}));
+  base.report = base.report || {};
+  const rep = base.report;
+  const off = {};
+  for (const d of REPORT_SECTION_DEFS) off[d.key] = false;
+  rep.sections = { ...off };
+  rep.layout = normalizeReportLayout(rep.layout);
+  rep.layout.parent = {};
+  rep.layout.annexes = {};
+  rep.layout.annexOrder = [];
+  rep.layout.order = [];
+  rep.numbering = 'none';
+  rep.blocks = Array.isArray(rep.blocks) ? rep.blocks : [];
+  if (annex.kind === 'sections') {
+    for (const k of annex.sections || []) rep.sections[k] = true;
+    rep.layout.order = REPORT_BODY_ORDER.filter((k) => (annex.sections || []).includes(k));
+    rep.numbering = 'auto';
+  } else if (annex.kind === 'reportAnnex') {
+    rep.sections.annex = true;
+    rep.layout.annexes = Object.fromEntries(REPORT_ANNEX_KEYS.map((k) => [k, k === annex.key]));
+    rep.layout.annexOrder = [annex.key];
+    rep.layout.order = ['annex'];
+  } else if (annex.kind === 'custom') {
+    const id = 'annexc';
+    rep.blocks = [
+      { id, title: String(annex.title || '').trim() || 'Ek', text: String(annex.content || '').trim(), on: true }
+    ];
+    rep.layout.order = [`free:${id}`];
+  }
+  // Ek belgesi sade içeriktir: kapak, içindekiler, künye, imza, ek listesi yok.
+  for (const k of ['cover', 'coverFields', 'toc', 'signature', 'kunye', 'summary', 'scopeNote', 's7']) {
+    rep.sections[k] = false;
+  }
+  // Kompakt akış: ek belgesinde her bölüm YENİ SAYFADAN başlamaz (rapor kuralı
+  // v2.259 rapordadır; 8 bölümlük teknik ek 8 sayfa olmasın).
+  base.__annexDoc = true;
+  return base;
+}
+
+/** Bir belge ekini UDF olarak indirir (EK-1 ise normal rapor iner). */
+async function exportLetterAnnex(id) {
+  const c = currentCase();
+  if (!c) return;
+  const a = letterAnnexNumbering(c.letterAnnexes).find((x) => x.id === id);
+  if (!a) return;
+  if (a.kind === 'report') {
+    await makeUdf();
+    return;
+  }
+  const temp = annexDocumentCase(c, a);
+  const name = `${a.no}_${safeName(letterAnnexLabel(a))}_${safeName(c.fileNo || 'Bilirkisi')}`;
+  await makeUdf({ case: temp, fileName: name });
+}
+
+/** Taşınan bölümleri rapordan çıkarır (raporda çizilmez). */
+function moveSectionsOutOfReport(c, keys) {
+  c.report = c.report || {};
+  c.report.sections = { ...(c.report.sections || {}) };
+  const placement = normalizeAnnexPlacement(c.report.annexPlacement);
+  for (const k of keys) {
+    c.report.sections[k] = false;
+    delete placement[k]; // "EKLER altına taşıma" ile aynı bölüm iki yerde olamaz
+  }
+  c.report.annexPlacement = normalizeAnnexPlacement(placement);
+}
+
+/** Rapor içi ekin kopyasını sessizce aç/kapat (yeniden çizim yapmaz). */
+function setReportAnnexOnQuiet(c, key, on) {
+  const l = normalizeReportLayout(c.report && c.report.layout);
+  l.annexes[key] = !!on;
+  c.report = c.report || {};
+  c.report.layout = l;
+}
+
+function addLetterAnnex(kind) {
+  const c = currentCase();
+  if (!c) return;
+  let list = normalizeLetterAnnexes(c.letterAnnexes);
+  let msg = '';
+  if (kind === 'sections') {
+    // TEK "Teknik bilgiler" eki: ikinci kez eklemek kopya üretmez (v2.324).
+    const existing = list.find((x) => x.kind === 'sections');
+    if (existing) {
+      letterAnnexEditId = existing.id;
+      renderLetter();
+      showToast('Teknik bilgiler eki zaten var; bölümlerini düzenleyebilirsiniz.');
+      return;
+    }
+    const keys = LETTER_ANNEX_DEFAULT_SECTIONS.slice();
+    // ÖNCEKİ görünürlük saklanır: ek kaldırılınca bölüm eski hâline döner.
+    const prev = Object.fromEntries(keys.map((k) => [k, reportSectionOn(c, k)]));
+    list.push({ id: '', kind: 'sections', sections: keys, label: 'TEKNİK BİLGİLER', prev });
+    moveSectionsOutOfReport(c, keys);
+    msg = `Teknik bilgiler eki eklendi; ${keys.length} bölüm rapordan çıkarıldı.`;
+  } else if (kind === 'reportAnnex') {
+    const used = new Set(list.filter((x) => x.kind === 'reportAnnex').map((x) => x.key));
+    const key = REPORT_ANNEX_DEFS.map((d) => d.key).find((k) => !used.has(k));
+    if (!key) {
+      showToast('Taşınacak rapor içi ek kalmadı.', true);
+      return;
+    }
+    list.push({ id: '', kind: 'reportAnnex', key });
+    setReportAnnexOnQuiet(c, key, false);
+    msg = 'Rapor içi ek belge eki olarak eklendi; rapordaki kopyası kapatıldı.';
+  } else {
+    list.push({ id: '', kind: 'custom', title: 'Yeni ek', content: '' });
+    msg = 'Serbest ek eklendi; başlık ve içeriği yazın.';
+  }
+  c.letterAnnexes = normalizeLetterAnnexes(list);
+  const last = c.letterAnnexes[c.letterAnnexes.length - 1];
+  letterAnnexEditId = last ? last.id : null;
+  persist();
+  renderReport();
+  renderLetter();
+  showToast(msg);
+}
+
+async function removeLetterAnnex(id) {
+  const c = currentCase();
+  if (!c) return;
+  const a = normalizeLetterAnnexes(c.letterAnnexes).find((x) => x.id === id);
+  if (!a || a.kind === 'report') return;
+  const ok = await askConfirm(
+    'Eki kaldır',
+    a.kind === 'sections'
+      ? 'Bu belge eki kaldırılacak; bölümleri RAPORA geri döner.'
+      : a.kind === 'reportAnnex'
+        ? 'Bu belge eki kaldırılacak; rapor içi kopyası yeniden açılır.'
+        : 'Bu serbest ek kaldırılacak. İçeriği silinir.'
+  );
+  if (!ok) return;
+  snapshotForUndo('belge eki kaldırıldı');
+  c.letterAnnexes = normalizeLetterAnnexes(c.letterAnnexes).filter((x) => x.id !== id);
+  if (a.kind === 'sections') {
+    c.report = c.report || {};
+    c.report.sections = { ...(c.report.sections || {}) };
+    for (const k of a.sections) {
+      const prev = a.prev && typeof a.prev[k] === 'boolean' ? a.prev[k] : null;
+      const def = REPORT_SECTION_DEFS.find((d) => d.key === k);
+      c.report.sections[k] = prev === null ? (def ? def.def : true) : prev;
+    }
+  }
+  if (a.kind === 'reportAnnex') setReportAnnexOnQuiet(c, a.key, true);
+  if (letterAnnexEditId === id) letterAnnexEditId = null;
+  persist();
+  renderReport();
+  renderLetter();
+  showToast('Belge eki kaldırıldı.');
+}
+
+function moveLetterAnnex(id, dir) {
+  const c = currentCase();
+  if (!c) return;
+  const list = normalizeLetterAnnexes(c.letterAnnexes);
+  const i = list.findIndex((x) => x.id === id);
+  const j = i + (dir === 'up' ? -1 : 1);
+  if (i < 0 || j < 0 || j >= list.length) return;
+  if (list[i].kind === 'report' || list[j].kind === 'report') return; // EK-1 sabit
+  const tmp = list[i];
+  list[i] = list[j];
+  list[j] = tmp;
+  c.letterAnnexes = normalizeLetterAnnexes(list);
+  persist();
+  renderLetter();
+}
+
+/** Bölümü eke ekle/çıkar: ekten çıkan bölüm RAPORA geri döner. */
+function toggleLetterAnnexSection(id, key, on) {
+  const c = currentCase();
+  if (!c) return;
+  const list = normalizeLetterAnnexes(c.letterAnnexes);
+  const a = list.find((x) => x.id === id);
+  if (!a || a.kind !== 'sections') return;
+  const keys = new Set(a.sections);
+  if (on) keys.add(key);
+  else keys.delete(key);
+  if (!keys.size) {
+    showToast('Ek boş kalamaz; en az bir bölüm seçin. Kaldırmak için × kullanın.', true);
+    return;
+  }
+  a.sections = [...keys];
+  if (on) a.prev = { ...(a.prev || {}), [key]: reportSectionOn(c, key) };
+  c.letterAnnexes = normalizeLetterAnnexes(list);
+  c.report = c.report || {};
+  const prevOn = a.prev && typeof a.prev[key] === 'boolean' ? a.prev[key] : true;
+  c.report.sections = { ...(c.report.sections || {}), [key]: on ? false : prevOn };
+  if (on) {
+    const placement = normalizeAnnexPlacement(c.report.annexPlacement);
+    delete placement[key];
+    c.report.annexPlacement = normalizeAnnexPlacement(placement);
+  }
+  persist();
+  renderReport();
+  renderLetter();
+}
+
+function renderLetterAnnexEditor(c, rows) {
+  const host = $('#letterAnnexEditor');
+  if (!host) return;
+  const a = rows.find((x) => x.id === letterAnnexEditId);
+  if (!a || a.kind === 'report') {
+    host.hidden = true;
+    host.innerHTML = '';
+    return;
+  }
+  host.hidden = false;
+  if (a.kind === 'sections') {
+    host.innerHTML =
+      `<div class="la-ed-title">${esc(a.no)} · bölümler</div>` +
+      `<p class="letter-side-hint">Seçilen bölümler <b>rapordan çıkar</b>, bu ekte yayımlanır. İşareti kaldırırsanız rapora geri döner.</p>` +
+      `<div class="la-checks">${LETTER_ANNEX_SECTIONS.map(
+        (k) =>
+          `<label class="letter-check"><input type="checkbox" data-annex-section="${esc(k)}"${
+            (a.sections || []).includes(k) ? ' checked' : ''
+          }> <span>${esc(reportUiLabel(c, k))}</span></label>`
+      ).join('')}</div>`;
+  } else if (a.kind === 'reportAnnex') {
+    const used = new Set(rows.filter((x) => x.kind === 'reportAnnex').map((x) => x.key));
+    const opts = REPORT_ANNEX_DEFS.filter((d) => d.key === a.key || !used.has(d.key))
+      .map((d) => `<option value="${esc(d.key)}"${d.key === a.key ? ' selected' : ''}>${esc(d.title)}</option>`)
+      .join('');
+    host.innerHTML =
+      `<div class="la-ed-title">${esc(a.no)} · rapor içi ek</div>` +
+      `<p class="letter-side-hint">Seçilen ek <b>rapordan çıkar</b>, bu belge olarak yayımlanır.</p>` +
+      `<label class="field"><span>Rapor içi ek</span><select data-annex-annexkey>${opts}</select></label>`;
+  } else {
+    host.innerHTML =
+      `<div class="la-ed-title">${esc(a.no)} · serbest ek</div>` +
+      `<label class="field"><span>Başlık</span><input type="text" maxlength="120" data-annex-title value="${esc(
+        a.title || ''
+      )}" placeholder="ör. Tapu kaydı"></label>` +
+      `<label class="field"><span>İçerik</span><textarea rows="5" data-annex-content placeholder="Yalnız belgelenmiş bilgileri yazın.">${esc(
+        a.content || ''
+      )}</textarea></label>` +
+      `<p class="letter-side-hint">Boş başlık ve içerik ekte yayımlanmaz.</p>`;
+  }
+}
+
 function renderLetterAnnexes(c) {
   const list = $('#letterAnnexList');
   const note = $('#letterAnnexNote');
   if (!list) return;
-  const rows = letterAnnexRows(c);
+  const rows = letterAnnexNumbering(c.letterAnnexes);
   list.innerHTML = rows
-    .map((a) => `<li><b>${esc(a.no)}</b><span>${esc(a.label)}</span></li>`)
+    .map((a, i) => {
+      const isReport = a.kind === 'report';
+      const tools = isReport
+        ? `<button type="button" class="la-btn" data-letter-annex-dl="${esc(a.id)}" title="Raporu UDF olarak indir" aria-label="Raporu indir">⤓</button>`
+        : `<button type="button" class="la-btn" data-letter-annex-move="up" data-annex-id="${esc(a.id)}"${
+            i <= 1 ? ' disabled' : ''
+          } title="Yukarı taşı" aria-label="Yukarı taşı">↑</button>` +
+          `<button type="button" class="la-btn" data-letter-annex-move="down" data-annex-id="${esc(a.id)}"${
+            i === rows.length - 1 ? ' disabled' : ''
+          } title="Aşağı taşı" aria-label="Aşağı taşı">↓</button>` +
+          `<button type="button" class="la-btn" data-letter-annex-dl="${esc(a.id)}" title="Bu eki UDF olarak indir" aria-label="Bu eki indir">⤓</button>` +
+          `<button type="button" class="la-btn" data-letter-annex-edit="${esc(a.id)}" title="Eki düzenle" aria-label="Eki düzenle">✎</button>` +
+          `<button type="button" class="la-btn" data-letter-annex-del="${esc(a.id)}" title="Eki kaldır" aria-label="Eki kaldır">×</button>`;
+      return `<li data-annex-id="${esc(a.id)}" class="la-row${letterAnnexEditId === a.id ? ' is-editing' : ''}"><b>${esc(
+        a.no
+      )}</b><span class="la-label">${esc(letterAnnexLabel(a))}</span><span class="la-tools">${tools}</span></li>`;
+    })
     .join('');
+  renderLetterAnnexEditor(c, rows);
   if (note) {
     note.textContent =
       rows.length > 1
-        ? 'Ek numaraları sıraya göre yeniden verilir.'
-        : 'Şimdilik tek ek var: EK-1 rapor. Belge ekleri (teknik bilgiler, envanter…) sonraki adımda düzenlenebilir olacak.';
+        ? 'EK numarası sıraya göre yeniden verilir. Eklerdeki içerik raporda tekrar etmez.'
+        : 'Tek ek var: EK-1 rapor. “＋ Teknik bilgiler” ile bölümleri rapordan çıkarıp ayrı belge yapabilirsiniz.';
   }
 }
 
@@ -16322,8 +16617,13 @@ function docxXml(c) {
   };
 
   let body = '';
-  for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) body += front[key]();
-  body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
+  let frontCount = 0;
+  for (const key of REPORT_FRONT_KEYS) {
+    if (!on(key) || !front[key]) continue;
+    body += front[key]();
+    frontCount += 1;
+  }
+  if (frontCount) body += '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç,
   // çünkü kapak→gövde zaten sayfa sonuyla ayrıldı).
   const pageBreakPara = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
@@ -16348,7 +16648,12 @@ function docxXml(c) {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody)) body += pageBreakPara;
+    const compactDocx = !!c.__annexDoc; // ek belgesi (v2.324)
+    if (
+      !compactDocx &&
+      ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody))
+    )
+      body += pageBreakPara;
     body += render();
     firstBody = false;
   }
@@ -16365,7 +16670,8 @@ function docxXml(c) {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
 async function makeDocx(opts = {}) {
-  const c = currentCase();
+  // opts.case: belge eki için geçici kopya (v2.324); opts.fileName: ad geçersiz kılma.
+  const c = (opts && opts.case) || currentCase();
   const letterMode = !!(opts && opts.letter);
   if (!window.JSZip) {
     throw new Error('DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
@@ -16406,7 +16712,10 @@ async function makeDocx(opts = {}) {
     type: 'blob',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   });
-  downloadBlob(blob, letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}.docx` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.docx`);
+  const docxName =
+    (opts && opts.fileName) ||
+    (letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}`);
+  downloadBlob(blob, `${docxName}.docx`);
   showToast(letterMode ? 'Üst yazı Word kopyası indirildi.' : 'Word raporu indirildi.');
 }
 function safeName(s) {
@@ -16443,7 +16752,7 @@ function udfSignedColor(hex) {
   return n > 0x7fffffff ? n - 0x100000000 : n;
 }
 async function makeUdf(opts = {}) {
-  const c = currentCase();
+  const c = (opts && opts.case) || currentCase();
   const letterMode = !!(opts && opts.letter);
   // Rapor biçimi: font + gövde puntosu + kenar boşluğu + yön UDF'e uygulanır.
   // Varsayılan font Times New Roman (resmî); kullanıcı değiştirirse UDF de izler.
@@ -17001,8 +17310,15 @@ async function makeUdf(opts = {}) {
     for (const a of m.annexes) el.push(paragraph(`${a.no}  ${a.label}`, { size: 11, after: 2 }));
     if (m.showPageCounts) el.push(paragraph(m.pageCountNote, { size: 9, italic: true, color: 'muted', before: 6 }));
   } else {
-  for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) front[key]();
-  el.push(pageBreak());
+  let frontRendered = 0;
+  for (const key of REPORT_FRONT_KEYS) {
+    if (!on(key) || !front[key]) continue;
+    front[key]();
+    frontRendered += 1;
+  }
+  // Kapak/içindekiler hiç çizilmediyse (ek belgesi) baştaki sayfa sonu EKLENMEZ;
+  // aksi hâlde boş bir ilk sayfa oluşuyordu (v2.324 ölçümü).
+  if (frontRendered) el.push(pageBreak());
   // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç).
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
@@ -17020,7 +17336,12 @@ async function makeUdf(opts = {}) {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody)) el.push(pageBreak());
+    const compact = !!c.__annexDoc; // ek belgesi: bölüm başına sayfa sonu yok (v2.324)
+    if (
+      !compact &&
+      ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody))
+    )
+      el.push(pageBreak());
     render();
     firstBody = false;
   }
@@ -17033,7 +17354,10 @@ async function makeUdf(opts = {}) {
   const outZip = new JSZip();
   outZip.file('content.xml', udfXml);
   const blob = await outZip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  downloadBlob(blob, letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}.udf` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.udf`);
+  const udfName =
+    (opts && opts.fileName) ||
+    (letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}`);
+  downloadBlob(blob, `${udfName}.udf`);
   showToast(
     letterMode
       ? 'Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin.'
@@ -19741,6 +20065,84 @@ function setupEvents() {
     $(sel)?.addEventListener('click', () => downloadLetterAndReport().catch((e) => showToast(e.message, true)))
   );
   $('#letterPrintBtn')?.addEventListener('click', () => window.print());
+  // BELGE EKLERİ (v2.324): ekle / sırala / düzenle / indir / kaldır.
+  // Tümü tek kapıdan (`letterAnnexes` modeli) yazılır; ekran yeniden çizilir.
+  $('#letterSide')?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    const add = t.closest('[data-letter-annex-add]');
+    if (add) {
+      addLetterAnnex(add.dataset.letterAnnexAdd);
+      return;
+    }
+    const mv = t.closest('[data-letter-annex-move]');
+    if (mv) {
+      moveLetterAnnex(mv.dataset.annexId, mv.dataset.letterAnnexMove);
+      return;
+    }
+    const ed = t.closest('[data-letter-annex-edit]');
+    if (ed) {
+      letterAnnexEditId = letterAnnexEditId === ed.dataset.letterAnnexEdit ? null : ed.dataset.letterAnnexEdit;
+      renderLetter();
+      return;
+    }
+    const dl = t.closest('[data-letter-annex-dl]');
+    if (dl) {
+      exportLetterAnnex(dl.dataset.letterAnnexDl).catch((err) => showToast(err.message, true));
+      return;
+    }
+    const del = t.closest('[data-letter-annex-del]');
+    if (del) {
+      removeLetterAnnex(del.dataset.letterAnnexDel).catch((err) => showToast(err.message, true));
+    }
+  });
+  $('#letterSide')?.addEventListener('change', (e) => {
+    const t = e.target;
+    if (!t || !t.dataset) return;
+    if (t.dataset.annexSection !== undefined) {
+      const id = (t.closest('[data-annex-id]') || {}).dataset?.annexId || letterAnnexEditId;
+      toggleLetterAnnexSection(id, t.dataset.annexSection, t.checked);
+      return;
+    }
+    if (t.dataset.annexAnnexkey !== undefined) {
+      const c = currentCase();
+      if (!c || !letterAnnexEditId) return;
+      const list = normalizeLetterAnnexes(c.letterAnnexes);
+      const a = list.find((x) => x.id === letterAnnexEditId);
+      if (!a || a.kind !== 'reportAnnex') return;
+      const key = t.value;
+      if (!isReportAnnexKey(key)) return;
+      setReportAnnexOnQuiet(c, a.key, true); // eski ekin rapordaki kopyası geri açılır
+      a.key = key;
+      setReportAnnexOnQuiet(c, key, false);
+      c.letterAnnexes = normalizeLetterAnnexes(list);
+      persist();
+      renderReport();
+      renderLetter();
+    }
+  });
+  $('#letterSide')?.addEventListener('input', (e) => {
+    const t = e.target;
+    if (!t || !t.dataset) return;
+    const c = currentCase();
+    if (!c || !letterAnnexEditId) return;
+    const isTitle = t.dataset.annexTitle !== undefined;
+    const isContent = t.dataset.annexContent !== undefined;
+    if (!isTitle && !isContent) return;
+    const list = normalizeLetterAnnexes(c.letterAnnexes);
+    const a = list.find((x) => x.id === letterAnnexEditId);
+    if (!a || a.kind !== 'custom') return;
+    if (isTitle) a.title = t.value;
+    else a.content = t.value;
+    c.letterAnnexes = normalizeLetterAnnexes(list);
+    persist();
+    // Liste/odak bozulmasın: satır etiketini ve üst yazı kâğıdını tazele
+    // (kâğıt ayrı düğümdedir; odak kaybolmaz).
+    const row = document.querySelector(`#letterAnnexList [data-annex-id="${letterAnnexEditId}"] .la-label`);
+    if (row) row.textContent = letterAnnexLabel(a);
+    const paper = $('#letterPreview');
+    if (paper) paper.innerHTML = letterPaperHtml(c);
+  });
   $('#exportProjectBtn').addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
   $('#importProjectBtn').addEventListener('click', () => $('#importProjectInput').click());
   // Ekip çalışması: birleştirme düğmesi ve diyaloğu.
@@ -21256,6 +21658,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.324': {
+    title: 'Üst yazıya ek ekleyebilirsiniz (EK-2 teknik bilgiler)',
+    body:
+      'Üst yazı sekmesindeki “Belge ekleri” panelinden ek ekleyin: “＋ Teknik bilgiler” seçtiğiniz bölümleri rapordan çıkarıp EK-2 yapar; “＋ Rapor içi ek” bir rapor ekini ayrı belgeye taşır; “＋ Serbest ek” başlık ve metinle yeni ek açar. Ekleri sıralayabilir, düzenleyebilir, tek tek UDF olarak indirebilir ve kaldırabilirsiniz. Aynı içerik hem raporda hem ekte bulunmaz; ek kaldırılınca bölümler rapora geri döner.'
+  },
   '2.323': {
     title: 'Üst yazı ayrı belge oldu (rapor EK-1)',
     body:

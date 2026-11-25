@@ -64,7 +64,7 @@ if (/^\s*import\s/m.test(code)) {
   process.exit(1);
 }
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
-  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
+  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
 
 const downloads = [];
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -97,7 +97,7 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
-const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
+const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
 // Bölüm başlıkları TEK KAYNAK: şema. Testte sabit başlık kopyası tutulmaz.
 const SEC_TITLE = Object.fromEntries(__schemaMod.REPORT_SECTION_DEFS.map((d) => [d.key, d.title]));
 
@@ -1566,6 +1566,57 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const me = letterModel(empty);
   check('eksikte hazır değil', me.ready === false);
   check('eksikte mahkeme satırı boş', me.courtLine === '');
+}
+
+
+// Senaryo 45: belge eki AYRI belge, raporda TEKRAR ETMEZ (v2.324).
+{
+  console.log('\n[Senaryo 45] belge eki tek kopya + ek belgesi (v2.324)');
+  const c = withMaterial({
+    origin: { deliveredBy: 'Deniz Aras', deliveredAt: '2026-01-10', deliveryPlace: 'Antalya' },
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        type: 'audio/wav',
+        size: 1000,
+        duration: 12.5,
+        sha256: 'abc123',
+        tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+        segments: [{ id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba', review: 'approved' }],
+        origin: { deliveredBy: 'Deniz Aras', deliveredAt: '2026-01-10', deliveryPlace: 'Antalya', mediumType: 'usb' },
+        log: []
+      }
+    ]
+  });
+  const originTitle = SEC_TITLE.origin;
+  const s5Title = SEC_TITLE.s5;
+  // 1) Bölüm belge ekine TAŞINMIŞ: raporda çizilmez.
+  c.report = { ...(c.report || {}), sections: { ...((c.report || {}).sections || {}), origin: false } };
+  const H = htmlText(c);
+  check('rapor: taşınan bölüm YOK', !H.includes(originTitle));
+  check('rapor: diğer bölüm var', H.includes(s5Title));
+  // 2) Ek belgesi: yalnız taşınan bölüm; kapak/içindekiler/imza yok.
+  const annex = { id: 'la2', kind: 'sections', sections: ['origin'], label: 'TEKNİK BİLGİLER' };
+  const doc = annexDocumentCase(c, annex);
+  const HA = htmlText(doc);
+  const UA = await udfText(doc);
+  const DA = await docxText(doc);
+  checkShared('ek belgesi: bölüm başlığı', originTitle, HA, UA, DA);
+  check('ek belgesi: kapak yok', !HA.includes(REPORT_TYPES.hukuk.heading));
+  check('ek belgesi: içindekiler yok', !HA.includes(SEC_TITLE.toc));
+  check('ek belgesi: imza yok', !HA.includes('Bilirkişi imza'));
+  check('ek belgesi: uygulama adı yok', !/AKİS/.test(UA) && !/AKİS/.test(DA));
+  // 3) Rapor içi ek belgesi: yalnız o ek.
+  const c2 = withMaterial();
+  const doc2 = annexDocumentCase(c2, { id: 'la3', kind: 'reportAnnex', key: 'ek2' });
+  const H2 = htmlText(doc2);
+  check('ek belgesi: yalnız EK-2 envanteri', H2.includes('EK-1. DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
+  // 4) Serbest ek belgesi.
+  const doc3 = annexDocumentCase(c2, { id: 'la4', kind: 'custom', title: 'TAPU KAYDI', content: 'Tapu kaydı incelenmiştir.' });
+  const H3 = htmlText(doc3);
+  checkShared('serbest ek: başlık', 'TAPU KAYDI', H3, await udfText(doc3), await docxText(doc3));
+  check('serbest ek: içerik', H3.includes('Tapu kaydı incelenmiştir.'));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

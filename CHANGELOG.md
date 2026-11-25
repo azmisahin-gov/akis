@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.323.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.324.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.324 — Belge ekleri: EK-2 teknik bilgiler, ek yönetimi
+
+**KULLANICI NE GÖRECEK:** Üst yazının altına **istediğiniz ekleri** koyabilirsiniz.
+**“＋ Teknik bilgiler”** seçtiğiniz bölümleri **rapordan çıkarıp** EK-2 yapar;
+**“＋ Rapor içi ek”** bir rapor ekini ayrı belgeye taşır; **“＋ Serbest ek”** başlık +
+metinle yeni ek açar. Ekler **sıralanır, düzenlenir, indirilir, kaldırılır**.
+
+**Ne yapıldı**
+- **Belge eki yönetimi** (sağ panel): EK listesi satırlarında **↑ ↓ ⤓ ✎ ×**;
+  “＋ Teknik bilgiler / ＋ Rapor içi ek / ＋ Serbest ek”.
+- **Tek kopya kuralı (DEĞİŞMEZ):** bir bölüm ya **raporda** ya **bir belge ekinde**
+  bulunur. Eke alınan bölüm `report.sections[k]=false` ile raporda kapatılır;
+  raporda yeniden açılırsa **ekten çıkar** (ve tersi). Rapor içi ekler için de
+  aynı kural (`layout.annexes[k]`).
+- **Ek belgesi** raporun kendi üreticisiyle üretilir: geçici kopyada yalnız ilgili
+  içerik açık; **kapak, içindekiler, künye, imza, ek listesi yok**; bölüm başına
+  sayfa sonu yok (kompakt). Böylece HTML/DOCX/UDF aynı kuralı izler.
+- **Silme güvenli:** ek kaldırılınca bölümler **önceki görünürlüğüne** döner
+  (`prev` alanı); rapor içi ekin kopyası yeniden açılır. Onay + `snapshotForUndo`.
+- **Dosya adı:** `EK-2_TEKNİK_BİLGİLER_<dosya no>.udf`.
+- **Tek “Teknik bilgiler” eki:** ikinci kez eklemek kopya üretmez, mevcut eki açar.
+
+**Ölçüm (gerçek Chromium + CDP, 1440×900, örnek dosya)**
+- “＋ Teknik bilgiler” → EK-2 eklendi; rapor başlıkları **12 → 11** (köken çıktı,
+  numaralar bitişik kaldı).
+- EK-2 UDF **3.670 bayt**: yalnız taşınan bölümler; **kapak yok, içindekiler yok,
+  imza yok, AKİS yok**; sayfa sonu **0** (kompakt).
+- “＋ Rapor içi ek” → EK-3 (materyal teslim tutanağı); rapor içi EK listesinden
+  düştü (kalanlar yeniden numaralandı).
+- “＋ Serbest ek” → EK-4; başlık yazılınca üst yazıdaki liste **anında** güncellendi
+  (“EK-4 TAPU KAYDI”); UDF 731 bayt, başlık + 2 paragraf.
+- Sıralama (↑) ve kaldırma (×) çalıştı; EK-2 silinince **bölümler rapora döndü**
+  ve rapor **eski görünürlüğüne** (kapalı `integrity/tech/qc` geri kapalı) döndü.
+- JS hatası **0**.
+
+**Koruyan test:** `birim [160]` (21) · `rapor` Senaryo 45 (tek kopya + ek belgesi
+üç çıktıda) · `tasarim [2dd]` (13).
+
+**Bilinen adlandırma notu:** rapor içi ekler kendi içinde “EK-1…” diye numaralanır;
+üst yazının ekleri de “EK-1…”. İkisi **ayrı numaralandırmadır**. Karışmaması için
+rapor içi ekleri de üst yazıya taşıyabilirsiniz (önerilen akış). Rapor içi ekleri
+“Rapor eki 1” olarak yeniden adlandırma v2.325 adayıdır.
 
 ## v2.323 — Üst yazı: ayrı belge, rapor EK-1
 

@@ -1357,6 +1357,49 @@ export function normalizeLetterAnnexes(list) {
   return all;
 }
 
+/**
+ * Belge eklerine TAŞINMIŞ bölüm anahtarları (v2.324). Taşınan bölüm raporda
+ * ÇİZİLMEZ; içerik yalnız ekinde bulunur (çift üretim yok).
+ */
+export function letterMovedSectionKeys(annexes) {
+  const out = new Set();
+  for (const a of normalizeLetterAnnexes(annexes)) {
+    if (a.kind !== 'sections') continue;
+    for (const k of a.sections) out.add(k);
+  }
+  return out;
+}
+
+/** Belge eklerine taşınmış RAPOR İÇİ EK anahtarları (v2.324). */
+export function letterMovedAnnexKeys(annexes) {
+  const out = new Set();
+  for (const a of normalizeLetterAnnexes(annexes)) {
+    if (a.kind === 'reportAnnex') out.add(a.key);
+  }
+  return out;
+}
+
+/** Bölümleri belge eklerinden çıkarır (rapora geri döner); boşalan ek düşer. */
+export function removeSectionsFromLetterAnnexes(annexes, keys) {
+  const drop = new Set(Array.isArray(keys) ? keys : [keys]);
+  const out = [];
+  for (const a of normalizeLetterAnnexes(annexes)) {
+    if (a.kind !== 'sections') {
+      out.push(a);
+      continue;
+    }
+    const left = a.sections.filter((k) => !drop.has(k));
+    if (left.length) out.push({ ...a, sections: left });
+  }
+  return normalizeLetterAnnexes(out);
+}
+
+/** Rapor içi ek anahtarını belge eklerinden çıkarır (rapordaki kopya açılır). */
+export function removeAnnexKeyFromLetterAnnexes(annexes, key) {
+  const k = String(key || '');
+  return normalizeLetterAnnexes(normalizeLetterAnnexes(annexes).filter((a) => !(a.kind === 'reportAnnex' && a.key === k)));
+}
+
 /** EK numarası TÜRETİLİR: bitişik, silinen/kapatılan ek boşluk bırakmaz. */
 export function letterAnnexNumbering(annexes) {
   return normalizeLetterAnnexes(annexes).map((a, i) => ({ ...a, no: 'EK-' + (i + 1) }));

@@ -117,6 +117,7 @@ const EXPOSE = [
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
+  'annexDocumentCase', 'LETTER_ANNEX_DEFAULT_SECTIONS', 'letterMovedSectionKeys', 'letterMovedAnnexKeys',
   'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
@@ -6999,6 +7000,63 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const blocked = T.letterPaperHtml(empty);
   eq('eksikte engel kutusu', /letter-blocked/.test(blocked), true);
   eq('eksikte uydurma mahkeme yok', /MAHKEMESİ’NE/.test(blocked), false);
+}
+
+
+// [160] v2.324 — Belge ekleri: taşınan bölüm/ek, tek kopya, ek belgesi.
+{
+  console.log('[160] Belge ekleri: taşıma ve ek belgesi (v2.324)');
+  const S = __schemaMod;
+  const c = T.emptyCaseForTest({
+    id: 'cA',
+    court: 'Antalya 4. Asliye Hukuk Mahkemesi',
+    fileNo: '2026/214 E.',
+    expert: { name: 'Örnek Bilirkişi' },
+    report: { date: '2026-11-15' },
+    letter: { place: 'Antalya' }
+  });
+  // --- Taşınan bölüm/ek kümeleri
+  c.letterAnnexes = [
+    { kind: 'report' },
+    { kind: 'sections', sections: ['levels', 'wer'] },
+    { kind: 'reportAnnex', key: 'ek2' }
+  ];
+  eq('taşınan bölümler', [...S.letterMovedSectionKeys(c.letterAnnexes)].sort().join(','), 'levels,wer');
+  eq('taşınan rapor içi ek', [...S.letterMovedAnnexKeys(c.letterAnnexes)].join(','), 'ek2');
+  // --- Bölüm geri alınınca ekten düşer
+  const back = S.removeSectionsFromLetterAnnexes(c.letterAnnexes, ['levels']);
+  eq('geri alınan bölüm ekte kalmaz', [...S.letterMovedSectionKeys(back)].join(','), 'wer');
+  eq('ek kaldı', back.filter((a) => a.kind === 'sections').length, 1);
+  // --- Son bölüm de çıkarsa ek düşer
+  const none = S.removeSectionsFromLetterAnnexes(back, ['wer']);
+  eq('boşalan ek düşer', none.filter((a) => a.kind === 'sections').length, 0);
+  // --- Rapor içi ek geri alınınca belge ekinden düşer
+  const back2 = S.removeAnnexKeyFromLetterAnnexes(c.letterAnnexes, 'ek2');
+  eq('rapor içi ek belge ekinden düşer', [...S.letterMovedAnnexKeys(back2)].length, 0);
+
+  // --- EK BELGESİ: yalnız seçili bölümler, kapak/içindekiler/imza YOK
+  c.report.sections = { cover: true, levels: true };
+  const annex = S.letterAnnexNumbering(c.letterAnnexes).find((a) => a.kind === 'sections');
+  const doc = T.annexDocumentCase(c, annex);
+  eq('ek belgesi: yalnız seçili bölüm açık', Object.keys(doc.report.sections).filter((k) => doc.report.sections[k]).sort().join(','), 'levels,wer');
+  eq('ek belgesi: kapak kapalı', doc.report.sections.cover, false);
+  eq('ek belgesi: içindekiler kapalı', doc.report.sections.toc, false);
+  eq('ek belgesi: imza kapalı', doc.report.sections.signature, false);
+  eq('ek belgesi: kompakt akış', doc.__annexDoc, true);
+  eq('ek belgesi: orijinal kayıt DEĞİŞMEZ', c.report.sections.cover, true);
+  // --- Rapor içi ek belgesi: yalnız o ek açık
+  const rAnnex = S.letterAnnexNumbering(c.letterAnnexes).find((a) => a.kind === 'reportAnnex');
+  const doc2 = T.annexDocumentCase(c, rAnnex);
+  eq('ek belgesi: yalnız ek2 açık', doc2.report.layout.annexes.ek2, true);
+  eq('ek belgesi: ek1 kapalı', doc2.report.layout.annexes.ek1, false);
+  eq('ek belgesi: yalnız EKLER bölümü', doc2.report.layout.order.join(','), 'annex');
+  // --- Serbest ek belgesi: tek serbest blok
+  const doc3 = T.annexDocumentCase(c, { kind: 'custom', title: 'Tapu kaydı', content: 'Metin' });
+  eq('serbest ek: tek blok', doc3.report.blocks.length, 1);
+  eq('serbest ek: başlık', doc3.report.blocks[0].title, 'Tapu kaydı');
+  eq('serbest ek: numarasız', doc3.report.numbering, 'none');
+  // --- Varsayılan teknik bölüm kümesi
+  eq('varsayılan bölümler', T.LETTER_ANNEX_DEFAULT_SECTIONS.join(','), 'origin,embedded,acquisition,levels,wer,qc,integrity,tech');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

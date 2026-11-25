@@ -2329,6 +2329,50 @@ Belge ekleri düzenleme: `sections` (EK-2 Teknik bilgiler) + `reportAnnex`
 **taşınan bölüm raporda çizilmez** (`reportBlockRenders`); her belge için
 UDF/DOCX. Ayrıntı: `docs/UST_YAZI_PLANI.md` §10–§14.
 
+## YENİ OTURUM DEVRİ (v2.324) — Belge ekleri: EK-2 teknik bilgiler + ek yönetimi
+
+| | |
+|---|---|
+| Sürüm | **v2.324** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2436 birim + 522 şema** + rapor (45) + sürüm + tasarım yeşil |
+| Plan | [`docs/UST_YAZI_PLANI.md`](docs/UST_YAZI_PLANI.md) — v2.323+324 uygulandı; v2.325 (ZIP + sayfa sayısı) sırada |
+| Açık konu | v2.325: ZIP (`belgeler.json`), sayfa sayısı (opt-in), rapor içi eklerin "Rapor eki N" olarak yeniden adlandırılması |
+
+### Ne yapıldı
+- **Belge eki yönetimi** (sağ panel): `＋ Teknik bilgiler` · `＋ Rapor içi ek` ·
+  `＋ Serbest ek`; satırda `↑ ↓ ⤓ ✎ ×`. EK numarası **türetilir**.
+- **TEK KOPYA (DEĞİŞMEZ):** eke alınan bölüm `report.sections[k]=false` ile
+  raporda kapanır; raporda yeniden açılırsa **ekten çıkar** (`setReportSection`
+  içinde `letterMovedSectionKeys`). Rapor içi ek için aynısı `setReportAnnexOn`.
+- **Ek belgesi** `annexDocumentCase(c, annex)` ile üretilir: geçici kopyada yalnız
+  ilgili içerik açık; kapak/toc/künye/imza/ek listesi **kapalı**; `__annexDoc`
+  ile **kompakt akış** (bölüm başına sayfa sonu yok). `makeUdf({case, fileName})`
+  / `makeDocx({case, fileName})` geçici kopyayı kullanır — **rapor kaydı değişmez**.
+- **Silme güvenli:** `prev` alanı bölümün ÖNCEKİ görünürlüğünü saklar; ek
+  kaldırılınca o değere döner (kapalı bölüm kendiliğinden açılmaz).
+- **Kapak yoksa baştaki sayfa sonu eklenmez** (UDF `frontRendered`, DOCX
+  `frontCount`) — ek belgesinde boş ilk sayfa oluşmuyordu.
+- **`hidden` dersi tekrar:** `#view-report [hidden] { display:none }` eklendi;
+  yazar `display` kuralı `hidden`'ı eziyordu (sağ panel alt satıra düşüyordu).
+  Üst yazı ızgarası ayrıca **3 sütun** olarak sabitlendi.
+
+### Ölçüm (gerçek Chromium + CDP)
+EK-2 UDF **3.670 bayt**, yalnız taşınan bölümler, **kapak/içindekiler/imza yok**,
+sayfa sonu **0**; EK-3 (rapor içi ek) 1.248 bayt; EK-4 (serbest) 731 bayt.
+Rapor başlıkları 12 → 11 (köken çıktı, numaralar bitişik). `origin` raporda
+yeniden açılınca EK-2'den düştü (7 bölüm kaldı); `ek1` açılınca EK-3 kalktı.
+1440/1100/900/760: kırpma 0, yatay taşma 0; JS hatası 0.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Bir içerik tek yerde:** rapor **veya** belge eki. İki yön de otomatik
+   (ekle → raporda kapat; raporda aç → ekten çıkar).
+2. Ek belgesi **sade**dir: kapak/içindekiler/künye/imza/ek listesi yok.
+3. Ek belgesi üretimi **raporun kendi üreticisini** kullanır (kopya biçim yok).
+4. `prev` olmadan bölüm geri alınmaz; "hepsini aç" yanlış (v2.324'te ölçüldü:
+   `integrity/tech/qc` kendiliğinden açılıyordu).
+5. Yeni bir "taşıma" yolu eklerseniz `moveSectionsOutOfReport` +
+   `letterMovedSectionKeys` + `removeSectionsFromLetterAnnexes` üçlüsünü kullanın.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2502,7 +2546,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.323.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.324.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

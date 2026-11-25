@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.323.**
+yazılır. **Güncel sürüm: v2.324.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.324 — Belge ekleri: EK-2 teknik bilgiler, ek yönetimi (TAMAMLANDI)
+
+- Sağ panelde ek yönetimi: **＋ Teknik bilgiler / ＋ Rapor içi ek / ＋ Serbest ek**,
+  satırda **↑ ↓ ⤓ ✎ ×**.
+- **Tek kopya:** eke alınan bölüm raporda kapanır; raporda açılırsa ekten çıkar.
+- Ek belgesi: kapak/içindekiler/imza yok, kompakt akış, `EK-N_<ad>_<no>.udf`.
+- Silme: bölümler **önceki görünürlüğüne** döner; rapor içi ek kopyası açılır.
+- Test `birim [160]`, `rapor` 45, `tasarim [2dd]`.
 
 ## v2.323 — Üst yazı: ayrı belge, rapor EK-1 (TAMAMLANDI)
 
