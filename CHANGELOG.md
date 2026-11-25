@@ -6,12 +6,19 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.292.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.293.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.293 — Dosyalar arası kişiler Dosya bilgileri çekmecesinde
+
+- **Kişiler (K)** paneli Analiz sekmesinden **Dosya bilgileri** çekmecesine taşındı.
+- Kişi ekle/düzenle/sil orada; kayıt kartındaki **Aynı kişi** bağlantısı yerinde.
+- Silme onay ister; bağlı konuşmacı/ses/metin **korunur**, yalnız eşleştirme kalkar.
+- Koruyan: `birim` [135], `tasarim` kişi paneli kontrolü.
 
 ## v2.292 — Atanmamış bölümleri benzer sese göre gruplama
 

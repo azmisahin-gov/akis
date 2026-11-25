@@ -6024,5 +6024,19 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('atama günlüğe yazılır', /speaker-cluster-assign/.test(js), true);
 }
 
+
+// [135] v2.293 — Dosyalar arası kişiler Dosya bilgileri çekmecesinde.
+{
+  console.log('[135] Kişiler paneli dosya çekmecesinde (v2.293)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  eq('çekmecede kişi paneli', /id="casePersonsPanel"/.test(html), true);
+  eq('kişi ekleme düğmesi yeni panelde', /data-add-case-person/.test(js), true);
+  eq('kişi alanı güncellenir', /function updateCasePerson\(/.test(js), true);
+  eq('kişi silme onay ister', /async function deleteCasePerson[\s\S]{0,800}askConfirm/.test(js), true);
+  eq('çekmece paneli çizilir', /function renderCasePersons\(/.test(js) && /renderCasePersons\(\);/.test(js), true);
+  eq('eski analiz paneli kaldırıldı', /personBlock\}\$\{voiceEmbedPanelHtml/.test(js), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

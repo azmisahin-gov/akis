@@ -1555,7 +1555,7 @@ console.log('\n[2be] Dosyalar arası kişi kaydı (v2.205)');
   check('kişi kodu K1 üretilir', /assignCaseSpeakerCodes/.test(schemaJs) && /\^K\\d\+\$/.test(schemaJs));
   check('kayıt içi personId korunur', /personId: str\(s\.personId\)/.test(schemaJs));
   check('rapor kişiye göre gruplar', /linksByPerson/.test(appJs) && /emitted\.has\(pid\)/.test(appJs));
-  check('kişi paneli ve bağ seçici var', /data-add-person/.test(appJs) && /data-person-key/.test(appJs) && /data-spk-key="personId"/.test(appJs));
+  check('kişi paneli dosya çekmecesinde', /data-add-case-person/.test(appJs) && /casePersonsPanel/.test(appJs) && /data-person-key/.test(appJs) && /data-spk-key="personId"/.test(appJs));
   check('kişi silme onay ister', /data-del-person/.test(appJs) && /Dosya geneli kişiyi sil/.test(appJs));
   check('birleştirme kişi/bağ çakışması', /kind: 'case-speaker'/.test(schemaJs) && /kind: 'speaker-person'/.test(schemaJs));
   check('rapor açıklaması uzman kanaati der', /uzman kanaatidir, otomatik kimlik tespiti değildir/.test(appJs));

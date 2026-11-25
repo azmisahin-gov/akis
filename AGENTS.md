@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.292.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.293.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7331,3 +7331,17 @@ Ayrıntı: `docs/RAPOR_SERBEST_TASARIM.md` §v2.291.
 - `m.voiceEmbed.clusters` özet (vektör yok); **Git** / **Ata**; atama onay + snapshot + `speaker-cluster-assign` günlüğü.
 - **Otomatik atama yok**; kimlik tespiti değildir. Test: `birim [134]`.
 - Sıradaki: Kişiler (K) panelinin dosya düzeyine taşınması.
+
+
+## YENİ OTURUM DEVRİ (v2.293) — Kişiler paneli dosya çekmecesinde
+
+| | |
+|---|---|
+| Sürüm | **v2.293** |
+| Testler | **2033 birim + 522 şema** yeşil |
+| Açık konu | Yok (planlanan rapor/kişi işleri kapandı) |
+
+- **Dosyalar arası kişiler (K)** Analiz’den **Dosya bilgileri** çekmecesine taşındı.
+- `casePersonsPanelHtml` + `renderCasePersons`; ekle/düzenle/sil çekmecede.
+- Silme onaylı; bağlı konuşmacı/ses/metin korunur. Kayıt kartındaki “Aynı kişi” yerinde.
+- Test: `birim [135]`, `tasarim` kişi paneli.

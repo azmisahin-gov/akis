@@ -114,15 +114,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.292';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.292';
+} from './schema.js?v=2.293';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.293';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.292';
+const APP_VERSION = '2.293';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1499,6 +1499,7 @@ function populateCaseForm() {
   }
   applyRoleLabels(c.reportType);
   renderTeam();
+  renderCasePersons();
 }
 // ---- Ekip (ortak çalışma) ----------------------------------------------
 // Ekip, aynı dosyada çalışan bilirkişi/yardımcıları tanımlar. Rapora GİRMEZ;
@@ -4543,6 +4544,79 @@ function suggestSpeakerMerges(m) {
   return groups.filter((g) => g.length > 1);
 }
 
+// Dosya geneli kişiler (K) — v2.293: Analiz sekmesinden Dosya bilgileri
+// çekmecesine taşındı. Kayıt içi S1/S2 kodları ayrı kalır.
+function casePersonsPanelHtml(c) {
+  const persons = (c && c.speakers) || [];
+  const linksOf = (pid) => {
+    const out = [];
+    for (const m of (c && c.materials) || [])
+      for (const s of m.speakers || []) if (String(s.personId || '') === pid) out.push(`${m.name} (${s.code || s.name})`);
+    return out;
+  };
+  const roleOpts = (r) =>
+    SPEAKER_ROLE.map((x) => `<option value="${esc(x)}" ${normalizeSpeakerRole(r) === x ? 'selected' : ''}>${esc(SPEAKER_ROLE_LABEL[x] || x)}</option>`).join('');
+  const genderOpts = (g) =>
+    SPEAKER_GENDER.map((x) => `<option value="${esc(x)}" ${normalizeSpeakerGender(g) === x ? 'selected' : ''}>${esc(SPEAKER_GENDER_LABEL[x] || x)}</option>`).join('');
+  const cards = persons
+    .map((p) => {
+      const links = linksOf(p.id);
+      return `<div class="spk-card person-card" data-person-card="${esc(p.id)}">
+      <div class="spk-card-head"><b>${esc(p.code || '')}${p.code ? ' · ' : ''}${esc(p.label || 'Etiketsiz')}</b><button class="mini-button danger" data-del-person="${esc(p.id)}" title="Kişi kaydını siler; bağlı konuşmacı etiketleri ve bölümler KORUNUR.">Sil</button></div>
+      <div class="seg-row2"><div class="seg-field"><label>Kişi kodu</label><input data-person="${esc(p.id)}" data-person-key="code" value="${esc(p.code || '')}" placeholder="K1"></div><div class="seg-field"><label>Etiket</label><input data-person="${esc(p.id)}" data-person-key="label" value="${esc(p.label || '')}" placeholder="Örn. Kiracı"></div></div>
+      <div class="seg-row2"><div class="seg-field"><label>Rol</label><select data-person="${esc(p.id)}" data-person-key="role">${roleOpts(p.role)}</select></div><div class="seg-field"><label>Cinsiyet</label><select data-person="${esc(p.id)}" data-person-key="gender">${genderOpts(p.gender)}</select></div></div>
+      <div class="seg-row2"><div class="seg-field"><label>Yaş aralığı</label><input data-person="${esc(p.id)}" data-person-key="ageRange" value="${esc(p.ageRange || '')}" placeholder="30-40"></div><div class="seg-field"><label>Not</label><input data-person="${esc(p.id)}" data-person-key="notes" value="${esc(p.notes || '')}" placeholder="uzman gözlemi"></div></div>
+      <small>${links.length} kayıt: ${esc(links.join(' · ') || 'henüz bağlı değil')} · <b>uzman eşleştirmesi</b></small></div>`;
+    })
+    .join('');
+  return `<p class="drawer-note">Kişi kaydı yalnız eşleştirmedir; ses/metin silinmez. Konuşmacıları bağlamak için kayıt kartındaki <b>Aynı kişi</b> alanını kullanın.</p>${cards || '<div class="seg-empty-note">Henüz dosya geneli kişi yok.</div>'}<div class="evidence-actions"><button class="mini-button" data-add-case-person="1">＋ Kişi ekle</button></div>`;
+}
+function renderCasePersons() {
+  const host = $('#casePersonsPanel');
+  if (host) host.innerHTML = casePersonsPanelHtml(currentCase());
+}
+function updateCasePerson(id, key, value) {
+  const c = currentCase();
+  const p = ((c && c.speakers) || []).find((x) => x.id === id);
+  if (!p) return;
+  if (key === 'role') p.role = normalizeSpeakerRole(value);
+  else if (key === 'gender') p.gender = normalizeSpeakerGender(value);
+  else p[key] = String(value || '');
+  persist();
+}
+function addCasePerson() {
+  const c = currentCase();
+  if (!c) return;
+  c.speakers = c.speakers || [];
+  const p = emptyCaseSpeaker({ label: 'Yeni kişi' });
+  c.speakers.push(p);
+  assignCaseSpeakerCodes(c.speakers);
+  persist();
+  renderCasePersons();
+  showToast(`${p.code} · ${p.label} oluşturuldu. Konuşmacıları kayıt kartındaki “Aynı kişi” alanından bağlayın.`);
+}
+async function deleteCasePerson(pid) {
+  const c = currentCase();
+  const p = ((c && c.speakers) || []).find((x) => x.id === pid);
+  if (!p) return;
+  const links = [];
+  for (const m of c.materials || [])
+    for (const s of m.speakers || []) if (String(s.personId || '') === pid) links.push(s);
+  const ok = await askConfirm(
+    'Dosya geneli kişiyi sil',
+    `${p.code ? p.code + ' · ' : ''}${p.label || 'Etiketsiz'} kişi kaydı silinecek. ` +
+      (links.length ? `Bağlı ${links.length} konuşmacı ve bölümler KORUNUR; yalnız eşleştirme kaldırılır.` : 'Bağlı konuşmacı yok.') +
+      ' Ses ve metin SİLİNMEZ.'
+  );
+  if (!ok) return;
+  for (const s of links) s.personId = '';
+  c.speakers = (c.speakers || []).filter((x) => x.id !== pid);
+  persist();
+  renderCasePersons();
+  renderAudioList();
+  showToast('Kişi kaydı silindi; ses/metin korundu.');
+}
+
 // Konuşmacı paneli: her konuşmacı için standart kod, etiket, rol, cinsiyet,
 // yaş aralığı, not ve ölçülen perde. Bu bilgiler rapora "Konuşmacılar" tablosu
 // olarak akar.
@@ -4624,7 +4698,7 @@ function speakersPanelHtml(m) {
     // Konuşmacı YOKKEN de gömme paneli görünür: ölçüm, atanmamış bölümler için
     // "hangi konuşmacıya benziyor" önerisi üretir (v2.280). Panel gizlenirse
     // öneriden hiç haberdar olunmaz.
-    return `${personBlock}${voiceEmbedPanelHtml(m)}<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>`;
+    return `${voiceEmbedPanelHtml(m)}<div class="seg-empty-note">Konuşmacı etiketi girilmedi. Bölümlerde konuşmacı adı girdiğinizde burada listelenir.</div>`;
   const merges = suggestSpeakerMerges(m);
   const mergeNote = merges.length
     ? `<div class="halluc-note" style="background:#eef4fb;border-color:#d6e4f2;color:#2f6f95">Öneri (kimlik tespiti değildir): benzer perdede görünen etiketler — ${merges.map((g) => g.map((s) => esc(s.name)).join(' ≈ ')).join(' · ')}. Aynı kişi olup olmadığına uzman karar verir.</div>`
@@ -4720,7 +4794,7 @@ function speakersPanelHtml(m) {
     })
     .join('');
   const embedBlock = voiceEmbedPanelHtml(m);
-  return `${codeNote}${personBlock}${voiceBlock}${embedBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
+  return `${codeNote}${voiceBlock}${embedBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 // v2.279 — Gömme ölçümü paneli (Konuşmacılar bölümünde).
 // v2.292 — benzer grup ataması: ONAY + snapshot + günlük; otomatik değil.
@@ -16329,6 +16403,9 @@ function setupEvents() {
     if (el.dataset && el.dataset.team !== undefined) {
       updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
     }
+    if (el.dataset && el.dataset.person !== undefined) {
+      updateCasePerson(el.dataset.person, el.dataset.personKey, el.value);
+    }
   });
   $('#caseDrawer').addEventListener('change', (e) => {
     const el = e.target;
@@ -16353,8 +16430,22 @@ function setupEvents() {
     if (el.dataset && el.dataset.team !== undefined) {
       updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
     }
+    if (el.dataset && el.dataset.person !== undefined) {
+      updateCasePerson(el.dataset.person, el.dataset.personKey, el.value);
+      renderCasePersons();
+      renderAudioList();
+    }
   });
   $('#caseDrawer').addEventListener('click', (e) => {
+    if (e.target.closest('[data-add-case-person]')) {
+      addCasePerson();
+      return;
+    }
+    const dp = e.target.closest('[data-del-person]');
+    if (dp) {
+      deleteCasePerson(dp.dataset.delPerson);
+      return;
+    }
     const b = e.target.closest('[data-team-remove]');
     if (b) removeTeamMember(b.dataset.teamRemove);
   });
@@ -19115,6 +19206,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.293': {
+    title: 'Dosyalar arası kişiler artık Dosya bilgileri çekmecesinde',
+    body:
+      'Kişiler (K) paneli Analiz sekmesinden Dosya bilgileri çekmecesine taşındı. Kişi ekleme, düzenleme ve silme orada. ' +
+      'Kayıt kartındaki “Aynı kişi” bağlantısı yerinde. Silme onay ister; bağlı konuşmacı, ses ve metin KORUNUR, yalnız eşleştirme kalkar.'
+  },
   '2.292': {
     title: 'Atanmamış bölümler benzer sese göre gruplanıyor',
     body:

@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.292.**
+yazılır. **Güncel sürüm: v2.293.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.293 — Kişiler paneli dosya çekmecesinde (TAMAMLANDI)
+
+- **Dosyalar arası kişiler (K)** Analiz’den **Dosya bilgileri** çekmecesine taşındı.
+- Ekle/düzenle/sil; silme onaylı, bağlı konuşmacı/ses/metin korunur.
+- Kayıt kartındaki “Aynı kişi” bağlantısı yerinde.
+- Koruyan: `birim` [135].
 
 ## v2.292 — Benzer ses grupları (TAMAMLANDI)
 
