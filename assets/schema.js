@@ -1844,6 +1844,26 @@ export function autoSpeakerPlan(points, { threshold = VOICE_EMBED_SAME, minSize 
   }));
 }
 
+/**
+ * Bir bölüm gömgesini mevcut konuşmacı profilleriyle karşılaştırır (v2.302).
+ * `candidates = [{ code, vec }]`; döner `{ code, sim, match }`.
+ * match: 'certain' (≥ SAME) · 'uncertain' (DIFF–SAME) · 'none' (< DIFF).
+ * KİMLİK TESPİTİ DEĞİLDİR; en yakın konuşmacı **önerisi**dir. Saf; test edilir.
+ */
+export function bestSpeakerMatch(targetVec, candidates) {
+  const list = Array.isArray(candidates) ? candidates : [];
+  let best = null;
+  for (const c of list) {
+    if (!c || !Array.isArray(c.vec) || !Array.isArray(targetVec)) continue;
+    const sim = cosineSimilarity(targetVec, c.vec);
+    if (!best || sim > best.sim) best = { code: String(c.code || ''), sim };
+  }
+  if (!best) return { code: '', sim: null, match: 'none' };
+  const match =
+    best.sim >= VOICE_EMBED_SAME ? 'certain' : best.sim >= VOICE_EMBED_DIFF ? 'uncertain' : 'none';
+  return { ...best, match };
+}
+
 // ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
 // Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
 // yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK

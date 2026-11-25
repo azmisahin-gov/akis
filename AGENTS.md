@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.301.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.302.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7547,5 +7547,40 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 - **v2.302:** bölüm bazında tahmin ("bu bölümün konuşmacısı ≈S2") + yeniden
   kümele düğmesi + belirsiz işaretleri (minSize/cohesion).
 - **v2.303:** rapor dürüst yöntem notu (varsayılan kapalı) + dosyalar arası K
+  kişi eşleştirmesiyle birleştirme.
+- Sonra: deterministik soru↔bölüm önerisi, terim listesi, kanıt tutarlılığı.
+
+## YENİ OTURUM DEVRİ (v2.302) — Bölüm bazında konuşmacı tahmini
+
+| | |
+|---|---|
+| Sürüm | **v2.302** |
+| Testler | `bash tools/test.sh` → **2123 birim + 522 şema** + rapor + sürüm + tasarım yeşil |
+| Açık konu | v2.303 (rapor yöntem notu + K eşleştirme) |
+
+- Bölüm detayında **≈?** düğmesi: hedef bölüm + her konuşmacıdan ≤3 örnek **tek
+  decode** ile gömülür; konuşmacı **centroid**'iyle karşılaştırılır; **öneri**
+  (≈ S2 · 0.91) çip olarak gösterilir. **Uygula** demeden atama DEĞİŞMEZ.
+- `schema.js` → **`bestSpeakerMatch`** (saf): `certain|uncertain|none`
+  (`VOICE_EMBED_SAME=0.88`, `VOICE_EMBED_DIFF=0.72`). `app.js` →
+  `suggestSpeakerForSegment`; sonuç `m.__spkSuggest` (**oturumluk**).
+- **Uygula** `setSegmentSpeakerByName` + `logEvent('Konuşmacı tahmini uygulandı')`;
+  `speakerAuto=false`.
+- Test: `birim` [143] (16).
+
+### DEĞİŞMEZ
+1. **Kimlik tespiti değil**; en yakın konuşmacı **önerisi**. Belirsiz aralık
+   işaretlenir, kör uygulama yok.
+2. Öneri **atama yapmaz**; yalnız `__spkSuggest` yazar. Atama **Uygula** ile ve
+   **tek kapıdan** (`setSegmentSpeakerByName`).
+3. Karşılaştırma için **konuşmacı örneği** gerekir (önce dosya bazında ön-atama
+   veya elle atama). Örnek yoksa öneri üretilmez.
+4. `__spkSuggest` şemaya YAZILMAZ (oturumluk; `sanitizeForStorage` atar).
+5. Üçlü tamam: **dosya** (v2.301 ön-atama) · **bölüm** (v2.302 tahmin) · elle
+   düzelt/ekle. Yeniden çalıştırma = dosya düğmesini tekrar bas (boşları doldurur).
+
+### Sıradaki iş
+- **v2.303 (opsiyon):** raporda dürüst yöntem notu ("konuşmacı grupları
+  benzerlikle ön-atandı, uzman doğruladı"; varsayılan kapalı) + dosyalar arası K
   kişi eşleştirmesiyle birleştirme.
 - Sonra: deterministik soru↔bölüm önerisi, terim listesi, kanıt tutarlılığı.

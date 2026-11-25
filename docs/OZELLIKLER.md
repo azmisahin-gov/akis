@@ -1,4 +1,4 @@
-# Özellikler (v2.301 — mevcut durum)
+# Özellikler (v2.302 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -994,6 +994,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Bölüm bazında konuşmacı tahmini (v2.302):** bölüm detayında **≈?** düğmesi, o bölümü mevcut konuşmacıların ses örnekleriyle karşılaştırıp **öneri** verir (ör. **≈ S2 · 0.91**). **Uygula** ile atanır; onaylamadan atama **değişmez**. Belirsiz aralık (0,72–0,88) **işaretlenir**; kör uygulama yok. Kimlik tespiti değildir.
 - **Benzer ses grupları (v2.292):** gömme ölçümünde **atanmamış** bölümler
   `Grup A · N bölüm` olarak gruplanır. **Git** / **Ata**; hedef konuşmacı seçilir,
   onay + Ctrl+Z + günlük. Otomatik atama yok; kimlik tespiti değildir.

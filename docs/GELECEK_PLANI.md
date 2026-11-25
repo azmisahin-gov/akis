@@ -6,9 +6,8 @@
 > çözümle" kolaylığının konuşmacı karşılığı). **Kimlik tespiti değildir**; ayrı
 > gömme modeliyle **anonim kümeleme** (S1, S2…), onay + geri alma + uzman
 > doğrulaması. Ayrıntı: [`KONUSMACI_ON_ATAMA.md`](KONUSMACI_ON_ATAMA.md).
-> **v2.301 yapıldı** (dosya bazında otomatik ön-atama). Sıra: **v2.302** (bölüm
-> bazında tahmin + yeniden kümele) → **v2.303** (opsiyon: rapor yöntem notu +
-> K eşleştirme).
+> **v2.301 ve v2.302 yapıldı** (dosya bazında ön-atama + bölüm bazında tahmin).
+> Sıra: **v2.303** (opsiyon: rapor yöntem notu + K eşleştirme).
 
 > **Durum:** **Delil Tier 1 v2.208'de uygulandı.** Bu belgedeki diğer konular
 > (LLM, rapor, Rust/Tauri, delil Tier 2) **öneridir**; uygulanmamıştır.
@@ -22,7 +21,7 @@
 
 1. **Konuşmacı ön-atama (diyarizasyon benzeri)** — bölümlerdeki konuşmacılar
    önceden belirlensin; uzman yalnız hataları düzeltir. Ayrıntı:
-   [`KONUSMACI_ON_ATAMA.md`](KONUSMACI_ON_ATAMA.md). **v2.301 yapıldı; sıra: v2.302 → v2.303.**
+   [`KONUSMACI_ON_ATAMA.md`](KONUSMACI_ON_ATAMA.md). **v2.301–v2.302 yapıldı; sıra: v2.303.**
 2. ~~**Delil edinme** — hızlı geçiş: minimum standart + paket doğrulama.~~
    **v2.208'de yapıldı (Tier 1).**
 3. **Rapor** — bölüm yapısı + kurumsal biçim (büyük ölçüde v2.227–v2.300'de yapıldı).

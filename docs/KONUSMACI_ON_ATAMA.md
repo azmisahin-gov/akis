@@ -1,8 +1,8 @@
 # Konuşmacı Ön-Atama (diyarizasyon benzeri) — Plan
 
-> **Durum:** **v2.301 UYGULANDI** (dosya bazında otomatik ön-atama, anonim).
-> **v2.302** (bölüm bazında tahmin + yeniden kümele) ve **v2.303** (opsiyon)
-> planlıdır. Aşağıdaki çerçeve/kararlar geçerlidir.
+> **Durum:** **v2.301 UYGULANDI** (dosya bazında otomatik ön-atama) ve **v2.302
+> UYGULANDI** (bölüm bazında tahmin ≈S2 + belirsiz işareti). **v2.303** (opsiyon:
+> rapor yöntem notu + K eşleştirme) planlıdır. Çerçeve/kararlar geçerlidir.
 > **Öncelik: 1** (kullanıcı isteği, 2026-11-25).
 
 ## 1. İstek

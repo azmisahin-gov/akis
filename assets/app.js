@@ -116,16 +116,18 @@ import {
   emptyReportFormat,
   normalizeReportFormat,
   questionEvidenceRows,
-  autoSpeakerPlan
-} from './schema.js?v=2.301';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.301';
+  autoSpeakerPlan,
+  bestSpeakerMatch,
+  embeddingCentroid
+} from './schema.js?v=2.302';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.302';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.301';
+const APP_VERSION = '2.302';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4435,6 +4437,88 @@ async function autoAssignSpeakers(m) {
   }
 }
 
+// BÖLÜM BAZINDA TAHMİN (v2.302): seçili bölümün konuşmacısını mevcut
+// konuşmacı profilleriyle karşılaştırıp "≈ S2" ÖNERİSİ üretir. Atama YAPMAZ;
+// uzman "Uygula" der. Kimlik tespiti değildir.
+async function suggestSpeakerForSegment(m, idx) {
+  if (!m) return;
+  const segs = m.segments || [];
+  const target = segs[idx];
+  if (!target) return;
+  ensureSpeakers(m);
+  const speakers = (m.speakers || []).filter((sp) => sp && sp.name);
+  if (!speakers.length) {
+    showToast('Önce konuşmacı belirleyin (otomatik ön-atama veya elle), sonra tahmin yapılabilir.');
+    return;
+  }
+  if (voiceEmbedRunning) {
+    showToast('Konuşmacı ölçümü zaten sürüyor; bitmesini bekleyin.');
+    return;
+  }
+  if (!speakerEmbedder) {
+    const ok = await askConfirm(
+      'Bu bölümün konuşmacısını tahmin et',
+      `Konuşmacı doğrulama modeli (WavLM-SV, q8) yaklaşık <b>${esc(fmtBytes(VOICE_EMBED_BYTES))}</b> indirilir (bir kez). ` +
+        'Bu bölüm, mevcut konuşmacıların ses örnekleriyle karşılaştırılır ve bir <b>öneri</b> (≈ S2) üretilir. ' +
+        '<b>Kimlik tespiti değildir</b>; atama yapılmaz, "Uygula" derseniz uygulanır.'
+    );
+    if (!ok) return;
+  }
+  voiceEmbedRunning = true;
+  try {
+    if (!speakerEmbedder) {
+      await loadSpeakerEmbedder();
+    }
+    const idxSet = new Set([idx]);
+    const perSpk = [];
+    for (const sp of speakers) {
+      const ids = speakerSegments(m, sp)
+        .map((s) => segs.indexOf(s))
+        .filter((i) => i >= 0 && i !== idx)
+        .slice(0, 3);
+      for (const i of ids) idxSet.add(i);
+      perSpk.push({ code: sp.code || sp.name, ids });
+    }
+    const res = await embedSegmentIndexes(m, [...idxSet], {});
+    if (res.error === 'noaudio') {
+      showToast('Ses dosyası bulunamadı.');
+      return;
+    }
+    if (res.error === 'decode') {
+      showToast('Ses çözümlenemedi.');
+      return;
+    }
+    const byIndex = new Map((res.points || []).map((p) => [p.index, p.vec]));
+    const targetVec = byIndex.get(idx);
+    if (!targetVec) {
+      showToast(`Bu bölüm tahmin için çok kısa (en az ${VOICE_EMBED_MIN_SEC} sn) veya ses yok.`);
+      return;
+    }
+    const candidates = [];
+    for (const g of perSpk) {
+      const vecs = g.ids.map((i) => byIndex.get(i)).filter(Boolean);
+      if (!vecs.length) continue;
+      candidates.push({ code: g.code, vec: embeddingCentroid(vecs) });
+    }
+    if (!candidates.length) {
+      showToast('Karşılaştırılacak konuşmacı örneği yok (her konuşmacıda en az bir uzun bölüm gerekir).');
+      return;
+    }
+    const best = bestSpeakerMatch(targetVec, candidates);
+    m.__spkSuggest = { idx, code: best.code, sim: best.sim, match: best.match, at: Date.now() };
+    renderSegDetail(m);
+    showToast(
+      best.match === 'none'
+        ? `Belirgin eşleşme yok (en yakın ≈ ${best.code || '—'} ${Number(best.sim).toFixed(2)}).`
+        : `Öneri: ≈ ${best.code} · ${Number(best.sim).toFixed(2)}${best.match === 'uncertain' ? ' (belirsiz)' : ''}. Uygulamak için “Uygula”.`
+    );
+  } catch (e) {
+    showToast(`Tahmin başarısız: ${e && e.message ? e.message : 'bilinmeyen hata'}`);
+  } finally {
+    voiceEmbedRunning = false;
+  }
+}
+
 // Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
 // birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
 // yapılır ve kayda bağlı saklanır.
@@ -6185,7 +6269,7 @@ function segDetailHtml(m) {
       <!-- KONTROL, DİNLE'NİN YANINDA (v2.196): kullanıcı dinledikten sonra
            fareyle sağ uca gitmiyor. Sıra: dinle → karar → sonraki. -->
       <label class="sd-field" title="Kontrol durumu — 1 Onay, 2 Anlaşılmadı, 3 Yeniden, 4 Belirsiz"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu" title="Kontrol: 1 Onay · 2 Anlaşılmadı · 3 Yeniden dinle · 4 Belirsiz">${opts}</select></label>
-      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button>${s.speakerAuto ? '<span class="sd-auto" title="Konuşmacı otomatik ön-atandı (anonim ses benzerliği). Dinleyip kontrol edin; yanlışsa değiştirin veya yeni konuşmacı ekleyin.">≈ otomatik</span>' : ''}</span></label>
+      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button>${s.speakerAuto ? '<span class="sd-auto" title="Konuşmacı otomatik ön-atandı (anonim ses benzerliği). Dinleyip kontrol edin; yanlışsa değiştirin veya yeni konuşmacı ekleyin.">≈ otomatik</span>' : ''}<button class="seg-tool" data-suggest-speaker="${i}" title="Bu bölümün konuşmacısını ses benzerliğiyle tahmin et (öneri; atama yapmaz). Model gerekirse indirilir.">≈?</button>${m.__spkSuggest && m.__spkSuggest.idx === i ? `<span class="sd-suggest${m.__spkSuggest.match === 'uncertain' ? ' is-uncertain' : ''}" title="Ses benzerliği önerisi; kimlik tespiti değil. 'Uygula' ile atanır.">≈ ${esc(m.__spkSuggest.code || '—')} · ${Number(m.__spkSuggest.sim || 0).toFixed(2)}${m.__spkSuggest.match === 'uncertain' ? ' (belirsiz)' : ''} <button type="button" class="mini-button" data-apply-suggest="${i}">Uygula</button></span>` : ''}</span></label>
   </div>
 
   <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
@@ -17484,6 +17568,31 @@ function setupEvents() {
       // v2.301 — boş bölümlerin konuşmacısını anonim benzerlikle ön-ata.
       const mm = c.materials.find((x) => x.id === b.dataset.autoSpeakers);
       if (mm) autoAssignSpeakers(mm);
+    } else if (b.dataset.suggestSpeaker !== undefined) {
+      // v2.302 — bölüm bazında konuşmacı tahmini (öneri; atama yapmaz).
+      const idx = Number(b.dataset.suggestSpeaker);
+      const mm = activeMaterial();
+      if (mm) suggestSpeakerForSegment(mm, idx);
+    } else if (b.dataset.applySuggest !== undefined) {
+      // v2.302 — öneriyi uygula (uzman kabulü). Atama tek kapıdan yapılır.
+      const idx = Number(b.dataset.applySuggest);
+      const mm = activeMaterial();
+      const sug = mm && mm.__spkSuggest;
+      if (mm && sug && sug.idx === idx) {
+        const sp = (mm.speakers || []).find((x) => x.code === sug.code);
+        const seg = (mm.segments || [])[idx];
+        if (sp && seg) {
+          setSegmentSpeakerByName(mm, seg, sp.name);
+          seg.speakerAuto = false;
+          mm.__spkSuggest = null;
+          logEvent(mm, 'Konuşmacı tahmini uygulandı', `Bölüm ${idx + 1} → ${sp.code || ''} ${sp.name} (öneri; uzman uyguladı)`);
+          persist();
+          renderSegDetail(mm);
+          updateSegListItem(mm, idx);
+          scheduleLightRefresh(mm);
+          showToast(`Bölüm ${idx + 1} → ${sp.code || ''} · ${sp.name}.`);
+        }
+      }
     } else if (b.dataset.voiceEmbed !== undefined) {
       // v2.279 — konuşmacı gömme benzerliği (model isteğe bağlı indirilir).
       const mm = c.materials.find((x) => x.id === b.dataset.voiceEmbed);
@@ -19639,6 +19748,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.302': {
+    title: 'Bölüm bazında konuşmacı tahmini',
+    body:
+      'Bölüm detayında “≈?” ile bu bölümün konuşmacısını mevcut konuşmacıların ses örnekleriyle karşılaştırıp öneri alırsınız (≈ S2 · 0.91). ' +
+      'Siz “Uygula” demeden atama değişmez; belirsiz eşleşme işaretlenir. Bu bir öneridir, kimlik tespiti değildir.'
+  },
   '2.301': {
     title: 'Konuşmacıları otomatik ön-atama',
     body:

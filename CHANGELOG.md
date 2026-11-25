@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.301.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.302.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.302 — Bölüm bazında konuşmacı tahmini
+
+**Kullanıcı:** "tümü / dosya / bölüm" üçlüsünün konuşmacıda da tamamlanması.
+
+### KULLANICI NE GÖRECEK
+
+- Bölüm detayında konuşmacı alanının yanında **≈?** düğmesi: **bu bölümün
+  konuşmacısını** mevcut konuşmacıların ses örnekleriyle karşılaştırıp **öneri**
+  verir — **≈ S2 · 0.91**. Yanında **Uygula** vardır; siz onaylamadan atama
+  **değişmez**.
+- Öneri **belirsiz** aralıkta (0,72–0,88) ise **“belirsiz”** olarak işaretlenir;
+  kör uygulama yoktur.
+- **Uygula** atamayı tek kapıdan yapar, delil günlüğüne yazar; ön-atama rozeti
+  (varsa) kalkar.
+
+### Dürüst sınır (DEĞİŞMEZ)
+
+- **Kimlik tespiti değildir**; en yakın konuşmacı **önerisi**dir. Kısa bölüm
+  (< 1,2 sn) tahmin edilmez; karşılaştırılacak konuşmacı örneği yoksa öneri
+  üretilmez.
+
+### Teknik
+
+- `schema.js` → **`bestSpeakerMatch(targetVec, candidates)`** (saf): en yakın
+  konuşmacı + `certain|uncertain|none` (eşikler `VOICE_EMBED_SAME/DIFF`).
+- `app.js` → **`suggestSpeakerForSegment(m, idx)`**: hedef + her konuşmacıdan
+  ≤3 örnek **tek decode** ile gömülür, konuşmacı **centroid**'iyle karşılaştırılır;
+  sonuç `m.__spkSuggest` (oturumluk) olarak tutulur ve çip olarak gösterilir.
+  **Uygula** `setSegmentSpeakerByName` + `logEvent` kullanır.
+- Koruyan: `birim` [143] (16 kontrol).
 
 ## v2.301 — Konuşmacıları önceden belirle (otomatik, anonim)
 

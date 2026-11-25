@@ -6272,5 +6272,37 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('otomatik işareti gösterilir', /≈ otomatik/.test(js), true);
 }
 
+// [143] v2.302 — Bölüm bazında konuşmacı tahmini (öneri) + belirsiz işareti.
+{
+  console.log('[143] Konuşmacı tahmini (v2.302)');
+  const S = __schemaMod;
+  const cand = [
+    { code: 'S1', vec: [1, 0] },
+    { code: 'S2', vec: [0, 1] }
+  ];
+  const c1 = S.bestSpeakerMatch([1, 0], cand);
+  eq('aynı sese → S1', c1.code, 'S1');
+  eq('kesin eşleşme', c1.match, 'certain');
+  const c2 = S.bestSpeakerMatch([0.8, 0.6], cand);
+  eq('yakın ama kesin değil → belirsiz', c2.match, 'uncertain');
+  eq('belirsizde en yakın S1', c2.code, 'S1');
+  const c3 = S.bestSpeakerMatch([0.5, 0.5], cand);
+  eq('uzak → eşleşme yok', c3.match, 'none');
+  eq('aday yoksa kod boş', S.bestSpeakerMatch([1, 0], []).code, '');
+  eq('aday yoksa match none', S.bestSpeakerMatch([1, 0], []).match, 'none');
+
+  // Uygulama yolu: öneri atama YAPMAZ; "Uygula" tek kapıdan atar; işaretler.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('bölüm tahmin düğmesi var', /data-suggest-speaker/.test(js), true);
+  eq('uygula düğmesi var', /data-apply-suggest/.test(js), true);
+  eq('tahmin saf fonksiyonu kullanır', /bestSpeakerMatch\(targetVec, candidates\)/.test(js), true);
+  eq('konuşmacı profili centroid ile', /embeddingCentroid\(vecs\)/.test(js), true);
+  eq('öneri atama yapmaz (yalnız __spkSuggest yazar)', /m\.__spkSuggest = \{ idx/.test(js), true);
+  eq('uygula tek kapıdan atar', /setSegmentSpeakerByName\(mm, seg, sp\.name\)/.test(js), true);
+  eq('uygula otomatik işareti temizler', /seg\.speakerAuto = false;/.test(js), true);
+  eq('uygula günlüğe yazılır', /Konuşmacı tahmini uygulandı/.test(js), true);
+  eq('belirsiz işareti gösterilir', /is-uncertain/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

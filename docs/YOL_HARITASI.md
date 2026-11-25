@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.301.**
+yazılır. **Güncel sürüm: v2.302.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.302 — Bölüm bazında konuşmacı tahmini (TAMAMLANDI)
+
+- Bölüm detayında **≈?**: bu bölümün konuşmacısını mevcut konuşmacıların ses
+  örnekleriyle karşılaştırıp **öneri** verir (≈ S2 · 0.91); **Uygula** ile atanır.
+- Belirsiz aralık (0,72–0,88) **işaretlenir**; kör uygulama yok. Kimlik değil.
+- `schema.js` → `bestSpeakerMatch` (saf); `app.js` → `suggestSpeakerForSegment`.
+- Test `birim [143]`.
 
 ## v2.301 — Konuşmacıları önceden belirle (TAMAMLANDI)
 
