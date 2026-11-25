@@ -105,15 +105,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.285';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.285';
+} from './schema.js?v=2.286';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.286';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.285';
+const APP_VERSION = '2.286';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12632,9 +12632,6 @@ function renderReportSections(c) {
   const openCount = REPORT_SECTION_DEFS.filter((d) => reportSectionOn(c, d.key)).length;
   const cnt = $('#reportSkeletonCount');
   if (cnt) cnt.textContent = `${openCount} dahil · ${REPORT_SECTION_DEFS.length - openCount} hariç`;
-  const presets = REPORT_PRESET_DEFS.map(
-    (p) => `<button type="button" class="mini-button" data-report-preset="${esc(p.key)}" title="Bölüm kümesini hazır ayarla (veri değişmez)">${esc(p.label)}</button>`
-  ).join('');
   const sig = reportOutlineMatch(c, 'signature', reportUiLabel(c, 'signature'), reportSectionOn(c, 'signature'))
     ? row('signature')
     : '';
@@ -12644,7 +12641,6 @@ function renderReportSections(c) {
     (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
     (sig ? `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${sig}</div>` : '');
   host.innerHTML =
-    `<div class="rsec-presets"><span class="rsec-note">Hazır profil:</span>${presets}</div>` +
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Numaralar açık bölümlere göre yeniden verilir.</span></div>`;
 }
@@ -17374,22 +17370,6 @@ $('#reportSections')?.addEventListener('click', (e) => {
     removeReportAnnex(adel.dataset.reportAnnexDel);
     return;
   }
-  const preset = e.target.closest('[data-report-preset]');
-  if (preset) {
-    const c = currentCase();
-    if (!c) return;
-    c.report = c.report || {};
-    const p = reportPresetLayout(preset.dataset.reportPreset);
-    c.report.sections = p.sections;
-    // v2.261: profil SIRAYI da yazabilir (56.12 ana şablonu). Diğer profiller
-    // kullanıcının sırasını korur (order: null).
-    if (Array.isArray(p.order)) {
-      c.report.layout = normalizeReportLayout({ ...(c.report.layout || {}), order: p.order });
-    }
-    persist();
-    renderReport();
-    return;
-  }
   const b = e.target.closest('[data-report-sections-all]');
   if (!b) return;
   const c = currentCase();
@@ -18516,6 +18496,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.286': {
+    title: 'Hazır profil düğmeleri kaldırıldı; bölüm kümesi sizin',
+    body:
+      'Rapor iskeletindeki Yalın/Standart/Tümü/56.12 düğmeleri kaldırıldı. Bölümleri tek tek ' +
+      'açıp kapatır, ↑↓ ile sıralarsınız. Mevcut raporların bölüm kümesi değişmedi; eski profiller ' +
+      'otomatik uygulanmaz. Başlıkları kalemle düzenleme ve numara biçimi (1,2,3… · A,B,C… · ' +
+      'numarasız) v2.285’teki gibi çalışmaya devam eder.'
+  },
   '2.285': {
     title: 'Bölüm başlıklarını kendiniz yazabilirsiniz; numaralar A, B, C… olabilir',
     body:

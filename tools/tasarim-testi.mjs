@@ -1785,24 +1785,19 @@ console.log('\n[2bp] Teknik ortam alanları: elle düzenlenir (v2.222)');
   check('panel stili token kullanır', /\.report-tech-box\s*\{[^}]*var\(--surface\)/.test(layer));
 }
 
-console.log('\n[2bq] Rapor profilleri: Yalın · Standart · Tam 56.12 (v2.223)');
+console.log('\n[2bq] Rapor profilleri: tanımlar korunur, düğmeler kaldırıldı (v2.286)');
 {
   const js = read('assets/app.js');
   const schema = read('assets/schema.js');
   const layer = read('assets/reading-layer.css');
-  check('profil tanımları + saf fonksiyon şemada', /REPORT_PRESET_DEFS/.test(schema) && /reportSectionsForPreset/.test(schema));
+  check('profil tanımları + saf fonksiyon şemada (geri uyum)', /REPORT_PRESET_DEFS/.test(schema) && /reportSectionsForPreset/.test(schema));
   check('dört profil de tanımlı', /key: 'minimal'/.test(schema) && /key: 'standard'/.test(schema) && /key: 'full'/.test(schema) && /key: 'sablon'/.test(schema));
-  check('panelde hazır profil düğmeleri', /data-report-preset=/.test(js));
-  check('profil tıklama işleyicisi', /closest\('\[data-report-preset\]'\)/.test(js));
-  // v2.261: profil bölüm kümesini VE (56.12 için) SIRAYI yazar; veri değişmez.
-  check(
-    'profil bölüm kümesi + sıra yazar (veri değişmez)',
-    /reportPresetLayout\(preset\.dataset\.reportPreset\)/.test(js) &&
-      /c\.report\.sections = p\.sections/.test(js) &&
-      /Array\.isArray\(p\.order\)/.test(js) &&
-      /c\.report\.layout = normalizeReportLayout/.test(js)
-  );
-  check('profil satırı token stil', /\.rsec-presets\s*\{[^}]*display:\s*flex/.test(layer));
+  check('56.12 sırası şemada korunur', /REPORT_SABLON_ORDER/.test(schema));
+  // v2.286: kullanıcı "şablon yapısı olmasın" dedi; düğmeler kaldırıldı.
+  // Tanımlar yalnız geri uyum ve testler için şemada kalır; otomatik uygulanmaz.
+  check('panelde hazır profil düğmesi YOK', !/data-report-preset/.test(js));
+  check('profil tıklama işleyicisi YOK', !/reportPresetLayout\(preset/.test(js));
+  check('profil satırı stili kaldırıldı', !/\.rsec-presets\s*\{/.test(layer));
 }
 
 console.log('\n[2br] Yazdırma: yalnız rapor kâğıdı (v2.224)');

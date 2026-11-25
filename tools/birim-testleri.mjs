@@ -5826,5 +5826,24 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('titles normalize edilir', /titles: normalizeReportTitles\(report\.titles\)/.test(schemaSrc), true);
 }
 
+// [128] v2.286 — Hazır profil düğmeleri kaldırıldı; tanımlar geri uyum için
+// şemada kalır. Varsayılan bölüm kümesi DEĞİŞMEZ (mevcut raporlar bozulmaz).
+{
+  console.log('[128] Hazır profil düğmeleri kaldırıldı (v2.286)');
+  const S = __schemaMod;
+  eq('profil tanımları korunur', S.REPORT_PRESET_DEFS.length, 4);
+  eq(
+    'standart = varsayılan bölüm kümesi',
+    JSON.stringify(S.reportSectionsForPreset('standard')),
+    JSON.stringify(S.emptyReportSections())
+  );
+  eq('56.12 profili sıra yazar (şemada)', Array.isArray(S.reportPresetLayout('sablon').order), true);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const layer = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('arayüzde hazır profil düğmesi yok', /data-report-preset/.test(js), false);
+  eq('profil tıklama işleyicisi yok', /reportPresetLayout\(preset/.test(js), false);
+  eq('profil satırı stili yok', /\.rsec-presets\s*\{/.test(layer), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

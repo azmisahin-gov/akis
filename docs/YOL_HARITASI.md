@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.285.**
+yazılır. **Güncel sürüm: v2.286.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.286 — Hazır profil düğmeleri kaldırıldı (TAMAMLANDI)
+
+- İskeletteki **Yalın / Standart / Tümü / 56.12 Ana Şablon** düğmeleri kaldırıldı;
+  bölüm kümesi tek tek aç/kapa + ↑↓ ile belirlenir.
+- Varsayılan bölüm kümesi **değişmedi**; mevcut raporlar bozulmaz.
+- `REPORT_PRESET_DEFS` + `reportPresetLayout` geri uyum için şemada kalır;
+  **otomatik uygulanmaz**.
+- Koruyan: `birim` [128], `tasarim` [2bq].
 
 ## v2.285 — Başlık düzenleme + numara biçimi (TAMAMLANDI)
 

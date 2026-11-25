@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.285.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.286.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7043,4 +7043,47 @@ konuşmacı kümeleme ve Kişiler panelinin taşınması.
    `normalizeReportTitles` dinamik anahtarı kabul etmeli).
 3. **v2.288 — Kullanıcı profilleri.**
 4. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
+   dosya düzeyine taşınması.
+
+## YENİ OTURUM DEVRİ (v2.286) — Hazır profil düğmeleri kaldırıldı
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.286** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1960 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | v2.287 serbest blok; v2.288 kullanıcı profilleri; konuşmacı kümeleme; Kişiler panelinin taşınması |
+
+### Ne yapıldı
+
+- Rapor iskeletindeki **Yalın / Standart / Tümü / 56.12 Ana Şablon** düğmeleri
+  kaldırıldı (`rsec-presets` bloğu + `[data-report-preset]` işleyicisi +
+  `.rsec-presets` CSS'i).
+- `REPORT_PRESET_DEFS` ve `reportPresetLayout` **şemada kalır** (geri uyum,
+  testler ve kayıtlı düzenler için); **UI'den çağrılmaz**.
+- Varsayılan bölüm kümesi **değişmedi**: `reportSectionsForPreset('standard')`
+  = `emptyReportSections()`.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Profil tanımları silinmez.** Geri uyum ve test için şemada durur; yalnız
+   ekranda düğme yoktur.
+2. **Varsayılan bölüm kümesi = `emptyReportSections()`.** Yeni dosya açılışında
+   profil otomatik uygulanmaz; kullanıcı istediğini kapatır/sıralar.
+3. **Kayıtlı `case.report.sections` / `layout` korunur.** Açılışta hiçbir profil
+   yazılmaz (v2.286'da düğmeler kaldırıldı; sessiz sıra değişimi yok).
+4. Yeni bir "hazır şablon" özelliği eklenirse **kullanıcı açıkça seçmedikçe**
+   uygulanmaz; varsayılan olarak dayatılmaz.
+5. Testler UI'nin YOKLUĞUNU denetler: `data-report-preset` / `rsec-presets`
+   app.js ve CSS'te bulunmamalı (`birim [128]`, `tasarim [2bq]`).
+
+### Sıradaki iş
+
+1. **v2.287 — Serbest blok:** “＋ Bölüm ekle” (başlık + metin); `free:<id>`
+   dinamik anahtarı. `normalizeReportLayout` ve `normalizeReportTitles`
+   bilinmeyen anahtarı **düşürmemeli**; üç çıktı aynı bloğu basmalı.
+2. **v2.288 — Kullanıcı profilleri:** yalnız kullanıcı tanımlı; kaydet/uygula.
+3. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
    dosya düzeyine taşınması.

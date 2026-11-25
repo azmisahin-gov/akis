@@ -6,12 +6,31 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.285.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.286.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.286 — Hazır profil düğmeleri kaldırıldı
+
+**Kullanıcı:** *"Şablon yapısı olmasın; her alanı sıfırdan yapabilsin."*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletindeki **Yalın / Standart / Tümü / 56.12 Ana Şablon** düğmeleri
+  kalktı. Bölüm kümesini artık **tek tek aç/kapa** ve **↑↓** ile siz belirlersiniz.
+- **Mevcut raporlar değişmez:** varsayılan bölüm kümesi aynı; yalnız düğmeler
+  kaldırıldı. Eski profiller **otomatik uygulanmaz**.
+- Tanımlar geri uyum için kodda kalır (kayıtlı düzenler ve eski testler bozulmaz).
+
+### Teknik
+
+- `renderReportSections` içindeki `rsec-presets` bloğu ve
+  `[data-report-preset]` işleyicisi kaldırıldı; `.rsec-presets` CSS'i silindi.
+- `REPORT_PRESET_DEFS` + `reportPresetLayout` şemada korunur; UI'den çağrılmaz.
+- Koruyan: `birim` [128], `tasarim` [2bq].
 
 ## v2.285 — Bölüm başlıkları düzenlenebilir; numara biçimi seçilebilir
 

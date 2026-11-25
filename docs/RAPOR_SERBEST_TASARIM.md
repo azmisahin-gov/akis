@@ -55,7 +55,7 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
 - TOC otomatik güncellenir; üç çıktı aynı başlığı basar.
 - İskelette her satırda **kalem** düğmesi (başlığı düzenle).
 
-### v2.286 — Profil/preset düğmeleri kaldırılır
+### v2.286 — Profil/preset düğmeleri kaldırılır (YAPILDI)
 
 - "Yalın / Standart / Tam 56.12" düğmeleri **kaldırılır** (istenirse "Şablonlar"
   altında saklanır, varsayılan uygulanmaz).

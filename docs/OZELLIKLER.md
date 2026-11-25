@@ -1,4 +1,4 @@
-# Özellikler (v2.285 — mevcut durum)
+# Özellikler (v2.286 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -939,8 +939,8 @@ köken, edinme, WER ve seviye tablolarının sütunları tek tek açılıp kapat
 envanterle aynı sütun seçimini izler.
 
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
-  ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profiller
-  (Yalın · Standart · Tümü · **56.12 Ana Şablon**) burada.
+  ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profil düğmeleri
+  **v2.286'da kaldırıldı**; bölüm kümesini tek tek siz seçersiniz.
 - **Parçalar ayrı ayrı (v2.261):** **kayıt bazında bulgular**, **soruların
   cevapları** ve **teknik sınırlılıklar** ayrı bölümdür; her biri tek başına
   açılıp kapatılır ve sıralanır. **Soru yoksa** "Cevaplar" bölümü hiç çizilmez.
@@ -948,10 +948,9 @@ envanterle aynı sütun seçimini izler.
   her kaydın **SHA-256** özetini, **doğrulama durumunu** (Doğrulandı /
   Uyuşmuyor / Doğrulanamadı) ve **delil günlüğü zincirini** yazar. Özet yoksa
   "hesaplanmadı" der; uydurma değer yazmaz.
-- **56.12 Ana Şablon (v2.261):** tek tıkla bölüm kümesini **ve sırayı** yazar
-  (görevlendirme → materyal/envanter → bütünlük → teknik → yöntem → iyileştirme
-  → ASR → bulgular → sınırlılıklar → kalite → cevaplar → kapsam → gizlilik →
-  sonuç → ekler). Diğer profiller kullanıcının sırasını **korur**.
+- **56.12 Ana Şablon (v2.261–v2.285):** düğme **v2.286'da kaldırıldı**.
+  Tanım geri uyum için şemada (`reportPresetLayout`) kalır; **otomatik
+  uygulanmaz**. Kayıtlı bir düzenin sırası bozulmaz.
 - **EKLER bölümü (v2.261):** gerçekten basılan ekleri listeler (EK-1, EK-2…);
   ek yoksa **"Bu raporla ek sunulmamıştır"** yazar. Boş vaat bırakmaz.
 - **Numara türetilir:** ana bölüm numaraları **açık ve sıralı** bölümlere göre
