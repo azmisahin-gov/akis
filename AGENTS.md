@@ -7460,3 +7460,57 @@ kullanıyordu. "Soru → bölüm" bağı modelde vardı, kullanımda yoktu.
    YOK; yalnız "öneri" + tıkla bağla). Bu sürümdeki manuel bağın üstüne.
 2. Gömülü metadata tam dosya (8 MB sınırı), UDF yatay tablo genişliği.
 3. CSS borcu: nöbetçi eşikleri korunur.
+
+## PLAN GÜNCELLEMESİ (2026-11-25) — ÖNCELİK 1: Konuşmacı ön-atama
+
+Kullanıcı, çözümlemedeki kolaylığın (**tümünü çözümle · dosya bazında yeniden
+çözümle · bölümü yeniden çözümle**) konuşmacılarda da olmasını istedi:
+
+> "Aynı işlemi bölümlenen yerlerdeki konuşmacıları da bizim için **önceden
+> belirleyebilirse** çok iyi olacak."
+
+Yani deşifre gelince her bölümün konuşmacısı **makul bir başlangıç** olarak dolu
+gelsin; uzman yalnız **hatalı olanları** düzeltsin.
+
+**Ayrıntılı plan:** [`docs/KONUSMACI_ON_ATAMA.md`](docs/KONUSMACI_ON_ATAMA.md).
+Bu bölüm yalnız **özet**tir; sıra: **v2.301 → v2.302 → v2.303**.
+
+### Dürüst çerçeve (DEĞİŞMEZ)
+- **Kimlik tespiti DEĞİLDİR**; **anonim kümeleme** (S1, S2…). "Kim olduğu"
+  değil, "hangi bölümler aynı sese benziyor".
+- ASR modeli diyarizasyon **yapmaz**; ayrı **gömme modeli** (WavLM-SV q8 ≈ 97 MB,
+  v2.279 altyapısı) kullanılır; isteğe bağlı indirme.
+- Çıktı **ön-atama/öneri**; **uzman doğrular**. Rapora "diyarizasyon yaptık"
+  **yazılmaz**; rapordaki etiketler uzman onaylıdır.
+- Kısa bölüm (<1,2 sn) güvenilmez; belirsiz benzerlik **kör atanmaz**, işaretlenir.
+
+### v2.292 "otomatik atama yok" ile ilişki
+v2.292 kuralı **sessiz/arka plan** atamayı yasaklar. Bu, kullanıcının **açıkça
+tetiklediği**, **onay isteyen**, **geri alınabilir** ve **uzmanın düzelttiği**
+bir **ön-atama**dır. Varsayılan **yalnız boş** bölümleri doldurur; onaylı/
+doğrulanmış atamayı **ezmez**; `review` (onay) durumunu **değiştirmez**.
+
+### Üç düzey (çözümleme ile aynı)
+1. **Dosya:** "Konuşmacıları önceden belirle" → kümele → S1…Sk → boş bölümlere ata.
+2. **Bölüm:** "Bu bölümün konuşmacısını tahmin et" → en yakın konuşmacı önerisi.
+3. **Yeniden:** "Konuşmacıları yeniden kümele" (yalnız boşlar; "hepsi" ayrı onay).
+
+### Veri modeli (eklemeli; SCHEMA_VERSION artmaz)
+- `segment.speakerAuto` (bool), `segment.speakerMatch` (`certain|uncertain`),
+  `material.speakerAutoAt`. Vektör **saklanmaz** (yeniden ölçüm).
+- Atama yine **tek kapıdan** `setSegmentSpeakerByName` (ad + kimlik).
+- Onay + `snapshotForUndo` + `logEvent`; Ctrl+Z.
+
+### Karar bekleyen sorular (uygulamadan önce)
+1. Varsayılan yalnız boş mu, "hepsini yeniden" de olsun mu? (öneri: yalnız boş)
+2. Onaylı bölümlere dokunsun mu? (öneri: hayır)
+3. Rapora dürüst yöntem notu? (öneri: isteğe bağlı, varsayılan kapalı)
+4. Eşik mevcut 0,88 mi? (öneri: önce ölç, sonra gerekirse kalibre)
+5. Etiket "Konuşmacı 1…" mi, "Kişi 1…" mi? (öneri: Konuşmacı)
+
+### Diğer planlar (not edildi, ÖNCELİK 1'den SONRA)
+v2.301'den sonra sırasıyla: deterministik soru↔bölüm **önerisi**, terim/konu
+listesi (C2), kanıt tutarlılığı A1+A3, kurumsal kâğıt (B2), UDF yatay tablo
+genişliği + video "yalnız ses" gerçek mp4 doğrulaması. Stratejik/karar bekleyen:
+Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
+`docs/GELECEK_PLANI.md`.

@@ -1,19 +1,32 @@
 # Gelecek Planı — Öneriler
 
+> **ÖNCELİK 1 (kullanıcı isteği, 2026-11-25): Konuşmacı ön-atama
+> (diyarizasyon benzeri).** Bölümlerdeki konuşmacılar **önceden belirlensin**;
+> uzman yalnız hataları düzeltsin (çözümlemedeki "tümünü/dosya/bölüm yeniden
+> çözümle" kolaylığının konuşmacı karşılığı). **Kimlik tespiti değildir**; ayrı
+> gömme modeliyle **anonim kümeleme** (S1, S2…), onay + geri alma + uzman
+> doğrulaması. Ayrıntı: [`KONUSMACI_ON_ATAMA.md`](KONUSMACI_ON_ATAMA.md).
+> Sıra: **v2.301** (dosya bazında ön-atama) → **v2.302** (bölüm bazında tahmin +
+> yeniden kümele) → **v2.303** (opsiyon: rapor yöntem notu + K eşleştirme).
+
 > **Durum:** **Delil Tier 1 v2.208'de uygulandı.** Bu belgedeki diğer konular
 > (LLM, rapor, Rust/Tauri, delil Tier 2) **öneridir**; uygulanmamıştır.
 > Uygulanmadan önce ölçüm, test ve kullanıcı onayı gerekir.
 >
-> **Güncel sürüm:** v2.217. Delil paketi, envanter ve gömülü metadata
-> tamamlandı; sıradaki iş **tasarım denetimi**, sonra **rapor**. Ayrıntı: §11.
+> **Güncel sürüm:** v2.300. Delil paketi, envanter, gömülü metadata, rapor
+> yeniden tasarımı (ağaç/sürükle-bırak/ekler) ve soru dayanağı tamamlandı.
+> **Sıradaki iş: Öncelik 1 — Konuşmacı ön-atama.** Diğer maddeler ikincildir.
 
 ## 0. Öncelik sırası (kullanıcı kararı)
 
-1. ~~**Delil edinme** — hızlı geçiş: minimum standart + paket doğrulama.~~
+1. **Konuşmacı ön-atama (diyarizasyon benzeri)** — bölümlerdeki konuşmacılar
+   önceden belirlensin; uzman yalnız hataları düzeltir. Ayrıntı:
+   [`KONUSMACI_ON_ATAMA.md`](KONUSMACI_ON_ATAMA.md). **Sıra: v2.301 → v2.302 → v2.303.**
+2. ~~**Delil edinme** — hızlı geçiş: minimum standart + paket doğrulama.~~
    **v2.208'de yapıldı (Tier 1).**
-2. **LLM** — hızlı çalışan çözüm: yerel, ölçülmüş, yalnız taslak.
-3. **Rapor** — bölüm yapısı + kurumsal biçim.
-4. **Uzun vade:** saf Rust / Tauri yeniden yazım (opsiyonel).
+3. **Rapor** — bölüm yapısı + kurumsal biçim (büyük ölçüde v2.227–v2.300'de yapıldı).
+4. **LLM** — hızlı çalışan çözüm: yerel, ölçülmüş, yalnız taslak (karar bekliyor).
+5. **Uzun vade:** saf Rust / Tauri yeniden yazım (opsiyonel).
 
 Her konu **tek sürüm** olarak ele alınır; konular aynı sürüme karıştırılmaz.
 
