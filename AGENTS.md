@@ -7811,3 +7811,94 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 - **A3 tamam** (v2.309), **A1** (v2.308), **B2** (v2.310), **C2** (v2.311) bitti.
 - Yeni adaylar: sürükle-bırak rapor sırası iyileştirmeleri, ≤900 px IA, CSS borcu
   azaltma, video "yalnız ses" gerçek mp4 uçtan uca, UDF yatay tablo genişliği.
+
+## YENİ OTURUM DEVRİ (v2.311) — UÇTAN UCA OTOMASYON GÖREVİ (öncelik)
+
+> **Yeni oturum ÖNCE bunu okusun.** Bu oturum v2.307–v2.311 turunu ve
+> **uçtan uca akış denetimini** kapattı. Kullanıcı talimatı: *"Önerilen iyi;
+> bu uçtan uca çalışmaları ve hatta daha fazlasını başlayalım. Yeni oturum
+> kendi araştırmalarını yapsın ve bilirkişiye gerekli olabilecek HER ŞEYİ tam
+> otomatik denetleme için sırayla (ya da yapabiliyorsa topluca) yapsın."*
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.311** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2193 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = **d868f29** (push edildi) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.311** |
+| Denetim | [`docs/UCTAN_UCA_DENETIM.md`](docs/UCTAN_UCA_DENETIM.md) (OKU) |
+
+### Bu oturumda yapılanlar (v2.307–v2.311)
+| Sürüm | Konu |
+|---|---|
+| v2.307 | Soru ↔ bölüm **önerisi** (deterministik kelime örtüşmesi; Ekle ile dayanak) |
+| v2.308 | **Kanıt zaman çelişkisi (A1)** — dosya zamanı ↔ gömülü metadata uyarısı |
+| v2.309 | **Gömülü metadata tüm dosyada (A3)** — ID3v1 + sonda moov; gerçek 9 MB dosyada doğrulandı |
+| v2.310 | **Kurumsal kâğıt biçimi (B2)** — yalnız görsel; üç çıktı metni değişmedi |
+| v2.311 | **Terim/konu listesi (C2)** — opt-in; `frequentTerms`/`termsText` |
+
+### ÖLÇÜLEN EKSİKLER (uçtan uca denetim, gerçek Chromium + kod)
+1. **Dashboard'da son teslim tarihi ve "kaç gün kaldı" YOK.**
+2. **Son teslim tarihi otomatik hesaplanmıyor** (görevlendirme tarihi + süre).
+   `freshCase.assignment.date = dateToday()` var ama `dueDate` boş; hesaplayan
+   işleyici YOK.
+3. **Görevlendirme tarihi çekmecede boş geliyor.**
+4. **"Dosya" adımı/sayfası yok** (ray: overview · audio · questions · report);
+   künye yalnız sağ çekmecede (`#caseDrawer`, üst bar ✎).
+5. **`case.createdAt` var ama gösterilmiyor** → "dosya açılışından bu yana"
+   hesaplanabilir ama yok.
+6. Rapor tarihi **otomatik bugün** (doğru). "Rapor tarihi > son teslim" uyarısı yok.
+7. Rapor teslimi hazırlık kartı **var** (Rapor ekranında) ama **dashboard'da yok**.
+
+### YENİ OTURUMUN GÖREVİ — tam otomasyon araştırması + uygulama
+Kullanıcı **uçtan uca** (dosya başlatma → rapor teslimi) her şeyin **otomatik
+denetlenmesini** ve gerekli alanların **otomatik hazır/oluşturulmasını** istiyor.
+**Önce araştır** (kod + gerçek tarayıcı ölçümü + gerekiyorsa mevzuat/56.12
+pratiği), **sonra sırayla (ya da güvenliyse topluca) uygula.** Önerilen sıra:
+
+| Aday | Konu | Not |
+|---|---|---|
+| **v2.312** | **Tarih zekâsı** | görevlendirme tarihi = bugün; **son teslim = tarih + süre** (elle ezilebilir); **kalan gün** + **dosya açılışından bu yana**; gecikme ve "rapor tarihi > son teslim" uyarısı — dashboard + rapor + durum çubuğu |
+| **v2.313** | **"Dosya" görünümü (sayfa)** | ray'a Dosya ekle; künye bölümlere ayrılmış; üstte kalan gün + tamamlanma; çekmece hızlı düzenleme olarak kalır |
+| **v2.314** | **Dashboard "teslim" özeti** | kalan gün + hazırlık maddeleri özeti ("rapora hazır mı") |
+| **v2.315** | **Teslim kontrol listesi (rapor)** | yazdır/indir öncesi son kontrol |
+
+**Tarih zekâsı için teknik yön (saf fonksiyon + test):**
+- `daysRemaining(dueDate, today)` → tam sayı gün (takvim günü); tarih yoksa
+  `null` (uydurma yok). `elapsedDays(createdAt, today)` → gün.
+- `dueDate = addDays(assignmentDate, durationDays)`; kullanıcı elle ezebilir
+  (`dueDateManual` bayrağı: elle değiştirilirse otomatik hesaplama onu EZMEZ).
+- Gösterim: dashboard + rapor kapağı + durum çubuğu. "Gecikti" (negatif) ve
+  "rapor tarihi > son teslim" uyarıları **metinle** (renk tek başına yetmez).
+- **Resmî tatil/hafta sonu**: önce **takvim günü**; iş günü ayrı sürüm (karar).
+
+### Açık kararlar (kullanıcıya; güvenli varsayılanlar)
+1. Son teslim otomatik **önerilsin ama elle ezilebilsin** — *varsayılan: evet*.
+2. "Dosya" **ayrı sayfa** — *varsayılan: evet* (çekmece kalır).
+3. Kalan gün **dashboard + rapor + durum çubuğu** — *varsayılan: üçü*.
+4. **Takvim günü** (iş günü sonra) — *varsayılan: takvim*.
+5. Soruları görev yazısından otomatik çıkarma **deterministik değil** —
+   *varsayılan: yapma; yalnız elle/öneri*. (LLM yok.)
+
+### DEĞİŞMEZ (bu oturumda doğdu/pekişti)
+- **Uydurma yok:** tarih/veri yoksa "—"; ölçülmeyen değer yazılmaz.
+- **Üç çıktı aynı metin** (`rapor-tutarlilik-testi`); kâğıt biçimi metni değiştirmez.
+- **Tek kaynak:** `contentWords` (terim/soru önerisi), `setSegmentSpeakerByName`,
+  `reportHeadingText`, `reportTableColumns`, `questionBasisText` vb.
+- **Bölüm alanı değişiklikleri `input` olayıyla** işlenir; sentetik testte
+  `input` da gönder (yalnız `change` yanıltır — v2.305 dersi).
+- Her sürüm: **APP_VERSION + CHANGELOG + YOL_HARITASI + index.html 4×`?v=` +
+  version.json**; `bash tools/test.sh` yeşil; **gerçek Chromium** ölçümü;
+  **commit + push + uzak hash + Pages `built` + canlı `version.json`** doğrula.
+- Rapor **bilirkişi adına**; uygulama adı/sürümü çıktıda geçmez.
+
+### İlk komutlar (yeni oturum)
+```bash
+bash tools/test.sh
+git log --oneline -3; git status --short
+curl -s https://azmisahin-gov.github.io/akis/version.json
+```
+Beklenen: **2193 birim + 522 şema** yeşil; sürüm **2.311**; git temiz (veya d868f29).
+Sonra **`docs/UCTAN_UCA_DENETIM.md`** okunur; **v2.312 — Tarih zekâsı** ile başlanır.
