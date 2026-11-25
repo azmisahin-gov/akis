@@ -748,8 +748,7 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
     REPORT_TEXT.enhanceHeading,
     REPORT_TEXT.asrHeading,
     REPORT_TEXT.scopeNoteHeading,
-    REPORT_TEXT.privacyHeading,
-    REPORT_TEXT.annexHeading
+    REPORT_TEXT.privacyHeading
   ];
   const d = mk();
   const Hd = htmlText(d), Ud = await udfText(d), Dd = await docxText(d);
@@ -863,7 +862,9 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   const HN = htmlText(noAnnex),
     UN = await udfText(noAnnex),
     DN = await docxText(noAnnex);
-  checkShared('ek yokken "ek sunulmamıştır"', REPORT_TEXT.noAttachments, HN, UN, DN);
+  check('ek yokken EKLER bölümü çizilmez (H)', !HN.includes(REPORT_TEXT.annexHeading));
+  check('ek yokken EKLER bölümü çizilmez (U)', !UN.includes(REPORT_TEXT.annexHeading));
+  check('ek yokken EKLER bölümü çizilmez (D)', !DN.includes(REPORT_TEXT.annexHeading));
 
   const annex = baseCase({ report: { sections: { annex: true } } });
   const HA = htmlText(annex),
@@ -878,7 +879,7 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   );
   check(
     "EKLER listesi UDF ve DOCX'te de var",
-    UA.includes('• EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('• EK-1. MATERYAL TESLİM VE İADE TUTANAĞI')
+    UA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI')
   );
 }
 
@@ -1092,7 +1093,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('soru metni (aynen)', 'Kayıtta ne konuşuldu?', H, U, D);
   checkShared('cevap metni', 'Depozito tartışıldı.', H, U, D);
   checkShared('sınırlılıklar başlığı', SEC_TITLE.limits, H, U, D);
-  checkShared('sınırlılık metni', 'Arka plan gürültüsü', H, U, D);
+  checkShared('sınırlılık metni', 'Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.', H, U, D);
   checkShared('ölçülen sınırlılık özeti', REPORT_TEXT.limitsMeasuredPrefix, H, U, D);
   checkShared('bütünlük başlığı', SEC_TITLE.integrity, H, U, D);
   checkShared('bütünlük SHA-256 değeri', sha, H, U, D);
@@ -1114,7 +1115,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     'cevaplar kapalı: cevap metni yok',
     !H2.includes('Depozito tartışıldı.') && !U2.includes('Depozito tartışıldı.') && !D2.includes('Depozito tartışıldı.')
   );
-  checkShared('cevaplar kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü', H2, U2, D2);
+  checkShared('cevaplar kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.', H2, U2, D2);
 
   // (c) Sınırlılıklar kapatılır: cevaplar KALIR.
   const noLim = mk({ sections: { limits: false, integrity: true } });
@@ -1123,7 +1124,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     D3 = await docxText(noLim);
   check(
     'sınırlılıklar kapalı: metin yok',
-    !H3.includes('Arka plan gürültüsü') && !U3.includes('Arka plan gürültüsü') && !D3.includes('Arka plan gürültüsü')
+    !H3.includes('Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.') && !U3.includes('Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.') && !D3.includes('Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.')
   );
   checkShared('sınırlılıklar kapalı: cevaplar duruyor', 'Depozito tartışıldı.', H3, U3, D3);
 
@@ -1137,7 +1138,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     'bütünlük kapalı: not yok',
     !H4.includes(REPORT_TEXT.integrityNote) && !U4.includes(REPORT_TEXT.integrityNote) && !D4.includes(REPORT_TEXT.integrityNote)
   );
-  checkShared('bütünlük kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü', H4, U4, D4);
+  checkShared('bütünlük kapalı: sınırlılıklar duruyor', 'Arka plan gürültüsü yer yer anlaşılabilirliği düşürmüştür.', H4, U4, D4);
 }
 
 
@@ -1368,6 +1369,20 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('boş blok H çizilmez', !H2.includes('BOŞ BLOK'), 'başlık sızdı');
   check('boş blok U çizilmez', !U2.includes('BOŞ BLOK'), 'başlık sızdı');
   check('boş blok D çizilmez', !D2.includes('BOŞ BLOK'), 'başlık sızdı');
+}
+
+
+// Senaryo 39: tek EKLER bölümü (v2.290). Boş "EK LİSTESİ" varsayılan kapalı;
+// asıl EKLER (annex) açık ve EK-1… içeriğini basar.
+{
+  console.log('\n[Senaryo 39] tek EKLER bölümü (v2.290)');
+  const c = withMaterial();
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('EKLER başlığı', 'EKLER', H, U, D);
+  checkShared('EK-1 içeriği', 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  check('boş EK LİSTESİ yok (H)', !H.includes('EK LİSTESİ'), 'hâlâ var');
+  check('boş EK LİSTESİ yok (U)', !U.includes('EK LİSTESİ'), 'hâlâ var');
+  check('boş EK LİSTESİ yok (D)', !D.includes('EK LİSTESİ'), 'hâlâ var');
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

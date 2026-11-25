@@ -1717,7 +1717,7 @@ console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
   check('bölüm tanımları şemada (tek kaynak)', /REPORT_SECTION_DEFS/.test(schema) && /emptyReportSections/.test(schema));
   check(
     'şema: normalize bölüm tercihini korur',
-    /sections:\s*normalizeReportSections\(report\.sections\)/.test(schema)
+    /sections:\s*normalizeReportSections\(sectionsSrc\)/.test(schema)
   );
   check('çizim ve karar fonksiyonları var', /function renderReportSections\(/.test(js) && /function setReportSection\(/.test(js));
   check('bölüm durumu tek kapıdan okunur', /function reportSectionOn\(/.test(js));

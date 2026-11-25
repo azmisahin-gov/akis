@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.289.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.290.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7233,3 +7233,49 @@ Ayrıca verisi olmayan bölüm (WER) sessizce hiç çizilmiyordu.
 2. **Kişiler (K)** panelinin dosya düzeyine taşınması.
 3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
    sürükle-bırak sıralama.
+
+## YENİ OTURUM DEVRİ (v2.290) — Tek EKLER bölümü
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.290** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2009 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | **v2.291 — bölümü EK olarak taşıma** (kullanıcı sorusu); konuşmacı kümeleme; Kişiler paneli |
+
+### Kullanıcı sorusu
+
+*"İki tane EKLER alanı var; ‘Sadece Ekler’ kısmında bir şey yok. Hatalı mı, amacı
+ne? … Kayıt bazında bulguları EK olarak göstermek istesem olur mu?"*
+
+**Kök neden:** `s7` yalnız **ek başlıklarını listeleyen** bölümdü ve varsayılan
+açıktı; asıl ek içerikleri (`annex`) varsayılan **kapalı** olduğu için liste boş
+kalıyordu. İki “EKLER” yanıltıcıydı.
+
+### Ne yapıldı
+
+- `s7` → başlık **“EK LİSTESİ”**, varsayılan **kapalı**.
+- `annex` → başlık **“EKLER”**, varsayılan **açık**; `annexIntro` eklendi.
+- Göç: `normalizeCase` içinde `annex` tanımsız + `s7` tanımlıysa
+  `annex = s7 !== false`, `s7 = false`.
+- Varsayılan raporda **tek EKLER** ve EK-1… içerikleri görünür; isteğe bağlı
+  “Ek listesi (başlıklar)” açılabilir.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Tek EKLER bölümü.** Yeni bir “ek listesi” eklerken asıl EKLER’i kapatıp
+   boş liste bırakmayın; `annex` açık olmalı.
+2. **Göç korunur:** eski `s7` tercihi `annex`e taşınır; boş liste kapanır.
+3. **s7 yalnız listedir:** içerik üretmez; `reportAttachmentLines` ile başlıkları
+   basar. Ek gövdesi `reportAnnexBlocks` + `annex` renderer’ındadır.
+4. Testler: `birim [132]`, `rapor 39`.
+
+### Sıradaki iş — v2.291 (plan)
+
+**Bölümü EK olarak taşıma:** `case.report.annexPlacement = { s5: true }` gibi
+bir yerleşim alanı; taşınan bölüm gövde sırasından çıkar, EKLER altında
+`EK-N. <bölüm başlığı>` olarak basılır; içerik üreticisi aynı kalır (kopya yok),
+alt başlıklar `EK-N.1`, üç çıktı aynı, onay + Ctrl+Z. Kanıt etkilenmez.
+Ayrıntı: `docs/RAPOR_SERBEST_TASARIM.md` §v2.291.

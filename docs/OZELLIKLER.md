@@ -1,4 +1,4 @@
-# Özellikler (v2.289 — mevcut durum)
+# Özellikler (v2.290 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -972,6 +972,10 @@ envanterle aynı sütun seçimini izler.
   WER için referans metin + model çıktısı gerekir; yoksa rapora girmez.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
+- **Tek EKLER bölümü (v2.290):** boş “EKLER” listesi (`s7`) varsayılan
+  **kapalı** ve başlığı **“EK LİSTESİ”**; asıl **EKLER** (`annex`) varsayılan
+  **açık**. EK-1… içerikleri tek yerde. İsteğe bağlı ek listesi açılabilir;
+  eski `s7` tercihi `annex`e taşınır.
 - **Ekler ayrı ve düzenlenebilir kayıttır:** her ek tek tek açılır/kapanır ve
   sıralanır; numara **EK-1…EK-N** bitişiktir (eski EK-4 boşluğu kapandı). Sağdaki
   **Ekler · başlık / içerik / not** panelinden başlık ve not düzenlenir; **＋ Yeni

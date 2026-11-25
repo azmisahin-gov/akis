@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -4219,13 +4219,14 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
   // v2.283: numara YALNIZ ÇİZİLEN bölüme verilir. Soru yoksa "Cevaplar"
   // çizilmez → numara almaz ve numarada boşluk kalmaz (eski hata: 5 → 7).
-  eq('varsayılan numara s7=11 (tüm çizilen bölümler numaralı)', T.reportNumberMap(c).s7, 11);
+  eq('varsayılan numara annex=11 (EKLER)', T.reportNumberMap(c).annex, 11);
+  eq('boş EK LİSTESİ (s7) varsayılan kapalı', T.reportNumberMap(c).s7, undefined);
   eq('soru yoksa answers numara almaz', T.reportNumberMap(c).answers, undefined);
   eq('varsayılan numara limits=8', T.reportNumberMap(c).limits, 8);
   // Soru VARSA cevaplar çizilir ve numara alır (s7 yeniden 9).
   const cq = T.emptyCaseForTest({ id: 'cRepQ', questions: [{ id: 'q1', question: 'x', answer: 'y' }] });
   eq('soru varsa answers=8', T.reportNumberMap(cq).answers, 8);
-  eq('soru varsa s7=12', T.reportNumberMap(cq).s7, 12);
+  eq('soru varsa annex=12', T.reportNumberMap(cq).annex, 12);
   eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
   eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
   eq('yardımcı bölüm de numaralı', T.reportHeadingText(c, 'origin'), '4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
@@ -4233,7 +4234,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
   const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
   eq('s3 kapalı: s4 numarası 5', T.reportNumberMap(c2).s4, 5);
-  eq('s3 kapalı: s7 numarası 10', T.reportNumberMap(c2).s7, 10);
+  eq('s3 kapalı: annex numarası 10', T.reportNumberMap(c2).annex, 10);
   eq(
     's3 kapalı: s4 başlığı yeniden numaralandı',
     T.reportHeadingText(c2, 's4'),
@@ -5719,7 +5720,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const base = T.emptyCaseForTest({ id: 'c1' });
   const map = T.reportNumberMap(base);
   eq('soru yok: answers numara almaz', map.answers, undefined);
-  eq('soru yok: s7 son numara', map.s7, Math.max(...Object.values(map)));
+  eq('soru yok: annex son numara', map.annex, Math.max(...Object.values(map)));
   const nums = Object.values(map).sort((a, b) => a - b);
   eq('numaralar bitişik (1..N)', nums.every((n, i) => n === i + 1), true);
 
@@ -5958,6 +5959,25 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('iskelette "veri yok" rozeti var', /rsec-nodata/.test(js), true);
   eq('açma anında neden söylenir', /reportBlockEmptyReason\(c, key\)/.test(js), true);
+}
+
+
+// [132] v2.290 — Tek EKLER bölümü: boş "EK LİSTESİ" varsayılan kapalı,
+// asıl EKLER (annex) açık; eski s7 tercihi annex'e taşınır.
+{
+  console.log('[132] Tek EKLER bölümü (v2.290)');
+  const S = __schemaMod;
+  eq('varsayılan EKLER açık', S.emptyReportSections().annex, true);
+  eq('boş EK LİSTESİ kapalı', S.emptyReportSections().s7, false);
+  const c = T.emptyCaseForTest({ id: 'cA1' });
+  eq('EKLER numara alır', typeof T.reportNumberMap(c).annex, 'number');
+  eq('EK LİSTESİ numara almaz', T.reportNumberMap(c).s7, undefined);
+  const mig = S.normalizeCase({ id: 'm1', report: { sections: { s7: true } } });
+  eq('göç: s7 açık → annex açık', mig.report.sections.annex, true);
+  eq('göç: s7 kapanır', mig.report.sections.s7, false);
+  const mig2 = S.normalizeCase({ id: 'm2', report: { sections: { s7: false } } });
+  eq('göç: s7 kapalı annex’i kapatmaz', mig2.report.sections.annex, true);
+  eq('ek listesi başlıkları', T.reportAttachmentLines(c).length > 0, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

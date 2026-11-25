@@ -574,7 +574,7 @@ export const REPORT_SECTION_DEFS = [
   { key: 'levels', def: true, title: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ' },
   { key: 'reviewSummary', def: true, title: 'İNCELEME ÖZETİ (denetim kaydı)' },
   { key: 's6', def: true, title: 'GEREKÇELİ SONUÇ' },
-  { key: 's7', def: true, title: 'EKLER' },
+  { key: 's7', def: false, title: 'EK LİSTESİ' },
   { key: 'signature', def: true, title: 'İmza ve alt bilgi' },
   // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI.
   { key: 'kunye', def: false, title: 'RAPOR KÜNYESİ' },
@@ -585,7 +585,7 @@ export const REPORT_SECTION_DEFS = [
   { key: 'scopeNote', def: false, title: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI' },
   { key: 'qc', def: false, title: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK' },
   { key: 'privacy', def: false, title: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ' },
-  { key: 'annex', def: false, title: 'EKLER – RAPORUN DENETLENEBİLİRLİĞİ İÇİN' }
+  { key: 'annex', def: true, title: 'EKLER' }
 ];
 export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 
@@ -1987,6 +1987,13 @@ export function normalizeCase(src = {}) {
   const reportBlocks = normalizeReportBlocks(report.blocks);
   const reportLayout = normalizeReportLayout(report.layout);
   reportLayout.order = ensureFreeBlockOrder(reportLayout.order, reportBlocks);
+  const sectionsSrc = { ...(report.sections && typeof report.sections === 'object' ? report.sections : {}) };
+  // Yalnız ESKİ varsayılanı (s7 açık) taşı. s7=false yeni "Ek listesi"
+  // tercihidir; annex'i kapatmamalıdır (v2.290'da ölçüldü).
+  if (sectionsSrc.annex === undefined && sectionsSrc.s7 === true) {
+    sectionsSrc.annex = true;
+    sectionsSrc.s7 = false;
+  }
   const team = (Array.isArray(c.team) ? c.team : []).map((t) => ({
     ...emptyTeamMember(),
     ...(isObj(t) ? t : {}),
@@ -2041,7 +2048,9 @@ export function normalizeCase(src = {}) {
       limitationsText: str(report.limitationsText ?? c.limitationsText),
       conclusionText: str(report.conclusionText ?? c.conclusionText),
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
-      sections: normalizeReportSections(report.sections),
+      // v2.290: eski kayıtta EKLER listesi (s7) açıksa asıl EKLER bölümüne
+      // (annex) taşınır; boş "EKLER" listesi varsayılan olarak kapanır.
+      sections: normalizeReportSections(sectionsSrc),
       // Rapor iskeleti (v2.227): sıra/ekler; bozuk düzen güvenli hâle getirilir.
       layout: reportLayout,
       // Serbest bloklar (v2.287): kullanıcı başlığı + metni.

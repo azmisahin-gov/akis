@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.289.**
+yazılır. **Güncel sürüm: v2.290.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.290 — Tek EKLER bölümü (TAMAMLANDI)
+
+- Boş “EKLER” listesi (`s7`) varsayılan **kapalı**; başlığı **“EK LİSTESİ”**.
+- Asıl **EKLER** (`annex`) varsayılan **açık**; EK-1… içerikleri orada.
+- Göç: eski `s7` tercihi `annex`e taşınır; boş liste kapanır.
+- İsteğe bağlı “Ek listesi (başlıklar)” açılabilir.
+- Koruyan: `birim` [132], `rapor` Senaryo 39.
 
 ## v2.289 — Tüm bölümler numaralı + veri yok açıklaması (TAMAMLANDI)
 

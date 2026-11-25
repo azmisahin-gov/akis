@@ -111,15 +111,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.289';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.289';
+} from './schema.js?v=2.290';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.290';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.289';
+const APP_VERSION = '2.290';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -243,8 +243,9 @@ const REPORT_TEXT = {
     'Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü incelenmemiştir.',
   // v2.235: tablo sütunları kapatılırsa boş tablo yerine bu satır yazılır.
   noColumns: 'Bu tablo için alan seçilmedi.',
-  attachmentsText: 'Raporla birlikte sunulan ekler, aşağıda numaralarıyla listelenmiştir.',
-  noAttachments: 'Bu raporla ek sunulmamıştır.',
+  attachmentsText: 'Bu bölüm yalnız eklerin listesini verir; ek içerikleri EKLER bölümündedir.',
+  noAttachments: 'Ek listesi boş: EKLER bölümü kapalı veya ek yok.',
+  annexIntro: 'Raporun denetlenebilirliği için sunulan ekler aşağıdadır.',
   inventoryHeaders: ['DOSYA ADI', 'DOSYA BİÇİMİ', 'DOSYA BOYUTU', 'SÜRE', 'SES KANALI', 'ÖRNEKLEME HIZI', 'SHA-256'],
   speakerHeaders: ['KOD', 'ETİKET', 'KAYIT', 'ROL', 'CİNSİYET', 'YAŞ ARALIĞI', 'ÖLÇÜLEN PERDE', 'BÖLÜM / NOT'],
   // v2.273 — S/K ve dosyalar arası eşleştirme açıklaması TEK paragrafta
@@ -361,7 +362,7 @@ Object.assign(REPORT_TEXT, {
   privacyHeading: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ',
   privacyText:
     'Ses içeriği ve çözümleme bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.',
-  annexHeading: 'EKLER – RAPORUN DENETLENEBİLİRLİĞİ İÇİN',
+  annexHeading: 'EKLER',
   annexLegalText:
     'Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.',
   annexNoLog: 'Kayıtlı işlem günlüğü yok.',
@@ -12550,7 +12551,7 @@ const REPORT_UI_LABELS = {
   limits: 'Teknik sınırlılıklar',
   integrity: 'Orijinalin korunması / bütünlük',
   s6: 'Gerekçeli sonuç',
-  s7: 'Ekler',
+  s7: 'Ek listesi (başlıklar)',
   origin: 'Kayıt kökeni ve teslim zinciri',
   embedded: 'Gömülü metadata (beyan)',
   acquisition: 'Delil edinme ve doğrulama',
@@ -12564,7 +12565,7 @@ const REPORT_UI_LABELS = {
   reviewSummary: 'İnceleme özeti',
   qc: 'Kalite kontrolü',
   privacy: 'Kişisel veri / gizlilik',
-  annex: 'Ekler (denetlenebilirlik)',
+  annex: 'Ekler',
   reading: 'Okuma metni',
   signature: 'İmza ve alt bilgi'
 };
@@ -13948,7 +13949,7 @@ function renderReport() {
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`,
     privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`,
     annex: () => {
-      let out = `<div class="paper-section"><h3>${esc(H('annex'))}</h3>`;
+      let out = `<div class="paper-section"><h3>${esc(H('annex'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.annexIntro)}</p>`;
       for (const b of reportAnnexBlocks(c)) {
         out += `<h4>${esc(b.heading)}</h4>`;
         if (b.kind === 'para') {
@@ -14435,7 +14436,7 @@ function docxXml(c) {
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
     privacy: () => headingXml(H('privacy')) + wP(REPORT_TEXT.privacyText),
     annex: () => {
-      let out = headingXml(H('annex'));
+      let out = headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
       for (const b of reportAnnexBlocks(c)) {
         out += headingXml(b.heading, 2);
         if (b.kind === 'para') {
@@ -15046,6 +15047,7 @@ async function makeUdf() {
     },
     annex: () => {
       el.push(h(H('annex')));
+      el.push(paragraph(REPORT_TEXT.annexIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       for (const b of reportAnnexBlocks(c)) {
         el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
         if (b.kind === 'para') {
@@ -18916,6 +18918,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.290': {
+    title: 'Tek EKLER bölümü: boş “EKLER” listesi kaldırıldı',
+    body:
+      'Rapor artık tek EKLER bölümü içerir; EK-1…EK-N içerikleri orada. Boş EKLER listesi ' +
+      'varsayılan kapandı. İsterseniz “Ek listesi (başlıklar)” bölümünü açarak yalnız ek başlıklarını ' +
+      'listeleyebilirsiniz. EKLER bölümü varsayılan açık. Eski kayıtlarda boş liste açıksa tercih ' +
+      'EKLER bölümüne taşınır; veri kaybı olmaz.'
+  },
   '2.289': {
     title: 'Tüm bölümler numaralı; “veri yok” artık nedenini söylüyor',
     body:

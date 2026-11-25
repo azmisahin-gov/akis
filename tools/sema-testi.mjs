@@ -1779,7 +1779,7 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('profil: minimal çekirdek açık', mn.cover === true && mn.s5 === true && mn.signature === true);
   ok('profil: minimal ayrıntı kapalı', mn.annex === false && mn.origin === false && mn.tech === false);
   const unk = reportSectionsForPreset('bilinmeyen');
-  ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.annex === false);
+  ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.annex === true);
   // v2.225 — Künye ek alanları: boş varsayılan, dolu değer korunur, birleşir.
   ok('emptyCase künye ek alanları boş', emptyCase().report.impartiality === '' && emptyCase().report.annexList === '');
   const nk = normalizeCase({ id: 'ck', report: { impartiality: 'Engel yok', annexList: 'EK-1' } });

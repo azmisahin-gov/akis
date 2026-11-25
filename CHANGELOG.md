@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.289.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.290.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.290 — Tek EKLER bölümü
+
+**Kullanıcı:** *"İki tane EKLER alanı var; ‘Sadece Ekler’ kısmında bir şey yok.
+Bu hatalı bir içerik mi, amacı ne?"*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor artık **tek EKLER bölümü** içerir; **EK-1…EK-N** içerikleri orada.
+- Boş “EKLER” listesi kaldırıldı. İsterseniz **“Ek listesi (başlıklar)”**
+  bölümünü açarak yalnız ek başlıklarının listesini alabilirsiniz
+  (**varsayılan kapalı**).
+- EKLER bölümü **varsayılan açık**; yeni dosyada gerçek ekler görünür.
+- Eski kayıtlarda boş EKLER listesi açıksa tercih **EKLER bölümüne taşınır**;
+  boş liste kapanır (veri kaybı yok).
+
+### Teknik
+
+- `s7` başlığı **“EK LİSTESİ”**, varsayılan **kapalı**; `annex` başlığı
+  **“EKLER”**, varsayılan **açık**.
+- `normalizeCase`: `annex` tanımsız + `s7` tanımlıysa `annex = s7 !== false`,
+  `s7 = false` (göç).
+- `REPORT_TEXT.annexIntro`; s7 yalnız başlık listesi basar.
+- Koruyan: `birim` [132], `rapor` Senaryo 39.
+
+### Sıradaki (kullanıcı sorusu)
+
+- **“Kayıt bazında bulguları ek olarak gösterme”** = gövde bölümünü EKLER
+  altına taşıma. Ayrı sürüm olarak planlandı (aşağıdaki v2.291).
 
 ## v2.289 — Tüm bölümler numaralı; "veri yok" artık sessiz değil
 
