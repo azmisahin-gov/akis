@@ -1,8 +1,9 @@
 # Konuşmacı Ön-Atama (diyarizasyon benzeri) — Plan
 
-> **Durum:** ÖNERİ / PLAN. Henüz kodlanmadı; sürüm numarası verilmedi.
-> **Öncelik: 1** (kullanıcı isteği, 2026-11-25). Uygulanmadan önce ölçüm, test
-> ve kullanıcı onayı gerekir.
+> **Durum:** **v2.301 UYGULANDI** (dosya bazında otomatik ön-atama, anonim).
+> **v2.302** (bölüm bazında tahmin + yeniden kümele) ve **v2.303** (opsiyon)
+> planlıdır. Aşağıdaki çerçeve/kararlar geçerlidir.
+> **Öncelik: 1** (kullanıcı isteği, 2026-11-25).
 
 ## 1. İstek
 

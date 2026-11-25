@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.300.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.301.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7514,3 +7514,38 @@ listesi (C2), kanıt tutarlılığı A1+A3, kurumsal kâğıt (B2), UDF yatay ta
 genişliği + video "yalnız ses" gerçek mp4 doğrulaması. Stratejik/karar bekleyen:
 Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 `docs/GELECEK_PLANI.md`.
+
+## YENİ OTURUM DEVRİ (v2.301) — Konuşmacı otomatik ön-atama (anonim)
+
+| | |
+|---|---|
+| Sürüm | **v2.301** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2107 birim + 522 şema** + rapor + sürüm + tasarım yeşil |
+| Açık konu | v2.302 (bölüm bazında tahmin + yeniden kümele), v2.303 (rapor yöntem notu) |
+
+### Ne yapıldı
+- Konuşmacılar panelinde **“Konuşmacıları önceden belirle (otomatik)”** düğmesi:
+  **boş** bölümlerin konuşmacısını ses benzerliğine göre **S1, S2…** ön-atar.
+- `schema.js` → **`autoSpeakerPlan(points)`** (saf): kümeler + ilk görülme sırasına
+  göre kod; `minSize:1` → her bölüm atanır.
+- `app.js` → **`autoAssignSpeakers(m)`** + `embedSegmentIndexes` (mevcut gömme
+  hattı). Atama **tek kapıdan** `setSegmentSpeakerByName`; `segment.speakerAuto`.
+- UI: **“≈ otomatik”** rozeti; elle atama değişince `speakerAuto=false`.
+- Test: `birim` [142] (16).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Kimlik tespiti DEĞİLDİR**; anonim kümeleme (S1/S2). Rapora "diyarizasyon
+   yaptık" yazılmaz; etiketler uzman onaylı.
+2. **Mevcut atamalar KORUNUR**: düğme yalnız **boş** bölümleri doldurur
+   (`if (s.speakerId || String(s.speaker||'').trim()) continue`).
+3. **Onay (`review`) değişmez**; ön-atama yalnız `speaker`/`speakerId` yazar.
+4. **Onay + snapshot + Ctrl+Z + log**; model indirme onayı (v2.279 deseni).
+5. `speakerAuto` yalnız "gözden geçir" işaretidir; elle atama temizler.
+6. Yeni bir atama yolu eklerken **`setSegmentSpeakerByName`** kullanın.
+
+### Sıradaki iş
+- **v2.302:** bölüm bazında tahmin ("bu bölümün konuşmacısı ≈S2") + yeniden
+  kümele düğmesi + belirsiz işaretleri (minSize/cohesion).
+- **v2.303:** rapor dürüst yöntem notu (varsayılan kapalı) + dosyalar arası K
+  kişi eşleştirmesiyle birleştirme.
+- Sonra: deterministik soru↔bölüm önerisi, terim listesi, kanıt tutarlılığı.

@@ -1,4 +1,4 @@
-# Özellikler (v2.300 — mevcut durum)
+# Özellikler (v2.301 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -987,6 +987,13 @@ envanterle aynı sütun seçimini izler.
 - **Kişiler paneli dosya çekmecesinde (v2.293):** **Dosyalar arası kişiler (K)**
   Analiz yerine **Dosya bilgileri** çekmecesinde; ekle/düzenle/sil orada. Kayıt
   kartındaki “Aynı kişi” bağlantısı yerinde. Silme onay ister; ses/metin korunur.
+- **Konuşmacıları otomatik ön-atama (v2.301):** Konuşmacılar panelindeki
+  **“Konuşmacıları önceden belirle (otomatik)”** düğmesi **boş** bölümlerin
+  konuşmacısını ses benzerliğine göre **S1, S2…** olarak ön-atar. Bu bir
+  **öneridir** (anonim kümeleme; **kimlik tespiti değildir**); dinleyip
+  düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
+  atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
+  **≈ otomatik** rozetiyle görünür.
 - **Benzer ses grupları (v2.292):** gömme ölçümünde **atanmamış** bölümler
   `Grup A · N bölüm` olarak gruplanır. **Git** / **Ata**; hedef konuşmacı seçilir,
   onay + Ctrl+Z + günlük. Otomatik atama yok; kimlik tespiti değildir.

@@ -115,16 +115,17 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat,
-  questionEvidenceRows
-} from './schema.js?v=2.300';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.300';
+  questionEvidenceRows,
+  autoSpeakerPlan
+} from './schema.js?v=2.301';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.301';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.300';
+const APP_VERSION = '2.301';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4261,6 +4262,179 @@ async function measureSpeakerEmbeddings(m) {
   }
 }
 
+// ---- Konuşmacı ÖN-ATAMA (v2.301) ---------------------------------------
+// Çözümlemedeki "tümünü çözümle / dosya / bölüm yeniden çözümle" kolaylığının
+// konuşmacı karşılığı. Bölüm gömmelerini anonim kümelere ayırıp S1..Sk atar.
+// KİMLİK TESPİTİ DEĞİLDİR; öneri/ön-atamadır, uzman dinleyip düzeltir.
+
+// Hedef bölümler için gömme vektörleri. `measureSpeakerEmbeddings` ile aynı
+// hattı kullanır (16 kHz'e yeniden örnekleme, en yüksek enerjili kanal).
+async function embedSegmentIndexes(m, indexes, { onProgress } = {}) {
+  const c = currentCase();
+  const blob = await getAudioBlob(c, m);
+  if (!blob) return { error: 'noaudio' };
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  let audio;
+  try {
+    audio = await ctx.decodeAudioData(await blob.arrayBuffer());
+  } catch (e) {
+    await ctx.close();
+    return { error: 'decode' };
+  }
+  const sr = audio.sampleRate;
+  const channels = [];
+  for (let ch = 0; ch < audio.numberOfChannels; ch++) channels.push(audio.getChannelData(ch));
+  const points = [];
+  let skipped = 0;
+  for (const i of indexes) {
+    const s = (m.segments || [])[i];
+    if (!s) continue;
+    const st = secondsFromTimecode(s.start);
+    const en = secondsFromTimecode(s.end);
+    const dur = en - st;
+    if (!(dur >= VOICE_EMBED_MIN_SEC)) {
+      skipped++;
+      continue;
+    }
+    const span = Math.min(VOICE_EMBED_WINDOW_SEC, dur);
+    const mid = st + dur / 2;
+    const a = Math.max(0, Math.floor((mid - span / 2) * sr));
+    const b = Math.min(channels[0].length, Math.floor((mid + span / 2) * sr));
+    if (b - a < sr * VOICE_EMBED_MIN_SEC) {
+      skipped++;
+      continue;
+    }
+    const segCh = channels.map((ch) => ch.subarray(a, b));
+    const pick = pickActiveChannel(segCh);
+    const f32 = await resampleTo16k(segCh[pick.index], sr);
+    const inputs = await speakerEmbedder.processor(f32);
+    const out = await speakerEmbedder.model(inputs);
+    points.push({ index: i, vec: Array.from(out.embeddings.data) });
+    if (typeof onProgress === 'function') onProgress(points.length);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+  await ctx.close();
+  return { points, skipped };
+}
+
+// Dosya bazında: BOŞ bölümlerin konuşmacısını otomatik ön-ata. Mevcut
+// atamalar KORUNUR (v2.292 "sessiz atama yok" kuralı); onay + geri alma var.
+async function autoAssignSpeakers(m) {
+  if (!m) return;
+  const segs = m.segments || [];
+  if (!segs.length) {
+    showToast('Önce bölümleyin; atanacak bölüm yok.');
+    return;
+  }
+  if (voiceEmbedRunning) {
+    showToast('Konuşmacı ölçümü zaten sürüyor; bitmesini bekleyin.');
+    return;
+  }
+  const targets = [];
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    if (s.speakerId || String(s.speaker || '').trim()) continue; // mevcut atama korunur
+    targets.push(i);
+  }
+  if (!targets.length) {
+    showToast('Atanacak boş bölüm yok. Mevcut atamalar korunur.');
+    return;
+  }
+  if (!speakerEmbedder) {
+    const ok = await askConfirm(
+      'Konuşmacıları önceden belirle',
+      `Konuşmacı doğrulama modeli (WavLM-SV, q8) yaklaşık <b>${esc(fmtBytes(VOICE_EMBED_BYTES))}</b> indirilir (bir kez). ` +
+        'Bölümler ses benzerliğine göre <b>anonim</b> gruplara (S1, S2…) ayrılır; bu <b>kimlik tespiti değildir</b>. ' +
+        'Atamalar <b>öneri</b>dir; dinleyip düzeltirsiniz ve <b>Ctrl+Z</b> ile geri alınır. Devam edilsin mi?'
+    );
+    if (!ok) return;
+  }
+  voiceEmbedRunning = true;
+  const progressEl = document.getElementById(`ve-progress-${m.id}`);
+  const setProgress = (t) => {
+    if (progressEl) progressEl.textContent = t;
+  };
+  try {
+    if (!speakerEmbedder) {
+      setProgress('Model indiriliyor…');
+      await loadSpeakerEmbedder((p) => {
+        if (p && p.status === 'progress' && p.total) {
+          setProgress(`Model indiriliyor… %${Math.round((p.loaded / p.total) * 100)}`);
+        }
+      });
+    }
+    setProgress('Ses çözümleniyor…');
+    const res = await embedSegmentIndexes(m, targets, {
+      onProgress: (n) => setProgress(`Ölçülüyor… ${n} bölüm`)
+    });
+    if (res.error === 'noaudio') {
+      showToast('Ses dosyası bulunamadı.');
+      return;
+    }
+    if (res.error === 'decode') {
+      showToast('Ses çözümlenemedi.');
+      return;
+    }
+    if (!res.points || !res.points.length) {
+      showToast(`Ön-atama için yeterli uzunlukta bölüm yok (en az ${VOICE_EMBED_MIN_SEC} sn).`);
+      return;
+    }
+    const plan = autoSpeakerPlan(res.points, { threshold: VOICE_EMBED_SAME, minSize: 1 });
+    snapshotForUndo();
+    ensureSpeakers(m);
+    const usedNames = new Set((m.speakers || []).map((x) => x.name));
+    let nextN = (m.speakers || []).length + 1;
+    const nextName = () => {
+      let n = nextN;
+      while (usedNames.has(`Konuşmacı ${n}`)) n++;
+      usedNames.add(`Konuşmacı ${n}`);
+      nextN = n + 1;
+      return `Konuşmacı ${n}`;
+    };
+    let assigned = 0;
+    for (const g of plan) {
+      const name = nextName();
+      m.speakers.push({
+        id: uid(),
+        code: '',
+        name,
+        label: name,
+        role: 'unspecified',
+        gender: 'unspecified',
+        ageRange: '',
+        notes: '',
+        pitch: null,
+        pitchAt: null
+      });
+      for (const idx of g.indexes) {
+        const sg = segs[idx];
+        if (!sg) continue;
+        setSegmentSpeakerByName(m, sg, name);
+        sg.speakerAuto = true;
+        assigned += 1;
+      }
+    }
+    assignSpeakerCodes(m.speakers);
+    logEvent(m, 'Konuşmacılar ön-atandı', `${plan.length} konuşmacı · ${assigned} bölüm (anonim benzerlik; kimlik değil)`);
+    persist();
+    const scroll = captureSegScroll(m);
+    await renderAudioList();
+    restoreSegScroll(m, scroll, activeSegIndex(m));
+    renderSpeakersPanel(m);
+    renderOverview();
+    setProgress(`${plan.length} konuşmacı · ${assigned} bölüm ön-atandı`);
+    showToast(
+      `${plan.length} konuşmacı ön-atandı · ${assigned} bölüm. Dinleyip düzeltin; yanlışsa konuşmacıyı değiştirin veya yeni ekleyin (Ctrl+Z ile geri alınır).`
+    );
+  } catch (e) {
+    showToast(`Ön-atama başarısız: ${e && e.message ? e.message : 'bilinmeyen hata'}`);
+    if (progressEl) progressEl.textContent = 'Ön-atama başarısız.';
+  } finally {
+    voiceEmbedRunning = false;
+  }
+}
+
 // Kayıttaki konuşmacılar için perde ölçümü. Her konuşmacının bölümlerinden
 // birkaç örnek alınır, ortanca (medyan) perde hesaplanır. Ölçüm tek seferde
 // yapılır ve kayda bağlı saklanır.
@@ -4945,8 +5119,8 @@ function voiceEmbedInnerHtml(m) {
         ? 'model bu oturumda yüklü'
         : `model ~${fmtBytes(VOICE_EMBED_BYTES)} · bir kez indirilir`
   }</small></div>
-    <p class="spk-person-note">Konuşmacı doğrulama modeli (WavLM-SV) <b>benzerlik</b> ölçer; <b>kimlik tespiti değildir</b>. Eşikler ölçüldü: ≥ ${VOICE_EMBED_SAME} aynı · &lt; ${VOICE_EMBED_DIFF} farklı; arası belirsiz sayılır ve işaretlenmez. Hiçbir atama otomatik değişmez.</p>
-    <div class="vc-actions"><button class="mini-button" data-voice-embed="${esc(
+    <p class="spk-person-note">Konuşmacı doğrulama modeli (WavLM-SV) <b>benzerlik</b> ölçer; <b>kimlik tespiti değildir</b>. Eşikler ölçüldü: ≥ ${VOICE_EMBED_SAME} aynı · &lt; ${VOICE_EMBED_DIFF} farklı; arası belirsiz sayılır. <b>Ön-atama öneridir</b>; uzman dinleyip doğrular, yanlışı değiştirir veya yeni konuşmacı ekler.</p>
+    <div class="vc-actions"><button class="mini-button primary" data-auto-speakers="${esc(m.id)}" title="BOŞ bölümlerin konuşmacısını ses benzerliğine göre ötomatik ön-atar (S1, S2…). Kimlik tespiti DEĞİLDİR; öneridir. Dinleyip düzeltirsiniz; Ctrl+Z ile geri alınır.">Konuşmacıları önceden belirle (ötomatik)</button><button class="mini-button" data-voice-embed="${esc(
       m.id
     )}" title="Modeli (gerekirse indirip) bölümleri ölçer. Model ~${esc(
       fmtBytes(VOICE_EMBED_BYTES)
@@ -6011,7 +6185,7 @@ function segDetailHtml(m) {
       <!-- KONTROL, DİNLE'NİN YANINDA (v2.196): kullanıcı dinledikten sonra
            fareyle sağ uca gitmiyor. Sıra: dinle → karar → sonraki. -->
       <label class="sd-field" title="Kontrol durumu — 1 Onay, 2 Anlaşılmadı, 3 Yeniden, 4 Belirsiz"><span>Kontrol</span><select data-seg="${i}" data-key="review" data-state="${rev}" aria-label="Kontrol durumu" title="Kontrol: 1 Onay · 2 Anlaşılmadı · 3 Yeniden dinle · 4 Belirsiz">${opts}</select></label>
-      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button></span></label>
+      <label class="sd-field" title="Konuşmacı — bölümdeki konuşmacıyı listeden seçin (standart kod: S1, S2…)"><span>Konuşmacı</span><span class="sd-spk-pick"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı" title="Konuşmacı seçimi standarttır: S1, S2… Bölümdeki konuşmacıyı listeden seçin.">${spkSelectOptions(m, s.speaker)}</select><button class="seg-tool" data-add-spk="${esc(m.id)}" title="Yeni konuşmacı ekle (sıradaki standart kod verilir)">＋</button>${s.speakerAuto ? '<span class="sd-auto" title="Konuşmacı otomatik ön-atandı (anonim ses benzerliği). Dinleyip kontrol edin; yanlışsa değiştirin veya yeni konuşmacı ekleyin.">≈ otomatik</span>' : ''}</span></label>
   </div>
 
   <!-- DÜZENLEME BİLGİSİ (v2.180): konuşmacı ve kontrol ANALİZ DEĞİLDİR; her
@@ -17306,6 +17480,10 @@ function setupEvents() {
       // v2.269 — tek düğme: seviye → perde → tutarlılık (sıralı, çift çalışmaz).
       const mm = c.materials.find((x) => x.id === b.dataset.measureAll);
       if (mm) measureAllFor(mm);
+    } else if (b.dataset.autoSpeakers !== undefined) {
+      // v2.301 — boş bölümlerin konuşmacısını anonim benzerlikle ön-ata.
+      const mm = c.materials.find((x) => x.id === b.dataset.autoSpeakers);
+      if (mm) autoAssignSpeakers(mm);
     } else if (b.dataset.voiceEmbed !== undefined) {
       // v2.279 — konuşmacı gömme benzerliği (model isteğe bağlı indirilir).
       const mm = c.materials.find((x) => x.id === b.dataset.voiceEmbed);
@@ -17676,6 +17854,8 @@ function setupEvents() {
       // TEK KAPI (v2.263): ad + kimlik birlikte yazılır. Yalnız ad yazılsaydı
       // birleştirme/eşleştirme ada bağlı kalırdı.
       setSegmentSpeakerByName(m, s, el.value);
+      // v2.301 — uzman atamayı elle değiştirdi: "otomatik ön-atama" işareti kalkar.
+      s.speakerAuto = false;
     }
     else if (el.dataset.key === 'start' || el.dataset.key === 'end') {
       // ZAMAN ALANI (v2.97): yazarken kayda YAZILMAZ. Yarım yazılmış
@@ -19459,6 +19639,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.301': {
+    title: 'Konuşmacıları otomatik ön-atama',
+    body:
+      'Konuşmacılar panelinde “Konuşmacıları önceden belirle (otomatik)” ile boş bölümlerin konuşmacısı ses benzerliğine göre S1, S2… olarak ön-atılır. ' +
+      'Bu bir ÖNERİdir (anonim benzerlik; kimlik tespiti değil); dinleyip düzeltirsiniz, mevcut atamalar korunur, Ctrl+Z ile geri alınır.'
+  },
   '2.300': {
     title: 'Soru dayanağı: bölümlere bağlayın',
     body:

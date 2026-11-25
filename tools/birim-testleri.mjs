@@ -6228,5 +6228,49 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('evidence UI (ekle/kaldır) var', /data-q-ev-add/.test(js) && /data-q-ev-del/.test(js), true);
 }
 
+// [142] v2.301 — Konuşmacı ön-atama: anonim kümeleme planı + boş bölüm hedefi.
+{
+  console.log('[142] Konuşmacı ön-atama planı (v2.301)');
+  const S = __schemaMod;
+  const pts = [
+    { index: 0, vec: [1, 0] },
+    { index: 1, vec: [0, 1] },
+    { index: 2, vec: [1, 0] },
+    { index: 3, vec: [0, 1] }
+  ];
+  const plan = S.autoSpeakerPlan(pts, { threshold: 0.88, minSize: 1 });
+  eq('iki konuşmacı kümesi', plan.length, 2);
+  eq('S1 ilk görülene verilir', plan[0].code, 'S1');
+  eq('S1 bölümleri', plan[0].indexes.join(','), '0,2');
+  eq('S2 bölümleri', plan[1].indexes.join(','), '1,3');
+  const all = plan.flatMap((g) => g.indexes).sort((a, b) => a - b);
+  eq('her bölüm tam bir kez atanır', all.join(','), '0,1,2,3');
+  // Benzemeyen (tekil) bölüm de kendi kümesini alır (minSize=1).
+  const p2 = S.autoSpeakerPlan(
+    [
+      { index: 0, vec: [1, 0] },
+      { index: 1, vec: [0, 1] },
+      { index: 2, vec: [-1, 0] }
+    ],
+    { threshold: 0.88, minSize: 1 }
+  );
+  eq('benzemeyen bölüm de atanır', p2.flatMap((g) => g.indexes).sort((a, b) => a - b).join(','), '0,1,2');
+
+  // Şema: speakerAuto varsayılan false; normalize korur.
+  eq('emptySegment.speakerAuto false', S.emptySegment().speakerAuto, false);
+  eq('normalizeSegment speakerAuto korunur', S.normalizeSegment({ speakerAuto: true }).speakerAuto, true);
+
+  // Uygulama yolu: yalnız BOŞ bölüm hedeflenir; onay + snapshot + log + tek kapı.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('ön-atama düğmesi var', /data-auto-speakers/.test(js), true);
+  eq('yalnız boş bölüm hedeflenir', /if \(s\.speakerId \|\| String\(s\.speaker \|\| ''\)\.trim\(\)\) continue;/.test(js), true);
+  eq('onay ister', /Konuşmacıları önceden belirle/.test(js), true);
+  eq('geri alma kaydı alınır', /snapshotForUndo\(\);\s*\n\s*ensureSpeakers\(m\);/.test(js), true);
+  eq('delil günlüğüne yazılır', /Konuşmacılar ön-atandı/.test(js), true);
+  eq('tek kapı setSegmentSpeakerByName', /setSegmentSpeakerByName\(m, sg, name\)/.test(js), true);
+  eq('elle değişince otomatik işareti kalkar', /s\.speakerAuto = false;/.test(js), true);
+  eq('otomatik işareti gösterilir', /≈ otomatik/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

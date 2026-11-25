@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.300.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.301.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.301 — Konuşmacıları önceden belirle (otomatik, anonim)
+
+**Kullanıcı:** *"Çözümlemedeki 'tümünü/dosya/bölüm yeniden çözümle' kolaylığının
+aynısını konuşmacılarda da istiyoruz; bölümlerdeki konuşmacılar önceden
+belirlensin, biz yalnız hataları düzeltelim."*
+
+### KULLANICI NE GÖRECEK
+
+- Konuşmacılar panelinde **“Konuşmacıları önceden belirle (otomatik)”** düğmesi:
+  **boş** bölümlerin konuşmacısını ses benzerliğine göre **S1, S2…** olarak
+  **ön-atar**. Sonra siz dinleyip düzeltirsiniz (yanlışsa konuşmacıyı değiştirin
+  veya **＋** ile yeni ekleyin).
+- Ön-atama yapılan bölümde **“≈ otomatik”** rozeti görünür; atamayı **elle
+  değiştirince** rozet kalkar.
+- **Mevcut atamalar korunur:** düğme yalnız **boş** bölümleri doldurur; onaylı/
+  doğrulanmış atamayı **ezmez**. Onay durumu (Kontrol) **değişmez**.
+- İşlem **onay ister**, ilerleme gösterir, **Ctrl+Z** ile geri alınır ve delil
+  günlüğüne yazılır.
+
+### Dürüst sınır (DEĞİŞMEZ)
+
+- **Kimlik tespiti DEĞİLDİR.** Ayrı **gömme modeli** (WavLM-SV q8 ≈ 97 MB, bir kez
+  indirilir) ile **anonim kümeleme** yapılır: "hangi bölümler **aynı sese
+  benziyor**". Rapora "diyarizasyon yaptık" yazılmaz; etiketler uzman onaylıdır.
+- Kısa bölüm (< 1,2 sn) ölçülmez; **belirsiz** benzerlik kör atanmaz.
+
+### Teknik
+
+- `schema.js` → **`autoSpeakerPlan(points)`** (saf): gömmeleri kümelere ayırır,
+  **ilk görülme sırasına göre** S1, S2… verir; her bölüm bir kümeye düşer.
+- `app.js` → **`autoAssignSpeakers(m)`** + `embedSegmentIndexes` (mevcut gömme
+  hattı: 16 kHz, en yüksek enerjili kanal); atama **tek kapıdan**
+  `setSegmentSpeakerByName`; `segment.speakerAuto` işareti.
+- Koruyan: `birim` [142] (16 kontrol).
 
 ## v2.300 — Soru dayanağı: bölümlere bağlama + zaman damgalı rapor
 

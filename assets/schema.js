@@ -421,6 +421,11 @@ export function emptySegment(over = {}) {
     start: '', // 'HH:MM:SS.mmm'
     end: '',
     speakerId: '', // speakers[].id — ad değil
+    speaker: '', // görünen ad (kod S1..; raporda kod + etiket)
+    // KONUŞMACI ÖN-ATAMASI (v2.301): bölümün konuşmacısı otomatik (anonim
+    // benzerlik kümelemesiyle) önerildi mi? Uzman atamayı değiştirince temizlenir.
+    // Kimlik tespiti DEĞİLDİR; yalnız "gözden geçir" işaretidir.
+    speakerAuto: false,
     text: '', // bilirkişinin onayladığı/düzelttiği metin
     // OTOMATİK ÇÖZÜMLEME ÇIKTISI, ayrı saklanır ve ASLA üzerine yazılmaz.
     // Adli incelemede "modelin ne ürettiği" ile "bilirkişinin neyi
@@ -1382,6 +1387,8 @@ export function normalizeSegment(src = {}) {
     start: str(s.start),
     end: str(s.end),
     speakerId: str(s.speakerId),
+    speaker: str(s.speaker),
+    speakerAuto: !!s.speakerAuto,
     text: str(s.text),
     // Otomatik çözümleme çıktısı korunur (v2.83). Eski kayıtlarda bu alan
     // yoktur; boş kalır ve rapor "otomatik çıktı saklanmadı" der — uydurma
@@ -1816,6 +1823,24 @@ export function embeddingClusters(points, { threshold = VOICE_EMBED_SAME, minSiz
     count: indexes.length,
     first: indexes[0],
     last: indexes[indexes.length - 1]
+  }));
+}
+
+/**
+ * Konuşmacı ÖN-ATAMA planı (v2.301). Bölüm gömmelerini benzerliğe göre kümelere
+ * ayırır ve her kümeye **ilk görülme sırasına göre** anonim kod (S1, S2…) verir.
+ * Her bölüm bir kümeye düşer (minSize=1) → tüm hedef bölümler ön-atama alır.
+ * KİMLİK TESPİTİ DEĞİLDİR; yalnız "hangi bölümler aynı sese benziyor" sorusu.
+ * Saf; test edilir (`birim`).
+ */
+export function autoSpeakerPlan(points, { threshold = VOICE_EMBED_SAME, minSize = 1 } = {}) {
+  const clusters = embeddingClusters(points, { threshold, minSize });
+  return clusters.map((c, i) => ({
+    code: 'S' + (i + 1),
+    indexes: c.indexes,
+    count: c.count,
+    first: c.first,
+    last: c.last
   }));
 }
 
