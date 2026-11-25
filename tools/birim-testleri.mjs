@@ -6061,5 +6061,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('başlık normalize edilir', /normalizeReportLabels\(c\.report\.labels\)/.test(js), true);
 }
 
+
+// [137] v2.296 — Sürükle-bırak: anahtar hedef konuma taşınır; ↑↓ korunur.
+{
+  console.log('[137] Sürükle-bırak sıralama (v2.296)');
+  const M = __reportModelMod;
+  eq('aşağı taşı', M.moveKeyTo(['a', 'b', 'c', 'd'], 'a', 'c').join(','), 'b,c,a,d');
+  eq('yukarı taşı', M.moveKeyTo(['a', 'b', 'c', 'd'], 'd', 'b').join(','), 'a,d,b,c');
+  eq('aynı anahtar değişmez', M.moveKeyTo(['a', 'b'], 'a', 'a').join(','), 'a,b');
+  eq('bilinmeyen anahtar değişmez', M.moveKeyTo(['a', 'b'], 'x', 'a').join(','), 'a,b');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('sürükleme tutamacı verisi', /data-drag-kind/.test(js) && /data-drag-key/.test(js), true);
+  eq('sürükleme hedefi vurgulanır', /drag-over/.test(js), true);
+  eq('↑↓ düğmeleri korunur', /data-report-move=/.test(js), true);
+  eq('filtreli listede sürükleme kapalı', /const canDrag = !reportOutlineState\.q/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

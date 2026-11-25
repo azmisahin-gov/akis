@@ -68,3 +68,14 @@ export function mainSectionNumbers(order, isOn, mainKeys) {
   }
   return map;
 }
+
+/** Bir anahtarı hedef anahtarın konumuna taşır (sürükle-bırak, v2.296). */
+export function moveKeyTo(items, key, targetKey) {
+  const list = Array.isArray(items) ? items.slice() : [];
+  const from = list.indexOf(key);
+  const to = list.indexOf(targetKey);
+  if (from < 0 || to < 0 || from === to) return list;
+  const [x] = list.splice(from, 1);
+  list.splice(to, 0, x);
+  return list;
+}

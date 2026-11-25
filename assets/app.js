@@ -115,15 +115,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.295';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.295';
+} from './schema.js?v=2.296';
+import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.296';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.295';
+const APP_VERSION = '2.296';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12677,6 +12677,25 @@ function moveReportSection(key, dir) {
     l.order = moveInList(l.order, key, dir);
   });
 }
+
+function moveReportSectionTo(key, targetKey) {
+  const c = currentCase();
+  if (!c) return;
+  const layout = reportLayoutOf(c);
+  const order = moveKeyTo(layout.order, key, targetKey);
+  c.report.layout = normalizeReportLayout({ ...layout, order });
+  persist();
+  renderReport();
+}
+function moveReportAnnexTo(key, targetKey) {
+  const c = currentCase();
+  if (!c) return;
+  const layout = reportLayoutOf(c);
+  layout.annexOrder = moveKeyTo(layout.annexOrder, key, targetKey);
+  c.report.layout = normalizeReportLayout(layout);
+  persist();
+  renderReport();
+}
 function moveReportAnnex(key, dir) {
   setReportLayout((l) => {
     l.annexOrder = moveInList(l.annexOrder, key, dir);
@@ -12839,6 +12858,7 @@ function renderReportSections(c) {
   const host = $('#reportSections');
   if (!host) return;
   const layout = reportLayoutOf(c);
+  const canDrag = !reportOutlineState.q && reportOutlineState.cat === 'all' && !reportOutlineState.onlyOpen;
   const row = (key, { move = false, child = false } = {}) => {
     const on = reportSectionOn(c, key);
     const mover = move
@@ -12879,7 +12899,8 @@ function renderReportSections(c) {
         (isAnnexPlaceable(key)
           ? `<button type="button" class="rsec-edit" data-report-place="${esc(key)}" aria-label="${placed ? 'Gövdeye geri al' : 'EKLER altına taşı'}" title="${placed ? 'Bu bölümü gövdeye geri al' : 'Bu bölümü EKLER altına taşı (EK-N olarak basılır)'}">${placed ? 'G' : 'EK'}</button>`
           : '');
-    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
+    const drag = move && canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(key)}"` : '';
+    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -12904,7 +12925,8 @@ function renderReportSections(c) {
       const del = custom
         ? `<button type="button" class="rsec-mv rsec-del" data-report-annex-del="${esc(key)}" aria-label="Eki kaldır" title="Bu özel eki kaldır">×</button>`
         : '';
-      annexRows += `<div class="rsec-row rsec-child"><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
+      const adrag = canDrag ? ` draggable="true" data-drag-kind="annex" data-drag-key="${esc(key)}"` : '';
+      annexRows += `<div class="rsec-row rsec-child"${adrag}><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
     }
     if (reportOutlineState.cat === 'all' || reportOutlineState.cat === 'closing') {
       annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
@@ -18121,6 +18143,43 @@ $('#reportSections')?.addEventListener('keydown', (e) => {
     }
   }
 });
+// Sürükle-bırak sıralama (v2.296). ↑↓ düğmeleri KORUNUR; sürükleme hızlandırıcıdır.
+let rsecDrag = null;
+$('#reportSections')?.addEventListener('dragstart', (e) => {
+  const row = e.target.closest('[data-drag-kind][data-drag-key]');
+  if (!row) return;
+  rsecDrag = { kind: row.dataset.dragKind, key: row.dataset.dragKey };
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', rsecDrag.key);
+  }
+  row.classList.add('dragging');
+});
+$('#reportSections')?.addEventListener('dragover', (e) => {
+  if (!rsecDrag) return;
+  const row = e.target.closest('[data-drag-kind][data-drag-key]');
+  if (!row || row.dataset.dragKind !== rsecDrag.kind || row.dataset.dragKey === rsecDrag.key) return;
+  e.preventDefault();
+  document.querySelectorAll('#reportSections .drag-over').forEach((x) => x.classList.remove('drag-over'));
+  row.classList.add('drag-over');
+});
+$('#reportSections')?.addEventListener('drop', (e) => {
+  if (!rsecDrag) return;
+  const row = e.target.closest('[data-drag-kind][data-drag-key]');
+  if (!row || row.dataset.dragKind !== rsecDrag.kind) return;
+  e.preventDefault();
+  const src = rsecDrag;
+  rsecDrag = null;
+  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over').forEach((x) => x.classList.remove('dragging', 'drag-over'));
+  if (row.dataset.dragKey === src.key) return;
+  if (src.kind === 'body') moveReportSectionTo(src.key, row.dataset.dragKey);
+  else moveReportAnnexTo(src.key, row.dataset.dragKey);
+  showToast('Sıra değiştirildi (Ctrl+Z ile geri alınır).');
+});
+$('#reportSections')?.addEventListener('dragend', () => {
+  rsecDrag = null;
+  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over').forEach((x) => x.classList.remove('dragging', 'drag-over'));
+});
 // Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
 $('#reportAnnexFields')?.addEventListener('input', (e) => {
   const t = e.target.closest('[data-annex-meta-title]');
@@ -19234,6 +19293,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.296': {
+    title: 'Rapor bölümlerini sürükleyerek sıralayabilirsiniz',
+    body:
+      'İskelette bölümü ve ekleri sürükleyip bırakarak sıralayın. ↑↓ düğmeleri ve klavye erişilebilirliği korunur. ' +
+      'Arama/kategori/“Yalnız açık” filtresi açıkken sürükleme kapalıdır; sıra değişikliği Ctrl+Z ile geri alınır.'
+  },
   '2.295': {
     title: 'Tablo sütun başlıklarını düzenleyebilirsiniz',
     body:
