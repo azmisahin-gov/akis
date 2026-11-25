@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.284.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.285.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -6979,3 +6979,63 @@ konuşmacı kümeleme ve Kişiler panelinin taşınması.
 4. Üç çıktı aynı metni üretmeli; her adımda `bash tools/test.sh` yeşil olmadan
    push yok.
 5. Kökteki `.udf/.docx/.pdf` çıktıları **ignore**; rapor dosyaları depoya girmez.
+
+## YENİ OTURUM DEVRİ (v2.285) — Başlık düzenleme + numara biçimi
+
+### Durum (2026-11-24)
+
+| | |
+|---|---|
+| Sürüm | **v2.285** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1954 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (push edildi) |
+| Açık konu | v2.286 profillerin kaldırılması; v2.287 serbest blok; v2.288 kullanıcı profilleri; konuşmacı kümeleme; Kişiler panelinin taşınması |
+
+### Ne yapıldı
+
+- **Bölüm başlığı düzenleme:** `case.report.titles` + `normalizeReportTitles`
+  (yalnız bilinen bölüm, boş atılır, 160 karakter). İskelette her satırda
+  **kalem (✎)**; Enter uygular, Esc vazgeçer. Başlık üç çıktıda aynı
+  (`reportHeadingText` tek kaynak).
+- **Numara biçimi:** `REPORT_NUMBERING = ['auto','letters','none']`;
+  `#reportNumberingToggle` artık **select** (1,2,3… / A,B,C… / numarasız).
+  İçindekiler, alt başlıklar ve kayıt ön ekleri aynı biçimi izler.
+- **Düzeltilen sessiz hata:** numarasız kipte h3 numarasızken h4 hâlâ
+  **5.1 / 5.1.1** yazıyordu; s5 kapalıyken de numara uyduruyordu. Artık
+  `reportSubHeadings` kipi ve "çiziliyor mu" durumunu izler.
+
+### Ölçüm (gerçek Chromium + CDP, 1440/1100/900/600)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Seçici | `SELECT:auto:3` · 89×24 px, kırpma yok |
+| Harf kipi | h3 `A.`/`B.`/`C.`, TOC `A.`, h4 `E.1.` |
+| Numarasız | h3 numarasız, h4 `Ses kayıtlarının çözümlenmesi`, `5.1.` sayısı **0** |
+| Kalem | 31 satır · tıkla → odak + mevcut başlık seçili |
+| Başlık kaydı | önizleme + iskelet + yenileme sonrası korundu |
+| Kırpma / yatay taşma / JS hatası | **0 / 0 / 0** |
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Tek kaynak:** `reportSectionTitle(c, key)`, `reportNumbering(c)`,
+   `reportHeadingText`, `reportSubHeadings` (+`recordPrefix(i)`).
+   Başlığı/numarayı başka yerde yeniden biçimlendirmeyin.
+2. **Alt başlık numarası türetilir:** kip + bölüm çiziliyor mu. `n5` gibi sabit
+   varsayım kullanmayın (v2.285'te hata buydu).
+3. **Başlık yalnız `case.report.titles`.** Bilinmeyen anahtar ve boş değer
+   normalize'da atılır; başlık metni uydurulmaz.
+4. **İskelet düzenleme oturumluktur** (`reportTitleEditKey`), kayda yazılmaz.
+   Enter `change` → kaydet; Esc iptal. Yeniden çizimden sonra odak geri verilir.
+5. **`#reportNumberingToggle` bir SELECT'tir.** Checkbox'a döndürmeyin: üç kip
+   (auto/letters/none) tek boolean ile anlatılamaz.
+6. **Yeni numara kipi eklerken** `REPORT_NUMBERING`, `reportNumberToken`,
+   `reportSubHeadings`, TOC ve üç çıktı testleri birlikte güncellenir.
+
+### Sıradaki iş (plan: `docs/RAPOR_SERBEST_TASARIM.md`)
+
+1. **v2.286 — Profil düğmeleri kaldırılır** (tanımlar geri uyum için kalır).
+2. **v2.287 — Serbest blok** (`free:` anahtarı; `normalizeReportLayout` ve
+   `normalizeReportTitles` dinamik anahtarı kabul etmeli).
+3. **v2.288 — Kullanıcı profilleri.**
+4. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
+   dosya düzeyine taşınması.

@@ -593,10 +593,9 @@ export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 // KAPAK/ön bölüm ve İMZA yapısaldır: sırası sabittir. Gövde bölümleri
 // kullanıcı tarafından sıralanabilir; sıra `case.report.layout.order`'dadır.
 export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
-// Bölüm numaralandırma (v2.284): 'auto' = ana bölümler 1,2,3…; 'none' = hiç
-// numara yok (kullanıcı başlıkları kendi düzenine göre yazar). Varsayılan auto
-// (mevcut raporlar değişmesin); kullanıcı panelden kapatabilir.
-export const REPORT_NUMBERING = ['auto', 'none'];
+// Bölüm numaralandırma (v2.285): 'auto' = 1, 2, 3…; 'letters' = A, B, C…;
+// 'none' = hiç numara yok. Varsayılan auto (mevcut raporlar değişmesin).
+export const REPORT_NUMBERING = ['auto', 'letters', 'none'];
 // Numaralı bölümler (1…N). Numara SIRAYA göre türetilir; bu dizinin sırası
 // önemli değildir, yalnız "hangi bölüm numara alır" sorusunu yanıtlar.
 // v2.261: cevaplar / sınırlılıklar / bütünlük de numaralı ana bölümdür.
@@ -896,6 +895,22 @@ export function normalizeReportColumns(src) {
   }
   return { ...base, ...out };
 }
+/**
+ * Bölüm başlığı düzenlemeleri (v2.285). Yalnız bilinen bölüm anahtarları
+ * korunur; boş/boşluk değer atılır (varsayılan başlık kullanılır). Uzunluk
+ * sınırlanır: başlık bir satırlık addır, paragraf değildir.
+ */
+export function normalizeReportTitles(src) {
+  const out = {};
+  if (!src || typeof src !== 'object') return out;
+  for (const key of REPORT_SECTION_KEYS) {
+    const v = src[key];
+    if (typeof v !== 'string') continue;
+    const t = v.trim();
+    if (t) out[key] = t.slice(0, 160);
+  }
+  return out;
+}
 
 // ---- 5b-2. Rapor biçimi: sayfa · font · punto (v2.238) -------------------
 // TEK KAYNAK. Ekran önizlemesi, yazdırma/PDF (@page), DOCX ve UDF bu değerleri
@@ -1143,8 +1158,11 @@ export function emptyCase(over = {}) {
       layout: emptyReportLayout(),
       // Tablo sütun görünürlüğü (v2.235): tümü açık.
       columns: emptyReportColumns(),
-      // Numaralandırma (v2.284): 'auto' | 'none'.
+      // Numaralandırma (v2.285): 'auto' | 'letters' | 'none'.
       numbering: 'auto',
+      // Bölüm başlığı düzenlemeleri (v2.285): anahtar → kullanıcı başlığı.
+      // Boş/eksik anahtar varsayılan başlığı kullanır.
+      titles: {},
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -1931,8 +1949,10 @@ export function normalizeCase(src = {}) {
       layout: normalizeReportLayout(report.layout),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
-      // Numaralandırma (v2.284): bilinmeyen/boş değer 'auto' olur.
+      // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
       numbering: REPORT_NUMBERING.includes(report.numbering) ? report.numbering : 'auto',
+      // Başlık düzenlemeleri: yalnız bilinen bölüm anahtarları, boş atılır.
+      titles: normalizeReportTitles(report.titles),
       // Sayfalı önizleme (v2.221): varsayılan kapalı.
       pageView: !!report.pageView,
       // Teknik ortam (v2.222): eksik alan boş metin; bilinmeyen korunur.

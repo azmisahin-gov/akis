@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.284.**
+yazılır. **Güncel sürüm: v2.285.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.285 — Başlık düzenleme + numara biçimi (TAMAMLANDI)
+
+- Her bölüm başlığı iskeletteki **kalem** ile düzenlenir (`case.report.titles`);
+  üç çıktı aynı başlığı basar. Enter uygular, Esc vazgeçer.
+- Numara biçimi **1,2,3… / A,B,C… / numarasız**; içindekiler ve alt başlıklar
+  aynı biçimi izler.
+- **Düzeltme:** numarasız kipte alt başlık "5.1" kalmıyor; s5 kapalıysa numara
+  uydurulmuyor.
+- Koruyan: `birim` [127], `rapor` Senaryo 37.
 
 ## v2.284 — Numaralandırma seçenekli; Git onarıldı (TAMAMLANDI)
 

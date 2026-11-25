@@ -144,6 +144,7 @@ const EXPOSE = [
   'readEmbeddedMeta', 'parseId3v2', 'parseMp4Meta', 'parseWavMeta', 'parseFlacMeta', 'embeddedSummary', 'embeddedRows', 'mp4EpochToIso',
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
+  'reportSectionTitle', 'reportUiLabel', 'reportLetter',
   'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
@@ -5777,6 +5778,52 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kayıt altı konuşmacı etiketi var', /recordSpeakersHeading/.test(js), true);
   eq('kayıt altı deşifre etiketi var', /recordTranscriptHeading/.test(js), true);
   eq('s5 girişi bir kez (üç çıktı)', (js.match(/REPORT_TEXT\.s5Intro/g) || []).length >= 3, true);
+}
+
+// [127] v2.285 — Başlık düzenleme + numara biçimi (auto/letters/none) +
+// alt başlık tutarlılığı. Ölçülen hata: numaralar kapalıyken h3 numarasız
+// kalıyor ama h4 hâlâ "5.1." yazıyordu (gerçek tarayıcıda ölçüldü).
+{
+  console.log('[127] Başlık düzenleme ve numara biçimi (v2.285)');
+  const S = __schemaMod;
+  eq('letters kipi şemada', S.REPORT_NUMBERING.includes('letters'), true);
+  eq('letters normalize korunur', S.normalizeCase({ report: { numbering: 'letters' } }).report.numbering, 'letters');
+  eq('bilinmeyen kip auto olur', S.normalizeCase({ report: { numbering: 'zzz' } }).report.numbering, 'auto');
+
+  const t = S.normalizeReportTitles({ s1: '  Özel Başlık  ', yok: 'x', s2: '   ', s3: 'a'.repeat(200) });
+  eq('başlık kırpılır', t.s1, 'Özel Başlık');
+  eq('bilinmeyen başlık atılır', 'yok' in t, false);
+  eq('boş başlık atılır', 's2' in t, false);
+  eq('başlık uzunluğu sınırlı', t.s3.length, 160);
+  eq('emptyCase.titles boş', Object.keys(T.emptyCaseForTest({ id: 'cT0' }).report.titles).length, 0);
+
+  const c = T.emptyCaseForTest({ id: 'cT1', report: { numbering: 'letters', titles: { s1: 'ÖZEL KONU' } } });
+  eq('özel başlık okunur', T.reportSectionTitle(c, 's1'), 'ÖZEL KONU');
+  eq('harf numarası A', T.reportHeadingText(c, 's1'), 'A. ÖZEL KONU');
+  eq('ikinci ana bölüm B', T.reportHeadingText(c, 's2'), 'B. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR');
+  eq('iskelet etiketi özel başlık', T.reportUiLabel(c, 's1'), 'A · ÖZEL KONU');
+  eq('TOC harf numarası taşır', T.reportTocEntries(c).some((x) => x.startsWith('A. ÖZEL KONU')), true);
+  eq('alt başlık harf kipinde', T.reportSubHeadings(c).s51, 'E.1. Ses kayıtlarının çözümlenmesi');
+  eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), 'E.1.1.');
+
+  const cn = T.emptyCaseForTest({ id: 'cT2', report: { numbering: 'none' } });
+  eq('numarasız başlık', T.reportHeadingText(cn, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('numarasız alt başlık', T.reportSubHeadings(cn).s51, 'Ses kayıtlarının çözümlenmesi');
+  eq('numarasız kayıt öneki', T.reportSubHeadings(cn).recordPrefix(0), '1.');
+  eq('iskelet numarasız', T.reportUiLabel(cn, 's1'), 'Konu, kapsam ve sınırlar');
+
+  // s5 kapalıysa alt başlık numara UYDURMAZ (eski kod "5.1" yazıyordu).
+  const cc = T.emptyCaseForTest({ id: 'cT3', report: { sections: { s5: false } } });
+  eq('s5 kapalı: alt başlık numarasız', T.reportSubHeadings(cc).s51, 'Ses kayıtlarının çözümlenmesi');
+
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const schemaSrc = fs.readFileSync(path.join(ROOT, 'assets/schema.js'), 'utf8');
+  eq('numara seçici select', /<select id="reportNumberingToggle"/.test(html), true);
+  eq('üç numara kipi seçenekte', /value="auto"/.test(html) && /value="letters"/.test(html) && /value="none"/.test(html), true);
+  eq('iskelette başlık kalemi', /data-report-title="\$\{esc\(key\)\}"/.test(js), true);
+  eq('başlık düzenleme tek kapı', /function setReportSectionTitle\(/.test(js), true);
+  eq('titles normalize edilir', /titles: normalizeReportTitles\(report\.titles\)/.test(schemaSrc), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

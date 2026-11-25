@@ -3898,3 +3898,10 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 #view-audio .sd-canvas-top-tools .seg-tool { padding: 2px 7px; }
 #view-audio .sd-status .st-chip.work { border-style: dashed; }
+
+/* v2.285 — Rapor iskeleti: başlık düzenleme + numara biçimi seçici.
+   Kırpma yok: başlık girişi satırda kalan genişliği alır; uzun başlık sarar. */
+.rs-onlyopen select#reportNumberingToggle { height: 24px; max-width: 96px; padding: 0 4px; font-size: var(--fs-2xs); }
+.rsec-edit { flex: 0 0 auto; border: 0; background: transparent; color: var(--ink-3); cursor: pointer; font-size: var(--fs-xs); line-height: 1; padding: 2px 3px; border-radius: 3px; }
+.rsec-edit:hover { background: var(--surface-3); color: var(--ink); }
+.rsec-title-input { flex: 1 1 auto; min-width: 0; height: 24px; padding: 0 6px; font-size: var(--fs-2xs); }

@@ -91,6 +91,7 @@ import {
   REPORT_COLUMN_LOCKED,
   emptyReportColumns,
   normalizeReportColumns,
+  normalizeReportTitles,
   REPORT_FONT_DEFS,
   REPORT_FONT_KEYS,
   REPORT_FONT_LABEL,
@@ -104,15 +105,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.284';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.284';
+} from './schema.js?v=2.285';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.285';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.284';
+const APP_VERSION = '2.285';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12184,6 +12185,9 @@ function syncReportToolbarHeight() {
 // contentEditable DEĞİL; serbest metin alanları aynı modeli yazar, üç çıktı
 // (HTML/DOCX/UDF) aynı metni üretir.
 let reportEditKey = null;
+// Başlık düzenleme oturumluktur (kayda yazılmaz); yalnız hangi satırın
+// düzenlendiğini tutar. Değer `case.report.titles` içine yazılır.
+let reportTitleEditKey = null;
 const REPORT_NARRATIVE_FIELDS = {
   s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
   limits: [{ field: 'limitationsText', label: 'Teknik sınırlılıklar', rows: 6 }],
@@ -12293,31 +12297,54 @@ function reportNumberMap(c) {
   // Numaralandırma artık "çizilecek mi" ölçütünü kullanır (reportBlockRenders).
   return mainSectionNumbers(reportBodyOrder(c), (k) => reportBlockRenders(c, k), REPORT_MAIN_KEYS);
 }
-function reportSectionTitle(key) {
+// Başlık: kullanıcı düzenlemesi varsa o, yoksa tanımdaki varsayılan (v2.285).
+function reportSectionTitle(c, key) {
+  const custom = c && c.report && c.report.titles && c.report.titles[key];
+  if (typeof custom === 'string' && custom.trim()) return custom.trim();
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
   return (def && def.title) || key;
 }
-// Numaralandırma kipi (v2.284): 'auto' | 'none'. Tek kaynak: case.report.numbering.
+// Numaralandırma kipi (v2.285): 'auto' | 'letters' | 'none'. Tek kaynak:
+// case.report.numbering. Bilinmeyen değer 'auto' kabul edilir.
 function reportNumbering(c) {
   const v = c && c.report && c.report.numbering;
-  return v === 'none' ? 'none' : 'auto';
+  return REPORT_NUMBERING.includes(v) ? v : 'auto';
+}
+// 1 → A, 2 → B… Ana bölüm sayısı 26'yı aşmaz; yine de güvenli döngü.
+function reportLetter(n) {
+  const i = Math.max(0, Math.floor(Number(n) || 0));
+  if (!i) return '';
+  const base = ((i - 1) % 26) + 1;
+  const cycle = Math.floor((i - 1) / 26);
+  return String.fromCharCode(64 + base) + (cycle ? String(cycle) : '');
+}
+function reportNumberToken(n, mode) {
+  return mode === 'letters' ? reportLetter(n) : String(n);
 }
 function reportHeadingText(c, key, map) {
-  const title = reportSectionTitle(key);
-  if (reportNumbering(c) === 'none') return title;
+  const title = reportSectionTitle(c, key);
+  const mode = reportNumbering(c);
+  if (mode === 'none') return title;
   if (REPORT_MAIN_KEYS.includes(key)) {
     const n = (map || reportNumberMap(c))[key];
-    return n ? `${n}. ${title}` : title;
+    return n ? `${reportNumberToken(n, mode)}. ${title}` : title;
   }
   return title;
 }
-// Alt başlıklar ana bölüm numarasından türetilir (5.1 …). v2.261: cevaplar ve
-// sınırlılıklar ayrı bölüm olduğu için s5'in tek alt başlığı kaldı.
+// Alt başlıklar ana bölüm numarasından türetilir (5.1 / A.1 …). v2.261:
+// cevaplar ve sınırlılıklar ayrı bölüm olduğu için s5'in tek alt başlığı kaldı.
+// v2.285: numara kipi ve "bölüm çiziliyor mu" burada da geçerli; numarasız
+// kipte alt başlık da numarasız olur (eskiden h3 numarasızken h4 "5.1" kalıyordu).
 function reportSubHeadings(c) {
+  const mode = reportNumbering(c);
   const n = reportNumberMap(c).s5 || 0;
-  const p = n ? `${n}.` : '5.';
+  if (mode === 'none' || !n) {
+    return { s51: 'Ses kayıtlarının çözümlenmesi', recordPrefix: (i) => `${i + 1}.` };
+  }
+  const p = reportNumberToken(n, mode);
   return {
-    s51: `${p}1. Ses kayıtlarının çözümlenmesi`
+    s51: `${p}.1. Ses kayıtlarının çözümlenmesi`,
+    recordPrefix: (i) => `${p}.1.${i + 1}.`
   };
 }
 // TOC'a girecek blok gerçekten çizilecek mi? Koşullu bloklar (veri yoksa
@@ -12478,10 +12505,13 @@ const REPORT_UI_LABELS = {
   signature: 'İmza ve alt bilgi'
 };
 function reportUiLabel(c, key) {
-  const base = REPORT_UI_LABELS[key] || reportSectionTitle(key);
-  if (REPORT_MAIN_KEYS.includes(key)) {
+  // Kullanıcı başlığı düzenlediyse iskelette O görünür (yoksa kısa arayüz etiketi).
+  const custom = c && c.report && c.report.titles && c.report.titles[key];
+  const base = (typeof custom === 'string' && custom.trim()) || REPORT_UI_LABELS[key] || reportSectionTitle(c, key);
+  const mode = reportNumbering(c);
+  if (REPORT_MAIN_KEYS.includes(key) && mode !== 'none') {
     const n = reportNumberMap(c)[key];
-    return n ? `${n} · ${base}` : base;
+    return n ? `${reportNumberToken(n, mode)} · ${base}` : base;
   }
   return base;
 }
@@ -12534,7 +12564,7 @@ function reportOutlineMatch(c, key, label, on) {
   if (st.onlyOpen && !on) return false;
   const q = String(st.q || '').trim().toLocaleLowerCase('tr-TR');
   if (!q) return true;
-  const hay = `${label || ''} ${reportSectionTitle(key)}`.toLocaleLowerCase('tr-TR');
+  const hay = `${label || ''} ${reportSectionTitle(c, key)}`.toLocaleLowerCase('tr-TR');
   return hay.includes(q);
 }
 function syncReportOutlineControls() {
@@ -12545,7 +12575,7 @@ function syncReportOutlineControls() {
   if (cb) cb.checked = reportOutlineState.onlyOpen;
   const nb = $('#reportNumberingToggle');
   const c0 = currentCase();
-  if (nb) nb.checked = reportNumbering(c0) === 'auto';
+  if (nb) nb.value = reportNumbering(c0);
 }
 
 // RAPOR İSKELETİ (v2.227): tüm parçalar TEK listede; gövde ve ekler
@@ -12559,7 +12589,14 @@ function renderReportSections(c) {
     const mover = move
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
-    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(reportUiLabel(c, key))}</span></label></div>`;
+    const editing = reportTitleEditKey === key;
+    const label = editing
+      ? `<input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Enter: uygula · Esc: vazgeç">`
+      : `<span>${esc(reportUiLabel(c, key))}</span>`;
+    const editBtn = editing
+      ? `<button type="button" class="rsec-edit" data-report-title-cancel="${esc(key)}" aria-label="Vazgeç" title="Vazgeç (Esc)">×</button>`
+      : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle (Enter: uygula, Esc: vazgeç)">✎</button>`;
+    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -12618,6 +12655,22 @@ function setReportSection(key, on) {
   c.report.sections = { ...(c.report.sections || {}), [key]: !!on };
   persist();
   renderReport();
+}
+// Bölüm başlığını yaz (v2.285). Boş değer varsayılana döndürür. Başlık
+// `case.report.titles`ta tutulur; üç çıktı `reportHeadingText` üzerinden okur.
+function setReportSectionTitle(key, value) {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  const titles = { ...(c.report.titles || {}) };
+  const v = String(value == null ? '' : value).trim();
+  if (v) titles[key] = v;
+  else delete titles[key];
+  c.report.titles = normalizeReportTitles(titles);
+  reportTitleEditKey = null;
+  persist();
+  renderReport();
+  showToast(v ? 'Bölüm başlığı güncellendi.' : 'Bölüm başlığı varsayılana döndü.');
 }
 // v2.220 — 56.12 şablon bölümlerinin VERİSİ (tek kaynak). Üç çıktı bu
 // satırları/biçimleri kendi biçiminde basar; metin burada uydurulmaz.
@@ -13336,7 +13389,6 @@ function renderReport() {
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
-  const n5 = map.s5 || 5;
 
   // ÖN BÖLÜM (sırası sabit)
   const front = {
@@ -13448,7 +13500,7 @@ function renderReport() {
       if (materials.length) {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
-          out += `<h4>${n5}.1.${i + 1}. ${esc(m.name)}</h4><p class="paper-muted">Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+          out += `<h4>${esc(sub.recordPrefix(i))} ${esc(m.name)}</h4><p class="paper-muted">Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
           {
             const spkTable = materialSpeakerRows(c, m);
             if (spkTable.rows.length) {
@@ -13743,7 +13795,6 @@ function docxXml(c) {
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
-  const n5 = map.s5 || 5;
   const coverSpec = reportTypeSpec(c.reportType);
 
   const front = {
@@ -13913,7 +13964,7 @@ function docxXml(c) {
       let out = headingXml(H('s5')) + headingXml(sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17 });
       for (let i = 0; i < c.materials.length; i++) {
         const m = c.materials[i];
-        out += headingXml(`${n5}.1.${i + 1}. ${m.name}`, 2);
+        out += headingXml(`${sub.recordPrefix(i)} ${m.name}`, 2);
         out += wP(
           `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
           { color: '6F8295', size: 17 }
@@ -14297,7 +14348,6 @@ async function makeUdf() {
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
-  const n5 = map.s5 || 5;
   const coverSpec = reportTypeSpec(c.reportType);
 
   const front = {
@@ -14478,7 +14528,7 @@ async function makeUdf() {
       el.push(paragraph(REPORT_TEXT.s5Intro, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (c.materials?.length) {
         c.materials.forEach((m, i) => {
-          el.push(paragraph(`${n5}.1.${i + 1}. ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+          el.push(paragraph(`${sub.recordPrefix(i)} ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
           el.push(
             paragraph(
               `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
@@ -17238,16 +17288,23 @@ $('#reportOnlyOpen')?.addEventListener('change', (e) => {
   const c = currentCase();
   if (c) renderReportSections(c);
 });
-// v2.284 — Numaralandırma aç/kapa: başlıklar ve İÇİNDEKİLER birlikte değişir.
+// v2.285 — Numaralandırma biçimi: 1,2,3… / A,B,C… / numarasız. Başlıklar,
+// alt başlıklar ve İÇİNDEKİLER birlikte değişir (tek kaynak reportNumbering).
 $('#reportNumberingToggle')?.addEventListener('change', (e) => {
   const c = currentCase();
   if (!c) return;
   c.report = c.report || {};
-  c.report.numbering = e.target.checked ? 'auto' : 'none';
+  const v = REPORT_NUMBERING.includes(e.target.value) ? e.target.value : 'auto';
+  c.report.numbering = v;
   persist();
   renderReport();
-  renderReportSections(c);
-  showToast(e.target.checked ? 'Bölüm numaraları açık.' : 'Bölüm numaraları kapalı; başlıklar numarasız yazılır.');
+  showToast(
+    v === 'letters'
+      ? 'Bölüm numaraları A, B, C… biçiminde.'
+      : v === 'none'
+        ? 'Bölüm numaraları kapalı; başlıklar numarasız yazılır.'
+        : 'Bölüm numaraları 1, 2, 3… biçiminde.'
+  );
 });
 $('#reportSectionCats')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-rsec-cat]');
@@ -17257,6 +17314,15 @@ $('#reportSectionCats')?.addEventListener('click', (e) => {
   if (c) renderReportSections(c);
 });
 $('#reportSections')?.addEventListener('change', (e) => {
+  const tinp = e.target.closest('[data-report-title-input]');
+  if (tinp) {
+    // Yalnız hâlâ düzenlenen satır kaydedilir; Enter zaten kaydedip kapattıysa
+    // ardından gelen change olayı ikinci kez yazmasın.
+    if (reportTitleEditKey === tinp.dataset.reportTitleInput) {
+      setReportSectionTitle(tinp.dataset.reportTitleInput, tinp.value);
+    }
+    return;
+  }
   const acb = e.target.closest('[data-report-annex]');
   if (acb) {
     setReportAnnexOn(acb.dataset.reportAnnex, acb.checked);
@@ -17267,6 +17333,28 @@ $('#reportSections')?.addEventListener('change', (e) => {
   setReportSection(cb.dataset.reportSection, cb.checked);
 });
 $('#reportSections')?.addEventListener('click', (e) => {
+  const tedit = e.target.closest('[data-report-title]');
+  if (tedit) {
+    const key = tedit.dataset.reportTitle;
+    reportTitleEditKey = key;
+    const c = currentCase();
+    if (c) renderReportSections(c);
+    requestAnimationFrame(() => {
+      const inp = document.querySelector(`[data-report-title-input="${key}"]`);
+      if (inp) {
+        inp.focus();
+        inp.select();
+      }
+    });
+    return;
+  }
+  const tcancel = e.target.closest('[data-report-title-cancel]');
+  if (tcancel) {
+    reportTitleEditKey = null;
+    const c = currentCase();
+    if (c) renderReportSections(c);
+    return;
+  }
   const mv = e.target.closest('[data-report-move]');
   if (mv) {
     moveReportSection(mv.dataset.reportMove, Number(mv.dataset.dir));
@@ -17313,6 +17401,22 @@ $('#reportSections')?.addEventListener('click', (e) => {
       : emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   persist();
   renderReport();
+});
+// Başlık düzenleme (v2.285): Enter uygular (change → kaydet), Esc vazgeçer.
+$('#reportSections')?.addEventListener('keydown', (e) => {
+  const inp = e.target.closest('[data-report-title-input]');
+  if (!inp) return;
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    // Değer değişmemiş olsa da düzenlemeyi kapat (blur tek başına change
+    // üretmez; kutu açık kalırdı).
+    setReportSectionTitle(inp.dataset.reportTitleInput, inp.value);
+  } else if (e.key === 'Escape') {
+    e.preventDefault();
+    reportTitleEditKey = null;
+    const c = currentCase();
+    if (c) renderReportSections(c);
+  }
 });
 // Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
 $('#reportAnnexFields')?.addEventListener('input', (e) => {
@@ -18412,6 +18516,15 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.285': {
+    title: 'Bölüm başlıklarını kendiniz yazabilirsiniz; numaralar A, B, C… olabilir',
+    body:
+      'Rapor iskeletindeki her bölümün yanında kalem (✎) var: başlığı yazıp Enter ile uygularsınız, ' +
+      'Esc ile vazgeçersiniz. Yeni başlık önizlemede ve HTML/DOCX/UDF çıktısında aynı yazılır. ' +
+      'Numaralar artık üç biçimli: 1, 2, 3… · A, B, C… · numarasız. İçindekiler ve alt başlıklar da ' +
+      'aynı biçimi izler. Düzeltme: numarasız seçildiğinde alt başlıklar hâlâ "5.1" yazıyordu; artık ' +
+      'onlar da numarasız ve kapalı bölüm numara uydurmuyor.'
+  },
   '2.284': {
     title: 'Rapor numaraları artık sizin elinizde; "Git" düğmeleri çalışıyor',
     body:

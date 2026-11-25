@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.284.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.285.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.285 — Bölüm başlıkları düzenlenebilir; numara biçimi seçilebilir
+
+**Kullanıcı:** *"Her alanı sıfırdan yapabilsin, şablon yapısı olmasın. İster
+numaralı, ister numarasız, ister A B C'li."*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletindeki her bölümün yanında **kalem (✎)** var. Başlığı yazıp
+  **Enter** ile uygularsınız, **Esc** ile vazgeçersiniz. Yeni başlık hem
+  önizlemede hem **HTML/DOCX/UDF** çıktısında aynı yazılır.
+- **Numaralar** artık üç seçenekli: **1, 2, 3…** · **A, B, C…** · **Numarasız**.
+  İçindekiler ve alt başlıklar da aynı biçimi izler.
+- **Düzeltilen sessiz hata:** "Numarasız" seçiliyken ana başlıklar numarasız
+  oluyor ama alt başlıklar hâlâ **5.1 / 5.1.1** yazıyordu. Artık numarasız.
+  Bölüm kapalıysa alt başlık numara uydurmaz.
+
+### Teknik
+
+- `case.report.titles` + `normalizeReportTitles` (yalnız bilinen bölüm;
+  boş atılır, 160 karakter sınırı).
+- `REPORT_NUMBERING = ['auto','letters','none']`; `reportLetter`,
+  `reportNumberToken`, `reportSubHeadings().recordPrefix(i)`.
+- Üç çıktı `reportHeadingText` üzerinden okur; başlık tek kaynaktan.
+- `#reportNumberingToggle` checkbox → **select** (aynı kimlik).
+- Koruyan: `birim` [127], `rapor` Senaryo 37.
 
 ## v2.284 — Numaralandırma kullanıcıya bırakıldı; "Git" onarıldı
 

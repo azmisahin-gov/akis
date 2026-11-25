@@ -1,4 +1,4 @@
-# Özellikler (v2.284 — mevcut durum)
+# Özellikler (v2.285 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -586,9 +586,16 @@ uzmanlık alanını gösterir.
   konuşmacıyı kullanır (gereksiz "Konuşmacı 2" uydurmaz). Eski sürümlerde bozulmuş kayıtlar
   açılışta onarılır (`reconcileSpeakerRefs`); paketten yükleme arşivle aynı normalize kuralını
   kullanır. Raporda aynı bölüm iki satırda görünmez.
-- **Numaralandırma seçenekli (v2.284):** rapor iskeletinde **Numaralar** anahtarı;
-  kapatınca tüm başlıklar ve İÇİNDEKİLER numarasız yazılır (kullanıcı kendi
-  numarasını metne yazar). Açıkken ana bölümler 1…N, alt bloklar TOC'ta "–".
+- **Başlık düzenleme + numara biçimi (v2.285):** rapor iskeletindeki her bölümün
+  yanındaki **kalem (✎)** ile başlık yazılır (Enter uygular, Esc vazgeçer); başlık
+  `case.report.titles`ta saklanır ve **HTML/DOCX/UDF** çıktılarında aynı yazılır.
+  **Numaralar** üç biçimlidir: **1, 2, 3…** · **A, B, C…** · **Numarasız**;
+  İÇİNDEKİLER ve alt başlıklar aynı biçimi izler. **Düzeltme:** numarasız kipte
+  alt başlıklar da numarasız (eskiden "5.1" kalıyordu); bölüm kapalıysa numara
+  uydurulmaz.
+- **Numaralandırma seçenekli (v2.284):** aynı anahtarın ilk sürümü; kapatınca
+  tüm başlıklar ve İÇİNDEKİLER numarasız yazılıyordu. Açıkken ana bölümler 1…N,
+  alt bloklar TOC'ta "–".
 - **"Git" düğmeleri (v2.284):** perde/gömme işaretli bölüme giderken **Deşifre**
   sekmesine geçer, bölümü açar ve satıra odaklanır.
 - **Rapor sütunları: konuşmacı KODU ve ETİKETİ ayrı (v2.281):** kanıt tablosunda

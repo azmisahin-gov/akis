@@ -1318,5 +1318,26 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('S/K açıklaması tekrar etmez (D)', one(D) === 1, String(one(D)));
 }
 
+// Senaryo 37: başlık düzenleme + numara biçimi (v2.285). Üç çıktı aynı
+// kullanıcı başlığını ve aynı numara biçimini üretmeli. Ayrıca numarasız
+// kipte ALT BAŞLIK da numarasız olmalı (eski kod h4'te "5.1." bırakıyordu).
+{
+  console.log('\n[Senaryo 37] başlık düzenleme + harf numarası (v2.285)');
+  const c = withMaterial();
+  c.report = { numbering: 'letters', titles: { s1: 'ÖZEL KONU BAŞLIĞI' } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('özel başlık üç çıktıda', 'ÖZEL KONU BAŞLIĞI', H, U, D);
+  checkShared('harf numarası (A.)', 'A. ÖZEL KONU BAŞLIĞI', H, U, D);
+  checkShared('harf alt başlık (E.1.)', 'E.1. Ses kayıtlarının çözümlenmesi', H, U, D);
+
+  const c2 = withMaterial();
+  c2.report = { numbering: 'none' };
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  checkShared('numarasız alt başlık', 'Ses kayıtlarının çözümlenmesi', H2, U2, D2);
+  check('numarasız kipte "5.1." yok (H)', !/5\.1\./.test(H2), 'hâlâ numaralı');
+  check('numarasız kipte "5.1." yok (U)', !/5\.1\./.test(U2), 'hâlâ numaralı');
+  check('numarasız kipte "5.1." yok (D)', !/5\.1\./.test(D2), 'hâlâ numaralı');
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);
