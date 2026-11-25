@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -5978,6 +5978,24 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const mig2 = S.normalizeCase({ id: 'm2', report: { sections: { s7: false } } });
   eq('göç: s7 kapalı annex’i kapatmaz', mig2.report.sections.annex, true);
   eq('ek listesi başlıkları', T.reportAttachmentLines(c).length > 0, true);
+}
+
+
+// [133] v2.291 — Bölümü EKLER altına taşıma: gövdeden çıkar, EK-N olarak basılır.
+{
+  console.log('[133] Bölümü EK altına taşıma (v2.291)');
+  const S = __schemaMod;
+  eq('s5 taşınabilir', S.isAnnexPlaceable('s5'), true);
+  eq('annex taşınamaz', S.isAnnexPlaceable('annex'), false);
+  const ap = S.normalizeAnnexPlacement({ s5: true, annex: true, yok: true, s1: false });
+  eq('yalnız geçerli taşıma kalır', Object.keys(ap).join(','), 's5');
+  const c = T.emptyCaseForTest({ id: 'cP1', report: { annexPlacement: { s5: true } } });
+  eq('gövde sırası s5 içermez', T.reportBodyOrder(c).includes('s5'), false);
+  eq('taşınan s5 listelenir', T.reportMovedSections(c).includes('s5'), true);
+  const moved = T.reportAnnexList(c).find((a) => a.movedKey === 's5');
+  eq('taşınan EK başlığı', moved && moved.heading.startsWith('EK-7. '), true);
+  eq('annex blok türü moved', T.reportAnnexBlocks(c).find((b) => b.kind === 'moved')?.sectionKey, 's5');
+  eq('revizyon yerleşimi taşır', T.reportSnapshot(c).annexPlacement.s5, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

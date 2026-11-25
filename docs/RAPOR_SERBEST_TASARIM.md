@@ -90,7 +90,7 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
   asıl EKLER (`annex`) varsayılan açık. EK-1… içerikleri tek yerde.
 - Göç: eski `s7` tercihi `annex`e taşınır; boş liste kapanır.
 
-### v2.291 — Bölümü EK olarak taşıma (PLAN — kullanıcı sorusu)
+### v2.291 — Bölümü EK olarak taşıma (YAPILDI)
 
 - Amaç: **kayıt bazında bulgular (s5)** gibi uzun gövde bölümlerini EKLER
   altına taşıyıp gövdeyi temiz tutmak.

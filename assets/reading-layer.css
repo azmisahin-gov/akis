@@ -3919,3 +3919,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.289 — "veri yok" rozeti: bölüm açık ama rapora giremiyor; nedeni title'da.
    Renk tek başına anlam vermez: metin de taşır. */
 .rsec-nodata { font-size: var(--fs-2xs); color: var(--gold); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+
+/* v2.291 — Bölüm EKLER altına taşındı rozeti. */
+.rsec-placed { font-size: var(--fs-2xs); color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; white-space: nowrap; }

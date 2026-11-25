@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.290.**
+yazılır. **Güncel sürüm: v2.291.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.291 — Bölümü EKLER altına taşıma (TAMAMLANDI)
+
+- Her gövde bölümünün yanında **EK** / **G** düğmesi: bölüm EKLER altına taşınır
+  veya gövdeye geri alınır.
+- Taşınan bölüm `EK-N. <başlık>` olarak basılır; içerik aynı üreticiden, alt
+  başlıklar `EK-N.1`, üç çıktı aynı. Ctrl+Z ile geri alınır.
+- `case.report.annexPlacement`; revizyon ve birleştirme taşır.
+- Koruyan: `birim` [133], `rapor` Senaryo 40.
 
 ## v2.290 — Tek EKLER bölümü (TAMAMLANDI)
 

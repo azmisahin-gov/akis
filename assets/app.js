@@ -95,6 +95,8 @@ import {
   normalizeReportTitles,
   normalizeReportBlocks,
   normalizeReportProfiles,
+  normalizeAnnexPlacement,
+  isAnnexPlaceable,
   ensureFreeBlockOrder,
   isFreeBlockKey,
   freeBlockKey,
@@ -111,15 +113,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.290';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.290';
+} from './schema.js?v=2.291';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.291';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.290';
+const APP_VERSION = '2.291';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12197,6 +12199,10 @@ let reportEditKey = null;
 let reportTitleEditKey = null;
 // Seçili rapor profili (oturumluk; kayda yazılmaz).
 let reportProfileSel = '';
+// EK altında basılan bölümün EK numarası (alt başlık EK-N.1 için, v2.291).
+let movedAnnexNo = 0;
+let movedAnnexHeading = '';
+let movedAnnexKey = '';
 const REPORT_NARRATIVE_FIELDS = {
   s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
   limits: [{ field: 'limitationsText', label: 'Teknik sınırlılıklar', rows: 6 }],
@@ -12304,7 +12310,18 @@ function reportLayoutOf(c) {
 }
 function reportBodyOrder(c) {
   // v2.287: serbest blok anahtarları da gövde sırasına girer.
-  return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k));
+  // v2.291: EKLER altına taşınan bölüm gövdede çizilmez.
+  const placed = normalizeAnnexPlacement(c && c.report && c.report.annexPlacement);
+  return reportLayoutOf(c).order.filter(
+    (k) => (REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k)) && !placed[k]
+  );
+}
+// EKLER altına taşınmış ve gerçekten çizilecek bölümler (v2.291).
+function reportMovedSections(c) {
+  const placed = normalizeAnnexPlacement(c && c.report && c.report.annexPlacement);
+  return reportLayoutOf(c).order.filter(
+    (k) => isAnnexPlaceable(k) && placed[k] && reportBlockRenders(c, k)
+  );
 }
 function reportBlockByKey(c, key) {
   if (!isFreeBlockKey(key)) return null;
@@ -12349,6 +12366,8 @@ function reportNumberToken(n, mode) {
   return mode === 'letters' ? reportLetter(n) : String(n);
 }
 function reportHeadingText(c, key, map) {
+  // EK altına taşınan bölüm UDF'te kendi başlığını EK-N olarak bassın (v2.291).
+  if (movedAnnexHeading && movedAnnexKey === key) return movedAnnexHeading;
   const title = reportSectionTitle(c, key);
   const mode = reportNumbering(c);
   if (mode === 'none') return title;
@@ -12362,11 +12381,11 @@ function reportHeadingText(c, key, map) {
 // kipte alt başlık da numarasız olur (eskiden h3 numarasızken h4 "5.1" kalıyordu).
 function reportSubHeadings(c) {
   const mode = reportNumbering(c);
-  const n = reportNumberMap(c).s5 || 0;
-  if (mode === 'none' || !n) {
+  const n = movedAnnexNo || reportNumberMap(c).s5 || 0;
+  if ((mode === 'none' && !movedAnnexNo) || !n) {
     return { s51: 'Ses kayıtlarının çözümlenmesi', recordPrefix: (i) => `${i + 1}.` };
   }
-  const p = reportNumberToken(n, mode);
+  const p = movedAnnexNo ? `EK-${movedAnnexNo}` : reportNumberToken(n, mode);
   return {
     s51: `${p}.1. Ses kayıtlarının çözümlenmesi`,
     recordPrefix: (i) => `${p}.1.${i + 1}.`
@@ -12475,6 +12494,20 @@ function reportAnnexList(c) {
       heading: `EK-${n}. ${base}`,
       custom: !REPORT_ANNEX_DEFS.some((d) => d.key === key),
       meta
+    });
+  }
+  // v2.291: gövdeden EKLER altına taşınan bölümler EK olarak listelenir.
+  for (const key of reportMovedSections(c)) {
+    n += 1;
+    const base = reportSectionTitle(c, key);
+    out.push({
+      key: `moved:${key}`,
+      n,
+      title: base,
+      heading: `EK-${n}. ${base}`,
+      movedKey: key,
+      custom: false,
+      meta: {}
     });
   }
   return out;
@@ -12662,6 +12695,8 @@ function renderReportSections(c) {
     const editing = reportTitleEditKey === key;
     const free = isFreeBlockKey(key);
     const block = free ? reportBlockByKey(c, key) : null;
+    const placed =
+      isAnnexPlaceable(key) && !!(normalizeAnnexPlacement(c.report && c.report.annexPlacement)[key]);
     let label;
     if (editing && free) {
       // Serbest blok: başlık + metin aynı satırda düzenlenir. Metin çok
@@ -12676,6 +12711,7 @@ function renderReportSections(c) {
       const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
       label =
         `<span>${esc(reportUiLabel(c, key))}</span>` +
+        (placed ? ` <span class="rsec-placed" title="Bu bölüm EKLER altında basılıyor">EK'te</span>` : '') +
         (emptyReason
           ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
           : '');
@@ -12687,6 +12723,9 @@ function renderReportSections(c) {
       : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle (Enter: uygula, Esc: vazgeç)">✎</button>` +
         (free
           ? `<button type="button" class="rsec-edit" data-report-block-del="${esc(key)}" aria-label="Bölümü sil" title="Bu serbest bölümü sil">×</button>`
+          : '') +
+        (isAnnexPlaceable(key)
+          ? `<button type="button" class="rsec-edit" data-report-place="${esc(key)}" aria-label="${placed ? 'Gövdeye geri al' : 'EKLER altına taşı'}" title="${placed ? 'Bu bölümü gövdeye geri al' : 'Bu bölümü EKLER altına taşı (EK-N olarak basılır)'}">${placed ? 'G' : 'EK'}</button>`
           : '');
     return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
   };
@@ -12767,6 +12806,27 @@ function setReportSection(key, on) {
     const reason = reportBlockEmptyReason(c, key);
     if (reason) showToast(`“${reportUiLabel(c, key)}” rapora girmiyor: ${reason}`, true);
   }
+}
+// Bölümü EKLER altına taşı / gövdeye geri al (v2.291).
+function toggleAnnexPlacement(key) {
+  const c = currentCase();
+  if (!c) return;
+  if (!isAnnexPlaceable(key)) return;
+  const map = normalizeAnnexPlacement(c.report && c.report.annexPlacement);
+  const on = !map[key];
+  snapshotForUndo(on ? 'Bölümü EK altına taşı' : 'Bölümü gövdeye al');
+  if (on) map[key] = true;
+  else delete map[key];
+  c.report = c.report || {};
+  c.report.annexPlacement = normalizeAnnexPlacement(map);
+  persist();
+  renderReport();
+  const n = reportAnnexList(c).find((a) => a.movedKey === key)?.n;
+  showToast(
+    on
+      ? `“${reportUiLabel(c, key)}” EKLER altına taşındı${n ? ` (EK-${n})` : ''}.`
+      : `“${reportUiLabel(c, key)}” gövdeye geri alındı.`
+  );
 }
 // Bölüm başlığını yaz (v2.285). Boş değer varsayılana döndürür. Başlık
 // `case.report.titles`ta tutulur; üç çıktı `reportHeadingText` üzerinden okur.
@@ -13186,15 +13246,19 @@ function reportAnnexBlocks(c) {
     ek5: { kind: 'table', header: false, rows: reportChecklistRows(c) },
     ek6: { kind: 'para', text: REPORT_TEXT.annexLegalText }
   };
-  return reportAnnexList(c).map((a) => {
+  const out = reportAnnexList(c).map((a) => {
     const meta = a.meta || {};
     const note = typeof meta.note === 'string' && meta.note.trim() ? meta.note.trim() : '';
+    if (a.movedKey) {
+      return { key: a.key, heading: a.heading, kind: 'moved', sectionKey: a.movedKey, n: a.n, note: '' };
+    }
     if (a.custom) {
       const text = typeof meta.content === 'string' && meta.content.trim() ? meta.content.trim() : '—';
       return { key: a.key, heading: a.heading, kind: 'para', text, note };
     }
     return { key: a.key, heading: a.heading, ...defs[a.key], note };
   });
+  return out;
 }
 // v2.262 — kod çakışması varsa rapor UYARIR (üç çıktıda aynı cümle).
 function speakerCodeConflictText(c) {
@@ -13325,6 +13389,7 @@ function reportSnapshot(c) {
     layout: normalizeReportLayout(r.layout),
     // Serbest bloklar (v2.287): rapor metnidir, kanıt değildir; revizyona girer.
     blocks: normalizeReportBlocks(r.blocks),
+    annexPlacement: normalizeAnnexPlacement(r.annexPlacement),
     columns: normalizeReportColumns(r.columns),
     includeEmbedded: !!r.includeEmbedded,
     pageView: !!r.pageView,
@@ -13344,6 +13409,7 @@ const REPORT_SNAPSHOT_LABELS = {
   sections: 'Bölüm görünürlüğü',
   layout: 'Bölüm sırası / ekler',
   blocks: 'Serbest bölümler',
+  annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
   includeEmbedded: 'Gömülü metadata',
   pageView: 'A4 önizleme',
@@ -13372,6 +13438,7 @@ function applyReportSnapshot(c, snap) {
   if (snap.sections) r.sections = { ...snap.sections };
   if (snap.layout) r.layout = normalizeReportLayout(snap.layout);
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
+  if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.pageView = !!snap.pageView;
@@ -13830,11 +13897,12 @@ function renderReport() {
       return out + `<p class="paper-muted">${esc(REPORT_TEXT.asrLocal)} ${esc(REPORT_TEXT.asrVerify)}</p></div>`;
     },
     s5: () => {
-      let out = `<div class="paper-section"><h3>${esc(H('s5'))}</h3><h4>${esc(sub.s51)}</h4><p class="paper-muted">${esc(REPORT_TEXT.s5Intro)}</p>`;
+      const s5sub = reportSubHeadings(c);
+      let out = `<div class="paper-section"><h3>${esc(H('s5'))}</h3><h4>${esc(s5sub.s51)}</h4><p class="paper-muted">${esc(REPORT_TEXT.s5Intro)}</p>`;
       if (materials.length) {
         for (let i = 0; i < materials.length; i++) {
           const m = materials[i];
-          out += `<h4>${esc(sub.recordPrefix(i))} ${esc(m.name)}</h4><p class="paper-muted">Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
+          out += `<h4>${esc(s5sub.recordPrefix(i))} ${esc(m.name)}</h4><p class="paper-muted">Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'} · Biçim: ${esc(matFormat(m))} · ${esc(REPORT_TEXT.segmentCountLabel)}: ${(m.segments || []).length}</p>`;
           {
             const spkTable = materialSpeakerRows(c, m);
             if (spkTable.rows.length) {
@@ -13951,6 +14019,19 @@ function renderReport() {
     annex: () => {
       let out = `<div class="paper-section"><h3>${esc(H('annex'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.annexIntro)}</p>`;
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'moved') {
+          const fn = body[b.sectionKey];
+          if (!fn) continue;
+          movedAnnexNo = b.n || 0;
+          let raw = '';
+          try {
+            raw = fn();
+          } finally {
+            movedAnnexNo = 0;
+          }
+          out += `<h4>${esc(b.heading)}</h4>` + String(raw).replace(/<h3>[\s\S]*?<\/h3>/, '');
+          continue;
+        }
         out += `<h4>${esc(b.heading)}</h4>`;
         if (b.kind === 'para') {
           out += `<p>${esc(b.text)}</p>`;
@@ -14298,10 +14379,11 @@ function docxXml(c) {
       );
     },
     s5: () => {
-      let out = headingXml(H('s5')) + headingXml(sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17 });
+      const s5sub = reportSubHeadings(c);
+      let out = headingXml(H('s5')) + headingXml(s5sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17 });
       for (let i = 0; i < c.materials.length; i++) {
         const m = c.materials[i];
-        out += headingXml(`${sub.recordPrefix(i)} ${m.name}`, 2);
+        out += headingXml(`${s5sub.recordPrefix(i)} ${m.name}`, 2);
         out += wP(
           `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
           { color: '6F8295', size: 17 }
@@ -14438,6 +14520,20 @@ function docxXml(c) {
     annex: () => {
       let out = headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'moved') {
+          const fn = blocks[b.sectionKey];
+          if (!fn) continue;
+          movedAnnexNo = b.n || 0;
+          let raw = '';
+          try {
+            raw = fn();
+          } finally {
+            movedAnnexNo = 0;
+          }
+          const head = headingXml(reportHeadingText(c, b.sectionKey));
+          out += headingXml(b.heading, 2) + (raw.startsWith(head) ? raw.slice(head.length) : raw);
+          continue;
+        }
         out += headingXml(b.heading, 2);
         if (b.kind === 'para') {
           out += wP(b.text);
@@ -14878,12 +14974,13 @@ async function makeUdf() {
       el.push(paragraph(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     s5: () => {
+      const s5sub = reportSubHeadings(c);
       el.push(h(H('s5')));
-      el.push(paragraph(sub.s51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
+      el.push(paragraph(s5sub.s51, { size: 12, bold: true, color: 'mid', before: 5, after: 4 }));
       el.push(paragraph(REPORT_TEXT.s5Intro, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (c.materials?.length) {
         c.materials.forEach((m, i) => {
-          el.push(paragraph(`${sub.recordPrefix(i)} ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+          el.push(paragraph(`${s5sub.recordPrefix(i)} ${m.name}`, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
           el.push(
             paragraph(
               `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}   |   Biçim: ${matFormat(m)}   |   ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
@@ -15049,6 +15146,21 @@ async function makeUdf() {
       el.push(h(H('annex')));
       el.push(paragraph(REPORT_TEXT.annexIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'moved') {
+          const fn = blocks[b.sectionKey];
+          if (!fn) continue;
+          movedAnnexNo = b.n || 0;
+          movedAnnexHeading = b.heading;
+          movedAnnexKey = b.sectionKey;
+          try {
+            fn();
+          } finally {
+            movedAnnexNo = 0;
+            movedAnnexHeading = '';
+            movedAnnexKey = '';
+          }
+          continue;
+        }
         el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
         if (b.kind === 'para') {
           el.push(paragraphLines(b.text, { justify: true }));
@@ -17729,6 +17841,11 @@ $('#reportSections')?.addEventListener('click', (e) => {
     addReportBlock();
     return;
   }
+  const place = e.target.closest('[data-report-place]');
+  if (place) {
+    toggleAnnexPlacement(place.dataset.reportPlace);
+    return;
+  }
   const bsave = e.target.closest('[data-report-block-save]');
   if (bsave) {
     saveReportBlockFromRow(bsave.dataset.reportBlockSave);
@@ -18918,6 +19035,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.291': {
+    title: 'Bölümü EKLER altına taşıyabilirsiniz',
+    body:
+      'Her gövde bölümünün yanındaki “EK” düğmesi bölümü gövdeden çıkarıp EKLER altında ' +
+      '“EK-N. <başlık>” olarak basar; alt başlıklar EK-N.1 olur. İçerik aynı kalır, üç çıktı da aynı. ' +
+      '“G” düğmesi gövdeye geri alır; Ctrl+Z ile geri alınır. Ses/deşifre kanıtı etkilenmez.'
+  },
   '2.290': {
     title: 'Tek EKLER bölümü: boş “EKLER” listesi kaldırıldı',
     body:

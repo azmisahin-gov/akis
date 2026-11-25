@@ -1385,5 +1385,22 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('boş EK LİSTESİ yok (D)', !D.includes('EK LİSTESİ'), 'hâlâ var');
 }
 
+
+// Senaryo 40: gövde bölümünü EKLER altına taşıma (v2.291). s5 gövdeden çıkar,
+// EKLER altında EK-7 olarak basılır; içerik aynıdır, alt başlık EK-7.1 olur.
+{
+  console.log('\n[Senaryo 40] bölümü EK altına taşıma (v2.291)');
+  const c = withMaterial();
+  c.report = { annexPlacement: { s5: true } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('taşınan s5 EK başlığı', 'EK-7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
+  checkShared('taşınan s5 içeriği', 'merhaba', H, U, D);
+  checkShared('taşınan s5 alt başlığı', 'EK-7.1. Ses kayıtlarının çözümlenmesi', H, U, D);
+  const count = (t) => (String(t).match(/KAYIT BAZINDA BULGULAR VE TRANSKRİPT/g) || []).length;
+  check('s5 başlığı tek kez (H)', count(H) === 1, String(count(H)));
+  check('s5 başlığı tek kez (U)', count(U) === 1, String(count(U)));
+  check('s5 başlığı tek kez (D)', count(D) === 1, String(count(D)));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

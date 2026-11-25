@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.290.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.291.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7279,3 +7279,41 @@ bir yerleşim alanı; taşınan bölüm gövde sırasından çıkar, EKLER altı
 `EK-N. <bölüm başlığı>` olarak basılır; içerik üreticisi aynı kalır (kopya yok),
 alt başlıklar `EK-N.1`, üç çıktı aynı, onay + Ctrl+Z. Kanıt etkilenmez.
 Ayrıntı: `docs/RAPOR_SERBEST_TASARIM.md` §v2.291.
+
+## YENİ OTURUM DEVRİ (v2.291) — Bölümü EKLER altına taşıma
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.291** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2017 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | Konuşmacı kümeleme; Kişiler (K) panelinin taşınması |
+
+### Ne yapıldı
+
+- Her gövde bölümünün yanında **EK** düğmesi: bölüm gövdeden çıkar, EKLER
+  altında **EK-N. <başlık>** olarak basılır. **G** gövdeye geri alır.
+- Örnek: s5 → `EK-7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT`, alt başlık
+  `EK-7.1`, kayıtlar `EK-7.1.1`…
+- İçerik aynı üreticiden; üç çıktı aynı. Ctrl+Z ile geri alınır; kanıt etkilenmez.
+- Revizyon (`reportSnapshot.annexPlacement`) ve birleştirme taşır.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Yalnız gövde bölümleri taşınır.** `isAnnexPlaceable` EKLER (`annex`) ve
+   EK LİSTESİ (`s7`) için false; kendini taşımaz.
+2. **Tek kaynak:** `normalizeAnnexPlacement` + `reportMovedSections` +
+   `reportAnnexList`/`reportAnnexBlocks(kind:'moved')`. Ayrı kopya sıra/numara
+   üretmeyin.
+3. **Alt başlık `EK-N.1`:** `movedAnnexNo`; UDF başlığı `movedAnnexHeading` ile
+   **tek kez** yazılır (textParts/offset bütünlüğü). UDF’te başlığı el’den
+   silmeye çalışmayın.
+4. **Kanıt etkilenmez:** taşıma yalnız yerleşimdir; ses/deşifre/silme yok.
+5. Testler: `birim [133]`, `rapor 40`.
+
+### Sıradaki iş
+
+1. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + onaylı grup atama.
+2. **Kişiler (K)** panelinin dosya düzeyine taşınması.

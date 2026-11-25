@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.290.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.291.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.291 — Bölümü EKLER altına taşıma
+
+**Kullanıcı:** *"Kayıt bazında bulguları EK olarak göstermek istesem; gövde daha
+temiz dursun, uzun şeyleri başka bölüme atsam olur mu?"*
+
+### KULLANICI NE GÖRECEK
+
+- Her gövde bölümünün yanında **EK** düğmesi var. Basınca bölüm **gövdeden
+  çıkar**, **EKLER altında `EK-N. <bölüm başlığı>`** olarak basılır.
+- Örnek: **Kayıt bazında bulgular** → `EK-7. KAYIT BAZINDA BULGULAR VE
+  TRANSKRİPT`; alt başlıklar `EK-7.1`, `EK-7.1.1`… olur.
+- İçerik **aynı üreticiden** gelir (kopya metin yok); üç çıktı (HTML/DOCX/UDF)
+  aynı.
+- **G** düğmesi bölümü gövdeye geri alır. İşlem **Ctrl+Z** ile geri alınır;
+  ses/deşifre kanıtı etkilenmez.
+- Gövdede kalan bölümler yeniden numaralanır; taşınan bölüm gövde numarası
+  tüketmez.
+
+### Teknik
+
+- `case.report.annexPlacement = { s5: true }`; `normalizeAnnexPlacement` yalnız
+  gövde bölümlerini kabul eder (EKLER ve EK LİSTESİ taşınamaz).
+- `reportBodyOrder` taşınanı gövdeden çıkarır; `reportMovedSections` +
+  `reportAnnexList`/`reportAnnexBlocks` (`kind:'moved'`) EK olarak basar.
+- `movedAnnexNo`/`movedAnnexHeading` ile alt başlık `EK-N.1` ve UDF başlığı
+  tek kez yazılır. Revizyon ve birleştirme yerleşimi taşır.
+- Koruyan: `birim` [133], `rapor` Senaryo 40.
 
 ## v2.290 — Tek EKLER bölümü
 

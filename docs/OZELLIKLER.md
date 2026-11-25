@@ -1,4 +1,4 @@
-# Özellikler (v2.290 — mevcut durum)
+# Özellikler (v2.291 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -972,6 +972,10 @@ envanterle aynı sütun seçimini izler.
   WER için referans metin + model çıktısı gerekir; yoksa rapora girmez.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
+- **Bölümü EKLER altına taşıma (v2.291):** her gövde bölümünün yanındaki
+  **EK** düğmesi bölümü gövdeden çıkarır, EKLER altında **EK-N. başlık**
+  olarak basar; alt başlıklar **EK-N.1** olur. İçerik aynı üreticiden, üç
+  çıktı aynı. **G** gövdeye geri alır; Ctrl+Z ile geri alınır. Kanıt etkilenmez.
 - **Tek EKLER bölümü (v2.290):** boş “EKLER” listesi (`s7`) varsayılan
   **kapalı** ve başlığı **“EK LİSTESİ”**; asıl **EKLER** (`annex`) varsayılan
   **açık**. EK-1… içerikleri tek yerde. İsteğe bağlı ek listesi açılabilir;

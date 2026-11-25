@@ -970,6 +970,20 @@ export function ensureFreeBlockOrder(order, blocks) {
   return list;
 }
 
+// ---- Bölümü EK olarak taşıma (v2.291) ----------------------------------
+// Yalnız gövde bölümleri taşınabilir; EKLER ve EK LİSTESİ kendini taşımaz.
+export function isAnnexPlaceable(key) {
+  return REPORT_BODY_ORDER.includes(key) && key !== 'annex' && key !== 's7';
+}
+export function normalizeAnnexPlacement(src) {
+  const out = {};
+  if (!src || typeof src !== 'object') return out;
+  for (const key of REPORT_BODY_ORDER) {
+    if (isAnnexPlaceable(key) && src[key] === true) out[key] = true;
+  }
+  return out;
+}
+
 // ---- Kullanıcı rapor profilleri (v2.288) --------------------------------
 // Profil YALNIZ düzeni taşır: bölüm görünürlüğü, sıra, başlıklar, numara
 // biçimi ve tablo alanları. Ses/deşifre kanıtı ve serbest blok METNİ girmez.
@@ -1255,6 +1269,8 @@ export function emptyCase(over = {}) {
       blocks: [],
       // Kullanıcı rapor profilleri (v2.288): yalnız düzen; kanıt/metin taşımaz.
       userProfiles: [],
+      // Bölümü EKLER altına taşıma (v2.291): { s5: true } gibi.
+      annexPlacement: {},
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -2057,6 +2073,7 @@ export function normalizeCase(src = {}) {
       blocks: reportBlocks,
       // Kullanıcı profilleri (v2.288): yalnız kullanıcı tanımlı düzenler.
       userProfiles: normalizeReportProfiles(report.userProfiles),
+      annexPlacement: normalizeAnnexPlacement(report.annexPlacement),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
@@ -2798,6 +2815,19 @@ export function mergeCases(mine, theirs) {
     merged.report.userProfiles = normalizeReportProfiles(mp);
   }
 
+  // Bölüm → EK yerleşimi (v2.291): gelen taşıma eklenir; kanıt etkilenmez.
+  {
+    const mp = normalizeAnnexPlacement((mine.report || {}).annexPlacement);
+    const tp = normalizeAnnexPlacement((theirs.report || {}).annexPlacement);
+    for (const k of Object.keys(tp)) {
+      if (!mp[k]) {
+        mp[k] = true;
+        applied.push(`bölüm EK'e taşındı: ${k}`);
+      }
+    }
+    merged.report.annexPlacement = normalizeAnnexPlacement(mp);
+  }
+
   // Bölümler: id ile eşleşen kayıtlarda metin, düzenleme sayacıyla (textRev)
   // çözülür. Sayaç yüksek olan taraf daha yeni düzenlemedir ve kazanır; kaybeden
   // metin silinmez, geçmişe yazılır. Sayaçlar eşitse gerçek çakışma bildirilir.
@@ -3082,6 +3112,7 @@ export function compareCases(mine, theirs) {
     blocks: { added: [], conflicts: [] },
     // Kullanıcı profilleri (v2.288): önizleme = birleştirme kuralı.
     profiles: { added: [], conflicts: [] },
+    placement: { added: [] },
     disks: { added: 0 },
     // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
     // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
@@ -3355,6 +3386,14 @@ export function compareCases(mine, theirs) {
           reason: 'aynı profil kimliğinde farklı düzen'
         });
       }
+    }
+  }
+
+  // Bölüm → EK yerleşimi (v2.291): önizleme birleştirmeyle aynı.
+  {
+    const mp = normalizeAnnexPlacement((mine.report || {}).annexPlacement);
+    for (const k of Object.keys(normalizeAnnexPlacement((theirs.report || {}).annexPlacement))) {
+      if (!mp[k]) out.placement.added.push(k);
     }
   }
 
