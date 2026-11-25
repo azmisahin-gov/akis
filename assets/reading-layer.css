@@ -3977,3 +3977,12 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .q-sug-txt { flex: 1; min-width: 0; }
 .q-sug-ov { color: var(--ink-3); }
 .q-sug-none { color: var(--ink-3); font-size: var(--fs-2xs); }
+
+/* v2.310 — Kurumsal kâğıt biçimi (B2): bölüm kuralı, tablo çerçevesi,
+   imza bloğu, alt bilgi. Yalnız GÖRSEL; metin ve üç çıktı DEĞİŞMEZ.
+   `.report-paper` önekli: app.css kurallarını özgüllükle ezer, CSS borcunu artırmaz. */
+.report-paper .paper-section h3 { border-bottom: 1px solid var(--paper-line); padding-bottom: 5px; }
+.report-paper .paper-table { border-top: 2px solid var(--paper-head); border-bottom: 2px solid var(--paper-head); }
+.report-paper .paper-table th { border-bottom: 1.5px solid var(--paper-head); }
+.report-paper .paper-signature { border: 1px solid var(--paper-line); border-radius: 4px; padding: 10px 12px; }
+.report-paper .paper-footer { border-top: 3px double var(--paper-line); padding-top: 6px; }

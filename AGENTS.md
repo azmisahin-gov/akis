@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.309.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.310.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7764,3 +7764,25 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 ### Sıradaki iş
 - **B2:** kurumsal kâğıt biçimi (başlık bandı/sayfa no/imza; üç çıktı aynı).
 - **C2:** terim/konu listesi (opt-in).
+
+## YENİ OTURUM DEVRİ (v2.310) — Kurumsal kâğıt biçimi (B2)
+
+| | |
+|---|---|
+| Sürüm | **v2.310** |
+| Testler | `bash tools/test.sh` → **2186 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | C2 terim/konu listesi |
+
+- `assets/reading-layer.css` sonuna `.report-paper` önekli 5 kural: bölüm alt
+  kuralı, tablo üst/alt çerçeve, başlık ayırıcı, imza kutusu, alt bilgi çift çizgi.
+- **YALNIZ GÖRSEL**: metin/üç çıktı değişmez (`rapor-tutarlilik-testi` yeşil).
+  Renkler `--paper-*` token; koyu/sepya tema ve yazdırma etkilenmez.
+- Test `birim [151]` (6; ham hex yasağı dahil).
+
+### DEĞİŞMEZ
+1. Kâğıt biçimi **metni değiştirmez**; üç çıktı aynı metni üretir.
+2. `.report-paper` öneki kullan (app.css'i özgüllükle ezer; CSS borcunu artırmaz).
+3. Sayfa numarası motora bağlıdır (tarayıcı/Word/UYAP); uydurulmaz.
+
+### Sıradaki iş
+- **C2:** terim/konu listesi (opt-in; `contentWords` altyapısı hazır).

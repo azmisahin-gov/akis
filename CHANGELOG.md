@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.309.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.310.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.310 — Kurumsal kâğıt biçimi (B2)
+
+**Amaç (B2):** Rapor kâğıdı mahkemeye sunulacak **kurumsal** görünümde olsun.
+**Yalnız GÖRSEL**; metin ve üç çıktının (HTML/DOCX/UDF) **içeriği değişmez**.
+
+### KULLANICI NE GÖRECEK
+
+- **Bölüm başlıkları** altında ince bir kural (sol vurguya ek) → belge daha
+  düzenli, taranabilir.
+- **Tablolar** üst/alt **çerçeve** çizgisi ve **başlık ayırıcı** ile çerçevelenir.
+- **İmza bloğu** çerçeveli bir kutu olur.
+- **Alt bilgi** (dosya no + rapor tarihi) çift çizgiyle ayrılır.
+- Renkler **token**'dan (`--paper-*`); koyu/sepya tema ve yazdırma etkilenmez
+  (kâğıt temadan bağımsız).
+
+### Teknik
+
+- `assets/reading-layer.css` sonuna `.report-paper` önekli 5 kural (app.css'i
+  özgüllükle ezer; CSS borç nöbetçisini — ölü/`!important`/çakışma — artırmaz).
+- Metin/üç çıktı değişmez: `rapor-tutarlilik-testi` tüm senaryolarda aynı metni
+  doğrular (bu sürümde yeşil).
+- Koruyan: `birim` [151] (6 kontrol; ham hex yasağı dahil).
+
+### Dürüst sınır
+
+- HTML **önizleme/yazdırma (PDF)** görünümü iyileşir; **DOCX/UDF** kendi
+  motorlarının başlık gölgelemesini kullanır (içerik aynı). Sayfa numarası
+  motora bağlıdır (tarayıcı/Word/UYAP); uydurulmaz.
 
 ## v2.309 — Gömülü metadata tüm dosyada (A3)
 

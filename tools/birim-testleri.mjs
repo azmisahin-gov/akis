@@ -6517,5 +6517,38 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kuyruk sınırı var (4 MB)', /const TAIL = 4 \* 1024 \* 1024/.test(js), true);
 }
 
+// [151] v2.310 — Kurumsal kâğıt biçimi (B2): görsel çerçeve, token, metin değişmez.
+{
+  console.log('[151] Kurumsal kâğıt biçimi (v2.310)');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq(
+    'bölüm alt kuralı',
+    /\.report-paper \.paper-section h3 \{ border-bottom: 1px solid var\(--paper-line\)/.test(css),
+    true
+  );
+  eq(
+    'tablo çerçevesi',
+    /\.report-paper \.paper-table \{ border-top: 2px solid var\(--paper-head\)/.test(css),
+    true
+  );
+  eq(
+    'tablo başlık ayırıcı',
+    /\.report-paper \.paper-table th \{ border-bottom: 1\.5px solid var\(--paper-head\)/.test(css),
+    true
+  );
+  eq(
+    'imza bloğu kutusu',
+    /\.report-paper \.paper-signature \{ border: 1px solid var\(--paper-line\)/.test(css),
+    true
+  );
+  eq(
+    'alt bilgi çift kural',
+    /\.report-paper \.paper-footer \{ border-top: 3px double var\(--paper-line\)/.test(css),
+    true
+  );
+  const block = css.slice(css.indexOf('v2.310'));
+  eq('B2 bloğunda ham hex yok (token)', !/#[0-9a-f]{3,8}/i.test(block), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

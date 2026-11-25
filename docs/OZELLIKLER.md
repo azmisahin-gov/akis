@@ -1,4 +1,4 @@
-# Özellikler (v2.309 — mevcut durum)
+# Özellikler (v2.310 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -994,6 +994,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Kurumsal kâğıt biçimi (v2.310):** bölüm alt kuralı, tablo çerçevesi + başlık ayırıcı, çerçeveli imza bloğu, alt bilgi çift çizgi. Yalnız görsel; metin ve üç çıktı değişmez; renkler token.
 - **Gömülü metadata tüm dosyada (v2.309):** “Dosyadan oku” büyük dosyada metadata’yı sondan da arar (ID3v1 / MP4 moov); baş 8 MB + gerekirse kuyruk 4 MB. Sonuç cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.
 - **Kanıt zaman çelişkisi (v2.308):** gömülü metadata (beyan) kayıt tarihi, dosyanın değişiklik zamanından (gözlem) belirgin sonra ise Kayıt bilgileri’nde **⚠** uyarı + rapor hazırlığında madde. Kanıt değil, dikkat işareti; çözülemeyen tarihte uyarı yok (1 gün tolerans).
 - **Soru ↔ bölüm önerisi (v2.307):** Sorular kartında **“İlgili bölümleri öner”** soru metniyle anlamlı sözcük örtüşen bölümleri (zaman · alıntı · örtüşme sayısı) listeler; **Ekle** ile zaman damgalı dayanak bağlanır. Otomatik bağlama ve uydurma skor yok; bağlı bölüm tekrar önerilmez.

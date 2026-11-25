@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.309';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.309';
+} from './schema.js?v=2.310';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.310';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.309';
+const APP_VERSION = '2.310';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -20040,6 +20040,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.310': {
+    title: 'Kurumsal kâğıt biçimi',
+    body:
+      'Rapor kâğıdı kurumsal görünüme kavuştu: bölüm alt kuralı, tablo çerçevesi + başlık ayırıcı, çerçeveli imza bloğu, alt bilgi çift çizgi. Yalnız görsel; metin ve üç çıktının içeriği değişmez.'
+  },
   '2.309': {
     title: 'Gömülü metadata tüm dosyada',
     body:
