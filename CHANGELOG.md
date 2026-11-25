@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.314.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.315.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.315 — Dosya görünümü (ayrı sayfa)
+
+**Amaç (A‑1):** Künye çekmecede “gizli” kalıyordu ve akışta adım olarak
+görünmüyordu. Dosya artık **ayrı bir sayfa**; düzenleme **tek** çekmecede kalır
+(form kimlikleri çoğaltılmaz, veri kaybı riski yok).
+
+### KULLANICI NE GÖRECEK
+
+- Soldaki **Dosya** artık **sayfa** açar: künye, taraflar, bilirkişi,
+  görevlendirme, teslim durumu ve **tamamlanacaklar** tek ekranda.
+- **TESLİM** paneli (son teslim / kalan gün / gecikme) sayfanın en üstünde.
+- **Eksikler** listesi: mahkeme, dosya no, bilirkişi, konu, ses kaydı, soru.
+  Her satırda **Git ›** ilgili görünüme/çekmeceye gider.
+- **✎ Düzenle** sağdaki çekmeceyi açar (tek düzenleyici).
+- **Rapor kontrolü →** raporu Kontrol modunda açar.
+- Ray’daki Dosya düğmesi sayfada aktif kalır; çekmece kapanınca sayfa korunur.
+
+### Teknik
+
+- `deliveryPanelHtml(c)` **tek kaynak**: dashboard ve Dosya sayfası aynı HTML’i
+  kullanır; `renderDeliveryPanel` onu basar.
+- `caseIdentityRows(c)` + `caseMissingItems(c)` **saf** fonksiyonlar.
+- `renderCasePage(c)` sayfayı çizer; `switchView('case')` artık **sayfayı** açar
+  (eski erken “çekmece aç” dalı kaldırıldı).
+- `#view-case` delegasyonu: `data-case-edit` → çekmece; `data-case-goto` →
+  görünüm/çekmece; `data-delivery-check` → rapor Kontrol.
+- **Form kimliği çoğaltılmaz:** sayfada `id="court"` vb. yoktur; test bunu
+  denetler.
+- Test: `birim [156]`, `tasarim [2cw]`, `surum` kimlikleri.
+
+### Ölçüm (gerçek Chromium)
+
+- Dosya sayfası 1440/1100/900/760/600 px: kırpılma **0**, yatay taşma **0**.
+- Dosya → sayfa; **✎ Düzenle** → çekmece; çekmece kapanınca sayfa ve ray
+  aktifliği korunur.
+- JS hatası **0**.
+
+### Dürüst sınır
+
+- Sayfa **salt okunur özet**tir; düzenleme yalnız çekmecede. Böylece HTML/DOCX/UDF
+  çıktısını üreten tek veri yolu korunur.
+- Eksik listesi **zorunlu künye + kayıt/soru** ile sınırlıdır; rapor hazırlığının
+  tam listesi Rapor ekranındaki Kontrol panelindedir.
 
 ## v2.314 — Yeni gözlem işaretleri (duyulmuyor · uzaktan · bozuk ses · dil)
 

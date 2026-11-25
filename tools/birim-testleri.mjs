@@ -121,7 +121,7 @@ const EXPOSE = [
   'caseWorkload', 'formatWorkloadDuration',
   'parseDateOnly', 'dateOnlyStr', 'dateValueToDay', 'addDaysToDate', 'calendarDaysBetween',
   'daysRemaining', 'elapsedDays', 'deliveryInfo', 'deliverySummaryText', 'deliveryDetailText',
-  'deliveryToneClass', 'applyAutoDueDate',
+  'deliveryToneClass', 'applyAutoDueDate', 'deliveryPanelHtml', 'caseIdentityRows', 'caseMissingItems',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
@@ -6801,6 +6801,47 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Gözlem tıklaması "İş" durum satırını yerinde tazeler (sessiz eski durum yok).
   const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('gözlem tıklaması durum satırını tazeler', /statusEl\.outerHTML = statusRowHtml\(m, sg/.test(appJs), true);
+}
+
+
+// [156] v2.315 — Dosya görünümü: künye, eksikler, teslim paneli tek kaynak.
+{
+  console.log('[156] Dosya görünümü (v2.315)');
+  const c = T.emptyCaseForTest({
+    id: 'cCasePage',
+    court: 'Antalya 4. Asliye Hukuk Mahkemesi',
+    fileNo: '2026/315 E.',
+    subject: 'Depozito uyuşmazlığı',
+    expertName: 'Örnek Bilirkişi',
+    materials: [{ id: 'm1', name: 'a.wav', segments: [] }],
+    questions: [{ id: 'q1', question: 'Soru?' }]
+  });
+  const rows = T.caseIdentityRows(c);
+  const rowText = rows.map(([k, v]) => k + '=' + v).join(' | ');
+  eq('künye: dosya no', rows.some(([k, v]) => k === 'DOSYA NO' && v === '2026/315 E.'), true);
+  eq('künye: mahkeme', rows.some(([k, v]) => /Mahkeme/.test(k) && /Antalya/.test(v)), true);
+  eq('künye: bilirkişi', rows.some(([k, v]) => k === 'Bilirkişi' && v === 'Örnek Bilirkişi'), true);
+  eq('künye boş alan yazmaz', rows.every(([, v]) => String(v).trim()), true);
+  const missFull = T.caseMissingItems(c);
+  eq('tam dosyada eksik yok', missFull.length, 0);
+  const empty = T.emptyCaseForTest({ id: 'cEmpty' });
+  const missEmpty = T.caseMissingItems(empty);
+  eq('boş dosyada 6 eksik', missEmpty.length, 6);
+  eq('eksikler hedefli', missEmpty.every((x) => x.target === 'case' || x.target === 'audio' || x.target === 'questions'), true);
+  const dp = T.deliveryPanelHtml(c);
+  eq('teslim paneli tek kaynak (TESLİM)', /TESLİM/.test(dp) && /Son teslim/.test(dp), true);
+  // Kaynak kancaları: Dosya artık sayfa; form kimliği çoğaltılmaz.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('switchView case sayfayı açar (çekmece değil)', /if \(name === 'case'\) renderCasePage\(currentCase\(\)\)/.test(js), true);
+  eq('eski erken çekmece dalı kaldırıldı', !/if \(name === 'case'\) \{\s*populateCaseForm\(\);\s*setCaseDrawer\(true\);\s*return;/.test(js), true);
+  eq('case sayfası renderCasePage kullanır', /function renderCasePage\(c\)/.test(js), true);
+  eq('düzenle düğmesi çekmeceyi açar', /data-case-edit/.test(js) && /\[data-case-edit\]/.test(js), true);
+  eq('sayfa teslim panelini tek kaynaktan alır', /deliveryPanelHtml\(c\)/.test(js) && /renderDeliveryPanel\(c\)/.test(js), true);
+  eq('view-case HTML var', /id="view-case"/.test(html) && /id="casePageBody"/.test(html), true);
+  eq('form kimliği çoğaltılmadı (court)', (html.match(/id="court"/g) || []).length, 1);
+  eq('dosya sayfası CSS ızgara', /#view-case \.case-page-grid/.test(css) && /#view-case \.case-page-list/.test(css), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

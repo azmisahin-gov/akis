@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.314.**
+yazılır. **Güncel sürüm: v2.315.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.315 — Dosya görünümü (TAMAMLANDI)
+
+- **Ayrı Dosya sayfası:** künye + teslim + eksikler; **✎ Düzenle** çekmeceyi açar.
+- `deliveryPanelHtml` tek kaynak; `caseIdentityRows`/`caseMissingItems` saf;
+  `renderCasePage` + `switchView('case')` sayfa.
+- Form kimliği çoğaltılmaz (tek düzenleyici çekmece).
+- Test `birim [156]`, `tasarim [2cw]`; 1440–600 px kırpma 0.
 
 ## v2.314 — Yeni gözlem işaretleri (TAMAMLANDI)
 

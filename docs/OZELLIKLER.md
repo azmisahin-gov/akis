@@ -1,4 +1,4 @@
-# Özellikler (v2.314 — mevcut durum)
+# Özellikler (v2.315 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1000,6 +1000,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Dosya görünümü (v2.315):** soldaki **Dosya** ayrı bir **sayfa** açar — künye, taraflar, teslim durumu ve **tamamlanacaklar** tek ekranda. Düzenleme sağdaki **çekmecede** yapılır (form kimlikleri çoğaltılmaz). **✎ Düzenle** çekmeceyi açar; **Git ›** ilgili görünüme geçer; **Rapor kontrolü →** raporu Kontrol modunda açar.
 - **Teslim tarihi zekâsı (v2.312):** görevlendirme tarihi + verilen süre → **son teslim tarihi otomatik** (elle yazılan korunur, `dueDateManual`); **kalan gün / gecikme** tek kaynaktan (`deliveryInfo`) Özet **TESLİM** panelinde, **durum çubuğunda** (“Teslim: N gün / gecikti”) ve **rapor ekranında**; rapor tarihi > son teslim ve gecikme **metinle** uyarır. Ray’da **Dosya** girişi. Tarih yoksa “—” (uydurma yok); gün farkı **takvim günü**.
 - **Terim/konu listesi (v2.311):** rapor iskeletinde **TERİM VE KONU LİSTESİ** (varsayılan kapalı): en az 2 kez geçen anlamlı sözcükler + geçiş sayısı (`depozito (3)`). Özet değil; deterministik tarama yardımcısı. Üç çıktı aynı.
 - **Kurumsal kâğıt biçimi (v2.310):** bölüm alt kuralı, tablo çerçevesi + başlık ayırıcı, çerçeveli imza bloğu, alt bilgi çift çizgi. Yalnız görsel; metin ve üç çıktı değişmez; renkler token.

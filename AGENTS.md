@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.314.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.315.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8049,3 +8049,40 @@ Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
    bilinmeyen anahtar silinmez.
 5. **Panel kaydırılır, kırpılmaz:** `max-height` + `overflow-y:auto`; sessiz
    kesme yasak.
+
+## EK DÜZELTME (v2.315) — Dosya görünümü (ayrı sayfa)
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.315** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2342 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı; A‑4 iş günü |
+
+### Ne yapıldı
+
+- Ray’daki **Dosya** artık **ayrı sayfa** (`#view-case`) açar: künye, taraflar,
+  bilirkişi, görevlendirme, **teslim paneli** ve **eksikler** tek ekranda.
+- **Düzenleme tek çekmecede** kalır (form kimlikleri çoğaltılmaz). Sayfadaki
+  **✎ Düzenle** çekmeceyi açar; **Git ›** ilgili görünüme/çekmeceye gider;
+  **Rapor kontrolü →** raporu Kontrol modunda açar.
+- `deliveryPanelHtml(c)` **tek kaynak** (dashboard + Dosya sayfası);
+  `caseIdentityRows` / `caseMissingItems` saf; `renderCasePage` sayfayı çizer.
+- `switchView('case')` artık **sayfa** açar; eski erken “çekmece aç” dalı
+  kaldırıldı. Çekmece kapanınca Dosya sayfası ve ray aktifliği korunur.
+- Test: `birim [156]`, `tasarim [2cw]`, `surum` kimlikleri (`view-case`,
+  `casePageBody`, `casePageStatus`).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Tek düzenleyici:** form yalnız `#caseDrawer` içinde. Dosya sayfası salt
+   okunur özettir; sayfada `id="court"` vb. **bulunmaz** (test [2cw]).
+2. **Teslim paneli tek kaynak:** `deliveryPanelHtml`; dashboard ve sayfa aynı
+   HTML’i kullanır. Ayrı kopya yazmayın.
+3. **`switchView('case')` = sayfa.** “Düzenle” için çekmeceyi açın
+   (`setCaseDrawer(true)`); `data-goto="case"` artık sayfaya gider.
+4. **Ray aktifliği:** Dosya sayfasında `#navCase` aktif; çekmece açıkken diğer
+   nav öğeleri soluklaşır, kapanınca `body.dataset.view`’e göre geri gelir.
+5. **Eksik listesi sınırlıdır:** zorunlu künye + kayıt/soru. Rapor hazırlığının
+   tam listesi Rapor ekranındaki Kontrol panelindedir.

@@ -122,15 +122,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.314';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.314';
+} from './schema.js?v=2.315';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.315';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.314';
+const APP_VERSION = '2.315';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1651,21 +1651,16 @@ function showToast(msg, urgent) {
   showToast.t = setTimeout(() => el.classList.remove('show'), 3400);
 }
 function switchView(name) {
-  // "Dosya bilgileri" artık ayrı sayfa değil, sağ çekmece. Böylece çalışma
-  // alanı kapanmaz; dosya formu üzerine açılır.
-  if (name === 'case') {
-    populateCaseForm();
-    setCaseDrawer(true);
-    return;
-  }
+  // "Dosya" artık gerçek bir SAYFA (v2.315): künye okunur, düzenleme sağdaki
+  // çekmecede yapılır. Form kimlikleri çoğaltılmaz; tek düzenleyici çekmece.
   // Ses kayıtları açılırken: kayıt varsa doğrudan çalışma moduna gir. Uzman
   // zaten tek kaydı dinleyip yazıyor; materyal şeridi sürekli gerekmiyor.
   // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
-  // "Dosya" çekmece düğmesi (v2.312): başka görünüme geçince aktifliği kalkar.
+  // "Dosya" ray düğmesi (v2.312/v2.315): yalnız Dosya sayfasında aktif.
   const navCase = $('#navCase');
-  if (navCase) navCase.classList.remove('active');
+  if (navCase) navCase.classList.toggle('active', name === 'case');
   // Görünüm adı body'ye yazılır (v2.230): durum çubuğundaki tekrarları
   // görünüme göre gizlemek için tek kaynak.
   document.body.dataset.view = name;
@@ -1681,6 +1676,7 @@ function switchView(name) {
     name === 'overview'
       ? 'ÇALIŞMA ALANI'
       : `0${['overview', 'case', 'audio', 'questions', 'report'].indexOf(name)} / AKİS`;
+  if (name === 'case') renderCasePage(currentCase());
   if (name === 'report') renderReport();
   if (name === 'questions') populateQuestionsForm();
   if (name === 'audio') {
@@ -1697,6 +1693,7 @@ function switchView(name) {
       .catch(() => {});
   }
 }
+
 function renderCaseSelect() {
   const sel = $('#caseSelect');
   // ARŞİVLİ DOSYALAR SEÇİCİDE GÖRÜNMEZ (v2.107): çalışma alanı sade kalır.
@@ -2135,9 +2132,7 @@ function deliveryToneClass(info) {
   if (lvl === 'ok') return 'is-ok';
   return 'is-none';
 }
-function renderDeliveryPanel(c) {
-  const el = $('#deliveryPanel');
-  if (!el) return;
+function deliveryPanelHtml(c) {
   const info = deliveryInfo(c);
   const sum = readinessSummary(reportReadiness(c));
   const kpi = (label, value, hint) =>
@@ -2152,7 +2147,7 @@ function renderDeliveryPanel(c) {
   const created = info.createdDay
     ? `${niceDate(info.createdDay)}${info.elapsedDays != null ? ` · ${info.elapsedDays} gün önce` : ''}`
     : '—';
-  el.innerHTML =
+  return (
     `<div class="panel-heading"><div><div class="eyebrow">TESLİM</div><h3>Son teslim ve rapor hazırlığı</h3></div>` +
     `<span class="dl-chip ${deliveryToneClass(info)}" title="${esc(deliveryDetailText(info))}">${esc(info.label)}</span></div>` +
     `<div class="dl-grid">` +
@@ -2170,7 +2165,103 @@ function renderDeliveryPanel(c) {
     `</div>` +
     (notes.length
       ? `<ul class="dl-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`
-      : `<p class="dl-note-ok">Teslim tarihi ve rapor hazırlığı görünür. Bu bir denetim listesidir, onay değildir.</p>`);
+      : `<p class="dl-note-ok">Teslim tarihi ve rapor hazırlığı görünür. Bu bir denetim listesidir, onay değildir.</p>`)
+  );
+}
+function renderDeliveryPanel(c) {
+  const el = $('#deliveryPanel');
+  if (!el) return;
+  el.innerHTML = deliveryPanelHtml(c);
+}
+
+// ---- Dosya görünümü (v2.315) ---------------------------------------------
+// Ayrı "Dosya" SAYFASI: künye okunur, düzenleme çekmecede yapılır. Form
+// kimlikleri ÇOĞALTILMAZ (tek düzenleyici çekmece); sayfa yalnız özet + eksik
+// listesi + teslim paneli gösterir. `switchView('case')` bu sayfayı açar.
+function caseIdentityRows(c) {
+  const spec = reportTypeSpec(c && c.reportType);
+  const r = spec.roles;
+  const p = (c && c.parties) || {};
+  const a = (c && c.assignment) || {};
+  const e = (c && c.expert) || {};
+  const rows = [
+    ['Dosya', caseDisplayName(c)],
+    [spec.merci || 'Mahkeme / merci', c && c.court],
+    [spec.fileNo, c && c.fileNo],
+    [spec.subject, c && c.subject],
+    [r.plaintiff, p.plaintiff || (c && c.plaintiff)],
+    [r.plaintiffCounsel, p.plaintiffCounsel || (c && c.plaintiffCounsel)],
+    [r.defendant, p.defendant || (c && c.defendant)],
+    [r.defendantCounsel, p.defendantCounsel || (c && c.defendantCounsel)],
+    [spec.date, c && c.caseDate ? niceDate(c.caseDate) : ''],
+    ['Keşif / inceleme tarihi', c && c.inspectionDate ? niceDate(c.inspectionDate) : ''],
+    ['Bilirkişi', e.name || (c && c.expertName)],
+    ['Sicil no', e.registryNo || (c && c.registryNo)],
+    ['Uzmanlık alanı', e.field || (c && c.expertField)],
+    ['Görevlendirme tarihi', (a.date || (c && c.assignmentDate)) ? niceDate(a.date || c.assignmentDate) : ''],
+    ['Verilen süre', (a.durationDays || (c && c.assignmentDurationDays)) ? `${a.durationDays || c.assignmentDurationDays} gün` : ''],
+    ['Son teslim', (a.dueDate || (c && c.dueDate)) ? niceDate(a.dueDate || c.dueDate) : ''],
+    ['Rapor tarihi', ((c && c.report && c.report.date) || (c && c.reportDate)) ? niceDate((c.report && c.report.date) || c.reportDate) : ''],
+    ['Ekip', c && c.team && c.team.length ? `${c.team.length} üye` : ''],
+    ['Ses kaydı', c && c.materials ? `${c.materials.length} kayıt` : '0 kayıt'],
+    ['İnceleme sorusu', c && c.questions ? `${c.questions.length} soru` : '0 soru']
+  ];
+  return rows
+    .map(([label, value]) => [label, String(value == null ? '' : value).trim()])
+    .filter(([, value]) => value);
+}
+function caseMissingItems(c) {
+  const txt = (v) => String(v == null ? '' : v).trim();
+  const items = [];
+  if (!txt(c && c.court)) items.push({ key: 'court', label: 'Mahkeme / merci girilmedi', target: 'case' });
+  if (!txt(c && c.fileNo)) items.push({ key: 'fileNo', label: 'Dosya numarası girilmedi', target: 'case' });
+  if (!txt((c && c.expert && c.expert.name) || (c && c.expertName))) items.push({ key: 'expert', label: 'Bilirkişi adı girilmedi', target: 'case' });
+  if (!txt(c && c.subject)) items.push({ key: 'subject', label: 'İnceleme konusu girilmedi', target: 'case' });
+  if (!(c && c.materials && c.materials.length)) items.push({ key: 'materials', label: 'Ses kaydı yok', target: 'audio' });
+  if (!(c && c.questions && c.questions.length)) items.push({ key: 'questions', label: 'İnceleme sorusu yok', target: 'questions' });
+  return items;
+}
+function renderCasePage(c) {
+  const host = $('#casePageBody');
+  if (!host) return;
+  const status = $('#casePageStatus');
+  if (!c) {
+    if (status) status.textContent = '—';
+    host.innerHTML = '<div class="empty-state"><b>Dosya yok</b><span>Yeni dosya açın veya paketten yükleyin.</span></div>';
+    return;
+  }
+  if (status) status.textContent = caseDisplayName(c);
+  const rows = caseIdentityRows(c);
+  const miss = caseMissingItems(c);
+  const sum = readinessSummary(reportReadiness(c));
+  const identity =
+    `<div class="panel-heading"><div><div class="eyebrow">KÜNYE</div><h3>Dosya bilgileri</h3></div>` +
+    `<button type="button" class="mini-button" data-case-edit="1" title="Bilgileri sağdaki çekmecede düzenle">✎ Düzenle</button></div>` +
+    `<div class="case-page-list">${rows
+      .map(([label, value]) => `<div class="case-page-row"><small>${esc(label)}</small><b>${esc(value)}</b></div>`)
+      .join('')}</div>`;
+  const missing =
+    `<div class="panel-heading"><div><div class="eyebrow">EKSİKLER</div><h3>Tamamlanacaklar</h3></div>` +
+    `<span class="subtle-pill">${miss.length ? `${miss.length} eksik` : 'Eksik görünmüyor'}</span></div>` +
+    (miss.length
+      ? `<ul class="case-page-missing">${miss
+          .map(
+            (x) =>
+              `<li><span>${esc(x.label)}</span><button type="button" class="mini-button" data-case-goto="${esc(x.target)}" title="İlgili yere git">Git ›</button></li>`
+          )
+          .join('')}</ul>`
+      : `<p class="dl-note-ok">Zorunlu künye alanları dolu. Rapor hazırlığı için “Rapor kontrolü”nü açın.</p>`) +
+    `<div class="dl-check"><span class="dl-check-title">Rapor kontrolü</span>` +
+    `<span class="dl-check-chip${sum.blocking ? ' is-blocking' : ''}">Engelleyen ${sum.blocking}</span>` +
+    `<span class="dl-check-chip">Uzman ${sum.expert}</span>` +
+    `<span class="dl-check-chip">Öneri ${sum.advisory}</span>` +
+    `<button type="button" class="mini-button" data-delivery-check="1">Rapor kontrolü →</button></div>`;
+  host.innerHTML =
+    `<div class="panel delivery-panel" aria-label="Teslim durumu">${deliveryPanelHtml(c)}</div>` +
+    `<div class="content-grid case-page-grid">` +
+    `<div class="panel" aria-label="Dosya künyesi">${identity}</div>` +
+    `<div class="panel" aria-label="Tamamlanacaklar">${missing}</div>` +
+    `</div>`;
 }
 
 function renderOverview() {
@@ -2205,6 +2296,8 @@ function renderOverview() {
   renderWorkload(c);
   renderDeliveryPanel(c);
   renderStatusBar();
+  // Dosya SAYFASI açıksa künye/teslim/eksikler de tazelenir (v2.315).
+  if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
 }
 // Alt durum çubuğu: hangi dosyada olduğumuzu ve genel durumu her an gösterir.
 // Genel görünüm sayfasındaki tekrarın yerini alır.
@@ -17432,11 +17525,14 @@ function setCaseDrawer(open) {
     $$('.nav-item[data-view]').forEach((x) => x.classList.remove('active'));
     if (navCase) navCase.classList.add('active');
   } else {
-    if (navCase) navCase.classList.remove('active');
     const cur = (document.body && document.body.dataset && document.body.dataset.view) || 'overview';
     $$('.nav-item[data-view]').forEach((x) => x.classList.toggle('active', x.dataset.view === cur));
+    // Dosya SAYFASI açıksa ray düğmesi aktif kalır (v2.315); çekmece kapanınca
+    // alttaki görünüm (case) korunur.
+    if (navCase) navCase.classList.toggle('active', cur === 'case');
   }
 }
+
 function setSettingsDrawer(open) {
   const d = $('#settingsDrawer');
   const b = $('#drawerBackdrop');
@@ -17528,6 +17624,29 @@ function setupEvents() {
     if (!b) return;
     setReportMode('check');
     switchView('report');
+  });
+  // Dosya SAYFASI (v2.315): düzenle / git / rapor kontrolü.
+  $('#view-case')?.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t || !t.closest) return;
+    if (t.closest('[data-case-edit]')) {
+      populateCaseForm();
+      setCaseDrawer(true);
+      return;
+    }
+    const go = t.closest('[data-case-goto]');
+    if (go) {
+      const target = go.dataset.caseGoto;
+      if (target === 'case') {
+        populateCaseForm();
+        setCaseDrawer(true);
+      } else switchView(target);
+      return;
+    }
+    if (t.closest('[data-delivery-check]')) {
+      setReportMode('check');
+      switchView('report');
+    }
   });
   // Ekip alanları: yazma/kaldırma. Delegasyon kullanılır çünkü panel yeniden
   // çizildiğinde düğümler tazelenir.
@@ -20559,6 +20678,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.315': {
+    title: 'Dosya görünümü (ayrı sayfa)',
+    body:
+      'Soldaki “Dosya” artık ayrı bir sayfa açar: künye, taraflar, teslim durumu ve tamamlanacaklar tek ekranda. Düzenleme yine sağdaki çekmecede yapılır (form kimlikleri çoğaltılmaz). “✎ Düzenle” çekmeceyi açar; “Git ›” ilgili görünüme geçer; “Rapor kontrolü →” raporu Kontrol modunda açar.'
+  },
   '2.314': {
     title: 'Yeni gözlem işaretleri',
     body:

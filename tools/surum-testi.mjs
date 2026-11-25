@@ -213,7 +213,8 @@ const HELP_TOPICS = [
   ['delil paketi', /Delil paketi \(Tier 1\)/],
   ['ses gömme ölçümü', /Ses gömme ölçümü/],
   ['hızlı etiket sözlüğü', /Hızlı etiketler \(metne ekleme\)/],
-  ['duyulmuyor/anlaşılmaz ayrımı', /\[duyulmuyor\]/]
+  ['duyulmuyor/anlaşılmaz ayrımı', /\[duyulmuyor\]/],
+  ['dosya görünümü', /Dosya görünümü \(v2\.315\)/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));
@@ -260,7 +261,11 @@ const REQUIRED_IDS = [
   ['rayda dosya girişi', 'navCase'],
   ['son teslim hesapla düğmesi', 'dueDateAutoBtn'],
   ['son teslim ipucu', 'dueDateHint'],
-  ['rapor ekranı teslim çipi', 'reportDueChip']
+  ['rapor ekranı teslim çipi', 'reportDueChip'],
+  // v2.315 — Dosya görünümü (sayfa).
+  ['dosya görünümü', 'view-case'],
+  ['dosya sayfası gövdesi', 'casePageBody'],
+  ['dosya sayfası durumu', 'casePageStatus']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

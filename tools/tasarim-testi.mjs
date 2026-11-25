@@ -2260,5 +2260,28 @@ console.log('\n[2cv] Yeni gözlem işaretleri (v2.314)');
   check('gözlem paneli kaydırılır', /\.sd-obs-menu > \.sd-obs \{[^}]*overflow-y: auto/.test(layer));
   check('tam etiket app.js e kopyalanmaz', !/duyulmuyor \(ses yok\/kısık\)/.test(app));
 }
+console.log('\n[2cw] Dosya görünümü (v2.315)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const sec = (html.match(/<section class="view" id="view-case">[\s\S]*?<\/section>/) || [''])[0];
+  check('view-case bölümü var', !!sec);
+  check('casePageBody var', /id="casePageBody"/.test(html));
+  check('casePageStatus var', /id="casePageStatus"/.test(html));
+  check('renderCasePage tanımlı', /function renderCasePage\(c\)/.test(app));
+  check('switchView case sayfayı açar', /if \(name === 'case'\) renderCasePage\(currentCase\(\)\)/.test(app));
+  check('eski erken çekmece dalı yok', !/if \(name === 'case'\) \{\s*populateCaseForm\(\);\s*setCaseDrawer\(true\);\s*return;/.test(app));
+  check('düzenle düğmesi çekmeceyi açar', /data-case-edit/.test(app) && /\[data-case-edit\]/.test(app));
+  check('eksik satırı hedefli git', /data-case-goto/.test(app) && /\[data-case-goto\]/.test(app));
+  check('teslim paneli tek kaynak', /function deliveryPanelHtml\(c\)/.test(app) && /deliveryPanelHtml\(c\)/.test(app));
+  check('form kimliği çoğaltılmadı (court)', (html.match(/id="court"/g) || []).length === 1);
+  check('sayfa form kimliği taşımaz', !!sec && !/id="(court|fileNo|expertName|subject|assignmentDate|dueDate)"/.test(sec));
+  check('künye ızgarası CSS', /#view-case \.case-page-grid/.test(layer) && /#view-case \.case-page-list/.test(layer));
+  check('eksik listesi CSS', /#view-case \.case-page-missing/.test(layer));
+  check('dosya sayfası ham hex taşımaz', !/#view-case \.case-page-[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(layer));
+  check('dosya sayfası ham font-size taşımaz', !/#view-case \.case-page-[^{]*\{[^}]*font-size:\s*[0-9.]+px/i.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

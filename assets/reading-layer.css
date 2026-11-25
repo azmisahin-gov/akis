@@ -4034,3 +4034,14 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 #view-audio .qt-buttons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 #view-audio .qt-empty { color: var(--ink-3); font-size: var(--fs-2xs); padding: 4px 0; }
 #view-audio .sd-quick-menu .quick-tag-clear { margin-top: 6px; }
+
+/* v2.315 — Dosya görünümü (ayrı sayfa): künye ızgarası + eksik listesi.
+   Form kimlikleri çoğaltılmaz; düzenleme çekmecede. Panel içeriği kadar uzar. */
+#view-case .case-page-grid { align-items: start; flex-grow: 0; flex-shrink: 0; }
+#view-case .case-page-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; }
+#view-case .case-page-row { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); min-width: 0; }
+#view-case .case-page-row small { color: var(--ink-3); font-size: var(--fs-2xs); }
+#view-case .case-page-row b { color: var(--ink); font-size: var(--fs-sm); overflow-wrap: anywhere; }
+#view-case .case-page-missing { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+#view-case .case-page-missing li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-xs); }
+#view-case .case-page-missing li span { overflow-wrap: anywhere; }
