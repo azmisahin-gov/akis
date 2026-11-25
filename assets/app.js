@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.320';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.320';
+} from './schema.js?v=2.321';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.321';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.320';
+const APP_VERSION = '2.321';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -20797,6 +20797,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.321': {
+    title: 'Küçük ekranda ad ve etiketler kırpılmıyor',
+    body:
+      'Küçük ekranda (telefon/tablet) ses kaydının adı artık kırpılmıyor; adın tamamı görünür ve gerekirse alt satıra iner. Özet ekranındaki istatistik etiketleri de kart dışına taşmıyor. Veri ve iş akışı değişmedi.'
+  },
   '2.320': {
     title: 'Etiket menüsünde 30 etiket',
     body:

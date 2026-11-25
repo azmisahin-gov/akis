@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.320.**
+yazılır. **Güncel sürüm: v2.321.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.321 — Dar ekranda metin kırpılması/taşması (TAMAMLANDI)
+
+- 600 px'te kayıt başlığındaki **dosya adı kırpılmıyor** (96/170 → 96/96, 2 satır).
+- 360 px'te **istatistik kartı etiketi** kart dışına taşmıyor (ikon üst satır, tek sütun).
+- Yalnız CSS; davranış/veri değişmedi. Test `tasarim [2da]`.
 
 ## v2.320 — Etiket menüsünde 30 etiket + kapatma garantisi (TAMAMLANDI)
 

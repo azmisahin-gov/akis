@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.320.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.321.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.321 — Dar ekranda metin kırpılması/taşması
+
+**KULLANICI NE GÖRECEK:** Küçük ekranda (telefon/tablet) kayıt adının tamamı
+görünür; Özet'teki istatistik etiketleri kart dışına taşmaz.
+
+**Ölçülen iki hata (gerçek Chromium, v2.320):**
+
+| Yer | Ölçüm |
+|---|---|
+| 600 px · Ses görünümü, kayıt başlığı dosya adı | kutu **96 px**, içerik **170 px** → adın **%44'ü gizli** (`nowrap + ellipsis`) |
+| 360 px · Özet, istatistik kartı etiketi | "ÇÖZÜMLENEN" **36 px taşıyor** ve kart dışına çıkıyor (kart sağı 169, metin 188) |
+
+**Düzeltme (yalnız CSS, `reading-layer.css`; davranış/veri değişmez):**
+- Dosya adı **sarar** (`white-space: normal; text-overflow: clip;
+  overflow-wrap: anywhere`). Ad kimliktir, kırpılmaz (v2.277 `.mc-name` dersi).
+- ≤480 px'te istatistik kartı **tek sütun**: ikon üst satıra iner, etiket tam
+  genişliği alır; yine sığmazsa kelime kırılır (sessiz taşma yok).
+
+**Ölçüm (sonra, önbellek kapalı):** 600 px ad kutusu 96 px / içerik 96 px,
+**kayıp 0**, 2 satır; 360 px etiket taşması **0**, kart dışına taşma **yok**;
+1440 px görünüm değişmedi.
+
+**Koruyan test:** `tasarim-testi` **[2da]** (9 kontrol) — düzeltme yokken
+**8 kontrol KALDI** (kanıtlandı).
 
 ## v2.320 — Etiket menüsünde 30 etiket + kapatma garantisi
 

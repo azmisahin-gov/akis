@@ -4062,3 +4062,33 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 #view-audio .sd-obs-active { order: 2; margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px; }
 #view-audio .sd-obs-active:empty { display: none; }
 #view-audio .sd-obs-menu { order: 3; }
+
+/* v2.321 — Dar ekranda metin KIRPILMAZ / TAŞMAZ (depo kuralı: kırpma yasak).
+   ÖLÇÜM (v2.320, gerçek Chromium):
+   1) 600 px Ses görünümü — kayıt başlığındaki dosya adı: kutu 96 px, içerik
+      170 px → adın %44'ü gizliydi (app.css `.audio-file-main b` nowrap+ellipsis).
+      Dosya adı KİMLİKTİR; kırpılmaz (v2.277 `.mc-name` dersi).
+   2) 360 px Özet — "ÇÖZÜMLENEN" etiketi 36 px taşıp kart dışına çıkıyordu
+      (kart sağı 169, metin 188). Tek sözcük sarılamadığı için taşıyordu.
+      Dar ekranda ikon üst satıra iner, etiket tam genişliği alır. */
+#view-audio .audio-file-main b {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+@media (max-width: 480px) {
+  #view-overview .stat-card {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    row-gap: 2px;
+  }
+  #view-overview .stat-card::before {
+    grid-row: auto;
+    grid-column: 1;
+    width: 32px;
+    height: 32px;
+  }
+  #view-overview .stat-card > span { overflow-wrap: anywhere; }
+}

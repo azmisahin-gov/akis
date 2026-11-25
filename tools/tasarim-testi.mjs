@@ -2329,5 +2329,30 @@ console.log('\n[2cz] Görünür sürüm + tek tık yenile (v2.319)');
   check('denetim aralığı ≤30 sn', /CHECK_MS\s*=\s*30000/.test(html));
 }
 
+console.log('\n[2da] Dar ekranda metin kırpılmaz/taşmaz (v2.321)');
+{
+  const layer = read('assets/reading-layer.css');
+  // ÖLÇÜM (v2.320, gerçek Chromium):
+  //  • 600 px Ses görünümü: kayıt başlığındaki dosya adı kutusu 96 px, içerik
+  //    170 px → adın %44'ü gizliydi (app.css `.audio-file-main b` nowrap+ellipsis).
+  //  • 360 px Özet: "ÇÖZÜMLENEN" etiketi 36 px taşıp kart dışına çıkıyordu
+  //    (kart sağı 169, metin 188); tek sözcük olduğu için sarılmıyordu.
+  // Kural: kırpma yasak — sığmayan öğe SARAR (v2.130/v2.133/v2.277 dersi).
+  const fileBlock = (layer.match(/#view-audio \.audio-file-main b\s*\{[^}]*\}/) || [''])[0];
+  check('dosya adı bloğu var (ses görünümü)', !!fileBlock);
+  check('dosya adı sarar (white-space normal)', /white-space:\s*normal/.test(fileBlock));
+  check('dosya adı kırpılmaz (text-overflow clip)', /text-overflow:\s*clip/.test(fileBlock));
+  check('uzun ad sarılır (overflow-wrap anywhere)', /overflow-wrap:\s*anywhere/.test(fileBlock));
+  check('dosya adı taşmaz (overflow visible)', /overflow:\s*visible/.test(fileBlock));
+
+  // Dar ekran: istatistik kartı ikonu üst satıra iner, etiket tam genişliği alır.
+  const narrow = layer.slice(layer.indexOf('@media (max-width: 480px)'));
+  check('dar ekran bloğu var (<=480px)', narrow.length > 0);
+  const cardBlock = (narrow.match(/#view-overview \.stat-card\s*\{[^}]*\}/) || [''])[0];
+  check('istatistik kartı tek sütun', /grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(cardBlock));
+  check('kart ikonu kendi satırında', /#view-overview \.stat-card::before\s*\{[^}]*grid-row:\s*auto/.test(narrow));
+  check('etiket sığmazsa kırılır', /#view-overview \.stat-card > span\s*\{[^}]*overflow-wrap:\s*anywhere/.test(narrow));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
