@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.302.**
+yazılır. **Güncel sürüm: v2.303.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.303 — Konuşmacı yöntem notu (TAMAMLANDI)
+
+- Rapor araç çubuğunda **“Konuşmacı yöntem notu raporda görünsün”** (varsayılan
+  kapalı). Açıksa ve otomatik ön-atama kullanıldıysa Konuşmacılar bölümüne
+  dürüst yöntem cümlesi eklenir; aksi hâlde **yazılmaz** (uydurma beyan yok).
+- `case.report.speakerMethod`; `anyMaterialAutoUsed` + `speakerMethodNoteText`
+  TEK KAYNAK; üç çıktı aynı. Test `birim [144]`, `rapor` Senaryo 42.
 
 ## v2.302 — Bölüm bazında konuşmacı tahmini (TAMAMLANDI)
 

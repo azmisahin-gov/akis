@@ -119,15 +119,15 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   embeddingCentroid
-} from './schema.js?v=2.302';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.302';
+} from './schema.js?v=2.303';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.303';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.302';
+const APP_VERSION = '2.303';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -419,6 +419,8 @@ Object.assign(REPORT_TEXT, {
   speakerVerifiedSuffix: 'doğrulandı',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
+  speakerMethodNote:
+    'Konuşmacı grupları, ses benzerliğine dayalı anonim kümeleme ile ön-atandı; nihai konuşmacı etiketleri uzman değerlendirmesinin ürünüdür. Bu yöntem bir konuşmacı kimlik tespiti değildir.',
   speakerCodeConflict:
     'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.',
   integrityNote:
@@ -4418,6 +4420,7 @@ async function autoAssignSpeakers(m) {
       }
     }
     assignSpeakerCodes(m.speakers);
+    m.speakerAutoAt = new Date().toISOString();
     logEvent(m, 'Konuşmacılar ön-atandı', `${plan.length} konuşmacı · ${assigned} bölüm (anonim benzerlik; kimlik değil)`);
     persist();
     const scroll = captureSegScroll(m);
@@ -4935,6 +4938,14 @@ async function deleteCasePerson(pid) {
 // Türkçe ETİKETTİR. v2.78 ve öncesinde value'ya etiket yazılıyordu; şema kodu
 // beklediği için kaydedilen rol/cinsiyet yeniden yüklemede 'unspecified'a
 // düşüyordu (sessiz veri kaybı).
+// Konuşmacı yöntem notu (v2.303): otomatik ön-atama kullanıldıysa ve kullanıcı
+// raporda açtıysa döner; aksi hâlde '' (rapora satır YAZILMAZ).
+function anyMaterialAutoUsed(c) {
+  return ((c && c.materials) || []).some((m) => m && m.speakerAutoAt);
+}
+function speakerMethodNoteText(c) {
+  return c && c.report && c.report.speakerMethod && anyMaterialAutoUsed(c) ? REPORT_TEXT.speakerMethodNote : '';
+}
 function speakersPanelHtml(m) {
   const c = currentCase();
   const sp = m.speakers || [];
@@ -13942,6 +13953,7 @@ function reportSnapshot(c) {
     annexPlacement: normalizeAnnexPlacement(r.annexPlacement),
     columns: normalizeReportColumns(r.columns),
     includeEmbedded: !!r.includeEmbedded,
+    speakerMethod: !!r.speakerMethod,
     pageView: !!r.pageView,
     methodText: r.methodText || '',
     limitationsText: r.limitationsText || '',
@@ -13962,6 +13974,7 @@ const REPORT_SNAPSHOT_LABELS = {
   annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
   includeEmbedded: 'Gömülü metadata',
+  speakerMethod: 'Konuşmacı yöntem notu',
   pageView: 'A4 önizleme',
   methodText: 'İnceleme yöntemi',
   limitationsText: 'Teknik sınırlılıklar',
@@ -13991,6 +14004,7 @@ function applyReportSnapshot(c, snap) {
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
   r.includeEmbedded = !!snap.includeEmbedded;
+  r.speakerMethod = !!snap.speakerMethod;
   r.pageView = !!snap.pageView;
   r.methodText = snap.methodText || '';
   r.limitationsText = snap.limitationsText || '';
@@ -14277,6 +14291,8 @@ function renderReport() {
   if (!c) return;
   const embToggle = $('#reportEmbeddedToggle');
   if (embToggle) embToggle.checked = !!(c.report && c.report.includeEmbedded);
+  const spkMethodToggle = $('#reportSpeakerMethodToggle');
+  if (spkMethodToggle) spkMethodToggle.checked = !!(c.report && c.report.speakerMethod);
   renderReportReadiness(c);
   const materials = c.materials || [];
   const allSegs = materials.flatMap((m) => m.segments || []);
@@ -14424,7 +14440,7 @@ function renderReport() {
         : `<table class="paper-table"><thead><tr>${spk.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spk.rows
             .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
             .join('')}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p>${speakerMethodNoteText(c) ? `<p class="paper-muted">${esc(speakerMethodNoteText(c))}</p>` : ''}</div>`;
     },
     speakerDurations: () => {
       const rows = speakerDurationRows(c);
@@ -14902,7 +14918,8 @@ function docxXml(c) {
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         })() +
-        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
+        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true }) +
+        (speakerMethodNoteText(c) ? wP(speakerMethodNoteText(c), { color: '74869A', size: 17, italic: true }) : '')
       );
     },
     speakerDurations: () => {
@@ -15498,6 +15515,7 @@ async function makeUdf() {
         else el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
       }
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
+      if (speakerMethodNoteText(c)) el.push(paragraph(speakerMethodNoteText(c), { size: 9, italic: true, color: 'muted', after: 4 }));
     },
     speakerDurations: () => {
       el.push(h(H('speakerDurations')));
@@ -18374,6 +18392,15 @@ $('#reportEmbeddedToggle')?.addEventListener('change', (e) => {
   persist();
   renderReport();
 });
+// Konuşmacı yöntem notu rapora girsin mi? (v2.303) — varsayılan KAPALI.
+$('#reportSpeakerMethodToggle')?.addEventListener('change', (e) => {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  c.report.speakerMethod = !!e.target.checked;
+  persist();
+  renderReport();
+});
 // Rapor bölümleri (v2.219) — aç/kapa; önizleme ANINDA tazelenir.
 // Karar tek kapıdan: `setReportSection` (persist + renderReport).
 // Rapor çalışma modu (v2.228): Düzenle / Kontrol. Mod UI tercihidir.
@@ -19748,6 +19775,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.303': {
+    title: 'Konuşmacı yöntem notu (isteğe bağlı)',
+    body:
+      'Rapor araç çubuğunda “Konuşmacı yöntem notu raporda görünsün” anahtarı var (varsayılan kapalı). Açarsanız ve otomatik konuşmacı ön-ataması kullanıldıysa, Konuşmacılar bölümüne dürüst bir yöntem cümlesi eklenir; aksi hâlde yazılmaz.'
+  },
   '2.302': {
     title: 'Bölüm bazında konuşmacı tahmini',
     body:

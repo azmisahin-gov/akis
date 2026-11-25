@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -6302,6 +6302,42 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('uygula otomatik işareti temizler', /seg\.speakerAuto = false;/.test(js), true);
   eq('uygula günlüğe yazılır', /Konuşmacı tahmini uygulandı/.test(js), true);
   eq('belirsiz işareti gösterilir', /is-uncertain/.test(js), true);
+}
+
+// [144] v2.303 — Konuşmacı yöntem notu: opt-in, yalnız ön-atama kullanıldıysa.
+{
+  console.log('[144] Konuşmacı yöntem notu (v2.303)');
+  const S = __schemaMod;
+  eq('varsayılan kapalı', S.emptyCase().report.speakerMethod, false);
+  eq('normalize korur', S.normalizeCase({ report: { speakerMethod: true } }).report.speakerMethod, true);
+  const cAuto = T.emptyCaseForTest({
+    id: 'cM',
+    report: { speakerMethod: true },
+    materials: [{ id: 'm1', name: 'a.wav', speakerAutoAt: '2026-01-01T00:00:00.000Z', segments: [] }]
+  });
+  const note = T.speakerMethodNoteText(cAuto);
+  eq('otomatik kullanıldıysa not döner', !!note, true);
+  eq('not anonim kümeleme der', /anonim kümeleme/.test(note), true);
+  eq('not kimlik değil der', /kimlik tespiti değildir/.test(note), true);
+  const cOff = T.emptyCaseForTest({
+    id: 'cM2',
+    report: { speakerMethod: false },
+    materials: [{ id: 'm1', name: 'a.wav', speakerAutoAt: 'x', segments: [] }]
+  });
+  eq('kapalıysa not yok', T.speakerMethodNoteText(cOff), '');
+  const cNoAuto = T.emptyCaseForTest({
+    id: 'cM3',
+    report: { speakerMethod: true },
+    materials: [{ id: 'm1', name: 'a.wav', segments: [] }]
+  });
+  eq('otomatik kullanılmadıysa not yok', T.speakerMethodNoteText(cNoAuto), '');
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  eq('üç çıktı yöntem notunu kullanır', (js.match(/speakerMethodNoteText\(c\)/g) || []).length >= 3, true);
+  eq('ön-atama speakerAutoAt yazar', /m\.speakerAutoAt = new Date\(\)\.toISOString\(\)/.test(js), true);
+  eq('rapor anahtarı (app + html)', /reportSpeakerMethodToggle/.test(js) && /reportSpeakerMethodToggle/.test(html), true);
+  eq('revizyona girer', /speakerMethod: !!r\.speakerMethod/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

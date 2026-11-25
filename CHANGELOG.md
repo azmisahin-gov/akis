@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.302.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.303.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.303 — Konuşmacı yöntem notu (opt-in, dürüst)
+
+### KULLANICI NE GÖRECEK
+
+- Rapor ekranındaki **“Konuşmacı yöntem notu raporda görünsün”** anahtarı
+  (varsayılan **kapalı**) açılırsa ve dosyada **otomatik konuşmacı ön-ataması**
+  kullanıldıysa, raporun **Konuşmacılar** bölümüne tek cümlelik dürüst bir
+  yöntem notu eklenir: *“Konuşmacı grupları, ses benzerliğine dayalı anonim
+  kümeleme ile ön-atandı; nihai konuşmacı etiketleri uzman değerlendirmesinin
+  ürünüdür. Bu yöntem bir konuşmacı kimlik tespiti değildir.”*
+- **Uydurma beyan yok:** anahtar açık olsa bile otomatik ön-atama
+  kullanılmadıysa not **yazılmaz**. Kapalıysa hiç yazılmaz.
+
+### Teknik
+
+- `case.report.speakerMethod` (varsayılan **false**); `normalizeCase` korur,
+  rapor revizyonuna girer.
+- `anyMaterialAutoUsed(c)` (`material.speakerAutoAt`) + `speakerMethodNoteText(c)`
+  TEK KAYNAK; **üç çıktı** (HTML/DOCX/UDF) aynı metni basar.
+- `autoAssignSpeakers` artık `material.speakerAutoAt` yazar.
+- UI: `#reportSpeakerMethodToggle` (rapor araç çubuğu).
+- Koruyan: `birim` [144] (11 kontrol) + `rapor` Senaryo 42 (üç çıktı aynı;
+  kapalı/ön-atamasız durumda not yok).
 
 ## v2.302 — Bölüm bazında konuşmacı tahmini
 

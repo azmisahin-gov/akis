@@ -1446,5 +1446,43 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('çözülemeyen bağ yazılmaz', !/yok · /.test(Hb) && Hb.includes('Not'), '');
 }
 
+// Senaryo 42: konuşmacı yöntem notu (v2.303). Yalnız (a) kullanıcı açtıysa ve
+// (b) gerçekten otomatik ön-atama kullanıldıysa rapora girer; üç çıktı aynı.
+{
+  console.log('\n[Senaryo 42] konuşmacı yöntem notu (v2.303)');
+  const mk = (report, auto) =>
+    baseCase({
+      report,
+      materials: [
+        {
+          id: 'm1',
+          name: 'a.wav',
+          type: 'audio/wav',
+          size: 1000,
+          duration: 10,
+          sha256: 'abc123',
+          tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+          speakerAutoAt: auto ? '2026-01-01T00:00:00.000Z' : '',
+          segments: [
+            { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Konuşmacı 1', review: 'approved' }
+          ],
+          log: []
+        }
+      ]
+    });
+  const on = mk({ speakerMethod: true }, true);
+  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
+  checkShared('yöntem notu (üç çıktı)', 'anonim kümeleme', H, U, D);
+  checkShared('yöntem notu kimlik değil der', 'kimlik tespiti değildir', H, U, D);
+  // Kapalı → not yok.
+  const off = mk({ speakerMethod: false }, true);
+  const Ho = htmlText(off);
+  check('kapalı → not yok', !Ho.includes('anonim kümeleme'), '');
+  // Açık ama ön-atama kullanılmamış → not yok (uydurma yöntem beyanı yok).
+  const noAuto = mk({ speakerMethod: true }, false);
+  const Hn = htmlText(noAuto);
+  check('ön-atama yok → not yok', !Hn.includes('anonim kümeleme'), '');
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

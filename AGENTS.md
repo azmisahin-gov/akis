@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.302.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.303.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7584,3 +7584,34 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
   benzerlikle ön-atandı, uzman doğruladı"; varsayılan kapalı) + dosyalar arası K
   kişi eşleştirmesiyle birleştirme.
 - Sonra: deterministik soru↔bölüm önerisi, terim listesi, kanıt tutarlılığı.
+
+## YENİ OTURUM DEVRİ (v2.303) — Konuşmacı yöntem notu (opt-in)
+
+| | |
+|---|---|
+| Sürüm | **v2.303** |
+| Testler | `bash tools/test.sh` → **2134 birim + 522 şema** + rapor (Senaryo 42) + sürüm + tasarım yeşil |
+| Açık konu | Konuşmacı ön-atama üçlüsü KAPANDI (v2.301–v2.303) |
+
+- Rapor araç çubuğunda **“Konuşmacı yöntem notu raporda görünsün”**
+  (`#reportSpeakerMethodToggle`, `case.report.speakerMethod`, varsayılan **kapalı**).
+  Açıksa **ve** `material.speakerAutoAt` varsa Konuşmacılar bölümüne dürüst yöntem
+  cümlesi eklenir; aksi hâlde **yazılmaz** (uydurma beyan yok).
+- TEK KAYNAK: `anyMaterialAutoUsed(c)` + `speakerMethodNoteText(c)`; üç çıktı aynı.
+- `autoAssignSpeakers` artık `material.speakerAutoAt` yazar (yöntem notu koşulu).
+- Revizyona girer (`reportSnapshot.speakerMethod`).
+
+### DEĞİŞMEZ
+1. **Uydurma beyan yok:** not yalnız (a) kullanıcı açtıysa **ve** (b) gerçekten
+   otomatik ön-atama kullanıldıysa yazılır.
+2. Not **kimlik tespiti olmadığını** açıkça söyler; uygulama adı geçmez.
+3. Üç çıktı tek fonksiyondan; kopya metin yazmayın.
+
+### DURUM — Konuşmacı arc tamam
+- v2.301 dosya bazında ön-atama · v2.302 bölüm bazında tahmin · v2.303 yöntem notu.
+- Dosyalar arası **K** kişi eşleştirmesi v2.205'ten beri var; ek iş gerekmedi.
+
+### Sıradaki iş (öneri)
+- Deterministik **soru↔bölüm önerisi** (keyword örtüşmesi; otomatik bağlama yok).
+- **Terim/konu listesi (C2)** — opt-in.
+- Kanıt tutarlılığı A1+A3 (dosya zamanı ↔ gömülü metadata; tam dosya metadata).

@@ -1306,6 +1306,9 @@ export function emptyCase(over = {}) {
       // Gömülü metadata (cihaz beyanı) rapora girsin mi? VARSAYILAN KAPALI:
       // beyan niteliğindedir, kullanıcı bilinçli açmalıdır.
       includeEmbedded: false,
+      // Konuşmacı yöntem notu (v2.303): otomatik ön-atama kullanıldıysa rapora
+      // dürüst bir yöntem cümlesi eklenir. VARSAYILAN KAPALI; kullanıcı açar.
+      speakerMethod: false,
       methodText: '',
       limitationsText: '',
       conclusionText: '',
@@ -2229,6 +2232,7 @@ export function normalizeCase(src = {}) {
     report: {
       date: str(report.date || c.reportDate),
       includeEmbedded: !!report.includeEmbedded,
+      speakerMethod: !!report.speakerMethod,
       methodText: str(report.methodText ?? c.methodText),
       limitationsText: str(report.limitationsText ?? c.limitationsText),
       conclusionText: str(report.conclusionText ?? c.conclusionText),
