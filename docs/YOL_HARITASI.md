@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.322.**
+yazılır. **Güncel sürüm: v2.323.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.323 — Üst yazı: ayrı belge, rapor EK-1 (TAMAMLANDI)
+
+- Rapor ekranında **Rapor | Üst yazı** sekmesi; üst yazı kendi A4 kâğıdında.
+- `case.letter` + `case.letterAnnexes[]`; EK numarası **türetilir** (EK-1 = rapor).
+- Üç çıktı (HTML/DOCX/UDF) **aynı modelden**: `letterModel`.
+- Eksik künyede üst yazı **üretilmez** (uydurma mahkeme/dosya yok).
+- "Üst yazı + rapor (2 dosya)" tek tıkla; rapor çıktısı değişmedi.
+- Test `birim [159]`, `rapor` 44, `tasarim [2dc]`.
+- Sıradaki: belge ekleri düzenleme (EK-2 teknik bilgiler, rapordan çıkarma).
 
 ## v2.322 — Etiket menüsü onarıldı (TAMAMLANDI)
 

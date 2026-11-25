@@ -64,7 +64,7 @@ if (/^\s*import\s/m.test(code)) {
   process.exit(1);
 }
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
-  + ` makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
+  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
 
 const downloads = [];
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -97,7 +97,7 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
-const { setCase, makeUdf, makeDocx, renderReport, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
+const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
 // Bölüm başlıkları TEK KAYNAK: şema. Testte sabit başlık kopyası tutulmaz.
 const SEC_TITLE = Object.fromEntries(__schemaMod.REPORT_SECTION_DEFS.map((d) => [d.key, d.title]));
 
@@ -115,6 +115,21 @@ async function udfText(c) {
   const zip = await JSZip.loadAsync(buf);
   const xml = await zip.file('content.xml').async('string');
   return xml.match(/<!\[CDATA\[([\s\S]*?)\]\]>/)[1].replace(/\u200b/g, '');
+}
+async function udfTextLetter(c) {
+  downloads.length = 0; setCase(c); await makeUdf({ letter: true });
+  const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
+  const zip = await JSZip.loadAsync(buf);
+  const xml = await zip.file('content.xml').async('string');
+  return xml.match(/<!\[CDATA\[([\s\S]*?)\]\]>/)[1].replace(/\u200b/g, '');
+}
+async function docxTextLetter(c) {
+  downloads.length = 0; setCase(c); await makeDocx({ letter: true });
+  const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
+  const zip = await JSZip.loadAsync(buf);
+  const xml = await zip.file('word/document.xml').async('string');
+  return [...xml.matchAll(/<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g)].map((m) => m[1]).join('\n')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
 }
 async function docxText(c) {
   downloads.length = 0; setCase(c); await makeDocx();
@@ -1510,6 +1525,47 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('terim başlığı', SEC_TITLE.terms, H, U, D);
   checkShared('terim metni', 'depozito (3)', H, U, D);
   checkShared('terim açıklaması', REPORT_TEXT.termsIntro, H, U, D);
+}
+
+
+// Senaryo 44: üst yazı AYRI belge; HTML/DOCX/UDF aynı metni verir (v2.323).
+{
+  console.log('\n[Senaryo 44] üst yazı üç çıktıda aynı metin (v2.323)');
+  const c = baseCase({
+    court: 'Antalya 4. Asliye Hukuk Mahkemesi',
+    fileNo: '2026/214 E.',
+    expert: { name: 'Örnek Bilirkişi', registryNo: '1234' },
+    assignment: { date: '2026-10-12', durationDays: '34' },
+    report: { date: '2026-11-15' },
+    letter: { place: 'Antalya', bodyText: 'Birinci paragraf metni.\n\nİkinci paragraf metni.' }
+  });
+  setCase(c);
+  const H = letterPaperHtml(c).replace(/<[^>]+>/g, '\n');
+  const U = await udfTextLetter(c);
+  const D = await docxTextLetter(c);
+  checkShared('T.C.', 'T.C.', H, U, D);
+  checkShared('mahkeme satırı', 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİ’NE', H, U, D);
+  checkShared('sayı', 'Sayı: 2026/214 E.', H, U, D);
+  checkShared('konu', 'Konu: Bilirkişi raporunun sunulması', H, U, D);
+  checkShared('hitap', 'Sayın Hâkimliğine,', H, U, D);
+  checkShared('birinci paragraf', 'Birinci paragraf metni.', H, U, D);
+  checkShared('ikinci paragraf', 'İkinci paragraf metni.', H, U, D);
+  checkShared('kapanış', 'Bilgilerinize arz ederim.', H, U, D);
+  checkShared('yer ve tarih', 'Antalya, 15.11.2026', H, U, D);
+  checkShared('imza unvanı', 'Bilirkişi', H, U, D);
+  checkShared('bilirkişi adı', 'Örnek Bilirkişi', H, U, D);
+  checkShared('EKLER', 'EKLER', H, U, D);
+  checkShared('EK-1 satırı', 'EK-1', H, U, D);
+  checkShared('EK-1 etiketi', 'Bilirkişi raporu', H, U, D);
+  // Uygulama adı hiçbir çıktıda geçmez (v2.83 kuralı).
+  for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`${name}: uygulama adı yok`, !/AKİS|uygulama adı/i.test(text));
+  }
+  // Eksik zorunlu alan: üst yazı üretilmez (uydurma yok).
+  const empty = baseCase({ court: '', fileNo: '', expert: { name: '' } });
+  const me = letterModel(empty);
+  check('eksikte hazır değil', me.ready === false);
+  check('eksikte mahkeme satırı boş', me.courtLine === '');
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

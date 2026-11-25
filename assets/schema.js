@@ -1276,6 +1276,92 @@ export function normalizeReportSections(src) {
   return base;
 }
 
+
+// ---- ÜST YAZI (v2.323) ----------------------------------------------------
+// Üst yazı (sunuş yazısı) AYRI bir belgedir; rapor onun EK-1'idir. "Teslim"
+// sözcüğü son teslim TARİHİ için ayrılmıştır (deliveryInfo); belge kümesi için
+// "belge ekleri" denir. Ayrıntı: docs/UST_YAZI_PLANI.md.
+export const LETTER_ANNEX_KINDS = ['report', 'sections', 'reportAnnex', 'custom'];
+
+export function emptyLetter() {
+  return {
+    enabled: false, // kapalıyken hiçbir çıktı değişmez (göç güvenliği)
+    place: '', // "Antalya" — boşsa yazılmaz
+    date: '', // boşsa rapor tarihi
+    addressee: '', // boşsa mahkeme adından türetilir
+    subject: '', // boşsa varsayılan konu
+    bodyText: '', // boşsa varsayılan gövde (tek kaynak)
+    showRegistry: false, // sicil no üst yazıda görünsün mü
+    showPageCounts: false, // ek listesinde (≈) sayfa sayısı
+    signerTitle: '' // boşsa "Bilirkişi"
+  };
+}
+
+export function normalizeLetter(v) {
+  const base = emptyLetter();
+  if (!isObj(v)) return base;
+  const out = { ...base, ...v };
+  for (const k of ['place', 'date', 'addressee', 'subject', 'bodyText', 'signerTitle']) out[k] = str(out[k]).trim();
+  out.enabled = !!out.enabled;
+  out.showRegistry = !!out.showRegistry;
+  out.showPageCounts = !!out.showPageCounts;
+  return out;
+}
+
+/** Varsayılan: yalnız EK-1 (rapor). Rapor eki tek ve zorunludur. */
+export function emptyLetterAnnexes() {
+  return [{ id: 'la1', kind: 'report' }];
+}
+
+/**
+ * Belge ekleri: sıra korunur, `report` tekildir ve BAŞTA durur.
+ * Geçersiz tür/boş içerik düşer; bilinmeyen alanlar korunur.
+ */
+export function normalizeLetterAnnexes(list) {
+  const src = Array.isArray(list) ? list : [];
+  const out = [];
+  let report = null;
+  for (const raw of src) {
+    if (!isObj(raw)) continue;
+    const kind = String(raw.kind || '');
+    if (!LETTER_ANNEX_KINDS.includes(kind)) continue;
+    if (kind === 'report') {
+      if (report) continue;
+      report = { ...raw, kind, id: str(raw.id) || 'la1' };
+      continue;
+    }
+    if (kind === 'sections') {
+      const sections = (Array.isArray(raw.sections) ? raw.sections : []).filter((k) => REPORT_SECTION_KEYS.includes(k));
+      if (!sections.length) continue;
+      out.push({ ...raw, kind, sections, label: str(raw.label), id: str(raw.id) });
+    } else if (kind === 'reportAnnex') {
+      if (!isReportAnnexKey(raw.key)) continue;
+      out.push({ ...raw, kind, key: String(raw.key), id: str(raw.id) });
+    } else {
+      const title = str(raw.title);
+      const content = str(raw.content);
+      if (!title && !content) continue; // boş serbest ek yazılmaz
+      out.push({ ...raw, kind, title, content, id: str(raw.id) });
+    }
+  }
+  const all = [report || { id: 'la1', kind: 'report' }, ...out];
+  // Eksik kimlikler deterministik verilir (rastgele değil; test edilebilir).
+  const used = new Set(all.map((a) => a.id).filter(Boolean));
+  let n = 1;
+  for (const a of all) {
+    if (a.id) continue;
+    while (used.has('la' + n)) n++;
+    a.id = 'la' + n;
+    used.add(a.id);
+  }
+  return all;
+}
+
+/** EK numarası TÜRETİLİR: bitişik, silinen/kapatılan ek boşluk bırakmaz. */
+export function letterAnnexNumbering(annexes) {
+  return normalizeLetterAnnexes(annexes).map((a, i) => ({ ...a, no: 'EK-' + (i + 1) }));
+}
+
 export function emptyCase(over = {}) {
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -1331,6 +1417,10 @@ export function emptyCase(over = {}) {
     // Disk/bölüm/birim metadata'sı + dizin ağacı; raw sektör YOKTUR.
     // Kayıtlar burada tutulur; materyal `origin.acquisition.diskId` ile bağlanır.
     disks: [],
+
+    // ÜST YAZI (v2.323): ayrı belge; rapor onun EK-1'idir.
+    letter: emptyLetter(),
+    letterAnnexes: emptyLetterAnnexes(),
 
     // Rapor
     report: {
@@ -2328,6 +2418,9 @@ export function normalizeCase(src = {}) {
         .filter(isObj)
         .slice(-10)
     },
+    // ÜST YAZI (v2.323): eksik/bozuk alan güvenli varsayılana çekilir.
+    letter: normalizeLetter(c.letter),
+    letterAnnexes: normalizeLetterAnnexes(c.letterAnnexes),
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
     shared: !!c.shared,

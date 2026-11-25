@@ -119,16 +119,23 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   evidenceTimeConflict,
-  embeddingCentroid
-} from './schema.js?v=2.322';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.322';
+  embeddingCentroid,
+  // ÜST YAZI (v2.323)
+  LETTER_ANNEX_KINDS,
+  emptyLetter,
+  normalizeLetter,
+  emptyLetterAnnexes,
+  normalizeLetterAnnexes,
+  letterAnnexNumbering
+} from './schema.js?v=2.323';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.323';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.322';
+const APP_VERSION = '2.323';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1791,7 +1798,12 @@ function switchView(name) {
       ? 'ÇALIŞMA ALANI'
       : `0${['overview', 'case', 'audio', 'questions', 'report'].indexOf(name)} / AKİS`;
   if (name === 'case') renderCasePage(currentCase());
-  if (name === 'report') renderReport();
+  if (name === 'report') {
+    renderReport();
+    // Belge sekmesi durumu (rapor/üst yazı) görünüm değişiminde de uygulanır;
+    // aksi hâlde paneller yanlış açık kalır (v2.323).
+    setReportDoc(reportDocMode);
+  }
   if (name === 'questions') populateQuestionsForm();
   if (name === 'audio') {
     // GÖRÜNÜR OLDUKTAN SONRA BİR KEZ DAHA ÇİZ (v2.154). Gizli görünümde
@@ -15145,6 +15157,268 @@ function readReportFormatPanel(c) {
   renderPageGuides();
 }
 
+// ---- ÜST YAZI (v2.323) ----------------------------------------------------
+// Üst yazı (sunuş yazısı) AYRI bir belgedir; rapor onun EK-1'idir. Tek kaynak:
+// `letterModel()` — HTML önizleme, DOCX ve UDF aynı modelden beslenir.
+// "Teslim" sözcüğü son teslim TARİHİ için ayrılmıştır; belge kümesi "belge
+// ekleri"dir. Ayrıntı: docs/UST_YAZI_PLANI.md.
+const LETTER_TEXT = {
+  subject: 'Bilirkişi raporunun sunulması',
+  greetingCourt: 'Sayın Hâkimliğine,',
+  greetingProsecutor: 'Sayın Cumhuriyet Başsavcılığına,',
+  greetingOther: 'Sayın Yetkiliye,',
+  closing: 'Bilgilerinize arz ederim.',
+  annexHeading: 'EKLER',
+  signerTitle: 'Bilirkişi',
+  reportAnnexLabel: 'Bilirkişi raporu',
+  defaultSectionsLabel: 'Teknik bilgiler',
+  fallbackAnnexLabel: 'Ek',
+  missing: {
+    court: 'Mahkeme adı girilmedi — üst yazı yazılamaz.',
+    fileNo: 'Dosya numarası girilmedi — üst yazı yazılamaz.',
+    expert: 'Bilirkişi adı girilmedi — üst yazı yazılamaz.'
+  },
+  pageCountNote: 'Sayfa sayıları belge düzenine göre değişebilir.'
+};
+
+function letterAnnexLabel(item) {
+  if (!item) return LETTER_TEXT.fallbackAnnexLabel;
+  if (item.kind === 'report') return LETTER_TEXT.reportAnnexLabel;
+  if (item.kind === 'sections') return String(item.label || '').trim() || LETTER_TEXT.defaultSectionsLabel;
+  if (item.kind === 'reportAnnex') return reportAnnexBaseTitle(item.key);
+  return String(item.title || '').trim() || LETTER_TEXT.fallbackAnnexLabel;
+}
+
+/** EK listesi: numara TÜRETİLİR (bitişik), etiket tek kaynaktan. */
+function letterAnnexRows(c) {
+  return letterAnnexNumbering((c && c.letterAnnexes) || []).map((a) => ({
+    id: a.id,
+    kind: a.kind,
+    key: a.key || '',
+    no: a.no,
+    label: letterAnnexLabel(a)
+  }));
+}
+
+/**
+ * Varsayılan gövde. Uydurma yok: tarih/süre yoksa o cümle kurulmaz.
+ * Kullanıcı `letter.bodyText` yazdıysa o kullanılır (paragraflar boş satırla).
+ */
+function letterDefaultBody(c, annexRows) {
+  const a = (c && c.assignment) || {};
+  const out = [];
+  if (a.date) {
+    out.push(
+      `Mahkemenizce ${niceDate(a.date)} tarihinde bilirkişi olarak görevlendirildim.` +
+        (a.durationDays ? ` Tarafıma ${a.durationDays} gün süre verilmiştir.` : '')
+    );
+  } else {
+    out.push('Mahkemenizin yukarıda sayılı dosyasında bilirkişi olarak görevlendirildim.');
+  }
+  const others = (annexRows || []).filter((x) => x.kind !== 'report');
+  out.push(
+    others.length
+      ? `Yapılan inceleme sonucunda hazırlanan bilirkişi raporu EK-1'de sunulmuştur. İncelemeye ilişkin diğer belgeler ${others
+          .map((x) => x.no)
+          .join(', ')} numaralı eklerde yer almaktadır.`
+      : `Yapılan inceleme sonucunda hazırlanan bilirkişi raporu EK-1'de sunulmuştur.`
+  );
+  return out;
+}
+
+/**
+ * Üst yazının TEK modeli. Eksik zorunlu alan varsa `ready:false` ve `missing`
+ * dolu döner; hiçbir çıktı üretilmez (uydurma mahkeme/dosya yazılmaz).
+ */
+function letterModel(c) {
+  const L = normalizeLetter((c && c.letter) || {});
+  const court = String((c && c.court) || '').trim();
+  const fileNo = String((c && c.fileNo) || '').trim();
+  const expert = String(((c && c.expert) || {}).name || '').trim();
+  const registry = String(((c && c.expert) || {}).registryNo || '').trim();
+  const missing = [];
+  if (!court) missing.push('court');
+  if (!fileNo) missing.push('fileNo');
+  if (!expert) missing.push('expert');
+  const annexes = letterAnnexRows(c);
+  const dateSrc = L.date || (c && c.report && c.report.date) || (c && c.reportDate) || '';
+  const bodyRaw = String(L.bodyText || '').trim();
+  const paragraphs = bodyRaw
+    ? bodyRaw
+        .split(/\n\s*\n/)
+        .map((x) => x.trim())
+        .filter(Boolean)
+    : letterDefaultBody(c, annexes);
+  return {
+    ready: missing.length === 0,
+    missing,
+    court,
+    courtLine: court ? `${court.toLocaleUpperCase('tr-TR')}’${trDative(court)}` : '',
+    addressee: String(L.addressee || '').trim(),
+    greeting: /Başsavcılı/i.test(court)
+      ? LETTER_TEXT.greetingProsecutor
+      : /Mahkemesi/i.test(court)
+        ? LETTER_TEXT.greetingCourt
+        : LETTER_TEXT.greetingOther,
+    subject: String(L.subject || '').trim() || LETTER_TEXT.subject,
+    fileNo,
+    paragraphs,
+    closing: LETTER_TEXT.closing,
+    place: String(L.place || '').trim(),
+    dateText: dateSrc ? niceDate(dateSrc) : '',
+    signerTitle: String(L.signerTitle || '').trim() || LETTER_TEXT.signerTitle,
+    signerName: expert,
+    signerRegistry: L.showRegistry ? registry : '',
+    annexes,
+    showPageCounts: !!L.showPageCounts,
+    pageCountNote: LETTER_TEXT.pageCountNote
+  };
+}
+
+/** Eksik alanların nereye gidileceğini söyleyen satırlar (sessiz engel yok). */
+function letterMissingRows(m) {
+  const where = { court: 'Mahkeme', fileNo: 'Dosya numarası', expert: 'Bilirkişi adı' };
+  return (m.missing || []).map((k) => ({ key: k, label: where[k] || k, text: LETTER_TEXT.missing[k] || '' }));
+}
+
+/** A4 kâğıdı: ekran, DOCX ve UDF aynı içeriği bu modelden üretir. */
+function letterPaperHtml(c) {
+  const m = letterModel(c);
+  if (!m.ready) {
+    return `<div class="letter-blocked"><b>Üst yazı hazır değil</b><ul>${letterMissingRows(m)
+      .map((r) => `<li>${esc(r.text)}</li>`)
+      .join('')}</ul><p>Bu alanları <b>Dosya bilgileri</b> çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez.</p></div>`;
+  }
+  return (
+    `<div class="letter-head"><div class="letter-republic">T.C.</div><div class="letter-court">${esc(m.courtLine)}</div></div>` +
+    `<div class="letter-meta"><p>Sayı: ${esc(m.fileNo)}</p><p>Konu: ${esc(m.subject)}</p></div>` +
+    `<p class="letter-greeting">${esc(m.greeting)}</p>` +
+    m.paragraphs.map((p) => `<p class="letter-para">${esc(p)}</p>`).join('') +
+    `<p class="letter-closing">${esc(m.closing)}</p>` +
+    `<div class="letter-date">${esc([m.place, m.dateText].filter(Boolean).join(', '))}</div>` +
+    `<div class="letter-sign"><div class="letter-sign-title">${esc(m.signerTitle)}</div><div class="letter-sign-name">${esc(
+      m.signerName
+    )}</div>${m.signerRegistry ? `<div class="letter-sign-reg">Sicil No: ${esc(m.signerRegistry)}</div>` : ''}<div class="letter-sign-line"></div></div>` +
+    `<div class="letter-annex"><h4>${esc(LETTER_TEXT.annexHeading)}</h4><ul>${m.annexes
+      .map((a) => `<li><b>${esc(a.no)}</b> <span>${esc(a.label)}</span></li>`)
+      .join('')}</ul>${m.showPageCounts ? `<p class="letter-note">${esc(m.pageCountNote)}</p>` : ''}</div>`
+  );
+}
+
+// ---- ÜST YAZI: ekran (v2.323) --------------------------------------------
+// `reportDocMode` OTURUMLUKTUR (kayda yazılmaz): yalnız hangi belgenin
+// görüntülendiğini tutar. Veri `case.letter` / `case.letterAnnexes` içindedir.
+let reportDocMode = 'report';
+
+function letterFieldHtml(label, field, value, opts = {}) {
+  const type = opts.type || 'text';
+  const ph = opts.placeholder ? ` placeholder="${esc(opts.placeholder)}"` : '';
+  const title = opts.title ? ` title="${esc(opts.title)}"` : '';
+  return `<label class="field"${title}><span>${esc(label)}</span><input type="${type}" data-letter-field="${field}" value="${esc(
+    value || ''
+  )}"${ph}></label>`;
+}
+
+function renderLetterFields(c) {
+  const host = $('#letterFields');
+  if (!host) return;
+  const L = normalizeLetter(c.letter || {});
+  const m = letterModel(c);
+  const missing = letterMissingRows(m);
+  const status = $('#letterStatus');
+  if (status) status.textContent = m.ready ? 'Hazır' : `${missing.length} eksik`;
+  const defBody = letterDefaultBody(c, letterAnnexRows(c)).join('\n\n');
+  host.innerHTML =
+    (missing.length
+      ? `<div class="letter-missing"><b>Üst yazı için eksik</b><ul>${missing
+          .map((r) => `<li>${esc(r.label)}</li>`)
+          .join('')}</ul><button type="button" class="mini-button" data-letter-goto="case">Dosya bilgilerine git</button></div>`
+      : '') +
+    letterFieldHtml('Yer', 'place', L.place, { placeholder: 'ör. Antalya', title: 'Yazının altına yazılacak yer. Boşsa yalnız tarih yazılır.' }) +
+    letterFieldHtml('Tarih', 'date', L.date, { type: 'date', title: 'Boş bırakılırsa rapor tarihi kullanılır.' }) +
+    letterFieldHtml('Konu', 'subject', L.subject, { placeholder: LETTER_TEXT.subject, title: 'Boşsa varsayılan konu yazılır.' }) +
+    letterFieldHtml('Muhatap (isteğe bağlı)', 'addressee', L.addressee, {
+      placeholder: m.courtLine || 'Mahkeme adından türetilir',
+      title: 'Boş bırakılırsa mahkeme adından üretilir.'
+    }) +
+    letterFieldHtml('İmza unvanı', 'signerTitle', L.signerTitle, { placeholder: LETTER_TEXT.signerTitle }) +
+    `<label class="field" title="Boş bırakılırsa varsayılan metin yazılır. Paragrafları boş satırla ayırın."><span>Gövde metni</span><textarea data-letter-field="bodyText" rows="7" placeholder="${esc(
+      defBody
+    )}">${esc(L.bodyText)}</textarea></label>` +
+    `<div class="letter-checks"><label class="letter-check" title="Sicil numarası üst yazıda imza bloğunda görünür."><input type="checkbox" data-letter-field="showRegistry"${
+      L.showRegistry ? ' checked' : ''
+    }> <span>Sicil no görünsün</span></label><label class="letter-check" title="Açılırsa ek listesinin altına 'sayfa sayıları değişebilir' dipnotu eklenir."><input type="checkbox" data-letter-field="showPageCounts"${
+      L.showPageCounts ? ' checked' : ''
+    }> <span>Sayfa sayısı dipnotu</span></label></div>` +
+    `<p class="letter-hint">Gövdeyi boş bırakırsanız yukarıdaki varsayılan metin yazılır. <b>Boş alan satır üretmez.</b></p>`;
+}
+
+function renderLetterAnnexes(c) {
+  const list = $('#letterAnnexList');
+  const note = $('#letterAnnexNote');
+  if (!list) return;
+  const rows = letterAnnexRows(c);
+  list.innerHTML = rows
+    .map((a) => `<li><b>${esc(a.no)}</b><span>${esc(a.label)}</span></li>`)
+    .join('');
+  if (note) {
+    note.textContent =
+      rows.length > 1
+        ? 'Ek numaraları sıraya göre yeniden verilir.'
+        : 'Şimdilik tek ek var: EK-1 rapor. Belge ekleri (teknik bilgiler, envanter…) sonraki adımda düzenlenebilir olacak.';
+  }
+}
+
+function renderLetter() {
+  const c = currentCase();
+  if (!c) return;
+  const paper = $('#letterPreview');
+  if (paper) paper.innerHTML = letterPaperHtml(c);
+  renderLetterFields(c);
+  renderLetterAnnexes(c);
+}
+
+/** Belge sekmesi: rapor ↔ üst yazı. Görünürlük dışında bir şey değiştirmez. */
+function setReportDoc(mode) {
+  reportDocMode = mode === 'letter' ? 'letter' : 'report';
+  const view = $('#view-report');
+  if (view) view.dataset.doc = reportDocMode;
+  $$('#reportDocs [data-report-doc]').forEach((b) =>
+    b.setAttribute('aria-pressed', b.dataset.reportDoc === reportDocMode ? 'true' : 'false')
+  );
+  const isLetter = reportDocMode === 'letter';
+  const toggle = (sel, show) => {
+    const el = $(sel);
+    if (el) el.hidden = !show;
+  };
+  toggle('#letterFieldsBox', isLetter);
+  toggle('#reportSectionsBox', !isLetter);
+  toggle('#reportSide', !isLetter);
+  toggle('#letterSide', isLetter);
+  toggle('#letterWindow', isLetter);
+  toggle('#reportPageWindow', !isLetter);
+  // Rapor çıktı düğmeleri rapora, üst yazı düğmeleri üst yazıya aittir.
+  // İkisi aynı anda görünmez (karışıklık olmasın).
+  toggle('#reportToolbarActions', !isLetter);
+  toggle('#letterToolbarActions', isLetter);
+  if (isLetter) renderLetter();
+  else renderReport();
+}
+
+/** İki dosya: üst yazı (ayrı) + rapor (EK-1). Kullanıcının ana akışı. */
+async function downloadLetterAndReport() {
+  const c = currentCase();
+  const m = letterModel(c);
+  if (!m.ready) {
+    showToast(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`, true);
+    return;
+  }
+  await makeUdf({ letter: true });
+  await new Promise((r) => setTimeout(r, 800));
+  await makeUdf();
+  showToast('Üst yazı ve rapor (EK-1) iki ayrı dosya olarak indirildi. Tarayıcı ikinci dosyayı engellerse tek tek indirin.');
+}
+
 function renderReport() {
   const c = currentCase();
   if (!c) return;
@@ -15543,6 +15817,8 @@ function renderReport() {
   renderReportSectionEditor(c);
   renderPageGuides();
   syncReportToolbarHeight();
+  // Üst yazı sekmesi açıksa veri değişikliği onu da tazeler (tek kaynak model).
+  if (reportDocMode === 'letter') renderLetter();
 }
 function xesc(s = '') {
   return String(s)
@@ -15654,6 +15930,38 @@ function headingXml(text, level = 1) {
     keep: true
   });
 }
+// ---- ÜST YAZI: DOCX üreticisi (v2.323) -----------------------------------
+// Rapor DOCX'i ile AYNI yardımcıları (wP/wRun/wTable/docxFormatInit) kullanır;
+// böylece font, punto ölçeği ve marj rapor biçiminden gelir (tek kaynak).
+function docxLetterXml(c) {
+  docxFormatInit(c);
+  const m = letterModel(c);
+  if (!m.ready) {
+    return wP(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`, {
+      bold: true,
+      color: 'B23B3B'
+    });
+  }
+  let out = '';
+  out += wP('T.C.', { bold: true, color: '1C426B', size: 24, align: 'center', after: 60 });
+  out += wP(m.courtLine, { bold: true, color: '1C426B', size: 22, align: 'center', after: 220 });
+  out += wP(`Sayı: ${m.fileNo}`, { size: 22, after: 20 });
+  out += wP(`Konu: ${m.subject}`, { size: 22, after: 200 });
+  out += wP(m.greeting, { size: 22, before: 200, after: 120 });
+  for (const p of m.paragraphs) out += wP(p, { size: 22, align: 'both', after: 140 });
+  out += wP(m.closing, { size: 22, after: 300 });
+  out += wP([m.place, m.dateText].filter(Boolean).join(', '), { size: 22, align: 'right', after: 260 });
+  out += wP(m.signerTitle, { size: 22, align: 'right', after: 20 });
+  out += wP(m.signerName, { bold: true, color: '1C426B', size: 24, align: 'right', after: 20 });
+  if (m.signerRegistry) out += wP(`Sicil No: ${m.signerRegistry}`, { size: 20, align: 'right', after: 20 });
+  out += wP('____________________________', { size: 22, align: 'right', after: 260 });
+  out += wP(LETTER_TEXT.annexHeading, { bold: true, color: '1C426B', size: 22, before: 140, after: 60 });
+  for (const a of m.annexes) out += wP(`${a.no}  ${a.label}`, { size: 22, after: 20 });
+  if (m.showPageCounts) out += wP(m.pageCountNote, { italic: true, color: '70869C', size: 18, before: 80 });
+  return out;
+}
+
+
 function docxXml(c) {
   docxFormatInit(c);
   const on = (k) => reportSectionOn(c, k);
@@ -16056,8 +16364,9 @@ function docxXml(c) {
   const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="${pgW}" w:h="${pgH}"${landscape ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${mmToTw(dm.top)}" w:right="${mmToTw(dm.right)}" w:bottom="${mmToTw(dm.bottom)}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
-async function makeDocx() {
+async function makeDocx(opts = {}) {
   const c = currentCase();
+  const letterMode = !!(opts && opts.letter);
   if (!window.JSZip) {
     throw new Error('DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
   }
@@ -16074,7 +16383,7 @@ async function makeDocx() {
       `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`
     );
   const w = zip.folder('word');
-  w.file('document.xml', docxXml(c));
+  w.file('document.xml', letterMode ? docxLetterXml(c) : docxXml(c));
   w.file(
     '_rels/document.xml.rels',
     `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/></Relationships>`
@@ -16085,7 +16394,9 @@ async function makeDocx() {
   );
   w.file(
     'header1.xml',
-    `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`BİLİRKİŞİ RAPORU  |  ${REPORT_TEXT.toplineField}${expertFieldShort(c)}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
+    letterMode
+      ? `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`ÜST YAZI  |  ${c.fileNo || ''}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
+      : `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`BİLİRKİŞİ RAPORU  |  ${REPORT_TEXT.toplineField}${expertFieldShort(c)}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
   );
   w.file(
     'footer1.xml',
@@ -16095,8 +16406,8 @@ async function makeDocx() {
     type: 'blob',
     mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   });
-  downloadBlob(blob, `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.docx`);
-  showToast('Word raporu indirildi.');
+  downloadBlob(blob, letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}.docx` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.docx`);
+  showToast(letterMode ? 'Üst yazı Word kopyası indirildi.' : 'Word raporu indirildi.');
 }
 function safeName(s) {
   return (
@@ -16131,8 +16442,9 @@ function udfSignedColor(hex) {
   const n = (0xff000000 | parseInt(hex.replace('#', ''), 16)) >>> 0;
   return n > 0x7fffffff ? n - 0x100000000 : n;
 }
-async function makeUdf() {
+async function makeUdf(opts = {}) {
   const c = currentCase();
+  const letterMode = !!(opts && opts.letter);
   // Rapor biçimi: font + gövde puntosu + kenar boşluğu + yön UDF'e uygulanır.
   // Varsayılan font Times New Roman (resmî); kullanıcı değiştirirse UDF de izler.
   const fmt = reportFormat(c);
@@ -16666,6 +16978,29 @@ async function makeUdf() {
     }
   };
 
+  if (letterMode) {
+    // ÜST YAZI (v2.323): AYRI belge. Aynı model (`letterModel`) — ekran ve
+    // DOCX ile birebir aynı metin. Eksik zorunlu alan varsa üretilmez.
+    const m = letterModel(c);
+    if (!m.ready) {
+      throw new Error(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`);
+    }
+    el.push(paragraph('T.C.', { size: 14, bold: true, color: 'navy', align: 1, after: 6 }));
+    el.push(paragraph(m.courtLine, { size: 13, bold: true, color: 'navy', align: 1, after: 16 }));
+    el.push(paragraph(`Sayı: ${m.fileNo}`, { size: 11, after: 2 }));
+    el.push(paragraph(`Konu: ${m.subject}`, { size: 11, after: 16 }));
+    el.push(paragraph(m.greeting, { size: 11, before: 4, after: 10 }));
+    for (const p of m.paragraphs) el.push(paragraph(p, { size: 11, justify: true, after: 8 }));
+    el.push(paragraph(m.closing, { size: 11, after: 20 }));
+    el.push(paragraph([m.place, m.dateText].filter(Boolean).join(', '), { size: 11, align: 2, after: 24 }));
+    el.push(paragraph(m.signerTitle, { size: 11, align: 2, after: 2 }));
+    el.push(paragraph(m.signerName, { size: 12, bold: true, color: 'navy', align: 2, after: 2 }));
+    if (m.signerRegistry) el.push(paragraph(`Sicil No: ${m.signerRegistry}`, { size: 10, align: 2, after: 2 }));
+    el.push(paragraph('____________________________', { size: 11, align: 2, after: 18 }));
+    el.push(paragraph(LETTER_TEXT.annexHeading, { size: 11, bold: true, color: 'navy', before: 10, after: 4 }));
+    for (const a of m.annexes) el.push(paragraph(`${a.no}  ${a.label}`, { size: 11, after: 2 }));
+    if (m.showPageCounts) el.push(paragraph(m.pageCountNote, { size: 9, italic: true, color: 'muted', before: 6 }));
+  } else {
   for (const key of REPORT_FRONT_KEYS) if (on(key) && front[key]) front[key]();
   el.push(pageBreak());
   // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç).
@@ -16690,6 +17025,7 @@ async function makeUdf() {
     firstBody = false;
   }
   if (on('signature')) blocks.signature();
+  }
   const bodyText = textParts.join('');
   const udfXml = `<?xml version="1.0" encoding="UTF-8" ?>\n<template format_id="${udfAttr(formatId)}">\n<content><![CDATA[${udfCdata(bodyText)}]]></content>${properties}\n<elements resolver="${udfAttr(resolver)}">${el.join('')}</elements>${styles}\n</template>`;
   const parsed = new DOMParser().parseFromString(udfXml, 'application/xml');
@@ -16697,8 +17033,12 @@ async function makeUdf() {
   const outZip = new JSZip();
   outZip.file('content.xml', udfXml);
   const blob = await outZip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
-  downloadBlob(blob, `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.udf`);
-  showToast('UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin.');
+  downloadBlob(blob, letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}.udf` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}.udf`);
+  showToast(
+    letterMode
+      ? 'Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin.'
+      : 'UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin.'
+  );
 }
 // Çalışma paketi (yedek) oluşturma ve doğrulama saf fonksiyonlara ayrıldı;
 // böylece otomatik test edilebilir. Paket biçimi MİHENK uyumluluğu için sabittir.
@@ -19362,6 +19702,45 @@ function setupEvents() {
   });
   $('#downloadDocxBtn').addEventListener('click', () => makeDocx().catch((e) => showToast(e.message)));
   $('#downloadUdfBtn').addEventListener('click', () => makeUdf().catch((e) => showToast(e.message)));
+  // ÜST YAZI (v2.323): belge sekmesi, alanlar ve ayrı çıktı. Rapor çıktısı
+  // DEĞİŞMEZ; üst yazı kendi dosyasıdır (EK-1 = rapor).
+  $$('#reportDocs [data-report-doc]').forEach((b) =>
+    b.addEventListener('click', () => setReportDoc(b.dataset.reportDoc))
+  );
+  const letterFieldUpdate = (e) => {
+    const el = e.target;
+    if (!el || !el.dataset || el.dataset.letterField === undefined) return;
+    const c = currentCase();
+    if (!c) return;
+    c.letter = normalizeLetter(c.letter || {});
+    const field = el.dataset.letterField;
+    c.letter[field] = el.type === 'checkbox' ? !!el.checked : el.value;
+    persist();
+    const paper = $('#letterPreview');
+    if (paper) paper.innerHTML = letterPaperHtml(c);
+    const st = $('#letterStatus');
+    if (st) {
+      const m = letterModel(c);
+      st.textContent = m.ready ? 'Hazır' : `${letterMissingRows(m).length} eksik`;
+    }
+  };
+  $('#view-report')?.addEventListener('input', letterFieldUpdate);
+  $('#view-report')?.addEventListener('change', letterFieldUpdate);
+  $('#view-report')?.addEventListener('click', (e) => {
+    const go = e.target && e.target.closest ? e.target.closest('[data-letter-goto]') : null;
+    if (go) setCaseDrawer(true);
+  });
+  // Aynı eylem iki yerde (araç çubuğu + sağ panel); ikisi de aynı işlevi çağırır.
+  ['#letterUdfBtn', '#letterUdfBtn2'].forEach((sel) =>
+    $(sel)?.addEventListener('click', () => makeUdf({ letter: true }).catch((e) => showToast(e.message, true)))
+  );
+  ['#letterDocxBtn', '#letterDocxBtn2'].forEach((sel) =>
+    $(sel)?.addEventListener('click', () => makeDocx({ letter: true }).catch((e) => showToast(e.message, true)))
+  );
+  ['#letterBothBtn', '#letterBothBtn2'].forEach((sel) =>
+    $(sel)?.addEventListener('click', () => downloadLetterAndReport().catch((e) => showToast(e.message, true)))
+  );
+  $('#letterPrintBtn')?.addEventListener('click', () => window.print());
   $('#exportProjectBtn').addEventListener('click', () => exportProject().catch((e) => showToast(e.message)));
   $('#importProjectBtn').addEventListener('click', () => $('#importProjectInput').click());
   // Ekip çalışması: birleştirme düğmesi ve diyaloğu.
@@ -20877,6 +21256,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.323': {
+    title: 'Üst yazı ayrı belge oldu (rapor EK-1)',
+    body:
+      'Rapor ekranında “Rapor | Üst yazı” sekmesi var. Üst yazı ayrı bir belge olarak UDF/DOCX indirilir; rapor onun EK-1’idir. “Üst yazı + rapor (2 dosya)” tek tıkla iki dosyayı indirir. Mahkeme, dosya numarası veya bilirkişi adı eksikse üst yazı üretilmez; eksikler yazılır. Raporun kendi çıktısı değişmedi.'
+  },
   '2.322': {
     title: 'Etiket menüsü: kapanır, metni örtmez, metni silmez',
     body:

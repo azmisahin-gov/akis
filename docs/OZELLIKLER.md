@@ -1,4 +1,4 @@
-# Özellikler (v2.322 — mevcut durum)
+# Özellikler (v2.323 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1001,6 +1001,27 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+
+## Üst yazı ve belge ekleri (v2.323)
+
+Üst yazı (sunuş yazısı) **ayrı bir belgedir**; bilirkişi raporu onun **EK-1**'idir.
+Rapor ekranında **Rapor | Üst yazı** sekmeleri vardır; aynı A4 önizleme ve aynı
+rapor biçimi (font/punto/marj) kullanılır.
+
+- **Üst yazı alanları:** yer · tarih · konu · muhatap · imza unvanı · gövde.
+  Boş alan satır üretmez; gövde boşsa varsayılan metin yazılır.
+- **Zorunlu künye:** mahkeme, dosya no, bilirkişi adı. Biri eksikse üst yazı
+  **hazır değil** denir, eksikler listelenir ve **çıktı üretilmez**.
+- **Belge ekleri:** `case.letterAnnexes[]` sıralıdır; EK numarası **türetilir**
+  (EK-1 rapor; sonrakiler bitişik). `report` · `sections` · `reportAnnex` ·
+  `custom` türleri desteklenir; v2.323'te yalnız `report` etkin.
+- **Çıktı:** `UstYazi_<dosya no>.udf` (+ isteğe bağlı `.docx`); rapor adı
+  değişmedi. **“Üst yazı + rapor (2 dosya)”** ikisini birlikte indirir.
+- **Tek kaynak:** `letterModel(c)` — ekran, DOCX ve UDF aynı metni üretir
+  (`rapor-tutarlilik-testi` Senaryo 44).
+- **Sınır:** uygulama e-imza üretmez; sayfa sayısı UYAP/Word düzenine bağlıdır.
+
+- **Üst yazı ayrı belge (v2.323):** Rapor ekranında **Rapor | Üst yazı** sekmesi. Üst yazı kendi UDF/DOCX dosyasıdır; rapor **EK-1**'dir; **“Üst yazı + rapor (2 dosya)”** tek tıkla indirir. Eksik künyede üretilmez. Ayrıntı: yukarıdaki “Üst yazı ve belge ekleri”.
 - **Etiket menüsü onarıldı (v2.322):** menü **segment listesine doğru (sola)** açılır, deşifre metni alanını örtmez; **seçim yapılmasa da** üst × / alt “Kapat” / **Esc** / dış tıklama kapatır (inline `display` artık `[hidden]` kuralını ezmiyor). **“Etiketleri temizle”** yalnız `[etiket]` işaretlerini kaldırır — **metin korunur**, bilinmeyen köşeli parantezler dokunulmaz, onay ister. Yeniden çizimden sonra backdrop eşitlenir; etiket eklendikten sonra menü yine açılır.
 - **30 etiket geri + kapatma garantisi (v2.320):** Etiket menüsünde **30 etiketin tamamı** (12 gözlem kavramı dâhil) görünür; başlıkta **“Etiket ekle · 30”**. Alt **Kapat** şeridi sabittir; kapatma **yakalama aşamasında** da bağlanır. Menü yüksekliği 30 etikete göre büyütüldü, kaydırılır.
 - **Görünür sürüm + tek tık yenile (v2.319):** üst barda **⟳ vX.Y** düğmesi; tıklayınca sayfa `?t=` ile önbelleği kırarak yenilenir. İlk sürüm denetimi **hemen**, sonra 30 sn’de bir ve sekmeye dönüşte. Eski sürümde “Yeni sürüm hazır” şeridi.

@@ -2387,5 +2387,35 @@ console.log('\n[2db] Etiket menüsü: kapanır, listeye doğru açılır, metni 
   check('"Metni temizle" düğmesi kalmadı', !/>Metni temizle</.test(app));
 }
 
+console.log('\n[2dc] Üst yazı sekmesi ve ayrı belge (v2.323)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  // Üst yazı AYRI belgedir; rapor onun EK-1'idir. Sekme + kâğıt + panel tek yerde.
+  check('belge sekmeleri var', /id="reportDocs"/.test(html) && /data-report-doc="report"/.test(html) && /data-report-doc="letter"/.test(html));
+  check('üst yazı kâğıdı var', /id="letterWindow"/.test(html) && /id="letterPreview"/.test(html));
+  check('üst yazı alanları paneli var', /id="letterFieldsBox"/.test(html) && /id="letterFields"/.test(html));
+  check('belge ekleri paneli var', /id="letterSide"/.test(html) && /id="letterAnnexList"/.test(html));
+  check('araç çubuğunda üst yazı çıktıları', /id="letterToolbarActions"/.test(html) && /id="letterUdfBtn2"/.test(html) && /id="letterBothBtn2"/.test(html));
+  check('rapor çıktı grubu kimlikli', /id="reportToolbarActions"/.test(html));
+  // Tek kaynak: üç çıktı da letterModel()den beslenir.
+  check('model tek kaynak', /function letterModel\(/.test(app) && /function letterPaperHtml\(/.test(app) && /function docxLetterXml\(/.test(app));
+  check('UDF üst yazı kipi', /async function makeUdf\(opts = \{\}\)/.test(app) && /if \(letterMode\)/.test(app));
+  check('DOCX üst yazı kipi', /async function makeDocx\(opts = \{\}\)/.test(app) && /docxLetterXml\(c\)/.test(app));
+  check('dosya adı UstYazi_', /UstYazi_\$\{safeName/.test(app));
+  check('iki dosya indirme', /function downloadLetterAndReport\(/.test(app) && /makeUdf\(\{ letter: true \}\)/.test(app));
+  // Ek numarası şemadan türetilir (kopya numaralandırma yok).
+  check('EK numarası şemadan', /letterAnnexNumbering\(/.test(app) && /export function letterAnnexNumbering/.test(read('assets/schema.js')));
+  // Yerleşim: üst yazıda rapor iskeleti/denetim paneli gizlenir, belge ekleri görünür.
+  check('rapor paneli gizlenir', /toggle\('#reportSectionsBox', !isLetter\)/.test(app) && /toggle\('#reportSide', !isLetter\)/.test(app));
+  check('belge ekleri her zaman görünür', /#view-report\[data-doc="letter"\] \.letter-side \{ display: block; \}/.test(layer));
+  check('uzun metin sarar (kırpma yok)', /\.letter-para \{[^}]*overflow-wrap: anywhere/.test(layer));
+  check('kâğıt rengi temadan bağımsız', /\.letter-court \{[^}]*var\(--paper-ink\)/.test(layer));
+  // Uygulama adı belgede geçmez (v2.83 kuralı) — metin sabitlerinde yok.
+  const lt = (app.match(/const LETTER_TEXT = \{[\s\S]*?\n\};/) || [''])[0];
+  check('LETTER_TEXT uygulama adı taşımaz', !!lt && !/AKİS/.test(lt));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

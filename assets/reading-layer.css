@@ -4092,3 +4092,79 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   }
   #view-overview .stat-card > span { overflow-wrap: anywhere; }
 }
+
+/* v2.323 — Üst yazı sekmesi, alanları ve belge ekleri.
+   Üst yazı AYRI bir belgedir; rapor onun EK-1'idir. Bu katman yalnız yerleşim
+   ve kâğıt tipografisidir; metin `letterModel()`den gelir (tek kaynak).
+   Kırpma yasak: uzun alanlar sarar (`overflow-wrap:anywhere`). */
+.report-docs { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.report-doc-btn {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  cursor: pointer;
+}
+.report-doc-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+#view-report[data-doc="letter"] .report-stage-bar { display: none; }
+.letter-window { padding: 0 0 12px; }
+.letter-paper { min-height: 320px; }
+.letter-form .field { margin-bottom: 8px; }
+.letter-form textarea { min-height: 120px; font-size: var(--fs-xs); line-height: 1.5; }
+.letter-checks { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
+.letter-check { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); color: var(--ink-2); }
+.letter-hint, .letter-side-hint, .letter-side-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 6px 0 0; }
+.letter-missing {
+  border: 1px solid var(--red);
+  background: var(--red-soft);
+  color: var(--red);
+  border-radius: var(--r-sm);
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: var(--fs-2xs);
+}
+.letter-missing ul { margin: 4px 0 6px; padding-left: 16px; }
+.letter-head { text-align: center; margin-bottom: 18px; }
+.letter-republic { font-weight: 700; letter-spacing: .06em; color: var(--paper-ink); }
+.letter-court { font-weight: 700; font-size: 1.08em; color: var(--paper-ink); margin-top: 4px; overflow-wrap: anywhere; }
+.letter-meta { margin: 0 0 18px; }
+.letter-meta p { margin: 0 0 3px; color: var(--paper-ink); overflow-wrap: anywhere; }
+.letter-greeting { margin: 18px 0 12px; color: var(--paper-ink); }
+.letter-para { margin: 0 0 10px; text-align: justify; color: var(--paper-ink); line-height: 1.6; overflow-wrap: anywhere; }
+.letter-closing { margin: 16px 0 22px; color: var(--paper-ink); }
+.letter-date { text-align: right; color: var(--paper-ink); margin-bottom: 24px; }
+.letter-sign { text-align: right; margin-bottom: 22px; color: var(--paper-ink); }
+.letter-sign-title { font-size: .95em; color: var(--paper-muted); }
+.letter-sign-name { font-weight: 700; overflow-wrap: anywhere; }
+.letter-sign-reg { font-size: .9em; color: var(--paper-muted); }
+.letter-sign-line { margin: 26px 0 0 auto; border-top: 1px solid var(--paper-line); width: 180px; }
+.letter-annex { border-top: 1px solid var(--paper-line); padding-top: 10px; }
+.letter-annex h4 { margin: 0 0 6px; font-size: .95em; letter-spacing: .06em; color: var(--paper-ink); }
+.letter-annex ul { list-style: none; margin: 0; padding: 0; }
+.letter-annex li { display: flex; gap: 8px; padding: 2px 0; color: var(--paper-ink); overflow-wrap: anywhere; }
+.letter-annex li b { min-width: 52px; }
+.letter-note { font-size: .85em; color: var(--paper-muted); margin: 6px 0 0; }
+.letter-blocked { color: var(--red); font-size: var(--fs-xs); }
+.letter-blocked ul { margin: 6px 0; padding-left: 18px; }
+.letter-annex-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.letter-annex-list li {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  font-size: var(--fs-2xs);
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.letter-annex-list li b { color: var(--ink); min-width: 44px; }
+.letter-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
+/* v2.323 — Üst yazıda sağ panel (belge ekleri) HER ZAMAN görünür: "Düzenle"
+   kipinde `.report-side` gizlenir; üst yazı bir düzenleme iskeleti değildir. */
+#view-report[data-doc="letter"] .letter-side { display: block; }
+#view-report[data-doc="letter"] .report-editor { display: none; }

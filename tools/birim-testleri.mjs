@@ -116,6 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
+  'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
   'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
@@ -6908,6 +6909,96 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const all = T.QUICK_TAGS.map((t) => t.text).join(' ');
   eq('tüm tanımlı etiketler kaldırılır', T.stripQuickTags(all).text, '');
   eq('tüm etiketler sayıldı', T.stripQuickTags(all).removed, T.QUICK_TAGS.length);
+}
+
+
+// [159] v2.323 — ÜST YAZI: model, ek numaralandırma, hazır değil durumu.
+{
+  console.log('[159] Üst yazı modeli (v2.323)');
+  const S = __schemaMod;
+  eq('şema: emptyLetter tanımlı', typeof S.emptyLetter, 'function');
+  eq('şema: normalizeLetterAnnexes tanımlı', typeof S.normalizeLetterAnnexes, 'function');
+  eq('şema: letterAnnexNumbering tanımlı', typeof S.letterAnnexNumbering, 'function');
+  // Ek numaralandırma BİTİŞİK: rapor başta, diğerleri sırayla.
+  const num = S.letterAnnexNumbering([
+    { kind: 'sections', sections: ['levels'], label: 'TEKNİK BİLGİLER' },
+    { kind: 'report' },
+    { kind: 'custom', title: 'Ek yazı', content: 'içerik' }
+  ]);
+  eq('rapor EK-1 (başta)', num[0].kind, 'report');
+  eq('numaralar bitişik', num.map((x) => x.no).join(','), 'EK-1,EK-2,EK-3');
+  eq('sıra korunur', num[1].label, 'TEKNİK BİLGİLER');
+  // Geçersiz/boş kayıtlar düşer; rapor tektir.
+  const norm = S.normalizeLetterAnnexes([
+    { kind: 'report' },
+    { kind: 'report' },
+    { kind: 'sections', sections: [] },
+    { kind: 'custom', title: '', content: '' },
+    { kind: 'reportAnnex', key: 'yok' },
+    { kind: 'reportAnnex', key: 'ek2' },
+    { kind: 'bilinmeyen' }
+  ]);
+  eq('rapor tek', norm.filter((x) => x.kind === 'report').length, 1);
+  eq('boş sections/custom düşer', norm.length, 2);
+  eq('geçerli rapor eki korunur', norm[1].key, 'ek2');
+  eq('kimlik verilir', !!norm[1].id, true);
+  // normalizeLetter: bilinmeyen alan korunur, boole'lar sağlam.
+  const L = S.normalizeLetter({ place: ' Antalya ', showRegistry: 1, gelecek: 'x' });
+  eq('yer kırpılır', L.place, 'Antalya');
+  eq('boole', L.showRegistry, true);
+  eq('bilinmeyen alan korunur', L.gelecek, 'x');
+  eq('varsayılan enabled kapalı', L.enabled, false);
+
+  // MODEL: hazır dosya
+  const c = T.emptyCaseForTest({
+    id: 'cL',
+    court: 'Antalya 4. Asliye Hukuk Mahkemesi',
+    fileNo: '2026/214 E.',
+    expert: { name: 'Örnek Bilirkişi', registryNo: '1234' },
+    assignment: { date: '2026-10-12', durationDays: '34' },
+    report: { date: '2026-11-15' },
+    letter: { place: 'Antalya' }
+  });
+  const m = T.letterModel(c);
+  eq('hazır', m.ready, true);
+  eq('mahkeme satırı yönelme', m.courtLine, 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİ’NE');
+  eq('hitap', m.greeting, T.LETTER_TEXT.greetingCourt);
+  eq('konu varsayılan', m.subject, T.LETTER_TEXT.subject);
+  eq('tarih rapor tarihinden', m.dateText, '15.11.2026');
+  eq('EK-1 rapor', m.annexes.map((a) => a.no + ' ' + a.label).join('|'), 'EK-1 Bilirkişi raporu');
+  eq('sicil varsayılan kapalı', m.signerRegistry, '');
+  eq('ilk paragraf görevlendirme', /12\.10\.2026/.test(m.paragraphs[0]), true);
+  eq('ikinci paragraf EK-1', /EK-1/.test(m.paragraphs[1]), true);
+
+  // MODEL: eksik dosya → hazır değil, uydurma yok
+  const empty = T.emptyCaseForTest({ id: 'cE' });
+  const me = T.letterModel(empty);
+  eq('boş dosya hazır değil', me.ready, false);
+  eq('eksikler', me.missing.join(','), 'court,fileNo,expert');
+  eq('mahkeme satırı boş', me.courtLine, '');
+  const rows = T.letterMissingRows(me);
+  eq('eksik satırları', rows.map((r) => r.label).join(','), 'Mahkeme,Dosya numarası,Bilirkişi adı');
+  eq('gerekçe metni var', /yazılamaz/.test(rows[0].text), true);
+
+  // VARSAYILAN GÖVDE: tarih/süre yoksa o cümle kurulmaz (uydurma yok)
+  const noDate = T.letterDefaultBody(T.emptyCaseForTest({ id: 'cN' }), []);
+  eq('tarih yoksa genel cümle', /yukarıda sayılı dosyasında bilirkişi olarak görevlendirildim/.test(noDate[0]), true);
+  eq('süre yoksa süre cümlesi yok', /gün süre verilmiştir/.test(noDate.join(' ')), false);
+
+  // EK etiketleri
+  eq('rapor etiketi', T.letterAnnexLabel({ kind: 'report' }), 'Bilirkişi raporu');
+  eq('bölüm etiketi', T.letterAnnexLabel({ kind: 'sections', label: '' }), 'Teknik bilgiler');
+  eq('serbest ek etiketi', T.letterAnnexLabel({ kind: 'custom', title: 'Tapu kaydı' }), 'Tapu kaydı');
+
+  // KÂĞIT: uygulama adı geçmez; EKLER ve EK-1 basılır
+  const html = T.letterPaperHtml(c);
+  eq('kâğıtta AKİS yok', /AKİS/.test(html), false);
+  eq('kâğıtta EKLER var', /EKLER/.test(html), true);
+  eq('kâğıtta EK-1 var', /EK-1/.test(html), true);
+  eq('kâğıtta imza var', /letter-sign-name/.test(html), true);
+  const blocked = T.letterPaperHtml(empty);
+  eq('eksikte engel kutusu', /letter-blocked/.test(blocked), true);
+  eq('eksikte uydurma mahkeme yok', /MAHKEMESİ’NE/.test(blocked), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -6,12 +6,59 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.322.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.323.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.323 — Üst yazı: ayrı belge, rapor EK-1
+
+**KULLANICI NE GÖRECEK:** Rapor ekranında **Rapor | Üst yazı** sekmesi var.
+Üst yazı **ayrı bir belge** olarak (UDF/DOCX) indirilir; rapor onun **EK-1**'idir.
+"Üst yazı + rapor (2 dosya)" tek tıkla iki dosyayı indirir. Raporun kendi çıktısı
+**değişmedi**.
+
+**Ne yapıldı**
+- **Veri modeli** (`assets/schema.js`): `case.letter` (yer, tarih, muhatap, konu,
+  gövde, imza unvanı, sicil/sayfa notu) + `case.letterAnnexes[]` (sıralı belge
+  ekleri: `report` · `sections` · `reportAnnex` · `custom`). `report` tektir ve
+  **EK-1**'dir; EK numarası **türetilir** (bitişik, boşluk yok).
+- **Tek model**: `letterModel(c)` → ekran (A4 kâğıdı), DOCX ve UDF **aynı metni**
+  üretir. `letterPaperHtml`, `docxLetterXml`, `makeUdf({letter:true})` aynı
+  modelden beslenir.
+- **Ekran**: rapor görünümüne belge sekmesi; solda üst yazı alanları, ortada A4
+  kâğıt, sağda **Belge ekleri** paneli; araç çubuğunda üst yazı çıktı düğmeleri
+  (rapor düğmeleriyle karışmaz).
+- **Uydurma yok**: mahkeme / dosya no / bilirkişi adı eksikse üst yazı **hazır
+  değil** denir, eksikler listelenir ve çıktı **üretilmez**.
+- **Varsayılan gövde** yalnız var olan veriyi kullanır (görevlendirme tarihi ve
+  süre varsa yazılır); kullanıcı gövdeyi düzenlerse o kullanılır.
+- **Dosya adları**: `UstYazi_<dosya no>.udf/.docx`; rapor adı değişmedi.
+
+**Ölçüm (gerçek Chromium + CDP, 1440×900)**
+- Sekme geçişi: `Rapor→Üst yazı` panelleri doğru değiştiriyor; rapor iskeleti ve
+  Kontrol paneli gizleniyor, **Belge ekleri** görünüyor.
+- Üst yazı kâğıdı: `T.C. · ANTALYA 4. ASLİYE HUKUK MAHKEMESİ'NE · Sayı · Konu ·
+  Sayın Hâkimliğine, · 2 paragraf · Bilgilerinize arz ederim. · Antalya,
+  15.11.2026 · Bilirkişi · Örnek Bilirkişi · imza çizgisi · EKLER · EK-1`.
+- İndirilen dosyalar: `UstYazi_2026_214_E.udf` (998 bayt, **sayfa sonu 0** = tek
+  sayfa), `UstYazi_2026_214_E.docx`; iki dosya kipinde `UstYazi_*.udf` +
+  `2026_214_E.udf` (rapor). UDF'te `paperOrientation=1`, `leftMargin=42.52 pt`
+  (15 mm) — rapor biçiminden geliyor.
+- **Uygulama adı yok** (UDF/DOCX/HTML); ZWSP yalnız rapor SHA-256'larında.
+- Alan düzenleme + yenileme: `Antalya` ve gövde metni **korundu**.
+- Eksik dosyada: engel kutusu 3 madde + "3 eksik"; indirme **yok**, toast
+  "Üst yazı hazır değil: Mahkeme, Dosya numarası, Bilirkişi adı eksik."
+- 1440/1100/900/760: yatay taşma **0**, kırpılan öğe **0**; JS hatası **0**.
+
+**Koruyan test:** `birim [159]` (32) · `rapor` Senaryo 44 (üç çıktı aynı metin) ·
+`tasarim [2dc]` (17) · `surum` kimlikleri.
+
+**Sıradaki (v2.324):** Belge ekleri **düzenlenebilir** olacak — EK-2 "Teknik
+bilgiler" (rapordan çıkarılan bölümler), rapor içi eklerin belgeye taşınması,
+serbest ek; taşınan bölüm raporda çizilmez (çift üretim biter).
 
 ## v2.322 — Etiket menüsü: kapanma, yerleşim, “Etiketleri temizle”
 

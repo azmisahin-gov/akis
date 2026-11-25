@@ -2271,6 +2271,64 @@ olduğu için **CSS/JS önbellekten** gelebilir; ölçümden önce
 `Network.setCacheDisabled(true)` kullanın. Aksi hâlde "düzeltme işlemedi"
 gibi yanlış sonuç alınır (v2.321'de bir kez yaşandı).
 
+## YENİ OTURUM DEVRİ (v2.323) — Üst yazı ayrı belge (rapor EK-1)
+
+| | |
+|---|---|
+| Sürüm | **v2.323** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2417 birim + 522 şema** + rapor (44) + sürüm + tasarım yeşil |
+| Plan | [`docs/UST_YAZI_PLANI.md`](docs/UST_YAZI_PLANI.md) (v2.323 uygulandı; v2.324/325 sırada) |
+| Açık konu | **v2.324 belge ekleri düzenleme** (EK-2 teknik bilgiler, rapordan çıkarma), v2.325 ZIP |
+
+### Ne yapıldı
+- `case.letter` + `case.letterAnnexes[]` (schema): `report` tektir ve **EK-1**;
+  `sections` · `reportAnnex` · `custom` türleri modelde hazır (v2.323'te yalnız
+  `report` etkin). EK numarası **türetilir** (`letterAnnexNumbering`).
+- **Tek model**: `letterModel(c)` → `letterPaperHtml` (A4), `docxLetterXml`,
+  `makeUdf({letter:true})`. Üçü **aynı metni** üretir (`rapor` Senaryo 44).
+- Rapor görünümünde **Rapor | Üst yazı** sekmesi (`setReportDoc`); üst yazıda
+  sol panel alanlar, sağ panel **Belge ekleri**; araç çubuğunda üst yazı çıktıları
+  (`#letterToolbarActions`), rapor çıktıları gizlenir (`#reportToolbarActions`).
+- Eksik künyede (mahkeme / dosya no / bilirkişi adı) üst yazı **üretilmez**;
+  eksikler yazılır. Boş alan satır üretmez; gövde boşsa varsayılan metin.
+- "Üst yazı + rapor (2 dosya)" (`downloadLetterAndReport`).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **"Teslim" sözcüğü tarih içindir** (`deliveryInfo`). Belge kümesi **belge
+   eki**dir; `.akis` yedeği **paket**tir. Üç anlamı karıştırmayın.
+2. **EK numarası yalnız üst yazıda** ve **bitişik**; rapor içinde "EK-N" adı
+   kullanılmaz (rapor içi ekler "rapor içi tablolar"dır veya belgeye taşınır).
+3. **Üç çıktı tek model**: yeni bir alan eklerken `letterModel` + üç üretici
+   birlikte güncellenir; kopya metin/biçim yazmayın.
+4. **Uydurma yok**: zorunlu künye eksikse çıktı üretilmez; "—" ile doldurulmaz.
+5. `makeUdf(opts)` / `makeDocx(opts)` **imzası** `{letter:true}` alır; rapor
+   davranışı değişmez (rapor testleri bunu korur).
+6. **Rapor tarafına dokunmadan** eklendi: `#reportPreview`/rapor çıktıları aynı.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+Üst yazı kâğıdı: `T.C.` · `ANTALYA 4. ASLİYE HUKUK MAHKEMESİ'NE` ·
+`Sayı: 2026/214 E.` · `Konu: Bilirkişi raporunun sunulması` ·
+`Sayın Hâkimliğine,` · 2 paragraf · `Bilgilerinize arz ederim.` ·
+`Antalya, 15.11.2026` · `Bilirkişi` · `Örnek Bilirkişi` · imza çizgisi ·
+`EKLER` · `EK-1 Bilirkişi raporu`.
+İndirilen: `UstYazi_2026_214_E.udf` (998 bayt, **sayfa sonu 0** = tek sayfa),
+`UstYazi_2026_214_E.docx`; iki dosya kipinde rapor `2026_214_E.udf`.
+UDF: `paperOrientation=1`, `leftMargin=42.52 pt` (15 mm), **AKİS/uygulama yok**.
+Eksik dosyada: engel kutusu (3 madde), toast, **dosya yok**.
+1440/1100/900/760/600: yatay taşma **0**, kırpılan **0**; JS hatası **0**.
+
+### ÖLÇÜM TUZAĞI (yine)
+- Sürüm notu bandı (`#versionNotice`) rapor araç çubuğunun üstüne biner; gerçek
+  fare ölçümünden önce `#versionNoticeClose` ile kapatın.
+- `#newCaseBtn` çekmeceyi açar; açık çekmece tıklamayı yer. Ölçümden önce kapatın.
+- CSS/JS önbelleği: `Network.setCacheDisabled(true)` + `Page.reload({ignoreCache:true})`.
+
+### Sıradaki iş (v2.324 — plan hazır)
+Belge ekleri düzenleme: `sections` (EK-2 Teknik bilgiler) + `reportAnnex`
+(rapor içi eki belgeye çıkar, raporda kapat) + `custom`; ekle/sırala/sil;
+**taşınan bölüm raporda çizilmez** (`reportBlockRenders`); her belge için
+UDF/DOCX. Ayrıntı: `docs/UST_YAZI_PLANI.md` §10–§14.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2444,7 +2502,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.322.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.323.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
