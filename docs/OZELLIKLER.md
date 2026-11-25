@@ -1,4 +1,4 @@
-# Özellikler (v2.311 — mevcut durum)
+# Özellikler (v2.312 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -994,6 +994,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Teslim tarihi zekâsı (v2.312):** görevlendirme tarihi + verilen süre → **son teslim tarihi otomatik** (elle yazılan korunur, `dueDateManual`); **kalan gün / gecikme** tek kaynaktan (`deliveryInfo`) Özet **TESLİM** panelinde, **durum çubuğunda** (“Teslim: N gün / gecikti”) ve **rapor ekranında**; rapor tarihi > son teslim ve gecikme **metinle** uyarır. Ray’da **Dosya** girişi. Tarih yoksa “—” (uydurma yok); gün farkı **takvim günü**.
 - **Terim/konu listesi (v2.311):** rapor iskeletinde **TERİM VE KONU LİSTESİ** (varsayılan kapalı): en az 2 kez geçen anlamlı sözcükler + geçiş sayısı (`depozito (3)`). Özet değil; deterministik tarama yardımcısı. Üç çıktı aynı.
 - **Kurumsal kâğıt biçimi (v2.310):** bölüm alt kuralı, tablo çerçevesi + başlık ayırıcı, çerçeveli imza bloğu, alt bilgi çift çizgi. Yalnız görsel; metin ve üç çıktı değişmez; renkler token.
 - **Gömülü metadata tüm dosyada (v2.309):** “Dosyadan oku” büyük dosyada metadata’yı sondan da arar (ID3v1 / MP4 moov); baş 8 MB + gerekirse kuyruk 4 MB. Sonuç cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.

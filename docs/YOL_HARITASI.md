@@ -2,11 +2,24 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.311.**
+yazılır. **Güncel sürüm: v2.312.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.312 — Teslim tarihi zekâsı ve teslim hazırlığı (TAMAMLANDI)
+
+- **Son teslim = görevlendirme tarihi + süre** (elle yazılanı ezmez,
+  `dueDateManual`); `↻ Süreye göre hesapla`.
+- **Kalan gün / gecikme** tek kaynaktan (`deliveryInfo`): Özet **TESLİM** paneli,
+  **durum çubuğu** (“Teslim: N gün / gecikti”), **rapor ekranı** teslim satırı.
+- Görevlendirme tarihi çekmecede **bugün** ön dolgu; **boş taslak kaydedilmez**
+  kuralı korunur (modele yazılmaz).
+- Rapor tarihi > son teslim ve gecikme **metinle** uyarır.
+- Ray’a **Dosya** girişi (çekmeceyi açar; tek form korunur).
+- Test `birim [153]`, `tasarim [2ct]`. Ölçüm: gerçek Chromium, 5 genişlik,
+  kırpılma 0, JS hatası 0.
 
 ## v2.311 — Terim/konu listesi (TAMAMLANDI)
 

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.311.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.312.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7902,3 +7902,53 @@ curl -s https://azmisahin-gov.github.io/akis/version.json
 ```
 Beklenen: **2193 birim + 522 şema** yeşil; sürüm **2.311**; git temiz (veya d868f29).
 Sonra **`docs/UCTAN_UCA_DENETIM.md`** okunur; **v2.312 — Tarih zekâsı** ile başlanır.
+
+## YENİ OTURUM DEVRİ (v2.312) — Teslim tarihi zekâsı ve teslim hazırlığı
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.312** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2241 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | yerel değişiklik (commit/push kullanıcı onayına bağlı) |
+| Açık konu | Ayrı “Dosya” sayfası, yazdırılan teslim kontrol listesi, görev yazısından soru önerisi (deterministik değil) |
+
+### Ne yapıldı (uçtan uca akış denetiminin 1. maddesi)
+
+- **Son teslim tarihi otomatik:** görevlendirme tarihi + verilen süre → `dueDate`.
+  Elle yazılan tarih **korunur** (`assignment.dueDateManual`); `↻ Süreye göre
+  hesapla` yeniden hesaplar.
+- **Kalan gün / gecikme tek kaynak:** `deliveryInfo(c)` → Özet **TESLİM** paneli,
+  **durum çubuğu** (`#sbDue`), **rapor araç çubuğu** (`#reportDueChip`, her iki
+  modda), Kontrol panelinde `.report-due` ve gecikme uyarıları. “N gün kaldı /
+  N gün gecikti / Bugün son gün”.
+- **Görevlendirme tarihi** çekmecede **bugün** ön dolgu; modele yazılmaz →
+  **boş taslak kaydedilmez** (v2.109) korunur.
+- **Ray’a “Dosya”** (`#navCase`) → dosya bilgileri çekmecesini açar.
+- Test: `birim` [153], `tasarim` [2ct], `surum` [9] kimlikleri.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Teslim hesabı TEK KAYNAK:** `deliveryInfo` + `deliverySummaryText` /
+   `deliveryDetailText`. Dashboard/durum çubuğu/rapor ayrı hesap yazmaz.
+2. **Tarih yoksa uydurma yok:** `—`, `level:'none'`; gün farkı **takvim günü**
+   (`Date.UTC`), `dateToday()` **yerel** gün.
+3. **Elle yazılan son teslim EZİLMEZ:** `dueDateManual`; yalnız `↻` (force)
+   temizler.
+4. **Boş taslak kayda yazılmaz:** ön dolgu yalnız GİRDİ değeridir; `isEmptyCase`
+   ve `casesForStorage` değişmedi. Yeni bir “varsayılan tarih” eklerken modele
+   yazmayın; aksi hâlde ilk açılış “hayalet dosya” üretir.
+5. **Renk tek başına anlam taşımaz:** “gecikti” metni + kırmızı; kırpma yok,
+   durum çubuğu sarar.
+6. **`input` olayı** ile alan değişikliği işlenir (sentetik testte `input` da
+   gönder — v2.305 dersi).
+
+### Sıradaki iş (adaylar)
+
+1. **Ayrı “Dosya” sayfası:** künyeyi bölümlere ayır, üstte kalan gün + tamamlanma;
+   çekmece hızlı düzenleme olarak kalsın. (Tek form kuralı: kimlik çoğaltmayın.)
+2. **Teslim kontrol listesi (yazdırılan):** rapor ekranındaki hazırlık + teslim
+   satırını isteğe bağlı ek/bölüm olarak üç çıktıya ekle (metin aynı olmalı).
+3. **Görev yazısından soru önerisi:** deterministik değil; LLM olmadan yalnız
+   “öneri” ve insan onayıyla sunulmalı. Yapılmadı.

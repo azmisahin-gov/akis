@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.311.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.312.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.312 — Teslim tarihi zekâsı ve teslim hazırlığı
+
+**Amaç:** Bilirkişinin en kritik sorusu **“rapor teslimine ne kadar var?”**
+Uçtan uca akış denetiminde (`docs/UCTAN_UCA_DENETIM.md`) ölçülen eksik:
+son teslim tarihi otomatik hesaplanmıyor, “kaç gün kaldı” hiçbir yerde
+görünmüyor, rapor tarihi ile son teslim ilişkisi denetlenmiyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Özet ekranında “TESLİM” paneli:** görevlendirme tarihi · verilen süre ·
+  son teslim · rapor tarihi · dosya açılışı ve **“N gün kaldı / N gün gecikti /
+  Bugün son gün”** çipi. Yanında **rapor kontrolü** sayaçları (engelleyen ·
+  uzman · öneri) ve tek tıkla **Rapor kontrolü →**.
+- **Alt durum çubuğunda “Teslim: N gün”** her an görünür; gecikmede
+  **“Teslim: N gün gecikti”** (metin + kırmızı).
+- **Son teslim tarihi otomatik hesaplanır:** “Görevlendirme tarihi + verilen
+  süre” girilince `Son teslim tarihi` dolar. Tarihi **elle değiştirirseniz
+  korunur**; `↻ Süreye göre hesapla` düğmesi yeniden hesaplar.
+- **Görevlendirme tarihi çekmecede boş gelmez:** yeni dosyada **bugün**
+  görünür (kayda ancak siz bir alanı düzenleyince yazılır; boş taslak
+  kaydedilmez kuralı korunur).
+- **Gecikme sessiz geçmez:** son teslim geçmişse veya rapor tarihi son teslimden
+  sonraysa panelde ve rapor ekranında **metinle** uyarır.
+- **Ray’da “Dosya” adımı:** Dosya bilgileri çekmecesini açar (akışın 1. adımı
+  görünür oldu; ayrı sayfa açılmadı, tek form korunur).
+
+### Teknik
+
+- `app.js` → **`deliveryInfo(c)`** TEK KAYNAK; `deliverySummaryText`,
+  `deliveryDetailText`, `deliveryToneClass`; saf tarih yardımcıları
+  `parseDateOnly`, `dateOnlyStr`, `dateValueToDay`, `addDaysToDate`,
+  `calendarDaysBetween`, `daysRemaining`, `elapsedDays`.
+- `dateToday()` artık **yerel** günü verir (UTC kayması yok).
+- `readCaseForm` → `applyAutoDueDate` (elle yazılanı ezmez; `dueDateManual`).
+- `schema.js` → `assignment.dueDateManual` (emptyCase + normalizeCase).
+- Arayüz: `#deliveryPanel`, `#sbDue`, `#navCase`, `#dueDateAutoBtn`,
+  `#dueDateHint`; rapor ekranında **araç çubuğunda `#reportDueChip`** (her iki
+  modda görünür) ve Kontrol panelinde `.report-due` satırı.
+- Koruyan testler: `birim` [153], `tasarim` [2ct].
+
+### Ölçüm (gerçek Chromium 156 + CDP, 1440/1280/1100/900/760)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Görevlendirme tarihi ön dolgu | **2026-11-25** (bugün) |
+| 2026-11-01 + 30 gün → son teslim | **2026-12-01** (otomatik) |
+| Durum çubuğu | “Teslim: 6 gün” |
+| Elle 2026-11-20 → | “Teslim: 5 gün gecikti”, çip `is-late`, rapor uyarısı **var** |
+| `↻ Süreye göre hesapla` | 2026-12-01’e döndü (elle işaret kalktı) |
+| Rapor araç çubuğu çipi | “Teslim: 5 gün gecikti” (kırpılma yok) |
+| “Rapor kontrolü →” | rapor görünümü + **Kontrol** modu |
+| Kırpılma / yatay taşma | **0 / yok** (beş genişlikte) |
+| JS hatası | **0** |
+
+### Dürüst sınır
+
+- Gün farkı **takvim günüdür**; resmî tatil/hafta sonu hesaba katılmaz.
+- Eski kayıtlara **uydurma tarih yazılmaz**; tarih yoksa “—” ve “Teslim: —”.
+- Soruları görevlendirme yazısından **otomatik çıkarma yapılmadı**
+  (deterministik değildir; LLM olmadan güvenilmez).
+
 
 ## v2.311 — Terim/konu listesi (opt-in, C2)
 

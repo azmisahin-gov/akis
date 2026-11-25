@@ -1284,6 +1284,9 @@ export function emptyCase(over = {}) {
       date: '',
       dueDate: '',
       durationDays: '',
+      // Son teslim tarihi kullanıcı tarafından elle yazıldıysa true. Otomatik
+      // hesap (görevlendirme tarihi + süre) elle yazılanı EZMEZ.
+      dueDateManual: false,
       scope: '',
       body: '' // Görevlendirme yazısı metni
     },
@@ -2244,6 +2247,7 @@ export function normalizeCase(src = {}) {
       date: str(assignment.date || c.assignmentDate),
       dueDate: str(assignment.dueDate || c.dueDate),
       durationDays: str(assignment.durationDays || c.assignmentDurationDays),
+      dueDateManual: assignment.dueDateManual === true,
       scope: str(assignment.scope || c.assignmentScope),
       body: str(assignment.body)
     },

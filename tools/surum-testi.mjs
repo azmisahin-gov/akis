@@ -251,7 +251,14 @@ const REQUIRED_IDS = [
   ['rapor alanları paneli', 'reportColumnsBox'],
   ['rapor alanları listesi', 'reportColumnsFields'],
   ['rapor profili penceresi', 'profileDialog'],
-  ['rapor profili adı', 'profileName']
+  ['rapor profili adı', 'profileName'],
+  // v2.312 — teslim tarihi zekâsı (JS bu kimlikleri arıyor; yoksa sessiz boş).
+  ['dashboard teslim paneli', 'deliveryPanel'],
+  ['durum çubuğu teslim göstergesi', 'sbDue'],
+  ['rayda dosya girişi', 'navCase'],
+  ['son teslim hesapla düğmesi', 'dueDateAutoBtn'],
+  ['son teslim ipucu', 'dueDateHint'],
+  ['rapor ekranı teslim çipi', 'reportDueChip']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

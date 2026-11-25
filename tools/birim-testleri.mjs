@@ -118,6 +118,9 @@ const EXPOSE = [
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'segmentWorkSummary',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
+  'parseDateOnly', 'dateOnlyStr', 'dateValueToDay', 'addDaysToDate', 'calendarDaysBetween',
+  'daysRemaining', 'elapsedDays', 'deliveryInfo', 'deliverySummaryText', 'deliveryDetailText',
+  'deliveryToneClass', 'applyAutoDueDate',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
@@ -6576,6 +6579,99 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('terms varsayılan kapalı', S.emptyCase().report.sections.terms, false);
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('üç çıktı terms üretir', (js.match(/terms: \(\) =>/g) || []).length >= 3, true);
+}
+
+// [153] v2.312 — Teslim tarihi zekâsı: otomatik son teslim, kalan gün, gecikme.
+{
+  console.log('[153] Teslim tarihi zekâsı (v2.312)');
+  const S = __schemaMod;
+  // Tarih ayrıştırma / gün farkı
+  eq('geçerli tarih okunur', T.dateOnlyStr(T.parseDateOnly('2026-01-31')), '2026-01-31');
+  eq('geçersiz gün reddedilir (30 Şubat)', T.parseDateOnly('2026-02-30'), null);
+  eq('boş tarih null', T.parseDateOnly(''), null);
+  eq('gün ekleme', T.addDaysToDate('2026-01-01', 30), '2026-01-31');
+  eq('gün ekleme (ay sonu)', T.addDaysToDate('2026-01-31', 1), '2026-02-01');
+  eq('takvim günü farkı', T.calendarDaysBetween('2026-01-01', '2026-01-31'), 30);
+  eq('negatif fark', T.calendarDaysBetween('2026-01-31', '2026-01-01'), -30);
+  eq('kalan gün', T.daysRemaining('2026-01-31', '2026-01-01'), 30);
+  eq('geçen gün (ISO yerel)', T.elapsedDays('2026-01-01T09:00:00', '2026-01-11'), 10);
+
+  // deliveryInfo: normal / gecikme / bugün / yakın / tarih yok / rapor geç
+  const mk = (a, r, created) => ({ assignment: a || {}, report: r || {}, createdAt: created || '' });
+  const ok = T.deliveryInfo(mk({ date: '2026-01-01', durationDays: '30', dueDate: '2026-01-31' }, { date: '2026-01-20' }, '2026-01-01T09:00:00'), { today: '2026-01-10' });
+  eq('kalan gün 21', ok.daysLeft, 21);
+  eq('seviye ok', ok.level, 'ok');
+  eq('rapor geç değil', ok.reportLate, false);
+  eq('dosya açılışından gün', ok.elapsedDays, 9);
+  eq('özet metni', T.deliverySummaryText(ok), 'Teslim: 21 gün');
+  eq('ayrıntı metni tarih içerir', /31\.01\.2026/.test(T.deliveryDetailText(ok)), true);
+
+  const late = T.deliveryInfo(mk({ dueDate: '2026-01-05' }, { date: '2026-01-10' }), { today: '2026-01-10' });
+  eq('gecikme günü negatif', late.daysLeft, -5);
+  eq('seviye late', late.level, 'late');
+  eq('gecikme etiketi', late.label, '5 gün gecikti');
+  eq('gecikme özeti', T.deliverySummaryText(late), 'Teslim: 5 gün gecikti');
+  eq('rapor son teslimden sonra', late.reportLate, true);
+  eq('rapor farkı -5', late.reportLeft, -5);
+  eq('gecikme sınıfı', T.deliveryToneClass(late), 'is-late');
+
+  const today = T.deliveryInfo(mk({ dueDate: '2026-01-10' }), { today: '2026-01-10' });
+  eq('bugün son gün', today.label, 'Bugün son gün');
+  eq('bugün özeti', T.deliverySummaryText(today), 'Teslim: bugün');
+  eq('bugün sınıfı', T.deliveryToneClass(today), 'is-soon');
+
+  const soon = T.deliveryInfo(mk({ dueDate: '2026-01-13' }), { today: '2026-01-10' });
+  eq('yakın seviye', soon.level, 'soon');
+
+  const none = T.deliveryInfo(mk({}), { today: '2026-01-10' });
+  eq('tarih yok seviyesi', none.level, 'none');
+  eq('tarih yok özeti', T.deliverySummaryText(none), 'Teslim: —');
+  eq('tarih yoksa uydurma yok', none.daysLeft, null);
+
+  // v2 düz alan yedeği (göç/uyum)
+  const flat = T.deliveryInfo({ assignmentDate: '2026-01-01', assignmentDurationDays: '10', dueDate: '2026-01-11', reportDate: '2026-01-11' }, { today: '2026-01-05' });
+  eq('düz alanlardan son teslim', flat.dueDate, '2026-01-11');
+  eq('düz alanlardan kalan', flat.daysLeft, 6);
+
+  // Otomatik hesap: süre yoksa dueDate ÜRETİLMEZ; süre varsa hesaplanır.
+  const elDate = T.el('#assignmentDate');
+  const elDur = T.el('#assignmentDurationDays');
+  const elDue = T.el('#dueDate');
+  const c1 = { assignment: { date: '2026-01-01', durationDays: '', dueDateManual: false }, dueDate: '' };
+  elDate.value = '2026-01-01';
+  elDur.value = '';
+  eq('süre yoksa otomatik tarih yok', T.applyAutoDueDate(c1), '');
+  elDur.value = '30';
+  eq('süre varsa otomatik tarih', T.applyAutoDueDate(c1), '2026-01-31');
+  eq('model dueDate yazıldı', c1.dueDate, '2026-01-31');
+  eq('girdi kutusu tazelendi', elDue.value, '2026-01-31');
+  // Elle yazılmış tarih otomatik hesapta EZİLMEZ; force ile ezilir.
+  const c2 = { assignment: { date: '2026-01-01', durationDays: '30', dueDate: '2026-03-01', dueDateManual: true }, dueDate: '2026-03-01' };
+  elDate.value = '2026-01-01';
+  elDur.value = '30';
+  eq('elle yazılan korunur', T.applyAutoDueDate(c2), '');
+  eq('force ile yeniden hesaplanır', T.applyAutoDueDate(c2, { force: true }), '2026-01-31');
+  eq('force sonrası işaret kalkar', c2.assignment.dueDateManual, false);
+  elDate.value = '';
+  elDur.value = '';
+
+  // Şema: dueDateManual korunur; boş taslak hâlâ boş sayılır (v2.109 korunur).
+  eq('emptyCase dueDateManual false', S.emptyCase().assignment.dueDateManual, false);
+  const norm = S.normalizeCase({ id: 'x', assignment: { date: '2026-01-01', dueDate: '2026-03-01', dueDateManual: true } });
+  eq('normalizeCase dueDateManual korunur', norm.assignment.dueDateManual, true);
+  eq('boş taslak boş sayılır', T.isEmptyCase(T.freshCase()), true);
+
+  // Arayüz kancaları: panel, durum çubuğu, düğme, ray girişi.
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('dashboard teslim paneli var', /id="deliveryPanel"/.test(html), true);
+  eq('durum çubuğu teslim göstergesi var', /id="sbDue"/.test(html), true);
+  eq('son teslim hesapla düğmesi var', /id="dueDateAutoBtn"/.test(html), true);
+  eq('rayda Dosya girişi var', /id="navCase"/.test(html), true);
+  eq('durum çubuğu deliveryInfo kullanır', /#sbDue[\s\S]{0,200}deliveryInfo\(c\)/.test(js), true);
+  eq('rapor ekranı teslim satırı taşır', /report-due/.test(js) && /\.report-due\s*\{/.test(css), true);
+  eq('teslim CSS ham hex taşımaz', !/\.dl-chip[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(css), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

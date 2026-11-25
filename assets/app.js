@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.311';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.311';
+} from './schema.js?v=2.312';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.312';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.311';
+const APP_VERSION = '2.312';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -507,7 +507,132 @@ function fmtSize(n) {
   return `${(n / 1024 / 1024).toFixed(2)} MB`;
 }
 function dateToday() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+// ---- Teslim tarihi zekâsı (v2.312) ---------------------------------------
+// Tarihler YYYY-MM-DD (yerel gün) biçimindedir. Gün farkı Date.UTC ile yalnız
+// takvim günü üzerinden hesaplanır; yaz saati/saat dilimi kayması olmaz.
+// Geçersiz tarih null döner — uydurma değer üretilmez.
+function parseDateOnly(value) {
+  const s = String(value == null ? '' : value).trim();
+  if (!s) return null;
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const da = Number(m[3]);
+  const d = new Date(y, mo - 1, da);
+  if (d.getFullYear() !== y || d.getMonth() !== mo - 1 || d.getDate() !== da) return null;
+  return d;
+}
+function dateOnlyStr(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return '';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+// createdAt gibi tam ISO değerleri YEREL güne çevirir (UTC diliminde gün
+// kaymasın). Saf tarih değerleri olduğu gibi okunur.
+function dateValueToDay(value) {
+  const s = String(value == null ? '' : value).trim();
+  if (!s) return null;
+  if (s.length > 10 && s.includes('T')) {
+    const d = new Date(s);
+    return Number.isNaN(d.getTime()) ? null : dateOnlyStr(d);
+  }
+  return dateOnlyStr(parseDateOnly(s)) || null;
+}
+function addDaysToDate(dateStr, days) {
+  const d = parseDateOnly(dateStr);
+  const n = Number(String(days == null ? '' : days).replace(',', '.'));
+  if (!d || !Number.isFinite(n)) return '';
+  d.setDate(d.getDate() + Math.round(n));
+  return dateOnlyStr(d);
+}
+function calendarDaysBetween(from, to) {
+  const a = parseDateOnly(from);
+  const b = parseDateOnly(to);
+  if (!a || !b) return null;
+  const ua = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+  const ub = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+  return Math.round((ub - ua) / 86400000);
+}
+function daysRemaining(dueDate, today) {
+  return calendarDaysBetween(today || dateToday(), dueDate);
+}
+function elapsedDays(fromValue, today) {
+  const from = dateValueToDay(fromValue);
+  if (!from) return null;
+  return calendarDaysBetween(from, today || dateToday());
+}
+// TEK KAYNAK: teslim durumu. Dashboard, durum çubuğu, rapor ekranı ve kapak
+// buradan beslenir; ayrı hesap yazmayın. Tarih yoksa `level:'none'` (uydurma yok).
+function deliveryInfo(c, opts = {}) {
+  const today = opts.today || dateToday();
+  const a = (c && c.assignment) || {};
+  // v2 düz alanları da okunur (göç/uyum): iç içe alan boşsa düz alan kullanılır.
+  const assignmentDate = String(a.date || (c && c.assignmentDate) || '').trim();
+  const durationSource = a.durationDays != null && a.durationDays !== '' ? a.durationDays : (c && c.assignmentDurationDays);
+  const durationRaw = String(durationSource == null ? '' : durationSource).replace(',', '.');
+  const durationNum = Number(durationRaw);
+  const dueDate = String(a.dueDate || (c && c.dueDate) || '').trim();
+  const manual = a.dueDateManual === true;
+  const daysLeft = dueDate ? daysRemaining(dueDate, today) : null;
+  const reportDate = String((c && c.report && c.report.date) || (c && c.reportDate) || '').trim();
+  const reportLeft = dueDate && reportDate ? daysRemaining(dueDate, reportDate) : null;
+  const createdDay = dateValueToDay(c && c.createdAt);
+  const elapsed = createdDay ? calendarDaysBetween(createdDay, today) : null;
+  let level = 'none';
+  let label = 'Son teslim tarihi girilmedi';
+  if (dueDate) {
+    if (daysLeft == null) {
+      level = 'invalid';
+      label = 'Son teslim tarihi okunamadı';
+    } else if (daysLeft < 0) {
+      level = 'late';
+      label = `${Math.abs(daysLeft)} gün gecikti`;
+    } else if (daysLeft === 0) {
+      level = 'today';
+      label = 'Bugün son gün';
+    } else if (daysLeft <= 7) {
+      level = 'soon';
+      label = `${daysLeft} gün kaldı`;
+    } else {
+      level = 'ok';
+      label = `${daysLeft} gün kaldı`;
+    }
+  }
+  return {
+    today,
+    assignmentDate,
+    durationDays: Number.isFinite(durationNum) ? durationNum : 0,
+    dueDate,
+    dueDateManual: manual,
+    daysLeft,
+    level,
+    label,
+    reportDate,
+    reportLeft,
+    reportLate: reportLeft != null && reportLeft < 0,
+    createdDay: createdDay || '',
+    elapsedDays: elapsed
+  };
+}
+function deliverySummaryText(info) {
+  const i = info || {};
+  if (!i.dueDate) return 'Teslim: —';
+  if (i.daysLeft == null) return 'Teslim: geçersiz tarih';
+  if (i.daysLeft < 0) return `Teslim: ${Math.abs(i.daysLeft)} gün gecikti`;
+  if (i.daysLeft === 0) return 'Teslim: bugün';
+  return `Teslim: ${i.daysLeft} gün`;
+}
+function deliveryDetailText(info) {
+  const i = info || {};
+  const parts = [i.dueDate ? `Son teslim ${niceDate(i.dueDate)} · ${i.label}` : 'Son teslim tarihi girilmedi'];
+  if (i.reportLate) parts.push(`Rapor tarihi ${Math.abs(i.reportLeft)} gün sonra`);
+  if (i.elapsedDays != null && i.elapsedDays >= 0) parts.push(`Dosya açılışından ${i.elapsedDays} gün`);
+  return parts.join(' · ');
 }
 function currentCase() {
   return appState.cases.find((c) => c.id === appState.activeCaseId) || null;
@@ -909,7 +1034,7 @@ function freshCase() {
     caseDate: '',
     inspectionDate: '',
     parties: { plaintiff: '', plaintiffCounsel: '', defendant: '', defendantCounsel: '' },
-    assignment: { date: '', dueDate: '', durationDays: '', scope: '', body: '' },
+    assignment: { date: '', dueDate: '', durationDays: '', dueDateManual: false, scope: '', body: '' },
     expert: { name: '', registryNo: '', field: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi' },
     team: [],
     report: {
@@ -1421,6 +1546,9 @@ function switchView(name) {
   // Kullanıcı "← Kayıt listesine dön" ile şeride geçebilir.
   $$('.view').forEach((v) => v.classList.toggle('active', v.id === `view-${name}`));
   $$('.nav-item[data-view]').forEach((b) => b.classList.toggle('active', b.dataset.view === name));
+  // "Dosya" çekmece düğmesi (v2.312): başka görünüme geçince aktifliği kalkar.
+  const navCase = $('#navCase');
+  if (navCase) navCase.classList.remove('active');
   // Görünüm adı body'ye yazılır (v2.230): durum çubuğundaki tekrarları
   // görünüme göre gizlemek için tek kaynak.
   document.body.dataset.view = name;
@@ -1500,6 +1628,36 @@ const CASE_FIELDS = [
   'expertField',
   'reportDate'
 ];
+function applyAutoDueDate(c, opts = {}) {
+  if (!c) return '';
+  c.assignment = c.assignment || {};
+  if (!opts.force && c.assignment.dueDateManual) return '';
+  const dateEl = $('#assignmentDate');
+  const durEl = $('#assignmentDurationDays');
+  const base = (dateEl && dateEl.value) || c.assignment.date || dateToday();
+  const durRaw = durEl && durEl.value !== '' ? durEl.value : c.assignment.durationDays;
+  const durStr = String(durRaw == null ? '' : durRaw).trim();
+  if (!durStr) return '';
+  const dur = Number(durStr.replace(',', '.'));
+  if (!Number.isFinite(dur) || dur <= 0) return '';
+  const next = addDaysToDate(base, dur);
+  if (!next) return '';
+  if (opts.force) c.assignment.dueDateManual = false;
+  c.dueDate = next;
+  const dueEl = $('#dueDate');
+  if (dueEl) dueEl.value = next;
+  return next;
+}
+function updateDueDateHint(c) {
+  const el = $('#dueDateHint');
+  if (!el) return;
+  const info = deliveryInfo(c);
+  if (!info.dueDate) {
+    el.textContent = 'Görevlendirme tarihi ve verilen süre girilince son teslim tarihi otomatik hesaplanır.';
+    return;
+  }
+  el.textContent = `${niceDate(info.dueDate)} · ${info.label}${info.dueDateManual ? ' · elle girildi' : ' · süreden hesaplandı'}`;
+}
 function populateCaseForm() {
   const c = currentCase();
   if (!c) return;
@@ -1507,6 +1665,11 @@ function populateCaseForm() {
     const el = $(`#${k}`);
     if (el) el.value = c[k] ?? '';
   }
+  // Görevlendirme tarihi boşsa yalnız GÖRÜNÜR varsayılan: bugün. Model boş
+  // kalır; aksi hâlde "boş taslak kayda yazılmaz" kuralı (v2.109) bozulurdu.
+  const ad = $('#assignmentDate');
+  if (ad && !ad.value) ad.value = dateToday();
+  updateDueDateHint(c);
   applyRoleLabels(c.reportType);
   renderTeam();
   renderCasePersons();
@@ -1620,14 +1783,25 @@ function updateCaseName(c) {
 function readCaseForm() {
   const c = currentCase();
   if (!c) return;
+  const prev = { date: c.assignmentDate, duration: c.assignmentDurationDays, due: c.dueDate };
   for (const k of CASE_FIELDS) {
     const el = $(`#${k}`);
     if (el) c[k] = el.value;
   }
+  c.assignment = c.assignment || {};
+  // Son teslim tarihi: elle yazıldıysa KORUNUR; görevlendirme tarihi veya süre
+  // değişince otomatik hesaplanır (elle yazılanı ezmez).
+  const dueChanged = String(c.dueDate || '') !== String(prev.due || '');
+  const dateChanged = String(c.assignmentDate || '') !== String(prev.date || '');
+  const durChanged = String(c.assignmentDurationDays || '') !== String(prev.duration || '');
+  if (dueChanged) c.assignment.dueDateManual = !!String(c.dueDate || '').trim();
+  else if ((dateChanged || durChanged) && !c.assignment.dueDateManual) applyAutoDueDate(c);
+  updateDueDateHint(c);
   applyRoleLabels(c.reportType);
   updateCaseName(c);
   persist();
   renderOverview();
+  if (document.body && document.body.dataset && document.body.dataset.view === 'report') renderReport();
 }
 function populateQuestionsForm() {
   const c = currentCase();
@@ -1834,6 +2008,54 @@ function renderWorkload(c) {
   host.innerHTML = workloadSummaryHtml(caseWorkload(c));
 }
 
+// ---- Teslim paneli (v2.312) ---------------------------------------------
+// Dashboard'da "rapor teslimine ne kadar var" sorusunun cevabı. Sayılar
+// ÖLÇÜMDÜR (tarih farkı + hazırlık maddeleri); ücret/süre tahmini değildir.
+function deliveryToneClass(info) {
+  const lvl = (info && info.level) || 'none';
+  if (lvl === 'late') return 'is-late';
+  if (lvl === 'today' || lvl === 'soon') return 'is-soon';
+  if (lvl === 'ok') return 'is-ok';
+  return 'is-none';
+}
+function renderDeliveryPanel(c) {
+  const el = $('#deliveryPanel');
+  if (!el) return;
+  const info = deliveryInfo(c);
+  const sum = readinessSummary(reportReadiness(c));
+  const kpi = (label, value, hint) =>
+    `<div class="dl-item"${hint ? ` title="${esc(hint)}"` : ''}><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+  const notes = [];
+  if (info.level === 'late')
+    notes.push(`Son teslim tarihi ${Math.abs(info.daysLeft)} gün önce geçti. Gecikme nedenini raporda veya üst yazıda belirtin.`);
+  if (info.reportLate)
+    notes.push(`Rapor tarihi son teslimden ${Math.abs(info.reportLeft)} gün sonra. Rapor tarihini ya da son teslim tarihini kontrol edin.`);
+  if (info.level === 'none')
+    notes.push('Son teslim tarihi girilmedi. "Dosya bilgilerini düzenle" ile görevlendirme tarihi ve verilen süreyi girin.');
+  const created = info.createdDay
+    ? `${niceDate(info.createdDay)}${info.elapsedDays != null ? ` · ${info.elapsedDays} gün önce` : ''}`
+    : '—';
+  el.innerHTML =
+    `<div class="panel-heading"><div><div class="eyebrow">TESLİM</div><h3>Son teslim ve rapor hazırlığı</h3></div>` +
+    `<span class="dl-chip ${deliveryToneClass(info)}" title="${esc(deliveryDetailText(info))}">${esc(info.label)}</span></div>` +
+    `<div class="dl-grid">` +
+    kpi('Görevlendirme', info.assignmentDate ? niceDate(info.assignmentDate) : '—', 'Görevlendirme tarihi') +
+    kpi('Verilen süre', info.durationDays ? `${info.durationDays} gün` : '—', 'Mahkemenin verdiği süre') +
+    kpi('Son teslim', info.dueDate ? niceDate(info.dueDate) : '—', info.dueDateManual ? 'Elle girildi; otomatik hesap ezmez.' : 'Görevlendirme tarihi + süre') +
+    kpi('Rapor tarihi', info.reportDate ? niceDate(info.reportDate) : '—', 'Raporun tarihi (varsayılan bugün)') +
+    kpi('Dosya açılışı', created, 'Dosyanın bu uygulamada açıldığı tarih') +
+    `</div>` +
+    `<div class="dl-check"><span class="dl-check-title">Rapor kontrolü</span>` +
+    `<span class="dl-check-chip${sum.blocking ? ' is-blocking' : ''}">Engelleyen ${sum.blocking}</span>` +
+    `<span class="dl-check-chip">Uzman ${sum.expert}</span>` +
+    `<span class="dl-check-chip">Öneri ${sum.advisory}</span>` +
+    `<button type="button" class="mini-button" data-delivery-check="1" title="Rapor ekranını Kontrol modunda açar">Rapor kontrolü →</button>` +
+    `</div>` +
+    (notes.length
+      ? `<ul class="dl-notes">${notes.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`
+      : `<p class="dl-note-ok">Teslim tarihi ve rapor hazırlığı görünür. Bu bir denetim listesidir, onay değildir.</p>`);
+}
+
 function renderOverview() {
   refreshSampleAction();
   const c = currentCase();
@@ -1864,6 +2086,7 @@ function renderOverview() {
     .map((x) => `<div class="overview-item"><small>${x[1].toUpperCase()}</small><b>${esc(x[2] || '—')}</b></div>`)
     .join('');
   renderWorkload(c);
+  renderDeliveryPanel(c);
   renderStatusBar();
 }
 // Alt durum çubuğu: hangi dosyada olduğumuzu ve genel durumu her an gösterir.
@@ -1887,6 +2110,16 @@ function renderStatusBar() {
   set('#sbAudio', String(mats.length));
   set('#sbSegments', String(segs.length));
   set('#sbChecked', `%${pct}`);
+  // TESLİM (v2.312): son teslim tarihine kalan gün her an görünür. Tarih yoksa
+  // "—" yazar; uydurma değer yok. Gecikmede metin de söyler (yalnız renk değil).
+  const dueEl = $('#sbDue');
+  if (dueEl) {
+    const info = deliveryInfo(c);
+    dueEl.textContent = deliverySummaryText(info);
+    dueEl.title = deliveryDetailText(info);
+    dueEl.classList.toggle('is-late', info.level === 'late');
+    dueEl.classList.toggle('is-soon', info.level === 'today' || info.level === 'soon');
+  }
   // EKSİK DÖKÜMÜ (v2.114): "%100 olmuyor" sorusunun cevabı.
   // Sayı doğru; kullanıcı HANGİ bölümlerin eksik olduğunu görmeli.
   const pend = $('#sbPending');
@@ -14426,8 +14659,11 @@ function renderReportReadiness(c) {
   const el = $('#reportReadiness');
   if (!el) return;
   const r = reportReadiness(c);
+  const info = deliveryInfo(c);
   el.classList.toggle('is-ok', r.ok);
   el.innerHTML =
+    `<div class="report-due ${deliveryToneClass(info)}" title="${esc(deliveryDetailText(info))}">` +
+    `<b>Teslim</b> <span>${esc(deliveryDetailText(info))}</span></div>` +
     `<div class="ready-head"><b>Rapor hazırlığı</b><small>${
       r.ok ? 'Eksik görünmüyor' : `${r.items.length} konu eksik`
     } · denetim listesidir, onay değildir</small></div>` +
@@ -14544,11 +14780,24 @@ function renderReport() {
   const spkMethodToggle = $('#reportSpeakerMethodToggle');
   if (spkMethodToggle) spkMethodToggle.checked = !!(c.report && c.report.speakerMethod);
   renderReportReadiness(c);
+  // TESLİM (v2.312): araç çubuğunda HER İKİ modda da görünen tek çip.
+  const dinfo = deliveryInfo(c);
+  const dueChip = $('#reportDueChip');
+  if (dueChip) {
+    dueChip.textContent = deliverySummaryText(dinfo);
+    dueChip.title = deliveryDetailText(dinfo);
+    dueChip.className = `report-due-chip ${deliveryToneClass(dinfo)}`;
+  }
   const materials = c.materials || [];
   const allSegs = materials.flatMap((m) => m.segments || []);
   const checked = allSegs.filter((s) => isReviewed(s)).length;
   const warnings = [];
   if (!c.court || !c.fileNo || !c.expertName) warnings.push(REPORT_TEXT.warnMissingFields);
+  // TESLİM (v2.312): gecikme sessiz geçmez; rapor ekranında metinle uyarır.
+  if (dinfo.level === 'late')
+    warnings.push(`Son teslim tarihi ${Math.abs(dinfo.daysLeft)} gün önce geçti; rapor gecikmeli teslim ediliyor.`);
+  if (dinfo.reportLate)
+    warnings.push(`Rapor tarihi son teslimden ${Math.abs(dinfo.reportLeft)} gün sonra; tarihleri kontrol edin.`);
   if (!materials.length) warnings.push(REPORT_TEXT.warnNoMaterials);
   // Teslim bilgisi girilmemiş kayıtlar rapora "—" olarak yazılır. Uzman
   // bunu görmeden raporu bitirmemeli; eksik künye sessizce geçmemeli.
@@ -17022,6 +17271,18 @@ function setCaseDrawer(open) {
   d.classList.toggle('open', open);
   d.setAttribute('aria-hidden', open ? 'false' : 'true');
   if (b) b.hidden = !open;
+  // Ray'daki "Dosya" düğmesi çekmece açıkken aktif görünür (v2.312). Aynı anda
+  // iki nav öğesi aktif görünmesin: çekmece açıkken diğerleri soluklaşır, kapanınca
+  // o anki görünüm yeniden aktif olur.
+  const navCase = $('#navCase');
+  if (open) {
+    $$('.nav-item[data-view]').forEach((x) => x.classList.remove('active'));
+    if (navCase) navCase.classList.add('active');
+  } else {
+    if (navCase) navCase.classList.remove('active');
+    const cur = (document.body && document.body.dataset && document.body.dataset.view) || 'overview';
+    $$('.nav-item[data-view]').forEach((x) => x.classList.toggle('active', x.dataset.view === cur));
+  }
 }
 function setSettingsDrawer(open) {
   const d = $('#settingsDrawer');
@@ -17094,6 +17355,27 @@ function setupEvents() {
   });
   $('#caseDrawer').addEventListener('input', readCaseForm);
   $('#caseDrawer').addEventListener('change', readCaseForm);
+  // SON TESLİM (v2.312): süreye göre hesapla — elle yazılmış işareti kaldırır.
+  $('#dueDateAutoBtn')?.addEventListener('click', () => {
+    const c = currentCase();
+    if (!c) return;
+    const next = applyAutoDueDate(c, { force: true });
+    if (!next) {
+      showToast('Hesaplamak için görevlendirme tarihi ve verilen süre (gün) girilmelidir.', true);
+      return;
+    }
+    persist();
+    populateCaseForm();
+    renderOverview();
+    showToast(`Son teslim tarihi ${niceDate(next)} olarak hesaplandı.`);
+  });
+  // Dashboard teslim paneli: raporu Kontrol modunda açar.
+  $('#deliveryPanel')?.addEventListener('click', (e) => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-delivery-check]') : null;
+    if (!b) return;
+    setReportMode('check');
+    switchView('report');
+  });
   // Ekip alanları: yazma/kaldırma. Delegasyon kullanılır çünkü panel yeniden
   // çizildiğinde düğümler tazelenir.
   $('#caseDrawer').addEventListener('input', (e) => {
@@ -20089,6 +20371,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.312': {
+    title: 'Teslim tarihi ve kalan gün',
+    body:
+      'Görevlendirme tarihi + verilen süre girilince son teslim tarihi otomatik hesaplanır (elle yazılan korunur). Özet ekranında ve durum çubuğunda “N gün kaldı / N gün gecikti” görünür; gecikme ve “rapor tarihi > son teslim” metinle uyarır. Ray’a “Dosya” girişi eklendi.'
+  },
   '2.311': {
     title: 'Terim/konu listesi (isteğe bağlı)',
     body:

@@ -3986,3 +3986,37 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .report-paper .paper-table th { border-bottom: 1.5px solid var(--paper-head); }
 .report-paper .paper-signature { border: 1px solid var(--paper-line); border-radius: 4px; padding: 10px 12px; }
 .report-paper .paper-footer { border-top: 3px double var(--paper-line); padding-top: 6px; }
+
+/* v2.312 — Teslim tarihi zekâsı. Dashboard teslim paneli, durum çubuğu teslim
+   göstergesi ve rapor ekranı teslim satırı. Hesap app.js'te `deliveryInfo`;
+   burada yalnız görünüm var. Renkler token; punto 11px altına inmez. */
+#view-overview .delivery-panel { display: flex; flex-direction: column; gap: 10px; }
+#view-overview .delivery-panel .panel-heading { align-items: flex-start; }
+.dl-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 700; white-space: nowrap; }
+.dl-chip.is-ok { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.dl-chip.is-soon { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.dl-chip.is-late { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+.dl-chip.is-none { background: var(--surface-3); color: var(--ink-3); }
+.dl-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; }
+.dl-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); min-width: 0; }
+.dl-item small { color: var(--ink-3); font-size: var(--fs-2xs); }
+.dl-item b { color: var(--ink); font-size: var(--fs-md); overflow-wrap: anywhere; }
+.dl-check { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dl-check-title { color: var(--ink-3); font-size: var(--fs-2xs); font-weight: 700; }
+.dl-check-chip { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-2xs); white-space: nowrap; }
+.dl-check-chip.is-blocking { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+.dl-notes { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: var(--fs-xs); }
+.dl-notes li { margin: 2px 0; overflow-wrap: anywhere; }
+.dl-note-ok { margin: 0; color: var(--ink-3); font-size: var(--fs-xs); }
+.statusbar .sb-item.is-late { color: var(--red); font-weight: 700; }
+.statusbar .sb-item.is-soon { color: var(--gold); font-weight: 700; }
+.report-due { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; background: var(--surface-2); font-size: var(--fs-2xs); color: var(--ink-2); }
+.report-due b { color: var(--ink); }
+.report-due.is-late { border-left-color: var(--red); background: var(--red-soft); color: var(--red); }
+.report-due.is-soon { border-left-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+.report-due.is-ok { border-left-color: var(--green); background: var(--green-soft); color: var(--green); }
+.report-due-chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-2xs); font-weight: 700; white-space: nowrap; }
+.report-due-chip.is-ok { background: var(--green-soft); color: var(--green); border-color: var(--green); }
+.report-due-chip.is-soon { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+.report-due-chip.is-late { background: var(--red-soft); color: var(--red); border-color: var(--red); }
+.report-due-chip.is-none { background: var(--surface-3); color: var(--ink-3); }

@@ -6,7 +6,11 @@
 > otomatik oluşsun. Bu belge **bulguları + planı** tutar; uygulama sonraki
 > oturumlarda **tek konu = tek sürüm** disipliniyle yapılır.
 >
-> **Durum:** ÖLÇÜM YAPILDI (v2.311). Henüz kod değişikliği yok.
+> **Durum:** ÖLÇÜM v2.311’de yapıldı. **v2.312’de “Tarih zekâsı” uygulandı**
+> (son teslim otomatik, kalan gün, gecikme uyarıları, dashboard/durum çubuğu/rapor
+> ekranı, ray’da Dosya). Kalan adaylar: ayrı “Dosya” sayfası, teslim kontrol
+> listesinin ayrı bölüm olarak yazdırılması, görev yazısından soru önerisi
+> (deterministik değil).
 
 ## 1. Yöntem (ölçüm, tahmin değil)
 

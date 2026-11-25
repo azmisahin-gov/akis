@@ -2183,5 +2183,28 @@ console.log('\n[2cs] Kalan düşük kontrast metinler (v2.278)');
   ];
   for (const [label, rx] of must) check(label + ' token rengi kullanır', rx.test(layer));
 }
+console.log('\n[2ct] Teslim tarihi paneli (v2.312)');
+{
+  const html = read('index.html');
+  const appJs = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  // Panel ve göstergeler mevcut olmalı (JS kimlik arıyor; yoksa sessiz boş kalır).
+  check('dashboard teslim paneli var', /id="deliveryPanel"/.test(html));
+  check('durum çubuğunda teslim göstergesi var', /id="sbDue"/.test(html));
+  check('rayda "Dosya" girişi var', /id="navCase"/.test(html));
+  check('son teslim hesapla düğmesi var', /id="dueDateAutoBtn"/.test(html));
+  check('rapor ekranı teslim çipi var', /id="reportDueChip"/.test(html));
+  check('rapor teslim çipi her iki modda görünür (araç çubuğu)', /\.report-due-chip\s*\{/.test(layer));
+  // Durum çubuğu kesmez: mevcut kural sarar; teslim öğesi de aynı davranışta.
+  check('durum çubuğu teslimi kesmez (sarma kuralı)', /\.statusbar \.sb-item\s*\{[^}]*white-space:\s*normal/.test(layer));
+  check('gecikme rengi token (ham hex değil)', /\.statusbar \.sb-item\.is-late\s*\{[^}]*color:\s*var\(--red\)/.test(layer));
+  // Teslim paneli metni kesmez; uzun değer sarar.
+  check('teslim değeri sarar (overflow-wrap)', /\.dl-item b\s*\{[^}]*overflow-wrap:\s*anywhere/.test(layer));
+  check('teslim paneli ham hex taşımaz', !/\.dl-(chip|item|check-chip|notes|note-ok)[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(layer));
+  // Punto tabanı: teslim CSS'i 11px altı ham punto yazmaz.
+  check('teslim CSS ham font-size taşımaz', !/\.(dl-|report-due)[^{]*\{[^}]*font-size:\s*[0-9.]+px/i.test(layer));
+  // Hesap tek kaynak: rapor ekranı ve durum çubuğu deliveryInfo kullanır.
+  check('teslim hesabı tek kaynak (deliveryInfo)', (appJs.match(/deliveryInfo\(/g) || []).length >= 3);
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
