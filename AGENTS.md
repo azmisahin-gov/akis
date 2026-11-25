@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.317.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.318.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8197,4 +8197,60 @@ Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
 | Gözlem satırı | **yok** |
 | Gözlem paneli | 12 düğme; etkin çip 1 → çipe tıkla 0 |
 | Menü görünürlüğü | tüm genişliklerde viewport içinde; hOverflow 0 |
+| JS hatası | **0** |
+
+## EK DÜZELTME (v2.318) — Envanter bütünlüğü + menü kapatma
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.318** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2354 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### ÖLÇÜLEN HATA
+
+- **EK-5 “Metin işaretleri”** tablosu menüde olmayan **dört eski etiketi**
+  (`[anlaşılmıyor]`, `[kısmen anlaşılmıyor]`, `[eşzamanlı konuşma]`,
+  `[konuşma dışı ses]`) listeliyordu; menüdeki 18 etiketin çoğu anahtarda yoktu.
+  Kullanıcı “bazıları kaybolmuş” dedi — haklıydı.
+- Etiket menüsünde kapatma güvenilir değildi; **tarayıcının kendi arama ×’i**
+  menüyü kapatmıyordu (yanlış × izlenimi).
+
+### Yapılan
+
+- EK-5 `Metin işaretleri` satırları **`QUICK_TAG_DEFS.map`** ile üretilir →
+  **18 etiket** menüyle birebir. Gözlem satırları `OBS_DEFS.map` → **12**.
+- **Backdrop** (`#sdPopBackdrop`, z 1190) + `syncFloatingBackdrop()`: menü
+  açıkken görünür; dışarı tıklama güvenilir kapatır.
+- Etiket menüsünde **üst `Kapat ×` + alt `Kapat`**; gözlem panelinde
+  **`Kapat ×`** (`data-obs-close`).
+- **Native arama × gizlendi** (`::-webkit-search-cancel-button`).
+- Açık tetikleyici `[aria-expanded="true"]` ile vurgulanır.
+- Test: `birim [157]`, `tasarim [2cu]/[2cy]`.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Rapor anahtarı = menü tanımı.** EK-5 metin işaretleri `QUICK_TAG_DEFS`ten,
+   gözlem işaretleri `OBS_DEFS`ten üretilir; sabit liste yazmayın. Aksi hâlde
+   anahtar menüden ayrışır (v2.318'de ölçüldü).
+2. **Her menüde iki kapatma yolu + backdrop:** görünür `Kapat` (üst/alt),
+   `Esc`, dış tıklama/backdrop. Tek “×” yeterli değildir; tarayıcının kendi
+   arama ×’i gizlenir.
+3. **Envanter testi:** 18 metin + 12 gözlem; menü, EK-5 ve `REPORT_TEXT.obsLabels`
+   aynı sayıyı vermeli (`birim [157]`).
+4. Yeni etiket/gözlem eklerken: `QUICK_TAG_DEFS`/`OBS_DEFS` + EK-5 otomatik +
+   test sayıları birlikte güncellenir.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Menü metin etiketi | **18/18** |
+| Gözlem paneli | **12/12** |
+| EK-5 metin anahtarı | **18** (eski 4 etiket yok) |
+| EK-5 gözlem anahtarı | **12** |
+| Kapatma | üst/alt Kapat ✓ · Esc ✓ · backdrop ✓ |
+| Native arama × | gizli |
 | JS hatası | **0** |

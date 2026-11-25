@@ -96,6 +96,11 @@ kullanılır.
 **İçerik notu (yorum değil, belirsizlik):** `[isim belirsiz]`, `[yer belirsiz]`,
 `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]`
 
+
+**Rapor anahtarı (EK-5):** “Metin işaretleri” tablosu menüdeki **18 etiketten**
+(`QUICK_TAG_DEFS`), “Gözlem işaretleri” tablosu **12 bayraktan** (`OBS_DEFS`)
+üretilir; anahtar ile menü ayrışmaz (v2.318).
+
 **Gözlem işaretleri ayrı menüdedir (v2.316):** gürültü · üst üste · anlaşılmayan ·
 duyulmuyor · müzik · telefon · sessizlik · kesinti · yankı · uzaktan/zayıf ·
 bozuk ses · dil değişimi. Bunlar **“Gözlem işaretle”** menüsündedir ve hızlı

@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.317.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.318.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.318 — Envanter bütünlüğü ve menü kapatma (backdrop + Kapat)
+
+**Amaç:** Kullanıcı “bazı etiketler kaybolmuş gibi” dedi. Ölçüm: **EK-5
+“Metin işaretleri” tablosu** menüde olmayan dört eski etiketi
+(`[anlaşılmıyor]`, `[kısmen anlaşılmıyor]`, `[eşzamanlı konuşma]`,
+`[konuşma dışı ses]`) listeliyordu; menüdeki 18 etiketin çoğu anahtarda yoktu.
+Ayrıca Etiket menüsünde **kapatma** hâlâ güvenilir değildi; tarayıcının kendi
+arama “×”i menüyü kapatmıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **EK-5 gösterim anahtarı artık menüyle birebir:** “Metin işaretleri” tablosu
+  **18 etiketin tamamını** (menüdeki açıklamalarla) listeler; eski dört etiket
+  kaldırıldı. “Gözlem işaretleri” tablosu **12 işaretin tamamını** listeler.
+- **Etiket menüsünde iki “Kapat”:** üstte `Kapat ×`, altta `Kapat`. Ayrıca
+  **tam ekran görünmez backdrop**: dışarı tıklamak güvenilir biçimde kapatır.
+  **Esc** ve “Etiket ekle” düğmesi de kapatır.
+- **Tarayıcının kendi arama “×”i gizlendi** — yanlış ×’e basıp “kapanmıyor”
+  izlenimi oluşmuyor.
+- **Gözlem panelinde de “Kapat ×”** var; dışarı tıklama/Esc kapatır.
+- **Etiket düğmesi açıkken vurgulanır** (`aria-expanded`).
+- **“Metni temizle” onay ister** (v2.317 kuralı korunur).
+
+### Teknik
+
+- EK-5 `Metin işaretleri` satırları **`QUICK_TAG_DEFS.map`** ile üretilir
+  (tek kaynak). Gözlem satırları `OBS_DEFS.map` (zaten).
+- `syncFloatingBackdrop()` + `#sdPopBackdrop` (z 1190; menü z 1200); açık menü
+  varsa görünür, kapanınca gizlenir. Backdrop tıklaması `closeFloatingMenus`.
+- `data-obs-close` → gözlem panelini kapatır.
+- `.qt-head` (başlık + Kapat + arama) sticky; `.qt-foot` (Kapat + Metni temizle).
+- `::-webkit-search-cancel-button` gizlenir.
+- Test: `birim [157]`, `tasarim [2cu]/[2cy]`.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Metin etiketi (menü) | **18/18** seçilebilir |
+| Gözlem işareti (panel) | **12/12** tanımlı |
+| EK-5 metin anahtarı | **18** satır = menü |
+| EK-5 gözlem anahtarı | **12** satır = OBS_DEFS |
+| Kapatma | üst Kapat ✓ · alt Kapat ✓ · Esc ✓ · dış tıklama/backdrop ✓ |
+| Gözlem paneli Kapat | ✓ |
+| Native arama × | **gizli** |
+| Menü görünürlüğü | tüm genişliklerde viewport içinde |
+| JS hatası | **0** |
+
+### Dürüst sınır
+
+- Backdrop sayfayı menü açıkken tıklamaya kapatır; menü kapanınca sayfa normal.
+- EK-5 anahtarı **menü tanımından** üretilir; yeni etiket eklendiğinde anahtar
+  kendiliğinden güncellenir (kopya metin yok).
 
 ## v2.317 — Etiket menüsü kapatma, onaylı temizleme, sade gözlem şeridi
 

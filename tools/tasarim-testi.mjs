@@ -2236,6 +2236,7 @@ console.log('\n[2cu] Hızlı etiket sözlüğü (v2.316)');
   // Standart + yardım.
   check('standart duyulmuyor/anlaşılmaz ayrımını anar', /duyulmuyor/.test(std) && /anlaşılmaz/.test(std));
   check('standart hukuki yorum etiketi yasağını anar', /Hukuki yorum etiketi yoktur/.test(std));
+  check('EK-5 metin işaretleri QUICK_TAG_DEFS ten', /title: 'Metin işaretleri'[\s\S]{0,240}QUICK_TAG_DEFS\.map/.test(appJs));
   check('yardımda hızlı etiket bölümü var', /Hızlı etiketler \(metne ekleme\)/.test(html));
   check('yardımda duyulmuyor ayrımı var', /\[duyulmuyor\]/.test(html));
 }
@@ -2299,6 +2300,21 @@ console.log('\n[2cw] Dosya görünümü (v2.315)');
   check('eksik listesi CSS', /#view-case \.case-page-missing/.test(layer));
   check('dosya sayfası ham hex taşımaz', !/#view-case \.case-page-[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(layer));
   check('dosya sayfası ham font-size taşımaz', !/#view-case \.case-page-[^{]*\{[^}]*font-size:\s*[0-9.]+px/i.test(layer));
+}
+
+console.log('\n[2cy] Menü kapatma: backdrop + Kapat + native × (v2.318)');
+{
+  const app = read('assets/app.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('backdrop var', /id="sdPopBackdrop"/.test(html));
+  check('backdrop CSS sabit katman', /#sdPopBackdrop\s*\{[^}]*position:\s*fixed/.test(layer));
+  check('üst Kapat düğmesi', /data-quick-close=/.test(app) && /Kapat ×<\/button>/.test(app));
+  check('alt Kapat düğmesi', /qt-foot[\s\S]{0,220}data-quick-close/.test(app));
+  check('gözlem paneli Kapat', /data-obs-close=/.test(app));
+  check('native arama × gizli', /::-webkit-search-cancel-button/.test(layer));
+  check('açık tetikleyici durumu', /\[aria-expanded="true"\]/.test(layer));
+  check('backdrop senkron', /function syncFloatingBackdrop/.test(app) && /sdPopBackdrop/.test(app));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

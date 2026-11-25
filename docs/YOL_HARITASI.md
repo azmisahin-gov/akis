@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.317.**
+yazılır. **Güncel sürüm: v2.318.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.318 — Envanter bütünlüğü + menü kapatma (TAMAMLANDI)
+
+- EK-5 “Metin işaretleri” artık **QUICK_TAG_DEFS** (18); eski 4 etiket kaldırıldı.
+- EK-5 “Gözlem işaretleri” = **OBS_DEFS** (12).
+- Etiket/Gözlem menülerinde **üst/alt Kapat + backdrop + Esc**; native arama × gizli.
+- Gözlem panelinde **Kapat ×**; açık tetikleyici vurgusu.
+- Test `birim [157]`, `tasarim [2cu]/[2cy]`; menü 18/18, gözlem 12/12, JS hatası 0.
 
 ## v2.317 — Etiket menüsü kapatma + sade gözlem şeridi (TAMAMLANDI)
 

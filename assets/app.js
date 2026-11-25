@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.317';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.317';
+} from './schema.js?v=2.318';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.318';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.317';
+const APP_VERSION = '2.318';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -509,11 +509,11 @@ function quickMenuHtml(i) {
   }).join('');
   return (
     `<div class="sd-quick-menu" role="group" aria-label="Etiket ekle" hidden>` +
-    `<div class="qt-search-wrap"><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"><button type="button" class="mini-button qt-close" data-quick-close="${i}" aria-label="Kapat" title="Menüyü kapat (Esc)">×</button></div>` +
+    `<div class="qt-head"><div class="qt-head-row"><b>Etiket ekle</b><button type="button" class="mini-button qt-close" data-quick-close="${i}" aria-label="Kapat" title="Menüyü kapat (Esc)">Kapat ×</button></div><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
     recentHtml +
     `<div class="qt-groups">${groups}</div>` +
     `<div class="qt-empty" hidden>Eşleşen etiket yok.</div>` +
-    `<div class="qt-foot"><button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Bölüm metnini temizler; onay ister.">Metni temizle</button></div>` +
+    `<div class="qt-foot"><button type="button" class="mini-button" data-quick-close="${i}" title="Menüyü kapat (Esc)">Kapat</button><button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Bölüm metnini temizler; onay ister.">Metni temizle</button></div>` +
     `</div>`
   );
 }
@@ -542,6 +542,15 @@ function filterQuickMenu(menu, query) {
 // KATMAN TAŞMASI (v2.316): menüler position:absolute iken .seg-detail/.audio-card
 // gibi ataların overflow:hidden/auto'su tarafından KIRPILIYOR ve sağa taşıyordu.
 // position:fixed ile ata kırpmasından çıkar; konum görünür alana göre hesaplanır.
+// Backdrop (v2.318): menü açıkken sayfanın geri kalanını örter; dışarı tıklama
+// güvenilir biçimde kapatır. Menü z-index 1200, backdrop 1190.
+function syncFloatingBackdrop() {
+  const b = $('#sdPopBackdrop');
+  if (!b) return;
+  const any =
+    !!document.querySelector('.sd-quick-menu:not([hidden])') || !!document.querySelector('.sd-obs-menu[open]');
+  b.hidden = !any;
+}
 function closeFloatingMenus(except) {
   $$('.sd-quick-menu').forEach((m) => {
     if (m !== except) m.hidden = true;
@@ -550,6 +559,8 @@ function closeFloatingMenus(except) {
     const panel = d.querySelector('.sd-obs');
     if (panel !== except) d.open = false;
   });
+  $$('[data-quick-menu]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  syncFloatingBackdrop();
 }
 function placeFloatingMenu(menu, trigger, align = 'right') {
   if (!menu || !trigger) return;
@@ -573,6 +584,7 @@ function placeFloatingMenu(menu, trigger, align = 'right') {
   menu.style.left = `${Math.round(left)}px`;
   menu.style.maxHeight = `${Math.max(160, Math.min(mh, vh - top - gap))}px`;
   menu.style.visibility = 'visible';
+  syncFloatingBackdrop();
 }
 // Hızlı etiketi İMLECİN olduğu yere ekler (v2.239). Önceden her zaman metnin
 // SONUNA ekliyordu; cümle ortasına etiket koymak imkânsızdı (kullanıcı isteği).
@@ -7007,7 +7019,7 @@ function segDetailHtml(m) {
             <span class="sd-obs-active" role="group" aria-label="Etkin gözlem işaretleri">${activeObsChips}</span>
             <details class="sd-obs-menu">
               <summary class="sd-mini" title="Gözlem işaretle — raporun GÖZLEM sütununa işaret ekler; metni değiştirmez." aria-label="Gözlem işaretle">Gözlem işaretle${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
-              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)">${obsAllBtns}</div>
+              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)"><div class="qt-head"><div class="qt-head-row"><b>Gözlem işaretle</b><button type="button" class="mini-button" data-obs-close="1" aria-label="Kapat" title="Paneli kapat (Esc)">Kapat ×</button></div></div>${obsAllBtns}</div>
             </details>
           </div>
         </div>
@@ -14544,14 +14556,12 @@ function reportAnnexBlocks(c) {
           ]
         },
         {
+          // TEK KAYNAK (v2.318): metin işaretleri QUICK_TAG_DEFS'ten üretilir.
+          // Eski sabit dört etiket (anlaşılmıyor/eşzamanlı…) menüde yoktu; anahtar
+          // ile menü ayrışıyordu. Artık 18 etiketin tamamı raporda tanımlıdır.
           title: 'Metin işaretleri',
           headers: ['İŞARET', 'ANLAMI'],
-          rows: [
-            ['[anlaşılmıyor]', 'Ses güvenilir biçimde çözümlenemedi.'],
-            ['[kısmen anlaşılmıyor]', 'Bir bölüm veya sözcük çözümlenemedi.'],
-            ['[eşzamanlı konuşma]', 'Üst üste konuşma; ayrıştırılamadı.'],
-            ['[konuşma dışı ses]', 'Gülme, öksürme, kapı vb. gözlenebilir ses.']
-          ]
+          rows: QUICK_TAG_DEFS.map((d) => [d.text, d.hint])
         },
         {
           title: 'Gözlem işaretleri',
@@ -18203,6 +18213,7 @@ function setupEvents() {
       if (menu) {
         menu.hidden = !menu.hidden;
         b.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+        if (menu.hidden) syncFloatingBackdrop();
         if (!menu.hidden) {
           closeFloatingMenus(menu);
           placeFloatingMenu(menu, b, 'left');
@@ -18691,6 +18702,7 @@ function setupEvents() {
     if (close) {
       const menu = close.closest('.sd-quick-menu');
       if (menu) menu.hidden = true;
+      syncFloatingBackdrop();
       const btn = menu && menu.parentElement.querySelector('[data-quick-menu]');
       if (btn) {
         btn.setAttribute('aria-expanded', 'false');
@@ -18772,6 +18784,13 @@ function setupEvents() {
   });
   // GÖZLEM menüsü (v2.316): sağda; açılınca görünür alana oturtulur.
   $('#view-audio').addEventListener('click', (e) => {
+    const obsClose = e.target && e.target.closest ? e.target.closest('[data-obs-close]') : null;
+    if (obsClose) {
+      const details = obsClose.closest('.sd-obs-menu');
+      if (details) details.open = false;
+      closeFloatingMenus(null);
+      return;
+    }
     const summary = e.target && e.target.closest ? e.target.closest('.sd-obs-menu > summary') : null;
     if (!summary) return;
     const details = summary.parentElement;
@@ -18789,6 +18808,7 @@ function setupEvents() {
     closeFloatingMenus(null);
   });
   window.addEventListener('resize', () => closeFloatingMenus(null));
+  $('#sdPopBackdrop')?.addEventListener('click', () => closeFloatingMenus(null));
   document.addEventListener(
     'scroll',
     (e) => {
@@ -20752,6 +20772,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.318': {
+    title: 'Etiket/gözlem envanteri ve menü kapatma',
+    body:
+      'EK-5 gösterim anahtarı artık menüyle birebir: 18 metin etiketinin ve 12 gözlem işaretinin tamamı listelenir. Etiket menüsünde üstte/altta “Kapat”, dışarı tıklama/backdrop ve Esc kapatır; tarayıcının kendi arama ×’i gizlendi. Gözlem panelinde de “Kapat ×” var.'
+  },
   '2.317': {
     title: 'Etiket menüsü kapatma ve sade gözlem şeridi',
     body:

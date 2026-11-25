@@ -6845,5 +6845,35 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('dosya sayfası CSS ızgara', /#view-case \.case-page-grid/.test(css) && /#view-case \.case-page-list/.test(css), true);
 }
 
+
+// [157] v2.318 — Envanter: metin etiketleri + gözlem işaretleri menü = rapor anahtarı.
+{
+  console.log('[157] Etiket/gözlem envanteri (v2.318)');
+  const S = __schemaMod;
+  const quick = T.QUICK_TAGS || [];
+  const obs = S.OBS_DEFS || [];
+  eq('metin etiketi 18', quick.length, 18);
+  eq('gözlem işareti 12', obs.length, 12);
+  const menu = T.quickMenuHtml(0);
+  eq('menüde her metin etiketi seçilebilir', quick.every((t) => menu.includes(`data-quick-tag="0|${t.text}"`)), true);
+  eq('gözlem paneli OBS_DEFS ten', /const obsAllBtns = OBS_DEFS\.map\(/.test(fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8')), true);
+  eq('REPORT_TEXT.obsLabels 12', Object.keys(T.REPORT_TEXT.obsLabels || {}).length, 12);
+  eq(
+    'segObsText tüm gözlemleri basar',
+    T.segObsText({ obs: Object.fromEntries(S.OBS_KEYS.map((k) => [k, true])) }),
+    S.OBS_KEYS.map((k) => S.OBS_LABEL[k]).join(', ')
+  );
+  const c = T.emptyCaseForTest({ id: 'cEnv' });
+  const blocks = T.reportAnnexBlocks({ ...c, report: { sections: { annex: true } } });
+  const b = blocks.find((x) => /GÖSTERİM ANAHTARI/.test(x.heading));
+  eq('EK-5 var', !!b, true);
+  eq('EK-5 metin işaretleri = QUICK_TAGS', b.tables[1].rows.length, quick.length);
+  eq('EK-5 metin etiketleri aynı', b.tables[1].rows.map((r) => r[0]).join('|'), quick.map((t) => t.text).join('|'));
+  eq('EK-5 eski etiket yok', b.tables[1].rows.some((r) => /anlaşılmıyor|eşzamanlı/.test(r[0])), false);
+  eq('EK-5 gözlem = OBS_DEFS', b.tables[2].rows.length, obs.length);
+  const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('yardım listesi OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => `<b>/.test(appJs), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
