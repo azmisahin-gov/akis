@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -6468,6 +6468,53 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('hazırlık maddesi var', /'timeConflict'/.test(js), true);
   eq('köken panelinde uyarı', /Zaman çelişkisi/.test(js), true);
   eq('severity advisory', /timeConflict: 'advisory'/.test(js), true);
+}
+
+// [150] v2.309 — Dosya sonu metadata (ID3v1 + sonda moov); A3.
+{
+  console.log('[150] Dosya sonu metadata (v2.309)');
+  // ID3v1: son 128 bayt "TAG" + yıl (releaseAt).
+  const b = new Uint8Array(200);
+  const base = 200 - 128;
+  b[base] = 0x54;
+  b[base + 1] = 0x41;
+  b[base + 2] = 0x47; // 'TAG'
+  const yr = '2021';
+  for (let i = 0; i < 4; i++) b[base + 93 + i] = yr.charCodeAt(i);
+  eq('ID3v1 yıl (releaseAt)', T.parseId3v1(b).releaseAt, '2021');
+  eq('TAG yok → boş', Object.keys(T.parseId3v1(new Uint8Array(200))).length, 0);
+
+  // MP4: sonda moov + mvhd (mac epoch = unix + 2082844800).
+  const mvhdSize = 108;
+  const moovSize = 8 + mvhdSize;
+  const prefix = 20;
+  const buf = new Uint8Array(prefix + moovSize);
+  const w32 = (o, v) => {
+    buf[o] = (v >>> 24) & 255;
+    buf[o + 1] = (v >>> 16) & 255;
+    buf[o + 2] = (v >>> 8) & 255;
+    buf[o + 3] = v & 255;
+  };
+  w32(prefix, moovSize);
+  buf[prefix + 4] = 0x6d;
+  buf[prefix + 5] = 0x6f;
+  buf[prefix + 6] = 0x6f;
+  buf[prefix + 7] = 0x76; // 'moov'
+  const mv = prefix + 8;
+  w32(mv, mvhdSize);
+  buf[mv + 4] = 0x6d;
+  buf[mv + 5] = 0x76;
+  buf[mv + 6] = 0x68;
+  buf[mv + 7] = 0x64; // 'mvhd'
+  buf[mv + 8] = 0; // version 0
+  const t = Math.floor(Date.UTC(2021, 5, 1) / 1000) + 2082844800;
+  w32(mv + 12, t); // creation time (mac epoch)
+  eq('sonda moov → kayıt tarihi', (T.parseMp4MetaTail(buf).recordingAt || '').startsWith('2021-06-01'), true);
+  eq('moov yok → boş', Object.keys(T.parseMp4MetaTail(new Uint8Array(50))).length, 0);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('audioEmbedded kuyruğu okur', /readEmbeddedMetaTail\(tail\)/.test(js), true);
+  eq('kuyruk sınırı var (4 MB)', /const TAIL = 4 \* 1024 \* 1024/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.308.**
+yazılır. **Güncel sürüm: v2.309.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.309 — Gömülü metadata tüm dosyada (TAMAMLANDI)
+
+- “Dosyadan oku” büyük dosyada metadata'yı **sondan** da arar (ID3v1 / MP4 moov).
+  Baş (8 MB) + gerekirse kuyruk (4 MB). Beyan; kanıt değil.
+- `parseId3v1` + `parseMp4MetaTail` + `readEmbeddedMetaTail`. Test `birim [150]`.
 
 ## v2.308 — Kanıt zaman çelişkisi (TAMAMLANDI)
 

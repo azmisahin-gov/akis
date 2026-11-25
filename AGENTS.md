@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.308.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.309.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7739,5 +7739,28 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 
 ### Sıradaki iş
 - **A3:** gömülü metadata tam dosyada (8 MB sınırı) — gerçek büyük dosyada ölç.
+- **B2:** kurumsal kâğıt biçimi (başlık bandı/sayfa no/imza; üç çıktı aynı).
+- **C2:** terim/konu listesi (opt-in).
+
+## YENİ OTURUM DEVRİ (v2.309) — Gömülü metadata tüm dosyada (A3)
+
+| | |
+|---|---|
+| Sürüm | **v2.309** |
+| Testler | `bash tools/test.sh` → **2180 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | B2 kurumsal kâğıt, C2 terim listesi |
+
+- `app.js` → **`parseId3v1`** (son 128 bayt "TAG" → `releaseAt` yıl) +
+  **`parseMp4MetaTail`** (kuyrukta `moov` arar, `mvhd` creation → `recordingAt`) +
+  **`readEmbeddedMetaTail`**. `audioEmbedded`: baş 8 MB; kayıt tarihi yoksa ve
+  dosya > 8 MB ise kuyruk 4 MB okunur, boş alanlar dolar.
+- Test `birim [150]` (6).
+
+### DEĞİŞMEZ
+1. Metadata **beyandır**; kanıt değil (v2.217 kuralı).
+2. Baş bulamazsa kuyruk okunur; bulunamazsa "yok" denir (uydurma yok).
+3. Kuyruk penceresi 4 MB; çok büyük `moov` nadir sınır.
+
+### Sıradaki iş
 - **B2:** kurumsal kâğıt biçimi (başlık bandı/sayfa no/imza; üç çıktı aynı).
 - **C2:** terim/konu listesi (opt-in).

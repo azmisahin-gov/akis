@@ -6,12 +6,40 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.308.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.309.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.309 — Gömülü metadata tüm dosyada (A3)
+
+**Amaç (A3):** Büyük dosyalarda metadata **sonda** olabilir (ID3v1 son 128 bayt;
+MP4'te `moov` kutusu faststart değilse sonda). Baş (ilk 8 MB) taraması bunları
+kaçırıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Kayıt bilgileri → “Dosyadan oku”** artık büyük dosyada da metadata bulur:
+  baş tarafta kayıt tarihi yoksa **dosyanın sonundan** da okunur (ID3v1 yılı /
+  MP4 `moov`).
+- Sonuç yine **beyan** olarak işaretlidir (cihaz beyanı; doğrulanmış kayıt
+  zamanı değil). Bulunamazsa "okunmadı/yok" der; uydurma yok.
+
+### Teknik
+
+- `app.js` → **`parseId3v1(buf)`** (son 128 bayt "TAG" → `releaseAt` yıl) ve
+  **`parseMp4MetaTail(buf)`** (kuyrukta `moov` arar, `mvhd` creation time →
+  `recordingAt`). `readEmbeddedMetaTail` ikisini birleştirir.
+- `audioEmbedded(blob)`: baş (8 MB) okunur; **kayıt tarihi yoksa ve dosya >
+  8 MB ise** son **4 MB** kuyruk okunur, boş alanlar doldurulur.
+- Koruyan: `birim` [150] (6 kontrol).
+
+### Dürüst sınır
+
+- Kuyruk penceresi **4 MB**'tır; çok büyük videolarda `moov` bu pencereden büyük
+  olabilir (nadir). Metadata **beyandır**; kanıt değildir.
 
 ## v2.308 — Kanıt zaman çelişkisi (beyan ≠ gözlem)
 

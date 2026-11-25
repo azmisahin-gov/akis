@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.308';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.308';
+} from './schema.js?v=2.309';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.309';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.308';
+const APP_VERSION = '2.309';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -10053,6 +10053,89 @@ function parseFlacMeta(buf) {
   }
   return out;
 }
+// ---- DOSYA SONU METADATA (v2.309, A3) ----------------------------------
+// Büyük dosyalarda metadata SONDA olabilir: ID3v1 (son 128 bayt) veya MP4'te
+// `moov` kutusu (faststart değilse sonda). Baş (ilk 8 MB) taranınca bulunamaz.
+// Bu iki ayrıştırıcı KUYRUK tamponu üzerinde çalışır; saf ve test edilir.
+function parseId3v1(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 128) return out;
+  const base = u8.length - 128;
+  if (!(u8[base] === 0x54 && u8[base + 1] === 0x41 && u8[base + 2] === 0x47)) return out; // 'TAG'
+  const field = (o, n) =>
+    embeddedText(u8.subarray(base + o, base + o + n), 0)
+      .replace(/\u0000/g, '')
+      .trim();
+  const year = field(93, 4);
+  if (/^\d{4}$/.test(year)) out.releaseAt = year;
+  out.source = 'ID3v1';
+  return out;
+}
+function parseMp4MetaTail(buf) {
+  const u8 = buf instanceof Uint8Array ? buf : new Uint8Array(buf || []);
+  const out = {};
+  if (u8.length < 16) return out;
+  const rd32 = (o) => ((u8[o] << 24) | (u8[o + 1] << 16) | (u8[o + 2] << 8) | u8[o + 3]) >>> 0;
+  const fourcc = (o) => String.fromCharCode(u8[o], u8[o + 1], u8[o + 2], u8[o + 3]);
+  const containers = ['moov', 'trak', 'mdia', 'udta', 'meta', 'ilst'];
+  const walk = (start, end, depth) => {
+    let o = start;
+    while (o + 8 <= end) {
+      let size = rd32(o);
+      const type = fourcc(o + 4);
+      let header = 8;
+      if (size === 1 && o + 16 <= end) {
+        size = rd32(o + 8) * 4294967296 + rd32(o + 12);
+        header = 16;
+      } else if (size === 0) {
+        size = end - o;
+      }
+      if (size < header || o + size > end) break;
+      const body = o + header;
+      if (type === 'mvhd' && body + 12 <= o + size) {
+        const t = u8[body] === 1 ? rd32(body + 4) * 4294967296 + rd32(body + 8) : rd32(body + 4);
+        const iso = mp4EpochToIso(t);
+        if (iso) out.recordingAt = out.recordingAt || iso;
+      }
+      if (depth < 8 && containers.includes(type)) walk(type === 'meta' ? body + 4 : body, o + size, depth + 1);
+      o += size;
+    }
+  };
+  // 'moov' dizisini tara; kutu başlangıcı 4 bayt öncesindedir (boyut alanı).
+  for (let i = 4; i + 4 <= u8.length; i++) {
+    if (u8[i] === 0x6d && u8[i + 1] === 0x6f && u8[i + 2] === 0x6f && u8[i + 3] === 0x76) {
+      const boxStart = i - 4;
+      let size = rd32(boxStart);
+      if (size === 0) size = u8.length - boxStart;
+      if (size >= 8 && boxStart + size <= u8.length) {
+        walk(i + 4, boxStart + size, 0);
+        if (out.recordingAt) {
+          out.source = 'MP4/M4A (son)';
+          break;
+        }
+      }
+    }
+  }
+  return out;
+}
+// Kuyruk tamponu için ayrıştırıcılar; baş tarafta bulunamayan alanları doldurur.
+function readEmbeddedMetaTail(buf) {
+  const out = { ...EMBEDDED_EMPTY };
+  for (const fn of [parseId3v1, parseMp4MetaTail]) {
+    let r = null;
+    try {
+      r = fn(buf);
+    } catch (e) {
+      r = null;
+    }
+    if (!r) continue;
+    for (const k of ['recordingAt', 'encodingAt', 'releaseAt', 'software', 'source']) {
+      if (!out[k] && r[k]) out[k] = String(r[k]);
+    }
+  }
+  return out;
+}
 // Dört biçimi de dener; ilk bulunan alan kazanır. Hata yutulur (metadata
 // okunamazsa dosya yine işlenir), ama sonuç "boş" olarak dürüst kalır.
 function readEmbeddedMeta(buf) {
@@ -10074,8 +10157,20 @@ function readEmbeddedMeta(buf) {
 async function audioEmbedded(blob) {
   const empty = { ...EMBEDDED_EMPTY, readAt: new Date().toISOString() };
   try {
-    const head = await blob.slice(0, Math.min(blob.size, 8 * 1024 * 1024)).arrayBuffer();
-    return { ...readEmbeddedMeta(head), readAt: new Date().toISOString() };
+    const HEAD = 8 * 1024 * 1024;
+    const TAIL = 4 * 1024 * 1024;
+    const head = await blob.slice(0, Math.min(blob.size, HEAD)).arrayBuffer();
+    const out = readEmbeddedMeta(head);
+    // v2.309 (A3): büyük dosyada metadata SONDA olabilir (ID3v1 / MP4 moov).
+    // Baş taraf kayıt tarihi vermediyse KUYRUĞU da oku ve boş alanları doldur.
+    if (blob.size > HEAD && !out.recordingAt) {
+      const tail = await blob.slice(Math.max(0, blob.size - TAIL), blob.size).arrayBuffer();
+      const rt = readEmbeddedMetaTail(tail);
+      for (const k of ['recordingAt', 'encodingAt', 'releaseAt', 'software', 'source']) {
+        if (!out[k] && rt[k]) out[k] = rt[k];
+      }
+    }
+    return { ...out, readAt: new Date().toISOString() };
   } catch (e) {
     return empty;
   }
@@ -19945,6 +20040,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.309': {
+    title: 'Gömülü metadata tüm dosyada',
+    body:
+      '“Dosyadan oku” artık büyük dosyada metadata’yı sondan da arar (ID3v1 / MP4 moov). Baş 8 MB + gerekirse kuyruk 4 MB. Sonuç yine cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.'
+  },
   '2.308': {
     title: 'Kanıt zaman çelişkisi uyarısı',
     body:
