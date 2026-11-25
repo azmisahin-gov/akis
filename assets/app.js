@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.310';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.310';
+} from './schema.js?v=2.311';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.311';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.310';
+const APP_VERSION = '2.311';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -223,6 +223,8 @@ const REPORT_TEXT = {
   readingHeading: 'Okuma metni',
   readingIntro:
     'Aşağıdaki okuma metni, aynı konuşmacının ardışık bölümlerinden türetilmiş salt okunur bir okuma biçimidir. Ayrıntılı (zaman damgalı) bölüm tablosu ve cümle zamanları değişmez; bu bölüm yalnız okunabilirliği artırır.',
+  termsIntro:
+    'Transkriptte en sık geçen anlamlı sözcükler (parantezdeki sayı = geçiş sayısı). Yazım tutarlılığı ve hızlı tarama içindir; bir özet ya da yorum değildir. Sıra: sıklık, eşitlikte alfabetik.',
   emptyCourt: '……………………………… MAHKEMESİ',
   emptyFileNo: '—',
   defaultScope: 'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.',
@@ -1997,6 +1999,28 @@ function qSuggestHtml(c, q, i) {
         `<button type="button" class="mini-button" data-q-sug-add="${i}" data-mid="${esc(x.materialId)}" data-sid="${esc(x.segmentId)}">Ekle</button></span>`
     )
     .join('');
+}
+// TERİM/KONU LİSTESİ (v2.311, C2): transkriptte sık geçen anlamlı sözcükler.
+// Deterministik; uydurma yok. Yazım tutarlılığı ve hızlı tarama için (özet DEĞİL).
+function frequentTerms(c, opts = {}) {
+  const limit = opts.limit || 24;
+  const minCount = opts.minCount || 2;
+  const counts = new Map();
+  for (const m of (c && c.materials) || []) {
+    for (const s of m.segments || []) {
+      for (const w of contentWords(s.text || '')) counts.set(w, (counts.get(w) || 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, n]) => n >= minCount)
+    .map(([term, count]) => ({ term, count }))
+    .sort((a, b) => b.count - a.count || a.term.localeCompare(b.term, 'tr'))
+    .slice(0, limit);
+}
+function termsText(c) {
+  return frequentTerms(c)
+    .map((x) => `${x.term} (${x.count})`)
+    .join(' · ');
 }
 function renderQuestions() {
   const c = currentCase();
@@ -13146,6 +13170,8 @@ function reportBlockRenders(c, key) {
       return (c.materials || []).some((m) => readingGroupsFor(m).length > 0);
     case 'speakerDurations':
       return speakerDurationRows(c).length > 0;
+    case 'terms':
+      return frequentTerms(c).length > 0;
     default:
       return true;
   }
@@ -13173,6 +13199,8 @@ function reportBlockEmptyReason(c, key) {
       return 'Seviye/kırpılma ölçümü yapılmadı.';
     case 'reading':
       return 'Okuma metni oluşturacak bölüm yok.';
+    case 'terms':
+      return 'Terim listesi için en az 2 kez geçen anlamlı sözcük yok.';
     default:
       return 'Bu bölüm için veri yok.';
   }
@@ -13417,6 +13445,7 @@ const REPORT_SECTION_CATEGORY = {
   s6: 'main',
   s7: 'main',
   reading: 'main',
+  terms: 'main',
   origin: 'tech',
   embedded: 'tech',
   acquisition: 'tech',
@@ -14770,6 +14799,12 @@ function renderReport() {
       if (!parts.length) return '';
       return `<div class="paper-section"><h3>${esc(H('reading'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>${parts.join('')}</div>`;
     },
+    // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in). Yalnız görünürse çizilir.
+    terms: () => {
+      const t = termsText(c);
+      if (!t) return '';
+      return `<div class="paper-section"><h3>${esc(H('terms'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.termsIntro)}</p><p>${esc(t)}</p></div>`;
+    },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`,
     s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`,
     s7: () => {
@@ -15260,6 +15295,12 @@ function docxXml(c) {
       }
       if (!out) return '';
       return headingXml(H('reading')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 }) + out;
+    },
+    // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in).
+    terms: () => {
+      const t = termsText(c);
+      if (!t) return '';
+      return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17 }) + wP(t);
     },
     scopeNote: () => headingXml(H('scopeNote')) + wP(REPORT_TEXT.scopeNoteText),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || REPORT_TEXT.defaultConclusion),
@@ -15882,6 +15923,14 @@ async function makeUdf() {
           el.push(paragraphLines(g.text, { justify: true }));
         }
       }
+    },
+    // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in).
+    terms: () => {
+      const t = termsText(c);
+      if (!t) return;
+      el.push(h(H('terms')));
+      el.push(paragraph(REPORT_TEXT.termsIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+      el.push(paragraphLines(t, { justify: true }));
     },
     scopeNote: () => {
       el.push(h(H('scopeNote')));
@@ -20040,6 +20089,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.311': {
+    title: 'Terim/konu listesi (isteğe bağlı)',
+    body:
+      'Rapor iskeletinde “TERİM VE KONU LİSTESİ” bölümü var (varsayılan kapalı). Açınca transkriptte en az 2 kez geçen anlamlı sözcükler ve geçiş sayıları yazılır; özet değil, tarama yardımcısıdır.'
+  },
   '2.310': {
     title: 'Kurumsal kâğıt biçimi',
     body:

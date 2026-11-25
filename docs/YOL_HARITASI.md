@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.310.**
+yazılır. **Güncel sürüm: v2.311.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.311 — Terim/konu listesi (TAMAMLANDI)
+
+- Rapor iskeletinde **TERİM VE KONU LİSTESİ** (varsayılan kapalı): en az 2 kez
+  geçen anlamlı sözcükler + geçiş sayısı. Özet değil; deterministik.
+- `frequentTerms` + `termsText`; üç çıktı aynı. Test `birim [152]`, `rapor 43`.
 
 ## v2.310 — Kurumsal kâğıt biçimi (TAMAMLANDI)
 

@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.310.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.311.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.311 — Terim/konu listesi (opt-in, C2)
+
+**Amaç (C2):** Transkriptte **sık geçen anlamlı sözcükleri** tek listede görmek —
+yazım tutarlılığı ve hızlı tarama için. **Özet değildir**; deterministik sayımdır.
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletinde **“TERİM VE KONU LİSTESİ”** bölümü (varsayılan **KAPALI**).
+  Açılınca rapora şu satır girer: `depozito (3) · kira (2) …` — parantezde
+  **geçiş sayısı**.
+- Yalnız **en az 2 kez** geçen anlamlı sözcükler (Türkçe stopword'ler ve 4
+  harften kısa sözcükler elenir). Hiç yoksa bölüm **çizilmez**; iskelette
+  “veri yok” nedeni yazar.
+- **Üç çıktı aynı metni** üretir (HTML/DOCX/UDF).
+
+### Teknik
+
+- `app.js` → **`frequentTerms(c)`** (mevcut `contentWords`/`trLowerCase` ile
+  sayar; sıklık, eşitlikte alfabetik) + **`termsText(c)`** (tek kaynak metin).
+- `schema.js` → `REPORT_SECTION_DEFS` + `REPORT_BODY_ORDER`'a `terms`
+  (`def:false`). `reportBlockRenders`/`reportBlockEmptyReason` `terms` taşır;
+  kategori `main`.
+- Koruyan: `birim` [152] + `rapor` Senaryo 43 (üç çıktı aynı).
+
+### Dürüst sınır
+
+- Kelime sıklığı **anlam** değildir; Türkçe ekler sözcüğü böler (aynı kök ayrı
+  sayılabilir). Bu bir tarama yardımcısıdır; **özet/çıkarım değildir**.
 
 ## v2.310 — Kurumsal kâğıt biçimi (B2)
 

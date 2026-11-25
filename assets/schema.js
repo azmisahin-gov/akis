@@ -567,6 +567,9 @@ export const REPORT_SECTION_DEFS = [
   { key: 's4', def: true, title: 'İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR' },
   { key: 's5', def: true, title: 'KAYIT BAZINDA BULGULAR VE TRANSKRİPT' },
   { key: 'reading', def: true, title: 'Okuma metni' },
+  // v2.311 (C2): terim/konu listesi — opt-in (varsayılan KAPALI). Transkriptte
+  // sık geçen anlamlı sözcükler; yazım tutarlılığı ve hızlı tarama için.
+  { key: 'terms', def: false, title: 'TERİM VE KONU LİSTESİ' },
   // v2.261 — s5'in içindeki iki parça AYRI bölüm oldu: her parça tek tek
   // açılıp kapatılabilir, sırası değiştirilebilir. Varsayılan AÇIK: mevcut
   // raporun içeriği korunur (yalnız numara/sıra değişir).
@@ -624,6 +627,7 @@ export const REPORT_BODY_ORDER = [
   'answers',
   'limits',
   'reading',
+  'terms',
   // Ölçümler ve denetim özeti BULGULARDAN sonra, SONUÇTAN önce gelir (v2.261).
   'wer',
   'levels',

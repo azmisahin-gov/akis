@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.310.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.311.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7786,3 +7786,28 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 
 ### Sıradaki iş
 - **C2:** terim/konu listesi (opt-in; `contentWords` altyapısı hazır).
+
+## YENİ OTURUM DEVRİ (v2.311) — Terim/konu listesi (C2)
+
+| | |
+|---|---|
+| Sürüm | **v2.311** |
+| Testler | `bash tools/test.sh` → **2193 birim + 522 şema** + rapor (Senaryo 43) + sürüm + tasarım yeşil |
+| Açık konu | Önerilen C2/A1/A3/B2 turu KAPANDI |
+
+- `app.js` → **`frequentTerms(c)`** (contentWords; sıklık, eşitlikte alfabetik,
+  en az 2 geçiş, en çok 24) + **`termsText(c)`** (tek kaynak metin).
+- `schema.js` → `terms` bölümü (`def:false`), `REPORT_BODY_ORDER`'da `reading`
+  sonrası. `reportBlockRenders`/`reportBlockEmptyReason` + kategori `main`.
+- Üç çıktı (HTML/DOCX/UDF) `terms:` renderer'ı; aynı metin. Test `birim [152]`,
+  `rapor` Senaryo 43.
+
+### DEĞİŞMEZ
+1. **Özet/çıkarım değil**: yalnız sözcük sıklığı (gözlenebilir). Uydurma yok.
+2. Varsayılan **KAPALI**; veri yoksa bölüm çizilmez (nedeni yazılır).
+3. Türkçe küçültme/stopword tek kaynak: `contentWords`.
+
+### Sıradaki (yeni tur — öneri)
+- **A3 tamam** (v2.309), **A1** (v2.308), **B2** (v2.310), **C2** (v2.311) bitti.
+- Yeni adaylar: sürükle-bırak rapor sırası iyileştirmeleri, ≤900 px IA, CSS borcu
+  azaltma, video "yalnız ses" gerçek mp4 uçtan uca, UDF yatay tablo genişliği.

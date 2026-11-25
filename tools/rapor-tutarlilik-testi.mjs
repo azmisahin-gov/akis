@@ -1484,5 +1484,33 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('ön-atama yok → not yok', !Hn.includes('anonim kümeleme'), '');
 }
 
+// Senaryo 43: terim/konu listesi (v2.311). Opt-in; üç çıktı aynı metni verir.
+{
+  console.log('\n[Senaryo 43] terim/konu listesi (v2.311)');
+  const c = baseCase({
+    report: { sections: { terms: true } },
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        type: 'audio/wav',
+        size: 1000,
+        duration: 10,
+        sha256: 'abc123',
+        tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+        segments: [
+          { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'depozito depozito ödeme', review: 'approved' },
+          { id: 'sg2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'S1', text: 'kira depozito', review: 'approved' }
+        ],
+        log: []
+      }
+    ]
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('terim başlığı', SEC_TITLE.terms, H, U, D);
+  checkShared('terim metni', 'depozito (3)', H, U, D);
+  checkShared('terim açıklaması', REPORT_TEXT.termsIntro, H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

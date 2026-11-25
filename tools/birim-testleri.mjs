@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -6548,6 +6548,34 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   );
   const block = css.slice(css.indexOf('v2.310'));
   eq('B2 bloğunda ham hex yok (token)', !/#[0-9a-f]{3,8}/i.test(block), true);
+}
+
+// [152] v2.311 — Terim/konu listesi (opt-in, deterministik).
+{
+  console.log('[152] Terim/konu listesi (v2.311)');
+  const c = T.emptyCaseForTest({
+    id: 'cTerms',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        segments: [
+          { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', text: 'depozito depozito ödeme' },
+          { id: 'sg2', start: '00:00:05.000', end: '00:00:10.000', text: 'kira depozito' }
+        ]
+      }
+    ]
+  });
+  const t = T.frequentTerms(c);
+  eq('sık terim (min 2)', t.map((x) => x.term + ':' + x.count).join(','), 'depozito:3');
+  eq('tek geçen elenir', t.some((x) => x.term === 'kira'), false);
+  eq('termsText biçimi', T.termsText(c), 'depozito (3)');
+  const S = __schemaMod;
+  eq('terms bölümü tanımlı', S.REPORT_SECTION_DEFS.some((d) => d.key === 'terms'), true);
+  eq('terms gövde sırasında', S.REPORT_BODY_ORDER.includes('terms'), true);
+  eq('terms varsayılan kapalı', S.emptyCase().report.sections.terms, false);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('üç çıktı terms üretir', (js.match(/terms: \(\) =>/g) || []).length >= 3, true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
