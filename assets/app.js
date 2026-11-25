@@ -119,15 +119,15 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   embeddingCentroid
-} from './schema.js?v=2.303';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.303';
+} from './schema.js?v=2.304';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.304';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.303';
+const APP_VERSION = '2.304';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2207,13 +2207,14 @@ function materialCardHtml(m) {
   //    deşifre sırasında nadiren gerekir. Dinleme yardımcısı ve kanal seçimi
   //    ise her zaman görünür olmaları gerektiği için dinleme şeridindedir.
   // Tüm id/data-* işaretleri korunur.
-  const tab = m.uiTab === 'record' ? 'record' : m.uiTab === 'listen' ? 'listen' : 'transcript';
+  const tab = ['record', 'listen', 'speakers'].includes(m.uiTab) ? m.uiTab : 'transcript';
   const tabBtn = (k, label, extra = '') =>
     `<button class="card-tab ${tab === k ? 'on' : ''}" data-card-tab="${esc(m.id)}|${k}" role="tab" aria-selected="${tab === k}">${label}${extra}</button>`;
   return `<div class="audio-status-zone" id="status-zone-${esc(m.id)}">${audioStatusZoneHtml(m)}</div>
     <div class="card-tabs" role="tablist" aria-label="Kayıt çalışma alanı">
       ${tabBtn('transcript', 'Deşifre', ` <span class="tab-n">${segs.length}</span>`)}
-      ${tabBtn('listen', 'Analiz')}
+      ${tabBtn('speakers', 'Konuşmacılar', ` <span class="tab-n">${(m.speakers || []).length}</span>`)}
+      ${tabBtn('listen', 'Ölçümler')}
       ${tabBtn('record', 'Kayıt bilgileri')}
     </div>
     <div class="audio-content-zone">
@@ -2234,12 +2235,14 @@ function materialCardHtml(m) {
           ${m.referenceSegments?.length ? `<details class="reference-box"><summary>Bu test kaydı için referans metni görüntüle</summary><div>${m.referenceSegments.map((x) => `<p><b>${timecode(x.start)}–${timecode(x.end)} · ${esc(x.speaker)}</b><br>${esc(x.text)}</p>`).join('')}</div></details>` : ''}
         </div>
       </div>
+      <div class="card-pane ${tab === 'speakers' ? 'on' : ''}" data-pane="speakers" role="tabpanel">
+        <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
+      </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
         <div id="measure-panel-${esc(m.id)}">${measurementPanelHtml(m)}</div>
         <details class="pane-section wer-ref"><summary>WER — çözümleme doğruluğu (referans varsa)</summary><div id="wer-panel-${esc(m.id)}">${werPanelHtml(m)}</div></details>
         <div class="pane-section"><div class="pane-title">Spektrogram<span class="info-i" tabindex="0" data-tip="Log frekans ekseni 20 Hz – 8 kHz. Sarı çizgiler bölüm sınırlarını gösterir. Talep üzerine hesaplanır.">i</span></div><div class="evidence-actions"><button class="mini-button" data-spec="${esc(m.id)}">Spektrogramı göster ${m.spectrogramReviewed ? '✓' : ''}</button></div><div class="spec-wrap" id="spec-wrap-${esc(m.id)}" hidden><div class="zw-head"><span>20 Hz – 8 kHz · sarı çizgiler bölüm sınırları</span><span>FFT 512</span></div><canvas class="spec-canvas" id="spec-${esc(m.id)}" width="900" height="160" aria-label="Spektrogram"></canvas></div></div>
         <div class="pane-section"><div class="pane-title">Seviye ölçümü<span class="info-i" tabindex="0" data-tip="Tepe ve RMS düzeyi, tepe kırpılma oranı, gürültü tabanı ve sinyal/gürültü oranı kaydın örneklerinden hesaplanır. Ölçüm yapılmadan rapora yazılmaz.">i</span></div><div id="level-panel-${esc(m.id)}">${levelPanelHtml(m)}</div><div class="evidence-actions"><button class="mini-button" data-measure-levels="${esc(m.id)}">Seviye ölçümü yap</button></div></div>
-        <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
       </div>
       <div class="card-pane ${tab === 'record' ? 'on' : ''}" data-pane="record" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Kayıt bilgileri</div><div id="record-panel-${esc(m.id)}">${recordPanelHtml(m)}</div></div>
@@ -18357,12 +18360,12 @@ if (readyBox)
               if (panel) panel.scrollIntoView({ block: 'nearest' });
             }
           }
-          // v2.262 — kod çakışması: konuşmacı paneli "Dinleme" sekmesindedir;
-          // kullanıcı ikinci bir tıklama yapmadan oraya gelir.
+          // v2.262/v2.304 — kod çakışması: konuşmacı paneli artık kendi
+          // "Konuşmacılar" sekmesindedir; kullanıcı ikinci tıklama yapmadan oraya gelir.
           if (action === 'speakerCodes') {
             const mm = activeMaterial();
             if (mm) {
-              mm.uiTab = 'listen';
+              mm.uiTab = 'speakers';
               persist();
               renderAudioList()
                 .then(() => {
@@ -19775,6 +19778,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.304': {
+    title: 'Konuşmacılar kendi sekmesinde',
+    body:
+      'Kayıt kartı artık 4 sekme: Deşifre · Konuşmacılar · Ölçümler · Kayıt bilgileri. Konuşmacı işi (ön-atama, tahmin, perde, tutarlılık) kendi sekmesinde; sinyal ölçümleri “Ölçümler” (eski “Analiz”) sekmesinde. Davranış değişmedi.'
+  },
   '2.303': {
     title: 'Konuşmacı yöntem notu (isteğe bağlı)',
     body:

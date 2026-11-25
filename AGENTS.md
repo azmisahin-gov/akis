@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.303.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.304.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7615,3 +7615,26 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 - Deterministik **soru↔bölüm önerisi** (keyword örtüşmesi; otomatik bağlama yok).
 - **Terim/konu listesi (C2)** — opt-in.
 - Kanıt tutarlılığı A1+A3 (dosya zamanı ↔ gömülü metadata; tam dosya metadata).
+
+## YENİ OTURUM DEVRİ (v2.304) — Konuşmacılar kendi sekmesinde
+
+| | |
+|---|---|
+| Sürüm | **v2.304** |
+| Testler | `bash tools/test.sh` → **2142 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.305 (bölüm↔konuşmacı tablosu), v2.306 (⋮ menü + toplu) |
+
+- Kayıt kartı **4 sekme**: Deşifre · **Konuşmacılar** · **Ölçümler** · Kayıt bilgileri.
+  "Analiz" → **"Ölçümler"**; konuşmacı bölümü (`#spk-panel` + perde/tutarlılık)
+  `listen` panelinden yeni `speakers` paneline taşındı (id'ler korundu).
+- `uiTab` `['record','listen','speakers']` kabul eder; kod çakışması readiness
+  artık `uiTab='speakers'` yapar.
+- CSS: `#view-audio .card-pane.on[data-pane="speakers"]` kendi içinde kayar.
+- **Davranış değişmedi** (yerleşim/ad). Test `birim [145]`.
+
+### Sıradaki iş (v2.305)
+- **Bölüm ↔ konuşmacı tablosu** (Konuşmacılar sekmesinde): her bölüm = zaman ·
+  metin kısa · konuşmacı seçici · ≈ öneri · durum. Deşifre'ye gitmeden hızlı
+  gözden geçir/düzelt.
+- Sonra v2.306: satır **⋮** menüsüne "≈ Konuşmacıyı tahmin et" + "Konuşmacı
+  ata ▸" ve toplu ön-atama.

@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.303.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.304.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.304 — Konuşmacılar kendi sekmesinde; Analiz → Ölçümler
+
+**Kullanıcı:** *"Konuşmacı sayfasını 'Analiz' içine koymuşuz; hiç düzenli ve
+kullanışlı değil. Ya adını değiştirelim ya yenisini düzgünce yapalım."*
+
+### KULLANICI NE GÖRECEK
+
+- Kayıt kartında artık **4 sekme**: **Deşifre · Konuşmacılar · Ölçümler ·
+  Kayıt bilgileri**. **Konuşmacılar** kendi evine kavuştu (sekmede konuşmacı
+  sayısı görünür).
+- Sinyal ölçümleri (**spektrogram, seviye, WER, ölçüm çipleri**) artık
+  **Ölçümler** sekmesinde (eski adı "Analiz").
+- **Konuşmacı** işi (konuşmacı kartları, otomatik ön-atama, ≈ tahmin, perde/ses
+  tutarlılığı, gömme/kümeleme) tek yerde, **Konuşmacılar** sekmesinde.
+- **Davranış değişmedi:** tüm düğmeler/akışlar aynı; yalnız yerleşim ve ad
+  düzenlendi. Kayıtlı sekme tercihi (`uiTab`) korunur; kod çakışması bildirimi
+  artık doğrudan **Konuşmacılar** sekmesini açar.
+
+### Teknik
+
+- `renderMaterialDetail` sekme durumu `['record','listen','speakers']` kabul eder.
+- Konuşmacı bölümü (`#spk-panel-<id>` + perde/tutarlılık düğmeleri) `listen`
+  panelinden çıkarılıp yeni `speakers` paneline taşındı (id'ler korundu).
+- CSS: `#view-audio .card-pane.on[data-pane="speakers"]` kendi içinde kayar.
+- Koruyan: `birim` [145] (8 kontrol).
 
 ## v2.303 — Konuşmacı yöntem notu (opt-in, dürüst)
 

@@ -3951,3 +3951,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.302 — bölüm bazında konuşmacı tahmini (öneri) çipi */
 .sd-suggest { margin-left: 6px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); font-size: var(--fs-2xs); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
 .sd-suggest.is-uncertain { border-color: var(--gold); background: var(--gold-soft); color: var(--gold); }
+
+/* v2.304 — Konuşmacılar sekmesi: kendi içinde kayar (listen/record gibi) */
+#view-audio .card-pane.on[data-pane="speakers"] { max-height: 100%; overflow-y: auto; }

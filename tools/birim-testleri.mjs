@@ -6340,5 +6340,22 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('revizyona girer', /speakerMethod: !!r\.speakerMethod/.test(js), true);
 }
 
+// [145] v2.304 — IA: ayrı "Konuşmacılar" sekmesi; "Analiz" → "Ölçümler".
+{
+  console.log('[145] Konuşmacılar sekmesi (v2.304)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('Konuşmacılar sekmesi var', /tabBtn\('speakers', 'Konuşmacılar'/.test(js), true);
+  eq('Analiz adı Ölçümler oldu', /tabBtn\('listen', 'Ölçümler'\)/.test(js), true);
+  eq('eski Analiz sekme etiketi kalmadı', /tabBtn\('listen', 'Analiz'\)/.test(js), false);
+  eq('speakers paneli var', /data-pane="speakers"/.test(js), true);
+  const spkIdx = js.indexOf('data-pane="speakers"');
+  const listenIdx = js.indexOf('data-pane="listen"');
+  eq('Konuşmacılar paneli Ölçümlerden önce', spkIdx > 0 && spkIdx < listenIdx, true);
+  const spkTitle = js.indexOf('pane-title">Konuşmacılar ve ses özellikleri');
+  eq('konuşmacı bölümü Konuşmacılar panelinde', spkTitle > spkIdx && spkTitle < listenIdx, true);
+  eq('uiTab speakers kabul edilir', /\[[^\]]*'speakers'[^\]]*\]\.includes\(m\.uiTab\)/.test(js), true);
+  eq('kod çakışması → Konuşmacılar sekmesi', /uiTab = 'speakers'/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

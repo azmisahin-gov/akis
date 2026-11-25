@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.303.**
+yazılır. **Güncel sürüm: v2.304.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.304 — Konuşmacılar kendi sekmesinde (TAMAMLANDI)
+
+- Kayıt kartı 4 sekme: **Deşifre · Konuşmacılar · Ölçümler · Kayıt bilgileri**;
+  "Analiz" → **"Ölçümler"**. Konuşmacı işi kendi sekmesinde.
+- Davranış değişmedi; sekme tercihi korunur; kod çakışması → Konuşmacılar.
+- Test `birim [145]`.
 
 ## v2.303 — Konuşmacı yöntem notu (TAMAMLANDI)
 
