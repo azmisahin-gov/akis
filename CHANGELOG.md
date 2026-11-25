@@ -6,12 +6,62 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.316.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.317.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.317 — Etiket menüsü kapatma, onaylı temizleme, sade gözlem şeridi
+
+**Amaç:** Kullanıcı “Etiket” menüsünü açınca **kapatamıyordu**; tek görünen
+eylem “Temizle” idi ve **metni hemen siliyordu**. Ayrıca “Gözlem işaretle”
+paneli varken yanında **8 gözlem düğmesi** tekrarlanıyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Etiket menüsünde sağ üstte “× Kapat”.** **Esc**, dış tıklama ve
+  “Etiket ekle” düğmesine tekrar basma da kapatır.
+- **“Metni temizle” artık onay ister.** “Vazgeç” derseniz metin **korunur**;
+  yanlışlıkla silme olmaz.
+- **Metin alanı ~3 satır** (min ~87 px); uzun metin kendi içinde kayar,
+  panel kaymaz.
+- **Yan yana 8 gözlem düğmesi kaldırıldı.** Tüm işaretler **“Gözlem işaretle”**
+  panelinde; **etkin** işaretler alt şeritte **çip** olarak görünür ve çipe
+  tıklayınca kaldırılır.
+- Alt şerit sade: **solda Etiket ekle**, **sağda Gözlem işaretle (N)**.
+
+### Teknik
+
+- `data-quick-close` → menüyü kapatır, odağı tetikleyiciye verir.
+- `data-quick-clear` → **`askConfirm`** ile onay; “Vazgeç” veriyi değiştirmez.
+- Global `Escape` → `closeFloatingMenus(null)`.
+- `activeObsChipsHtml(i, s)` **tek kaynak**: hem ilk çizim hem gözlem tıklaması
+  sonrası yerinde tazelere kullanılır (aksi hâlde çip görünmezdi).
+- `OBS_PRIMARY_KEYS` ve `obsBtns` **kaldırıldı**; panel `obsAllBtns` (12).
+- CSS: `.sd-obs-active` (yalnız etkin çipler); `.sd-obs-row` kaldırıldı.
+- Metin alanı: `min-height: calc(3 * 1.7em + 16px)` (~87 px).
+- Test: `birim [154]/[155]`, `tasarim [2cu]/[2cx]`.
+
+### Ölçüm (gerçek Chromium, 1100×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Metin alanı yüksekliği | **87 px** (1440/1100/900/760/600/360) |
+| Etiket menüsü | 18 etiket; **Kapat** düğmesi var |
+| Kapatma | düğme **✓**, **Esc ✓**, dış tıklama ✓ |
+| Temizleme | onay diyaloğu **açıldı**; “Vazgeç” → metin **korundu** |
+| Gözlem satırı | **yok** (`sd-obs-row` 0) |
+| Gözlem paneli | **12** düğme; etkin çip **1** → çipe tıkla **0** |
+| Menüler | görünür alanda; yatay taşma **0** |
+| JS hatası | **0** |
+
+### Dürüst sınır
+
+- Sabit menü, sayfa/panel kaydırılınca **kapanır** (kaymasın diye).
+- “Metni temizle” onay ister; onaylanırsa geri alma **Ctrl+Z** ile yapılır.
+- Etiket (metne) ile gözlem (rapora) ayrı kavramlardır; otomatik dönüşüm yok.
 
 ## v2.316 — Menü kırpılması ve alt şerit düzeni
 

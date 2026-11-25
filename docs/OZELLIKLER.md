@@ -1,4 +1,4 @@
-# Özellikler (v2.316 — mevcut durum)
+# Özellikler (v2.317 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -443,11 +443,12 @@ tuşları bozulmaz.
   bölüme atlar.
 - **Bölüm işlemleri:** oynatıcı konumundan böl (`B`), sonrakiyle birleştir
   (`M`), sil.
-- **Gözlem işaretleri (v2.314):** 12 bayrak — arka plan gürültüsü, üst üste konuşma,
+- **Gözlem işaretleri (v2.317):** 12 bayrak — arka plan gürültüsü, üst üste konuşma,
   anlaşılmaz bölüm, **duyulmuyor (ses yok/kısık)**, müzik/ses efekti, telefon,
   sessizlik, kesinti, yankı, **uzaktan/zayıf**, **bozuk ses**, **dil değişimi**.
-  **8 birincil** düğme alt şeritte görünür; kalan 4 **“Gözlem” panelinde** (panel
-  TÜM 12’yi gösterir). İşaretler rapora **“Gözlem”** sütunu ve **EK-5** olarak yansır.
+  **Tümü “Gözlem işaretle” panelindedir**; yan yana 8 düğme kaldırıldı. **Etkin**
+  işaretler alt şeritte **çip** olarak görünür; çipe tıklayınca kaldırılır.
+  İşaretler rapora **“GÖZLEM”** sütunu ve **EK-5** olarak yansır.
 - **Kanal seçimi (stereo kayıtlarda):** her iki kanal, yalnız sol veya yalnız
   sağ kanal dinlenebilir. Arka plan gürültüsünü veya tek kanaldaki konuşmayı
   ayırt etmeye yardımcı olur. Web Audio `ChannelSplitter` ile uygulanır;
@@ -998,6 +999,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Etiket menüsü kapatma + onaylı temizleme (v2.317):** “Etiket ekle” menüsünde sağ üstte **× Kapat**; **Esc**, dış tıklama ve düğmeye tekrar basma da kapatır. **“Metni temizle”** artık **onay ister** (yanlışlıkla silme yok). Metin alanı **~3 satır** (min ~87 px); uzun metin kendi içinde kayar.
 - **Menü kırpılması düzeltildi (v2.316):** “Etiket ekle” ve “Gözlem işaretle” menüleri artık **`position:fixed`** ve görünür alana oturtulur; `.seg-detail`/`.audio-card` gibi ataların `overflow:hidden` kutusuna hapsolmaz, sağa taşmaz. **Solda Etiket, sağda Gözlem** (rapor tablosunun GÖZLEM sütunuyla uyumlu); düğmeler ne işe yaradığını yazar. Menü dışarı tıklama/kaydırma/pencere boyutunda kapanır.
 - **Dosya görünümü (v2.315):** soldaki **Dosya** ayrı bir **sayfa** açar — künye, taraflar, teslim durumu ve **tamamlanacaklar** tek ekranda. Düzenleme sağdaki **çekmecede** yapılır (form kimlikleri çoğaltılmaz). **✎ Düzenle** çekmeceyi açar; **Git ›** ilgili görünüme geçer; **Rapor kontrolü →** raporu Kontrol modunda açar.
 - **Teslim tarihi zekâsı (v2.312):** görevlendirme tarihi + verilen süre → **son teslim tarihi otomatik** (elle yazılan korunur, `dueDateManual`); **kalan gün / gecikme** tek kaynaktan (`deliveryInfo`) Özet **TESLİM** panelinde, **durum çubuğunda** (“Teslim: N gün / gecikti”) ve **rapor ekranında**; rapor tarihi > son teslim ve gecikme **metinle** uyarır. Ray’da **Dosya** girişi. Tarih yoksa “—” (uydurma yok); gün farkı **takvim günü**.

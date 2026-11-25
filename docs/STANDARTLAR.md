@@ -64,9 +64,9 @@ satır satır"** denir.
 
 Gözlem düğmeleri (12, v2.314): **gürültü · üst üste · anlaşılmayan ·
 duyulmuyor · müzik · telefon · sessizlik · kesinti · yankı · uzaktan/zayıf ·
-bozuk ses · dil değişimi**. **8 birincil** düğme görünür; kalan 4 **“Gözlem”
-panelindedir** (panel TÜM 12’yi gösterir). Gözlem işaretleri raporun **GÖZLEM**
-sütununa ve EK-5’e yazılır.
+bozuk ses · dil değişimi**. Tümü **“Gözlem işaretle” panelindedir** (v2.317);
+etkin işaretler alt şeritte **çip** olarak görünür ve çipe tıklayınca kaldırılır.
+Gözlem işaretleri raporun **GÖZLEM** sütununa ve EK-5’e yazılır.
 
 Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütununa**.
 İkisi farklı işe yarar, biri diğerinin yerine geçmez.

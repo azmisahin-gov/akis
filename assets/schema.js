@@ -288,20 +288,6 @@ export function defineOptions(defs) {
 const OBS = defineOptions(OBS_DEFS);
 export const OBS_KEYS = OBS.keys;
 export const OBS_LABEL = OBS.label;
-// Birincil gözlem düğmeleri (v2.314): 12 bayrak alt şeritte 1100 px'te 4 satıra
-// çıkıp metni eziyordu (ölçüldü). En sık kullanılan 8 düğme görünür kalır;
-// kalan 4 (yankı, uzaktan, bozuk ses, dil değişimi) "Gözlem" panelindedir.
-// Panel TÜM 12'yi gösterir; hiçbir bayrak erişilemez değildir.
-export const OBS_PRIMARY_KEYS = [
-  'noise',
-  'overlap',
-  'inaudible',
-  'notAudible',
-  'music',
-  'phone',
-  'noSpeech',
-  'dropout'
-];
 export const OBS_SHORT = OBS.short;
 export const OBS_HINT = OBS.hint;
 

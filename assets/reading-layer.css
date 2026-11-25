@@ -2502,7 +2502,8 @@ input::placeholder, textarea::placeholder {
   display: block;
   width: 100%;
   flex: 1 1 auto;
-  min-height: 120px;
+  /* v2.317: ~3 satır (3 × 1.7em + dikey dolgu). Uzun metin kendi içinde kayar. */
+  min-height: calc(3 * 1.7em + 16px);
   margin: 0;
   padding: 8px 10px;
   border: 0;
@@ -2606,9 +2607,6 @@ input::placeholder, textarea::placeholder {
   border-radius: var(--r-sm);
   background: var(--surface);
   box-shadow: var(--shadow-md);
-}
-@media (max-width: 600px) {
-  #view-audio .sd-editor-bottom .sd-obs-row { display: none; }
 }
 #view-audio .sd-quick {
   position: relative;
@@ -4028,8 +4026,10 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    Menü taban kuralı (yukarıda) artık block + max-height + overflow-y; burada
    yalnız arama/grup düzeni var. Arama yalnız görünürlüğü süzer. */
 #view-audio .sd-quick-menu .quick-tag[hidden] { display: none; }
-#view-audio .qt-search-wrap { position: sticky; top: -8px; margin: -8px -8px 6px; padding: 8px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; }
-#view-audio .qt-search { width: 100%; box-sizing: border-box; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); font-size: var(--fs-2xs); }
+#view-audio .qt-search-wrap { position: sticky; top: -8px; margin: -8px -8px 6px; padding: 8px; background: var(--surface); border-bottom: 1px solid var(--line); z-index: 1; display: flex; align-items: center; gap: 6px; }
+#view-audio .qt-search { flex: 1 1 auto; width: auto; min-width: 0; box-sizing: border-box; padding: 4px 8px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface-2); color: var(--ink); font-size: var(--fs-2xs); }
+#view-audio .qt-close { flex: 0 0 auto; padding: 2px 8px; }
+#view-audio .qt-foot { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--line); }
 #view-audio .qt-recent { display: flex; flex-direction: column; gap: 4px; margin: 0 0 6px; }
 #view-audio .qt-recent-head, #view-audio .qt-group-head { font-size: var(--fs-2xs); font-weight: 700; color: var(--ink-3); text-transform: uppercase; letter-spacing: .02em; }
 #view-audio .qt-group { margin-top: 6px; }
@@ -4051,5 +4051,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.316 — Alt şerit sırası: solda ETİKET (metne), sağda GÖZLEM (rapora).
    Rapor tablosunda GÖZLEM sağ sütundur; düğme de sağdadır. */
 #view-audio .sd-quick { order: 1; margin-right: auto; }
-#view-audio .sd-obs-row { order: 2; margin-left: auto; }
+#view-audio .sd-obs-active { order: 2; margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px; }
+#view-audio .sd-obs-active:empty { display: none; }
 #view-audio .sd-obs-menu { order: 3; }

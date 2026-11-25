@@ -487,7 +487,7 @@ console.log('\n[2u] Detay paneli sıkıştırma (v2.153)');
     /data-merge-next/.test(js) && /data-split-seg/.test(js) && /data-retranscribe-seg/.test(js) && /data-delete-seg/.test(js));
   check('detayda katlama kalmadı', !/<details class="sd-more">/.test(js));
   // v2.191: metin kutusu kalan yüksekliği alır; taban 160 px, kendi içinde kayar.
-  check('metin alanı tabanı 120 px', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*120px/.test(rl));
+  check('metin alanı ~3 satır tabanı', /#view-audio \.seg-detail \.sd-text \.sd-editor \.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*calc\(3 \* 1\.7em \+ 16px\)/.test(rl));
   check('metin alanı 11 px altına inmiyor', !/sd-text textarea[^}]*font-size:\s*(?:[0-9]|10)px/.test(rl));
 }
 
@@ -1125,7 +1125,7 @@ console.log('\n[2al] Metin kutusu: tek kutu, saydam alan, vurgu arkada (v2.188)'
   const rl7 = read('assets/reading-layer.css');
   check('metin alanı saydam (vurgu arkadan görünür)', /\.sd-ta-wrap textarea\s*\{[^}]*background:\s*transparent/.test(rl7));
   check('metin alanı kendi içinde kayar (vurgu eşlenir)', /\.sd-ta-wrap textarea\s*\{[^}]*overflow-y:\s*auto/.test(rl7));
-  check('metin alanı 120 px tabanı', /\.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*120px/.test(rl7));
+  check('metin alanı ~3 satır tabanı (v2.317)', /\.sd-ta-wrap textarea\s*\{[^}]*min-height:\s*calc\(3 \* 1\.7em \+ 16px\)/.test(rl7));
   check('236 px tabanı kaldırıldı (panel kaymaz)', !/\.sd-body\s*\{[^}]*min-height:\s*236px/.test(rl7) && !/\.sd-right\s*\{[^}]*min-height:\s*236px/.test(rl7));
 }
 
@@ -1529,8 +1529,8 @@ console.log('\n[2bc] Alan tanımlama: gözlem bayrakları tek kaynak (v2.203)');
   check('bilinmeyen anahtar normalize da korunur', /BİLİNMEYEN ANAHTAR KORUNUR/.test(schemaJs));
   check('mergeCases gözlemleri OR lar', /gözlem işaretleri birleşti/.test(schemaJs));
   // Dar ekranda düğme yığını metni ezmesin: tek "Gözlem" düğmesi + panel.
-  check('dar ekran gözlem menüsü var', /class="sd-obs-menu"/.test(appJs) && /sd-obs-row/.test(appJs));
-  check('dar ekran menüsü ≤600 px', /@media \(max-width: 600px\)[\s\S]{0,300}sd-obs-row/.test(layer));
+  check('gözlem menüsü var', /class="sd-obs-menu"/.test(appJs));
+  check('gözlem satırı kaldırıldı', !/sd-obs-row/.test(appJs) && !/sd-obs-row/.test(layer));
   check('menü aynı düğmeleri kullanır (kopya mantık yok)', /activeObsCount/.test(appJs) && /Gözlem işaretle\$\{activeObsCount/.test(appJs));
 }
 console.log('\n[2bd] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)');
@@ -2131,7 +2131,7 @@ console.log('\n[2cp] Yeni gözlem bayrakları tek kaynaktan (v2.272)');
   const schema = read('assets/schema.js');
   check('bayrak tanımı yalnız şemada', /key: 'echo'/.test(schema) && /key: 'dropout'/.test(schema));
   check('uygulama etiket kopyası taşımaz', !/yankı \/ oda akustiği/.test(js) && !/kesinti \/ kopukluk/.test(js));
-  check('düğmeler OBS_DEFS ten üretilir', /const obsAllBtns = OBS_DEFS\.map\(/.test(js) && /const obsBtns = OBS_DEFS\.filter\(/.test(js));
+  check('düğmeler OBS_DEFS ten üretilir', /const obsAllBtns = OBS_DEFS\.map\(/.test(js) && /function activeObsChipsHtml\(/.test(js));
   check('yardım listesi OBS_DEFS ten doldurulur', /el\.innerHTML = OBS_DEFS\.map\(\(d\) => `<b>/.test(js));
   check('EK-5 gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(js));
   check('index.html sabit gözlem etiketi taşımaz', !/kesinti \/ kopukluk/.test(html) && !/oda akustiği/.test(html));
@@ -2250,7 +2250,7 @@ console.log('\n[2cx] Menü kırpılması ve alt şerit sırası (v2.316)');
   check('etiket menüsü açılınca konumlanır', /placeFloatingMenu\(menu, b, 'left'\)/.test(appJs));
   check('gözlem paneli açılınca konumlanır', /placeFloatingMenu\(panel, summary, 'right'\)/.test(appJs));
   check('kapatma kancaları (dış tıklama/kaydırma/boyut)', (appJs.match(/closeFloatingMenus\(/g) || []).length >= 5 && /addEventListener\(\s*'resize'/.test(appJs));
-  check('solda Etiket, sağda Gözlem', /#view-audio \.sd-quick \{[^}]*order:\s*1[^}]*margin-right:\s*auto/.test(layer) && /#view-audio \.sd-obs-row \{[^}]*order:\s*2[^}]*margin-left:\s*auto/.test(layer) && /#view-audio \.sd-obs-menu \{[^}]*order:\s*3/.test(layer));
+  check('solda Etiket, sağda Gözlem', /#view-audio \.sd-quick \{[^}]*order:\s*1[^}]*margin-right:\s*auto/.test(layer) && /#view-audio \.sd-obs-active \{[^}]*order:\s*2[^}]*margin-left:\s*auto/.test(layer) && /#view-audio \.sd-obs-menu \{[^}]*order:\s*3/.test(layer));
   check('düğme metni: Etiket ekle', />Etiket ekle<\/button>/.test(appJs));
   check('düğme metni: Gözlem işaretle', /Gözlem işaretle\$\{activeObsCount/.test(appJs));
   check('açıklama ipuçları var', /Gözlem işaretle — raporun GÖZLEM sütununa işaret ekler/.test(appJs) && /Etiket ekle — metne \[etiket\] ekler/.test(appJs));
@@ -2271,7 +2271,8 @@ console.log('\n[2cv] Yeni gözlem işaretleri (v2.314)');
   check('EK-5 gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(app));
   check('filtreler yeni anahtarları taşır', /notAudible/.test(app) && /foreignLanguage/.test(app));
   check('dar ekranda tek "Gözlem" paneli', /\.sd-obs-menu\s*\{/.test(layer));
-  check('birincil 8 gözlem düğmesi', /OBS_PRIMARY_KEYS/.test(schema) && /OBS_DEFS\.filter\(\(d\) => obsPrimary\.has/.test(app));
+  check('gözlem satırı kaldırıldı (tek panel)', !/OBS_PRIMARY_KEYS/.test(schema) && !/sd-obs-row/.test(app));
+  check('etkin gözlem çipleri', /function activeObsChipsHtml\(/.test(app) && /activeObsChipsHtml\(ix, sg\)/.test(app));
   check('panel TÜM 12 bayrağı gösterir', /const obsAllBtns = OBS_DEFS\.map\(/.test(app));
   check('gözlem paneli her genişlikte görünür', /#view-audio \.sd-obs-menu \{\s*display: block/.test(layer));
   check('gözlem paneli kaydırılır', /\.sd-obs-menu > \.sd-obs \{[^}]*overflow-y: auto/.test(layer));

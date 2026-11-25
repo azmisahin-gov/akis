@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.316.**
+yazılır. **Güncel sürüm: v2.317.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.317 — Etiket menüsü kapatma + sade gözlem şeridi (TAMAMLANDI)
+
+- Etiket menüsünde **× Kapat**; Esc/dış tıklama/düğme tekrarı kapatır.
+- **“Metni temizle” onay ister**; “Vazgeç” metni korur.
+- Metin alanı **~3 satır** (`calc(3 * 1.7em + 16px)` ≈ 87 px).
+- Yan yana **8 gözlem düğmesi kaldırıldı**; tümü panelde, **etkin** işaretler
+  alt şeritte çip; çipe tıkla = kaldır.
+- Test `birim [154]/[155]`, `tasarim [2cu]/[2cx]`; 6 genişlikte metin 87 px,
+  menü görünür alanda, JS hatası 0.
 
 ## v2.316 — Menü kırpılması ve alt şerit düzeni (TAMAMLANDI)
 

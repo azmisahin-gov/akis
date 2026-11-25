@@ -37,7 +37,6 @@ import {
   OBS_DEFS,
   OBS_KEYS,
   OBS_LABEL,
-  OBS_PRIMARY_KEYS,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
   emptyCaseSpeaker,
@@ -121,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.316';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.316';
+} from './schema.js?v=2.317';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.317';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.316';
+const APP_VERSION = '2.317';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -510,11 +509,11 @@ function quickMenuHtml(i) {
   }).join('');
   return (
     `<div class="sd-quick-menu" role="group" aria-label="Etiket ekle" hidden>` +
-    `<div class="qt-search-wrap"><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
+    `<div class="qt-search-wrap"><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"><button type="button" class="mini-button qt-close" data-quick-close="${i}" aria-label="Kapat" title="Menüyü kapat (Esc)">×</button></div>` +
     recentHtml +
     `<div class="qt-groups">${groups}</div>` +
     `<div class="qt-empty" hidden>Eşleşen etiket yok.</div>` +
-    `<button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>` +
+    `<div class="qt-foot"><button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Bölüm metnini temizler; onay ister.">Metni temizle</button></div>` +
     `</div>`
   );
 }
@@ -6850,6 +6849,16 @@ function reviewSelectOptions(rev, short) {
     })
     .join('');
 }
+// Etkin gözlem çipleri (v2.317): alt şeritte yalnız AKTİF işaretler görünür.
+// Tam liste "Gözlem işaretle" panelindedir; 8 düğme yan yana tekrarlanmaz.
+function activeObsChipsHtml(i, s) {
+  return OBS_DEFS.filter((d) => s && s.obs && s.obs[d.key])
+    .map(
+      (d) =>
+        `<button type="button" class="mini-button obs-btn on" data-obs="${i}|${d.key}" title="${esc(d.hint)} — kaldırmak için tıkla">${esc(d.short)}</button>`
+    )
+    .join('');
+}
 function segDetailHtml(m) {
   const segs = m.segments || [];
   if (!segs.length)
@@ -6876,11 +6885,12 @@ function segDetailHtml(m) {
   // Yeni bir gözlem anahtarı eklemek için yalnız OBS_DEFS'e satır eklenir.
   // v2.314: 12 bayrak alt şeritte 1100 px'te 4 satıra çıkıyordu; birincil 8
   // görünür, kalan 4 "Gözlem" panelinde (panel TÜM 12'yi gösterir).
-  const obsPrimary = new Set(OBS_PRIMARY_KEYS);
   const obsBtnHtml = (d) =>
     `<button class="mini-button obs-btn ${s.obs && s.obs[d.key] ? 'on' : ''}" data-obs="${i}|${d.key}" title="${esc(d.hint)}">${esc(d.short)}</button>`;
-  const obsBtns = OBS_DEFS.filter((d) => obsPrimary.has(d.key)).map(obsBtnHtml).join('');
   const obsAllBtns = OBS_DEFS.map(obsBtnHtml).join('');
+  // Yalnız ETKİN gözlemler alt şeritte çip olarak görünür; 8 düğmeyi yan yana
+  // tekrarlamak yerine "Gözlem işaretle" paneli tümünü verir (v2.317).
+  const activeObsChips = activeObsChipsHtml(i, s);
   // Dar ekranda düğme yığını metin alanını ezmesin: tek "Gözlem" düğmesi +
   // açılır panel. Panel TÜM bayrakları gösterir (v2.314); kopya mantık yok.
   const activeObsCount = OBS_KEYS.filter((k) => s.obs && s.obs[k]).length;
@@ -6994,7 +7004,7 @@ function segDetailHtml(m) {
               <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Etiket ekle — metne [etiket] ekler; rapora metin olarak girer. Gözlem işareti değildir.">Etiket ekle</button>
               ${quickMenuHtml(i)}
             </div>
-            <div class="sd-obs sd-obs-row" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            <span class="sd-obs-active" role="group" aria-label="Etkin gözlem işaretleri">${activeObsChips}</span>
             <details class="sd-obs-menu">
               <summary class="sd-mini" title="Gözlem işaretle — raporun GÖZLEM sütununa işaret ekler; metni değiştirmez." aria-label="Gözlem işaretle">Gözlem işaretle${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
               <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)">${obsAllBtns}</div>
@@ -18552,10 +18562,12 @@ function setupEvents() {
           const summary = menu && menu.querySelector('summary');
           if (summary) {
             const n = OBS_KEYS.filter((k) => sg.obs && sg.obs[k]).length;
-            summary.textContent = `Gözlem${n ? ` (${n})` : ''}`;
+            summary.textContent = `Gözlem işaretle${n ? ` (${n})` : ''}`;
           }
           // DURUM SATIRI yerinde tazelenir (v2.314): "İş" çipleri gözlem
           // işaretlerini gösterir; tazelenmezse eski durum kalır (sessiz hata).
+          const activeHost = card.querySelector('.sd-obs-active');
+          if (activeHost) activeHost.innerHTML = activeObsChipsHtml(ix, sg);
           const statusEl = card.querySelector('.sd-status');
           if (statusEl) statusEl.outerHTML = statusRowHtml(m, sg, Number(ix));
           persist();
@@ -18666,15 +18678,26 @@ function setupEvents() {
   // Hızlı etiket: gözlem ifadesini İMLECİN olduğu yere ekler (seçim varsa
   // yerine) — v2.239. Temizle yalnızca metni boşaltır; geçmiş kaydı odak
   // değişiminde tutulur.
-  $('#view-audio').addEventListener('click', (e) => {
+  $('#view-audio').addEventListener('click', async (e) => {
     const tag = e.target.closest('[data-quick-tag]');
     const clear = e.target.closest('[data-quick-clear]');
-    if (!tag && !clear) return;
+    const close = e.target.closest('[data-quick-close]');
+    if (!tag && !clear && !close) return;
     const card = e.target.closest('.audio-card');
     if (!card) return;
     const id = card.querySelector('[data-transcribe]')?.dataset.transcribe;
     const m = currentCase().materials.find((x) => x.id === id);
     if (!m) return;
+    if (close) {
+      const menu = close.closest('.sd-quick-menu');
+      if (menu) menu.hidden = true;
+      const btn = menu && menu.parentElement.querySelector('[data-quick-menu]');
+      if (btn) {
+        btn.setAttribute('aria-expanded', 'false');
+        btn.focus();
+      }
+      return;
+    }
     if (tag) {
       const [ix, text] = tag.dataset.quickTag.split('|');
       const s = m.segments[Number(ix)];
@@ -18713,6 +18736,8 @@ function setupEvents() {
       const ix = Number(clear.dataset.quickClear);
       const s = m.segments[ix];
       if (!s) return;
+      const ok = await askConfirm('Metni temizle', 'Bu bölümün metni silinecek. Ctrl+Z ile geri alabilirsiniz. Devam edilsin mi?');
+      if (!ok) return;
       const prev = s.text;
       applyTextEdit(s, '');
       pushSegmentHistory(s, prev);
@@ -19261,6 +19286,8 @@ function setupEvents() {
     }
   });
   document.addEventListener('keydown', (e) => {
+    // Escape: açık Etiket/Gözlem menülerini kapat (v2.317).
+    if (e.key === 'Escape') closeFloatingMenus(null);
     // Ctrl+Z belge düzeyinde: hangi görünümde olursa olsun işlem geri alınır.
     // Metin alanındayken tarayıcının kendi geri almasına bırakılır.
     const tag = (e.target?.tagName || '').toLowerCase();
@@ -20725,6 +20752,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.317': {
+    title: 'Etiket menüsü kapatma ve sade gözlem şeridi',
+    body:
+      'Etiket menüsünde “× Kapat” var; Esc, dış tıklama ve düğmeye tekrar basma da kapatır. “Metni temizle” artık onay ister; “Vazgeç” metni korur. Metin alanı ~3 satıra indirildi. Yan yana 8 gözlem düğmesi kaldırıldı: tümü “Gözlem işaretle” panelinde, etkin işaretler alt şeritte çip olarak görünür.'
+  },
   '2.316': {
     title: 'Etiket ve gözlem menüleri düzeltildi',
     body:

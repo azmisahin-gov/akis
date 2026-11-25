@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.316.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.317.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8141,4 +8141,60 @@ Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
 | Sayfa yatay kayması | **yok** (`bodyScroll = innerWidth`) |
 | Sıra | Etiket sol (653), Gözlem sağ (919/1029) |
 | 1440/1100/900/760/600/360 | menü **inViewport**, hOverflow yok |
+| JS hatası | **0** |
+
+## EK DÜZELTME (v2.317) — Etiket menüsü kapatma + sade gözlem şeridi
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.317** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2342 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### ÖLÇÜLEN UX HATASI
+
+- Etiket menüsünde **kapatma yolu yoktu**; tek eylem “Temizle” idi ve
+  **metni hemen siliyordu** (yanlışlıkla veri kaybı riski).
+- “Gözlem işaretle” paneli varken yanında **8 gözlem düğmesi** tekrarlanıyordu.
+- Metin alanı 120 px (≈5 satır) idi; kullanıcı ~3 satır istedi.
+
+### Yapılan
+
+- **× Kapat** (sağ üst) + **Esc** + dış tıklama + düğmeye tekrar basma menüyü
+  kapatır. `data-quick-close`.
+- **“Metni temizle” onay ister** (`askConfirm`); “Vazgeç” veriyi değiştirmez.
+- **Metin alanı ~3 satır:** `min-height: calc(3 * 1.7em + 16px)` ≈ 87 px.
+- **8 gözlem düğmesi kaldırıldı**; tümü “Gözlem işaretle” panelinde. **Etkin**
+  işaretler alt şeritte **çip**; çipe tıkla = kaldır.
+- `activeObsChipsHtml(i, s)` **tek kaynak**: ilk çizim + gözlem tıklaması
+  sonrası yerinde tazeleme.
+- `OBS_PRIMARY_KEYS` ve `obsBtns` kaldırıldı; panel `obsAllBtns` (12).
+- Test: `birim [154]/[155]`, `tasarim [2cu]/[2cx]`.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Her açılır menüde KAPATMA yolu olmalı:** görünür düğme (×) + Esc + dış
+   tıklama + tetikleyiciye tekrar basma. “Tek eylem = Temizle” olamaz.
+2. **Yıkıcı eylem onay ister:** “Metni temizle” `askConfirm` kullanır; onay
+   yoksa veri değişmez. Geri alma Ctrl+Z’dir.
+3. **Aynı işi iki denetimle sunma:** gözlem işaretleri tek panelde; alt şeritte
+   yalnız **etkin** çipler (tek kaynak `activeObsChipsHtml`).
+4. **Etkin çipler yerinde tazelenir:** `data-obs` tıklaması hem paneli hem alt
+   şerit çiplerini hem durum satırını günceller; aksi hâlde çip görünmez.
+5. **Metin alanı 3 satır tabanı:** `calc(3 * 1.7em + 16px)`; uzun metin kendi
+   içinde kayar, panel kaymaz.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Metin alanı | **87 px** (6 genişlikte) |
+| Etiket menüsü | 18 etiket + **Kapat** |
+| Kapatma | düğme ✓ · Esc ✓ · dış tıklama ✓ |
+| Temizleme | onay açıldı; “Vazgeç” → metin **korundu** |
+| Gözlem satırı | **yok** |
+| Gözlem paneli | 12 düğme; etkin çip 1 → çipe tıkla 0 |
+| Menü görünürlüğü | tüm genişliklerde viewport içinde; hOverflow 0 |
 | JS hatası | **0** |
