@@ -719,7 +719,9 @@ export function normalizeReportLayout(src) {
   const order = [];
   const srcOrder = Array.isArray(src.order) ? src.order : [];
   for (const k of srcOrder) {
-    if (REPORT_BODY_ORDER.includes(k) && !seen.has(k)) {
+    // v2.287: serbest blok anahtarları (`free:<id>`) korunur; sahiplik ve
+    // sıra `ensureFreeBlockOrder` ile blok listesine göre doğrulanır.
+    if ((REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k)) && !seen.has(k)) {
       order.push(k);
       seen.add(k);
     }
@@ -910,6 +912,62 @@ export function normalizeReportTitles(src) {
     if (t) out[key] = t.slice(0, 160);
   }
   return out;
+}
+
+// ---- Serbest rapor blokları (v2.287) -------------------------------------
+// Kullanıcının kendi başlığı + metni. Sıra `layout.order` içinde `free:<id>`
+// anahtarıyla tutulur; bölüm görünürlüğü bloktaki `on` alanındadır.
+export function isFreeBlockKey(key) {
+  return typeof key === 'string' && /^free:[A-Za-z0-9_-]{1,40}$/.test(key);
+}
+export function freeBlockKey(id) {
+  return `free:${String(id || '')}`;
+}
+export function freeBlockId(key) {
+  return isFreeBlockKey(key) ? key.slice(5) : '';
+}
+/**
+ * Serbest blokları güvenli hâle getirir. Kimlik zorunludur ve tekildir;
+ * başlık 160, metin 50.000 karakterle sınırlanır. Boş blok SİLİNMEZ (kullanıcı
+ * yazmaya devam edebilir) ama `reportBlockRenders` boşu rapora sokmaz.
+ */
+export function normalizeReportBlocks(src) {
+  const out = [];
+  const seen = new Set();
+  for (const b of Array.isArray(src) ? src : []) {
+    if (!b || typeof b !== 'object') continue;
+    const id = typeof b.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(b.id) ? b.id : '';
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out.push({
+      ...b,
+      id,
+      title: typeof b.title === 'string' ? b.title.trim().slice(0, 160) : '',
+      text: typeof b.text === 'string' ? b.text.slice(0, 50000) : '',
+      on: b.on !== false
+    });
+  }
+  return out;
+}
+/**
+ * `layout.order` içindeki `free:` anahtarlarını bloklarla eşitler:
+ * sahipsiz anahtarı düşürür, sırası olmayan bloğu `s6` (sonuç) öncesine ekler.
+ * Böylece yeni blok eklerken sıra bozulmaz; blok silinince yetim anahtar kalmaz.
+ */
+export function ensureFreeBlockOrder(order, blocks) {
+  const list = (Array.isArray(order) ? order : []).filter((k) => typeof k === 'string');
+  const keys = new Set((blocks || []).map((b) => freeBlockKey(b.id)));
+  for (let i = list.length - 1; i >= 0; i--) {
+    if (isFreeBlockKey(list[i]) && !keys.has(list[i])) list.splice(i, 1);
+  }
+  for (const b of blocks || []) {
+    const k = freeBlockKey(b.id);
+    if (list.includes(k)) continue;
+    const at = list.indexOf('s6');
+    if (at >= 0) list.splice(at, 0, k);
+    else list.push(k);
+  }
+  return list;
 }
 
 // ---- 5b-2. Rapor biçimi: sayfa · font · punto (v2.238) -------------------
@@ -1163,6 +1221,9 @@ export function emptyCase(over = {}) {
       // Bölüm başlığı düzenlemeleri (v2.285): anahtar → kullanıcı başlığı.
       // Boş/eksik anahtar varsayılan başlığı kullanır.
       titles: {},
+      // Serbest rapor blokları (v2.287): { id, title, text, on }.
+      // Sıra `layout.order` içinde `free:<id>` ile tutulur.
+      blocks: [],
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -1890,6 +1951,11 @@ export function normalizeCase(src = {}) {
   const assignment = isObj(c.assignment) ? c.assignment : {};
   const expert = isObj(c.expert) ? c.expert : {};
   const report = isObj(c.report) ? c.report : {};
+  // v2.287: serbest bloklar ve sıra birlikte normalize edilir; yetim
+  // `free:` anahtarı düşer, sırası olmayan blok `s6` öncesine girer.
+  const reportBlocks = normalizeReportBlocks(report.blocks);
+  const reportLayout = normalizeReportLayout(report.layout);
+  reportLayout.order = ensureFreeBlockOrder(reportLayout.order, reportBlocks);
   const team = (Array.isArray(c.team) ? c.team : []).map((t) => ({
     ...emptyTeamMember(),
     ...(isObj(t) ? t : {}),
@@ -1946,7 +2012,9 @@ export function normalizeCase(src = {}) {
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
       sections: normalizeReportSections(report.sections),
       // Rapor iskeleti (v2.227): sıra/ekler; bozuk düzen güvenli hâle getirilir.
-      layout: normalizeReportLayout(report.layout),
+      layout: reportLayout,
+      // Serbest bloklar (v2.287): kullanıcı başlığı + metni.
+      blocks: reportBlocks,
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
@@ -2633,6 +2701,36 @@ export function mergeCases(mine, theirs) {
       mergeTextField(merged.report.tech, mr.tech || {}, tr.tech || {}, newer, k, applied, conflicts, `report.tech.${k}`);
   }
 
+  // Serbest rapor blokları (v2.287): id ile eşleşir. Gelen blok yoksa eklenir;
+  // aynı kimlikte farklı içerik sessizce EZİLMEZ, çakışma olarak bildirilir.
+  {
+    const mr = mine.report || {};
+    const tr = theirs.report || {};
+    merged.report = merged.report || {};
+    const blocks = normalizeReportBlocks(mr.blocks);
+    const byId = new Map(blocks.map((b) => [b.id, b]));
+    for (const tb of normalizeReportBlocks(tr.blocks)) {
+      const mb = byId.get(tb.id);
+      if (!mb) {
+        blocks.push(tb);
+        byId.set(tb.id, tb);
+        applied.push(`serbest bölüm eklendi: ${tb.title || tb.id}`);
+      } else if (JSON.stringify(mb) !== JSON.stringify(tb)) {
+        conflicts.push({
+          kind: 'report-block',
+          blockId: mb.id,
+          field: 'blocks',
+          mine: mb.title || mb.id,
+          theirs: tb.title || tb.id,
+          reason: 'aynı serbest bölüm kimliğinde farklı içerik'
+        });
+      }
+    }
+    merged.report.blocks = normalizeReportBlocks(blocks);
+    const layout = normalizeReportLayout(merged.report.layout || mr.layout);
+    merged.report.layout = { ...layout, order: ensureFreeBlockOrder(layout.order, merged.report.blocks) };
+  }
+
   // Bölümler: id ile eşleşen kayıtlarda metin, düzenleme sayacıyla (textRev)
   // çözülür. Sayaç yüksek olan taraf daha yeni düzenlemedir ve kazanır; kaybeden
   // metin silinmez, geçmişe yazılır. Sayaçlar eşitse gerçek çakışma bildirilir.
@@ -2913,6 +3011,8 @@ export function compareCases(mine, theirs) {
     questions: { added: 0, filled: 0, conflicts: [], autoResolved: 0 },
     caseFields: { filled: [], autoResolved: [], conflicts: [] },
     team: { added: [] },
+    // Serbest rapor blokları (v2.287): önizleme = birleştirme kuralı.
+    blocks: { added: [], conflicts: [] },
     disks: { added: 0 },
     // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
     // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
@@ -3145,6 +3245,28 @@ export function compareCases(mine, theirs) {
     }
   }
 
+  // Serbest bloklar (v2.287): yeni blok eklenir; aynı kimlikte farklı içerik
+  // çakışma olarak görünür (birleştirme sessizce ezmez).
+  {
+    const mineBlocks = new Map(
+      normalizeReportBlocks((mine.report || {}).blocks).map((b) => [b.id, b])
+    );
+    for (const tb of normalizeReportBlocks((theirs.report || {}).blocks)) {
+      const mb = mineBlocks.get(tb.id);
+      if (!mb) out.blocks.added.push({ id: tb.id, title: tb.title || tb.id });
+      else if (JSON.stringify(mb) !== JSON.stringify(tb)) {
+        out.blocks.conflicts.push({
+          kind: 'report-block',
+          blockId: mb.id,
+          field: 'blocks',
+          mine: mb.title || mb.id,
+          theirs: tb.title || tb.id,
+          reason: 'aynı serbest bölüm kimliğinde farklı içerik'
+        });
+      }
+    }
+  }
+
   // Kaynağı tanımsız onaylar döngü sırasında `out.conflicts`'e eklenir; burada
   // yeniden atama onları SİLERDİ. Bu yüzden önce toplanır, sonra birleştirilir.
   out.conflicts = [
@@ -3152,6 +3274,7 @@ export function compareCases(mine, theirs) {
     ...out.questions.conflicts,
     ...out.caseFields.conflicts,
     ...out.speakers.conflicts,
+    ...out.blocks.conflicts,
     ...out.conflicts
   ];
   return out;

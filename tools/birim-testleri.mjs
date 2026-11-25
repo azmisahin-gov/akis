@@ -5845,5 +5845,51 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('profil satırı stili yok', /\.rsec-presets\s*\{/.test(layer), false);
 }
 
+// [129] v2.287 — Serbest rapor blokları: başlık + metin, `free:<id>` sırası,
+// boş blok rapora girmez, birleştirme sessizce ezmez.
+{
+  console.log('[129] Serbest rapor blokları (v2.287)');
+  const S = __schemaMod;
+  eq('free anahtarı tanınır', S.isFreeBlockKey('free:fb_1'), true);
+  eq('normal anahtar free değil', S.isFreeBlockKey('s1'), false);
+  const nb = S.normalizeReportBlocks([
+    { id: 'b1', title: '  Ek not  ', text: 'satır1\nsatır2', on: false },
+    { id: 'b1', title: 'yinelenen' },
+    { id: '', title: 'kimliksiz' },
+    null
+  ]);
+  eq('blok normalize: tek kayıt', nb.length, 1);
+  eq('başlık kırpılır', nb[0].title, 'Ek not');
+  eq('metin korunur', nb[0].text, 'satır1\nsatır2');
+  eq('on korunur', nb[0].on, false);
+  const order = S.ensureFreeBlockOrder(['s1', 's5', 'free:old', 's6', 'annex'], nb);
+  eq('yetim free anahtarı düşer', order.includes('free:old'), false);
+  eq('blok s6 (sonuç) öncesine girer', order.indexOf('free:b1') < order.indexOf('s6'), true);
+
+  const c = T.emptyCaseForTest({
+    id: 'cB1',
+    report: {
+      blocks: [{ id: 'b1', title: 'UZMAN NOTU', text: 'gözlem metni' }],
+      layout: { order: ['s1', 's5', 'free:b1', 's6', 'annex'] }
+    }
+  });
+  eq('blok gövde sırasında', T.reportBodyOrder(c).includes('free:b1'), true);
+  eq('blok başlığı', T.reportHeadingText(c, 'free:b1'), 'UZMAN NOTU');
+  eq('blok numarasız (TOC "–")', T.reportTocEntries(c).includes('– UZMAN NOTU'), true);
+  eq('blok çizilir', T.reportBlockRenders(c, 'free:b1'), true);
+  eq('revizyon blok taşır', T.reportSnapshot(c).blocks.length, 1);
+
+  const cEmpty = T.emptyCaseForTest({ id: 'cB2', report: { blocks: [{ id: 'b1', title: 'BOŞ', text: '' }] } });
+  eq('boş blok rapora girmez', T.reportBlockRenders(cEmpty, 'free:b1'), false);
+
+  const m = T.mergeCasesForTest(
+    S.normalizeCase({ id: 'm', report: { blocks: [{ id: 'b1', title: 'A', text: 'bir' }] } }),
+    S.normalizeCase({ id: 'm', report: { blocks: [{ id: 'b1', title: 'B', text: 'iki' }, { id: 'b2', title: 'Yeni', text: 'üç' }] } })
+  );
+  eq('birleştirme yeni bloğu ekler', m.merged.report.blocks.length, 2);
+  eq('birleştirme farklı bloğu ezmez', m.merged.report.blocks.find((b) => b.id === 'b1').title, 'A');
+  eq('birleştirme çakışma bildirir', m.conflicts.some((x) => x.kind === 'report-block'), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

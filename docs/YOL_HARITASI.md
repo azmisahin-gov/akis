@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.286.**
+yazılır. **Güncel sürüm: v2.287.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.287 — Serbest rapor bölümü (TAMAMLANDI)
+
+- İskelette **“＋ Bölüm ekle”**: başlık + metin; aç/kapa, ↑↓ sırala, üç çıktıya
+  gir, İÇİNDEKİLER’de “– Başlık”.
+- Başlık veya metin boşsa bölüm **çizilmez**; “—” uydurulmaz.
+- Silme onay ister, Ctrl+Z ile geri alınır; ses/deşifre kanıtı etkilenmez.
+- `case.report.blocks[]` + `free:<id>` sırası; revizyon ve birleştirme blokları
+  taşır (farklı içerik `report-block` çakışması).
+- Koruyan: `birim` [129], `rapor` Senaryo 38.
 
 ## v2.286 — Hazır profil düğmeleri kaldırıldı (TAMAMLANDI)
 

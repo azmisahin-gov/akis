@@ -1,4 +1,4 @@
-# Özellikler (v2.286 — mevcut durum)
+# Özellikler (v2.287 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -593,6 +593,11 @@ uzmanlık alanını gösterir.
   İÇİNDEKİLER ve alt başlıklar aynı biçimi izler. **Düzeltme:** numarasız kipte
   alt başlıklar da numarasız (eskiden "5.1" kalıyordu); bölüm kapalıysa numara
   uydurulmaz.
+- **Serbest rapor bölümü (v2.287):** iskeletin gövdesinde **“＋ Bölüm ekle”** ile
+  başlık + metin yazılır. Blok açılır/kapanır, **↑↓** ile sıralanır, İÇİNDEKİLER’de
+  **“– Başlık”** olarak görünür ve **HTML/DOCX/UDF** çıktısına girer. Başlık veya metin
+  boşsa rapora **girmez**; “—” uydurulmaz. Silme onay ister, **Ctrl+Z** ile geri alınır;
+  ses/deşifre kanıtı etkilenmez. Revizyon ve paket birleştirme blokları taşır.
 - **Numaralandırma seçenekli (v2.284):** aynı anahtarın ilk sürümü; kapatınca
   tüm başlıklar ve İÇİNDEKİLER numarasız yazılıyordu. Açıkken ana bölümler 1…N,
   alt bloklar TOC'ta "–".

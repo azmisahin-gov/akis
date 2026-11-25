@@ -1339,5 +1339,34 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('numarasız kipte "5.1." yok (D)', !/5\.1\./.test(D2), 'hâlâ numaralı');
 }
 
+// Senaryo 38: serbest rapor bloğu (v2.287). Üç çıktı aynı başlığı/metni
+// basmalı; başlık veya metin boşsa blok HİÇ çizilmemeli (uydurma "—" yok).
+{
+  console.log('\n[Senaryo 38] serbest rapor bloğu (v2.287)');
+  const c = withMaterial();
+  const order = [...__schemaMod.REPORT_BODY_ORDER];
+  order.splice(order.indexOf('s6'), 0, 'free:b1');
+  c.report = {
+    blocks: [{ id: 'b1', title: 'UZMAN NOTU', text: 'gözlem metni' }],
+    layout: { order }
+  };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('serbest blok başlığı', 'UZMAN NOTU', H, U, D);
+  checkShared('serbest blok metni', 'gözlem metni', H, U, D);
+  checkShared('serbest blok TOC satırı', '– UZMAN NOTU', H, U, D);
+
+  const c2 = withMaterial();
+  const order2 = [...__schemaMod.REPORT_BODY_ORDER];
+  order2.splice(order2.indexOf('s6'), 0, 'free:b1');
+  c2.report = {
+    blocks: [{ id: 'b1', title: 'BOŞ BLOK', text: '' }],
+    layout: { order: order2 }
+  };
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  check('boş blok H çizilmez', !H2.includes('BOŞ BLOK'), 'başlık sızdı');
+  check('boş blok U çizilmez', !U2.includes('BOŞ BLOK'), 'başlık sızdı');
+  check('boş blok D çizilmez', !D2.includes('BOŞ BLOK'), 'başlık sızdı');
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

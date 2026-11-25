@@ -92,6 +92,10 @@ import {
   emptyReportColumns,
   normalizeReportColumns,
   normalizeReportTitles,
+  normalizeReportBlocks,
+  ensureFreeBlockOrder,
+  isFreeBlockKey,
+  freeBlockKey,
   REPORT_FONT_DEFS,
   REPORT_FONT_KEYS,
   REPORT_FONT_LABEL,
@@ -105,15 +109,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.286';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.286';
+} from './schema.js?v=2.287';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.287';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.286';
+const APP_VERSION = '2.287';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12274,6 +12278,11 @@ function setReportEditSection(key) {
 // kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
 // kısa arayüz etiketidir. Eksik anahtar = tanımdaki varsayılan (eski kayıt bozulmaz).
 function reportSectionOn(c, key) {
+  // Serbest blok görünürlüğü bloktaki `on` alanındadır (v2.287).
+  if (isFreeBlockKey(key)) {
+    const b = reportBlockByKey(c, key);
+    return !!(b && b.on !== false);
+  }
   const s = (c && c.report && c.report.sections) || {};
   if (typeof s[key] === 'boolean') return s[key];
   // Kayıtta anahtar yoksa TANIMDAKİ varsayılana düş (v2.220): mevcut 19 bölüm
@@ -12289,7 +12298,13 @@ function reportLayoutOf(c) {
   return normalizeReportLayout(c && c.report && c.report.layout);
 }
 function reportBodyOrder(c) {
-  return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k));
+  // v2.287: serbest blok anahtarları da gövde sırasına girer.
+  return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k));
+}
+function reportBlockByKey(c, key) {
+  if (!isFreeBlockKey(key)) return null;
+  const id = key.slice(5);
+  return ((c && c.report && c.report.blocks) || []).find((b) => b && b.id === id) || null;
 }
 function reportNumberMap(c) {
   // v2.283 — NEDEN: numara yalnız AÇIK bölüme göre veriliyordu; "Cevaplar"
@@ -12299,6 +12314,10 @@ function reportNumberMap(c) {
 }
 // Başlık: kullanıcı düzenlemesi varsa o, yoksa tanımdaki varsayılan (v2.285).
 function reportSectionTitle(c, key) {
+  if (isFreeBlockKey(key)) {
+    const b = reportBlockByKey(c, key);
+    return b ? b.title || '' : '';
+  }
   const custom = c && c.report && c.report.titles && c.report.titles[key];
   if (typeof custom === 'string' && custom.trim()) return custom.trim();
   const def = REPORT_SECTION_DEFS.find((d) => d.key === key);
@@ -12347,10 +12366,31 @@ function reportSubHeadings(c) {
     recordPrefix: (i) => `${p}.1.${i + 1}.`
   };
 }
+// Serbest bloğun HTML gövdesi (v2.287). Başlık/metin boşsa çağrılmaz;
+// `reportBlockRenders` bunu garanti eder.
+function freeBlockHtml(c, key) {
+  const b = reportBlockByKey(c, key);
+  const t = b ? String(b.text || '').trim() : '';
+  if (!t) return '';
+  const title = reportHeadingText(c, key);
+  return (
+    `<div class="paper-section"><h3>${esc(title)}</h3>` +
+    t
+      .split(/\n/)
+      .map((line) => `<p>${esc(line)}</p>`)
+      .join('') +
+    `</div>`
+  );
+}
 // TOC'a girecek blok gerçekten çizilecek mi? Koşullu bloklar (veri yoksa
 // çizilmez) TOC'te de görünmez; böylece içindekiler ile gövde ayrışmaz.
 function reportBlockRenders(c, key) {
   if (!reportSectionOn(c, key)) return false;
+  // Serbest blok (v2.287): başlık VE metin dolu değilse rapora girmez.
+  if (isFreeBlockKey(key)) {
+    const b = reportBlockByKey(c, key);
+    return !!(b && String(b.title || '').trim() && String(b.text || '').trim());
+  }
   switch (key) {
     case 'embedded':
       return !!(c.report && c.report.includeEmbedded) && embeddedRows(c).length > 0;
@@ -12505,6 +12545,11 @@ const REPORT_UI_LABELS = {
   signature: 'İmza ve alt bilgi'
 };
 function reportUiLabel(c, key) {
+  // Serbest blok: başlık yoksa yalnız arayüzde "Yeni bölüm" (rapora girmez).
+  if (isFreeBlockKey(key)) {
+    const b = reportBlockByKey(c, key);
+    return (b && b.title) || 'Yeni bölüm';
+  }
   // Kullanıcı başlığı düzenlediyse iskelette O görünür (yoksa kısa arayüz etiketi).
   const custom = c && c.report && c.report.titles && c.report.titles[key];
   const base = (typeof custom === 'string' && custom.trim()) || REPORT_UI_LABELS[key] || reportSectionTitle(c, key);
@@ -12590,12 +12635,29 @@ function renderReportSections(c) {
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
     const editing = reportTitleEditKey === key;
-    const label = editing
-      ? `<input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Enter: uygula · Esc: vazgeç">`
-      : `<span>${esc(reportUiLabel(c, key))}</span>`;
+    const free = isFreeBlockKey(key);
+    const block = free ? reportBlockByKey(c, key) : null;
+    let label;
+    if (editing && free) {
+      // Serbest blok: başlık + metin aynı satırda düzenlenir. Metin çok
+      // satırlı olduğu için Enter kaydetmez; Kaydet düğmesi kullanılır.
+      label =
+        `<span class="rsec-free-edit"><input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(key)}" value="${esc(block ? block.title : '')}" placeholder="Bölüm başlığı" aria-label="Bölüm başlığı">` +
+        `<textarea rows="3" data-report-block-text="${esc(key)}" placeholder="Bölüm metni…" aria-label="Bölüm metni">${esc(block ? block.text : '')}</textarea>` +
+        `<span class="rsec-free-actions"><button type="button" class="mini-button" data-report-block-save="${esc(key)}">Kaydet</button><button type="button" class="rsec-mv" data-report-title-cancel="${esc(key)}">Vazgeç</button></span></span>`;
+    } else if (editing) {
+      label = `<input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Enter: uygula · Esc: vazgeç">`;
+    } else {
+      label = `<span>${esc(reportUiLabel(c, key))}</span>`;
+    }
     const editBtn = editing
-      ? `<button type="button" class="rsec-edit" data-report-title-cancel="${esc(key)}" aria-label="Vazgeç" title="Vazgeç (Esc)">×</button>`
-      : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle (Enter: uygula, Esc: vazgeç)">✎</button>`;
+      ? free
+        ? ''
+        : `<button type="button" class="rsec-edit" data-report-title-cancel="${esc(key)}" aria-label="Vazgeç" title="Vazgeç (Esc)">×</button>`
+      : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle (Enter: uygula, Esc: vazgeç)">✎</button>` +
+        (free
+          ? `<button type="button" class="rsec-edit" data-report-block-del="${esc(key)}" aria-label="Bölümü sil" title="Bu serbest bölümü sil">×</button>`
+          : '');
     return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}">${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
   };
   syncReportOutlineControls();
@@ -12635,9 +12697,10 @@ function renderReportSections(c) {
   const sig = reportOutlineMatch(c, 'signature', reportUiLabel(c, 'signature'), reportSectionOn(c, 'signature'))
     ? row('signature')
     : '';
+  const addBlock = `<div class="rsec-row"><button type="button" class="mini-button" data-report-block-add="1" title="Başlık ve metinle yeni rapor bölümü ekle">＋ Bölüm ekle</button></div>`;
   const groups =
     (front ? `<div class="rsec-group"><div class="rsec-title">Ön bölüm · sırası sabit</div>${front}</div>` : '') +
-    (body ? `<div class="rsec-group"><div class="rsec-title">Gövde · sıralanabilir</div>${body}</div>` : '') +
+    (body ? `<div class="rsec-group"><div class="rsec-title">Gövde · sıralanabilir</div>${body}${addBlock}</div>` : '') +
     (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
     (sig ? `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${sig}</div>` : '');
   host.innerHTML =
@@ -12668,6 +12731,91 @@ function setReportSectionTitle(key, value) {
   renderReport();
   showToast(v ? 'Bölüm başlığı güncellendi.' : 'Bölüm başlığı varsayılana döndü.');
 }
+// ---- Serbest rapor blokları (v2.287) -------------------------------------
+function addReportBlock() {
+  const c = currentCase();
+  if (!c) return;
+  snapshotForUndo('Serbest bölüm ekle');
+  c.report = c.report || {};
+  const id = newId('fb');
+  c.report.blocks = normalizeReportBlocks([...(c.report.blocks || []), { id, title: '', text: '', on: true }]);
+  const layout = normalizeReportLayout(c.report.layout);
+  layout.order = ensureFreeBlockOrder(layout.order, c.report.blocks);
+  c.report.layout = layout;
+  reportTitleEditKey = freeBlockKey(id);
+  persist();
+  renderReport();
+  requestAnimationFrame(() => {
+    const i = document.querySelector(`[data-report-title-input="${freeBlockKey(id)}"]`);
+    if (i) {
+      i.focus();
+      i.select();
+    }
+  });
+  showToast('Yeni bölüm eklendi: başlık ve metni yazıp Kaydet’e basın.');
+}
+function setReportBlock(key, title, text) {
+  const c = currentCase();
+  if (!c) return;
+  const id = key.slice(5);
+  c.report = c.report || {};
+  const blocks = (c.report.blocks || []).map((b) =>
+    b.id === id ? { ...b, title: String(title || ''), text: String(text || '') } : b
+  );
+  c.report.blocks = normalizeReportBlocks(blocks);
+  const layout = normalizeReportLayout(c.report.layout);
+  layout.order = ensureFreeBlockOrder(layout.order, c.report.blocks);
+  c.report.layout = layout;
+  reportTitleEditKey = null;
+  persist();
+  renderReport();
+}
+function saveReportBlockFromRow(key) {
+  const t = document.querySelector(`[data-report-title-input="${key}"]`);
+  const x = document.querySelector(`[data-report-block-text="${key}"]`);
+  setReportBlock(key, t ? t.value : '', x ? x.value : '');
+  const b = reportBlockByKey(currentCase(), key);
+  showToast(
+    b && String(b.title || '').trim() && String(b.text || '').trim()
+      ? 'Bölüm kaydedildi.'
+      : 'Başlık veya metin boş; bölüm rapora girmez.'
+  );
+}
+function cancelReportBlockEdit(key) {
+  const c = currentCase();
+  const b = reportBlockByKey(c, key);
+  if (c && b && !String(b.title || '').trim() && !String(b.text || '').trim()) {
+    // Boş blok iptal edilirse yetim kalmasın (ekle → vazgeç yolu).
+    c.report.blocks = (c.report.blocks || []).filter((x) => x.id !== b.id);
+    const layout = normalizeReportLayout(c.report.layout);
+    layout.order = ensureFreeBlockOrder(layout.order, c.report.blocks);
+    c.report.layout = layout;
+    persist();
+  }
+  reportTitleEditKey = null;
+  if (c) renderReport();
+}
+async function removeReportBlock(key) {
+  const c = currentCase();
+  if (!c) return;
+  const b = reportBlockByKey(c, key);
+  if (!b) return;
+  const ok = await askConfirm(
+    'Serbest bölümü sil',
+    `“${b.title || 'Yeni bölüm'}” bölümü silinecek. Ses ve deşifre kanıtı ETKİLENMEZ; Ctrl+Z ile geri alınabilir.`
+  );
+  if (!ok) return;
+  snapshotForUndo('Serbest bölüm sil');
+  c.report.blocks = (c.report.blocks || []).filter((x) => x.id !== b.id);
+  const layout = normalizeReportLayout(c.report.layout);
+  layout.order = ensureFreeBlockOrder(layout.order, c.report.blocks);
+  c.report.layout = layout;
+  reportTitleEditKey = null;
+  persist();
+  renderReport();
+  showToast('Serbest bölüm silindi (Ctrl+Z ile geri alınabilir).');
+}
+
 // v2.220 — 56.12 şablon bölümlerinin VERİSİ (tek kaynak). Üç çıktı bu
 // satırları/biçimleri kendi biçiminde basar; metin burada uydurulmaz.
 function reportKunyeRows(c) {
@@ -12989,6 +13137,8 @@ function reportSnapshot(c) {
   return {
     sections,
     layout: normalizeReportLayout(r.layout),
+    // Serbest bloklar (v2.287): rapor metnidir, kanıt değildir; revizyona girer.
+    blocks: normalizeReportBlocks(r.blocks),
     columns: normalizeReportColumns(r.columns),
     includeEmbedded: !!r.includeEmbedded,
     pageView: !!r.pageView,
@@ -13007,6 +13157,7 @@ function reportSnapshot(c) {
 const REPORT_SNAPSHOT_LABELS = {
   sections: 'Bölüm görünürlüğü',
   layout: 'Bölüm sırası / ekler',
+  blocks: 'Serbest bölümler',
   columns: 'Rapor alanları (tablo sütunları)',
   includeEmbedded: 'Gömülü metadata',
   pageView: 'A4 önizleme',
@@ -13034,6 +13185,7 @@ function applyReportSnapshot(c, snap) {
   const r = c.report;
   if (snap.sections) r.sections = { ...snap.sections };
   if (snap.layout) r.layout = normalizeReportLayout(snap.layout);
+  if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.pageView = !!snap.pageView;
@@ -13643,8 +13795,11 @@ function renderReport() {
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
     // TOC ile gövde AYNI ölçütü kullanır (v2.261): veri yoksa bölüm çizilmez.
-    if (!on(key) || !body[key] || !reportBlockRenders(c, key)) continue;
-    const piece = body[key]();
+    if (!on(key)) continue;
+    // v2.287: serbest blokların kendi üreticisi vardır (body[key] yoktur).
+    const render = body[key] || (isFreeBlockKey(key) ? () => freeBlockHtml(c, key) : null);
+    if (!render || !reportBlockRenders(c, key)) continue;
+    const piece = render();
     if (!piece) continue;
     // Her ana bölüm (1–7) ve ekler yeni sayfadan (v2.259; ilk gövde hariç).
     if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody))
@@ -14127,9 +14282,27 @@ function docxXml(c) {
   const pageBreakPara = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
-    if (!on(key) || !blocks[key] || !reportBlockRenders(c, key)) continue;
+    if (!on(key)) continue;
+    // v2.287: serbest blok için DOCX üreticisi (başlık + satırlar).
+    const render =
+      blocks[key] ||
+      (isFreeBlockKey(key)
+        ? () => {
+            const b = reportBlockByKey(c, key);
+            const t = b ? String(b.text || '').trim() : '';
+            if (!t) return '';
+            return (
+              headingXml(reportHeadingText(c, key)) +
+              t
+                .split(/\n/)
+                .map((line) => wP(line))
+                .join('')
+            );
+          }
+        : null);
+    if (!render || !reportBlockRenders(c, key)) continue;
     if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) body += pageBreakPara;
-    body += blocks[key]();
+    body += render();
     firstBody = false;
   }
   if (on('signature')) body += blocks.signature();
@@ -14733,9 +14906,22 @@ async function makeUdf() {
   // Her ANA bölüm (1–7) ve ekler yeni sayfadan başlar (v2.259; ilk gövde hariç).
   let firstBody = true;
   for (const key of reportBodyOrder(c)) {
-    if (!on(key) || !blocks[key] || !reportBlockRenders(c, key)) continue;
+    if (!on(key)) continue;
+    // v2.287: serbest blok için UDF üreticisi (başlık + paragraflar).
+    const render =
+      blocks[key] ||
+      (isFreeBlockKey(key)
+        ? () => {
+            const b = reportBlockByKey(c, key);
+            const t = b ? String(b.text || '').trim() : '';
+            if (!t) return;
+            el.push(h(reportHeadingText(c, key)));
+            t.split(/\n/).forEach((line) => el.push(paragraphLines(line, { justify: true })));
+          }
+        : null);
+    if (!render || !reportBlockRenders(c, key)) continue;
     if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) el.push(pageBreak());
-    blocks[key]();
+    render();
     firstBody = false;
   }
   if (on('signature')) blocks.signature();
@@ -17312,10 +17498,14 @@ $('#reportSectionCats')?.addEventListener('click', (e) => {
 $('#reportSections')?.addEventListener('change', (e) => {
   const tinp = e.target.closest('[data-report-title-input]');
   if (tinp) {
+    const tkey = tinp.dataset.reportTitleInput;
+    // Serbest blokta metin de olduğu için kaydetme düğmeyle/Enter ile yapılır;
+    // odak kaybı sessiz yarım kayıt üretmesin.
+    if (isFreeBlockKey(tkey)) return;
     // Yalnız hâlâ düzenlenen satır kaydedilir; Enter zaten kaydedip kapattıysa
     // ardından gelen change olayı ikinci kez yazmasın.
-    if (reportTitleEditKey === tinp.dataset.reportTitleInput) {
-      setReportSectionTitle(tinp.dataset.reportTitleInput, tinp.value);
+    if (reportTitleEditKey === tkey) {
+      setReportSectionTitle(tkey, tinp.value);
     }
     return;
   }
@@ -17329,6 +17519,20 @@ $('#reportSections')?.addEventListener('change', (e) => {
   setReportSection(cb.dataset.reportSection, cb.checked);
 });
 $('#reportSections')?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-report-block-add]')) {
+    addReportBlock();
+    return;
+  }
+  const bsave = e.target.closest('[data-report-block-save]');
+  if (bsave) {
+    saveReportBlockFromRow(bsave.dataset.reportBlockSave);
+    return;
+  }
+  const bdel = e.target.closest('[data-report-block-del]');
+  if (bdel) {
+    removeReportBlock(bdel.dataset.reportBlockDel);
+    return;
+  }
   const tedit = e.target.closest('[data-report-title]');
   if (tedit) {
     const key = tedit.dataset.reportTitle;
@@ -17346,9 +17550,13 @@ $('#reportSections')?.addEventListener('click', (e) => {
   }
   const tcancel = e.target.closest('[data-report-title-cancel]');
   if (tcancel) {
-    reportTitleEditKey = null;
-    const c = currentCase();
-    if (c) renderReportSections(c);
+    const key = tcancel.dataset.reportTitleCancel;
+    if (isFreeBlockKey(key)) cancelReportBlockEdit(key);
+    else {
+      reportTitleEditKey = null;
+      const c = currentCase();
+      if (c) renderReportSections(c);
+    }
     return;
   }
   const mv = e.target.closest('[data-report-move]');
@@ -17385,17 +17593,25 @@ $('#reportSections')?.addEventListener('click', (e) => {
 // Başlık düzenleme (v2.285): Enter uygular (change → kaydet), Esc vazgeçer.
 $('#reportSections')?.addEventListener('keydown', (e) => {
   const inp = e.target.closest('[data-report-title-input]');
-  if (!inp) return;
-  if (e.key === 'Enter') {
+  const ta = e.target.closest('[data-report-block-text]');
+  if (!inp && !ta) return;
+  const key = inp ? inp.dataset.reportTitleInput : ta.dataset.reportBlockText;
+  const free = isFreeBlockKey(key);
+  if (e.key === 'Enter' && inp) {
     e.preventDefault();
     // Değer değişmemiş olsa da düzenlemeyi kapat (blur tek başına change
-    // üretmez; kutu açık kalırdı).
-    setReportSectionTitle(inp.dataset.reportTitleInput, inp.value);
+    // üretmez; kutu açık kalırdı). Serbest blokta metin de kaydedilir.
+    if (free) saveReportBlockFromRow(key);
+    else setReportSectionTitle(key, inp.value);
   } else if (e.key === 'Escape') {
     e.preventDefault();
-    reportTitleEditKey = null;
-    const c = currentCase();
-    if (c) renderReportSections(c);
+    if (free) {
+      cancelReportBlockEdit(key);
+    } else {
+      reportTitleEditKey = null;
+      const c = currentCase();
+      if (c) renderReportSections(c);
+    }
   }
 });
 // Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
@@ -18496,6 +18712,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.287': {
+    title: 'Kendi rapor bölümünüzü ekleyebilirsiniz (başlık + metin)',
+    body:
+      'Rapor iskeletinin gövdesinde “＋ Bölüm ekle” var. Başlık ve metni yazıp Kaydet dersiniz; ' +
+      'bölüm diğerleri gibi açılır/kapanır, ↑↓ ile sıralanır ve HTML/DOCX/UDF çıktısına girer. ' +
+      'İçindekilerde “– Başlık” olarak görünür (numarasız). Başlık veya metin boşsa rapora girmez. ' +
+      'Bölümü × ile silersiniz; onay ister ve Ctrl+Z ile geri alınır. Ses/deşifre kanıtı etkilenmez.'
+  },
   '2.286': {
     title: 'Hazır profil düğmeleri kaldırıldı; bölüm kümesi sizin',
     body:

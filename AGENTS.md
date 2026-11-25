@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.286.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.287.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7087,3 +7087,50 @@ konuşmacı kümeleme ve Kişiler panelinin taşınması.
 2. **v2.288 — Kullanıcı profilleri:** yalnız kullanıcı tanımlı; kaydet/uygula.
 3. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
    dosya düzeyine taşınması.
+
+## YENİ OTURUM DEVRİ (v2.287) — Serbest rapor bölümü
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.287** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1977 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | v2.288 kullanıcı profilleri; konuşmacı kümeleme; Kişiler panelinin taşınması |
+
+### Ne yapıldı
+
+- **“＋ Bölüm ekle”** (rapor iskeleti gövdesi): başlık + metin. Blok açılır/kapanır,
+  ↑↓ ile sıralanır, üç çıktıya girer; İÇİNDEKİLER’de **“– Başlık”** (numarasız).
+- Veri: `case.report.blocks[] = { id, title, text, on }`; sıra `layout.order`
+  içinde **`free:<id>`**. Boş blok (başlık veya metin yok) **rapora girmez**.
+- Silme: onay ister, `snapshotForUndo` alınır, **Ctrl+Z** ile geri gelir.
+- Revizyon `blocks` taşır; birleştirme id ile ekler, farklı içerikte
+  **`report-block` çakışması** bildirir (sessiz ezme yok).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Serbest anahtar `free:<id>`.** Blok kimliği `normalizeReportBlocks` ile
+   doğrulanır; yetim anahtar `ensureFreeBlockOrder` ile düşer, sırası olmayan
+   blok `s6` öncesine girer. Yeni blok eklerken bu iki fonksiyonu birlikte
+   kullanın.
+2. **Boş blok çizilmez.** `reportBlockRenders` **başlık VE metin** ister;
+   “—” uydurulmaz. Arayüzde boş blok “Yeni bölüm” görünür, rapora girmez.
+3. **Üç çıktı aynı kapıdan:** `reportBodyOrder` serbest anahtarları kapsar;
+   HTML/DOCX/UDF döngüleri `body[key]`/`blocks[key]` yoksa serbest üreticiye
+   düşer. Yeni bir çıktı yolu eklerken aynı fallback'i kullanın.
+4. **Kaydetme:** serbest blokta **Kaydet** düğmesi veya başlık alanında
+   **Enter**; metin alanında Enter **satır atlar**. **Esc** vazgeçer; boş blok
+   iptalinde yetim kayıt bırakılmaz.
+5. **Revizyon ve birleştirme:** `reportSnapshot.blocks` taşınır; merge farklı
+   içerikte çakışma bildirir, ezmez. Kanıt (ses/deşifre) etkilenmez.
+
+### Sıradaki iş
+
+1. **v2.288 — Kullanıcı profilleri:** yalnız kullanıcı tanımlı; “düzeni profil
+   olarak kaydet” + “profili uygula”.
+2. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
+   dosya düzeyine taşınması.
+3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
+   sürükle-bırak sıralama.

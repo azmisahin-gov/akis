@@ -63,7 +63,7 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
   değişmez); kullanıcı istediğini kapatır/sıralar.
 - Yeni dosyalar için "boş iskelet" seçeneği: yalnız kapak + kanıt (isteğe bağlı).
 
-### v2.287 — Serbest blok ekleme
+### v2.287 — Serbest blok ekleme (YAPILDI)
 
 - "＋ Bölüm ekle": **başlık + serbest metin** (isteğe bağlı tablo).
 - Blok, diğer bölümler gibi sıralanır/açılır/kapanır; üç çıktıya girer.

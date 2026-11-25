@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.286.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.287.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.287 — Serbest rapor bölümü (başlık + metin)
+
+**Kullanıcı:** *"Her alanı sıfırdan yapabilsin… gerekli alanları sürükler bırakır."*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletinin gövdesinde **“＋ Bölüm ekle”** var. Başlık ve metni yazıp
+  **Kaydet** dersiniz; bölüm diğerleri gibi **açılır/kapanır**, **↑↓** ile
+  sıralanır ve **HTML/DOCX/UDF** çıktısına girer.
+- İÇİNDEKİLER’de **“– Başlık”** olarak görünür (numarasız; isterseniz numarayı
+  başlığa kendiniz yazarsınız).
+- Başlık veya metin boşsa bölüm **rapora girmez**; “—” uydurulmaz.
+- Bölümü **×** ile silersiniz: onay ister, **Ctrl+Z** ile geri alınır. Ses ve
+  deşifre kanıtı **etkilenmez**.
+
+### Teknik
+
+- `case.report.blocks[] = { id, title, text, on }`; sıra `layout.order` içinde
+  `free:<id>` anahtarıyla tutulur.
+- Şema (saf): `normalizeReportBlocks`, `ensureFreeBlockOrder`, `isFreeBlockKey`,
+  `freeBlockKey`. Yetim `free:` anahtarı düşer; yeni blok `s6` öncesine girer.
+- `reportBodyOrder` serbest anahtarları kapsar; `reportBlockRenders` **başlık +
+  metin** zorunlu kılar; `reportTocEntries` “–” ile basar.
+- Revizyon `blocks` taşır; birleştirme id ile ekler, farklı içerikte
+  **çakışma** bildirir (`report-block`), sessizce ezmez.
+- Koruyan: `birim` [129], `rapor` Senaryo 38.
 
 ## v2.286 — Hazır profil düğmeleri kaldırıldı
 
