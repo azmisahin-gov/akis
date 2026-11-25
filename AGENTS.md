@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.304.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.305.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7638,3 +7638,23 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
   gözden geçir/düzelt.
 - Sonra v2.306: satır **⋮** menüsüne "≈ Konuşmacıyı tahmin et" + "Konuşmacı
   ata ▸" ve toplu ön-atama.
+
+## YENİ OTURUM DEVRİ (v2.305) — Bölüm ↔ konuşmacı tablosu
+
+| | |
+|---|---|
+| Sürüm | **v2.305** |
+| Testler | `bash tools/test.sh` → **2151 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.306 (⋮ menü + toplu ön-atama) |
+
+- Konuşmacılar sekmesinde **`renderSpeakerSegmentTable(m)`**: her bölüm = zaman ·
+  kısa metin · konuşmacı seçici · ≈ öneri/durum. Filtre `m.__spkSegFilter`
+  (Tümü/Atanmamış/Otomatik; oturumluk). 400 satır sınırı + not.
+- Satırdaki seçici **mevcut tek kapıyı** kullanır (`data-seg`/`data-key="speaker"`);
+  değişiklik Deşifre listesi + detay + tablo birlikte tazelenir.
+- Panel çizimi / ön-atama / ≈ tahmin / “Uygula” sonrası tablo tazelenir.
+- Test `birim [146]` (9).
+
+### Sıradaki iş (v2.306)
+- Satır **⋮** menüsüne “≈ Konuşmacıyı tahmin et” + “Konuşmacı ata ▸ S1/S2…”;
+  toplu ön-atama (dosya başına).

@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.304.**
+yazılır. **Güncel sürüm: v2.305.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.305 — Bölüm ↔ konuşmacı tablosu (TAMAMLANDI)
+
+- Konuşmacılar sekmesinde **Bölüm ↔ konuşmacı** tablosu: zaman · kısa metin ·
+  konuşmacı seçici · ≈ öneri/durum; filtre Tümü/Atanmamış/Otomatik.
+- Atama satırdan yapılır (Deşifre'ye gitmeden); değişiklik Deşifre'ye de yansır.
+- Test `birim [146]`.
 
 ## v2.304 — Konuşmacılar kendi sekmesinde (TAMAMLANDI)
 

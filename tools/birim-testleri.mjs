@@ -6357,5 +6357,20 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kod çakışması → Konuşmacılar sekmesi', /uiTab = 'speakers'/.test(js), true);
 }
 
+// [146] v2.305 — Bölüm ↔ konuşmacı tablosu (Konuşmacılar sekmesi).
+{
+  console.log('[146] Bölüm ↔ konuşmacı tablosu (v2.305)');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('tablo çizici var', /function renderSpeakerSegmentTable\(m\)/.test(js), true);
+  eq('tablo kapsayıcısı', /id="spk-seg-table-\$\{esc\(m\.id\)\}"/.test(js), true);
+  eq('filtre (tümü/atanmamış/otomatik)', /data-spk-seg-filter/.test(js), true);
+  eq('satırda konuşmacı seçici (tek kapı)', /data-seg="\$\{i\}" data-key="speaker"/.test(js), true);
+  eq('satırda ≈ öneri + Uygula', /data-apply-suggest="\$\{i\}"/.test(js), true);
+  eq('otomatik rozeti', /sst-auto/.test(js), true);
+  eq('sekmede tablo bölümü başlığı', /Bölüm ↔ konuşmacı/.test(js), true);
+  eq('filtre oturumluk', /__spkSegFilter/.test(js), true);
+  eq('panel çiziminde tablo tazelenir', /renderSpeakersPanel\(m\);\s*\n\s*renderSpeakerSegmentTable\(m\);/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

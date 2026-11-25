@@ -119,15 +119,15 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   embeddingCentroid
-} from './schema.js?v=2.304';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.304';
+} from './schema.js?v=2.305';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.305';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.304';
+const APP_VERSION = '2.305';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2237,6 +2237,10 @@ function materialCardHtml(m) {
       </div>
       <div class="card-pane ${tab === 'speakers' ? 'on' : ''}" data-pane="speakers" role="tabpanel">
         <div class="pane-section"><div class="pane-title">Konuşmacılar ve ses özellikleri<span class="info-i" tabindex="0" data-tip="Etiketleri uzman girer; uygulama kimlik tespiti yapmaz. Perde ölçümü otokorelasyonla hesaplanan bir tahmindir, kayıt koşullarına bağlıdır.">i</span></div><div id="spk-panel-${esc(m.id)}"></div><div class="evidence-actions"><button class="mini-button" data-measure-pitch="${esc(m.id)}" title="Her konuşmacı için ortanca perde (f0) tahmini. Kimlik tespiti değildir.">Konuşmacı perdesini ölç</button><button class="mini-button" data-voice-check="${esc(m.id)}" title="Bölüm bazında perde ölçüp atandığı konuşmacının profiliyle karşılaştırır. 'Bu bölüm başka konuşmacıya ait olabilir' ve 'burada konuşmacı değişmiş olabilir' işaretleri üretir. Karar sizindir; hiçbir atama otomatik değiştirilmez.">Ses tutarlılığını ölç</button></div></div>
+        <div class="pane-section"><div class="pane-title">Bölüm ↔ konuşmacı<span class="info-i" tabindex="0" data-tip="Her bölümün konuşmacısını tek listede gözden geçirip düzeltin. ≈ = otomatik ön-atama (anonim ses benzerliği; kimlik tespiti değildir). Değişiklik Deşifre sekmesine de yansır.">i</span></div>
+          <div class="spk-seg-tools"><label class="ms-note">Göster: <select data-spk-seg-filter="${esc(m.id)}"><option value="all"${(m.__spkSegFilter || 'all') === 'all' ? ' selected' : ''}>Tümü</option><option value="empty"${m.__spkSegFilter === 'empty' ? ' selected' : ''}>Atanmamış</option><option value="auto"${m.__spkSegFilter === 'auto' ? ' selected' : ''}>Otomatik</option></select></label><span class="ms-note" id="spk-seg-note-${esc(m.id)}"></span></div>
+          <div id="spk-seg-table-${esc(m.id)}"></div>
+        </div>
       </div>
       <div class="card-pane ${tab === 'listen' ? 'on' : ''}" data-pane="listen" role="tabpanel">
         <div id="measure-panel-${esc(m.id)}">${measurementPanelHtml(m)}</div>
@@ -2458,6 +2462,7 @@ async function renderMaterialDetail() {
   setAnalysisMode(m, analysisMode);
   ensureSpeakers(m);
   renderSpeakersPanel(m);
+  renderSpeakerSegmentTable(m);
   // Takip durumu dosya bazlı saklanır; sayfa yenilenince korunur.
   const c2 = currentCase();
   if (c2 && typeof c2.followMode === 'boolean') {
@@ -4430,6 +4435,7 @@ async function autoAssignSpeakers(m) {
     await renderAudioList();
     restoreSegScroll(m, scroll, activeSegIndex(m));
     renderSpeakersPanel(m);
+    renderSpeakerSegmentTable(m);
     renderOverview();
     setProgress(`${plan.length} konuşmacı · ${assigned} bölüm ön-atandı`);
     showToast(
@@ -4513,6 +4519,7 @@ async function suggestSpeakerForSegment(m, idx) {
     const best = bestSpeakerMatch(targetVec, candidates);
     m.__spkSuggest = { idx, code: best.code, sim: best.sim, match: best.match, at: Date.now() };
     renderSegDetail(m);
+    renderSpeakerSegmentTable(m);
     showToast(
       best.match === 'none'
         ? `Belirgin eşleşme yok (en yakın ≈ ${best.code || '—'} ${Number(best.sim).toFixed(2)}).`
@@ -4949,6 +4956,55 @@ function anyMaterialAutoUsed(c) {
 function speakerMethodNoteText(c) {
   return c && c.report && c.report.speakerMethod && anyMaterialAutoUsed(c) ? REPORT_TEXT.speakerMethodNote : '';
 }
+// BÖLÜM ↔ KONUŞMACI TABLOSU (v2.305). Konuşmacılar sekmesinde her bölümün
+// konuşmacısını tek listede gösterir; atama buradan yapılır (Deşifre'ye gitmeden
+// hızlı gözden geçir/düzelt). Kimlik değil; yalnız atama kolaylığı.
+function renderSpeakerSegmentTable(m) {
+  if (!m) return;
+  const host = document.getElementById(`spk-seg-table-${m.id}`);
+  if (!host) return;
+  const note = document.getElementById(`spk-seg-note-${m.id}`);
+  const segs = m.segments || [];
+  if (!segs.length) {
+    host.innerHTML = '<div class="seg-empty-note">Henüz bölüm yok. Önce Deşifre sekmesinde çözümleyin.</div>';
+    if (note) note.textContent = '';
+    return;
+  }
+  const filter = m.__spkSegFilter || 'all';
+  const rows = [];
+  let total = 0;
+  let shown = 0;
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
+    const has = !!(s.speakerId || String(s.speaker || '').trim());
+    if (filter === 'empty' && has) continue;
+    if (filter === 'auto' && !s.speakerAuto) continue;
+    total += 1;
+    if (shown >= 400) continue;
+    shown += 1;
+    const sug = m.__spkSuggest && m.__spkSuggest.idx === i ? m.__spkSuggest : null;
+    const sugCell = sug
+      ? `<span class="sd-suggest${sug.match === 'uncertain' ? ' is-uncertain' : ''}" title="Ses benzerliği önerisi; kimlik değil.">≈ ${esc(sug.code || '—')} · ${Number(sug.sim || 0).toFixed(2)} <button type="button" class="mini-button" data-apply-suggest="${i}">Uygula</button></span>`
+      : '';
+    const badge = s.speakerAuto
+      ? '<span class="sst-auto" title="Otomatik ön-atama (anonim ses benzerliği); dinleyip kontrol edin.">≈</span>'
+      : '';
+    rows.push(
+      `<tr data-spk-seg-row="${i}"><td class="sst-time">${esc(s.start || '')}</td>` +
+        `<td class="sst-text" title="${esc(s.text || '')}">${esc(clipText(s.text || '', 60) || '—')}</td>` +
+        `<td class="sst-spk"><select data-seg="${i}" data-key="speaker" aria-label="Konuşmacı">${spkSelectOptions(m, s.speaker)}</select></td>` +
+        `<td class="sst-badge">${badge}${sugCell}</td></tr>`
+    );
+  }
+  if (!rows.length) {
+    host.innerHTML = '<div class="seg-empty-note">Bu filtreye uyan bölüm yok.</div>';
+    if (note) note.textContent = '';
+    return;
+  }
+  host.innerHTML = `<table class="spk-seg-table"><thead><tr><th>ZAMAN</th><th>METİN</th><th>KONUŞMACI</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  if (note) note.textContent = total > shown ? `${shown}/${total} bölüm gösteriliyor` : `${total} bölüm`;
+}
+
 function speakersPanelHtml(m) {
   const c = currentCase();
   const sp = m.speakers || [];
@@ -16976,6 +17032,16 @@ function setupEvents() {
     persist();
     renderQuestions();
   });
+  // v2.305 — Konuşmacılar sekmesindeki bölüm tablosu filtresi (oturumluk).
+  $('#view-audio')?.addEventListener('change', (e) => {
+    const f = e.target && e.target.closest ? e.target.closest('[data-spk-seg-filter]') : null;
+    if (!f) return;
+    const mm = activeMaterial();
+    if (mm) {
+      mm.__spkSegFilter = f.value;
+      renderSpeakerSegmentTable(mm);
+    }
+  });
   $('#audioInput').addEventListener('change', async (e) => {
     const files = [...e.target.files];
     if (files.length) await addAudioFiles(files);
@@ -17610,6 +17676,7 @@ function setupEvents() {
           persist();
           renderSegDetail(mm);
           updateSegListItem(mm, idx);
+          renderSpeakerSegmentTable(mm);
           scheduleLightRefresh(mm);
           showToast(`Bölüm ${idx + 1} → ${sp.code || ''} · ${sp.name}.`);
         }
@@ -17986,6 +18053,8 @@ function setupEvents() {
       setSegmentSpeakerByName(m, s, el.value);
       // v2.301 — uzman atamayı elle değiştirdi: "otomatik ön-atama" işareti kalkar.
       s.speakerAuto = false;
+      // v2.305 — Konuşmacılar sekmesindeki bölüm tablosunu da tazele.
+      renderSpeakerSegmentTable(m);
     }
     else if (el.dataset.key === 'start' || el.dataset.key === 'end') {
       // ZAMAN ALANI (v2.97): yazarken kayda YAZILMAZ. Yarım yazılmış
@@ -19778,6 +19847,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.305': {
+    title: 'Bölüm ↔ konuşmacı tablosu',
+    body:
+      'Konuşmacılar sekmesinde her bölümü zaman · kısa metin · konuşmacı seçici · ≈ öneri olarak tek listede görürsünüz. Atama satırdan yapılır; Deşifre’ye gitmeye gerek yok. Filtre: Tümü · Atanmamış · Otomatik.'
+  },
   '2.304': {
     title: 'Konuşmacılar kendi sekmesinde',
     body:

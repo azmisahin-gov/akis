@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.304.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.305.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.305 — Bölüm ↔ konuşmacı tablosu (Konuşmacılar sekmesi)
+
+**Kullanıcı:** "Konuşmacıları Deşifre'ye gitmeden tek listede gözden geçirip
+düzeltebilelim; tam kullanışlı bir konuşmacı çözümlemesi olsun."
+
+### KULLANICI NE GÖRECEK
+
+- **Konuşmacılar** sekmesinde yeni **“Bölüm ↔ konuşmacı”** tablosu: her bölüm
+  için **zaman · kısa metin · konuşmacı seçici · ≈ öneri/durum**.
+- Satırdaki **konuşmacı seçicisinden** atama yapılır; **Deşifre sekmesine
+  gitmeye gerek yok**, değişiklik oraya da yansır.
+- **Filtre:** Tümü · Atanmamış · Otomatik (otomatik ön-atama alanlar).
+- Otomatik ön-atama alanlar **≈** rozetiyle; **≈?** ile üretilen öneri satırda
+  **“≈ S2 · 0.91 · Uygula”** olarak çıkar.
+- **Kimlik değil:** öneri/ön-atama anonim benzerliktir; karar sizindir.
+
+### Teknik
+
+- `app.js` → **`renderSpeakerSegmentTable(m)`**: bölümleri tabloya basar; satırda
+  `data-seg`/`data-key="speaker"` seçici **mevcut tek kapıyı** kullanır (ek mantık
+  yok). Filtre `m.__spkSegFilter` (**oturumluk**). 400 satır sınırı, not gösterilir.
+- Panel çizimi, ön-atama, ≈ tahmin ve “Uygula” sonrası tablo tazelenir.
+- CSS: `.spk-seg-table`, `.sst-auto` (token; punto ölçeği).
+- Koruyan: `birim` [146] (9 kontrol).
 
 ## v2.304 — Konuşmacılar kendi sekmesinde; Analiz → Ölçümler
 

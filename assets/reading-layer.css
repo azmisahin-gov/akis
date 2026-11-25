@@ -3954,3 +3954,14 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* v2.304 — Konuşmacılar sekmesi: kendi içinde kayar (listen/record gibi) */
 #view-audio .card-pane.on[data-pane="speakers"] { max-height: 100%; overflow-y: auto; }
+
+/* v2.305 — Konuşmacılar sekmesi: bölüm ↔ konuşmacı tablosu */
+.spk-seg-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 4px 0; }
+.spk-seg-table { width: 100%; border-collapse: collapse; font-size: var(--fs-2xs); }
+.spk-seg-table th, .spk-seg-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.spk-seg-table th { color: var(--ink-3); font-weight: 600; }
+.spk-seg-table .sst-time { white-space: nowrap; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.spk-seg-table .sst-text { color: var(--ink-2); overflow-wrap: anywhere; max-width: 360px; }
+.spk-seg-table .sst-spk select { max-width: 160px; }
+.spk-seg-table .sst-badge { white-space: nowrap; }
+.sst-auto { display: inline-block; padding: 0 5px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-size: var(--fs-2xs); }
