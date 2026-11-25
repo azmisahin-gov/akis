@@ -97,6 +97,7 @@ import {
   normalizeReportBlocks,
   normalizeReportProfiles,
   normalizeAnnexPlacement,
+  normalizeReportLabels,
   isAnnexPlaceable,
   ensureFreeBlockOrder,
   isFreeBlockKey,
@@ -114,15 +115,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.294';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.294';
+} from './schema.js?v=2.295';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.295';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.294';
+const APP_VERSION = '2.295';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12090,9 +12091,11 @@ function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
   const idx = [];
   // Kanıt tablosunda zaman/metin ZORUNLU; kullanıcı kapatsa da basılır.
   for (let i = 0; i < keys.length; i++) if (reportColumnLocked(table, keys[i]) || on(keys[i])) idx.push(i);
+  const labels = normalizeReportLabels(c && c.report && c.report.labels);
+  const tableLabels = labels[table] || {};
   return {
     keys: idx.map((i) => keys[i]),
-    headers: idx.map((i) => headers[i]),
+    headers: idx.map((i) => tableLabels[keys[i]] || headers[i]),
     rows: (rows || []).map((r) => idx.map((i) => r[i])),
     widths: Array.isArray(widths) ? idx.map((i) => widths[i]) : null,
     empty: idx.length === 0
@@ -12135,7 +12138,7 @@ function renderReportColumns(c) {
             .map((k) => {
               const locked = reportColumnLocked(table, k);
               const on = locked || cols[table][k] !== false;
-              return `<label class="rcol-item${locked ? ' is-locked' : ''}"><input type="checkbox" data-rcol-table="${esc(table)}" data-rcol-key="${esc(k)}"${on ? ' checked' : ''}${locked ? ' disabled' : ''} title="${locked ? 'Kanıt için zorunlu; kapatılamaz.' : ''}"> <span>${esc(labels[k] || k)}</span></label>`;
+              return `<label class="rcol-item${locked ? ' is-locked' : ''}"><input type="checkbox" data-rcol-table="${esc(table)}" data-rcol-key="${esc(k)}"${on ? ' checked' : ''}${locked ? ' disabled' : ''} title="${locked ? 'Kanıt için zorunlu; kapatılamaz.' : ''}"> <span>${esc(labels[k] || k)}</span><input class="rcol-label" type="text" maxlength="60" data-rcol-label-table="${esc(table)}" data-rcol-label-key="${esc(k)}" value="${esc((c.report && c.report.labels && c.report.labels[table] && c.report.labels[table][k]) || '')}" placeholder="Başlık" title="Sütun başlığını değiştir (boşsa varsayılan)"></label>`;
             })
             .join('') +
           `</div>`
@@ -18140,6 +18143,21 @@ $('#reportAnnexFields')?.addEventListener('click', (e) => {
 });
 // Tablo sütunları (v2.235): kapat/aç → üç çıktıda da yansır.
 $('#reportColumnsFields')?.addEventListener('change', (e) => {
+  const lab = e.target.closest('[data-rcol-label-key]');
+  if (lab) {
+    const c = currentCase();
+    if (!c) return;
+    c.report = c.report || {};
+    const labels = normalizeReportLabels(c.report.labels);
+    if (!labels[lab.dataset.rcolLabelTable]) labels[lab.dataset.rcolLabelTable] = {};
+    const v = String(lab.value || '').trim();
+    if (v) labels[lab.dataset.rcolLabelTable][lab.dataset.rcolLabelKey] = v;
+    else delete labels[lab.dataset.rcolLabelTable][lab.dataset.rcolLabelKey];
+    c.report.labels = normalizeReportLabels(labels);
+    persist();
+    renderReport();
+    return;
+  }
   const cb = e.target.closest('[data-rcol-key]');
   if (!cb) return;
   setReportColumn(cb.dataset.rcolTable, cb.dataset.rcolKey, cb.checked);
@@ -19216,6 +19234,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.295': {
+    title: 'Tablo sütun başlıklarını düzenleyebilirsiniz',
+    body:
+      'Kontrol → Rapor alanları panelinde her sütunun yanındaki başlık girişiyle tablo başlığını değiştirin. ' +
+      'Boş bırakılırsa varsayılan başlık kullanılır. Veri değişmez; üç çıktı aynı başlığı basar.'
+  },
   '2.294': {
     title: 'Konuşmacı süreleri ayrı bölüm',
     body:

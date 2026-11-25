@@ -972,6 +972,26 @@ export function ensureFreeBlockOrder(order, blocks) {
   return list;
 }
 
+// ---- Tablo sütun başlığı düzenlemeleri (v2.295) ------------------------
+// Yalnız bilinen tablo/sütun; boş değer varsayılan başlığı kullanır.
+export function normalizeReportLabels(src) {
+  const out = {};
+  if (!src || typeof src !== 'object') return out;
+  for (const table of Object.keys(REPORT_COLUMN_TABLES)) {
+    const t = src[table];
+    if (!t || typeof t !== 'object') continue;
+    const row = {};
+    for (const key of REPORT_COLUMN_TABLES[table]) {
+      const v = t[key];
+      if (typeof v !== 'string') continue;
+      const s = v.trim();
+      if (s) row[key] = s.slice(0, 60);
+    }
+    if (Object.keys(row).length) out[table] = row;
+  }
+  return out;
+}
+
 // ---- Bölümü EK olarak taşıma (v2.291) ----------------------------------
 // Yalnız gövde bölümleri taşınabilir; EKLER ve EK LİSTESİ kendini taşımaz.
 export function isAnnexPlaceable(key) {
@@ -1274,6 +1294,8 @@ export function emptyCase(over = {}) {
       userProfiles: [],
       // Bölümü EKLER altına taşıma (v2.291): { s5: true } gibi.
       annexPlacement: {},
+      // Sütun başlığı düzenlemeleri (v2.295): tablo → sütun → metin.
+      labels: {},
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -2122,6 +2144,7 @@ export function normalizeCase(src = {}) {
       // Kullanıcı profilleri (v2.288): yalnız kullanıcı tanımlı düzenler.
       userProfiles: normalizeReportProfiles(report.userProfiles),
       annexPlacement: normalizeAnnexPlacement(report.annexPlacement),
+      labels: normalizeReportLabels(report.labels),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.

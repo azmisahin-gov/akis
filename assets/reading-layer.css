@@ -3922,3 +3922,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* v2.291 — Bölüm EKLER altına taşındı rozeti. */
 .rsec-placed { font-size: var(--fs-2xs); color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+
+/* v2.295 — Tablo sütun başlığı düzenleme girişi. */
+.rcol-label { width: 100%; max-width: 130px; height: 22px; font-size: var(--fs-2xs); padding: 0 4px; }

@@ -6038,5 +6038,28 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('eski analiz paneli kaldırıldı', /personBlock\}\$\{voiceEmbedPanelHtml/.test(js), false);
 }
 
+
+// [136] v2.295 — Tablo sütun başlığı düzenleme; veri değişmez, üç çıktı ortak.
+{
+  console.log('[136] Sütun başlığı düzenleme (v2.295)');
+  const S = __schemaMod;
+  const lab = S.normalizeReportLabels({ segments: { text: '  KONUŞMA METNİ  ', yok: 'X' }, bilinmeyen: { a: 'b' } });
+  eq('bilinen tablo korunur', lab.segments.text, 'KONUŞMA METNİ');
+  eq('bilinmeyen sütun atılır', 'yok' in lab.segments, false);
+  eq('bilinmeyen tablo atılır', 'bilinmeyen' in lab, false);
+  const c = T.emptyCaseForTest({ id: 'cL1', report: { labels: { segments: { text: 'KONUŞMA METNİ' } } } });
+  const t = T.reportTableColumns(
+    c,
+    'segments',
+    ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
+    [['a', 'b', 'c', 'd', 'e', 'f']]
+  );
+  eq('başlık geçersiz kılınır', t.headers[3], 'KONUŞMA METNİ');
+  eq('diğer başlık varsayılan', t.headers[0], 'ZAMAN ARALIĞI');
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('panelde başlık girişi var', /data-rcol-label-key/.test(js), true);
+  eq('başlık normalize edilir', /normalizeReportLabels\(c\.report\.labels\)/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
