@@ -1,4 +1,4 @@
-# Özellikler (v2.298 — mevcut durum)
+# Özellikler (v2.299 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -951,6 +951,12 @@ envanterle aynı sütun seçimini izler.
 - **Rapor iskeleti (sol):** bütün bölümler ve **ekler** tek listede. Gövde ve
   ekler **↑↓** ile sıralanır, tek tek açılıp kapatılır. Hazır profil düğmeleri
   **v2.286'da kaldırıldı**; bölüm kümesini tek tek siz seçersiniz.
+- **↑↓ alt ağacıyla taşır (v2.299):** bir bölümü ↑↓ ile taşıdığınızda **alt
+  bölümleri de birlikte** hareket eder; sıra sessizce geri alınmaz. Aynı düzeyde
+  komşu yoksa uygulama nedenini söyler (başka düzeye taşımak için sürükleyin).
+  Sürükle-bırak ile bölüm **başka bölümün altına** bırakılınca **alt bölüm**
+  (1.1 / A.1) olur; kenara bırakılınca aynı düzeyde sıralanır. Derinlik sınırsız,
+  döngü engellenir; ↑↓ ve sürükleme aynı ağaç kuralıyla çalışır.
 - **Parçalar ayrı ayrı (v2.261):** **kayıt bazında bulgular**, **soruların
   cevapları** ve **teknik sınırlılıklar** ayrı bölümdür; her biri tek başına
   açılıp kapatılır ve sıralanır. **Soru yoksa** "Cevaplar" bölümü hiç çizilmez.

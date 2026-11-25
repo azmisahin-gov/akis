@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.298.**
+yazılır. **Güncel sürüm: v2.299.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.299 — ↑↓ alt bölümleri alt ağacıyla taşır (TAMAMLANDI)
+
+- Ölçülen hata: v2.297 ağacında ↑↓ düz `moveInList` kullanıyordu; normalize DFS
+  sırasını geri kurduğu için ebeveyn/ilk-çocuk taşımaları **sessizce geri
+  alınıyordu** (↓ ebeveyn → değişmedi; ↑ kök → değişmedi).
+- `report-model.js` → `moveTreeBlock(order, parent, key, dir)` (saf): düğümü **alt
+  ağacıyla** aynı düzeydeki komşusuyla değiştirir; DFS korunur. Düz liste
+  davranışı geriye uyumlu.
+- `app.js` → `moveReportSection` bunu kullanır; komşu yoksa toast ile söyler.
+- Test `birim [140]`.
 
 ## v2.298 — EKLER alt grup olabilir (TAMAMLANDI)
 

@@ -115,15 +115,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.298';
-import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.298';
+} from './schema.js?v=2.299';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.299';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.298';
+const APP_VERSION = '2.299';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12695,9 +12695,22 @@ function setReportLayout(mut) {
   renderReport();
 }
 function moveReportSection(key, dir) {
+  // v2.299 — ↑↓ ağaçta düğümü ALT AĞACIYLA birlikte kendi düzeyindeki komşusuyla
+  // taşır. Düz `moveInList` yalnız tek anahtarı kaydırıyordu; ebeveyni çocuğunun
+  // altına indirince normalize DFS sırasını geri kuruyor ve değişiklik sessizce
+  // kayboluyordu ("↑↓ hiçbir şey yapmıyor"). Aynı düzeyde komşu yoksa kullanıcıya
+  // SESSİZ kalmadan söylenir; taşıma düzey değiştirmez (onu sürükleme yapar).
+  let moved = false;
   setReportLayout((l) => {
-    l.order = moveInList(l.order, key, dir);
+    const next = moveTreeBlock(l.order, l.parent || {}, key, dir);
+    if (next.length === l.order.length && next.some((k, i) => k !== l.order[i])) {
+      l.order = next;
+      moved = true;
+    }
   });
+  if (!moved) {
+    showToast('Bu bölümün bu düzeyde taşınacağı komşusu yok. Başka düzeye taşımak için sürükleyin.', false);
+  }
 }
 
 function sectionBlockKeys(c, key) {
@@ -12743,15 +12756,6 @@ function moveSectionRelative(key, target, mode) {
   return true;
 }
 
-function moveReportSectionTo(key, targetKey) {
-  const c = currentCase();
-  if (!c) return;
-  const layout = reportLayoutOf(c);
-  const order = moveKeyTo(layout.order, key, targetKey);
-  c.report.layout = normalizeReportLayout({ ...layout, order });
-  persist();
-  renderReport();
-}
 function moveReportAnnexTo(key, targetKey) {
   const c = currentCase();
   if (!c) return;
@@ -19362,6 +19366,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.299': {
+    title: '↑↓ alt bölümleri birlikte taşır',
+    body:
+      'İskelette bir bölümü ↑↓ ile taşıdığınızda alt bölümleri de birlikte hareket eder; sıra artık sessizce geri alınmaz. ' +
+      'Aynı düzeyde taşınacak komşu yoksa uygulama nedenini söyler (başka düzeye taşımak için sürükleyin).'
+  },
   '2.298': {
     title: 'EKLER de bir grup olarak alt bölüm olabilir',
     body:

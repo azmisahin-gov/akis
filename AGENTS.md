@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.298.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.299.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7345,3 +7345,70 @@ Ayrıntı: `docs/RAPOR_SERBEST_TASARIM.md` §v2.291.
 - `casePersonsPanelHtml` + `renderCasePersons`; ekle/düzenle/sil çekmecede.
 - Silme onaylı; bağlı konuşmacı/ses/metin korunur. Kayıt kartındaki “Aynı kişi” yerinde.
 - Test: `birim [135]`, `tasarim` kişi paneli.
+
+## YENİ OTURUM DEVRİ (v2.294–v2.299) — Rapor iskeleti: ağaç, sürükle-bırak, ↑↓
+
+Bu not, v2.293'ten sonra gelen **rapor iskeleti yapısal** sürümlerini özetler
+(AGENTS.md'de eksikti). Hepsi yalnız **yerleşim/sıra** ile ilgilidir; kanıt
+(ses/deşifre/silme) **değişmez**.
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.299** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2076 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` (commit + push kullanıcı onayına bağlı) |
+| Canlı | gerçek Chromium: `#appVersion` = **v2.299**, JS modül hatası 0 |
+
+### Bu aralıkta yapılanlar
+
+| Sürüm | Konu |
+|---|---|
+| v2.294 | Konuşmacı süreleri ayrı bölüm (skeleton'da aç/kapa + sırala) |
+| v2.295 | Tablo sütun başlığı düzenleme (`case.report.labels`; üç çıktı ortak) |
+| v2.296 | Sürükle-bırak sıralama (`moveKeyTo`; ↑↓ korunur; filtre açıkken kapalı) |
+| v2.297 | Sınırsız alt bölüm ağacı (`layout.parent` + DFS; 1.1 / A.1) |
+| v2.298 | EKLER alt grup olabilir (iç EKLER sayfa sonu zorlamaz) |
+| v2.299 | **↑↓ alt ağacıyla taşır** (bu oturum; aşağıda) |
+
+### v2.299 — ölçülen hata ve düzeltme
+
+v2.297 ağacında **↑↓ hâlâ düz `moveInList`** kullanıyordu (tek anahtar). Ebeveyni
+çocuğunun altına indirince `normalizeReportLayout` sırayı **yeniden DFS'e**
+çevirip değişikliği **sessizce geri alıyordu**:
+
+```
+order=s1,s2,s4,s3 · parent={s2:s1,s4:s1}
+↓ s1 (ebeveyn)  → DEĞİŞMEDİ   ↑ s3 (kök, düz komşusu çocuk) → DEĞİŞMEDİ
+↓ s2 (alt bölüm) → çalışıyordu (komşusu kardeş)
+```
+
+Düzeltme: `report-model.js` → **`moveTreeBlock(order, parent, key, dir)`** (saf).
+Düğümü **alt ağacıyla** aynı ebeveynli komşusuyla değiştirir; çıktı **geçerli
+DFS** olduğu için normalize onu artık geri almaz. `moveReportSection` bunu
+kullanır; aynı düzeyde komşu yoksa **toast** ile söyler (sessiz no-op yok).
+Ölü `moveReportSectionTo` (tek anahtar) kaldırıldı. Test `birim [140]`.
+
+### DEĞİŞMEZ KURALLAR (bu aralıkta doğdu)
+
+1. **Sıra/numara/TOC tek kaynak:** `reportBodyOrder` (layout.order, DFS),
+   `reportNumberLabelMap` (ağaç numarası), `reportHeadingText`. Üç çıktı aynı
+   döngüden geçer.
+2. **Numara = ÇİZİLEN blok** (v2.289): kapalı/verisiz bölüm numara tüketmez.
+3. **↑↓ ve sürükleme AYNI ağaç kuralı:** düğüm **alt ağacıyla** taşınır. Düz
+   `moveInList`'i `layout.order` üzerinde kullanmayın — normalize DFS'i geri
+   kurar (v2.299 hatası). Yeni bir taşıma yolu eklerken `moveTreeBlock` /
+   `moveSectionRelative` kullanın.
+4. **Sessiz no-op yasak:** taşınamıyorsa nedenini söyle (toast).
+5. **Sürükleme tek yol değil:** ↑↓ erişilebilirlik için korunur (depo kuralı).
+6. **`layout.parent` döngü engelli** (`normalizeReportLayout`); derinlik sınırsız.
+
+### Sıradaki iş (adaylar)
+
+1. **Rapora "video kaydından yalnız ses" notu** gerçek mp4 ile uçtan uca deneme
+   (v2.250'de metin var; kullanıcı doğrulaması bekliyor).
+2. **A3 — gömülü metadata tam dosyada** (8 MB sınırı; `GELECEK_PLANI §11.1`).
+3. **C1 — soru ↔ bölüm eşleştirme** (deterministik; `§11.3`).
+4. **UDF yatay tablo genişliği** yatay sayfada ölçekleme (v2.245 notu).
+5. CSS borcu: nöbetçi eşikleri korunur; küçük ve kanıtlı adımlar.

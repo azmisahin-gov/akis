@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.298.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.299.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.299 — ↑↓ alt bölümleri alt ağacıyla taşır
+
+**Ölçülen hata:** v2.297'de bölümler ağaç oldu (alt bölüm `1.1` / `A.1`), ama
+**↑↓ düğmeleri** hâlâ düz listede **tek anahtarı** kaydırıyordu. Ebeveyni
+çocuğunun altına indirince `normalizeReportLayout` sırayı yeniden DFS'e
+çeviriyor ve değişiklik **sessizce geri alınıyordu**. Gerçek Chromium yerine
+saf fonksiyonla ölçüldü:
+
+```
+order = s1,s2,s4,s3 · parent = {s2:s1, s4:s1}
+↓ s1 (ebeveyn)      → DEĞİŞMEDİ (beklenen: s3,s1,s2,s4)
+↑ s3 (kök)          → DEĞİŞMEDİ (beklenen: s3,s1,s2,s4)   ← düz komşusu çocuk
+↓ s2 (alt bölüm)    → s1,s4,s2,s3 (çalışıyordu; komşusu kardeş)
+```
+
+### KULLANICI NE GÖRECEK
+
+- İskelette bir bölümü **↑↓** ile taşıdığınızda **alt bölümleri de birlikte**
+  hareket eder; sıra artık sessizce geri alınmaz.
+- Aynı düzeyde taşınacak komşu yoksa (ör. ilk alt bölümde ↑) uygulama
+  **sessiz kalmaz**: “Bu bölümün bu düzeyde taşınacağı komşusu yok. Başka düzeye
+  taşımak için sürükleyin.” der.
+- Düz liste (alt bölüm yokken) davranışı **değişmedi** (geriye uyumlu).
+- Sürükle-bırak ve ↑↓ artık aynı ağaç kuralıyla çalışır.
+
+### Teknik
+
+- `report-model.js` → **`moveTreeBlock(order, parent, key, dir)`** (saf): düğümü
+  **alt ağacıyla** kendi düzeyindeki (aynı ebeveynli) komşusuyla yer değiştirir;
+  DFS korunur, `normalizeReportLayout` sonucu bozmaz. Aynı düzeyde komşu yoksa
+  dizi değişmez.
+- `app.js` → `moveReportSection` düz `moveInList` yerine `moveTreeBlock` kullanır;
+  taşıma olmadıysa `showToast` ile nedenini söyler.
+- Koruyan: `birim` [140] (13 kontrol: ebeveyn/çocuk/kök taşıma, alt ağaç
+  birlikte, düz liste geriye uyum, normalize sonrası sıra, uygulama yolu).
 
 ## v2.298 — EKLER alt grup olabilir
 

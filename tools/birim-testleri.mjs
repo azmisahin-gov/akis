@@ -6116,5 +6116,64 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('iç EKLER sayfa sonu zorlamaz', /key === 'annex' && reportSectionDepth\(c, key\) === 0/.test(js), true);
 }
 
+
+// [140] v2.299 — ↑↓ ağaçta düğümü ALT AĞACIYLA kardeşleri arasında taşır.
+// Eski düz `moveInList` yalnız tek anahtarı kaydırıyordu; normalize DFS sırasını
+// yeniden kurduğu için ebeveyn/ilk-çocuk taşımaları SESSİZCE geri alınıyordu.
+{
+  console.log('[140] ↑↓ ağaç sıralaması (v2.299)');
+  const M = __reportModelMod;
+  const order = ['s1', 's2', 's4', 's3'];
+  const parent = { s2: 's1', s4: 's1' };
+  eq('↓ ebeveyn kardeşinin altına iner', M.moveTreeBlock(order, parent, 's1', 1).join(','), 's3,s1,s2,s4');
+  eq('↑ kök kardeşinin üstüne çıkar', M.moveTreeBlock(order, parent, 's3', -1).join(','), 's3,s1,s2,s4');
+  eq('↓ alt bölüm kardeşiyle yer değiştirir', M.moveTreeBlock(order, parent, 's2', 1).join(','), 's1,s4,s2,s3');
+  eq('↑ ilk alt bölüm değişmez (üst komşu yok)', M.moveTreeBlock(order, parent, 's2', -1).join(','), 's1,s2,s4,s3');
+  eq('↓ son alt bölüm değişmez (alt komşu yok)', M.moveTreeBlock(order, parent, 's4', 1).join(','), 's1,s2,s4,s3');
+  eq('bilinmeyen anahtar değişmez', M.moveTreeBlock(order, parent, 'zz', 1).join(','), 's1,s2,s4,s3');
+  eq('dir=0 değişmez', M.moveTreeBlock(order, parent, 's1', 0).join(','), 's1,s2,s4,s3');
+  // Alt ağaç birlikte taşınır: s4, s2'nin çocuğu iken s1 aşağı inince s2+s4 birlikte.
+  eq('alt ağaç birlikte taşınır', M.moveTreeBlock(['s1', 's2', 's4', 's3'], { s2: 's1', s4: 's2' }, 's1', 1).join(','), 's3,s1,s2,s4');
+  // Düz liste davranışı eskisiyle aynı (geriye uyum).
+  eq('düz liste ↓', M.moveTreeBlock(['a', 'b', 'c'], {}, 'a', 1).join(','), 'b,a,c');
+  eq('düz liste ↑', M.moveTreeBlock(['a', 'b', 'c'], {}, 'c', -1).join(','), 'a,c,b');
+  // DFS korunur: `moveTreeBlock` çıktısı GEÇERLİ bir DFS sırasıdır (ebeveyn
+  // çocuğundan önce, alt ağaç bitişik). `normalizeReportLayout` yalnız DFS'e
+  // göre yeniden sıraladığı için bu sırayı ARTIK geri almaz — eski düz taşımanın
+  // sessizce yok olmasının nedeni buydu.
+  const posOf = (arr) => Object.fromEntries(arr.map((k, i) => [k, i]));
+  const validDfs = (arr) => {
+    const pos = posOf(arr);
+    const par = parent;
+    for (const k of arr) {
+      const p = par[k];
+      if (p && !(p in pos && pos[p] < pos[k])) return false;
+    }
+    const subtree = (root) => {
+      const set = new Set();
+      const st = [root];
+      while (st.length) {
+        const x = st.pop();
+        if (set.has(x)) continue;
+        set.add(x);
+        for (const y of arr) if (par[y] === x) st.push(y);
+      }
+      return [...set].map((k) => pos[k]).sort((a, b) => a - b);
+    };
+    for (const k of arr) {
+      const idx = subtree(k);
+      if (idx[idx.length - 1] - idx[0] !== idx.length - 1) return false;
+    }
+    return true;
+  };
+  const moved = M.moveTreeBlock(order, parent, 's1', 1);
+  eq('taşıma sonrası geçerli DFS', validDfs(moved), true);
+  eq('taşıma gerçekten değişti (eski hata: değişmezdi)', moved.join(',') !== order.join(','), true);
+  // Uygulama yolu gerçekten yeni fonksiyonu kullanır (sessiz geri dönüş yok).
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('↑↓ ağaç taşıma kullanır', /moveTreeBlock\(l\.order/.test(js), true);
+  eq('komşu yoksa sessiz kalmaz (toast)', /taşınacağı komşusu yok/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -79,3 +79,72 @@ export function moveKeyTo(items, key, targetKey) {
   list.splice(to, 0, x);
   return list;
 }
+
+/**
+ * Bir düğümü ALT AĞACIYLA birlikte kendi düzeyindeki (aynı ebeveynli) komşusuyla
+ * yer değiştirir (↑↓ düğmeleri, v2.299).
+ *
+ * v2.297'de bölümler ağaç oldu (parent haritası) ve `order` DFS sırasıdır. Düz
+ * `moveInList` yalnız TEK anahtarı kaydırıyordu: ebeveyni çocuklarının üstüne
+ * indirince `normalizeReportLayout` sırayı yeniden DFS'e çevirip değişikliği
+ * SESSİZCE geri alıyordu ("↑↓ hiçbir şey yapmıyor"). Bu fonksiyon düğümü alt
+ * ağacıyla taşır; DFS korunur ve normalize sonucu bozmaz.
+ *
+ * `dir < 0` yukarı, `dir > 0` aşağı. Aynı düzeyde komşu yoksa dizi DEĞİŞMEZ.
+ */
+export function moveTreeBlock(order, parent, key, dir) {
+  const list = Array.isArray(order) ? order.slice() : [];
+  const par = parent && typeof parent === 'object' ? parent : {};
+  const from = list.indexOf(key);
+  if (from < 0 || !Number.isInteger(dir) || dir === 0) return list;
+
+  const parentOf = (k) => par[k] || '';
+  const subtree = (root) => {
+    const set = new Set();
+    const stack = [root];
+    while (stack.length) {
+      const k = stack.pop();
+      if (set.has(k)) continue;
+      set.add(k);
+      for (const x of list) if (par[x] === k) stack.push(x);
+    }
+    return set;
+  };
+
+  const blockSet = subtree(key);
+  const block = list.filter((k) => blockSet.has(k));
+  const rest = list.filter((k) => !blockSet.has(k));
+  const p = parentOf(key);
+
+  if (dir < 0) {
+    let prev = null;
+    for (let i = from - 1; i >= 0; i--) {
+      if (parentOf(list[i]) === p) {
+        prev = list[i];
+        break;
+      }
+    }
+    if (!prev) return list;
+    const prevBlock = subtree(prev);
+    const at = rest.findIndex((k) => prevBlock.has(k));
+    if (at < 0) return list;
+    rest.splice(at, 0, ...block);
+    return rest;
+  }
+
+  const blockEnd = list.indexOf(block[block.length - 1]);
+  let next = null;
+  for (let i = blockEnd + 1; i < list.length; i++) {
+    if (parentOf(list[i]) === p) {
+      next = list[i];
+      break;
+    }
+  }
+  if (!next) return list;
+  const nextBlock = subtree(next);
+  let end = -1;
+  for (let i = 0; i < rest.length; i++) if (nextBlock.has(rest[i])) end = i;
+  if (end < 0) return list;
+  rest.splice(end + 1, 0, ...block);
+  return rest;
+}
