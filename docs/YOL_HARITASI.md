@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.288.**
+yazılır. **Güncel sürüm: v2.289.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.289 — Tüm bölümler numaralı + veri yok açıklaması (TAMAMLANDI)
+
+- Numara **çizilen her gövde bölümüne** verilir; ana/alt blok ayrımı ve TOC’taki
+  “–” işareti kaldırıldı.
+- Açık ama verisi olmayan bölüm iskelette **“veri yok”** rozeti taşır; nedeni
+  ipuçunda ve açma toast’ında yazar. WER için referans + model çıktısı gerekir.
+- Numarasız mod korunur (v2.285).
+- Koruyan: `birim` [82]/[125]/[127]/[129]/[131], `rapor` 22/37/38.
 
 ## v2.288 — Kullanıcı rapor profilleri (TAMAMLANDI)
 

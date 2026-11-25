@@ -3915,3 +3915,7 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    Sığmayan öğe sarar; kırpma yok. */
 .rsec-profiles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
 .rsec-profiles select { height: 24px; max-width: 150px; font-size: var(--fs-2xs); padding: 0 4px; }
+
+/* v2.289 — "veri yok" rozeti: bölüm açık ama rapora giremiyor; nedeni title'da.
+   Renk tek başına anlam vermez: metin de taşır. */
+.rsec-nodata { font-size: var(--fs-2xs); color: var(--gold); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 0 6px; white-space: nowrap; }

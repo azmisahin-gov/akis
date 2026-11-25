@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -4219,25 +4219,25 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
   // v2.283: numara YALNIZ ÇİZİLEN bölüme verilir. Soru yoksa "Cevaplar"
   // çizilmez → numara almaz ve numarada boşluk kalmaz (eski hata: 5 → 7).
-  eq('varsayılan numara s7=8 (cevaplar çizilmiyor)', T.reportNumberMap(c).s7, 8);
+  eq('varsayılan numara s7=11 (tüm çizilen bölümler numaralı)', T.reportNumberMap(c).s7, 11);
   eq('soru yoksa answers numara almaz', T.reportNumberMap(c).answers, undefined);
-  eq('varsayılan numara limits=6', T.reportNumberMap(c).limits, 6);
+  eq('varsayılan numara limits=8', T.reportNumberMap(c).limits, 8);
   // Soru VARSA cevaplar çizilir ve numara alır (s7 yeniden 9).
   const cq = T.emptyCaseForTest({ id: 'cRepQ', questions: [{ id: 'q1', question: 'x', answer: 'y' }] });
-  eq('soru varsa answers=6', T.reportNumberMap(cq).answers, 6);
-  eq('soru varsa s7=9', T.reportNumberMap(cq).s7, 9);
+  eq('soru varsa answers=8', T.reportNumberMap(cq).answers, 8);
+  eq('soru varsa s7=12', T.reportNumberMap(cq).s7, 12);
   eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
   eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
-  eq('yardımcı bölüm numarasız', T.reportHeadingText(c, 'origin'), 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
+  eq('yardımcı bölüm de numaralı', T.reportHeadingText(c, 'origin'), '4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
 
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
   const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
-  eq('s3 kapalı: s4 numarası 3', T.reportNumberMap(c2).s4, 3);
-  eq('s3 kapalı: s7 numarası 7', T.reportNumberMap(c2).s7, 7);
+  eq('s3 kapalı: s4 numarası 5', T.reportNumberMap(c2).s4, 5);
+  eq('s3 kapalı: s7 numarası 10', T.reportNumberMap(c2).s7, 10);
   eq(
     's3 kapalı: s4 başlığı yeniden numaralandı',
     T.reportHeadingText(c2, 's4'),
-    '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'
+    '5. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'
   );
 
   // Sıra değişince numara sıraya göre verilir.
@@ -4255,7 +4255,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const toc = T.reportTocEntries(c);
   eq('TOC ana bölümü numaralı taşır', toc.includes('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI'), true);
   eq('TOC köken bölümünü taşır', toc.some((x) => x.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ')), true);
-  eq('TOC köken satırı alt blok olarak işaretli', toc.includes('– KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
+  eq('TOC köken satırı numaralı', toc.includes('4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
   eq('TOC imzayı içermez', toc.includes('İmza ve alt bilgi'), false);
 
   // Düzen normalizasyonu: bilinmeyen atılır, yinelenen tekilleşir, eksik eklenir.
@@ -5719,7 +5719,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const base = T.emptyCaseForTest({ id: 'c1' });
   const map = T.reportNumberMap(base);
   eq('soru yok: answers numara almaz', map.answers, undefined);
-  eq('soru yok: s7 numarası 8', map.s7, 8);
+  eq('soru yok: s7 son numara', map.s7, Math.max(...Object.values(map)));
   const nums = Object.values(map).sort((a, b) => a - b);
   eq('numaralar bitişik (1..N)', nums.every((n, i) => n === i + 1), true);
 
@@ -5766,7 +5766,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   const auto = T.emptyCaseForTest({ id: 'cN1' });
   eq('auto: başlık numaralı', T.reportHeadingText(auto, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
-  eq('auto: TOC alt blok "–"', T.reportTocEntries(auto).some((x) => x.startsWith('– KAYIT KÖKENİ')), true);
+  eq('auto: TOC köken numaralı', T.reportTocEntries(auto).some((x) => x.startsWith('4. KAYIT KÖKENİ')), true);
   const none = T.emptyCaseForTest({ id: 'cN2', report: { numbering: 'none' } });
   eq('none: başlık numarasız', T.reportHeadingText(none, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
   eq('none: TOC numarasız ve işaretsiz', T.reportTocEntries(none).some((x) => x.startsWith('1.') || x.startsWith('–')), false);
@@ -5803,8 +5803,8 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ikinci ana bölüm B', T.reportHeadingText(c, 's2'), 'B. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR');
   eq('iskelet etiketi özel başlık', T.reportUiLabel(c, 's1'), 'A · ÖZEL KONU');
   eq('TOC harf numarası taşır', T.reportTocEntries(c).some((x) => x.startsWith('A. ÖZEL KONU')), true);
-  eq('alt başlık harf kipinde', T.reportSubHeadings(c).s51, 'E.1. Ses kayıtlarının çözümlenmesi');
-  eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), 'E.1.1.');
+  eq('alt başlık harf kipinde', T.reportSubHeadings(c).s51, 'G.1. Ses kayıtlarının çözümlenmesi');
+  eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), 'G.1.1.');
 
   const cn = T.emptyCaseForTest({ id: 'cT2', report: { numbering: 'none' } });
   eq('numarasız başlık', T.reportHeadingText(cn, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
@@ -5874,8 +5874,8 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     }
   });
   eq('blok gövde sırasında', T.reportBodyOrder(c).includes('free:b1'), true);
-  eq('blok başlığı', T.reportHeadingText(c, 'free:b1'), 'UZMAN NOTU');
-  eq('blok numarasız (TOC "–")', T.reportTocEntries(c).includes('– UZMAN NOTU'), true);
+  eq('blok başlığı numaralı', T.reportHeadingText(c, 'free:b1'), '10. UZMAN NOTU');
+  eq('blok TOC numaralı', T.reportTocEntries(c).includes('10. UZMAN NOTU'), true);
   eq('blok çizilir', T.reportBlockRenders(c, 'free:b1'), true);
   eq('revizyon blok taşır', T.reportSnapshot(c).blocks.length, 1);
 
@@ -5939,6 +5939,25 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('profil uygula/sil düğmeleri var', /data-report-profile-apply/.test(js) && /data-report-profile-del/.test(js), true);
   eq('profil adı diyaloğu var', /id="profileDialog"/.test(html) && /id="profileName"/.test(html), true);
   eq('profil adı sorulur', /function askProfileName\(/.test(js), true);
+}
+
+
+// [131] v2.289 — Tüm çizilen bölümler numaralı; veri yoksa NEDENİ söylenir.
+{
+  console.log('[131] Tüm bölümler numaralı + veri yok nedeni (v2.289)');
+  const c = T.emptyCaseForTest({ id: 'cE1' });
+  eq('WER açık ama veri yok', T.reportBlockRenders(c, 'wer'), false);
+  eq('WER nedeni referans ister', /referans/.test(T.reportBlockEmptyReason(c, 'wer')), true);
+  const cOff = T.emptyCaseForTest({ id: 'cE2', report: { sections: { wer: false } } });
+  eq('kapalı bölümün nedeni boş', T.reportBlockEmptyReason(cOff, 'wer'), '');
+  const map = T.reportNumberMap(c);
+  const nums = Object.values(map).sort((a, b) => a - b);
+  eq('tüm çizilen bölümler bitişik numaralı', nums.every((n, i) => n === i + 1), true);
+  eq('köken bölümü de numaralı', typeof map.origin, 'number');
+  eq('TOC "–" alt blok işareti taşımaz', T.reportTocEntries(c).some((x) => x.startsWith('–')), false);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('iskelette "veri yok" rozeti var', /rsec-nodata/.test(js), true);
+  eq('açma anında neden söylenir', /reportBlockEmptyReason\(c, key\)/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

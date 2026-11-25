@@ -1,4 +1,4 @@
-# Özellikler (v2.288 — mevcut durum)
+# Özellikler (v2.289 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -963,10 +963,13 @@ envanterle aynı sütun seçimini izler.
   uygulanmaz**. Kayıtlı bir düzenin sırası bozulmaz.
 - **EKLER bölümü (v2.261):** gerçekten basılan ekleri listeler (EK-1, EK-2…);
   ek yoksa **"Bu raporla ek sunulmamıştır"** yazar. Boş vaat bırakmaz.
-- **Numara türetilir:** ana bölüm numaraları **açık ve sıralı** bölümlere göre
-  verilir; bir bölüm kapatılınca numarada **boşluk kalmaz** (3 kapatılınca
-  4 → 3 olur). **Cevaplar** ve **sınırlılıklar** da numaralı ana bölümdür
-  (v2.261). 5.1 alt başlığı ana numaradan türetilir.
+- **Numara türetilir (v2.289):** **çizilen her gövde bölümü** numara alır
+  (1,2,3… veya A,B,C…); “ana bölüm / alt blok” ayrımı ve TOC’taki “–” işareti
+  kaldırıldı. Bir bölüm kapatılınca numarada **boşluk kalmaz**; numarasız modda
+  hiç numara yazılmaz. Alt başlık ana numaradan türetilir (5.1 / A.1…).
+- **Veri yoksa sessiz değil (v2.289):** açık ama verisi olmayan bölüm iskelette
+  **“veri yok”** rozeti taşır; nedeni ipuçunda ve açma bildiriminde yazar.
+  WER için referans metin + model çıktısı gerekir; yoksa rapora girmez.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
 - **Ekler ayrı ve düzenlenebilir kayıttır:** her ek tek tek açılır/kapanır ve

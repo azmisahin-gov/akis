@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.288.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.289.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.289 — Tüm bölümler numaralı; "veri yok" artık sessiz değil
+
+**Kullanıcı:** *"Tüm gövde alanlarında bazı bölümlere bastığımda otomatik A gibi
+şeyler başlıklarında oluşmuyor… WER ölçümüne basıyorum ama madde vermiyor; EK’e
+basıyorum raporda A diyor."*
+
+### KULLANICI NE GÖRECEK
+
+- **Numara artık çizilen her gövde bölümüne verilir.** “Ana bölüm / alt blok”
+  ayrımı kalktı: 1,2,3,4… ya da A,B,C,D… İÇİNDEKİLER’de **“–” işareti yok**.
+- Bir bölüm açık ama verisi yoksa iskelette **“veri yok”** rozeti çıkar;
+  ipucunda **neden** yazar, açma anında toast nedeni söyler. Sessiz kaybolma yok.
+- **WER:** referans metin + model çıktısı yoksa rapora **girmez**; nedeni yazılır
+  (uydurma ölçüm yok). Veri varsa artık kendi numarasını alır.
+- **EKLER** bölümü de kendi numarasını alır; ekler ayrıca **EK-1, EK-2…** olarak
+  numaralıdır.
+- **Numarasız** mod seçilirse hiç numara yazılmaz (v2.285).
+
+### Teknik
+
+- `reportNumberMap` tüm `reportBodyOrder` anahtarlarını numaralar (yalnız çizilenler).
+- `reportHeadingText` / `reportUiLabel` içindeki `REPORT_MAIN_KEYS` numara koşulu
+  kaldırıldı; TOC’taki `–` alt blok işareti kaldırıldı.
+- `reportBlockEmptyReason` + `.rsec-nodata`; `setReportSection` açılışta toast.
+- v2.259/v2.283 “alt bloklar numarasız / –” kuralı **kaldırıldı**.
+- Koruyan: `birim` [82]/[125]/[127]/[129]/[131], `rapor` 22/37/38.
 
 ## v2.288 — Kullanıcı rapor profilleri
 

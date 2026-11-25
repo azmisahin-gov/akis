@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.288.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.289.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7178,5 +7178,58 @@ konuşmacı kümeleme ve Kişiler panelinin taşınması.
    ata” onaylı/geri alınabilir; otomatik atama YOK.
 2. **Kişiler (K) panelinin** Analiz sekmesinden **Dosya bilgileri** düzeyine
    taşınması.
+3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
+   sürükle-bırak sıralama.
+
+## YENİ OTURUM DEVRİ (v2.289) — Tüm bölümler numaralı + veri yok açıklaması
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.289** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2000 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | Konuşmacı kümeleme; Kişiler (K) panelinin taşınması |
+
+### Kullanıcı sorusu ve kök neden
+
+*"Tüm gövde alanlarında bazı bölümlere bastığımda otomatik A gibi şeyler
+başlıklarında oluşmuyor… WER ölçümüne basıyorum madde vermiyor; EK’e basıyorum
+raporda A diyor."*
+
+**Kök neden:** v2.259/v2.283 kuralı **yalnız `REPORT_MAIN_KEYS`** (s1–s7,
+answers, limits, integrity) numaralıyordu; köken/konuşmacı/WER/seviye gibi
+bloklar numarasız ve TOC’ta “–” idi. Kullanıcı bunu **çelişki** olarak gördü.
+Ayrıca verisi olmayan bölüm (WER) sessizce hiç çizilmiyordu.
+
+### Ne yapıldı
+
+- **Numara artık çizilen HER gövde bölümüne** verilir:
+  `reportNumberMap` → `mainSectionNumbers(reportBodyOrder, renders, reportBodyOrder)`.
+  `REPORT_MAIN_KEYS` yalnız **sayfa sonu** için kullanılır; numara koşulu değildir.
+- `reportHeadingText`/`reportUiLabel` main-key koşulu kaldırıldı; TOC’taki
+  `–` alt blok işareti kaldırıldı. Serbest bloklar da numara alır.
+- **Veri yok sessiz değil:** `reportBlockEmptyReason(c,key)` + iskelette
+  `.rsec-nodata` rozeti (“veri yok”, neden `title`’da) + `setReportSection`
+  açma toast’ı. Rapor boş bölümü **basmaz**; uydurma “—” yok.
+- WER nedeni: “WER için referans metin ve model çıktısı gerekir.”
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Numara = çizilen bölüm.** Kapalı/verisiz bölüm numara tüketmez; numarada
+   boşluk olmaz. `REPORT_MAIN_KEYS`’i numara listesi sanıp geri dönmeyin.
+2. **TOC = gövde.** TOC “–” işareti taşımaz; her satır başlığın numarasını taşır
+   (numarasız modda hiç numara yok).
+3. **Veri yoksa neden söylenir.** Yeni bir koşullu bölüm eklerken
+   `reportBlockEmptyReason`’a da nedeni yazın; rozet + toast otomatik gelir.
+4. **Ölçülmeyen değer yazılmaz.** Boş bölüm rapora basılmaz; “veri yok” rozeti
+   yalnız iskelettedir. WER referans/model çıktısı olmadan ölçülmez.
+5. Testler: `birim [82]/[125]/[127]/[129]/[131]`, `rapor 22/37/38`.
+
+### Sıradaki iş
+
+1. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + onaylı grup atama.
+2. **Kişiler (K)** panelinin dosya düzeyine taşınması.
 3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
    sürükle-bırak sıralama.

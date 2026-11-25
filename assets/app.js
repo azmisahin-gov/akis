@@ -111,15 +111,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.288';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.288';
+} from './schema.js?v=2.289';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.289';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.288';
+const APP_VERSION = '2.289';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12313,8 +12313,11 @@ function reportBlockByKey(c, key) {
 function reportNumberMap(c) {
   // v2.283 — NEDEN: numara yalnız AÇIK bölüme göre veriliyordu; "Cevaplar"
   // açık ama soru yoksa çizilmiyordu → numarada BOŞLUK kalıyordu (1,2,3,4,5,7).
-  // Numaralandırma artık "çizilecek mi" ölçütünü kullanır (reportBlockRenders).
-  return mainSectionNumbers(reportBodyOrder(c), (k) => reportBlockRenders(c, k), REPORT_MAIN_KEYS);
+  // Numaralandırma "çizilecek mi" ölçütünü kullanır (reportBlockRenders).
+  // v2.289 — KULLANICI: "tüm gövde alanlarında otomatik numara oluşmuyor".
+  // Artık ANA bölüm/alt blok ayrımı YOK: çizilen her gövde bölümü numara alır.
+  const order = reportBodyOrder(c);
+  return mainSectionNumbers(order, (k) => reportBlockRenders(c, k), order);
 }
 // Başlık: kullanıcı düzenlemesi varsa o, yoksa tanımdaki varsayılan (v2.285).
 function reportSectionTitle(c, key) {
@@ -12348,11 +12351,9 @@ function reportHeadingText(c, key, map) {
   const title = reportSectionTitle(c, key);
   const mode = reportNumbering(c);
   if (mode === 'none') return title;
-  if (REPORT_MAIN_KEYS.includes(key)) {
-    const n = (map || reportNumberMap(c))[key];
-    return n ? `${reportNumberToken(n, mode)}. ${title}` : title;
-  }
-  return title;
+  // v2.289: çizilen HER gövde bölümü numara alır (alt blok ayrımı kaldırıldı).
+  const n = (map || reportNumberMap(c))[key];
+  return n ? `${reportNumberToken(n, mode)}. ${title}` : title;
 }
 // Alt başlıklar ana bölüm numarasından türetilir (5.1 / A.1 …). v2.261:
 // cevaplar ve sınırlılıklar ayrı bölüm olduğu için s5'in tek alt başlığı kaldı.
@@ -12415,21 +12416,40 @@ function reportBlockRenders(c, key) {
       return true;
   }
 }
+// Bölüm AÇIK ama veri yoksa NEDENİ söylenir (v2.289). Sessiz kaybolma yok:
+// iskelette "veri yok" rozeti + ipucu; açma anında toast.
+function reportBlockEmptyReason(c, key) {
+  if (!reportSectionOn(c, key)) return '';
+  if (reportBlockRenders(c, key)) return '';
+  if (isFreeBlockKey(key)) return 'Başlık veya metin boş.';
+  switch (key) {
+    case 'embedded':
+      return c.report && c.report.includeEmbedded
+        ? 'Gömülü metadata bulunamadı.'
+        : 'Gömülü metadata “rapora dahil” seçilmedi.';
+    case 'acquisition':
+      return 'Delil edinme/doğrulama kaydı yok.';
+    case 'answers':
+      return 'Dosyada soru tanımlanmamış.';
+    case 'integrity':
+      return 'SHA-256 bütünlük kaydı yok.';
+    case 'wer':
+      return 'WER için referans metin ve model çıktısı gerekir.';
+    case 'levels':
+      return 'Seviye/kırpılma ölçümü yapılmadı.';
+    case 'reading':
+      return 'Okuma metni oluşturacak bölüm yok.';
+    default:
+      return 'Bu bölüm için veri yok.';
+  }
+}
 function reportTocEntries(c) {
   const map = reportNumberMap(c);
   const out = [];
   for (const key of reportBodyOrder(c)) {
     if (!reportBlockRenders(c, key)) continue;
-    // v2.283 — NUMARASIZ SATIR AÇIKÇA ALT BLOK: ana bölümler 1,2,3… numara
-    // alır; köken/delil/konuşmacılar/okuma/özet gibi bloklar ana bölümün
-    // içeriğidir ve "–" ile gösterilir. Kullanıcı "neden bazıları numarasız"
-    // diye sordu; artık TOC'ta fark görünür.
-    const text = reportHeadingText(c, key, map);
-    if (reportNumbering(c) === 'none') {
-      out.push(text);
-      continue;
-    }
-    out.push(REPORT_MAIN_KEYS.includes(key) ? text : `– ${text}`);
+    // v2.289: TOC gövdeyle aynı numarayı taşır; "–" alt blok işareti kalktı.
+    out.push(reportHeadingText(c, key, map));
   }
   return out;
 }
@@ -12558,7 +12578,7 @@ function reportUiLabel(c, key) {
   const custom = c && c.report && c.report.titles && c.report.titles[key];
   const base = (typeof custom === 'string' && custom.trim()) || REPORT_UI_LABELS[key] || reportSectionTitle(c, key);
   const mode = reportNumbering(c);
-  if (REPORT_MAIN_KEYS.includes(key) && mode !== 'none') {
+  if (mode !== 'none') {
     const n = reportNumberMap(c)[key];
     return n ? `${reportNumberToken(n, mode)} · ${base}` : base;
   }
@@ -12652,7 +12672,12 @@ function renderReportSections(c) {
     } else if (editing) {
       label = `<input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Enter: uygula · Esc: vazgeç">`;
     } else {
-      label = `<span>${esc(reportUiLabel(c, key))}</span>`;
+      const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
+      label =
+        `<span>${esc(reportUiLabel(c, key))}</span>` +
+        (emptyReason
+          ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
+          : '');
     }
     const editBtn = editing
       ? free
@@ -12727,7 +12752,7 @@ function renderReportSections(c) {
   host.innerHTML =
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     profileBar +
-    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Numaralar açık bölümlere göre yeniden verilir.</span></div>`;
+    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler.</span></div>`;
 }
 function setReportSection(key, on) {
   const c = currentCase();
@@ -12736,6 +12761,11 @@ function setReportSection(key, on) {
   c.report.sections = { ...(c.report.sections || {}), [key]: !!on };
   persist();
   renderReport();
+  // Açılan bölüm veri yoksa sessizce kaybolmasın: nedeni söylenir (v2.289).
+  if (on && !reportBlockRenders(c, key)) {
+    const reason = reportBlockEmptyReason(c, key);
+    if (reason) showToast(`“${reportUiLabel(c, key)}” rapora girmiyor: ${reason}`, true);
+  }
 }
 // Bölüm başlığını yaz (v2.285). Boş değer varsayılana döndürür. Başlık
 // `case.report.titles`ta tutulur; üç çıktı `reportHeadingText` üzerinden okur.
@@ -18886,6 +18916,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.289': {
+    title: 'Tüm bölümler numaralı; “veri yok” artık nedenini söylüyor',
+    body:
+      'Numara artık çizilen her gövde bölümüne verilir (1,2,3… veya A,B,C…); içindekilerde “–” işareti ' +
+      'kalktı. Bir bölüm açık ama verisi yoksa iskelette “veri yok” rozeti çıkar ve nedenini söyler. ' +
+      'Örnek: WER için referans metin ve model çıktısı gerekir; yoksa rapora girmez, uydurma ölçüm yazılmaz. ' +
+      'Numarasız mod seçilirse hiç numara yazılmaz.'
+  },
   '2.288': {
     title: 'Rapor düzeninizi profil olarak kaydedebilirsiniz',
     body:

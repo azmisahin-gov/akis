@@ -836,7 +836,7 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   const H = htmlText(noS3),
     U = await udfText(noS3),
     D = await docxText(noS3);
-  checkShared('s3 kapalı: 4. bölüm 3 oldu', '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR', H, U, D);
+  checkShared('s3 kapalı: 4. bölüm yeniden numaralandı', '5. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR', H, U, D);
   const stale = '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR';
   check('s3 kapalı: eski 4 numarası kalmadı (H)', !H.includes(stale));
   check('s3 kapalı: eski 4 numarası kalmadı (U)', !U.includes(stale));
@@ -1328,7 +1328,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('özel başlık üç çıktıda', 'ÖZEL KONU BAŞLIĞI', H, U, D);
   checkShared('harf numarası (A.)', 'A. ÖZEL KONU BAŞLIĞI', H, U, D);
-  checkShared('harf alt başlık (E.1.)', 'E.1. Ses kayıtlarının çözümlenmesi', H, U, D);
+  checkShared('harf alt başlık (G.1.)', 'G.1. Ses kayıtlarının çözümlenmesi', H, U, D);
 
   const c2 = withMaterial();
   c2.report = { numbering: 'none' };
@@ -1353,7 +1353,9 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('serbest blok başlığı', 'UZMAN NOTU', H, U, D);
   checkShared('serbest blok metni', 'gözlem metni', H, U, D);
-  checkShared('serbest blok TOC satırı', '– UZMAN NOTU', H, U, D);
+  check('serbest blok TOC numaralı (H)', /\d+\. UZMAN NOTU/.test(H), 'numara yok');
+  check('serbest blok TOC numaralı (U)', /\d+\. UZMAN NOTU/.test(U), 'numara yok');
+  check('serbest blok TOC numaralı (D)', /\d+\. UZMAN NOTU/.test(D), 'numara yok');
 
   const c2 = withMaterial();
   const order2 = [...__schemaMod.REPORT_BODY_ORDER];

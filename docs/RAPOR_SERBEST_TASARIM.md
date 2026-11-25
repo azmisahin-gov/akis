@@ -74,6 +74,16 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
 - "Bu düzeni profil olarak kaydet" (ad verir), "Profili uygula".
 - Profil **yalnız** kullanıcı tanımlıdır; yerleşik 56.12 profili yok.
 
+### v2.289 — Tüm bölümler numaralı + veri yok açıklaması (YAPILDI)
+
+- Kullanıcı: "bazı bölümlerde otomatik A oluşmuyor; WER’e basıyorum madde
+  vermiyor, EK’e basıyorum A diyor." Çelişen kural v2.259/v2.283’ün
+  "ana bölüm numaralı, alt blok numarasız/–" ayrımıydı; **kaldırıldı**.
+- Artık **çizilen her gövde bölümü** numara alır; TOC’ta "–" yok.
+- Açık ama verisi olmayan bölüm iskelette **"veri yok"** rozeti taşır;
+  neden ipuçunda ve açma toast’ında yazılır (WER: referans + model çıktısı).
+- Ölçülmeyen değer yazılmaz; boş bölüm rapora basılmaz.
+
 ### Sürükle-bırak
 
 - v2.285'te ↑↓ düğmeleri **korunur** (erişilebilirlik); sürükle-bırak ayrı
