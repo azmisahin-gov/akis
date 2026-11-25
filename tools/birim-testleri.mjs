@@ -3466,10 +3466,14 @@ console.log('\n== [70] Birleştirme adayı: deterministik ölçüt (v2.198)');
   eq('aktif çip işaretli', /filter-chip on" data-seg-filter="merge"/.test(chipHtml), true);
   eq('koşullu filtre kümesi', [...T.CONDITIONAL_FILTERS].sort(), [
     'ambiguous',
+    'distance',
+    'distortion',
+    'foreignLanguage',
     'inaudibleObs',
     'long',
     'machine',
     'merge',
+    'notAudible',
     'overlap',
     'time'
   ]);
@@ -5316,7 +5320,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 // [118] v2.272 — Gözlem bayrakları: yankı ve kesinti (tek tanım noktası).
 {
   console.log('[118] Yeni gözlem bayrakları: yankı / kesinti (v2.272)');
-  eq('OBS_KEYS sekiz bayrak', __schemaMod.OBS_KEYS.length, 8);
+  eq('OBS_KEYS on iki bayrak', __schemaMod.OBS_KEYS.length, 12);
   eq('yankı anahtarı var', __schemaMod.OBS_KEYS.includes('echo'), true);
   eq('kesinti anahtarı var', __schemaMod.OBS_KEYS.includes('dropout'), true);
   eq('yankı etiketi', __schemaMod.OBS_LABEL.echo, 'yankı / oda akustiği');
@@ -6729,6 +6733,74 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Standart belgesi yeni ayrımı anar.
   const std = fs.readFileSync(path.join(ROOT, 'docs/STANDARTLAR.md'), 'utf8');
   eq('standart duyulmuyor/anlaşılmaz ayrımını anar', /duyulmuyor/.test(std) && /anlaşılmaz/.test(std), true);
+}
+
+// [155] v2.314 — Yeni gözlem işaretleri: duyulmuyor, uzaktan, bozuk ses, dil.
+{
+  console.log('[155] Yeni gözlem işaretleri (v2.314)');
+  const S = __schemaMod;
+  const keys = ['notAudible', 'distance', 'distortion', 'foreignLanguage'];
+  for (const k of keys) eq('OBS_KEYS: ' + k, S.OBS_KEYS.includes(k), true);
+  eq('etiket notAudible', S.OBS_LABEL.notAudible, 'duyulmuyor (ses yok/kısık)');
+  eq('etiket distance', S.OBS_LABEL.distance, 'uzaktan/zayıf konuşma');
+  eq('etiket distortion', S.OBS_LABEL.distortion, 'bozuk ses / artefakt');
+  eq('etiket foreignLanguage', S.OBS_LABEL.foreignLanguage, 'dil değişimi (farklı dil/lehçe)');
+  const eo = S.emptyObs();
+  eq('emptyObs 12 anahtar', Object.keys(eo).length, 12);
+  eq('emptyObs yeni anahtarlar false', keys.every((k) => eo[k] === false), true);
+  // Normalize: yeni bayrak korunur, bilinmeyen silinmez, eksik false olur.
+  const seg = S.normalizeSegment({ obs: { notAudible: true, future: true } });
+  eq('normalize yeni bayrağı korur', seg.obs.notAudible, true);
+  eq('normalize bilinmeyeni silmez', seg.obs.future, true);
+  eq('normalize eksik bayrağı false yapar', seg.obs.distortion, false);
+  // Sayaç + filtre TEK KAYNAK.
+  const m = {
+    id: 'm',
+    segments: [
+      { id: 'a', start: '00:00:00.000', end: '00:00:05.000', text: 'x', obs: { notAudible: true } },
+      { id: 'b', start: '00:00:05.000', end: '00:00:10.000', text: 'y', obs: { distance: true, distortion: true } },
+      { id: 'c', start: '00:00:10.000', end: '00:00:15.000', text: 'z', obs: { foreignLanguage: true } }
+    ]
+  };
+  const c = T.segCounts(m);
+  eq('notAudible sayısı', c.notAudible, 1);
+  eq('distance sayısı', c.distance, 1);
+  eq('distortion sayısı', c.distortion, 1);
+  eq('foreignLanguage sayısı', c.foreignLanguage, 1);
+  eq('filtre notAudible', T.segMatchesFilter(m.segments[0], 'notAudible'), true);
+  eq('filtre distance', T.segMatchesFilter(m.segments[1], 'distance'), true);
+  eq('filtre distortion', T.segMatchesFilter(m.segments[1], 'distortion'), true);
+  eq('filtre foreignLanguage', T.segMatchesFilter(m.segments[2], 'foreignLanguage'), true);
+  eq('filtre eşleşmeyen', T.segMatchesFilter(m.segments[0], 'distance'), false);
+  // Rapor GÖZLEM metni yeni etiketleri basar (tek kaynak OBS_LABEL).
+  eq(
+    'GÖZLEM metni yeni etiketler',
+    T.segObsText({ obs: { notAudible: true, distortion: true } }),
+    'duyulmuyor (ses yok/kısık), bozuk ses / artefakt'
+  );
+  eq('REPORT_TEXT.obsLabels yeni', T.REPORT_TEXT.obsLabels.notAudible, S.OBS_LABEL.notAudible);
+  // İş özeti yeni bayrakları gösterir.
+  const w = T.segmentWorkSummary({ review: 'pending', obs: { notAudible: true, distance: true, distortion: true, foreignLanguage: true } });
+  eq(
+    'iş özeti yeni bayraklar',
+    keys.every((k) => w.flags.some((f) => f.key === k)),
+    true
+  );
+  // Birleştirme yeni bayrakları OR'lar.
+  const mk = (flag) =>
+    S.normalizeCase({
+      id: 'c1',
+      materials: [{ id: 'm1', segments: [{ id: 's1', start: '00:00:00.000', end: '00:00:05.000', text: 'a', obs: { [flag]: true } }] }]
+    });
+  const merged = S.mergeCases(mk('notAudible'), mk('distortion'));
+  const o = merged.merged.materials[0].segments[0].obs;
+  eq('birleştirme yeni bayrakları OR lar', !!(o.notAudible && o.distortion), true);
+  // Hızlı etiket bağları: yeni obsKey'ler geçerli.
+  const tagKeys = (T.QUICK_TAGS || []).filter((t) => t.obsKey).map((t) => t.obsKey);
+  for (const k of keys) eq('hızlı etiket obsKey bağı: ' + k, tagKeys.includes(k), true);
+  // Gözlem tıklaması "İş" durum satırını yerinde tazeler (sessiz eski durum yok).
+  const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('gözlem tıklaması durum satırını tazeler', /statusEl\.outerHTML = statusRowHtml\(m, sg/.test(appJs), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

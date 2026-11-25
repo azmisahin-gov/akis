@@ -6,12 +6,66 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.313.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.314.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.314 — Yeni gözlem işaretleri (duyulmuyor · uzaktan · bozuk ses · dil)
+
+**Amaç:** `[duyulmuyor]` (ses yok/kısık) ile `[anlaşılmaz]` (ses var, kelimeler
+seçilemiyor) ayrımını **yapısal gözlem** olarak da işaretlemek; uzaktan/zayıf,
+bozuk ses ve dil değişimini rapora taşımak.
+
+### KULLANICI NE GÖRECEK
+
+- **12 gözlem işareti:** gürültü · üst üste · anlaşılmaz · **duyulmuyor** ·
+  müzik · telefon · sessizlik · kesinti · yankı · **uzaktan/zayıf** ·
+  **bozuk ses** · **dil değişimi**.
+- **8 birincil düğme** alt şeritte görünür; kalan 4 **“Gözlem” panelinde**.
+  Panel **TÜM 12’yi** gösterir; hiçbir bayrak erişilemez değildir.
+- Yeni **koşullu filtreler** (yalnız sayı > 0 iken): Duyulmuyor · Uzaktan ·
+  Bozuk ses · Dil değişimi.
+- Raporun **GÖZLEM** sütunu ve **EK-5** gözlem tablosu yeni etiketleri
+  kendiliğinden basar; birleştirme gözlemleri **OR**’lar.
+- İş durumu satırında “Duyulmuyor gözlem / Uzaktan/zayıf gözlem / Bozuk ses
+  gözlem / Dil değişimi gözlem” çipleri görünür.
+
+### Teknik
+
+- `schema.js` → `OBS_DEFS` +4 (`notAudible`, `distance`, `distortion`,
+  `foreignLanguage`); `OBS_PRIMARY_KEYS` (8 birincil).
+- `emptyObs`/`normalizeSegment` yeni anahtarları tamamlar; **bilinmeyen
+  anahtar silinmez**; eski kayıtlar `false` ile açılır (göç gerekmez).
+- `segCounts` + `SEG_FILTERS` + `CONDITIONAL_FILTERS` + `segMatchesFilter`
+  yeni anahtarları taşır (sayaç = filtre = tek kaynak).
+- `segObsText`, `REPORT_TEXT.obsLabels`, EK-5, `renderObsHelp` ve gözlem
+  düğmeleri `OBS_DEFS`ten **otomatik**.
+- Hızlı etiketler `obsKey` ile bağlandı: `[duyulmuyor]`→`notAudible`,
+  `[uzaktan konuşma]`→`distance`, `[bozuk ses]`→`distortion`,
+  `[dil değişimi]`→`foreignLanguage`. **Etiket eklemek gözlemi otomatik
+  açmaz** (v2.313 kuralı).
+- Test: `birim [155]`, `tasarim [2cv]`.
+
+### Ölçüm (gerçek Chromium)
+
+| Genişlik | Birincil düğme | Satır | Panel | Metin alanı |
+|---|---|---|---|---|
+| 1440/1280/1200 | 8 | 2 | 12 düğme | 120 px |
+| 1100 | 8 | **3** (önce 4) | 12 | 120 px |
+| 1000/900/760 | 8 | 1–2 | 12 | 120 px |
+| 600/360 | satır gizli | — | 12 | 120 px |
+
+Kırpılma/yatay taşma **0**; JS hatası **0**.
+
+### Dürüst sınır
+
+- Gözlem işaretleri **uzman beyanıdır**; otomatik sınıflandırma değildir.
+- `[duyulmuyor]` teknik gözlemdir; **kontrol durumu değildir** (gerekirse
+  ayrıca “Anlaşılmadı” seçilir).
+- Birincil 8 dışındaki 4 bayrak paneldedir; **hiçbiri gizli değildir**.
 
 ## v2.313 — Hızlı etiket sözlüğü (metin içi)
 

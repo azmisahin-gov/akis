@@ -38,6 +38,7 @@ import {
   OBS_KEYS,
   OBS_LABEL,
   OBS_HINT,
+  OBS_PRIMARY_KEYS,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
   emptyCaseSpeaker,
@@ -121,15 +122,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.313';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.313';
+} from './schema.js?v=2.314';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.314';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.313';
+const APP_VERSION = '2.314';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -434,9 +435,9 @@ Object.assign(REPORT_TEXT, {
 // sağlar. Etiketler köşeli parantezle metne girer ve rapora AYNEN akar; uydurma
 // metin üretilmez. `label` DAİMA `text` ile aynıdır (v2.312'ye kadar farklıydı:
 // görünen "[uzaktan konuşma]" metne "[uzaktan/zayıf konuşma]" yazıyordu).
-// `obsKey` varsa o etiket aynı zamanda yapısal gözlem işaretidir; ipucu
-// schema.js `OBS_HINT`ten gelir (TEK KAYNAK). Yeni bir ortak kavram eklerken
-// önce OBS_DEFS'e yazın, sonra burada `obsKey` ile bağlayın.
+// `obsKey` varsa aynı kavram `OBS_DEFS`te aranır (ipucu/doğrulama); etiket
+// eklemek gözlem işaretini OTOMATİK açmaz (v2.313 kuralı). Yeni bir ortak
+// kavram eklerken önce OBS_DEFS'e yazın, sonra burada `obsKey` ile bağlayın.
 const QUICK_TAG_GROUPS = [
   { key: 'clarity', label: 'Anlaşılırlık' },
   { key: 'environment', label: 'Ortam / teknik' },
@@ -445,12 +446,12 @@ const QUICK_TAG_GROUPS = [
 ];
 const QUICK_TAG_DEFS = [
   // --- Anlaşılırlık (duyulmuyor ≠ anlaşılmaz ≠ Anlaşılmadı durumu) ---
-  { text: '[duyulmuyor]', group: 'clarity', hint: 'Ses yok veya çok kısık; işitilmiyor. "Anlaşılmaz"dan farklıdır.' },
+  { text: '[duyulmuyor]', group: 'clarity', obsKey: 'notAudible', hint: 'Ses yok veya çok kısık; işitilmiyor. "Anlaşılmaz"dan farklıdır.' },
   { text: '[anlaşılmaz]', group: 'clarity', obsKey: 'inaudible', hint: 'Ses duyuluyor ama kelimeler seçilemiyor.' },
   { text: '[şüpheli]', group: 'clarity', hint: 'Okuma şüpheli; dinleyip doğrulayın. (Belirsiz okuma ayrı bir DURUMDUR.)' },
   { text: '[tahmin]', group: 'clarity', hint: 'En iyi tahmin; kesin değil.' },
   { text: '[kesik]', group: 'clarity', hint: 'Kelime veya cümle yarım kaldı.' },
-  { text: '[bozuk ses]', group: 'clarity', hint: 'Bozulma/artefakt; ses çözülemiyor.' },
+  { text: '[bozuk ses]', group: 'clarity', obsKey: 'distortion', hint: 'Bozulma/artefakt; ses çözülemiyor.' },
   // --- Ortam / teknik ---
   { text: '[gürültü]', group: 'environment', obsKey: 'noise', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
   { text: '[üst üste]', group: 'environment', obsKey: 'overlap', hint: 'İki veya daha fazla konuşma çakışıyor.' },
@@ -463,7 +464,7 @@ const QUICK_TAG_DEFS = [
   { text: '[trafik/araç]', group: 'environment', hint: 'Trafik/araç sesi.' },
   // --- Konuşma biçimi / konuşmacı ---
   { text: '[telefon]', group: 'speech', obsKey: 'phone', hint: 'Telefon görüşmesi; karşı taraf duyuluyor veya duyulmuyor olabilir.' },
-  { text: '[uzaktan konuşma]', group: 'speech', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
+  { text: '[uzaktan konuşma]', group: 'speech', obsKey: 'distance', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
   { text: '[fısıltı]', group: 'speech', hint: 'Fısıltıyla konuşma.' },
   { text: '[bağırma]', group: 'speech', hint: 'Yüksek ses/bağırma.' },
   { text: '[gülüşme]', group: 'speech', hint: 'Gülüşme.' },
@@ -471,7 +472,7 @@ const QUICK_TAG_DEFS = [
   { text: '[ağlama]', group: 'speech', hint: 'Ağlama.' },
   { text: '[alkış]', group: 'speech', hint: 'Alkış.' },
   { text: '[karşı taraf]', group: 'speech', hint: 'Telefonun karşı tarafındaki ses.' },
-  { text: '[dil değişimi]', group: 'speech', hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir.' },
+  { text: '[dil değişimi]', group: 'speech', obsKey: 'foreignLanguage', hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir.' },
   // --- İçerik notu (yorum değil; doğrulanması gereken belirsizlik) ---
   { text: '[isim belirsiz]', group: 'content', hint: 'Özel isim belirsiz; doğrulanmalı.' },
   { text: '[yer belirsiz]', group: 'content', hint: 'Yer adı belirsiz; doğrulanmalı.' },
@@ -5769,12 +5770,28 @@ const SEG_FILTERS = [
   ['long', 'Uzun · bölünmeli', 'Tek bölüm 45 sn üstünde; bölmeyi düşünün.'],
   ['overlap', 'Üst üste (gözlem)', 'Gözlem işareti: üst üste konuşma.'],
   ['inaudibleObs', 'Anlaşılmayan (gözlem)', 'Gözlem işareti: anlaşılmayan bölüm.'],
+  ['notAudible', 'Duyulmuyor (gözlem)', 'Gözlem işareti: ses yok/çok kısık; işitilmiyor.'],
+  ['distance', 'Uzaktan (gözlem)', 'Gözlem işareti: uzaktan/zayıf konuşma.'],
+  ['distortion', 'Bozuk ses (gözlem)', 'Gözlem işareti: bozulma/artefakt.'],
+  ['foreignLanguage', 'Dil değişimi (gözlem)', 'Gözlem işareti: farklı dil/lehçe.'],
   ['time', 'Zaman sorunları', 'Çakışma/yinelenen/sıfır süre gibi zaman sorunları (kayıt başına).']
 ];
 // Koşullu filtreler: yalnız sayı > 0 iken çip çizilir (v2.146 kuralı). Sıra,
 // dinamik eklemenin görünür sırayla aynı olması için SEG_FILTERS sonundaki
 // sırayla eşleşir.
-const CONDITIONAL_FILTERS = new Set(['machine', 'ambiguous', 'merge', 'long', 'overlap', 'inaudibleObs', 'time']);
+const CONDITIONAL_FILTERS = new Set([
+  'machine',
+  'ambiguous',
+  'merge',
+  'long',
+  'overlap',
+  'inaudibleObs',
+  'notAudible',
+  'distance',
+  'distortion',
+  'foreignLanguage',
+  'time'
+]);
 // BİRLEŞTİRME ADAYI (v2.198). Kullanıcı bölümleri sık birleştiriyor; hangi
 // satırların birleştirmeye uygun olduğunu görmek istiyor. Uydurma bir skor
 // YOKTUR; ölçüt yalnız GÖZLENEBİLİR ve gerekçesi yazılabilir işaretlerdir:
@@ -6103,6 +6120,10 @@ function segMatchesFilter(s, filter, prev, idx, issueSet, mergeSet) {
   if (filter === 'long') return segmentIsLong(s);
   if (filter === 'overlap') return segmentHasObs(s, 'overlap');
   if (filter === 'inaudibleObs') return segmentHasObs(s, 'inaudible');
+  if (filter === 'notAudible') return segmentHasObs(s, 'notAudible');
+  if (filter === 'distance') return segmentHasObs(s, 'distance');
+  if (filter === 'distortion') return segmentHasObs(s, 'distortion');
+  if (filter === 'foreignLanguage') return segmentHasObs(s, 'foreignLanguage');
   return r === filter; // approved/inaudible/relisten/ambiguous/machine
 }
 function segCounts(m) {
@@ -6120,7 +6141,11 @@ function segCounts(m) {
     merge: 0,
     long: 0,
     overlap: 0,
-    inaudibleObs: 0
+    inaudibleObs: 0,
+    notAudible: 0,
+    distance: 0,
+    distortion: 0,
+    foreignLanguage: 0
   };
   for (let i = 0; i < segs.length; i++) {
     const s = segs[i];
@@ -6133,6 +6158,10 @@ function segCounts(m) {
     if (!isReviewed(s)) c.pending++;
     if (segmentHasObs(s, 'overlap')) c.overlap++;
     if (segmentHasObs(s, 'inaudible')) c.inaudibleObs++;
+    if (segmentHasObs(s, 'notAudible')) c.notAudible++;
+    if (segmentHasObs(s, 'distance')) c.distance++;
+    if (segmentHasObs(s, 'distortion')) c.distortion++;
+    if (segmentHasObs(s, 'foreignLanguage')) c.foreignLanguage++;
     if (segmentIsLong(s)) c.long++;
   }
   // Hızlı onay sayısı TEK KAYNAKTAN gelir (filtre ve toplu onayla aynı).
@@ -6600,6 +6629,14 @@ function segmentWorkSummary(s, opts = {}) {
   if (o.inaudible) flags.push({ key: 'inaudibleObs', label: 'Anlaşılmayan gözlem', hint: 'Bu aralık anlaşılmayan gözlem işaretiyle işaretlenmiş.', tone: 'warn' });
   if (o.noSpeech) flags.push({ key: 'noSpeech', label: 'Sessizlik gözlem', hint: 'Konuşma yok olarak işaretlenmiş (ölçülen sessizlik oranından ayrıdır).', tone: 'info' });
   if (o.phone) flags.push({ key: 'phone', label: 'Telefon gözlem', hint: 'Telefon görüşmesi olarak işaretlenmiş.', tone: 'info' });
+  if (o.notAudible)
+    flags.push({ key: 'notAudible', label: 'Duyulmuyor gözlem', hint: 'Ses yok/çok kısık olarak işaretlenmiş; "anlaşılmaz"dan farklıdır.', tone: 'warn' });
+  if (o.distance)
+    flags.push({ key: 'distance', label: 'Uzaktan/zayıf gözlem', hint: 'Konuşma uzaktan/zayıf olarak işaretlenmiş.', tone: 'info' });
+  if (o.distortion)
+    flags.push({ key: 'distortion', label: 'Bozuk ses gözlem', hint: 'Bozulma/artefakt olarak işaretlenmiş.', tone: 'warn' });
+  if (o.foreignLanguage)
+    flags.push({ key: 'foreignLanguage', label: 'Dil değişimi gözlem', hint: 'Farklı dil/lehçe olarak işaretlenmiş.', tone: 'info' });
   if (state === 'ambiguous' && !(s && s.chosen))
     flags.push({ key: 'ambiguous', label: 'Okuma seçilmedi', hint: 'Belirsiz okumada iki okumadan birini seçip onaylayın.', tone: 'warn' });
   return { state, action, done, needsWork: !done, flags };
@@ -6727,12 +6764,15 @@ function segDetailHtml(m) {
 
   // TEK KAYNAK (v2.203): düğmeler schema.js `OBS_DEFS`ten türetilir.
   // Yeni bir gözlem anahtarı eklemek için yalnız OBS_DEFS'e satır eklenir.
-  const obsBtns = OBS_DEFS.map(
-    (d) =>
-      `<button class="mini-button obs-btn ${s.obs && s.obs[d.key] ? 'on' : ''}" data-obs="${i}|${d.key}" title="${esc(d.hint)}">${esc(d.short)}</button>`
-  ).join('');
+  // v2.314: 12 bayrak alt şeritte 1100 px'te 4 satıra çıkıyordu; birincil 8
+  // görünür, kalan 4 "Gözlem" panelinde (panel TÜM 12'yi gösterir).
+  const obsPrimary = new Set(OBS_PRIMARY_KEYS);
+  const obsBtnHtml = (d) =>
+    `<button class="mini-button obs-btn ${s.obs && s.obs[d.key] ? 'on' : ''}" data-obs="${i}|${d.key}" title="${esc(d.hint)}">${esc(d.short)}</button>`;
+  const obsBtns = OBS_DEFS.filter((d) => obsPrimary.has(d.key)).map(obsBtnHtml).join('');
+  const obsAllBtns = OBS_DEFS.map(obsBtnHtml).join('');
   // Dar ekranda düğme yığını metin alanını ezmesin: tek "Gözlem" düğmesi +
-  // açılır panel. Aynı `obsBtns` kullanılır; mantık kopyası yok.
+  // açılır panel. Panel TÜM bayrakları gösterir (v2.314); kopya mantık yok.
   const activeObsCount = OBS_KEYS.filter((k) => s.obs && s.obs[k]).length;
 
   // YERLEŞİM (v2.62): beş bölge, hiçbiri diğerinin üstüne binmez.
@@ -6843,7 +6883,7 @@ function segDetailHtml(m) {
             <div class="sd-obs sd-obs-row" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
             <details class="sd-obs-menu">
               <summary class="sd-mini" title="Gözlem işaretleri (rapora yazılır)">Gözlem${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
-              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)">${obsAllBtns}</div>
             </details>
             <div class="sd-quick">
               <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Hızlı etiket ekle (gruplu, aranabilir)">+ Hızlı ekle</button>
@@ -18376,6 +18416,10 @@ function setupEvents() {
             const n = OBS_KEYS.filter((k) => sg.obs && sg.obs[k]).length;
             summary.textContent = `Gözlem${n ? ` (${n})` : ''}`;
           }
+          // DURUM SATIRI yerinde tazelenir (v2.314): "İş" çipleri gözlem
+          // işaretlerini gösterir; tazelenmezse eski durum kalır (sessiz hata).
+          const statusEl = card.querySelector('.sd-status');
+          if (statusEl) statusEl.outerHTML = statusRowHtml(m, sg, Number(ix));
           persist();
           renderOverview();
           if ($('#view-report').classList.contains('active')) renderReport();
@@ -20515,6 +20559,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.314': {
+    title: 'Yeni gözlem işaretleri',
+    body:
+      'Duyulmuyor (ses yok/kısık), uzaktan/zayıf konuşma, bozuk ses/artefakt ve dil değişimi eklendi (toplam 12). 8 birincil düğme görünür; kalan 4 “Gözlem” panelinde (panel tümünü gösterir). “Duyulmuyor” teknik bir gözlemdir; “Anlaşılmadı” kontrol durumundan ayrıdır.'
+  },
   '2.313': {
     title: 'Hızlı etiket sözlüğü genişledi',
     body:

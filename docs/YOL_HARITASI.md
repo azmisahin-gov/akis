@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.313.**
+yazılır. **Güncel sürüm: v2.314.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.314 — Yeni gözlem işaretleri (TAMAMLANDI)
+
+- `OBS_DEFS` +4: **duyulmuyor**, **uzaktan/zayıf**, **bozuk ses**, **dil değişimi**.
+- **12 bayrak**, **8 birincil** düğme + “Gözlem” paneli (panel tümünü gösterir).
+- Yeni koşullu filtreler; rapor GÖZLEM/EK-5 otomatik; birleştirme OR.
+- `[duyulmuyor]` ≠ `[anlaşılmaz]` ≠ **Anlaşılmadı** (kontrol durumu).
+- Test `birim [155]`, `tasarim [2cv]`. Ölçüm: 1100 px’te 4 → **3** satır; kırpma 0.
 
 ## v2.313 — Hızlı etiket sözlüğü (TAMAMLANDI)
 

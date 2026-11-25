@@ -62,9 +62,11 @@ satır satır"** denir.
 
 ## 6. Gözlemler ve hızlı etiketler
 
-Gözlem düğmeleri: **gürültü · üst üste · anlaşılmayan · müzik · telefon ·
-sessizlik · yankı · kesinti** (v2.272'de **yankı/oda akustiği** ve
-**kesinti/kopukluk** eklendi).
+Gözlem düğmeleri (12, v2.314): **gürültü · üst üste · anlaşılmayan ·
+duyulmuyor · müzik · telefon · sessizlik · kesinti · yankı · uzaktan/zayıf ·
+bozuk ses · dil değişimi**. **8 birincil** düğme görünür; kalan 4 **“Gözlem”
+panelindedir** (panel TÜM 12’yi gösterir). Gözlem işaretleri raporun **GÖZLEM**
+sütununa ve EK-5’e yazılır.
 
 Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütununa**.
 İkisi farklı işe yarar, biri diğerinin yerine geçmez.

@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.313.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.314.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8001,3 +8001,51 @@ Sonra **`docs/UCTAN_UCA_DENETIM.md`** okunur; **v2.312 — Tarih zekâsı** ile 
    testi güncellenir.
 2. **A‑1 — Ayrı “Dosya” görünümü** (çekmece editör kalır).
 3. **A‑2 — Yazdırılan teslim kontrol listesi** (üç çıktı aynı metin).
+
+## EK DÜZELTME (v2.314) — Yeni gözlem işaretleri
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.314** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2325 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑1 Ayrı “Dosya” görünümü; A‑2 yazdırılan teslim kontrol listesi |
+
+### Ne yapıldı
+
+- `OBS_DEFS` +4: **`notAudible`** (duyulmuyor), **`distance`** (uzaktan/zayıf),
+  **`distortion`** (bozuk ses), **`foreignLanguage`** (dil değişimi) → toplam **12**.
+- **`OBS_PRIMARY_KEYS`** (8): noise, overlap, inaudible, notAudible, music,
+  phone, noSpeech, dropout. Alt şeritte **8 birincil** düğme; **“Gözlem” paneli
+  TÜM 12’yi** gösterir (panel `max-height` + `overflow-y:auto`).
+- Yeni **koşullu filtreler** (`notAudible`, `distance`, `distortion`,
+  `foreignLanguage`); `segCounts` + `segMatchesFilter` aynı kaynaktan.
+- `segmentWorkSummary` yeni bayrakları “İş” çiplerinde gösterir.
+- Hızlı etiketler `obsKey` ile bağlandı; **etiket eklemek gözlemi OTOMATİK
+  açmaz**.
+- Rapor GÖZLEM/EK-5, yardım listesi, düğmeler **`OBS_DEFS`ten otomatik**;
+  birleştirme gözlemleri **OR**’lar.
+- Test: `birim [155]`, `tasarim [2cv]`.
+
+### ÖLÇÜM (gerçek Chromium)
+
+12 bayrak alt şeritte **1100 px’te 4 satıra** çıkıyordu (88 px, metni eziyordu).
+Birincil 8 + panel ile: 1100 px’te **3 satır**; 1440/1280/1200/1000/900/760’ta
+1–2 satır; ≤600 px’te satır gizli, panel tek erişim. Panel 12 düğme, kaydırılır.
+Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Gözlem = uzman beyanı.** Otomatik sınıflandırma yok; `[duyulmuyor]` teknik
+   gözlemdir, **kontrol durumu değildir** (gerekirse “Anlaşılmadı” seçilir).
+2. **12 bayrağın hepsi erişilebilir:** birincil 8 görünür, kalan 4 panelde;
+   panel tümünü gösterir. Yeni bayrak eklerken `OBS_PRIMARY_KEYS`’e koymazsanız
+   panelde kalır (gizli değil).
+3. **Sayaç = filtre = tek kaynak:** `segCounts` + `segMatchesFilter` aynı
+   `segmentHasObs` yardımcısını kullanır; yeni filtre eklerken `SEG_FILTERS` +
+   `CONDITIONAL_FILTERS` + `segCounts` birlikte güncellenir.
+4. **Eski kayıt göçü gerekmez:** `emptyObs` eksik anahtarı `false` yapar;
+   bilinmeyen anahtar silinmez.
+5. **Panel kaydırılır, kırpılmaz:** `max-height` + `overflow-y:auto`; sessiz
+   kesme yasak.

@@ -2131,7 +2131,7 @@ console.log('\n[2cp] Yeni gözlem bayrakları tek kaynaktan (v2.272)');
   const schema = read('assets/schema.js');
   check('bayrak tanımı yalnız şemada', /key: 'echo'/.test(schema) && /key: 'dropout'/.test(schema));
   check('uygulama etiket kopyası taşımaz', !/yankı \/ oda akustiği/.test(js) && !/kesinti \/ kopukluk/.test(js));
-  check('düğmeler OBS_DEFS ten üretilir', /const obsBtns = OBS_DEFS\.map\(/.test(js));
+  check('düğmeler OBS_DEFS ten üretilir', /const obsAllBtns = OBS_DEFS\.map\(/.test(js) && /const obsBtns = OBS_DEFS\.filter\(/.test(js));
   check('yardım listesi OBS_DEFS ten doldurulur', /el\.innerHTML = OBS_DEFS\.map\(\(d\) => `<b>/.test(js));
   check('EK-5 gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(js));
   check('index.html sabit gözlem etiketi taşımaz', !/kesinti \/ kopukluk/.test(html) && !/oda akustiği/.test(html));
@@ -2237,6 +2237,28 @@ console.log('\n[2cu] Hızlı etiket sözlüğü (v2.313)');
   check('standart hukuki yorum etiketi yasağını anar', /Hukuki yorum etiketi yoktur/.test(std));
   check('yardımda hızlı etiket bölümü var', /Hızlı etiketler \(metne ekleme\)/.test(html));
   check('yardımda duyulmuyor ayrımı var', /\[duyulmuyor\]/.test(html));
+}
+console.log('\n[2cv] Yeni gözlem işaretleri (v2.314)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  for (const k of ['notAudible', 'distance', 'distortion', 'foreignLanguage'])
+    check('OBS_DEFS anahtarı: ' + k, new RegExp(`key: '${k}'`).test(schema));
+  check('etiket: duyulmuyor', /label: 'duyulmuyor \(ses yok\/kısık\)'/.test(schema));
+  check('etiket: uzaktan/zayıf', /label: 'uzaktan\/zayıf konuşma'/.test(schema));
+  check('etiket: bozuk ses', /label: 'bozuk ses \/ artefakt'/.test(schema));
+  check('etiket: dil değişimi', /label: 'dil değişimi \(farklı dil\/lehçe\)'/.test(schema));
+  check('gözlem düğmeleri OBS_DEFS ten', /OBS_DEFS\.map\(/.test(app));
+  check('yardım listesi OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => `<b>/.test(app));
+  check('EK-5 gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(app));
+  check('filtreler yeni anahtarları taşır', /notAudible/.test(app) && /foreignLanguage/.test(app));
+  check('dar ekranda tek "Gözlem" paneli', /\.sd-obs-menu\s*\{/.test(layer));
+  check('birincil 8 gözlem düğmesi', /OBS_PRIMARY_KEYS/.test(schema) && /OBS_DEFS\.filter\(\(d\) => obsPrimary\.has/.test(app));
+  check('panel TÜM 12 bayrağı gösterir', /const obsAllBtns = OBS_DEFS\.map\(/.test(app));
+  check('gözlem paneli her genişlikte görünür', /#view-audio \.sd-obs-menu \{\s*display: block/.test(layer));
+  check('gözlem paneli kaydırılır', /\.sd-obs-menu > \.sd-obs \{[^}]*overflow-y: auto/.test(layer));
+  check('tam etiket app.js e kopyalanmaz', !/duyulmuyor \(ses yok\/kısık\)/.test(app));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -238,6 +238,31 @@ export const OBS_DEFS = [
     label: 'kesinti / kopukluk',
     short: 'kesinti',
     hint: 'Kayıtta kopma/kesinti; içeriğin bir bölümü eksik olabilir. Kayıt kalitesi gözlemidir.'
+  },
+  // v2.314 — "duyulmuyor ≠ anlaşılmaz" ayrımı ve teknik/ortam gözlemleri.
+  {
+    key: 'notAudible',
+    label: 'duyulmuyor (ses yok/kısık)',
+    short: 'duyulmuyor',
+    hint: 'Ses yok veya çok kısık; kayıtta işitilmiyor. "Anlaşılmaz"dan farklıdır (ses duyulmuyor).'
+  },
+  {
+    key: 'distance',
+    label: 'uzaktan/zayıf konuşma',
+    short: 'uzaktan',
+    hint: 'Konuşma çok uzaktan veya zayıf; net değil. Teknik gözlemdir.'
+  },
+  {
+    key: 'distortion',
+    label: 'bozuk ses / artefakt',
+    short: 'bozuk ses',
+    hint: 'Bozulma/artefakt; ses çözülemiyor. Kayıt kalitesi gözlemidir.'
+  },
+  {
+    key: 'foreignLanguage',
+    label: 'dil değişimi (farklı dil/lehçe)',
+    short: 'dil değişimi',
+    hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir. Uzman gözlemidir.'
   }
 ];
 
@@ -263,6 +288,20 @@ export function defineOptions(defs) {
 const OBS = defineOptions(OBS_DEFS);
 export const OBS_KEYS = OBS.keys;
 export const OBS_LABEL = OBS.label;
+// Birincil gözlem düğmeleri (v2.314): 12 bayrak alt şeritte 1100 px'te 4 satıra
+// çıkıp metni eziyordu (ölçüldü). En sık kullanılan 8 düğme görünür kalır;
+// kalan 4 (yankı, uzaktan, bozuk ses, dil değişimi) "Gözlem" panelindedir.
+// Panel TÜM 12'yi gösterir; hiçbir bayrak erişilemez değildir.
+export const OBS_PRIMARY_KEYS = [
+  'noise',
+  'overlap',
+  'inaudible',
+  'notAudible',
+  'music',
+  'phone',
+  'noSpeech',
+  'dropout'
+];
 export const OBS_SHORT = OBS.short;
 export const OBS_HINT = OBS.hint;
 

@@ -1,4 +1,4 @@
-# Özellikler (v2.313 — mevcut durum)
+# Özellikler (v2.314 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -443,9 +443,11 @@ tuşları bozulmaz.
   bölüme atlar.
 - **Bölüm işlemleri:** oynatıcı konumundan böl (`B`), sonrakiyle birleştir
   (`M`), sil.
-- **Gözlem işaretleri:** her bölüm için arka plan gürültüsü, üst üste konuşma,
-  anlaşılmaz bölüm ve müzik/ses efekti işaretlenebilir. Bu işaretler rapora
-  "Gözlem" sütunu olarak yansır.
+- **Gözlem işaretleri (v2.314):** 12 bayrak — arka plan gürültüsü, üst üste konuşma,
+  anlaşılmaz bölüm, **duyulmuyor (ses yok/kısık)**, müzik/ses efekti, telefon,
+  sessizlik, kesinti, yankı, **uzaktan/zayıf**, **bozuk ses**, **dil değişimi**.
+  **8 birincil** düğme alt şeritte görünür; kalan 4 **“Gözlem” panelinde** (panel
+  TÜM 12’yi gösterir). İşaretler rapora **“Gözlem”** sütunu ve **EK-5** olarak yansır.
 - **Kanal seçimi (stereo kayıtlarda):** her iki kanal, yalnız sol veya yalnız
   sağ kanal dinlenebilir. Arka plan gürültüsünü veya tek kanaldaki konuşmayı
   ayırt etmeye yardımcı olur. Web Audio `ChannelSplitter` ile uygulanır;
@@ -626,6 +628,7 @@ uzmanlık alanını gösterir.
 - **Kayıt bazında konuşmacı tablosu (v2.273; sütunlar v2.281/v2.283):** her kayıt için **KOD · ETİKET · BÖLÜM · SÜRE · İLK – SON**; **atanmamış bölümler** ayrı satırda (— Konuşmacı belirtilmedi);
   dosyalar arası kişi bağlıysa **DOSYALAR ARASI KİŞİ** sütunu eklenir (boş sütun çizilmez). Tek kaynak:
   `materialSpeakerRows(c, m)`; üç çıktı aynı tabloyu basar.
+- **Yeni gözlem bayrakları (v2.314):** **duyulmuyor (ses yok/kısık)** (`notAudible`), **uzaktan/zayıf konuşma** (`distance`), **bozuk ses / artefakt** (`distortion`), **dil değişimi** (`foreignLanguage`). Tek kaynak `OBS_DEFS`; düğmeler, yardım listesi, rapor gözlem sütunu, EK-5 ve **koşullu filtreler** otomatik güncellenir. `[duyulmuyor]` etiketi teknik bir gözlemdir; **“Anlaşılmadı” kontrol durumundan ayrıdır** ve etiket eklemek gözlemi otomatik açmaz. 12 bayrak alt şeritte 1100 px’te 4 satıra çıkınca **8 birincil + “Gözlem” paneli** düzenine geçildi (panel tümünü gösterir).
 - **İki yeni gözlem bayrağı (v2.272):** **yankı / oda akustiği** (`echo`) ve **kesinti / kopukluk**
   (`dropout`). Tek kaynak `OBS_DEFS`; düğmeler, yardım listesi, rapor gözlem sütunu ve **EK-5 gözlem
   tablosu** otomatik güncellenir. Eski kayıtlar `false` ile açılır (veri kaybı yok).
