@@ -115,15 +115,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.296';
-import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.296';
+} from './schema.js?v=2.297';
+import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.297';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.296';
+const APP_VERSION = '2.297';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12476,6 +12476,28 @@ function reportBlockByKey(c, key) {
   const id = key.slice(5);
   return ((c && c.report && c.report.blocks) || []).find((b) => b && b.id === id) || null;
 }
+function reportSectionDepth(c, key) {
+  const parent = reportLayoutOf(c).parent || {};
+  let d = 0, p = parent[key], guard = 0;
+  while (p && guard++ < 100) { d += 1; p = parent[p]; }
+  return d;
+}
+function reportNumberLabelMap(c) {
+  const mode = reportNumbering(c);
+  if (mode === 'none') return {};
+  const parent = reportLayoutOf(c).parent || {};
+  const labels = {};
+  const counters = {};
+  for (const key of reportBodyOrder(c)) {
+    if (!reportBlockRenders(c, key)) continue;
+    const p = parent[key] || '';
+    counters[p] = (counters[p] || 0) + 1;
+    const n = counters[p];
+    labels[key] = labels[p] ? `${labels[p]}.${reportNumberToken(n, mode)}` : reportNumberToken(n, mode);
+  }
+  return labels;
+}
+
 function reportNumberMap(c) {
   // v2.283 — NEDEN: numara yalnız AÇIK bölüme göre veriliyordu; "Cevaplar"
   // açık ama soru yoksa çizilmiyordu → numarada BOŞLUK kalıyordu (1,2,3,4,5,7).
@@ -12519,9 +12541,9 @@ function reportHeadingText(c, key, map) {
   const title = reportSectionTitle(c, key);
   const mode = reportNumbering(c);
   if (mode === 'none') return title;
-  // v2.289: çizilen HER gövde bölümü numara alır (alt blok ayrımı kaldırıldı).
-  const n = (map || reportNumberMap(c))[key];
-  return n ? `${reportNumberToken(n, mode)}. ${title}` : title;
+  // v2.297: ağaç düğümü; numara yol biçiminde (1, 1.1 / A, A.1).
+  const label = reportNumberLabelMap(c)[key];
+  return label ? `${label}. ${title}` : title;
 }
 // Alt başlıklar ana bölüm numarasından türetilir (5.1 / A.1 …). v2.261:
 // cevaplar ve sınırlılıklar ayrı bölüm olduğu için s5'in tek alt başlığı kaldı.
@@ -12529,11 +12551,11 @@ function reportHeadingText(c, key, map) {
 // kipte alt başlık da numarasız olur (eskiden h3 numarasızken h4 "5.1" kalıyordu).
 function reportSubHeadings(c) {
   const mode = reportNumbering(c);
-  const n = movedAnnexNo || reportNumberMap(c).s5 || 0;
-  if ((mode === 'none' && !movedAnnexNo) || !n) {
+  const label = movedAnnexNo ? `EK-${movedAnnexNo}` : reportNumberLabelMap(c).s5 || '';
+  if ((mode === 'none' && !movedAnnexNo) || !label) {
     return { s51: 'Ses kayıtlarının çözümlenmesi', recordPrefix: (i) => `${i + 1}.` };
   }
-  const p = movedAnnexNo ? `EK-${movedAnnexNo}` : reportNumberToken(n, mode);
+  const p = label;
   return {
     s51: `${p}.1. Ses kayıtlarının çözümlenmesi`,
     recordPrefix: (i) => `${p}.1.${i + 1}.`
@@ -12678,6 +12700,49 @@ function moveReportSection(key, dir) {
   });
 }
 
+function sectionBlockKeys(c, key) {
+  const order = reportLayoutOf(c).order;
+  const parent = reportLayoutOf(c).parent || {};
+  return order.filter((k) => {
+    let p = k, guard = 0;
+    while (p && guard++ < 100) {
+      if (p === key) return true;
+      p = parent[p];
+    }
+    return false;
+  });
+}
+function moveSectionRelative(key, target, mode) {
+  if (!key || !target || key === target) return false;
+  const c = currentCase();
+  if (!c) return false;
+  const layout = reportLayoutOf(c);
+  const block = sectionBlockKeys(c, key);
+  if (mode === 'under' && block.includes(target)) return false;
+  const blockSet = new Set(block);
+  const blockItems = layout.order.filter((k) => blockSet.has(k));
+  const rest = layout.order.filter((k) => !blockSet.has(k));
+  const parent = { ...(layout.parent || {}) };
+  if (mode === 'under') parent[key] = target;
+  else {
+    const p = parent[target];
+    if (p) parent[key] = p;
+    else delete parent[key];
+  }
+  let at;
+  if (mode === 'under') {
+    const tb = sectionBlockKeys(c, target);
+    at = rest.indexOf(tb[tb.length - 1]) + 1;
+  } else {
+    at = rest.indexOf(target) + (mode === 'after' ? sectionBlockKeys(c, target).length : 0);
+  }
+  rest.splice(at, 0, ...blockItems);
+  c.report.layout = normalizeReportLayout({ ...layout, order: rest, parent });
+  persist();
+  renderReport();
+  return true;
+}
+
 function moveReportSectionTo(key, targetKey) {
   const c = currentCase();
   if (!c) return;
@@ -12781,12 +12846,8 @@ function reportUiLabel(c, key) {
   // Kullanıcı başlığı düzenlediyse iskelette O görünür (yoksa kısa arayüz etiketi).
   const custom = c && c.report && c.report.titles && c.report.titles[key];
   const base = (typeof custom === 'string' && custom.trim()) || REPORT_UI_LABELS[key] || reportSectionTitle(c, key);
-  const mode = reportNumbering(c);
-  if (mode !== 'none') {
-    const n = reportNumberMap(c)[key];
-    return n ? `${reportNumberToken(n, mode)} · ${base}` : base;
-  }
-  return base;
+  const label = reportNumberLabelMap(c)[key];
+  return label ? `${label} · ${base}` : base;
 }
 
 // ---- Rapor iskeleti: kategori + arama + yalnız açık (v2.229) --------------
@@ -12900,7 +12961,8 @@ function renderReportSections(c) {
           ? `<button type="button" class="rsec-edit" data-report-place="${esc(key)}" aria-label="${placed ? 'Gövdeye geri al' : 'EKLER altına taşı'}" title="${placed ? 'Bu bölümü gövdeye geri al' : 'Bu bölümü EKLER altına taşı (EK-N olarak basılır)'}">${placed ? 'G' : 'EK'}</button>`
           : '');
     const drag = move && canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(key)}"` : '';
-    return `<div class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
+    const depth = reportSectionDepth(c, key);
+    return `<div style="--depth:${depth}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -14246,7 +14308,7 @@ function renderReport() {
     const piece = render();
     if (!piece) continue;
     // Her ana bölüm (1–7) ve ekler yeni sayfadan (v2.259; ilk gövde hariç).
-    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody))
+    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody))
       html += '<div class="paper-page-break"></div>';
     html += wrapBlock(key, piece);
     firstBody = false;
@@ -14763,7 +14825,7 @@ function docxXml(c) {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) body += pageBreakPara;
+    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody)) body += pageBreakPara;
     body += render();
     firstBody = false;
   }
@@ -15399,7 +15461,7 @@ async function makeUdf() {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if (key === 'annex' || (REPORT_MAIN_KEYS.includes(key) && !firstBody)) el.push(pageBreak());
+    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody)) el.push(pageBreak());
     render();
     firstBody = false;
   }
@@ -18160,8 +18222,12 @@ $('#reportSections')?.addEventListener('dragover', (e) => {
   const row = e.target.closest('[data-drag-kind][data-drag-key]');
   if (!row || row.dataset.dragKind !== rsecDrag.kind || row.dataset.dragKey === rsecDrag.key) return;
   e.preventDefault();
-  document.querySelectorAll('#reportSections .drag-over').forEach((x) => x.classList.remove('drag-over'));
-  row.classList.add('drag-over');
+  const r = row.getBoundingClientRect();
+  const y = (e.clientY - r.top) / Math.max(1, r.height);
+  const zone = rsecDrag.kind === 'annex' ? (y < 0.5 ? 'before' : 'after') : y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
+  row.dataset.dropZone = zone;
+  document.querySelectorAll('#reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('drag-over', 'drop-before', 'drop-after', 'drop-under'));
+  row.classList.add('drag-over', `drop-${zone}`);
 });
 $('#reportSections')?.addEventListener('drop', (e) => {
   if (!rsecDrag) return;
@@ -18170,15 +18236,17 @@ $('#reportSections')?.addEventListener('drop', (e) => {
   e.preventDefault();
   const src = rsecDrag;
   rsecDrag = null;
-  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over').forEach((x) => x.classList.remove('dragging', 'drag-over'));
+  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('dragging', 'drag-over', 'drop-before', 'drop-after', 'drop-under'));
   if (row.dataset.dragKey === src.key) return;
-  if (src.kind === 'body') moveReportSectionTo(src.key, row.dataset.dragKey);
+  const zone = row.dataset.dropZone || (src.kind === 'annex' ? 'after' : 'under');
+  let ok = true;
+  if (src.kind === 'body') ok = moveSectionRelative(src.key, row.dataset.dragKey, zone);
   else moveReportAnnexTo(src.key, row.dataset.dragKey);
-  showToast('Sıra değiştirildi (Ctrl+Z ile geri alınır).');
+  if (ok) showToast(zone === 'under' ? 'Bölüm altına taşındı (Ctrl+Z ile geri alınır).' : 'Sıra değiştirildi (Ctrl+Z ile geri alınır).');
 });
 $('#reportSections')?.addEventListener('dragend', () => {
   rsecDrag = null;
-  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over').forEach((x) => x.classList.remove('dragging', 'drag-over'));
+  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('dragging', 'drag-over', 'drop-before', 'drop-after', 'drop-under'));
 });
 // Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
 $('#reportAnnexFields')?.addEventListener('input', (e) => {
@@ -19293,6 +19361,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.297': {
+    title: 'Bölümleri birbirinin altına taşıyabilirsiniz',
+    body:
+      'İskelette bir bölümü başka bir bölümün ortasına bırakın: alt bölüm olur (1.1, 1.1.1 / A.1). ' +
+      'Üst/alt kenara bırakın: aynı düzeyde sıralanır. Derinlik sınırsızdır; döngü engellenir. ↑↓ korunur.'
+  },
   '2.296': {
     title: 'Rapor bölümlerini sürükleyerek sıralayabilirsiniz',
     body:

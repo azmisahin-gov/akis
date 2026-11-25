@@ -3929,3 +3929,9 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.296 — Sürükle-bırak sıralama: hedef satır görünür vurgulanır. */
 .rsec-row.drag-over { outline: 2px dashed var(--accent); outline-offset: 2px; }
 .rsec-row.dragging { opacity: .55; }
+
+/* v2.297 — Bölüm ağacı: girinti ve sürükleme bölgeleri. */
+.rsec-row { padding-left: calc(var(--depth, 0) * 14px); }
+.rsec-row.drop-before { box-shadow: inset 0 2px 0 var(--accent); }
+.rsec-row.drop-after { box-shadow: inset 0 -2px 0 var(--accent); }
+.rsec-row.drop-under { outline: 2px solid var(--accent); outline-offset: 1px; background: var(--accent-soft); }

@@ -6077,5 +6077,28 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('filtreli listede sürükleme kapalı', /const canDrag = !reportOutlineState\.q/.test(js), true);
 }
 
+
+// [138] v2.297 — Bölüm ağacı: sınırsız alt bölüm, 1.1 / A.1 numara, DFS sıra.
+{
+  console.log('[138] Bölüm ağacı ve alt numaralar (v2.297)');
+  const S = __schemaMod;
+  const c = T.emptyCaseForTest({
+    id: 'cTree',
+    report: { layout: { order: ['s1', 's2', 's3'], parent: { s2: 's1' } } }
+  });
+  const nl = S.normalizeReportLayout({ order: ['s1', 's2', 's3'], parent: { s2: 's1' } });
+  eq('parent korunur', nl.parent.s2, 's1');
+  eq('DFS sıra (ilk üç)', nl.order.slice(0, 3).join(','), 's1,s2,s3');
+  eq('alt bölüm numarası 1.1', T.reportHeadingText(c, 's2'), '1.1. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR');
+  eq('sonraki kök 2', T.reportHeadingText(c, 's3'), '2. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR');
+  eq('TOC alt numarayı taşır', T.reportTocEntries(c).some((x) => x.startsWith('1.1. ')), true);
+  const cyc = S.normalizeReportLayout({ order: ['s1', 's2'], parent: { s1: 's2', s2: 's1' } });
+  eq('döngü temizlenir', !cyc.parent.s1 || !cyc.parent.s2, true);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('altına bırakma bölgesi', /drop-under/.test(js), true);
+  eq('göreli taşıma var', /function moveSectionRelative\(/.test(js), true);
+  eq('girinti derinliğe bağlı', /--depth:/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

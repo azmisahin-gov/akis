@@ -2,11 +2,16 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.296.**
+yazılır. **Güncel sürüm: v2.297.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.297 — Sınırsız alt bölüm ağacı (TAMAMLANDI)
+
+- `layout.parent` + DFS; 1.1 / A.1 numara; sınırsız derinlik; döngü engelli.
+- Sürükle: orta=alt bölüm, kenar=sıra. Test `birim [138]`.
 
 ## v2.296 — Sürükle-bırak sıralama (TAMAMLANDI)
 

@@ -677,6 +677,7 @@ export function emptyReportAnnexes(over = {}) {
 export function emptyReportLayout(over = {}) {
   return {
     order: [...REPORT_BODY_ORDER],
+    parent: {},
     annexOrder: [...REPORT_ANNEX_KEYS],
     annexes: emptyReportAnnexes(),
     annexMeta: {},
@@ -763,7 +764,34 @@ export function normalizeReportLayout(src) {
       if (title || content || note) annexMeta[k] = { title, content, note };
     }
   }
-  return { ...src, order, annexOrder, annexes, annexMeta };
+  // v2.297 — ebeveyn haritası + derinlik-önce sıra.
+  const parent = {};
+  const srcParent = src.parent && typeof src.parent === 'object' ? src.parent : {};
+  const inOrder = new Set(order);
+  for (const k of order) {
+    const p = srcParent[k];
+    if (typeof p === 'string' && inOrder.has(p) && p !== k) parent[k] = p;
+  }
+  for (const k of Object.keys(parent)) {
+    let cur = parent[k], guard = 0;
+    while (cur && guard++ < 100) {
+      if (cur === k) { delete parent[k]; break; }
+      cur = parent[cur];
+    }
+  }
+  const children = new Map();
+  for (const k of order) {
+    const p = parent[k] || '';
+    if (!children.has(p)) children.set(p, []);
+    children.get(p).push(k);
+  }
+  const dfs = [];
+  const walk = (p) => {
+    for (const k of children.get(p) || []) { dfs.push(k); walk(k); }
+  };
+  walk('');
+  for (const k of order) if (!dfs.includes(k)) dfs.push(k);
+  return { ...src, order: dfs, parent, annexOrder, annexes, annexMeta };
 }
 
 // ---- 5b-3. Rapor tabloları: sütun görünürlüğü (v2.235) --------------------
