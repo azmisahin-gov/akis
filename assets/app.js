@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.321';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.321';
+} from './schema.js?v=2.322';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.322';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.321';
+const APP_VERSION = '2.322';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -525,7 +525,7 @@ function quickMenuHtml(i) {
     recentHtml +
     `<div class="qt-groups">${groups}</div>` +
     `<div class="qt-empty" hidden>Eşleşen etiket yok.</div>` +
-    `<div class="qt-foot"><button type="button" class="mini-button" data-quick-close="${i}" title="Menüyü kapat (Esc)">Kapat</button><button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Bölüm metnini temizler; onay ister.">Metni temizle</button></div>` +
+    `<div class="qt-foot"><button type="button" class="mini-button" data-quick-close="${i}" title="Menüyü kapat (Esc)">Kapat</button><button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metindeki [etiket] işaretlerini kaldırır; metnin kendisine dokunmaz. Onay ister.">Etiketleri temizle</button></div>` +
     `</div>`
   );
 }
@@ -565,7 +565,10 @@ function syncFloatingBackdrop() {
 }
 function closeFloatingMenus(except) {
   $$('.sd-quick-menu').forEach((m) => {
-    if (m !== except) m.hidden = true;
+    if (m !== except) {
+      m.hidden = true;
+      m.style.display = ''; // eski inline display kalıntısı kalmasın (v2.322)
+    }
   });
   $$('.sd-obs-menu[open]').forEach((d) => {
     const panel = d.querySelector('.sd-obs');
@@ -574,24 +577,72 @@ function closeFloatingMenus(except) {
   $$('[data-quick-menu]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
   syncFloatingBackdrop();
 }
+// Etiket menüsünü TEK yoldan kapatır (v2.322): `hidden` niteliği + inline
+// display temizliği birlikte. Aksi hâlde `style.display='block'` kalıntısı
+// yüzünden menü kapanmıyor ve metin alanını örtmeye devam ediyordu.
+function closeQuickMenu(menu, focusTrigger) {
+  if (!menu) return;
+  menu.hidden = true;
+  menu.style.display = '';
+  const btn = menu.parentElement && menu.parentElement.querySelector('[data-quick-menu]');
+  if (btn) {
+    btn.setAttribute('aria-expanded', 'false');
+    if (focusTrigger) {
+      try {
+        btn.focus();
+      } catch (e) {}
+    }
+  }
+  syncFloatingBackdrop();
+}
 function placeFloatingMenu(menu, trigger, align = 'right') {
   if (!menu || !trigger) return;
+  // INLINE `display` YAZILMAZ (v2.322). `style.display='block'` yazılınca
+  // `[hidden] { display:none }` kuralını eziyor ve menü KAPANMIYORDU
+  // (ölçüldü: hidden=true ama computed display=block → ekranda kalıyor).
+  // Görünürlük yalnız `hidden` niteliğiyle yönetilir.
+  menu.hidden = false;
+  menu.style.display = '';
   menu.style.position = 'fixed';
   menu.style.right = 'auto';
   menu.style.bottom = 'auto';
   menu.style.visibility = 'hidden';
-  menu.style.display = 'block';
   const gap = 8;
   const vw = window.innerWidth || 360;
   const vh = window.innerHeight || 640;
   const mw = menu.offsetWidth || 320;
   const mh = menu.offsetHeight || 320;
   const r = trigger.getBoundingClientRect();
-  let top = r.top - mh - gap;
-  if (top < gap) top = r.bottom + gap;
-  if (top + mh > vh - gap) top = Math.max(gap, vh - mh - gap);
-  let left = align === 'left' ? r.left : r.right - mw;
-  left = Math.max(gap, Math.min(left, vw - mw - gap));
+  let top;
+  let left;
+  if (align === 'list') {
+    // "Segment listesine doğru" (v2.322): menü tetikleyicinin SOLUNA açılır ve
+    // deşifre metni alanını KAPATMAZ (ölçüm v2.321: menü metnin üstünü örtüyordu).
+    const asideLeft = r.left - mw - gap;
+    if (asideLeft >= gap) {
+      left = asideLeft;
+      top = r.bottom - mh;
+      if (top < gap) top = gap;
+      if (top + mh > vh - gap) top = Math.max(gap, vh - mh - gap);
+    } else {
+      // Dar ekran (tek sütun): yana yer YOK. Menü ÖNCE tetikleyicinin ALTINA
+      // açılır (deşifre metni görünür kalır). Alt/üst ikisi de yetmezse menü
+      // görünür alana sığdırılıp KAYDIRILIR — metnin üstüne binmek yerine
+      // kısalır (ölçüm: 900 px'te metin 347–434, menü 470'te başlıyor).
+      left = Math.max(gap, Math.min(r.right - mw, vw - mw - gap));
+      const below = vh - (r.bottom + gap) - gap;
+      const above = r.top - gap * 2;
+      if (below >= 240 || below >= above) top = r.bottom + gap;
+      else if (above >= 240) top = r.top - mh - gap;
+      else top = Math.max(gap, vh - mh - gap);
+    }
+  } else {
+    top = r.top - mh - gap;
+    if (top < gap) top = r.bottom + gap;
+    if (top + mh > vh - gap) top = Math.max(gap, vh - mh - gap);
+    left = align === 'left' ? r.left : r.right - mw;
+    left = Math.max(gap, Math.min(left, vw - mw - gap));
+  }
   menu.style.top = `${Math.round(top)}px`;
   menu.style.left = `${Math.round(left)}px`;
   menu.style.maxHeight = `${Math.max(160, Math.min(mh, vh - top - gap))}px`;
@@ -620,6 +671,29 @@ function insertTagAt(full, token, start, end) {
   const needAfter = after.length > 0 && !/^\s/.test(after);
   const ins = (needBefore ? ' ' : '') + tok + (needAfter ? ' ' : '');
   return { text: before + ins + after, caret: s + ins.length, mode: 'cursor' };
+}
+// Metinden YALNIZ bilinen hızlı etiketleri çıkarır; metnin kendisi KORUNUR
+// (v2.322). Önceden "Metni temizle" tüm metni siliyordu — kullanıcı yalnız
+// eklediği [etiket] işaretlerinin kalkmasını istedi. Bilinmeyen köşeli
+// parantezler (ör. alıntı/eksiltme "[...]", "[bkz. 3]") DOKUNULMAZ.
+// SAF fonksiyon; dönüş { text, removed } (removed = kaldırılan etiket sayısı).
+function stripQuickTags(text) {
+  const src = String(text == null ? '' : text);
+  const tokens = QUICK_TAGS.map((t) => String(t.text || '')).filter(Boolean).sort((a, b) => b.length - a.length);
+  let out = src;
+  let removed = 0;
+  for (const tok of tokens) {
+    if (out.indexOf(tok) < 0) continue;
+    const parts = out.split(tok);
+    removed += parts.length - 1;
+    out = parts.join('');
+  }
+  out = out
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim();
+  return { text: out, removed };
 }
 // Eski sürümlerin varsayılan yöntem metni (iki paragraf). Kayıtlı dosyalarda
 // aracın kendisini anan ifadeler kalmasın diye birebir karşılaştırmayla
@@ -7912,6 +7986,10 @@ function renderSegDetail(m) {
   attachSegWave(m, idx);
   setAnalysisMode(m, analysisMode);
   refreshNarrowBar(m, root.closest('.audio-card'));
+  // Yeniden çizim menüyü DOM'dan silip yerine KAPALI bir kopya koyar; backdrop
+  // görünür kalırsa sonraki tıklamayı yutuyordu (v2.322'de ölçüldü: etiket
+  // eklendikten sonra "Etiket ekle"ye basınca menü açılmıyordu).
+  syncFloatingBackdrop();
 }
 function renderSegments(m, card) {
   const root = $(`#segments-${CSS.escape(m.id)}`, card || document);
@@ -18220,15 +18298,16 @@ function setupEvents() {
       const m = c.materials.find((x) => x.id === id);
       if (m) openAsrPopover(m);
     } else if (b.dataset.quickMenu !== undefined) {
-      // ETİKET menüsü (v2.316): solda; görünür alana oturtulur (kırpılmaz).
+      // ETİKET menüsü: SEGMENT LİSTESİNE DOĞRU (sola) açılır (v2.322) — metin
+      // alanını örtmez. Kapatma tek yoldan (`closeQuickMenu`).
       const menu = b.parentElement.querySelector('.sd-quick-menu');
       if (menu) {
-        menu.hidden = !menu.hidden;
-        b.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
-        if (menu.hidden) syncFloatingBackdrop();
         if (!menu.hidden) {
+          closeQuickMenu(menu, false);
+        } else {
           closeFloatingMenus(menu);
-          placeFloatingMenu(menu, b, 'left');
+          placeFloatingMenu(menu, b, 'list');
+          b.setAttribute('aria-expanded', 'true');
           const s = menu.querySelector('.qt-search');
           if (s) {
             s.value = '';
@@ -18712,14 +18791,7 @@ function setupEvents() {
     const m = currentCase().materials.find((x) => x.id === id);
     if (!m) return;
     if (close) {
-      const menu = close.closest('.sd-quick-menu');
-      if (menu) menu.hidden = true;
-      syncFloatingBackdrop();
-      const btn = menu && menu.parentElement.querySelector('[data-quick-menu]');
-      if (btn) {
-        btn.setAttribute('aria-expanded', 'false');
-        btn.focus();
-      }
+      closeQuickMenu(close.closest('.sd-quick-menu'), true);
       return;
     }
     if (tag) {
@@ -18760,17 +18832,27 @@ function setupEvents() {
       const ix = Number(clear.dataset.quickClear);
       const s = m.segments[ix];
       if (!s) return;
-      const ok = await askConfirm('Metni temizle', 'Bu bölümün metni silinecek. Ctrl+Z ile geri alabilirsiniz. Devam edilsin mi?');
+      const res = stripQuickTags(s.text || '');
+      if (!res.removed) {
+        showToast('Metinde etiket bulunamadı; metin değişmedi.');
+        return;
+      }
+      const ok = await askConfirm(
+        'Etiketleri temizle',
+        `Metindeki ${res.removed} etiket kaldırılacak; metnin kendisi korunacak. Üst bardaki ↶ veya Ctrl+Z ile geri alabilirsiniz. Devam edilsin mi?`
+      );
       if (!ok) return;
+      // Toplu metin değişikliği: ↶ düğmesiyle geri alınabilmesi için tam kayıt.
+      snapshotForUndo('etiketler temizlendi');
       const prev = s.text;
-      applyTextEdit(s, '');
+      applyTextEdit(s, res.text);
       pushSegmentHistory(s, prev);
       persist();
       renderSegDetail(m);
       updateSegListItem(m, ix);
       refreshSegChips(m);
       renderOverview();
-      showToast('Bölüm metni temizlendi.');
+      showToast(`${res.removed} etiket kaldırıldı; metin korundu.`);
     }
   });
   // Hızlı etiket araması (v2.313): yalnız menü içindeki görünürlüğü süzer.
@@ -18785,14 +18867,7 @@ function setupEvents() {
     const menu = e.target && e.target.closest ? e.target.closest('.sd-quick-menu') : null;
     if (!menu) return;
     e.stopPropagation();
-    menu.hidden = true;
-    const btn = menu.parentElement && menu.parentElement.querySelector('[data-quick-menu]');
-    if (btn) {
-      btn.setAttribute('aria-expanded', 'false');
-      try {
-        btn.focus();
-      } catch (err) {}
-    }
+    closeQuickMenu(menu, true);
   });
   // GÖZLEM menüsü (v2.316): sağda; açılınca görünür alana oturtulur.
   $('#view-audio').addEventListener('click', (e) => {
@@ -18828,6 +18903,11 @@ function setupEvents() {
     (e) => {
       const close = e.target && e.target.closest ? e.target.closest('[data-quick-close], [data-obs-close]') : null;
       if (!close) return;
+      const qm = close.closest('.sd-quick-menu');
+      if (qm) {
+        closeQuickMenu(qm, true);
+        return;
+      }
       const details = close.closest('.sd-obs-menu');
       if (details) details.open = false;
       closeFloatingMenus(null);
@@ -20797,6 +20877,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.322': {
+    title: 'Etiket menüsü: kapanır, metni örtmez, metni silmez',
+    body:
+      'Etiket menüsü artık segment listesine doğru (sola) açılır ve deşifre metni alanını örtmez. Hiç etiket seçmeseniz de üst ×, alt Kapat, Esc veya dış tıklama kapatır. “Etiketleri temizle” metni silmez; yalnız eklediğiniz [etiket] işaretlerini kaldırır (onay ister, Ctrl+Z ile geri alınır).'
+  },
   '2.321': {
     title: 'Küçük ekranda ad ve etiketler kırpılmıyor',
     body:

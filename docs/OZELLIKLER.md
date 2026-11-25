@@ -1,4 +1,4 @@
-# Özellikler (v2.321 — mevcut durum)
+# Özellikler (v2.322 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -476,8 +476,8 @@ tuşları bozulmaz.
   `[telefon]`, `[uzaktan konuşma]`, `[fısıltı]`, `[bağırma]`, `[gülüşme]`,
   `[öksürük]`, `[ağlama]`, `[alkış]`, `[karşı taraf]`, `[dil değişimi]`,
   `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`, `[isim belirsiz]`,
-  `[yer belirsiz]`, `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]` + “Metni temizle”.
-  **12 gözlem kavramı hem bu menüde (metne) hem “Gözlem işaretle” panelinde (rapora) bulunur.** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
+  `[yer belirsiz]`, `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]` + **“Etiketleri temizle”**.
+  **12 gözlem kavramı hem bu menüde (metne) hem “Gözlem işaretle” panelinde (rapora) bulunur.** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239). **Menü segment listesine doğru (sola) açılır** ve deşifre metni alanını örtmez; **seçim yapılmasa da** üst ×, alt “Kapat”, **Esc** ve dış tıklama kapatır (v2.322). **“Etiketleri temizle”** yalnız `[etiket]` işaretlerini kaldırır; **metnin kendisi korunur**, bilinmeyen köşeli parantezler (`[bkz. 3]`, `[...]`) dokunulmaz; onay ister ve Ctrl+Z ile geri alınır (v2.322).
 - **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
   inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
@@ -1001,6 +1001,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Etiket menüsü onarıldı (v2.322):** menü **segment listesine doğru (sola)** açılır, deşifre metni alanını örtmez; **seçim yapılmasa da** üst × / alt “Kapat” / **Esc** / dış tıklama kapatır (inline `display` artık `[hidden]` kuralını ezmiyor). **“Etiketleri temizle”** yalnız `[etiket]` işaretlerini kaldırır — **metin korunur**, bilinmeyen köşeli parantezler dokunulmaz, onay ister. Yeniden çizimden sonra backdrop eşitlenir; etiket eklendikten sonra menü yine açılır.
 - **30 etiket geri + kapatma garantisi (v2.320):** Etiket menüsünde **30 etiketin tamamı** (12 gözlem kavramı dâhil) görünür; başlıkta **“Etiket ekle · 30”**. Alt **Kapat** şeridi sabittir; kapatma **yakalama aşamasında** da bağlanır. Menü yüksekliği 30 etikete göre büyütüldü, kaydırılır.
 - **Görünür sürüm + tek tık yenile (v2.319):** üst barda **⟳ vX.Y** düğmesi; tıklayınca sayfa `?t=` ile önbelleği kırarak yenilenir. İlk sürüm denetimi **hemen**, sonra 30 sn’de bir ve sekmeye dönüşte. Eski sürümde “Yeni sürüm hazır” şeridi.
 - **Envanter bütünlüğü (v2.318):** EK-5 “Metin işaretleri” anahtarı **o sürümde menüdeki 18 etiketten** (`QUICK_TAG_DEFS`), “Gözlem işaretleri” **12 bayraktan** (`OBS_DEFS`) üretilir; eski/olmayan etiketler kaldırıldı. Etiket/Gözlem menülerinde **üst/alt Kapat + backdrop + Esc**; tarayıcının arama ×’i gizli; gözlem panelinde **Kapat ×**.

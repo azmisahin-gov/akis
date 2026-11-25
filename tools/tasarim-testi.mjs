@@ -2248,7 +2248,7 @@ console.log('\n[2cx] Menü kırpılması ve alt şerit sırası (v2.316)');
   check('gözlem paneli position:fixed', /#view-audio \.sd-obs-menu > \.sd-obs \{[^}]*position:\s*fixed/.test(layer));
   check('menü z-index yüksek', /#view-audio \.sd-quick-menu \{[^}]*z-index:\s*1200/.test(layer) && /#view-audio \.sd-obs-menu > \.sd-obs \{[^}]*z-index:\s*1200/.test(layer));
   check('konum görünür alana oturtulur', /function placeFloatingMenu\(/.test(appJs) && /function closeFloatingMenus\(/.test(appJs));
-  check('etiket menüsü açılınca konumlanır', /placeFloatingMenu\(menu, b, 'left'\)/.test(appJs));
+  check('etiket menüsü açılınca konumlanır', /placeFloatingMenu\(menu, b, 'list'\)/.test(appJs));
   check('gözlem paneli açılınca konumlanır', /placeFloatingMenu\(panel, summary, 'right'\)/.test(appJs));
   check('kapatma kancaları (dış tıklama/kaydırma/boyut)', (appJs.match(/closeFloatingMenus\(/g) || []).length >= 5 && /addEventListener\(\s*'resize'/.test(appJs));
   check('solda Etiket, sağda Gözlem', /#view-audio \.sd-quick \{[^}]*order:\s*1[^}]*margin-right:\s*auto/.test(layer) && /#view-audio \.sd-obs-active \{[^}]*order:\s*2[^}]*margin-left:\s*auto/.test(layer) && /#view-audio \.sd-obs-menu \{[^}]*order:\s*3/.test(layer));
@@ -2352,6 +2352,39 @@ console.log('\n[2da] Dar ekranda metin kırpılmaz/taşmaz (v2.321)');
   check('istatistik kartı tek sütun', /grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(cardBlock));
   check('kart ikonu kendi satırında', /#view-overview \.stat-card::before\s*\{[^}]*grid-row:\s*auto/.test(narrow));
   check('etiket sığmazsa kırılır', /#view-overview \.stat-card > span\s*\{[^}]*overflow-wrap:\s*anywhere/.test(narrow));
+}
+
+console.log('\n[2db] Etiket menüsü: kapanır, listeye doğru açılır, metni korur (v2.322)');
+{
+  const app = read('assets/app.js');
+  // ÖLÇÜM (v2.321, gerçek Chromium, gerçek fare):
+  //  • Kapat: hidden=true ama inline `style.display='block'` kaldığı için
+  //    computed display=block → menü EKRANDA KALIYOR ve metin alanını örtüyor.
+  //  • Yerleşim: menü [762,131,380,470], metin alanı [756,517,619,87] → ÖRTÜŞME.
+  //  • "Metni temizle": 'Konuşma metni burada [duyulmuyor] …' → '' (tüm metin gitti).
+  //  • Etiket eklendikten sonra backdrop görünür kalıp sonraki tıklamayı yutuyordu.
+  const noComments = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+  const appCode = noComments(app);
+  const place = (appCode.match(/function placeFloatingMenu\([\s\S]*?\n\}/) || [''])[0];
+  check('yerleşimde inline display YAZILMAZ', !!place && !/style\.display\s*=\s*'block'/.test(place));
+  check('görünürlük hidden niteliğiyle', /menu\.hidden\s*=\s*false/.test(place));
+  check('listeye doğru açılma kipi var', /align === 'list'/.test(place));
+  check('sola açılır (tetikleyici solundan)', /r\.left - mw - gap/.test(place));
+  check('dar ekranda metnin altına açılır', /top = r\.bottom \+ gap/.test(place));
+  const closeFn = (app.match(/function closeQuickMenu\([\s\S]*?\n\}/) || [''])[0];
+  check('tek yol kapatma yardımcısı var', !!closeFn);
+  check('kapatma inline display temizler', /menu\.style\.display\s*=\s*''/.test(closeFn));
+  check('tetikleyici listeye doğru açıyor', /placeFloatingMenu\(menu, b, 'list'\)/.test(app));
+  check('Kapat düğmesi tek yolu kullanır', /closeQuickMenu\(close\.closest\('\.sd-quick-menu'\), true\)/.test(app));
+  check('Esc tek yolu kullanır', /closeQuickMenu\(menu, true\)/.test(app));
+  check('yeniden çizimde backdrop eşitlenir',
+    /refreshNarrowBar\(m, root\.closest\('\.audio-card'\)\);[\s\S]{0,320}syncFloatingBackdrop\(\)/.test(app));
+  check('temizleme saf fonksiyonu var', /function stripQuickTags\(text\)/.test(app));
+  check('temizleme etiketleri kaldırır', /const res = stripQuickTags\(s\.text \|\| ''\)/.test(app));
+  check('temizleme metni silmez (applyTextEdit boş değil)', !/applyTextEdit\(s, ''\)/.test(app));
+  check('temizleme geri alınabilir (↶ kaydı)', /snapshotForUndo\('etiketler temizlendi'\)/.test(app));
+  check('düğme "Etiketleri temizle" der', /Etiketleri temizle<\/button>/.test(app));
+  check('"Metni temizle" düğmesi kalmadı', !/>Metni temizle</.test(app));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

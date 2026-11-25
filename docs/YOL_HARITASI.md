@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.321.**
+yazılır. **Güncel sürüm: v2.322.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.322 — Etiket menüsü onarıldı (TAMAMLANDI)
+
+- Kapatma: inline `display` kaldırıldı; üst × / alt Kapat / Esc / dış tıklama
+  **seçim yapılmasa da** kapatır (`closeQuickMenu`).
+- Yerleşim: menü **segment listesine doğru (sola)** açılır; metin alanını örtmez.
+- “Etiketleri temizle”: yalnız `[etiket]` işaretleri kaldırılır; **metin korunur**.
+- Backdrop yeniden çizimde eşitlenir (etiket sonrası menü yine açılır).
+- Test `birim [158]`, `tasarim [2db]`.
 
 ## v2.321 — Dar ekranda metin kırpılması/taşması (TAMAMLANDI)
 

@@ -6,12 +6,56 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.321.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.322.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.322 — Etiket menüsü: kapanma, yerleşim, “Etiketleri temizle”
+
+**KULLANICI NE GÖRECEK:** Etiket menüsü artık **kapanıyor**, **metnin üstünü
+örtmüyor** ve “Etiketleri temizle” **metni silmiyor** — yalnız eklediğiniz
+`[etiket]` işaretlerini kaldırıyor.
+
+**Ölçülen dört hata (gerçek Chromium, gerçek fare):**
+
+| Belirti | Ölçüm |
+|---|---|
+| Seçim yapmadan kapatma | `hidden=true` ama `computed display=block` → menü **ekranda kalıyor** (inline `style.display='block'`, `[hidden]` kuralını eziyor) |
+| Menü metni örtüyor | menü `[762,131,380,470]`, metin alanı `[756,517,619,87]` → **örtüşme var** |
+| “Metni temizle” | `'Konuşma metni burada [duyulmuyor] ve devam ediyor.'` → **`''`** (tüm metin gitti) |
+| Etiket sonrası menü | etiket eklendikten sonra “Etiket ekle”ye basınca menü **açılmıyor** (backdrop görünür kalıp tıklamayı yutuyor) |
+
+**Düzeltme (`assets/app.js`):**
+- Yerleşim kodu **inline `display` yazmaz**; görünürlük yalnız `hidden`
+  niteliğiyle. Kapatma **tek yoldan** (`closeQuickMenu`): üst ×, alt Kapat,
+  Esc, dış tıklama.
+- Yeni `'list'` yerleşimi: menü **tetikleyicinin soluna** açılır (segment
+  listesine doğru), dikeyde tetikleyiciyle hizalı ve görünür alana kırpılır.
+- **“Etiketleri temizle”**: yeni saf `stripQuickTags()` yalnız **bilinen**
+  etiketleri kaldırır; metin, satır sonları ve bilinmeyen köşeli parantezler
+  (`[bkz. 3]`, `[...]`) korunur. Etiket yoksa metin **değişmez** ve söylenir.
+- **Dar ekran (≤900 px tek sütun):** yana yer yok → menü **metnin altına**
+  açılır; sığmazsa kısalıp kaydırılır (metnin üstüne binmez).
+- Temizleme **geri alınabilir**: `snapshotForUndo` → üst bardaki **↶** ve
+  Ctrl+Z (metin alanı dışındayken) etiketi geri getirir.
+- `renderSegDetail` sonunda `syncFloatingBackdrop()` → yeniden çizimden sonra
+  backdrop kapanır; menü tek tıkla yeniden açılır.
+- Gözlem paneli de inline `block` almadığı için `display:flex` düzenini korur.
+
+**Ölçüm (sonra, gerçek Chromium):** 1440 → menü `[374,47,380,522]` · 1100 →
+`[265,51,380,522]` → metinle **örtüşme yok**; 900/760/600/360 → menü metnin
+**altında** (`y≈470`, metin 347–434) → örtüşme **yok**, kaydırılır; her
+genişlikte Esc kapatıyor; yatay taşma **0**. Temizleme: 2 etiket gitti, metin
+durdu, **↶** ile geri geldi;
+Kapat/Esc sonrası `computed display=none`; temizleme sonrası metin
+`'Konuşma metni burada Konuşma metni burada ve devam ediyor.'` (etiketler gitti,
+metin durdu); JS hatası **0**.
+
+**Koruyan test:** `birim [158]` (13) + `tasarim [2db]` (16) — yeni kontrollerin
+tamamı v2.321 kodunda **KALDI** (kanıtlandı).
 
 ## v2.321 — Dar ekranda metin kırpılması/taşması
 

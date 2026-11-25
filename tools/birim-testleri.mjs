@@ -115,7 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'profileById', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
-  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'segmentWorkSummary',
+  'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
@@ -6876,6 +6876,38 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('EK-5 gözlem = OBS_DEFS', b.tables[2].rows.length, obs.length);
   const appJs = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('yardım listesi OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => `<b>/.test(appJs), true);
+}
+
+
+// [158] v2.322 — "Etiketleri temizle" YALNIZ etiketleri kaldırır, metni korur.
+{
+  console.log('[158] stripQuickTags — etiketleri kaldır, metni koru');
+  eq('tanımlı', typeof T.stripQuickTags, 'function');
+  eq(
+    'etiket kaldırılır, metin korunur',
+    T.stripQuickTags('Konuşma metni burada [duyulmuyor] ve devam ediyor.'),
+    { text: 'Konuşma metni burada ve devam ediyor.', removed: 1 }
+  );
+  eq(
+    'birden çok etiket sayılır',
+    T.stripQuickTags('[gürültü] bir [gürültü] iki [müzik/ses]'),
+    { text: 'bir iki', removed: 3 }
+  );
+  eq(
+    'bilinmeyen köşeli parantez DOKUNULMAZ',
+    T.stripQuickTags('[bkz. 3] metin [...] son'),
+    { text: '[bkz. 3] metin [...] son', removed: 0 }
+  );
+  eq('etiket yoksa metin aynı', T.stripQuickTags('düz metin'), { text: 'düz metin', removed: 0 });
+  eq('yalnız etiket varsa metin boşalır', T.stripQuickTags('[gürültü]'), { text: '', removed: 1 });
+  eq('satır sonu korunur', T.stripQuickTags('bir [gürültü]\niki'), { text: 'bir\niki', removed: 1 });
+  eq('fazla boşluk tekilleşir', T.stripQuickTags('a  [gürültü]   b'), { text: 'a b', removed: 1 });
+  eq('baş/son boşluk kırpılır', T.stripQuickTags('  [gürültü] metin  '), { text: 'metin', removed: 1 });
+  eq('null güvenli', T.stripQuickTags(null), { text: '', removed: 0 });
+  // Etiket listesi TEK KAYNAK: her tanımlı etiket gerçekten kaldırılmalı.
+  const all = T.QUICK_TAGS.map((t) => t.text).join(' ');
+  eq('tüm tanımlı etiketler kaldırılır', T.stripQuickTags(all).text, '');
+  eq('tüm etiketler sayıldı', T.stripQuickTags(all).removed, T.QUICK_TAGS.length);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
