@@ -6100,5 +6100,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('girinti derinliğe bağlı', /--depth:/.test(js), true);
 }
 
+
+// [139] v2.298 — EKLER de bir grup olarak başka bölümün altına taşınabilir.
+{
+  console.log('[139] EKLER grubu alt bölüm olabilir (v2.298)');
+  const c = T.emptyCaseForTest({
+    id: 'cAnnexTree',
+    report: { layout: { order: ['s1', 's2', 'annex'], parent: { annex: 's1' } } }
+  });
+  eq('EKLER gövde sırasında', T.reportBodyOrder(c).includes('annex'), true);
+  eq('EKLER alt bölüm numarası', T.reportHeadingText(c, 'annex'), '1.1. EKLER');
+  eq('TOC alt bölümü taşır', T.reportTocEntries(c).some((x) => x.startsWith('1.1. EKLER')), true);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('EKLER hedefi yalnız sıra alır', /isAnnexTarget/.test(js), true);
+  eq('iç EKLER sayfa sonu zorlamaz', /key === 'annex' && reportSectionDepth\(c, key\) === 0/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

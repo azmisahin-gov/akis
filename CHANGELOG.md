@@ -6,12 +6,18 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.297.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.298.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.298 — EKLER alt grup olabilir
+
+- EKLER başka bölümün altına sürüklenir; EK-1… içerikleriyle alt grup (1.1/A.1).
+- Gövde bölümü EKLER’e EK düğmesiyle girer; EKLER hedefi yalnız sıra alır.
+- İç EKLER sayfa sonu zorlamaz. Test `birim [139]`.
 
 ## v2.297 — Sınırsız alt bölüm ağacı
 

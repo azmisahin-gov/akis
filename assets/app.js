@@ -115,15 +115,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.297';
-import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.297';
+} from './schema.js?v=2.298';
+import { moveInList, moveKeyTo, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.298';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.297';
+const APP_VERSION = '2.298';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14308,7 +14308,7 @@ function renderReport() {
     const piece = render();
     if (!piece) continue;
     // Her ana bölüm (1–7) ve ekler yeni sayfadan (v2.259; ilk gövde hariç).
-    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody))
+    if ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody))
       html += '<div class="paper-page-break"></div>';
     html += wrapBlock(key, piece);
     firstBody = false;
@@ -14825,7 +14825,7 @@ function docxXml(c) {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody)) body += pageBreakPara;
+    if ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody)) body += pageBreakPara;
     body += render();
     firstBody = false;
   }
@@ -15461,7 +15461,7 @@ async function makeUdf() {
           }
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
-    if (key === 'annex' || (reportSectionDepth(c, key) === 0 && !firstBody)) el.push(pageBreak());
+    if ((key === 'annex' && reportSectionDepth(c, key) === 0) || (reportSectionDepth(c, key) === 0 && !firstBody)) el.push(pageBreak());
     render();
     firstBody = false;
   }
@@ -18224,7 +18224,8 @@ $('#reportSections')?.addEventListener('dragover', (e) => {
   e.preventDefault();
   const r = row.getBoundingClientRect();
   const y = (e.clientY - r.top) / Math.max(1, r.height);
-  const zone = rsecDrag.kind === 'annex' ? (y < 0.5 ? 'before' : 'after') : y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
+  const isAnnexTarget = row.dataset.dragKind === 'body' && row.dataset.dragKey === 'annex';
+  const zone = rsecDrag.kind === 'annex' || isAnnexTarget ? (y < 0.5 ? 'before' : 'after') : y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
   row.dataset.dropZone = zone;
   document.querySelectorAll('#reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('drag-over', 'drop-before', 'drop-after', 'drop-under'));
   row.classList.add('drag-over', `drop-${zone}`);
@@ -19361,6 +19362,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.298': {
+    title: 'EKLER de bir grup olarak alt bölüm olabilir',
+    body:
+      'EKLER’i başka bir bölümün altına sürükleyebilirsiniz; EK-1… içerikleriyle birlikte alt grup olur (1.1 / A.1). ' +
+      'Gövde bölümlerini EKLER’in altına bırakmak için EK düğmesini kullanın; bu, bölümü EK olarak basar.'
+  },
   '2.297': {
     title: 'Bölümleri birbirinin altına taşıyabilirsiniz',
     body:
