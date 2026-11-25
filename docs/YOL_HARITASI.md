@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.324.**
+yazılır. **Güncel sürüm: v2.325.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.325 — ZIP paketi + sayfa tahmini + "Rapor eki N" (TAMAMLANDI)
+
+- **⤓ Tüm belgeler (ZIP):** üst yazı + rapor + belge ekleri + `belgeler.json`
+  (sıra, tür, ad, bayt, sha256).
+- Üreticiler `udfDocument`/`docxDocument` (blob) + indirme sarmalayıcıları.
+- Ek listesinde **≈ sayfa** (yalnız ekran; belgeye yazılmaz; ölçüm ekran dışında).
+- Rapor içi ekler **"Rapor eki N."** (üst yazının EK-N'siyle karışmaz).
+- Test `birim [161]`, `tasarim [2de]`.
 
 ## v2.324 — Belge ekleri: EK-2 teknik bilgiler, ek yönetimi (TAMAMLANDI)
 

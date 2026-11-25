@@ -2444,5 +2444,25 @@ console.log('\n[2dd] Belge ekleri: düzenleme ve tek kopya (v2.324)');
   check('ek düğmeleri var', /\.la-btn \{/.test(layer));
 }
 
+console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('ZIP düğmesi (araç çubuğu + panel)', /id="letterZipBtn2"/.test(html) && /id="letterZipBtn"/.test(html));
+  check('ZIP üreticisi var', /async function buildDocumentsZip\(/.test(app));
+  check('belgeler.json manifesti', /schema: 'akis\.belgeler\.v1'/.test(app) && /zip\.file\('belgeler\.json'/.test(app));
+  check('ZIP adında "Paket" yok', /UstYazi_Belgeler_/.test(app) && !/documentsZipName[\s\S]{0,200}Paket/.test(app));
+  check('üreticiler blob döndürür', /async function udfDocument\(opts = \{\}\)/.test(app) && /async function docxDocument\(opts = \{\}\)/.test(app));
+  check('makeUdf sarmalayıcı', /const out = await udfDocument\(opts\)/.test(app));
+  // Sayfa tahmini YALNIZ EKRAN: belge metnine sayfa sayısı yazılmaz.
+  check('sayfa tahmini ekranda', /function estimateDocumentPages\(/.test(app) && /la-pages/.test(app));
+  check('üst yazı metninde sayfa dipnotu yok', !/pageCountNote\)\)/.test(app));
+  check('tahmin uyarısı panelde', /TAHMİNÎdir/.test(app));
+  check('sayfa etiketi CSS', /\.la-pages \{/.test(layer));
+  // Rapor içi ekler "Rapor eki N." (üst yazının EK-N'siyle karışmaz).
+  check('rapor içi ek adı "Rapor eki"', /heading: `Rapor eki \$\{n\}\. \$\{base\}`/.test(app) && !/heading: `EK-\$\{n\}/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

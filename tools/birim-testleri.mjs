@@ -118,6 +118,7 @@ const EXPOSE = [
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
   'annexDocumentCase', 'LETTER_ANNEX_DEFAULT_SECTIONS', 'letterMovedSectionKeys', 'letterMovedAnnexKeys',
+  'documentsZipName', 'annexFileName', 'blobSha256Hex', 'udfDocument', 'docxDocument',
   'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
@@ -4281,21 +4282,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const c4 = T.emptyCaseForTest({ id: 'cRep4', report: { layout: { annexOrder: ['ek2', 'ek1'], annexes: { ek1: false } } } });
   eq('ek listesi sırası ve kapalı ek', T.reportAnnexList(c4).map((a) => a.key).join(','), 'ek2,ek3,ek4,ek5,ek6');
   eq(
-    'EK numaraları bitişik (EK-4 boşluğu yok)',
+    'Ek numaraları bitişik (boşluk yok)',
     T.reportAnnexList(c4).map((a) => a.heading.split('.')[0]).join(','),
-    'EK-1,EK-2,EK-3,EK-4,EK-5'
+    'Rapor eki 1,Rapor eki 2,Rapor eki 3,Rapor eki 4,Rapor eki 5'
   );
   // Özel ek: ekle → numara bitişik; başlık/içerik/not düzenlenir; kaldırılır.
   const c4b = T.emptyCaseForTest({ id: 'cRep4b' });
   T.setAppState({ cases: [c4b], activeCaseId: c4b.id, settings: {}, ui: {} });
   T.addReportAnnex();
   eq('özel ek eklendi (x1)', T.reportLayoutOf(c4b).annexOrder.includes('x1'), true);
-  eq('özel ek numarası bitişik (EK-7)', T.reportAnnexList(c4b).slice(-1)[0].heading.split('.')[0], 'EK-7');
+  eq('özel ek numarası bitişik (7)', T.reportAnnexList(c4b).slice(-1)[0].heading.split('.')[0], 'Rapor eki 7');
   T.patchReportAnnexMeta('x1', 'title', 'UZMAN NOTU');
   T.patchReportAnnexMeta('x1', 'content', 'Gözlenen teknik bulgu.');
   T.patchReportAnnexMeta('x1', 'note', 'Yalnız belgelenmiş bulgu.');
   const xb = T.reportAnnexBlocks(c4b).find((b) => b.key === 'x1');
-  eq('özel ek başlığı', xb.heading, 'EK-7. UZMAN NOTU');
+  eq('özel ek başlığı', xb.heading, 'Rapor eki 7. UZMAN NOTU');
   eq('özel ek içeriği', xb.text, 'Gözlenen teknik bulgu.');
   eq('özel ek notu', xb.note, 'Yalnız belgelenmiş bulgu.');
   T.removeReportAnnex('x1');
@@ -6003,7 +6004,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('gövde sırası s5 içermez', T.reportBodyOrder(c).includes('s5'), false);
   eq('taşınan s5 listelenir', T.reportMovedSections(c).includes('s5'), true);
   const moved = T.reportAnnexList(c).find((a) => a.movedKey === 's5');
-  eq('taşınan EK başlığı', moved && moved.heading.startsWith('EK-7. '), true);
+  eq('taşınan ek başlığı', moved && moved.heading.startsWith('Rapor eki 7. '), true);
   eq('annex blok türü moved', T.reportAnnexBlocks(c).find((b) => b.kind === 'moved')?.sectionKey, 's5');
   eq('revizyon yerleşimi taşır', T.reportSnapshot(c).annexPlacement.s5, true);
 }
@@ -7057,6 +7058,34 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('serbest ek: numarasız', doc3.report.numbering, 'none');
   // --- Varsayılan teknik bölüm kümesi
   eq('varsayılan bölümler', T.LETTER_ANNEX_DEFAULT_SECTIONS.join(','), 'origin,embedded,acquisition,levels,wer,qc,integrity,tech');
+}
+
+
+// [161] v2.325 — Belge paketi (ZIP) adı, dosya adı, sha256, blob üreticileri.
+{
+  console.log('[161] Belge paketi ve dosya adları (v2.325)');
+  const c = T.emptyCaseForTest({
+    id: 'cZ',
+    court: 'Antalya 4. Asliye Hukuk Mahkemesi',
+    fileNo: '2026/214 E.',
+    expert: { name: 'Örnek Bilirkişi' },
+    report: { date: '2026-11-15' }
+  });
+  const zn = T.documentsZipName(c);
+  eq('ZIP adı öneki', zn.startsWith('UstYazi_Belgeler_'), true);
+  eq('ZIP adı uzantısı', /\.zip$/.test(zn), true);
+  eq('ZIP adı dosya no taşır', zn.includes('2026_214_E'), true);
+  eq('ZIP adında "Paket" YOK', /Paket/.test(zn), false);
+  const a = { id: 'la2', kind: 'sections', sections: ['levels'], label: 'TEKNİK BİLGİLER' };
+  eq('ek dosya adı', T.annexFileName(c, { ...a, no: 'EK-2' }), 'EK-2_TEKNİK_BİLGİLER_2026_214_E');
+  // sha256 yardımcısı 64 karakter döndürür (sandbox crypto stub).
+  const hex = await T.blobSha256Hex(new Blob(['x']));
+  eq('sha256 uzunluğu', hex.length, 64);
+  eq('sha256 hex', /^[0-9a-f]{64}$/.test(hex), true);
+  // Belge üreticilerinin blob sözleşmesi `rapor` testinde ölçülür (gerçek
+  // BOS.udf şablonu oradaki sandbox'ta var; birim sandbox'ında fetch stub'ı yok).
+  eq('udfDocument tanımlı', typeof T.udfDocument, 'function');
+  eq('docxDocument tanımlı', typeof T.docxDocument, 'function');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

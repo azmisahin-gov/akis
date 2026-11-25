@@ -2373,6 +2373,27 @@ yeniden açılınca EK-2'den düştü (7 bölüm kaldı); `ek1` açılınca EK-3
 5. Yeni bir "taşıma" yolu eklerseniz `moveSectionsOutOfReport` +
    `letterMovedSectionKeys` + `removeSectionsFromLetterAnnexes` üçlüsünü kullanın.
 
+## YENİ OTURUM DEVRİ (v2.325) — ZIP paketi, sayfa tahmini, "Rapor eki N"
+
+| | |
+|---|---|
+| Sürüm | **v2.325** |
+| Testler | **2445 birim + 522 şema** + rapor (45) + sürüm + tasarım yeşil |
+| Açık konu | Yok (üst yazı/belge eki turu kapandı) |
+
+- **ZIP:** `buildDocumentsZip()` → üst yazı + rapor + belge ekleri +
+  `belgeler.json` (`akis.belgeler.v1`: no, kind, label, file, bytes, sha256).
+  Dosya adı `UstYazi_Belgeler_<no>_<tarih>_<saat>.zip` — **"Paket" sözcüğü yok**.
+- **Üretici sözleşmesi:** `udfDocument(opts)` / `docxDocument(opts)` → `{blob, name,
+  message}`; `makeUdf` / `makeDocx` indirme sarmalayıcısıdır. ZIP bunları kullanır.
+- **Sayfa tahmini YALNIZ EKRAN** (`estimateDocumentPages`): gizli kâğıdın yüksekliği
+  0 olduğu için ölçüm **görünür alan dışına** taşınır (v2.325'te ölçüldü: hepsi
+  "1 sayfa" görünüyordu). **Belge metnine sayfa sayısı YAZILMAZ** — UYAP/Word
+  düzeni farklı sayfa üretir; adli belgede uydurma sayı yanıltıcıdır.
+- **Adlandırma:** rapor içi ekler `Rapor eki N.` (üst yazının `EK-N`'siyle karışmaz).
+- **Birim sandbox'ında `fetch` stub'ı YOK**; `udfDocument`/`docxDocument` yalnız
+  `rapor` testinde (gerçek `templates/BOS.udf` ile) sınanır.
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
@@ -2546,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.324.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.325.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç

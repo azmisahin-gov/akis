@@ -778,9 +778,9 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
   checkShared('künye değeri (dosya no)', '2026/214 E.', H, U, D);
   checkShared('kısa özet başlığı içeriği', 'İncelenen ses dosyası sayısı', H, U, D);
   checkShared('ASR modeli', 'Xenova/whisper-small', H, U, D);
-  checkShared('EK-1 teslim tutanağı', 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
-  checkShared('EK-3 işlem günlüğü', 'EK-3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
-  checkShared('EK-4 gösterim anahtarı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
+  checkShared('EK-1 teslim tutanağı', 'Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('EK-3 işlem günlüğü', 'Rapor eki 3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
+  checkShared('EK-4 gösterim anahtarı', 'Rapor eki 4. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
 }
 
 // Senaryo 19: teknik ortam alanları (v2.222). Bölüm varsayılan kapalı;
@@ -885,16 +885,16 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   const HA = htmlText(annex),
     UA = await udfText(annex),
     DA = await docxText(annex);
-  checkShared('EK-4 bitişik numaralı', 'EK-4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
-  checkShared('EK-6 bitişik numaralı', 'EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
-  check('EK-7 numarası kalmadı (H)', !HA.includes('EK-7.'));
+  checkShared('EK-4 bitişik numaralı', 'Rapor eki 4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
+  checkShared('EK-6 bitişik numaralı', 'Rapor eki 6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
+  check('EK-7 numarası kalmadı (H)', !HA.includes('Rapor eki 7.'));
   check(
     'EKLER bölümü ekleri listeler (H)',
-    HA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && HA.includes('EK-6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR')
+    HA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI') && HA.includes('Rapor eki 6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR')
   );
   check(
     "EKLER listesi UDF ve DOCX'te de var",
-    UA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('EK-1. MATERYAL TESLİM VE İADE TUTANAĞI')
+    UA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI')
   );
 }
 
@@ -913,7 +913,7 @@ console.log('\n[Senaryo 23] özel ek başlık/içerik/not üç çıktıda (v2.22
   const H = htmlText(custom),
     U = await udfText(custom),
     D = await docxText(custom);
-  checkShared('özel ek başlığı (EK-7)', 'EK-7. UZMAN TEKNİK NOTU', H, U, D);
+  checkShared('özel ek başlığı (EK-7)', 'Rapor eki 7. UZMAN TEKNİK NOTU', H, U, D);
   checkShared('özel ek içeriği', 'Gözlenen teknik bulgu.', H, U, D);
   checkShared('özel ek notu', 'Yalnız belgelenmiş bulgu.', H, U, D);
 }
@@ -1394,7 +1394,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const c = withMaterial();
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('EKLER başlığı', 'EKLER', H, U, D);
-  checkShared('EK-1 içeriği', 'EK-1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('EK-1 içeriği', 'Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
   check('boş EK LİSTESİ yok (H)', !H.includes('EK LİSTESİ'), 'hâlâ var');
   check('boş EK LİSTESİ yok (U)', !U.includes('EK LİSTESİ'), 'hâlâ var');
   check('boş EK LİSTESİ yok (D)', !D.includes('EK LİSTESİ'), 'hâlâ var');
@@ -1408,7 +1408,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const c = withMaterial();
   c.report = { annexPlacement: { s5: true } };
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('taşınan s5 EK başlığı', 'EK-7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
+  checkShared('taşınan s5 EK başlığı', 'Rapor eki 7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
   checkShared('taşınan s5 içeriği', 'merhaba', H, U, D);
   checkShared('taşınan s5 alt başlığı', 'EK-7.1. Ses kayıtlarının çözümlenmesi', H, U, D);
   const count = (t) => (String(t).match(/KAYIT BAZINDA BULGULAR VE TRANSKRİPT/g) || []).length;
@@ -1611,7 +1611,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const c2 = withMaterial();
   const doc2 = annexDocumentCase(c2, { id: 'la3', kind: 'reportAnnex', key: 'ek2' });
   const H2 = htmlText(doc2);
-  check('ek belgesi: yalnız EK-2 envanteri', H2.includes('EK-1. DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
+  check('ek belgesi: yalnız EK-2 envanteri', H2.includes('Rapor eki 1. DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
   // 4) Serbest ek belgesi.
   const doc3 = annexDocumentCase(c2, { id: 'la4', kind: 'custom', title: 'TAPU KAYDI', content: 'Tapu kaydı incelenmiştir.' });
   const H3 = htmlText(doc3);

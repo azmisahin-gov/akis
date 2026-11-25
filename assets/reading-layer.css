@@ -4210,3 +4210,5 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   #view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 216px minmax(0, 1fr); }
   #view-report[data-doc="letter"] .letter-side { grid-column: 1 / -1; }
 }
+/* v2.325 — Ek listesinde sayfa TAHMİNİ (yalnız ekran; belgeye yazılmaz). */
+.la-pages { flex: 0 0 auto; color: var(--ink-3); font-size: var(--fs-2xs); white-space: nowrap; }

@@ -131,15 +131,15 @@ import {
   letterMovedAnnexKeys,
   removeSectionsFromLetterAnnexes,
   removeAnnexKeyFromLetterAnnexes
-} from './schema.js?v=2.324';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.324';
+} from './schema.js?v=2.325';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.325';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.324';
+const APP_VERSION = '2.325';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -13857,7 +13857,7 @@ function reportAnnexList(c) {
       key,
       n,
       title: base,
-      heading: `EK-${n}. ${base}`,
+      heading: `Rapor eki ${n}. ${base}`,
       custom: !REPORT_ANNEX_DEFS.some((d) => d.key === key),
       meta
     });
@@ -13870,7 +13870,7 @@ function reportAnnexList(c) {
       key: `moved:${key}`,
       n,
       title: base,
-      heading: `EK-${n}. ${base}`,
+      heading: `Rapor eki ${n}. ${base}`,
       movedKey: key,
       custom: false,
       meta: {}
@@ -15318,7 +15318,7 @@ function letterPaperHtml(c) {
     )}</div>${m.signerRegistry ? `<div class="letter-sign-reg">Sicil No: ${esc(m.signerRegistry)}</div>` : ''}<div class="letter-sign-line"></div></div>` +
     `<div class="letter-annex"><h4>${esc(LETTER_TEXT.annexHeading)}</h4><ul>${m.annexes
       .map((a) => `<li><b>${esc(a.no)}</b> <span>${esc(a.label)}</span></li>`)
-      .join('')}</ul>${m.showPageCounts ? `<p class="letter-note">${esc(m.pageCountNote)}</p>` : ''}</div>`
+      .join('')}</ul></div>`
   );
 }
 
@@ -15370,6 +15370,135 @@ function renderLetterFields(c) {
       L.showPageCounts ? ' checked' : ''
     }> <span>Sayfa sayısı dipnotu</span></label></div>` +
     `<p class="letter-hint">Gövdeyi boş bırakırsanız yukarıdaki varsayılan metin yazılır. <b>Boş alan satır üretmez.</b></p>`;
+}
+
+// ---- BELGE PAKETİ (ZIP) ve SAYFA TAHMİNİ (v2.325) ------------------------
+// Tüm belgeler TEK ZIP'te: üst yazı + EK-1 rapor + belge ekleri + `belgeler.json`
+// manifesti (sıra, tür, ad, bayt, sha256). Üreticiler `udfDocument` — kopya yok.
+function documentsZipName(c) {
+  const t = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `UstYazi_Belgeler_${safeName((c && c.fileNo) || 'Dosya')}_${dateToday()}_${p(t.getHours())}-${p(
+    t.getMinutes()
+  )}-${p(t.getSeconds())}.zip`;
+}
+
+async function blobSha256Hex(blob) {
+  try {
+    const buf = await blob.arrayBuffer();
+    const d = await crypto.subtle.digest('SHA-256', buf);
+    return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    return '';
+  }
+}
+
+/** Belge eki için dosya adı (indirme ve ZIP aynı adı kullanır). */
+function annexFileName(c, a) {
+  return `${a.no}_${safeName(letterAnnexLabel(a))}_${safeName((c && c.fileNo) || 'Bilirkisi')}`;
+}
+
+async function buildDocumentsZip() {
+  const c = currentCase();
+  const m = letterModel(c);
+  if (!m.ready) {
+    throw new Error(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`);
+  }
+  if (!window.JSZip) throw new Error('ZIP bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
+  const zip = new JSZip();
+  const manifest = {
+    schema: 'akis.belgeler.v1',
+    createdAt: new Date().toISOString(),
+    fileNo: c.fileNo || '',
+    court: c.court || '',
+    documents: []
+  };
+  const add = async (no, kind, label, out) => {
+    zip.file(out.name, out.blob);
+    manifest.documents.push({
+      no,
+      kind,
+      label,
+      file: out.name,
+      bytes: out.blob.size,
+      sha256: await blobSha256Hex(out.blob)
+    });
+  };
+  await add('—', 'letter', 'Üst yazı', await udfDocument({ letter: true }));
+  for (const a of letterAnnexNumbering(c.letterAnnexes)) {
+    if (a.kind === 'report') {
+      await add(a.no, 'report', letterAnnexLabel(a), await udfDocument());
+      continue;
+    }
+    await add(
+      a.no,
+      a.kind,
+      letterAnnexLabel(a),
+      await udfDocument({ case: annexDocumentCase(c, a), fileName: annexFileName(c, a) })
+    );
+  }
+  zip.file('belgeler.json', JSON.stringify(manifest, null, 2));
+  const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+  downloadBlob(blob, documentsZipName(c));
+  showToast(`${manifest.documents.length} belge tek ZIP'te indirildi (belgeler.json dâhil).`);
+}
+
+// SAYFA TAHMİNİ — YALNIZ EKRAN. Belge metnine sayfa sayısı YAZILMAZ: UYAP/Word
+// düzeni farklı sayfa üretir, uydurma sayı adli belgede yanıltıcı olur.
+const annexPageCache = new Map(); // oturumluk: ek kimliği → sayfa
+let measuringPages = false;
+
+function clearAnnexPageCache() {
+  annexPageCache.clear();
+}
+
+function letterPageCount() {
+  const paper = $('#letterPreview');
+  return reportPageCountFor(paper ? paper.scrollHeight : 0, reportPageHeight());
+}
+
+/**
+ * Ek belgesinin sayfa sayısı: geçici kopya rapor üreticisiyle çizilir, yükseklik
+ * ölçülür ve kayıt hemen geri alınır. Ölçüm başarısızsa `null` (uydurma yok).
+ */
+function estimateDocumentPages(c, annex) {
+  if (measuringPages) return null;
+  const key = (annex && annex.id) || 'report';
+  if (annexPageCache.has(key)) return annexPageCache.get(key);
+  const paper = $('#reportPreview');
+  const win = $('#reportPageWindow');
+  const idx = appState.cases.findIndex((x) => x.id === appState.activeCaseId);
+  if (!paper || !win || idx < 0) return null;
+  const orig = appState.cases[idx];
+  const keepScroll = paper.scrollTop;
+  const keepTop = window.scrollY;
+  // Üst yazı sekmesinde rapor kâğıdı gizlidir; gizli kâğıdın yüksekliği 0 olur
+  // ve her belge "1 sayfa" görünürdü (v2.325'te ölçüldü). Ölçüm sırasında kâğıt
+  // görünür alanın DIŞINA alınır; gerçek genişlikle çizilir, sonra geri konur.
+  const keepHidden = win.hidden;
+  const keepStyle = win.getAttribute('style');
+  let pages = null;
+  measuringPages = true;
+  try {
+    win.hidden = false;
+    win.style.cssText = 'position:absolute;left:-99999px;top:0;width:900px;display:block;';
+    if (annex) appState.cases[idx] = annexDocumentCase(orig, annex);
+    renderReport();
+    pages = reportPageCountFor(paper.scrollHeight, reportPageHeight());
+  } catch (e) {
+    pages = null;
+  } finally {
+    appState.cases[idx] = orig;
+    if (keepStyle == null) win.removeAttribute('style');
+    else win.setAttribute('style', keepStyle);
+    win.hidden = keepHidden;
+    renderReport();
+    paper.scrollTop = keepScroll;
+    window.scrollTo(0, keepTop);
+    measuringPages = false;
+  }
+  annexPageCache.set(key, pages);
+  return pages;
 }
 
 // ---- BELGE EKİ BELGESİ (v2.324) ------------------------------------------
@@ -15468,6 +15597,7 @@ function setReportAnnexOnQuiet(c, key, on) {
 }
 
 function addLetterAnnex(kind) {
+  clearAnnexPageCache();
   const c = currentCase();
   if (!c) return;
   let list = normalizeLetterAnnexes(c.letterAnnexes);
@@ -15511,6 +15641,7 @@ function addLetterAnnex(kind) {
 }
 
 async function removeLetterAnnex(id) {
+  clearAnnexPageCache();
   const c = currentCase();
   if (!c) return;
   const a = normalizeLetterAnnexes(c.letterAnnexes).find((x) => x.id === id);
@@ -15544,6 +15675,7 @@ async function removeLetterAnnex(id) {
 }
 
 function moveLetterAnnex(id, dir) {
+  clearAnnexPageCache();
   const c = currentCase();
   if (!c) return;
   const list = normalizeLetterAnnexes(c.letterAnnexes);
@@ -15561,6 +15693,7 @@ function moveLetterAnnex(id, dir) {
 
 /** Bölümü eke ekle/çıkar: ekten çıkan bölüm RAPORA geri döner. */
 function toggleLetterAnnexSection(id, key, on) {
+  clearAnnexPageCache();
   const c = currentCase();
   if (!c) return;
   const list = normalizeLetterAnnexes(c.letterAnnexes);
@@ -15636,6 +15769,7 @@ function renderLetterAnnexes(c) {
   const note = $('#letterAnnexNote');
   if (!list) return;
   const rows = letterAnnexNumbering(c.letterAnnexes);
+  const showPages = !!normalizeLetter(c.letter || {}).showPageCounts && !measuringPages;
   list.innerHTML = rows
     .map((a, i) => {
       const isReport = a.kind === 'report';
@@ -15650,17 +15784,22 @@ function renderLetterAnnexes(c) {
           `<button type="button" class="la-btn" data-letter-annex-dl="${esc(a.id)}" title="Bu eki UDF olarak indir" aria-label="Bu eki indir">⤓</button>` +
           `<button type="button" class="la-btn" data-letter-annex-edit="${esc(a.id)}" title="Eki düzenle" aria-label="Eki düzenle">✎</button>` +
           `<button type="button" class="la-btn" data-letter-annex-del="${esc(a.id)}" title="Eki kaldır" aria-label="Eki kaldır">×</button>`;
+      const pages = showPages ? (a.kind === 'report' ? estimateDocumentPages(c, null) : estimateDocumentPages(c, a)) : null;
+      const pagesHtml = showPages ? `<span class="la-pages">${pages ? `≈ ${pages} sayfa` : '—'}</span>` : '';
       return `<li data-annex-id="${esc(a.id)}" class="la-row${letterAnnexEditId === a.id ? ' is-editing' : ''}"><b>${esc(
         a.no
-      )}</b><span class="la-label">${esc(letterAnnexLabel(a))}</span><span class="la-tools">${tools}</span></li>`;
+      )}</b><span class="la-label">${esc(letterAnnexLabel(a))}</span>${pagesHtml}<span class="la-tools">${tools}</span></li>`;
     })
     .join('');
   renderLetterAnnexEditor(c, rows);
   if (note) {
-    note.textContent =
+    const base =
       rows.length > 1
         ? 'EK numarası sıraya göre yeniden verilir. Eklerdeki içerik raporda tekrar etmez.'
         : 'Tek ek var: EK-1 rapor. “＋ Teknik bilgiler” ile bölümleri rapordan çıkarıp ayrı belge yapabilirsiniz.';
+    note.textContent = showPages
+      ? `${base} Sayfa sayıları TAHMİNÎdir (≈); UYAP/Word düzeni farklı sayfa üretebilir.`
+      : base;
   }
 }
 
@@ -16252,7 +16391,6 @@ function docxLetterXml(c) {
   out += wP('____________________________', { size: 22, align: 'right', after: 260 });
   out += wP(LETTER_TEXT.annexHeading, { bold: true, color: '1C426B', size: 22, before: 140, after: 60 });
   for (const a of m.annexes) out += wP(`${a.no}  ${a.label}`, { size: 22, after: 20 });
-  if (m.showPageCounts) out += wP(m.pageCountNote, { italic: true, color: '70869C', size: 18, before: 80 });
   return out;
 }
 
@@ -16670,6 +16808,11 @@ function docxXml(c) {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
 }
 async function makeDocx(opts = {}) {
+  const out = await docxDocument(opts);
+  downloadBlob(out.blob, out.name);
+  showToast(out.message);
+}
+async function docxDocument(opts = {}) {
   // opts.case: belge eki için geçici kopya (v2.324); opts.fileName: ad geçersiz kılma.
   const c = (opts && opts.case) || currentCase();
   const letterMode = !!(opts && opts.letter);
@@ -16715,8 +16858,11 @@ async function makeDocx(opts = {}) {
   const docxName =
     (opts && opts.fileName) ||
     (letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}`);
-  downloadBlob(blob, `${docxName}.docx`);
-  showToast(letterMode ? 'Üst yazı Word kopyası indirildi.' : 'Word raporu indirildi.');
+  return {
+    blob,
+    name: `${docxName}.docx`,
+    message: letterMode ? 'Üst yazı Word kopyası indirildi.' : 'Word raporu indirildi.'
+  };
 }
 function safeName(s) {
   return (
@@ -16751,7 +16897,15 @@ function udfSignedColor(hex) {
   const n = (0xff000000 | parseInt(hex.replace('#', ''), 16)) >>> 0;
   return n > 0x7fffffff ? n - 0x100000000 : n;
 }
+// Belge üreticileri BLOB döndürür (`udfDocument` / `docxDocument`); indirme ve
+// bildirim sarmalayıcıda (`makeUdf` / `makeDocx`) yapılır. Böylece ZIP paketi
+// aynı üreticiyi kullanır — kopya biçimlendirme yok (v2.325).
 async function makeUdf(opts = {}) {
+  const out = await udfDocument(opts);
+  downloadBlob(out.blob, out.name);
+  showToast(out.message);
+}
+async function udfDocument(opts = {}) {
   const c = (opts && opts.case) || currentCase();
   const letterMode = !!(opts && opts.letter);
   // Rapor biçimi: font + gövde puntosu + kenar boşluğu + yön UDF'e uygulanır.
@@ -17308,7 +17462,6 @@ async function makeUdf(opts = {}) {
     el.push(paragraph('____________________________', { size: 11, align: 2, after: 18 }));
     el.push(paragraph(LETTER_TEXT.annexHeading, { size: 11, bold: true, color: 'navy', before: 10, after: 4 }));
     for (const a of m.annexes) el.push(paragraph(`${a.no}  ${a.label}`, { size: 11, after: 2 }));
-    if (m.showPageCounts) el.push(paragraph(m.pageCountNote, { size: 9, italic: true, color: 'muted', before: 6 }));
   } else {
   let frontRendered = 0;
   for (const key of REPORT_FRONT_KEYS) {
@@ -17357,12 +17510,13 @@ async function makeUdf(opts = {}) {
   const udfName =
     (opts && opts.fileName) ||
     (letterMode ? `UstYazi_${safeName(c.fileNo || 'Bilirkisi')}` : `${safeName(c.fileNo || 'Bilirkisi_Raporu')}`);
-  downloadBlob(blob, `${udfName}.udf`);
-  showToast(
-    letterMode
+  return {
+    blob,
+    name: `${udfName}.udf`,
+    message: letterMode
       ? 'Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin.'
       : 'UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin.'
-  );
+  };
 }
 // Çalışma paketi (yedek) oluşturma ve doğrulama saf fonksiyonlara ayrıldı;
 // böylece otomatik test edilebilir. Paket biçimi MİHENK uyumluluğu için sabittir.
@@ -20042,6 +20196,10 @@ function setupEvents() {
     persist();
     const paper = $('#letterPreview');
     if (paper) paper.innerHTML = letterPaperHtml(c);
+    if (field === 'showPageCounts') {
+      clearAnnexPageCache();
+      renderLetterAnnexes(c);
+    }
     const st = $('#letterStatus');
     if (st) {
       const m = letterModel(c);
@@ -20063,6 +20221,9 @@ function setupEvents() {
   );
   ['#letterBothBtn', '#letterBothBtn2'].forEach((sel) =>
     $(sel)?.addEventListener('click', () => downloadLetterAndReport().catch((e) => showToast(e.message, true)))
+  );
+  ['#letterZipBtn', '#letterZipBtn2'].forEach((sel) =>
+    $(sel)?.addEventListener('click', () => buildDocumentsZip().catch((e) => showToast(e.message, true)))
   );
   $('#letterPrintBtn')?.addEventListener('click', () => window.print());
   // BELGE EKLERİ (v2.324): ekle / sırala / düzenle / indir / kaldır.
@@ -20134,6 +20295,7 @@ function setupEvents() {
     if (!a || a.kind !== 'custom') return;
     if (isTitle) a.title = t.value;
     else a.content = t.value;
+    clearAnnexPageCache();
     c.letterAnnexes = normalizeLetterAnnexes(list);
     persist();
     // Liste/odak bozulmasın: satır etiketini ve üst yazı kâğıdını tazele
@@ -21658,6 +21820,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.325': {
+    title: 'Tüm belgeler tek ZIP’te; sayfa tahmini',
+    body:
+      'Üst yazı ekranında “⤓ Tüm belgeler (ZIP)” düğmesi üst yazıyı, raporu ve bütün belge eklerini tek dosyada indirir; içindeki belgeler.json sıra, tür ve sha256 bilgisini taşır. Ek listesinde “Sayfa sayısı dipnotu”nu açarsanız ≈ sayfa tahmini görünür (yalnız ekranda; UYAP/Word düzeni farklı sayfa üretebilir). Rapor içi ekler artık “Rapor eki 1, 2…” diye adlandırılır; üst yazının EK-1, EK-2… numaralarıyla karışmaz.'
+  },
   '2.324': {
     title: 'Üst yazıya ek ekleyebilirsiniz (EK-2 teknik bilgiler)',
     body:

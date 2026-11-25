@@ -6,12 +6,46 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.324.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.325.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.325 — Tüm belgeler tek ZIP + sayfa tahmini + "Rapor eki N"
+
+**KULLANICI NE GÖRECEK:** **⤓ Tüm belgeler (ZIP)** düğmesi üst yazıyı, raporu ve
+bütün belge eklerini **tek dosyada** indirir; içinde `belgeler.json` manifesti
+vardır. Ek listesinde isterseniz **≈ sayfa** tahmini görünür.
+
+**Ne yapıldı**
+- **ZIP paketi** (`buildDocumentsZip`): üst yazı + EK-1 rapor + tüm belge ekleri
+  + `belgeler.json` (`akis.belgeler.v1`: sıra, tür, ad, **bayt**, **sha256**).
+  Dosya adı `UstYazi_Belgeler_<no>_<tarih>_<saat>.zip` ("Paket" sözcüğü yok).
+- **Üreticiler ayrıştırıldı:** `udfDocument` / `docxDocument` **blob** döndürür;
+  `makeUdf` / `makeDocx` indirme + bildirim sarmalayıcısıdır. ZIP aynı üreticiyi
+  kullanır (kopya biçimlendirme yok).
+- **Sayfa tahmini (yalnız EKRAN):** ek listesinde `≈ N sayfa`. Ölçüm, belgeyi
+  görünür alanın dışında gerçek genişlikle çizip yüksekliği ölçer ve kaydı geri
+  alır. **Belge metnine sayfa sayısı yazılmaz** (UYAP/Word düzeni farklı sayfa
+  üretir; adli belgede uydurma sayı yanıltıcıdır). Panelde "TAHMİNÎ" uyarısı var.
+- **Adlandırma:** rapor içi ekler artık **"Rapor eki N."** (üst yazının `EK-N`'si
+  ile karışmıyordu; iki ayrı numaralandırma vardı).
+
+**Ölçüm (gerçek Chromium + CDP, 1440×900)**
+- ZIP: `UstYazi_Belgeler_2026_214_E_2026-11-25_22-05-18.zip`; içinde
+  `UstYazi_…udf` (1.167 B), `2026_214_E.udf` (9.814 B),
+  `EK-2_TEKNİK_BİLGİLER_…udf` (3.652 B), `EK-3_TAPU_KAYDI_…udf` (689 B),
+  `belgeler.json`; manifestte **4 belge**, her biri için sha256 dolu.
+- Sayfa tahmini: **rapor ≈ 7 · EK-2 ≈ 2 · EK-3 ≈ 1**. İlk denemede gizli kâğıt
+  yüksekliği 0 olduğu için hepsi "1 sayfa" görünüyordu → ölçüm görünür alanın
+  dışına taşındı (düzeltildi).
+- Üst yazı metninde **sayfa ifadesi yok**; ölçümden sonra kâğıt/panel durumu
+  geri yüklendi (`hidden=true`, style temiz); JS hatası **0**.
+
+**Koruyan test:** `birim [161]` (12) · `tasarim [2de]` (10) · rapor testleri
+başlık değişikliğine göre güncellendi.
 
 ## v2.324 — Belge ekleri: EK-2 teknik bilgiler, ek yönetimi
 
