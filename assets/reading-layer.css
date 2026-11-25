@@ -2593,10 +2593,11 @@ input::placeholder, textarea::placeholder {
   color: var(--accent);
 }
 #view-audio .sd-obs-menu > .sd-obs {
-  position: absolute;
-  left: 0;
-  bottom: calc(100% + 6px);
-  z-index: 20;
+  /* v2.316: ATA KIRPMASI YOK. position:fixed + JS konum (placeFloatingMenu). */
+  position: fixed;
+  left: auto;
+  bottom: auto;
+  z-index: 1200;
   width: min(340px, 80vw);
   max-height: min(50vh, 320px);
   overflow-y: auto;
@@ -2633,10 +2634,11 @@ input::placeholder, textarea::placeholder {
   color: var(--accent);
 }
 #view-audio .sd-quick-menu {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 6px);
-  z-index: 20;
+  /* v2.316: ATA KIRPMASI YOK. position:fixed + JS konum (placeFloatingMenu). */
+  position: fixed;
+  right: auto;
+  bottom: auto;
+  z-index: 1200;
   display: block;
   width: min(380px, calc(100vw - 64px));
   max-height: min(60vh, 440px);
@@ -4045,3 +4047,9 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 #view-case .case-page-missing { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 #view-case .case-page-missing li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-xs); }
 #view-case .case-page-missing li span { overflow-wrap: anywhere; }
+
+/* v2.316 — Alt şerit sırası: solda ETİKET (metne), sağda GÖZLEM (rapora).
+   Rapor tablosunda GÖZLEM sağ sütundur; düğme de sağdadır. */
+#view-audio .sd-quick { order: 1; margin-right: auto; }
+#view-audio .sd-obs-row { order: 2; margin-left: auto; }
+#view-audio .sd-obs-menu { order: 3; }

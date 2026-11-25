@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.315.**
+yazılır. **Güncel sürüm: v2.316.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.316 — Menü kırpılması ve alt şerit düzeni (TAMAMLANDI)
+
+- Etiket/Gözlem menüleri **position:fixed** + görünür alana oturtma; ata
+  `overflow:hidden` kırpması bitti, sağa taşma yok.
+- **Solda Etiket ekle, sağda Gözlem işaretle** (rapor GÖZLEM sütunuyla uyumlu).
+- 18 metin etiketi; 12 gözlem işareti ayrı menüde; yinelenenler kaldırıldı.
+- Test `birim [154]/[155]`, `tasarim [2cu]/[2cx]`; 1100 px kırpma 0.
 
 ## v2.315 — Dosya görünümü (TAMAMLANDI)
 

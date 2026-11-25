@@ -1,4 +1,4 @@
-# Özellikler (v2.315 — mevcut durum)
+# Özellikler (v2.316 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -469,14 +469,12 @@ tuşları bozulmaz.
 - **Dinle / Duraklat / Durdur:** "Dinle" düğmesi akıllıdır; aynı bölümde tekrar
   basınca duraklar, duraklatılmışken kaldığı yerden devam eder. "Durdur" çalmayı
   keser ve bölüm başına sarar. Bölüm bitişinde otomatik durur.
-- **Hızlı etiketler (v2.313):** **gruplu ve aranabilir** menü — Anlaşılırlık · Ortam/teknik · Konuşma biçimi · İçerik notu. 30 etiket:
-  `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`, `[kesik]`, `[bozuk ses]`,
-  `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`, `[sessizlik]`, `[müzik/ses]`,
-  `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`, `[telefon]`, `[uzaktan konuşma]`,
+- **Hızlı etiketler (v2.316):** soldaki **“Etiket ekle”** menüsü **gruplu ve aranabilir** — Anlaşılırlık · Ortam/teknik · Konuşma biçimi · İçerik notu. **18 metin etiketi:**
+  `[şüpheli]`, `[tahmin]`, `[kesik]`, `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`,
   `[fısıltı]`, `[bağırma]`, `[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`,
-  `[karşı taraf]`, `[dil değişimi]`, `[isim belirsiz]`, `[yer belirsiz]`,
-  `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]` + “Temizle”.
-  **`[duyulmuyor]` (ses yok/kısık) ile `[anlaşılmaz]` (ses var, kelimeler seçilemiyor) ayrıdır;** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
+  `[karşı taraf]`, `[isim belirsiz]`, `[yer belirsiz]`, `[rakam belirsiz]`,
+  `[tarih belirsiz]`, `[küfür]` + “Temizle”.
+  **Gözlem işaretleri (duyulmuyor, anlaşılmaz, gürültü, üst üste, yankı, kesinti, sessizlik, müzik, telefon, uzaktan, bozuk ses, dil değişimi) ayrı “Gözlem işaretle” menüsündedir; hızlı etiketlerde tekrarlanmaz.** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
 - **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
   inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
@@ -1000,6 +998,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Menü kırpılması düzeltildi (v2.316):** “Etiket ekle” ve “Gözlem işaretle” menüleri artık **`position:fixed`** ve görünür alana oturtulur; `.seg-detail`/`.audio-card` gibi ataların `overflow:hidden` kutusuna hapsolmaz, sağa taşmaz. **Solda Etiket, sağda Gözlem** (rapor tablosunun GÖZLEM sütunuyla uyumlu); düğmeler ne işe yaradığını yazar. Menü dışarı tıklama/kaydırma/pencere boyutunda kapanır.
 - **Dosya görünümü (v2.315):** soldaki **Dosya** ayrı bir **sayfa** açar — künye, taraflar, teslim durumu ve **tamamlanacaklar** tek ekranda. Düzenleme sağdaki **çekmecede** yapılır (form kimlikleri çoğaltılmaz). **✎ Düzenle** çekmeceyi açar; **Git ›** ilgili görünüme geçer; **Rapor kontrolü →** raporu Kontrol modunda açar.
 - **Teslim tarihi zekâsı (v2.312):** görevlendirme tarihi + verilen süre → **son teslim tarihi otomatik** (elle yazılan korunur, `dueDateManual`); **kalan gün / gecikme** tek kaynaktan (`deliveryInfo`) Özet **TESLİM** panelinde, **durum çubuğunda** (“Teslim: N gün / gecikti”) ve **rapor ekranında**; rapor tarihi > son teslim ve gecikme **metinle** uyarır. Ray’da **Dosya** girişi. Tarih yoksa “—” (uydurma yok); gün farkı **takvim günü**.
 - **Terim/konu listesi (v2.311):** rapor iskeletinde **TERİM VE KONU LİSTESİ** (varsayılan kapalı): en az 2 kez geçen anlamlı sözcükler + geçiş sayısı (`depozito (3)`). Özet değil; deterministik tarama yardımcısı. Üç çıktı aynı.

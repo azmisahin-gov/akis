@@ -1531,7 +1531,7 @@ console.log('\n[2bc] Alan tanımlama: gözlem bayrakları tek kaynak (v2.203)');
   // Dar ekranda düğme yığını metni ezmesin: tek "Gözlem" düğmesi + panel.
   check('dar ekran gözlem menüsü var', /class="sd-obs-menu"/.test(appJs) && /sd-obs-row/.test(appJs));
   check('dar ekran menüsü ≤600 px', /@media \(max-width: 600px\)[\s\S]{0,300}sd-obs-row/.test(layer));
-  check('menü aynı düğmeleri kullanır (kopya mantık yok)', /activeObsCount/.test(appJs) && /Gözlem\$\{activeObsCount/.test(appJs));
+  check('menü aynı düğmeleri kullanır (kopya mantık yok)', /activeObsCount/.test(appJs) && /Gözlem işaretle\$\{activeObsCount/.test(appJs));
 }
 console.log('\n[2bd] Alan tanımlama: sınıflandırma/rol seçenekleri (v2.204)');
 {
@@ -2206,21 +2206,22 @@ console.log('\n[2ct] Teslim tarihi paneli (v2.312)');
   // Hesap tek kaynak: rapor ekranı ve durum çubuğu deliveryInfo kullanır.
   check('teslim hesabı tek kaynak (deliveryInfo)', (appJs.match(/deliveryInfo\(/g) || []).length >= 3);
 }
-console.log('\n[2cu] Hızlı etiket sözlüğü (v2.313)');
+console.log('\n[2cu] Hızlı etiket sözlüğü (v2.316)');
 {
   const html = read('index.html');
   const appJs = read('assets/app.js');
   const layer = read('assets/reading-layer.css');
   const std = read('docs/STANDARTLAR.md');
-  // Sözlük: kapsam ve tek biçim.
+  // Sözlük: 18 metin etiketi; gözlem işaretleri AYRI menüde.
   const tagCount = (appJs.match(/\{ text: '\[/g) || []).length;
-  check('en az 30 hızlı etiket', tagCount >= 30, String(tagCount));
+  check('en az 18 hızlı etiket', tagCount >= 18, String(tagCount));
   check('label = text (tek biçim)', /label: t\.text/.test(appJs));
-  check('duyulmuyor etiketi var', /\{ text: '\[duyulmuyor\]'/.test(appJs));
   check('şüpheli/tahmin/kesik var', /\{ text: '\[şüpheli\]'/.test(appJs) && /\{ text: '\[tahmin\]'/.test(appJs) && /\{ text: '\[kesik\]'/.test(appJs));
-  check('yankı/kesinti inline eklendi', /\{ text: '\[yankı\]'/.test(appJs) && /\{ text: '\[kesinti\]'/.test(appJs));
   check('fısıltı/bağırma var', /\{ text: '\[fısıltı\]'/.test(appJs) && /\{ text: '\[bağırma\]'/.test(appJs));
   check('[belirsiz] etiketi YOK (durumdur)', !/\{ text: '\[belirsiz\]'/.test(appJs));
+  const qdefs = (appJs.match(/\{ text: '\[[^\]]+\]'/g) || []).join(' ');
+  const dup = ['duyulmuyor', 'anlaşılmaz', 'gürültü', 'yankı', 'kesinti', 'telefon', 'müzik/ses'];
+  check('gözlem etiketleri hızlı etikette TEKRARLANMAZ', dup.every((x) => !qdefs.includes('[' + x + ']')));
   // Gruplu + aranabilir menü.
   check('menü gruplu üretilir (quickMenuHtml)', /function quickMenuHtml\(/.test(appJs) && /\$\{quickMenuHtml\(i\)\}/.test(appJs));
   check('menüde arama kutusu', /class="qt-search"/.test(appJs));
@@ -2237,6 +2238,22 @@ console.log('\n[2cu] Hızlı etiket sözlüğü (v2.313)');
   check('standart hukuki yorum etiketi yasağını anar', /Hukuki yorum etiketi yoktur/.test(std));
   check('yardımda hızlı etiket bölümü var', /Hızlı etiketler \(metne ekleme\)/.test(html));
   check('yardımda duyulmuyor ayrımı var', /\[duyulmuyor\]/.test(html));
+}
+console.log('\n[2cx] Menü kırpılması ve alt şerit sırası (v2.316)');
+{
+  const appJs = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('etiket menüsü position:fixed', /#view-audio \.sd-quick-menu \{[^}]*position:\s*fixed/.test(layer));
+  check('gözlem paneli position:fixed', /#view-audio \.sd-obs-menu > \.sd-obs \{[^}]*position:\s*fixed/.test(layer));
+  check('menü z-index yüksek', /#view-audio \.sd-quick-menu \{[^}]*z-index:\s*1200/.test(layer) && /#view-audio \.sd-obs-menu > \.sd-obs \{[^}]*z-index:\s*1200/.test(layer));
+  check('konum görünür alana oturtulur', /function placeFloatingMenu\(/.test(appJs) && /function closeFloatingMenus\(/.test(appJs));
+  check('etiket menüsü açılınca konumlanır', /placeFloatingMenu\(menu, b, 'left'\)/.test(appJs));
+  check('gözlem paneli açılınca konumlanır', /placeFloatingMenu\(panel, summary, 'right'\)/.test(appJs));
+  check('kapatma kancaları (dış tıklama/kaydırma/boyut)', (appJs.match(/closeFloatingMenus\(/g) || []).length >= 5 && /addEventListener\(\s*'resize'/.test(appJs));
+  check('solda Etiket, sağda Gözlem', /#view-audio \.sd-quick \{[^}]*order:\s*1[^}]*margin-right:\s*auto/.test(layer) && /#view-audio \.sd-obs-row \{[^}]*order:\s*2[^}]*margin-left:\s*auto/.test(layer) && /#view-audio \.sd-obs-menu \{[^}]*order:\s*3/.test(layer));
+  check('düğme metni: Etiket ekle', />Etiket ekle<\/button>/.test(appJs));
+  check('düğme metni: Gözlem işaretle', /Gözlem işaretle\$\{activeObsCount/.test(appJs));
+  check('açıklama ipuçları var', /Gözlem işaretle — raporun GÖZLEM sütununa işaret ekler/.test(appJs) && /Etiket ekle — metne \[etiket\] ekler/.test(appJs));
 }
 console.log('\n[2cv] Yeni gözlem işaretleri (v2.314)');
 {

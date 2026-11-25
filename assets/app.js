@@ -37,7 +37,6 @@ import {
   OBS_DEFS,
   OBS_KEYS,
   OBS_LABEL,
-  OBS_HINT,
   OBS_PRIMARY_KEYS,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
@@ -122,15 +121,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.315';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.315';
+} from './schema.js?v=2.316';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.316';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.315';
+const APP_VERSION = '2.316';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -431,13 +430,12 @@ Object.assign(REPORT_TEXT, {
   integrityNote:
     'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
 });
-// HIZLI ETİKET SÖZLÜĞÜ (v2.313). Uzmanın elle yazmadan bölümü işaretlemesini
+// HIZLI ETİKET SÖZLÜĞÜ (v2.316). Uzmanın elle yazmadan METNE etiket eklemesini
 // sağlar. Etiketler köşeli parantezle metne girer ve rapora AYNEN akar; uydurma
-// metin üretilmez. `label` DAİMA `text` ile aynıdır (v2.312'ye kadar farklıydı:
-// görünen "[uzaktan konuşma]" metne "[uzaktan/zayıf konuşma]" yazıyordu).
-// `obsKey` varsa aynı kavram `OBS_DEFS`te aranır (ipucu/doğrulama); etiket
-// eklemek gözlem işaretini OTOMATİK açmaz (v2.313 kuralı). Yeni bir ortak
-// kavram eklerken önce OBS_DEFS'e yazın, sonra burada `obsKey` ile bağlayın.
+// metin üretilmez. `label` DAİMA `text` ile aynıdır.
+// GÖZLEM işaretleri (gürültü, üst üste, duyulmuyor, telefon…) BURADA TEKRARLANMAZ;
+// onlar sağdaki "Gözlem işaretle" menüsündedir (OBS_DEFS tek kaynak). Böylece
+// aynı kavram iki yerde görünüp bilirkişiyi yanıltmaz (v2.316 kuralı).
 const QUICK_TAG_GROUPS = [
   { key: 'clarity', label: 'Anlaşılırlık' },
   { key: 'environment', label: 'Ortam / teknik' },
@@ -445,26 +443,15 @@ const QUICK_TAG_GROUPS = [
   { key: 'content', label: 'İçerik notu' }
 ];
 const QUICK_TAG_DEFS = [
-  // --- Anlaşılırlık (duyulmuyor ≠ anlaşılmaz ≠ Anlaşılmadı durumu) ---
-  { text: '[duyulmuyor]', group: 'clarity', obsKey: 'notAudible', hint: 'Ses yok veya çok kısık; işitilmiyor. "Anlaşılmaz"dan farklıdır.' },
-  { text: '[anlaşılmaz]', group: 'clarity', obsKey: 'inaudible', hint: 'Ses duyuluyor ama kelimeler seçilemiyor.' },
+  // --- Anlaşılırlık (gözlem işaretleri ayrı menüdedir) ---
   { text: '[şüpheli]', group: 'clarity', hint: 'Okuma şüpheli; dinleyip doğrulayın. (Belirsiz okuma ayrı bir DURUMDUR.)' },
   { text: '[tahmin]', group: 'clarity', hint: 'En iyi tahmin; kesin değil.' },
   { text: '[kesik]', group: 'clarity', hint: 'Kelime veya cümle yarım kaldı.' },
-  { text: '[bozuk ses]', group: 'clarity', obsKey: 'distortion', hint: 'Bozulma/artefakt; ses çözülemiyor.' },
   // --- Ortam / teknik ---
-  { text: '[gürültü]', group: 'environment', obsKey: 'noise', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
-  { text: '[üst üste]', group: 'environment', obsKey: 'overlap', hint: 'İki veya daha fazla konuşma çakışıyor.' },
-  { text: '[yankı]', group: 'environment', obsKey: 'echo', hint: 'Belirgin yankı veya oda akustiği.' },
-  { text: '[kesinti]', group: 'environment', obsKey: 'dropout', hint: 'Kayıtta kopma/kesinti; içeriğin bir bölümü eksik olabilir.' },
-  { text: '[sessizlik]', group: 'environment', obsKey: 'noSpeech', hint: 'Bu aralıkta konuşma yok; sessizlik.' },
-  { text: '[müzik/ses]', group: 'environment', obsKey: 'music', hint: 'Müzik veya ses efekti; konuşma değil.' },
   { text: '[mikrofon teması]', group: 'environment', hint: 'Mikrofon teması/hışırtı; konuşmayı bozabilir.' },
   { text: '[rüzgar]', group: 'environment', hint: 'Rüzgar sesi.' },
   { text: '[trafik/araç]', group: 'environment', hint: 'Trafik/araç sesi.' },
   // --- Konuşma biçimi / konuşmacı ---
-  { text: '[telefon]', group: 'speech', obsKey: 'phone', hint: 'Telefon görüşmesi; karşı taraf duyuluyor veya duyulmuyor olabilir.' },
-  { text: '[uzaktan konuşma]', group: 'speech', obsKey: 'distance', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
   { text: '[fısıltı]', group: 'speech', hint: 'Fısıltıyla konuşma.' },
   { text: '[bağırma]', group: 'speech', hint: 'Yüksek ses/bağırma.' },
   { text: '[gülüşme]', group: 'speech', hint: 'Gülüşme.' },
@@ -472,7 +459,6 @@ const QUICK_TAG_DEFS = [
   { text: '[ağlama]', group: 'speech', hint: 'Ağlama.' },
   { text: '[alkış]', group: 'speech', hint: 'Alkış.' },
   { text: '[karşı taraf]', group: 'speech', hint: 'Telefonun karşı tarafındaki ses.' },
-  { text: '[dil değişimi]', group: 'speech', obsKey: 'foreignLanguage', hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir.' },
   // --- İçerik notu (yorum değil; doğrulanması gereken belirsizlik) ---
   { text: '[isim belirsiz]', group: 'content', hint: 'Özel isim belirsiz; doğrulanmalı.' },
   { text: '[yer belirsiz]', group: 'content', hint: 'Yer adı belirsiz; doğrulanmalı.' },
@@ -480,12 +466,8 @@ const QUICK_TAG_DEFS = [
   { text: '[tarih belirsiz]', group: 'content', hint: 'Tarih belirsiz; doğrulanmalı.' },
   { text: '[küfür]', group: 'content', hint: 'Küfür/argo geçti (birebir yazılır; yorum eklenmez).' }
 ];
-// `label` = `text` (tek biçim). `obsKey` varsa ipucu OBS_HINT'ten gelir.
-const QUICK_TAGS = QUICK_TAG_DEFS.map((t) => ({
-  ...t,
-  label: t.text,
-  hint: t.hint || (t.obsKey && OBS_HINT[t.obsKey]) || ''
-}));
+// `label` = `text` (tek biçim).
+const QUICK_TAGS = QUICK_TAG_DEFS.map((t) => ({ ...t, label: t.text, hint: t.hint || '' }));
 function quickTagButton(i, t) {
   const txt = String(t.text || '');
   return `<button class="quick-tag" data-quick-tag="${i}|${esc(txt)}" data-qt-text="${esc(trLowerCase(txt))}" title="${esc(t.hint || '')}">${esc(t.label || txt)}</button>`;
@@ -527,7 +509,7 @@ function quickMenuHtml(i) {
       .join('')}</div></div>`;
   }).join('');
   return (
-    `<div class="sd-quick-menu" role="group" aria-label="Hızlı metin ekle" hidden>` +
+    `<div class="sd-quick-menu" role="group" aria-label="Etiket ekle" hidden>` +
     `<div class="qt-search-wrap"><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
     recentHtml +
     `<div class="qt-groups">${groups}</div>` +
@@ -557,6 +539,41 @@ function filterQuickMenu(menu, query) {
   });
   const empty = menu.querySelector('.qt-empty');
   if (empty) empty.hidden = any;
+}
+// KATMAN TAŞMASI (v2.316): menüler position:absolute iken .seg-detail/.audio-card
+// gibi ataların overflow:hidden/auto'su tarafından KIRPILIYOR ve sağa taşıyordu.
+// position:fixed ile ata kırpmasından çıkar; konum görünür alana göre hesaplanır.
+function closeFloatingMenus(except) {
+  $$('.sd-quick-menu').forEach((m) => {
+    if (m !== except) m.hidden = true;
+  });
+  $$('.sd-obs-menu[open]').forEach((d) => {
+    const panel = d.querySelector('.sd-obs');
+    if (panel !== except) d.open = false;
+  });
+}
+function placeFloatingMenu(menu, trigger, align = 'right') {
+  if (!menu || !trigger) return;
+  menu.style.position = 'fixed';
+  menu.style.right = 'auto';
+  menu.style.bottom = 'auto';
+  menu.style.visibility = 'hidden';
+  menu.style.display = 'block';
+  const gap = 8;
+  const vw = window.innerWidth || 360;
+  const vh = window.innerHeight || 640;
+  const mw = menu.offsetWidth || 320;
+  const mh = menu.offsetHeight || 320;
+  const r = trigger.getBoundingClientRect();
+  let top = r.top - mh - gap;
+  if (top < gap) top = r.bottom + gap;
+  if (top + mh > vh - gap) top = Math.max(gap, vh - mh - gap);
+  let left = align === 'left' ? r.left : r.right - mw;
+  left = Math.max(gap, Math.min(left, vw - mw - gap));
+  menu.style.top = `${Math.round(top)}px`;
+  menu.style.left = `${Math.round(left)}px`;
+  menu.style.maxHeight = `${Math.max(160, Math.min(mh, vh - top - gap))}px`;
+  menu.style.visibility = 'visible';
 }
 // Hızlı etiketi İMLECİN olduğu yere ekler (v2.239). Önceden her zaman metnin
 // SONUNA ekliyordu; cümle ortasına etiket koymak imkânsızdı (kullanıcı isteği).
@@ -6970,18 +6987,18 @@ function segDetailHtml(m) {
             <textarea data-seg="${i}" data-key="text" placeholder="${isSecondEyesEditor() ? 'Düzeltmenizi yazın — öneri olarak kaydedilir, ana metne girmez.' : 'Kaydı dinleyerek metni doğrulayın ve düzeltin.'}">${esc(isSecondEyesEditor() && s.proposal ? s.proposal.text : s.text || '')}</textarea>
           </div>
           <div class="sd-editor-bottom">
-            <!-- GÖZLEM İŞARETLERİ: rapora aktarılan işaretler; sol altta, yer kaplamaz.
-                 Geniş ekranda düğmeler görünür; ≤600 px'te tek "Gözlem" düğmesi
-                 aynı düğmeleri açılır panelde gösterir (düğme yığını metni ezmesin). -->
-            <div class="sd-obs sd-obs-row" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
-            <details class="sd-obs-menu">
-              <summary class="sd-mini" title="Gözlem işaretleri (rapora yazılır)">Gözlem${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
-              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)">${obsAllBtns}</div>
-            </details>
+            <!-- SIRA (v2.316): solda ETİKET (metne ekler), sağda GÖZLEM (rapora işaretler).
+                 Rapor tablosunda GÖZLEM sağdaki sütundur; düğme de sağdadır.
+                 Menüler position:fixed ile görünür alana oturtulur (kırpılmaz). -->
             <div class="sd-quick">
-              <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Hızlı etiket ekle (gruplu, aranabilir)">+ Hızlı ekle</button>
+              <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Etiket ekle — metne [etiket] ekler; rapora metin olarak girer. Gözlem işareti değildir.">Etiket ekle</button>
               ${quickMenuHtml(i)}
             </div>
+            <div class="sd-obs sd-obs-row" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
+            <details class="sd-obs-menu">
+              <summary class="sd-mini" title="Gözlem işaretle — raporun GÖZLEM sütununa işaret ekler; metni değiştirmez." aria-label="Gözlem işaretle">Gözlem işaretle${activeObsCount ? ` (${activeObsCount})` : ''}</summary>
+              <div class="sd-obs" role="group" aria-label="Gözlem işaretleri (tümü)">${obsAllBtns}</div>
+            </details>
           </div>
         </div>
       </div>
@@ -18171,12 +18188,14 @@ function setupEvents() {
       const m = c.materials.find((x) => x.id === id);
       if (m) openAsrPopover(m);
     } else if (b.dataset.quickMenu !== undefined) {
-      // Hızlı ekle menüsü: düğmenin üstünde açılır (v2.313 gruplu + aranabilir).
+      // ETİKET menüsü (v2.316): solda; görünür alana oturtulur (kırpılmaz).
       const menu = b.parentElement.querySelector('.sd-quick-menu');
       if (menu) {
         menu.hidden = !menu.hidden;
         b.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
         if (!menu.hidden) {
+          closeFloatingMenus(menu);
+          placeFloatingMenu(menu, b, 'left');
           const s = menu.querySelector('.qt-search');
           if (s) {
             s.value = '';
@@ -18726,6 +18745,34 @@ function setupEvents() {
       } catch (err) {}
     }
   });
+  // GÖZLEM menüsü (v2.316): sağda; açılınca görünür alana oturtulur.
+  $('#view-audio').addEventListener('click', (e) => {
+    const summary = e.target && e.target.closest ? e.target.closest('.sd-obs-menu > summary') : null;
+    if (!summary) return;
+    const details = summary.parentElement;
+    requestAnimationFrame(() => {
+      if (!details.open) return;
+      const panel = details.querySelector('.sd-obs');
+      closeFloatingMenus(panel);
+      placeFloatingMenu(panel, summary, 'right');
+    });
+  });
+  // Dışarı tıklama / sayfa kaydırma / pencere boyutu: açık menüleri kapat.
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (t && t.closest && (t.closest('.sd-quick-menu') || t.closest('.sd-obs-menu') || t.closest('[data-quick-menu]'))) return;
+    closeFloatingMenus(null);
+  });
+  window.addEventListener('resize', () => closeFloatingMenus(null));
+  document.addEventListener(
+    'scroll',
+    (e) => {
+      const t = e.target;
+      if (t && t.closest && t.closest('.sd-quick-menu, .sd-obs-menu')) return;
+      closeFloatingMenus(null);
+    },
+    true
+  );
   $('#view-audio').addEventListener('focusin', (e) => {
     const el = e.target;
     if (el.dataset && el.dataset.key === 'text') {
@@ -20678,6 +20725,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.316': {
+    title: 'Etiket ve gözlem menüleri düzeltildi',
+    body:
+      'Menüler artık kutunun içinde kırpılmıyor; görünür alana oturuyor ve sayfa sağa kaymıyor. Solda “Etiket ekle” (metne), sağda “Gözlem işaretle” (rapora GÖZLEM sütununa). 18 metin etiketi; 12 gözlem işareti ayrı menüde, yinelenenler kaldırıldı.'
+  },
   '2.315': {
     title: 'Dosya görünümü (ayrı sayfa)',
     body:

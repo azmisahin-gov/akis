@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.315.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.316.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8086,3 +8086,59 @@ Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
    nav öğeleri soluklaşır, kapanınca `body.dataset.view`’e göre geri gelir.
 5. **Eksik listesi sınırlıdır:** zorunlu künye + kayıt/soru. Rapor hazırlığının
    tam listesi Rapor ekranındaki Kontrol panelindedir.
+
+## EK DÜZELTME (v2.316) — Menü kırpılması ve alt şerit düzeni
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.316** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2342 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### ÖLÇÜLEN HATA (1100×900)
+
+`Etiket` ve `Gözlem` menüleri `position:absolute` idi; atalarında
+`.seg-detail` (overflow:auto), `.seg-workspace`/`.audio-card`/`#view-audio`
+(overflow:hidden) olduğu için menü **kırpılıyordu**:
+- Etiket menüsü: top 280 < `.seg-detail` top 383 → üst kısmı görünmüyordu.
+- Gözlem paneli: sağ kenar **1223 > 1100** → sağ kısmı görünmüyordu.
+
+### Yapılan
+
+- **`position: fixed` + JS konum:** `placeFloatingMenu(menu, trigger, align)`
+  görünür alana oturtur (üst/alt, sol/sağ kırpma yok); `closeFloatingMenus`
+  diğer menüyü kapatır. Dış tıklama + `scroll` (menü içi hariç) + `resize`
+  kapatır.
+- **Sıra:** solda **“Etiket ekle”** (metne), sağda **“Gözlem işaretle”**
+  (rapora GÖZLEM). CSS `order` + `margin-left/right:auto`.
+- **Düğme metinleri ne işe yaradığını söyler**; ayrıntı `title` ipucunda.
+- **Yinelenenler kaldırıldı:** gözlem karşılığı olan 12 etiket
+  `QUICK_TAG_DEFS`ten çıkarıldı → **18 metin etiketi**; `OBS_DEFS` **12**.
+- Test: `birim [154]/[155]`, `tasarim [2cu]/[2cx]`.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Açılır menü ata `overflow` kutusuna hapsolmaz.** Menü `position:fixed`
+   olmalı ve JS ile görünür alana oturtulmalı; `position:absolute` + ata
+   `overflow:hidden` = **sessiz kırpma** (v2.316'da ölçüldü).
+2. **Menü içi kaydırma kapatmaz:** `scroll` dinleyicisi menü içindeki
+   kaydırmayı yok sayar; yalnız dış kaydırma kapatır.
+3. **Etiket ≠ Gözlem:** solda Etiket (metne, `s.text`), sağda Gözlem (rapora,
+   GÖZLEM sütunu). **Aynı kavram iki yerde tekrarlanmaz**; gözlem karşılığı
+   olan etiket hızlı etiketlerde bulunmaz.
+4. **Sıra rapor tablosuyla uyumlu:** GÖZLEM sağ sütun → düğme sağda.
+5. **Yeni bir menü eklerken:** `placeFloatingMenu` + `closeFloatingMenus`
+   kullanın; `position:absolute` ile ata kutusuna bırakmayın.
+
+### Ölçüm (gerçek Chromium)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Etiket menüsü | 18 etiket, `[duyulmuyor]` **yok**, rect görünür alanda |
+| Gözlem paneli | 12 düğme, sağ kenar **1029 ≤ 1100** |
+| Sayfa yatay kayması | **yok** (`bodyScroll = innerWidth`) |
+| Sıra | Etiket sol (653), Gözlem sağ (919/1029) |
+| 1440/1100/900/760/600/360 | menü **inViewport**, hOverflow yok |
+| JS hatası | **0** |

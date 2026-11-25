@@ -6,12 +6,67 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.315.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.316.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.316 — Menü kırpılması ve alt şerit düzeni
+
+**Amaç:** “Etiket ekle” ve “Gözlem işaretle” menüleri `position:absolute` idi;
+`.seg-detail`/`.audio-card` gibi ataların `overflow:hidden/auto` kutusunda
+**kırpılıyor**, sağa taşıyor ve bir kısmı görünmüyordu. Bilirkişi rahat
+seçemiyordu.
+
+### KULLANICI NE GÖRECEK
+
+- **Solda “Etiket ekle”, sağda “Gözlem işaretle”.** Rapor tablosunda GÖZLEM
+  sağdaki sütundur; düğme de sağdadır. Etiket **metne** girer; gözlem
+  **rapora** (GÖZLEM sütunu) işaret olur.
+- **Menüler artık kutunun içinde hapsolmuyor:** görünür alana oturur; üstten/
+  sağdan kesilmez, sayfa sağa kaymaz. Menü kendi içinde kayar.
+- **Düğmeler ne işe yaradığını yazar:** “Etiket ekle” ve “Gözlem işaretle”
+  (ayrıntı ipucunda).
+- **18 metin etiketi:** şüpheli · tahmin · kesik · mikrofon teması · rüzgar ·
+  trafik/araç · fısıltı · bağırma · gülüşme · öksürük · ağlama · alkış ·
+  karşı taraf · isim/yer/rakam/tarih belirsiz · küfür.
+- **12 gözlem işareti ayrı menüde:** duyulmuyor · anlaşılmaz · gürültü · üst
+  üste · yankı · kesinti · sessizlik · müzik · telefon · uzaktan · bozuk ses ·
+  dil değişimi. **Hızlı etiketlerde tekrarlanmaz** (yinelenenler kaldırıldı).
+- Menü dışarı tıklama, sayfa kaydırma veya pencere boyutu değişince kapanır.
+
+### Teknik
+
+- CSS: `.sd-quick-menu` ve `.sd-obs-menu > .sd-obs` → **`position: fixed`**,
+  `z-index: 1200`; `right/bottom` yerine JS konum.
+- `placeFloatingMenu(menu, trigger, align)` görünür alana oturtur (üst/alt,
+  sol/sağ kırpma yok); `closeFloatingMenus(except)` diğerini kapatır.
+- Açılışta konumlama: etiket `align:'left'`, gözlem `align:'right'`.
+- `document` dış tıklama + `scroll` (menü içi hariç) + `resize` kapatır.
+- `QUICK_TAG_DEFS` **18** (gözlem karşılığı olan 12 etiket kaldırıldı);
+  `OBS_DEFS` **12** (tek kaynak).
+- Alt şerit sırası CSS `order` + `margin-left/right:auto` ile: Etiket 1,
+  gözlem düğmeleri 2, Gözlem menüsü 3.
+- Test: `birim [154]/[155]`, `tasarim [2cu]/[2cx]`.
+
+### Ölçüm (gerçek Chromium, 1100×900)
+
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| Etiket menüsü | atanın içinde kırpılıyor | **görünür alanda**, kırpma 0 |
+| Gözlem paneli | sağ kenar 1223 > 1100 | **sağ kenar ≤ 1092** |
+| Sayfa yatay kayması | menü taşıyor | **yok** (`scrollWidth = innerWidth`) |
+| Alt şerit | Gözlem solda, Etiket sağda | **Etiket solda, Gözlem sağda** |
+| JS hatası | — | **0** |
+
+### Dürüst sınır
+
+- Sabit (fixed) menü, sayfa/panel kaydırılınca **kapanır** (kaymasın diye).
+  Bu bilinçli bir davranıştır; yeniden açmak tek tıktır.
+- Etiket ile gözlem **ayrı** kavramlardır: biri metni, diğeri raporun GÖZLEM
+  sütununu değiştirir. Otomatik dönüşüm yoktur.
 
 ## v2.315 — Dosya görünümü (ayrı sayfa)
 

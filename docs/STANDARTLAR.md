@@ -75,8 +75,8 @@ Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütunu
 
 | Durum | Anlamı | Doğru yer |
 |---|---|---|
-| **`[duyulmuyor]`** | Ses yok/çok kısık; kayıtta **işitilmiyor** | Metin içi etiket (teknik gözlem) |
-| **`[anlaşılmaz]`** | Ses **duyuluyor** ama kelimeler seçilemiyor | Metin içi etiket + gözlem “anlaşılmayan” |
+| **Duyulmuyor** | Ses yok/çok kısık; kayıtta **işitilmiyor** | **Gözlem işareti** (teknik) |
+| **Anlaşılmaz** | Ses **duyuluyor** ama kelimeler seçilemiyor | **Gözlem işareti** “anlaşılmayan” |
 | **Anlaşılmadı** | Bölümün **kontrol durumu**: dinlendi, metin doğrulanamadı | Kontrol durumu (klavye `2`) |
 | **`[sessizlik]`** | Gerçekten konuşma yok (ortam sessiz) | Metin içi etiket + gözlem “sessizlik” |
 
@@ -84,20 +84,23 @@ Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütunu
 (Belirsiz okuma, klavye `4`); tek kelime şüphesinde `[şüpheli]` / `[tahmin]`
 kullanılır.
 
-### 6.2 Hızlı etiket sözlüğü (v2.313)
+### 6.2 Hızlı etiket sözlüğü (v2.316)
 
-**Anlaşılırlık:** `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`,
-`[kesik]`, `[bozuk ses]`
+**Anlaşılırlık (metin):** `[şüpheli]`, `[tahmin]`, `[kesik]`
 
-**Ortam / teknik:** `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`,
-`[sessizlik]`, `[müzik/ses]`, `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`
+**Ortam / teknik (metin):** `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`
 
-**Konuşma biçimi:** `[telefon]`, `[uzaktan konuşma]`, `[fısıltı]`, `[bağırma]`,
-`[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`, `[karşı taraf]`,
-`[dil değişimi]`
+**Konuşma biçimi (metin):** `[fısıltı]`, `[bağırma]`, `[gülüşme]`, `[öksürük]`,
+`[ağlama]`, `[alkış]`, `[karşı taraf]`
 
 **İçerik notu (yorum değil, belirsizlik):** `[isim belirsiz]`, `[yer belirsiz]`,
 `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]`
+
+**Gözlem işaretleri ayrı menüdedir (v2.316):** gürültü · üst üste · anlaşılmayan ·
+duyulmuyor · müzik · telefon · sessizlik · kesinti · yankı · uzaktan/zayıf ·
+bozuk ses · dil değişimi. Bunlar **“Gözlem işaretle”** menüsündedir ve hızlı
+etiketlerde **tekrarlanmaz**. Hızlı etiket **metne** girer; gözlem işareti
+**rapora** (GÖZLEM sütunu) gider.
 
 **Kural:** Etiket **imlecin olduğu yere** eklenir (v2.239); bir kelimeyi
 seçtiyseniz seçimin yerine yazılır. `label` ve metne giren değer **aynıdır**
