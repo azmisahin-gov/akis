@@ -2441,6 +2441,11 @@ Her düzeltme şu sırayla yapılır — sıra atlanmaz:
 
 Push edilmemiş commit yayın değildir (bkz. "DERS: commit ≠ yayın").
 
+**Kullanıcı tercihi (2026-11-25):** değişiklikler **doğrudan `main`** dalına
+push edilir; özellikle istenmedikçe ara/özellik dalı açılmaz. Gereksiz dal
+açıldıysa hem uzak (`git push origin --delete <dal>`) hem yerel
+(`git branch -D <dal>`) dal silinir.
+
 ### 4. Kullanıcı her değişiklikten haberdar edilir
 
 Bilirkişi teknik ayrıntıyı okumaz; **ne kaybettiğini ve ne kazandığını** bilmek
