@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -6173,6 +6173,59 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
   eq('↑↓ ağaç taşıma kullanır', /moveTreeBlock\(l\.order/.test(js), true);
   eq('komşu yoksa sessiz kalmaz (toast)', /taşınacağı komşusu yok/.test(js), true);
+}
+
+// [141] v2.300 — Soru dayanağı: bölümlere bağlama + zaman damgalı rapor metni.
+// Şema `question.evidence` alanı tanımlıydı ama HİÇBİR yerde okunmuyordu (ölü
+// alan); rapor eski serbest `q.basis` alanını kullanıyordu. Artık ikisi tek
+// kaynakta birleşir ve üç çıktı aynı "Dayanak" metnini üretir.
+{
+  console.log('[141] Soru dayanağı (v2.300)');
+  const S = __schemaMod;
+  const c = T.emptyCaseForTest({
+    id: 'cEv',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        segments: [
+          { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', text: 'merhaba dünya nasılsın' },
+          { id: 'sg2', start: '00:00:05.000', end: '00:00:09.000', text: 'ikinci bölüm metni' }
+        ]
+      }
+    ]
+  });
+  const q = {
+    evidence: [
+      { materialId: 'm1', segmentId: 'sg1', note: '' },
+      { materialId: 'm1', segmentId: 'yok', note: '' }, // segment yok → atlanır
+      { materialId: 'zzz', segmentId: 'sg2', note: '' } // kayıt yok → atlanır
+    ]
+  };
+  const rows = S.questionEvidenceRows(c, q);
+  eq('çözülen dayanak sayısı (dangling atlanır)', rows.length, 1);
+  eq('dayanak kayıt adı', rows[0].material, 'a.wav');
+  eq('dayanak zaman aralığı', rows[0].range, '00:00:00.000 – 00:00:05.000');
+  eq('dayanak metni', rows[0].text, 'merhaba dünya nasılsın');
+  eq('dayanak yoksa boş', S.questionEvidenceRows(c, { evidence: [] }).length, 0);
+  eq('evidence yoksa boş', S.questionEvidenceRows(c, {}).length, 0);
+
+  // Rapor metni: serbest not + zaman damgalı alıntı TEK kaynak (questionBasisText).
+  const txt = T.questionBasisText(c, { basisNote: 'Kayıt a.wav', evidence: q.evidence });
+  eq('rapor dayanağı notu içerir', txt.includes('Kayıt a.wav'), true);
+  eq('rapor dayanağı kayıt+zaman içerir', txt.includes('a.wav · 00:00:00.000 – 00:00:05.000'), true);
+  eq('rapor dayanağı alıntı içerir', txt.includes('“merhaba dünya nasılsın”'), true);
+  eq('boş dayanak varsayılana düşer', T.questionBasisText(c, { evidence: [] }), 'Belirtilmemiş');
+
+  // Tek kaynak: eski serbest `basis` alanı `basisNote`a göçer, kaybolmaz.
+  eq('basis → basisNote göçü', S.normalizeQuestion({ basis: 'eski metin' }).basisNote, 'eski metin');
+
+  // Üç çıktı (HTML/DOCX/UDF) AYNI yardımcıyı kullanır; eski q.basis okuması kalmadı.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('üç çıktı questionBasisText kullanır', (js.match(/questionBasisText\(c, q\)/g) || []).length >= 3, true);
+  eq('eski q.basis rapor okuması kalmadı', /q\.basis \|\| REPORT_TEXT\.defaultBasis/.test(js), false);
+  eq('soru kartı basisNote yazar', /data-k="basisNote"/.test(js), true);
+  eq('evidence UI (ekle/kaldır) var', /data-q-ev-add/.test(js) && /data-q-ev-del/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

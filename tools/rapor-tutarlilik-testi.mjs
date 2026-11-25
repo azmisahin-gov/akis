@@ -1402,5 +1402,49 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('s5 başlığı tek kez (D)', count(D) === 1, String(count(D)));
 }
 
+// Senaryo 41: soru dayanağı (v2.300). Bir soruya bölüm bağlanınca rapor
+// "Dayanak" satırı serbest notu + KAYIT · ZAMAN ARALIĞI · alıntıyı taşır ve
+// üç çıktı (HTML/DOCX/UDF) aynı metni üretir (tek kaynak: questionBasisText).
+{
+  console.log('\n[Senaryo 41] soru dayanağı: bölüm bağlama (v2.300)');
+  const c = baseCase({
+    questions: [
+      {
+        id: 'q1',
+        question: 'Ne konuşuldu?',
+        answer: 'Depozito tartışıldı.',
+        basisNote: 'Serbest dayanak notu',
+        evidence: [{ materialId: 'm1', segmentId: 'sg1', note: '' }]
+      }
+    ],
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        type: 'audio/wav',
+        size: 1000,
+        duration: 12.5,
+        sha256: 'abc123',
+        tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 },
+        segments: [
+          { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba dünya', review: 'approved' }
+        ],
+        log: []
+      }
+    ]
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('dayanak serbest not', 'Serbest dayanak notu', H, U, D);
+  checkShared('dayanak kayıt+zaman aralığı', 'a.wav · 00:00:00.000 – 00:00:05.000', H, U, D);
+  checkShared('dayanak alıntı', '“merhaba dünya”', H, U, D);
+  // Bağ çözülemezse uydurma dayanak yazılmaz (yalnız serbest not kalır).
+  const bad = baseCase({
+    questions: [{ id: 'q2', question: 'Soru', answer: 'Cevap', basisNote: 'Not', evidence: [{ materialId: 'm1', segmentId: 'yok', note: '' }] }],
+    materials: [{ id: 'm1', name: 'a.wav', type: 'audio/wav', size: 1000, duration: 5, sha256: 'abc', tech: { codec: 'PCM (WAV)', channels: 1, sampleRate: 16000, bitDepth: 16 }, segments: [{ id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'x', review: 'approved' }], log: [] }]
+  });
+  const Hb = htmlText(bad);
+  check('çözülemeyen bağ yazılmaz', !/yok · /.test(Hb) && Hb.includes('Not'), '');
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

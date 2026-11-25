@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.299.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.300.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7412,3 +7412,51 @@ kullanır; aynı düzeyde komşu yoksa **toast** ile söyler (sessiz no-op yok).
 3. **C1 — soru ↔ bölüm eşleştirme** (deterministik; `§11.3`).
 4. **UDF yatay tablo genişliği** yatay sayfada ölçekleme (v2.245 notu).
 5. CSS borcu: nöbetçi eşikleri korunur; küçük ve kanıtlı adımlar.
+
+## YENİ OTURUM DEVRİ (v2.300) — Soru dayanağı: bölümlere bağlama
+
+| | |
+|---|---|
+| Sürüm | **v2.300** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2091 birim + 522 şema** + rapor (Senaryo 41) + sürüm + tasarım yeşil |
+| Açık konu | Deterministik soru↔bölüm **önerisi** (otomatik değil) ileride eklenebilir |
+
+### Ölçülen tutarsızlık
+
+Şema `question.evidence = [{materialId, segmentId}]` alanını tanımlıyor,
+`normalizeQuestion` ve `mergeCases` onu taşıyordu; ama **hiçbir arayüz ve hiçbir
+rapor okumuyordu** (ölü alan). Rapor/arayüz eski serbest `q.basis` alanını
+kullanıyordu. "Soru → bölüm" bağı modelde vardı, kullanımda yoktu.
+
+### Yapılan
+
+- `schema.js` → **`questionEvidenceRows(c, q)`** (saf): `evidence` bağlarını
+  `{materialId, segmentId, material, range, text, note}` olarak çözer; kayıt/
+  segment yoksa **atlar** (uydurma yok).
+- `app.js` → **`questionBasisText(c, q)`** TEK KAYNAK: serbest not
+  (`basisNote || basis`) + `kayıt · zaman aralığı · “alıntı”` satırları. Üç cevap
+  bloğu (HTML/DOCX/UDF) bunu kullanır; eski `q.basis` okuması kaldırıldı.
+- `renderQuestions` soru kartına **Dayanak bölümleri** (çipler + bölüm seçici +
+  **＋ Bölüm ekle** / **×** kaldır) eklendi. Serbest metin artık `basisNote`a
+  yazılır; eski `basis` kopyası yazınca silinir (tek kaynak).
+- Test: `birim` [141] (15) + `rapor` Senaryo 41 (üç çıktı aynı dayanak;
+  çözülemeyen bağ yazılmaz).
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Soru dayanağı = `question.evidence`** (yapılandırılmış, segment kimliğiyle).
+   Rapor/arayüz `q.basis` (eski serbest alan) OKUMAZ; `basisNote` + `evidence`.
+2. **Uydurma dayanak yok:** bağ çözülemezse satır yazılmaz; yalnız serbest not
+   (yoksa "Belirtilmemiş") kalır.
+3. **Üç çıktı tek kaynak:** `questionBasisText` — kopya metin/biçim yazmayın.
+4. **Kimlikle bağ:** `materialId` + `segmentId`; bölüm sırası değişse de bağ
+   kopmaz (indekse bağlamayın).
+5. Yeni bir "kanıt atfı" eklerken `questionEvidenceRows` desenini kullan
+   (dangling → atla, uydurma yok).
+
+### Sıradaki iş (adaylar)
+
+1. **Deterministik soru↔bölüm ÖNERİSİ** (keyword örtüşmesi; otomatik bağlama
+   YOK; yalnız "öneri" + tıkla bağla). Bu sürümdeki manuel bağın üstüne.
+2. Gömülü metadata tam dosya (8 MB sınırı), UDF yatay tablo genişliği.
+3. CSS borcu: nöbetçi eşikleri korunur.

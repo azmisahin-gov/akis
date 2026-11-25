@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.299.**
+yazılır. **Güncel sürüm: v2.300.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.300 — Soru dayanağı: bölümlere bağlama (TAMAMLANDI)
+
+- Şema `question.evidence` alanı **ölüydü** (hiçbir arayüz/rapor okumuyordu);
+  rapor eski serbest `q.basis` kullanıyordu.
+- Soru kartında **Dayanak bölümleri**: bölüm seç → **＋ Bölüm ekle** → çip;
+  **×** ile kaldır. Serbest metin tek kaynağa (`basisNote`) çekildi.
+- Rapor "Dayanak" satırı serbest notu **ve** `kayıt · zaman aralığı · “alıntı”`
+  yazar; çözülemeyen bağ **yazılmaz** (uydurma yok). Üç çıktı aynı metin.
+- `schema.js` → `questionEvidenceRows` (saf); `app.js` → `questionBasisText`
+  (tek kaynak). Test `birim [141]`, `rapor` Senaryo 41.
 
 ## v2.299 — ↑↓ alt bölümleri alt ağacıyla taşır (TAMAMLANDI)
 

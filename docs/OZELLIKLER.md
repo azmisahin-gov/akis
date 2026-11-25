@@ -1,4 +1,4 @@
-# Özellikler (v2.299 — mevcut durum)
+# Özellikler (v2.300 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -957,6 +957,12 @@ envanterle aynı sütun seçimini izler.
   Sürükle-bırak ile bölüm **başka bölümün altına** bırakılınca **alt bölüm**
   (1.1 / A.1) olur; kenara bırakılınca aynı düzeyde sıralanır. Derinlik sınırsız,
   döngü engellenir; ↑↓ ve sürükleme aynı ağaç kuralıyla çalışır.
+- **Soru dayanağı — bölümlere bağlama (v2.300):** İnceleme → Sorular kartında
+  her soruya **zaman damgalı bölüm** bağlanır (bölüm seç → **＋ Bölüm ekle**;
+  **×** ile kaldır). Raporun **Dayanak** satırı serbest notu **ve** bağlı
+  bölümleri (`kayıt · 00:00:00.000 – 00:00:05.000 · “alıntı”`) yazar. Bağlı
+  bölüm/kayıt silinmişse o bağ **yazılmaz** (uydurma dayanak yok). Serbest metin
+  tek kaynaktır (`basisNote`); üç çıktı aynı metni üretir.
 - **Parçalar ayrı ayrı (v2.261):** **kayıt bazında bulgular**, **soruların
   cevapları** ve **teknik sınırlılıklar** ayrı bölümdür; her biri tek başına
   açılıp kapatılır ve sıralanır. **Soru yoksa** "Cevaplar" bölümü hiç çizilmez.

@@ -2090,6 +2090,32 @@ export function normalizeQuestion(src = {}) {
   };
 }
 
+/**
+ * Bir sorunun yapılandırılmış dayanaklarını (question.evidence) çözümler (v2.300).
+ * Her bağ `{ materialId, segmentId }` → `{ material, range, text, note }`.
+ * Segment/kayıt BULUNAMAZSA atlanır (uydurma dayanak yazılmaz). Saf; test edilir.
+ */
+export function questionEvidenceRows(c, q) {
+  const materials = Array.isArray(c && c.materials) ? c.materials : [];
+  const links = Array.isArray(q && q.evidence) ? q.evidence : [];
+  const out = [];
+  for (const e of links) {
+    if (!e) continue;
+    const m = materials.find((x) => x && x.id === e.materialId);
+    const s = m && (Array.isArray(m.segments) ? m.segments : []).find((x) => x && x.id === e.segmentId);
+    if (!m || !s) continue;
+    out.push({
+      materialId: m.id,
+      segmentId: s.id,
+      material: str(m.name),
+      range: s.start && s.end ? `${s.start} – ${s.end}` : str(s.start || s.end),
+      text: str(s.text),
+      note: str(e.note)
+    });
+  }
+  return out;
+}
+
 export function normalizeCase(src = {}) {
   const c = isObj(src) ? src : {};
   const parties = isObj(c.parties) ? c.parties : {};

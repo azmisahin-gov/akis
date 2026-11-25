@@ -6,12 +6,46 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.299.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.300.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.300 — Soru dayanağı: bölümlere bağlama + zaman damgalı rapor
+
+**Ölçülen tutarsızlık:** Şema `question.evidence = [{materialId, segmentId}]`
+alanını tanımlıyor, `normalizeQuestion`/`mergeCases` onu taşıyordu; ama
+**hiçbir arayüz ve hiçbir rapor onu okumuyordu** (ölü alan). Rapor ve arayüz
+eski serbest `q.basis` alanını kullanıyordu. Yani "soru → bölüm" bağı
+veri modelinde vardı, kullanımda yoktu.
+
+### KULLANICI NE GÖRECEK
+
+- **İnceleme → Sorular** kartında her soru için **Dayanak bölümleri** alanı var:
+  açılır listeden bir bölüm (kayıt · zaman · metin) seçip **＋ Bölüm ekle** ile
+  o soruya **zaman damgalı dayanak** bağlarsınız; bağlı bölümler **çip** olarak
+  görünür ve **×** ile kaldırılır.
+- **Rapor "Dayanak" satırı** artık serbest notu **ve** bağlanan bölümleri
+  yazar: `a.wav · 00:00:00.000 – 00:00:05.000 · “merhaba dünya”`. Böylece her
+  cevap, kanıt tablosundaki gerçek zaman aralığına **atıf** yapar.
+- **Uydurma dayanak yok:** bağlı bölüm/kayıt silinmişse o bağ **yazılmaz**;
+  serbest not (yoksa "Belirtilmemiş") kalır.
+- **Tek kaynak:** serbest metin artık `basisNote`; eski `basis` alanı okunur ve
+  yazınca `basisNote`a geçer (kaybolmaz). Üç çıktı (HTML/DOCX/UDF) aynı
+  "Dayanak" metnini üretir.
+
+### Teknik
+
+- `schema.js` → **`questionEvidenceRows(c, q)`** (saf): bağları çözer
+  (`{material, range, text, note}`); çözülemeyen bağı atlar.
+- `app.js` → `questionBasisText(c, q)` TEK KAYNAK (not + zaman damgalı alıntı);
+  `renderQuestions` soru kartına çip + bölüm seçici ekler; `basisNote` yazar.
+- Üç cevap bloğu `questionBasisText(c, q)` kullanır (eski `q.basis` okuması
+  kaldırıldı).
+- Koruyan: `birim` [141] (15 kontrol) + `rapor` Senaryo 41 (üç çıktı aynı
+  dayanak; çözülemeyen bağ yazılmaz).
 
 ## v2.299 — ↑↓ alt bölümleri alt ağacıyla taşır
 

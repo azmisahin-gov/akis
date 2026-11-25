@@ -114,16 +114,17 @@ import {
   REPORT_FONT_SIZE_MIN,
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
-  normalizeReportFormat
-} from './schema.js?v=2.299';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.299';
+  normalizeReportFormat,
+  questionEvidenceRows
+} from './schema.js?v=2.300';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.300';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.299';
+const APP_VERSION = '2.300';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1902,6 +1903,50 @@ function renderStatusBar() {
     }
   }
 }
+function clipText(text, n = 80) {
+  const t = String(text == null ? '' : text).trim().replace(/\s+/g, ' ');
+  return t.length > n ? `${t.slice(0, n)}…` : t;
+}
+// Soru dayanağı (v2.300): serbest not (`basisNote`) + yapılandırılmış bölüm
+// bağları (`evidence`) TEK metne çevrilir. Üç çıktı da bunu kullanır; böylece
+// HTML/DOCX/UDF aynı "Dayanak" metnini üretir. Bağ çözülemezse yazılmaz.
+function questionBasisText(c, q) {
+  const note = String((q && (q.basisNote || q.basis)) || '').trim();
+  const parts = [];
+  if (note) parts.push(note);
+  for (const e of questionEvidenceRows(c, q)) {
+    const cite = [e.material, e.range].filter(Boolean).join(' · ');
+    const snippet = e.text ? `“${clipText(e.text, 80)}”` : '';
+    const line = [cite, snippet].filter(Boolean).join(' · ');
+    if (line) parts.push(line);
+  }
+  return parts.length ? parts.join(' · ') : REPORT_TEXT.defaultBasis;
+}
+function questionEvidenceChipsHtml(c, q, qi) {
+  const rows = questionEvidenceRows(c, q);
+  if (!rows.length) return '<span class="q-ev-none">Henüz bölüm bağlanmadı.</span>';
+  return rows
+    .map(
+      (e) =>
+        `<span class="q-ev-chip"><span>${esc(e.material || 'Kayıt')} · ${esc(e.range || '')}</span>` +
+        `<button type="button" class="q-ev-del" data-q-ev-del="${qi}" data-q-ev-mid="${esc(e.materialId)}" data-q-ev-sid="${esc(e.segmentId)}" aria-label="Dayanağı kaldır" title="Dayanağı kaldır">×</button></span>`
+    )
+    .join('');
+}
+function questionEvidenceOptionsHtml(c) {
+  const opts = [];
+  let total = 0;
+  for (const m of c.materials || []) {
+    for (const s of m.segments || []) {
+      if (total >= 500) break;
+      const label = `${m.name || 'Kayıt'} · ${s.start || ''} · ${clipText(s.text || '', 40)}`;
+      opts.push(`<option value="${esc(m.id)}::${esc(s.id)}">${esc(label)}</option>`);
+      total += 1;
+    }
+    if (total >= 500) break;
+  }
+  return `<option value="">Bölüm seç…</option>${opts.join('')}`;
+}
 function renderQuestions() {
   const c = currentCase();
   if (!c) return;
@@ -1922,16 +1967,23 @@ function renderQuestions() {
       '<div class="empty-state" style="padding:14px"><b>Henüz soru eklenmedi</b><span>Mahkemece cevaplanması istenen soruları ekleyin.</span></div>';
     return;
   }
+  const optionsHtml = questionEvidenceOptionsHtml(c);
   c.questions.forEach((q, i) => {
     const div = document.createElement('div');
     div.className = 'question-card';
-    div.innerHTML = `<label class="field"><span>${i + 1}. Soru</span><textarea rows="2" data-q="${i}" data-k="question" placeholder="Mahkemenin sorusu">${esc(q.question || '')}</textarea></label><label class="field"><span>Teknik cevap</span><textarea rows="3" data-q="${i}" data-k="answer" placeholder="Doğrulanmış teknik bulgulara dayalı cevap">${esc(q.answer || '')}</textarea></label><label class="field"><span>Dayanak (kayıt / zaman aralığı)</span><input data-q="${i}" data-k="basis" value="${esc(q.basis || '')}" placeholder="Kayıt adı, 00:00–00:15"></label><button class="mini-button remove-question" data-remove-q="${i}">Soruyu kaldır</button>`;
+    div.innerHTML =
+      `<label class="field"><span>${i + 1}. Soru</span><textarea rows="2" data-q="${i}" data-k="question" placeholder="Mahkemenin sorusu">${esc(q.question || '')}</textarea></label>` +
+      `<label class="field"><span>Teknik cevap</span><textarea rows="3" data-q="${i}" data-k="answer" placeholder="Doğrulanmış teknik bulgulara dayalı cevap">${esc(q.answer || '')}</textarea></label>` +
+      `<label class="field"><span>Dayanak notu (serbest)</span><input data-q="${i}" data-k="basisNote" value="${esc(q.basisNote || q.basis || '')}" placeholder="Kayıt adı, zaman aralığı, kısa açıklama"></label>` +
+      `<div class="field"><span>Dayanak bölümleri (zaman damgalı)</span><div class="q-ev-list">${questionEvidenceChipsHtml(c, q, i)}</div>` +
+      `<div class="q-ev-add"><select data-q-ev-src="${i}" aria-label="Dayanak eklenecek bölüm">${optionsHtml}</select><button type="button" class="mini-button" data-q-ev-add="${i}">＋ Bölüm ekle</button></div></div>` +
+      `<button class="mini-button remove-question" data-remove-q="${i}">Soruyu kaldır</button>`;
     root.appendChild(div);
   });
 }
 function addQuestion() {
   const c = currentCase();
-  c.questions.push({ question: '', answer: '', basis: '' });
+  c.questions.push({ question: '', answer: '', basisNote: '', evidence: [] });
   persist();
   renderQuestions();
 }
@@ -14180,7 +14232,7 @@ function renderReport() {
       let out = `<div class="paper-section"><h3>${esc(H('answers'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.answersIntro)}</p>`;
       for (let i = 0; i < c.questions.length; i++) {
         const q = c.questions[i];
-        out += `<h4>${na}.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(q.basis || REPORT_TEXT.defaultBasis)}</p>`;
+        out += `<h4>${na}.${i + 1}. ${esc(q.question || REPORT_TEXT.defaultQuestion)}</h4><p>${esc(q.answer || REPORT_TEXT.defaultAnswer)}</p><p class="paper-muted"><b>Dayanak:</b> ${esc(questionBasisText(c, q))}</p>`;
       }
       return out + `</div>`;
     },
@@ -14674,7 +14726,7 @@ function docxXml(c) {
           keep: true
         });
         out += wP(q.answer || REPORT_TEXT.defaultAnswer);
-        out += wP(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, { color: '657D92', size: 17, italic: true });
+        out += wP(`Dayanak: ${questionBasisText(c, q)}`, { color: '657D92', size: 17, italic: true });
       });
       return out;
     },
@@ -15290,7 +15342,7 @@ async function makeUdf() {
         );
         el.push(paragraphLines(q.answer || REPORT_TEXT.defaultAnswer, { justify: true }));
         el.push(
-          paragraph(`Dayanak: ${q.basis || REPORT_TEXT.defaultBasis}`, {
+          paragraph(`Dayanak: ${questionBasisText(c, q)}`, {
             size: 9,
             italic: true,
             color: 'muted',
@@ -16571,6 +16623,9 @@ function setupEvents() {
         q = c.questions[Number(t.dataset.q)];
       if (q) {
         q[t.dataset.k] = t.value;
+        // v2.300 — `basis` eski serbest alandı; artık TEK kaynak `basisNote`.
+        // Kullanıcı yazınca eski alan kopyası silinir (iki alan ayrışmasın).
+        if (t.dataset.k === 'basisNote') delete q.basis;
         // Cevap düzenlemesi ayrı sayılır; birleştirmede "kim dokundu" buna dayanır.
         if (t.dataset.k === 'answer' && t.value.trim()) q.answerRev = 1;
       }
@@ -16597,6 +16652,44 @@ function setupEvents() {
     });
   });
   $('#questionsList').addEventListener('click', (e) => {
+    // v2.300 — Soru dayanağı: bölüm bağla / kaldır (yapılandırılmış evidence).
+    const addBtn = e.target.closest('[data-q-ev-add]');
+    if (addBtn) {
+      const qi = Number(addBtn.dataset.qEvAdd);
+      const sel = $('#questionsList').querySelector(`select[data-q-ev-src="${qi}"]`);
+      const val = sel ? sel.value : '';
+      const [mid, sid] = String(val).split('::');
+      const c = currentCase();
+      const q = c.questions[qi];
+      if (!mid || !sid || !q) {
+        showToast('Önce bir bölüm seçin.', false);
+        return;
+      }
+      q.evidence = Array.isArray(q.evidence) ? q.evidence : [];
+      if (!q.evidence.some((x) => x && x.materialId === mid && x.segmentId === sid)) {
+        q.evidence.push({ materialId: mid, segmentId: sid, note: '' });
+        persist();
+        renderQuestions();
+        showToast('Bölüm soruya dayanak olarak eklendi.', false);
+      } else {
+        showToast('Bu bölüm zaten dayanak olarak ekli.', false);
+      }
+      return;
+    }
+    const delBtn = e.target.closest('[data-q-ev-del]');
+    if (delBtn) {
+      const qi = Number(delBtn.dataset.qEvDel);
+      const mid = delBtn.dataset.qEvMid;
+      const sid = delBtn.dataset.qEvSid;
+      const c = currentCase();
+      const q = c.questions[qi];
+      if (q && Array.isArray(q.evidence)) {
+        q.evidence = q.evidence.filter((x) => !(x && x.materialId === mid && x.segmentId === sid));
+        persist();
+        renderQuestions();
+      }
+      return;
+    }
     const b = e.target.closest('[data-remove-q]');
     if (!b) return;
     const c = currentCase();
@@ -19366,6 +19459,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.300': {
+    title: 'Soru dayanağı: bölümlere bağlayın',
+    body:
+      'İnceleme → Sorular kartında her soruya zaman damgalı bölüm bağlayabilirsiniz: bölüm seçip “＋ Bölüm ekle”. ' +
+      'Raporun “Dayanak” satırı serbest notu ve bağlanan bölümleri (kayıt · zaman aralığı · alıntı) yazar; bağ çözülemezse yazılmaz.'
+  },
   '2.299': {
     title: '↑↓ alt bölümleri birlikte taşır',
     body:
