@@ -262,6 +262,9 @@ const REQUIRED_IDS = [
   ['son teslim hesapla düğmesi', 'dueDateAutoBtn'],
   ['son teslim ipucu', 'dueDateHint'],
   ['rapor ekranı teslim çipi', 'reportDueChip'],
+  // v2.319 — görünür sürüm + tek tık yenile.
+  ['sürüm yenile düğmesi', 'reloadVersionBtn'],
+  ['üst sürüm etiketi', 'topVersion'],
   // v2.315 — Dosya görünümü (sayfa).
   ['dosya görünümü', 'view-case'],
   ['dosya sayfası gövdesi', 'casePageBody'],

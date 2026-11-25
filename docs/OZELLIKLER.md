@@ -1,4 +1,4 @@
-# Özellikler (v2.318 — mevcut durum)
+# Özellikler (v2.319 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -999,6 +999,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Görünür sürüm + tek tık yenile (v2.319):** üst barda **⟳ vX.Y** düğmesi; tıklayınca sayfa `?t=` ile önbelleği kırarak yenilenir. İlk sürüm denetimi **hemen**, sonra 30 sn’de bir ve sekmeye dönüşte. Eski sürümde “Yeni sürüm hazır” şeridi.
 - **Envanter bütünlüğü (v2.318):** EK-5 “Metin işaretleri” anahtarı **menüdeki 18 etiketten** (`QUICK_TAG_DEFS`), “Gözlem işaretleri” **12 bayraktan** (`OBS_DEFS`) üretilir; eski/olmayan etiketler kaldırıldı. Etiket/Gözlem menülerinde **üst/alt Kapat + backdrop + Esc**; tarayıcının arama ×’i gizli; gözlem panelinde **Kapat ×**.
 - **Etiket menüsü kapatma + onaylı temizleme (v2.317):** “Etiket ekle” menüsünde sağ üstte **× Kapat**; **Esc**, dış tıklama ve düğmeye tekrar basma da kapatır. **“Metni temizle”** artık **onay ister** (yanlışlıkla silme yok). Metin alanı **~3 satır** (min ~87 px); uzun metin kendi içinde kayar.
 - **Menü kırpılması düzeltildi (v2.316):** “Etiket ekle” ve “Gözlem işaretle” menüleri artık **`position:fixed`** ve görünür alana oturtulur; `.seg-detail`/`.audio-card` gibi ataların `overflow:hidden` kutusuna hapsolmaz, sağa taşmaz. **Solda Etiket, sağda Gözlem** (rapor tablosunun GÖZLEM sütunuyla uyumlu); düğmeler ne işe yaradığını yazar. Menü dışarı tıklama/kaydırma/pencere boyutunda kapanır.

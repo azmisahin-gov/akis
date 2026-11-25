@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.318.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.319.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8253,4 +8253,54 @@ Metin alanı **120 px** sabit; kırpılma/yatay taşma **0**; JS hatası **0**.
 | EK-5 gözlem anahtarı | **12** |
 | Kapatma | üst/alt Kapat ✓ · Esc ✓ · backdrop ✓ |
 | Native arama × | gizli |
+| JS hatası | **0** |
+
+## EK DÜZELTME (v2.319) — Görünür sürüm + tek tık “Yenile”
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.319** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2354 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A‑2 Yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### KÖK NEDEN (ölçüldü)
+
+Kullanıcı “yeni etiketlerin hiçbiri yok, yalnız Temizle var” dedi. Bu **v2.311
+arayüzü** (7 etiket + Temizle). Canlı site **v2.318** ile **birebir aynıydı**:
+`assets/app.js` SHA-256 yerel = canlı; canlı `RUNNING=2.318`; yeni işaretler
+20 kez vardı. Yani kod doğru; **açık sayfa eski kopya/önbellek**ti.
+Kullanıcı hangi sürümde olduğunu göremediği için sorun “kod bozuk” sanıldı.
+
+### Yapılan
+
+- Üst barda **`⟳ vX.Y`** düğmesi (`#reloadVersionBtn` + `#topVersion`).
+  Tıklama: `location.replace(...?t=Date.now())` → **önbelleği kırar**.
+- `init()` → `#topVersion` = `v${APP_VERSION}`.
+- Bootstrap: **ilk denetim hemen** (`setTimeout(check, 0)`), sonra 30 sn’de bir
+  + sekmeye dönüşte. Fark varsa boştaysa yenile, değilse “Yeni sürüm hazır”.
+- Test: `tasarim [2cz]`, `surum` kimlikleri.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Kullanıcı sürümü görebilmeli:** üst bar + sol alt `vX.Y`.
+2. **Tek tık yenile olmalı:** `?t=` ile HTML önbelleğini kır. “Ctrl+Shift+R”
+   tek yol olamaz.
+3. **İlk sürüm denetimi hemen**; 60 sn beklemek “yeni sürüm gelmedi”
+   izlenimi verir.
+4. **Çok eski sayfa yeni düğmeyi gösteremez:** bir kez `git pull` / canlı URL
+   ile güncellenmeli. Bu dürüst sınırdır; kodla geriye dönük çözülemez.
+5. Yerel sunucu (`run.ps1`) `Cache-Control: no-store` verir; yine de `?t=`
+   güvenli yoldur.
+
+### Ölçüm
+
+| Ölçüm | Sonuç |
+|---|---|
+| Canlı app.js SHA-256 = yerel | **eşit** |
+| Canlı `RUNNING` | **2.319** |
+| Üst bar sürüm düğmesi | **⟳ v2.319** |
+| Tıklama | URL `?t=...`, sayfa yenilendi |
+| İlk denetim | **0 sn** |
 | JS hatası | **0** |

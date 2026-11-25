@@ -120,15 +120,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.318';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.318';
+} from './schema.js?v=2.319';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.319';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.318';
+const APP_VERSION = '2.319';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -20772,6 +20772,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.319': {
+    title: 'Görünür sürüm + tek tık yenile',
+    body:
+      'Üst barda “⟳ vX.Y” düğmesi var: tıklayınca sayfa önbelleği kırarak yenilenir ve en son sürüm gelir. İlk sürüm denetimi hemen, sonra 30 sn’de bir. Hangi sürümde olduğunuzu üst bardan ve sol alttan görebilirsiniz.'
+  },
   '2.318': {
     title: 'Etiket/gözlem envanteri ve menü kapatma',
     body:
@@ -22747,6 +22752,21 @@ async function init() {
   // çiziliyordu; bilirkişi okuyamıyordu. Ayrıntı ve geçmiş artık tıklamada.
   const verEl = $('#appVersion');
   if (verEl) verEl.textContent = `v${APP_VERSION}`;
+  // GÖRÜNÜR SÜRÜM + TEK TIK YENİLE (v2.319): kullanıcı hangi sürümde olduğunu
+  // görsün ve önbelleği kırarak en son sürümü alabilsin.
+  const topVer = $('#topVersion');
+  if (topVer) topVer.textContent = `v${APP_VERSION}`;
+  const reloadBtn = $('#reloadVersionBtn');
+  if (reloadBtn)
+    reloadBtn.addEventListener('click', () => {
+      try {
+        const u = new URL(location.href);
+        u.searchParams.set('t', String(Date.now()));
+        location.replace(u.toString());
+      } catch (e) {
+        location.reload();
+      }
+    });
   // Görünüm tercihini uygula (index.html'deki satır içi betik ilk boyamayı
   // zaten yaptı; burada yalnız paneli çizip durumu tazeliyoruz).
   applyTheme();

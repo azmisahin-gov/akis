@@ -2317,5 +2317,17 @@ console.log('\n[2cy] Menü kapatma: backdrop + Kapat + native × (v2.318)');
   check('backdrop senkron', /function syncFloatingBackdrop/.test(app) && /sdPopBackdrop/.test(app));
 }
 
+console.log('\n[2cz] Görünür sürüm + tek tık yenile (v2.319)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  check('üst sürüm etiketi var', /id="topVersion"/.test(html));
+  check('yenile düğmesi var', /id="reloadVersionBtn"/.test(html));
+  check('yenile düğmesi ?t= ile yeniler', /reloadVersionBtn[\s\S]{0,500}searchParams\.set\('t'/.test(app) && /location\.replace/.test(app));
+  check('üst sürüm APP_VERSION dan', /topVersion[\s\S]{0,160}APP_VERSION/.test(app));
+  check('ilk sürüm denetimi hemen', /setTimeout\(check, 0\)/.test(html));
+  check('denetim aralığı ≤30 sn', /CHECK_MS\s*=\s*30000/.test(html));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -6,12 +6,50 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.318.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.319.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.319 — Görünür sürüm + tek tık “Yenile”
+
+**Neden:** Kullanıcı eski bir kopya/önbellek açtığında **v2.311 arayüzünü**
+(7 etiket + yalnız “Temizle”) görüyor ve “hiçbir yeni etiket yok” diyordu.
+Canlı site **v2.318** ile birebir aynıydı (SHA-256 eşit); sorun açık sayfanın
+eski olmasıydı. Kullanıcı hangi sürümde olduğunu göremiyordu.
+
+### KULLANICI NE GÖRECEK
+
+- Üst barda **`⟳ v2.319`** düğmesi. Tıklayınca sayfa **önbelleği kırarak**
+  (`?t=<zaman>`) yenilenir ve en son sürüm gelir.
+- **İlk sürüm denetimi hemen** (20 sn bekletmez); 30 sn’de bir ve sekmeye
+  dönüşte yinelenir.
+- Sürüm etiketi hem üst barda hem sol altta **vX.Y** olarak görünür.
+- Bir sürüm eskiyse “Yeni sürüm hazır” şeridi çıkar; “Şimdi yenile” ile
+  önbellek kırılarak geçilir.
+
+### Teknik
+
+- `index.html` → `#reloadVersionBtn` + `#topVersion`; tıklama
+  `location.replace(...?t=Date.now())`.
+- `init()` → `#topVersion` = `v${APP_VERSION}`.
+- Bootstrap: `setTimeout(check, 0)`, `CHECK_MS = 30000`.
+- Test: `tasarim [2cz]`, `surum` kimlikleri (`reloadVersionBtn`, `topVersion`).
+
+### Ölçüm
+
+- Canlı `assets/app.js` SHA-256 = yerel (birebir aynı); canlı `RUNNING=2.319`.
+- Üst bar düğmesi tıklanınca URL `?t=...` alır ve sayfa yenilenir.
+- Eski sayfa (v2.311) **bu düğmeyi içermez**; bir kez `git pull`/canlı URL ile
+  güncellendikten sonra bu yol kalıcıdır.
+
+### Dürüst sınır
+
+- Çok eski bir sayfa (v2.311) yeni düğmeyi **gösteremez**; o sayfa bir kez elle
+  güncellenmelidir (`git pull` veya canlı URL + Ctrl+Shift+R).
+- GitHub Pages CDN’i 10 dk önbellek verebilir; `?t=` bunu kırar.
 
 ## v2.318 — Envanter bütünlüğü ve menü kapatma (backdrop + Kapat)
 

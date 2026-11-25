@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.318.**
+yazılır. **Güncel sürüm: v2.319.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.319 — Görünür sürüm + tek tık yenile (TAMAMLANDI)
+
+- Üst barda **⟳ vX.Y**: tıkla → `?t=` ile önbelleği kır, en son sürümü al.
+- İlk sürüm denetimi **hemen**; 30 sn’de bir + sekmeye dönüşte.
+- Sürüm etiketi üst bar + sol alt; eski sürümde “Yeni sürüm hazır” şeridi.
+- Test `tasarim [2cz]`, `surum` kimlikleri.
 
 ## v2.318 — Envanter bütünlüğü + menü kapatma (TAMAMLANDI)
 
