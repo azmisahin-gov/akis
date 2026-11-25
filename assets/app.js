@@ -114,15 +114,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.293';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.293';
+} from './schema.js?v=2.294';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.294';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.293';
+const APP_VERSION = '2.294';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12577,6 +12577,8 @@ function reportBlockRenders(c, key) {
       return levelRowsForCase(c).length > 0;
     case 'reading':
       return (c.materials || []).some((m) => readingGroupsFor(m).length > 0);
+    case 'speakerDurations':
+      return speakerDurationRows(c).length > 0;
     default:
       return true;
   }
@@ -12734,6 +12736,7 @@ const REPORT_UI_LABELS = {
   embedded: 'Gömülü metadata (beyan)',
   acquisition: 'Delil edinme ve doğrulama',
   speakers: 'Konuşmacılar',
+  speakerDurations: 'Konuşmacı süreleri',
   tech: 'Teknik özellikler ve ortam',
   enhance: 'Ses iyileştirme',
   asr: 'Otomatik konuşma tanıma',
@@ -12789,6 +12792,7 @@ const REPORT_SECTION_CATEGORY = {
   embedded: 'tech',
   acquisition: 'tech',
   speakers: 'tech',
+  speakerDurations: 'tech',
   tech: 'tech',
   enhance: 'tech',
   asr: 'tech',
@@ -14019,12 +14023,15 @@ function renderReport() {
         : `<table class="paper-table"><thead><tr>${spk.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spk.rows
             .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
             .join('')}</tbody></table>`;
-      const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, durRows);
-      const durTable =
-        durRows.length && !d.empty
-          ? `<h4>${esc(REPORT_TEXT.speakerDurationHeading)}</h4><table class="paper-table"><thead><tr>${d.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${d.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-          : '';
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}${durTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
+    },
+    speakerDurations: () => {
+      const rows = speakerDurationRows(c);
+      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows);
+      const body = t.empty
+        ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
+        : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
@@ -14494,14 +14501,17 @@ function docxXml(c) {
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         })() +
-        (dDur.length
-          ? (() => {
-              const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, dDur, [800, 1800, 1200, 1400, 3600]);
-              return d.empty
-                ? ''
-                : headingXml(REPORT_TEXT.speakerDurationHeading, 2) + wTable([[...d.headers], ...d.rows], { widths: d.widths, header: true });
-            })()
-          : '') +
+        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
+      );
+    },
+    speakerDurations: () => {
+      const rows = speakerDurationRows(c);
+      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [800, 1800, 1200, 1400, 3600]);
+      return (
+        headingXml(H('speakerDurations')) +
+        (t.empty
+          ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })) +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
       );
     },
@@ -15086,14 +15096,14 @@ async function makeUdf() {
         if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
         else el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
       }
-      const uDur = speakerDurationRows(c);
-      if (uDur.length) {
-        const d = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, uDur, [46, 120, 60, 60, 200]);
-        if (!d.empty) {
-          el.push(paragraph(REPORT_TEXT.speakerDurationHeading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
-          el.push(table([[...d.headers], ...d.rows], d.widths, { header: true }));
-        }
-      }
+      el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
+    },
+    speakerDurations: () => {
+      el.push(h(H('speakerDurations')));
+      const rows = speakerDurationRows(c);
+      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [46, 120, 60, 60, 200]);
+      if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
     s4: () => {
@@ -19206,6 +19216,12 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.294': {
+    title: 'Konuşmacı süreleri ayrı bölüm',
+    body:
+      'Konuşmacı süreleri tablosu artık “Konuşmacılar” içinde değil, ayrı bir bölüm olarak basılır. ' +
+      'Bölüm iskeletinden ayrı açılıp kapatılabilir ve sıralanabilir; içerik aynıdır.'
+  },
   '2.293': {
     title: 'Dosyalar arası kişiler artık Dosya bilgileri çekmecesinde',
     body:

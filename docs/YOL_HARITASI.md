@@ -2,11 +2,15 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.293.**
+yazılır. **Güncel sürüm: v2.294.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.294 — Konuşmacı süreleri ayrı bölüm (TAMAMLANDI)
+
+- Süre tablosu ayrı bölüm; iskeletten aç/kapa + sırala. İçerik aynı.
 
 ## v2.293 — Kişiler paneli dosya çekmecesinde (TAMAMLANDI)
 
