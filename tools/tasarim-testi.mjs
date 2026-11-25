@@ -2206,5 +2206,37 @@ console.log('\n[2ct] Teslim tarihi paneli (v2.312)');
   // Hesap tek kaynak: rapor ekranı ve durum çubuğu deliveryInfo kullanır.
   check('teslim hesabı tek kaynak (deliveryInfo)', (appJs.match(/deliveryInfo\(/g) || []).length >= 3);
 }
+console.log('\n[2cu] Hızlı etiket sözlüğü (v2.313)');
+{
+  const html = read('index.html');
+  const appJs = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const std = read('docs/STANDARTLAR.md');
+  // Sözlük: kapsam ve tek biçim.
+  const tagCount = (appJs.match(/\{ text: '\[/g) || []).length;
+  check('en az 30 hızlı etiket', tagCount >= 30, String(tagCount));
+  check('label = text (tek biçim)', /label: t\.text/.test(appJs));
+  check('duyulmuyor etiketi var', /\{ text: '\[duyulmuyor\]'/.test(appJs));
+  check('şüpheli/tahmin/kesik var', /\{ text: '\[şüpheli\]'/.test(appJs) && /\{ text: '\[tahmin\]'/.test(appJs) && /\{ text: '\[kesik\]'/.test(appJs));
+  check('yankı/kesinti inline eklendi', /\{ text: '\[yankı\]'/.test(appJs) && /\{ text: '\[kesinti\]'/.test(appJs));
+  check('fısıltı/bağırma var', /\{ text: '\[fısıltı\]'/.test(appJs) && /\{ text: '\[bağırma\]'/.test(appJs));
+  check('[belirsiz] etiketi YOK (durumdur)', !/\{ text: '\[belirsiz\]'/.test(appJs));
+  // Gruplu + aranabilir menü.
+  check('menü gruplu üretilir (quickMenuHtml)', /function quickMenuHtml\(/.test(appJs) && /\$\{quickMenuHtml\(i\)\}/.test(appJs));
+  check('menüde arama kutusu', /class="qt-search"/.test(appJs));
+  check('arama filtresi var', /function filterQuickMenu\(/.test(appJs));
+  check('son kullanılan hatırlanır', /function rememberQuickTag\(/.test(appJs) && /rememberQuickTag\(text\)/.test(appJs));
+  check('menü kaydırılır (kırpma yok)', /#view-audio \.sd-quick-menu \{[^}]*overflow-y:\s*auto/.test(layer));
+  check('menü yüksekliği sınırlı', /#view-audio \.sd-quick-menu \{[^}]*max-height:\s*min\(/.test(layer));
+  check('gizli etiket display:none', /\.sd-quick-menu \.quick-tag\[hidden\]\s*\{\s*display:\s*none/.test(layer));
+  check('grup başlığı stili var', /\.qt-group-head\s*\{/.test(layer));
+  check('hızlı etiket CSS ham hex taşımaz', !/\.qt-(search|group|recent|empty)[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(layer));
+  check('hızlı etiket CSS ham font-size taşımaz', !/\.qt-(search|group|recent|empty)[^{]*\{[^}]*font-size:\s*[0-9.]+px/i.test(layer));
+  // Standart + yardım.
+  check('standart duyulmuyor/anlaşılmaz ayrımını anar', /duyulmuyor/.test(std) && /anlaşılmaz/.test(std));
+  check('standart hukuki yorum etiketi yasağını anar', /Hukuki yorum etiketi yoktur/.test(std));
+  check('yardımda hızlı etiket bölümü var', /Hızlı etiketler \(metne ekleme\)/.test(html));
+  check('yardımda duyulmuyor ayrımı var', /\[duyulmuyor\]/.test(html));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

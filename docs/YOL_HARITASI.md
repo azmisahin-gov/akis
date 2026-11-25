@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.312.**
+yazılır. **Güncel sürüm: v2.313.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.313 — Hızlı etiket sözlüğü (TAMAMLANDI)
+
+- Hızlı ekle menüsü **gruplu + aranabilir**; **30 etiket** (7’den).
+- `[duyulmuyor]` (ses yok/kısık) ile `[anlaşılmaz]` (ses var, kelime
+  seçilemiyor) ayrıldı; `[belirsiz]` etiketi yok (kontrol durumudur).
+- `label` = metne giren değer; “son kullanılan 5” (kayda yazılmaz); menü kaydırılır.
+- Şema değişmedi. Test `birim [154]`, `tasarim [2cu]`.
 
 ## v2.312 — Teslim tarihi zekâsı ve teslim hazırlığı (TAMAMLANDI)
 

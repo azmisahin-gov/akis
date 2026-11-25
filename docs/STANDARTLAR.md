@@ -66,22 +66,57 @@ Gözlem düğmeleri: **gürültü · üst üste · anlaşılmayan · müzik · t
 sessizlik · yankı · kesinti** (v2.272'de **yankı/oda akustiği** ve
 **kesinti/kopukluk** eklendi).
 
-Hızlı etiketler: `[sessizlik]`, `[anlaşılmaz]`, `[uzaktan konuşma]`,
-`[gürültülü]`, `[üst üste]`, `[müzik/ses]`, `[telefonda konuşma]`. Hızlı etiket
-**imlecin olduğu yere** eklenir (v2.239); bir kelimeyi seçtiyseniz seçimin yerine
-yazılır.
+Hızlı etiketler **metne** girer; gözlem işaretleri **raporun GÖZLEM sütununa**.
+İkisi farklı işe yarar, biri diğerinin yerine geçmez.
 
-Örnekler:
+### 6.1 Üç ayrı şey: duyulmuyor · anlaşılmaz · Anlaşılmadı
+
+| Durum | Anlamı | Doğru yer |
+|---|---|---|
+| **`[duyulmuyor]`** | Ses yok/çok kısık; kayıtta **işitilmiyor** | Metin içi etiket (teknik gözlem) |
+| **`[anlaşılmaz]`** | Ses **duyuluyor** ama kelimeler seçilemiyor | Metin içi etiket + gözlem “anlaşılmayan” |
+| **Anlaşılmadı** | Bölümün **kontrol durumu**: dinlendi, metin doğrulanamadı | Kontrol durumu (klavye `2`) |
+| **`[sessizlik]`** | Gerçekten konuşma yok (ortam sessiz) | Metin içi etiket + gözlem “sessizlik” |
+
+**`[belirsiz]` diye hızlı etiket YOKTUR.** “Belirsiz” bir **kontrol durumudur**
+(Belirsiz okuma, klavye `4`); tek kelime şüphesinde `[şüpheli]` / `[tahmin]`
+kullanılır.
+
+### 6.2 Hızlı etiket sözlüğü (v2.313)
+
+**Anlaşılırlık:** `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`,
+`[kesik]`, `[bozuk ses]`
+
+**Ortam / teknik:** `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`,
+`[sessizlik]`, `[müzik/ses]`, `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`
+
+**Konuşma biçimi:** `[telefon]`, `[uzaktan konuşma]`, `[fısıltı]`, `[bağırma]`,
+`[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`, `[karşı taraf]`,
+`[dil değişimi]`
+
+**İçerik notu (yorum değil, belirsizlik):** `[isim belirsiz]`, `[yer belirsiz]`,
+`[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]`
+
+**Kural:** Etiket **imlecin olduğu yere** eklenir (v2.239); bir kelimeyi
+seçtiyseniz seçimin yerine yazılır. `label` ve metne giren değer **aynıdır**
+(v2.313’te eşitlendi). Menü **gruplu ve aranabilir**; “son kullanılan” 5 etiket
+üstte görünür (kayda yazılmaz).
+
+**Hukuki yorum etiketi yoktur:** `[tehdit]`, `[ikrar]`, `[hakaret]`, `[suç]`,
+`[montaj]` gibi etiketler **önerilmez**; bunlar hukuki/teknik değerlendirmedir.
+Bilirkişi ifadeyi **birebir alıntılar** ve yorumunu rapor metninde yazar.
+
+### 6.3 Örnekler
+
 - **Uzaktan gelen kadın sesi:** `[uzaktan konuşma]` + gerekirse gözlem
-  **"yankı"**/"gürültü"/"anlaşılmayan" + konuşmacı notu *"uzak/mesafeli"*.
-- **Kayıtta kopma:** gözlem **"kesinti"**; içeriğin eksik olabileceği
+  **“yankı”**/“gürültü”/“anlaşılmayan” + konuşmacı notu *“uzak/mesafeli”*.
+- **Kayıtta kopma:** gözlem **“kesinti”**; içeriğin eksik olabileceği
   zaman aralığıyla birlikte yazılır.
-- **Telefon görüşmesi:** `[telefonda konuşma]`; karşı tarafın sesi duyuluyorsa
-  metne yazılır, duyulmuyorsa not düşülür.
-- **Sessizlik:** `[sessizlik]` etiketi + "Sessizlik ölç" sonucu.
-
-Gözlem işaretleri rapordaki **gözlem** sütununa; hızlı etiketler **metne**
-girer. İkisi farklı işe yarar, biri diğerinin yerine geçmez.
+- **Telefon görüşmesi:** `[telefon]`; karşı tarafın sesi duyuluyorsa
+  `[karşı taraf]` ile işaretlenir, duyulmuyorsa not düşülür.
+- **Sessizlik:** `[sessizlik]` etiketi + “Sessizlik ölç” sonucu.
+- **Duyulmuyor:** `[duyulmuyor]`; bölümün tamamı işitilmiyorsa ayrıca kontrol
+  durumu **Anlaşılmadı** seçilir.
 
 ## 7. Rapor yöntemi (dürüst ve doğrulanabilir)
 

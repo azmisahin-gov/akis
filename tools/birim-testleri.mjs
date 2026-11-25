@@ -116,6 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'segmentWorkSummary',
+  'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
   'caseWorkload', 'formatWorkloadDuration',
   'parseDateOnly', 'dateOnlyStr', 'dateValueToDay', 'addDaysToDate', 'calendarDaysBetween',
@@ -6672,6 +6673,62 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('durum çubuğu deliveryInfo kullanır', /#sbDue[\s\S]{0,200}deliveryInfo\(c\)/.test(js), true);
   eq('rapor ekranı teslim satırı taşır', /report-due/.test(js) && /\.report-due\s*\{/.test(css), true);
   eq('teslim CSS ham hex taşımaz', !/\.dl-chip[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(css), true);
+}
+
+// [154] v2.313 — Hızlı etiket sözlüğü: kapsam, tek biçim, arama, son kullanılan.
+{
+  console.log('[154] Hızlı etiket sözlüğü (v2.313)');
+  const tags = T.QUICK_TAGS || [];
+  const texts = tags.map((t) => t.text);
+  eq('en az 30 etiket', tags.length >= 30, true);
+  eq('etiketler benzersiz', new Set(texts).size, texts.length);
+  eq('hepsi köşeli parantezli', texts.every((t) => /^\[.+\]$/.test(t)), true);
+  eq('label = text (tek biçim)', tags.every((t) => t.label === t.text), true);
+  const groups = new Set((T.QUICK_TAG_GROUPS || []).map((g) => g.key));
+  eq('her etiketin grubu tanımlı', tags.every((t) => groups.has(t.group)), true);
+  const obsKeys = new Set(__schemaMod.OBS_KEYS);
+  eq('obsKey geçerli (OBS_KEYS)', tags.filter((t) => t.obsKey).every((t) => obsKeys.has(t.obsKey)), true);
+  const core = [
+    '[duyulmuyor]', '[anlaşılmaz]', '[şüpheli]', '[tahmin]', '[kesik]', '[bozuk ses]',
+    '[gürültü]', '[üst üste]', '[yankı]', '[kesinti]', '[sessizlik]', '[müzik/ses]',
+    '[telefon]', '[uzaktan konuşma]', '[fısıltı]', '[bağırma]'
+  ];
+  for (const need of core) eq('çekirdek etiket: ' + need, texts.includes(need), true);
+  const extra = [
+    '[gülüşme]', '[öksürük]', '[alkış]', '[ağlama]', '[mikrofon teması]', '[rüzgar]',
+    '[trafik/araç]', '[dil değişimi]', '[karşı taraf]', '[isim belirsiz]', '[yer belirsiz]',
+    '[rakam belirsiz]', '[tarih belirsiz]', '[küfür]'
+  ];
+  for (const need of extra) eq('geniş etiket: ' + need, texts.includes(need), true);
+  // Standart §12.2: "belirsiz" bir etiket DEĞİL, kontrol durumudur.
+  eq('[belirsiz] etiketi YOK', texts.includes('[belirsiz]'), false);
+  // Son kullanılan: tekil, sıralı, en çok 5, bilinmeyen süzülür.
+  T.store.removeItem('akis.quickTagRecent');
+  T.rememberQuickTag('[duyulmuyor]');
+  T.rememberQuickTag('[gürültü]');
+  T.rememberQuickTag('[duyulmuyor]');
+  eq('son kullanılan tekil ve sıralı', T.quickTagRecent().join(','), '[duyulmuyor],[gürültü]');
+  for (const t of ['[fısıltı]', '[bağırma]', '[gülüşme]', '[öksürük]', '[alkış]', '[küfür]']) T.rememberQuickTag(t);
+  eq('son kullanılan en çok 5', T.quickTagRecent().length, 5);
+  T.store.setItem('akis.quickTagRecent', JSON.stringify(['[eski-etiket]', '[duyulmuyor]']));
+  eq('bilinmeyen etiket süzülür', T.quickTagRecent().join(','), '[duyulmuyor]');
+  // Menü HTML'i: arama + gruplar + etiket + kapalı başlar.
+  const menu = T.quickMenuHtml(2);
+  eq('menüde arama var', /class="qt-search"/.test(menu), true);
+  eq('menüde gruplar var', /data-qt-group="clarity"/.test(menu) && /data-qt-group="content"/.test(menu), true);
+  eq('menüde data-quick-tag var', /data-quick-tag="2\|\[duyulmuyor\]"/.test(menu), true);
+  eq('menü kapalı başlar', /hidden>/.test(menu), true);
+  // Kaynak kancaları: segDetail menüsü, tıklama, arama, CSS kaydırma.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
+  eq('segDetail menüsü quickMenuHtml kullanır', /\$\{quickMenuHtml\(i\)\}/.test(js), true);
+  eq('etiket tıklaması son kullanılana yazar', /rememberQuickTag\(text\)/.test(js), true);
+  eq('arama filtresi bağlı', /filterQuickMenu\(search\.closest/.test(js), true);
+  eq('menü kaydırılır (kırpma yok)', /#view-audio \.sd-quick-menu \{[^}]*overflow-y:\s*auto/.test(css), true);
+  eq('gizli etiket display:none', /\.sd-quick-menu \.quick-tag\[hidden\]\s*\{\s*display:\s*none/.test(css), true);
+  // Standart belgesi yeni ayrımı anar.
+  const std = fs.readFileSync(path.join(ROOT, 'docs/STANDARTLAR.md'), 'utf8');
+  eq('standart duyulmuyor/anlaşılmaz ayrımını anar', /duyulmuyor/.test(std) && /anlaşılmaz/.test(std), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

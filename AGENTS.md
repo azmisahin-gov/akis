@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.312.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.313.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7952,3 +7952,52 @@ Sonra **`docs/UCTAN_UCA_DENETIM.md`** okunur; **v2.312 — Tarih zekâsı** ile 
    satırını isteğe bağlı ek/bölüm olarak üç çıktıya ekle (metin aynı olmalı).
 3. **Görev yazısından soru önerisi:** deterministik değil; LLM olmadan yalnız
    “öneri” ve insan onayıyla sunulmalı. Yapılmadı.
+
+## EK DÜZELTME (v2.313) — Hızlı etiket sözlüğü (metin içi)
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.313** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2291 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.314 yeni gözlem işaretleri (`notAudible`, `distance`, `distortion`, `foreignLanguage`); sonra A‑1 Dosya görünümü |
+
+### Ne yapıldı
+
+- **Hızlı ekle menüsü gruplu + aranabilir:** Anlaşılırlık · Ortam/teknik ·
+  Konuşma biçimi · İçerik notu. **30 etiket** (7’den). Üstte “son kullanılan 5”.
+- **`[duyulmuyor]`** (ses yok/kısık) ile **`[anlaşılmaz]`** (ses var, kelimeler
+  seçilemiyor) ayrıldı; **Anlaşılmadı** bölümün kontrol durumudur.
+- **`[belirsiz]` etiketi YOKTUR:** belirsizlik **Belirsiz okuma** kontrol
+  durumudur (klavye `4`); tek kelime şüphesinde `[şüpheli]` / `[tahmin]`.
+- **Hukuki yorum etiketi yoktur** (`[tehdit]`, `[ikrar]`, `[hakaret]`,
+  `[montaj]`); ifade birebir alıntılanır, yorum rapor metnindedir.
+- `label` = `text` (görünen ad = metne giren değer); `obsKey` olan etiketler
+  `OBS_KEYS` ile doğrulanır, ipucu `OBS_HINT`ten gelir (TEK KAYNAK).
+- Menü `max-height: min(60vh, 440px); overflow-y: auto` → **kırpma yok**.
+- Test: `birim [154]`, `tasarim [2cu]`, `surum` yardım konuları.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Etiket metni `s.text` içinde yaşar; şemaya yazılmaz.** Inline etiket ile
+   gözlem işareti otomatik dönüşmez (istenirse ileride tek tık).
+2. **`label` = `text`.** Görünen ad ile metne giren değer ayrışırsa rapor
+   sözlükle uyuşmaz (v2.312’ye kadar `[uzaktan konuşma]` metne
+   `[uzaktan/zayıf konuşma]` yazıyordu).
+3. **Ortak kavram TEK KAYNAK:** önce `OBS_DEFS`, sonra `QUICK_TAG_DEFS` içinde
+   `obsKey` ile bağla; ipucunu kopyalama.
+4. **Kontrol durumu ≠ etiket:** “Belirsiz”, “Anlaşılmadı”, “Yeniden dinle”
+   durumdur; bunlar için inline etiket eklemeyin.
+5. **Arama yalnız görünürlük süzer;** etiket metnini/veriyi değiştirmez.
+6. Yeni etiket eklerken: `QUICK_TAG_DEFS` satırı + grup + (varsa) `obsKey` +
+   `birim [154]`/`tasarim [2cu]` güncelle.
+
+### Sıradaki iş
+
+1. **v2.314 — Yeni gözlem işaretleri:** `notAudible`, `distance`, `distortion`,
+   `foreignLanguage` (+ isteğe bağlı `whisper`, `shouting`); `OBS_DEFS` göçü,
+   filtreler, rapor GÖZLEM sütunu, EK-5, birleştirme OR. `OBS_KEYS.length`
+   testi güncellenir.
+2. **A‑1 — Ayrı “Dosya” görünümü** (çekmece editör kalır).
+3. **A‑2 — Yazdırılan teslim kontrol listesi** (üç çıktı aynı metin).

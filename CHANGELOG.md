@@ -6,12 +6,64 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.312.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.313.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.313 — Hızlı etiket sözlüğü (metin içi)
+
+**Amaç:** “Hızlı ekle” yalnız 7 etiketten oluşuyordu ve standart §6’daki
+kavramlarla birebir örtüşmüyordu (`[gürültülü]` ↔ “arka plan gürültüsü”,
+`[telefonda konuşma]` ↔ “telefon görüşmesi”, `[yankı]`/`[kesinti]` yalnız
+gözlemde vardı). Kullanıcının istediği **`[duyulmuyor]`** hiç yoktu.
+
+### KULLANICI NE GÖRECEK
+
+- **Hızlı ekle menüsü gruplu ve aranabilir:** Anlaşılırlık · Ortam/teknik ·
+  Konuşma biçimi · İçerik notu. Üstte **son kullanılan 5** etiket.
+- **30 etiket** (7’den): `[duyulmuyor]`, `[şüpheli]`, `[tahmin]`, `[kesik]`,
+  `[bozuk ses]`, `[yankı]`, `[kesinti]`, `[fısıltı]`, `[bağırma]`, `[gülüşme]`,
+  `[öksürük]`, `[ağlama]`, `[alkış]`, `[mikrofon teması]`, `[rüzgar]`,
+  `[trafik/araç]`, `[dil değişimi]`, `[karşı taraf]`, `[isim/yer/rakam/tarih
+  belirsiz]`, `[küfür]` + mevcutlar.
+- **`[duyulmuyor]` ≠ `[anlaşılmaz]` ≠ Anlaşılmadı:** ses yok/kısık · ses var
+  ama kelime seçilemiyor · bölümün kontrol durumu. Üçü ayrı yerde kullanılır.
+- **`[belirsiz]` etiketi YOKTUR:** belirsizlik **Belirsiz okuma** kontrol
+  durumudur (klavye `4`). Tek kelime şüphesinde `[şüpheli]` / `[tahmin]`.
+- **Hukuki yorum etiketi yoktur:** `[tehdit]`, `[ikrar]`, `[hakaret]`,
+  `[montaj]` önerilmez; ifade birebir alıntılanır, yorum rapor metnindedir.
+- Menü **kaydırılır** (kırpılmaz); arama yalnız görünürlüğü süzer.
+
+### Teknik
+
+- `app.js` → `QUICK_TAG_GROUPS` + `QUICK_TAG_DEFS` + `QUICK_TAGS`;
+  `quickMenuHtml`, `quickTagButton`, `filterQuickMenu`, `quickTagRecent`,
+  `rememberQuickTag`.
+- **`label` = `text`** (görünen ad ile metne giren değer aynı; v2.312’ye kadar
+  `[uzaktan konuşma]` metne `[uzaktan/zayıf konuşma]` yazıyordu).
+- `obsKey` taşıyan etiketler `OBS_KEYS` ile doğrulanır; ipucu `OBS_HINT`ten
+  gelir (TEK KAYNAK). **Şema değişmedi** (inline etiket `s.text` içinde yaşar).
+- Son kullanılan: `akis.quickTagRecent` (localStorage, **kayda yazılmaz**);
+  bilinmeyen/eski etiket süzülür.
+- Menü CSS: `max-height: min(60vh, 440px); overflow-y: auto` (sessiz kırpma yok).
+- Test: `birim [154]`, `tasarim [2cu]`, `surum` yardım konuları.
+
+### Ölçüm (gerçek Chromium)
+
+- Menüde **30 etiket**, 4 grup; arama “fıs” → yalnız `[fısıltı]`.
+- `[duyulmuyor]` imleç konumuna eklendi; “son kullanılan”da göründü.
+- 1440/1100/900/600/360 px: menü kaydırılıyor, **kırpılma 0**, yatay taşma 0,
+  JS hatası 0.
+
+### Dürüst sınır
+
+- Etiketler **uzman beyanıdır**; otomatik sınıflandırma değildir. Gözlem
+  işaretleriyle **otomatik dönüşüm yoktur** (istenirse ileride tek tık).
+- `[duyulmuyor]` teknik bir gözlemdir; bölümün kontrol durumunu **değiştirmez**
+  (gerekirse ayrıca “Anlaşılmadı” seçilir).
 
 ## v2.312 — Teslim tarihi zekâsı ve teslim hazırlığı
 

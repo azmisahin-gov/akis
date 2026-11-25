@@ -37,6 +37,7 @@ import {
   OBS_DEFS,
   OBS_KEYS,
   OBS_LABEL,
+  OBS_HINT,
   normalizeSpeakerRole,
   normalizeSpeakerGender,
   emptyCaseSpeaker,
@@ -120,15 +121,15 @@ import {
   bestSpeakerMatch,
   evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.312';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.312';
+} from './schema.js?v=2.313';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.313';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.312';
+const APP_VERSION = '2.313';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -429,18 +430,133 @@ Object.assign(REPORT_TEXT, {
   integrityNote:
     'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
 });
-// Hızlı etiketler: uzmanın elle yazmadan boş/anlaşılmaz/uzaktan gelen bölümleri
-// işaretlemesini sağlar. Bunlar köşeli parantezle yazılır ve rapora aynen akar;
-// uydurma metin üretilmez, yalnızca gözlem ifadesi eklenir.
-const QUICK_TAGS = [
-  { label: '[sessizlik]', text: '[sessizlik]', hint: 'Bu aralıkta konuşma yok; sessizlik.' },
-  { label: '[anlaşılmaz]', text: '[anlaşılmaz]', hint: 'Konuşma var ancak kelimeler anlaşılamadı.' },
-  { label: '[uzaktan konuşma]', text: '[uzaktan/zayıf konuşma]', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
-  { label: '[gürültülü]', text: '[gürültülü bölüm]', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
-  { label: '[üst üste]', text: '[üst üste konuşma]', hint: 'İki veya daha fazla konuşma çakışıyor.' },
-  { label: '[müzik/ses]', text: '[müzik/ses efekti]', hint: 'Müzik veya ses efekti; konuşma değil.' },
-  { label: '[telefonda konuşma]', text: '[telefonda konuşma]', hint: 'Konuşmacı telefonla görüşüyor; karşı tarafın sesi duyuluyor veya duyulmuyor olabilir.' }
+// HIZLI ETİKET SÖZLÜĞÜ (v2.313). Uzmanın elle yazmadan bölümü işaretlemesini
+// sağlar. Etiketler köşeli parantezle metne girer ve rapora AYNEN akar; uydurma
+// metin üretilmez. `label` DAİMA `text` ile aynıdır (v2.312'ye kadar farklıydı:
+// görünen "[uzaktan konuşma]" metne "[uzaktan/zayıf konuşma]" yazıyordu).
+// `obsKey` varsa o etiket aynı zamanda yapısal gözlem işaretidir; ipucu
+// schema.js `OBS_HINT`ten gelir (TEK KAYNAK). Yeni bir ortak kavram eklerken
+// önce OBS_DEFS'e yazın, sonra burada `obsKey` ile bağlayın.
+const QUICK_TAG_GROUPS = [
+  { key: 'clarity', label: 'Anlaşılırlık' },
+  { key: 'environment', label: 'Ortam / teknik' },
+  { key: 'speech', label: 'Konuşma biçimi' },
+  { key: 'content', label: 'İçerik notu' }
 ];
+const QUICK_TAG_DEFS = [
+  // --- Anlaşılırlık (duyulmuyor ≠ anlaşılmaz ≠ Anlaşılmadı durumu) ---
+  { text: '[duyulmuyor]', group: 'clarity', hint: 'Ses yok veya çok kısık; işitilmiyor. "Anlaşılmaz"dan farklıdır.' },
+  { text: '[anlaşılmaz]', group: 'clarity', obsKey: 'inaudible', hint: 'Ses duyuluyor ama kelimeler seçilemiyor.' },
+  { text: '[şüpheli]', group: 'clarity', hint: 'Okuma şüpheli; dinleyip doğrulayın. (Belirsiz okuma ayrı bir DURUMDUR.)' },
+  { text: '[tahmin]', group: 'clarity', hint: 'En iyi tahmin; kesin değil.' },
+  { text: '[kesik]', group: 'clarity', hint: 'Kelime veya cümle yarım kaldı.' },
+  { text: '[bozuk ses]', group: 'clarity', hint: 'Bozulma/artefakt; ses çözülemiyor.' },
+  // --- Ortam / teknik ---
+  { text: '[gürültü]', group: 'environment', obsKey: 'noise', hint: 'Arka plan gürültüsü konuşmayı bastırıyor.' },
+  { text: '[üst üste]', group: 'environment', obsKey: 'overlap', hint: 'İki veya daha fazla konuşma çakışıyor.' },
+  { text: '[yankı]', group: 'environment', obsKey: 'echo', hint: 'Belirgin yankı veya oda akustiği.' },
+  { text: '[kesinti]', group: 'environment', obsKey: 'dropout', hint: 'Kayıtta kopma/kesinti; içeriğin bir bölümü eksik olabilir.' },
+  { text: '[sessizlik]', group: 'environment', obsKey: 'noSpeech', hint: 'Bu aralıkta konuşma yok; sessizlik.' },
+  { text: '[müzik/ses]', group: 'environment', obsKey: 'music', hint: 'Müzik veya ses efekti; konuşma değil.' },
+  { text: '[mikrofon teması]', group: 'environment', hint: 'Mikrofon teması/hışırtı; konuşmayı bozabilir.' },
+  { text: '[rüzgar]', group: 'environment', hint: 'Rüzgar sesi.' },
+  { text: '[trafik/araç]', group: 'environment', hint: 'Trafik/araç sesi.' },
+  // --- Konuşma biçimi / konuşmacı ---
+  { text: '[telefon]', group: 'speech', obsKey: 'phone', hint: 'Telefon görüşmesi; karşı taraf duyuluyor veya duyulmuyor olabilir.' },
+  { text: '[uzaktan konuşma]', group: 'speech', hint: 'Konuşma çok uzaktan veya zayıf; net değil.' },
+  { text: '[fısıltı]', group: 'speech', hint: 'Fısıltıyla konuşma.' },
+  { text: '[bağırma]', group: 'speech', hint: 'Yüksek ses/bağırma.' },
+  { text: '[gülüşme]', group: 'speech', hint: 'Gülüşme.' },
+  { text: '[öksürük]', group: 'speech', hint: 'Öksürük.' },
+  { text: '[ağlama]', group: 'speech', hint: 'Ağlama.' },
+  { text: '[alkış]', group: 'speech', hint: 'Alkış.' },
+  { text: '[karşı taraf]', group: 'speech', hint: 'Telefonun karşı tarafındaki ses.' },
+  { text: '[dil değişimi]', group: 'speech', hint: 'Farklı dil/lehçe; çözümleme güvenilir olmayabilir.' },
+  // --- İçerik notu (yorum değil; doğrulanması gereken belirsizlik) ---
+  { text: '[isim belirsiz]', group: 'content', hint: 'Özel isim belirsiz; doğrulanmalı.' },
+  { text: '[yer belirsiz]', group: 'content', hint: 'Yer adı belirsiz; doğrulanmalı.' },
+  { text: '[rakam belirsiz]', group: 'content', hint: 'Rakam/sayı belirsiz; doğrulanmalı.' },
+  { text: '[tarih belirsiz]', group: 'content', hint: 'Tarih belirsiz; doğrulanmalı.' },
+  { text: '[küfür]', group: 'content', hint: 'Küfür/argo geçti (birebir yazılır; yorum eklenmez).' }
+];
+// `label` = `text` (tek biçim). `obsKey` varsa ipucu OBS_HINT'ten gelir.
+const QUICK_TAGS = QUICK_TAG_DEFS.map((t) => ({
+  ...t,
+  label: t.text,
+  hint: t.hint || (t.obsKey && OBS_HINT[t.obsKey]) || ''
+}));
+function quickTagButton(i, t) {
+  const txt = String(t.text || '');
+  return `<button class="quick-tag" data-quick-tag="${i}|${esc(txt)}" data-qt-text="${esc(trLowerCase(txt))}" title="${esc(t.hint || '')}">${esc(t.label || txt)}</button>`;
+}
+// SON KULLANILAN (oturumlar arası, kayda yazılmaz). Bilinmeyen/eski etiket
+// süzülür; böylece sözlükten çıkarılan bir etiket menüde dirilmez.
+function quickTagRecent() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('akis.quickTagRecent') || '[]');
+    if (!Array.isArray(raw)) return [];
+    const known = new Set(QUICK_TAGS.map((t) => t.text));
+    return raw.filter((x) => known.has(x)).slice(0, 5);
+  } catch (e) {
+    return [];
+  }
+}
+function rememberQuickTag(text) {
+  try {
+    const list = quickTagRecent().filter((x) => x !== text);
+    list.unshift(text);
+    localStorage.setItem('akis.quickTagRecent', JSON.stringify(list.slice(0, 5)));
+  } catch (e) {}
+}
+function quickMenuHtml(i) {
+  const recent = quickTagRecent();
+  const recentHtml = recent.length
+    ? `<div class="qt-recent" data-qt-recent><div class="qt-recent-head">Son kullanılan</div><div class="qt-buttons">${recent
+        .map((txt) => {
+          const t = QUICK_TAGS.find((x) => x.text === txt);
+          return t ? quickTagButton(i, t) : '';
+        })
+        .join('')}</div></div>`
+    : '';
+  const groups = QUICK_TAG_GROUPS.map((g) => {
+    const tags = QUICK_TAGS.filter((t) => t.group === g.key);
+    if (!tags.length) return '';
+    return `<div class="qt-group" data-qt-group="${esc(g.key)}"><div class="qt-group-head">${esc(g.label)}</div><div class="qt-buttons">${tags
+      .map((t) => quickTagButton(i, t))
+      .join('')}</div></div>`;
+  }).join('');
+  return (
+    `<div class="sd-quick-menu" role="group" aria-label="Hızlı metin ekle" hidden>` +
+    `<div class="qt-search-wrap"><input type="search" class="qt-search" placeholder="Etiket ara…" aria-label="Hızlı etiket ara" autocomplete="off"></div>` +
+    recentHtml +
+    `<div class="qt-groups">${groups}</div>` +
+    `<div class="qt-empty" hidden>Eşleşen etiket yok.</div>` +
+    `<button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>` +
+    `</div>`
+  );
+}
+// Arama: yalnız GÖRÜNÜRLÜK süzer; etiket metni değişmez. Türkçe küçültme
+// (İ/I) tek kaynaktan (`trLowerCase`).
+function filterQuickMenu(menu, query) {
+  if (!menu) return;
+  const q = trLowerCase(String(query == null ? '' : query).trim());
+  const recent = menu.querySelector('[data-qt-recent]');
+  if (recent) recent.hidden = !!q;
+  let any = false;
+  menu.querySelectorAll('[data-qt-group]').forEach((g) => {
+    let gAny = false;
+    g.querySelectorAll('[data-quick-tag]').forEach((b) => {
+      const hay = String(b.dataset.qtText || '') + ' ' + trLowerCase(b.textContent || '');
+      const hit = !q || hay.includes(q);
+      b.hidden = !hit;
+      if (hit) gAny = true;
+    });
+    g.hidden = !gAny;
+    if (gAny) any = true;
+  });
+  const empty = menu.querySelector('.qt-empty');
+  if (empty) empty.hidden = any;
+}
 // Hızlı etiketi İMLECİN olduğu yere ekler (v2.239). Önceden her zaman metnin
 // SONUNA ekliyordu; cümle ortasına etiket koymak imkânsızdı (kullanıcı isteği).
 // Seçim varsa seçili metnin yerine yazılır. Komşu karakter boşluk değilse tek
@@ -6730,11 +6846,8 @@ function segDetailHtml(m) {
               <div class="sd-obs" role="group" aria-label="Gözlem işaretleri">${obsBtns}</div>
             </details>
             <div class="sd-quick">
-              <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Sık kullanılan gözlem etiketini metne ekle">+ Hızlı ekle</button>
-              <div class="sd-quick-menu" role="group" aria-label="Hızlı metin ekle" hidden>
-                ${QUICK_TAGS.map((t) => `<button class="quick-tag" data-quick-tag="${i}|${esc(t.text)}" title="${esc(t.hint)}">${esc(t.label)}</button>`).join('')}
-                <button class="quick-tag quick-tag-clear" data-quick-clear="${i}" title="Metni temizle">Temizle</button>
-              </div>
+              <button type="button" class="sd-mini" data-quick-menu="${i}" aria-expanded="false" title="Hızlı etiket ekle (gruplu, aranabilir)">+ Hızlı ekle</button>
+              ${quickMenuHtml(i)}
             </div>
           </div>
         </div>
@@ -17899,11 +18012,20 @@ function setupEvents() {
       const m = c.materials.find((x) => x.id === id);
       if (m) openAsrPopover(m);
     } else if (b.dataset.quickMenu !== undefined) {
-      // Hızlı ekle menüsü: düğmenin altında açılır.
+      // Hızlı ekle menüsü: düğmenin üstünde açılır (v2.313 gruplu + aranabilir).
       const menu = b.parentElement.querySelector('.sd-quick-menu');
       if (menu) {
         menu.hidden = !menu.hidden;
         b.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+        if (!menu.hidden) {
+          const s = menu.querySelector('.qt-search');
+          if (s) {
+            s.value = '';
+            filterQuickMenu(menu, '');
+            // Masaüstünde aramaya odaklan; mobilde klavye açıp ekranı kaplamasın.
+            if (window.innerWidth > 900) s.focus();
+          }
+        }
       }
     } else if (b.dataset.covGoto !== undefined) {
       const [id, at] = b.dataset.covGoto.split('|');
@@ -18382,6 +18504,7 @@ function setupEvents() {
       const en = ta && typeof ta.selectionEnd === 'number' ? ta.selectionEnd : null;
       const prev = s.text;
       const ins = insertTagAt(s.text || '', text, at, en);
+      rememberQuickTag(text);
       applyTextEdit(s, ins.text);
       pushSegmentHistory(s, prev);
       persist();
@@ -18417,6 +18540,27 @@ function setupEvents() {
       refreshSegChips(m);
       renderOverview();
       showToast('Bölüm metni temizlendi.');
+    }
+  });
+  // Hızlı etiket araması (v2.313): yalnız menü içindeki görünürlüğü süzer.
+  // Metne/veriye dokunmaz. Escape menüyü kapatır ve odağı düğmeye verir.
+  $('#view-audio').addEventListener('input', (e) => {
+    const search = e.target && e.target.closest ? e.target.closest('.qt-search') : null;
+    if (!search) return;
+    filterQuickMenu(search.closest('.sd-quick-menu'), search.value);
+  });
+  $('#view-audio').addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const menu = e.target && e.target.closest ? e.target.closest('.sd-quick-menu') : null;
+    if (!menu) return;
+    e.stopPropagation();
+    menu.hidden = true;
+    const btn = menu.parentElement && menu.parentElement.querySelector('[data-quick-menu]');
+    if (btn) {
+      btn.setAttribute('aria-expanded', 'false');
+      try {
+        btn.focus();
+      } catch (err) {}
     }
   });
   $('#view-audio').addEventListener('focusin', (e) => {
@@ -20371,6 +20515,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.313': {
+    title: 'Hızlı etiket sözlüğü genişledi',
+    body:
+      '“Hızlı ekle” menüsü gruplu ve aranabilir oldu; 30 etiket var. “[duyulmuyor]” (ses yok/kısık) ile “[anlaşılmaz]” (ses var, kelimeler seçilemiyor) ayrıldı; “Anlaşılmadı” bölümün kontrol durumudur. “[belirsiz]” etiketi yoktur: belirsizlik Belirsiz okuma durumudur. Son kullanılan 5 etiket hatırlanır.'
+  },
   '2.312': {
     title: 'Teslim tarihi ve kalan gün',
     body:

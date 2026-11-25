@@ -1,4 +1,4 @@
-# Özellikler (v2.312 — mevcut durum)
+# Özellikler (v2.313 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -467,11 +467,14 @@ tuşları bozulmaz.
 - **Dinle / Duraklat / Durdur:** "Dinle" düğmesi akıllıdır; aynı bölümde tekrar
   basınca duraklar, duraklatılmışken kaldığı yerden devam eder. "Durdur" çalmayı
   keser ve bölüm başına sarar. Bölüm bitişinde otomatik durur.
-- **Hızlı etiketler:** [sessizlik], [anlaşılmaz], [uzaktan konuşma], [gürültülü],
-  [üst üste], [müzik/ses], [telefonda konuşma] düğmeleri ve "Temizle". Boş veya
-  anlaşılmaz bölümler elle yazmadan işaretlenir; uygulama uydurma metin üretmez.
-  Etiket **imlecin olduğu yere** eklenir (seçim varsa yerine) — v2.239; imleç
-  bilgisi yoksa sona eklenir.
+- **Hızlı etiketler (v2.313):** **gruplu ve aranabilir** menü — Anlaşılırlık · Ortam/teknik · Konuşma biçimi · İçerik notu. 30 etiket:
+  `[duyulmuyor]`, `[anlaşılmaz]`, `[şüpheli]`, `[tahmin]`, `[kesik]`, `[bozuk ses]`,
+  `[gürültü]`, `[üst üste]`, `[yankı]`, `[kesinti]`, `[sessizlik]`, `[müzik/ses]`,
+  `[mikrofon teması]`, `[rüzgar]`, `[trafik/araç]`, `[telefon]`, `[uzaktan konuşma]`,
+  `[fısıltı]`, `[bağırma]`, `[gülüşme]`, `[öksürük]`, `[ağlama]`, `[alkış]`,
+  `[karşı taraf]`, `[dil değişimi]`, `[isim belirsiz]`, `[yer belirsiz]`,
+  `[rakam belirsiz]`, `[tarih belirsiz]`, `[küfür]` + “Temizle”.
+  **`[duyulmuyor]` (ses yok/kısık) ile `[anlaşılmaz]` (ses var, kelimeler seçilemiyor) ayrıdır;** `[belirsiz]` etiketi **yoktur** (Belirsiz okuma bir kontrol durumudur). Etiket görünen adı ile metne giren değer **aynı**; “son kullanılan 5” hatırlanır (kayda yazılmaz). Etiket **imlecin olduğu yere** eklenir (v2.239).
 - **Sessizlik ölçümü:** "Sessizlik ölç" düğmesi bölüm aralığını RMS tabanlı
   inceler; sessiz oran, sessiz süre ve toplam süre gösterilir. Eşik kaydın
   kendi gürültü zeminine göre uyarlanır. Metin boş/dolgu ve aralık büyük ölçüde
