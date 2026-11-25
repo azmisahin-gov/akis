@@ -145,7 +145,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
@@ -6381,6 +6381,44 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('menüde Konuşmacı ata (seçici)', /seg-menu-spk[\s\S]{0,160}data-key="speaker"/.test(js), true);
   eq('menü seçicisi tek kapıyı kullanır', /data-seg="\$\{index\}" data-key="speaker"/.test(js), true);
   eq('menü seçici CSS', /\.seg-menu-spk/.test(css), true);
+}
+
+// [148] v2.307 — Soru ↔ bölüm önerisi (deterministik kelime örtüşmesi).
+{
+  console.log('[148] Soru ↔ bölüm önerisi (v2.307)');
+  const c = T.emptyCaseForTest({
+    id: 'cSug',
+    materials: [
+      {
+        id: 'm1',
+        name: 'a.wav',
+        segments: [
+          { id: 'sg1', start: '00:00:00.000', end: '00:00:05.000', text: 'depozito ödemesi yapıldı' },
+          { id: 'sg2', start: '00:00:05.000', end: '00:00:10.000', text: 'kira artışı konuşuldu' },
+          { id: 'sg3', start: '00:00:10.000', end: '00:00:15.000', text: 'depozito iadesi tartışıldı' }
+        ]
+      }
+    ]
+  });
+  const s = T.questionSegmentSuggestions(c, { question: 'depozito ödemesi ne oldu', evidence: [] });
+  eq('öneri var', s.length >= 1, true);
+  eq('en iyi öneri sg1', s[0].segmentId, 'sg1');
+  eq('örtüşme sayısı görünür', s[0].overlap >= 2, true);
+  eq('ilgisiz sg2 yok', s.some((x) => x.segmentId === 'sg2'), false);
+  eq('zayıf sg3 yok (örtüşme < 2)', s.some((x) => x.segmentId === 'sg3'), false);
+  // Bağlı olan bölüm önerilmez.
+  const s2 = T.questionSegmentSuggestions(c, {
+    question: 'depozito ödemesi ne oldu',
+    evidence: [{ materialId: 'm1', segmentId: 'sg1', note: '' }]
+  });
+  eq('bağlı bölüm önerilmez', s2.some((x) => x.segmentId === 'sg1'), false);
+  // Boş soru → öneri yok.
+  eq('boş soru öneri yok', T.questionSegmentSuggestions(c, { question: '', evidence: [] }).length, 0);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('öneri düğmesi var', /data-q-suggest=/.test(js), true);
+  eq('öneriyi ekle düğmesi var', /data-q-sug-add=/.test(js), true);
+  eq('otomatik bağlama yok (öneri yalnız __suggest)', /q\.__suggest = questionSegmentSuggestions/.test(js), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

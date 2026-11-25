@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.306.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.307.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7686,3 +7686,30 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
 
 ### Sıradaki iş (öneri)
 - Deterministik **soru↔bölüm önerisi**; terim listesi (C2); kanıt tutarlılığı A1+A3.
+
+## YENİ OTURUM DEVRİ (v2.307) — Soru ↔ bölüm önerisi (deterministik)
+
+| | |
+|---|---|
+| Sürüm | **v2.307** |
+| Testler | `bash tools/test.sh` → **2165 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A1 zaman çelişkisi, B2 kurumsal kâğıt, terim listesi (C2) |
+
+- `app.js` → **`questionSegmentSuggestions(c, q, opts)`**: mevcut `contentWords`/
+  `trLowerCase` ile soru + bölüm sözcüklerini çıkarır; örtüşme ≥ eşik
+  (varsayılan 2; tek sözcüklü soruda 1) olan bölümleri sıralar. `q.__suggest`
+  **oturumluk**; `evidence` bağlarına dokunmaz (otomatik bağlama YOK).
+- UI: Sorular kartında **“İlgili bölümleri öner”** (`data-q-suggest`) + her
+  öneride **Ekle** (`data-q-sug-add` → `evidence` + persist). Bağlı bölüm önerilmez.
+- Örtüşme sayısı **görünür** (uydurma güven skoru değil). Test `birim [148]` (10).
+
+### DEĞİŞMEZ
+1. **Otomatik bağlama yok**; yalnız gözlenebilir kelime örtüşmesi. Karar uzmanın.
+2. Bağlı bölüm tekrar önerilmez; öneri `evidence`'e dokunmaz.
+3. Türkçe küçültme/stopword tek kaynak: `contentWords` (kopya tokenizer yazmayın).
+
+### Sıradaki iş (öneri sırası)
+1. **A1 — kanıt tutarlılığı:** dosya zamanı ↔ gömülü metadata çelişkisi (çip +
+   hazırlık maddesi; "beyan ≠ gözlem"). A3 (tam dosya metadata) sonra, ölçümle.
+2. **B2 — kurumsal kâğıt biçimi** (başlık bandı/sayfa no/imza; üç çıktı aynı).
+3. **C2 — terim/konu listesi** (opt-in; en sona).

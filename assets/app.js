@@ -119,15 +119,15 @@ import {
   autoSpeakerPlan,
   bestSpeakerMatch,
   embeddingCentroid
-} from './schema.js?v=2.306';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.306';
+} from './schema.js?v=2.307';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.307';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.306';
+const APP_VERSION = '2.307';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1952,6 +1952,51 @@ function questionEvidenceOptionsHtml(c) {
   }
   return `<option value="">Bölüm seç…</option>${opts.join('')}`;
 }
+// SORU ↔ BÖLÜM ÖNERİSİ (v2.307). Soru metniyle ANLAMLI SÖZCÜK örtüşen bölümleri
+// önerir. Otomatik bağlama YOK; yalnız gözlenebilir kelime örtüşmesi (uydurma
+// skor yok). Türkçe küçültme + stopword eleme mevcut `contentWords` ile yapılır.
+function questionSegmentSuggestions(c, q, opts = {}) {
+  const limit = opts.limit || 5;
+  const qWords = new Set(contentWords((q && q.question) || ''));
+  if (!qWords.size) return [];
+  const need = Math.min(qWords.size, opts.minOverlap || 2);
+  const linked = new Set(((q && q.evidence) || []).map((e) => `${e.materialId}::${e.segmentId}`));
+  const out = [];
+  for (const m of (c && c.materials) || []) {
+    for (const s of m.segments || []) {
+      if (linked.has(`${m.id}::${s.id}`)) continue;
+      const segSet = new Set(contentWords(s.text || ''));
+      if (!segSet.size) continue;
+      let overlap = 0;
+      for (const w of qWords) if (segSet.has(w)) overlap++;
+      if (overlap >= need) {
+        out.push({
+          materialId: m.id,
+          segmentId: s.id,
+          material: m.name || '',
+          start: s.start || '',
+          end: s.end || '',
+          text: s.text || '',
+          overlap
+        });
+      }
+    }
+  }
+  out.sort((a, b) => b.overlap - a.overlap || String(a.start).localeCompare(String(b.start)));
+  return out.slice(0, limit);
+}
+function qSuggestHtml(c, q, i) {
+  const sug = q && q.__suggest;
+  if (!Array.isArray(sug)) return '';
+  if (!sug.length) return '<span class="q-sug-none">Soruyla örtüşen bölüm bulunamadı (kelime örtüşmesi).</span>';
+  return sug
+    .map(
+      (x) =>
+        `<span class="q-sug-item"><span class="q-sug-txt">${esc(x.material || 'Kayıt')} · ${esc(x.start || '')} · ${esc(clipText(x.text || '', 50) || '—')} <span class="q-sug-ov" title="Soruyla örtüşen anlamlı sözcük sayısı (uydurma güven skoru değil).">(${x.overlap})</span></span>` +
+        `<button type="button" class="mini-button" data-q-sug-add="${i}" data-mid="${esc(x.materialId)}" data-sid="${esc(x.segmentId)}">Ekle</button></span>`
+    )
+    .join('');
+}
 function renderQuestions() {
   const c = currentCase();
   if (!c) return;
@@ -1981,7 +2026,8 @@ function renderQuestions() {
       `<label class="field"><span>Teknik cevap</span><textarea rows="3" data-q="${i}" data-k="answer" placeholder="Doğrulanmış teknik bulgulara dayalı cevap">${esc(q.answer || '')}</textarea></label>` +
       `<label class="field"><span>Dayanak notu (serbest)</span><input data-q="${i}" data-k="basisNote" value="${esc(q.basisNote || q.basis || '')}" placeholder="Kayıt adı, zaman aralığı, kısa açıklama"></label>` +
       `<div class="field"><span>Dayanak bölümleri (zaman damgalı)</span><div class="q-ev-list">${questionEvidenceChipsHtml(c, q, i)}</div>` +
-      `<div class="q-ev-add"><select data-q-ev-src="${i}" aria-label="Dayanak eklenecek bölüm">${optionsHtml}</select><button type="button" class="mini-button" data-q-ev-add="${i}">＋ Bölüm ekle</button></div></div>` +
+      `<div class="q-ev-add"><select data-q-ev-src="${i}" aria-label="Dayanak eklenecek bölüm">${optionsHtml}</select><button type="button" class="mini-button" data-q-ev-add="${i}">＋ Bölüm ekle</button></div>` +
+      `<div class="q-sug-tools"><button type="button" class="mini-button" data-q-suggest="${i}" title="Soru metniyle anlamlı sözcük örtüşen bölümleri önerir (otomatik bağlama yapmaz).">İlgili bölümleri öner</button><span class="q-sug" id="q-sug-${i}">${qSuggestHtml(c, q, i)}</span></div></div>` +
       `<button class="mini-button remove-question" data-remove-q="${i}">Soruyu kaldır</button>`;
     root.appendChild(div);
   });
@@ -16989,6 +17035,37 @@ function setupEvents() {
     });
   });
   $('#questionsList').addEventListener('click', (e) => {
+    // v2.307 — Soru ↔ bölüm ÖNERİSİ (deterministik kelime örtüşmesi; otomatik bağlama yok).
+    const sugBtn = e.target.closest('[data-q-suggest]');
+    if (sugBtn) {
+      const qi = Number(sugBtn.dataset.qSuggest);
+      const c = currentCase();
+      const q = c && c.questions[qi];
+      if (q) {
+        q.__suggest = questionSegmentSuggestions(c, q);
+        renderQuestions();
+      }
+      return;
+    }
+    const sugAdd = e.target.closest('[data-q-sug-add]');
+    if (sugAdd) {
+      const qi = Number(sugAdd.dataset.qSugAdd);
+      const mid = sugAdd.dataset.mid;
+      const sid = sugAdd.dataset.sid;
+      const c = currentCase();
+      const q = c && c.questions[qi];
+      if (q && mid && sid) {
+        q.evidence = Array.isArray(q.evidence) ? q.evidence : [];
+        if (!q.evidence.some((x) => x && x.materialId === mid && x.segmentId === sid)) {
+          q.evidence.push({ materialId: mid, segmentId: sid, note: '' });
+        }
+        q.__suggest = null;
+        persist();
+        renderQuestions();
+        showToast('Öneri dayanak olarak eklendi.', false);
+      }
+      return;
+    }
     // v2.300 — Soru dayanağı: bölüm bağla / kaldır (yapılandırılmış evidence).
     const addBtn = e.target.closest('[data-q-ev-add]');
     if (addBtn) {
@@ -19849,6 +19926,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.307': {
+    title: 'Soru ↔ bölüm önerisi',
+    body:
+      'Sorular kartında “İlgili bölümleri öner”: soru metniyle anlamlı sözcük örtüşen bölümleri (zaman + alıntı + örtüşme sayısı) listeler; “Ekle” ile zaman damgalı dayanak bağlanır. Otomatik bağlama yok; yalnız gözlenebilir kelime örtüşmesi.'
+  },
   '2.306': {
     title: 'Satır menüsünde konuşmacı işlemleri',
     body:

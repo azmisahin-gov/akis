@@ -3969,3 +3969,11 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.306 — satır menüsünde konuşmacı atama (⋮ → Konuşmacı) */
 .seg-menu-spk { display: flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: var(--fs-2xs); color: var(--ink-2); }
 .seg-menu-spk select { flex: 1; min-width: 0; }
+
+/* v2.307 — soru ↔ bölüm önerisi (deterministik kelime örtüşmesi) */
+.q-sug-tools { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.q-sug { display: flex; flex-direction: column; gap: 4px; }
+.q-sug-item { display: inline-flex; align-items: center; gap: 6px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: var(--fs-2xs); overflow-wrap: anywhere; }
+.q-sug-txt { flex: 1; min-width: 0; }
+.q-sug-ov { color: var(--ink-3); }
+.q-sug-none { color: var(--ink-3); font-size: var(--fs-2xs); }

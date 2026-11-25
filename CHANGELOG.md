@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.306.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.307.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.307 — Soru ↔ bölüm önerisi (deterministik)
+
+**Kullanıcı:** "Mahkemenin sorusunu zaman damgalı kanıtla cevaplamak asıl iş;
+hangi bölümün ilgili olduğunu hızlı bulalım."
+
+### KULLANICI NE GÖRECEK
+
+- **İnceleme → Sorular** kartında **“İlgili bölümleri öner”** düğmesi: soru
+  metniyle **anlamlı sözcük örtüşen** bölümleri listeler —
+  `kayıt · 00:00:05.000 · “…” (örtüşme: 2)`.
+- Her önerinin yanında **Ekle** vardır; tıklayınca o bölüm soruya **zaman
+  damgalı dayanak** olarak bağlanır (v2.300 altyapısı).
+- **Otomatik bağlama yok**; uydurma güven skoru yok — yalnız **gözlenebilir
+  kelime örtüşmesi**. Karar sizindir. Bağlı bölüm tekrar önerilmez.
+
+### Teknik
+
+- `app.js` → **`questionSegmentSuggestions(c, q, opts)`**: mevcut
+  `contentWords`/`trLowerCase` ile soru ve bölüm sözcüklerini çıkarır; örtüşme
+  ≥ eşik (varsayılan 2; tek sözcüklü soruda 1) olan bölümleri örtüşme sayısına
+  göre sıralar. `q.__suggest` **oturumluk**; `evidence` bağlarına dokunmaz.
+- UI: `data-q-suggest` (öner) + `data-q-sug-add` (ekle → `evidence` + persist).
+- Koruyan: `birim` [148] (10 kontrol).
 
 ## v2.306 — Satır ⋮ menüsünde konuşmacı işlemleri (ASR ile aynı yerde)
 
