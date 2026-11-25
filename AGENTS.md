@@ -2208,6 +2208,69 @@ hiç çizmedim**. Ayrıca minified CSS'te kural çok satıra yayıldığı için
 incelemesinde **durum matrisi** çıkarılmalı: bileşen × durum × tema.
 
 
+## YENİ OTURUM DEVRİ (v2.322) — Dar ekran kırpması + etiket menüsü
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.322** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2378 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = v2.322 commit'i (push edildi) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.322** |
+| Açık konu | A‑2 yazdırılan teslim kontrol listesi; A‑3 gecikme açılış uyarısı |
+
+### v2.321 — Dar ekranda metin kırpılması/taşması
+
+Ölçülen iki hata: 600 px'te kayıt başlığındaki **dosya adı** 96 px kutuya sığmıyordu
+(içerik 170 px, %44 gizli, `nowrap+ellipsis`); 360 px'te **"ÇÖZÜMLENEN"** etiketi
+36 px taşıp kart dışına çıkıyordu. Düzeltme yalnız CSS (`reading-layer.css`):
+ad **sarar**; ≤480 px'te istatistik kartı **tek sütun** (ikon üst satır).
+Ölçüm sonrası: 600 px kayıp **0**, 360 px taşma **0**, 1440 px değişmedi.
+Test `tasarim [2da]` (düzeltme yokken 8 kontrol KALDI).
+
+### v2.322 — Etiket menüsü (kapanma, yerleşim, "Etiketleri temizle")
+
+Gerçek Chromium + gerçek fare ile **dört** hata ölçüldü:
+
+| Belirti | Kök neden |
+|---|---|
+| Seçim yapmadan kapanmıyor | `placeFloatingMenu` inline `style.display='block'` yazıyordu → `[hidden]{display:none}` eziliyordu (computed `block`) |
+| Menü metni örtüyor | menü `[762,131,380,470]` vs metin `[756,517,619,87]` |
+| "Metni temizle" metni siliyordu | `applyTextEdit(s, '')` |
+| Etiket sonrası menü açılmıyor | yeniden çizimden sonra backdrop görünür kalıp tıklamayı yutuyordu |
+
+**DEĞİŞMEZ KURALLAR (bu sürümde doğdu):**
+
+1. **Inline `display` yazmayın.** `style.display='block'` verilen bir öğe,
+   `[hidden] { display:none }` kuralını ezer; menü "kapandı" görünür ama ekranda
+   kalır. Görünürlük **yalnız `hidden` niteliğiyle** yönetilir (v2.322 dersi).
+2. **Açılır menü tek kapıdan kapanır:** `closeQuickMenu(menu, focusTrigger)` —
+   üst ×, alt Kapat, Esc ve yakalama aşamasındaki kapatma aynı yolu kullanır.
+3. **Yerleşim kipi `'list'`:** etiket menüsü **segment listesine doğru (sola)**
+   açılır; ≤900 px tek sütunda **metnin altına** iner, sığmazsa kısalıp kaydırılır.
+4. **"Etiketleri temizle" = `stripQuickTags()`**: yalnız **bilinen** `[etiket]`
+   işaretlerini kaldırır; metin, satır sonları ve bilinmeyen köşeli parantezler
+   (`[bkz. 3]`, `[...]`) korunur. Etiket yoksa metin değişmez ve söylenir.
+   Toplu metin değişikliği olduğu için `snapshotForUndo` alınır (↶ / Ctrl+Z).
+5. **Yeniden çizimden sonra `syncFloatingBackdrop()`** çağrılır; aksi hâlde
+   görünmez backdrop sonraki tıklamayı yutar.
+6. Gözlem paneli `<details>` içindedir; inline `display` verilmez (yoksa
+   `display:flex` düzeni bozulur ve kapalıyken de görünür kalır).
+
+**Ölçüm (sonra):** 1440 → `[374,47,380,522]` · 1100 → `[265,51,380,522]` (metinle
+örtüşme yok); 900/760/600/360 → menü metnin altında (`y≈470`, metin 347–434),
+örtüşme yok, kaydırılır; her genişlikte Esc kapatıyor; yatay taşma 0; temizleme
+sonrası metin durdu, **↶** etiketi geri getirdi; JS hatası 0.
+
+**Koruyan test:** `birim [158]` (13) + `tasarim [2db]` (17) — v2.321 kodunda
+tamamı KALDI (kanıtlandı).
+
+**ÖLÇÜM TUZAĞI (tekrar etmesin):** Chromium profili aynı kalınca `?v=` sabit
+olduğu için **CSS/JS önbellekten** gelebilir; ölçümden önce
+`Network.setCacheDisabled(true)` kullanın. Aksi hâlde "düzeltme işlemedi"
+gibi yanlış sonuç alınır (v2.321'de bir kez yaşandı).
+
 ## Bilinen açık hatalar
 
 **Yok.** 2026-11-19 itibarıyla bildirilen tüm model/çözümleme hataları
