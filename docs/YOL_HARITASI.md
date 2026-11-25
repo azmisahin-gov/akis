@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.291.**
+yazılır. **Güncel sürüm: v2.292.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.292 — Benzer ses grupları (TAMAMLANDI)
+
+- Atanmamış bölümler gömme benzerliğine göre gruplanır (`Grup A · N bölüm`).
+- **Git** / **Ata**: hedef konuşmacı seçilir; onay + snapshot + günlük. Otomatik atama yok.
+- `embeddingClusters` saf; `m.voiceEmbed.clusters` özet (vektör yok).
+- Koruyan: `birim` [134].
 
 ## v2.291 — Bölümü EKLER altına taşıma (TAMAMLANDI)
 

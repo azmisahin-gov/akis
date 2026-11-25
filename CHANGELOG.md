@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.291.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.292.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.292 — Atanmamış bölümleri benzer sese göre gruplama
+
+**Kullanıcı:** *"Konuşmacı atamadığım bölümleri benzer sese göre gruplayabilir miyiz?"*
+
+### KULLANICI NE GÖRECEK
+
+- Ses gömme ölçümü yapıldığında **atanmamış** bölümler benzerliğe göre gruplanır:
+  **Grup A · N bölüm · zaman aralığı**.
+- Her grupta **Git** ve **Ata** vardır; hedef konuşmacı seçilir. **Ata** onay ister,
+  `Ctrl+Z` ile geri alınır ve delil günlüğüne yazılır.
+- **Otomatik atama yok**; gruplar yalnız benzerlik işaretidir, kimlik tespiti değildir.
+- Atanan grup listeden düşer; kalan gruplar yeniden harflenir.
+
+### Teknik
+
+- `embeddingClusters(points,{threshold:VOICE_EMBED_SAME,minSize:2})` (saf).
+- `m.voiceEmbed.clusters` **özet** (vektör yok); ölçüm sırasında yalnız atanmamışlar.
+- Atama `assignEmbeddingCluster` → `setSegmentSpeakerByName` + snapshot + `logEvent`.
+- Koruyan: `birim` [134].
 
 ## v2.291 — Bölümü EKLER altına taşıma
 

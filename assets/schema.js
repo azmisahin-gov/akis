@@ -1721,6 +1721,51 @@ export function embeddingSuggestions(points, profiles) {
   return out.sort((a, b) => a.index - b.index);
 }
 
+/**
+ * Atanmamış bölümleri gömme benzerliğine göre gruplar (v2.292).
+ * Eşik altındaki çiftler ayrı kalır; en az `minSize` bölüm olan gruplar döner.
+ * Hiçbir atama yapmaz; yalnız "benzer görünüyor" işaretidir.
+ */
+export function embeddingClusters(points, { threshold = VOICE_EMBED_SAME, minSize = 2 } = {}) {
+  const pts = Array.isArray(points) ? points : [];
+  const n = pts.length;
+  const parent = Array.from({ length: n }, (_, i) => i);
+  const find = (x) => {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  };
+  const union = (a, b) => {
+    const ra = find(a),
+      rb = find(b);
+    if (ra !== rb) parent[rb] = ra;
+  };
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (cosineSimilarity(pts[i].vec, pts[j].vec) >= threshold) union(i, j);
+    }
+  }
+  const groups = new Map();
+  for (let i = 0; i < n; i++) {
+    const r = find(i);
+    if (!groups.has(r)) groups.set(r, []);
+    groups.get(r).push(pts[i]);
+  }
+  const list = [...groups.values()]
+    .filter((g) => g.length >= minSize)
+    .map((g) => g.map((p) => Number(p.index)).sort((a, b) => a - b))
+    .sort((a, b) => a[0] - b[0]);
+  return list.map((indexes, i) => ({
+    key: String.fromCharCode(65 + (i % 26)),
+    indexes,
+    count: indexes.length,
+    first: indexes[0],
+    last: indexes[indexes.length - 1]
+  }));
+}
+
 // ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
 // Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
 // yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK

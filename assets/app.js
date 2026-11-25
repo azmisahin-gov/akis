@@ -54,6 +54,7 @@ import {
   embeddingOutliers,
   embeddingChangeSuspects,
   embeddingSuggestions,
+  embeddingClusters,
   VOICE_EMBED_SCHEMA,
   VOICE_EMBED_MODEL,
   VOICE_EMBED_DTYPE,
@@ -113,15 +114,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.291';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.291';
+} from './schema.js?v=2.292';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.292';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.291';
+const APP_VERSION = '2.292';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -4160,6 +4161,11 @@ async function measureSpeakerEmbeddings(m) {
     const outliers = embeddingOutliers(points, profiles);
     const changes = embeddingChangeSuspects(points);
     const suggestions = embeddingSuggestions(points, profiles);
+    const unassignedPoints = points.filter((p) => {
+      const sg = segs[p.index];
+      return !(sg && (sg.speakerId || String(sg.speaker || '').trim()));
+    });
+    const clusters = embeddingClusters(unassignedPoints, { threshold: VOICE_EMBED_SAME, minSize: 2 });
     m.voiceEmbed = {
       ok: true,
       schema: VOICE_EMBED_SCHEMA,
@@ -4175,7 +4181,8 @@ async function measureSpeakerEmbeddings(m) {
       profiles: profiles.map((p) => ({ speakerId: p.speakerId, count: p.count })),
       outliers,
       changes,
-      suggestions
+      suggestions,
+      clusters
     };
     logEvent(
       m,
@@ -4716,6 +4723,48 @@ function speakersPanelHtml(m) {
   return `${codeNote}${personBlock}${voiceBlock}${embedBlock}${codeBar}${cleanBar}${mergeNote}<div class="spk-list">${rows}</div>`;
 }
 // v2.279 — Gömme ölçümü paneli (Konuşmacılar bölümünde).
+// v2.292 — benzer grup ataması: ONAY + snapshot + günlük; otomatik değil.
+async function assignEmbeddingCluster(m, key) {
+  const cl = ((m.voiceEmbed && m.voiceEmbed.clusters) || []).find((x) => x.key === key);
+  if (!cl) return;
+  const sel = document.querySelector(`[data-voice-cluster-target="${CSS.escape(m.id)}"]`);
+  const sp = (m.speakers || []).find((s) => s.id === (sel && sel.value));
+  if (!sp) {
+    showToast('Önce hedef konuşmacı seçin (konuşmacı etiketi girilmiş olmalı).');
+    return;
+  }
+  const ok = await askConfirm(
+    'Grubu ata',
+    `Grup ${key} (${cl.count} bölüm) “${sp.code ? sp.code + ' · ' : ''}${sp.name}” konuşmacısına atanacak. ` +
+      'Onay ister; Ctrl+Z ile geri alınır. Ses/deşifre kanıtı DEĞİŞMEZ.'
+  );
+  if (!ok) return;
+  snapshotForUndo('Grup ata');
+  let n = 0;
+  for (const idx of cl.indexes) {
+    const sg = (m.segments || [])[idx];
+    if (!sg) continue;
+    setSegmentSpeakerByName(m, sg, sp.name);
+    n += 1;
+  }
+  logEvent(m, 'speaker-cluster-assign', `Grup ${key} → ${sp.code ? sp.code + ' ' : ''}${sp.name} (${n} bölüm)`);
+  const remaining = ((m.voiceEmbed && m.voiceEmbed.clusters) || [])
+    .map((c) => ({ ...c, indexes: c.indexes.filter((i) => !cl.indexes.includes(i)) }))
+    .filter((c) => c.indexes.length >= 2)
+    .map((c, i) => ({
+      ...c,
+      key: String.fromCharCode(65 + i),
+      count: c.indexes.length,
+      first: c.indexes[0],
+      last: c.indexes[c.indexes.length - 1]
+    }));
+  m.voiceEmbed.clusters = remaining;
+  persist();
+  await renderAudioList();
+  refreshVoiceEmbedPanel(m);
+  showToast(`Grup ${key} atandı: ${sp.code ? sp.code + ' · ' : ''}${sp.name} (${n} bölüm).`);
+}
+
 function voiceEmbedInnerHtml(m) {
   const ve = voiceEmbedIsMeasured(m) ? m.voiceEmbed : null;
   const codeOf = (id) => {
@@ -4746,7 +4795,20 @@ function voiceEmbedInnerHtml(m) {
             )} profiline <b>${s.sim.toFixed(2)}</b> benziyor (öneri)</span><button class="mini-button" data-voice-embed-goto="${
               s.index
             }" title="Bu bölüme git">Git</button></div>`
-        )
+        ),
+        ...(ve && (ve.clusters || []).length
+          ? ve.clusters.map((c) => {
+              const s0 = (m.segments || [])[c.first] || {};
+              const s1 = (m.segments || [])[c.last] || {};
+              return `<div class="vc-row"><span class="vc-idx">Grup ${c.key}</span><span class="vc-txt">${c.count} bölüm · ${esc(
+                s0.start || ''
+              )}–${esc(s1.end || '')} <i>(atama yapılmadı)</i></span><button class="mini-button" data-voice-cluster-goto="${esc(
+                m.id
+              )}|${esc(c.key)}" title="Grubun ilk bölümüne git">Git</button><button class="mini-button" data-voice-cluster-assign="${esc(
+                m.id
+              )}|${esc(c.key)}" title="Seçili konuşmacıya ata (onay ister)">Ata</button></div>`;
+            })
+          : [])
       ].join('')
     : '';
   return `<div class="vc-head"><b>Ses gömme ölçümü (konuşmacı benzerliği)</b><small>${
@@ -4770,6 +4832,15 @@ function voiceEmbedInnerHtml(m) {
         } · ${esc(when)}`
       : ''
   }</span></div>${rows}${
+    ve && (ve.clusters || []).length
+      ? `<div class="vc-row"><span class="vc-txt"><b>Grubu ata:</b></span><select data-voice-cluster-target="${esc(
+          m.id
+        )}">${(m.speakers || [])
+          .filter((s) => s.name)
+          .map((s) => `<option value="${esc(s.id)}">${esc(s.code || '')} · ${esc(s.name)}</option>`)
+          .join('')}</select></div>`
+      : ''
+  }${
     ve && !(ve.profiles || []).length
       ? `<div class="vc-row"><span class="vc-txt">Karşılaştırılacak konuşmacı profili yok: bölümlere konuşmacı atayıp yeniden ölçün (konuşmacı başına en az 2 bölüm).</span></div>`
       : ''
@@ -16954,6 +17025,15 @@ function setupEvents() {
       // v2.279 — konuşmacı gömme benzerliği (model isteğe bağlı indirilir).
       const mm = c.materials.find((x) => x.id === b.dataset.voiceEmbed);
       if (mm) measureSpeakerEmbeddings(mm);
+    } else if (b.dataset.voiceClusterGoto !== undefined) {
+      const [mid, key] = String(b.dataset.voiceClusterGoto).split('|');
+      const mm = c.materials.find((x) => x.id === mid);
+      const cl = mm && ((mm.voiceEmbed && mm.voiceEmbed.clusters) || []).find((x) => x.key === key);
+      if (mm && cl) goToSegment(mm, cl.first, b.closest('.audio-card'));
+    } else if (b.dataset.voiceClusterAssign !== undefined) {
+      const [mid, key] = String(b.dataset.voiceClusterAssign).split('|');
+      const mm = c.materials.find((x) => x.id === mid);
+      if (mm) assignEmbeddingCluster(mm, key);
     } else if (b.dataset.voiceEmbedGoto !== undefined) {
       const idx = Number(b.dataset.voiceEmbedGoto);
       const mm = c.materials.find((x) => (x.segments || []).length > idx) || null;
@@ -19035,6 +19115,13 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.292': {
+    title: 'Atanmamış bölümler benzer sese göre gruplanıyor',
+    body:
+      'Ses gömme ölçümünde atanmamış bölümler “Grup A · N bölüm” olarak listelenir. Her grupta Git ve Ata var; ' +
+      'hedef konuşmacıyı seçip Ata dersiniz. Onay ister, Ctrl+Z ile geri alınır ve günlüğe yazılır. Otomatik atama yoktur; ' +
+      'bu bir benzerlik işaretidir, kimlik tespiti değildir.'
+  },
   '2.291': {
     title: 'Bölümü EKLER altına taşıyabilirsiniz',
     body:

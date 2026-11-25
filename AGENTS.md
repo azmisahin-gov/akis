@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.291.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.292.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7317,3 +7317,17 @@ Ayrıntı: `docs/RAPOR_SERBEST_TASARIM.md` §v2.291.
 
 1. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + onaylı grup atama.
 2. **Kişiler (K)** panelinin dosya düzeyine taşınması.
+
+
+## YENİ OTURUM DEVRİ (v2.292) — Benzer ses grupları
+
+| | |
+|---|---|
+| Sürüm | **v2.292** |
+| Testler | **2027 birim + 522 şema** yeşil |
+| Açık konu | Kişiler (K) panelinin taşınması |
+
+- `embeddingClusters` (saf) atanmamış bölümleri `VOICE_EMBED_SAME` eşiğiyle gruplar.
+- `m.voiceEmbed.clusters` özet (vektör yok); **Git** / **Ata**; atama onay + snapshot + `speaker-cluster-assign` günlüğü.
+- **Otomatik atama yok**; kimlik tespiti değildir. Test: `birim [134]`.
+- Sıradaki: Kişiler (K) panelinin dosya düzeyine taşınması.

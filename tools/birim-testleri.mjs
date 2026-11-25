@@ -5998,5 +5998,31 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('revizyon yerleşimi taşır', T.reportSnapshot(c).annexPlacement.s5, true);
 }
 
+
+// [134] v2.292 — Atanmamış bölüm kümeleme: eşik üstü gruplar; atama yapmaz.
+{
+  console.log('[134] Konuşmacı gömme kümeleme (v2.292)');
+  const S = __schemaMod;
+  const pts = [
+    { index: 0, vec: [1, 0, 0] },
+    { index: 1, vec: [0.99, 0.1, 0] },
+    { index: 2, vec: [0, 1, 0] },
+    { index: 3, vec: [0.1, 0.99, 0] },
+    { index: 4, vec: [0, 0, 1] }
+  ];
+  const cl = S.embeddingClusters(pts, { threshold: 0.9, minSize: 2 });
+  eq('iki benzer grup', cl.length, 2);
+  eq('grup A indeksleri', cl[0].indexes.join(','), '0,1');
+  eq('grup B indeksleri', cl[1].indexes.join(','), '2,3');
+  eq('tek bölüm grup olmaz', cl.some((c) => c.indexes.includes(4)), false);
+  eq('minSize 3 → grup yok', S.embeddingClusters(pts, { threshold: 0.9, minSize: 3 }).length, 0);
+  eq('eşik düşük → tek grup', S.embeddingClusters(pts, { threshold: 0.1, minSize: 2 }).length, 1);
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('grup Git düğmesi var', /data-voice-cluster-goto/.test(js), true);
+  eq('grup Ata düğmesi var', /data-voice-cluster-assign/.test(js), true);
+  eq('atama tek kapıdan', /assignEmbeddingCluster[\s\S]{0,1200}setSegmentSpeakerByName\(m, sg, sp\.name\)/.test(js), true);
+  eq('atama günlüğe yazılır', /speaker-cluster-assign/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

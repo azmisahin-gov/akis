@@ -1,4 +1,4 @@
-# Özellikler (v2.291 — mevcut durum)
+# Özellikler (v2.292 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -972,6 +972,9 @@ envanterle aynı sütun seçimini izler.
   WER için referans metin + model çıktısı gerekir; yoksa rapora girmez.
 - **İçindekiler** gövde sırasını birebir izler; yalnız ana 7 başlık değil,
   çizilen tüm bölümler listelenir.
+- **Benzer ses grupları (v2.292):** gömme ölçümünde **atanmamış** bölümler
+  `Grup A · N bölüm` olarak gruplanır. **Git** / **Ata**; hedef konuşmacı seçilir,
+  onay + Ctrl+Z + günlük. Otomatik atama yok; kimlik tespiti değildir.
 - **Bölümü EKLER altına taşıma (v2.291):** her gövde bölümünün yanındaki
   **EK** düğmesi bölümü gövdeden çıkarır, EKLER altında **EK-N. başlık**
   olarak basar; alt başlıklar **EK-N.1** olur. İçerik aynı üreticiden, üç
