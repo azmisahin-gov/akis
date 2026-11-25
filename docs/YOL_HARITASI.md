@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.287.**
+yazılır. **Güncel sürüm: v2.288.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.288 — Kullanıcı rapor profilleri (TAMAMLANDI)
+
+- İskelette **Profiller**: seç · **Uygula** · **Sil** · **＋ Bu düzeni kaydet**.
+- Profil yalnız düzeni taşır (bölüm/sıra/başlık/numara/tablo alanları); kanıt ve
+  serbest blok metni **girmez**. En çok 20; aynı ad günceller.
+- Uygulama onay ister, Ctrl+Z ile geri alınır; yerleşik/otomatik profil yok.
+- Birleştirme profili ekler; farklı düzen `report-profile` çakışması.
+- Koruyan: `birim` [130], `surum` profil kimlikleri.
 
 ## v2.287 — Serbest rapor bölümü (TAMAMLANDI)
 

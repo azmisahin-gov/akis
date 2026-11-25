@@ -970,6 +970,35 @@ export function ensureFreeBlockOrder(order, blocks) {
   return list;
 }
 
+// ---- Kullanıcı rapor profilleri (v2.288) --------------------------------
+// Profil YALNIZ düzeni taşır: bölüm görünürlüğü, sıra, başlıklar, numara
+// biçimi ve tablo alanları. Ses/deşifre kanıtı ve serbest blok METNİ girmez.
+export function normalizeReportProfiles(src) {
+  const out = [];
+  const seen = new Set();
+  for (const p of Array.isArray(src) ? src : []) {
+    if (!p || typeof p !== 'object') continue;
+    const id = typeof p.id === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(p.id) ? p.id : '';
+    const name = typeof p.name === 'string' ? p.name.trim().slice(0, 80) : '';
+    if (!id || !name || seen.has(id)) continue;
+    seen.add(id);
+    const layout = normalizeReportLayout({ order: p.order, annexOrder: p.annexOrder, annexes: p.annexes });
+    out.push({
+      id,
+      name,
+      at: typeof p.at === 'string' ? p.at : '',
+      sections: normalizeReportSections(p.sections),
+      order: layout.order,
+      annexOrder: layout.annexOrder,
+      annexes: layout.annexes,
+      titles: normalizeReportTitles(p.titles),
+      numbering: REPORT_NUMBERING.includes(p.numbering) ? p.numbering : 'auto',
+      columns: normalizeReportColumns(p.columns)
+    });
+  }
+  return out.slice(-20);
+}
+
 // ---- 5b-2. Rapor biçimi: sayfa · font · punto (v2.238) -------------------
 // TEK KAYNAK. Ekran önizlemesi, yazdırma/PDF (@page), DOCX ve UDF bu değerleri
 // okur. `fontFamily` ÜÇ çıktıya da uygulanır (v2.254): varsayılan **Times New
@@ -1224,6 +1253,8 @@ export function emptyCase(over = {}) {
       // Serbest rapor blokları (v2.287): { id, title, text, on }.
       // Sıra `layout.order` içinde `free:<id>` ile tutulur.
       blocks: [],
+      // Kullanıcı rapor profilleri (v2.288): yalnız düzen; kanıt/metin taşımaz.
+      userProfiles: [],
       // Sayfalı önizleme (v2.221): A4 sayfa çizgileri. VARSAYILAN KAPALI
       // (en temiz hâl sürekli kâğıttır); kullanıcı açarsa görünür.
       pageView: false,
@@ -2015,6 +2046,8 @@ export function normalizeCase(src = {}) {
       layout: reportLayout,
       // Serbest bloklar (v2.287): kullanıcı başlığı + metni.
       blocks: reportBlocks,
+      // Kullanıcı profilleri (v2.288): yalnız kullanıcı tanımlı düzenler.
+      userProfiles: normalizeReportProfiles(report.userProfiles),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
@@ -2731,6 +2764,31 @@ export function mergeCases(mine, theirs) {
     merged.report.layout = { ...layout, order: ensureFreeBlockOrder(layout.order, merged.report.blocks) };
   }
 
+  // Kullanıcı rapor profilleri (v2.288): id ile eklenir; aynı kimlikte farklı
+  // düzen sessizce ezilmez, çakışma olarak bildirilir.
+  {
+    const mp = normalizeReportProfiles((mine.report || {}).userProfiles);
+    const byId = new Map(mp.map((p) => [p.id, p]));
+    for (const tp of normalizeReportProfiles((theirs.report || {}).userProfiles)) {
+      const ep = byId.get(tp.id);
+      if (!ep) {
+        mp.push(tp);
+        byId.set(tp.id, tp);
+        applied.push(`rapor profili eklendi: ${tp.name}`);
+      } else if (JSON.stringify(ep) !== JSON.stringify(tp)) {
+        conflicts.push({
+          kind: 'report-profile',
+          profileId: ep.id,
+          field: 'userProfiles',
+          mine: ep.name,
+          theirs: tp.name,
+          reason: 'aynı profil kimliğinde farklı düzen'
+        });
+      }
+    }
+    merged.report.userProfiles = normalizeReportProfiles(mp);
+  }
+
   // Bölümler: id ile eşleşen kayıtlarda metin, düzenleme sayacıyla (textRev)
   // çözülür. Sayaç yüksek olan taraf daha yeni düzenlemedir ve kazanır; kaybeden
   // metin silinmez, geçmişe yazılır. Sayaçlar eşitse gerçek çakışma bildirilir.
@@ -3013,6 +3071,8 @@ export function compareCases(mine, theirs) {
     team: { added: [] },
     // Serbest rapor blokları (v2.287): önizleme = birleştirme kuralı.
     blocks: { added: [], conflicts: [] },
+    // Kullanıcı profilleri (v2.288): önizleme = birleştirme kuralı.
+    profiles: { added: [], conflicts: [] },
     disks: { added: 0 },
     // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
     // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
@@ -3267,6 +3327,28 @@ export function compareCases(mine, theirs) {
     }
   }
 
+  // Kullanıcı profilleri (v2.288): yeni profil eklenir; aynı kimlikte farklı
+  // düzen çakışma olarak görünür.
+  {
+    const mineProfiles = new Map(
+      normalizeReportProfiles((mine.report || {}).userProfiles).map((p) => [p.id, p])
+    );
+    for (const tp of normalizeReportProfiles((theirs.report || {}).userProfiles)) {
+      const ep = mineProfiles.get(tp.id);
+      if (!ep) out.profiles.added.push({ id: tp.id, name: tp.name });
+      else if (JSON.stringify(ep) !== JSON.stringify(tp)) {
+        out.profiles.conflicts.push({
+          kind: 'report-profile',
+          profileId: ep.id,
+          field: 'userProfiles',
+          mine: ep.name,
+          theirs: tp.name,
+          reason: 'aynı profil kimliğinde farklı düzen'
+        });
+      }
+    }
+  }
+
   // Kaynağı tanımsız onaylar döngü sırasında `out.conflicts`'e eklenir; burada
   // yeniden atama onları SİLERDİ. Bu yüzden önce toplanır, sonra birleştirilir.
   out.conflicts = [
@@ -3275,6 +3357,7 @@ export function compareCases(mine, theirs) {
     ...out.caseFields.conflicts,
     ...out.speakers.conflicts,
     ...out.blocks.conflicts,
+    ...out.profiles.conflicts,
     ...out.conflicts
   ];
   return out;

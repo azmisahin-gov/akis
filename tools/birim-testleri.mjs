@@ -5891,5 +5891,55 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('birleştirme çakışma bildirir', m.conflicts.some((x) => x.kind === 'report-block'), true);
 }
 
+// [130] v2.288 — Kullanıcı rapor profilleri: yalnız düzen, kanıt/metin yok;
+// ad zorunlu, kimlik tekil, en çok 20; birleştirme profili ekler.
+{
+  console.log('[130] Kullanıcı rapor profilleri (v2.288)');
+  const S = __schemaMod;
+  const p = S.normalizeReportProfiles([
+    {
+      id: 'p1',
+      name: '  Kısa  ',
+      sections: { s1: false },
+      order: ['s2', 's1'],
+      titles: { s1: 'X' },
+      numbering: 'letters',
+      columns: { segments: { text: false } },
+      blocks: [{ id: 'b1', title: 'SIZAN', text: 'metin' }]
+    },
+    { id: 'p1', name: 'yinelenen' },
+    { id: '', name: 'kimliksiz' },
+    { id: 'p2', name: '   ' },
+    null
+  ]);
+  eq('profil normalize: tek kayıt', p.length, 1);
+  eq('profil adı kırpılır', p[0].name, 'Kısa');
+  eq('bölüm görünürlüğü korunur', p[0].sections.s1, false);
+  eq('sıra normalize edilir (s1 sonda)', p[0].order.indexOf('s1') > p[0].order.indexOf('s2'), true);
+  eq('başlık korunur', p[0].titles.s1, 'X');
+  eq('numara biçimi korunur', p[0].numbering, 'letters');
+  eq('tablo alanı tercihi korunur', p[0].columns.segments.text, false);
+  eq('profil blok/metin taşımaz', 'blocks' in p[0], false);
+  eq('emptyCase profilsiz', S.emptyCase().report.userProfiles.length, 0);
+  eq(
+    'profil sayısı 20 ile sınırlı',
+    S.normalizeReportProfiles(Array.from({ length: 25 }, (_, i) => ({ id: 'p' + i, name: 'P' + i }))).length,
+    20
+  );
+
+  const m = T.mergeCasesForTest(
+    S.normalizeCase({ id: 'm', report: { userProfiles: [{ id: 'p1', name: 'A' }] } }),
+    S.normalizeCase({ id: 'm', report: { userProfiles: [{ id: 'p1', name: 'A' }, { id: 'p2', name: 'B' }] } })
+  );
+  eq('birleştirme yeni profili ekler', m.merged.report.userProfiles.length, 2);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+  eq('profil kaydet düğmesi var', /data-report-profile-save/.test(js), true);
+  eq('profil uygula/sil düğmeleri var', /data-report-profile-apply/.test(js) && /data-report-profile-del/.test(js), true);
+  eq('profil adı diyaloğu var', /id="profileDialog"/.test(html) && /id="profileName"/.test(html), true);
+  eq('profil adı sorulur', /function askProfileName\(/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

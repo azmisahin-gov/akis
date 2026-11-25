@@ -68,6 +68,7 @@ import {
   canApproveRole,
   REPORT_SECTION_DEFS,
   emptyReportSections,
+  normalizeReportSections,
   REPORT_FRONT_KEYS,
   REPORT_MAIN_KEYS,
   REPORT_NUMBERING,
@@ -93,6 +94,7 @@ import {
   normalizeReportColumns,
   normalizeReportTitles,
   normalizeReportBlocks,
+  normalizeReportProfiles,
   ensureFreeBlockOrder,
   isFreeBlockKey,
   freeBlockKey,
@@ -109,15 +111,15 @@ import {
   REPORT_FONT_SIZE_MAX,
   emptyReportFormat,
   normalizeReportFormat
-} from './schema.js?v=2.287';
-import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.287';
+} from './schema.js?v=2.288';
+import { moveInList, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.288';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.287';
+const APP_VERSION = '2.288';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -12192,6 +12194,8 @@ let reportEditKey = null;
 // Başlık düzenleme oturumluktur (kayda yazılmaz); yalnız hangi satırın
 // düzenlendiğini tutar. Değer `case.report.titles` içine yazılır.
 let reportTitleEditKey = null;
+// Seçili rapor profili (oturumluk; kayda yazılmaz).
+let reportProfileSel = '';
 const REPORT_NARRATIVE_FIELDS = {
   s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
   limits: [{ field: 'limitationsText', label: 'Teknik sınırlılıklar', rows: 6 }],
@@ -12703,8 +12707,26 @@ function renderReportSections(c) {
     (body ? `<div class="rsec-group"><div class="rsec-title">Gövde · sıralanabilir</div>${body}${addBlock}</div>` : '') +
     (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
     (sig ? `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${sig}</div>` : '');
+  // Kullanıcı profilleri (v2.288): yalnız düzen taşır; kanıt/metin taşımaz.
+  const profiles = normalizeReportProfiles(c.report && c.report.userProfiles);
+  if (!profiles.some((p) => p.id === reportProfileSel)) reportProfileSel = profiles[0] ? profiles[0].id : '';
+  const profileOptions = profiles.length
+    ? profiles
+        .map(
+          (p) =>
+            `<option value="${esc(p.id)}"${p.id === reportProfileSel ? ' selected' : ''}>${esc(p.name)}</option>`
+        )
+        .join('')
+    : `<option value="">(kayıtlı profil yok)</option>`;
+  const profileBar =
+    `<div class="rsec-profiles"><span class="rsec-note">Profiller:</span>` +
+    `<select data-report-profile-select aria-label="Rapor profili">${profileOptions}</select>` +
+    `<button type="button" class="mini-button" data-report-profile-apply="1"${profiles.length ? '' : ' disabled'}>Uygula</button>` +
+    `<button type="button" class="mini-button" data-report-profile-del="1"${profiles.length ? '' : ' disabled'}>Sil</button>` +
+    `<button type="button" class="mini-button" data-report-profile-save="1" title="Bu rapor düzenini (bölümler, sıra, başlıklar, numara biçimi, tablo alanları) profil olarak kaydet. Ses/deşifre kanıtı girmez.">＋ Bu düzeni kaydet</button></div>`;
   host.innerHTML =
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
+    profileBar +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Numaralar açık bölümlere göre yeniden verilir.</span></div>`;
 }
 function setReportSection(key, on) {
@@ -12731,6 +12753,139 @@ function setReportSectionTitle(key, value) {
   renderReport();
   showToast(v ? 'Bölüm başlığı güncellendi.' : 'Bölüm başlığı varsayılana döndü.');
 }
+// ---- Kullanıcı rapor profilleri (v2.288) --------------------------------
+// Profil yalnız DÜZENİ taşır: bölüm görünürlüğü, sıra, başlıklar, numara
+// biçimi, tablo alanları. Ses/deşifre kanıtı ve serbest blok METNİ girmez.
+function reportProfileCapture(c) {
+  const layout = reportLayoutOf(c);
+  const sections = {};
+  for (const d of REPORT_SECTION_DEFS) sections[d.key] = reportSectionOn(c, d.key);
+  const annexes = {};
+  for (const d of REPORT_ANNEX_DEFS) annexes[d.key] = layout.annexes[d.key] !== false;
+  return {
+    sections,
+    order: [...layout.order],
+    annexOrder: layout.annexOrder.filter((k) => REPORT_ANNEX_DEFS.some((d) => d.key === k)),
+    annexes,
+    titles: { ...(c.report.titles || {}) },
+    numbering: reportNumbering(c),
+    columns: normalizeReportColumns(c.report.columns)
+  };
+}
+function askProfileName(defaultName) {
+  return new Promise((resolve) => {
+    const dlg = $('#profileDialog');
+    const inp = $('#profileName');
+    if (!dlg || !inp) return resolve(null);
+    inp.value = defaultName || '';
+    let done = false;
+    const finish = (v) => {
+      if (done) return;
+      done = true;
+      $('#profileOk').removeEventListener('click', onOk);
+      $('#profileCancel').removeEventListener('click', onCancel);
+      $('#closeProfile').removeEventListener('click', onCancel);
+      inp.removeEventListener('keydown', onKey);
+      if (dlg.open) dlg.close();
+      resolve(v);
+    };
+    const onOk = () => {
+      const v = inp.value.trim();
+      if (!v) {
+        inp.focus();
+        return;
+      }
+      finish(v);
+    };
+    const onCancel = () => finish(null);
+    const onKey = (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        onOk();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onCancel();
+      }
+    };
+    $('#profileOk').addEventListener('click', onOk);
+    $('#profileCancel').addEventListener('click', onCancel);
+    $('#closeProfile').addEventListener('click', onCancel);
+    inp.addEventListener('keydown', onKey);
+    dlg.addEventListener('close', () => finish(null), { once: true });
+    dlg.showModal();
+    requestAnimationFrame(() => {
+      inp.focus();
+      inp.select();
+    });
+  });
+}
+async function saveReportProfile() {
+  const c = currentCase();
+  if (!c) return;
+  const profiles = normalizeReportProfiles(c.report && c.report.userProfiles);
+  const name = await askProfileName(`Profil ${profiles.length + 1}`);
+  if (!name) return;
+  const key = name.toLocaleLowerCase('tr-TR');
+  const same = profiles.find((p) => p.name.toLocaleLowerCase('tr-TR') === key);
+  const id = same ? same.id : newId('rp');
+  const next = profiles
+    .filter((p) => p.id !== id)
+    .concat([{ id, name, at: new Date().toISOString(), ...reportProfileCapture(c) }]);
+  c.report = c.report || {};
+  c.report.userProfiles = normalizeReportProfiles(next);
+  reportProfileSel = id;
+  persist();
+  renderReport();
+  showToast(same ? `Profil güncellendi: ${name}` : `Profil kaydedildi: ${name}`);
+}
+async function applyReportProfile(id) {
+  const c = currentCase();
+  if (!c) return;
+  const p = normalizeReportProfiles(c.report && c.report.userProfiles).find((x) => x.id === id);
+  if (!p) return;
+  const ok = await askConfirm(
+    'Profili uygula',
+    `“${p.name}” düzeni uygulanacak: bölüm görünürlüğü, sıra, başlıklar, numara biçimi ve tablo alanları değişecek. ` +
+      'Ses ve deşifre kanıtı ETKİLENMEZ. Ctrl+Z ile geri alınabilir.'
+  );
+  if (!ok) return;
+  snapshotForUndo('Rapor profili uygula');
+  c.report.sections = normalizeReportSections(p.sections);
+  const layout = normalizeReportLayout({
+    ...(c.report.layout || {}),
+    order: p.order,
+    annexOrder: p.annexOrder,
+    annexes: p.annexes
+  });
+  layout.order = ensureFreeBlockOrder(layout.order, c.report.blocks || []);
+  c.report.layout = layout;
+  c.report.titles = normalizeReportTitles(p.titles);
+  c.report.numbering = REPORT_NUMBERING.includes(p.numbering) ? p.numbering : 'auto';
+  c.report.columns = normalizeReportColumns(p.columns);
+  persist();
+  renderReport();
+  showToast(`Profil uygulandı: ${p.name}. Ses/deşifre kanıtı değişmedi.`);
+}
+async function deleteReportProfile(id) {
+  const c = currentCase();
+  if (!c) return;
+  const p = normalizeReportProfiles(c.report && c.report.userProfiles).find((x) => x.id === id);
+  if (!p) return;
+  const ok = await askConfirm(
+    'Profili sil',
+    `“${p.name}” profili silinecek. Yalnız bu kayıtlı düzen silinir; mevcut rapor ve kanıt ETKİLENMEZ.`
+  );
+  if (!ok) return;
+  snapshotForUndo('Rapor profili sil');
+  c.report.userProfiles = normalizeReportProfiles(
+    (c.report.userProfiles || []).filter((x) => x.id !== id)
+  );
+  if (reportProfileSel === id) reportProfileSel = '';
+  persist();
+  renderReport();
+  showToast('Profil silindi (Ctrl+Z ile geri alınabilir).');
+}
+
 // ---- Serbest rapor blokları (v2.287) -------------------------------------
 function addReportBlock() {
   const c = currentCase();
@@ -17496,6 +17651,11 @@ $('#reportSectionCats')?.addEventListener('click', (e) => {
   if (c) renderReportSections(c);
 });
 $('#reportSections')?.addEventListener('change', (e) => {
+  const psel = e.target.closest('[data-report-profile-select]');
+  if (psel) {
+    reportProfileSel = psel.value;
+    return;
+  }
   const tinp = e.target.closest('[data-report-title-input]');
   if (tinp) {
     const tkey = tinp.dataset.reportTitleInput;
@@ -17519,6 +17679,20 @@ $('#reportSections')?.addEventListener('change', (e) => {
   setReportSection(cb.dataset.reportSection, cb.checked);
 });
 $('#reportSections')?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-report-profile-save]')) {
+    saveReportProfile();
+    return;
+  }
+  if (e.target.closest('[data-report-profile-apply]')) {
+    const s = document.querySelector('[data-report-profile-select]');
+    if (s) applyReportProfile(s.value);
+    return;
+  }
+  if (e.target.closest('[data-report-profile-del]')) {
+    const s = document.querySelector('[data-report-profile-select]');
+    if (s) deleteReportProfile(s.value);
+    return;
+  }
   if (e.target.closest('[data-report-block-add]')) {
     addReportBlock();
     return;
@@ -18712,6 +18886,14 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.288': {
+    title: 'Rapor düzeninizi profil olarak kaydedebilirsiniz',
+    body:
+      'Rapor iskeletinde “Profiller” satırı var: “＋ Bu düzeni kaydet” ile bölüm görünürlüğü, sıra, ' +
+      'başlıklar, numara biçimi ve tablo alanları saklanır. Sonra profili seçip “Uygula” dersiniz; ' +
+      'onay ister ve Ctrl+Z ile geri alınır. Ses/deşifre kanıtı ve serbest blok metni profile GİRMEZ. ' +
+      'Yerleşik/otomatik profil yoktur; yalnız sizin kaydettikleriniz kullanılır.'
+  },
   '2.287': {
     title: 'Kendi rapor bölümünüzü ekleyebilirsiniz (başlık + metin)',
     body:

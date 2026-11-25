@@ -69,7 +69,7 @@ olmaktan çıkarıp** serbest tasarıma geçiş planını verir.
 - Blok, diğer bölümler gibi sıralanır/açılır/kapanır; üç çıktıya girer.
 - Böylece kullanıcı 56.12 dışında kendi başlıklarını yazabilir.
 
-### v2.288 — Kullanıcı profilleri (isteğe bağlı)
+### v2.288 — Kullanıcı profilleri (YAPILDI)
 
 - "Bu düzeni profil olarak kaydet" (ad verir), "Profili uygula".
 - Profil **yalnız** kullanıcı tanımlıdır; yerleşik 56.12 profili yok.

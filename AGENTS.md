@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.287.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.288.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7132,5 +7132,51 @@ konuşmacı kümeleme ve Kişiler panelinin taşınması.
    olarak kaydet” + “profili uygula”.
 2. **Konuşmacı kümeleme** (atamasız, `≈A` rozeti) + **Kişiler (K)** panelinin
    dosya düzeyine taşınması.
+3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
+   sürükle-bırak sıralama.
+
+## YENİ OTURUM DEVRİ (v2.288) — Kullanıcı rapor profilleri
+
+### Durum (2026-11-25)
+
+| | |
+|---|---|
+| Sürüm | **v2.288** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **1992 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` (doğrudan push) |
+| Açık konu | Konuşmacı kümeleme; Kişiler (K) panelinin taşınması; isteğe bağlı küçük işler |
+
+### Ne yapıldı
+
+- Rapor iskeletinde **Profiller** satırı: seç · **Uygula** · **Sil** ·
+  **＋ Bu düzeni kaydet**. Ad, küçük bir diyalogla sorulur (`#profileDialog`).
+- Profil yalnız **düzeni** taşır: bölüm görünürlüğü, sıra (`order`), ek sırası/
+  görünürlüğü, başlıklar, numara biçimi, tablo alanları. **Kanıt ve serbest blok
+  metni girmez.**
+- Uygulama **onay ister** ve `snapshotForUndo` alır (Ctrl+Z). Yerleşik/otomatik
+  profil yoktur.
+
+### DEĞİŞMEZ KURALLAR
+
+1. **Profil = düzen, içerik değil.** `blocks` (serbest blok metni), ses,
+  deşifre, SHA-256 profile **konmaz**. Yeni bir profil alanı eklerken bu sınırı koru.
+2. **Ad zorunlu, kimlik tekil, en çok 20 profil.** `normalizeReportProfiles`
+  bilinmeyen/boş kaydı atar; aynı adla kaydetmek **günceller** (kopya üretmez).
+3. **Uygulama tek kapıdan:** `applyReportProfile(id)` — onay + snapshot +
+  `normalizeReportSections`/`normalizeReportLayout`/`normalizeReportTitles`/
+  `normalizeReportColumns`. Serbest blok anahtarları hedef dosyanın bloklarına
+  göre `ensureFreeBlockOrder` ile süzülür.
+4. **Birleştirme sessiz ezmez:** profiller id ile eklenir; aynı kimlikte farklı
+  düzen `report-profile` çakışması olarak bildirilir.
+5. **Arayüz kimlikleri:** `#profileDialog`, `#profileName` `surum-testi` [9] ile
+  korunur. `reportProfileSel` oturumluktur, kayda yazılmaz.
+6. Profil **otomatik uygulanmaz**; dosya açılışında hiçbir profil yazılmaz.
+
+### Sıradaki iş
+
+1. **Konuşmacı kümeleme** (atamasız): `≈A` rozeti, grup listesi, “Grubu S1’e
+   ata” onaylı/geri alınabilir; otomatik atama YOK.
+2. **Kişiler (K) panelinin** Analiz sekmesinden **Dosya bilgileri** düzeyine
+   taşınması.
 3. İsteğe bağlı: `speakerDurations` ayrı bölüm, sütun başlığı düzenleme,
    sürükle-bırak sıralama.

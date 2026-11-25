@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.287.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.288.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.288 — Kullanıcı rapor profilleri
+
+**Kullanıcı:** *"Bu düzeni profil olarak kaydet; sonra profili uygula."*
+
+### KULLANICI NE GÖRECEK
+
+- Rapor iskeletinde **Profiller** satırı var: kayıtlı profili seçin,
+  **Uygula** veya **Sil**; **＋ Bu düzeni kaydet** ile yeni profil oluşturun.
+- Profil yalnız **düzeni** saklar: bölüm görünürlüğü, sıra, başlıklar, numara
+  biçimi ve tablo alanları. **Ses/deşifre kanıtı ve serbest blok metni profile
+  girmez.**
+- Profil uygulamak mevcut düzeni değiştirir; **onay ister**, **Ctrl+Z** ile geri
+  alınır. Yerleşik/otomatik profil yoktur; yalnız sizin kaydettikleriniz.
+
+### Teknik
+
+- `case.report.userProfiles[] = { id, name, at, sections, order, annexOrder,
+  annexes, titles, numbering, columns }`; en çok **20** profil.
+- `normalizeReportProfiles` (şema, saf): ad zorunlu, kimlik tekil; aynı adla
+  kaydetmek profili **günceller** (kopya üretmez).
+- Birleştirme profili id ile ekler; aynı kimlikte farklı düzen
+  **`report-profile` çakışması** olarak bildirilir (sessiz ezme yok).
+- Koruyan: `birim` [130], `surum` profil kimlikleri.
 
 ## v2.287 — Serbest rapor bölümü (başlık + metin)
 

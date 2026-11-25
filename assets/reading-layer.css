@@ -3910,3 +3910,8 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .rsec-free-edit { display: grid; gap: 4px; width: 100%; }
 .rsec-free-edit textarea { width: 100%; min-height: 56px; padding: 4px 6px; font-size: var(--fs-2xs); line-height: 1.35; resize: vertical; }
 .rsec-free-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+
+/* v2.288 — Kullanıcı rapor profilleri: seç + uygula/sil + kaydet.
+   Sığmayan öğe sarar; kırpma yok. */
+.rsec-profiles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 6px 0 2px; }
+.rsec-profiles select { height: 24px; max-width: 150px; font-size: var(--fs-2xs); padding: 0 4px; }
