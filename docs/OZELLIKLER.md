@@ -1,4 +1,4 @@
-# Özellikler (v2.307 — mevcut durum)
+# Özellikler (v2.308 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -994,6 +994,7 @@ envanterle aynı sütun seçimini izler.
   düzeltirsiniz, yanlışsa değiştirir veya **＋** ile yeni eklersiniz. Mevcut
   atamalar korunur, onay ister, **Ctrl+Z** ile geri alınır; ön-atama bölümde
   **≈ otomatik** rozetiyle görünür.
+- **Kanıt zaman çelişkisi (v2.308):** gömülü metadata (beyan) kayıt tarihi, dosyanın değişiklik zamanından (gözlem) belirgin sonra ise Kayıt bilgileri’nde **⚠** uyarı + rapor hazırlığında madde. Kanıt değil, dikkat işareti; çözülemeyen tarihte uyarı yok (1 gün tolerans).
 - **Soru ↔ bölüm önerisi (v2.307):** Sorular kartında **“İlgili bölümleri öner”** soru metniyle anlamlı sözcük örtüşen bölümleri (zaman · alıntı · örtüşme sayısı) listeler; **Ekle** ile zaman damgalı dayanak bağlanır. Otomatik bağlama ve uydurma skor yok; bağlı bölüm tekrar önerilmez.
 - **Satır ⋮ menüsünde konuşmacı işlemleri (v2.306):** bölüm satırı **⋮** menüsünde **“≈ Konuşmacıyı tahmin et”** ve **Konuşmacı** seçicisi (S1/S2…) vardır; çözümlemeyle aynı yerde. Mevcut tek kapı kullanılır.
 - **Bölüm ↔ konuşmacı tablosu (v2.305):** Konuşmacılar sekmesinde her bölüm **zaman · kısa metin · konuşmacı seçici · ≈ öneri/durum** olarak listelenir; atama satırdan yapılır (Deşifre'ye gitmeden), değişiklik Deşifre'ye de yansır. Filtre: Tümü · Atanmamış · Otomatik. Kimlik değil; öneri/ön-atama anonim benzerlik.

@@ -2,11 +2,17 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.307.**
+yazılır. **Güncel sürüm: v2.308.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.308 — Kanıt zaman çelişkisi (TAMAMLANDI)
+
+- Gömülü metadata (beyan) kayıt tarihi dosya değişiklik zamanından belirgin sonra
+  ise **⚠ uyarı** + rapor hazırlık maddesi. Kanıt değil, dikkat işareti.
+- `schema.js` → `evidenceTimeConflict` (saf). Test `birim [149]`.
 
 ## v2.307 — Soru ↔ bölüm önerisi (TAMAMLANDI)
 

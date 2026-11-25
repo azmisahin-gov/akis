@@ -6421,5 +6421,54 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('otomatik bağlama yok (öneri yalnız __suggest)', /q\.__suggest = questionSegmentSuggestions/.test(js), true);
 }
 
+// [149] v2.308 — Kanıt zaman çelişkisi (gömülü metadata ↔ dosya zamanı).
+{
+  console.log('[149] Kanıt zaman çelişkisi (v2.308)');
+  const S = __schemaMod;
+  const a = S.evidenceTimeConflict({
+    embedded: { recordingAt: '2026-03-10T10:00:00Z' },
+    fileTimes: { modifiedAt: '2026-03-08T10:00:00Z' }
+  });
+  eq('beyan dosyadan sonra → çelişki', a.conflict, true);
+  eq(
+    'dosya sonra → çelişki yok',
+    S.evidenceTimeConflict({
+      embedded: { recordingAt: '2026-03-08T10:00:00Z' },
+      fileTimes: { modifiedAt: '2026-03-10T10:00:00Z' }
+    }).conflict,
+    false
+  );
+  eq(
+    '1 gün tolerans içinde yok',
+    S.evidenceTimeConflict({
+      embedded: { recordingAt: '2026-03-08T12:00:00Z' },
+      fileTimes: { modifiedAt: '2026-03-08T00:00:00Z' }
+    }).conflict,
+    false
+  );
+  eq(
+    'çözülemeyen tarih → yok (uydurma yok)',
+    S.evidenceTimeConflict({
+      embedded: { recordingAt: 'bilinmiyor' },
+      fileTimes: { modifiedAt: '2026-03-08T00:00:00Z' }
+    }).conflict,
+    false
+  );
+  eq('metadata yok → yok', S.evidenceTimeConflict({}).conflict, false);
+  eq(
+    'createdAt yedeği kullanılır',
+    S.evidenceTimeConflict({
+      embedded: { recordingAt: '2026-03-10T00:00:00Z' },
+      fileTimes: { createdAt: '2026-03-01T00:00:00Z' }
+    }).conflict,
+    true
+  );
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('hazırlık maddesi var', /'timeConflict'/.test(js), true);
+  eq('köken panelinde uyarı', /Zaman çelişkisi/.test(js), true);
+  eq('severity advisory', /timeConflict: 'advisory'/.test(js), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

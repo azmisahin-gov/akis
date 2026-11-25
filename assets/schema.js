@@ -1867,6 +1867,29 @@ export function bestSpeakerMatch(targetVec, candidates) {
   return { ...best, match };
 }
 
+/**
+ * KANIT ZAMAN TUTARLILIĞI (v2.308, A1). Gömülü metadata'nın **beyan** ettiği
+ * kayıt tarihi, dosyanın **gözlenen** değişiklik zamanından belirgin biçimde
+ * SONRA ise çelişki bildirir (bir dosya, kaydedilmeden önce değiştirilmiş olamaz).
+ * Yalnız iki değer de tarih olarak çözülebiliyorsa çalışır; aksi hâlde
+ * { conflict:false } döner (uydurma yok). Saat dilimi sapmaları için 1 gün tolerans.
+ * BEYAN ≠ GÖZLEM; bu bir KANIT değil, DİKKAT işaretidir.
+ */
+export function evidenceTimeConflict(origin) {
+  const o = origin && typeof origin === 'object' ? origin : {};
+  const embRaw = o.embedded && o.embedded.recordingAt ? String(o.embedded.recordingAt) : '';
+  const ft = o.fileTimes && typeof o.fileTimes === 'object' ? o.fileTimes : {};
+  const fileRaw = ft.modifiedAt || ft.createdAt || '';
+  const emb = embRaw ? Date.parse(embRaw) : NaN;
+  const file = fileRaw ? Date.parse(String(fileRaw)) : NaN;
+  if (!Number.isFinite(emb) || !Number.isFinite(file)) return { conflict: false };
+  const tolMs = 24 * 60 * 60 * 1000;
+  if (emb - file > tolMs) {
+    return { conflict: true, embeddedAt: embRaw, fileAt: String(fileRaw), embeddedMs: emb, fileMs: file };
+  }
+  return { conflict: false };
+}
+
 // ---- Konuşmacı kodu çakışması (v2.262) -----------------------------------
 // Kod KİMLİK ANAHTARIDIR: iki konuşmacı aynı kodu taşırsa rapor iki kez "S1"
 // yazar ve hangi bölümün kime ait olduğu okunamaz. Çakışma VERİ OLARAK

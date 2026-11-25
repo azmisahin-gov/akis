@@ -118,16 +118,17 @@ import {
   questionEvidenceRows,
   autoSpeakerPlan,
   bestSpeakerMatch,
+  evidenceTimeConflict,
   embeddingCentroid
-} from './schema.js?v=2.307';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.307';
+} from './schema.js?v=2.308';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.308';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.307';
+const APP_VERSION = '2.308';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -11940,7 +11941,14 @@ function originPanelHtml(m) {
   <div class="seg-field"><label>Gömülü metadata (cihaz beyanı)</label>
     <div class="origin-embedded">${embTxt ? esc(embTxt) : 'Okunmadı veya dosyada yok'}</div>
     <button type="button" class="mini-button" data-read-embedded="${esc(m.id)}" title="Dosyanın kendi metadata'sını yeniden okur. Cihaz beyanıdır; doğrulanmış kayıt zamanı değildir.">Dosyadan oku</button>
-  </div>`;
+  </div>${(() => {
+    const tc = evidenceTimeConflict(o);
+    return tc.conflict
+      ? `<div class="warn-box" title="Gömülü metadata bir BEYANDIR; dosya zamanı GÖZLEMDİR. Bu bir kanıt değil, dikkat işaretidir.">⚠ Zaman çelişkisi: gömülü metadata kayıt tarihi (${esc(
+          tc.embeddedAt
+        )}) dosyanın değişiklik zamanından (${esc(tc.fileAt)}) SONRA görünüyor. İnceleyin.</div>`
+      : '';
+  })()}`;
 }
 function originRows(c) {
   const out = [];
@@ -12279,6 +12287,7 @@ const READINESS_SEVERITY = {
   coverage: 'expert',
   hash: 'expert',
   origin: 'advisory',
+  timeConflict: 'advisory',
   longSegments: 'advisory',
   questions: 'advisory'
 };
@@ -12405,6 +12414,16 @@ function reportReadiness(c) {
     `${String(gapSec.toFixed(1)).replace('.', ',')} sn · "Kapsam" düğmesinden aralıkları görün.`,
     '',
     'coverage'
+  );
+  // KANIT ZAMAN ÇELİŞKİSİ (v2.308): gömülü metadata (BEYAN) dosya zamanından
+  // (GÖZLEM) belirgin biçimde sonra ise DİKKAT maddesi. Kanıt değildir.
+  const timeConf = materials.filter((m) => evidenceTimeConflict(m && m.origin).conflict).length;
+  add(
+    'timeConflict',
+    'Kanıt zamanı çelişkisi',
+    timeConf,
+    'audio',
+    'Gömülü metadata kayıt tarihi, dosyanın değişiklik zamanından sonra görünüyor. Beyan ≠ gözlem; "Kayıt bilgileri" bölümünde inceleyin.'
   );
   // ZAMAN SORUNU (v2.201): KAYIT BAŞINA sayılır. Kayıtların zaman çizgileri
   // AYRIDIR; tüm bölümleri tek çizgi gibi saymak, her kayıt 0'dan başladığında
@@ -19926,6 +19945,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.308': {
+    title: 'Kanıt zaman çelişkisi uyarısı',
+    body:
+      'Gömülü metadata (beyan) kayıt tarihi, dosyanın değişiklik zamanından (gözlem) belirgin biçimde sonra ise “Kayıt bilgileri”nde ⚠ uyarı ve rapor hazırlığında madde çıkar. Bu bir kanıt değil, dikkat işaretidir; tarihler çözülemezse uyarı verilmez.'
+  },
   '2.307': {
     title: 'Soru ↔ bölüm önerisi',
     body:

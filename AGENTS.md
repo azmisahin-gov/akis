@@ -2381,7 +2381,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.307.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.308.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -7713,3 +7713,31 @@ Delil D2 (Rust CLI), D3/D4 (imaj), Ollama LLM, Tauri. Ayrıntı:
    hazırlık maddesi; "beyan ≠ gözlem"). A3 (tam dosya metadata) sonra, ölçümle.
 2. **B2 — kurumsal kâğıt biçimi** (başlık bandı/sayfa no/imza; üç çıktı aynı).
 3. **C2 — terim/konu listesi** (opt-in; en sona).
+
+## YENİ OTURUM DEVRİ (v2.308) — Kanıt zaman çelişkisi (A1)
+
+| | |
+|---|---|
+| Sürüm | **v2.308** |
+| Testler | `bash tools/test.sh` → **2174 birim + 522 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | A3 (tam dosya metadata), B2 kurumsal kâğıt, C2 terim listesi |
+
+- `schema.js` → **`evidenceTimeConflict(origin)`** (saf): `Date.parse` ile
+  `embedded.recordingAt` ve `fileTimes.modifiedAt||createdAt` çözülür; beyan
+  dosyadan **>1 gün** sonra ise `{conflict:true, embeddedAt, fileAt}`.
+  Çözülemeyen tarihte `{conflict:false}` (uydurma yok).
+- UI: `originPanelHtml` → **⚠ Zaman çelişkisi** kutusu; `reportReadiness`
+  maddesi `timeConflict` (`READINESS_SEVERITY.timeConflict='advisory'`).
+- Test `birim [149]` (9).
+
+### DEĞİŞMEZ
+1. **Beyan ≠ gözlem:** gömülü metadata beyandır, dosya zamanı gözlemdir. Uyarı
+   **kanıt değil**, dikkat işaretidir; "çelişki yok" kaydın gerçek olduğunu
+   KANITLAMAZ.
+2. **Uydurma yok:** tarih çözülemezse çelişki bildirilmez; 1 gün tolerans.
+3. Yeni bir "dikkat" maddesi eklerken `reportReadiness` + `READINESS_SEVERITY`.
+
+### Sıradaki iş
+- **A3:** gömülü metadata tam dosyada (8 MB sınırı) — gerçek büyük dosyada ölç.
+- **B2:** kurumsal kâğıt biçimi (başlık bandı/sayfa no/imza; üç çıktı aynı).
+- **C2:** terim/konu listesi (opt-in).

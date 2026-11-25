@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.307.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.308.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.308 — Kanıt zaman çelişkisi (beyan ≠ gözlem)
+
+**Amaç (A1):** Gömülü metadata'nın **beyan** ettiği kayıt tarihi ile dosyanın
+**gözlenen** değişiklik zamanı çelişirse **görünür** olsun.
+
+### KULLANICI NE GÖRECEK
+
+- **Kayıt bilgileri** bölümünde, gömülü metadata kayıt tarihi dosya değişiklik
+  zamanından **belirgin biçimde sonra** ise **⚠ Zaman çelişkisi** uyarısı çıkar
+  (iki tarih birlikte yazılır).
+- **Rapor hazırlığı** kartına **“Kanıt zamanı çelişkisi”** maddesi eklenir
+  (dikkat/uyarı; engellemez).
+- **Uydurma yok:** tarihlerden biri çözülemiyorsa (serbest metin/eksik) çelişki
+  **bildirilmez**; 1 gün tolerans (saat dilimi sapmaları) uygulanır.
+
+### Dürüst sınır
+
+- Gömülü metadata **beyandır** (kolayca değişir); dosya zamanı **gözlemdir**.
+  Bu bir **kanıt değil**, **dikkat işaretidir**. Çelişki yokluğu, kaydın gerçek
+  olduğunu **kanıtlamaz**.
+
+### Teknik
+
+- `schema.js` → **`evidenceTimeConflict(origin)`** (saf): `Date.parse` ile iki
+  değeri çözer; `embedded.recordingAt − (modifiedAt||createdAt) > 1 gün` ise
+  `{conflict:true, embeddedAt, fileAt}`. Aksi hâlde `{conflict:false}`.
+- `originPanelHtml` uyarı kutusu; `reportReadiness` maddesi
+  (`READINESS_SEVERITY.timeConflict='advisory'`).
+- Koruyan: `birim` [149] (9 kontrol).
 
 ## v2.307 — Soru ↔ bölüm önerisi (deterministik)
 
