@@ -2,11 +2,25 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.335.**
+yazılır. **Güncel sürüm: v2.336.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.336 — Rapor künyesi tek bölüm + alan görünürlüğü (TAMAMLANDI)
+
+- **Tek “RAPOR KÜNYESİ”:** ayrıntılı künye bölümü kaldırıldı, içeriği birleşti;
+  eski kayıt göçü korunur.
+- **Alan görünürlüğü:** `case.report.fields` + iskelette “Alanlar · N/M”;
+  kapatılan alan üç çıktıda da çizilmez.
+- **Keşif → İnceleme tarihi**; **uzmanlık alanı** tam metin ve tek kaynak;
+  **inceleme konusu** boşsa engelleyen hazırlık maddesi.
+- **Raporun ekleri** otomatik; **tarafsızlık beyanı** künyede kapatılabilir.
+- **Kısa özet:** süreler birimli; “Transkriptin bulunduğu bölüm” kaldırıldı.
+- **Tutarlılık:** etiketler veride büyük harf (CSS dönüşümü yok), bölüm
+  başlıkları tek biçim.
+- Test: `birim [163]`, `rapor` Senaryo 20.
 
 ## v2.335 — Toplu işlem/aktarma bildirimleri (TAMAMLANDI)
 

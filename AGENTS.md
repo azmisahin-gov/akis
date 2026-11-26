@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.335.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.336.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8741,3 +8741,32 @@ hatası `role=status` (nazik) idi.
 
 **Dürüst sınır:** Toplu çözümleme bu ortamda gerçek model indirilmeden
 çalıştırılamadı; `queueResultText` ve sayaç kaynak düzeyinde test edildi.
+
+## YENİ OTURUM DEVRİ (v2.336) — Rapor künyesi tek bölüm + alan görünürlüğü
+
+| | |
+|---|---|
+| Sürüm | **v2.336** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2584 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Rapor ön bölüm tipografisi/başlık tutarlılığı ayrı sürümde sürer |
+
+**Ölçülen durum (v2.335):** Künye iki tabloda tekrar ediyordu; uzmanlık alanı
+aynı raporda iki farklı değer gösteriyordu (“56.12 – …” / “56.12”); özet
+süreleri birimsizdi (“02:03”); HTML etiketleri CSS ile büyük harfe çevriliyor,
+DOCX/UDF karışık harf basıyordu.
+
+**DEĞİŞMEZ KURALLAR**
+
+1. **Tek künye:** `coverFields` = “RAPOR KÜNYESİ”. Ayrı `kunye` bölümü YOKTUR;
+   göç `normalizeReportSections` içinde (kunye açıksa coverFields açık kalır).
+2. **Alan görünürlüğü tek kaynak:** `REPORT_FIELD_DEFS` + `normalizeReportFieldVisibility`
+   + `reportFieldVisible`; `case.report.fields`. Üç çıktı `frontRowsFor()` kullanır;
+   ayrı süzgeç yazmayın.
+3. **Etiketler VERİDE büyük harf**; CSS `text-transform` yazılmaz. Ekran/DOCX/UDF
+   aynı metni gösterir.
+4. **Uzmanlık alanı tek kaynak:** `DEFAULT_EXPERT_FIELD` (schema). Dosyada
+   değiştirilebilir; raporda tam metin, üst satır/üst bilgide kısa kod.
+5. **“Raporun ekleri” elle yazılmaz:** `reportAttachmentLines(c)` (EKLER) otomatik.
+6. **“Keşif” sözcüğü kullanılmaz:** tek anlam `inspectionDate` → “İNCELEME TARİHİ”.
+7. **İnceleme konusu boşsa** `reportReadiness` `subject` maddesi **blocking**.
+8. Test: `birim [163]`, `rapor` Senaryo 20, `tasarim [2bs]`.

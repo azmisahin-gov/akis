@@ -4258,3 +4258,11 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .pf-doc-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .pf-doc-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--ink-2); }
 .pf-doc-list li b { color: var(--ink); overflow-wrap: anywhere; }
+
+/* ÖN BÖLÜM ALAN GÖRÜNÜRLÜĞÜ (v2.336): bölüm satırının altında açılır liste.
+   Alanlar bölüm gibi tek tek kapatılır; kapatılan alan üç çıktıda da çizilmez. */
+.rsec-fields { margin: 2px 0 4px 26px; font-size: var(--fs-xs); }
+.rsec-fields > summary { cursor: pointer; color: var(--ink-3); font-size: var(--fs-xs); }
+.rsec-fields > summary:hover { color: var(--ink); }
+.rsec-field-item { display: flex; align-items: center; gap: 6px; padding: 2px 0 2px 10px; color: var(--ink-2); }
+.rsec-field-item input { flex: 0 0 auto; }

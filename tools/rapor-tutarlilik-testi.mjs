@@ -765,7 +765,6 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
       ...(sections ? { report: { sections } } : {})
     });
   const NEW = [
-    REPORT_TEXT.kunyeHeading,
     REPORT_TEXT.summaryHeading,
     REPORT_TEXT.enhanceHeading,
     REPORT_TEXT.asrHeading,
@@ -779,11 +778,11 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
     NEW.every((t) => !Hd.includes(t) && !Ud.includes(t) && !Dd.includes(t))
   );
 
-  const on = mk({ kunye: true, summary: true, enhance: true, asr: true, scopeNote: true, privacy: true, annex: true });
+  const on = mk({ summary: true, enhance: true, asr: true, scopeNote: true, privacy: true, annex: true });
   const H = htmlText(on), U = await udfText(on), D = await docxText(on);
   for (const t of NEW) checkShared(`açık: ${t.slice(0, 24)}`, t, H, U, D);
   checkShared('künye değeri (dosya no)', '2026/214 E.', H, U, D);
-  checkShared('kısa özet başlığı içeriği', 'İncelenen ses dosyası sayısı', H, U, D);
+  checkShared('kısa özet başlığı içeriği', 'İNCELENEN SES DOSYASI SAYISI', H, U, D);
   checkShared('ASR modeli', 'Xenova/whisper-small', H, U, D);
   checkShared('EK-1 teslim tutanağı', 'Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
   checkShared('EK-3 işlem günlüğü', 'Rapor eki 3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
@@ -811,23 +810,39 @@ console.log('\n[Senaryo 19] teknik ortam alanları (v2.222)');
   checkShared('boş alan "—" ile yazılır', 'Meta veri okuma aracı ve sürümü', H, U, D);
 }
 
-// Senaryo 20: künye ek alanları (v2.225). Künye kapalıyken görünmez; açıkken
-// elle girilen ekler/tarafsızlık beyanı üç çıktıda AYNI olmalı.
-console.log('\n[Senaryo 20] künye ek alanları (v2.225)');
+// Senaryo 20: birleşik RAPOR KÜNYESİ + alan görünürlüğü (v2.336)
+console.log('\n[Senaryo 20] birleşik künye ve alan görünürlüğü (v2.336)');
 {
-  const mk = (sections, extra) => baseCase({ report: { sections: sections || {}, ...(extra || {}) } });
-  const off = mk({}, { impartiality: 'Engel yok', annexList: 'EK-1' });
+  const mk = (report) => baseCase({ report: report || {} });
+  const withImp = mk({ impartiality: 'Tarafsızlığı etkileyen hâl yoktur.' });
+  const H = htmlText(withImp), U = await udfText(withImp), D = await docxText(withImp);
+  checkShared('künye alanı etiketi', 'TARAFSIZLIK / BAĞIMSIZLIK BEYANI', H, U, D);
+  checkShared('tarafsızlık beyanı değeri', 'Tarafsızlığı etkileyen hâl yoktur.', H, U, D);
+
+  // Alan kapatılınca üç çıktıda da görünmez; VERİ SİLİNMEZ.
+  const off = mk({ fields: { coverFields: { impartiality: false } }, impartiality: 'Gizli beyan' });
   const Ho = htmlText(off), Uo = await udfText(off), Do = await docxText(off);
   check(
-    'varsayılan: künye KAPALI (üç çıktıda yok)',
-    !Ho.includes(REPORT_TEXT.kunyeHeading) && !Uo.includes(REPORT_TEXT.kunyeHeading) && !Do.includes(REPORT_TEXT.kunyeHeading)
+    'alan kapatılınca beyan üç çıktıda yok',
+    !Ho.includes('Gizli beyan') && !Uo.includes('Gizli beyan') && !Do.includes('Gizli beyan')
   );
-
-  const on = mk({ kunye: true }, { impartiality: 'Tarafsızlığı etkileyen hâl yoktur.', annexList: 'EK-1 teslim tutanağı' });
-  const H = htmlText(on), U = await udfText(on), D = await docxText(on);
-  checkShared('künye başlığı', REPORT_TEXT.kunyeHeading, H, U, D);
-  checkShared('raporun ekleri değeri', 'EK-1 teslim tutanağı', H, U, D);
-  checkShared('tarafsızlık beyanı değeri', 'Tarafsızlığı etkileyen hâl yoktur.', H, U, D);
+  // RAPORUN EKLERİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
+  const withAnnex = baseCase({
+    report: { annexList: 'ELLE YAZILMIŞ EK' },
+    physicalFile: { handover: { delivered: true, at: '2026-01-01T10:00', deliveredBy: 'Görevli' } }
+  });
+  const Ha = htmlText(withAnnex), Ua = await udfText(withAnnex), Da = await docxText(withAnnex);
+  checkShared('raporun ekleri etiketi', 'RAPORUN EKLERİ', Ha, Ua, Da);
+  checkShared('ek otomatik listelenir', 'MATERYAL TESLİM VE İADE TUTANAĞI', Ha, Ua, Da);
+  check(
+    'elle yazılan ek listesi kullanılmaz',
+    !Ha.includes('ELLE YAZILMIŞ EK') && !Ua.includes('ELLE YAZILMIŞ EK') && !Da.includes('ELLE YAZILMIŞ EK')
+  );
+  // Keşif sözcüğü raporda yok: tek anlam İNCELEME TARİHİ.
+  check(
+    'keşif ifadesi kaldırıldı',
+    !Ha.includes('KEŞİF') && !Ua.includes('KEŞİF') && !Da.includes('KEŞİF') && Ha.includes('İNCELEME TARİHİ')
+  );
 }
 
 // Senaryo 21: kalite kontrolü / denetlenebilirlik (v2.226).
@@ -1418,10 +1433,12 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('taşınan s5 EK başlığı', 'Rapor eki 7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
   checkShared('taşınan s5 içeriği', 'merhaba', H, U, D);
   checkShared('taşınan s5 alt başlığı', 'EK-7.1. Ses kayıtlarının çözümlenmesi', H, U, D);
+  // v2.336: künyedeki "RAPORUN EKLERİ" satırı da taşınan eki listeler; bu
+  // yüzden başlık 2 kez geçer (ek başlığı + künye listesi), gövdede TEK kez.
   const count = (t) => (String(t).match(/KAYIT BAZINDA BULGULAR VE TRANSKRİPT/g) || []).length;
-  check('s5 başlığı tek kez (H)', count(H) === 1, String(count(H)));
-  check('s5 başlığı tek kez (U)', count(U) === 1, String(count(U)));
-  check('s5 başlığı tek kez (D)', count(D) === 1, String(count(D)));
+  check('s5 başlığı gövde+ek ve künye listesi (H)', count(H) === 2, String(count(H)));
+  check('s5 başlığı gövde+ek ve künye listesi (U)', count(U) === 2, String(count(U)));
+  check('s5 başlığı gövde+ek ve künye listesi (D)', count(D) === 2, String(count(D)));
 }
 
 // Senaryo 41: soru dayanağı (v2.300). Bir soruya bölüm bağlanınca rapor

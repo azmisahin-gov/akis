@@ -1503,7 +1503,7 @@ console.log('\n[2bb] Raporda okuma metni (v2.202)');
     'paragraf görünümü de aynı kaynağı kullanıyor',
     /function paragraphViewText\(m\)[\s\S]{0,220}readingGroupsFor\(m\)/.test(appJs)
   );
-  check('okuma metni başlığı REPORT_TEXT te', /readingHeading: 'Okuma metni'/.test(appJs) && /readingIntro:/.test(appJs));
+  check('okuma metni başlığı REPORT_TEXT te', /readingHeading: 'OKUMA METNİ'/.test(appJs) && /readingIntro:/.test(appJs));
   check(
     'HTML raporu okuma metnini ekliyor',
     // v2.234: okuma metni ayrı `reading` bloğunda (s5 içinde değil).
@@ -1831,7 +1831,8 @@ console.log('\n[2bs] Künye ek alanları: ekler + tarafsızlık (v2.225)');
   check('çizim fonksiyonu tanımlı', /function renderReportKunye\(/.test(js));
   check('renderReport künye alanlarını çizer', /renderReportKunye\(c\);/.test(js));
   check('girdi işleyicisi', /reportKunyeFields'\)\?\.addEventListener\('input'/.test(js) && /reportKunyeFields'\)\?\.addEventListener\('change'/.test(js));
-  check('kunyeRows iki alanı basar', /Raporun ekleri/.test(js) && /Tarafsızlık \/ bağımsızlık beyanı/.test(js));
+  check('künye alanları büyük harf (üç çıktı aynı)', /RAPORUN EKLERİ/.test(js) && /TARAFSIZLIK \/ BAĞIMSIZLIK BEYANI/.test(js));
+  check('alan görünürlüğü: tek kaynak ve çizim', /REPORT_FIELD_DEFS/.test(schema) && /frontRowsFor\(c, 'coverFields'/.test(js) && /data-report-field/.test(js));
 }
 
 console.log('\n[2bt] Kalite kontrolü / denetlenebilirlik (v2.226)');

@@ -600,6 +600,72 @@ export function emptyMaterial(over = {}) {
   };
 }
 
+// ---- 5a-2. Rapor ön bölüm ALAN görünürlüğü (v2.336) ---------------------
+// KURAL: ön bölüm alanları da bölümler gibi tek tek açılıp kapatılabilir.
+// Anahtar (key) sabittir; etiket arayüzde/raporda tek kaynaktan türetilir.
+// `false` = gizli. Varsayılan AÇIK; eksik anahtar açık sayılır.
+export const REPORT_FIELD_DEFS = {
+  coverFields: [
+    { key: 'fileNo' },
+    { key: 'court' },
+    { key: 'plaintiff' },
+    { key: 'plaintiffCounsel' },
+    { key: 'defendant' },
+    { key: 'defendantCounsel' },
+    { key: 'subject' },
+    { key: 'caseDate' },
+    { key: 'assignmentDate' },
+    { key: 'assignmentDuration' },
+    { key: 'dueDate' },
+    { key: 'inspectionDate' },
+    { key: 'reportDate' },
+    { key: 'expertName' },
+    { key: 'expertField' },
+    { key: 'registryNo' },
+    { key: 'annexList' },
+    { key: 'impartiality' }
+  ],
+  summary: [
+    { key: 'materialCount' },
+    { key: 'totalDuration' },
+    { key: 'transcriptDuration' },
+    { key: 'speakerCodes' },
+    { key: 'unclearSegments' },
+    { key: 'asr' },
+    { key: 'enhancement' }
+  ]
+};
+export function normalizeReportFieldVisibility(src = {}) {
+  const out = {};
+  for (const [section, defs] of Object.entries(REPORT_FIELD_DEFS)) {
+    const cur = src && typeof src === 'object' && src[section] && typeof src[section] === 'object' ? src[section] : {};
+    out[section] = {};
+    for (const d of defs) out[section][d.key] = cur[d.key] !== false;
+    // Bilinmeyen anahtar korunur (ileri uyum); yalnız bilinen anahtarlar çizilir.
+    for (const k of Object.keys(cur)) if (!(k in out[section])) out[section][k] = !!cur[k];
+  }
+  return out;
+}
+export function reportFieldVisible(c, section, key) {
+  const v = c && c.report && c.report.fields;
+  return !(v && v[section] && v[section][key] === false);
+}
+// UZMANLIK ALANI varsayılanı TEK KAYNAK (v2.336). Kullanıcı dosya künyesinden
+// değiştirebilir; boş bırakılırsa bu metin kullanılır.
+export const DEFAULT_EXPERT_FIELD =
+  '56.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)';
+// Eski varsayılan ("56.12 – Ses kayıtlarının metin hâline dönüştürülmesi") ve
+// yalnız kod ("56.12") TAM metne çekilir; özel yazılmış metin korunur.
+export function normalizeExpertField(v) {
+  const s = str(v).trim();
+  if (!s) return DEFAULT_EXPERT_FIELD;
+  if (/^56\.12$/.test(s)) return DEFAULT_EXPERT_FIELD;
+  if (/^56\.12\s*[–-]\s*Ses kayıtlarının metin hâline dönüştürülmesi\.?$/i.test(s)) {
+    return DEFAULT_EXPERT_FIELD;
+  }
+  return s;
+}
+
 // ---- 5b. Rapor bölüm görünürlüğü (v2.219) --------------------------------
 // RAPOR PARAMETRİKTİR: tüm bölümler hazır tutulur; bilirkişi her birini
 // açıp kapatabilir. Anahtar (key) sabittir, başlık arayüzde `REPORT_TEXT`ten
@@ -613,7 +679,7 @@ export function emptyMaterial(over = {}) {
 // `case.report.layout.order` ile değiştirebilir.
 export const REPORT_SECTION_DEFS = [
   { key: 'cover', def: true, title: 'KAPAK' },
-  { key: 'coverFields', def: true, title: 'KÜNYE ALANLARI' },
+  { key: 'coverFields', def: true, title: 'RAPOR KÜNYESİ' },
   { key: 'toc', def: true, title: 'İÇİNDEKİLER' },
   { key: 's1', def: true, title: 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI' },
   { key: 's2', def: true, title: 'BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR' },
@@ -621,11 +687,11 @@ export const REPORT_SECTION_DEFS = [
   { key: 'origin', def: true, title: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ' },
   { key: 'embedded', def: true, title: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)' },
   { key: 'acquisition', def: true, title: 'DELİL EDİNME VE DOĞRULAMA' },
-  { key: 'speakers', def: true, title: 'Konuşmacılar' },
-  { key: 'speakerDurations', def: true, title: 'Konuşmacı süreleri' },
+  { key: 'speakers', def: true, title: 'KONUŞMACILAR' },
+  { key: 'speakerDurations', def: true, title: 'KONUŞMACI SÜRELERİ' },
   { key: 's4', def: true, title: 'İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR' },
   { key: 's5', def: true, title: 'KAYIT BAZINDA BULGULAR VE TRANSKRİPT' },
-  { key: 'reading', def: true, title: 'Okuma metni' },
+  { key: 'reading', def: true, title: 'OKUMA METNİ' },
   // v2.311 (C2): terim/konu listesi — opt-in (varsayılan KAPALI). Transkriptte
   // sık geçen anlamlı sözcükler; yazım tutarlılığı ve hızlı tarama için.
   { key: 'terms', def: false, title: 'TERİM VE KONU LİSTESİ' },
@@ -640,12 +706,11 @@ export const REPORT_SECTION_DEFS = [
   { key: 'integrity', def: false, title: 'ORİJİNALİN KORUNMASI VE BÜTÜNLÜK KAYDI' },
   { key: 'wer', def: true, title: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)' },
   { key: 'levels', def: true, title: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ' },
-  { key: 'reviewSummary', def: true, title: 'İNCELEME ÖZETİ (denetim kaydı)' },
+  { key: 'reviewSummary', def: true, title: 'İNCELEME ÖZETİ (DENETİM KAYDI)' },
   { key: 's6', def: true, title: 'GEREKÇELİ SONUÇ' },
   { key: 's7', def: false, title: 'EK LİSTESİ' },
-  { key: 'signature', def: true, title: 'İmza ve alt bilgi' },
+  { key: 'signature', def: true, title: 'İMZA VE ALT BİLGİ' },
   // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI.
-  { key: 'kunye', def: false, title: 'RAPOR KÜNYESİ' },
   { key: 'summary', def: false, title: 'RAPORUN KISA ÖZETİ' },
   { key: 'enhance', def: false, title: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ' },
   { key: 'asr', def: false, title: 'OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI' },
@@ -660,7 +725,7 @@ export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
 // ---- 5b-2. Rapor iskeleti: sıra, numara, ekler (v2.227) ------------------
 // KAPAK/ön bölüm ve İMZA yapısaldır: sırası sabittir. Gövde bölümleri
 // kullanıcı tarafından sıralanabilir; sıra `case.report.layout.order`'dadır.
-export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'kunye', 'summary', 'toc'];
+export const REPORT_FRONT_KEYS = ['cover', 'coverFields', 'summary', 'toc'];
 // Bölüm numaralandırma (v2.285): 'auto' = 1, 2, 3…; 'letters' = A, B, C…;
 // 'none' = hiç numara yok. Varsayılan auto (mevcut raporlar değişmesin).
 export const REPORT_NUMBERING = ['auto', 'letters', 'none'];
@@ -1307,6 +1372,12 @@ export function normalizeReportSections(src) {
   if (!src || typeof src !== 'object') return base;
   for (const k of Object.keys(base)) if (typeof src[k] === 'boolean') base[k] = src[k];
   for (const k of Object.keys(src)) if (!(k in base)) base[k] = src[k];
+  // v2.336: ayrıntılı "RAPOR KÜNYESİ" bölümü tek künyeye (coverFields) birleşti.
+  // Eski kayıtta künye açıksa birleşik künye de açık kalır; anahtar temizlenir.
+  if (typeof src.kunye === 'boolean') {
+    if (src.kunye && src.coverFields === false) base.coverFields = true;
+    delete base.kunye;
+  }
   return base;
 }
 
@@ -1533,6 +1604,8 @@ export function emptyCase(over = {}) {
       layout: emptyReportLayout(),
       // Tablo sütun görünürlüğü (v2.235): tümü açık.
       columns: emptyReportColumns(),
+      // Ön bölüm ALAN görünürlüğü (v2.336): tümü açık.
+      fields: normalizeReportFieldVisibility(),
       // Numaralandırma (v2.285): 'auto' | 'letters' | 'none'.
       numbering: 'auto',
       // Bölüm başlığı düzenlemeleri (v2.285): anahtar → kullanıcı başlığı.
@@ -2616,6 +2689,9 @@ export function normalizeCase(src = {}) {
   const parties = isObj(c.parties) ? c.parties : {};
   const assignment = isObj(c.assignment) ? c.assignment : {};
   const expert = isObj(c.expert) ? c.expert : {};
+  // v2.336: düz alan ile iç içe alan AYNI değeri taşımalı; aksi hâlde
+  // defineCaseMirrors eski düz değeri geri yazar ve göç kaybolur.
+  const expertFieldNorm = normalizeExpertField(expert.field || c.expertField);
   const report = isObj(c.report) ? c.report : {};
   // v2.287: serbest bloklar ve sıra birlikte normalize edilir; yetim
   // `free:` anahtarı düşer, sırası olmayan blok `s6` öncesine girer.
@@ -2671,8 +2747,11 @@ export function normalizeCase(src = {}) {
     expert: {
       name: str(expert.name || c.expertName),
       registryNo: str(expert.registryNo || c.registryNo),
-      field: str(expert.field || c.expertField) || '56.12'
+      // UZMANLIK ALANI (v2.336): boş, yalnız kod ("56.12") veya eski varsayılan
+      // metin ise TAM varsayılana çekilir. Kullanıcının yazdığı özel metin korunur.
+      field: expertFieldNorm
     },
+    expertField: expertFieldNorm,
     team,
     speakers,
     // Disk envanteri: bilinmeyen alanlar korunur; kimlik yoksa verilir.
@@ -2698,6 +2777,8 @@ export function normalizeCase(src = {}) {
       labels: normalizeReportLabels(report.labels),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
+      // Ön bölüm alan görünürlüğü (v2.336): eksik alan açık varsayılır.
+      fields: normalizeReportFieldVisibility(report.fields),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
       numbering: REPORT_NUMBERING.includes(report.numbering) ? report.numbering : 'auto',
       // Başlık düzenlemeleri: yalnız bilinen bölüm anahtarları, boş atılır.

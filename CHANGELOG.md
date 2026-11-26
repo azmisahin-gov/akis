@@ -6,12 +6,51 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.335.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.336.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.336 — Rapor künyesi tek bölüm, alanlar tek tek açılıp kapanabilir
+
+**KULLANICI NE GÖRECEK:** Raporun ön bölümü sadeleşti. Ayrıntılı **“RAPOR
+KÜNYESİ”** ile **“KÜNYE ALANLARI”** aynı bilgileri iki kez yazıyordu; artık
+**tek “RAPOR KÜNYESİ”** var. Her künye/özet alanı, iskelette bölüm satırının
+altındaki **“Alanlar · N/M”** listesinden **tek tek açılıp kapatılabilir**;
+kapatılan alan üç çıktıda da görünmez (veri silinmez). **“Keşif / inceleme
+tarihi”** yerine tek anlam: **“İnceleme tarihi”**. **Uzmanlık alanı** artık tam
+metinle gelir: *56.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı
+Mercilerince … Hariç)* ve dosya künyesinden değiştirilebilir. **İnceleme konusu**
+boşsa rapor hazırlığında **engelleyen** madde çıkar. **“Raporun ekleri”** elle
+yazılmaz; EKLER bölümündeki gerçek eklerden otomatik üretilir. **Tarafsızlık /
+bağımsızlık beyanı** künyenin kapatılabilir bir satırıdır. Kısa özet süreleri
+**birimlidir** (sn/dk/sa); “Transkriptin bulunduğu bölüm” satırı kaldırıldı.
+
+**NEDEN (ölçüm, v2.335):** Örnek dosyada künye iki tabloda tekrar ediyordu
+(DOSYA NO, GÖREVLENDİRME TARİHİ, RAPOR TARİHİ, BİLİRKİŞİ ADI, SİCİL, UZMANLIK
+ALANI). Aynı rapor **uzmanlık alanını iki farklı değerle** gösteriyordu
+(“56.12 – Ses kayıtlarının metin hâline dönüştürülmesi” ve “56.12”). Özet
+“TOPLAM KAYIT SÜRESİ **02:03**” ve “DEŞİFRE EDİLEN … **—**” birimsizdi. HTML
+etiketleri CSS ile büyük harfe çevriliyor, DOCX/UDF ise karışık harf basıyordu
+(“Raporun ekleri” / “RAPORUN EKLERİ”).
+
+**Yapılan**
+- `REPORT_FIELD_DEFS` + `normalizeReportFieldVisibility` + `reportFieldVisible`
+  (schema): alan görünürlüğü **tek kaynak**, `case.report.fields`.
+- `reportRows` / `reportSummaryRows` → `{key,label,value}`; üç çıktı
+  `frontRowsFor()` ile aynı süzgeci kullanır. Etiketler **veride** büyük harf;
+  CSS `text-transform` kaldırıldı (ekran = DOCX = UDF).
+- Ayrıntılı künye bölümü kaldırıldı; eski kayıtta `kunye` açıksa birleşik künye
+  açık kalır (göç).
+- `DEFAULT_EXPERT_FIELD` tek kaynak (schema); yeni dosyalar bu metinle açılır.
+- Bölüm başlıkları tutarlı büyük harf (“KONUŞMACILAR”, “OKUMA METNİ”, “İMZA VE
+  ALT BİLGİ”…); iskelet etiketi “Rapor künyesi”.
+- Revizyon `fields` taşır.
+
+**Koruyan test:** `birim [163]` (25 kontrol) + `rapor` Senaryo 20 (birleşik
+künye, alan kapatma, otomatik ek listesi, keşif yok) + `tasarim [2bs]`.
 
 ## v2.335 — Toplu işlem ve aktarma bildirimleri
 

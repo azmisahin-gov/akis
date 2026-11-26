@@ -171,6 +171,7 @@ const EXPOSE = [
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
+  'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
   // v2.330 — fizikî dosya teslim ve iade
   'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
   'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
@@ -254,6 +255,8 @@ vm.createContext(sandbox);
 vm.runInContext(code, sandbox, { filename: 'app.js' });
 const T = sandbox.__t;
 T.reconcileSpeakerRefsForTest = __schemaMod.reconcileSpeakerRefs;
+T.normalizeExpertField = __schemaMod.normalizeExpertField;
+T.normalizeCaseForTest = __schemaMod.normalizeCase;
 T.l2Normalize = __schemaMod.l2Normalize;
 T.cosineSimilarity = __schemaMod.cosineSimilarity;
 T.embeddingCentroid = __schemaMod.embeddingCentroid;
@@ -3004,7 +3007,7 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
       segments: [seg()], log: []
     }, o);
     const base = (o) => Object.assign({
-      id: 'c1', fileNo: '2026/1', court: 'Ankara 1. Asliye Hukuk Mahkemesi', expertName: 'A. Bilirkişi',
+      id: 'c1', fileNo: '2026/1', court: 'Ankara 1. Asliye Hukuk Mahkemesi', expertName: 'A. Bilirkişi', subject: 'İnceleme konusu.',
       questions: [{ id: 'q1', question: 'Ne oldu?', answer: 'x' }],
       conclusionText: 'Kanaat metni.',
       materials: [mat()]
@@ -3018,6 +3021,9 @@ console.log('\n== [60] Rapor hazırlık denetimi (v2.150)');
 
     const noFile = T.reportReadiness(base({ fileNo: '   ' }));
     eq('dosya no boş yakalanır', keys(noFile).includes('fileNo'), true);
+    const noSubject = T.reportReadiness(base({ subject: '  ' }));
+    eq('inceleme konusu boş yakalanır', keys(noSubject).includes('subject'), true);
+    eq('konu eksiği engelleyen', T.readinessSeverity('subject'), 'blocking');
     eq('dosya no hedefi dosya bilgileri', noFile.items.find((x) => x.key === 'fileNo').target, 'case');
 
     const noCourt = T.reportReadiness(base({ court: '' }));
@@ -4386,7 +4392,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const sha = 'a'.repeat(64);
   const seg = (o) => Object.assign({ id: 's1', start: '00:00:00.000', end: '00:00:10.000', text: 'merhaba', review: 'approved', speaker: 'Tanık' }, o);
   const mat = (o) => Object.assign({ id: 'm1', name: 'a.wav', duration: 10, sha256: sha, origin: { mediumType: 'usb', deliveredBy: 'X', deliveredAt: '2026-01-01' }, speakers: [{ id: 'sp1', code: 'S1', label: 'Tanık' }], segments: [seg()], log: [] }, o);
-  const base = (o) => Object.assign({ id: 'c1', fileNo: '2026/1', court: 'A', expertName: 'B', conclusionText: 'Kanaat.', questions: [{ id: 'q1', question: 'x', answer: 'y' }], materials: [mat()] }, o);
+  const base = (o) => Object.assign({ id: 'c1', fileNo: '2026/1', court: 'A', expertName: 'B', subject: 'Konu.', conclusionText: 'Kanaat.', questions: [{ id: 'q1', question: 'x', answer: 'y' }], materials: [mat()] }, o);
   eq('tam dosya ready', T.reportRecordStatus(base({})).code, 'ready');
   const blocked = T.reportRecordStatus(base({ fileNo: '' }));
   eq('dosya no boş blocked', blocked.code, 'blocked');
@@ -7430,6 +7436,72 @@ console.log('[162] Toplu işlem ve aktarma bildirimleri (v2.335)');
     /Paketten yükleme başarısız: \$\{err\.message\}`, true\)/.test(js),
     true
   );
+}
+
+console.log('[163] Ön bölüm alan görünürlüğü ve künye (v2.336)');
+{
+  // Ölçülen durum (v2.335): künye iki bölümde tekrarlanıyordu (DOSYA NO,
+  // GÖREVLENDİRME TARİHİ, RAPOR TARİHİ, BİLİRKİŞİ ADI…); uzmanlık alanı iki
+  // farklı değer gösteriyordu ("56.12 – …" / "56.12"); özet süreleri birimsizdi.
+  const defs = T.REPORT_FIELD_DEFS;
+  eq('alan tanımları var', !!(defs && defs.coverFields && defs.summary), true);
+  eq('künye alanı sayısı', defs.coverFields.length, 18);
+  eq('özet alanı sayısı', defs.summary.length, 7);
+
+  const v = T.normalizeReportFieldVisibility();
+  eq('varsayılan: künye alanı açık', v.coverFields.fileNo, true);
+  eq('varsayılan: özet alanı açık', v.summary.totalDuration, true);
+  const v2 = T.normalizeReportFieldVisibility({ coverFields: { fileNo: false, bilinmeyen: false } });
+  eq('kapatılan alan korunur', v2.coverFields.fileNo, false);
+  eq('diğer alan açık kalır', v2.coverFields.court, true);
+  eq('bilinmeyen anahtar korunur', v2.coverFields.bilinmeyen, false);
+
+  const c = { report: { fields: { coverFields: { fileNo: false } } } };
+  eq('reportFieldVisible kapalı', T.reportFieldVisible(c, 'coverFields', 'fileNo'), false);
+  eq('reportFieldVisible açık', T.reportFieldVisible(c, 'coverFields', 'court'), true);
+
+  const rowCase = {
+    reportType: 'hukuk', fileNo: '2026/1', court: 'Mahkeme', plaintiff: 'A', defendant: 'B',
+    subject: 'Konu', caseDate: '2026-01-01', assignmentDate: '2026-01-02', dueDate: '2026-02-01',
+    inspectionDate: '2026-01-10', reportDate: '2026-02-10', expertName: 'Uzman', expertField: '',
+    registryNo: 'R-1', report: { impartiality: 'Beyan' }, materials: []
+  };
+  const rows = T.reportRows(rowCase);
+  eq('künye satırları anahtar taşır', rows.every((r) => r.key && r.label && 'value' in r), true);
+  eq('etiketler büyük harf', rows.every((r) => r.label === r.label.toLocaleUpperCase('tr-TR')), true);
+  eq('keşif ifadesi yok', rows.some((r) => /KEŞİF/.test(r.label)), false);
+  eq('inceleme tarihi var', rows.some((r) => r.key === 'inspectionDate' && r.label === 'İNCELEME TARİHİ'), true);
+  eq(
+    'uzmanlık alanı varsayılanı tam metin',
+    rows.find((r) => r.key === 'expertField').value,
+    T.DEFAULT_EXPERT_FIELD
+  );
+  eq('varsayılan metin 56.12 ile başlar', /^56\.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi/.test(T.DEFAULT_EXPERT_FIELD), true);
+  eq('parantezli kapsam metni', /Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç/.test(T.DEFAULT_EXPERT_FIELD), true);
+  eq('uzmanlık kodu tam metne çekilir', T.normalizeExpertField('56.12'), T.DEFAULT_EXPERT_FIELD);
+  eq(
+    'eski varsayılan metin tam metne çekilir',
+    T.normalizeExpertField('56.12 – Ses kayıtlarının metin hâline dönüştürülmesi'),
+    T.DEFAULT_EXPERT_FIELD
+  );
+  eq('özel uzmanlık metni korunur', T.normalizeExpertField('Özel alan metni'), 'Özel alan metni');
+  const nc = T.normalizeCaseForTest({ expertField: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi' });
+  eq('göç: düz alan tam metin', nc.expertField, T.DEFAULT_EXPERT_FIELD);
+  eq('göç: iç içe alan tam metin', nc.expert.field, T.DEFAULT_EXPERT_FIELD);
+  const nc2 = T.normalizeCaseForTest({ expertField: 'Kullanıcının özel alanı' });
+  eq('göç: özel metin korunur (düz)', nc2.expertField, 'Kullanıcının özel alanı');
+
+  const visible = T.frontRowsFor({ report: { fields: { coverFields: { fileNo: false } } } }, 'coverFields', rows);
+  eq('kapalı alan çizilmez', visible.some((r) => r.key === 'fileNo'), false);
+  eq('açık alan çizilir', visible.some((r) => r.key === 'court'), true);
+
+  const sum = T.reportSummaryRows({
+    materials: [{ duration: 123, segments: [{ start: '00:00:00.000', end: '00:00:30.000', review: 'approved' }] }]
+  });
+  eq('özet satırları anahtar taşır', sum.every((r) => r.key && r.label), true);
+  eq('toplam süre birimli', /sn|dk|sa/.test(sum.find((r) => r.key === 'totalDuration').value), true);
+  eq('deşifre süresi birimli', /sn|dk|sa/.test(sum.find((r) => r.key === 'transcriptDuration').value), true);
+  eq('transkript bölümü satırı kaldırıldı', sum.some((r) => /TRANSKRİPTİN BULUNDUĞU/.test(r.label)), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

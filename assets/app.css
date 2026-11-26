@@ -89,7 +89,7 @@
 .storage-note{font-size:11px;line-height:1.6;color:var(--ink-3);margin:0}
 
 /* Official civil/admin court report structure + AKİS visual system */
-.report-paper .cover-fields td:first-child{width:34%;background:#eaf0f6;color:#24486f;font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.2px}
+.report-paper .cover-fields td:first-child{width:34%;background:#eaf0f6;color:#24486f;font-weight:700;font-size:11px;letter-spacing:.2px}
 .report-paper .cover-fields td:last-child{background:#fff}
 .paper-page-break{break-before:page;page-break-before:always;border-top:1px dashed #c7d3df;margin-top:32px;padding-top:20px}
 .toc-section ol{padding-left:24px;margin:12px 0 0;color:#294a6c}

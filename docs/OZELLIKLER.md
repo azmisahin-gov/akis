@@ -1,4 +1,4 @@
-# Özellikler (v2.335 — mevcut durum)
+# Özellikler (v2.336 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -109,6 +109,13 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   kayıtları sayar; sonuç `queueResultText` tek kaynağından yazılır ("N tamamlandı,
   M BAŞARISIZ"), hata varsa **role=alert**. Paketten yükleme hatası da
   **role=alert** ile duyurulur.
+- **Rapor künyesi tek bölüm (v2.336).** Ayrıntılı künye bölümü kaldırıldı;
+  `coverFields` = “RAPOR KÜNYESİ”. Alanlar `case.report.fields` ile tek tek
+  açılıp kapatılır (iskelette “Alanlar · N/M”); kapatılan alan üç çıktıda da
+  çizilmez. “Keşif / inceleme tarihi” → **İnceleme tarihi**; uzmanlık alanı
+  `DEFAULT_EXPERT_FIELD` tam metniyle gelir; inceleme konusu boşsa **engelleyen**
+  hazırlık maddesi; “Raporun ekleri” EKLER’den otomatik; tarafsızlık beyanı
+  künyede kapatılabilir; kısa özet süreleri birimli.
 
 ## Veri şeması (v3) — tek geçerli yapı
 

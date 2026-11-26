@@ -144,16 +144,21 @@ import {
   physicalCounts,
   physicalMissingItems,
   physicalReturnComplete,
-  physicalHandoverComplete
-} from './schema.js?v=2.335';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.335';
+  physicalHandoverComplete,
+  // ÖN BÖLÜM ALANLARI (v2.336)
+  REPORT_FIELD_DEFS,
+  normalizeReportFieldVisibility,
+  reportFieldVisible,
+  DEFAULT_EXPERT_FIELD
+} from './schema.js?v=2.336';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.336';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.335';
+const APP_VERSION = '2.336';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -245,7 +250,7 @@ const REPORT_TEXT = {
   sub51: '5.1. Ses kayıtlarının çözümlenmesi',
   // RAPOR "OKUMA METNİ" (v2.202). Paragraf görünümüyle AYNI gruplama; rapora
   // yalnız okunabilir metin olarak eklenir. Kanıt tablosu DEĞİŞMEZ.
-  readingHeading: 'Okuma metni',
+  readingHeading: 'OKUMA METNİ',
   readingIntro:
     'Aşağıdaki okuma metni, aynı konuşmacının ardışık bölümlerinden türetilmiş salt okunur bir okuma biçimidir. Ayrıntılı (zaman damgalı) bölüm tablosu ve cümle zamanları değişmez; bu bölüm yalnız okunabilirliği artırır.',
   termsIntro:
@@ -262,7 +267,7 @@ const REPORT_TEXT = {
   defaultConclusion:
     'Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.',
   defaultExpert: 'BİLİRKİŞİ',
-  defaultField: '56.12',
+  defaultField: DEFAULT_EXPERT_FIELD,
   toplineField: 'UZMANLIK ALANI · ',
   expertFieldHeading: 'UZMANLIK ALANI',
   defaultInventoryIntro: 'İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.',
@@ -336,7 +341,7 @@ const REPORT_TEXT = {
     'Telefon',
     'Diğer'
   ],
-  reviewSummaryHeading: 'İNCELEME ÖZETİ (denetim kaydı)',
+  reviewSummaryHeading: 'İNCELEME ÖZETİ (DENETİM KAYDI)',
   reviewSummaryIntro:
     'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
   rsMaterials: 'İncelemeye alınan kayıt',
@@ -377,7 +382,6 @@ REPORT_TEXT.noInventoryRow = [REPORT_TEXT.noMaterials, '', '', '', ''];
 // v2.220 — 56.12 şablon bölümleri. Yeni bölümler VARSAYILAN KAPALI; mevcut
 // rapor görünümü değişmez. Metinler tek kaynakta toplanır (HTML/DOCX/UDF aynı).
 Object.assign(REPORT_TEXT, {
-  kunyeHeading: 'RAPOR KÜNYESİ',
   summaryHeading: 'RAPORUN KISA ÖZETİ',
   summaryIntro:
     'Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler birbiriyle tutarlıdır.',
@@ -440,7 +444,7 @@ Object.assign(REPORT_TEXT, {
   recordTranscriptHeading: 'Deşifre (zaman damgalı)',
 
   // v2.268 — süre/aralık AYRI tabloda; ana tablo sıkışmaz.
-  speakerDurationHeading: 'Konuşmacı süreleri',
+  speakerDurationHeading: 'KONUŞMACI SÜRELERİ',
   speakerDurationHeaders: ['KOD', 'ETİKET', 'KAYIT', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
   speakerFootnote:
     'S kodları kayıt içidir (her kayıtta S1\'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.',
@@ -1324,7 +1328,7 @@ function freshCase() {
     inspectionDate: '',
     parties: { plaintiff: '', plaintiffCounsel: '', defendant: '', defendantCounsel: '' },
     assignment: { date: '', dueDate: '', durationDays: '', dueDateManual: false, scope: '', body: '' },
-    expert: { name: '', registryNo: '', field: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi' },
+    expert: { name: '', registryNo: '', field: DEFAULT_EXPERT_FIELD },
     team: [],
     report: {
       date: dateToday(),
@@ -2811,7 +2815,7 @@ function caseIdentityRows(c) {
     [r.defendant, p.defendant || (c && c.defendant)],
     [r.defendantCounsel, p.defendantCounsel || (c && c.defendantCounsel)],
     [spec.date, c && c.caseDate ? niceDate(c.caseDate) : ''],
-    ['Keşif / inceleme tarihi', c && c.inspectionDate ? niceDate(c.inspectionDate) : ''],
+    ['İnceleme tarihi', c && c.inspectionDate ? niceDate(c.inspectionDate) : ''],
     ['Bilirkişi', e.name || (c && c.expertName)],
     ['Sicil no', e.registryNo || (c && c.registryNo)],
     ['Uzmanlık alanı', e.field || (c && c.expertField)],
@@ -13530,26 +13534,42 @@ function expertFieldShort(c) {
   const code = raw.match(/^\d+(?:\.\d+)*/);
   return code ? code[0] : raw;
 }
+// RAPOR KÜNYESİ SATIRLARI (v2.336) — TEK KAYNAK. Her satır `{ key, label, value }`
+// taşır: alan görünürlüğü `key` ile yönetilir, üç çıktı `label/value` basar.
+// Etiketler BÜYÜK harfe burada çevrilir; CSS'e `text-transform` yazılmaz
+// (ekran ile DOCX/UDF aynı metni göstersin).
 function reportRows(c) {
+  if (!c) return [];
   const spec = reportTypeSpec(c.reportType);
   const r = spec.roles;
+  const up = (v) => String(v == null ? '' : v).toLocaleUpperCase('tr-TR');
   return [
-    [spec.fileNo, c.fileNo],
-    [r.plaintiff, c.plaintiff],
-    [r.plaintiffCounsel, c.plaintiffCounsel],
-    [r.defendant, c.defendant],
-    [r.defendantCounsel, c.defendantCounsel],
-    [spec.subject, c.subject],
-    [spec.date, niceDate(c.caseDate)],
-    ['GÖREVLENDİRME TARİHİ', niceDate(c.assignmentDate)],
-    ['VERİLEN SÜRE', c.assignmentDurationDays ? `${c.assignmentDurationDays} GÜN` : ''],
-    ['SON TESLİM TARİHİ', niceDate(c.dueDate)],
-    ['KEŞİF / İNCELEME TARİHİ', niceDate(c.inspectionDate)],
-    ['RAPOR TARİHİ', niceDate(c.reportDate)],
-    ['BİLİRKİŞİ ADI SOYADI', c.expertName],
-    [REPORT_TEXT.expertFieldHeading, c.expertField],
-    ['BİLİRKİŞİ SİCİL NO', c.registryNo]
-  ].filter((x) => x[1] && x[1] !== '—');
+    { key: 'fileNo', label: spec.fileNo, value: c.fileNo },
+    { key: 'court', label: 'GÖREVLENDİRME MAKAMI', value: c.court },
+    { key: 'plaintiff', label: r.plaintiff, value: c.plaintiff },
+    { key: 'plaintiffCounsel', label: r.plaintiffCounsel, value: c.plaintiffCounsel },
+    { key: 'defendant', label: r.defendant, value: c.defendant },
+    { key: 'defendantCounsel', label: r.defendantCounsel, value: c.defendantCounsel },
+    { key: 'subject', label: spec.subject, value: c.subject },
+    { key: 'caseDate', label: spec.date, value: niceDate(c.caseDate) },
+    { key: 'assignmentDate', label: 'GÖREVLENDİRME TARİHİ', value: niceDate(c.assignmentDate) },
+    { key: 'assignmentDuration', label: 'VERİLEN SÜRE', value: c.assignmentDurationDays ? `${c.assignmentDurationDays} GÜN` : '' },
+    { key: 'dueDate', label: 'SON TESLİM TARİHİ', value: niceDate(c.dueDate) },
+    // "Keşif" bu uzmanlık alanında yapılmaz; tek anlam: İNCELEME TARİHİ.
+    { key: 'inspectionDate', label: 'İNCELEME TARİHİ', value: niceDate(c.inspectionDate) },
+    { key: 'reportDate', label: 'RAPOR TARİHİ', value: niceDate(c.reportDate) },
+    { key: 'expertName', label: 'BİLİRKİŞİ ADI SOYADI', value: c.expertName },
+    { key: 'expertField', label: REPORT_TEXT.expertFieldHeading, value: String(c.expertField || '').trim() || DEFAULT_EXPERT_FIELD },
+    { key: 'registryNo', label: 'BİLİRKİŞİ SİCİL NO', value: c.registryNo },
+    // EK LİSTESİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
+    { key: 'annexList', label: 'RAPORUN EKLERİ', value: reportAttachmentLines(c).join(' · ') },
+    { key: 'impartiality', label: 'TARAFSIZLIK / BAĞIMSIZLIK BEYANI', value: (c.report && c.report.impartiality) || '' }
+  ].map((row) => ({ ...row, label: up(row.label) }));
+}
+// Ön bölümde ÇİZİLECEK satırlar: alan görünür + değer var. Boş alan satır
+// üretmez; "—" ile doldurulmaz (uydurma yok).
+function frontRowsFor(c, section, rows) {
+  return rows.filter((r) => reportFieldVisible(c, section, r.key) && r.value && r.value !== '—');
 }
 // RAPOR HAZIRLIK DENETİMİ (v2.150).
 // Kullanıcı: "eksikle rapor üretmeyi engelle." KURAL: uydurma "hazırlık
@@ -13562,6 +13582,7 @@ const READINESS_TARGETS = ['case', 'audio', 'questions', 'report'];
 const READINESS_SEVERITY = {
   fileNo: 'blocking',
   court: 'blocking',
+  subject: 'blocking',
   expert: 'blocking',
   materials: 'blocking',
   log: 'blocking',
@@ -13649,6 +13670,13 @@ function reportReadiness(c) {
   };
   add('fileNo', 'Dosya numarası boş', txt(c && c.fileNo) ? 0 : 1, 'case', 'Kapak ve alt bilgi boş kalır.');
   add('court', 'Mahkeme boş', txt(c && c.court) ? 0 : 1, 'case', 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
+  add(
+    'subject',
+    'İnceleme konusu boş',
+    txt(c && c.subject) ? 0 : 1,
+    'case',
+    'Künyede ve 1. bölümde konu boş kalır; rapor eksik görünür.'
+  );
   add('expert', 'Bilirkişi adı boş', txt(c && c.expertName) ? 0 : 1, 'case', 'Künyede ad alanı boş kalır.');
   add('materials', 'Ses kaydı yok', materials.length ? 0 : 1, 'audio', 'Envanter ve deşifre bölümleri boş görünür.');
   add(
@@ -14133,7 +14161,7 @@ function reportSectionDerivedTarget(key) {
   return map[key] || '';
 }
 function reportSectionInspectorKey(key) {
-  return ['tech', 'kunye', 'qc'].includes(key) ? key : '';
+  return ['tech', 'qc'].includes(key) ? key : '';
 }
 function renderReportSectionEditor(c) {
   const host = $('#reportSectionEditorFields');
@@ -14574,9 +14602,8 @@ function patchReportAnnexMeta(key, field, value) {
 // buradaki kısa etiket yalnız iskelet panelinde kullanılır.
 const REPORT_UI_LABELS = {
   cover: 'Kapak başlığı',
-  coverFields: 'Künye alanları',
+  coverFields: 'Rapor künyesi',
   toc: 'İçindekiler',
-  kunye: 'Rapor künyesi (ayrıntılı)',
   summary: 'Raporun kısa özeti',
   s1: 'Konu, kapsam ve sınırlar',
   s2: 'Cevaplanacak sorular',
@@ -14626,7 +14653,6 @@ function reportUiLabel(c, key) {
 const REPORT_SECTION_CATEGORY = {
   cover: 'front',
   coverFields: 'front',
-  kunye: 'front',
   summary: 'front',
   toc: 'front',
   s1: 'main',
@@ -14685,6 +14711,28 @@ function syncReportOutlineControls() {
 
 // RAPOR İSKELETİ (v2.227): tüm parçalar TEK listede; gövde ve ekler
 // sıralanabilir, her parça aç/kapanabilir. Numara açık bölümlerden türetilir.
+// Ön bölüm ALAN anahtarları (v2.336): bölüm satırının altında açılır liste.
+// Her alan bölüm gibi tek tek kapatılabilir; kapatılan alan üç çıktıda da
+// görünmez (veri silinmez).
+function frontFieldsHtml(c, key) {
+  if (!c) return '';
+  const defs = REPORT_FIELD_DEFS[key];
+  if (!defs) return '';
+  const labels = new Map(
+    (key === 'coverFields' ? reportRows(c) : reportSummaryRows(c)).map((r) => [r.key, r.label])
+  );
+  const onCount = defs.filter((d) => reportFieldVisible(c, key, d.key)).length;
+  return (
+    `<details class="rsec-fields"><summary>Alanlar · ${onCount}/${defs.length}</summary>` +
+    defs
+      .map(
+        (d) =>
+          `<label class="rsec-field-item"><input type="checkbox" data-report-field="${esc(key)}|${esc(d.key)}"${reportFieldVisible(c, key, d.key) ? ' checked' : ''}> ${esc(labels.get(d.key) || d.key)}</label>`
+      )
+      .join('') +
+    '</details>'
+  );
+}
 function renderReportSections(c) {
   const host = $('#reportSections');
   if (!host) return;
@@ -14736,7 +14784,7 @@ function renderReportSections(c) {
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
-    .map((k) => row(k))
+    .map((k) => row(k) + frontFieldsHtml(c, k))
     .join('');
   let body = '';
   for (const key of layout.order) {
@@ -14799,6 +14847,19 @@ function renderReportSections(c) {
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     profileBar +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler.</span></div>`;
+}
+function setReportField(spec, on) {
+  const c = currentCase();
+  if (!c) return;
+  const [section, key] = String(spec || '').split('|');
+  const defs = REPORT_FIELD_DEFS[section];
+  if (!defs || !defs.some((d) => d.key === key)) return;
+  c.report = c.report || {};
+  const fields = normalizeReportFieldVisibility(c.report.fields);
+  fields[section][key] = !!on;
+  c.report.fields = fields;
+  persist();
+  renderReport();
 }
 function setReportSection(key, on) {
   const c = currentCase();
@@ -15076,27 +15137,17 @@ async function removeReportBlock(key) {
 
 // v2.220 — 56.12 şablon bölümlerinin VERİSİ (tek kaynak). Üç çıktı bu
 // satırları/biçimleri kendi biçiminde basar; metin burada uydurulmaz.
-function reportKunyeRows(c) {
-  const a = c.assignment || {};
-  const sure = [a.durationDays ? `${a.durationDays} gün` : '', a.dueDate ? niceDate(a.dueDate) : '']
-    .filter(Boolean)
-    .join(' · ');
-  return [
-    ['Dosya / soruşturma / esas numarası', c.fileNo || '—'],
-    ['Görevlendirme makamı', c.court || '—'],
-    ['Görevlendirme kararı tarihi', a.date ? niceDate(a.date) : '—'],
-    ['Verilen rapor süresi / son tarih', sure || '—'],
-    ['Bilirkişinin adı ve soyadı', c.expertName || '—'],
-    ['Bilirkişilik sicil / liste numarası', c.registryNo || '—'],
-    ['Temel ve alt uzmanlık alanı', expertFieldShort(c)],
-    ['Rapor tarihi', c.reportDate ? niceDate(c.reportDate) : '—'],
-    ['Raporun ekleri', (c.report && c.report.annexList) || '—'],
-    ['Tarafsızlık / bağımsızlık beyanı', (c.report && c.report.impartiality) || '—']
-  ];
+// v2.225 — Künye alanları (elle). RAPORUN EKLERİ artık EKLER bölümünden
+// OTOMATİK türetilir; elle liste tutulmaz (v2.336). Tarafsızlık beyanı
+// künyenin bir satırıdır; alan görünürlüğünden kapatılabilir.
+function renderReportKunye(c) {
+  const host = $('#reportKunyeFields');
+  if (!host) return;
+  const r = c.report || {};
+  host.innerHTML =
+    `<label class="field rtech-field"><span>Tarafsızlık / bağımsızlık beyanı</span><input data-report-kunye="impartiality" value="${esc(r.impartiality || '')}" placeholder="Örn. Bu raporda yer alan görüşler tarafsız ve bağımsız olarak, yalnızca teknik inceleme sonucuna dayanılarak oluşturulmuştur."></label>` +
+    '<p class="rtech-hint">“Raporun ekleri” satırı EKLER bölümündeki gerçek eklerden otomatik üretilir; elle liste yazılmaz. Boş alan rapora satır olarak girmez.</p>';
 }
-// Ek düzenleyici (v2.227): başlık her eke; içerik özel eke; not tüm eklere.
-// Yerleşik eklerin gövdesi veriden otomatik üretilir; burada yalnız başlık/not
-// ve özel ek içeriği düzenlenir. Boş alan rapora uydurulmaz ("—").
 function renderReportAnnexEditor(c) {
   const host = $('#reportAnnexFields');
   if (!host) return;
@@ -15126,15 +15177,8 @@ function renderReportAnnexEditor(c) {
     `<button type="button" class="mini-button" data-report-annex-add="1">＋ Yeni ek</button>`;
 }
 // v2.225 — Künye ek alanları (elle). Boşsa rapora "—".
-function renderReportKunye(c) {
-  const host = $('#reportKunyeFields');
-  if (!host) return;
-  const r = c.report || {};
-  host.innerHTML =
-    `<label class="field rtech-field"><span>Raporun ekleri</span><input data-report-kunye="annexList" value="${esc(r.annexList || '')}" placeholder="Örn. EK-1 teslim tutanağı, EK-2 envanter… (boşsa “—”)"></label>` +
-    `<label class="field rtech-field"><span>Tarafsızlık / bağımsızlık beyanı</span><input data-report-kunye="impartiality" value="${esc(r.impartiality || '')}" placeholder="Engel bulunmadığı / varsa açıklama (boşsa “—”)"></label>`;
-}
 function reportSummaryRows(c) {
+  if (!c) return [];
   const materials = c.materials || [];
   const allSegs = materials.flatMap((m) => m.segments || []);
   const totalDur = materials.reduce((n, m) => n + (matDuration(m) || 0), 0);
@@ -15151,15 +15195,15 @@ function reportSummaryRows(c) {
   const inaudible = allSegs.filter((s) => segReview(s) === 'inaudible').length;
   const ambiguous = allSegs.filter((s) => segReview(s) === 'ambiguous').length;
   const asrUsed = materials.some((m) => m.transcribedWithModel);
+  // Süreler BİRİMLİ yazılır ("02:03" tek başına saniye/dakika belirsizdi).
   return [
-    ['İncelenen ses dosyası sayısı', String(materials.length)],
-    ['Toplam kayıt süresi', totalDur ? fmtShort(totalDur) : '—'],
-    ['Deşifre edilen toplam zaman aralığı', segDur ? fmtShort(segDur) : '—'],
-    ['Konuşmacı kodu sayısı (kimlik tespiti değildir)', String(codeCount)],
-    ['Anlaşılmayan / kısmen anlaşılan bölüm', `${inaudible} / ${ambiguous}`],
-    ['Otomatik konuşma tanıma kullanımı', asrUsed ? 'Kullanıldı (yerel)' : 'Kullanılmadı'],
-    ['Ses iyileştirme', 'Uygulanmadı'],
-    ['Transkriptin bulunduğu bölüm', reportSubHeadings(c).s51]
+    { key: 'materialCount', label: 'İNCELENEN SES DOSYASI SAYISI', value: String(materials.length) },
+    { key: 'totalDuration', label: 'TOPLAM KAYIT SÜRESİ', value: totalDur ? formatWorkloadDuration(totalDur) : '' },
+    { key: 'transcriptDuration', label: 'DEŞİFRE EDİLEN TOPLAM ZAMAN ARALIĞI', value: segDur ? formatWorkloadDuration(segDur) : '' },
+    { key: 'speakerCodes', label: 'KONUŞMACI KODU SAYISI (KİMLİK TESPİTİ DEĞİLDİR)', value: String(codeCount) },
+    { key: 'unclearSegments', label: 'ANLAŞILMAYAN / KISMEN ANLAŞILAN BÖLÜM', value: `${inaudible} / ${ambiguous}` },
+    { key: 'asr', label: 'OTOMATİK KONUŞMA TANIMA KULLANIMI', value: asrUsed ? 'Kullanıldı (yerel)' : 'Kullanılmadı' },
+    { key: 'enhancement', label: 'SES İYİLEŞTİRME', value: 'Uygulanmadı' }
   ];
 }
 function reportAsrRows(c) {
@@ -15578,6 +15622,8 @@ function reportSnapshot(c) {
     blocks: normalizeReportBlocks(r.blocks),
     annexPlacement: normalizeAnnexPlacement(r.annexPlacement),
     columns: normalizeReportColumns(r.columns),
+    // Ön bölüm ALAN görünürlüğü (v2.336): revizyona girer.
+    fields: normalizeReportFieldVisibility(r.fields),
     includeEmbedded: !!r.includeEmbedded,
     speakerMethod: !!r.speakerMethod,
     pageView: !!r.pageView,
@@ -15586,7 +15632,6 @@ function reportSnapshot(c) {
     conclusionText: r.conclusionText || '',
     tech,
     impartiality: r.impartiality || '',
-    annexList: r.annexList || '',
     qcBy: r.qcBy || '',
     qcScope: r.qcScope || '',
     qcDate: r.qcDate || '',
@@ -15599,6 +15644,7 @@ const REPORT_SNAPSHOT_LABELS = {
   blocks: 'Serbest bölümler',
   annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
+  fields: 'Künye/özet alan görünürlüğü',
   includeEmbedded: 'Gömülü metadata',
   speakerMethod: 'Konuşmacı yöntem notu',
   pageView: 'A4 önizleme',
@@ -15607,7 +15653,6 @@ const REPORT_SNAPSHOT_LABELS = {
   conclusionText: 'Sonuç ve kanaat',
   tech: 'Teknik ortam',
   impartiality: 'Tarafsızlık beyanı',
-  annexList: 'Raporun ekleri',
   qcBy: 'İkinci kontrolü yapan',
   qcScope: 'İkinci kontrol kapsamı',
   qcDate: 'İkinci kontrol tarihi',
@@ -15629,6 +15674,7 @@ function applyReportSnapshot(c, snap) {
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
+  if (snap.fields) r.fields = normalizeReportFieldVisibility(snap.fields);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.speakerMethod = !!snap.speakerMethod;
   r.pageView = !!snap.pageView;
@@ -16414,7 +16460,7 @@ function annexDocumentCase(c, annex) {
     rep.layout.order = [`free:${id}`];
   }
   // Ek belgesi sade içeriktir: kapak, içindekiler, künye, imza, ek listesi yok.
-  for (const k of ['cover', 'coverFields', 'toc', 'signature', 'kunye', 'summary', 'scopeNote', 's7']) {
+  for (const k of ['cover', 'coverFields', 'toc', 'signature', 'summary', 'scopeNote', 's7']) {
     rep.sections[k] = false;
   }
   // Kompakt akış: ek belgesinde her bölüm YENİ SAYFADAN başlamaz (rapor kuralı
@@ -16851,16 +16897,12 @@ function renderReport() {
       `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>` +
       (c.synthetic ? `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>` : ''),
     coverFields: () =>
-      `<table class="paper-table cover-fields"><tbody>${reportRows(c)
-        .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
+        .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
         .join('')}</tbody></table>`,
-    kunye: () =>
-      `<div class="paper-section"><h3>${esc(REPORT_TEXT.kunyeHeading)}</h3><table class="paper-table cover-fields"><tbody>${reportKunyeRows(c)
-        .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
-        .join('')}</tbody></table></div>`,
     summary: () =>
-      `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(REPORT_TEXT.summaryIntro)}</p><table class="paper-table cover-fields"><tbody>${reportSummaryRows(c)
-        .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
+      `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(REPORT_TEXT.summaryIntro)}</p><table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'summary', reportSummaryRows(c))
+        .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
         .join('')}</tbody></table></div>`,
     toc: () => {
       if (!on('toc')) return '';
@@ -17365,7 +17407,6 @@ function docxXml(c) {
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
-  const coverSpec = reportTypeSpec(c.reportType);
 
   const front = {
     cover: () =>
@@ -17393,19 +17434,17 @@ function docxXml(c) {
         : ''),
     coverFields: () =>
       wTable(
-        [
-          [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
-          ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
-        ],
+        frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
         { widths: [3000, 6000], header: false, shadeFirstCol: true }
       ),
-    kunye: () =>
-      headingXml(H('kunye')) +
-      wTable(reportKunyeRows(c), { widths: [3200, 5800], header: false, shadeFirstCol: true }),
     summary: () =>
       headingXml(H('summary')) +
       wP(REPORT_TEXT.summaryIntro) +
-      wTable(reportSummaryRows(c), { widths: [4200, 4800], header: false, shadeFirstCol: true }),
+      wTable(frontRowsFor(c, 'summary', reportSummaryRows(c)).map((r) => [r.label, r.value]), {
+        widths: [4200, 4800],
+        header: false,
+        shadeFirstCol: true
+      }),
     toc: () => {
       if (!on('toc')) return '';
       const toc = reportTocEntries(c);
@@ -18004,7 +18043,6 @@ async function udfDocument(opts = {}) {
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
-  const coverSpec = reportTypeSpec(c.reportType);
 
   const front = {
     cover: () => {
@@ -18036,22 +18074,21 @@ async function udfDocument(opts = {}) {
     coverFields: () =>
       el.push(
         table(
-          [
-            [coverSpec.fileNo, c.fileNo || REPORT_TEXT.emptyFileNo],
-            ...reportRows(c).filter((r) => r[0] !== coverSpec.fileNo)
-          ],
+          frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
           [170, 340],
           { header: false, shadeFirstCol: true }
         )
       ),
-    kunye: () => {
-      el.push(h(H('kunye')));
-      el.push(table(reportKunyeRows(c), [170, 340], { header: false, shadeFirstCol: true }));
-    },
     summary: () => {
       el.push(h(H('summary')));
       el.push(paragraph(REPORT_TEXT.summaryIntro, { size: 10 }));
-      el.push(table(reportSummaryRows(c), [220, 290], { header: false, shadeFirstCol: true }));
+      el.push(
+        table(
+          frontRowsFor(c, 'summary', reportSummaryRows(c)).map((r) => [r.label, r.value]),
+          [220, 290],
+          { header: false, shadeFirstCol: true }
+        )
+      );
     },
     toc: () => {
       if (!on('toc')) return;
@@ -21730,6 +21767,11 @@ $('#reportSections')?.addEventListener('change', (e) => {
     setReportAnnexOn(acb.dataset.reportAnnex, acb.checked);
     return;
   }
+  const fcb = e.target.closest('[data-report-field]');
+  if (fcb) {
+    setReportField(fcb.dataset.reportField, fcb.checked);
+    return;
+  }
   const cb = e.target.closest('[data-report-section]');
   if (!cb) return;
   setReportSection(cb.dataset.reportSection, cb.checked);
@@ -23031,6 +23073,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.336': {
+    title: 'Rapor künyesi tek bölüm; alanlar tek tek kapatılabilir',
+    body:
+      'Raporun ön bölümü sadeleşti: ayrıntılı künye ile künye alanları aynı bilgileri iki kez yazıyordu, artık tek RAPOR KÜNYESİ var. İskelette her künye/özet alanı tek tek açılıp kapatılabilir; kapatılan alan üç çıktıda da görünmez, veri silinmez. Keşif/inceleme tarihi yerine İnceleme tarihi kullanılır; uzmanlık alanı tam metinle gelir; raporun ekleri otomatik listelenir; kısa özet süreleri birimlidir.'
+  },
   '2.335': {
     title: 'Toplu çözümleme kaç kaydın başarısız olduğunu söylüyor',
     body:
