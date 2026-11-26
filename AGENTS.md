@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.339.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.340.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8866,3 +8866,45 @@ birim testinde · sürüm şeridi açıkken `dueTop=136 = verBottom` (gap 0,
 kontrol bekleyen, SHA-256, son teslim, fizikî iade) görünür; durum dağılımı
 **Tamam 9 · Eksik 4 · Bilgi 4**; **SAYISAL KONTROL** tablosu var; 12 tablo ·
 kırpılan tablo **0**; 1440/1100/900/760/600 → clip 0, yatay taşma 0; JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.340) — Rapor içi ekler: ad ve biçim
+
+| | |
+|---|---|
+| Sürüm | **v2.340** |
+| Testler | **2641 birim + 555 şema** + rapor (49 senaryo) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+### Neden
+Kullanıcı iki listeyi karşılaştırdı: rapor kapağında **“RAPORUN EKLERİ →
+Rapor eki 1…6”**, üst yazıda **“EK-1 Bilirkişi Raporu / EK-2 Teknik Bilgiler”**.
+İkisi **ayrı şeydir** (raporun kendi ekleri ↔ üst yazının belge seti) ama ad
+benzerliği karışıklık üretiyordu; ayrıca kapakta “Rapor eki” öneki 6 kez
+tekrarlanıp **259 karakterlik** tek satır oluşuyordu.
+
+### Yapılan
+- Kapak etiketi **“RAPOR İÇİ EKLER”** (üst yazının EK-N'siyle karışmaz).
+- `reportAttachmentLines` → **“1. BAŞLIK · 2. BAŞLIK…”** (önek tekrarı yok);
+  **259 → 199** karakter. Numaralar `reportAnnexList`'ten; kapak + EK LİSTESİ +
+  üç çıktı aynı metni kullanır.
+- **İçeriksiz ek filtresi UYGULANMADI** (önerinin bu kısmı yanlıştı): fizikî
+  kayıt yokken EK-1 **beyan** basıyor (“kayıt girilmemiştir; bu bir eksiklik
+  değildir”). Filtrelemek rapordan bir beyan silerdi.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **İki numara alanı ayrıdır:** rapor içi ekler `Rapor eki N.` (EKLER bölümü),
+   üst yazı belge seti `EK-N`. Kapakta **“RAPOR İÇİ EKLER”** denir; “EK” adı
+   yalnız üst yazıda kullanılır (v2.323 kuralının görünür adı).
+2. **Kapakta numara tekrarı yok:** “1. BAŞLIK” biçimi; tam başlık EKLER
+   bölümünde “Rapor eki N. …” olarak durur.
+3. **Boş vaat yok:** EKLER bloğu kapalıysa liste yazılmaz.
+4. **“İçeriksiz görünen” ek silinmez:** içerik yerine **beyan** basan ekler
+   (EK-1 “kayıt yok”, EK-3 “günlük boş”) listede kalır; filtrelemeden önce
+   ek metnini okuyun.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+`v2.340` · kapak satırı: etiket **RAPOR İÇİ EKLER**, değer **199 karakter**,
+“Rapor eki” öneki **yok**, eski etiket **yok**; EKLER bölümünde **6** adet
+“Rapor eki N.” başlığı duruyor; üst yazı **EK-1** listesi değişmedi.
+1440/1100/900/760/600 → kırpma **0**, yatay taşma **0**, hücre sarar (65→97 px);
+JS hatası **0**.

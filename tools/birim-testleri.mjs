@@ -7636,5 +7636,46 @@ console.log('[165] Teslim kontrol listesi (v2.339)');
   eq('durum sözcükleri metin', full.every((r) => ['Tamam', 'Eksik', 'Bilgi'].includes(r[1])), true);
 }
 
+
+console.log('[166] Rapor içi ek listesi: ad ve biçim (v2.340)');
+{
+  const mk = (over) =>
+    Object.assign(
+      {
+        id: 'c1',
+        fileNo: '2026/88',
+        materials: [
+          {
+            id: 'm1',
+            duration: 10,
+            segments: [{ start: '00:00:00.000', end: '00:00:10.000', text: 'bir', review: 'approved' }]
+          }
+        ]
+      },
+      over || {}
+    );
+  const c = mk();
+  const list = T.reportAnnexList(c);
+  const lines = T.reportAttachmentLines(c);
+  // 1) Liste = açık ekler; sayı korunur (sessiz düşme yok).
+  eq('satır sayısı = açık ek sayısı', lines.length, list.length);
+  // 2) Kısa biçim: "1. BAŞLIK" — "Rapor eki" öneki TEKRARLANMAZ.
+  eq('ilk satır numaralı', /^1\. /.test(lines[0]), true);
+  eq('satırda "Rapor eki" öneki yok', lines.some((x) => /^Rapor eki/.test(x)), false);
+  eq('başlık korunur', lines[0].includes('MATERYAL TESLİM VE İADE TUTANAĞI'), true);
+  // 3) Numaralar bitişik (kapalı ek numarada boşluk bırakmaz).
+  eq('numaralar bitişik', lines.every((x, i) => x.startsWith(`${i + 1}. `)), true);
+  // 4) EKLER bölümü kapalıysa liste verilmez (boş vaat yok).
+  eq('ekler kapalıysa liste boş', T.reportAttachmentLines(mk({ report: { sections: { annex: false } } })).length, 0);
+  // 5) Fizikî kayıt yokken EK-1 LİSTEDE KALIR: ek "kayıt yok" beyanı basıyor,
+  //    içeriksiz değildir (v2.340'da ölçüldü).
+  eq('fizikî kayıt yoksa EK-1 listede', lines.some((x) => x.includes('MATERYAL TESLİM VE İADE TUTANAĞI')), true);
+  // 6) EKLER altına taşınan bölüm listede ve numarası bitişik.
+  const moved = mk({ report: { annexPlacement: { s5: true } } });
+  const movedLines = T.reportAttachmentLines(moved);
+  eq('taşınan bölüm listede', movedLines.some((x) => x.includes('KAYIT BAZINDA BULGULAR')), true);
+  eq('taşınan bölüm numarası bitişik', movedLines.every((x, i) => x.startsWith(`${i + 1}. `)), true);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

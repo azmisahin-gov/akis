@@ -1834,7 +1834,7 @@ console.log('\n[2bs] Künye ek alanları: ekler + tarafsızlık (v2.225)');
   check('çizim fonksiyonu tanımlı', /function renderReportKunye\(/.test(js));
   check('renderReport künye alanlarını çizer', /renderReportKunye\(c\);/.test(js));
   check('girdi işleyicisi', /reportKunyeFields'\)\?\.addEventListener\('input'/.test(js) && /reportKunyeFields'\)\?\.addEventListener\('change'/.test(js));
-  check('künye alanları büyük harf (üç çıktı aynı)', /RAPORUN EKLERİ/.test(js) && /TARAFSIZLIK \/ BAĞIMSIZLIK BEYANI/.test(js));
+  check('künye alanları büyük harf (üç çıktı aynı)', /RAPOR İÇİ EKLER/.test(js) && /TARAFSIZLIK \/ BAĞIMSIZLIK BEYANI/.test(js));
   check('alan görünürlüğü: tek kaynak ve çizim', /REPORT_FIELD_DEFS/.test(schema) && /frontRowsFor\(c, 'coverFields'/.test(js) && /data-report-field/.test(js));
 }
 

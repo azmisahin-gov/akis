@@ -1,4 +1,4 @@
-# Özellikler (v2.339 — mevcut durum)
+# Özellikler (v2.340 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1154,3 +1154,7 @@ Son teslim tarihi görevlendirme tarihi + süreden hesaplanır (elle yazılan ko
 ## Teslim kontrol listesi (EK-5, v2.339)
 
 Raporun **EK-5 “Son kontrol listesi”** eki teslimden önce otomatik denetim yapan **TESLİM KONTROLÜ** tablosu taşır: künye alanları, kayıt/bölüm durumu, kontrol bekleyen bölüm, belirsiz okumada seçim, konuşmacı ataması ve kod çakışması, kapsama, SHA-256 doğrulaması, son teslim tarihi, rapor tarihi ≤ son teslim ve fizikî materyal iadesi. Durum **metinle** yazılır: Tamam · Eksik · Bilgi. "Bilgi" eksik değildir (isteğe bağlı ya da ölçülmemiş); uydurma "Eksik" üretilmez. Tablo HTML/DOCX/UDF çıktısında **aynı satırları** basar.
+
+## Rapor içi ekler (v2.340)
+
+Raporun ön bölümünde **RAPOR İÇİ EKLER** satırı vardır; raporun kendi eklerini **“1. BAŞLIK · 2. BAŞLIK…”** biçiminde listeler ve EKLER bölümünden otomatik türetilir (elle yazılmaz). Üst yazıdaki **EK-1/EK-2** belge seti ayrıdır: üst yazı ayrı belgeleri sunar. EKLER bloğu kapalıysa liste yazılmaz; kapatmak için künye alanlarından `annexList` kapatılır. Kapak ile EKLER bölümü aynı kaynaktan (`reportAnnexList`) beslenir; üç çıktı (HTML/DOCX/UDF) aynı metni üretir.

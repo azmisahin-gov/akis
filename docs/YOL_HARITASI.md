@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.339.**
+yazılır. **Güncel sürüm: v2.340.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.340 — Rapor içi ekler: ad ve biçim (TAMAMLANDI)
+
+- Kapak etiketi **“RAPORUN EKLERİ” → “RAPOR İÇİ EKLER”**; üst yazının EK-N
+  belge setiyle karışmasın.
+- `reportAttachmentLines` kısa biçim: **“1. BAŞLIK”** (öneki tekrarlamaz);
+  künye satırı **259 → 199** karakter. Numaralar `reportAnnexList`'ten.
+- “İçeriksiz ek” filtresi **UYGULANMADI**: EK-1 (fizikî kayıt yok) bir
+  **beyan** basıyor (“kayıt girilmemiştir; bu bir eksiklik değildir”).
+- Test: `birim [166]`, `rapor` Senaryo 49 (üç çıktı aynı etiket/biçim).
 
 ## v2.339 — Teslim kontrol listesi raporda (A‑2, TAMAMLANDI)
 

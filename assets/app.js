@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.339';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.339';
+} from './schema.js?v=2.340';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.340';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.339';
+const APP_VERSION = '2.340';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -13668,7 +13668,7 @@ function reportRows(c) {
     { key: 'expertField', label: REPORT_TEXT.expertFieldHeading, value: String(c.expertField || '').trim() || DEFAULT_EXPERT_FIELD },
     { key: 'registryNo', label: 'BİLİRKİŞİ SİCİL NO', value: c.registryNo },
     // EK LİSTESİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
-    { key: 'annexList', label: 'RAPORUN EKLERİ', value: reportAttachmentLines(c).join(' · ') },
+    { key: 'annexList', label: 'RAPOR İÇİ EKLER', value: reportAttachmentLines(c).join(' · ') },
     { key: 'impartiality', label: 'TARAFSIZLIK / BAĞIMSIZLIK BEYANI', value: (c.report && c.report.impartiality) || '' }
   ].map((row) => ({ ...row, label: up(row.label) }));
 }
@@ -15243,7 +15243,7 @@ async function removeReportBlock(key) {
 
 // v2.220 — 56.12 şablon bölümlerinin VERİSİ (tek kaynak). Üç çıktı bu
 // satırları/biçimleri kendi biçiminde basar; metin burada uydurulmaz.
-// v2.225 — Künye alanları (elle). RAPORUN EKLERİ artık EKLER bölümünden
+// v2.225 — Künye alanları (elle). RAPOR İÇİ EKLER artık EKLER bölümünden
 // OTOMATİK türetilir; elle liste tutulmaz (v2.336). Tarafsızlık beyanı
 // künyenin bir satırıdır; alan görünürlüğünden kapatılabilir.
 function renderReportKunye(c) {
@@ -15698,7 +15698,11 @@ function speakerCodeConflictText(c) {
 function reportAttachmentLines(c) {
   // Ekler bloğu kapalıysa ek BASILMIYOR; liste de verilmez (yanıltıcı olur).
   if (!reportSectionOn(c, 'annex')) return [];
-  return reportAnnexList(c).map((a) => a.heading);
+  // KISA BİÇİM (v2.340): kapakta ve "EK LİSTESİ"nde "1. BAŞLIK".
+  // "Rapor eki N." öneki EKLER bölümündeki başlıklarda durur; burada altı kez
+  // tekrarlanınca künyede 259 karakterlik tek satır oluşuyordu. Numaralar aynı
+  // kaynaktan (`reportAnnexList`) gelir; kapak ile bölüm ayrışmaz.
+  return reportAnnexList(c).map((a) => `${a.n}. ${a.title}`);
 }
 // v2.261 — Orijinalin korunması / bütünlük: satırlar YALNIZ ölçülmüş/kayıtlı
 // değerlerden üretilir. Özet yoksa "hesaplanmadı", doğrulama yapılmadıysa
@@ -23266,6 +23270,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.340': {
+    title: 'Rapor içi ekler: ad ve biçim',
+    body:
+      'Raporun ön bölümündeki ek listesi artık “RAPOR İÇİ EKLER” adını taşıyor; böylece üst yazıdaki EK-1/EK-2 belge setiyle karışmıyor. Liste “1. BAŞLIK · 2. BAŞLIK…” biçiminde kısaldı: “Rapor eki” öneki altı kez tekrarlanmıyor, künyedeki satır 259 yerine 199 karakter. Numara ve sıra değişmedi; EKLER bölümündeki başlıklar “Rapor eki N. …” olarak kalıyor. EKLER bölümü kapalıysa liste hiç yazılmaz; fizikî kayıt girilmemişse EK-1 yine listede kalır çünkü o ek “kayıt girilmemiştir” beyanını basar.'
+  },
   '2.339': {
     title: 'Teslim kontrol listesi raporda (EK-5)',
     body:

@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.339.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.340.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.340 — Rapor içi ekler: ad ve biçim
+
+**KULLANICI NE GÖRECEK:** Raporun ön bölümünde **“RAPORUN EKLERİ”** yazan satır
+artık **“RAPOR İÇİ EKLER”**. Böylece üst yazıdaki **EK-1 Bilirkişi Raporu ·
+EK-2 Teknik Bilgiler** belge setiyle karışmıyor: üst yazı **ayrı belgeleri**
+sunuyor, bu satır **raporun kendi içindeki** ekleri gösteriyor. Liste de kısaldı:
+**“1. BAŞLIK · 2. BAŞLIK…”** (ölçüm: künye satırı **259 → 199** karakter).
+
+- **Numara/sıra değişmedi:** EKLER bölümündeki başlıklar **“Rapor eki N. …”**
+  olarak kalır; kapak ile bölüm aynı kaynaktan (`reportAnnexList`) beslenir.
+- **Tek kaynak:** `reportAttachmentLines` kapak + “EK LİSTESİ” + üç çıktı
+  (HTML/DOCX/UDF) için aynı metni üretir.
+- **Boş vaat yok:** EKLER bloğu kapalıysa liste hiç yazılmaz.
+- **Ölçüm düzeltmesi (dürüst sınır):** “içeriksiz ek listede görünmesin”
+  düşüncesi **yanlıştı**; fizikî kayıt yokken EK-1 “kayıt girilmemiştir; bu bir
+  eksiklik değildir” **beyanını** basıyor. Bu yüzden filtre **uygulanmadı**;
+  aksi hâlde rapordan bir beyan silinirdi.
+- Yeni test: `birim-testleri` **[166]** (9 kontrol), `rapor-tutarlilik-testi`
+  **Senaryo 49**. Düzeltme yokken 4 kontrol **KALDI**.
 
 ## v2.339 — Teslim kontrol listesi raporda (A‑2)
 

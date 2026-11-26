@@ -826,13 +826,13 @@ console.log('\n[Senaryo 20] birleşik künye ve alan görünürlüğü (v2.336)'
     'alan kapatılınca beyan üç çıktıda yok',
     !Ho.includes('Gizli beyan') && !Uo.includes('Gizli beyan') && !Do.includes('Gizli beyan')
   );
-  // RAPORUN EKLERİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
+  // RAPOR İÇİ EKLER elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
   const withAnnex = baseCase({
     report: { annexList: 'ELLE YAZILMIŞ EK' },
     physicalFile: { handover: { delivered: true, at: '2026-01-01T10:00', deliveredBy: 'Görevli' } }
   });
   const Ha = htmlText(withAnnex), Ua = await udfText(withAnnex), Da = await docxText(withAnnex);
-  checkShared('raporun ekleri etiketi', 'RAPORUN EKLERİ', Ha, Ua, Da);
+  checkShared('rapor içi ekler etiketi', 'RAPOR İÇİ EKLER', Ha, Ua, Da);
   checkShared('ek otomatik listelenir', 'MATERYAL TESLİM VE İADE TUTANAĞI', Ha, Ua, Da);
   check(
     'elle yazılan ek listesi kullanılmaz',
@@ -1433,7 +1433,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('taşınan s5 EK başlığı', 'Rapor eki 7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
   checkShared('taşınan s5 içeriği', 'merhaba', H, U, D);
   checkShared('taşınan s5 alt başlığı', 'EK-7.1. Ses kayıtlarının çözümlenmesi', H, U, D);
-  // v2.336: künyedeki "RAPORUN EKLERİ" satırı da taşınan eki listeler; bu
+  // v2.336: künyedeki "RAPOR İÇİ EKLER" satırı da taşınan eki listeler; bu
   // yüzden başlık 2 kez geçer (ek başlığı + künye listesi), gövdede TEK kez.
   const count = (t) => (String(t).match(/KAYIT BAZINDA BULGULAR VE TRANSKRİPT/g) || []).length;
   check('s5 başlığı gövde+ek ve künye listesi (H)', count(H) === 2, String(count(H)));
@@ -1829,6 +1829,23 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   // Satır sayısı üç çıktıda AYNI (biçim farkı metni değiştirmez).
   const labels = H2 ? 'Dosya numarası' : '';
   check('HTML kontrol satırı var', H2.includes(labels), labels);
+}
+
+
+// Senaryo 49: RAPOR İÇİ EKLER — ad ve kısa biçim (v2.340). Üst yazının
+// EK-1/EK-2 belge setiyle karışmamalı; künyede "Rapor eki" öneki 6 kez
+// tekrarlanmamalı (ölçüm: 259 karakterlik tek satır).
+{
+  console.log('\n[Senaryo 49] rapor içi ekler: ad ve biçim (v2.340)');
+  const c = __schemaMod.normalizeCase(withMaterial());
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('yeni etiket', 'RAPOR İÇİ EKLER', H, U, D);
+  check('eski etiket kalktı (H)', !H.includes('RAPORUN EKLERİ'));
+  check('eski etiket kalktı (U)', !U.includes('RAPORUN EKLERİ'));
+  check('eski etiket kalktı (D)', !D.includes('RAPORUN EKLERİ'));
+  // Kısa biçim: numara + başlık, tekrar eden "Rapor eki N." öneki YOK.
+  checkShared('kısa biçim (1. başlık)', '1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('birleşik liste biçimi', '1. MATERYAL TESLİM VE İADE TUTANAĞI · 2. ', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
