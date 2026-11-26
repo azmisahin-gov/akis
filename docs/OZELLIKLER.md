@@ -1,4 +1,4 @@
-# Özellikler (v2.330 — mevcut durum)
+# Özellikler (v2.331 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1101,3 +1101,17 @@ ses kaydı kökeni (`origin`) ile karışmaz. Dosya yalnız **UYAP erişimi**yle
 incelendiyse bu bölüm boş kalabilir ve **zorunlu değildir**. Belge kopyaları
 `.akis` paketine girer; uygulama e-imza üretmez. Test: `birim [162]`,
 `rapor` 46, `tasarim [2dg]`.
+
+## Belge paketi: UDF + DOCX (v2.331)
+
+Üst yazı ekranındaki **⤓ Tüm belgeler (UDF + DOCX)** düğmesi üst yazıyı, raporu
+ve belge eklerini **tek ZIP'te** indirir; **her belge iki biçimde** bulunur:
+`.udf` (Bilirkişi Portalı/UYAP) ve `.docx` (Word kopyası). İçindeki
+**`belgeler.json`** (`akis.documents.v2`) her dosyayı **ayrı satırda** listeler:
+`sequence`, `annexNo`, `kind`, `format`, `label`, `file`, `bytes`, `sha256`;
+üstte `hashAlgorithm`, `createdAtUtc`, `appVersion` ve `case` künyesi vardır.
+**`SHA256SUMS.txt`** her dosya için `<hash>  <dosya>` satırı taşır. Hash
+hesaplanamazsa veya bir belgenin bir biçimi üretilemezse paket **eksik
+indirilmez**; hangi belge/biçim olduğu yazılır. ZIP bir **arşiv/taşıma**
+paketidir; UYAP'a tek belge gibi gönderilmez. Test: `rapor` 47,
+`tasarim [2dh]`.

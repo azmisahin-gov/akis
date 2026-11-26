@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.330.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.331.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8596,3 +8596,51 @@ olarak görünür. **Ayrı teslim ve iade tutanakları** UDF/DOCX (imza alanlı)
 - Fizikî dosya için **teslim/iade hatırlatması** (rapor hazırlığında).
 - Birden çok fizikî dosya (klasör bazında ayrı kayıt) — talep olursa.
 - Materyal ↔ ses kaydı bağının raporda ayrı sütun olarak gösterimi.
+
+
+## YENİ OTURUM DEVRİ (v2.331) — Belge paketi: UDF + DOCX
+
+| | |
+|---|---|
+| Sürüm | **v2.331** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → birim + şema + rapor (47) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+### Ne yapıldı
+
+Kullanıcı: *"Raporda tüm belgeleri ZIP olarak indirirken sadece UDF geliyor;
+Word kopyaları da alınsın."* `buildDocumentsZip()` artık **her belgeyi iki
+biçimde** üretir: `.udf` (UYAP) + `.docx` (Word). Ayrıca manifest v2
+(`akis.documents.v2`) ve `SHA256SUMS.txt` eklendi — `docs/UST_YAZI_STANDARDI.md`
+§7.2–§7.4 zaten bunu öngörüyordu.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **ZIP = arşiv seti:** her belge UDF **ve** DOCX; birincil çıktı yine UDF'dir,
+   ZIP'in UYAP'a tek belge gibi gönderildiği iddia edilmez.
+2. **Her dosya ayrı manifest satırı + ayrı SHA-256.** UDF ve DOCX aynı metni
+   taşısa da baytları farklıdır; tek özet paylaştırmayın.
+3. **Fail-closed:** `blobSha256Hex` boş özet döndürmez (hata yükseltir) ve bir
+   biçim üretilemezse paket **eksik indirilmez**; hangi belge/biçim söylenir.
+4. **ZIP'e dosya ArrayBuffer olarak eklenir** (`out.blob.arrayBuffer()`):
+   JSZip'in Blob desteği ortama göre değişir; ArrayBuffer tarayıcı + Node'da aynı.
+5. `belgeler.json` ve `SHA256SUMS.txt` **belge metnine girmez**; hash metne
+   yazılmaz (yalnız manifest/kontrol listesi).
+6. Düğme adı ne indirileceğini söyler: **⤓ Tüm belgeler (UDF + DOCX)**.
+
+### Ölçüm (gerçek Chromium + CDP)
+
+| Ölçüm | Sonuç |
+|---|---|
+| ZIP içeriği | `UstYazi_….udf` + `UstYazi_….docx`, rapor/ekler iki biçimde |
+| `belgeler.json` | `akis.documents.v2`, 6 satır, `format`/`sha256`/`bytes` dolu |
+| `SHA256SUMS.txt` | 6 satır, `<hash>  <dosya>` |
+| Manifest özetleri | dosyaların **gerçek baytlarıyla** eşleşti |
+| DOCX / UDF yapısı | `word/document.xml` / `content.xml` var |
+| JS hatası | **0** |
+
+### Sıradaki iş (adaylar)
+
+- ZIP'e `SHA256SUMS.txt`'in kendi özetini ayrı `.sha256` yan dosyası olarak
+  eklemek (standart §7.3 "istenirse").
+- Belge adlarında tarih/saat standardı (§7.1) — bugün yalnız dosya numarası.

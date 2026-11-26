@@ -145,15 +145,15 @@ import {
   physicalMissingItems,
   physicalReturnComplete,
   physicalHandoverComplete
-} from './schema.js?v=2.330';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.330';
+} from './schema.js?v=2.331';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.331';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.330';
+const APP_VERSION = '2.331';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16071,13 +16071,21 @@ function documentsZipName(c) {
 }
 
 async function blobSha256Hex(blob) {
+  // FAIL-CLOSED (docs/UST_YAZI_STANDARDI.md §7.1): özet hesaplanamazsa boş
+  // metinle devam etmek yasak — belge paketi eksik/bozuk hash ile inmemeli.
+  let buf;
   try {
-    const buf = await blob.arrayBuffer();
-    const d = await crypto.subtle.digest('SHA-256', buf);
-    return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+    buf = await blob.arrayBuffer();
   } catch (e) {
-    return '';
+    throw new Error('Belge içeriği okunamadı; SHA-256 özeti hesaplanamadı. Belge paketi oluşturulmadı.');
   }
+  let d;
+  try {
+    d = await crypto.subtle.digest('SHA-256', buf);
+  } catch (e) {
+    throw new Error('SHA-256 özeti hesaplanamadı (tarayıcı şifreleme desteği yok). Belge paketi oluşturulmadı.');
+  }
+  return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
 /** Belge eki için dosya adı (indirme ve ZIP aynı adı kullanır). */
@@ -16085,6 +16093,12 @@ function annexFileName(c, a) {
   return `${a.no}_${safeName(letterAnnexLabel(a))}_${safeName((c && c.fileNo) || 'Bilirkisi')}`;
 }
 
+// BELGE PAKETİ (v2.331) — HER BELGE İKİ BİÇİMDE: UDF (UYAP) + DOCX (Word).
+// NEDEN: v2.325–v2.330 paketi yalnız UDF içeriyordu; kullanıcı "Word kopyaları
+// da gelsin" dedi. Standart zaten "Arşiv seti = aynı belgelerin UDF ve DOCX
+// sürümleri + belgeler.json + SHA256SUMS.txt" diyor (docs/UST_YAZI_STANDARDI.md §7.4).
+// Her dosya manifestte AYRI satır ve AYRI SHA-256 taşır (§7.2). Bir biçim
+// üretilemezse paket EKSİK indirilmez: hangi belge/biçim olduğu söylenip durulur.
 async function buildDocumentsZip() {
   const c = currentCase();
   const m = letterModel(c);
@@ -16093,41 +16107,63 @@ async function buildDocumentsZip() {
   }
   if (!window.JSZip) throw new Error('ZIP bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin.');
   const zip = new JSZip();
-  const manifest = {
-    schema: 'akis.belgeler.v1',
-    createdAt: new Date().toISOString(),
-    fileNo: c.fileNo || '',
-    court: c.court || '',
-    documents: []
+  const documents = [];
+  const sums = [];
+  let sequence = 0;
+  const emit = async (annexNo, kind, label, opts) => {
+    for (const format of ['udf', 'docx']) {
+      let out;
+      try {
+        out = format === 'udf' ? await udfDocument(opts) : await docxDocument(opts);
+      } catch (e) {
+        // SESSİZ EKSİK PAKET YASAK: eksik belge varmış gibi "tamam" denmez.
+        throw new Error(
+          `"${label}" belgesinin ${format.toUpperCase()} çıktısı üretilemedi: ${(e && e.message) || e}`
+        );
+      }
+      const sha256 = await blobSha256Hex(out.blob);
+      // Blob yerine ArrayBuffer verilir: JSZip Blob desteği ortama göre değişir;
+      // ArrayBuffer hem tarayıcıda hem test ortamında güvenilirdir.
+      zip.file(out.name, await out.blob.arrayBuffer());
+      documents.push({
+        sequence: sequence++,
+        annexNo: annexNo === '—' ? null : annexNo,
+        kind,
+        format,
+        label,
+        file: out.name,
+        bytes: out.blob.size,
+        sha256
+      });
+      sums.push(`${sha256}  ${out.name}`);
+    }
   };
-  const add = async (no, kind, label, out) => {
-    zip.file(out.name, out.blob);
-    manifest.documents.push({
-      no,
-      kind,
-      label,
-      file: out.name,
-      bytes: out.blob.size,
-      sha256: await blobSha256Hex(out.blob)
-    });
-  };
-  await add('—', 'letter', 'Üst yazı', await udfDocument({ letter: true }));
+  await emit('—', 'letter', 'Üst yazı', { letter: true });
   for (const a of letterAnnexNumbering(c.letterAnnexes)) {
+    const label = letterAnnexLabel(a);
     if (a.kind === 'report') {
-      await add(a.no, 'report', letterAnnexLabel(a), await udfDocument());
+      await emit(a.no, 'report', label, {});
       continue;
     }
-    await add(
-      a.no,
-      a.kind,
-      letterAnnexLabel(a),
-      await udfDocument({ case: annexDocumentCase(c, a), fileName: annexFileName(c, a) })
-    );
+    const temp = annexDocumentCase(c, a);
+    await emit(a.no, a.kind, label, { case: temp, fileName: annexFileName(c, a) });
   }
+  const manifest = {
+    schema: 'akis.documents.v2',
+    hashAlgorithm: 'SHA-256',
+    createdAtUtc: new Date().toISOString(),
+    appVersion: APP_VERSION,
+    case: { court: c.court || '', fileNo: c.fileNo || '' },
+    documents
+  };
   zip.file('belgeler.json', JSON.stringify(manifest, null, 2));
+  zip.file('SHA256SUMS.txt', sums.join('\n') + '\n');
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
   downloadBlob(blob, documentsZipName(c));
-  showToast(`${manifest.documents.length} belge tek ZIP'te indirildi (belgeler.json dâhil).`);
+  const docCount = documents.length / 2;
+  showToast(
+    `${docCount} belge UDF + DOCX olarak tek ZIP'te indirildi (${documents.length} dosya; belgeler.json + SHA256SUMS.txt dâhil).`
+  );
 }
 
 // SAYFA TAHMİNİ — YALNIZ EKRAN. Belge metnine sayfa sayısı YAZILMAZ: UYAP/Word
@@ -22766,6 +22802,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.331': {
+    title: 'Belge paketi Word kopyalarını da indiriyor',
+    body:
+      'Üst yazı ekranındaki "⤓ Tüm belgeler (UDF + DOCX)" düğmesi artık her belgeyi İKİ biçimde tek ZIP\'te indirir: .udf (Bilirkişi Portalı/UYAP için) ve .docx (Word kopyası). Paket içindeki belgeler.json her dosyayı ayrı satırda (sıra, EK numarası, tür, biçim, dosya adı, bayt, SHA-256) listeler; SHA256SUMS.txt her dosya için tek satır özet taşır. Bir belgenin bir biçimi üretilemezse paket eksik indirilmez; hangi belge ve biçim olduğu yazılır.'
+  },
   '2.330': {
     title: 'Fizikî dosya teslim ve iade takibi',
     body:

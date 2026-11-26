@@ -64,7 +64,7 @@ if (/^\s*import\s/m.test(code)) {
   process.exit(1);
 }
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
-  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase };\n`;
+  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase, buildDocumentsZip, APP_VERSION };\n`;
 
 const downloads = [];
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -97,7 +97,7 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
-const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase: T_physicalTutanakCase } = sandbox.__api;
+const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase: T_physicalTutanakCase, buildDocumentsZip, APP_VERSION } = sandbox.__api;
 // Bölüm başlıkları TEK KAYNAK: şema. Testte sabit başlık kopyası tutulmaz.
 const SEC_TITLE = Object.fromEntries(__schemaMod.REPORT_SECTION_DEFS.map((d) => [d.key, d.title]));
 
@@ -1728,6 +1728,59 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('iade tutanağı fark açıklaması', 'CD-A bulunamadı; DVD-B kutusu hasarlı.', HR, UR, DR);
   checkShared('iade tutanağı eksik uyarısı', REPORT_TEXT.physicalMissingWarning, HR, UR, DR);
   check('iade tutanağında "Rapor eki" YOK', !HR.includes('Rapor eki'));
+}
+
+// Senaryo 47: belge paketi (ZIP) HER BELGEYİ İKİ BİÇİMDE taşır (v2.331).
+// NEDEN: v2.325–v2.330 ZIP yalnız UDF içeriyordu; kullanıcı "Word kopyaları da
+// gelsin" dedi. Ölçüt: her belge için .udf VE .docx; manifest v2 ayrı satır +
+// ayrı SHA-256; SHA256SUMS.txt her dosya için bir satır.
+{
+  console.log('\n[Senaryo 47] belge paketi: UDF + DOCX (v2.331)');
+  const c = __schemaMod.normalizeCase(
+    baseCase({
+      letter: { place: 'Antalya' },
+      letterAnnexes: [
+        { id: 'la1', kind: 'report' },
+        { id: 'la2', kind: 'sections', sections: ['levels'], label: 'TEKNİK BİLGİLER' }
+      ]
+    })
+  );
+  downloads.length = 0;
+  setCase(c);
+  await buildDocumentsZip();
+  check('ZIP indirildi', downloads.length === 1, `${downloads.length} indirme`);
+  const zipName = downloads[0].name;
+  check('ZIP adı .zip', /\.zip$/.test(zipName), zipName);
+  const zip = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+  const udfs = names.filter((n) => n.endsWith('.udf'));
+  const docxs = names.filter((n) => n.endsWith('.docx'));
+  check('ZIP en az iki UDF içerir', udfs.length >= 2, udfs.join(', '));
+  check('ZIP her belge için DOCX içerir', docxs.length === udfs.length, `udf=${udfs.length} docx=${docxs.length}`);
+  check('UDF ve DOCX adları eşleşir', udfs.every((u) => docxs.includes(u.replace(/\.udf$/, '.docx'))), docxs.join(', '));
+  check('belgeler.json var', names.includes('belgeler.json'));
+  check('SHA256SUMS.txt var', names.includes('SHA256SUMS.txt'));
+  const man = JSON.parse(await zip.file('belgeler.json').async('string'));
+  check('manifest şeması v2', man.schema === 'akis.documents.v2', man.schema);
+  check('hash algoritması yazılı', man.hashAlgorithm === 'SHA-256', man.hashAlgorithm);
+  check('uygulama sürümü manifestte', man.appVersion === APP_VERSION, man.appVersion);
+  check('manifest her dosya için satır', man.documents.length === udfs.length + docxs.length, `${man.documents.length}`);
+  check('her satırda biçim var', man.documents.every((d) => d.format === 'udf' || d.format === 'docx'));
+  check('her satırda 64 hex sha256', man.documents.every((d) => /^[0-9a-f]{64}$/.test(d.sha256)));
+  check('her satırda bayt ve dosya adı', man.documents.every((d) => d.bytes > 0 && names.includes(d.file)));
+  check('üst yazı satırı annexNo null', man.documents.filter((d) => d.kind === 'letter').every((d) => d.annexNo === null));
+  check('rapor satırı EK-1', man.documents.filter((d) => d.kind === 'report').every((d) => d.annexNo === 'EK-1'));
+  const sums = (await zip.file('SHA256SUMS.txt').async('string')).trim().split('\n');
+  check('SHA256SUMS satır sayısı', sums.length === man.documents.length, `${sums.length}`);
+  check('SHA256SUMS biçimi', sums.every((l) => /^[0-9a-f]{64} {2}.+\.(udf|docx)$/.test(l)), sums[0]);
+  check('SHA256SUMS dosya adları manifestle aynı',
+    sums.map((l) => l.slice(66)).sort().join('|') === man.documents.map((d) => d.file).sort().join('|'));
+  // DOCX gerçekten Word paketi mi (zip yapısı)?
+  const oneDocx = await JSZip.loadAsync(Buffer.from(await zip.file(docxs[0]).async('arraybuffer')));
+  check('DOCX word/document.xml taşır', !!oneDocx.file('word/document.xml'));
+  // UDF gerçekten UYAP paketi mi?
+  const oneUdf = await JSZip.loadAsync(Buffer.from(await zip.file(udfs[0]).async('arraybuffer')));
+  check('UDF content.xml taşır', !!oneUdf.file('content.xml'));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

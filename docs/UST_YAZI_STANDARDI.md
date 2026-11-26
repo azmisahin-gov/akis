@@ -414,7 +414,9 @@ ZIP içinde, manifestte listelenen her dosya için bir satır üretilebilir:
 - **UYAP belge seti:** Üst yazı + rapor + belge eklerinin ayrı UDF dosyaları. Kullanıcı bu UDF'leri Portalda uygun evrak alanlarına kendi yükler.
 - **Arşiv seti:** Aynı belgelerin UDF ve DOCX sürümleri + `belgeler.json` + `SHA256SUMS.txt`. ZIP yalnızca bir arşiv/taşıma paketidir; UYAP'a tek belge gibi gönderildiği iddia edilmez.
 
-Mevcut v2.325 ZIP yalnız UDF çıktıları ve `belgeler.json` içeriyor. DOCX'lerin de arşiv ZIP'ine alınması isteniyorsa, her DOCX ayrı manifest satırı ve ayrı SHA-256 ile eklenmelidir.
+**v2.331'de uygulandı:** ZIP artık **arşiv seti**ni üretir — her belge hem UDF
+hem DOCX olarak, her biri **ayrı manifest satırı ve ayrı SHA-256** ile; ayrıca
+`SHA256SUMS.txt`. (v2.325–v2.330 arasında paket yalnız UDF içeriyordu.)
 
 **Fail-closed:** `blobSha256Hex()` başarısız olduğunda boş hash döndürmek yerine hata yükseltmeli; eksik/bozuk hash ile ZIP indirilememelidir.
 

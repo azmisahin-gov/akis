@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.330.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.331.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.331 — Belge paketi Word kopyalarını da indiriyor
+
+**KULLANICI NE GÖRECEK:** Üst yazı ekranındaki **⤓ Tüm belgeler (UDF + DOCX)**
+düğmesi artık **her belgeyi iki biçimde** tek ZIP'te indirir: **.udf** (Bilirkişi
+Portalı/UYAP için) ve **.docx** (Word kopyası). Böylece pakette yalnız UDF değil,
+düzenlenebilir Word kopyaları da bulunur.
+
+**NEDEN:** v2.325–v2.330 paketi **yalnız UDF** içeriyordu; kullanıcı Word
+kopyalarını da bekliyordu. `docs/UST_YAZI_STANDARDI.md` §7.4 zaten "arşiv seti =
+aynı belgelerin UDF ve DOCX sürümleri + belgeler.json + SHA256SUMS.txt" diyordu.
+
+**Yapılan**
+- `buildDocumentsZip()` her belge için **iki kez** üretir (UDF + DOCX); dosya
+  adları aynı kökü paylaşır (`X.udf` / `X.docx`).
+- **Manifest v2** (`belgeler.json` → `akis.documents.v2`): `hashAlgorithm`,
+  `createdAtUtc`, `appVersion`, `case{court,fileNo}` ve **her dosya için ayrı
+  satır** (`sequence`, `annexNo`, `kind`, `format`, `label`, `file`, `bytes`,
+  `sha256`). Üst yazıda `annexNo: null`, raporda `EK-1`.
+- **`SHA256SUMS.txt`**: manifestteki her dosya için `<hash>  <dosya>` satırı.
+- **FAIL-CLOSED:** `blobSha256Hex` artık hata yutar ve boş özet döndürmez;
+  özet hesaplanamazsa paket **indirilmez** ve neden yazılır. Bir belgenin bir
+  biçimi üretilemezse paket **eksik** inmez; hangi belge/biçim olduğu söylenir.
+- ZIP'e dosyalar **ArrayBuffer** olarak eklenir (JSZip Blob desteği ortama göre
+  değişir; ArrayBuffer tarayıcı ve test ortamında aynı davranır).
+- Düğme adı ve ipucu iki biçimi açıkça söyler; yardım ekranına v2.331 notu.
+
+**DEĞİŞMEZ**
+1. ZIP bir **arşiv/taşıma** paketidir; UYAP'a tek belge gibi gönderildiği iddia
+   edilmez. Birincil çıktı yine UDF'dir.
+2. Her dosya **ayrı** SHA-256 taşır; UDF ve DOCX aynı metni taşısa da baytları
+   farklıdır, özetleri ayrıdır.
+3. Hash **metnin içine** yazılmaz (yalnız manifest + SHA256SUMS).
+4. Eksik/bozuk hash ile paket indirilmez (sessiz eksik paket yasak).
+
+**ÖLÇÜM (gerçek Chromium + CDP):** ZIP indi; içinde `UstYazi_…udf`,
+`UstYazi_…docx`, `EK-1/…` iki biçimde, `belgeler.json` (v2, 6 satır) ve
+`SHA256SUMS.txt` (6 satır) var; DOCX `word/document.xml`, UDF `content.xml`
+taşıyor; manifestteki her özet **dosyanın gerçek baytlarıyla** eşleşti; JS
+hatası **0**.
+
+**Test:** `rapor` Senaryo 47 (21 kontrol), `tasarim [2dh]`, `birim [161]`,
+`surum` kimlikleri.
 
 ## v2.330 — Fizikî dosya teslim ve iade takibi
 

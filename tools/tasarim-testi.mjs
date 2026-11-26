@@ -2451,7 +2451,7 @@ console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
   const layer = read('assets/reading-layer.css');
   check('ZIP düğmesi (araç çubuğu + panel)', /id="letterZipBtn2"/.test(html) && /id="letterZipBtn"/.test(html));
   check('ZIP üreticisi var', /async function buildDocumentsZip\(/.test(app));
-  check('belgeler.json manifesti', /schema: 'akis\.belgeler\.v1'/.test(app) && /zip\.file\('belgeler\.json'/.test(app));
+  check('belgeler.json manifesti', /schema: 'akis\.documents\.v2'/.test(app) && /zip\.file\('belgeler\.json'/.test(app));
   check('ZIP adında "Paket" yok', /UstYazi_Belgeler_/.test(app) && !/documentsZipName[\s\S]{0,200}Paket/.test(app));
   check('üreticiler blob döndürür', /async function udfDocument\(opts = \{\}\)/.test(app) && /async function docxDocument\(opts = \{\}\)/.test(app));
   check('makeUdf sarmalayıcı', /const out = await udfDocument\(opts\)/.test(app));
@@ -2510,6 +2510,31 @@ console.log('\n[2dg] Fizikî dosya teslim ve iade (v2.330)');
   for (const t of ['--green', '--red', '--gold']) {
     check(`${t} tanımlı`, new RegExp(`\\${t}:`).test(tokens));
   }
+}
+
+
+console.log('\n[2dh] Belge paketi UDF + DOCX (v2.331)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  // 1) Düğme iki biçimi söyler (kullanıcı ne indireceğini bilir).
+  check('ZIP düğmesi iki biçimi yazar', /Tüm belgeler \(UDF \+ DOCX\)/.test(html));
+  check('ZIP ipucu Word kopyasını söyler', /Word kopyası/.test(html));
+  // 2) Üretici her belge için iki biçim çağırır.
+  const fn = (app.match(/async function buildDocumentsZip\(\)[\s\S]*?\n\}/) || [''])[0];
+  check('buildDocumentsZip bulundu', fn.length > 200);
+  check('UDF ve DOCX birlikte üretilir', /udfDocument\(opts\)/.test(fn) && /docxDocument\(opts\)/.test(fn));
+  check('biçim döngüsü iki değerli', /\['udf', 'docx'\]/.test(fn));
+  check('manifestte biçim alanı', /format,/.test(fn) && /schema: 'akis\.documents\.v2'/.test(fn));
+  check('hash algoritması yazılı', /hashAlgorithm: 'SHA-256'/.test(fn));
+  check('uygulama sürümü manifestte', /appVersion: APP_VERSION/.test(fn));
+  check('SHA256SUMS yazılır', /SHA256SUMS\.txt/.test(fn));
+  check('eksik biçim sessiz geçmez', /çıktısı üretilemedi/.test(fn));
+  // 3) FAIL-CLOSED hash: boş özet döndürmez.
+  const hashFn = (app.match(/async function blobSha256Hex\(blob\)[\s\S]*?\n\}/) || [''])[0];
+  check('hash hatası yükseltilir', /Belge paketi oluşturulmadı/.test(hashFn) && !/return '';/.test(hashFn));
+  // 4) Yardım ekranı kullanıcıya söyler.
+  check('yardımda v2.331 notu', /Belge paketi artık Word kopyalarını da içerir \(v2\.331\)/.test(html));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

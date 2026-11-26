@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.330.**
+yazılır. **Güncel sürüm: v2.331.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.331 — Belge paketi: UDF + DOCX (TAMAMLANDI)
+
+- **⤓ Tüm belgeler (UDF + DOCX):** her belge iki biçimde tek ZIP'te; Word
+  kopyaları da iner (v2.325–v2.330 yalnız UDF içeriyordu).
+- **`belgeler.json` v2** (`akis.documents.v2`): her dosya ayrı satır —
+  `format`, `annexNo`, `sequence`, `bytes`, `sha256`, `hashAlgorithm`,
+  `appVersion`, `case{court,fileNo}`.
+- **`SHA256SUMS.txt`**: her dosya için bir satır.
+- **Fail-closed:** hash hesaplanamazsa veya bir biçim üretilemezse paket
+  **eksik indirilmez**; neden yazılır.
+- Test: `rapor` 47, `tasarim [2dh]`.
 
 ## v2.330 — Fizikî dosya teslim ve iade (TAMAMLANDI)
 

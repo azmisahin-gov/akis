@@ -191,7 +191,9 @@ const REQUIRED_TOPICS = [
   ['dosyalar arası konuşmacı', /Dosyalar arası konuşmacı kaydı|Dosyalar arası kişi/i],
   ['delil paketi', /Delil paketi|delil\.json/i],
   // v2.330 — fizikî dosya teslim ve iade.
-  ['fizikî dosya teslim/iade', /Fizikî dosya teslim ve iade/]
+  ['fizikî dosya teslim/iade', /Fizikî dosya teslim ve iade/],
+  // v2.331 — belge paketi UDF + DOCX.
+  ['belge paketi UDF + DOCX', /UDF \+ DOCX|UDF ve DOCX/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
