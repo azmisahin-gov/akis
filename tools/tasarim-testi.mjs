@@ -1834,7 +1834,7 @@ console.log('\n[2bs] Künye ek alanları: ekler + tarafsızlık (v2.225)');
   check('çizim fonksiyonu tanımlı', /function renderReportKunye\(/.test(js));
   check('renderReport künye alanlarını çizer', /renderReportKunye\(c\);/.test(js));
   check('girdi işleyicisi', /reportKunyeFields'\)\?\.addEventListener\('input'/.test(js) && /reportKunyeFields'\)\?\.addEventListener\('change'/.test(js));
-  check('künye alanları büyük harf (üç çıktı aynı)', /RAPOR İÇİ EKLER/.test(js) && /TARAFSIZLIK \/ BAĞIMSIZLIK BEYANI/.test(js));
+  check('künye alanları büyük harf (üç çıktı aynı)', /RAPOR İÇİ EKLER/.test(js) && /TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/.test(js));
   check('alan görünürlüğü: tek kaynak ve çizim', /REPORT_FIELD_DEFS/.test(schema) && /frontRowsFor\(c, 'coverFields'/.test(js) && /data-report-field/.test(js));
 }
 
@@ -2580,6 +2580,30 @@ console.log('\n[2dj] Açılış gecikme şeridi (v2.338)');
   // yerleşmezse üst üste biner (v2.338'de gerçek Chromium'da ÖLÇÜLDÜ).
   check('konum sürüm şeridine göre ölçülür', /function positionDueNotice[\s\S]{0,400}versionNotice[\s\S]{0,200}getBoundingClientRect/.test(app));
   check('sürüm şeridi değişince yeniden konumlanır', /MutationObserver\(positionDueNotice\)/.test(app));
+}
+
+
+console.log('\n[2dk] Tarafsızlık beyanı paneli (v2.341)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const css = read('assets/reading-layer.css');
+  // 1) Panel başlığı artık "ekler" demiyor (ek alanı yok; ekler otomatik).
+  const kunyeSummary = (html.match(/id="reportKunyeBox"><summary>([^<]*)<\/summary>/) || [])[1] || '';
+  check('panel başlığı ek alanı iddia etmiyor', kunyeSummary.length > 0 && !/ekler/i.test(kunyeSummary), kunyeSummary);
+  check('panel başlığı beyanı söyler', /Künye: tarafsızlığı etkileyebilecek hâl beyanı/.test(html));
+  // 2) Hazır metin YALNIZ açık eylemle: düğme + kaçış yok (dolu alan ezilmez).
+  check('hazır beyan düğmesi var', /data-impartiality-fill/.test(app));
+  check('dolu alan sessizce ezilmez', /data-impartiality-fill[\s\S]{0,600}trim\(\)[\s\S]{0,400}showToast/.test(app));
+  // 3) Eski taahhüt metni kalmadı; etiket tek kaynaktan.
+  check('eski taahhüt yer tutucusu kalktı', !/görüşler tarafsız ve bağımsız/.test(app));
+  check('etiket tek kaynaktan', /impartialityHeading: 'TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI'/.test(app));
+  check('kapak satırı sabit etiket taşımıyor', !/TARAFSIZLIK \/ BAĞIMSIZLIK BEYANI/.test(app));
+  // 4) Varsayılan BOŞ: uygulama beyan uydurmaz.
+  check('beyan varsayılan boş', /impartiality: ''/.test(schema));
+  // 5) Düğme şeridi düzenli (kırpılma değil, satır).
+  check('düğme şeridi biçimli', /\.rtech-actions\s*\{[^}]*display:\s*flex/.test(css));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

@@ -1801,7 +1801,11 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
     normalizeCase({ id: 'm1', report: { impartiality: 'A' }, updatedAt: '2026-01-01' }),
     normalizeCase({ id: 'm1', report: { annexList: 'EK-2' }, updatedAt: '2026-01-02' })
   );
-  ok('birleştirme: künye ek alanları dolar', mkc.merged.report.impartiality === 'A' && mkc.merged.report.annexList === 'EK-2');
+  // v2.341: `annexList` ÖLÜ alandır (ekler otomatik). Birleştirmeye girmez;
+  // girseydi görünmeyen bir alan için "çakışma" üretirdi. Beyan ise gerçek
+  // alandır ve eskisi gibi doldurulur.
+  ok('birleştirme: tarafsızlık beyanı dolar', mkc.merged.report.impartiality === 'A');
+  ok('birleştirme: ölü annexList taşınmaz', mkc.merged.report.annexList === '');
   // v2.226 — Kalite kontrolü / ikinci kontrol alanları.
   ok('emptyCase qc alanları boş', emptyCase().report.qcBy === '' && emptyCase().report.qcScope === '' && emptyCase().report.qcDate === '');
   const nq = normalizeCase({ id: 'cq', report: { qcBy: 'Uzman Y', qcScope: 'Tüm bölümler', qcDate: '2026-02-10' } });

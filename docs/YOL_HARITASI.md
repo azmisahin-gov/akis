@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.340.**
+yazılır. **Güncel sürüm: v2.341.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.341 — Tarafsızlık beyanı: 56.12 anlamı (TAMAMLANDI)
+
+- Etiket/yer tutucu/ipucu 56.12'nin **hâl beyanı** alanına çekildi
+  (`REPORT_TEXT.impartialityHeading/Placeholder/Hint`); taahhüt metni kaldırıldı.
+- Hazır cümle `impartialityTemplateText()`; **yalnız açık tıklamayla** yazılır,
+  dolu alan ezilmez. Varsayılan **boş**, boşsa **satır basılmaz**.
+- Panel başlığı: “Künye: tarafsızlığı etkileyebilecek hâl beyanı”.
+- `report.annexList` **ölü alan**: birleştirme/önizlemeden çıkarıldı (görünmez
+  çakışma üretiyordu); eski değer korunur, kullanılmaz.
+- Test: `birim [167]`, `rapor` Senaryo 50, `tasarim [2dk]`, `sema`.
 
 ## v2.340 — Rapor içi ekler: ad ve biçim (TAMAMLANDI)
 

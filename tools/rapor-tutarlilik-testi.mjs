@@ -816,7 +816,7 @@ console.log('\n[Senaryo 20] birleşik künye ve alan görünürlüğü (v2.336)'
   const mk = (report) => baseCase({ report: report || {} });
   const withImp = mk({ impartiality: 'Tarafsızlığı etkileyen hâl yoktur.' });
   const H = htmlText(withImp), U = await udfText(withImp), D = await docxText(withImp);
-  checkShared('künye alanı etiketi', 'TARAFSIZLIK / BAĞIMSIZLIK BEYANI', H, U, D);
+  checkShared('künye alanı etiketi', REPORT_TEXT.impartialityHeading, H, U, D);
   checkShared('tarafsızlık beyanı değeri', 'Tarafsızlığı etkileyen hâl yoktur.', H, U, D);
 
   // Alan kapatılınca üç çıktıda da görünmez; VERİ SİLİNMEZ.
@@ -1846,6 +1846,23 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   // Kısa biçim: numara + başlık, tekrar eden "Rapor eki N." öneki YOK.
   checkShared('kısa biçim (1. başlık)', '1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
   checkShared('birleşik liste biçimi', '1. MATERYAL TESLİM VE İADE TUTANAĞI · 2. ', H, U, D);
+}
+
+
+// Senaryo 50: tarafsızlık beyanı — 56.12 anlamı, üç çıktı (v2.341).
+// KURAL: alan "hâl beyanı"dır (engel bulunmadığı / açıklama + merci);
+// taahhüt metni değildir. Boşsa satır basılmaz; uydurma yok.
+{
+  console.log('\n[Senaryo 50] tarafsızlık beyanı (v2.341)');
+  const c = __schemaMod.normalizeCase(withMaterial());
+  c.report.impartiality = 'Tarafsızlığı ve bağımsızlığı etkileyebilecek bir hâl bulunmamaktadır.';
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('beyan etiketi 56.12', 'TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI', H, U, D);
+  checkShared('beyan metni', 'etkileyebilecek bir hâl bulunmamaktadır', H, U, D);
+  check('eski taahhüt etiketi kalktı', !H.includes('TARAFSIZLIK / BAĞIMSIZLIK BEYANI'));
+  const c2 = __schemaMod.normalizeCase(withMaterial());
+  const H2 = htmlText(c2);
+  check('boş beyan satır basmaz', !H2.includes('TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI'));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.340.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.341.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.341 — Tarafsızlık beyanı: 56.12 anlamı, ölü alan temizliği
+
+**KULLANICI NE GÖRECEK:** Künyedeki alan artık **“TARAFSIZLIĞI
+ETKİLEYEBİLECEK HÂL BEYANI”**. 56.12 künyesi bu alanda *“engel bulunmadığı”*
+ya da *“varsa açıklama ve merciye bildirim”* ister; alan bir **taahhüt** metni
+değildir. Uygulama **kendiliğinden beyan yazmaz**.
+
+- **Varsayılan boş**; boşsa rapora **satır basılmaz** (uydurma “—” yok).
+- **“Engel bulunmadığını yaz”** düğmesi hazır cümleyi yalnız **açık tıklamayla**
+  alana koyar; alan **doluysa ezilmez** (uyarı verir). Panelde ipucu:
+  “taahhüt değil beyandır”.
+- **Panel başlığı düzeltildi:** “Rapor künyesi ek alanları (ekler ·
+  tarafsızlık)” → **“Künye: tarafsızlığı etkileyebilecek hâl beyanı”**. Ek alanı
+  yoktur; ekler otomatik üretilir (v2.340).
+- **Ölü alan temizliği:** `case.report.annexList` hiçbir çıktıya girmiyordu ama
+  **birleştirme ve önizlemede** karşılaştırılıyordu → iki bilgisayarda farklı
+  eski değer varsa **görünmeyen bir alan için “çakışma”** çıkabiliyordu. Artık
+  taşınmaz (eski değer dosyada korunur, kullanılmaz).
+- **Tek kaynak:** etiket/yer tutucu/ipucu/hazır metin `REPORT_TEXT`; üç çıktı aynı.
+- Yeni testler: `birim [167]` (12), `rapor` Senaryo 50, `tasarim [2dk]`,
+  `sema` (ölü alan taşınmaz). Düzeltme yokken `birim [167]` **KALDI**.
 
 ## v2.340 — Rapor içi ekler: ad ve biçim
 

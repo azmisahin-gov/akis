@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.340.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.341.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8908,3 +8908,46 @@ tekrarlanıp **259 karakterlik** tek satır oluşuyordu.
 “Rapor eki N.” başlığı duruyor; üst yazı **EK-1** listesi değişmedi.
 1440/1100/900/760/600 → kırpma **0**, yatay taşma **0**, hücre sarar (65→97 px);
 JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.341) — Tarafsızlık beyanı (56.12 hâl beyanı)
+
+| | |
+|---|---|
+| Sürüm | **v2.341** |
+| Testler | **2653 birim + 556 şema** + rapor (50 senaryo) + sürüm + tasarım yeşil |
+| Açık konu | İstenirse “Metin şablonları kitaplığı” (kopyala-ekle) ayrı sürüm |
+
+### Neden (kullanıcı sorusu)
+Künyede **“TARAFSIZLIK / BAĞIMSIZLIK BEYANI”** alanı vardı ve yer tutucusu
+**taahhüt** cümlesiydi (“görüşler tarafsız ve bağımsız olarak…”). Oysa depodaki
+**56.12 künyesi** şunu ister: *“Tarafsızlık / bağımsızlığı etkileyebilecek hâl
+beyanı: [Engel bulunmadığı / varsa açıklama ve merciye bildirim]”*. Yani alan
+**beyandır, taahhüt değildir**; ayrıca sağ panel başlığı “(ekler · tarafsızlık)”
+diyordu ama **ek alanı yoktu** (ekler otomatik).
+
+### Yapılan
+- Etiket/yer tutucu/ipucu 56.12 anlamına çekildi — TEK KAYNAK `REPORT_TEXT`
+  (`impartialityHeading`, `impartialityPlaceholder`, `impartialityHint`).
+- Panel başlığı: **“Künye: tarafsızlığı etkileyebilecek hâl beyanı”**.
+- **“Engel bulunmadığını yaz”** düğmesi: hazır cümle **yalnız açık tıklamayla**
+  girer; alan doluysa **ezilmez** (uyarı). Varsayılan **boş**; boşsa **satır
+  basılmaz**.
+- **Ölü alan temizliği:** `report.annexList` birleştirme ve önizlemeden
+  çıkarıldı (hiçbir çıktıya girmiyordu, ama **görünmez çakışma** üretiyordu).
+  Eski değer dosyada korunur, kullanılmaz; revizyon geri yüklemesindeki yazım
+  kaldırıldı.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Beyan ≠ taahhüt.** Bu alan çıkar çatışması **beyanıdır**; uygulama
+   kendiliğinden “engel yoktur” yazmaz (rapor bilirkişi adına; uydurma yok).
+2. **Hazır metin yalnız açık eylemle** ve **dolu alanı ezmeden** yazılır.
+3. **Boş alan satır üretmez** (“—” uydurulmaz).
+4. **Görünmeyen alan birleştirmeye girmez.** Çıktıya girmeyen bir alanı
+   `mergeCases`/`compareCases` listesine koymak “görünmez çakışma” üretir.
+5. Panel başlığı **ne düzenlendiğini** söyler; olmayan alanı (“ekler”) anmaz.
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.341` · panel başlığı ve etiket 56.12 metniyle; düğme → alan dolar, kapak
+satırı **“TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI” + cümle** olarak görünür;
+ikinci tıklama değeri **değiştirmedi**, “alan dolu” uyarısı çıktı; alan
+boşaltılınca satır **kalktı**; kırpma 0 · yatay taşma 0 · JS hatası **0**.

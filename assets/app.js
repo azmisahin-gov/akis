@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.340';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.340';
+} from './schema.js?v=2.341';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.341';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.340';
+const APP_VERSION = '2.341';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -341,6 +341,14 @@ const REPORT_TEXT = {
     'Telefon',
     'Diğer'
   ],
+  // TARAFSIZLIK BEYANI (v2.341): 56.12 künyesindeki alan "hâl beyanı"dır
+  // (engel bulunmadığı / varsa açıklama ve bildirilen merci). Taahhüt metni
+  // DEĞİLDİR; uygulama kendiliğinden beyan yazmaz.
+  impartialityHeading: 'TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI',
+  impartialityPlaceholder: 'Engel bulunmadığı / varsa açıklama ve bildirilen merci',
+  impartialityHint:
+    'Bu alan taahhüt değil BEYANdır: tarafsızlığı/bağımsızlığı etkileyebilecek bir hâl yoksa “engel bulunmadığı”, varsa açıklama ve bildirilen merci yazılır. Boş bırakılırsa rapora satır basılmaz.',
+  impartialityTemplate: 'Tarafsızlığı ve bağımsızlığı etkileyebilecek bir hâl bulunmamaktadır.',
   reviewSummaryHeading: 'İNCELEME ÖZETİ (DENETİM KAYDI)',
   reviewSummaryIntro:
     'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
@@ -13669,7 +13677,7 @@ function reportRows(c) {
     { key: 'registryNo', label: 'BİLİRKİŞİ SİCİL NO', value: c.registryNo },
     // EK LİSTESİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
     { key: 'annexList', label: 'RAPOR İÇİ EKLER', value: reportAttachmentLines(c).join(' · ') },
-    { key: 'impartiality', label: 'TARAFSIZLIK / BAĞIMSIZLIK BEYANI', value: (c.report && c.report.impartiality) || '' }
+    { key: 'impartiality', label: REPORT_TEXT.impartialityHeading, value: (c.report && c.report.impartiality) || '' }
   ].map((row) => ({ ...row, label: up(row.label) }));
 }
 // Ön bölümde ÇİZİLECEK satırlar: alan görünür + değer var. Boş alan satır
@@ -15251,8 +15259,16 @@ function renderReportKunye(c) {
   if (!host) return;
   const r = c.report || {};
   host.innerHTML =
-    `<label class="field rtech-field"><span>Tarafsızlık / bağımsızlık beyanı</span><input data-report-kunye="impartiality" value="${esc(r.impartiality || '')}" placeholder="Örn. Bu raporda yer alan görüşler tarafsız ve bağımsız olarak, yalnızca teknik inceleme sonucuna dayanılarak oluşturulmuştur."></label>` +
-    '<p class="rtech-hint">“Raporun ekleri” satırı EKLER bölümündeki gerçek eklerden otomatik üretilir; elle liste yazılmaz. Boş alan rapora satır olarak girmez.</p>';
+    `<label class="field rtech-field"><span>${esc(REPORT_TEXT.impartialityHeading)}</span>` +
+    `<input data-report-kunye="impartiality" value="${esc(r.impartiality || '')}" placeholder="${esc(REPORT_TEXT.impartialityPlaceholder)}"></label>` +
+    `<div class="rtech-actions"><button class="mini-button" data-impartiality-fill title="Yalnız engel bulunmadığına dair beyanı yazar; siz yazmış gibi kendiliğinden girmez, bu düğmeye bastığınızda girer.">Engel bulunmadığını yaz</button></div>` +
+    `<p class="rtech-hint">${esc(REPORT_TEXT.impartialityHint)}</p>` +
+    '<p class="rtech-hint">“Rapor içi ekler” satırı EKLER bölümündeki gerçek eklerden otomatik üretilir; elle liste yazılmaz.</p>';
+}
+// v2.341: hazır beyan metni SAF; modele kendiliğinden yazılmaz. Yalnız
+// kullanıcı düğmeye bastığında alana yazılır (açık eylem), sonra kaydedilir.
+function impartialityTemplateText() {
+  return REPORT_TEXT.impartialityTemplate;
 }
 function renderReportAnnexEditor(c) {
   const host = $('#reportAnnexFields');
@@ -15885,7 +15901,6 @@ function applyReportSnapshot(c, snap) {
   r.conclusionText = snap.conclusionText || '';
   r.tech = { ...(snap.tech || {}) };
   r.impartiality = snap.impartiality || '';
-  r.annexList = snap.annexList || '';
   r.qcBy = snap.qcBy || '';
   r.qcScope = snap.qcScope || '';
   r.qcDate = snap.qcDate || '';
@@ -22243,6 +22258,24 @@ $('#reportKunyeFields')?.addEventListener('input', (e) => {
   c.report[inp.dataset.reportKunye] = inp.value;
   persist();
 });
+// HAZIR BEYAN (v2.341): yalnız AÇIK kullanıcı eylemiyle yazılır. Metin
+// kendiliğinden girmez (uydurma beyan yok); dolu alan sessizce EZİLMEZ.
+$('#reportKunyeFields')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-impartiality-fill]');
+  if (!btn) return;
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  if (String(c.report.impartiality || '').trim()) {
+    showToast('Beyan alanı dolu; hazır metin yazılmadı. Önce mevcut metni silin veya düzenleyin.', true);
+    return;
+  }
+  c.report.impartiality = impartialityTemplateText();
+  persist();
+  renderReportKunye(c);
+  renderReport();
+  showToast('Beyan yazıldı: “hâl bulunmamaktadır”. Metni kendi durumunuza göre düzenleyebilirsiniz.');
+});
 $('#reportKunyeFields')?.addEventListener('change', () => renderReport());
 // Kalite kontrolü ek alanları (v2.226) — aynı desen.
 $('#reportQcFields')?.addEventListener('input', (e) => {
@@ -23270,6 +23303,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.341': {
+    title: 'Tarafsızlık beyanı 56.12 anlamına çekildi',
+    body:
+      'Künyedeki alan artık “TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI”: 56.12 şablonunun istediği gibi “engel bulunmadığı” ya da varsa açıklama ve bildirilen merci yazılır. Alan taahhüt metni değildir; uygulama kendiliğinden beyan yazmaz, varsayılan boştur ve boşsa rapora satır basılmaz. İsterseniz “Engel bulunmadığını yaz” düğmesiyle hazır cümle alana girer (yalnız siz bastığınızda; dolu alan ezilmez). Sağ paneldeki eski “ekler · tarafsızlık” başlığı düzeltildi: ek alanı yoktur, ekler otomatik üretilir. Eski sürümden kalan görünmez “raporun ekleri” alanı birleştirmeden çıkarıldı; artık kimsenin görmediği bir alan için çakışma çıkmaz.'
+  },
   '2.340': {
     title: 'Rapor içi ekler: ad ve biçim',
     body:

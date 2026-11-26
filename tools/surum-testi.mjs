@@ -195,7 +195,9 @@ const REQUIRED_TOPICS = [
   // v2.331 — belge paketi UDF + DOCX.
   ['belge paketi UDF + DOCX', /UDF \+ DOCX|UDF ve DOCX/],
   // v2.339 — teslim kontrol listesi (EK-5).
-  ['teslim kontrol listesi (EK-5)', /Teslim kontrol listesi \(EK-5|TESLİM KONTROLÜ/]
+  ['teslim kontrol listesi (EK-5)', /Teslim kontrol listesi \(EK-5|TESLİM KONTROLÜ/],
+  // v2.341 — tarafsızlık beyanı (56.12 hâl beyanı).
+  ['tarafsızlık beyanı', /Tarafsızlığı etkileyebilecek hâl beyanı|TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

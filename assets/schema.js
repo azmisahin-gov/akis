@@ -1628,7 +1628,9 @@ export function emptyCase(over = {}) {
       // Rapor biçimi (v2.238): sayfa · font · punto · yön. TEK KAYNAK; ekran,
       // yazdırma/PDF (@page), DOCX ve UDF bu değerleri okur.
       format: emptyReportFormat(),
-      // Künye ek alanları (v2.225): elle doldurulur; boşsa rapora "—".
+      // Tarafsızlık beyanı (v2.341): 56.12 künyesinin "hâl beyanı" alanı.
+      // Boşsa rapora SATIR BASILMAZ (uydurma "—" yok). `annexList` eski
+      // sürümden kalan ölü alandır: okunur/korunur ama çıktıya girmez.
       impartiality: '',
       annexList: '',
       // Kalite kontrolü / ikinci göz (v2.226): elle; boşsa rapora "—".
@@ -3524,7 +3526,7 @@ export function mergeCases(mine, theirs) {
     ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
     ['expert', ['name', 'registryNo', 'field']],
     ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
-    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList', 'qcBy', 'qcScope', 'qcDate']]
+    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']]
   ]) {
     const mg = mine[group] || {};
     const tg = theirs[group] || {};
@@ -3925,7 +3927,7 @@ export function compareCases(mine, theirs) {
   };
   for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
   for (const [g, keys] of [
-    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'annexList', 'qcBy', 'qcScope', 'qcDate']],
+    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']],
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);

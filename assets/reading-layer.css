@@ -4273,3 +4273,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    Sürüm şeridi de açıksa JS konumu ölçerek aşağı kaydırır (üst üste binmez). */
 .due-notice { background: var(--red-soft); border-bottom-color: var(--red); }
 .due-notice b { color: var(--red); }
+
+/* ---- v2.341 — Künye beyanı: düğme şeridi -------------------------------- */
+.rtech-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-2) 0 0; }

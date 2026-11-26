@@ -174,6 +174,7 @@ const EXPOSE = [
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
+  'impartialityTemplateText', 'compareCases',
   // v2.330 — fizikî dosya teslim ve iade
   'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
   'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
@@ -7675,6 +7676,49 @@ console.log('[166] Rapor içi ek listesi: ad ve biçim (v2.340)');
   const movedLines = T.reportAttachmentLines(moved);
   eq('taşınan bölüm listede', movedLines.some((x) => x.includes('KAYIT BAZINDA BULGULAR')), true);
   eq('taşınan bölüm numarası bitişik', movedLines.every((x, i) => x.startsWith(`${i + 1}. `)), true);
+}
+
+
+console.log('[167] Tarafsızlık beyanı: anlam, yer ve ölü alan (v2.341)');
+{
+  const mk = (over = {}) => {
+    const c = T.emptyCaseForTest({ id: 'c1', updatedAt: '2026-11-20T10:00:00.000Z' });
+    Object.assign(c, over);
+    return c;
+  };
+  // 1) Kapak etiketi 56.12'nin alan adıyla AYNI anlamda: "hâl beyanı".
+  const c = mk();
+  c.report.impartiality = 'Engel bulunmadığı';
+  const row = T.reportRows(c).find((r) => r.key === 'impartiality');
+  eq('beyan satırı var', !!row, true);
+  eq('etiket 56.12 anlamında', row.label, 'TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI');
+  eq('etiket taahhüt adı değil', /BAĞIMSIZLIK BEYANI$/.test(row.label), false);
+  // 2) Boş beyan satır ÜRETMEZ (uydurma yok).
+  const c0 = mk();
+  const rows0 = T.reportRows(c0);
+  eq('boş beyanın değeri boş', (rows0.find((r) => r.key === 'impartiality') || {}).value, '');
+  eq('ön bölüm süzgeci de eler', T.frontRowsFor(c0, 'coverFields', rows0).some((r) => r.key === 'impartiality'), false);
+  // 3) Hazır metin YALNIZ açık çağrıda üretilir; modelde varsayılan BOŞ.
+  const tpl = T.impartialityTemplateText();
+  eq('şablon "hâl yok" der', /bulunmamaktadır/.test(tpl), true);
+  eq('şablon taahhüt cümlesi değil', /görüşler tarafsız ve bağımsız/.test(tpl), false);
+  eq('varsayılan beyan boş', mk().report.impartiality, '');
+  // 4) ÖLÜ ALAN: report.annexList (görünmez) birleştirmede çakışma ÜRETMEZ.
+  const a = mk(), b = mk();
+  a.report.annexList = 'ESKİ A';
+  b.report.annexList = 'ESKİ B';
+  const mg = T.mergeCasesForTest(a, b);
+  eq('birleştirme: görünmez alan çakışması yok', (mg.conflicts || []).some((x) => /annexList/.test(String(x.field || ''))), false);
+  eq('birleştirme: görünmez alan uygulanan listesinde yok', (mg.applied || []).some((x) => /annexList/.test(String(x))), false);
+  // 5) Önizleme de aynı gerçeği söyler (ayrışırsa kullanıcı yanlış karar verir).
+  const cmp = T.compareCases(a, b);
+  eq('önizleme: görünmez alan çakışması yok', (cmp.conflicts || []).some((x) => /annexList/.test(String(x.field || ''))), false);
+  // 6) GERÇEK alan (beyan) birleşmeye devam eder: sessiz ezme yok.
+  const a2 = mk(), b2 = mk();
+  a2.report.impartiality = 'A beyanı';
+  b2.report.impartiality = 'B beyanı';
+  const mg2 = T.mergeCasesForTest(a2, b2);
+  eq('beyan çakışması bildirilir', (mg2.conflicts || []).some((x) => /impartiality/.test(String(x.field || ''))), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

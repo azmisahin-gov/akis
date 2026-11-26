@@ -1,4 +1,4 @@
-# Özellikler (v2.340 — mevcut durum)
+# Özellikler (v2.341 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1158,3 +1158,7 @@ Raporun **EK-5 “Son kontrol listesi”** eki teslimden önce otomatik denetim 
 ## Rapor içi ekler (v2.340)
 
 Raporun ön bölümünde **RAPOR İÇİ EKLER** satırı vardır; raporun kendi eklerini **“1. BAŞLIK · 2. BAŞLIK…”** biçiminde listeler ve EKLER bölümünden otomatik türetilir (elle yazılmaz). Üst yazıdaki **EK-1/EK-2** belge seti ayrıdır: üst yazı ayrı belgeleri sunar. EKLER bloğu kapalıysa liste yazılmaz; kapatmak için künye alanlarından `annexList` kapatılır. Kapak ile EKLER bölümü aynı kaynaktan (`reportAnnexList`) beslenir; üç çıktı (HTML/DOCX/UDF) aynı metni üretir.
+
+## Tarafsızlık beyanı (v2.341)
+
+Künyede **“TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI”** satırı vardır. 56.12 künyesi bu alanda “engel bulunmadığı” ya da “varsa açıklama ve merciye bildirim” ister; alan **taahhüt değil beyandır**. Varsayılan **boştur** ve boşsa rapora satır basılmaz; uygulama kendiliğinden beyan yazmaz. **“Engel bulunmadığını yaz”** düğmesi hazır cümleyi yalnız açık tıklamayla koyar (dolu alan ezilmez). Satır, künye alanlarından kapatılabilir; rapor revizyonuna girer. Eski sürümden kalan görünmez `report.annexList` alanı birleştirmeye girmez (ölü alan).
