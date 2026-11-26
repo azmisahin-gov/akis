@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.336';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.336';
+} from './schema.js?v=2.337';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.337';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.336';
+const APP_VERSION = '2.337';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -6995,12 +6995,6 @@ function segPriority(s, prev) {
     }
   }
   return { score, reasons };
-}
-function segPriorityBadge(s, prev) {
-  const p = segPriority(s, prev);
-  if (p.score < 15) return '';
-  const label = p.score >= 40 ? 'Yüksek' : p.score >= 20 ? 'Orta' : 'Düşük';
-  return `<span class="badge prio" title="${esc(p.reasons.join(', '))}">Öncelik: ${label}</span>`;
 }
 
 // ---- Liste (sol panel) ----
@@ -16360,11 +16354,6 @@ function clearAnnexPageCache() {
   annexPageCache.clear();
 }
 
-function letterPageCount() {
-  const paper = $('#letterPreview');
-  return reportPageCountFor(paper ? paper.scrollHeight : 0, reportPageHeight());
-}
-
 /**
  * Ek belgesinin sayfa sayısı: geçici kopya rapor üreticisiyle çizilir, yükseklik
  * ölçülür ve kayıt hemen geri alınır. Ölçüm başarısızsa `null` (uydurma yok).
@@ -23073,6 +23062,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.337': {
+    title: 'Ölü kod ve yanlış yardım cümlesi düzeltildi',
+    body:
+      'Görsel veya davranış değişikliği yok. Bölüm listesinde artık kullanılmayan öncelik rozeti üreteci ile kullanılmayan sayfa sayacı koddan kaldırıldı. Öncelik bilgisi bölüm detayının Durum satırındaki çipte durmaya devam ediyor. Yardım ekranındaki bir sürüm notu, öncelik rozetinin listede olduğunu söylüyordu; rozet v2.186’da detaya taşındığı için cümle düzeltildi. Bir test yalnız fonksiyonun varlığına baktığı için kaldırılmış özelliği “korunmuş” sayıyordu; test artık görünen yeri denetliyor.'
+  },
   '2.336': {
     title: 'Rapor künyesi tek bölüm; alanlar tek tek kapatılabilir',
     body:
@@ -24224,7 +24218,7 @@ const VERSION_NOTICES = {
       'Metnin üstünde yalnız tek satır ipucu var: "Model çıktısı farklı — ' +
       'karşılaştır (Teknik)". Tıklayınca Teknik açılır; model adı, tarih ve ham ' +
       'çıktı orada görünür. Notlardaki tekrar eden "öncelik" satırı kaldırıldı; ' +
-      'listedeki Öncelik rozeti duruyor.'
+      "Öncelik rozeti v2.186'da detayın Durum satırına taşındı."
   },
   '2.180': {
     title: 'Konuşmacı, kontrol ve gözlem artık her zaman görünür',

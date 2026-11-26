@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.336.**
+yazılır. **Güncel sürüm: v2.337.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.337 — Ölü kod temizliği + test/yardım düzeltmesi (TAMAMLANDI)
+
+**Konu:** Yanlış güvence veren test ve çelişkili yardım metni. Davranış değişmedi.
+
+- `segPriorityBadge` (v2.186'dan sonra çağrılmıyordu) ve `letterPageCount`
+  (yerini `estimateDocumentPages` aldı) **silindi**.
+- `tasarim-testi`'nin "öncelik rozeti korunur" kontrolü **davranışa** çevrildi:
+  çip detayın Durum satırında, listede rozet yok.
+- v2.181 yardım notu ("listedeki Öncelik rozeti duruyor") bugünkü durumu yanlış
+  anlatıyordu; rozetin v2.186'da detaya taşındığı yazıldı.
+- Test: `tasarim-testi` **[2di]** — düzeltme yokken 5 kontrol KALDI.
 
 ## v2.336 — Rapor künyesi tek bölüm + alan görünürlüğü (TAMAMLANDI)
 

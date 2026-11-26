@@ -6,12 +6,31 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.336.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.337.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.337 — Ölü kod temizliği, test ve yardım metni düzeltmesi
+
+**KULLANICI NE GÖRECEK:** Görsel veya davranış değişikliği **yok**. Bu sürüm,
+yanlış güvence veren bir testi ve kullanıcıya çelişkili bilgi veren bir yardım
+cümlesini düzeltir.
+
+- **Ölü kod silindi.** `segPriorityBadge` (liste rozeti) v2.186'da detayın
+  Durum satırına taşınmıştı ama fonksiyon kalmıştı; `letterPageCount` yerini
+  `estimateDocumentPages`'e bırakmıştı. İkisi de çağrılmıyordu.
+- **Test davranışa çevrildi.** `tasarim-testi` "öncelik rozeti korunur" diye
+  yalnız `function segPriorityBadge` **varlığına** bakıyordu; bu, kaldırılmış
+  bir özelliği "korunmuş" sayıyordu. Artık **görünen yer** sınanıyor: çip
+  detayın Durum satırında ve listede rozet **yok**.
+- **Yardım metni düzeltildi.** v2.181 notu "listedeki Öncelik rozeti duruyor"
+  diyordu; v2.186 aynı rozetin detaya taşındığını yazıyordu. Cümle geçmiş
+  sürümün davranışını **bugün gibi** anlatmayacak biçimde düzeltildi.
+- Yeni test: `tasarim-testi` **[2di]** (6 kontrol). Düzeltme yokken 5 kontrol
+  **KALDI** (kanıtlandı), sonrasında geçti.
 
 ## v2.336 — Rapor künyesi tek bölüm, alanlar tek tek açılıp kapanabilir
 

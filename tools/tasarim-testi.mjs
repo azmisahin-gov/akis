@@ -1171,7 +1171,10 @@ console.log("\n[2an] ASR kökeni metin kutusunun sağ üstünde (v2.188)");
   const statusFn9 = js9.slice(js9.indexOf('function statusRowHtml'), js9.indexOf('\nfunction ', js9.indexOf('function statusRowHtml') + 10));
   check('çip durum satırı üreticisinde', /data-asr-open/.test(statusFn9));
   check('çip ASR kutusunu açar', /dataset\.asrOpen[\s\S]{0,300}openAsrPopover/.test(js9));
-  check('öncelik rozeti korunur', /function segPriorityBadge/.test(js9) && /badge prio/.test(js9));
+  // v2.337: öncelik rozeti LİSTEDEN kaldırıldı (v2.186), DURUM satırında
+  // yaşıyor. Eskiden bu kontrol yalnız `function segPriorityBadge` varlığına
+  // bakıyordu; ölü kodu "korunmuş" sayıyordu. Artık görünen yeri sınanır.
+  check('öncelik çipi detay durum satırında', /st-chip info[^>]*title="İnceleme önceliği:[\s\S]{0,120}Öncelik: \$\{label\}/.test(js9));
 }
 
 console.log("\n[2ao] Başlıkta birleşik işlem satırı (v2.183)");
@@ -2536,6 +2539,29 @@ console.log('\n[2dh] Belge paketi UDF + DOCX (v2.331)');
   check('hash hatası yükseltilir', /Belge paketi oluşturulmadı/.test(hashFn) && !/return '';/.test(hashFn));
   // 4) Yardım ekranı kullanıcıya söyler.
   check('yardımda v2.331 notu', /Belge paketi artık Word kopyalarını da içerir \(v2\.331\)/.test(html));
+}
+
+console.log('\n[2di] Ölü kod ve yardım metni tutarlılığı (v2.337)');
+{
+  const app = read('assets/app.js');
+  // 1) LİSTEDE öncelik rozeti v2.186'da kaldırıldı; üreteci ölü koddur.
+  //    Ölü üreteç kalırsa "rozet korunuyor" yanılgısı sürer (v2.115 dersi:
+  //    "fonksiyon var" ≠ "fonksiyon kullanılıyor").
+  check('listedeki öncelik rozeti üreteci kaldırıldı', !/function segPriorityBadge\s*\(/.test(app));
+  check('liste satırı öncelik rozeti basmıyor', !/badge prio/.test(app));
+  // 2) Kullanılmayan sayfa sayacı (yerini estimateDocumentPages aldı).
+  check('ölü letterPageCount kaldırıldı', !/function letterPageCount\s*\(/.test(app));
+  check('sayfa tahmini tek kaynaktan', /function estimateDocumentPages\s*\(/.test(app));
+  // 3) Yardım metni geçmiş sürümün davranışını BUGÜN gibi anlatmaz.
+  //    Yardım EKRANI index.html'de, sürüm notu app.js'tedir; İKİSİ de sınanır
+  //    (v2.337'de ilk deneme yalnız app.js düzeltildi, ekran eski cümleyi
+  //    göstermeye devam etti — ölçüldü).
+  const helpText = read('index.html').replace(/<[^>]+>/g, ' ');
+  check('yardım metni (app.js) "listede rozet duruyor" demiyor', !/listedeki Öncelik rozeti duruyor/.test(app));
+  check('yardım ekranı (index.html) "listede rozet duruyor" demiyor', !/listedeki\s+Öncelik\s+rozeti\s+duruyor/.test(helpText));
+  check('yardım metni rozetin taşındığını söyler', /Öncelik rozeti v2\.186'da detayın Durum satırına taşındı/.test(app));
+  check('yardım ekranı rozetin taşındığını söyler', /Öncelik\s+rozeti\s+v2\.186'da\s+detayın\s+Durum\s+satırına\s+taşındı/.test(helpText));
+  check('yardım ekranında v2.337 notu var', /Son değişiklikler \(v2\.337\)/.test(read('index.html')));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

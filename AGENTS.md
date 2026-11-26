@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.336.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.337.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8770,3 +8770,34 @@ DOCX/UDF karışık harf basıyordu.
 6. **“Keşif” sözcüğü kullanılmaz:** tek anlam `inspectionDate` → “İNCELEME TARİHİ”.
 7. **İnceleme konusu boşsa** `reportReadiness` `subject` maddesi **blocking**.
 8. Test: `birim [163]`, `rapor` Senaryo 20, `tasarim [2bs]`.
+
+## YENİ OTURUM DEVRİ (v2.337) — Ölü kod + yanlış test/yardım cümlesi
+
+| | |
+|---|---|
+| Sürüm | **v2.337** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2590 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.338 (A‑3 gecikme açılış uyarısı), v2.339 (A‑2 teslim kontrol listesi) |
+
+### Ne yapıldı
+- `segPriorityBadge` (v2.186'dan sonra çağrılmıyordu) ve `letterPageCount`
+  (yerini `estimateDocumentPages` aldı) **silindi**.
+- `tasarim-testi`'nin "öncelik rozeti korunur" kontrolü yalnız fonksiyon
+  **varlığına** bakıyordu; **davranışa** çevrildi: çip detayın Durum satırında,
+  listede rozet yok.
+- Yardım EKRANI (`index.html`) ile sürüm notu (`app.js` `VERSION_NOTICES`)
+  AYRI dosyalardadır. İlk denemede yalnız app.js düzeltildi, ekran eski cümleyi
+  göstermeye devam etti (tarayıcıda ölçüldü) → **ikisi birlikte** düzeltilir.
+
+### DEĞİŞMEZ DERS (v2.337)
+- **`function X` var mı?** testi özellik koruması DEĞİLDİR. Ölçüt: öğe
+  **ekranda/çıktıda** var mı. Yeni test yazarken davranışı sınayın.
+- Kullanıcıya görünen bir metin değişecekse **iki yer**: `index.html` (yardım
+  ekranı) + `assets/app.js` (`VERSION_NOTICES`). Yalnız birini düzeltmek
+  "düzeltildi" sanılan ama ekranda süren hatadır.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+`v2.337` · elle bölüm (boş metin) → liste rozeti `.badge.prio` **0** · durum
+çipleri `Ses: hazır · Anlamlı metin yok · **Öncelik: Yüksek**` · yardım
+ekranı eski cümle **yok**, yeni cümle **var**, v2.337 notu **var** · kırpılan 0 ·
+yatay taşma 0 · JS hatası **0**.
