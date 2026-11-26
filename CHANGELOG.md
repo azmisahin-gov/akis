@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.333.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.334.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.334 — Bozuk paket dosyası sessizce atlanmaz
+
+**KULLANICI NE GÖRECEK:** Bir paketten (`.akis`) geri yükleme sırasında bir dosya
+okunamazsa uygulama artık **sessizce atlamıyor**. Ekranın üstünde **kapatılana
+kadar duran kırmızı şerit** çıkar: kaç dosyanın geri yüklenemediğini, hangileri
+olduğunu ve ne yapılacağını söyler. Sağlam dosyalar alınmaya devam eder; bozuk
+dosyanın ham kaydı kurtarma alanında saklanır.
+
+**NEDEN:** `importArchive` içindeki `catch` yalnız `console.error` yazıyordu.
+Ölçüm: 2 dosyalı pakette birinin ses girdisi bozukken onay **"Bunlardan 2 tanesi
+EKLENİR"** diyor, sonuçta **1 dosya** geliyor, atlanan dosya **hiç
+söylenmiyordu**. v2.84/v2.132'de yükleme ve kurtarma kopyası için kapatılan
+"sessiz veri kaybı" sınıfı paketten geri yüklemede açıktı.
+
+**Yapılan**
+- `importArchive` bozuk dosyaları `failed[]` listesine toplar (`ad`, `hata`, ham kayıt).
+- `importFailureText(failed)` — tek kaynak metin (sayı + ilk 3 ad + ne yapılacağı).
+- `reportImportFailures(failed)` — ham kaydı `akis.rescue.failedImport`'a yazar,
+  durum metnini işaretler, **kalıcı şerit** (`#importFailureBanner`, role=alert,
+  aria-live=assertive) + kırmızı toast gösterir.
+- Hepsi başarısız olursa da şerit gösterilir ve hata açıkça bildirilir.
+
+**Koruyan test:** `birim [161]` (9 kontrol; metin, catch'in listeye eklemesi,
+şeridin kullanılması ve erişilebilirliği).
 
 ## v2.333 — Ses silinemezse artık görünür
 

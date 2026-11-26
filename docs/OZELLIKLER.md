@@ -1,4 +1,4 @@
-# Özellikler (v2.333 — mevcut durum)
+# Özellikler (v2.334 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -101,6 +101,10 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   adlarını listeler. Kayıt kaldır · kalıcı sil · test dosyalarını kaldır · fizikî
   belge kaldır yolları sonucu **role=alert** ile bildirir; başarı mesajı yalnız
   silme doğrulandıysa yazılır.
+- **Bozuk paket dosyası sessizce atlanmaz (v2.334).** `importArchive` bozuk
+  dosyaları `failed[]`'e alır; `akis.rescue.failedImport`'a ham kayıt yazılır ve
+  **kalıcı şerit** (`#importFailureBanner`, role=alert) + kırmızı toast ile kaç
+  dosyanın geri yüklenemediği söylenir. Sağlam dosyalar alınmaya devam eder.
 
 ## Veri şeması (v3) — tek geçerli yapı
 

@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.333.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.334.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8696,3 +8696,24 @@ diyor, kayıt listeden gidiyor, fakat IndexedDB blob sayısı **11 → 11** kal�
 3. Yeni bir silme yolu eklerken `discardMaterialMedia`/`purgeCaseMedia` kullanın;
    doğrudan `deleteBlob` çağırıp sonucu yok saymayın.
 4. Test: `birim [160]` (sahte silme hatası).
+
+## YENİ OTURUM DEVRİ (v2.334) — Bozuk paket dosyası bildirilir
+
+| | |
+|---|---|
+| Sürüm | **v2.334** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2551 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.335 (toplu çalıştırma/aktarma bildirimleri) |
+
+**Ölçülen hata (v2.331):** 2 dosyalı pakette birinin ses girdisi bozukken onay
+"Bunlardan 2 tanesi EKLENİR" diyor, sonuçta 1 dosya geliyor, atlanan dosya
+**hiç söylenmiyordu** (catch yalnız `console.error`).
+
+**DEĞİŞMEZ KURALLAR**
+
+1. **İçe aktarmada okuma hatası sessiz atlanmaz.** `failed[]` toplanır, ham kayıt
+   `akis.rescue.failedImport`'a yazılır; yükleme/kurtarma yollarıyla aynı sözleşme.
+2. **Toast tek başına yetmez:** kalıcı şerit (`#importFailureBanner`, role=alert)
+   kapatılana kadar ekranda kalır. Başarı toast'ı onu örtemez (en son çağrılır).
+3. Hepsi başarısızsa da şerit gösterilir; hata açık metinle bildirilir.
+4. Test: `birim [161]`.

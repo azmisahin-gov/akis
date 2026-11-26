@@ -145,15 +145,15 @@ import {
   physicalMissingItems,
   physicalReturnComplete,
   physicalHandoverComplete
-} from './schema.js?v=2.333';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.333';
+} from './schema.js?v=2.334';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.334';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.333';
+const APP_VERSION = '2.334';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1728,6 +1728,59 @@ function reportLoadFailures(failed, stored) {
     true
   );
   console.error('Yüklenemeyen dosyalar:', failed.map((f) => f.error));
+}
+// Paketten geri yüklemede okunamayan dosyalar (v2.334). Yükleme/kurtarma
+// yollarıyla AYNI sözleşme: bozuk dosya sessizce atlanmaz; ham kayıt saklanır,
+// kullanıcı neyi kaybettiğini ve ne yapacağını görür.
+function importFailureText(failed) {
+  const names = (failed || []).map((f) => f && f.name).filter(Boolean);
+  return (
+    `${(failed || []).length} dosya paketten geri yüklenemedi ve atlandı` +
+    (names.length ? ` (${names.slice(0, 3).join(', ')}${names.length > 3 ? '…' : ''})` : '') +
+    '. Diğer dosyalar korundu; ham kayıt kurtarma alanında tutuldu. ' +
+    'Paketi yeniden deneyin veya bozuk dosyayı paketten çıkarın.'
+  );
+}
+function reportImportFailures(failed) {
+  try {
+    localStorage.setItem(
+      'akis.rescue.failedImport',
+      JSON.stringify({
+        at: new Date().toISOString(),
+        count: failed.length,
+        cases: failed.map((f) => f.raw).filter(Boolean)
+      })
+    );
+  } catch (e) {}
+  const el = $('#saveState');
+  if (el) {
+    el.textContent = `● ${failed.length} dosya geri yüklenemedi — diğerleri alındı`;
+    el.classList.add('danger');
+  }
+  // Toast kaybolabilir; KALICI şerit kapatılana kadar ekranda kalır (v2.334).
+  showImportFailureBanner(importFailureText(failed));
+  showToast(importFailureText(failed), true);
+  console.error('Geri yüklenemeyen dosyalar:', failed.map((f) => f.error));
+}
+// Kalıcı uyarı şeridi: bozuk dosya geri yüklenemediğinde kullanıcı bunu
+// kaybolan bir toast'tan değil, ekranda duran şeritten görür.
+function showImportFailureBanner(text) {
+  let el = $('#importFailureBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'importFailureBanner';
+    el.className = 'storage-banner';
+    document.body.appendChild(el);
+  }
+  el.innerHTML =
+    '<div class="sb-body"><b>Paketten bazı dosyalar geri yüklenemedi</b>' +
+    `<small>${esc(text)}</small></div>` +
+    '<button class="icon-button" id="importFailureClose" aria-label="Kapat">×</button>';
+  const btn = $('#importFailureClose');
+  if (btn) btn.addEventListener('click', () => { el.hidden = true; });
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'assertive');
+  el.hidden = false;
 }
 function dbOpen() {
   if (dbPromise) return dbPromise;
@@ -19161,6 +19214,7 @@ async function importArchive(zip, arch) {
   snapshotForUndo('arşivden geri yükleme');
   let added = 0;
   const missingAudio = [];
+  const failed = [];
   let identityNeeded = false;
   for (const raw of fresh) {
     try {
@@ -19201,10 +19255,20 @@ async function importArchive(zip, arch) {
       appState.cases.push(c);
       added++;
     } catch (e) {
+      // v2.334: bozuk dosya SESSİZCE atlanmaz. v2.132'de yükleme ve kurtarma
+      // yolları için kapatılan "sessiz veri kaybı" sınıfı, paketten geri
+      // yüklemede hâlâ açıktı (yalnız console.error yazılıyordu).
+      failed.push({ name: (raw && (raw.fileNo || raw.name || raw.id)) || 'adsız dosya', error: e, raw });
       console.error('Arşiv dosyası atlandı:', e);
     }
   }
-  if (!added) throw new Error('Arşivdeki dosyaların hiçbiri yüklenemedi.');
+  if (!added) {
+    // Hepsi başarısız: kalıcı şerit + kurtarma kaydı yine gösterilir.
+    if (failed.length) reportImportFailures(failed);
+    throw new Error(
+      failed.length ? 'Paketteki dosyaların hiçbiri geri yüklenemedi.' : 'Arşivdeki dosyaların hiçbiri yüklenemedi.'
+    );
+  }
   appState.activeCaseId = appState.cases[appState.cases.length - added].id;
   // Geri yükleme sonrası "boş dosya + gelen dosyalar" kalabalığı OLUŞMAZ:
   // veri taşımayan kayıtlar düşürülür (kaybedilecek veri yoktur) ve aktif
@@ -19233,6 +19297,8 @@ async function importArchive(zip, arch) {
           : '')
     );
   }
+  // Bozuk dosya varsa EN SON ve KIRMIZI söylenir (başarı toast'ı onu örtmesin).
+  if (failed.length) reportImportFailures(failed);
 }
 async function importProject(file) {
   if (!window.JSZip) throw new Error('Çalışma paketi açma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin.');
@@ -22948,6 +23014,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.334': {
+    title: 'Bozuk paket dosyası artık bildiriliyor',
+    body:
+      'Paketten geri yükleme sırasında bir dosya okunamazsa uygulama artık sessizce atlamıyor: ekranın üstünde kapatılana kadar duran kırmızı şerit kaç dosyanın geri yüklenemediğini ve hangileri olduğunu söyler. Sağlam dosyalar alınmaya devam eder; bozuk dosyanın ham kaydı kurtarma alanında saklanır.'
+  },
   '2.333': {
     title: 'Ses silinemezse artık görünür',
     body:

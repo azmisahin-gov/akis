@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.333.**
+yazılır. **Güncel sürüm: v2.334.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.334 — Bozuk paket dosyası bildirilir (TAMAMLANDI)
+
+- **`importArchive` bozuk dosyayı `failed[]`'e alır** (yalnız console.error
+  değil); ham kayıt `akis.rescue.failedImport`'a yazılır.
+- **Kalıcı şerit** `#importFailureBanner` (role=alert, aria-live=assertive) +
+  kırmızı toast; kaç dosya, hangileri, ne yapılacağı yazılır.
+- Sağlam dosyalar alınmaya devam eder; hepsi bozuksa da şerit gösterilir.
+- Test: `birim [161]`.
 
 ## v2.333 — Ses silme hatası görünür (TAMAMLANDI)
 

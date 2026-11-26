@@ -134,6 +134,7 @@ const EXPOSE = [
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
   'normalizeRescueCases', 'persistPayloadFor',
+  'importFailureText', 'reportImportFailures',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
@@ -7356,6 +7357,48 @@ console.log('[160] Silme hatası görünür (v2.333)');
   eq(
     'belge kaldırma silme sonucunu bildirir',
     /const removed = await removePhysicalDoc\(c, id\);[\s\S]{0,500}!removed/.test(js),
+    true
+  );
+}
+
+console.log('[161] Bozuk arşiv dosyası sessizce atlanmaz (v2.334)');
+{
+  // Ölçülen hata (v2.331): importArchive catch'i yalnız console.error yazıyordu;
+  // 2 dosyalı pakette bozuk olan atlanıyor, kullanıcıya söylenmiyordu.
+  const t1 = T.importFailureText([{ name: 'TEST/2' }]);
+  eq('tek dosya metni sayı içerir', /^1 dosya paketten geri yüklenemedi/.test(t1), true);
+  eq('dosya adı metinde', /TEST\/2/.test(t1), true);
+  eq('kurtarma alanı söylenir', /kurtarma alanında/.test(t1), true);
+  const t4 = T.importFailureText([
+    { name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }
+  ]);
+  eq('dört dosyada üç ad + üç nokta', /\(A, B, C…\)/.test(t4), true);
+  eq('adsız dosya güvenli', /^1 dosya/.test(T.importFailureText([{}])), true);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq(
+    'arşiv catch bozuk dosyayı listeye ekler',
+    /failed\.push\(\{ name:[\s\S]{0,160}error: e, raw \}\)/.test(js),
+    true
+  );
+  eq(
+    'arşiv sonunda bozuk dosyalar bildirilir',
+    /if \(failed\.length\) reportImportFailures\(failed\);/.test(js),
+    true
+  );
+  eq(
+    'kurtarma anahtarı yazılır',
+    /akis\.rescue\.failedImport/.test(js),
+    true
+  );
+  eq(
+    'kalıcı uyarı şeridi kullanılır',
+    /showImportFailureBanner\(importFailureText\(failed\)\)/.test(js),
+    true
+  );
+  eq(
+    'şerit erişilebilir (role=alert + aria-live)',
+    /id = 'importFailureBanner'[\s\S]{0,600}aria-live/.test(js),
     true
   );
 }
