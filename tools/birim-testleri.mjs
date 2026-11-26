@@ -134,7 +134,7 @@ const EXPOSE = [
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
   'normalizeRescueCases', 'persistPayloadFor',
-  'importFailureText', 'reportImportFailures',
+  'importFailureText', 'reportImportFailures', 'queueResultText',
   'showToast', 'showSaveFailureBanner', 'showStorageBanner',
   'segmentTimeIssues', 'segmentTimeIssueIndexes', 'segmentTimeIssueLabel',
   'segmentIndexAtTime', 'segmentTimeIssueAt', 'followStripIndex', 'segHeadParts',
@@ -7399,6 +7399,35 @@ console.log('[161] Bozuk arşiv dosyası sessizce atlanmaz (v2.334)');
   eq(
     'şerit erişilebilir (role=alert + aria-live)',
     /id = 'importFailureBanner'[\s\S]{0,600}aria-live/.test(js),
+    true
+  );
+}
+
+console.log('[162] Toplu işlem ve aktarma bildirimleri (v2.335)');
+{
+  // Ölçülen hata (v2.331): runQueue hataları yutuyor, son mesaj koşulsuz
+  // "Toplu çözümleme tamamlandı." diyordu. Aktarma hatası ise role=status idi.
+  eq('kuyruk iptali metni', T.queueResultText(true, 3, 0), 'Kuyruk durduruldu.');
+  eq('hatasız kuyruk metni', T.queueResultText(false, 3, 0), 'Toplu çözümleme tamamlandı.');
+  const q = T.queueResultText(false, 5, 2);
+  eq('hatalı kuyrukta başarı sayısı', /3 kayıt tamamlandı/.test(q), true);
+  eq('hatalı kuyrukta hata sayısı', /2 kayıt BAŞARISIZ/.test(q), true);
+  eq('hepsi başarısızsa 0 başarı', /0 kayıt tamamlandı/.test(T.queueResultText(false, 3, 3)), true);
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq(
+    'kuyruk hata sayacı tutar',
+    /let failedCount = 0;[\s\S]{0,400}failedCount\+\+/.test(js),
+    true
+  );
+  eq(
+    'kuyruk sonucu tek kaynaktan yazılır',
+    /showToast\(queueResultText\(c\.queueCancel, done, failedCount\), failedCount > 0\)/.test(js),
+    true
+  );
+  eq(
+    'aktarma hatası role=alert ile duyurulur',
+    /Paketten yükleme başarısız: \$\{err\.message\}`, true\)/.test(js),
     true
   );
 }

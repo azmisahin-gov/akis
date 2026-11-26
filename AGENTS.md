@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.334.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.335.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8717,3 +8717,27 @@ diyor, kayıt listeden gidiyor, fakat IndexedDB blob sayısı **11 → 11** kal�
    kapatılana kadar ekranda kalır. Başarı toast'ı onu örtemez (en son çağrılır).
 3. Hepsi başarısızsa da şerit gösterilir; hata açık metinle bildirilir.
 4. Test: `birim [161]`.
+
+## YENİ OTURUM DEVRİ (v2.335) — Toplu işlem/aktarma bildirimleri
+
+| | |
+|---|---|
+| Sürüm | **v2.335** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2559 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | Önerilen dörtlü (v2.332–v2.335) kapandı |
+
+**Ölçülen hata (v2.331):** `runQueue` her hatayı `catch (e) {}` ile yutuyor,
+son mesajı koşulsuz "Toplu çözümleme tamamlandı." yazıyordu. Paketten yükleme
+hatası `role=status` (nazik) idi.
+
+**DEĞİŞMEZ KURALLAR**
+
+1. **Toplu iş sonucu tek kaynak:** `queueResultText(cancelled, done, failed)`;
+   hata varsa metin sayı verir ve bildirim **role=alert** olur.
+2. **Aktarma hatası kritik bildirimdir** (`showToast(..., true)`).
+3. Yeni bir toplu işlem eklerken başarısız sayısını tutun; "tamamlandı" demek
+   için hata sayısının 0 olduğunu doğrulayın.
+4. Test: `birim [162]`.
+
+**Dürüst sınır:** Toplu çözümleme bu ortamda gerçek model indirilmeden
+çalıştırılamadı; `queueResultText` ve sayaç kaynak düzeyinde test edildi.

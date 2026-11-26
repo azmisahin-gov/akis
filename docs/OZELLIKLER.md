@@ -1,4 +1,4 @@
-# Özellikler (v2.334 — mevcut durum)
+# Özellikler (v2.335 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -105,6 +105,10 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   dosyaları `failed[]`'e alır; `akis.rescue.failedImport`'a ham kayıt yazılır ve
   **kalıcı şerit** (`#importFailureBanner`, role=alert) + kırmızı toast ile kaç
   dosyanın geri yüklenemediği söylenir. Sağlam dosyalar alınmaya devam eder.
+- **Toplu işlem ve aktarma bildirimleri (v2.335).** `runQueue` başarısız
+  kayıtları sayar; sonuç `queueResultText` tek kaynağından yazılır ("N tamamlandı,
+  M BAŞARISIZ"), hata varsa **role=alert**. Paketten yükleme hatası da
+  **role=alert** ile duyurulur.
 
 ## Veri şeması (v3) — tek geçerli yapı
 

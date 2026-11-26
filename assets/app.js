@@ -145,15 +145,15 @@ import {
   physicalMissingItems,
   physicalReturnComplete,
   physicalHandoverComplete
-} from './schema.js?v=2.334';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.334';
+} from './schema.js?v=2.335';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.335';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.334';
+const APP_VERSION = '2.335';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -21526,7 +21526,8 @@ function setupEvents() {
       try {
         await importProject(f);
       } catch (err) {
-        showToast(`Paketten yükleme başarısız: ${err.message}`);
+        // v2.335: aktarma başarısızlığı kritik bildirimdir (role=alert).
+        showToast(`Paketten yükleme başarısız: ${err.message}`, true);
       }
       e.target.value = '';
     }
@@ -22242,11 +22243,17 @@ async function runQueue() {
   $('#cancelQueueBtn').disabled = false;
   const t0 = Date.now();
   let done = 0;
+  // v2.335: hata sayılır. Önceki sürümde her hata yutuluyor ve son mesaj
+  // koşulsuz "Toplu çözümleme tamamlandı." diyordu; 3 kayıt başarısız olsa da
+  // kullanıcı "tamamlandı" görüyordu.
+  let failedCount = 0;
   for (const m of pending) {
     if (c.queueCancel) break;
     try {
       await transcribe(m.id, { confirmed });
-    } catch (e) {}
+    } catch (e) {
+      failedCount++;
+    }
     done++;
     queueUpdateProgress(done, pending.length, Date.now() - t0);
     renderQueue();
@@ -22256,7 +22263,17 @@ async function runQueue() {
   $('#cancelQueueBtn').disabled = true;
   renderQueue();
   renderOverview();
-  showToast(c.queueCancel ? 'Kuyruk durduruldu.' : 'Toplu çözümleme tamamlandı.');
+  showToast(queueResultText(c.queueCancel, done, failedCount), failedCount > 0);
+}
+// Toplu çözümleme sonucu TEK KAYNAK (v2.335). Sayaç sıfırsa eski metin korunur.
+function queueResultText(cancelled, done, failed) {
+  if (cancelled) return 'Kuyruk durduruldu.';
+  if (failed > 0) {
+    const ok = Math.max(0, Number(done || 0) - Number(failed || 0));
+    return `Toplu çözümleme bitti: ${ok} kayıt tamamlandı, ${failed} kayıt BAŞARISIZ. ` +
+      'Başarısız kayıtları tek tek yeniden deneyin (Ayarlar → model ve hata nedeni).';
+  }
+  return 'Toplu çözümleme tamamlandı.';
 }
 // Model manager. transformers.js stores every downloaded file in the browser
 // Cache Storage under a fixed name, so the same cache can be enumerated,
@@ -23014,6 +23031,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.335': {
+    title: 'Toplu çözümleme kaç kaydın başarısız olduğunu söylüyor',
+    body:
+      'Toplu çözümleme bittiğinde uygulama artık yalnız “tamamlandı” demiyor: kaç kaydın tamamlandığını ve kaç kaydın BAŞARISIZ olduğunu yazıyor; hata varsa uyarı kırmızı gösterilir. Paketten yükleme başarısız olduğunda da kritik uyarı verilir.'
+  },
   '2.334': {
     title: 'Bozuk paket dosyası artık bildiriliyor',
     body:

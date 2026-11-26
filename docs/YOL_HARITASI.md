@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.334.**
+yazılır. **Güncel sürüm: v2.335.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.335 — Toplu işlem/aktarma bildirimleri (TAMAMLANDI)
+
+- **Toplu çözümleme** başarısız kayıtları sayar; sonuç `queueResultText` tek
+  kaynağından yazılır ("N tamamlandı, M BAŞARISIZ"), hata varsa **role=alert**.
+- **Paketten yükleme hatası** `role=alert` (nazik bildirim değil).
+- Test: `birim [162]`.
 
 ## v2.334 — Bozuk paket dosyası bildirilir (TAMAMLANDI)
 

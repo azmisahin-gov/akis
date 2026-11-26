@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.334.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.335.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.335 — Toplu işlem ve aktarma bildirimleri
+
+**KULLANICI NE GÖRECEK:** **Toplu çözümleme** bittiğinde artık yalnız "tamamlandı"
+yazmıyor: kaç kaydın tamamlandığını ve kaç kaydın **BAŞARISIZ** olduğunu söylüyor.
+Bir kayıt çözümlenemezse sonuç "hepsi oldu" izlenimi vermez. Ayrıca **paketten
+yükleme başarısız** olduğunda uyarı artık normal bildirim değil, **kritik uyarı**
+(ekran okuyucu kesintili duyurur).
+
+**NEDEN:** `runQueue` her kaydı `catch (e) {}` ile geçiyor, son mesajı koşulsuz
+**"Toplu çözümleme tamamlandı."** yazıyordu; 3 kayıt başarısız olsa da kullanıcı
+"tamamlandı" görüyordu. Paketten yükleme hatası ise `role=status` (nazik) idi;
+depo kuralı gereği veri aktarma hatası `role=alert` olmalı.
+
+**Yapılan**
+- `runQueue` **başarısız sayısını** tutar; sonuç `queueResultText(cancelled, done,
+  failed)` tek kaynağından yazılır. Hata varsa **kırmızı (alert)** bildirim:
+  "N kayıt tamamlandı, M kayıt BAŞARISIZ".
+- Kuyruk iptali ve hatasız bitiş metinleri **korunur**.
+- Paketten yükleme hatası **role=alert** ile duyurulur.
+
+**Koruyan test:** `birim [162]` (8 kontrol; sonuç metinleri, sayaç ve iki çağrı yolu).
 
 ## v2.334 — Bozuk paket dosyası sessizce atlanmaz
 
