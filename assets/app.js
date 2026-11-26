@@ -131,15 +131,15 @@ import {
   letterMovedAnnexKeys,
   removeSectionsFromLetterAnnexes,
   removeAnnexKeyFromLetterAnnexes
-} from './schema.js?v=2.328';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.328';
+} from './schema.js?v=2.329';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.329';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.328';
+const APP_VERSION = '2.329';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15387,7 +15387,7 @@ function letterPaperHtml(c) {
           .map((a) => `<li>${esc(a.no)} – ${esc(a.display)}</li>`)
           .join('')}</ul></div>`;
   return (
-    `<div class="letter-head"><div class="letter-court">${esc(m.courtLine)}</div></div>` +
+    `<div class="letter-head"><div class="letter-republic">T.C.</div><div class="letter-court">${esc(m.courtLine)}</div></div>` +
     `<div class="letter-meta">${meta}</div>` +
     m.paragraphs.map((p) => `<p class="letter-para">${esc(p)}</p>`).join('') +
     `<p class="letter-closing">${esc(m.closing)}</p>` +
@@ -16522,6 +16522,8 @@ function docxLetterXml(c) {
       `<w:pPr><w:ind w:firstLine="${indentTw}"/>`
     );
   let out = '';
+  // `T.C.` — AKİS tasarım tercihi: ortada, SİYAH, sade (kalın değil).
+  out += wP('T.C.', { bold: false, color: '000000', size: 24, align: 'center', after: 20 });
   out += wP(m.courtLine, { bold: true, size: 24, align: 'center', after: 240 });
   out += wP(`${LETTER_TEXT.fileNoLabel} ${m.fileNo}`, { size: 24, after: 20 });
   out += wP(`${LETTER_TEXT.subjectLabel} ${m.subject}`, { size: 24, after: 20 });
@@ -16556,7 +16558,7 @@ function docxXml(c) {
 
   const front = {
     cover: () =>
-      wP('T.C.', { bold: true, color: '1C426B', size: 24, align: 'center', before: 120, after: 90 }) +
+      wP('T.C.', { bold: false, color: '000000', size: 24, align: 'center', before: 60, after: 40 }) +
       wP((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR') + '’' + trDative(c.court || 'Mahkemesi'), {
         bold: true,
         color: '1C426B',
@@ -17097,6 +17099,7 @@ async function udfDocument(opts = {}) {
     mid: udfSignedColor('385873'),
     muted: udfSignedColor('58718A'),
     body: udfSignedColor('24384D'),
+    black: udfSignedColor('000000'),
     white: -1,
     pale: udfSignedColor('EAF0F6'),
     line: udfSignedColor('D9E2EB')
@@ -17183,7 +17186,8 @@ async function udfDocument(opts = {}) {
 
   const front = {
     cover: () => {
-      el.push(paragraph('T.C.', { size: 16, bold: true, color: 'navy', align: 1, after: 4 }));
+      // `T.C.` — AKİS tasarım tercihi: ortada, siyah, sade (rapor ve üst yazı aynı).
+      el.push(paragraph('T.C.', { size: 12, bold: false, color: 'black', align: 1, after: 4 }));
       el.push(
         paragraph(`${(c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR')}’${trDative(c.court || 'Mahkemesi')}`, {
           size: 15,
@@ -17596,6 +17600,8 @@ async function udfDocument(opts = {}) {
     if (!m.ready) {
       throw new Error(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`);
     }
+    // `T.C.` — AKİS tasarım tercihi: ortada, siyah, sade.
+    el.push(paragraph('T.C.', { size: 12, bold: false, color: 'black', align: 1, after: 4 }));
     el.push(paragraph(m.courtLine, { size: 12, bold: true, align: 1, after: 16 }));
     el.push(paragraph(`${LETTER_TEXT.fileNoLabel} ${m.fileNo}`, { size: 12, after: 2 }));
     el.push(paragraph(`${LETTER_TEXT.subjectLabel} ${m.subject}`, { size: 12, after: 2 }));
@@ -21977,6 +21983,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.329': {
+    title: 'T.C. iki şablonda da; puntolar düzeltildi',
+    body:
+      'T.C. satırı hem üst yazıda hem raporda, ortada, siyah ve sade yazılır (AKİS tasarım tercihi; mevzuat zorunluluğu değil). Üst yazının punto tabanı düzeltildi: gövde artık 12 punto (önceden ekranda 14 görünüyordu); muhatap 12, imza unvanı 12, sicil 11. Raporda T.C. artık kâğıt ölçeğini izler.'
+  },
   '2.328': {
     title: 'Üst yazı Word çıktısı düzeldi',
     body:

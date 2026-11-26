@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.328.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.329.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.329 — `T.C.` iki şablonda da · punto denetimi
+
+**KULLANICI KARARI:** `T.C.` satırı **hem üst yazıda hem raporda** bulunur;
+**ortada, siyah ve sade** (kalın değil, harf aralığı yok). Bu, **mevzuatın zorunlu
+tuttuğu bir unsur değil**, AKİS'in **tutarlı belge tasarımı tercihidir**.
+Üst yazıda hemen altında mahkeme adı; raporda mahkeme adı ve altında
+`BİLİRKİŞİ RAPORU` başlığı bulunur (rapor yapısı zaten böyleydi).
+
+**Yapılan**
+- Üst yazıya `T.C.` **geri eklendi** (HTML/DOCX/UDF). Rapor kapağındaki `T.C.`
+  **siyah + sade** yapıldı (önceden lacivert + kalın + harf aralıklı).
+- Yeni `--paper-black` token'ı (kâğıt rengi temadan bağımsız).
+- `T.C.` puntosu **kâğıt ölçeğini izler** (rapor biçimi büyütülürse T.C. de büyür;
+  önceden sabit 11 px idi).
+
+**PUNTO DENETİMİ (gerçek Chromium + CDP, 1440×900)**
+
+| Belge | Öğe | Önce | Sonra |
+|---|---|---|---|
+| Üst yazı | gövde, muhatap, imza, T.C. | **14 px (14 pt)** — kâğıt tabanı uygulanmıyordu | **12 px = 12 pt** |
+| Üst yazı | muhatap | 1,08 em → 12,96 pt | **12 pt** |
+| Üst yazı | imza unvanı | 0,95 em → 11,4 pt | **12 pt** |
+| Üst yazı | sicil no | 0,9 em → 10,8 pt | **11 pt** |
+| Rapor | T.C. / gövde / tablo | 11 pt | 11 pt (değişmedi) |
+| Rapor | bölüm başlığı / h2 | 13 / 22 pt | 13 / 22 pt (değişmedi) |
+| Ekran (tüm görünümler) | metin | — | **11 px altı öğe: 0** |
+
+**Koruyan test:** `birim [159]` (T.C. kâğıtta) · `rapor` Senaryo 44 (T.C. üç
+çıktıda) · `tasarim` yeşil.
 
 ## v2.328 — Üst yazı Word çıktısı onarıldı + "T.C. nerede var" netliği
 

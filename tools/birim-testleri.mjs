@@ -6994,6 +6994,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // KÂĞIT: uygulama adı geçmez; EKLER ve EK-1 basılır
   const html = T.letterPaperHtml(c);
   eq('kâğıtta AKİS yok', /AKİS/.test(html), false);
+  eq('kâğıtta T.C. var', /letter-republic">T\.C\.</.test(html), true);
   eq('kâğıtta Ek: var', /Ek:/.test(html), true);
   eq('kâğıtta EK-1 var', /EK-1/.test(html), true);
   eq('kâğıtta imza var', /letter-sign-name/.test(html), true);

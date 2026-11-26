@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.328.**
+yazılır. **Güncel sürüm: v2.329.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.329 — `T.C.` iki şablonda da + punto denetimi (TAMAMLANDI)
+
+- `T.C.` **üst yazıda ve raporda**: ortada, **siyah**, **sade** (AKİS tasarım
+  tercihi; mevzuat zorunluluğu değil). `--paper-black` token'ı eklendi.
+- Üst yazı puntosu düzeltildi: kâğıt tabanı uygulanmıyordu → **14 px**; artık
+  **12 px = 12 pt** (muhatap 12, imza unvanı 12, sicil 11).
+- Rapor puntosu değişmedi (T.C./gövde 11, h3 13, h2 22); T.C. artık ölçeği izler.
+- Ekranda 11 px altı metin: **0**.
+- Test: `birim [159]`, `rapor` 44.
 
 ## v2.328 — Üst yazı DOCX onarımı + T.C. netliği (TAMAMLANDI)
 

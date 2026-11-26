@@ -276,6 +276,7 @@ html[data-theme='light'],
 html[data-theme='sepia'] {
   --paper: #ffffff;
   --paper-ink: #1f3042;
+  --paper-black: #000000;
   --paper-ink-2: #476078;
   --paper-muted: #5c7085;
   --paper-line: #d7e1eb;
@@ -289,6 +290,7 @@ html[data-theme='sepia'] {
 html[data-theme='dark'] {
   --paper: #e9edf2;
   --paper-ink: #1a2735;
+  --paper-black: #000000;
   --paper-ink-2: #3d5165;
   --paper-muted: #4f6478;
   --paper-line: #c3cfdb;

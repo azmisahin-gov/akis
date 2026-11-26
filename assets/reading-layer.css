@@ -3663,7 +3663,10 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   margin: 26px 0 20px;
   background: var(--paper-band);
 }
-.report-paper .paper-title .republic { letter-spacing: 2px; font-weight: 800; }
+/* v2.329 — `T.C.` satırı: AKİS belge tasarımı tercihi (mevzuat zorunluluğu
+   değil). Ortada, SİYAH ve sade: kalın değil, harf aralığı yok. Punto
+   yukarıdaki `--paper-scale` kuralından gelir (rapor biçimini izler). */
+.report-paper .paper-title .republic { letter-spacing: normal; font-weight: 400; color: var(--paper-black); }
 .report-paper .paper-title h2 { margin: 10px 0 6px; }
 /* Üst şerit: hafif vurgu */
 .report-paper .paper-topline { font-weight: 700; letter-spacing: .6px; }
@@ -4128,8 +4131,8 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 .letter-missing ul { margin: 4px 0 6px; padding-left: 16px; }
 .letter-head { text-align: center; margin-bottom: 18px; }
-.letter-republic { font-weight: 700; letter-spacing: .06em; color: var(--paper-ink); }
-.letter-court { font-weight: 700; font-size: 1.08em; color: var(--paper-ink); margin-top: 4px; overflow-wrap: anywhere; }
+.letter-republic { font-weight: 400; letter-spacing: normal; color: var(--paper-black); }
+.letter-court { font-weight: 700; font-size: 1em; color: var(--paper-ink); margin-top: 4px; overflow-wrap: anywhere; }
 .letter-meta { margin: 0 0 14px; }
 .letter-meta p { margin: 0 0 2px; color: var(--paper-ink); overflow-wrap: anywhere; }
 .letter-greeting { margin: 18px 0 12px; color: var(--paper-ink); }
@@ -4137,9 +4140,9 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .letter-closing { margin: 14px 0 20px; color: var(--paper-ink); }
 .letter-date { text-align: right; color: var(--paper-ink); margin-bottom: 24px; }
 .letter-sign { text-align: right; margin-bottom: 22px; color: var(--paper-ink); }
-.letter-sign-title { font-size: .95em; color: var(--paper-muted); }
+.letter-sign-title { font-size: 1em; color: var(--paper-muted); }
 .letter-sign-name { font-weight: 700; overflow-wrap: anywhere; }
-.letter-sign-reg { font-size: .9em; color: var(--paper-muted); }
+.letter-sign-reg { font-size: calc(11px * var(--paper-scale)); color: var(--paper-muted); }
 .letter-sign-line { margin: 26px 0 0 auto; border-top: 1px solid var(--paper-line); width: 180px; }
 .letter-annex { border-top: 1px solid var(--paper-line); padding-top: 10px; margin-top: 6px; }
 .letter-annex h4 { margin: 0 0 6px; font-size: .95em; letter-spacing: .06em; color: var(--paper-ink); }
@@ -4223,6 +4226,9 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    Biçim `LETTER_FORMAT` (12 pt TNR, 15 mm, 1,15) — rapor biçiminden bağımsız;
    ekran değerleri `applyLetterFormat()` ile kâğıda yazılır. Satır aralığı ve
    ilk satır girintisi burada; kalan değerler yukarıdaki v2.323 kurallarında. */
-.letter-paper { line-height: 1.15; }
+/* Punto TABANI: üst yazı 12 pt (11px × 12/11). Kural olmadan gövde 14 px
+   kalıyordu (ölçüm v2.329: 12,8 pt) — rapor kâğıdıyla aynı ölçek kullanılır. */
+.report-paper.letter-paper { font-size: calc(11px * var(--paper-scale)); line-height: 1.15; }
 .letter-meta b { font-weight: 700; }
 .letter-annex p { margin: 0 0 2px; color: var(--paper-ink); overflow-wrap: anywhere; }
+

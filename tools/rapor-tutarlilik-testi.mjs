@@ -199,6 +199,7 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   const c = withMaterial({ hallucinationWarning: 'Dolgu ifadesi üretildi.', languageWarning: 'Dil tutarsızlığı.' });
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   console.log('[Senaryo 1] kayıt var, uyarılar var');
+  // `T.C.` rapor kapağında: AKİS tasarım tercihi (v2.329).
   checkShared('alt başlık', REPORT_TEXT.subtitle, H, U, D);
   checkShared('5.1 bölüm etiketi', REPORT_TEXT.segmentCountLabel, H, U, D);
   checkShared('envanter notu', REPORT_TEXT.inventoryNote, H, U, D);
@@ -1549,6 +1550,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = letterPaperHtml(c).replace(/<[^>]+>/g, '\n');
   const U = await udfTextLetter(c);
   const D = await docxTextLetter(c);
+  checkShared('T.C. (üst yazı)', 'T.C.', H, U, D);
   checkShared('mahkeme satırı (kesme işaretsiz)', 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİNE', H, U, D);
   checkShared('dosya no', 'Dosya No: 2026/214 E.', H, U, D);
   checkShared('konu (baş harfleri büyük)', 'Konu: Bilirkişi Raporunun Sunulması', H, U, D);
