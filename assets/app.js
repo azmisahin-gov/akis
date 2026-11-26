@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.352';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.352';
+} from './schema.js?v=2.353';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.353';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.352';
+const APP_VERSION = '2.353';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -907,10 +907,6 @@ function defaultTextFor(field) {
   if (u[field]) return u[field];
   return codeDefaultText(field);
 }
-// "Varsayılana dön" ölçütü: metin etkin varsayılanla aynı mı?
-function isDefaultText(field, text) {
-  return String(text == null ? '' : text).trim() === String(defaultTextFor(field)).trim();
-}
 let appState = { cases: [], activeCaseId: null };
 let asrPipeline = null;
 let modelLoading = false;
@@ -1161,13 +1157,8 @@ function touchCaseUpdated(c) {
   }
   return false;
 }
-// Tek yazma kapısı: veriyi değiştiren her yol buradan geçer. `persist()`i
-// doğrudan çağıran yerler bu yardımcıyı kullanmalıdır (aksi hâlde `updatedAt`
-// bayatlar ve birleştirme yanlış karar verir).
-function saveCaseNow(c) {
-  touchCaseUpdated(c || currentCase());
-  persist();
-}
+// KURAL: veriyi değiştiren her yol `persist()` ile yazar; `updatedAt` orada
+// tazelenir (v2.95). Doğrudan IndexedDB'ye yazmayın.
 async function persistNow() {
   for (const c of appState.cases || []) syncCaseMirrors(c);
   // ÇOKLU SEKME KORUMASI (v2.84): iki sekmede aynı veri açıksa son yazan
@@ -4294,18 +4285,6 @@ function analyzeSilence(samples, sampleRate, startSec, endSec, opts = {}) {
   const silentSec = (ratio * len) / sr;
   return { ok: true, ratio, silentSec, durationSec: len / sr, rmsFloor: floor, rmsPeak: peak, threshold };
 }
-// Bölüm metni zaten anlamlıysa sessizlik uyarısı üretmeyiz; yalnızca metin boş
-// veya dolgu iken ve aralık büyük ölçüde sessizse işaret veririz.
-function segmentSilenceFlag(stats, text, isHallucinationFn) {
-  if (!stats || !stats.ok) return null;
-  if (stats.durationSec < 0.5) return null;
-  const blank = isHallucinationFn ? isHallucinationFn(text) : !text || !String(text).trim();
-  if (!blank) return null;
-  if (stats.ratio >= 0.8 && stats.durationSec >= 1.5) return { level: 'high', stats };
-  if (stats.ratio >= 0.55 && stats.durationSec >= 1) return { level: 'mid', stats };
-  return null;
-}
-
 // ---- Seviye ölçümü (elektro-akustik ölçüm katmanı) ----
 // Aşağıdaki ölçümler kaydın kendisinden hesaplanır; hiçbiri tahmin değildir ve
 // hiçbiri rapora yazılmadan önce bilirkişinin tetiklemesini bekler. Ölçüm
@@ -10361,43 +10340,6 @@ function karaokeActiveIndex(segments, t) {
   }
   return -1;
 }
-// CÜMLE SINIRI (v2.125): takip şeridi SABİT 2 satırlık pencerede o anki
-// cümleyi gösterir. Sınır: bitiş noktalaması VEYA kelimeler arası ≥0,4 sn
-// sessizlik. Kelime zamanı yoksa yalnız noktalama; hiçbiri yoksa tek cümle.
-const SENTENCE_GAP = 0.4;
-const SENTENCE_END = /[.!?…;:]["'”’)]?$/;
-
-/** Karaoke parçalarını cümle aralıklarına böler (indeksler `segs` içindedir). */
-function karaokeSentences(segs) {
-  const list = Array.isArray(segs) ? segs : [];
-  const wordIdx = [];
-  for (let i = 0; i < list.length; i++) if (Number.isFinite(list[i].s)) wordIdx.push(i);
-  if (!wordIdx.length) return [];
-  const ranges = [];
-  let start = 0;
-  for (let k = 1; k < wordIdx.length; k++) {
-    const prev = list[wordIdx[k - 1]];
-    const cur = list[wordIdx[k]];
-    const gap = cur.s - prev.e;
-    const ends = SENTENCE_END.test(String(prev.w || '').trim());
-    if (ends || (Number.isFinite(gap) && gap >= SENTENCE_GAP)) {
-      ranges.push({ from: wordIdx[start], to: wordIdx[k - 1] });
-      start = k;
-    }
-  }
-  ranges.push({ from: wordIdx[start], to: wordIdx[wordIdx.length - 1] });
-  return ranges;
-}
-
-/** Aktif kelime hangi cümlede? Bulunamazsa -1. */
-function activeSentenceIndex(ranges, activeIdx) {
-  if (!Array.isArray(ranges) || activeIdx < 0) return -1;
-  for (let i = 0; i < ranges.length; i++) {
-    if (activeIdx >= ranges[i].from && activeIdx <= ranges[i].to) return i;
-  }
-  return -1;
-}
-
 // TAKİP ŞERİDİ HANGİ BÖLÜMÜ GÖSTERİR — SAF (v2.147).
 // NEDEN: bölüm oynatıcısının `timeupdate`i, çalmaya BAŞLADIĞI indeksi
 // (`__segStop.index`) kullanıyordu. Otomatik geçiş bir sonraki bölüme geçince
@@ -12507,9 +12449,6 @@ function activeSegIndex(m) {
 }
 // BİLİRKİŞİ ONAYI (dinleyerek). `machine` buraya GİRMEZ: rapor "Onaylandı"
 // basmadan önce bu sorulur. Adli ayrım: makine işaretlemesi onay değildir.
-function isHumanApproved(s) {
-  return isHumanApprovedReview(segReview(s));
-}
 function reviewLabel(s) {
   return REVIEW_STATES[segReview(s)].label;
 }
@@ -12954,10 +12893,6 @@ const ASR_PROFILE_KEY = 'akis.asrProfile';
 const PROFILE_LOCK = Object.freeze({ language: 'turkish', task: 'transcribe' });
 function asrProfile(id) {
   return ASR_PROFILES.find((p) => p.id === id) || ASR_PROFILES[0];
-}
-// Tek kaynak: profil kimliği → ASR_PROFILES kaydı. Bilinmeyen kimlik standart.
-function profileById(id) {
-  return asrProfile(id);
 }
 // Ekranda gösterilecek KISA etiket. Uzun açıklama `hint` alanında (ipucu).
 function profileRunLabel(id) {
@@ -19056,15 +18991,6 @@ function isEmptyCase(c) {
   ];
   return !filled.some((v) => String(v == null ? '' : v).trim());
 }
-// Pakete girecek dosyaları belirler. Boş dosyalar sessizce atılmaz;
-// `skipped` ile bildirilir (sessiz hata yasak).
-function buildExportPlan(cases) {
-  const all = Array.isArray(cases) ? cases : [];
-  const keep = all.filter((c) => !isEmptyCase(c));
-  const skipped = all.filter((c) => isEmptyCase(c));
-  const kind = keep.length === 0 ? 'none' : keep.length === 1 ? 'single' : 'archive';
-  return { kind, cases: keep, skipped };
-}
 // BOŞ ÇALIŞMA ALANI KAYDA YAZILMAZ (v2.109).
 // NEDEN: uygulama boş kurulumda çalışabilmek için bellekte boş bir taslak dosya
 // tutar (arayüz currentCase()'e bağlı; nesne olmadan çöküyor — ölçüldü). Ama bu
@@ -19084,11 +19010,6 @@ function persistPayloadFor(state) {
   if (!cases.length) return null;
   return { ...state, cases };
 }
-// Çalışma alanı "boş" mu? Yalnız boş taslak(lar) varsa evet.
-function isEmptyWorkspace(cases) {
-  return casesForStorage(cases).length === 0;
-}
-
 // ---- Dışa aktarma kapsamı (v2.110) --------------------------------------
 // KULLANICI KAFASI KARIŞMASIN: "Dışa aktar" artık NE aktarılacağını SORAR.
 // v2.109 ve öncesinde düğme sessizce "hepsi"ne dönüşüyordu: 3 dosya varken
@@ -23596,6 +23517,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.353': {
+    title: 'Kullanılmayan kod temizlendi (davranış aynı)',
+    body:
+      'Bu sürümde ekranda, rapor çıktısında ve veride hiçbir şey değişmedi. Yalnız üretimde çağrılmayan yardımcı kod kaldırıldı ve paket sözleşmesini anlatan belge, gerçekten kullanılan fonksiyonla eşlendi. Amaç bakım kolaylığı ve ileride yanlış fonksiyonun kullanılması riskini azaltmaktır. Çalışma biçiminiz aynı kalır.'
+  },
   '2.352': {
     title: 'Okunmayan ipucu satırı düzeltildi',
     body:

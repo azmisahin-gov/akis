@@ -453,7 +453,7 @@ okunuyordu; aynı biçimde üretilen paket birleştirmede reddediliyordu.
 | Fonksiyon | Görev |
 |---|---|
 | `isEmptyCase(c)` | Kullanıcı verisi yoksa `true`. Varsayılan uzmanlık alanı, yöntem metni ve tarih **veri sayılmaz**. |
-| `buildExportPlan(cases)` | `none` / `single` / `archive`. Boş dosyalar `skipped` ile **bildirilir**, sessizce atılmaz. |
+| `exportPlanFor(cases, activeCaseId, scope)` | `scope` = `current`/`all`; döner: `kind` (`none`/`single`/`archive`) + `scope` + `cases` + `skipped`. Boş dosyalar `skipped` ile **bildirilir**, sessizce atılmaz. **Kapsamı (`scope`) taşımayan bir plan fonksiyonu yazmayın** — v2.124 "hangi kapsam seçildi" hatası buradan doğdu. |
 | `selectCaseFromArchive(arch, mine)` | id → dosya no + mahkeme. Bulunamazsa NEDEN söylenir; "uyumsuz" demek yetmez. |
 | `dropEmptyCases(cases)` | Yalnız boş kayıtları düşürür. Açılışta, içe aktarma sonrası ve yeni dosya açarken kullanılır. |
 | `matchAudioEntries(names, mats, caseId)` | Arşivde sesler `audio/<dosyaId>/` altındadır; `caseId` verilmezse yanlış dosyanın sesi bağlanabilir. |
@@ -558,7 +558,7 @@ kırpma** gösterdi. Kırpma kaldırıldı, `tasarim-testi` [2c] bunu da denetli
   tanımlanır (`assets/schema.js`). Etiket/ipucu/renk TEK KAYNAK; app.js kopya
   metin tutmaz.
 - `isReviewed({review:'machine'})` → **false** (kontrol sayacı saymaz).
-- `isHumanApproved()` → yalnız `approved`.
+- `isHumanApprovedReview(segReview(s))` (schema) → yalnız `approved`.
 - Birleştirme `rank`: `machine: 0` (= `pending`), `approved: 2` → gelen onay
   makine işaretini geçer.
 - Rozet: kısa etiket + `title` ipucu + `auto` sınıfı (yeşil DEĞİL).
@@ -596,7 +596,7 @@ getirmez**. Bu yüzden silme tek tıkla yapılamaz.
 **Değişmez kurallar:**
 - Son görünür dosya arşivlenirse **yeni boş çalışma alanı** açılır; seçici boş
   kalmaz (boş seçici "verim gitti" izlenimi verir).
-- Arşivli dosyalar `buildExportPlan` içinde **kalır** (yedek eksik olmaz).
+- Arşivli dosyalar `exportPlanFor` çıktısında **kalır** (yedek eksik olmaz).
 - Silinen dosyanın sesi geri gelmez; kullanıcıya açıkça söylenir.
 
 **Koruyan test:** `birim-testleri` [35] (24 kontrol) + gerçek Chromium
@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.352.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.353.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9251,11 +9251,44 @@ Sebep ölçüm hatasıydı: `data-theme` sayfa yüklendikten **sonra** değişti
 `localStorage.setItem('akis.theme', …)` → sayfayı **yeniden yükle** → ölç.
 Ekran görüntüsüyle doğrulamadan "kontrast hatası" yazmayın.
 
-### SIRADAKİ İŞ (v2.353 adayı — onaylandı, henüz yapılmadı)
+### SIRADAKİ İŞ (v2.353'te YAPILDI — aşağıdaki devir notuna bakın)
 Yalnız **testlerde** yaşayan 9 ölü fonksiyon: `buildExportPlan`,
 `isEmptyWorkspace`, `saveCaseNow`, `isHumanApproved`, `profileById`,
 `karaokeSentences`, `activeSentenceIndex`, `segmentSilenceFlag`, `isDefaultText`.
 **Riskli olan `buildExportPlan`:** AGENTS.md "paket yolu eklerken bu beş
 fonksiyondan geçin" diyor ama canlı yol `exportPlanFor` (kapsam/`scope` taşıyan
 sürüm). Belgeyi de düzeltin; yoksa v2.124 sınıfı "kapsam kaybı" geri gelir.
+
+## YENİ OTURUM DEVRİ (v2.353) — Ölü kod temizliği (davranış değişmedi)
+
+| | |
+|---|---|
+| Sürüm | **v2.353** |
+| Testler | `bash tools/test.sh` → 2724 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium (CDP, gerçek zaman): demo paketi içe aktarıldı, 7 bölüm, **Paket oluştur** kapsam diyaloğu açıldı (`1 dosya + ses kayıtları`), **JS hatası 0** |
+
+### Ne yapıldı
+- Yalnız testlerde yaşayan **9 fonksiyon** silindi: `buildExportPlan` ·
+  `isEmptyWorkspace` · `saveCaseNow` · `isHumanApproved` · `profileById` ·
+  `karaokeSentences` · `activeSentenceIndex` · `segmentSilenceFlag` ·
+  `isDefaultText` (+ yalnız onlara hizmet eden `SENTENCE_GAP`/`SENTENCE_END`).
+- Testler **canlı karşılıklara** çevrildi: `exportPlanFor(..., 'all')`,
+  `casesForStorage(...).length === 0`, `isHumanApprovedReview(segReview(s))`,
+  `asrProfile(id)`. `birim`: 2746 → **2724** kontrol (22'si ölü koda aitti).
+- **Belge tuzağı kapatıldı:** AGENTS.md paket sözleşmesi artık
+  `exportPlanFor(cases, activeCaseId, scope)` diyor; "kapsam (`scope`)
+  taşımayan plan fonksiyonu yazma" kuralı eklendi (v2.124 hatasının kaynağı).
+
+### DEĞİŞMEZ DERS: "testte var" ≠ "üretimde kullanılıyor"
+Bir fonksiyonun yalnız `typeof X === 'function'` testiyle ayakta tutulması onu
+canlı tutmaz; **ölü kodu gizler**. Yeni test yazarken **davranışı** sınayın ve
+çağrı yerini `grep` ile doğrulayın. Ölü kod silinirken testler canlı karşılığa
+taşınır (davranış kaybı olmadan).
+
+### ÖLÇÜM NOTU (CDP, tekrar kullanılabilir)
+Bu ortamda `--virtual-time-budget` + `--dump-dom` **IndexedDB/paket içe
+aktarma** gibi gerçek zamana bağlı akışları tamamlatmıyor (init yarıda kalır,
+"boş ekran" görünür). Güvenilir yol: `chromium --remote-debugging-port=9333` +
+Node 24'ün yerleşik `WebSocket`'i ile CDP (`Runtime.evaluate`, `awaitPromise`).
+Geçici sürücü `/tmp`'de tutulur, depoya girmez.
 

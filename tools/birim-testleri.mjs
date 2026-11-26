@@ -79,7 +79,7 @@ const EXPOSE = [
   'isHallucination', 'compactHistory', 'segReview', 'isReviewed',
   'reportTypeSpec', 'questionsFallbackText', 'evaluationFallbackText',
   'paragraphGroups', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
-  'detectPitchAmbiguity', 'pitchCellText', 'analyzeSilence', 'segmentSilenceFlag',
+  'detectPitchAmbiguity', 'pitchCellText', 'analyzeSilence',
   'analyzeLevels', 'levelRowsForCase', 'expertFieldShort',
   'analyzeStereo', 'spectralRolloff', 'snrText', 'floorText', 'fmtDb',
   'contentWords', 'findTermInconsistencies', 'applyTermForm',
@@ -98,21 +98,21 @@ const EXPOSE = [
   'snapshotSegmentText', 'approvalDroppedByEdit',
   'measureWerForCase', 'werMeasuredCount',
   'analyzeChannelLevels', 'LEVELS_SCHEMA', 'levelRowsForCase',
-  'pickActiveChannel', 'analyzeSilenceChannelAware', 'segmentSilenceFlag', 'SILENCE_SCHEMA',
-  'touchCaseUpdated', 'saveCaseNow', 'mergeCasesForTest', 'persist',
+  'pickActiveChannel', 'analyzeSilenceChannelAware', 'SILENCE_SCHEMA',
+  'touchCaseUpdated', 'mergeCasesForTest', 'persist',
   'isSha256Hex', 'verifyHashState', 'sha256',
   'parseTimecodeStrict', 'normalizeTimeInput',
   'paragraphGroups', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText',
-  'isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'freshCase',
+  'isEmptyCase', 'exportPlanFor', 'selectCaseFromArchive', 'freshCase',
   'reprocessPlan', 'queueReprocessSummary',
-  'isHumanApproved', 'reviewCellText', 'reviewHintText',
+  'isHumanApprovedReview', 'reviewCellText', 'reviewHintText',
   'isArchivedCase', 'visibleCases', 'archiveCase', 'unarchiveCase',
   'deleteConfirmPhrase', 'deleteConfirmMatches', 'canDeleteCase',
   'canArchiveCase', 'caseShortId', 'caseDisplayName',
-  'casesForStorage', 'isEmptyWorkspace',
+  'casesForStorage',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
-  'profileRunLabel', 'profileById', 'PROFILE_LOCK',
+  'profileRunLabel', 'asrProfile', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
@@ -131,7 +131,6 @@ const EXPOSE = [
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
   'FOLLOW_MODES', 'followShouldAutoStart',
   'setSegReview',
-  'karaokeSentences', 'activeSentenceIndex',
   'specTimeAt', 'specHzAt', 'specNearestBoundary',
   'activeSegIndex',
   'ANALYSIS_MODES', 'ANALYSIS_PANE_H', 'normalizeAnalysisMode', 'analysisLayout', 'analysisView',
@@ -175,7 +174,7 @@ const EXPOSE = [
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
   'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS', 'TEXT_DEFAULT_ITEMS', 'stripDerivedFields', 'PREV_DEFAULT_METHOD',
-  'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
+  'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
   // v2.330 — fizikî dosya teslim ve iade
   'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
@@ -415,10 +414,6 @@ console.log('\n[7c] Sessizlik ölçümü');
   near('tam konuşma ~0', T.analyzeSilence(loud, sr, 0, 3).ratio, 0, 0.02);
   // Boş aralık -> ok:false.
   eq('boş aralık', T.analyzeSilence(s, sr, 3, 3).ok, false);
-  // İşaret yalnızca metin boş/dolgu iken ve yeterince sessizse üretilir.
-  const stats = T.analyzeSilence(quiet, sr, 0, 3);
-  eq('boş metin + sessiz -> işaret', !!T.segmentSilenceFlag(stats, '', T.isHallucination), true);
-  eq('anlamlı metin + sessiz -> işaret yok', T.segmentSilenceFlag(stats, 'merhaba dünya', T.isHallucination), null);
 }
 
 // --- 7c-2. Seviye ölçümü ---------------------------------------------------
@@ -1340,7 +1335,6 @@ console.log('\n[23] Sessizlik/perde tüm kanalları görür');
     const st = T.analyzeSilenceChannelAware([silent, speech], sr, 0, 3);
     eq('sessizlik oranı düşük', st.ratio < 0.2, true);
     eq('ölçülen kanal bildirilir', st.channel, 2);
-    eq('sessizlik uyarısı ÜRETİLMEZ', T.segmentSilenceFlag(st, '', (x) => !x), null);
   } else {
     eq('analyzeSilenceChannelAware tanımlı', false, true);
   }
@@ -1435,7 +1429,6 @@ console.log('\n[24] isHallucination yalnız tam dolgu etiketini yakalar');
 console.log('\n[25] updatedAt düzenlemede tazelenir');
 {
   eq('touchCaseUpdated tanımlı', typeof T.touchCaseUpdated, 'function');
-  eq('saveCaseNow tanımlı', typeof T.saveCaseNow, 'function');
 
   if (typeof T.touchCaseUpdated === 'function') {
     // 1) Dokunma zaman damgasını ilerletir.
@@ -1800,7 +1793,7 @@ console.log('\n[31] Perde tahmininde oktav belirsizliği');
 // reddediyordu ("case.json yok") — kullanıcının gördüğü "uyumsuz" hatası.
 console.log('\n[32] Paket sözleşmesi (boş dosya, arşiv, kopya)');
 {
-  const need = ['isEmptyCase', 'buildExportPlan', 'selectCaseFromArchive', 'matchAudioEntries'];
+  const need = ['isEmptyCase', 'exportPlanFor', 'selectCaseFromArchive', 'matchAudioEntries'];
   for (const n of need) eq(`${n} tanımlı`, typeof T[n], 'function');
 
   if (need.every((n) => typeof T[n] === 'function')) {
@@ -1816,16 +1809,16 @@ console.log('\n[32] Paket sözleşmesi (boş dosya, arşiv, kopya)');
     const real1 = { ...fresh, id: 'c1', fileNo: '2024/1', materials: [{ id: 'm1', segments: [] }] };
     const real2 = { ...fresh, id: 'c2', fileNo: '2024/2', materials: [{ id: 'm2', segments: [] }] };
 
-    const plan1 = T.buildExportPlan([fresh, real1]);
+    const plan1 = T.exportPlanFor([fresh, real1], null, 'all');
     eq('tek gerçek dosya → tekil paket (case.json)', plan1.kind, 'single');
     eq('boş dosya pakete GİRMEZ', plan1.cases.length, 1);
     eq('paket gerçek dosyayı taşır', plan1.cases[0].id, 'c1');
 
-    const plan2 = T.buildExportPlan([fresh, real1, real2]);
+    const plan2 = T.exportPlanFor([fresh, real1, real2], null, 'all');
     eq('iki gerçek dosya → arşiv paketi', plan2.kind, 'archive');
     eq('arşivde boş dosya yok', plan2.cases.length, 2);
 
-    const plan0 = T.buildExportPlan([fresh]);
+    const plan0 = T.exportPlanFor([fresh], null, 'all');
     eq('yalnız boş dosya varsa yedek alınmaz', plan0.kind, 'none');
     eq('yedek alınmayınca dosya listesi boş', plan0.cases.length, 0);
 
@@ -1938,8 +1931,8 @@ console.log('\n[34] Otomatik onay ile bilirkişi onayı ayrı');
   eq('anlaşılmadı kontrol edilmiş sayılır', T.isReviewed({ review: 'inaudible' }), true);
 
   // 4) İnsan onayı ayrı sorulur (rapor "Onaylandı" basmak için).
-  eq('machine insan onayı DEĞİL', T.isHumanApproved({ review: 'machine' }), false);
-  eq('approved insan onayı', T.isHumanApproved({ review: 'approved' }), true);
+  eq('machine insan onayı DEĞİL', T.isHumanApprovedReview(T.segReview({ review: 'machine' })), false);
+  eq('approved insan onayı', T.isHumanApprovedReview(T.segReview({ review: 'approved' })), true);
 
   // 5) RAPOR hücresi: makine onayı "Onaylandı" olarak yazılmaz.
   eq('raporda otomatik onay "Onaylandı" değil', T.reviewCellText({ review: 'machine' }), 'Çözümlendi');
@@ -2012,7 +2005,7 @@ console.log('\n[35] Arşivleme ve silme');
   eq('arşivsiz dosya silinemez (önce arşivle)', T.canDeleteCase({ status: 'draft' }), false);
 
   // 7) Yedek arşivli dosyaları KAPSAR: arşiv "kayıp" demek değildir.
-  const plan = T.buildExportPlan([{ ...real('c4', '2024/4'), status: 'archived' }]);
+  const plan = T.exportPlanFor([{ ...real('c4', '2024/4'), status: 'archived' }], null, 'all');
   eq('arşivli dosya yedeğe GİRER', plan.cases.length, 1);
   eq('yedek biçimi tekil', plan.kind, 'single');
 }
@@ -2077,29 +2070,28 @@ console.log('\n[36] Arşiv/silme: boş dosya ve görünmeyen kimlik');
 console.log('\n[37] Boş çalışma alanı kayda yazılmaz');
 {
   eq('casesForStorage tanımlı', typeof T.casesForStorage, 'function');
-  eq('isEmptyWorkspace tanımlı', typeof T.isEmptyWorkspace, 'function');
 
   const fresh = T.freshCase();
   // 1) Yalnız boş taslak varsa kayda YAZILACAK DOSYA YOKTUR.
   eq('yalnız boş taslak → kayıt boş', T.casesForStorage([fresh]).length, 0);
-  eq('yalnız boş taslak → çalışma alanı boş', T.isEmptyWorkspace([fresh]), true);
+  eq('yalnız boş taslak → çalışma alanı boş', T.casesForStorage([fresh]).length === 0, true);
 
   // 2) Gerçek dosya varsa o yazılır.
   const real = { ...T.freshCase(), fileNo: '2024/1', materials: [{ id: 'm', segments: [] }] };
   eq('gerçek dosya kayda yazılır', T.casesForStorage([real]).length, 1);
   eq('boş taslak gerçek dosyayla birlikte yazılmaz', T.casesForStorage([fresh, real]).length, 1);
-  eq('çalışma alanı boş DEĞİL', T.isEmptyWorkspace([fresh, real]), false);
+  eq('çalışma alanı boş DEĞİL', T.casesForStorage([fresh, real]).length === 0, false);
 
   // 3) Arşivli dosya da "gerçek" sayılır (kaybolmaz).
   const archived = { ...real, id: 'x2', status: 'archived' };
   eq('arşivli dosya kayda yazılır', T.casesForStorage([archived]).length, 1);
-  eq('arşivli dosya çalışma alanını dolu yapar', T.isEmptyWorkspace([fresh, archived]), false);
+  eq('arşivli dosya çalışma alanını dolu yapar', T.casesForStorage([fresh, archived]).length === 0, false);
 
   // 4) Tamamen boş liste.
   eq('boş liste → kayıt boş', T.casesForStorage([]).length, 0);
-  eq('boş liste → çalışma alanı boş', T.isEmptyWorkspace([]), true);
+  eq('boş liste → çalışma alanı boş', T.casesForStorage([]).length === 0, true);
   eq('null güvenli', T.casesForStorage(null).length, 0);
-  eq('null çalışma alanı boş', T.isEmptyWorkspace(null), true);
+  eq('null çalışma alanı boş', T.casesForStorage(null).length === 0, true);
 
   // 5) Boş taslak "dosya gibi" GÖRÜNMEZ: seçicide değil, "Yeni dosya" olarak.
   eq('boş taslak için görünen ad', T.caseDisplayName(fresh), 'Yeni inceleme dosyası #' + T.caseShortId(fresh));
@@ -2206,7 +2198,7 @@ console.log('\n[38] Paket oluşturma kapsamı ve adı');
 console.log('\n[39] Çözümleme profili: kayıt başına sabit + görünür');
 {
   eq('profileRunLabel tanımlı', typeof T.profileRunLabel, 'function');
-  eq('profileById tanımlı', typeof T.profileById, 'function');
+  eq('asrProfile tanımlı', typeof T.asrProfile, 'function');
 
   // 1) Profil kimliği → kısa etiket (ekranda uzun metin olmaz).
   eq('standart profil etiketi', T.profileRunLabel('standard'), 'Standart');
@@ -2218,9 +2210,9 @@ console.log('\n[39] Çözümleme profili: kayıt başına sabit + görünür');
   eq('boş profil → Standart', T.profileRunLabel(''), 'Standart');
   eq('null → Standart', T.profileRunLabel(null), 'Standart');
 
-  // 3) profileById: bilinmeyen kimlik standart profile düşer.
-  eq('profileById standard', T.profileById('standard').id, 'standard');
-  eq('profileById bilinmeyen → standard', T.profileById('yok').id, 'standard');
+  // 3) asrProfile: bilinmeyen kimlik standart profile düşer.
+  eq('asrProfile standard', T.asrProfile('standard').id, 'standard');
+  eq('asrProfile bilinmeyen → standard', T.asrProfile('yok').id, 'standard');
 
   // 4) DİL KİLİDİ: profil ne olursa olsun dil Türkçe, görev transcribe.
   eq('dil kilidi tanımlı', T.PROFILE_LOCK.language, 'turkish');
@@ -2374,7 +2366,7 @@ console.log('\n== [43] Belirsiz okuma (iki okuma mümkün)');
   eq('rengi onaydan farklı', __schemaMod.REVIEW_TONE.ambiguous !== 'good', true);
   eq('normalize ambiguous korur', __schemaMod.normalizeReviewState('ambiguous'), 'ambiguous');
   eq('isReviewed(ambiguous) FALSE (kontrol edilmedi)', T.isReviewed({ review: 'ambiguous' }), false);
-  eq('isHumanApproved(ambiguous) FALSE', T.isHumanApproved({ review: 'ambiguous' }), false);
+  eq('isHumanApproved(ambiguous) FALSE', T.isHumanApprovedReview(T.segReview({ review: 'ambiguous' })), false);
   eq('pendingBreakdown ambiguous sayar', T.pendingBreakdown([{ review: 'ambiguous' }]).ambiguous, 1);
   eq('ambiguous toplamda eksik sayılır', T.pendingBreakdown([{ review: 'ambiguous' }]).total, 1);
 
@@ -2582,54 +2574,6 @@ console.log('\n== [46] Onayın sahibi (birleştirmede onay aktarımı)');
     const cmp = T.compareCasesForTest(mk(), newer({ review: 'approved', reviewedBy: 't1' }));
     eq('F) önizleme ilerlemeyi sayar', cmp.segments.reviewAdvanced, 1);
     eq('F) önizleme reddi saymaz', cmp.segments.approvalsRejected || 0, 0);
-  }
-}
-
-// --- 47. Takip şeridi: sabit 2 satırlık cümle penceresi (v2.125) ----------
-// CANLI VERİ. Bilirkişi: "sd-follow sürekli yüksekliği değiştiği için yazıyı
-// düzgün takip edemiyorum". ÖLÇÜM (v2.124): kutu 120px tavanlıydı ama içerik
-// 202–314px; kod 74px'lik (~5 satır) sıçramalarla kaydırıyordu. Ayrıca aktif
-// kelime kalın+dolgu ile satır sonlarını kaydırabiliyordu (1100px'te 8 kelime).
-// ÇÖZÜM: sabit 2 satırlık pencere + O ANKİ CÜMLE; vurgu yalnız arka plan.
-console.log('\n== [47] Takip şeridi: cümle penceresi');
-{
-  eq('karaokeSentences tanımlı', typeof T.karaokeSentences, 'function');
-  eq('activeSentenceIndex tanımlı', typeof T.activeSentenceIndex, 'function');
-  if (typeof T.karaokeSentences === 'function') {
-    const sp = { w: ' ', s: NaN, e: NaN };
-    // Noktalama cümleyi böler; boşluk parçaları aralığa DAHİL kalır.
-    const segs = [
-      { w: 'Merhaba', s: 0, e: 0.4 }, sp, { w: 'dünya.', s: 0.5, e: 0.9 }, sp,
-      { w: 'Nasılsın', s: 1.0, e: 1.4 }, sp, { w: 'İyiyim', s: 1.5, e: 1.9 }
-    ];
-    const r = T.karaokeSentences(segs);
-    eq('noktalama cümle böler', r.length, 2);
-    eq('1. cümle başlangıcı', r[0].from, 0);
-    eq('1. cümle sonu', r[0].to, 2);
-    eq('2. cümle başlangıcı', r[1].from, 4);
-    eq('2. cümle sonu', r[1].to, 6);
-    eq('kelime 0 → 1. cümle', T.activeSentenceIndex(r, 0), 0);
-    eq('kelime 5 → 2. cümle', T.activeSentenceIndex(r, 5), 1);
-    eq('aktif yoksa -1', T.activeSentenceIndex(r, -1), -1);
-
-    // ≥0,4 sn sessizlik de cümle böler (noktalama olmasa bile).
-    const gap = [
-      { w: 'bir', s: 0, e: 0.3 }, sp, { w: 'iki', s: 0.35, e: 0.6 }, sp,
-      { w: 'üç', s: 1.2, e: 1.5 }
-    ];
-    eq('boşluk (≥0,4 sn) cümle böler', T.karaokeSentences(gap).length, 2);
-    // Kısa boşluk bölmez.
-    const near = [
-      { w: 'bir', s: 0, e: 0.3 }, sp, { w: 'iki', s: 0.5, e: 0.8 }
-    ];
-    eq('kısa boşluk bölmez', T.karaokeSentences(near).length, 1);
-    // Noktalama yok, boşluk yok → tek cümle.
-    eq('tek cümle', T.karaokeSentences([{ w: 'a', s: 0, e: 0.2 }, sp, { w: 'b', s: 0.25, e: 0.4 }]).length, 1);
-    // Kapanış tırnağı noktalamayı bozmaz.
-    eq('tırnaklı bitiş böler', T.karaokeSentences([
-      { w: '“geldi.”', s: 0, e: 0.4 }, sp, { w: 'Sonra', s: 0.5, e: 0.9 }
-    ]).length, 2);
-    eq('boş girdi → []', T.karaokeSentences([]).length, 0);
   }
 }
 
@@ -7758,9 +7702,6 @@ console.log('[168] Varsayılan metinlerim (v2.342)');
   T.saveUserDefaults({ impartiality: 'ENGEL YOKTUR' });
   eq('beyan depoya girmez', T.userDefaults().impartiality, undefined);
   eq('beyan varsayılanı boş kalır', T.defaultTextFor('impartiality'), '');
-  // 7) "Varsayılana dön" ölçütü: metin etkin varsayılanla aynı mı?
-  eq('eşit metin varsayılan sayılır', T.isDefaultText('conclusionText', T.defaultTextFor('conclusionText')), true);
-  eq('düzenlenmiş metin varsayılan değil', T.isDefaultText('conclusionText', 'Elle yazdım.'), false);
   // 8) BOŞ DOSYA KURALI (v2.109): kullanıcı varsayılanı modele YAZILMAZ.
   T.saveUserDefaults({ limitationsText: 'VARSAYILAN SINIRLILIK', conclusionText: 'VARSAYILAN SONUÇ', methodText: 'VARSAYILAN YÖNTEM' });
   const fresh = T.freshCase();

@@ -1,4 +1,4 @@
-# Özellikler (v2.352 — mevcut durum)
+# Özellikler (v2.353 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,6 +1190,14 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Ölü kod temizliği (v2.353)
+
+Üretimde çağrılmayan 9 yardımcı fonksiyon kaldırıldı; davranış değişmedi.
+Testler canlı karşılıkları sınar (`exportPlanFor`, `casesForStorage`,
+`isHumanApprovedReview`, `asrProfile`). Paket sözleşmesi belgesi
+`exportPlanFor(cases, activeCaseId, scope)` olarak düzeltildi: kapsam (`scope`)
+taşımayan plan fonksiyonu yazılmaz.
 
 ## Okunabilirlik: biçim ipucu satırı (v2.352)
 

@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.352.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.353.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.353 — Ölü kod temizliği (davranış değişmedi)
+
+**KULLANICI NE GÖRECEK:** Hiçbir şey değişmedi. Bu sürüm yalnız **kullanılmayan
+kodu** kaldırır; ekran, çıktı ve veri aynı.
+
+- Üretimde hiç çağrılmayan, yalnız testlerde "tanımlı mı" diye yaşatılan **9
+  fonksiyon** silindi: `buildExportPlan` · `isEmptyWorkspace` · `saveCaseNow` ·
+  `isHumanApproved` · `profileById` · `karaokeSentences` ·
+  `activeSentenceIndex` · `segmentSilenceFlag` · `isDefaultText`
+  (+ yalnız onlara hizmet eden `SENTENCE_GAP` / `SENTENCE_END` sabitleri).
+- Testler **canlı karşılıklara** çevrildi (davranış korunur):
+  `exportPlanFor(..., 'all')` · `casesForStorage(...).length === 0` ·
+  `isHumanApprovedReview(segReview(s))` · `asrProfile(id)`.
+- **Belge tuzağı kapatıldı:** AGENTS.md paket sözleşmesi `buildExportPlan`
+  diyordu; canlı yol `exportPlanFor(cases, activeCaseId, scope)`. Kapsamı
+  (`scope`) taşımayan bir plan fonksiyonu yazılmaması kurala eklendi
+  (v2.124 "hangi kapsam seçildi" hatasının kaynağı).
+- `birim-testleri`: **2746 → 2724** kontrol (22'si ölü koda aitti). Diğer
+  paketler değişmedi.
 
 ## v2.352 — Okunmayan ipucu satırı düzeltildi
 

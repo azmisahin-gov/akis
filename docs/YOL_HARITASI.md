@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.352.**
+yazılır. **Güncel sürüm: v2.353.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.353 — Ölü kod temizliği (TAMAMLANDI)
+
+- Yalnız testlerde yaşayan 9 fonksiyon silindi; testler canlı karşılıklara
+  (`exportPlanFor`, `casesForStorage`, `isHumanApprovedReview`, `asrProfile`)
+  çevrildi. Davranış değişmedi.
+- AGENTS.md paket sözleşmesi `exportPlanFor(..., scope)` olarak düzeltildi.
+- `birim`: 2746 → 2724 kontrol (ölü koda ait 22 kontrol kalktı).
 
 ## v2.352 — Okunmayan ipucu satırı düzeltildi (TAMAMLANDI)
 
