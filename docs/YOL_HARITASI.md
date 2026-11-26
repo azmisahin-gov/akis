@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.327.**
+yazılır. **Güncel sürüm: v2.328.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.328 — Üst yazı DOCX onarımı + T.C. netliği (TAMAMLANDI)
+
+- Üst yazı DOCX'i **boş** açılıyordu: `word/document.xml` kökü `<w:document>`
+  değildi. `docxWrapBody` + `docxSectionXml` tek kaynak; rapor ve üst yazı aynı
+  sarmalayıcıyı kullanır.
+- Üst yazı alt bilgisinde **sayfa numarası yok** (tek sayfa; standart §2.9).
+- **T.C. raporda VAR** (kapak), **üst yazıda YOK** (standart §2.2) — yardım ve
+  CHANGELOG'da tablo ile yazıldı.
+- Test: `rapor` 44 DOCX geçerliliği (kök/body/sectPr/metin sayısı).
 
 ## v2.327 — Üst yazı görsel standardı, otomatik (TAMAMLANDI)
 

@@ -131,15 +131,15 @@ import {
   letterMovedAnnexKeys,
   removeSectionsFromLetterAnnexes,
   removeAnnexKeyFromLetterAnnexes
-} from './schema.js?v=2.327';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.327';
+} from './schema.js?v=2.328';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.328';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.327';
+const APP_VERSION = '2.328';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16478,6 +16478,33 @@ function headingXml(text, level = 1) {
 // ---- ÜST YAZI: DOCX üreticisi (v2.323) -----------------------------------
 // Rapor DOCX'i ile AYNI yardımcıları (wP/wRun/wTable/docxFormatInit) kullanır;
 // böylece font, punto ölçeği ve marj rapor biçiminden gelir (tek kaynak).
+/**
+ * DOCX sayfa geometrisi (tek kaynak). `__docxFmt` biçiminden okur: A4, yön,
+ * mm→twip marj. Rapor ve üst yazı AYNI yardımcıyı kullanır.
+ */
+function docxSectionXml() {
+  const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
+  const landscape = __docxFmt.orientation === 'landscape';
+  const A4W = 11906,
+    A4H = 16838;
+  const pgW = landscape ? A4H : A4W;
+  const pgH = landscape ? A4W : A4H;
+  const dm = __docxFmt.margins;
+  return `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="${pgW}" w:h="${pgH}"${
+    landscape ? ' w:orient="landscape"' : ''
+  }/><w:pgMar w:top="${mmToTw(dm.top)}" w:right="${mmToTw(dm.right)}" w:bottom="${mmToTw(
+    dm.bottom
+  )}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
+}
+
+/**
+ * DOCX gövdesini TAM belgeye sarar. `word/document.xml` KÖK `<w:document>`
+ * olmadan geçersizdir; Word boş belge gösterir (v2.328'de ölçüldü).
+ */
+function docxWrapBody(body) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${docxSectionXml()}</w:body></w:document>`;
+}
+
 function docxLetterXml(c) {
   // Üst yazı KENDİ biçimini kullanır (standart §2.1/§8.3); rapor biçimi etkilemez.
   docxFormatInit(c, LETTER_FORMAT);
@@ -16514,7 +16541,8 @@ function docxLetterXml(c) {
     out += wP(LETTER_TEXT.annexHeading, { bold: true, size: 24, after: 20 });
     for (const a of m.annexes) out += wP(`    ${a.no} – ${a.display}`, { size: 24, after: 20 });
   }
-  return out;
+  // KÖK `<w:document>` ZORUNLU: eksikse Word boş belge gösterir (v2.328).
+  return docxWrapBody(out);
 }
 
 
@@ -16919,16 +16947,7 @@ function docxXml(c) {
     firstBody = false;
   }
   if (on('signature')) body += blocks.signature();
-  // Sayfa geometrisi biçimden gelir (v2.238): A4, yön, mm→twip marj.
-  const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
-  const landscape = __docxFmt.orientation === 'landscape';
-  const A4W = 11906,
-    A4H = 16838;
-  const pgW = landscape ? A4H : A4W;
-  const pgH = landscape ? A4W : A4H;
-  const dm = __docxFmt.margins;
-  const sect = `<w:sectPr><w:headerReference w:type="default" r:id="rId2"/><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="${pgW}" w:h="${pgH}"${landscape ? ' w:orient="landscape"' : ''}/><w:pgMar w:top="${mmToTw(dm.top)}" w:right="${mmToTw(dm.right)}" w:bottom="${mmToTw(dm.bottom)}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
+  return docxWrapBody(body);
 }
 async function makeDocx(opts = {}) {
   const out = await docxDocument(opts);
@@ -16972,7 +16991,12 @@ async function docxDocument(opts = {}) {
   );
   w.file(
     'footer1.xml',
-    `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${wRun(`Dosya: ${c.fileNo || '—'}  •  Sayfa `, { color: '8293A3', size: 15 })}<w:fldSimple w:instr="PAGE"><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`
+    letterMode
+      ? `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${wRun(
+          `Dosya: ${c.fileNo || '—'}`,
+          { color: '8293A3', size: 15 }
+        )}</w:p></w:ftr>`
+      : `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${wRun(`Dosya: ${c.fileNo || '—'}  •  Sayfa `, { color: '8293A3', size: 15 })}<w:fldSimple w:instr="PAGE"><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`
   );
   const blob = await zip.generateAsync({
     type: 'blob',
@@ -21953,6 +21977,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.328': {
+    title: 'Üst yazı Word çıktısı düzeldi',
+    body:
+      'Üst yazının Word (.docx) çıktısı boş açılıyordu; dosya yapısı onarıldı, artık dolu açılır. Ayrıca karışıklık giderildi: T.C. satırı RAPORUN kapağında vardır (HTML/DOCX/UDF), ÜST YAZIDA yoktur — standart yalnız üst yazıyı kapsar. Üst yazı alt bilgisinde sayfa numarası basılmaz.'
+  },
   '2.327': {
     title: 'Üst yazı standarda uydu (otomatik)',
     body:

@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.327.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.328.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.328 — Üst yazı Word çıktısı onarıldı + "T.C. nerede var" netliği
+
+**KULLANICI NE GÖRECEK:** Üst yazının **Word (.docx) çıktısı artık dolu** açılıyor.
+
+**Ölçülen hata (v2.327):** `docxLetterXml` yalnız paragraf parçalarını döndürüyordu;
+`word/document.xml` içinde **kök `<w:document>` ve `<w:body>` yoktu**. Word geçersiz
+dosyayı **boş belge** olarak açıyordu. Rapor DOCX'i etkilenmemişti (o tam belge
+döndürüyordu).
+
+**Düzeltme**
+- `docxSectionXml()` + `docxWrapBody(body)` yardımcıları: sayfa geometrisi ve tam
+  belge sarmalayıcısı **tek kaynak**. `docxXml` (rapor) ve `docxLetterXml` (üst
+  yazı) ikisi de aynı sarmalayıcıyı kullanır.
+- Üst yazı DOCX alt bilgisinden **sayfa numarası kaldırıldı** (tek sayfalık yazıda
+  sayfa numarası basılmaz — standart §2.9); raporda kalmaya devam ediyor.
+- **Test:** `rapor` Senaryo 44 artık DOCX geçerliliğini denetler: XML bildirimi,
+  kök `<w:document>`, `<w:body>`, `<w:sectPr>` ve gövdede **≥10 metin düğümü**.
+
+**"T.C. nerede var?" — KARIŞIKLIK GİDERİLDİ**
+
+| Belge | `T.C.` |
+|---|---|
+| **Üst yazı** | **YOK** (standart §2.2 yalnız üst yazıyı kapsar: bağımsız bilirkişi yazısı kamu anteti taşımaz) |
+| **Rapor (EK-1)** | **VAR** — kapakta `T.C.` + mahkeme adı; HTML, DOCX ve UDF'te korunuyor |
+
+Ölçüm (kod): rapor kapağı `paper-title > .republic` (HTML), `wP('T.C.', …)` (DOCX),
+`paragraph('T.C.', …)` (UDF) — **üçünde de duruyor**. Üst yazıda kaldırılan tek şey
+`T.C.`/`Sayı:`/hitap satırıdır. Yardım ekranına bu ayrım yazıldı.
 
 ## v2.327 — Üst yazı görsel standardı (otomatik)
 

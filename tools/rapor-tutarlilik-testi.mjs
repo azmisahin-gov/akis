@@ -123,6 +123,12 @@ async function udfTextLetter(c) {
   const xml = await zip.file('content.xml').async('string');
   return xml.match(/<!\[CDATA\[([\s\S]*?)\]\]>/)[1].replace(/\u200b/g, '');
 }
+async function docxRawLetter(c) {
+  downloads.length = 0; setCase(c); await makeDocx({ letter: true });
+  const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
+  const zip = await JSZip.loadAsync(buf);
+  return zip.file('word/document.xml').async('string');
+}
 async function docxTextLetter(c) {
   downloads.length = 0; setCase(c); await makeDocx({ letter: true });
   const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
@@ -1560,6 +1566,14 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
     check(`${name}: uygulama adı yok`, !/AKİS|uygulama adı/i.test(text));
   }
+  // DOCX GEÇERLİLİĞİ (v2.328): kök `<w:document>` ve `<w:body>` olmadan Word
+  // belgeyi BOŞ gösteriyordu (kullanıcı bildirdi; ölçüldü).
+  const raw = await docxRawLetter(c);
+  check('DOCX: XML bildirimi', raw.startsWith('<?xml'));
+  check('DOCX: kök <w:document>', /<w:document[\s>]/.test(raw));
+  check('DOCX: <w:body> var', /<w:body>/.test(raw));
+  check('DOCX: sayfa geometrisi (<w:sectPr>)', /<w:sectPr>/.test(raw));
+  check('DOCX: gövde dolu (>=10 metin düğümü)', (raw.match(/<w:t(?:\s[^>]*)?>/g) || []).length >= 10);
   // Eksik zorunlu alan: üst yazı üretilmez (uydurma yok).
   const empty = baseCase({ court: '', fileNo: '', expert: { name: '' } });
   const me = letterModel(empty);
