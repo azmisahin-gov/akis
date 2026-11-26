@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.344.**
+yazılır. **Güncel sürüm: v2.345.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.345 — Tek düzenleme yeri (TAMAMLANDI)
+
+- İnceleme görünümündeki üç textarea (`#methodText`, `#limitationsText`,
+  `#conclusionText`) **kaldırıldı**; aynı alanlar Rapor → Bölüm düzenle’de.
+- Yönlendirme: `[data-open-report-section]` → `switchView('report')` +
+  `setReportEditSection(key)`; “Mesleki sınır” kutusu korundu.
+- `populateQuestionsForm`/`readQuestionsForm` artık bu metinleri okumaz/yazmaz.
+- Test: `tasarim [2dn]`.
 
 ## v2.344 — Metin envanteri (TAMAMLANDI)
 

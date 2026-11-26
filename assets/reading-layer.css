@@ -4294,3 +4294,12 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .rse-lib-row .mini-button { text-align: left; max-width: 100%; overflow-wrap: anywhere; }
 .rse-lib-save { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; }
 .rse-lib-save input { flex: 1 1 180px; min-width: 120px; }
+
+/* ---- v2.345 — Tek düzenleme yeri notu ----------------------------------- */
+.single-home-note {
+  border: 1px solid var(--line); border-left: 3px solid var(--accent);
+  border-radius: var(--radius-sm); background: var(--surface-2);
+  padding: var(--sp-3); display: flex; flex-direction: column; gap: var(--sp-2);
+}
+.single-home-note p { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
+.single-home-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }

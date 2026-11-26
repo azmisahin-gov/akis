@@ -1,4 +1,4 @@
-# Özellikler (v2.344 — mevcut durum)
+# Özellikler (v2.345 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1174,3 +1174,7 @@ Rapor bölümü metin alanlarının altında **Kayıtlı metinlerim** kutusu var
 ## Metin envanteri (v2.344)
 
 Uygulamadaki tüm rapor metinleri `docs/METIN_ENVANTERI.md` içinde tek listede toplanır (künye, bölüm girişleri, beyan, gizlilik, dayanak, ASR, fizikî tutanak, üst yazı, kısa etiketler) ve nerede düzenlendiği yazılır. Belge **koddan üretilir** (`node tools/metin-envanteri.mjs`); `surum-testi` güncelliğini denetler.
+
+## Tek düzenleme yeri (v2.345)
+
+Yöntem, teknik sınırlılıklar ve sonuç metinleri **yalnız** Rapor görünümünde (belgede bölüme tıkla → Bölüm düzenle) düzenlenir; İnceleme görünümünde ikinci kopya yoktur, yalnız yönlendirme düğmeleri vardır. Yeni dosyada hangi metnin geleceği Ayarlar → Kendi varsayılan metinlerim ile belirlenir.

@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.344';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.344';
+} from './schema.js?v=2.345';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.345';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.344';
+const APP_VERSION = '2.345';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -2459,18 +2459,14 @@ function populateQuestionsForm() {
   const c = currentCase();
   if (!c) return;
   $('#assignmentScope').value = c.assignmentScope || '';
-  $('#methodText').value = c.methodText || defaultTextFor('methodText');
-  $('#limitationsText').value = c.limitationsText || '';
-  $('#conclusionText').value = c.conclusionText || '';
+  // v2.345: yöntem/sınırlılık/sonuç burada DÜZENLENMEZ; tek yer Rapor görünümü.
   renderQuestions();
 }
 function readQuestionsForm() {
   const c = currentCase();
   if (!c) return;
   c.assignmentScope = $('#assignmentScope').value;
-  c.methodText = $('#methodText').value;
-  c.limitationsText = $('#limitationsText').value;
-  c.conclusionText = $('#conclusionText').value;
+  // v2.345: yöntem/sınırlılık/sonuç yalnız Rapor → Bölüm düzenle'de yazılır.
   persist();
 }
 // ---- İŞ YÜKÜ ÖZETİ (v2.243) ---------------------------------------------
@@ -20299,7 +20295,17 @@ function setupEvents() {
   $('#view-questions').addEventListener('change', (e) => {
     if (e.target.dataset.q === undefined) readQuestionsForm();
   });
-  $('#addQuestionBtn').addEventListener('click', addQuestion);
+  // TEK DÜZENLEME YERİ (v2.345): İnceleme'deki yönlendirme düğmeleri Rapor
+// görünümünü açar ve ilgili bölümün düzenleyicisini seçer. İkinci kopya yok.
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-open-report-section]');
+  if (!b) return;
+  const key = b.dataset.openReportSection;
+  switchView('report');
+  setReportEditSection(key);
+});
+
+$('#addQuestionBtn').addEventListener('click', addQuestion);
   // İnceleme bölüm menüsü: yalnız görünürlük değişir, DOM yeniden çizilmez.
   $$('.split-item[data-qtab]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -23558,6 +23564,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.345': {
+    title: 'Yöntem, sınırlılık ve sonuç tek yerden düzenlenir',
+    body:
+      'Aynı üç metin (inceleme yöntemi, teknik sınırlılıklar, sonuç) hem “İnceleme” görünümünde hem Rapor “Bölüm düzenle” panelinde düzenlenebiliyordu; ayrıca İnceleme’de alanlar boş görünürken rapora varsayılan cümle basılabiliyordu. Artık tek yer: Rapor görünümü → belgede bölüme tıkla → Bölüm düzenle. İnceleme görünümündeki “Yöntem ve değerlendirme” sekmesinde ikinci kopya yok; yerine kısa açıklama ve “Rapor’da aç” düğmeleri var. Varsayılanlar (yeni dosyada ne gelsin) Ayarlar’dan yönetilir.'
+  },
   '2.344': {
     title: 'Metin listesi belgesi (danışmanlık için)',
     body:

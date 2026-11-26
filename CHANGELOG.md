@@ -6,12 +6,29 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.344.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.345.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.345 — Yöntem, sınırlılık ve sonuç tek yerden düzenlenir
+
+**KULLANICI NE GÖRECEK:** Aynı üç metin **iki yerde** düzenlenebiliyordu
+(İnceleme görünümü ve Rapor → Bölüm düzenle). Üstelik İnceleme’de
+**sınırlılık/sonuç alanları boş görünürken** rapora **varsayılan cümle**
+basılabiliyordu. Artık **tek yer**: **Rapor → belgede bölüme tıkla → Bölüm
+düzenle**.
+
+- İnceleme görünümündeki “03 Yöntem ve değerlendirme” sekmesinde **ikinci
+  kopya alanlar kaldırıldı**; yerine açıklama ve
+  **“İnceleme yöntemini aç › / Sınırlılıkları aç › / Sonucu aç ›”** düğmeleri
+  geldi. Düğme, Rapor görünümünü açar ve ilgili bölümün düzenleyicisini seçer.
+- **“Mesleki sınır”** uyarı kutusu **korundu** (silinmedi).
+- Varsayılanlar yine **Ayarlar → Kendi varsayılan metinlerim**’den yönetilir.
+- Tek yazma yolu: `data-rse-field`; eski `#methodText` okuma/yazma kodu kaldırıldı.
+- Testler: `tasarim [2dn]` (9 kontrol). Düzeltme yokken 4 kontrol **KALDI**.
 
 ## v2.344 — Metin envanteri (hukuk danışmanlığı için tek liste)
 

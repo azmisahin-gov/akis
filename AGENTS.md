@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.344.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.345.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9068,3 +9068,39 @@ dağınık duruyordu.
 ### Ölçüm
 `node tools/metin-envanteri.mjs --check` → **GEÇTİ**; belge **512 satır**,
 **65** “Düzenlenebilir?” satırı; `bash tools/test.sh` → hepsi yeşil.
+
+## YENİ OTURUM DEVRİ (v2.345) — Tek düzenleme yeri
+
+| | |
+|---|---|
+| Sürüm | **v2.345** |
+| Testler | **2692 birim + 556 şema** + rapor (51) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+### Bulgu (ölçüldü)
+Kullanıcı “İnceleme alanında da düzenleyebiliyorum, çift mi?” diye sordu.
+Ölçüm: **evet, çift** —
+- `#view-questions` (İnceleme → “03 Yöntem ve değerlendirme”) içinde
+  `#methodText`, `#limitationsText`, `#conclusionText` textarea’ları vardı;
+- Rapor → **Bölüm düzenle** aynı üç alanı yazıyordu.
+Ayrıca **görüntü çelişkisi**: İnceleme’de `limitationsText/conclusionText`
+`|| ''` ile **boş** görünürken rapora v2.342’deki **varsayılan cümle**
+basılabiliyordu (yöntem alanı ise varsayılanı gösteriyordu).
+
+### Yapılan
+- İnceleme’deki üç textarea **kaldırıldı**; yerine `.single-home-note`
+  (açıklama + 3 yönlendirme düğmesi). **“Mesleki sınır” kutusu korundu.**
+- `[data-open-report-section]` → `switchView('report')` +
+  `setReportEditSection(key)`.
+- `populateQuestionsForm` / `readQuestionsForm` artık bu metinleri okumaz/yazar.
+- Sekme ipucu: “Rapor görünümünde düzenlenir”.
+
+### DEĞİŞMEZ KURAL (bu sürümde doğdu)
+**Bir metnin TEK düzenleme yeri olur.** Aynı alanı iki görünümde düzenlenebilir
+bırakmak, biri boş/varsayılan gösterirken diğeri dolu gösterebildiği için
+“çelişki” üretir. İkinci yer gerekiyorsa **salt okunur + yönlendirme** olur.
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.345` · Yöntem sekmesinde **textarea 0**, not var, 3 düğme, “Mesleki sınır”
+kutusu duruyor; “İnceleme yöntemini aç ›” → `dataset.view='report'`, düzenleyici
+açık (`methodText` dolu); kırpma 0 · yatay taşma 0 · JS hatası **0**.

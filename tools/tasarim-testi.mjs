@@ -2640,5 +2640,25 @@ console.log('\n[2dm] Kayıtlı metinlerim (v2.343)');
   check('panel kapalı başlar', /<details class="rse-lib"/.test(app));
 }
 
+
+console.log('\n[2dn] Tek düzenleme yeri: yöntem/sınırlılık/sonuç (v2.345)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  // 1) Çift düzenleme kaldırıldı: İnceleme görünümünde bu alanlar YOK.
+  check('İnceleme görünümünde yöntem alanı yok', !/id="methodText"/.test(html));
+  check('İnceleme görünümünde sınırlılık alanı yok', !/id="limitationsText"/.test(html));
+  check('İnceleme görünümünde sonuç alanı yok', !/id="conclusionText"/.test(html));
+  check('eski form okuyucusu bu alanları yazmıyor', !/\$\('#methodText'\)/.test(app) && !/c\.conclusionText = \$\('#conclusionText'\)/.test(app));
+  // 2) Yönlendirme: kullanıcı kaybolmaz — Rapor görünümüne götürür ve bölümü seçer.
+  check('yönlendirme düğmeleri var', (html.match(/data-open-report-section=/g) || []).length >= 3);
+  check('yönlendirme rapor görünümünü açar', /data-open-report-section[\s\S]{0,400}switchView\('report'\)[\s\S]{0,200}setReportEditSection/.test(app));
+  check('sekme ipucu yerini söyler', /Rapor görünümünde düzenlenir/.test(html));
+  check('yönlendirme notu biçimli', /\.single-home-note\s*\{[^}]*display:\s*flex/.test(css) && /\.single-home-actions\s*\{[^}]*flex-wrap:\s*wrap/.test(css));
+  // 3) Tek yazma yolu: rapor düzenleyicisi (mevcut testler de bunu korur).
+  check('rapor düzenleyicisi tek yol', /data-rse-field/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
