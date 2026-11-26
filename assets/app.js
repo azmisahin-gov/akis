@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.347';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.347';
+} from './schema.js?v=2.348';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.348';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.347';
+const APP_VERSION = '2.348';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -786,7 +786,27 @@ Dosyalar için SHA-256 özeti hesaplanmışsa bu değer ve doğrulama durumu gö
 // KURAL: varsayılan metin DOSYAYA YAZILMAZ; boş alanın yerine basılır. Böylece
 // "boş taslak kayda yazılmaz" (v2.109) bozulmaz ve bir dosyanın metni sonradan
 // sessizce değişmez. Tarafsızlık beyanı kapsam DIŞIDIR: kişisel beyandır.
-const USER_DEFAULT_FIELDS = ['methodText', 'limitationsText', 'conclusionText'];
+// DÜZENLENEBİLİR RAPOR METİNLERİ (v2.348). TEK KAYNAK: panel ve varsayılan
+// çözümü bu listeden beslenir. Hepsi GLOBAL varsayılandır: yalnız bu tarayıcıda
+// saklanır, dosyaya yazılmaz; bölüm açıksa rapora bu metin basılır.
+const TEXT_DEFAULT_ITEMS = [
+  { key: 'methodText', label: 'İnceleme yöntemi', where: 'Rapor · 4. bölüm' },
+  { key: 'limitationsText', label: 'Teknik sınırlılıklar', where: 'Rapor · sınırlılıklar bölümü' },
+  { key: 'conclusionText', label: 'Sonuç ve kanaat', where: 'Rapor · sonuç bölümü' },
+  { key: 'scopeNoteText', label: 'Görev alanı dışı / sınırlılık beyanı', where: 'Rapor · kapsam beyanı (varsayılan kapalı)' },
+  { key: 'annexLegalText', label: 'Hukuki ve yöntemsel dayanaklar', where: 'Ek · dayanaklar', legal: true },
+  { key: 'privacyText', label: 'Kişisel veri / gizlilik', where: 'Rapor · gizlilik (varsayılan kapalı)' },
+  { key: 'integrityNote', label: 'İşlem günlüğü ve özet sınırı', where: 'Rapor · bütünlük kaydı (varsayılan kapalı)' },
+  { key: 'asrIntro', label: 'Yazılım desteği — giriş', where: 'Rapor · çözümleme yöntemi (varsayılan kapalı)' },
+  { key: 'asrLocal', label: 'Yazılım desteği — çalışma biçimi', where: 'Rapor · çözümleme yöntemi' },
+  { key: 'asrVerify', label: 'Yazılım desteği — kontrol durumu', where: 'Rapor · çözümleme yöntemi' },
+  { key: 'asrNone', label: 'Yazılım desteği yok (boş durum)', where: 'Rapor · çözümleme yöntemi' },
+  { key: 'werIntro', label: 'Ölçüm açıklaması (WER)', where: 'Rapor · WER' },
+  { key: 'levelIntro', label: 'Ölçüm açıklaması (ses düzeyi)', where: 'Rapor · seviye' },
+  { key: 'deliveryCheckNote', label: 'Teslim kontrolü açıklaması', where: 'Ek · son kontrol listesi' },
+  { key: 'embeddedIntro', label: 'Gömülü metadata açıklaması', where: 'Rapor · metadata (varsayılan kapalı)' }
+];
+const USER_DEFAULT_FIELDS = TEXT_DEFAULT_ITEMS.map((x) => x.key);
 const USER_DEFAULTS_KEY = 'akis.defaults';
 function userDefaults() {
   const out = {};
@@ -871,9 +891,10 @@ function libraryFor(field) {
 // Kod varsayılanı (uygulamanın kendi metni) — kullanıcı kaydı yoksa kullanılır.
 function codeDefaultText(field) {
   if (field === 'methodText') return DEFAULT_METHOD;
-  if (field === 'limitationsText') return REPORT_TEXT.defaultLimitations;
-  if (field === 'conclusionText') return REPORT_TEXT.defaultConclusion;
-  return '';
+  // Sınırlılık/sonuç metinleri katalogda farklı adlarla durur.
+  const alias = { limitationsText: 'defaultLimitations', conclusionText: 'defaultConclusion' };
+  const v = REPORT_TEXT[alias[field] || field];
+  return typeof v === 'string' ? v : '';
 }
 // ETKİN varsayılan: kullanıcı metni varsa o, yoksa kod varsayılanı.
 function defaultTextFor(field) {
@@ -9975,25 +9996,34 @@ function defaultsPanelHtml() {
     const s = String(t || '').replace(/\s+/g, ' ').trim();
     return s.length > 90 ? s.slice(0, 90) + '…' : s;
   };
-  const rows = [
-    ['methodText', 'İnceleme yöntemi (s4)'],
-    ['limitationsText', 'Teknik sınırlılıklar'],
-    ['conclusionText', 'Sonuç ve kanaat']
-  ];
+  const item = (x) => {
+    const field = x.key;
+    const mine = !!u[field];
+    return (
+      `<label class="field"><span>${esc(x.label)} <small class="rtech-where">${esc(x.where || '')}</small></span>` +
+      `<textarea rows="4" data-default-field="${field}" placeholder="Boş: uygulama varsayılanı kullanılır">${esc(u[field] || '')}</textarea></label>` +
+      `<div class="rtech-actions">` +
+      `<button type="button" class="mini-button" data-default-load="${field}" title="Uygulamanın metnini bu alana yükler; sonra düzenleyebilirsiniz.">Uygulama varsayılanını yükle</button>` +
+      (mine
+        ? `<button type="button" class="mini-button" data-default-reset-one="${field}" title="Yalnız bu metni siler; uygulama varsayılanına döner.">Bu metni varsayılana döndür</button>`
+        : '') +
+      `</div>` +
+      `<p class="rtech-hint">${mine ? 'Etkin: <b>sizin metniniz</b>' : 'Etkin: <b>uygulama metni</b>'} — “${esc(brief(codeDefaultText(field)))}”</p>` +
+      (x.legal
+        ? '<p class="rtech-hint"><b>Hukuki beyandır.</b> Doğrulanmamış mevzuat maddesi veya standart künyesi eklemeyin; kullanılan dayanak varsa tam künyesini (başlık, sürüm, tarih) yazın.</p>'
+        : '')
+    );
+  };
+  const first = TEXT_DEFAULT_ITEMS.filter((x) => ['methodText', 'limitationsText', 'conclusionText', 'scopeNoteText', 'annexLegalText', 'privacyText', 'integrityNote'].includes(x.key));
+  const rest = TEXT_DEFAULT_ITEMS.filter((x) => !first.includes(x));
   return `<div class="panel defaults-panel">
-    <div class="panel-heading"><div><div class="eyebrow">VARSAYILAN METİNLER</div>
-      <h3>Kendi varsayılan metinlerim<span class="info-i" tabindex="0" data-tip="Buraya yazdığınız metin yeni dosyada hazır gelir; dosyaya YAZILMAZ, boş alanın yerine basılır. Yalnız bu tarayıcıda saklanır (pakete girmez). Tarafsızlık beyanı burada yoktur: kişisel beyandır, kendiliğinden dolmaz.">i</span></h3></div></div>
-    <p class="queue-copy">Boş bıraktığınız alan uygulamanın varsayılanını kullanır. Yazdığınız metin <b>yalnız bu tarayıcıda</b> saklanır; pakete ve rapora dosya adına yazılmaz.</p>
-    ${rows
-      .map(
-        ([field, label]) =>
-          `<label class="field"><span>${esc(label)}</span><textarea rows="5" data-default-field="${field}" placeholder="Boş: uygulama varsayılanı kullanılır">${esc(u[field] || '')}</textarea></label>` +
-          `<div class="rtech-actions"><button type="button" class="mini-button" data-default-load="${field}" title="Uygulamanın metnini bu alana yükler; sonra düzenleyebilirsiniz.">Uygulama varsayılanını yükle</button></div>` +
-          `<p class="rtech-hint">Etkin varsayılan: ${u[field] ? 'sizin metniniz' : 'uygulama metni'} — “${esc(brief(codeDefaultText(field)))}”</p>`
-      )
-      .join('')}
+    <div class="panel-heading"><div><div class="eyebrow">RAPOR METİNLERİ</div>
+      <h3>Kendi varsayılan metinlerim<span class="info-i" tabindex="0" data-tip="Buraya yazdığınız metin rapora basılır; dosyaya YAZILMAZ. Yalnız bu tarayıcıda saklanır (pakete girmez). Buradaki metinler bölümü AÇIK olan TÜM raporlarda kullanılır; eski dosyalar da yeni metinle basılır. Tarafsızlık beyanı burada yoktur: kişisel beyandır, kendiliğinden dolmaz.">i</span></h3></div></div>
+    <p class="queue-copy"><b>Buradaki metinler bölümü açık olan tüm raporlarda kullanılır.</b> Dosyaya yazılmaz; yalnız bu tarayıcıda saklanır. Boş bıraktığınız alan uygulamanın metnini kullanır.</p>
+    ${first.map(item).join('')}
+    <details class="rtech-box"><summary>Ölçüm ve teknik açıklamalar (${rest.length})</summary>${rest.map(item).join('')}</details>
     <p class="rtech-hint"><b>Tarafsızlık beyanı burada yoktur.</b> O alan kişisel beyandır; boş başlar ve yalnız sizin yazmanızla dolar (v2.341).</p>
-    <div class="rtech-actions"><button type="button" class="mini-button danger" data-defaults-reset="1" title="Yazdığınız üç metni siler; uygulama varsayılanlarına döner.">Uygulama varsayılanlarına dön</button></div>
+    <div class="rtech-actions"><button type="button" class="mini-button danger" data-defaults-reset="1" title="Yazdığınız tüm varsayılan metinleri siler; uygulama varsayılanlarına döner.">Tüm varsayılanları sıfırla</button></div>
   </div>`;
 }
 function renderDefaultsPanel() {
@@ -10016,6 +10046,17 @@ $('#defaultsHost')?.addEventListener('click', async (e) => {
     renderDefaultsPanel();
     renderReport();
     showToast('Uygulama varsayılanı alana yüklendi; düzenleyebilirsiniz.');
+    return;
+  }
+  const one = e.target.closest('[data-default-reset-one]');
+  if (one) {
+    const f = one.dataset.defaultResetOne;
+    const label = (TEXT_DEFAULT_ITEMS.find((x) => x.key === f) || {}).label || f;
+    if (!(await askConfirm('Metni varsayılana döndür', `“${label}” için yazdığınız metin silinecek ve uygulama metni kullanılacak. Dosyalarınızdaki metinler DEĞİŞMEZ.`))) return;
+    saveUserDefaults({ [f]: '' });
+    renderDefaultsPanel();
+    renderReport();
+    showToast('Metin uygulama varsayılanına döndü.');
     return;
   }
   if (e.target.closest('[data-defaults-reset]')) {
@@ -15862,7 +15903,7 @@ function reportAnnexBlocks(c) {
     ek5: {
       kind: 'blocks',
       blocks: [
-        { kind: 'para', text: REPORT_TEXT.deliveryCheckNote },
+        { kind: 'para', text: defaultTextFor('deliveryCheckNote') },
         {
           kind: 'table',
           title: REPORT_TEXT.deliveryCheckTitle,
@@ -15877,7 +15918,7 @@ function reportAnnexBlocks(c) {
         }
       ]
     },
-    ek6: { kind: 'para', text: REPORT_TEXT.annexLegalText }
+    ek6: { kind: 'para', text: defaultTextFor('annexLegalText') }
   };
   const out = reportAnnexList(c).map((a) => {
     const meta = a.meta || {};
@@ -17344,7 +17385,7 @@ function renderReport() {
     embedded: () => {
       const embRows = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
       if (!embRows.length) return '';
-      return `<div class="paper-section"><h3>${esc(H('embedded'))}</h3><p>${esc(REPORT_TEXT.embeddedIntro)}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      return `<div class="paper-section"><h3>${esc(H('embedded'))}</h3><p>${esc(defaultTextFor('embeddedIntro'))}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     },
     acquisition: () => {
       const acqRows = acquisitionRows(c);
@@ -17389,11 +17430,11 @@ function renderReport() {
     enhance: () => `<div class="paper-section"><h3>${esc(H('enhance'))}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`,
     asr: () => {
       const asrRows = reportAsrRows(c);
-      let out = `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(REPORT_TEXT.asrIntro)}</p>`;
+      let out = `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrIntro'))}</p>`;
       if (asrRows.length) {
         out += `<table class="paper-table"><thead><tr>${REPORT_TEXT.asrHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${asrRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      } else out += `<p>${esc(REPORT_TEXT.asrNone)}</p>`;
-      return out + `<p class="paper-muted">${esc(REPORT_TEXT.asrLocal)} ${esc(REPORT_TEXT.asrVerify)}</p></div>`;
+      } else out += `<p>${esc(defaultTextFor('asrNone'))}</p>`;
+      return out + `<p class="paper-muted">${esc(defaultTextFor('asrLocal'))} ${esc(defaultTextFor('asrVerify'))}</p></div>`;
     },
     s5: () => {
       const s5sub = reportSubHeadings(c);
@@ -17458,7 +17499,7 @@ function renderReport() {
         `<table class="paper-table"><thead><tr>${REPORT_TEXT.integrityHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows
           .map((r) => `<tr>${r.map((x, i) => `<td${i === 1 ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`)
           .join('')}</tbody></table>` +
-        `<p class="paper-muted">${esc(REPORT_TEXT.integrityNote)}</p></div>`
+        `<p class="paper-muted">${esc(defaultTextFor('integrityNote'))}</p></div>`
       );
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234): s5 kapalı olsa da tek başına açılabilir.
@@ -17485,7 +17526,7 @@ function renderReport() {
       if (!t) return '';
       return `<div class="paper-section"><h3>${esc(H('terms'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.termsIntro)}</p><p>${esc(t)}</p></div>`;
     },
-    scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`,
+    scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(defaultTextFor('scopeNoteText'))}</p></div>`,
     s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
     s7: () => {
       const lines = reportAttachmentLines(c);
@@ -17501,7 +17542,7 @@ function renderReport() {
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
         : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('wer'))}</h3><p>${esc(REPORT_TEXT.werIntro)}</p>${body}</div>`;
+      return `<div class="paper-section"><h3>${esc(H('wer'))}</h3><p>${esc(defaultTextFor('werIntro'))}</p>${body}</div>`;
     },
     levels: () => {
       const levelRows = levelRowsForCase(c);
@@ -17510,7 +17551,7 @@ function renderReport() {
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
         : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('levels'))}</h3><p>${esc(REPORT_TEXT.levelIntro)}</p>${body}</div>`;
+      return `<div class="paper-section"><h3>${esc(H('levels'))}</h3><p>${esc(defaultTextFor('levelIntro'))}</p>${body}</div>`;
     },
     reviewSummary: () => {
       const rsRows = reviewSummaryRows(c);
@@ -17520,7 +17561,7 @@ function renderReport() {
       `<div class="paper-section"><h3>${esc(H('qc'))}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
         .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`,
-    privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`,
+    privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(defaultTextFor('privacyText'))}</p></div>`,
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı ve ek girişi BASILMAZ;
       // belgenin kendi başlığı (teslim/iade tutanağı) h3 olarak yazılır.
@@ -17909,7 +17950,7 @@ function docxXml(c) {
       if (!dEmb.length) return '';
       return (
         headingXml(H('embedded')) +
-        wP(REPORT_TEXT.embeddedIntro) +
+        wP(defaultTextFor('embeddedIntro')) +
         wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], { widths: [2200, 2200, 2400, 2200], header: true })
       );
     },
@@ -17966,11 +18007,11 @@ function docxXml(c) {
       const dAsr = reportAsrRows(c);
       return (
         headingXml(H('asr')) +
-        wP(REPORT_TEXT.asrIntro) +
+        wP(defaultTextFor('asrIntro')) +
         (dAsr.length
           ? wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true })
-          : wP(REPORT_TEXT.asrNone)) +
-        wP(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { color: '74869A', size: 17, italic: true })
+          : wP(defaultTextFor('asrNone'))) +
+        wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true })
       );
     },
     s5: () => {
@@ -18042,7 +18083,7 @@ function docxXml(c) {
       headingXml(H('integrity')) +
       wP(REPORT_TEXT.integrityIntro) +
       wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true }) +
-      wP(REPORT_TEXT.integrityNote, { color: '74869A', size: 17, italic: true }),
+      wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true }),
     // BAĞIMSIZ OKUMA METNİ (v2.234).
     reading: () => {
       let out = '';
@@ -18068,7 +18109,7 @@ function docxXml(c) {
       if (!t) return '';
       return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17 }) + wP(t);
     },
-    scopeNote: () => headingXml(H('scopeNote')) + wP(REPORT_TEXT.scopeNoteText),
+    scopeNote: () => headingXml(H('scopeNote')) + wP(defaultTextFor('scopeNoteText')),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || defaultTextFor('conclusionText')),
     s7: () => {
       const lines = reportAttachmentLines(c);
@@ -18086,7 +18127,7 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'wer', REPORT_TEXT.werHeaders, dWer, [1800, 2200, 1200, 1200, 900, 700]);
       return (
         headingXml(H('wer')) +
-        wP(REPORT_TEXT.werIntro) +
+        wP(defaultTextFor('werIntro')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
@@ -18098,7 +18139,7 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'levels', REPORT_TEXT.levelHeaders, dLevel, [1500, 800, 800, 900, 1000, 1000, 1900]);
       return (
         headingXml(H('levels')) +
-        wP(REPORT_TEXT.levelIntro) +
+        wP(defaultTextFor('levelIntro')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
@@ -18117,7 +18158,7 @@ function docxXml(c) {
       wP(REPORT_TEXT.qcIntro) +
       wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true }) +
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
-    privacy: () => headingXml(H('privacy')) + wP(REPORT_TEXT.privacyText),
+    privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText')),
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok; belge başlığı 1. düzey.
       const tutanakDoc = !!c.__tutanakKind;
@@ -18560,7 +18601,7 @@ async function udfDocument(opts = {}) {
       const uEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
       if (!uEmb.length) return;
       el.push(h(H('embedded')));
-      el.push(paragraph(REPORT_TEXT.embeddedIntro, { size: 10 }));
+      el.push(paragraph(defaultTextFor('embeddedIntro'), { size: 10 }));
       el.push(table([[...REPORT_TEXT.embeddedHeaders], ...uEmb], [130, 130, 150, 130], { header: true }));
     },
     acquisition: () => {
@@ -18611,11 +18652,11 @@ async function udfDocument(opts = {}) {
     },
     asr: () => {
       el.push(h(H('asr')));
-      el.push(paragraph(REPORT_TEXT.asrIntro, { size: 10 }));
+      el.push(paragraph(defaultTextFor('asrIntro'), { size: 10 }));
       const uAsr = reportAsrRows(c);
       if (uAsr.length) el.push(table([[...REPORT_TEXT.asrHeaders], ...uAsr], [120, 240, 150], { header: true }));
-      else el.push(paragraph(REPORT_TEXT.asrNone, { italic: true, color: 'muted' }));
-      el.push(paragraph(`${REPORT_TEXT.asrLocal} ${REPORT_TEXT.asrVerify}`, { size: 9, italic: true, color: 'muted', after: 7 }));
+      else el.push(paragraph(defaultTextFor('asrNone'), { italic: true, color: 'muted' }));
+      el.push(paragraph(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     s5: () => {
       const s5sub = reportSubHeadings(c);
@@ -18710,7 +18751,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('integrity')));
       el.push(paragraphLines(REPORT_TEXT.integrityIntro, { justify: true }));
       el.push(table([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], [100, 230, 105, 120], { header: true }));
-      el.push(paragraph(REPORT_TEXT.integrityNote, { size: 9, italic: true, color: 'muted', after: 7 }));
+      el.push(paragraph(defaultTextFor('integrityNote'), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234).
     reading: () => {
@@ -18742,7 +18783,7 @@ async function udfDocument(opts = {}) {
     },
     scopeNote: () => {
       el.push(h(H('scopeNote')));
-      el.push(paragraphLines(REPORT_TEXT.scopeNoteText, { justify: true }));
+      el.push(paragraphLines(defaultTextFor('scopeNoteText'), { justify: true }));
     },
     s6: () => {
       el.push(h(H('s6')));
@@ -18760,7 +18801,7 @@ async function udfDocument(opts = {}) {
       if (!uWer.length) return;
       const t = reportTableColumns(c, 'wer', REPORT_TEXT.werHeaders, uWer, [110, 130, 70, 70, 55, 45]);
       el.push(h(H('wer')));
-      el.push(paragraph(REPORT_TEXT.werIntro, { size: 10 }));
+      el.push(paragraph(defaultTextFor('werIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
       else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
@@ -18769,7 +18810,7 @@ async function udfDocument(opts = {}) {
       if (!uLevel.length) return;
       const t = reportTableColumns(c, 'levels', REPORT_TEXT.levelHeaders, uLevel, [110, 70, 70, 80, 80, 80, 110]);
       el.push(h(H('levels')));
-      el.push(paragraph(REPORT_TEXT.levelIntro, { size: 10 }));
+      el.push(paragraph(defaultTextFor('levelIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
       else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
@@ -18792,7 +18833,7 @@ async function udfDocument(opts = {}) {
     },
     privacy: () => {
       el.push(h(H('privacy')));
-      el.push(paragraphLines(REPORT_TEXT.privacyText, { justify: true }));
+      el.push(paragraphLines(defaultTextFor('privacyText'), { justify: true }));
     },
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok.
@@ -23559,6 +23600,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.348': {
+    title: 'Rapor metinleri Ayarlar’dan düzenlenebilir',
+    body:
+      'Ayarlar → “Kendi varsayılan metinlerim” artık 15 rapor metnini kapsıyor: inceleme yöntemi, sınırlılıklar, sonuç, kapsam beyanı, hukuki dayanaklar, gizlilik, bütünlük notu, yazılım desteği açıklamaları, WER ve ses düzeyi açıklamaları, teslim kontrolü notu ve gömülü metadata açıklaması. Metinler yalnız bu tarayıcıda saklanır, dosyaya yazılmaz; bölümü açık olan tüm raporlarda kullanılır. Her metin için “Uygulama varsayılanını yükle” ve “Bu metni varsayılana döndür” vardır; hukuki dayanak metninde doğrulanmamış mevzuat/standart künyesi eklenmemesi uyarısı durur. Tarafsızlık beyanı bilinçli olarak kapsam dışıdır.'
+  },
   '2.347': {
     title: 'Rapor dili bilirkişinin anlatımına çekildi',
     body:

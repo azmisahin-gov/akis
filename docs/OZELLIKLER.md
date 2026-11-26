@@ -1,4 +1,4 @@
-# Özellikler (v2.347 — mevcut durum)
+# Özellikler (v2.348 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1182,3 +1182,7 @@ Yöntem, teknik sınırlılıklar ve sonuç metinleri **yalnız** Rapor görün�
 ## Rapor dili (v2.347)
 
 Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi birinci kişidir; “ASR / yapay zekâ / model çıktısı / diarizasyon / embedding / pipeline” gibi terimler ana anlatımın zorunlu dili değildir (teknik kayıtlarda ve gerektiğinde kullanılabilir). Otomatik çözümleme bölümünün başlığı **İNCELEME VE ÇÖZÜMLEME YÖNTEMİ**’dir. SHA-256, doğrulama, sayım, imza ve kümeleme iddiaları gerçek duruma **koşulludur**; kontrolü tamamlanmamış bölüm onaylanmış sayılmaz. S/K açıklaması tek yerde; teknik algoritma ayrıntısı ana rapora taşınmaz.
+
+## Düzenlenebilir rapor metinleri (v2.348)
+
+**Ayarlar → Kendi varsayılan metinlerim** 15 rapor metnini kapsar (yöntem, sınırlılıklar, sonuç, kapsam beyanı, hukuki dayanaklar, gizlilik, bütünlük notu, yazılım desteği açıklamaları, WER/seviye açıklamaları, teslim kontrolü notu, gömülü metadata açıklaması). Metinler **yalnız bu tarayıcıda** saklanır, dosyaya yazılmaz; bölümü açık olan tüm raporlarda kullanılır. Her metin tek tek varsayılana döndürülebilir; hukuki dayanak metninde doğrulanmamış mevzuat/standart künyesi eklenmemesi uyarısı vardır. Tarafsızlık beyanı kapsam dışıdır.

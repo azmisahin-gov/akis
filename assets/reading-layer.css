@@ -4303,3 +4303,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 .single-home-note p { margin: 0; color: var(--ink-2); font-size: var(--fs-sm); line-height: var(--lh-body); }
 .single-home-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+/* ---- v2.348 — Rapor metinleri paneli ------------------------------------ */
+.rtech-where { color: var(--ink-3); font-weight: 400; font-size: var(--fs-xs); }

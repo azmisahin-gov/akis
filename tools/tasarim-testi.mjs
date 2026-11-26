@@ -2613,7 +2613,7 @@ console.log('\n[2dl] Varsayılan metinlerim paneli (v2.342)');
   const app = read('assets/app.js');
   const css = read('assets/reading-layer.css');
   check('ayarlarda varsayılan konağı var', /id="defaultsHost"/.test(html));
-  check('üç metin alanı tanımlı', /data-default-field/.test(app) && /USER_DEFAULT_FIELDS = \['methodText', 'limitationsText', 'conclusionText'\]/.test(app));
+  check('metin alanları tanımlı', /data-default-field/.test(app) && /USER_DEFAULT_FIELDS = TEXT_DEFAULT_ITEMS\.map/.test(app));
   check('depo anahtarı yalnız tarayıcı', /USER_DEFAULTS_KEY = 'akis\.defaults'/.test(app));
   check('uygulama varsayılanını yükle düğmesi', /data-default-load/.test(app));
   check('sıfırlama onay ister', /data-defaults-reset[\s\S]{0,400}askConfirm/.test(app));
@@ -2677,6 +2677,21 @@ console.log('\n[2do] Metin envanteri üreticisi (v2.346)');
   check('kullanılmayan metin ayrımı var', doc.includes('Kullanılmıyor'));
   check('bölümler 1..9', [1,2,3,4,5,6,7,8,9].every((n) => doc.includes('## ' + n + ')')));
   check('danışman listesi düzeltildi', /kullanılan dayanakların künyesi/.test(doc) && !/mevzuat atfı içerir/.test(doc));
+}
+
+
+console.log('\n[2dp] Düzenlenebilir rapor metinleri paneli (v2.348)');
+{
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  const items = (app.match(/\{ key: '[A-Za-z]+', label: '[^']+'/g) || []).length;
+  check('panel 15 metin listeler', items >= 15, String(items));
+  check('global uyarı var', /bölümü açık olan tüm raporlarda kullanılır/i.test(app));
+  check('hukuki metin uyarısı var', /Doğrulanmamış mevzuat maddesi veya standart künyesi eklemeyin/.test(app));
+  check('tek metin sıfırlama var', /data-default-reset-one/.test(app));
+  check('tarafsızlık textarea değil', !/data-default-field="impartiality"/.test(app));
+  check('yer etiketi biçimli', /\.rtech-where\s*\{[^}]*color:/.test(css));
+  check('panel iki grup (teknik katlanır)', /Ölçüm ve teknik açıklamalar/.test(app));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

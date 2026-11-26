@@ -174,7 +174,7 @@ const EXPOSE = [
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
-  'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS',
+  'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS', 'TEXT_DEFAULT_ITEMS',
   'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
   // v2.330 — fizikî dosya teslim ve iade
@@ -7729,7 +7729,10 @@ console.log('[168] Varsayılan metinlerim (v2.342)');
   const store = T.store;
   store.removeItem('akis.defaults');
   // 1) Varsayılan kapsamı: YALNIZ 3 metin. Beyan bilinçli olarak DIŞARIDA.
-  eq('varsayılan alanları üç tane', T.USER_DEFAULT_FIELDS.join(','), 'methodText,limitationsText,conclusionText');
+  eq('varsayılan alan sayısı 15', T.USER_DEFAULT_FIELDS.length, 15);
+  eq('kritik metinler kapsamda', ['scopeNoteText', 'annexLegalText', 'privacyText', 'integrityNote', 'asrIntro'].every((k) => T.USER_DEFAULT_FIELDS.includes(k)), true);
+  eq('her metnin etiketi ve yeri var', T.TEXT_DEFAULT_ITEMS.every((x) => x.label && x.where), true);
+  eq('hukuki metin işaretli', T.TEXT_DEFAULT_ITEMS.find((x) => x.key === 'annexLegalText').legal, true);
   eq('beyan varsayılanı kapsamda değil', T.USER_DEFAULT_FIELDS.includes('impartiality'), false);
   eq('depo anahtarı', T.USER_DEFAULTS_KEY, 'akis.defaults');
   // 2) Kayıt yoksa KOD varsayılanı kullanılır (geriye uyum).
@@ -7856,6 +7859,36 @@ console.log('[170] Bilirkişi anlatımı ve dürüst sınırlar (v2.347)');
   const asrDef = T.REPORT_SECTION_DEFS.find((d) => d.key === 'asr');
   eq('asr başlığı sade', asrDef.title, 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ');
   eq('başlıkta ASR/yapay zekâ yok', jargon.test(asrDef.title), false);
+}
+
+
+console.log('[171] Düzenlenebilir rapor metinleri (v2.348)');
+{
+  const store = T.store;
+  store.removeItem('akis.defaults');
+  const R = T.REPORT_TEXT;
+  // 1) Kayıt yoksa kod metni; kapsam 15; tarafsızlık DIŞARIDA.
+  eq('kod metni döner', T.defaultTextFor('scopeNoteText'), R.scopeNoteText);
+  eq('tarafsızlık kapsam dışı', T.USER_DEFAULT_FIELDS.includes('impartiality'), false);
+  // 2) Kullanıcı metni devreye girer; dosyaya YAZILMAZ.
+  T.saveUserDefaults({ scopeNoteText: 'BENİM KAPSAM BEYANIM', privacyText: 'BENİM GİZLİLİK METNİM' });
+  eq('kapsam beyanı kullanıcıdan', T.defaultTextFor('scopeNoteText'), 'BENİM KAPSAM BEYANIM');
+  eq('gizlilik kullanıcıdan', T.defaultTextFor('privacyText'), 'BENİM GİZLİLİK METNİM');
+  const fresh = T.freshCase();
+  eq('dosyaya yazılmaz (kapsam)', fresh.report.scopeNoteText, undefined);
+  eq('boş taslak hâlâ boş', T.isEmptyCase(fresh), true);
+  // 3) Tek metin sıfırlama: kod metnine döner, diğerleri KORUNUR.
+  T.saveUserDefaults({ scopeNoteText: '' });
+  eq('sıfırlanan kod metnine döner', T.defaultTextFor('scopeNoteText'), R.scopeNoteText);
+  eq('diğer metin korunur', T.defaultTextFor('privacyText'), 'BENİM GİZLİLİK METNİM');
+  // 4) Tüm metinlerin kod varsayılanı BOŞ değil (boş textarea tuzağı yok).
+  const empties = T.TEXT_DEFAULT_ITEMS.filter((x) => !String(T.defaultTextFor(x.key) || '').trim()).map((x) => x.key);
+  eq('boş kod varsayılanı yok', empties.join(','), '');
+  // 5) Render yolu tek kapıdan: katalog metinleri defaultTextFor ile okunur.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq('kapsam beyanı render yolu', (js.match(/defaultTextFor\('scopeNoteText'\)/g) || []).length >= 1, true);
+  eq('doğrudan katalog okuması kalmadı', /REPORT_TEXT\.(scopeNoteText|privacyText|integrityNote|asrIntro|asrLocal|asrVerify|asrNone|werIntro|levelIntro|deliveryCheckNote|embeddedIntro|annexLegalText)/.test(js), false);
+  store.removeItem('akis.defaults');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

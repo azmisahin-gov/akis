@@ -1898,5 +1898,21 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('kontrol durumu kanıt tablosunda', 'kontrolü tamamlanmamış bölümler onaylanmış sayılmaz', H, U, D);
 }
 
+
+// Senaryo 53: kullanıcı varsayılan rapor metinleri üç çıktıda (v2.348).
+{
+  console.log('\n[Senaryo 53] düzenlenebilir rapor metinleri (v2.348)');
+  localStorageStub.setItem('akis.defaults', JSON.stringify({ scopeNoteText: 'BENİM KAPSAM BEYANIM', privacyText: 'BENİM GİZLİLİK METNİM' }));
+  const c = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { scopeNote: true, privacy: true } } });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('kapsam beyanı (kullanıcı)', 'BENİM KAPSAM BEYANIM', H, U, D);
+  checkShared('gizlilik (kullanıcı)', 'BENİM GİZLİLİK METNİM', H, U, D);
+  check('model alanı boş kaldı', c.report.scopeNoteText === undefined);
+  localStorageStub.removeItem('akis.defaults');
+  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { scopeNote: true } } });
+  const H2 = htmlText(c2);
+  check('varsayılan silinince kod metni döner', H2.includes('56.12') && !H2.includes('BENİM KAPSAM BEYANIM'));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

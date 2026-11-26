@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.347 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.348 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -143,7 +143,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod varsayılanı; **Ayarlar → Kendi varsayılan metinlerim** ile kullanıcı varsayılanı olur; dosya bazında **Rapor → Bölüm düzenle**.
 - **Tür:** beyan/otomatik
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > İncelemede karşılaşılan teknik sınırlılıklar varsa, somut kayıt ve zaman aralıklarıyla açıklanır.
 
@@ -153,7 +153,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod varsayılanı; **Ayarlar → Kendi varsayılan metinlerim**; dosya bazında **Rapor → Bölüm düzenle**.
 - **Tür:** beyan/otomatik
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.
 
@@ -309,7 +309,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Aşağıdaki değerler ses dosyasına gömülü metadata bilgilerinden okunmuştur. Bu bilgiler dosyanın kendi kaydından gelir; kaynağı ve doğruluğu ayrıca doğrulanmadıkça cihaz tarafından doğrulanmış beyan olarak kabul edilmez ve tek başına kayıt zamanı kanıtı sayılmaz.
 
@@ -331,7 +331,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Aşağıdaki oranlar, referans metni bulunan kayıtlarda yazılımın ürettiği ilk metnin (bilirkişi düzeltmesinden önceki hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni değil ilk metni ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. İlk metni saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.
 
@@ -351,7 +351,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Aşağıdaki değerler, kayıtların örneklerinden türetilen tahmini düzey değerleridir; kalibre edilmiş akustik ölçüm sonucu değildir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu değerler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.
 
@@ -403,7 +403,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > İşlem günlüğü, bu inceleme ortamında kaydedilen işlemlerin mevcut kayıtlar arasındaki tutarlılığını denetlemeye yardımcı olur. Bu kontrol tek başına kayıtların sonradan değiştirilemediğini veya işlemlerin belirtilen kişi ve zamanda gerçekleştiğini kanıtlamaz. Hesaplanan dosya özetleri ve doğrulama durumları ayrıca gösterilir. Özet hesaplanmadıysa “hesaplanmadı” yazılır; eski (hash taşımayan) günlük kayıtları “eski kayıt” olarak işaretlenir.
 
@@ -415,7 +415,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.
 
@@ -425,17 +425,17 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Ses içeriği ve inceleme işlemleri bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.
 
 **`annexLegalText`**
 
 - **Belge/bölüm:** Ek/tutanak belgesi · Beyan, gizlilik, dayanak, otomatik çözümleme
-- **Koşul:** Ek/tutanak açıksa
+- **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif · tutanak/ek belgesi
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.
 
@@ -445,7 +445,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Konuşma içeriklerinin ilk metin taslağını hazırlarken ilgili yazılımdan yardımcı olarak yararlandım. Oluşan metni ses kayıtlarıyla karşılaştırarak incelemem kapsamında gerekli düzeltmeleri yaptım. Nihai metin ve değerlendirme kendi incelemem doğrultusunda oluşturulmuştur.
 
@@ -455,7 +455,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > İşlem, kayıt harici bir hizmete aktarılmadan bu bilgisayarda yürütülmüştür.
 
@@ -465,7 +465,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Bölümlerin kontrol durumu raporun kanıt tablosunda gösterilir; kontrolü tamamlanmamış bölümler onaylanmış sayılmaz.
 
@@ -529,7 +529,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Koşul:** Bölüm açıksa
 - **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
 - **Tür:** otomatik açıklama
-- **Durum:** Aktif
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırı giderilmeden rapor teslim edilmemelidir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.
 
@@ -865,25 +865,25 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 
 | Üretici | Satır | Tür | Metin (kısaltıldı) |
 |---|---|---|---|
-| `reportAnnexBlocks` | 15838 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
-| `reportAnnexBlocks` | 15839 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
-| `letterDefaultBody` | 16487 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
-| `letterPaperHtml` | 16562 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17229 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17240 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17246 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17249 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17252 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17256 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17258 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17266 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `makeDocx` | 18219 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
-| `udfDocument` | 18321 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 18324 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 18329 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 18923 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 18934 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 18935 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `reportAnnexBlocks` | 15879 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
+| `reportAnnexBlocks` | 15880 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
+| `letterDefaultBody` | 16528 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 16603 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17270 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17281 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17287 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17290 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17293 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17297 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17299 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17307 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 18260 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 18362 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 18365 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 18370 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 18964 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 18975 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 18976 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 
