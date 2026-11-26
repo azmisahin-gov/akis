@@ -1,388 +1,893 @@
-# Metin Envanteri (uygulamadaki tüm rapor metinleri)
+# Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-Bu dosya **koddaki güncel metinleri** tek yerde toplar; hukuk danışmanlığı alırken
-"hangi cümle nerede geçiyor, düzenlenebilir mi" sorusunu cevaplamak için üretildi.
-Metinler `assets/app.js` içindeki `REPORT_TEXT`, `LETTER_TEXT` ve `DEFAULT_METHOD`
-sabitlerinden **otomatik** çıkarıldı. **Bu dosyayı elle düzenlemeyin:**
-`node tools/metin-envanteri.mjs` ile yeniden üretilir; `surum-testi` güncel olup
-olmadığını denetler.
+**Üretildiği uygulama sürümü:** v2.346 (kaynaktan okunur)
+
+Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
+denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
+yanıtlamaktır. **Elle düzenlenmez:** `node tools/metin-envanteri.mjs` ile üretilir;
+`surum-testi` güncelliğini denetler.
+
+**Ana ilke:** Rapor, yazılımın çalışma biçimini değil **bilirkişinin yaptığı incelemeyi**
+anlatır. Teknik terimler ana anlatımın zorunlu dili değildir; gerekli teknik bilgi
+ölçüsünde ve gerektiğinde verilir.
 
 ## 1) Ekranda nerede?
 
 | Ne | Yol |
 |---|---|
-| Kendi varsayılan metinlerim (3 metin) | Üst bar **⚙ Ayarlar** → çekmecede **“Kendi varsayılan metinlerim”** |
-| Bir dosyada yöntem/sınırlılık/sonuç yazmak | **Rapor** görünümü → belgede bölüme tıkla → sağda **Bölüm düzenle** |
-| Kayıtlı metinlerim (tıkla-dolsun) | Aynı **Bölüm düzenle** panelinde, alanın altındaki **“Kayıtlı metinlerim (N)”** |
-| Tarafsızlık beyanı | **Rapor → Kontrol** modu → **“Künye: tarafsızlığı etkileyebilecek hâl beyanı”** |
-| Bölüm başlıkları / sıra | **Rapor** sol iskelet: kalem (başlık), ↑↓ (sıra), aç/kapa |
-| Üst yazı metni | **Rapor → Üst yazı** sekmesi (gövde, yer, ilgi) |
+| Kendi varsayılan metinlerim (3 metin) | Üst bar **⚙ Ayarlar** → **“Kendi varsayılan metinlerim”** |
+| Bir dosyada yöntem/sınırlılık/sonuç | **Rapor** → belgede bölüme tıkla → **Bölüm düzenle** |
+| Kayıtlı metinlerim (tıkla-dolsun) | Aynı panelde, alanın altındaki **“Kayıtlı metinlerim (N)”** |
+| Tarafsızlık beyanı | **Rapor → Kontrol** → **“Künye: tarafsızlığı etkileyebilecek hâl beyanı”** |
+| Bölüm başlıkları / sıra | **Rapor** sol iskelet: kalem · ↑↓ · aç/kapa |
+| Üst yazı metni | **Rapor → Üst yazı** sekmesi |
 
-## 2) Şu anda uygulamadan düzenlenebilenler
+> **Tek düzenleme yeri (v2.345):** Yöntem, sınırlılık ve sonuç metinleri **yalnız**
+> Rapor görünümünde düzenlenir; İnceleme görünümünde yalnız yönlendirme vardır.
 
-| Metin | Nerede | Kapsam |
+## 2) Düzenlenebilirlik ayrımı
+
+| Katman | Ne | Nerede |
 |---|---|---|
-| İnceleme yöntemi | Bölüm düzenle + Ayarlar (varsayılan) | Dosya + yeni dosya varsayılanı |
-| Teknik sınırlılıklar | Bölüm düzenle + Ayarlar (varsayılan) | Dosya + yeni dosya varsayılanı |
-| Sonuç ve kanaat | Bölüm düzenle + Ayarlar (varsayılan) | Dosya + yeni dosya varsayılanı |
-| Tarafsızlığı etkileyebilecek hâl beyanı | Rapor → Kontrol | Dosya |
-| Üst yazı: yer, ilgi, gövde, imza | Rapor → Üst yazı | Dosya |
-| Bölüm başlıkları, sıra, aç/kapa | Rapor iskeleti | Dosya |
-| Ek başlığı / içerik / not | Rapor → Kontrol → Ekler | Dosya |
-| Tablo sütunları ve başlıkları | Rapor → Kontrol → Rapor alanları | Dosya |
-| Punto, kenar boşluğu, yön | Rapor → Kontrol → Rapor biçimi | Dosya |
-| Teknik ortam (7 alan), ikinci kontrol (3 alan) | Rapor → Kontrol | Dosya |
+| Kod varsayılanı | Uygulamanın kendi metni | `assets/app.js` |
+| Kullanıcı varsayılanı | Yeni dosyada ne gelsin | **Ayarlar** (yalnız bu tarayıcı) |
+| Dosya metni | O dosyada yazılan | **Rapor → Bölüm düzenle** (dosyaya yazılır) |
 
-## 3) Uzun metinler (rapora giren cümleler)
+Kod varsayılanı **dosyaya yazılmaz**; alan boşsa basılır. Eski dosyanın metni, varsayılan
+değişince kendiliğinden değişmez.
 
-Her metin **koddadır** (bugün sabit). “Düzenlenebilir?” satırı o metnin bugün
-uygulamadan değiştirilip değiştirilemediğini söyler.
+## 3) Yöntem metni — `DEFAULT_METHOD`
 
-### 3.0 İnceleme yöntemi — `DEFAULT_METHOD`
+- **Belge/bölüm:** Rapor · İnceleme yöntemi (s4)
+- **Koşul:** Bölüm açık ve dosyada metin yoksa (varsayılan)
+- **Düzenlenebilir:** Kod varsayılanı; **Ayarlar → Kendi varsayılan metinlerim**; dosya bazında **Rapor → Bölüm düzenle**.
+- **Tür:** beyan/otomatik
+- **Durum:** Aktif
 
 > İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
 >
 > Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.
 
+## 4) Katalog metinleri (rapora/üst yazıya giren cümleler)
+
+Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yazılır.
+“Kullanılmıyor” metinler **silinmez**; önce doğrulanır.
+
 ### Künye / kapak
 
-**`subtitle`** — **Düzenlenebilir?** hayır — kod sabiti
+**`subtitle`**
+
+- **Belge/bölüm:** Rapor · Künye / kapak
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > SES KAYITLARININ TEKNİK İNCELEMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ
 
-**`defaultField`** — **Düzenlenebilir?** hayır — kod sabiti
+**`defaultField`**
+
+- **Belge/bölüm:** Rapor · Künye / kapak
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > 56.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)
 
 ### Kapsam, sorular, yöntem, sonuç
 
-**`defaultScope`** — **Düzenlenebilir?** hayır — kod sabiti
+**`defaultScope`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.
 
-**`defaultQuestions`** — **Düzenlenebilir?** hayır — kod sabiti
+**`defaultQuestions`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Görevlendirme yazısında bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.
 
-**`defaultEvaluation`** — **Düzenlenebilir?** hayır — kod sabiti
+**`defaultEvaluation`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Teknik sorulara ilişkin değerlendirme, görevlendirme yazısında yer alan sorular doğrultusunda eklenir.
 
-**`s5Intro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`s5Intro`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Her kayıt için sırasıyla: (a) kısa kayıt bilgisi, (b) o kayıtta konuşanların tablosu, (c) zaman damgalı deşifre tablosu verilir. Bu açıklama her kayıtta yinelenmez.
 
-**`answersIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`answersIntro`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Görevlendirme kararındaki sorular, sorulma sırası korunarak aşağıda cevaplanmıştır. Her cevap, ilgili kayıt ve zaman aralığıyla ilişkilendirilir; cevaplanamayan sorunun nedeni açıkça yazılır. Sorular metni değiştirilmeden aktarılır.
 
-**`limitsIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`limitsIntro`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıda inceleme sırasında gerçekten karşılaşılan teknik sınırlılıklar açıklanmıştır. Sınırlılık yoksa bu açıkça belirtilir; ölçülmeyen değer yazılmaz ve konuşmanın anlamı bağlamdan tamamlanmaz.
 
-**`defaultLimitations`** — **Düzenlenebilir?** kod; **Ayarlar → Kendi varsayılan metinlerim** ile değiştirilebilir (boş alan için)
+**`defaultLimitations`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod varsayılanı; **Ayarlar → Kendi varsayılan metinlerim** ile kullanıcı varsayılanı olur; dosya bazında **Rapor → Bölüm düzenle**.
+- **Tür:** beyan/otomatik
+- **Durum:** Aktif
 
 > İncelemede karşılaşılan teknik sınırlılıklar varsa, somut kayıt ve zaman aralıklarıyla açıklanır.
 
-**`defaultConclusion`** — **Düzenlenebilir?** kod; **Ayarlar → Kendi varsayılan metinlerim** ile değiştirilebilir (boş alan için)
+**`defaultConclusion`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod varsayılanı; **Ayarlar → Kendi varsayılan metinlerim**; dosya bazında **Rapor → Bölüm düzenle**.
+- **Tür:** beyan/otomatik
+- **Durum:** Aktif
 
 > Sonuç, yalnızca inceleme kapsamında tespit edilen ve gerekçelendirilen teknik bulgulara dayanılarak bilirkişi tarafından yazılır.
 
-**`summaryIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`summaryIntro`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler birbiriyle tutarlıdır.
 
-**`sections`** — **Düzenlenebilir?** hayır — kod sabiti
+**`sections`**
+
+- **Belge/bölüm:** Rapor · Kapsam, sorular, yöntem, sonuç
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > 1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI · 2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR · 3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR · 4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR · 5. ANALİZ, TESPİT VE DEĞERLENDİRME · 6. GEREKÇELİ SONUÇ · 7. EKLER
 
 ### Envanter ve kayıtlar
 
-**`defaultInventoryIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`defaultInventoryIntro`**
+
+- **Belge/bölüm:** Rapor · Envanter ve kayıtlar
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.
 
-**`inventoryNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`inventoryNote`**
+
+- **Belge/bölüm:** Rapor · Envanter ve kayıtlar
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.
 
-**`videoAudioNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`videoAudioNote`**
+
+- **Belge/bölüm:** Rapor · Envanter ve kayıtlar
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü incelenmemiştir.
 
 ### Konuşmacı
 
-**`speakerIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerIntro`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.
 
-**`speakerFootnote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerFootnote`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > S kodları kayıt içidir (her kayıtta S1'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.
 
-**`speakerVerifiedNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerVerifiedNote`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.
 
-**`speakerMethodNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerMethodNote`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Konuşmacı grupları, ses benzerliğine dayalı anonim kümeleme ile ön-atandı; nihai konuşmacı etiketleri uzman değerlendirmesinin ürünüdür. Bu yöntem bir konuşmacı kimlik tespiti değildir.
 
-**`speakerCodeNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerCodeNote`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.
 
-**`speakerCodeConflict`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerCodeConflict`**
+
+- **Belge/bölüm:** Rapor · Konuşmacı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.
 
 ### Köken, edinme, metadata
 
-**`originIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`originIntro`**
+
+- **Belge/bölüm:** Rapor · Köken, edinme, metadata
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Kayıtların hangi ortamdan geldiği, kim tarafından ve ne zaman teslim edildiği aşağıda gösterilmiştir. Bu bilgiler bilirkişi beyanına ve teslim tutanağına dayanır; ortam türü kendiliğinden tespit edilmemiştir.
 
-**`originFileTimeNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`originFileTimeNote`**
+
+- **Belge/bölüm:** Rapor · Köken, edinme, metadata
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Ortamdaki dosya zamanları (oluşturulma/değiştirilme/erişim) yalnız edinme sırasında okunan gözlemlerdir; kayıt zamanı değildir. Kopyalama, dosya sistemi ve saat dilimi bu değerleri değiştirebilir. Kayıt cihazı ve kayıt tarihi yalnız beyan varsa yazılır; yoksa “bilinmiyor” yazar.
 
-**`acqIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`acqIntro`**
+
+- **Belge/bölüm:** Rapor · Köken, edinme, metadata
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.
 
-**`embeddedIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`embeddedIntro`**
+
+- **Belge/bölüm:** Rapor · Köken, edinme, metadata
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki değerler ses dosyasının kendi metadata’sından okunmuştur. Cihaz beyanıdır; doğrulanmamıştır ve değiştirilebilir. Tek başına kayıt zamanı kanıtı değildir.
 
-**`mediumTypes`** — **Düzenlenebilir?** hayır — kod sabiti
+**`mediumTypes`**
+
+- **Belge/bölüm:** Rapor · Köken, edinme, metadata
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > Belirtilmedi · CD / DVD · USB flaş bellek · Taşınabilir disk · Sabit disk / imaj · E-posta eki · Bulut / ağ paylaşımı · Hafıza kartı · Telefon · Diğer
 
 ### Ölçümler (WER, seviye)
 
-**`werIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`werIntro`**
+
+- **Belge/bölüm:** Rapor · Ölçümler (WER, seviye)
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümlemenin ÜRETTİĞİ HAM ÇIKTININ (bilirkişi düzeltmesinden ÖNCEKİ hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni DEĞİL modelin kendi çıktısını ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. Model çıktısı saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.
 
-**`werNoRows`** — **Düzenlenebilir?** hayır — kod sabiti
+**`werNoRows`**
 
-> Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir). ·  ·  ·  ·  · 
+- **Belge/bölüm:** Rapor · Ölçümler (WER, seviye)
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
-**`levelIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+> Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir).
+
+**`levelIntro`**
+
+- **Belge/bölüm:** Rapor · Ölçümler (WER, seviye)
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki değerler, kayıtların örneklerinden hesaplanan elektro-akustik ölçümlerdir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu ölçümler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.
 
 ### İnceleme özeti, QC, bütünlük
 
-**`reviewSummaryIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`reviewSummaryIntro`**
+
+- **Belge/bölüm:** Rapor · İnceleme özeti, QC, bütünlük
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.
 
-**`qcIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`qcIntro`**
+
+- **Belge/bölüm:** Rapor · İnceleme özeti, QC, bütünlük
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki sayılar inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Bunlar bir ONAY değil, denetim listesidir; son kararı bilirkişi verir.
 
-**`qcNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`qcNote`**
+
+- **Belge/bölüm:** Rapor · İnceleme özeti, QC, bütünlük
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > İkinci kontrol (varsa) bilirkişi beyanıdır; boş alan "—" olarak yazılır.
 
-**`integrityIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`integrityIntro`**
+
+- **Belge/bölüm:** Rapor · İnceleme özeti, QC, bütünlük
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içeriğin bit düzeyinde bütünlüğünü gösterir.
 
-**`integrityNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`integrityNote`**
+
+- **Belge/bölüm:** Rapor · İnceleme özeti, QC, bütünlük
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.
 
-### Beyan, gizlilik, dayanak, ASR
+### Beyan, gizlilik, dayanak, otomatik çözümleme
 
-**`scopeNoteText`** — **Düzenlenebilir?** hayır — kod sabiti
+**`scopeNoteText`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.
 
-**`privacyText`** — **Düzenlenebilir?** hayır — kod sabiti
+**`privacyText`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Ses içeriği ve çözümleme bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.
 
-**`annexLegalText`** — **Düzenlenebilir?** hayır — kod sabiti
+**`annexLegalText`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.
 
-**`asrIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`asrIntro`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Otomatik konuşma tanıma (ASR) yalnızca yardımcı araç olarak kullanılmıştır. Otomatik çıktının tamamı uzman tarafından ses kaydı dinlenerek karşılaştırılmış; denetlenmeyen otomatik metin nihai transkript olarak kabul edilmemiştir. Otomatik sistemin duyulmayan kelimeyi üretmesi veya özel isimleri yanlış tamamlaması mümkündür; bu yüzden rapora onaylanmış metin girer.
 
-**`asrLocal`** — **Düzenlenebilir?** hayır — kod sabiti
+**`asrLocal`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Çalışma biçimi: yerel/çevrimdışı (kayıt harici bir hizmete aktarılmamıştır).
 
-**`asrVerify`** — **Düzenlenebilir?** hayır — kod sabiti
+**`asrVerify`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > İnsan doğrulaması: bölümler dinlenerek kontrol edilmiş; yalnızca uzman onaylı metin rapora aktarılmıştır.
 
-**`enhanceText`** — **Düzenlenebilir?** hayır — kod sabiti
+**`enhanceText`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Ses iyileştirme uygulanmamıştır; orijinal kayıt değiştirilmemiştir. Dinleme yardımcıları (hız, filtre, kanal seçimi) yalnızca dinlemeyi kolaylaştırır, kaydı değiştirmez ve deşifre metnini etkilemez. İşlenmiş bir kopya oluşturulmamıştır.
 
-**`techIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`techIntro`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > İncelemenin yürütüldüğü iş istasyonu, yazılım ve dinleme donanımı aşağıda bilirkişi beyanına göre gösterilmiştir. Boş alan rapora "—" olarak yazılır; uydurulmaz.
 
-**`techNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`techNote`**
+
+- **Belge/bölüm:** Rapor · Beyan, gizlilik, dayanak, otomatik çözümleme
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Teknik araçların adı ve sürümü yalnız fiilen kullanıldığı ölçüde yazılır; aracın dosyayı açabilmesi tek başına bilimsel doğrulama değildir.
 
 ### Okuma metni / terim
 
-**`readingIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`readingIntro`**
+
+- **Belge/bölüm:** Rapor · Okuma metni / terim
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Aşağıdaki okuma metni, aynı konuşmacının ardışık bölümlerinden türetilmiş salt okunur bir okuma biçimidir. Ayrıntılı (zaman damgalı) bölüm tablosu ve cümle zamanları değişmez; bu bölüm yalnız okunabilirliği artırır.
 
-**`termsIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`termsIntro`**
+
+- **Belge/bölüm:** Rapor · Okuma metni / terim
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Transkriptte en sık geçen anlamlı sözcükler (parantezdeki sayı = geçiş sayısı). Yazım tutarlılığı ve hızlı tarama içindir; bir özet ya da yorum değildir. Sıra: sıklık, eşitlikte alfabetik.
 
 ### Teslim kontrolü / beyan alanı
 
-**`deliveryCheckNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`deliveryCheckNote`**
+
+- **Belge/bölüm:** Rapor · Teslim kontrolü / beyan alanı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırı giderilmeden rapor teslim edilmemelidir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.
 
-**`impartialityHint`** — **Düzenlenebilir?** kod (panel ipucu)
+**`impartialityHint`**
+
+- **Belge/bölüm:** Rapor · Teslim kontrolü / beyan alanı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (panel ipucu).
+- **Tür:** arayüz
+- **Durum:** Aktif
 
 > Bu alan taahhüt değil BEYANdır: tarafsızlığı/bağımsızlığı etkileyebilecek bir hâl yoksa “engel bulunmadığı”, varsa açıklama ve bildirilen merci yazılır. Boş bırakılırsa rapora satır basılmaz.
 
-**`impartialityTemplate`** — **Düzenlenebilir?** kod; beyan alanındaki **“Engel bulunmadığını yaz”** düğmesi bu cümleyi yazar
+**`impartialityTemplate`**
+
+- **Belge/bölüm:** Rapor · Teslim kontrolü / beyan alanı
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti; beyan alanındaki **“Engel bulunmadığını yaz”** düğmesi yazar.
+- **Tür:** beyan
+- **Durum:** Aktif
 
 > Tarafsızlığı ve bağımsızlığı etkileyebilecek bir hâl bulunmamaktadır.
 
 ### Uyarılar
 
-**`warnLanguage`** — **Düzenlenebilir?** hayır — kod sabiti
+**`warnLanguage`**
+
+- **Belge/bölüm:** Rapor · Uyarılar
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > En az bir kaydın transkriptinde dil tutarsızlığı olasılığı bulundu.
 
-**`warnHallucination`** — **Düzenlenebilir?** hayır — kod sabiti
+**`warnHallucination`**
+
+- **Belge/bölüm:** Rapor · Uyarılar
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > En az bir kayıtta model anlamlı konuşma üretemedi veya dolgu ifadesi üretti; bu bölümler rapora aktarılmadan önce elle doldurulmalıdır.
 
 ### Fizikî dosya (tutanak metinleri)
 
-**`physicalAnnexEmpty`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalAnnexEmpty`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Fizikî dosya (tutanak metinleri)
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > Fizikî dosya teslim ve iade kaydı girilmemiştir. Dosya yalnız elektronik (UYAP) erişimle incelendiyse bu bölüm boş kalır; bu bir eksiklik değildir.
 
-**`physicalIntro`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalIntro`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Fizikî dosya (tutanak metinleri)
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > Aşağıdaki kayıt, bilirkişiye fizikî olarak teslim edilen dava dosyası ve materyaller ile inceleme sonunda yapılan iadeyi gösterir. Dosya içeriği tek tek sayılmadıysa bu durum açıkça yazılır; sayılmadığı hâlde sayılmış gibi gösterilmez. Materyallerin içeriği bu bölümün kapsamı dışındadır.
 
-**`physicalMissingWarning`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalMissingWarning`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Fizikî dosya (tutanak metinleri)
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > UYARI: Teslim alınan materyallerden biri veya birkaçı iade edilmemiş olarak kayıtlıdır. İade işlemi tamamlanmış sayılmaz.
 
-**`physicalNoIndexWarning`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalNoIndexWarning`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Fizikî dosya (tutanak metinleri)
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > Dizi pusulası verilmediği için dosya içeriği mahkemece sayılarak teslim edilmemiştir; bilirkişi içeriği tek tek saymamıştır.
 
-**`physicalSignatureNote`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalSignatureNote`**
+
+- **Belge/bölüm:** Ek/tutanak belgesi · Fizikî dosya (tutanak metinleri)
+- **Koşul:** Ek/tutanak açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif · tutanak/ek belgesi
 
 > Bu tutanak iki nüsha düzenlenir ve taraflarca imzalanır. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.
 
 ### Diğer uzun metinler
 
-**`attachmentsText`** — **Düzenlenebilir?** hayır — kod sabiti
+**`attachmentsText`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > Bu bölüm yalnız eklerin listesini verir; ek içerikleri EKLER bölümündedir.
 
-**`inventoryHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`inventoryHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > DOSYA ADI · DOSYA BİÇİMİ · DOSYA BOYUTU · SÜRE · SES KANALI · ÖRNEKLEME HIZI · SHA-256
 
-**`speakerHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`speakerHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > KOD · ETİKET · KAYIT · ROL · CİNSİYET · YAŞ ARALIĞI · ÖLÇÜLEN PERDE · BÖLÜM / NOT
 
-**`segmentHeadersObs`** — **Düzenlenebilir?** hayır — kod sabiti
+**`obsLabels`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> noise: arka plan gürültüsü; overlap: üst üste konuşma; inaudible: anlaşılmaz bölüm; music: müzik/ses efekti; phone: telefon görüşmesi; noSpeech: sessizlik (konuşma yok); echo: yankı / oda akustiği; dropout: kesinti / kopukluk; notAudible: duyulmuyor (ses yok/kısık); distance: uzaktan/zayıf konuşma; distortion: bozuk ses / artefakt; foreignLanguage: dil değişimi (farklı dil/lehçe)
+
+**`segmentHeadersObs`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA · KONTROL DURUMU · GÖZLEM
 
-**`levelHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`levelHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > KAYIT · TEPE (dBFS) · RMS (dBFS) · TEPE KIRPILMA · GÜRÜLTÜ TABANI · SİNYAL / GÜRÜLTÜ · EK ÖLÇÜMLER
 
-**`originHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`originHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > KAYIT · ORTAM TÜRÜ · ORTAM ETİKETİ · TESLİM EDEN · TESLİM TARİHİ · TESLİM YERİ · KAYIT CİHAZI · KAYIT TARİHİ
 
-**`acqHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`acqHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > KAYIT · CİHAZ · ETİKET · SERİ NO · YÖNTEM · ARAÇ · OPERATÖR · ALINMA · DOĞRULAMA
 
-**`segmentHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`segmentHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA · KONTROL DURUMU
 
-**`physicalItemHeaders`** — **Düzenlenebilir?** hayır — kod sabiti
+**`physicalItemHeaders`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
 
 > SIRA · TÜR · MARKA / ETİKET · SERİ NO · MÜHÜR / AMBALAJ · TESLİM DURUMU · İLGİLİ · İADE
 
-## 4) Üst yazı metinleri (`LETTER_TEXT`)
+**`physicalDocKinds`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> index: Dizi pusulası; handover: Teslim tutanağı; return: İade tutanağı; other: Diğer
+
+## 5) Üst yazı metinleri (`LETTER_TEXT`)
 
 **`subject`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Bilirkişi Raporunun Sunulması
 
 **`closing`**
 
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
 > Bilgilerinize arz ederim.
 
 **`annexHeading`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Ek:
 
 **`signerTitle`**
 
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
 > Bilirkişi
 
 **`registryLabel`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Bilirkişilik Sicil No:
 
 **`fileNoLabel`**
 
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
 > Dosya No:
 
 **`subjectLabel`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Konu:
 
 **`referenceLabel`**
 
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
 > İlgi:
 
 **`reportAnnexLabel`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Bilirkişi Raporu
 
 **`defaultSectionsLabel`**
 
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
 > Teknik Bilgiler
 
 **`fallbackAnnexLabel`**
+
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
 > Ek
 
 **`referenceFromAssignment`**
 
-> (dateText) => `Mahkemenizin ${dateText} tarihli görevlendirme yazısı.`
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
+
+> —
 
 **`missing`**
 
-> [object Object]
+- **Belge:** Üst yazı
+- **Düzenlenebilir:** Metin alanları **Rapor → Üst yazı**
+- **Tür:** otomatik/koşullu
+- **Durum:** Aktif
 
-## 5) Kısa etiket ve başlıklar (`REPORT_TEXT`, 60 karakterden kısa)
+> court: Mahkeme adı girilmedi — üst yazı yazılamaz.; fileNo: Dosya numarası girilmedi — üst yazı yazılamaz.; expert: Bilirkişi adı girilmedi — üst yazı yazılamaz.
 
-Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş durum metinleri).
+## 6) Gömülü metinler (katalogda değil, üretici içinde)
+
+Rapor/üst yazı/tutanak üreticilerinde **doğrudan yazılmış** cümleler; katalog
+sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
+
+| Üretici | Satır | Tür | Metin (kısaltıldı) |
+|---|---|---|---|
+| `reportAnnexBlocks` | 15843 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
+| `reportAnnexBlocks` | 15844 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
+| `letterDefaultBody` | 16492 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 16567 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17234 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17245 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17251 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17254 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17257 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17261 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17263 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17271 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 18224 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 18326 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 18329 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 18334 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 18928 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 18939 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 18940 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+
+## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
+
+Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 
 | Anahtar | Değer |
 |---|---|
@@ -396,7 +901,7 @@ Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş 
 | `defaultAnswer` | Bu soruya ilişkin teknik cevap henüz girilmemiştir. |
 | `defaultBasis` | Belirtilmemiş |
 | `defaultExpert` | BİLİRKİŞİ |
-| `toplineField` | UZMANLIK ALANI ·  |
+| `toplineField` | UZMANLIK ALANI · |
 | `expertFieldHeading` | UZMANLIK ALANI |
 | `noMaterials` | İncelemeye sunulan ses kaydı bulunmamaktadır. |
 | `codecFallback` | Ses dosyası |
@@ -405,8 +910,7 @@ Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş 
 | `noColumns` | Bu tablo için alan seçilmedi. |
 | `noAttachments` | Ek listesi boş: EKLER bölümü kapalı veya ek yok. |
 | `annexIntro` | Raporun denetlenebilirliği için sunulan ekler aşağıdadır. |
-| `noSpeakerRow` | — · Konuşmacı etiketi girilmemiştir. ·  ·  ·  ·  ·  ·  |
-| `obsLabels` | [object Object] |
+| `noSpeakerRow` | — · Konuşmacı etiketi girilmemiştir. |
 | `spectrogramLabel` | Spektrogram incelendi |
 | `werHeading` | ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER) |
 | `werHeaders` | KAYIT · MODEL · REFERANS KELİME · ÇIKTI KELİME · HATA · WER |
@@ -455,7 +959,7 @@ Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş 
 | `warnMissingFields` | Mahkeme/merci, dosya numarası veya bilirkişi adı eksik. |
 | `warnNoMaterials` | Rapora eklenecek ses kaydı bulunmuyor. |
 | `warnPreReport` | Rapor öncesi kontrol: |
-| `noInventoryRow` | İncelemeye sunulan ses kaydı bulunmamaktadır. ·  ·  ·  ·  |
+| `noInventoryRow` | İncelemeye sunulan ses kaydı bulunmamaktadır. |
 | `summaryHeading` | RAPORUN KISA ÖZETİ |
 | `enhanceHeading` | SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ |
 | `asrHeading` | OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI |
@@ -468,11 +972,11 @@ Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş 
 | `annexNoInventory` | Teknik envanter kaydı yok. |
 | `techHeading` | TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI |
 | `qcHeading` | KALİTE KONTROLÜ VE DENETLENEBİLİRLİK |
-| `limitsMeasuredPrefix` | Bölüm işaretlerinden ölçülen:  |
+| `limitsMeasuredPrefix` | Bölüm işaretlerinden ölçülen: |
 | `integrityHeaders` | KAYIT · SHA-256 · DOĞRULAMA · DELİL GÜNLÜĞÜ |
 | `integrityNoHash` | hesaplanmadı |
 | `integrityNotVerified` | Doğrulanmadı |
-| `recordSpeakersPrefix` | Bu kaydın konuşmacıları:  |
+| `recordSpeakersPrefix` | Bu kaydın konuşmacıları: |
 | `recordSpeakersHeading` | Konuşmacılar (bu kayıt) |
 | `recordTranscriptHeading` | Deşifre (zaman damgalı) |
 | `speakerDurationHeading` | KONUŞMACI SÜRELERİ |
@@ -492,20 +996,25 @@ Bunlar hukuki cümle değil, **etiket/başlık**tır (ör. sütun adları, boş 
 | `physicalChanged` | Durum/mühür değişti |
 | `physicalDocHeading` | Fizikî dosya belgeleri (taranmış kopyalar) |
 | `physicalDocHeaders` | BELGE · TÜR · TARİH |
-| `physicalDocKinds` | [object Object] |
 
-## 6) Danışmana sorulacaklar (öneri)
+## 8) Arayüz / yardım metinleri (rapora girmez)
 
-Aşağıdaki metinler **hukuki/etik beyan** niteliğinde; önce bunlar netleşmeli:
+Buton, ipucu, uyarı ve sürüm notları rapor metni değildir: `index.html` (yardım
+penceresi) ve `assets/app.js` → `VERSION_NOTICES` içinde tutulur. Bu envanterin
+kapsamı **belge çıktısıdır**.
 
-1. `DEFAULT_METHOD` (İnceleme yöntemi) — yapılan/yapılmayan işi anlatır.
-2. `scopeNoteText` (Görev alanı dışında kalan konular / sınırlılık beyanı).
-3. `annexLegalText` (Hukuki ve yöntemsel dayanaklar) — **mevzuat atfı içerir**, doğrulanmalı.
-4. `privacyText` (Kişisel veri / gizlilik).
-5. `asrIntro`, `asrLocal`, `asrVerify` (otomatik çözümleme ve doğrulama sınırı).
-6. `impartialityTemplate` / beyan alanı (tarafsızlığı etkileyebilecek hâl).
-7. `defaultLimitations`, `defaultConclusion` (teknik sınırlılık ve sonuç çerçevesi).
-8. `deliveryCheckNote` (teslim kontrolü tablosunun anlamı).
+## 9) Danışmana sorulacaklar
+
+Aşağıdakiler **hukuki/etik beyan** niteliğinde; metin değişikliğinden önce netleşmeli:
+
+1. `DEFAULT_METHOD` — yapılan/yapılmayan işi anlatan yöntem paragrafı.
+2. `scopeNoteText` — 56.12 kapsamı ve yapılmayan incelemeler.
+3. `annexLegalText` — **kullanılan dayanakların künyesi**: metin, doğrulanmamış mevzuat/standart atfı kullanılmamasını söyler; danışmana soru, gerçekten kullanılan rehber/standart varsa tam künyesinin (başlık, sürüm, tarih) ne olacağıdır.
+4. `privacyText` — kişisel veri/gizlilik sınırı.
+5. Otomatik çözümleme metinleri (`asrIntro`, `asrLocal`, `asrVerify`) — bilirkişi anlatımıyla sadeleştirme ve gerçek kontrol durumuna bağlama.
+6. `impartialityTemplate` / beyan alanı — tarafsızlığı etkileyebilecek hâl.
+7. `defaultLimitations`, `defaultConclusion` — sınırlılık ve sonuç çerçevesi.
+8. `integrityNote` — işlem günlüğü ve hash iddialarının sınırı.
 
 > **Not:** Uygulama hukuki görüş üretmez; bu metinler bilirkişinin beyanı/teknik
 > açıklamasıdır. Mevzuat maddesi ve uzmanlık alanı künyesi **doğrulanmadan** yazılmaz.

@@ -2660,5 +2660,24 @@ console.log('\n[2dn] Tek düzenleme yeri: yöntem/sınırlılık/sonuç (v2.345)
   check('rapor düzenleyicisi tek yol', /data-rse-field/.test(app));
 }
 
+
+console.log('\n[2do] Metin envanteri üreticisi (v2.346)');
+{
+  const doc = read('docs/METIN_ENVANTERI.md');
+  const tool = read('tools/metin-envanteri.mjs');
+  const app = read('assets/app.js');
+  const ver = (app.match(/const APP_VERSION = '([^']+)'/) || [])[1] || '';
+  check('belge var ve boş değil', doc.length > 5000);
+  check('[object Object] yok', !doc.includes('[object Object]'));
+  check('sürüm APP_VERSION\'dan', ver && doc.includes('v' + ver));
+  check('üretici sürümü koddan okuyor', /APP_VERSION/.test(tool) && !/v2\.344/.test(tool));
+  check('nesne biçimleyici var', /fmtObject/.test(tool));
+  check('gömülü metin taraması var', /literalTexts/.test(tool) && doc.includes('Gömülü metinler'));
+  check('gömülü tabloda tür sütunu', /\| Üretici \| Satır \| Tür \|/.test(doc));
+  check('kullanılmayan metin ayrımı var', doc.includes('Kullanılmıyor'));
+  check('bölümler 1..9', [1,2,3,4,5,6,7,8,9].every((n) => doc.includes('## ' + n + ')')));
+  check('danışman listesi düzeltildi', /kullanılan dayanakların künyesi/.test(doc) && !/mevzuat atfı içerir/.test(doc));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

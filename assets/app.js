@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.345';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.345';
+} from './schema.js?v=2.346';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.346';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.345';
+const APP_VERSION = '2.346';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -23564,6 +23564,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.346': {
+    title: 'Metin envanteri güvenilir hâle getirildi',
+    body:
+      'Metin envanteri artık her metni doğru gösteriyor: nesneler “[object Object]” olarak basılmıyor, diziler okunabilir yazılıyor, fonksiyon değerleri kaynak kod olarak gösterilmiyor (dinamik metin sayılıyor). Üretici içine doğrudan yazılmış cümleler de taranıp listeye ekleniyor. Her metin için belge/bölüm, koşul, kim düzenleyebilir, tür ve durum (aktif/koşullu/kullanılmıyor) yazılıyor. Sürüm bilgisi sabit yazılmıyor, uygulamanın sürümünden okunuyor. Danışman listesindeki hukuki dayanak açıklaması metnin gerçek içeriğine göre düzeltildi. Görsel değişiklik yok.'
+  },
   '2.345': {
     title: 'Yöntem, sınırlılık ve sonuç tek yerden düzenlenir',
     body:

@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.345.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.346.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.346 — Metin envanteri: doğru gösterim, kapsam ve durum
+
+**KULLANICI NE GÖRECEK:** Görsel değişiklik yok; **danışmanlık/denetim belgesi**
+güvenilir hâle geldi.
+
+- **Nesne/dizi/fonksiyon değerleri:** `[object Object]` **üretilmez**; nesneler
+  `anahtar: değer`, diziler okunabilir yazılır; **fonksiyonlar kaynak kod olarak
+  basılmaz** → “dinamik metin” sayılır.
+- **Kapsam:** yalnız katalog sabitleri değil, **rapor/üst yazı/tutanak
+  üreticilerine gömülü** uzun cümleler de **taranır** (19 metin bulundu; hata/
+  arayüz metinleri ayrı türde işaretlenir).
+- **Durum ayrımı:** her metin **Aktif · Koşullu · Tutanak/ek · Kullanılmıyor**
+  olarak sınıflanır. Ölçüm: **7 metin kullanılmıyor** (ör. `segmentHeaders`,
+  `werNoRows`, `defaultQuestions`) — **silinmedi**, doğrulanmak üzere işaretlendi.
+- **Düzenlenebilirlik üç katman:** kod varsayılanı · kullanıcı varsayılanı
+  (Ayarlar) · dosya metni (Rapor) ayrı yazılır.
+- **Sürüm tek kaynak:** sabit `v2.344` yerine **`APP_VERSION`** okunur; belge
+  “üretildiği sürüm” satırını taşır.
+- **Danışman listesi:** `annexLegalText` açıklaması düzeltildi (“mevzuat atfı
+  içerir” değil; **kullanılan dayanakların künyesi** sorulur).
+- Testler: `tasarim [2do]` (10) + `surum-testi` `--check` (belge koddan farklıysa
+  **KALIR**).
 
 ## v2.345 — Yöntem, sınırlılık ve sonuç tek yerden düzenlenir
 
