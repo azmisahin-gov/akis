@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.343';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.343';
+} from './schema.js?v=2.344';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.344';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.343';
+const APP_VERSION = '2.344';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -23558,6 +23558,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.344': {
+    title: 'Metin listesi belgesi (danışmanlık için)',
+    body:
+      'Görsel değişiklik yok. Uygulamadaki tüm rapor metinleri (künye, bölüm girişleri, beyanlar, gizlilik, hukuki dayanak, otomatik çözümleme sınırı, fizikî tutanak, üst yazı ve kısa etiketler) tek bir belgede toplandı: docs/METIN_ENVANTERI.md. Belgede her metnin nerede düzenlendiği ve hangilerinin hukuki beyan olduğu yazar. Belge koddan üretilir; metinler değişince otomatik denetim güncel olmadığını söyler.'
+  },
   '2.343': {
     title: 'Kayıtlı metinlerim: tek tıkla alana ekle',
     body:

@@ -4,7 +4,7 @@ Bilirkişiler için ses kaydı inceleme, konuşma çözümleme (deşifre) ve rap
 hazırlama aracı. Tamamen tarayıcıda çalışır; Python veya Node.js kurulumu
 gerektirmez.
 
-**Sürüm:** v2.343 · **Lisans:** özel / kurumsal kullanım
+**Sürüm:** v2.344 · **Lisans:** özel / kurumsal kullanım
 
 > Sürüm numarası tek kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`.
 > Arayüzdeki etiket buradan yazılır. Her güncellemede bu değer, `CHANGELOG.md`
@@ -123,3 +123,6 @@ Paket içindeki dört kurgusal dosya ve on sentetik Türkçe WAV kaydı, eSpeak
 tabanlı TTS ile üretilmiştir. Gerçek kişi, olay veya dosya içermez; yalnızca
 çözümleme ve rapor akışını denemek içindir. Ayrıntı:
 [`sample_data/docs/TEST_DOSYALARI.txt`](sample_data/docs/TEST_DOSYALARI.txt).
+
+Metinlerin (rapor cümleleri, beyanlar, üst yazı) tam listesi ve nerede
+düzenlendiği: [`docs/METIN_ENVANTERI.md`](docs/METIN_ENVANTERI.md).

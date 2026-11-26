@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.343.**
+yazılır. **Güncel sürüm: v2.344.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.344 — Metin envanteri (TAMAMLANDI)
+
+- `tools/metin-envanteri.mjs` rapor metinlerini koddan çıkarıp
+  `docs/METIN_ENVANTERI.md` üretir; `--check` ile fark denetlenir.
+- Belgede: **nerede düzenlenir**, düzenlenebilir mi, tüm uzun metinler
+  (yöntem · bölüm girişleri · beyan · gizlilik · dayanak · ASR · fizikî
+  tutanak) ve kısa etiketler.
+- `surum-testi` [10b] belge güncel değilse **KALIR**.
 
 ## v2.343 — Kayıtlı metinlerim (TAMAMLANDI)
 

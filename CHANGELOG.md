@@ -6,12 +6,28 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.343.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.344.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.344 — Metin envanteri (hukuk danışmanlığı için tek liste)
+
+**KULLANICI NE GÖRECEK:** Görsel değişiklik yok. **`docs/METIN_ENVANTERI.md`**
+eklendi: uygulamadaki **tüm rapor metinleri** tek listede (künye, bölüm
+girişleri, beyan, gizlilik, dayanak, ASR, fizikî tutanak, üst yazı, etiketler)
++ **nerede düzenlendiği** + **hangi metin hukuki beyan**.
+
+- Belge **koddan otomatik** üretilir: `node tools/metin-envanteri.mjs`.
+- **Elle düzenlenmez;** `surum-testi` `--check` ile **güncelliğini** denetler →
+  bir metin değişip belge yenilenmezse test **KALIR** (belge eskimesi yok).
+- Belgede **“Ekranda nerede?”** bölümü var: varsayılan metinler (⚙ Ayarlar),
+  bölüm düzenleyici, kayıtlı metinler, beyan, başlık/sıra, üst yazı.
+- **“Danışmana sorulacaklar”** bölümü hukuki/etik beyan metinlerini sıralar
+  (yöntem, sınırlılık beyanı, hukuki dayanak, gizlilik, ASR sınırı, tarafsızlık,
+  sonuç çerçevesi, teslim kontrolü notu).
 
 ## v2.343 — Kayıtlı metinlerim (tek tıkla alana ekle)
 

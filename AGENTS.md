@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.343.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.344.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9034,3 +9034,37 @@ dosya oluşur). Tasarım gereği: açık taslağın metni geriye dönük değiş
 satır “Kısa sonuç”; alan değiştirilip satıra tıklanınca **onay** çıktı, kabul →
 alan = “BENİM SONUÇ METNİM”, **önizleme güncellendi**; silme **onay** istedi →
 **(0)**; kırpma 0 · yatay taşma 0 · JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.344) — Metin envanteri (danışmanlık için tek liste)
+
+| | |
+|---|---|
+| Sürüm | **v2.344** |
+| Testler | **2692 birim + 556 şema** + rapor (51) + sürüm + tasarım yeşil |
+| Belge | `docs/METIN_ENVANTERI.md` — **koddan üretilir** |
+
+### Neden
+Kullanıcı “hangi metin nerede, hangisini değiştirebilirim, hukuk danışmanına ne
+göstereceğim?” diye sordu; ekranda da kayboldu (“metin alanını bulamadım”).
+Metinler 171 `REPORT_TEXT` anahtarı + `LETTER_TEXT` + `DEFAULT_METHOD` içinde
+dağınık duruyordu.
+
+### Yapılan
+- **`tools/metin-envanteri.mjs`**: app.js’i vm içinde yükleyip `REPORT_TEXT`,
+  `LETTER_TEXT`, `DEFAULT_METHOD` değerlerini çıkarır; `docs/METIN_ENVANTERI.md`
+  üretir. `--check` modu farkı bildirir.
+- Belge bölümleri: **1) Ekranda nerede**, 2) uygulamadan düzenlenebilenler,
+  3) 64 uzun metin (grup grup), 4) üst yazı metinleri, 5) kısa etiketler,
+  6) **danışmana sorulacaklar** (yöntem, sınırlılık beyanı, hukuki dayanak,
+  gizlilik, ASR sınırı, tarafsızlık, sonuç çerçevesi, teslim kontrolü notu).
+- `surum-testi` **[10b]**: belge **güncel değilse test KALIR** (belge eskimesi
+  sessizce oluşamaz). Yeni sürüm → `VERSION_NOTICES` zorunluluğu (mevcut test).
+
+### DEĞİŞMEZ KURALLAR
+1. **Belge elle düzenlenmez**; `node tools/metin-envanteri.mjs` ile üretilir.
+2. **Metin değişirse belge yenilenir**; aksi hâlde `surum-testi` kalır.
+3. Danışmanlık metni **doğrulanmadan** rapora yazılmaz (mevzuat atfı kuralı).
+
+### Ölçüm
+`node tools/metin-envanteri.mjs --check` → **GEÇTİ**; belge **512 satır**,
+**65** “Düzenlenebilir?” satırı; `bash tools/test.sh` → hepsi yeşil.

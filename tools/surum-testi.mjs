@@ -328,6 +328,17 @@ check('eksik ses kullanıcıya bildiriliyor', /bulunamadı ve pakete GİRMEDİ/.
 // v2.86: yazarken ağır yenileme geciktirilir (500 bölümde tuş başına 8,5 ms).
 check('yazma sırasında ağır iş geciktiriliyor', /function scheduleLightRefresh/.test(appJs));
 
+// [10b] METİN ENVANTERİ (v2.344): rapor metinleri değiştiyse belge yenilenmeli.
+// NEDEN: hukuk danışmanlığı için üretilen metin listesi elle tutulursa eskir;
+// belge KODDAN üretilir ve burada güncelliği denetlenir.
+check('metin envanteri belgesi var', fs.existsSync(path.join(ROOT, 'docs/METIN_ENVANTERI.md')));
+try {
+  execFileSync(process.execPath, [path.join(ROOT, 'tools/metin-envanteri.mjs'), '--check'], { cwd: ROOT, stdio: 'pipe' });
+  check('metin envanteri güncel (kod ile aynı)', true);
+} catch (e) {
+  check('metin envanteri güncel (kod ile aynı)', false, 'node tools/metin-envanteri.mjs çalıştırın');
+}
+
 // [11] Terim tutarlılığı (v2.123) -----------------------------------------
 // KURAL: kullanıcı aynı şeye iki ad vermez. "Dosya" = tek dava/çalışma alanı;
 // "Paket" = taşınabilir .akis dosyası (1+ dosya + ses). Eylemler: Paket
