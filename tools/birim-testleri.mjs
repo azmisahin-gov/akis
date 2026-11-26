@@ -175,6 +175,7 @@ const EXPOSE = [
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
   'impartialityTemplateText', 'compareCases',
+  'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   // v2.330 — fizikî dosya teslim ve iade
   'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
   'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
@@ -7719,6 +7720,51 @@ console.log('[167] Tarafsızlık beyanı: anlam, yer ve ölü alan (v2.341)');
   b2.report.impartiality = 'B beyanı';
   const mg2 = T.mergeCasesForTest(a2, b2);
   eq('beyan çakışması bildirilir', (mg2.conflicts || []).some((x) => /impartiality/.test(String(x.field || ''))), true);
+}
+
+
+console.log('[168] Varsayılan metinlerim (v2.342)');
+{
+  const store = T.store;
+  store.removeItem('akis.defaults');
+  // 1) Varsayılan kapsamı: YALNIZ 3 metin. Beyan bilinçli olarak DIŞARIDA.
+  eq('varsayılan alanları üç tane', T.USER_DEFAULT_FIELDS.join(','), 'methodText,limitationsText,conclusionText');
+  eq('beyan varsayılanı kapsamda değil', T.USER_DEFAULT_FIELDS.includes('impartiality'), false);
+  eq('depo anahtarı', T.USER_DEFAULTS_KEY, 'akis.defaults');
+  // 2) Kayıt yoksa KOD varsayılanı kullanılır (geriye uyum).
+  eq('kayıt yok: boş nesne', Object.keys(T.userDefaults()).length, 0);
+  const codeMethod = T.defaultTextFor('methodText');
+  eq('kod varsayılanı yöntem', /SHA-256/.test(codeMethod) && codeMethod.length > 500, true);
+  eq('beyan varsayılanı BOŞ', T.defaultTextFor('impartiality'), '');
+  // 3) Kullanıcı varsayılanı devreye girer (kod değişikliği gerekmez).
+  T.saveUserDefaults({ methodText: 'BENİM YÖNTEM METNİM', limitationsText: 'BENİM SINIRLILIK METNİM' });
+  eq('kullanıcı yöntemi kullanılır', T.defaultTextFor('methodText'), 'BENİM YÖNTEM METNİM');
+  eq('kullanıcı sınırlılığı kullanılır', T.defaultTextFor('limitationsText'), 'BENİM SINIRLILIK METNİM');
+  eq('boş bırakılan kod varsayılanında kalır', T.defaultTextFor('conclusionText'), T.defaultTextFor('conclusionText'));
+  eq('depoda saklanır', JSON.parse(store.getItem('akis.defaults') || '{}').methodText, 'BENİM YÖNTEM METNİM');
+  // 4) Boş/boşluk değeri varsayılanı SİLER (kod varsayılanına döner).
+  T.saveUserDefaults({ methodText: '   ' });
+  eq('boş değer siler', T.defaultTextFor('methodText'), codeMethod);
+  // 5) Geçersiz değer yok sayılır; aşırı uzun metin kırpılır.
+  T.saveUserDefaults({ limitationsText: 42 });
+  eq('sayı değeri yok sayılır', T.userDefaults().limitationsText, undefined);
+  T.saveUserDefaults({ conclusionText: 'x'.repeat(50000) });
+  eq('uzun metin kırpılır', T.userDefaults().conclusionText.length, 20000);
+  // 6) Beyan varsayılan olarak YAZILAMAZ (kişisel beyan; uydurma yok).
+  T.saveUserDefaults({ impartiality: 'ENGEL YOKTUR' });
+  eq('beyan depoya girmez', T.userDefaults().impartiality, undefined);
+  eq('beyan varsayılanı boş kalır', T.defaultTextFor('impartiality'), '');
+  // 7) "Varsayılana dön" ölçütü: metin etkin varsayılanla aynı mı?
+  eq('eşit metin varsayılan sayılır', T.isDefaultText('conclusionText', T.defaultTextFor('conclusionText')), true);
+  eq('düzenlenmiş metin varsayılan değil', T.isDefaultText('conclusionText', 'Elle yazdım.'), false);
+  // 8) BOŞ DOSYA KURALI (v2.109): kullanıcı varsayılanı modele YAZILMAZ.
+  T.saveUserDefaults({ limitationsText: 'VARSAYILAN SINIRLILIK', conclusionText: 'VARSAYILAN SONUÇ', methodText: 'VARSAYILAN YÖNTEM' });
+  const fresh = T.freshCase();
+  eq('sonuç alanı boş kalır', fresh.report.conclusionText, '');
+  eq('sınırlılık alanı boş kalır', fresh.report.limitationsText, '');
+  eq('yöntem varsayılanla gelir', fresh.report.methodText, 'VARSAYILAN YÖNTEM');
+  eq('boş taslak hâlâ BOŞ sayılır', T.isEmptyCase(fresh), true);
+  store.removeItem('akis.defaults');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

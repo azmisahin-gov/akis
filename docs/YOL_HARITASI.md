@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.341.**
+yazılır. **Güncel sürüm: v2.342.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.342 — Kendi varsayılan metinlerim (TAMAMLANDI)
+
+- `userDefaults` / `saveUserDefaults` / `defaultTextFor` / `isDefaultText`
+  (`akis.defaults`, yalnız tarayıcı). Kapsam: yöntem · sınırlılık · sonuç.
+  **Tarafsızlık beyanı kapsam dışı** (kişisel beyan).
+- Varsayılan **dosyaya yazılmaz**: boş alanın yerine basılır → boş taslak kayda
+  yazılmaz (v2.109) ve eski dosya metni sonradan değişmez.
+- Ayarlar paneli (3 metin + “Uygulama varsayılanını yükle” + onaylı sıfırlama);
+  bölüm düzenleyicide **VARSAYILAN METİN** rozeti ve **Varsayılana dön**.
+- Test: `birim [168]`, `rapor` Senaryo 51, `tasarim [2dl]`, `surum`.
 
 ## v2.341 — Tarafsızlık beyanı: 56.12 anlamı (TAMAMLANDI)
 

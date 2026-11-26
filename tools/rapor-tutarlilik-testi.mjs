@@ -1865,5 +1865,23 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('boş beyan satır basmaz', !H2.includes('TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI'));
 }
 
+
+// Senaryo 51: kullanıcı varsayılan metni üç çıktıda (v2.342). Alan boşsa
+// ETKİN varsayılan basılır; metin dosyaya yazılmaz (model boş kalır).
+{
+  console.log('\n[Senaryo 51] kullanıcı varsayılan metni (v2.342)');
+  localStorageStub.setItem('akis.defaults', JSON.stringify({ methodText: 'KULLANICI YÖNTEM METNİ' }));
+  const c = __schemaMod.normalizeCase(withMaterial());
+  c.report.methodText = '';
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('kullanıcı varsayılanı (yöntem)', 'KULLANICI YÖNTEM METNİ', H, U, D);
+  check('model alanı BOŞ kaldı', c.report.methodText === '');
+  localStorageStub.removeItem('akis.defaults');
+  const c2 = __schemaMod.normalizeCase(withMaterial());
+  c2.report.methodText = '';
+  const H2 = htmlText(c2);
+  check('varsayılan silinince kod metni döner', H2.includes('SHA-256') && !H2.includes('KULLANICI YÖNTEM METNİ'));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

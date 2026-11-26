@@ -4276,3 +4276,12 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* ---- v2.341 — Künye beyanı: düğme şeridi -------------------------------- */
 .rtech-actions { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: var(--sp-2) 0 0; }
+
+/* ---- v2.342 — Varsayılan metin rozeti ----------------------------------- */
+/* Metin alanı boşken etkin varsayılan gösterilir; rozet bunu SÖYLER. */
+.rse-field .rse-badge {
+  display: inline-block; margin-left: var(--sp-2); padding: 1px 6px;
+  border: 1px solid var(--line); border-radius: 999px;
+  font-size: var(--fs-xs); font-weight: 700; color: var(--ink-3);
+  vertical-align: middle;
+}

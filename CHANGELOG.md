@@ -6,12 +6,34 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.341.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.342.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.342 — Kendi varsayılan metinlerim (kod değişikliği gerekmez)
+
+**KULLANICI NE GÖRECEK:** **Ayarlar → Kendi varsayılan metinlerim**. Üç metni
+(inceleme yöntemi · teknik sınırlılıklar · sonuç) **bir kez** yazın; her yeni
+dosyada o metin gelir. Bugüne kadar bu metinleri değiştirmek **kod** istiyordu.
+
+- **“Uygulama varsayılanını yükle”** düğmesi mevcut metni alana yükler; oradan
+  düzenlersiniz (boş sayfadan yazmaya gerek yok).
+- **“Uygulama varsayılanlarına dön”** onay ister; yalnız bu tarayıcıdaki
+  varsayılanları sıfırlar, **dosyalarınızdaki metinlere dokunmaz**.
+- **Dosyaya yazılmaz:** alan boşsa etkin varsayılan basılır; siz yazınca alan
+  dosyaya kaydedilir. Böylece **boş taslak kayda yazılmaz** kuralı (v2.109)
+  bozulmaz ve eski dosyanın metni sonradan sessizce değişmez.
+- Bölüm düzenleyicide metin varsayılandan geliyorsa **“VARSAYILAN METİN”**
+  rozeti; düzenlenmiş metinde **“Varsayılana dön”** düğmesi çıkar.
+- **Tarafsızlık beyanı bilinçli olarak kapsam dışı:** kişisel beyandır,
+  kendiliğinden dolmaz (v2.341 kuralı).
+- Depo yalnız bu tarayıcıdır (`akis.defaults`); **pakete girmez** (dürüst sınır:
+  başka bilgisayarda varsayılanlar yoktur, kod varsayılanı kullanılır).
+- Testler: `birim [168]` (21), `rapor` Senaryo 51 (üç çıktı), `tasarim [2dl]`,
+  `surum` `#defaultsHost`. Düzeltme yokken `birim [168]` **KALDI**.
 
 ## v2.341 — Tarafsızlık beyanı: 56.12 anlamı, ölü alan temizliği
 

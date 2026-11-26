@@ -1,4 +1,4 @@
-# Özellikler (v2.341 — mevcut durum)
+# Özellikler (v2.342 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1162,3 +1162,7 @@ Raporun ön bölümünde **RAPOR İÇİ EKLER** satırı vardır; raporun kendi 
 ## Tarafsızlık beyanı (v2.341)
 
 Künyede **“TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI”** satırı vardır. 56.12 künyesi bu alanda “engel bulunmadığı” ya da “varsa açıklama ve merciye bildirim” ister; alan **taahhüt değil beyandır**. Varsayılan **boştur** ve boşsa rapora satır basılmaz; uygulama kendiliğinden beyan yazmaz. **“Engel bulunmadığını yaz”** düğmesi hazır cümleyi yalnız açık tıklamayla koyar (dolu alan ezilmez). Satır, künye alanlarından kapatılabilir; rapor revizyonuna girer. Eski sürümden kalan görünmez `report.annexList` alanı birleştirmeye girmez (ölü alan).
+
+## Varsayılan metinler (v2.342)
+
+**Ayarlar → Kendi varsayılan metinlerim**: inceleme yöntemi, teknik sınırlılıklar ve sonuç metni bir kez yazılır; her yeni dosyada gelir (kod değişikliği gerekmez). Metin **dosyaya yazılmaz**; boş alanın yerine basılır. Bölüm düzenleyicide **VARSAYILAN METİN** rozeti ve **Varsayılana dön** düğmesi vardır. Tarafsızlık beyanı kapsam dışıdır (kişisel beyan, kendiliğinden dolmaz). Depo yalnız bu tarayıcıdır (`akis.defaults`); pakete girmez.

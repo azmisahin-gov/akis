@@ -197,7 +197,9 @@ const REQUIRED_TOPICS = [
   // v2.339 — teslim kontrol listesi (EK-5).
   ['teslim kontrol listesi (EK-5)', /Teslim kontrol listesi \(EK-5|TESLİM KONTROLÜ/],
   // v2.341 — tarafsızlık beyanı (56.12 hâl beyanı).
-  ['tarafsızlık beyanı', /Tarafsızlığı etkileyebilecek hâl beyanı|TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/]
+  ['tarafsızlık beyanı', /Tarafsızlığı etkileyebilecek hâl beyanı|TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/],
+  // v2.342 — kullanıcı varsayılan metinleri.
+  ['varsayılan metinler', /Kendi varsayılan metinlerim|Varsayılan metinler \(v2\.342\)/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
@@ -282,7 +284,9 @@ const REQUIRED_IDS = [
   // v2.330 — fizikî dosya teslim ve iade (form çekmecede, tek düzenleyici).
   ['fizikî dosya formu', 'physicalFileForm'],
   // v2.338 — açılış gecikme uyarısı (JS #dueNotice arıyor).
-  ['gecikme şeridi', 'dueNotice']
+  ['gecikme şeridi', 'dueNotice'],
+  // v2.342 — varsayılan metinler (Ayarlar).
+  ['varsayılan metinler paneli', 'defaultsHost']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

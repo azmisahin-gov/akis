@@ -2606,5 +2606,23 @@ console.log('\n[2dk] Tarafsızlık beyanı paneli (v2.341)');
   check('düğme şeridi biçimli', /\.rtech-actions\s*\{[^}]*display:\s*flex/.test(css));
 }
 
+
+console.log('\n[2dl] Varsayılan metinlerim paneli (v2.342)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  check('ayarlarda varsayılan konağı var', /id="defaultsHost"/.test(html));
+  check('üç metin alanı tanımlı', /data-default-field/.test(app) && /USER_DEFAULT_FIELDS = \['methodText', 'limitationsText', 'conclusionText'\]/.test(app));
+  check('depo anahtarı yalnız tarayıcı', /USER_DEFAULTS_KEY = 'akis\.defaults'/.test(app));
+  check('uygulama varsayılanını yükle düğmesi', /data-default-load/.test(app));
+  check('sıfırlama onay ister', /data-defaults-reset[\s\S]{0,400}askConfirm/.test(app));
+  check('beyan varsayılan kapsamında değil', !/USER_DEFAULT_FIELDS = \[[^\]]*impartiality/.test(app));
+  check('panel beyanın kapsam dışı olduğunu söyler', /Tarafsızlık beyanı burada yoktur/.test(app));
+  check('düzenleyicide varsayılan rozeti', /class="rse-badge"/.test(app) && /\.rse-field \.rse-badge/.test(css));
+  check('düzenleyicide varsayılana dön', /data-rse-default-reset/.test(app));
+  check('tema değişince panel yeniden çizilir', /renderBehaviorPanel\(\);\s*\n\s*renderDefaultsPanel\(\);/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

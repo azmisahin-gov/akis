@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.341';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.341';
+} from './schema.js?v=2.342';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.342';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.341';
+const APP_VERSION = '2.342';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -786,6 +786,54 @@ Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak ola
 const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
 
 Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
+
+// KULLANICI VARSAYILANLARI (v2.342). Depo: yalnız bu tarayıcı (`akis.defaults`).
+// KURAL: varsayılan metin DOSYAYA YAZILMAZ; boş alanın yerine basılır. Böylece
+// "boş taslak kayda yazılmaz" (v2.109) bozulmaz ve bir dosyanın metni sonradan
+// sessizce değişmez. Tarafsızlık beyanı kapsam DIŞIDIR: kişisel beyandır.
+const USER_DEFAULT_FIELDS = ['methodText', 'limitationsText', 'conclusionText'];
+const USER_DEFAULTS_KEY = 'akis.defaults';
+function userDefaults() {
+  const out = {};
+  try {
+    const raw = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem(USER_DEFAULTS_KEY)) || '{}') || {};
+    for (const k of USER_DEFAULT_FIELDS) {
+      const v = raw && raw[k];
+      if (typeof v === 'string' && v.trim()) out[k] = v.slice(0, 20000);
+    }
+  } catch (e) {}
+  return out;
+}
+function saveUserDefaults(patch) {
+  const next = { ...userDefaults() };
+  for (const k of USER_DEFAULT_FIELDS) {
+    if (!patch || !(k in patch)) continue;
+    const v = typeof patch[k] === 'string' ? patch[k] : '';
+    if (v.trim()) next[k] = v.slice(0, 20000);
+    else delete next[k];
+  }
+  try {
+    localStorage.setItem(USER_DEFAULTS_KEY, JSON.stringify(next));
+  } catch (e) {}
+  return next;
+}
+// Kod varsayılanı (uygulamanın kendi metni) — kullanıcı kaydı yoksa kullanılır.
+function codeDefaultText(field) {
+  if (field === 'methodText') return DEFAULT_METHOD;
+  if (field === 'limitationsText') return REPORT_TEXT.defaultLimitations;
+  if (field === 'conclusionText') return REPORT_TEXT.defaultConclusion;
+  return '';
+}
+// ETKİN varsayılan: kullanıcı metni varsa o, yoksa kod varsayılanı.
+function defaultTextFor(field) {
+  const u = userDefaults();
+  if (u[field]) return u[field];
+  return codeDefaultText(field);
+}
+// "Varsayılana dön" ölçütü: metin etkin varsayılanla aynı mı?
+function isDefaultText(field, text) {
+  return String(text == null ? '' : text).trim() === String(defaultTextFor(field)).trim();
+}
 let appState = { cases: [], activeCaseId: null };
 let asrPipeline = null;
 let modelLoading = false;
@@ -1452,7 +1500,7 @@ function freshCase() {
     team: [],
     report: {
       date: dateToday(),
-      methodText: DEFAULT_METHOD,
+      methodText: defaultTextFor('methodText'),
       limitationsText: '',
       conclusionText: ''
     },
@@ -1580,7 +1628,7 @@ function stripDerivedFields(state) {
     // rapora sızmasın diye yeni metne çevrilir. Yalnız eski varsayılanla
     // birebir aynıysa değiştirilir; bilirkişinin yazdığı metne dokunulmaz.
     if (c.methodText === LEGACY_DEFAULT_METHOD) {
-      c.methodText = DEFAULT_METHOD;
+      c.methodText = defaultTextFor('methodText');
       cleaned = true;
     }
     for (const m of c.materials || []) {
@@ -2355,7 +2403,7 @@ function populateQuestionsForm() {
   const c = currentCase();
   if (!c) return;
   $('#assignmentScope').value = c.assignmentScope || '';
-  $('#methodText').value = c.methodText || DEFAULT_METHOD;
+  $('#methodText').value = c.methodText || defaultTextFor('methodText');
   $('#limitationsText').value = c.limitationsText || '';
   $('#conclusionText').value = c.conclusionText || '';
   renderQuestions();
@@ -9871,6 +9919,68 @@ function renderBehaviorPanel() {
   const host = $('#behaviorHost');
   if (host) host.innerHTML = behaviorPanelHtml();
 }
+// AYARLAR → VARSAYILAN METİNLER (v2.342). Kullanıcı kendi standart metnini
+// yazar; yeni dosyada hazır gelir ve KOD değişikliği gerekmez. Depo yalnız bu
+// tarayıcıdır; metin dosyaya YAZILMAZ (boş alanın yerine basılır).
+function defaultsPanelHtml() {
+  const u = userDefaults();
+  const brief = (t) => {
+    const s = String(t || '').replace(/\s+/g, ' ').trim();
+    return s.length > 90 ? s.slice(0, 90) + '…' : s;
+  };
+  const rows = [
+    ['methodText', 'İnceleme yöntemi (s4)'],
+    ['limitationsText', 'Teknik sınırlılıklar'],
+    ['conclusionText', 'Sonuç ve kanaat']
+  ];
+  return `<div class="panel defaults-panel">
+    <div class="panel-heading"><div><div class="eyebrow">VARSAYILAN METİNLER</div>
+      <h3>Kendi varsayılan metinlerim<span class="info-i" tabindex="0" data-tip="Buraya yazdığınız metin yeni dosyada hazır gelir; dosyaya YAZILMAZ, boş alanın yerine basılır. Yalnız bu tarayıcıda saklanır (pakete girmez). Tarafsızlık beyanı burada yoktur: kişisel beyandır, kendiliğinden dolmaz.">i</span></h3></div></div>
+    <p class="queue-copy">Boş bıraktığınız alan uygulamanın varsayılanını kullanır. Yazdığınız metin <b>yalnız bu tarayıcıda</b> saklanır; pakete ve rapora dosya adına yazılmaz.</p>
+    ${rows
+      .map(
+        ([field, label]) =>
+          `<label class="field"><span>${esc(label)}</span><textarea rows="5" data-default-field="${field}" placeholder="Boş: uygulama varsayılanı kullanılır">${esc(u[field] || '')}</textarea></label>` +
+          `<div class="rtech-actions"><button type="button" class="mini-button" data-default-load="${field}" title="Uygulamanın metnini bu alana yükler; sonra düzenleyebilirsiniz.">Uygulama varsayılanını yükle</button></div>` +
+          `<p class="rtech-hint">Etkin varsayılan: ${u[field] ? 'sizin metniniz' : 'uygulama metni'} — “${esc(brief(codeDefaultText(field)))}”</p>`
+      )
+      .join('')}
+    <p class="rtech-hint"><b>Tarafsızlık beyanı burada yoktur.</b> O alan kişisel beyandır; boş başlar ve yalnız sizin yazmanızla dolar (v2.341).</p>
+    <div class="rtech-actions"><button type="button" class="mini-button danger" data-defaults-reset="1" title="Yazdığınız üç metni siler; uygulama varsayılanlarına döner.">Uygulama varsayılanlarına dön</button></div>
+  </div>`;
+}
+function renderDefaultsPanel() {
+  const host = $('#defaultsHost');
+  if (host) host.innerHTML = defaultsPanelHtml();
+}
+// Varsayılan metin işleyicileri (v2.342): yazarken kaydet, odaktan çıkınca
+// rapor önizlemesini tazele. Dolu metin sessizce SİLİNMEZ (reset onay ister).
+$('#defaultsHost')?.addEventListener('input', (e) => {
+  const ta = e.target.closest('[data-default-field]');
+  if (!ta) return;
+  saveUserDefaults({ [ta.dataset.defaultField]: ta.value });
+});
+$('#defaultsHost')?.addEventListener('change', () => renderReport());
+$('#defaultsHost')?.addEventListener('click', async (e) => {
+  const load = e.target.closest('[data-default-load]');
+  if (load) {
+    const f = load.dataset.defaultLoad;
+    saveUserDefaults({ [f]: codeDefaultText(f) });
+    renderDefaultsPanel();
+    renderReport();
+    showToast('Uygulama varsayılanı alana yüklendi; düzenleyebilirsiniz.');
+    return;
+  }
+  if (e.target.closest('[data-defaults-reset]')) {
+    if (!(await askConfirm('Varsayılan metinler', 'Yazdığınız üç varsayılan metin silinecek ve uygulama varsayılanlarına dönülecek. Dosyalarınızdaki metinler DEĞİŞMEZ; yalnız bu tarayıcıdaki varsayılanlar sıfırlanır.'))) return;
+    try {
+      localStorage.removeItem(USER_DEFAULTS_KEY);
+    } catch (err) {}
+    renderDefaultsPanel();
+    renderReport();
+    showToast('Varsayılan metinler uygulama varsayılanlarına döndü.');
+  }
+});
 function followShouldAutoStart(pref) {
   return !!(pref && pref.autoFollow === true);
 }
@@ -14294,8 +14404,20 @@ function renderReportSectionEditor(c) {
       head +
       fields
         .map((f) => {
-          const val = c[f.field] || (f.field === 'methodText' ? DEFAULT_METHOD : '');
-          return `<label class="rse-field"><span>${esc(f.label)}</span><textarea rows="${f.rows}" data-rse-field="${f.field}">${esc(val)}</textarea></label>`;
+          // VARSAYILAN METİN (v2.342): alan boşsa etkin varsayılan GÖSTERİLİR.
+          // Rozet, metnin dosyaya yazılmadığını söyler (yanlış izlenim yok).
+          const stored = String(c[f.field] || '');
+          const val = stored.trim() ? stored : defaultTextFor(f.field);
+          const badge = stored.trim()
+            ? ''
+            : ' <span class="rse-badge" title="Bu metin varsayılandan geliyor; alana yazmaya başladığınızda dosyaya kaydedilir.">VARSAYILAN METİN</span>';
+          const reset = stored.trim()
+            ? `<div class="rtech-actions"><button type="button" class="mini-button" data-rse-default-reset="${f.field}" title="Alanı boşaltır; etkin varsayılan metin yeniden basılır (dosyadaki metin silinir).">Varsayılana dön</button></div>`
+            : '';
+          return (
+            `<label class="rse-field"><span>${esc(f.label)}${badge}</span><textarea rows="${f.rows}" data-rse-field="${f.field}">${esc(val)}</textarea></label>` +
+            reset
+          );
         })
         .join('') +
       `<p class="rse-note">Yazarken model güncellenir; alandan çıkınca önizleme tazelenir. Üç çıktı (HTML/DOCX/UDF) aynı metni üretir.</p>`;
@@ -17193,7 +17315,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
-      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || DEFAULT_METHOD).replace(/\n/g, '<br>')}</p></div>`,
+      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
     tech: () =>
       `<div class="paper-section"><h3>${esc(H('tech'))}</h3><p>${esc(REPORT_TEXT.techIntro)}</p><table class="paper-table cover-fields"><tbody>${reportTechRows(c)
         .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
@@ -17257,7 +17379,7 @@ function renderReport() {
       const meas = limitsMeasuredText(c);
       return (
         `<div class="paper-section"><h3>${esc(H('limits'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.limitsIntro)}</p>` +
-        `<p>${esc(c.limitationsText || REPORT_TEXT.defaultLimitations)}</p>` +
+        `<p>${esc(c.limitationsText || defaultTextFor('limitationsText'))}</p>` +
         (meas ? `<p class="paper-muted">${esc(REPORT_TEXT.limitsMeasuredPrefix)}${esc(meas)}</p>` : '') +
         `</div>`
       );
@@ -17298,7 +17420,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('terms'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.termsIntro)}</p><p>${esc(t)}</p></div>`;
     },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(REPORT_TEXT.scopeNoteText)}</p></div>`,
-    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || REPORT_TEXT.defaultConclusion)}</p></div>`,
+    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
     s7: () => {
       const lines = reportAttachmentLines(c);
       const body = lines.length
@@ -17767,7 +17889,7 @@ function docxXml(c) {
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
       );
     },
-    s4: () => headingXml(H('s4')) + wP(c.methodText || DEFAULT_METHOD),
+    s4: () => headingXml(H('s4')) + wP(c.methodText || defaultTextFor('methodText')),
     tech: () =>
       headingXml(H('tech')) +
       wP(REPORT_TEXT.techIntro) +
@@ -17845,7 +17967,7 @@ function docxXml(c) {
       return (
         headingXml(H('limits')) +
         wP(REPORT_TEXT.limitsIntro, { color: '6F8295', size: 17 }) +
-        wP(c.limitationsText || REPORT_TEXT.defaultLimitations) +
+        wP(c.limitationsText || defaultTextFor('limitationsText')) +
         (meas ? wP(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { color: '6F8295', size: 17, italic: true }) : '')
       );
     },
@@ -17881,7 +18003,7 @@ function docxXml(c) {
       return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17 }) + wP(t);
     },
     scopeNote: () => headingXml(H('scopeNote')) + wP(REPORT_TEXT.scopeNoteText),
-    s6: () => headingXml(H('s6')) + wP(c.conclusionText || REPORT_TEXT.defaultConclusion),
+    s6: () => headingXml(H('s6')) + wP(c.conclusionText || defaultTextFor('conclusionText')),
     s7: () => {
       const lines = reportAttachmentLines(c);
       return (
@@ -18409,7 +18531,7 @@ async function udfDocument(opts = {}) {
     },
     s4: () => {
       el.push(h(H('s4')));
-      el.push(paragraphLines(c.methodText || DEFAULT_METHOD, { justify: true }));
+      el.push(paragraphLines(c.methodText || defaultTextFor('methodText'), { justify: true }));
     },
     tech: () => {
       el.push(h(H('tech')));
@@ -18514,7 +18636,7 @@ async function udfDocument(opts = {}) {
       const meas = limitsMeasuredText(c);
       el.push(h(H('limits')));
       el.push(paragraph(REPORT_TEXT.limitsIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
-      el.push(paragraphLines(c.limitationsText || REPORT_TEXT.defaultLimitations, { justify: true }));
+      el.push(paragraphLines(c.limitationsText || defaultTextFor('limitationsText'), { justify: true }));
       if (meas) el.push(paragraph(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { size: 9, italic: true, color: 'muted', after: 5 }));
     },
     // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK.
@@ -18558,7 +18680,7 @@ async function udfDocument(opts = {}) {
     },
     s6: () => {
       el.push(h(H('s6')));
-      el.push(paragraphLines(c.conclusionText || REPORT_TEXT.defaultConclusion, { justify: true }));
+      el.push(paragraphLines(c.conclusionText || defaultTextFor('conclusionText'), { justify: true }));
     },
     s7: () => {
       el.push(h(H('s7')));
@@ -21906,6 +22028,17 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   if (e.target.closest('[data-rse-field]')) renderReport();
 });
 $('#reportSectionEditorFields')?.addEventListener('click', (e) => {
+  const reset = e.target.closest('[data-rse-default-reset]');
+  if (reset) {
+    const cc = currentCase();
+    if (!cc) return;
+    cc[reset.dataset.rseDefaultReset] = '';
+    persist();
+    renderReport();
+    if (reportEditKey) setReportEditSection(reportEditKey);
+    showToast('Alan varsayılan metne döndü; dosyadaki metin silindi.');
+    return;
+  }
   if (e.target.closest('[data-rse-close]')) {
     setReportEditSection(null);
     return;
@@ -23207,6 +23340,7 @@ function applyTheme({ announce = false } = {}) {
   if (meta) meta.setAttribute('content', theme === 'dark' ? '#12171e' : theme === 'sepia' ? '#efe7d8' : '#14283f');
   renderAppearancePanel();
   renderBehaviorPanel();
+  renderDefaultsPanel();
   // Tuval renkleri token'dan okunur (v2.162): tema değişince yeniden çizilir.
   try {
     const m = activeMaterial();
@@ -23303,6 +23437,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.342': {
+    title: 'Kendi varsayılan metinlerinizi yazın',
+    body:
+      'Ayarlar → “Kendi varsayılan metinlerim”: inceleme yöntemi, teknik sınırlılıklar ve sonuç metnini bir kez yazın; her yeni dosyada o metin gelir. Artık kod değişikliği gerekmez. “Uygulama varsayılanını yükle” ile mevcut metni alıp düzenleyebilirsiniz. Yazdığınız metin yalnız bu tarayıcıda saklanır (pakete girmez) ve dosyaya YAZILMAZ: alan boşsa basılır, siz yazınca dosyaya kaydedilir. Bölüm düzenleyicide metin varsayılandan geliyorsa “VARSAYILAN METİN” rozeti görünür; “Varsayılana dön” ile alan boşaltılır. Tarafsızlık beyanı bilinçli olarak buraya ALINMADI: kişisel beyandır, kendiliğinden dolmaz.'
+  },
   '2.341': {
     title: 'Tarafsızlık beyanı 56.12 anlamına çekildi',
     body:

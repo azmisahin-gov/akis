@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.341.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.342.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8951,3 +8951,51 @@ diyordu ama **ek alanı yoktu** (ekler otomatik).
 satırı **“TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI” + cümle** olarak görünür;
 ikinci tıklama değeri **değiştirmedi**, “alan dolu” uyarısı çıktı; alan
 boşaltılınca satır **kalktı**; kırpma 0 · yatay taşma 0 · JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.342) — Kendi varsayılan metinlerim
+
+| | |
+|---|---|
+| Sürüm | **v2.342** |
+| Testler | **2674 birim + 556 şema** + rapor (51 senaryo) + sürüm + tasarım yeşil |
+| Açık konu | İstenirse “Kayıtlı metinlerim” (tıkla-dolsun kitaplık) ayrı sürüm |
+
+### Neden
+Kullanıcı: “bu alanları değiştirmek için kod mu gerekiyor?” Ölçüm: **evet** —
+`DEFAULT_METHOD` (959 krkt), `defaultLimitations`, `defaultConclusion`,
+`impartialityTemplate` **kodda sabitti**. Dosya içindeki metin düzenlenebiliyordu
+ama **her yeni dosyada ne geleceği** değiştirilemiyordu; bilirkişi her dosyada
+aynı metni silip yeniden yazıyordu.
+
+### Yapılan
+- **Ayarlar → Kendi varsayılan metinlerim**: 3 metin (yöntem · sınırlılıklar ·
+  sonuç). Depo **yalnız tarayıcı** (`akis.defaults`), **pakete girmez**.
+- `defaultTextFor(field)` **etkin varsayılan** (kullanıcı → kod). `saveUserDefaults`
+  boş değeri **siler**, 20.000 karakterde kırpar, sayı/nesne yok sayar.
+- **“Uygulama varsayılanını yükle”** mevcut metni alana kopyalar; **onaylı**
+  “Uygulama varsayılanlarına dön” sıfırlar (dosyalara dokunmaz).
+- Bölüm düzenleyicide **“VARSAYILAN METİN”** rozeti (alan boşsa) ve
+  **“Varsayılana dön”** (alan doluysa; alanı boşaltır, dosyadaki metin silinir).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Varsayılan metin DOSYAYA YAZILMAZ** (yöntem hariç, o zaten türetimde
+   saklanıyordu). Sınırlılık/sonuç alanları **boş kalır**, metin boş alanın
+   yerine basılır → **boş taslak kayda yazılmaz** (v2.109) bozulmaz.
+2. **Tarafsızlık beyanı varsayılan DEĞİLDİR.** Kişisel beyandır; kapsam dışı
+   tutulur, kendiliğinden dolmaz (v2.341).
+3. **Kod varsayılanı geri dönüş yoludur**: kullanıcı metni yoksa uygulama metni
+   kullanılır (geriye uyum).
+4. Depo tarayıcıdır → **paketle taşınmaz**; başka bilgisayarda kod varsayılanı
+   geçerlidir (dürüst sınır, sessiz iddia yok).
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.342` · panel 3 alan; “Uygulama varsayılanını yükle” → **962** karakter;
+kendi metin yazıldı → **yenileme sonrası** yeni dosyada s4 = “BENİM STANDART
+YÖNTEM METNİM”, kod metni **yok**; s6 boşken **rozet var**, yazınca rozet kalkıp
+**Varsayılana dön** çıkıyor, basınca metin varsayılana dönüp **rozet geri
+geliyor**; kırpma 0 · yatay taşma 0 · JS hatası **0**.
+
+### ÖLÇÜM NOTU
+“— Yeni dosya —” **açık taslağı** yeniden kullanır; varsayılanı değiştirdikten
+sonra o taslak eski metni taşır. Doğrulama için **sayfa yenilenir** (yeni boş
+dosya oluşur). Tasarım gereği: açık taslağın metni geriye dönük değiştirilmez.
