@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.342.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.343.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.343 — Kayıtlı metinlerim (tek tıkla alana ekle)
+
+**KULLANICI NE GÖRECEK:** Rapor bölümündeki metin alanının altında **“Kayıtlı
+metinlerim”** kutusu. Yazdığınız metni **kısa bir adla kaydedin**, sonraki
+dosyalarda **tek tıkla** alana ekleyin.
+
+- **Kopyala-ekle:** ekleme metni alana yazar; **canlı bağ yoktur**. Sonrası
+  normal düzenlemedir; üç çıktı (HTML/DOCX/UDF) her zamanki yolu kullanır.
+- **Depo yalnız tarayıcı** (`akis.textLibrary`): dosyaya ve pakete **girmez** →
+  **birleştirme/revizyon çakışması üretmez**. Dürüst sınır: başka bilgisayarda
+  kayıtlar yoktur.
+- **Sessiz ezme yok:** alanda dosyaya kaydedilmiş metin varsa ekleme **onay
+  ister**; silme de onay ister. Kaydetme boş metni reddeder.
+- **Kapsam:** inceleme yöntemi · teknik sınırlılıklar · sonuç alanları. Alan
+  bazlı kayıtlar yalnız o alanda, “genel” kayıtlar her üç alanda görünür.
+- **Tarafsızlık beyanı kütüphanede yoktur** (kişisel beyan); onun için ayrı
+  “Engel bulunmadığını yaz” düğmesi vardır (v2.341).
+- Testler: `birim [169]` (18), `tasarim [2dm]`. Düzeltme yokken `birim [169]`
+  **KALDI**.
 
 ## v2.342 — Kendi varsayılan metinlerim (kod değişikliği gerekmez)
 

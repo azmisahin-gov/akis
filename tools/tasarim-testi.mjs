@@ -2624,5 +2624,21 @@ console.log('\n[2dl] Varsayılan metinlerim paneli (v2.342)');
   check('tema değişince panel yeniden çizilir', /renderBehaviorPanel\(\);\s*\n\s*renderDefaultsPanel\(\);/.test(app));
 }
 
+
+console.log('\n[2dm] Kayıtlı metinlerim (v2.343)');
+{
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  check('kütüphane düğmeleri var', /data-lib-insert/.test(app) && /data-lib-del/.test(app) && /data-lib-save/.test(app));
+  check('kayıt adı alanı var', /data-lib-label/.test(app));
+  // Ekleme MEVCUT yazma yolunu kullanır: alana yazar + input olayı (ayrı model yolu yok).
+  check('ekleme mevcut alan yolunu kullanır', /data-lib-insert[\s\S]{0,1200}data-rse-field[\s\S]{0,400}dispatchEvent\(new Event\('input'/.test(app));
+  check('dolu alan sessizce ezilmez', /data-lib-insert[\s\S]{0,900}askConfirm/.test(app));
+  check('silme onay ister', /data-lib-del[\s\S]{0,500}askConfirm/.test(app));
+  check('kütüphane dosyaya yazılmaz (persist dışı)', !/persistPayloadFor[\s\S]{0,600}textLibrary/.test(app) && /TEXT_LIBRARY_KEY = 'akis\.textLibrary'/.test(app));
+  check('liste düzeni sarar (kırpma yok)', /\.rse-lib-row\s*\{[^}]*flex-wrap:\s*wrap/.test(css) && /\.rse-lib-save\s*\{[^}]*flex-wrap:\s*wrap/.test(css));
+  check('panel kapalı başlar', /<details class="rse-lib"/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

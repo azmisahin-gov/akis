@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.342.**
+yazılır. **Güncel sürüm: v2.343.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.343 — Kayıtlı metinlerim (TAMAMLANDI)
+
+- `textLibrary` / `saveLibraryEntry` / `removeLibraryEntry` / `libraryFor`
+  (`akis.textLibrary`, yalnız tarayıcı; en çok 40 kayıt, 20.000 krkt).
+- Bölüm düzenleyicide kapalı **“Kayıtlı metinlerim (N)”** kutusu: tek tıkla
+  alana ekle, kısa adla kaydet, onaylı sil.
+- **Ekleme mevcut yazma yolunu kullanır** (`data-rse-field` + `input` olayı):
+  ayrı model yolu yok; dolu alan **onayla** değişir.
+- Dosyaya/pakete girmez → birleştirme çakışması yok (dürüst sınır: cihaza özgü).
+- Test: `birim [169]`, `tasarim [2dm]`.
 
 ## v2.342 — Kendi varsayılan metinlerim (TAMAMLANDI)
 

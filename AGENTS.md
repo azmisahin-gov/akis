@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.342.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.343.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8999,3 +8999,38 @@ geliyor**; kırpma 0 · yatay taşma 0 · JS hatası **0**.
 “— Yeni dosya —” **açık taslağı** yeniden kullanır; varsayılanı değiştirdikten
 sonra o taslak eski metni taşır. Doğrulama için **sayfa yenilenir** (yeni boş
 dosya oluşur). Tasarım gereği: açık taslağın metni geriye dönük değiştirilmez.
+
+## YENİ OTURUM DEVRİ (v2.343) — Kayıtlı metinlerim (tıkla-dolsun)
+
+| | |
+|---|---|
+| Sürüm | **v2.343** |
+| Testler | **2692 birim + 556 şema** + rapor (51) + sürüm + tasarım yeşil |
+| Açık konu | Yok (varsayılan + kitaplık turu kapandı) |
+
+### Yapılan
+- **Rapor bölümü düzenleyicisinde** (yöntem · sınırlılıklar · sonuç) kapalı
+  **“Kayıtlı metinlerim (N)”** kutusu: kaydet (kısa ad) · **tek tıkla alana
+  ekle** · onaylı sil.
+- Depo `akis.textLibrary` (**yalnız tarayıcı**, en çok 40 kayıt / 20.000 krkt).
+  **Dosyaya ve pakete girmez** → birleştirme/revizyon çakışması yok.
+- Ekleme **mevcut yazma yolunu** kullanır: `data-rse-field` + `input` olayı →
+  `persist()`; ayrı model yolu yok. Canlı bağ yok (kopya).
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Kütüphane = kopya, referans değil.** Ekleme metni alana yazar; sonrası
+   normal düzenlemedir. Canlı bağ olsaydı eski raporların metni sonradan değişir,
+   birleştirme/revizyon ayrışırdı.
+2. **Dosyaya/pakete girmez.** Kütüphane cihaza özgüdür; paket = dava verisi.
+   (Dürüst sınır: başka bilgisayarda kayıt yok.)
+3. **Sessiz ezme yok:** alanda **dosyaya kaydedilmiş** metin varsa ekleme
+   `askConfirm` ister. Boş alan (yalnızca varsayılan görünüyor) onay istemez —
+   çünkü dosyada metin yoktur.
+4. **Kişisel beyan kütüphanede olmaz:** tarafsızlık beyanı için v2.341’deki
+   “Engel bulunmadığını yaz” düğmesi kullanılır.
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.343` · kutu **(0)** → metin yaz + “Kısa sonuç” adıyla kaydet → **(1)**,
+satır “Kısa sonuç”; alan değiştirilip satıra tıklanınca **onay** çıktı, kabul →
+alan = “BENİM SONUÇ METNİM”, **önizleme güncellendi**; silme **onay** istedi →
+**(0)**; kırpma 0 · yatay taşma 0 · JS hatası **0**.

@@ -1,4 +1,4 @@
-# Özellikler (v2.342 — mevcut durum)
+# Özellikler (v2.343 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1166,3 +1166,7 @@ Künyede **“TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI”** satırı vardır.
 ## Varsayılan metinler (v2.342)
 
 **Ayarlar → Kendi varsayılan metinlerim**: inceleme yöntemi, teknik sınırlılıklar ve sonuç metni bir kez yazılır; her yeni dosyada gelir (kod değişikliği gerekmez). Metin **dosyaya yazılmaz**; boş alanın yerine basılır. Bölüm düzenleyicide **VARSAYILAN METİN** rozeti ve **Varsayılana dön** düğmesi vardır. Tarafsızlık beyanı kapsam dışıdır (kişisel beyan, kendiliğinden dolmaz). Depo yalnız bu tarayıcıdır (`akis.defaults`); pakete girmez.
+
+## Kayıtlı metinlerim (v2.343)
+
+Rapor bölümü metin alanlarının altında **Kayıtlı metinlerim** kutusu vardır: metni kısa adla kaydedin, sonraki dosyalarda **tek tıkla** alana ekleyin. Kayıtlar **yalnız bu tarayıcıda** tutulur (`akis.textLibrary`); dosyaya ve pakete girmez, birleştirmede çakışma üretmez. Ekleme kopyadır (canlı bağ yok); dolu alan **onayla** değişir, silme onay ister. Kapsam: inceleme yöntemi · teknik sınırlılıklar · sonuç; tarafsızlık beyanı kütüphanede yer almaz (kişisel beyan).

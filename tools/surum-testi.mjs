@@ -199,7 +199,9 @@ const REQUIRED_TOPICS = [
   // v2.341 — tarafsızlık beyanı (56.12 hâl beyanı).
   ['tarafsızlık beyanı', /Tarafsızlığı etkileyebilecek hâl beyanı|TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/],
   // v2.342 — kullanıcı varsayılan metinleri.
-  ['varsayılan metinler', /Kendi varsayılan metinlerim|Varsayılan metinler \(v2\.342\)/]
+  ['varsayılan metinler', /Kendi varsayılan metinlerim|Varsayılan metinler \(v2\.342\)/],
+  // v2.343 — kayıtlı metinler (tek tıkla ekle).
+  ['kayıtlı metinler', /Kayıtlı metinlerim/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

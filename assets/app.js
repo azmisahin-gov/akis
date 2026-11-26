@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.342';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.342';
+} from './schema.js?v=2.343';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.343';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.342';
+const APP_VERSION = '2.343';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -816,6 +816,62 @@ function saveUserDefaults(patch) {
     localStorage.setItem(USER_DEFAULTS_KEY, JSON.stringify(next));
   } catch (e) {}
   return next;
+}
+// KAYITLI METİNLERİM (v2.343). Kullanıcı kendi cümlelerini saklar, alana
+// TEK TIKLA kopyalar. Depo yalnız bu tarayıcıdır (`akis.textLibrary`); dosyaya
+// ve pakete GİRMEZ. Canlı bağ YOKTUR: eklenen metin normal alan metni olur.
+const TEXT_LIBRARY_KEY = 'akis.textLibrary';
+const TEXT_LIBRARY_MAX = 40;
+const TEXT_LIBRARY_TEXT_MAX = 20000;
+function textLibrary() {
+  const out = [];
+  try {
+    const raw = JSON.parse((typeof localStorage !== 'undefined' && localStorage.getItem(TEXT_LIBRARY_KEY)) || '[]');
+    if (!Array.isArray(raw)) return out;
+    for (const x of raw) {
+      if (!x || typeof x !== 'object') continue;
+      const text = typeof x.text === 'string' ? x.text : '';
+      if (!text.trim()) continue;
+      const field = USER_DEFAULT_FIELDS.includes(x.field) ? x.field : '';
+      out.push({
+        id: String(x.id || uid()),
+        field,
+        label: String(x.label || '').trim().slice(0, 80) || text.replace(/\s+/g, ' ').trim().slice(0, 40),
+        text: text.slice(0, TEXT_LIBRARY_TEXT_MAX)
+      });
+    }
+  } catch (e) {}
+  return out.slice(-TEXT_LIBRARY_MAX);
+}
+function writeTextLibrary(list) {
+  try {
+    localStorage.setItem(TEXT_LIBRARY_KEY, JSON.stringify((Array.isArray(list) ? list : []).slice(-TEXT_LIBRARY_MAX)));
+  } catch (e) {}
+}
+function saveLibraryEntry(entry) {
+  const e = entry || {};
+  const text = typeof e.text === 'string' ? e.text.trim() : '';
+  if (!text) return null;
+  const item = {
+    id: uid(),
+    field: USER_DEFAULT_FIELDS.includes(e.field) ? e.field : '',
+    label: String(e.label || '').trim().slice(0, 80) || text.replace(/\s+/g, ' ').slice(0, 40),
+    text: text.slice(0, TEXT_LIBRARY_TEXT_MAX)
+  };
+  writeTextLibrary([...textLibrary(), item]);
+  return item;
+}
+function removeLibraryEntry(id) {
+  const key = String(id || '');
+  writeTextLibrary(textLibrary().filter((x) => x.id !== key));
+}
+// Alanda gösterilecekler: o alana özgü + genel metinler; YENİ önce.
+function libraryFor(field) {
+  const f = USER_DEFAULT_FIELDS.includes(field) ? field : '';
+  return textLibrary()
+    .filter((x) => !x.field || x.field === f)
+    .slice()
+    .reverse();
 }
 // Kod varsayılanı (uygulamanın kendi metni) — kullanıcı kaydı yoksa kullanılır.
 function codeDefaultText(field) {
@@ -14414,9 +14470,28 @@ function renderReportSectionEditor(c) {
           const reset = stored.trim()
             ? `<div class="rtech-actions"><button type="button" class="mini-button" data-rse-default-reset="${f.field}" title="Alanı boşaltır; etkin varsayılan metin yeniden basılır (dosyadaki metin silinir).">Varsayılana dön</button></div>`
             : '';
+          // KAYITLI METİNLERİM (v2.343): alanın altında, KAPALI başlar.
+          // Tek tık metni alana YAZAR (kopya); sonra normal düzenlemedir.
+          const lib = libraryFor(f.field);
+          const libRows = lib.length
+            ? lib
+                .map(
+                  (x) =>
+                    `<div class="rse-lib-row"><button type="button" class="mini-button" data-lib-insert="${esc(x.id)}" data-lib-for="${f.field}" title="Bu metni alana yazar; sonra normal düzenleme yapabilirsiniz.">${esc(x.label)}</button>` +
+                    `<button type="button" class="icon-button" data-lib-del="${esc(x.id)}" data-lib-for="${f.field}" aria-label="Kayıtlı metni sil" title="Kayıtlı metni sil">×</button></div>`
+                )
+                .join('')
+            : '<p class="rtech-hint">Bu alan için kayıtlı metin yok. Aşağıdan bu alandaki metni kaydedin.</p>';
+          const libBox =
+            `<details class="rse-lib" data-lib-field="${f.field}"><summary>Kayıtlı metinlerim (${lib.length})</summary>` +
+            `<div class="rse-lib-body">${libRows}` +
+            `<div class="rse-lib-save"><input data-lib-label="${f.field}" placeholder="Kısa ad (ör. Antalya yöntem)" aria-label="Kayıt adı">` +
+            `<button type="button" class="mini-button" data-lib-save="${f.field}">Mevcut metni kaydet</button></div>` +
+            `<p class="rtech-hint">Kayıtlı metinler yalnız bu tarayıcıda tutulur; dosyaya ve pakete girmez. Ekleme metni alana yazar; sonrası normal düzenlemedir.</p></div></details>`;
           return (
             `<label class="rse-field"><span>${esc(f.label)}${badge}</span><textarea rows="${f.rows}" data-rse-field="${f.field}">${esc(val)}</textarea></label>` +
-            reset
+            reset +
+            libBox
           );
         })
         .join('') +
@@ -22027,7 +22102,53 @@ $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
 $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   if (e.target.closest('[data-rse-field]')) renderReport();
 });
-$('#reportSectionEditorFields')?.addEventListener('click', (e) => {
+$('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
+  // KAYITLI METİNLER (v2.343): ekle / sil / kaydet. Hepsi açık eylem.
+  const ins = e.target.closest('[data-lib-insert]');
+  if (ins) {
+    const cc = currentCase();
+    const entry = textLibrary().find((x) => x.id === ins.dataset.libInsert);
+    const field = ins.dataset.libFor;
+    const ta = document.querySelector(`#reportSectionEditorFields [data-rse-field="${field}"]`);
+    if (!cc || !entry || !ta) return;
+    // DOLU ALAN SESSİZCE EZİLMEZ: dosyada metin varsa önce sorulur.
+    if (String(cc[field] || '').trim()) {
+      const ok = await askConfirm('Kayıtlı metni ekle', 'Bu alanda dosyaya kaydedilmiş bir metin var. Kayıtlı metinle DEĞİŞTİRİLECEK. Devam edilsin mi?');
+      if (!ok) return;
+    }
+    ta.value = entry.text;
+    ta.dispatchEvent(new Event('input', { bubbles: true }));
+    renderReport();
+    showToast(`Kayıtlı metin alana yazıldı: ${entry.label}`);
+    return;
+  }
+  const del = e.target.closest('[data-lib-del]');
+  if (del) {
+    const entry = textLibrary().find((x) => x.id === del.dataset.libDel);
+    if (!entry) return;
+    if (!(await askConfirm('Kayıtlı metni sil', `“${entry.label}” kayıtlı metni bu tarayıcıdan silinecek. Dosyalarınızdaki metinler DEĞİŞMEZ.`))) return;
+    removeLibraryEntry(entry.id);
+    if (reportEditKey) setReportEditSection(reportEditKey);
+    showToast('Kayıtlı metin silindi.');
+    return;
+  }
+  const save = e.target.closest('[data-lib-save]');
+  if (save) {
+    const field = save.dataset.libSave;
+    const ta = document.querySelector(`#reportSectionEditorFields [data-rse-field="${field}"]`);
+    const labelEl = document.querySelector(`#reportSectionEditorFields [data-lib-label="${field}"]`);
+    const text = ta ? ta.value : '';
+    if (!String(text || '').trim()) {
+      showToast('Alan boş; kaydedilecek metin yok.', true);
+      return;
+    }
+    const item = saveLibraryEntry({ field, label: labelEl ? labelEl.value : '', text });
+    if (item) {
+      setReportEditSection(reportEditKey);
+      showToast(`Metin kaydedildi: ${item.label}`);
+    }
+    return;
+  }
   const reset = e.target.closest('[data-rse-default-reset]');
   if (reset) {
     const cc = currentCase();
@@ -23437,6 +23558,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.343': {
+    title: 'Kayıtlı metinlerim: tek tıkla alana ekle',
+    body:
+      'Rapor bölümlerindeki metin alanlarının altında “Kayıtlı metinlerim” kutusu var. Yazdığınız metni kısa bir adla kaydedin; sonraki dosyalarda tek tıkla alana ekleyin. Kayıtlar yalnız bu tarayıcıda tutulur; dosyaya ve pakete girmez, birleştirmede çakışma üretmez. Ekleme metni alana YAZAR (kopya); canlı bağ yoktur, sonrası normal düzenlemedir. Alanda dosyaya kaydedilmiş metin varsa ekleme önce onay ister; silme de onay ister. Tarafsızlık beyanı için ayrı “Engel bulunmadığını yaz” düğmesi vardır (kişisel beyan).'
+  },
   '2.342': {
     title: 'Kendi varsayılan metinlerinizi yazın',
     body:

@@ -176,6 +176,7 @@ const EXPOSE = [
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
   'impartialityTemplateText', 'compareCases',
   'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
+  'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
   // v2.330 — fizikî dosya teslim ve iade
   'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
   'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
@@ -7765,6 +7766,52 @@ console.log('[168] Varsayılan metinlerim (v2.342)');
   eq('yöntem varsayılanla gelir', fresh.report.methodText, 'VARSAYILAN YÖNTEM');
   eq('boş taslak hâlâ BOŞ sayılır', T.isEmptyCase(fresh), true);
   store.removeItem('akis.defaults');
+}
+
+
+console.log('[169] Kayıtlı metinlerim (v2.343)');
+{
+  const store = T.store;
+  store.removeItem('akis.textLibrary');
+  // 1) Depo ve sınır
+  eq('kütüphane anahtarı', T.TEXT_LIBRARY_KEY, 'akis.textLibrary');
+  eq('kütüphane sınırı', T.TEXT_LIBRARY_MAX, 40);
+  eq('başlangıçta boş', T.textLibrary().length, 0);
+  // 2) Kaydet → alana özgü görünür
+  const a = T.saveLibraryEntry({ field: 'methodText', label: 'Antalya yöntem', text: 'METİN A' });
+  eq('kayıt kimlik alır', !!a && !!a.id, true);
+  eq('depoda 1 kayıt', T.textLibrary().length, 1);
+  eq('kendi alanında görünür', T.libraryFor('methodText').map((x) => x.text).join('|'), 'METİN A');
+  eq('başka alanda görünmez', T.libraryFor('limitsText').length, 0);
+  // 3) Alanı boş kayıt HER alanda görünür (genel metin)
+  T.saveLibraryEntry({ field: '', label: 'Genel', text: 'GENEL METİN' });
+  eq('genel metin yöntemde', T.libraryFor('methodText').some((x) => x.text === 'GENEL METİN'), true);
+  eq('genel metin sonuçta', T.libraryFor('conclusionText').some((x) => x.text === 'GENEL METİN'), true);
+  // 4) Boş metin kaydedilmez; etiket yoksa metnin başından türetilir
+  eq('boş metin kaydedilmez', T.saveLibraryEntry({ field: 'methodText', label: 'x', text: '   ' }), null);
+  const b = T.saveLibraryEntry({ field: 'limitationsText', text: 'Kısa bir sınırlılık metni.' });
+  eq('etiket metinden türetilir', b.label, 'Kısa bir sınırlılık metni.');
+  // 5) Uzun metin kırpılır (depo şişmesin)
+  T.saveLibraryEntry({ field: 'methodText', label: 'uzun', text: 'y'.repeat(50000) });
+  eq('metin 20000 karaktere kırpılır', T.textLibrary().find((x) => x.label === 'uzun').text.length, 20000);
+  // 6) Silme
+  const before = T.textLibrary().length;
+  T.removeLibraryEntry(a.id);
+  eq('silme çalışır', T.textLibrary().length, before - 1);
+  eq('silinen görünmez', T.libraryFor('methodText').some((x) => x.id === a.id), false);
+  // 7) Sınır aşılırsa en eski düşer (depo sonsuz büyümez)
+  store.removeItem('akis.textLibrary');
+  for (let i = 0; i < T.TEXT_LIBRARY_MAX + 5; i++) T.saveLibraryEntry({ field: '', label: `m${i}`, text: `T${i}` });
+  eq('üst sınır korunur', T.textLibrary().length, T.TEXT_LIBRARY_MAX);
+  eq('en eski düşer', T.textLibrary()[0].label, 'm5');
+  // 8) Bozuk depo çökmez
+  store.setItem('akis.textLibrary', 'bu json değil');
+  eq('bozuk depo boş liste', Array.isArray(T.textLibrary()) && T.textLibrary().length === 0, true);
+  // 9) Kütüphane DOSYAYA sızmaz: yeni dosya varsayılan metni taşır.
+  store.setItem('akis.textLibrary', JSON.stringify([{ id: 'x1', field: 'methodText', label: 'L', text: 'KÜTÜPHANE METNİ' }]));
+  const fresh = T.freshCase();
+  eq('kütüphane dosyaya yazılmaz', fresh.report.methodText !== 'KÜTÜPHANE METNİ', true);
+  store.removeItem('akis.textLibrary');
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
