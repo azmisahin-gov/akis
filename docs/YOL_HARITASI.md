@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.351.**
+yazılır. **Güncel sürüm: v2.352.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.352 — Okunmayan ipucu satırı düzeltildi (TAMAMLANDI)
+
+- `assets/app.css` → `.upload-zone.compact small` metin rengi ham hex yerine
+  **`var(--ink-3)`**; okuma katmanının token kuralı özgüllükle ezilemiyordu.
+- Ölçüm (gerçek Chromium, 11 px): açık **2.48 → 5.93**, sepya **2.30 → 6.11**,
+  koyu 6.44 (değişmedi). Davranış/metin değişmedi.
+- Test: `tasarim-testi [2dq]` (düzeltme yokken 2 kontrol KALDI).
+- Not: tema denetiminde `data-theme` boyamadan önce uygulanmalı (transition
+  donması yanlış ölçüm üretir).
 
 ## v2.345 — Tek düzenleme yeri (TAMAMLANDI)
 

@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.351';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.351';
+} from './schema.js?v=2.352';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.352';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.351';
+const APP_VERSION = '2.352';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -23596,6 +23596,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.352': {
+    title: 'Okunmayan ipucu satırı düzeltildi',
+    body:
+      'Ses görünümündeki dosya yükleme alanının altında desteklenen biçimleri yazan ipucu satırı (WAV · MP3 · M4A · OGG · FLAC · AAC · MP4/MOV/WEBM · delil paketi) açık ve sepya temada çok soluk görünüyordu; okunabilirlik ölçütünün altındaydı. Renk artık tema renginden geliyor: satır üç temada da okunur. İçerik ve davranış değişmedi.'
+  },
   '2.351': {
     title: 'Kurgusal demo paketi eklendi',
     body:

@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.351.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.352.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9225,3 +9225,37 @@ Kullanıcının “boş dosya” çıktısı **eski ayarlarla** üretilmişti (1
 eski yöntem metni, boş tablolar). Güncel kodla yeniden üretmek gerçek durumu
 gösterdi; sorunların bir kısmı eski kayıt, bir kısmı gerçek hataydı. **Ayrım
 ölçümle yapılır:** aynı senaryoyu güncel kodla üret, iki çıktıyı karşılaştır.
+
+## YENİ OTURUM DEVRİ (v2.352) — Okunmayan ipucu satırı + ölçüm tuzağı
+
+| | |
+|---|---|
+| Sürüm | **v2.352** |
+| Testler | `bash tools/test.sh` → 2746 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Açık konu | Ölü kod temizliği (v2.353 adayı); ayrıntısı aşağıda |
+
+### Ne yapıldı
+- `assets/app.css` → `.upload-zone.compact small` metin rengi **ham hex**
+  (`#9aa6b2`) taşıyordu. Okuma katmanının `.upload-zone small` token kuralı
+  (0,1,1) bu kuraldan (0,2,1) **zayıf** olduğu için ezemiyordu.
+- Ölçüm (gerçek Chromium, 11 px, hesaplanan renk): açık **2.48:1**, sepya
+  **2.30:1** (AA altı) → `var(--ink-3)` ile **5.93 / 6.11**; koyu 6.44 (değişmedi).
+- Test: `tasarim [2dq]` — kural token rengi kullanmalı, ham hex taşımamalı,
+  token üç temada AA üstü olmalı. Düzeltme yokken **2 kontrol KALDI**.
+
+### DEĞİŞMEZ DERS: tema denetiminde `data-theme` BOYAMADAN ÖNCE uygulanır
+Bu turda önce yanlış bir "koyu temada beyaz üzerine beyaz" bulgusu çıktı.
+Sebep ölçüm hatasıydı: `data-theme` sayfa yüklendikten **sonra** değiştirildi;
+`--virtual-time-budget` altında CSS `transition` ilerlemediği için geçişin
+**başlangıç** değeri (açık tema beyazı) ölçüldü. Doğrusu:
+`localStorage.setItem('akis.theme', …)` → sayfayı **yeniden yükle** → ölç.
+Ekran görüntüsüyle doğrulamadan "kontrast hatası" yazmayın.
+
+### SIRADAKİ İŞ (v2.353 adayı — onaylandı, henüz yapılmadı)
+Yalnız **testlerde** yaşayan 9 ölü fonksiyon: `buildExportPlan`,
+`isEmptyWorkspace`, `saveCaseNow`, `isHumanApproved`, `profileById`,
+`karaokeSentences`, `activeSentenceIndex`, `segmentSilenceFlag`, `isDefaultText`.
+**Riskli olan `buildExportPlan`:** AGENTS.md "paket yolu eklerken bu beş
+fonksiyondan geçin" diyor ama canlı yol `exportPlanFor` (kapsam/`scope` taşıyan
+sürüm). Belgeyi de düzeltin; yoksa v2.124 sınıfı "kapsam kaybı" geri gelir.
+

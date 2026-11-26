@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.351.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.352.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.352 — Okunmayan ipucu satırı düzeltildi
+
+**KULLANICI NE GÖRECEK:** Ses görünümünde dosya yükleme alanının altındaki
+biçim ipucu satırı (**WAV · MP3 · M4A · OGG · FLAC · AAC · MP4/MOV/WEBM ·
+delil paketi**) artık **açık ve sepya temada da okunuyor**. Önceden bu satır çok
+soluktu (açık temada 2.48:1, sepyada 2.30:1); okunabilirlik ölçütü 4.5:1'dir.
+
+| Ölçüm (gerçek Chromium, 11 px) | Önce | Sonra |
+|---|---|---|
+| Açık tema | 2.48:1 | **5.93:1** |
+| Sepya tema | 2.30:1 | **6.11:1** |
+| Koyu tema | 6.44:1 (zaten iyiydi) | **6.44:1** |
+
+- **Kök neden:** `assets/app.css` içindeki `.upload-zone.compact small` kuralı
+  metin rengini **ham hex** (`#9aa6b2`) olarak taşıyordu; okuma katmanının token
+  kuralı (`.upload-zone small`, özgüllük 0,1,1) bu kuraldan (0,2,1) daha zayıf
+  olduğu için ezemiyordu. Renk artık `var(--ink-3)`.
+- **Davranış değişmedi:** yalnız renk. Metin, punto ve yerleşim aynı.
+- **Koruyan test:** `tasarim-testi [2dq]` (6 kontrol) — kural token rengi
+  kullanmalı, ham hex taşımamalı ve token üç temada AA üstü olmalı. Düzeltme
+  yokken test **KALDI** (2 kontrol).
+- **Yöntem notu:** tema denetimi için `data-theme` **boyamadan önce**
+  (localStorage ile) uygulanmalı; sayfa yüklendikten sonra değiştirmek CSS
+  `transition`'ı dondurup yanlış "beyaz üzerine beyaz" okuması üretiyor.
 
 ## v2.351 — Kurgusal demo paketi
 

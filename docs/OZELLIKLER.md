@@ -1,4 +1,4 @@
-# Özellikler (v2.351 — mevcut durum)
+# Özellikler (v2.352 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,6 +1190,14 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Okunabilirlik: biçim ipucu satırı (v2.352)
+
+Ses görünümündeki yükleme alanının altında desteklenen biçimleri yazan satır
+(WAV · MP3 · M4A · OGG · FLAC · AAC · MP4/MOV/WEBM · delil paketi) artık tema
+renginden (`--ink-3`) gelir. Önce ham hex taşıyordu ve açık/sepya temada
+okunabilirlik ölçütünün altındaydı (2.48:1 / 2.30:1 → 5.93:1 / 6.11:1).
+Davranış değişmedi; koruyan test `tasarim [2dq]`.
 
 ## Kurgusal demo paketi (v2.351)
 

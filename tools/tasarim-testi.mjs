@@ -2694,5 +2694,37 @@ console.log('\n[2dp] Düzenlenebilir rapor metinleri paneli (v2.348)');
   check('panel iki grup (teknik katlanır)', /Ölçüm ve teknik açıklamalar/.test(app));
 }
 
+console.log('\n[2dq] Kompakt yükleme alanı ipucu kontrastı (v2.352)');
+{
+  // ÖLÇÜM (v2.352, gerçek Chromium + hesaplanan renk): `.upload-zone.compact small`
+  // app.css'te HAM HEX (#9aa6b2) taşıyordu. Okuma katmanının `.upload-zone small`
+  // token kuralı (0,1,1) bu kuraldan (0,2,1) DAHA ZAYIF olduğu için ezemiyordu:
+  // açık temada 2.48:1, sepyada 2.30:1 (AA altı). Metin rengi token olmalı.
+  const appCss = read('assets/app.css');
+  const layer = read('assets/reading-layer.css');
+  const decls = [
+    ...(appCss.match(/\.upload-zone\.compact small\s*\{[^}]*\}/g) || []),
+    ...(layer.match(/\.upload-zone\.compact small\s*\{[^}]*\}/g) || [])
+  ];
+  check('kompakt ipucu kuralı bulunur', decls.length > 0, `${decls.length} kural`);
+  check(
+    'kompakt ipucu token rengi kullanır',
+    decls.some((d) => /color:\s*var\(--ink-3\)/.test(d)),
+    decls.map((d) => d.slice(0, 70)).join(' | ')
+  );
+  check(
+    'kompakt ipucu ham hex metin rengi taşımaz',
+    decls.every((d) => !/(^|[;{\s])color:\s*#[0-9a-f]{3,8}/i.test(d)),
+    decls.map((d) => d.slice(0, 70)).join(' | ')
+  );
+  // Hesaplanan kontrast: token üç temada da AA üstü olmalı (tema tablosu).
+  for (const [name, t] of Object.entries(themes)) {
+    const onSurface = contrast(t['ink-3'], t.surface);
+    const onBg = contrast(t['ink-3'], t.bg);
+    const worst = Math.min(onSurface, onBg);
+    check(`${name}: kompakt ipucu AA`, worst >= 4.5, `${worst.toFixed(2)}:1`);
+  }
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
