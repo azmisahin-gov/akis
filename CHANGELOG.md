@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.346.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.347.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.347 — Rapor dili: bilirkişinin anlatımı, jargon yerine sade Türkçe
+
+**KULLANICI NE GÖRECEK:** Rapor metinleri artık **yazılımın yaptıklarını sıralayan
+teknik belge** gibi değil, **bilirkişinin kendi incelemesini anlatan** metin gibi
+okunur.
+
+| Metin | Önce | Sonra |
+|---|---|---|
+| İnceleme yöntemi | “Otomatik çözümleme …”, “her dosyanın SHA-256 özeti hesaplanır” | **Birinci kişi** anlatım; SHA-256 **yalnız hesaplandıysa** gösterilir |
+| Otomatik çözümleme bölümü | “OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI” | **“İNCELEME VE ÇÖZÜMLEME YÖNTEMİ”**; yazılım desteği sade dille |
+| Doğrulama iddiası | “yalnızca uzman onaylı metin rapora aktarılmıştır” | **“kontrolü tamamlanmamış bölümler onaylanmış sayılmaz”** |
+| Konuşmacı notu | “anonim kümeleme / embedding” | **“ön gruplama / yazılım desteği”**; S/K açıklaması **tek yerde** |
+| İşlem günlüğü | “sonradan değiştirilmediğini gösterir” | **“yardımcı olur; tek başına kanıtlamaz”** |
+| Dizi pusulası | “mahkemece sayılarak teslim edilmemiştir” | **“kaydedilmiştir; mahkemece sayım yapılıp yapılmadığı anlaşılamamaktadır”** |
+| Uyarı metni | “elle doldurulmalıdır” | **“ses kaydı üzerinden ayrıca değerlendirilmelidir”** |
+| Gömülü metadata | “Cihaz beyanıdır” | **“dosyaya gömülü metadata”**; doğrulanmış beyan sayılmaz |
+| Ses düzeyi | “elektro-akustik ölçümler” | **“tahmini düzey değerleri; kalibre edilmiş ölçüm değildir”** |
+| İmza/nüsha | “iki nüsha düzenlenir ve taraflarca imzalanır” | **merciin yerleşik işleyişine göre**; e-imza üretilmez |
+
+- **Yapılmayan iş yazılmaz:** SHA-256, doğrulama, sayım, imza ve kümeleme
+  iddiaları gerçek duruma **koşullandı**.
+- **Tekrar yok:** S/K açıklaması tek yerde; konuşmacı notu teknik algoritma
+  anlatmıyor.
+- **Testler:** `birim [170]` (26), `rapor` Senaryo 52 (üç çıktı aynı).
+- **Dürüst sınır:** Bu metinler **hukuki onay değildir**. Danışmana sorulacak
+  başlıklar `docs/METIN_ENVANTERI.md` §9’da listelidir.
 
 ## v2.346 — Metin envanteri: doğru gösterim, kapsam ve durum
 

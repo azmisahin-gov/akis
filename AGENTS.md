@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.346.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.347.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9104,3 +9104,52 @@ bırakmak, biri boş/varsayılan gösterirken diğeri dolu gösterebildiği içi
 `v2.345` · Yöntem sekmesinde **textarea 0**, not var, 3 düğme, “Mesleki sınır”
 kutusu duruyor; “İnceleme yöntemini aç ›” → `dataset.view='report'`, düzenleyici
 açık (`methodText` dolu); kırpma 0 · yatay taşma 0 · JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.347) — Rapor dili: bilirkişi anlatımı
+
+| | |
+|---|---|
+| Sürüm | **v2.347** |
+| Testler | **2718 birim + 556 şema** + rapor (52) + sürüm + tasarım yeşil |
+| Belge | `docs/METIN_ENVANTERI.md` (koddan; §9 danışman listesi) |
+
+### Neden
+Kullanıcı talimatı: rapor **yazılımın yaptıklarını sıralayan teknik belge** değil,
+**bilirkişinin kendi incelemesini anlatan** metin olmalı. ASR/model/embedding gibi
+terimler ana anlatımın zorunlu dili olmamalı; yapılmayan iş yazılmamalı.
+
+### Yapılan (metinler)
+- `DEFAULT_METHOD`: **birinci kişi**; SHA-256 **koşullu** (“hesaplanmışsa …
+  hesaplanmamışsa belirtilir”).
+- `asrIntro/asrLocal/asrVerify`: jargon çıktı; **kontrol durumu kanıt tablosuna**
+  bağlandı (“kontrolü tamamlanmamış bölümler onaylanmış sayılmaz”). Bölüm başlığı
+  **İNCELEME VE ÇÖZÜMLEME YÖNTEMİ** (schema).
+- `speakerMethodNote`: “anonim kümeleme” → **ön gruplama/yazılım desteği**;
+  `speakerCodeNote`: tek S/K açıklaması + “kimlik tespiti değildir”;
+  `speakerFootnote`: yalnız süre/aralık.
+- `integrityNote`: **“yardımcı olur; tek başına kanıtlamaz”**.
+- `physicalNoIndexWarning`: “mahkemece sayılmadı” iddiası → **bilinmiyor**.
+- `physicalSignatureNote`: imza/nüsha **merciin işleyişine** bırakıldı.
+- `warnHallucination`: “elle doldurulmalıdır” → **ses kaydından değerlendirme**.
+- `embeddedIntro`: “cihaz beyanı” → **dosyaya gömülü metadata**.
+- `levelIntro`: **tahmini** düzey; “kalibre edilmiş ölçüm değildir”.
+- `werIntro`: “otomatik çıktı” → **yazılımın ürettiği ilk metin**.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Raporun anlatıcısı bilirkişidir.** Ana metin birinci kişi olabilir; “sistem/
+   otomatik olarak yaptı” dili varsayılan değildir.
+2. **Jargon ana anlatıma zorunlu değil:** ASR · yapay zekâ · model çıktısı ·
+   diarizasyon · embedding · pipeline · otomatik ön atama. Teknik kayıtta ve
+   gerektiğinde kullanılabilir (ör. asr/tech/qc bölümleri).
+3. **Yapılmayan iş yazılmaz:** SHA-256, doğrulama, sayım, imza, kümeleme
+   iddiaları **koşullu**; bilinmeyen “bilinmiyor”.
+4. **Kontrol durumu gerçek:** onaylanmamış bölüm “onaylandı” sayılmaz; kanıt
+   tablosu esastır.
+5. **Tekrar yok:** S/K açıklaması tek yerde; aynı sınır cümlesi iki bölümde
+   yinelenmez.
+6. **Ürün adı yok:** rapor metinlerinde “uygulama/AKİS” geçmez (mevcut test).
+
+### Ölçüm
+`bash tools/test.sh` yeşil; gerçek Chromium: rapor önizlemesinde yeni yöntem
+cümlesi **var**, eski “her dosyanın SHA-256 özeti hesaplanır” **yok**, jargon
+**yok**; JS hatası **0**.

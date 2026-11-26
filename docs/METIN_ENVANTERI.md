@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.346 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.347 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -44,9 +44,9 @@ değişince kendiliğinden değişmez.
 - **Tür:** beyan/otomatik
 - **Durum:** Aktif
 
-> İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
+> İnceleme kapsamında tarafıma sunulan ses kayıtlarını ayrı ayrı ele aldım. Dosyaların tanımlayıcı bilgilerini ve teknik özelliklerini kaydettim. Orijinal kayıtları koruyarak inceleme çalışmalarını bunların çalışma kopyaları üzerinde yürüttüm. Konuşma içeriklerini zaman bilgileriyle birlikte yazılı hâle getirdim. İlk metin taslağının hazırlanmasında bir yazılım desteğinden yararlandıysam, bu taslağı incelemem ve gerçekleştirdiğim kontroller doğrultusunda düzenledim. Kontrolü tamamlanmamış veya anlaşılamayan bölümleri ayrıca belirttim. Duyulmayan konuşmaları tahmin yoluyla tamamlamadım. Konuşmacı etiketlerini kayıt içindeki kişileri ayırt etmek amacıyla kullandım. İncelemeyi etkileyen teknik sınırlılıkları somut bulgular ve ilgili zaman aralıklarıyla açıkladım.
 >
-> Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.
+> Dosyalar için SHA-256 özeti hesaplanmışsa bu değer ve doğrulama durumu gösterilir; özet hesaplanmamışsa bu durum açıkça belirtilir.
 
 ## 4) Katalog metinleri (rapora/üst yazıya giren cümleler)
 
@@ -219,7 +219,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.
+> Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.
 
 **`speakerFootnote`**
 
@@ -229,7 +229,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> S kodları kayıt içidir (her kayıtta S1'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.
+> Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer “—” olarak yazılır.
 
 **`speakerVerifiedNote`**
 
@@ -249,7 +249,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Konuşmacı grupları, ses benzerliğine dayalı anonim kümeleme ile ön-atandı; nihai konuşmacı etiketleri uzman değerlendirmesinin ürünüdür. Bu yöntem bir konuşmacı kimlik tespiti değildir.
+> Konuşmacı etiketlerinin ilk taslağında yazılım desteğinden yararlanıldıysa bu yalnızca ön gruplama içindir; nihai konuşmacı etiketleri bilirkişi değerlendirmesinin ürünüdür. Bu yöntem konuşmacı kimlik tespiti değildir.
 
 **`speakerCodeNote`**
 
@@ -259,7 +259,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.
+> Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme bilirkişi kanaatidir; kimlik tespiti değildir.
 
 **`speakerCodeConflict`**
 
@@ -311,7 +311,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Aşağıdaki değerler ses dosyasının kendi metadata’sından okunmuştur. Cihaz beyanıdır; doğrulanmamıştır ve değiştirilebilir. Tek başına kayıt zamanı kanıtı değildir.
+> Aşağıdaki değerler ses dosyasına gömülü metadata bilgilerinden okunmuştur. Bu bilgiler dosyanın kendi kaydından gelir; kaynağı ve doğruluğu ayrıca doğrulanmadıkça cihaz tarafından doğrulanmış beyan olarak kabul edilmez ve tek başına kayıt zamanı kanıtı sayılmaz.
 
 **`mediumTypes`**
 
@@ -333,7 +333,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümlemenin ÜRETTİĞİ HAM ÇIKTININ (bilirkişi düzeltmesinden ÖNCEKİ hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni DEĞİL modelin kendi çıktısını ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. Model çıktısı saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.
+> Aşağıdaki oranlar, referans metni bulunan kayıtlarda yazılımın ürettiği ilk metnin (bilirkişi düzeltmesinden önceki hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni değil ilk metni ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. İlk metni saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.
 
 **`werNoRows`**
 
@@ -353,7 +353,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Aşağıdaki değerler, kayıtların örneklerinden hesaplanan elektro-akustik ölçümlerdir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu ölçümler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.
+> Aşağıdaki değerler, kayıtların örneklerinden türetilen tahmini düzey değerleridir; kalibre edilmiş akustik ölçüm sonucu değildir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu değerler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.
 
 ### İnceleme özeti, QC, bütünlük
 
@@ -405,7 +405,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.
+> İşlem günlüğü, bu inceleme ortamında kaydedilen işlemlerin mevcut kayıtlar arasındaki tutarlılığını denetlemeye yardımcı olur. Bu kontrol tek başına kayıtların sonradan değiştirilemediğini veya işlemlerin belirtilen kişi ve zamanda gerçekleştiğini kanıtlamaz. Hesaplanan dosya özetleri ve doğrulama durumları ayrıca gösterilir. Özet hesaplanmadıysa “hesaplanmadı” yazılır; eski (hash taşımayan) günlük kayıtları “eski kayıt” olarak işaretlenir.
 
 ### Beyan, gizlilik, dayanak, otomatik çözümleme
 
@@ -427,7 +427,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Ses içeriği ve çözümleme bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.
+> Ses içeriği ve inceleme işlemleri bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.
 
 **`annexLegalText`**
 
@@ -447,7 +447,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Otomatik konuşma tanıma (ASR) yalnızca yardımcı araç olarak kullanılmıştır. Otomatik çıktının tamamı uzman tarafından ses kaydı dinlenerek karşılaştırılmış; denetlenmeyen otomatik metin nihai transkript olarak kabul edilmemiştir. Otomatik sistemin duyulmayan kelimeyi üretmesi veya özel isimleri yanlış tamamlaması mümkündür; bu yüzden rapora onaylanmış metin girer.
+> Konuşma içeriklerinin ilk metin taslağını hazırlarken ilgili yazılımdan yardımcı olarak yararlandım. Oluşan metni ses kayıtlarıyla karşılaştırarak incelemem kapsamında gerekli düzeltmeleri yaptım. Nihai metin ve değerlendirme kendi incelemem doğrultusunda oluşturulmuştur.
 
 **`asrLocal`**
 
@@ -457,7 +457,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Çalışma biçimi: yerel/çevrimdışı (kayıt harici bir hizmete aktarılmamıştır).
+> İşlem, kayıt harici bir hizmete aktarılmadan bu bilgisayarda yürütülmüştür.
 
 **`asrVerify`**
 
@@ -467,7 +467,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> İnsan doğrulaması: bölümler dinlenerek kontrol edilmiş; yalnızca uzman onaylı metin rapora aktarılmıştır.
+> Bölümlerin kontrol durumu raporun kanıt tablosunda gösterilir; kontrolü tamamlanmamış bölümler onaylanmış sayılmaz.
 
 **`enhanceText`**
 
@@ -573,7 +573,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> En az bir kayıtta model anlamlı konuşma üretemedi veya dolgu ifadesi üretti; bu bölümler rapora aktarılmadan önce elle doldurulmalıdır.
+> Bazı bölümlerde konuşma içeriğini güvenilir biçimde belirlemeye elverişli olmayan metinler bulunmaktadır. Bu bölümler ses kaydı üzerinden ayrıca değerlendirilmelidir. Duyulmayan veya anlaşılamayan içerik tahmin yoluyla tamamlanmamıştır.
 
 ### Fizikî dosya (tutanak metinleri)
 
@@ -615,7 +615,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif · tutanak/ek belgesi
 
-> Dizi pusulası verilmediği için dosya içeriği mahkemece sayılarak teslim edilmemiştir; bilirkişi içeriği tek tek saymamıştır.
+> Dizi pusulası teslim edilmediği kaydedilmiştir. Bilirkişi dosya içeriğini tek tek saymamıştır. Mahkemece ayrıca sayım yapılıp yapılmadığı bu kayıttan anlaşılamamaktadır.
 
 **`physicalSignatureNote`**
 
@@ -625,7 +625,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif · tutanak/ek belgesi
 
-> Bu tutanak iki nüsha düzenlenir ve taraflarca imzalanır. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.
+> İmza, nüsha sayısı ve teslim yöntemi ilgili merciin yerleşik işleyişine ve somut işlem koşullarına göre belirlenir. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.
 
 ### Diğer uzun metinler
 
@@ -865,25 +865,25 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 
 | Üretici | Satır | Tür | Metin (kısaltıldı) |
 |---|---|---|---|
-| `reportAnnexBlocks` | 15843 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
-| `reportAnnexBlocks` | 15844 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
-| `letterDefaultBody` | 16492 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
-| `letterPaperHtml` | 16567 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17234 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17245 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17251 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17254 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17257 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17261 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17263 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17271 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `makeDocx` | 18224 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
-| `udfDocument` | 18326 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 18329 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 18334 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 18928 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 18939 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 18940 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `reportAnnexBlocks` | 15838 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
+| `reportAnnexBlocks` | 15839 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
+| `letterDefaultBody` | 16487 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 16562 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17229 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17240 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17246 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17249 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17252 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17256 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17258 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17266 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 18219 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 18321 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 18324 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 18329 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 18923 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 18934 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 18935 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 
@@ -962,7 +962,7 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `noInventoryRow` | İncelemeye sunulan ses kaydı bulunmamaktadır. |
 | `summaryHeading` | RAPORUN KISA ÖZETİ |
 | `enhanceHeading` | SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ |
-| `asrHeading` | OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI |
+| `asrHeading` | İNCELEME VE ÇÖZÜMLEME YÖNTEMİ |
 | `asrHeaders` | KAYIT · MODEL · ÇÖZÜMLEME ZAMANI |
 | `asrNone` | Bu dosyada otomatik konuşma tanıma kullanılmamıştır. |
 | `scopeNoteHeading` | GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI |

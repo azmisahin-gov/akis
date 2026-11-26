@@ -1350,7 +1350,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('bağ varsa kişi sütunu', 'DOSYALAR ARASI KİŞİ', H2, U2, D2);
 
   // S/K açıklaması TEK paragraf: eşleştirme cümlesi bir kez.
-  const one = (t) => (String(t).match(/otomatik kimlik tespiti değildir/g) || []).length;
+  const one = (t) => (String(t).match(/KAYIT İÇİ etiketlerdir/g) || []).length;
   check('S/K açıklaması tekrar etmez (H)', one(H) === 1, String(one(H)));
   check('S/K açıklaması tekrar etmez (U)', one(U) === 1, String(one(U)));
   check('S/K açıklaması tekrar etmez (D)', one(D) === 1, String(one(D)));
@@ -1511,16 +1511,16 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     });
   const on = mk({ speakerMethod: true }, true);
   const H = htmlText(on), U = await udfText(on), D = await docxText(on);
-  checkShared('yöntem notu (üç çıktı)', 'anonim kümeleme', H, U, D);
+  checkShared('yöntem notu (üç çıktı)', 'ön gruplama', H, U, D);
   checkShared('yöntem notu kimlik değil der', 'kimlik tespiti değildir', H, U, D);
   // Kapalı → not yok.
   const off = mk({ speakerMethod: false }, true);
   const Ho = htmlText(off);
-  check('kapalı → not yok', !Ho.includes('anonim kümeleme'), '');
+  check('kapalı → not yok', !Ho.includes('ön gruplama'), '');
   // Açık ama ön-atama kullanılmamış → not yok (uydurma yöntem beyanı yok).
   const noAuto = mk({ speakerMethod: true }, false);
   const Hn = htmlText(noAuto);
-  check('ön-atama yok → not yok', !Hn.includes('anonim kümeleme'), '');
+  check('ön-atama yok → not yok', !Hn.includes('ön gruplama'), '');
 }
 
 // Senaryo 43: terim/konu listesi (v2.311). Opt-in; üç çıktı aynı metni verir.
@@ -1881,6 +1881,21 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   c2.report.methodText = '';
   const H2 = htmlText(c2);
   check('varsayılan silinince kod metni döner', H2.includes('SHA-256') && !H2.includes('KULLANICI YÖNTEM METNİ'));
+}
+
+
+// Senaryo 52: bilirkişi anlatımı ve dürüst sınırlar üç çıktıda (v2.347).
+{
+  console.log('\n[Senaryo 52] bilirkişi anlatımı (v2.347)');
+  const c = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { integrity: true, asr: true } } });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('yöntem birinci kişi', 'tarafıma sunulan ses kayıtlarını ayrı ayrı ele aldım', H, U, D);
+  checkShared('SHA-256 koşullu yazılır', 'hesaplanmamışsa bu durum açıkça belirtilir', H, U, D);
+  checkShared('bütünlük notu sınırı', 'kanıtlamaz', H, U, D);
+  check('elle doldurulmalıdır kalktı (üç çıktı)', !(H + U + D).includes('elle doldurulmalıdır'));
+  checkShared('otomatik çözümleme başlığı sade', 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ', H, U, D);
+  check('ASR/yapay zekâ jargonu yok', !/(\bASR\b|yapay zekâ|model çıktısı)/i.test(H + U + D));
+  checkShared('kontrol durumu kanıt tablosunda', 'kontrolü tamamlanmamış bölümler onaylanmış sayılmaz', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

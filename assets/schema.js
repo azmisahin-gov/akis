@@ -713,7 +713,7 @@ export const REPORT_SECTION_DEFS = [
   // v2.220 — 56.12 şablonunun isteğe bağlı bölümleri. VARSAYILAN KAPALI.
   { key: 'summary', def: false, title: 'RAPORUN KISA ÖZETİ' },
   { key: 'enhance', def: false, title: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ' },
-  { key: 'asr', def: false, title: 'OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI' },
+  { key: 'asr', def: false, title: 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ' },
   { key: 'tech', def: false, title: 'TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI' },
   { key: 'scopeNote', def: false, title: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI' },
   { key: 'qc', def: false, title: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK' },

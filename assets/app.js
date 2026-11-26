@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.346';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.346';
+} from './schema.js?v=2.347';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.347';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.346';
+const APP_VERSION = '2.347';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -292,7 +292,7 @@ const REPORT_TEXT = {
   // v2.273 — S/K ve dosyalar arası eşleştirme açıklaması TEK paragrafta
   // (`speakerCodeNote`). Burada TEKRARLANMAZ (aynı bilgi iki yerde gösterilmez).
   speakerIntro:
-    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri otokorelasyon yöntemiyle hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
+    'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
   noSpeakerRow: ['—', 'Konuşmacı etiketi girilmemiştir.', '', '', '', '', '', ''],
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
@@ -300,12 +300,12 @@ const REPORT_TEXT = {
   spectrogramLabel: 'Spektrogram incelendi',
   werHeading: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
   werIntro:
-    'Aşağıdaki oranlar, referans metni bulunan kayıtlarda otomatik çözümlemenin ÜRETTİĞİ HAM ÇIKTININ (bilirkişi düzeltmesinden ÖNCEKİ hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni DEĞİL modelin kendi çıktısını ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. Model çıktısı saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.',
+    'Aşağıdaki oranlar, referans metni bulunan kayıtlarda yazılımın ürettiği ilk metnin (bilirkişi düzeltmesinden önceki hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni değil ilk metni ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. İlk metni saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.',
   werHeaders: ['KAYIT', 'MODEL', 'REFERANS KELİME', 'ÇIKTI KELİME', 'HATA', 'WER'],
   werNoRows: ['Ölçüm yapılabilecek kayıt yok (referans metni ve çözümleme gerekir).', '', '', '', '', ''],
   levelHeading: 'SES SEVİYESİ VE KIRPILMA ÖLÇÜMÜ',
   levelIntro:
-    'Aşağıdaki değerler, kayıtların örneklerinden hesaplanan elektro-akustik ölçümlerdir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu ölçümler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.',
+    'Aşağıdaki değerler, kayıtların örneklerinden türetilen tahmini düzey değerleridir; kalibre edilmiş akustik ölçüm sonucu değildir. Tepe ve RMS düzeyleri dBFS (0 dBFS = tam ölçek) cinsindendir; tepe kırpılma oranı, örneklerin tam ölçek sınırına dayandığı sürenin örnek sayısına oranıdır. Gürültü tabanı ve sinyal/gürültü oranı, kısa pencerelerin RMS dağılımından okunur. Bu değerler kaydın içeriğini değil, yalnızca düzey ve kırpılma durumunu gösterir; ölçüm yapılmamış kayıt bu tabloya girmez.',
   levelHeaders: ['KAYIT', 'TEPE (dBFS)', 'RMS (dBFS)', 'TEPE KIRPILMA', 'GÜRÜLTÜ TABANI', 'SİNYAL / GÜRÜLTÜ', 'EK ÖLÇÜMLER'],
   rsLevel: 'Seviyesi ölçülen kayıt',
   originHeading: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ',
@@ -327,7 +327,7 @@ const REPORT_TEXT = {
   // GÖMÜLÜ METADATA (v2.217): yalnız kullanıcı açarsa rapora girer.
   embeddedHeading: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)',
   embeddedIntro:
-    'Aşağıdaki değerler ses dosyasının kendi metadata’sından okunmuştur. Cihaz beyanıdır; doğrulanmamıştır ve değiştirilebilir. Tek başına kayıt zamanı kanıtı değildir.',
+    'Aşağıdaki değerler ses dosyasına gömülü metadata bilgilerinden okunmuştur. Bu bilgiler dosyanın kendi kaydından gelir; kaynağı ve doğruluğu ayrıca doğrulanmadıkça cihaz tarafından doğrulanmış beyan olarak kabul edilmez ve tek başına kayıt zamanı kanıtı sayılmaz.',
   embeddedHeaders: ['KAYIT', 'KAYIT ZAMANI (beyan)', 'YAZILIM (beyan)', 'KAYNAK'],
   mediumTypes: [
     'Belirtilmedi',
@@ -393,7 +393,7 @@ const REPORT_TEXT = {
   warnNoMaterials: 'Rapora eklenecek ses kaydı bulunmuyor.',
   warnLanguage: 'En az bir kaydın transkriptinde dil tutarsızlığı olasılığı bulundu.',
   warnHallucination:
-    'En az bir kayıtta model anlamlı konuşma üretemedi veya dolgu ifadesi üretti; bu bölümler rapora aktarılmadan önce elle doldurulmalıdır.',
+    'Bazı bölümlerde konuşma içeriğini güvenilir biçimde belirlemeye elverişli olmayan metinler bulunmaktadır. Bu bölümler ses kaydı üzerinden ayrıca değerlendirilmelidir. Duyulmayan veya anlaşılamayan içerik tahmin yoluyla tamamlanmamıştır.',
   warnPreReport: 'Rapor öncesi kontrol:'
 };
 // Envanter tablosundaki boş satır, tek 'materyal yok' metninden türetilir;
@@ -408,20 +408,21 @@ Object.assign(REPORT_TEXT, {
   enhanceHeading: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ',
   enhanceText:
     'Ses iyileştirme uygulanmamıştır; orijinal kayıt değiştirilmemiştir. Dinleme yardımcıları (hız, filtre, kanal seçimi) yalnızca dinlemeyi kolaylaştırır, kaydı değiştirmez ve deşifre metnini etkilemez. İşlenmiş bir kopya oluşturulmamıştır.',
-  asrHeading: 'OTOMATİK KONUŞMA TANIMA / YAPAY ZEKÂ KULLANIMI',
+  asrHeading: 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ',
   asrIntro:
-    'Otomatik konuşma tanıma (ASR) yalnızca yardımcı araç olarak kullanılmıştır. Otomatik çıktının tamamı uzman tarafından ses kaydı dinlenerek karşılaştırılmış; denetlenmeyen otomatik metin nihai transkript olarak kabul edilmemiştir. Otomatik sistemin duyulmayan kelimeyi üretmesi veya özel isimleri yanlış tamamlaması mümkündür; bu yüzden rapora onaylanmış metin girer.',
+    'Konuşma içeriklerinin ilk metin taslağını hazırlarken ilgili yazılımdan yardımcı olarak yararlandım. Oluşan metni ses kayıtlarıyla karşılaştırarak incelemem kapsamında gerekli düzeltmeleri yaptım. Nihai metin ve değerlendirme kendi incelemem doğrultusunda oluşturulmuştur.',
   asrHeaders: ['KAYIT', 'MODEL', 'ÇÖZÜMLEME ZAMANI'],
   asrNone: 'Bu dosyada otomatik konuşma tanıma kullanılmamıştır.',
-  asrLocal: 'Çalışma biçimi: yerel/çevrimdışı (kayıt harici bir hizmete aktarılmamıştır).',
+  asrLocal:
+    'İşlem, kayıt harici bir hizmete aktarılmadan bu bilgisayarda yürütülmüştür.',
   asrVerify:
-    'İnsan doğrulaması: bölümler dinlenerek kontrol edilmiş; yalnızca uzman onaylı metin rapora aktarılmıştır.',
+    'Bölümlerin kontrol durumu raporun kanıt tablosunda gösterilir; kontrolü tamamlanmamış bölümler onaylanmış sayılmaz.',
   scopeNoteHeading: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI',
   scopeNoteText:
     'Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.',
   privacyHeading: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ',
   privacyText:
-    'Ses içeriği ve çözümleme bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.',
+    'Ses içeriği ve inceleme işlemleri bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.',
   annexHeading: 'EKLER',
   annexLegalText:
     'Yöntemsel dayanaklar dosyaya ve görevlendirme kararına göre bilirkişi tarafından değerlendirilir. Bu raporda doğrulanmamış mevzuat maddesi, standart sürümü veya künye bilgisi kullanılmamıştır. Uluslararası teknik rehberler ancak gerçekten kullanıldıysa tam başlık, sürüm ve tarihle belirtilmelidir; aksi hâlde anılmaz.',
@@ -454,7 +455,7 @@ Object.assign(REPORT_TEXT, {
   // v2.267 — S/K AYRIMI (tek kaynak). Rapor okuyan kişi "iki dosyada da S1 var"
   // sorusunu bu paragrafla yanıtlar.
   speakerCodeNote:
-    'Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme uzman kanaatidir, otomatik kimlik tespiti değildir.',
+    'Bu raporda S kodları (S1, S2…) KAYIT İÇİ etiketlerdir: her kayıtta S1\'den başlar ve kayıtlar arasında aynı kişiyi göstermez. Aynı kişi birden çok kayıtta konuşuyorsa K koduyla (K1, K2…) tek satırda gösterilir (dosyalar arası eşleştirme); bu eşleştirme bilirkişi kanaatidir; kimlik tespiti değildir.',
   recordSpeakersPrefix: 'Bu kaydın konuşmacıları: ',
   // v2.284 — kayıt altı blokları KISA etiketle tanıtılır; uzun açıklama
   // bölüm başında BİR KEZ verilir (her dosyada yinelenmez).
@@ -467,22 +468,16 @@ Object.assign(REPORT_TEXT, {
   speakerDurationHeading: 'KONUŞMACI SÜRELERİ',
   speakerDurationHeaders: ['KOD', 'ETİKET', 'KAYIT', 'BÖLÜM', 'SÜRE', 'İLK – SON'],
   speakerFootnote:
-    'S kodları kayıt içidir (her kayıtta S1\'den başlar); K kodları dosyalar arası kişiyi gösterir ve uzman eşleştirmesidir. Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer "—" olarak yazılır.',
+    'Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer “—” olarak yazılır.',
   speakerVerifiedSuffix: 'doğrulandı',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
   speakerMethodNote:
-    'Konuşmacı grupları, ses benzerliğine dayalı anonim kümeleme ile ön-atandı; nihai konuşmacı etiketleri uzman değerlendirmesinin ürünüdür. Bu yöntem bir konuşmacı kimlik tespiti değildir.',
+    'Konuşmacı etiketlerinin ilk taslağında yazılım desteğinden yararlanıldıysa bu yalnızca ön gruplama içindir; nihai konuşmacı etiketleri bilirkişi değerlendirmesinin ürünüdür. Bu yöntem konuşmacı kimlik tespiti değildir.',
   speakerCodeConflict:
     'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.',
   integrityNote:
-    'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
-});
-// FİZİKÎ DOSYA TESLİM VE İADE (v2.330) — rapor ve tutanak metinleri TEK KAYNAK.
-// Bu kayıt ses kaydı kökeninden (`origin`) AYRIDIR: `origin` sesin nereden
-// geldiğini, bu bölüm kâğıt dosya ve fizikî nesne teslimini anlatır. UYAP
-// erişimi fizikî teslim sayılmaz ve zorunlu değildir.
-Object.assign(REPORT_TEXT, {
+    'İşlem günlüğü, bu inceleme ortamında kaydedilen işlemlerin mevcut kayıtlar arasındaki tutarlılığını denetlemeye yardımcı olur. Bu kontrol tek başına kayıtların sonradan değiştirilemediğini veya işlemlerin belirtilen kişi ve zamanda gerçekleştiğini kanıtlamaz. Hesaplanan dosya özetleri ve doğrulama durumları ayrıca gösterilir. Özet hesaplanmadıysa “hesaplanmadı” yazılır; eski (hash taşımayan) günlük kayıtları “eski kayıt” olarak işaretlenir.',
   physicalAnnexEmpty:
     'Fizikî dosya teslim ve iade kaydı girilmemiştir. Dosya yalnız elektronik (UYAP) erişimle incelendiyse bu bölüm boş kalır; bu bir eksiklik değildir.',
   physicalIntro:
@@ -503,9 +498,9 @@ Object.assign(REPORT_TEXT, {
   physicalMissingWarning:
     'UYARI: Teslim alınan materyallerden biri veya birkaçı iade edilmemiş olarak kayıtlıdır. İade işlemi tamamlanmış sayılmaz.',
   physicalNoIndexWarning:
-    'Dizi pusulası verilmediği için dosya içeriği mahkemece sayılarak teslim edilmemiştir; bilirkişi içeriği tek tek saymamıştır.',
+    'Dizi pusulası teslim edilmediği kaydedilmiştir. Bilirkişi dosya içeriğini tek tek saymamıştır. Mahkemece ayrıca sayım yapılıp yapılmadığı bu kayıttan anlaşılamamaktadır.',
   physicalSignatureNote:
-    'Bu tutanak iki nüsha düzenlenir ve taraflarca imzalanır. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.',
+    'İmza, nüsha sayısı ve teslim yöntemi ilgili merciin yerleşik işleyişine ve somut işlem koşullarına göre belirlenir. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.',
   physicalDocHeading: 'Fizikî dosya belgeleri (taranmış kopyalar)',
   physicalDocHeaders: ['BELGE', 'TÜR', 'TARİH'],
   physicalDocKinds: { index: 'Dizi pusulası', handover: 'Teslim tutanağı', return: 'İade tutanağı', other: 'Diğer' }
@@ -783,9 +778,9 @@ function stripQuickTags(text) {
 const LEGACY_DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden uygulama depolamasında tutulur. Otomatik çözümleme için ses verisi tarayıcı belleğine alınarak işlenir; kaynak ses dosyası üzerinde düzenleme yapılmaz.
 
 Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
-const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
+const DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan ses kayıtlarını ayrı ayrı ele aldım. Dosyaların tanımlayıcı bilgilerini ve teknik özelliklerini kaydettim. Orijinal kayıtları koruyarak inceleme çalışmalarını bunların çalışma kopyaları üzerinde yürüttüm. Konuşma içeriklerini zaman bilgileriyle birlikte yazılı hâle getirdim. İlk metin taslağının hazırlanmasında bir yazılım desteğinden yararlandıysam, bu taslağı incelemem ve gerçekleştirdiğim kontroller doğrultusunda düzenledim. Kontrolü tamamlanmamış veya anlaşılamayan bölümleri ayrıca belirttim. Duyulmayan konuşmaları tahmin yoluyla tamamlamadım. Konuşmacı etiketlerini kayıt içindeki kişileri ayırt etmek amacıyla kullandım. İncelemeyi etkileyen teknik sınırlılıkları somut bulgular ve ilgili zaman aralıklarıyla açıkladım.
 
-Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
+Dosyalar için SHA-256 özeti hesaplanmışsa bu değer ve doğrulama durumu gösterilir; özet hesaplanmamışsa bu durum açıkça belirtilir.`;
 
 // KULLANICI VARSAYILANLARI (v2.342). Depo: yalnız bu tarayıcı (`akis.defaults`).
 // KURAL: varsayılan metin DOSYAYA YAZILMAZ; boş alanın yerine basılır. Böylece
@@ -15517,7 +15512,7 @@ function reportSummaryRows(c) {
     { key: 'transcriptDuration', label: 'DEŞİFRE EDİLEN TOPLAM ZAMAN ARALIĞI', value: segDur ? formatWorkloadDuration(segDur) : '' },
     { key: 'speakerCodes', label: 'KONUŞMACI KODU SAYISI (KİMLİK TESPİTİ DEĞİLDİR)', value: String(codeCount) },
     { key: 'unclearSegments', label: 'ANLAŞILMAYAN / KISMEN ANLAŞILAN BÖLÜM', value: `${inaudible} / ${ambiguous}` },
-    { key: 'asr', label: 'OTOMATİK KONUŞMA TANIMA KULLANIMI', value: asrUsed ? 'Kullanıldı (yerel)' : 'Kullanılmadı' },
+    { key: 'asr', label: 'YAZILIM DESTEĞİ KULLANIMI', value: asrUsed ? 'Kullanıldı (yerel)' : 'Kullanılmadı' },
     { key: 'enhancement', label: 'SES İYİLEŞTİRME', value: 'Uygulanmadı' }
   ];
 }
@@ -23564,6 +23559,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.347': {
+    title: 'Rapor dili bilirkişinin anlatımına çekildi',
+    body:
+      'Rapor metinleri artık yazılım terminolojisi yerine bilirkişinin kendi anlatımını kullanıyor. İnceleme yöntemi birinci kişiyle yazıldı; SHA-256 özeti yalnız hesaplandıysa gösterildiği koşullu olarak belirtildi. Otomatik çözümleme bölümünün başlığı “İnceleme ve çözümleme yöntemi” oldu; “ASR”, “yapay zekâ” ve “model çıktısı” ifadeleri ana anlatımdan çıkarıldı, yazılım desteği sade dille açıklandı. Kontrolü tamamlanmamış bölümlerin onaylanmış sayılmadığı açıkça yazıldı. İşlem günlüğü ve dosya özetlerinin neyi kanıtlayıp neyi kanıtlamadığı sınırıyla anlatıldı. Fizikî teslim metinlerinde imza/nüsha zorunluluk gibi sunulmuyor, bilinmeyen işlem bilinmiyor olarak yazılıyor. Gömülü metadata “cihaz beyanı” değil “dosyaya gömülü metadata” olarak anılıyor; ses düzeyi değerlerinin tahmini olduğu belirtiliyor. Metinler hukuki onay anlamına gelmez; danışman görüşü alınması gereken başlıklar belgede işaretlidir.'
+  },
   '2.346': {
     title: 'Metin envanteri güvenilir hâle getirildi',
     body:

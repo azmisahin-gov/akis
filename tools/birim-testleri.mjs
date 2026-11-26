@@ -174,7 +174,7 @@ const EXPOSE = [
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
-  'impartialityTemplateText', 'compareCases',
+  'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS',
   'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
   // v2.330 — fizikî dosya teslim ve iade
@@ -6364,7 +6364,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   });
   const note = T.speakerMethodNoteText(cAuto);
   eq('otomatik kullanıldıysa not döner', !!note, true);
-  eq('not anonim kümeleme der', /anonim kümeleme/.test(note), true);
+  eq('not yazılım desteği/ön gruplama der', /(ön gruplama|yazılım desteği)/.test(note), true);
   eq('not kimlik değil der', /kimlik tespiti değildir/.test(note), true);
   const cOff = T.emptyCaseForTest({
     id: 'cM2',
@@ -7812,6 +7812,50 @@ console.log('[169] Kayıtlı metinlerim (v2.343)');
   const fresh = T.freshCase();
   eq('kütüphane dosyaya yazılmaz', fresh.report.methodText !== 'KÜTÜPHANE METNİ', true);
   store.removeItem('akis.textLibrary');
+}
+
+
+console.log('[170] Bilirkişi anlatımı ve dürüst sınırlar (v2.347)');
+{
+  const R = T.REPORT_TEXT;
+  const method = T.DEFAULT_METHOD || '';
+  // 1) Yöntem metni BİRİNCİ KİŞİ ve sade: jargon yok.
+  eq('yöntem birinci kişi', /(aldım|kaydettim|yürüttüm|düzenledim|açıkladım)/.test(method), true);
+  const jargon = /(otomatik konuşma tanıma|\bASR\b|yapay zek|model çıktısı|ham model|diarizasyon|speaker embedding|pipeline|otomatik ön atama)/i;
+  eq('yöntemde jargon yok', jargon.test(method), false);
+  // 2) SHA-256 KOŞULLU yazılır (her dosyada hesaplandı iddiası yok).
+  eq('SHA-256 koşullu', /hesaplanmışsa/.test(method) && /hesaplanmamışsa/.test(method), true);
+  eq('koşulsuz SHA-256 iddiası yok', /her dosyanın SHA-256 özeti hesaplanır/i.test(method), false);
+  // 3) Otomatik çözümleme metinleri: jargon yok, kontrol durumu gerçek.
+  for (const k of ['asrIntro', 'asrLocal', 'asrVerify']) {
+    eq(`${k} jargon içermez`, jargon.test(String(R[k] || '')), false);
+  }
+  eq('doğrulama iddiası koşullu', /kontrolü tamamlanmamış bölümler onaylanmış sayılmaz/.test(R.asrVerify), true);
+  eq('tümü onaylandı iddiası yok', /yalnızca uzman onaylı metin rapora aktarılmıştır/i.test(R.asrVerify), false);
+  // 4) Konuşmacı metinleri: tek S/K açıklaması, jargon yok, kimlik iddiası yok.
+  eq('yöntem notunda jargon yok', /(anonim kümeleme|embedding|pipeline)/i.test(R.speakerMethodNote), false);
+  eq('yöntem notu ön gruplama der', /ön gruplama/.test(R.speakerMethodNote), true);
+  eq('S/K açıklaması tek yerde', ((R.speakerCodeNote + ' ' + R.speakerFootnote).match(/KAYIT İÇİ/g) || []).length, 1);
+  eq('kimlik tespiti değildir', /kimlik tespiti değildir/.test(R.speakerCodeNote), true);
+  // 5) Bütünlük: güç aşan iddia yok.
+  eq('günlük kanıtlamaz der', /kanıtlamaz/.test(R.integrityNote), true);
+  eq('günlük yardımcı olur der', /yardımcı olur/.test(R.integrityNote), true);
+  // 6) Fizikî metinler yalnız gerçek işlemi anlatır.
+  eq('dizi pusulası: bilinmeyen bilinmiyor', /anlaşılamamaktadır/.test(R.physicalNoIndexWarning), true);
+  eq('eski mahkeme sayım iddiası yok', /mahkemece sayılarak teslim edilmemiştir/i.test(R.physicalNoIndexWarning), false);
+  eq('imza zorunluluk gibi sunulmaz', /iki nüsha düzenlenir/i.test(R.physicalSignatureNote), false);
+  eq('imza merci işleyişine bırakılır', /yerleşik işleyişine/.test(R.physicalSignatureNote), true);
+  // 7) Uyarı ve metadata metinleri.
+  eq('elle doldurulmalıdır kalktı', /elle doldurulmalıdır/i.test(R.warnHallucination), false);
+  eq('gömülü metadata denir', /gömülü metadata/.test(R.embeddedIntro), true);
+  eq('cihaz beyanı iddiası kalktı', /Cihaz beyanıdır/i.test(R.embeddedIntro), false);
+  // 8) Düzey ölçümü kalibre izlenimi vermez.
+  eq('düzey tahmini denir', /tahmini/.test(R.levelIntro), true);
+  eq('kalibre değildir denir', /kalibre edilmiş akustik ölçüm sonucu değildir/.test(R.levelIntro), true);
+  // 9) Bölüm başlığı sadeleşti.
+  const asrDef = T.REPORT_SECTION_DEFS.find((d) => d.key === 'asr');
+  eq('asr başlığı sade', asrDef.title, 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ');
+  eq('başlıkta ASR/yapay zekâ yok', jargon.test(asrDef.title), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
