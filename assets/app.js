@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.348';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.348';
+} from './schema.js?v=2.349';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.349';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.348';
+const APP_VERSION = '2.349';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -322,7 +322,7 @@ const REPORT_TEXT = {
   // bilgisi edinme tutanağındaki BEYANDIR; cihaz bu ortamda okunmaz.
   acqHeading: 'DELİL EDİNME VE DOĞRULAMA',
   acqIntro:
-    'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
+    'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) hesaplanabildiği ölçüde yeniden hesaplanarak karşılaştırılır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
   acqHeaders: ['KAYIT', 'CİHAZ', 'ETİKET', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
   // GÖMÜLÜ METADATA (v2.217): yalnız kullanıcı açarsa rapora girer.
   embeddedHeading: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)',
@@ -358,7 +358,7 @@ const REPORT_TEXT = {
   deliveryCheckTitle: 'TESLİM KONTROLÜ',
   deliveryCheckHeaders: ['KONTROL', 'DURUM', 'AÇIKLAMA'],
   deliveryCheckNote:
-    'Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırı giderilmeden rapor teslim edilmemelidir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.',
+    'Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırının teslimden önce gözden geçirilmesi önerilir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.',
   deliveryCheckStateOk: 'Tamam',
   deliveryCheckStateMissing: 'Eksik',
   deliveryCheckStateInfo: 'Bilgi',
@@ -404,15 +404,15 @@ REPORT_TEXT.noInventoryRow = [REPORT_TEXT.noMaterials, '', '', '', ''];
 Object.assign(REPORT_TEXT, {
   summaryHeading: 'RAPORUN KISA ÖZETİ',
   summaryIntro:
-    'Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler birbiriyle tutarlıdır.',
+    'Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler aynı veriden üretilir.',
   enhanceHeading: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ',
   enhanceText:
     'Ses iyileştirme uygulanmamıştır; orijinal kayıt değiştirilmemiştir. Dinleme yardımcıları (hız, filtre, kanal seçimi) yalnızca dinlemeyi kolaylaştırır, kaydı değiştirmez ve deşifre metnini etkilemez. İşlenmiş bir kopya oluşturulmamıştır.',
   asrHeading: 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ',
   asrIntro:
     'Konuşma içeriklerinin ilk metin taslağını hazırlarken ilgili yazılımdan yardımcı olarak yararlandım. Oluşan metni ses kayıtlarıyla karşılaştırarak incelemem kapsamında gerekli düzeltmeleri yaptım. Nihai metin ve değerlendirme kendi incelemem doğrultusunda oluşturulmuştur.',
-  asrHeaders: ['KAYIT', 'MODEL', 'ÇÖZÜMLEME ZAMANI'],
-  asrNone: 'Bu dosyada otomatik konuşma tanıma kullanılmamıştır.',
+  asrHeaders: ['KAYIT', 'KULLANILAN YAZILIM', 'ÇÖZÜMLEME ZAMANI'],
+  asrNone: 'Bu dosyada yazılım desteğiyle elde edilmiş bir metin kaydı bulunmamaktadır.',
   asrLocal:
     'İşlem, kayıt harici bir hizmete aktarılmadan bu bilgisayarda yürütülmüştür.',
   asrVerify:
@@ -445,7 +445,7 @@ Object.assign(REPORT_TEXT, {
   limitsMeasuredPrefix: 'Bölüm işaretlerinden ölçülen: ',
   // Orijinalin korunması / bütünlük (v2.261): veriden üretilir, uydurulmaz.
   integrityIntro:
-    'Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içeriğin bit düzeyinde bütünlüğünü gösterir.',
+    'Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içerikle karşılaştırma yapılmasına yarar.',
   integrityHeaders: ['KAYIT', 'SHA-256', 'DOĞRULAMA', 'DELİL GÜNLÜĞÜ'],
   integrityNoHash: 'hesaplanmadı',
   integrityNotVerified: 'Doğrulanmadı',
@@ -475,7 +475,7 @@ Object.assign(REPORT_TEXT, {
   speakerMethodNote:
     'Konuşmacı etiketlerinin ilk taslağında yazılım desteğinden yararlanıldıysa bu yalnızca ön gruplama içindir; nihai konuşmacı etiketleri bilirkişi değerlendirmesinin ürünüdür. Bu yöntem konuşmacı kimlik tespiti değildir.',
   speakerCodeConflict:
-    'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.',
+    'UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodlarının düzeltilmesi önerilir.',
   integrityNote:
     'İşlem günlüğü, bu inceleme ortamında kaydedilen işlemlerin mevcut kayıtlar arasındaki tutarlılığını denetlemeye yardımcı olur. Bu kontrol tek başına kayıtların sonradan değiştirilemediğini veya işlemlerin belirtilen kişi ve zamanda gerçekleştiğini kanıtlamaz. Hesaplanan dosya özetleri ve doğrulama durumları ayrıca gösterilir. Özet hesaplanmadıysa “hesaplanmadı” yazılır; eski (hash taşımayan) günlük kayıtları “eski kayıt” olarak işaretlenir.',
   physicalAnnexEmpty:
@@ -23600,6 +23600,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.349': {
+    title: 'Rapor dilinde kalan ifadeler tamamlandı',
+    body:
+      'Önceki dil turunda kalan ifadeler düzeltildi: boş çözümleme durumu artık “otomatik konuşma tanıma” demiyor; delil edinmede dosya özetlerinin “hesaplanabildiği ölçüde” karşılaştırıldığı yazıyor; bütünlük girişi “bit düzeyinde bütünlüğü gösterir” yerine “karşılaştırma yapılmasına yarar” diyor; kısa özetin ayrıntıyla “aynı veriden üretildiği” belirtiliyor; teslim kontrolü ve konuşmacı kodu uyarıları zorunluluk yerine öneri dili kullanıyor; teknik tabloda “MODEL” yerine “KULLANILAN YAZILIM” yazıyor. Metinler Ayarlar’dan düzenlenebilir; bu değişiklikler yalnız varsayılan metinleri günceller.'
+  },
   '2.348': {
     title: 'Rapor metinleri Ayarlar’dan düzenlenebilir',
     body:

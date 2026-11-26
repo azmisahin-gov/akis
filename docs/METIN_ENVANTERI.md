@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.348 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.349 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -165,7 +165,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler birbiriyle tutarlıdır.
+> Aşağıdaki özet, raporu inceleyen mercie teknik sonucu hızlıca görmesi için hazırlanmıştır; ayrıntı ve görevlendirme sorularına cevaplar ilgili bölümlerdedir. Özet ile ayrıntılı bölümler aynı veriden üretilir.
 
 **`sections`**
 
@@ -269,7 +269,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodları düzeltilmelidir.
+> UYARI: Aynı konuşmacı kodu (ör. S1) birden çok kişiye verilmiş. Bu durumda kod, hangi bölümün kime ait olduğunu göstermez; rapor yayımlanmadan önce konuşmacı kodlarının düzeltilmesi önerilir.
 
 ### Köken, edinme, metadata
 
@@ -301,7 +301,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) yeniden hesaplanarak doğrulanır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.
+> Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) hesaplanabildiği ölçüde yeniden hesaplanarak karşılaştırılır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.
 
 **`embeddedIntro`**
 
@@ -395,7 +395,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içeriğin bit düzeyinde bütünlüğünü gösterir.
+> Orijinal dosya üzerine yazılmamıştır; inceleme, dosyanın değiştirilmeyen kopyası üzerinde yürütülmüştür. Dinleme yardımcıları (hız, filtre, kanal seçimi) kaydı değiştirmez ve deşifre metnini etkilemez. Aşağıdaki özetler, hesaplandıkları andaki içerikle karşılaştırma yapılmasına yarar.
 
 **`integrityNote`**
 
@@ -531,7 +531,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
-> Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırı giderilmeden rapor teslim edilmemelidir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.
+> Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırının teslimden önce gözden geçirilmesi önerilir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.
 
 **`impartialityHint`**
 
@@ -718,6 +718,16 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
 > ZAMAN ARALIĞI · KONUŞMACI KODU · KONUŞMACI ETİKETİ · ÇÖZÜMLENEN KONUŞMA · KONTROL DURUMU
+
+**`asrNone`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
+
+> Bu dosyada yazılım desteğiyle elde edilmiş bir metin kaydı bulunmamaktadır.
 
 **`physicalItemHeaders`**
 
@@ -963,8 +973,7 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `summaryHeading` | RAPORUN KISA ÖZETİ |
 | `enhanceHeading` | SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ |
 | `asrHeading` | İNCELEME VE ÇÖZÜMLEME YÖNTEMİ |
-| `asrHeaders` | KAYIT · MODEL · ÇÖZÜMLEME ZAMANI |
-| `asrNone` | Bu dosyada otomatik konuşma tanıma kullanılmamıştır. |
+| `asrHeaders` | KAYIT · KULLANILAN YAZILIM · ÇÖZÜMLEME ZAMANI |
 | `scopeNoteHeading` | GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI |
 | `privacyHeading` | KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ |
 | `annexHeading` | EKLER |

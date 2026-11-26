@@ -6,12 +6,30 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.348.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.349.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.349 — Rapor dilinde kalan ifadeler
+
+**KULLANICI NE GÖRECEK:** Önceki dil turunda kalan 7 ifade düzeltildi.
+
+| Metin | Önce | Sonra |
+|---|---|---|
+| Boş çözümleme durumu (`asrNone`) | “otomatik konuşma tanıma kullanılmamıştır” | **“yazılım desteğiyle elde edilmiş bir metin kaydı bulunmamaktadır”** |
+| Delil edinme (`acqIntro`) | “özetler yeniden hesaplanarak doğrulanır” | **“hesaplanabildiği ölçüde … karşılaştırılır”** |
+| Bütünlük girişi (`integrityIntro`) | “bit düzeyinde bütünlüğünü gösterir” | **“karşılaştırma yapılmasına yarar”** |
+| Kısa özet (`summaryIntro`) | “birbiriyle tutarlıdır” | **“aynı veriden üretilir”** |
+| Teslim kontrolü (`deliveryCheckNote`) | “teslim edilmemelidir” | **“gözden geçirilmesi önerilir”** |
+| Kod çakışması (`speakerCodeConflict`) | “düzeltilmelidir” | **“düzeltilmesi önerilir”** |
+| Teknik tablo (`asrHeaders`) | “MODEL” | **“KULLANILAN YAZILIM”** |
+
+- Metinler **Ayarlar → Kendi varsayılan metinlerim**’den düzenlenebilir; bu
+  sürüm yalnız **varsayılan** metinleri günceller (kendi metninizi yazdıysanız o korunur).
+- Test: `birim [172]` (10).
 
 ## v2.348 — Rapor metinleri Ayarlar’dan düzenlenebilir (15 metin)
 

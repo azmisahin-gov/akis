@@ -7891,5 +7891,22 @@ console.log('[171] Düzenlenebilir rapor metinleri (v2.348)');
   store.removeItem('akis.defaults');
 }
 
+
+console.log('[172] Rapor dilinde kalan ifadeler (v2.349)');
+{
+  const R = T.REPORT_TEXT;
+  const jargon = /(otomatik konuşma tanıma|\bASR\b|yapay zek|model çıktısı)/i;
+  eq('boş durum metni jargonsuz', jargon.test(R.asrNone), false);
+  eq('edinme ölçümü koşullu', /hesaplanabildiği ölçüde/.test(R.acqIntro), true);
+  eq('bütünlük girişi kanıt iddiası taşımaz', /bit düzeyinde bütünlüğünü gösterir/.test(R.integrityIntro), false);
+  eq('bütünlük girişi karşılaştırma der', /karşılaştırma yapılmasına yarar/.test(R.integrityIntro), true);
+  eq('özet aynı veriden der', /aynı veriden üretilir/.test(R.summaryIntro), true);
+  eq('teslim notu zorunluluk dayatmaz', /teslim edilmemelidir/.test(R.deliveryCheckNote), false);
+  eq('teslim notu öneri dili', /gözden geçirilmesi önerilir/.test(R.deliveryCheckNote), true);
+  eq('kod çakışması öneri dili', /düzeltilmesi önerilir/.test(R.speakerCodeConflict), true);
+  eq('teknik tablo yazılım der', R.asrHeaders.includes('KULLANILAN YAZILIM'), true);
+  eq('teknik tabloda MODEL etiketi yok', R.asrHeaders.includes('MODEL'), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

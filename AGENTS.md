@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.348.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.349.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9153,3 +9153,40 @@ terimler ana anlatımın zorunlu dili olmamalı; yapılmayan iş yazılmamalı.
 `bash tools/test.sh` yeşil; gerçek Chromium: rapor önizlemesinde yeni yöntem
 cümlesi **var**, eski “her dosyanın SHA-256 özeti hesaplanır” **yok**, jargon
 **yok**; JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.348–v2.349) — Metinler düzenlenebilir + dil tamamlandı
+
+| | |
+|---|---|
+| Sürüm | **v2.349** |
+| Testler | **2742 birim + 556 şema** + rapor (53) + sürüm + tasarım yeşil |
+| Açık konu | 7 ölü metnin kanıtlı silinmesi; dosya bazında kapsam/dayanak alanı (gerekirse) |
+
+### v2.348 — 15 metin düzenlenebilir (global varsayılan)
+- `TEXT_DEFAULT_ITEMS` (15) **tek kaynak**; `USER_DEFAULT_FIELDS` bundan türetilir.
+  Kapsam: yöntem · sınırlılık · sonuç · **kapsam beyanı** · **hukuki dayanak** ·
+  **gizlilik** · bütünlük notu · yazılım desteği (4) · WER · seviye · teslim
+  kontrolü · gömülü metadata.
+- Üç çıktı `defaultTextFor(key)` okur; metin **dosyaya yazılmaz**, bölümü açık
+  **tüm** raporlarda kullanılır (panelde açıkça yazar).
+- Panel: tek metin sıfırlama (onaylı), hukuki metin uyarısı, teknik grup katlanır.
+  **Tarafsızlık beyanı kapsam dışı** (kişisel beyan).
+- Test: `birim [171]`, `rapor` Senaryo 53, `tasarim [2dp]`.
+
+### v2.349 — Dil tamamlama (7 ifade)
+`asrNone` · `acqIntro` · `integrityIntro` · `summaryIntro` ·
+`deliveryCheckNote` · `speakerCodeConflict` · `asrHeaders` düzeltildi
+(jargon, kanıt iddiası, zorunluluk dili). Test: `birim [172]`.
+
+### DEĞİŞMEZ KURALLAR
+1. **Global varsayılan ≠ dosya metni.** Varsayılan dosyaya yazılmaz; dosyaya özel
+   metin yalnız `methodText/limitationsText/conclusionText` (+ beyan) alanlarında.
+2. **Global metin değişince eski dosyaların çıktısı da yeni metinle basılır** —
+   panelde uyarı var; metin geri alınabilir (“varsayılana döndür”).
+3. **Hukuki metinlerde doğrulanmamış atıf yasak**; uyarı panelde durur.
+4. Yeni bir katalog metni eklerken: `TEXT_DEFAULT_ITEMS` + render sitesi
+   (`defaultTextFor`) + `birim [171]`/`[172]` + envanter yenileme.
+
+### ÖLÇÜM
+`node tools/metin-envanteri.mjs --check` **GEÇTİ** (1030 satır, v2.349);
+`bash tools/test.sh` yeşil.
