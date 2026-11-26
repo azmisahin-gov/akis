@@ -64,7 +64,7 @@ if (/^\s*import\s/m.test(code)) {
   process.exit(1);
 }
 code += `\n;globalThis.__api={ setCase(c){appState.cases=[c];appState.activeCaseId=c.id;},`
-  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA };\n`;
+  + ` makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase };\n`;
 
 const downloads = [];
 // Gerçek şema modülünü sandbox'a ver: app.js içindeki import bloğu buradan
@@ -97,7 +97,7 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 sandbox.downloadBlob = (blob, name) => downloads.push({ blob, name });
 sandbox.showToast = noop;
 
-const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA } = sandbox.__api;
+const { setCase, makeUdf, makeDocx, renderReport, letterPaperHtml, letterModel, annexDocumentCase, REPORT_TEXT, REPORT_TYPES, LEVELS_SCHEMA, physicalTutanakCase: T_physicalTutanakCase } = sandbox.__api;
 // Bölüm başlıkları TEK KAYNAK: şema. Testte sabit başlık kopyası tutulmaz.
 const SEC_TITLE = Object.fromEntries(__schemaMod.REPORT_SECTION_DEFS.map((d) => [d.key, d.title]));
 
@@ -1634,5 +1634,100 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('serbest ek: içerik', H3.includes('Tapu kaydı incelenmiştir.'));
 }
 
+
+// Senaryo 46: fizikî dosya teslim/iade (v2.330). EK-1 bu kayıttan üretilir;
+// ayrı teslim ve iade tutanakları KENDİ belgesidir ("Rapor eki N." öneki yok).
+{
+  console.log('\n[Senaryo 46] fizikî dosya teslim ve iade (v2.330)');
+  const S = __schemaMod;
+  const base = withMaterial();
+  const c = S.normalizeCase({
+    ...base,
+    physicalFile: {
+      handover: {
+        delivered: true,
+        at: '2026-11-20T09:30',
+        deliveredBy: 'Zabıt Kâtibi Ayşe Yılmaz',
+        receivedBy: 'Örnek Bilirkişi',
+        folders: '2',
+        pages: '',
+        condition: 'sağlam',
+        indexDelivered: 'no',
+        indexNote: 'Mahkeme içeriği tek tek saymadı.',
+        note: ''
+      },
+      items: [
+        { id: 'pf1', type: 'usb', label: 'Kingston DT-1', serial: 'SN-111', seal: 'M-1', condition: 'sağlam', related: true, materialId: 'm1', opened: true, returned: true, returnSeal: 'M-1', returnCondition: 'sağlam' },
+        { id: 'pf2', type: 'cd', label: 'CD-A', seal: 'M-2', condition: 'çizik', related: false, opened: false, returned: false },
+        { id: 'pf3', type: 'dvd', label: 'DVD-B', seal: 'M-3', condition: 'sağlam', related: false, opened: false, returned: true, returnSeal: 'M-3', returnCondition: 'hasarlı' }
+      ],
+      returned: true,
+      return: {
+        at: '2026-11-25T16:00',
+        returnedBy: 'Örnek Bilirkişi',
+        receivedBy: 'Zabıt Kâtibi Ayşe Yılmaz',
+        folders: '2',
+        condition: 'sağlam',
+        indexCompared: 'no',
+        differences: 'CD-A bulunamadı; DVD-B kutusu hasarlı.',
+        note: ''
+      },
+      documents: [{ id: 'd1', name: 'dizi-pusulasi.pdf', kind: 'index', at: '2026-11-20T09:35', size: 1200, note: '' }]
+    }
+  });
+  const H = htmlText(c);
+  const U = await udfText(c);
+  const D = await docxText(c);
+
+  // --- EK-1 üç çıktıda AYNI metni taşır
+  checkShared('EK-1 başlığı', 'MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('teslim tablosu başlığı', REPORT_TEXT.physicalHandoverHeading, H, U, D);
+  checkShared('teslim eden görevli', 'Zabıt Kâtibi Ayşe Yılmaz', H, U, D);
+  checkShared('materyal tablosu başlığı', REPORT_TEXT.physicalItemsHeading, H, U, D);
+  checkShared('materyal etiketi', 'Kingston DT-1', H, U, D);
+  checkShared('iade edilmeyen materyal METNİ', REPORT_TEXT.physicalNotReturned, H, U, D);
+  checkShared('mühür değişti METNİ', REPORT_TEXT.physicalChanged, H, U, D);
+  checkShared('iade tablosu başlığı', REPORT_TEXT.physicalReturnHeading, H, U, D);
+  checkShared('eksik materyal uyarısı', REPORT_TEXT.physicalMissingWarning, H, U, D);
+  checkShared('dizi pusulası verilmedi uyarısı', REPORT_TEXT.physicalNoIndexWarning, H, U, D);
+  checkShared('ilişkili ses kaydı', 'Evet · a.wav', H, U, D);
+  check('EK-1 uydurma sayfa sayısı yazmaz', !/Sayfa sayısı[\s\S]{0,40}\d+/.test(H));
+  check('fizikî blokta uygulama adı yok', !/AKİS/.test(U) && !/AKİS/.test(D));
+
+  // --- Kayıt YOKSA: dürüst açıklama, uydurma satır yok
+  const cEmpty = S.normalizeCase({ ...withMaterial() });
+  const HE = htmlText(cEmpty);
+  const UE = await udfText(cEmpty);
+  checkShared('kayıt yoksa dürüst açıklama', REPORT_TEXT.physicalAnnexEmpty, HE, UE, await docxText(cEmpty));
+  check('kayıt yoksa "Teslim alındı" yazmaz', !HE.includes('Teslim alındı'));
+
+  // --- AYRI TUTANAK BELGELERİ: kendi başlığı, imza alanı, "Rapor eki" YOK
+  const docH = T_physicalTutanakCase(c, 'handover');
+  const HH = htmlText(docH);
+  const UH = await udfText(docH);
+  const DH = await docxText(docH);
+  checkShared('teslim tutanağı başlığı', 'FİZİKÎ DOSYA TESLİM TUTANAĞI', HH, UH, DH);
+  checkShared('teslim tutanağı imza alanı', 'İmza:', HH, UH, DH);
+  checkShared('teslim tutanağı teslim eden sütunu', 'TESLİM EDEN (Görevli)', HH, UH, DH);
+  check('teslim tutanağında "Rapor eki" YOK', !HH.includes('Rapor eki') && !UH.includes('Rapor eki') && !DH.includes('Rapor eki'));
+  // Kendi belgesidir: "EKLER" bölüm başlığı ve ek girişi basılmaz.
+  check('teslim tutanağında "EKLER" başlığı YOK', !HH.includes(SEC_TITLE.annex) && !UH.includes(SEC_TITLE.annex) && !DH.includes(SEC_TITLE.annex));
+  check('teslim tutanağında ek girişi YOK', !HH.includes(REPORT_TEXT.annexIntro));
+  check('ana raporda EKLER başlığı VAR', H.includes(SEC_TITLE.annex));
+  check('teslim tutanağında iade tablosu YOK', !HH.includes(REPORT_TEXT.physicalReturnHeading));
+  check('teslim tutanağında kapak YOK', !HH.includes(REPORT_TYPES.hukuk.heading));
+  check('teslim tutanağında içindekiler YOK', !HH.includes(SEC_TITLE.toc));
+  check('teslim tutanağında uygulama adı YOK', !/AKİS/.test(UH) && !/AKİS/.test(DH));
+
+  const docR = T_physicalTutanakCase(c, 'return');
+  const HR = htmlText(docR);
+  const UR = await udfText(docR);
+  const DR = await docxText(docR);
+  checkShared('iade tutanağı başlığı', 'FİZİKÎ DOSYA İADE TUTANAĞI', HR, UR, DR);
+  checkShared('iade tutanağı iade alan görevli', 'TESLİM ALAN (Görevli)', HR, UR, DR);
+  checkShared('iade tutanağı fark açıklaması', 'CD-A bulunamadı; DVD-B kutusu hasarlı.', HR, UR, DR);
+  checkShared('iade tutanağı eksik uyarısı', REPORT_TEXT.physicalMissingWarning, HR, UR, DR);
+  check('iade tutanağında "Rapor eki" YOK', !HR.includes('Rapor eki'));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

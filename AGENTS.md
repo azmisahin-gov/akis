@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.329.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.330.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8540,3 +8540,59 @@ uzun olduğunda **alt Kapat** görünür alandan çıkabiliyordu.
 | Kapatma (gerçek fare) | üst × ✓ · alt Kapat ✓ · backdrop ✓ |
 | Alt Kapat görünür | **sticky** (kaydırmada sabit) |
 | JS hatası | **0** |
+
+
+## YENİ OTURUM DEVRİ (v2.330) — Fizikî dosya teslim ve iade
+
+| | |
+|---|---|
+| Sürüm | **v2.330** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → birim + şema + rapor + sürüm + tasarım yeşil |
+| Açık konu | Yok (tur kapandı) |
+
+### Ne yapıldı
+
+Mahkemenin **fizikî olarak** teslim ettiği dava dosyası ve ayrı materyaller
+(USB, CD, DVD, harici disk, mühürlü zarf) **Dosya** alanında kaydedilir.
+Teslim ve iade **ayrı tarih/saat**; iade ekranına ilk liste aynen gelir.
+**Hiçbir materyal kendiliğinden iade edilmiş sayılmaz**; eksik materyal uyarı
+olarak görünür. **Ayrı teslim ve iade tutanakları** UDF/DOCX (imza alanlı).
+**EK-1** bu kayıttan üretilir. Belge kopyaları `.akis` paketine girer.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+
+1. **Fizikî teslim zorunlu değildir.** UYAP erişimi fizikî teslim sayılmaz;
+   bölüm boş kalabilir. EK-1 bu durumda dürüst açıklama yazar (uydurma satır yok).
+2. **Varsayılan "iade edilmedi"dir.** Materyal iadesi açık işaret ister;
+   "hepsi iade edildi" varsayımı yasak. `physicalReturnComplete` eksik varsa false.
+3. **Aynı bilgi tek yerde.** EK-1 kaydın çıktısıdır; ayrı kopya tutulmaz.
+   Ses kaydı kökeni (`origin`) ile fizikî dosya (`physicalFile`) karışmaz.
+4. **Belge kopyaları iki paket yolunda da taşınır** (`belge/<dosyaId>/`);
+   tekil ve arşiv paketi aynı sözleşmeyi kullanır (v2.132 dersi).
+5. **Kalıcı silme belgeleri de siler** (`purgeCaseMedia`); kopya temizlik kodu
+   yazmayın.
+6. **E-imza üretilmez**, mahkeme onayı iddia edilmez; tutanakta imza ALANI vardır.
+
+### Ölçüm (gerçek Chromium + CDP, 1440×900)
+
+| Ölçüm | Sonuç |
+|---|---|
+| Kayıt yokken panel | "Kayıt yok" + UYAP notu (zorunlu değil) |
+| Çekmecede 3 materyal + teslim/iade | çip **"1 materyal iade edilmedi"** |
+| Eksik uyarısı / dizi pusulası uyarısı | **var / var** |
+| İade sütunu | `İade edildi · İade edilmedi · İade edildi` |
+| Yenileme sonrası | **korundu** |
+| Kırpılan öğe / yatay taşma (1440→600) | **0 / 0** |
+| Tutanak UDF indirme | `Tutanak_Teslim_…udf`, `Tutanak_Iade_…udf` |
+| Tutanak belgesi | başlıkla başlar; **"EKLER" başlığı ve ek girişi YOK**, "Rapor eki" YOK, imza alanı var, AKİS/uygulama yok, ZWSP yok |
+| Belge ekleme (gerçek dosya girdisi) | `dizi-pusulasi.pdf` eklendi, panelde göründü |
+| Paket (.akis) | `case.json` + `belge/<dosyaId>/<belgeId>_ad`; **bayt bayt aynı** |
+| Rapor önizlemesi EK-1 | teslim tablosu + materyal + eksik uyarısı + dizi uyarısı |
+| Rapor hazırlığı | "İade edilmeyen fizikî materyal" maddesi |
+| JS hatası | **0** |
+
+### Sıradaki iş (adaylar)
+
+- Fizikî dosya için **teslim/iade hatırlatması** (rapor hazırlığında).
+- Birden çok fizikî dosya (klasör bazında ayrı kayıt) — talep olursa.
+- Materyal ↔ ses kaydı bağının raporda ayrı sütun olarak gösterimi.

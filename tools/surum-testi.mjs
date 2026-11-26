@@ -189,7 +189,9 @@ const REQUIRED_TOPICS = [
   ['gözlem işaretleri (telefon/sessizlik)', /telefon görüşmesi[\s\S]{0,300}sessizlik \(konuşma yok\)|sessizlik \(konuşma yok\)[\s\S]{0,300}telefon görüşmesi/i],
   ['sınıflandırma/rol tek kaynak', /Sınıflandırma\/rol seçenekleri tek kaynaktan|sınıflandırma ve rol etiketleri[\s\S]{0,100}tek kaynak/i],
   ['dosyalar arası konuşmacı', /Dosyalar arası konuşmacı kaydı|Dosyalar arası kişi/i],
-  ['delil paketi', /Delil paketi|delil\.json/i]
+  ['delil paketi', /Delil paketi|delil\.json/i],
+  // v2.330 — fizikî dosya teslim ve iade.
+  ['fizikî dosya teslim/iade', /Fizikî dosya teslim ve iade/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));
@@ -214,7 +216,9 @@ const HELP_TOPICS = [
   ['ses gömme ölçümü', /Ses gömme ölçümü/],
   ['hızlı etiket sözlüğü', /Hızlı etiketler \(metne ekleme\)/],
   ['duyulmuyor/anlaşılmaz ayrımı', /\[duyulmuyor\]/],
-  ['dosya görünümü', /Dosya görünümü \(v2\.315\)/]
+  ['dosya görünümü', /Dosya görünümü \(v2\.315\)/],
+  // v2.330 — fizikî dosya teslim ve iade.
+  ['fizikî dosya teslim/iade', /Fizikî dosya teslim ve iade \(v2\.330\)/]
 ];
 for (const [label, rx] of HELP_TOPICS) {
   check(`Yardım ekranı '${label}' konusunu anıyor`, rx.test(helpHtml));
@@ -268,7 +272,9 @@ const REQUIRED_IDS = [
   // v2.315 — Dosya görünümü (sayfa).
   ['dosya görünümü', 'view-case'],
   ['dosya sayfası gövdesi', 'casePageBody'],
-  ['dosya sayfası durumu', 'casePageStatus']
+  ['dosya sayfası durumu', 'casePageStatus'],
+  // v2.330 — fizikî dosya teslim ve iade (form çekmecede, tek düzenleyici).
+  ['fizikî dosya formu', 'physicalFileForm']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

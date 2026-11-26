@@ -94,7 +94,20 @@ import {
   REPORT_PRESET_DEFS,
   reportSectionsForPreset,
   REPORT_SABLON_ORDER,
-  reportPresetLayout
+  reportPresetLayout,
+  // v2.330 — fizikî dosya teslim ve iade
+  PHYSICAL_ITEM_DEFS,
+  PHYSICAL_ITEM_TYPE,
+  PHYSICAL_INDEX_STATE,
+  emptyPhysicalFile,
+  emptyPhysicalItem,
+  normalizePhysicalFile,
+  physicalFileActive,
+  physicalItemReturnState,
+  physicalCounts,
+  physicalMissingItems,
+  physicalReturnComplete,
+  physicalHandoverComplete
 } from '../assets/schema.js';
 
 let passed = 0;
@@ -1800,5 +1813,88 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('birleştirme: qc alanları dolar', mq.merged.report.qcBy === 'A' && mq.merged.report.qcScope === 'B');
 }
 
+
+// ---- v2.330: FİZİKÎ DOSYA TESLİM VE İADE --------------------------------
+{
+  console.log('\n[v2.330] Fizikî dosya teslim ve iade');
+  // Tanımlar TEK KAYNAK: tür kodları ASCII ve her kodun etiketi var.
+  eq('fizikî materyal türü sayısı', PHYSICAL_ITEM_DEFS.length, 8);
+  ok('tür kodları ASCII', PHYSICAL_ITEM_TYPE.every((k) => /^[a-z_]+$/.test(k)));
+  ok('her türün etiketi var', PHYSICAL_ITEM_DEFS.every((d) => !!d.label));
+  eq('dizi pusulası durumları', PHYSICAL_INDEX_STATE, ['yes', 'no', 'unknown']);
+
+  // Eski kayıtta alan yok → boş kayıt (veri kaybı yok, çökme yok).
+  const c0 = normalizeCase({ id: 'pf0', court: 'Mahkeme' });
+  ok('eski kayıtta fizikî alan boş kayıt olur', !!c0.physicalFile && !physicalFileActive(c0.physicalFile));
+  ok('varsayılan teslim yok', c0.physicalFile.handover.delivered === false);
+  ok('varsayılan iade yok', c0.physicalFile.returned === false);
+
+  // normalize: bilinmeyen alan korunur, bilinmeyen tür/kod güvenli.
+  const np = normalizePhysicalFile({
+    handover: { delivered: 'evet', indexDelivered: 'belki', gelecek: 5 },
+    items: [{ type: 'zzz', id: '' }, 'bozuk'],
+    returned: 1,
+    documents: [{ name: 'dizi.pdf', kind: 'xyz' }, { name: '' }]
+  });
+  ok('teslim yalnız true ile doğru', np.handover.delivered === false);
+  eq('bilinmeyen dizi durumu', np.handover.indexDelivered, 'unknown');
+  eq('bilinmeyen alan korunur', np.handover.gelecek, 5);
+  eq('bozuk materyal atılır, tür other', np.items.map((i) => i.type).join(','), 'other');
+  ok('materyal kimliği verilir', !!np.items[0].id);
+  eq('iade yalnız true ile doğru', np.returned, false);
+  eq('boş adlı belge atılır, tür other', np.documents.map((d) => d.kind).join(','), 'other');
+
+  // İade durumu üç hâlli; eksik materyal iadeyi TAMAM yapmaz.
+  const pf = normalizePhysicalFile({
+    handover: { delivered: true, at: '2026-11-20T09:00' },
+    items: [
+      { id: 'a', type: 'usb', seal: 'S1', returned: true },
+      { id: 'b', type: 'cd', seal: 'S2', returned: true, returnSeal: 'S9' },
+      { id: 'c', type: 'dvd' }
+    ],
+    returned: true
+  });
+  eq('iade durumu: iade edildi', physicalItemReturnState(pf.items[0]), 'returned');
+  eq('iade durumu: mühür değişti', physicalItemReturnState(pf.items[1]), 'changed');
+  eq('iade durumu: iade edilmedi', physicalItemReturnState(pf.items[2]), 'notReturned');
+  eq('özet sayıları', physicalCounts(pf), {
+    items: 3, related: 0, opened: 0, returned: 1, changed: 1, missing: 1,
+    handoverDelivered: true, fileReturned: true, indexDelivered: 'unknown',
+    indexCompared: 'unknown', documents: 0
+  });
+  eq('eksik materyal', physicalMissingItems(pf).map((x) => x.id), ['c']);
+  ok('eksik varken iade tamam DEĞİL', physicalReturnComplete(pf) === false);
+  ok('teslim kaydı tam', physicalHandoverComplete(pf) === true);
+  ok('yalnız materyal varsa da veri sayılır', physicalFileActive({ items: [emptyPhysicalItem()] }) === true);
+
+  // Birleştirme: boş alan dolar, farklı dolu değer çakışma (sessiz ezme yok).
+  const mine = normalizeCase({ id: 'pfm', updatedAt: '2026-11-20T10:00', physicalFile: { handover: { delivered: true, at: '2026-11-20T09:00', deliveredBy: 'A' } } });
+  const theirs = normalizeCase({
+    id: 'pfm',
+    updatedAt: '2026-11-21T10:00',
+    physicalFile: {
+      handover: { delivered: true, at: '2026-11-20T09:00', deliveredBy: 'B', folders: '2' },
+      items: [{ id: 'x1', type: 'usb', label: 'USB-X' }],
+      documents: [{ id: 'd1', name: 'dizi.pdf', kind: 'index' }]
+    }
+  });
+  const m = mergeCases(mine, theirs);
+  eq('birleştirme: boş alan dolar', m.merged.physicalFile.handover.folders, '2');
+  eq('birleştirme: dolu farklı değer KORUNUR', m.merged.physicalFile.handover.deliveredBy, 'A');
+  ok('birleştirme: farklı değer çakışma bildirir', m.conflicts.some((x) => x.kind === 'physical-file'));
+  eq('birleştirme: materyal eklenir', m.merged.physicalFile.items.map((x) => x.id), ['x1']);
+  eq('birleştirme: belge eklenir', m.merged.physicalFile.documents.map((x) => x.id), ['d1']);
+  const cmp = compareCases(mine, theirs);
+  eq('önizleme: çakışma', cmp.physical.conflicts.length, 1);
+  eq('önizleme: doldurulacak alan', cmp.physical.filled, 1);
+  eq('önizleme: yeni materyal', cmp.physical.itemsAdded, 1);
+  eq('önizleme: yeni belge', cmp.physical.docsAdded, 1);
+  // Materyal iadesi ilerlemişse "alınacak" sayılır ve birleştirme alır.
+  const mine2 = normalizeCase({ id: 'pfm2', physicalFile: { items: [{ id: 'y1', type: 'usb' }] } });
+  const theirs2 = normalizeCase({ id: 'pfm2', physicalFile: { items: [{ id: 'y1', type: 'usb', returned: true, returnSeal: 'M9' }] } });
+  eq('önizleme: iade ilerlemesi', compareCases(mine2, theirs2).physical.returnsAdvanced, 1);
+  const m2 = mergeCases(mine2, theirs2);
+  ok('birleştirme: iade bilgisi alınır', m2.merged.physicalFile.items[0].returned === true && m2.merged.physicalFile.items[0].returnSeal === 'M9');
+}
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);
 process.exit(failed === 0 ? 0 : 1);

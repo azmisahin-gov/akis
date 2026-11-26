@@ -2474,5 +2474,43 @@ console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
   check('araçlar alt satıra inebilir', /\.la-row \.la-tools \{[^}]*margin-left: auto/.test(layer));
 }
 
+
+console.log('\n[2dg] Fizikî dosya teslim ve iade (v2.330)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  const tokens = read('assets/tokens.css');
+  // 1) Düzenleyici çekmecede, özet Dosya sayfasında; form kimliği ÇOĞALTILMAZ.
+  check('çekmecede fizikî dosya formu', /id="physicalFileForm"/.test(html));
+  check('form tek yerde (JS üretir)', /function renderPhysicalForm\(/.test(app));
+  check('Dosya sayfasında özet panel', /function physicalPanelHtml\(/.test(app) && /physicalPanelHtml\(c\)/.test(app));
+  // 2) Kırpma yasak: sığmayan öğe SARAR; gizli yatay kaydırma yok.
+  check('panel eylemleri sarar', /\.physical-panel \.pf-actions \{[^}]*flex-wrap: wrap/.test(layer));
+  check('materyal işaretleri sarar', /\.pf-item-flags \{[^}]*flex-wrap: wrap/.test(layer));
+  check('tablo hücresi sarar', /\.physical-panel \.pf-table th,[\s\S]{0,120}overflow-wrap: anywhere/.test(layer));
+  check('fizikî kurallarda gizli kesme yok', !/\.pf-[a-z-]+ \{[^}]*text-overflow: ellipsis/.test(layer));
+  // 3) Metin rengi token'dan gelir (ham hex yasak).
+  const physRules = layer.split('\n').filter((l) => /^\.pf-|^\.physical-panel/.test(l)).join('\n');
+  check('fizikî kurallarda ham hex yok', !/#[0-9a-fA-F]{3,8}\b/.test(physRules), physRules.match(/#[0-9a-fA-F]{3,8}/)?.join(',') || '');
+  check('durum renkleri token', /\.pf-ok \{[^}]*var\(--green\)/.test(layer) && /\.pf-bad \{[^}]*var\(--red\)/.test(layer) && /\.pf-warn \{[^}]*var\(--gold\)/.test(layer));
+  // 4) Durum yalnız renkle anlatılmaz: metin de yazar.
+  check('iade durumu METİN taşır', /physicalNotReturned:|physicalReturned:|physicalChanged:/.test(app));
+  check('panelde uyarı metni var', /materyal İADE EDİLMEDİ/.test(app));
+  // 5) Punto alt sınırı (≥11px): yeni kural ham px yazmaz, token kullanır.
+  check('fizikî kurallarda punto token', /font-size: var\(--fs-(2xs|xs|sm)\)/.test(layer));
+  check('fizikî kurallarda ham font-size px yok', !/\.pf-[a-z-]+ \{[^}]*font-size: \d+px/.test(layer));
+  // 6) Erişilebilirlik: düğmeler ipucu taşır.
+  check('tutanak düğmeleri ipuçlu', /data-pf-tutanak="handover:udf" title=/.test(app) && /data-pf-tutanak="return:udf" title=/.test(app));
+  // 7) UYAP erişimi fizikî teslim sayılmaz — ekranda yazılı.
+  check('UYAP ayrımı ekranda', /UYAP erişimi fizikî teslim sayılmaz/.test(html));
+  // 8) E-imza iddiası yok.
+  check('e-imza üretilmediği yazılı', /e-imza üretmez/.test(html) && /e-imza üretmez/i.test(app));
+  // 9) Token bütünlüğü: kullanılan renk token'ları üç temada tanımlı.
+  for (const t of ['--green', '--red', '--gold']) {
+    check(`${t} tanımlı`, new RegExp(`\\${t}:`).test(tokens));
+  }
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

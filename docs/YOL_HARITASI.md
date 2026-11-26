@@ -2,11 +2,24 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.329.**
+yazılır. **Güncel sürüm: v2.330.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.330 — Fizikî dosya teslim ve iade (TAMAMLANDI)
+
+- **Dosya** alanında yeni bölüm: kâğıt dava dosyası + fizikî materyal
+  (USB/CD/DVD/harici disk/mühürlü zarf) teslim ve iade kaydı.
+- Teslim ve iade **ayrı** tarih/saat; iade listesi teslimden aynen gelir;
+  **iade edilmeyen materyal görünür uyarı**.
+- Dizi pusulası: verildi/verilmedi/belirtilmedi + taranmış kopya.
+- **Ayrı teslim ve iade tutanakları** (UDF/DOCX, imza alanlı).
+- **EK-1** bu kayıttan üretilir; ses kaydı kökeniyle karışmaz.
+- Belge kopyaları `.akis` paketine girer; kalıcı silmede temizlenir.
+- UYAP erişimi fizikî teslim sayılmaz; bölüm **zorunlu değildir**.
+- Test: `birim [162]`, `rapor` 46, `tasarim [2dg]`.
 
 ## v2.329 — `T.C.` iki şablonda da + punto denetimi (TAMAMLANDI)
 

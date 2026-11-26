@@ -130,16 +130,30 @@ import {
   letterMovedSectionKeys,
   letterMovedAnnexKeys,
   removeSectionsFromLetterAnnexes,
-  removeAnnexKeyFromLetterAnnexes
-} from './schema.js?v=2.329';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.329';
+  removeAnnexKeyFromLetterAnnexes,
+  // FİZİKÎ DOSYA TESLİM VE İADE (v2.330)
+  PHYSICAL_ITEM_DEFS,
+  PHYSICAL_ITEM_TYPE,
+  PHYSICAL_ITEM_LABEL,
+  PHYSICAL_INDEX_STATE,
+  PHYSICAL_INDEX_LABEL,
+  emptyPhysicalItem,
+  normalizePhysicalFile,
+  physicalFileActive,
+  physicalItemReturnState,
+  physicalCounts,
+  physicalMissingItems,
+  physicalReturnComplete,
+  physicalHandoverComplete
+} from './schema.js?v=2.330';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.330';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.329';
+const APP_VERSION = '2.330';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -440,6 +454,39 @@ Object.assign(REPORT_TEXT, {
   integrityNote:
     'SHA-256 özeti tek başına kaydın kim tarafından, hangi cihazla veya ne zaman oluşturulduğunu kanıtlamaz; yalnız hesaplama anındaki içerik bütünlüğünü karşılaştırmaya yarar. Özet hesaplanmadıysa "hesaplanmadı" yazılır, uydurulmaz. Delil günlüğü zinciri, kayıtlı işlemlerin sonradan değiştirilmediğini gösterir; eski (hash taşımayan) kayıtlar "eski kayıt" olarak işaretlenir.'
 });
+// FİZİKÎ DOSYA TESLİM VE İADE (v2.330) — rapor ve tutanak metinleri TEK KAYNAK.
+// Bu kayıt ses kaydı kökeninden (`origin`) AYRIDIR: `origin` sesin nereden
+// geldiğini, bu bölüm kâğıt dosya ve fizikî nesne teslimini anlatır. UYAP
+// erişimi fizikî teslim sayılmaz ve zorunlu değildir.
+Object.assign(REPORT_TEXT, {
+  physicalAnnexEmpty:
+    'Fizikî dosya teslim ve iade kaydı girilmemiştir. Dosya yalnız elektronik (UYAP) erişimle incelendiyse bu bölüm boş kalır; bu bir eksiklik değildir.',
+  physicalIntro:
+    'Aşağıdaki kayıt, bilirkişiye fizikî olarak teslim edilen dava dosyası ve materyaller ile inceleme sonunda yapılan iadeyi gösterir. Dosya içeriği tek tek sayılmadıysa bu durum açıkça yazılır; sayılmadığı hâlde sayılmış gibi gösterilmez. Materyallerin içeriği bu bölümün kapsamı dışındadır.',
+  physicalHandoverHeading: 'Fizikî dosya teslimi',
+  physicalReturnHeading: 'Fizikî dosya iadesi',
+  physicalItemsHeading: 'Teslim alınan fizikî materyaller',
+  physicalHandoverHeaders: ['KONU', 'KAYIT'],
+  physicalItemHeaders: ['SIRA', 'TÜR', 'MARKA / ETİKET', 'SERİ NO', 'MÜHÜR / AMBALAJ', 'TESLİM DURUMU', 'İLGİLİ', 'İADE'],
+  physicalReturnHeaders: ['KONU', 'KAYIT'],
+  physicalIndexDelivered: 'Dizi pusulası verildi',
+  physicalIndexNotDelivered: 'Dizi pusulası verilmedi',
+  physicalIndexUnknown: 'Dizi pusulası durumu belirtilmedi',
+  physicalNoItems: 'Ayrı fizikî materyal teslim alınmamıştır.',
+  physicalNotReturned: 'İade edilmedi',
+  physicalReturned: 'İade edildi',
+  physicalChanged: 'Durum/mühür değişti',
+  physicalMissingWarning:
+    'UYARI: Teslim alınan materyallerden biri veya birkaçı iade edilmemiş olarak kayıtlıdır. İade işlemi tamamlanmış sayılmaz.',
+  physicalNoIndexWarning:
+    'Dizi pusulası verilmediği için dosya içeriği mahkemece sayılarak teslim edilmemiştir; bilirkişi içeriği tek tek saymamıştır.',
+  physicalSignatureNote:
+    'Bu tutanak iki nüsha düzenlenir ve taraflarca imzalanır. Elektronik imza üretilmez; imzalı nüshanın taranmış kopyası dosyaya eklenebilir.',
+  physicalDocHeading: 'Fizikî dosya belgeleri (taranmış kopyalar)',
+  physicalDocHeaders: ['BELGE', 'TÜR', 'TARİH'],
+  physicalDocKinds: { index: 'Dizi pusulası', handover: 'Teslim tutanağı', return: 'İade tutanağı', other: 'Diğer' }
+});
+
 // HIZLI ETİKET SÖZLÜĞÜ (v2.316). Uzmanın elle yazmadan METNE etiket eklemesini
 // sağlar. Etiketler köşeli parantezle metne girer ve rapora AYNEN akar; uydurma
 // metin üretilmez. `label` DAİMA `text` ile aynıdır.
@@ -1761,6 +1808,73 @@ async function discardMaterialMedia(c, m) {
 }
 async function purgeCaseMedia(c) {
   for (const m of (c && c.materials) || []) await discardMaterialMedia(c, m);
+  // Fizikî dosya belgeleri (taranmış dizi pusulası, imzalı tutanak kopyaları)
+  // de bu dosyaya aittir; kalıcı silmede bırakılmaz (v2.330).
+  for (const d of (c && c.physicalFile && c.physicalFile.documents) || []) {
+    try {
+      await deleteBlob(physicalDocKey(c, d));
+    } catch (e) {}
+  }
+}
+// ---- FİZİKÎ DOSYA BELGELERİ (v2.330) -------------------------------------
+// Taranmış dizi pusulası ve imzalı tutanak kopyaları IndexedDB'de saklanır;
+// kayıtta yalnız üst veri durur. Paket içinde `belge/<dosyaId>/` altına girer.
+// Uygulama e-imza ÜRETMEZ; buraya yalnız kullanıcının eklediği kopya girer.
+function physicalDocKey(c, doc) {
+  return `${c.id}::pfd:${doc.id}`;
+}
+async function savePhysicalDoc(c, file, kind, note) {
+  if (!c || !file) return null;
+  const doc = {
+    id: newId('pfd'),
+    kind: ['index', 'handover', 'return', 'other'].includes(kind) ? kind : 'other',
+    name: String(file.name || 'belge'),
+    at: new Date().toISOString(),
+    size: Number(file.size) || 0,
+    note: String(note || '')
+  };
+  await storeBlob(physicalDocKey(c, doc), file);
+  c.physicalFile = normalizePhysicalFile(c.physicalFile);
+  c.physicalFile.documents.push(doc);
+  return doc;
+}
+async function removePhysicalDoc(c, docId) {
+  if (!c) return;
+  const pf = normalizePhysicalFile(c.physicalFile);
+  const doc = pf.documents.find((d) => d.id === docId);
+  if (!doc) return;
+  try {
+    await deleteBlob(physicalDocKey(c, doc));
+  } catch (e) {}
+  pf.documents = pf.documents.filter((d) => d.id !== docId);
+  c.physicalFile = pf;
+}
+async function openPhysicalDoc(c, docId) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const doc = pf.documents.find((d) => d.id === docId);
+  if (!doc) return;
+  const blob = await readBlob(physicalDocKey(c, doc));
+  if (!blob) {
+    showToast('Belge kopyası bu tarayıcıda bulunamadı. Paketten geri yüklenmemiş olabilir.', true);
+    return;
+  }
+  downloadBlob(blob, doc.name);
+}
+/** Paket içindeki belge girdilerini eşler: `belge/<dosyaId>/<belgeId>_ad`. */
+function matchPhysicalDocEntries(entryNames, docs, caseId) {
+  const names = entryNames || [];
+  const dirs = new Set(names.filter((n) => n.endsWith('/')));
+  const prefixes = caseId ? [`belge/${caseId}/`, 'belge/'] : ['belge/'];
+  const out = [];
+  for (const d of docs || []) {
+    let entry = '';
+    for (const base of prefixes) {
+      entry = names.find((p) => p.startsWith(`${base}${d.id}_`) && !dirs.has(p)) || '';
+      if (entry) break;
+    }
+    if (entry) out.push({ docId: d.id, entry });
+  }
+  return out;
 }
 // `urgent` = kritik uyarı (kayıt okunamadı, dosya atlandı, yazma hatası):
 // ekran okuyucu bekleyen işi kesip okur (role=alert, assertive). Normal bilgi
@@ -1917,6 +2031,7 @@ function populateCaseForm() {
   applyRoleLabels(c.reportType);
   renderTeam();
   renderCasePersons();
+  renderPhysicalForm();
 }
 // ---- Ekip (ortak çalışma) ----------------------------------------------
 // Ekip, aynı dosyada çalışan bilirkişi/yardımcıları tanımlar. Rapora GİRMEZ;
@@ -2304,6 +2419,297 @@ function renderDeliveryPanel(c) {
   el.innerHTML = deliveryPanelHtml(c);
 }
 
+// ---- Fizikî dosya: Dosya sayfası özeti (v2.330) --------------------------
+// KURAL: bu panel SALT OKUNUR özettir; düzenleme çekmecede yapılır (tek
+// düzenleyici). Teslim ve iade AYRI gösterilir; iade edilmeyen materyal
+// gizlenmez. UYAP erişimi fizikî teslim sayılmaz.
+function physicalStatusChip(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const counts = physicalCounts(pf);
+  if (!physicalFileActive(pf)) return { cls: 'is-none', text: 'Kayıt yok' };
+  if (physicalReturnComplete(pf)) return { cls: 'is-ok', text: 'İade tamam' };
+  if (pf.returned) return { cls: 'is-late', text: `${counts.missing} materyal iade edilmedi` };
+  if (counts.handoverDelivered) return { cls: 'is-soon', text: 'Teslim alındı · iade bekliyor' };
+  return { cls: 'is-soon', text: 'Kayıt var · iade yok' };
+}
+function physicalPanelHtml(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const counts = physicalCounts(pf);
+  const chip = physicalStatusChip(c);
+  const h = pf.handover;
+  const r = pf.return;
+  const kpi = (label, value, hint) =>
+    `<div class="dl-item"${hint ? ` title="${esc(hint)}"` : ''}><small>${esc(label)}</small><b>${esc(value)}</b></div>`;
+  const actions =
+    `<div class="pf-actions">` +
+    `<button type="button" class="mini-button" data-pf-edit="1" title="Fizikî dosya kaydını sağdaki çekmecede düzenle">✎ Düzenle</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="handover:udf" title="Teslim alma tutanağını UDF olarak indir">Teslim tutanağı (UDF)</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="handover:docx" title="Teslim alma tutanağını DOCX olarak indir">DOCX</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="return:udf" title="İade tutanağını UDF olarak indir">İade tutanağı (UDF)</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="return:docx" title="İade tutanağını DOCX olarak indir">DOCX</button>` +
+    `</div>`;
+  const head =
+    `<div class="panel-heading"><div><div class="eyebrow">FİZİKÎ DOSYA</div><h3>Teslim ve iade</h3></div>` +
+    `<span class="dl-chip ${chip.cls}">${esc(chip.text)}</span></div>`;
+  if (!physicalFileActive(pf)) {
+    return (
+      `<div class="panel physical-panel" aria-label="Fizikî dosya teslim ve iade">` +
+      head +
+      `<p class="dl-note-ok">Fizikî dosya teslim kaydı yok. Dosya yalnız UYAP üzerinden elektronik erişimle incelendiyse bu bölüm boş kalabilir; <b>zorunlu değildir</b>.</p>` +
+      `<p class="drawer-note">Mahkeme kâğıt dosya ve/veya USB, CD, DVD gibi fizikî materyal teslim ettiyse buraya kaydedin. Kayıt, ses dosyası kökeninden ayrıdır ve içerik analizi yapmaz.</p>` +
+      actions +
+      `</div>`
+    );
+  }
+  const items = pf.items;
+  const itemTable = items.length
+    ? `<table class="paper-table pf-table"><thead><tr><th>#</th><th>Tür</th><th>Marka / etiket</th><th>Seri no</th><th>Mühür</th><th>Durum</th><th>İlgili</th><th>İade</th></tr></thead><tbody>${items
+        .map((it, i) => {
+          const st = physicalItemReturnState(it);
+          const cls = st === 'returned' ? 'pf-ok' : st === 'changed' ? 'pf-warn' : 'pf-bad';
+          return `<tr><td>${i + 1}</td><td>${esc(PHYSICAL_ITEM_LABEL[it.type] || it.type)}</td><td>${esc(it.label || '—')}</td><td>${esc(it.serial || '—')}</td><td>${esc(it.seal || '—')}</td><td>${esc(it.condition || '—')}</td><td>${it.related ? 'Evet' : 'Hayır'}</td><td class="${cls}">${esc(physicalItemStateText(it))}</td></tr>`;
+        })
+        .join('')}</tbody></table>`
+    : `<p class="dl-note-ok">${esc(REPORT_TEXT.physicalNoItems)}</p>`;
+  const warnings = [];
+  if (counts.missing) warnings.push(`${counts.missing} materyal İADE EDİLMEDİ. İade işlemi tamamlanmış sayılmaz.`);
+  if (!physicalHandoverComplete(pf)) warnings.push('Teslim tarihi/saati girilmedi; tutanakta bu alan boş görünür.');
+  if (h.indexDelivered === 'no') warnings.push('Dizi pusulası verilmedi; dosya içeriği mahkemece sayılarak teslim edilmemiştir.');
+  if (r.indexCompared === 'no' && pf.returned) warnings.push('İade sırasında dizi pusulasıyla karşılaştırma yapılmadı.');
+  const docs = pf.documents.length
+    ? `<div class="pf-docs"><span class="pf-docs-title">${esc(REPORT_TEXT.physicalDocHeading)}</span><ul>${pf.documents
+        .map(
+          (d) =>
+            `<li><button type="button" class="mini-button tiny" data-pf-doc-open="${esc(d.id)}" title="Belgeyi indir">⤓</button> <b>${esc(d.name)}</b> <small>${esc(REPORT_TEXT.physicalDocKinds[d.kind] || d.kind)} · ${esc(niceDateTime(d.at))}</small></li>`
+        )
+        .join('')}</ul></div>`
+    : '';
+  return (
+    `<div class="panel physical-panel" aria-label="Fizikî dosya teslim ve iade">` +
+    head +
+    `<div class="dl-grid">` +
+    kpi('Teslim tarihi', niceDateTime(h.at), 'Fizikî dosyanın teslim alındığı tarih ve saat') +
+    kpi('Teslim eden', h.deliveredBy || '—', 'Teslim eden görevli') +
+    kpi('Klasör / cilt', h.folders || '—', 'Teslim alınan klasör veya cilt sayısı') +
+    kpi('Dizi pusulası', physicalIndexText(h.indexDelivered), 'Mahkemenin verdiği liste') +
+    kpi('Materyal', `${counts.items} adet`, 'Teslim alınan ayrı fizikî nesne') +
+    kpi('İade', pf.returned ? niceDateTime(r.at) : 'İade edilmedi', pf.returned ? 'İade tarihi ve saati' : 'İade kaydı yok') +
+    `</div>` +
+    itemTable +
+    (warnings.length ? `<ul class="dl-notes">${warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : '') +
+    docs +
+    actions +
+    `</div>`
+  );
+}
+// ---- Fizikî dosya: çekmece formu (v2.330) --------------------------------
+// TEK düzenleyici burasıdır (form kimlikleri çoğaltılmaz). Her alan `data-pf*`
+// ile işaretlenir; işleyici `#caseDrawer` delegasyonundadır.
+function pfOpts(list, labelMap, sel) {
+  return list
+    .map((k) => `<option value="${esc(k)}" ${sel === k ? 'selected' : ''}>${esc(labelMap[k] || k)}</option>`)
+    .join('');
+}
+function renderPhysicalForm() {
+  const c = currentCase();
+  const host = $('#physicalFileForm');
+  if (!c || !host) return;
+  const pf = normalizePhysicalFile(c.physicalFile);
+  const h = pf.handover;
+  const r = pf.return;
+  const mats = c.materials || [];
+  const matOpts = (sel) =>
+    ['<option value="">— ilişki yok —</option>']
+      .concat(mats.map((m) => `<option value="${esc(m.id)}" ${sel === m.id ? 'selected' : ''}>${esc(m.name || m.id)}</option>`))
+      .join('');
+  const field = (label, group, key, value, opts = {}) =>
+    `<label class="field${opts.wide ? ' span-2' : ''}"><span>${esc(label)}</span>` +
+    (opts.textarea
+      ? `<textarea data-pf="${group}" data-pf-key="${key}" rows="${opts.rows || 2}">${esc(value || '')}</textarea>`
+      : `<input data-pf="${group}" data-pf-key="${key}" type="${opts.type || 'text'}" value="${esc(value || '')}" placeholder="${esc(opts.placeholder || '')}">`) +
+    `</label>`;
+  const itemCards = pf.items.length
+    ? pf.items
+        .map((it, i) => {
+          const st = physicalItemReturnState(it);
+          const badge = `<span class="pf-badge ${st === 'returned' ? 'pf-ok' : st === 'changed' ? 'pf-warn' : 'pf-bad'}">${esc(physicalItemStateText(it))}</span>`;
+          return (
+            `<div class="pf-item" data-pf-item-card="${esc(it.id)}">` +
+            `<div class="pf-item-head"><b>${i + 1}. ${esc(PHYSICAL_ITEM_LABEL[it.type] || it.type)}</b>${badge}` +
+            `<button type="button" class="mini-button tiny danger" data-pf-item-remove="${esc(it.id)}" title="Materyali listeden çıkar">×</button></div>` +
+            `<div class="seg-row2">` +
+            `<label class="seg-field"><span>Tür</span><select data-pf-item="${esc(it.id)}" data-pf-item-key="type">${pfOpts(PHYSICAL_ITEM_TYPE, PHYSICAL_ITEM_LABEL, it.type)}</select></label>` +
+            `<label class="seg-field"><span>Marka / model / etiket</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="label" value="${esc(it.label)}" placeholder="Örn. Kingston DataTraveler"></label>` +
+            `</div><div class="seg-row2">` +
+            `<label class="seg-field"><span>Seri numarası</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="serial" value="${esc(it.serial)}" placeholder="Varsa"></label>` +
+            `<label class="seg-field"><span>Mühür / ambalaj no</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="seal" value="${esc(it.seal)}" placeholder="Varsa"></label>` +
+            `</div><div class="seg-row2">` +
+            `<label class="seg-field"><span>Teslim anındaki durum</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="condition" value="${esc(it.condition)}" placeholder="Örn. sağlam, kutusuz"></label>` +
+            `<label class="seg-field"><span>İlgili ses kaydı</span><select data-pf-item="${esc(it.id)}" data-pf-item-key="materialId">${matOpts(it.materialId)}</select></label>` +
+            `</div><div class="pf-item-flags">` +
+            `<label class="pf-check"><input type="checkbox" data-pf-item-check="${esc(it.id)}:related" ${it.related ? 'checked' : ''}> İnceleme göreviyle ilgili</label>` +
+            `<label class="pf-check"><input type="checkbox" data-pf-item-check="${esc(it.id)}:opened" ${it.opened ? 'checked' : ''}> Açıldı / incelendi</label>` +
+            `<label class="pf-check"><input type="checkbox" data-pf-item-check="${esc(it.id)}:returned" ${it.returned ? 'checked' : ''}> İade edildi</label>` +
+            `</div>` +
+            (it.returned
+              ? `<div class="seg-row2"><label class="seg-field"><span>İade mühür / ambalaj</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="returnSeal" value="${esc(it.returnSeal)}" placeholder="Varsa"></label>` +
+                `<label class="seg-field"><span>İade anındaki durum</span><input data-pf-item="${esc(it.id)}" data-pf-item-key="returnCondition" value="${esc(it.returnCondition)}" placeholder="Varsa"></label></div>`
+              : '') +
+            `</div>`
+          );
+        })
+        .join('')
+    : '<p class="drawer-note">Ayrı fizikî materyal (USB, CD, DVD, harici disk, mühürlü zarf) yoksa boş bırakın.</p>';
+  const docRows = pf.documents.length
+    ? `<ul class="pf-doc-list">${pf.documents
+        .map(
+          (d) =>
+            `<li><b>${esc(d.name)}</b> <small>${esc(REPORT_TEXT.physicalDocKinds[d.kind] || d.kind)} · ${esc(niceDateTime(d.at))}</small>` +
+            `<button type="button" class="mini-button tiny" data-pf-doc-open="${esc(d.id)}" title="Belgeyi indir">⤓</button>` +
+            `<button type="button" class="mini-button tiny danger" data-pf-doc-remove="${esc(d.id)}" title="Belgeyi kaldır">×</button></li>`
+        )
+        .join('')}</ul>`
+    : '<p class="drawer-note">Dizi pusulası veya imzalı tutanak kopyası eklenmedi.</p>';
+  host.innerHTML =
+    `<div class="pf-form">` +
+    `<div class="form-grid three">` +
+    `<label class="field"><span>Fizikî dosya teslim alındı mı?</span><select data-pf="handover" data-pf-key="delivered"><option value="no" ${h.delivered ? '' : 'selected'}>Hayır (yalnız UYAP erişimi olabilir)</option><option value="yes" ${h.delivered ? 'selected' : ''}>Evet, teslim alındı</option></select></label>` +
+    field('Teslim tarihi ve saati', 'handover', 'at', h.at, { type: 'datetime-local' }) +
+    `</div>` +
+    `<div class="form-grid two">` +
+    field('Teslim eden görevli', 'handover', 'deliveredBy', h.deliveredBy, { placeholder: 'Ad soyad / unvan' }) +
+    field('Teslim alan bilirkişi', 'handover', 'receivedBy', h.receivedBy, { placeholder: 'Ad soyad' }) +
+    field('Klasör / cilt sayısı', 'handover', 'folders', h.folders, { placeholder: 'Örn. 2' }) +
+    field('Sayfa sayısı (biliniyorsa)', 'handover', 'pages', h.pages, { placeholder: 'Bilinmiyorsa boş' }) +
+    field('Dosyanın fizikî durumu', 'handover', 'condition', h.condition, { placeholder: 'Örn. sağlam, yıpranmış' }) +
+    `<label class="field"><span>Dizi pusulası</span><select data-pf="handover" data-pf-key="indexDelivered">${pfOpts(PHYSICAL_INDEX_STATE, PHYSICAL_INDEX_LABEL, h.indexDelivered)}</select></label>` +
+    field('Dizi pusulası açıklaması / not', 'handover', 'indexNote', h.indexNote, { wide: true, textarea: true, placeholder: 'Verilmediyse neden; verildiyse kapsamı' }) +
+    `</div>` +
+    `<p class="drawer-note">Dosya yalnız klasör olarak verildiyse ve içerik sayılmadıysa, sayfa sayısını boş bırakın; sistem içeriğin sayıldığını varsaymaz.</p>` +
+    `<div class="form-divider"></div>` +
+    `<div class="form-section-title"><span>a</span><div><h3>Fizikî materyaller</h3><p>USB, CD, DVD, harici disk, mühürlü zarf… Her biri ayrı satır. İçerikleri burada analiz edilmez.</p></div></div>` +
+    `<div id="pfItems">${itemCards}</div>` +
+    `<div class="evidence-actions"><button type="button" class="mini-button" data-pf-item-add="1">＋ Materyal ekle</button></div>` +
+    `<div class="form-divider"></div>` +
+    `<div class="form-section-title"><span>b</span><div><h3>İade</h3><p>İlk teslim kaydı iade ekranına aynen gelir; hiçbir materyal kendiliğinden iade edilmiş sayılmaz.</p></div></div>` +
+    `<div class="form-grid three">` +
+    `<label class="field"><span>Fizikî dosya iade edildi mi?</span><select data-pf="return" data-pf-key="returned"><option value="no" ${pf.returned ? '' : 'selected'}>Hayır</option><option value="yes" ${pf.returned ? 'selected' : ''}>Evet, iade edildi</option></select></label>` +
+    field('İade tarihi ve saati', 'return', 'at', r.at, { type: 'datetime-local' }) +
+    `</div>` +
+    `<div class="form-grid two">` +
+    field('İade eden bilirkişi', 'return', 'returnedBy', r.returnedBy, { placeholder: 'Ad soyad' }) +
+    field('İade alan görevli', 'return', 'receivedBy', r.receivedBy, { placeholder: 'Ad soyad / unvan' }) +
+    field('Klasör / cilt sayısı', 'return', 'folders', r.folders, { placeholder: 'Örn. 2' }) +
+    field('Dosyanın iade anındaki durumu', 'return', 'condition', r.condition, { placeholder: 'Örn. sağlam' }) +
+    `<label class="field"><span>Dizi pusulasıyla karşılaştırma</span><select data-pf="return" data-pf-key="indexCompared">${pfOpts(PHYSICAL_INDEX_STATE, PHYSICAL_INDEX_LABEL, r.indexCompared)}</select></label>` +
+    field('Farklılık / eksiklik / hasar', 'return', 'differences', r.differences, { wide: true, textarea: true, placeholder: 'Eksik veya hasarlı materyal varsa açıkça yazın' }) +
+    field('Not', 'return', 'note', r.note, { wide: true, textarea: true }) +
+    `</div>` +
+    `<div class="form-divider"></div>` +
+    `<div class="form-section-title"><span>c</span><div><h3>Belge kopyaları</h3><p>Taranmış dizi pusulası ve imzalı tutanak kopyaları. Uygulama e-imza üretmez.</p></div></div>` +
+    docRows +
+    `<div class="form-grid two"><label class="field"><span>Belge türü</span><select id="pfDocKind">${pfOpts(['index', 'handover', 'return', 'other'], REPORT_TEXT.physicalDocKinds, 'index')}</select></label>` +
+    `<div class="field"><span>Dosya</span><div class="evidence-actions"><label class="button button-light button-small upload-label">Belge seç<input type="file" id="pfDocFile" accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff,.doc,.docx,.udf" hidden></label></div></div></div>` +
+    `<div class="form-divider"></div>` +
+    `<div class="evidence-actions">` +
+    `<button type="button" class="mini-button" data-pf-tutanak="handover:udf">Teslim tutanağı (UDF)</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="handover:docx">Teslim (DOCX)</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="return:udf">İade tutanağı (UDF)</button>` +
+    `<button type="button" class="mini-button" data-pf-tutanak="return:docx">İade (DOCX)</button>` +
+    `</div>` +
+    `<p class="drawer-note">${esc(REPORT_TEXT.physicalSignatureNote)}</p>` +
+    `</div>`;
+}
+
+// Fizikî dosya yazma yardımcıları: TEK KAPI. Her yazma normalize eder,
+// kaydeder ve açık Dosya sayfasını tazeler. Yapısal değişiklikte form yeniden
+// çizilir; serbest metin yazarken çizilmez (odak kaybı olmaz).
+function physicalMutate(fn) {
+  const c = currentCase();
+  if (!c) return null;
+  const pf = normalizePhysicalFile(c.physicalFile);
+  fn(pf);
+  c.physicalFile = normalizePhysicalFile(pf);
+  persist();
+  if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
+  return c.physicalFile;
+}
+function updatePhysicalField(group, key, value) {
+  const structural = (group === 'handover' && key === 'delivered') || (group === 'return' && key === 'returned');
+  physicalMutate((pf) => {
+    if (group === 'handover' && key === 'delivered') pf.handover.delivered = value === 'yes';
+    else if (group === 'return' && key === 'returned') pf.returned = value === 'yes';
+    else {
+      pf[group] = pf[group] || {};
+      pf[group][key] = value;
+    }
+  });
+  if (structural) renderPhysicalForm();
+}
+function updatePhysicalItem(id, key, value) {
+  physicalMutate((pf) => {
+    const it = pf.items.find((x) => x.id === id);
+    if (it) it[key] = value;
+  });
+}
+function setPhysicalItemFlag(id, key, on) {
+  const structural = key === 'returned';
+  physicalMutate((pf) => {
+    const it = pf.items.find((x) => x.id === id);
+    if (it) it[key] = on === true;
+  });
+  if (structural) renderPhysicalForm();
+}
+function addPhysicalItem() {
+  const pf = physicalMutate((p) => {
+    p.items.push(emptyPhysicalItem());
+  });
+  renderPhysicalForm();
+  if (pf) showToast('Fizikî materyal satırı eklendi. Türünü ve görünen etiketini yazın.', false);
+}
+async function removePhysicalItem(id) {
+  const c = currentCase();
+  if (!c) return;
+  const pf = normalizePhysicalFile(c.physicalFile);
+  const it = pf.items.find((x) => x.id === id);
+  if (!it) return;
+  const ok = await askConfirm(
+    'Materyali listeden çıkar',
+    `${PHYSICAL_ITEM_LABEL[it.type] || it.type} ${it.label || ''} kaydı silinecek. ` +
+      'Ses dosyaları ve deşifre metinleri ETKİLENMEZ. Devam edilsin mi?'
+  );
+  if (!ok) return;
+  physicalMutate((p) => {
+    p.items = p.items.filter((x) => x.id !== id);
+  });
+  renderPhysicalForm();
+  showToast('Fizikî materyal kaydı listeden çıkarıldı.', false);
+}
+async function attachPhysicalDoc(file) {
+  const c = currentCase();
+  if (!c || !file) return;
+  const kindEl = $('#pfDocKind');
+  const kind = kindEl ? kindEl.value : 'other';
+  await savePhysicalDoc(c, file, kind, '');
+  persist();
+  renderPhysicalForm();
+  if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
+  showToast(`Belge eklendi: ${file.name} (${REPORT_TEXT.physicalDocKinds[kind] || kind}). Paket oluşturulunca yedeğe girer.`, false);
+}
+async function detachPhysicalDoc(id) {
+  const c = currentCase();
+  if (!c) return;
+  const doc = normalizePhysicalFile(c.physicalFile).documents.find((d) => d.id === id);
+  if (!doc) return;
+  const ok = await askConfirm('Belgeyi kaldır', `"${doc.name}" belge kopyası bu tarayıcıdan silinecek. Devam edilsin mi?`);
+  if (!ok) return;
+  await removePhysicalDoc(c, id);
+  persist();
+  renderPhysicalForm();
+  if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
+  showToast('Belge kopyası kaldırıldı.', false);
+}
+
 // ---- Dosya görünümü (v2.315) ---------------------------------------------
 // Ayrı "Dosya" SAYFASI: künye okunur, düzenleme çekmecede yapılır. Form
 // kimlikleri ÇOĞALTILMAZ (tek düzenleyici çekmece); sayfa yalnız özet + eksik
@@ -2388,6 +2794,7 @@ function renderCasePage(c) {
     `<button type="button" class="mini-button" data-delivery-check="1">Rapor kontrolü →</button></div>`;
   host.innerHTML =
     `<div class="panel delivery-panel" aria-label="Teslim durumu">${deliveryPanelHtml(c)}</div>` +
+    physicalPanelHtml(c) +
     `<div class="content-grid case-page-grid">` +
     `<div class="panel" aria-label="Dosya künyesi">${identity}</div>` +
     `<div class="panel" aria-label="Tamamlanacaklar">${missing}</div>` +
@@ -13032,7 +13439,9 @@ const READINESS_SEVERITY = {
   origin: 'advisory',
   timeConflict: 'advisory',
   longSegments: 'advisory',
-  questions: 'advisory'
+  questions: 'advisory',
+  // Fizikî dosya iadesi (v2.330): eksik materyal varsa bilirkişi karar vermeli.
+  physicalMissing: 'expert'
 };
 const READINESS_GROUPS = [
   ['blocking', 'Engelleyen eksikler', 'Rapor eksik veya yanıltıcı olur; önce bunları giderin.'],
@@ -13167,6 +13576,20 @@ function reportReadiness(c) {
     timeConf,
     'audio',
     'Gömülü metadata kayıt tarihi, dosyanın değişiklik zamanından sonra görünüyor. Beyan ≠ gözlem; "Kayıt bilgileri" bölümünde inceleyin.'
+  );
+  // FİZİKÎ DOSYA İADESİ (v2.330): teslim alınan materyal iade edilmediyse
+  // rapor "iade tamamlandı" diyemez. Kayıt yoksa madde ÇIKMAZ (zorunlu değil).
+  const pfMissing = physicalMissingItems(c && c.physicalFile);
+  add(
+    'physicalMissing',
+    'İade edilmeyen fizikî materyal',
+    pfMissing.length,
+    'case',
+    pfMissing.length
+      ? `${pfMissing.map((x) => `${PHYSICAL_ITEM_LABEL[x.type] || x.type} ${x.label || ''}`.trim()).join(', ')} — iade işlemi tamamlanmış sayılmaz.`
+      : '',
+    '',
+    'physical'
   );
   // ZAMAN SORUNU (v2.201): KAYIT BAŞINA sayılır. Kayıtların zaman çizgileri
   // AYRIDIR; tüm bölümleri tek çizgi gibi saymak, her kayıt 0'dan başladığında
@@ -13857,7 +14280,9 @@ function reportAnnexList(c) {
       key,
       n,
       title: base,
-      heading: `Rapor eki ${n}. ${base}`,
+      // Ayrı tutanak belgesinde "Rapor eki 1." öneki YOKTUR: belge bir rapor
+      // eki değil, kendi başlığı olan bir tutanaktır (v2.330).
+      heading: c && c.__tutanakKind ? base : `Rapor eki ${n}. ${base}`,
       custom: !REPORT_ANNEX_DEFS.some((d) => d.key === key),
       meta
     });
@@ -14624,12 +15049,194 @@ function reportChecklistRows(c) {
     ['SHA-256 doğrulanmış kayıt', String(verified)]
   ];
 }
+// ---- FİZİKÎ DOSYA TESLİM VE İADE (v2.330) --------------------------------
+// Bu blok SES KAYDI KÖKENİNDEN (`origin`) AYRIDIR. `origin` sesin hangi
+// cihazdan/ortamdan geldiğini anlatır; buradaki kayıt mahkemenin fizikî olarak
+// ne teslim ettiğini ve neyin iade edildiğini tutar. UYAP erişimi fizikî
+// teslim sayılmaz. Dosya içeriği sayılmadıysa "sayılmadı" yazılır.
+function niceDateTime(v) {
+  const s = String(v || '').trim();
+  if (!s) return '—';
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+  if (!m) return s;
+  const d = `${m[3]}.${m[2]}.${m[1]}`;
+  return m[4] ? `${d} ${m[4]}:${m[5]}` : d;
+}
+function pfText(v) {
+  return String(v == null ? '' : v).trim() || '—';
+}
+function physicalIndexText(code) {
+  return PHYSICAL_INDEX_LABEL[code] || REPORT_TEXT.physicalIndexUnknown;
+}
+function physicalItemStateText(item) {
+  const st = physicalItemReturnState(item);
+  if (st === 'returned') return REPORT_TEXT.physicalReturned;
+  if (st === 'changed') return REPORT_TEXT.physicalChanged;
+  return REPORT_TEXT.physicalNotReturned;
+}
+function physicalHandoverRows(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const h = pf.handover;
+  const rows = [
+    ['Fizikî dosya', h.delivered ? 'Teslim alındı' : 'Teslim alınmadı (yalnız elektronik erişim olabilir)'],
+    ['Teslim tarihi ve saati', niceDateTime(h.at)],
+    ['Teslim eden görevli', pfText(h.deliveredBy)],
+    ['Teslim alan bilirkişi', pfText(h.receivedBy)],
+    ['Klasör / cilt sayısı', pfText(h.folders)],
+    ['Sayfa sayısı', pfText(h.pages)],
+    ['Dosyanın fizikî durumu', pfText(h.condition)],
+    ['Dizi pusulası', physicalIndexText(h.indexDelivered)]
+  ];
+  if (h.indexDelivered === 'no') rows.push(['Dizi pusulası açıklaması', pfText(h.indexNote)]);
+  else if (h.indexNote) rows.push(['Açıklama', pfText(h.indexNote)]);
+  if (h.note) rows.push(['Not', pfText(h.note)]);
+  return rows;
+}
+function physicalReturnRows(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const r = pf.return;
+  const counts = physicalCounts(pf);
+  if (!pf.returned) {
+    const rows = [['İade', 'İade edilmedi']];
+    if (counts.items) rows.push(['Teslim alınan materyal', `${counts.items} adet · iade edilen ${counts.returned}`]);
+    return rows;
+  }
+  const rows = [
+    ['İade', 'İade edildi'],
+    ['İade tarihi ve saati', niceDateTime(r.at)],
+    ['İade eden bilirkişi', pfText(r.returnedBy)],
+    ['İade alan görevli', pfText(r.receivedBy)],
+    ['Klasör / cilt sayısı', pfText(r.folders)],
+    ['Dosyanın iade anındaki durumu', pfText(r.condition)],
+    ['Dizi pusulası ile karşılaştırma', physicalIndexText(r.indexCompared)]
+  ];
+  if (counts.items) {
+    rows.push([
+      'Materyal iadesi',
+      `${counts.items} adet teslim alındı · ${counts.returned} iade edildi` +
+        (counts.changed ? ` · ${counts.changed} durumu değişti` : '') +
+        (counts.missing ? ` · ${counts.missing} İADE EDİLMEDİ` : '')
+    ]);
+  }
+  if (r.differences) rows.push(['Farklılık / eksiklik / hasar', pfText(r.differences)]);
+  if (r.note) rows.push(['Not', pfText(r.note)]);
+  if (counts.missing) rows.push(['Uyarı', REPORT_TEXT.physicalMissingWarning]);
+  return rows;
+}
+function physicalItemRows(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const mats = new Map(((c && c.materials) || []).map((m) => [m.id, m]));
+  return pf.items.map((it, i) => {
+    const mat = it.materialId ? mats.get(it.materialId) : null;
+    return [
+      String(i + 1),
+      PHYSICAL_ITEM_LABEL[it.type] || it.type,
+      pfText(it.label),
+      pfText(it.serial),
+      pfText(it.seal),
+      pfText(it.condition),
+      it.related ? (mat ? `Evet · ${mat.name || mat.id}` : 'Evet') : 'Hayır',
+      physicalItemStateText(it)
+    ];
+  });
+}
+function physicalSignatureTable(c, kind) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  const isReturn = kind === 'return';
+  const left = isReturn ? pf.return.returnedBy : pf.handover.deliveredBy;
+  const right = isReturn ? pf.return.receivedBy : pf.handover.receivedBy;
+  return {
+    headers: [
+      isReturn ? 'TESLİM EDEN (Bilirkişi)' : 'TESLİM EDEN (Görevli)',
+      isReturn ? 'TESLİM ALAN (Görevli)' : 'TESLİM ALAN (Bilirkişi)'
+    ],
+    rows: [
+      [pfText(left), pfText(right)],
+      ['İmza:', 'İmza:']
+    ]
+  };
+}
+// EK-1 gövdesi: teslim + materyaller + iade. Karışık blok (tablo/paragraf).
+function physicalAnnexBlock(c) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  if (!physicalFileActive(pf)) return { kind: 'para', text: REPORT_TEXT.physicalAnnexEmpty };
+  const blocks = [
+    { kind: 'para', text: REPORT_TEXT.physicalIntro },
+    { kind: 'table', title: REPORT_TEXT.physicalHandoverHeading, headers: REPORT_TEXT.physicalHandoverHeaders, rows: physicalHandoverRows(c) }
+  ];
+  if (pf.handover.indexDelivered === 'no') blocks.push({ kind: 'para', text: REPORT_TEXT.physicalNoIndexWarning });
+  const itemRows = physicalItemRows(c);
+  blocks.push(
+    itemRows.length
+      ? { kind: 'table', title: REPORT_TEXT.physicalItemsHeading, headers: REPORT_TEXT.physicalItemHeaders, rows: itemRows }
+      : { kind: 'para', text: REPORT_TEXT.physicalNoItems }
+  );
+  blocks.push({ kind: 'table', title: REPORT_TEXT.physicalReturnHeading, headers: REPORT_TEXT.physicalReturnHeaders, rows: physicalReturnRows(c) });
+  if (physicalMissingItems(pf).length) blocks.push({ kind: 'para', text: REPORT_TEXT.physicalMissingWarning });
+  return { kind: 'blocks', blocks };
+}
+// AYRI TUTANAK BELGESİ (v2.330): teslim alma ve iade için ayrı çıktı.
+// Raporun kendi üreticisini kullanır (kopya biçim yok); geçici kopyada yalnız
+// EK-1 açılır, kapak/içindekiler/imza/ek listesi kapatılır.
+function physicalTutanakTitle(kind) {
+  return kind === 'return' ? 'FİZİKÎ DOSYA İADE TUTANAĞI' : 'FİZİKÎ DOSYA TESLİM TUTANAĞI';
+}
+function physicalTutanakCase(c, kind) {
+  const base = JSON.parse(JSON.stringify(c || {}));
+  base.report = base.report || {};
+  const rep = base.report;
+  const off = {};
+  for (const d of REPORT_SECTION_DEFS) off[d.key] = false;
+  rep.sections = { ...off };
+  // EKLER bölümü AÇIK olmalı; aksi hâlde gövde döngüsü hiçbir şey çizmez
+  // (v2.330'da ölçüldü: tutanak belgesi boş iniyordu).
+  rep.sections.annex = true;
+  rep.layout = normalizeReportLayout(rep.layout);
+  rep.layout.parent = {};
+  rep.layout.order = ['annex'];
+  rep.layout.annexes = Object.fromEntries(REPORT_ANNEX_KEYS.map((k) => [k, k === 'ek1']));
+  rep.layout.annexOrder = ['ek1'];
+  rep.layout.annexMeta = { ek1: { title: physicalTutanakTitle(kind) } };
+  rep.numbering = 'none';
+  rep.blocks = [];
+  base.__annexDoc = true;
+  base.__tutanakKind = kind === 'return' ? 'return' : 'handover';
+  return base;
+}
+function physicalTutanakBlocks(c, kind) {
+  const pf = normalizePhysicalFile(c && c.physicalFile);
+  if (!physicalFileActive(pf)) return [{ kind: 'para', text: REPORT_TEXT.physicalAnnexEmpty }];
+  const blocks = [];
+  if (kind === 'return') {
+    blocks.push({ kind: 'para', text: REPORT_TEXT.physicalIntro });
+    blocks.push({ kind: 'table', title: REPORT_TEXT.physicalHandoverHeading, headers: REPORT_TEXT.physicalHandoverHeaders, rows: physicalHandoverRows(c) });
+    const itemRows = physicalItemRows(c);
+    blocks.push(
+      itemRows.length
+        ? { kind: 'table', title: REPORT_TEXT.physicalItemsHeading, headers: REPORT_TEXT.physicalItemHeaders, rows: itemRows }
+        : { kind: 'para', text: REPORT_TEXT.physicalNoItems }
+    );
+    blocks.push({ kind: 'table', title: REPORT_TEXT.physicalReturnHeading, headers: REPORT_TEXT.physicalReturnHeaders, rows: physicalReturnRows(c) });
+  } else {
+    blocks.push({ kind: 'para', text: REPORT_TEXT.physicalIntro });
+    blocks.push({ kind: 'table', title: REPORT_TEXT.physicalHandoverHeading, headers: REPORT_TEXT.physicalHandoverHeaders, rows: physicalHandoverRows(c) });
+    if (pf.handover.indexDelivered === 'no') blocks.push({ kind: 'para', text: REPORT_TEXT.physicalNoIndexWarning });
+    const itemRows = physicalItemRows(c);
+    blocks.push(
+      itemRows.length
+        ? { kind: 'table', title: REPORT_TEXT.physicalItemsHeading, headers: REPORT_TEXT.physicalItemHeaders, rows: itemRows }
+        : { kind: 'para', text: REPORT_TEXT.physicalNoItems }
+    );
+  }
+  const sig = physicalSignatureTable(c, kind);
+  blocks.push({ kind: 'table', title: 'İmzalar', headers: sig.headers, rows: sig.rows });
+  blocks.push({ kind: 'para', text: REPORT_TEXT.physicalSignatureNote });
+  return blocks;
+}
 // Ek blokları: başlık `REPORT_ANNEX_DEFS`ten (tek kaynak), sıra/aç-kapa
 // `case.report.layout`ten. EK numarası bitişiktir (EK-1…EK-6).
 function reportAnnexBlocks(c) {
   const materials = c.materials || [];
-  const o = (materials[0] && materials[0].origin) || {};
-  const typeLabel = o.mediumType ? MEDIUM_TYPE_LABEL[o.mediumType] || o.mediumType : '—';
   const logRows = [];
   for (const m of materials) {
     for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
@@ -14637,19 +15244,14 @@ function reportAnnexBlocks(c) {
   // EK-2 envanteri ANA envanter tablosuyla AYNI sütun seçimini kullanır (v2.236).
   const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
   const defs = {
-    ek1: {
-      kind: 'table',
-      header: false,
-      rows: [
-        ['Dosya numarası', c.fileNo || '—'],
-        ['Teslim tarihi', o.deliveredAt ? niceDate(o.deliveredAt) : '—'],
-        ['Teslim eden', o.deliveredBy || '—'],
-        ['Teslim yeri', o.deliveryPlace || '—'],
-        ['Ortam / taşıyıcı', o.mediumLabel || typeLabel],
-        ['İade tarihi', '—'],
-        ['Açıklama', '—']
-      ]
-    },
+    // EK-1 (v2.330): FİZİKÎ dosya teslim ve iade tutanağı. Kaynak artık ses
+    // kaydı kökeni DEĞİL, `case.physicalFile` kaydıdır (iki kavram karışmaz).
+    // Ayrı tutanak belgesi (`__tutanakKind`) ise yalnız teslim veya yalnız iade
+    // tablolarını ve imza alanını basar.
+    ek1:
+      c && c.__tutanakKind
+        ? { kind: 'blocks', blocks: physicalTutanakBlocks(c, c.__tutanakKind) }
+        : physicalAnnexBlock(c),
     ek2: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
       : { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, empty: REPORT_TEXT.annexNoInventory },
@@ -15661,6 +16263,28 @@ async function exportLetterAnnex(id) {
   await makeUdf({ case: temp, fileName: name });
 }
 
+/** Fizikî dosya tutanağını indirir (v2.330): ayrı teslim / iade belgesi. */
+async function exportPhysicalTutanak(kind, format) {
+  const c = currentCase();
+  if (!c) return;
+  if (!physicalFileActive(c.physicalFile)) {
+    showToast('Fizikî dosya teslim/iade kaydı yok. Önce Dosya → Fizikî dosya bölümünü doldurun.', true);
+    return;
+  }
+  if (kind === 'return' && !normalizePhysicalFile(c.physicalFile).returned) {
+    const ok = await askConfirm(
+      'İade kaydı yok',
+      'Fizikî dosya "iade edildi" olarak işaretlenmemiş. Yine de iade tutanağı taslağı oluşturulsun mu? ' +
+        'Tutanakta "İade edilmedi" yazacaktır.'
+    );
+    if (!ok) return;
+  }
+  const temp = physicalTutanakCase(c, kind);
+  const name = `Tutanak_${kind === 'return' ? 'Iade' : 'Teslim'}_${safeName(c.fileNo || 'Dosya')}`;
+  if (format === 'docx') await makeDocx({ case: temp, fileName: name });
+  else await makeUdf({ case: temp, fileName: name });
+}
+
 /** Taşınan bölümleri rapordan çıkarır (raporda çizilmez). */
 function moveSectionsOutOfReport(c, keys) {
   c.report = c.report || {};
@@ -16281,7 +16905,10 @@ function renderReport() {
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`,
     privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(REPORT_TEXT.privacyText)}</p></div>`,
     annex: () => {
-      let out = `<div class="paper-section"><h3>${esc(H('annex'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.annexIntro)}</p>`;
+      // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı ve ek girişi BASILMAZ;
+      // belgenin kendi başlığı (teslim/iade tutanağı) h3 olarak yazılır.
+      const tutanakDoc = !!c.__tutanakKind;
+      let out = tutanakDoc ? '<div class="paper-section">' : `<div class="paper-section"><h3>${esc(H('annex'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.annexIntro)}</p>`;
       for (const b of reportAnnexBlocks(c)) {
         if (b.kind === 'moved') {
           const fn = body[b.sectionKey];
@@ -16296,12 +16923,21 @@ function renderReport() {
           out += `<h4>${esc(b.heading)}</h4>` + String(raw).replace(/<h3>[\s\S]*?<\/h3>/, '');
           continue;
         }
-        out += `<h4>${esc(b.heading)}</h4>`;
+        out += tutanakDoc ? `<h3>${esc(b.heading)}</h3>` : `<h4>${esc(b.heading)}</h4>`;
         if (b.kind === 'para') {
           out += `<p>${esc(b.text)}</p>`;
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             out += `<p class="paper-muted"><b>${esc(t.title)}</b></p><table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+          }
+        } else if (b.kind === 'blocks') {
+          // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
+          for (const sub of b.blocks || []) {
+            if (sub.kind === 'para') {
+              out += `<p>${esc(sub.text)}</p>`;
+            } else if (sub.kind === 'table') {
+              out += `<p class="paper-muted"><b>${esc(sub.title)}</b></p><table class="paper-table"><thead><tr>${sub.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sub.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+            }
           }
         } else if (b.header) {
           out += `<table class="paper-table"><thead><tr>${b.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.length ? b.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${b.headers.length}">${esc(b.empty || '—')}</td></tr>`}</tbody></table>`;
@@ -16869,7 +17505,9 @@ function docxXml(c) {
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
     privacy: () => headingXml(H('privacy')) + wP(REPORT_TEXT.privacyText),
     annex: () => {
-      let out = headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
+      // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok; belge başlığı 1. düzey.
+      const tutanakDoc = !!c.__tutanakKind;
+      let out = tutanakDoc ? '' : headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
       for (const b of reportAnnexBlocks(c)) {
         if (b.kind === 'moved') {
           const fn = blocks[b.sectionKey];
@@ -16885,13 +17523,22 @@ function docxXml(c) {
           out += headingXml(b.heading, 2) + (raw.startsWith(head) ? raw.slice(head.length) : raw);
           continue;
         }
-        out += headingXml(b.heading, 2);
+        out += headingXml(b.heading, tutanakDoc ? 1 : 2);
         if (b.kind === 'para') {
           out += wP(b.text);
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
             out += wTable([[...t.headers], ...t.rows], { header: true });
+          }
+        } else if (b.kind === 'blocks') {
+          // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
+          for (const sub of b.blocks || []) {
+            if (sub.kind === 'para') out += wP(sub.text);
+            else if (sub.kind === 'table') {
+              out += wP(sub.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
+              out += wTable([[...sub.headers], ...sub.rows], { header: true });
+            }
           }
         } else if (b.header) {
           const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
@@ -17536,8 +18183,12 @@ async function udfDocument(opts = {}) {
       el.push(paragraphLines(REPORT_TEXT.privacyText, { justify: true }));
     },
     annex: () => {
-      el.push(h(H('annex')));
-      el.push(paragraph(REPORT_TEXT.annexIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+      // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok.
+      const tutanakDoc = !!c.__tutanakKind;
+      if (!tutanakDoc) {
+        el.push(h(H('annex')));
+        el.push(paragraph(REPORT_TEXT.annexIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
+      }
       for (const b of reportAnnexBlocks(c)) {
         if (b.kind === 'moved') {
           const fn = blocks[b.sectionKey];
@@ -17554,13 +18205,23 @@ async function udfDocument(opts = {}) {
           }
           continue;
         }
-        el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
+        if (tutanakDoc) el.push(h(b.heading));
+        else el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 6, after: 3 }));
         if (b.kind === 'para') {
           el.push(paragraphLines(b.text, { justify: true }));
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             el.push(paragraph(t.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
             el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true }));
+          }
+        } else if (b.kind === 'blocks') {
+          // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
+          for (const sub of b.blocks || []) {
+            if (sub.kind === 'para') el.push(paragraphLines(sub.text, { justify: true }));
+            else if (sub.kind === 'table') {
+              el.push(paragraph(sub.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
+              el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true }));
+            }
           }
         } else {
           const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
@@ -17720,6 +18381,9 @@ function isEmptyCase(c) {
   // Dosya geneli kişi kaydı kullanıcı verisidir (v2.205): yalnız kişi tanımlanmış
   // olsa bile dosya boş sayılmaz; aksi hâlde kayıt dışa aktarmada düşer.
   if ((c.speakers || []).length) return false;
+  // Fizikî dosya teslim/iade kaydı kullanıcı verisidir (v2.330): yalnız bu
+  // kayıt girilse bile dosya boş sayılmaz; aksi hâlde pakete girmezdi.
+  if (physicalFileActive(c.physicalFile)) return false;
   if ((c.questions || []).some((q) => String(q?.question || '').trim() || String(q?.answer || '').trim())) return false;
   const filled = [
     c.court,
@@ -18044,6 +18708,7 @@ async function exportProject(scope) {
     : '';
   const zip = new JSZip();
   const missingAudio = [];
+  const missingDocs = [];
   if (multi) {
     zip.file(
       'archive.json',
@@ -18067,6 +18732,14 @@ async function exportProject(scope) {
         if (blob && folder) folder.file(`${m.id}_${safeName(m.name)}`, blob);
         else missingAudio.push(`${cc.fileNo || cc.name || cc.id} → ${m.name}`);
       }
+      // FİZİKÎ DOSYA BELGELERİ (v2.330): taranmış dizi pusulası + imzalı
+      // tutanak kopyaları pakete girer. Eksikse sessizce atlanmaz.
+      const docFolder = zip.folder(`belge/${cc.id}`);
+      for (const d of (cc.physicalFile && cc.physicalFile.documents) || []) {
+        const blob = await readBlob(physicalDocKey(cc, d));
+        if (blob && docFolder) docFolder.file(`${d.id}_${safeName(d.name)}`, blob);
+        else missingDocs.push(`${cc.fileNo || cc.name || cc.id} → ${d.name}`);
+      }
     }
   } else {
     // Tek dosyalı paket: paketlenen dosya aktif dosya olmayabilir (aktif dosya
@@ -18079,28 +18752,47 @@ async function exportProject(scope) {
       if (blob) assets.file(`${m.id}_${safeName(m.name)}`, blob);
       else missingAudio.push(`${only.fileNo || only.name || only.id} → ${m.name}`);
     }
+    const docAssets = zip.folder(`belge/${only.id}`);
+    for (const d of (only.physicalFile && only.physicalFile.documents) || []) {
+      const blob = await readBlob(physicalDocKey(only, d));
+      if (blob && docAssets) docAssets.file(`${d.id}_${safeName(d.name)}`, blob);
+      else missingDocs.push(`${only.fileNo || only.name || only.id} → ${d.name}`);
+    }
   }
   // EKSİK SES SESSİZCE ATLANMAZ (v2.86). Ses blobu kaybolmuşsa (tarayıcı
   // verisi temizlendi, kota) yedek "tam" görünür ama ses yoktur. Adli
   // incelemede bu kabul edilemez: kullanıcı neyi kaybettiğini bilmeli.
-  if (missingAudio.length) {
-    zip.file(
-      'EKSIK_SES_UYARISI.txt',
-      'Bu pakette aşağıdaki ses dosyaları YOKTUR (yerel depoda bulunamadı):\n\n' +
-        missingAudio.map((x) => '• ' + x).join('\n') +
-        '\n\nDeşifre metinleri ve rapor verisi pakette vardır. ' +
-        'Ses dosyalarını orijinal kaynaktan yeniden eklemeniz gerekir.\n'
-    );
+  if (missingAudio.length || missingDocs.length) {
+    const parts = [];
+    if (missingAudio.length) {
+      parts.push(
+        'Bu pakette aşağıdaki ses dosyaları YOKTUR (yerel depoda bulunamadı):\n\n' +
+          missingAudio.map((x) => '• ' + x).join('\n') +
+          '\n\nDeşifre metinleri ve rapor verisi pakette vardır. ' +
+          'Ses dosyalarını orijinal kaynaktan yeniden eklemeniz gerekir.\n'
+      );
+    }
+    if (missingDocs.length) {
+      parts.push(
+        'Bu pakette aşağıdaki fizikî dosya belgeleri (taranmış kopya) YOKTUR:\n\n' +
+          missingDocs.map((x) => '• ' + x).join('\n') +
+          '\n\nTutanak kayıtları pakette vardır; belge kopyasını yeniden ekleyin.\n'
+      );
+    }
+    zip.file('EKSIK_SES_UYARISI.txt', parts.join('\n'));
   }
   const out = await zip.generateAsync({ type: 'blob' });
   // Dosya adı TARİH + SAAT taşır: aynı gün iki yedek üzerine yazmaz (v2.110).
   const fileName = backupFileName(plan, new Date());
   downloadBlob(out, fileName);
   markBackupDone();
-  if (missingAudio.length) {
+  if (missingAudio.length || missingDocs.length) {
     showToast(
-      `Paket oluşturuldu ANCAK ${missingAudio.length} ses dosyası bulunamadı ve pakete GİRMEDİ.` +
-        ' Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında. Deşifre metinleri pakette var.' +
+      `Paket oluşturuldu ANCAK ${missingAudio.length ? `${missingAudio.length} ses dosyası` : ''}` +
+        `${missingAudio.length && missingDocs.length ? ' ve ' : ''}` +
+        `${missingDocs.length ? `${missingDocs.length} fizikî dosya belgesi` : ''} bulunamadı ve pakete GİRMEDİ.` +
+        ' Ayrıntı paketteki EKSIK_SES_UYARISI.txt dosyasında.' +
+        (missingAudio.length ? ' Deşifre metinleri pakette var.' : '') +
         skippedNote
     );
   } else {
@@ -18364,6 +19056,16 @@ async function importArchive(zip, arch) {
         const blob = await zip.file(entry).async('blob');
         await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: m?.type || 'audio/wav' }));
       }
+      // Fizikî dosya belgeleri (v2.330): taranmış dizi pusulası + imzalı
+      // tutanak kopyaları da geri yüklenir.
+      for (const { docId, entry } of matchPhysicalDocEntries(
+        Object.keys(zip.files),
+        (c.physicalFile && c.physicalFile.documents) || [],
+        sourceId
+      )) {
+        const blob = await zip.file(entry).async('blob');
+        await storeBlob(`${c.id}::pfd:${docId}`, new Blob([blob], { type: 'application/octet-stream' }));
+      }
       // Sesi bulunamayan kayıt sessizce atlanmaz (dışa aktarmada uyarı vardı,
       // içeri alırken yoktu — v2.102'de kapatıldı).
       for (const m of c.materials) {
@@ -18450,11 +19152,22 @@ async function importProject(file) {
   c.lastEditedBy = '';
   c.materials = c.materials || [];
   const entryNames = Object.keys(zip.files);
+  // Paketteki belge klasörü ÖZGÜN dosya kimliğiyle yazılmıştır; yeni kimlik
+  // verildiği için eşleştirme eski kimlikle yapılır (v2.330).
+  const sourceId = pack.case && pack.case.id;
   for (const { materialId, entry } of matchAudioEntries(entryNames, c.materials)) {
     const m = c.materials.find((x) => x.id === materialId);
     const blob = await zip.file(entry).async('blob');
     const mime = m.type || 'audio/wav';
     await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
+  }
+  for (const { docId, entry } of matchPhysicalDocEntries(
+    entryNames,
+    (c.physicalFile && c.physicalFile.documents) || [],
+    sourceId
+  )) {
+    const blob = await zip.file(entry).async('blob');
+    await storeBlob(`${c.id}::pfd:${docId}`, new Blob([blob], { type: 'application/octet-stream' }));
   }
   c.name = c.name || c.fileNo || 'Paketten yüklenen dosya';
   snapshotForUndo('paketten dosya yüklendi');
@@ -18751,12 +19464,36 @@ function setupEvents() {
       setReportMode('check');
       switchView('report');
     }
+    // FİZİKÎ DOSYA (v2.330): düzenle (çekmece), tutanak indir, belge indir.
+    if (t.closest('[data-pf-edit]')) {
+      populateCaseForm();
+      setCaseDrawer(true);
+      return;
+    }
+    const pfTut = t.closest('[data-pf-tutanak]');
+    if (pfTut) {
+      const [kind, fmt] = String(pfTut.dataset.pfTutanak).split(':');
+      exportPhysicalTutanak(kind, fmt);
+      return;
+    }
+    const pfDoc = t.closest('[data-pf-doc-open]');
+    if (pfDoc) {
+      openPhysicalDoc(currentCase(), pfDoc.dataset.pfDocOpen);
+    }
   });
   // Ekip alanları: yazma/kaldırma. Delegasyon kullanılır çünkü panel yeniden
   // çizildiğinde düğümler tazelenir.
   $('#caseDrawer').addEventListener('input', (e) => {
     const el = e.target;
     if (el.id === 'whoEditingSelect') return; // change olayında işlenir
+    if (el.dataset && el.dataset.pf !== undefined) {
+      updatePhysicalField(el.dataset.pf, el.dataset.pfKey, el.value);
+      return;
+    }
+    if (el.dataset && el.dataset.pfItem !== undefined) {
+      updatePhysicalItem(el.dataset.pfItem, el.dataset.pfItemKey, el.value);
+      return;
+    }
     if (el.dataset && el.dataset.team !== undefined) {
       updateTeamMember(el.dataset.team, el.dataset.teamKey, el.value);
     }
@@ -18766,6 +19503,26 @@ function setupEvents() {
   });
   $('#caseDrawer').addEventListener('change', (e) => {
     const el = e.target;
+    // FİZİKÎ DOSYA (v2.330): seçim/onay kutusu ve belge yükleme.
+    if (el.dataset && el.dataset.pf !== undefined) {
+      updatePhysicalField(el.dataset.pf, el.dataset.pfKey, el.value);
+      return;
+    }
+    if (el.dataset && el.dataset.pfItem !== undefined) {
+      updatePhysicalItem(el.dataset.pfItem, el.dataset.pfItemKey, el.value);
+      return;
+    }
+    if (el.dataset && el.dataset.pfItemCheck !== undefined) {
+      const [id, key] = String(el.dataset.pfItemCheck).split(':');
+      setPhysicalItemFlag(id, key, el.checked);
+      return;
+    }
+    if (el.id === 'pfDocFile') {
+      const f = el.files && el.files[0];
+      el.value = '';
+      if (f) attachPhysicalDoc(f);
+      return;
+    }
     if (el.id === 'whoEditingSelect') {
       const c = currentCase();
       if (c) {
@@ -18794,6 +19551,32 @@ function setupEvents() {
     }
   });
   $('#caseDrawer').addEventListener('click', (e) => {
+    // FİZİKÎ DOSYA (v2.330): materyal ekle/kaldır, belge aç/kaldır, tutanak.
+    if (e.target.closest('[data-pf-item-add]')) {
+      addPhysicalItem();
+      return;
+    }
+    const pfRemove = e.target.closest('[data-pf-item-remove]');
+    if (pfRemove) {
+      removePhysicalItem(pfRemove.dataset.pfItemRemove);
+      return;
+    }
+    const pfDocOpen = e.target.closest('[data-pf-doc-open]');
+    if (pfDocOpen) {
+      openPhysicalDoc(currentCase(), pfDocOpen.dataset.pfDocOpen);
+      return;
+    }
+    const pfDocRemove = e.target.closest('[data-pf-doc-remove]');
+    if (pfDocRemove) {
+      detachPhysicalDoc(pfDocRemove.dataset.pfDocRemove);
+      return;
+    }
+    const pfTut = e.target.closest('[data-pf-tutanak]');
+    if (pfTut) {
+      const [kind, fmt] = String(pfTut.dataset.pfTutanak).split(':');
+      exportPhysicalTutanak(kind, fmt);
+      return;
+    }
     if (e.target.closest('[data-add-case-person]')) {
       addCasePerson();
       return;
@@ -21983,6 +22766,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.330': {
+    title: 'Fizikî dosya teslim ve iade takibi',
+    body:
+      'Mahkemenin fizikî olarak teslim ettiği dava dosyası ve USB/CD/DVD gibi materyaller artık Dosya bölümünde kaydedilir: teslim tarihi/saati, teslim eden görevli, klasör sayısı, dizi pusulası durumu ve her materyalin dıştan görünen özellikleri. İade aşamasında ilk liste aynen gelir; iade edilmeyen materyal açıkça uyarı olarak görünür ve hiçbir materyal kendiliğinden iade edilmiş sayılmaz. Teslim alma ve iade için ayrı UDF/DOCX tutanağı indirilebilir (imza alanlı); taranmış dizi pusulası ve imzalı tutanak kopyası dosyaya eklenir ve paket yedeğine girer. Dosya yalnız UYAP üzerinden incelendiyse bu bölüm boş kalabilir; zorunlu değildir. Uygulama e-imza üretmez.'
+  },
   '2.329': {
     title: 'T.C. iki şablonda da; puntolar düzeltildi',
     body:

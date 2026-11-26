@@ -6,12 +6,74 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.329.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.330.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.330 — Fizikî dosya teslim ve iade takibi
+
+**KULLANICI NE GÖRECEK:** Mahkeme kâğıt dosya ve/veya **USB, CD, DVD, harici
+disk, mühürlü zarf** teslim ettiyse artık **Dosya → Fizikî dosya teslim ve
+iade** bölümüne kaydedilir. Ne teslim alındığı, kimden, hangi tarih/saatte,
+kaç klasör olduğu ve **dizi pusulası verilip verilmediği** yazılır. İade
+aşamasında **ilk liste aynen karşıya gelir**; **hiçbir materyal kendiliğinden
+iade edilmiş sayılmaz** ve **iade edilmeyen materyal kırmızı uyarı** olarak
+görünür. **Teslim tutanağı** ve **iade tutanağı** ayrı UDF/DOCX olarak,
+**imza alanlarıyla** indirilir. Taranmış dizi pusulası ve imzalı tutanak
+kopyası dosyaya eklenir, **paket (.akis) yedeğine girer**. Dosya yalnız **UYAP**
+üzerinden incelendiyse bu bölüm **boş kalabilir**; zorunlu değildir.
+
+**Yapılan**
+- `case.physicalFile` (şema): `handover` (teslim), `items[]` (fizikî
+  materyaller), `return` (iade), `documents[]` (taranmış belge kopyaları).
+  Teslim ve iade **ayrı tarih/saat** taşır.
+- `PHYSICAL_ITEM_DEFS` (8 tür) + `PHYSICAL_INDEX_DEFS` (verildi/verilmedi/
+  belirtilmedi) — TEK KAYNAK; arayüz ve rapor buradan beslenir.
+- Saf fonksiyonlar: `physicalFileActive`, `physicalItemReturnState`,
+  `physicalCounts`, `physicalMissingItems`, `physicalReturnComplete`,
+  `physicalHandoverComplete`.
+- **EK-1** artık bu kayıttan üretilir: teslim tablosu + materyal tablosu +
+  iade tablosu; kayıt yoksa dürüst açıklama yazar (uydurma satır yok).
+  Ses kaydı kökeni (`origin`) ile **karışmaz**.
+- **Ayrı tutanak belgeleri:** `physicalTutanakCase` geçici kopyada yalnız EK-1'i
+  açar, kapak/içindekiler/imza/ek listesini kapatır; başlık **"Rapor eki N."
+  öneki taşımaz**. Üç çıktı aynı metni üretir (`blocks` karışık blok türü).
+- **Belge kopyaları:** `belge/<dosyaId>/<belgeId>_ad` paket yoluna yazılır; iki
+  paket yolu (tekil/arşiv) aynı sözleşmeyi kullanır. Eksik belge sessizce
+  atlanmaz (`EKSIK_SES_UYARISI.txt`).
+- Rapor hazırlığına **"İade edilmeyen fizikî materyal"** maddesi (uzman).
+- Kalıcı silme `purgeCaseMedia` belge kopyalarını da bırakır.
+
+**DEĞİŞMEZ KURALLAR**
+1. Fizikî teslim **zorunlu değildir**; UYAP erişimi fizikî teslim sayılmaz.
+2. **Hiçbir materyal kendiliğinden iade edildi sayılmaz**; varsayılan "hayır".
+3. Dosya içeriği sayılmadıysa "sayılmadı" yazılır; sistem sayıldığını varsaymaz.
+4. Aynı bilgi iki yerde tutulmaz: EK-1 bu kaydın çıktısıdır.
+5. E-imza üretilmez; mahkeme onayı iddia edilmez.
+6. Eski AKİS dosyaları bozulmaz (alan yoksa boş kayıt).
+
+**ESKİ DOSYALAR:** Kayıtta `physicalFile` yoksa boş kayıt açılır (çökme/veri
+kaybı yok). **EK-1'in içeriği değişti:** eskiden ses kaydı kökeninden
+(`origin.deliveredBy/deliveredAt`) üretiliyordu; artık **yalnız fizikî dosya
+kaydından** üretilir. Eski dosyalarda fizikî kayıt yoksa EK-1 "kayıt
+girilmemiştir" yazar — **uydurma teslim satırı basılmaz**. Ses kaydı kökeni
+bilgisi kendi bölümünde (`KAYIT KÖKENİ`) durmaya devam eder.
+
+**ÖLÇÜM (gerçek Chromium + CDP, 1440×900):** Dosya sayfası paneli kayıt yokken
+"Kayıt yok" + UYAP notu; çekmecede 3 materyal + teslim/iade dolduruldu → çip
+**"1 materyal iade edilmedi"**, eksik uyarısı ve "Dizi pusulası verilmedi"
+uyarısı görünür, iade sütunu `İade edildi / İade edilmedi / İade edildi`;
+yenilemeden sonra **korundu**; 1440/1280/1100/900/760/600 → kırpılan **0**,
+yatay taşma **0**; tutanak UDF indi (`Tutanak_Teslim_…udf`,
+`Tutanak_Iade_…udf`), belge eklendi (`dizi-pusulasi.pdf`), paket indi
+(`AKIS_Paket_Tam_1dosya_…akis`) ve içinde `belge/<dosyaId>/…pdf` **bayt bayt
+aynı**; JS hatası **0**.
+
+**Test:** `birim [162]`, `sema` (fizikî dosya), `rapor` Senaryo 46,
+`tasarim [2dg]`, `surum` kimlikleri.
 
 ## v2.329 — `T.C.` iki şablonda da · punto denetimi
 

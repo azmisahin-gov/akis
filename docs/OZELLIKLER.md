@@ -1,4 +1,4 @@
-# Özellikler (v2.329 — mevcut durum)
+# Özellikler (v2.330 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1086,3 +1086,18 @@ rapor biçimi (font/punto/marj) kullanılır.
   ortamda okunmaz. Tier 1 çıktısı "adli imaj" değil, "belgelenmiş kopya"dır.
 - Kontrol edilmemiş deşifreyi doğrulanmış gibi göstermez.
 - Yapılmayan incelemeyi rapora yazmaz.
+
+## Fizikî dosya teslim ve iade (v2.330)
+
+Mahkemenin **fizikî olarak** teslim ettiği dava dosyası ve ayrı materyaller
+(USB, CD, DVD, harici disk, mühürlü zarf) **Dosya** alanında kaydedilir.
+Teslim ve iade **ayrı tarih/saat** ile tutulur; iade ekranına ilk teslim listesi
+aynen gelir ve **hiçbir materyal kendiliğinden iade edilmiş sayılmaz**.
+İade edilmeyen materyal açık uyarı olarak görünür. Dizi pusulası
+verildi/verilmedi/belirtilmedi olarak işaretlenir, taranmış kopyası eklenebilir.
+**Teslim tutanağı** ve **iade tutanağı** ayrı UDF/DOCX (imza alanlı) indirilir.
+Raporun **EK-1 (materyal teslim ve iade tutanağı)** bölümü bu kayıttan üretilir;
+ses kaydı kökeni (`origin`) ile karışmaz. Dosya yalnız **UYAP erişimi**yle
+incelendiyse bu bölüm boş kalabilir ve **zorunlu değildir**. Belge kopyaları
+`.akis` paketine girer; uygulama e-imza üretmez. Test: `birim [162]`,
+`rapor` 46, `tasarim [2dg]`.

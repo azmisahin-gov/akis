@@ -4232,3 +4232,29 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .letter-meta b { font-weight: 700; }
 .letter-annex p { margin: 0 0 2px; color: var(--paper-ink); overflow-wrap: anywhere; }
 
+
+/* v2.330 — FİZİKÎ DOSYA TESLİM VE İADE. Kural: metin rengi token'dan gelir
+   (ham hex yok), kırpma yok (sığmayan öğe sarar), durum yalnız renkle
+   anlatılmaz — yanında METİN de yazar. Tablo dar ekranda sarar. */
+.physical-panel .dl-grid { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)); }
+.physical-panel .pf-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.physical-panel .pf-table { width: 100%; table-layout: fixed; margin-top: 10px; }
+.physical-panel .pf-table th,
+.physical-panel .pf-table td { overflow-wrap: anywhere; font-size: var(--fs-xs); }
+.pf-ok { color: var(--green); font-weight: 700; }
+.pf-warn { color: var(--gold); font-weight: 700; }
+.pf-bad { color: var(--red); font-weight: 700; }
+.pf-docs { margin-top: 10px; }
+.pf-docs-title { display: block; font-size: var(--fs-2xs); font-weight: 700; color: var(--ink-2); margin-bottom: 4px; }
+.pf-docs ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.pf-docs li { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: var(--fs-xs); color: var(--ink-2); }
+.pf-docs li b { color: var(--ink); overflow-wrap: anywhere; }
+.pf-form .pf-item { border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px; margin-bottom: 8px; background: var(--surface-2); }
+.pf-item-head { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; }
+.pf-item-head b { color: var(--ink); font-size: var(--fs-xs); overflow-wrap: anywhere; }
+.pf-badge { font-size: var(--fs-2xs); font-weight: 700; border: 1px solid currentColor; border-radius: 999px; padding: 1px 7px; }
+.pf-item-flags { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.pf-check { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--ink-2); }
+.pf-doc-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pf-doc-list li { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: var(--fs-xs); color: var(--ink-2); }
+.pf-doc-list li b { color: var(--ink); overflow-wrap: anywhere; }

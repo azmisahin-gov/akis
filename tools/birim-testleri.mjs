@@ -169,6 +169,11 @@ const EXPOSE = [
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
+  // v2.330 — fizikî dosya teslim ve iade
+  'physicalPanelHtml', 'physicalAnnexBlock', 'physicalTutanakCase', 'physicalTutanakBlocks',
+  'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
+  'physicalItemStateText', 'physicalStatusChip', 'niceDateTime', 'matchPhysicalDocEntries',
+  'physicalDocKey', 'PHYSICAL_ITEM_DEFS', 'PHYSICAL_INDEX_DEFS', 'physicalMutate',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -7086,6 +7091,173 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // BOS.udf şablonu oradaki sandbox'ta var; birim sandbox'ında fetch stub'ı yok).
   eq('udfDocument tanımlı', typeof T.udfDocument, 'function');
   eq('docxDocument tanımlı', typeof T.docxDocument, 'function');
+}
+
+
+// [162] v2.330 — Fizikî dosya teslim ve iade: model, iade durumu, tutanak.
+{
+  console.log('[162] Fizikî dosya teslim ve iade (v2.330)');
+  const S = __schemaMod;
+  // --- Tanımlar TEK KAYNAK
+  eq('materyal türü tanımları var', S.PHYSICAL_ITEM_DEFS.length, 8);
+  eq('tür kodları ASCII', S.PHYSICAL_ITEM_TYPE.every((k) => /^[a-z_]+$/.test(k)), true);
+  eq('dizi pusulası üç hâlli', S.PHYSICAL_INDEX_STATE.join(','), 'yes,no,unknown');
+  eq('dizi etiketi', S.PHYSICAL_INDEX_LABEL.no, 'Verilmedi');
+
+  // --- Boş kayıt: veri yok, dosya "boş" sayılır
+  const empty = S.emptyPhysicalFile();
+  eq('boş kayıt veri taşımaz', S.physicalFileActive(empty), false);
+  eq('varsayılan teslim HAYIR', empty.handover.delivered, false);
+  eq('varsayılan iade HAYIR', empty.returned, false);
+  eq('varsayılan dizi belirtilmedi', empty.handover.indexDelivered, 'unknown');
+  eq('iade tamam değil', S.physicalReturnComplete(empty), false);
+
+  // --- Materyal: varsayılan "açılmadı", "iade edilmedi" (varsayım YOK)
+  const it = S.emptyPhysicalItem({ label: 'USB-1', seal: 'M-1', condition: 'sağlam' });
+  eq('materyal açılmadı', it.opened, false);
+  eq('materyal iade edilmedi', it.returned, false);
+  eq('iade durumu: iade edilmedi', S.physicalItemReturnState(it), 'notReturned');
+  eq('iade edildi', S.physicalItemReturnState({ ...it, returned: true }), 'returned');
+  eq('mühür değişti', S.physicalItemReturnState({ ...it, returned: true, returnSeal: 'M-2' }), 'changed');
+  eq('durum değişti', S.physicalItemReturnState({ ...it, returned: true, returnCondition: 'hasarlı' }), 'changed');
+
+  // --- Özet: eksik materyal görünür, iade tamam sayılmaz
+  const pf = S.normalizePhysicalFile({
+    handover: { delivered: true, at: '2026-11-20T10:30', deliveredBy: 'Görevli A', folders: '2', indexDelivered: 'no' },
+    items: [
+      { id: 'i1', type: 'usb', label: 'USB-1', related: true, returned: true },
+      { id: 'i2', type: 'usb', label: 'USB-2' },
+      { id: 'i3', type: 'cd', label: 'CD-1' }
+    ],
+    returned: true,
+    return: { at: '2026-11-25T16:00', receivedBy: 'Görevli B', indexCompared: 'no' }
+  });
+  const counts = S.physicalCounts(pf);
+  eq('materyal sayısı', counts.items, 3);
+  eq('ilgili sayısı', counts.related, 1);
+  eq('iade edilen', counts.returned, 1);
+  eq('eksik sayısı', counts.missing, 2);
+  eq('eksik liste', S.physicalMissingItems(pf).map((x) => x.label).join(','), 'USB-2,CD-1');
+  eq('eksik varken iade TAMAM DEĞİL', S.physicalReturnComplete(pf), false);
+  eq('teslim kaydı tam', S.physicalHandoverComplete(pf), true);
+  eq('kayıt veri taşır', S.physicalFileActive(pf), true);
+
+  // --- normalize: bilinmeyen alan korunur, bilinmeyen tür 'other'
+  const norm = S.normalizePhysicalFile({ handover: { delivered: true, gelecek: 'x' }, items: [{ type: 'bilinmeyen' }] });
+  eq('bilinmeyen alan korunur', norm.handover.gelecek, 'x');
+  eq('bilinmeyen tür other', norm.items[0].type, 'other');
+  eq('kimlik verilir', !!norm.items[0].id, true);
+
+  // --- EK-1: kayıt yoksa dürüst açıklama (uydurma satır yok)
+  const cEmpty = T.emptyCaseForTest({ id: 'cPF0' });
+  const bEmpty = T.physicalAnnexBlock(cEmpty);
+  eq('kayıt yoksa paragraf', bEmpty.kind, 'para');
+  eq('kayıt yoksa dürüst metin', bEmpty.text, T.REPORT_TEXT.physicalAnnexEmpty);
+
+  // --- EK-1: kayıt varsa teslim + materyal + iade tabloları
+  const c = T.emptyCaseForTest({ id: 'cPF1', fileNo: '2026/9', materials: [] });
+  c.physicalFile = pf;
+  const b = T.physicalAnnexBlock(c);
+  eq('karışık blok', b.kind, 'blocks');
+  // Sıra: giriş · teslim · dizi-pusulası uyarısı · materyaller · iade · eksik uyarısı
+  eq('blok sayısı', b.blocks.length, 6);
+  eq('teslim tablosu başlığı', b.blocks[1].title, T.REPORT_TEXT.physicalHandoverHeading);
+  eq('dizi pusulası uyarısı', b.blocks[2].text, T.REPORT_TEXT.physicalNoIndexWarning);
+  eq('materyal tablosu 3 satır', b.blocks[3].rows.length, 3);
+  eq('materyal iade sütunu', b.blocks[3].rows[1][7], T.REPORT_TEXT.physicalNotReturned);
+  eq('iade tablosunda eksik uyarısı', b.blocks[4].rows.some((r) => /İADE EDİLMEDİ/.test(r[1])), true);
+  eq('kapanış uyarısı', b.blocks[5].text, T.REPORT_TEXT.physicalMissingWarning);
+  eq('dizi pusulası "verilmedi" satırı', b.blocks[1].rows.some((r) => r[0] === 'Dizi pusulası' && r[1] === 'Verilmedi'), true);
+  eq('uyarı metni blokta', b.blocks.some((x) => x.kind === 'para' && x.text === T.REPORT_TEXT.physicalNoIndexWarning), true);
+
+  // --- AYRI TUTANAK BELGESİ: yalnız EK-1, kapak/içindekiler/imza YOK
+  const docH = T.physicalTutanakCase(c, 'handover');
+  eq('tutanak: yalnız EKLER bölümü', docH.report.layout.order.join(','), 'annex');
+  eq('tutanak: yalnız ek1 açık', Object.keys(docH.report.layout.annexes).filter((k) => docH.report.layout.annexes[k]).join(','), 'ek1');
+  eq('tutanak: kapak kapalı', docH.report.sections.cover, false);
+  eq('tutanak: içindekiler kapalı', docH.report.sections.toc, false);
+  eq('tutanak: imza bölümü kapalı', docH.report.sections.signature, false);
+  eq('tutanak: numarasız', docH.report.numbering, 'none');
+  eq('tutanak: kompakt akış', docH.__annexDoc, true);
+  eq('tutanak türü', docH.__tutanakKind, 'handover');
+  eq('orijinal kayıt DEĞİŞMEZ (tutanak işareti yok)', c.__tutanakKind, undefined);
+  eq('orijinal kayıt DEĞİŞMEZ (ekler açık)', Object.values(c.report.layout.annexes).every((v) => v === true), true);
+  eq('tutanak başlığı (teslim)', T.reportAnnexList(docH)[0].heading, 'FİZİKÎ DOSYA TESLİM TUTANAĞI');
+  const docR = T.physicalTutanakCase(c, 'return');
+  eq('tutanak başlığı (iade)', T.reportAnnexList(docR)[0].heading, 'FİZİKÎ DOSYA İADE TUTANAĞI');
+  const blocksH = T.physicalTutanakBlocks(c, 'handover');
+  eq('teslim tutanağında iade tablosu YOK', blocksH.some((x) => x.title === T.REPORT_TEXT.physicalReturnHeading), false);
+  eq('teslim tutanağında imza tablosu var', blocksH.some((x) => x.title === 'İmzalar'), true);
+  const sig = T.physicalSignatureTable(c, 'handover');
+  eq('imza sütunları', sig.headers.join('|'), 'TESLİM EDEN (Görevli)|TESLİM ALAN (Bilirkişi)');
+  eq('imza satırı adlar', sig.rows[0][0], 'Görevli A');
+  eq('imza satırı boş alan', sig.rows[1].join('|'), 'İmza:|İmza:');
+  const sigR = T.physicalSignatureTable(c, 'return');
+  eq('iade imza sütunları', sigR.headers.join('|'), 'TESLİM EDEN (Bilirkişi)|TESLİM ALAN (Görevli)');
+
+  // --- Panel: eksik materyal görünür + uyarı
+  const panel = T.physicalPanelHtml(c);
+  eq('panelde eksik uyarısı', /2 materyal İADE EDİLMEDİ/.test(panel), true);
+  eq('panelde dizi pusulası uyarısı', /Dizi pusulası verilmedi/.test(panel), true);
+  eq('panelde tutanak düğmeleri', /data-pf-tutanak="return:udf"/.test(panel), true);
+  eq('panelde durum çipi', T.physicalStatusChip(c).text, '2 materyal iade edilmedi');
+  const cNo = T.emptyCaseForTest({ id: 'cPF2' });
+  eq('kayıt yoksa çip', T.physicalStatusChip(cNo).text, 'Kayıt yok');
+  eq('kayıt yoksa panel UYAP notu', /zorunlu değildir/.test(T.physicalPanelHtml(cNo)), true);
+
+  // --- Tarih/saat biçimi
+  eq('tarih+saat', T.niceDateTime('2026-11-20T10:30'), '20.11.2026 10:30');
+  eq('yalnız tarih', T.niceDateTime('2026-11-20'), '20.11.2026');
+  eq('boş tarih', T.niceDateTime(''), '—');
+
+  // --- Paket belge eşleşmesi: dosya kimliği + yalın klasör yedeği
+  const entries = ['belge/cOLD/pfd1_dizi.pdf', 'belge/pfd2_tutanak.pdf', 'belge/'];
+  eq(
+    'belge eşleşmesi (dosya kimliği)',
+    T.matchPhysicalDocEntries(entries, [{ id: 'pfd1' }], 'cOLD').map((x) => x.entry).join(','),
+    'belge/cOLD/pfd1_dizi.pdf'
+  );
+  eq(
+    'belge eşleşmesi (yalın klasör)',
+    T.matchPhysicalDocEntries(entries, [{ id: 'pfd2' }], 'cNEW').map((x) => x.entry).join(','),
+    'belge/pfd2_tutanak.pdf'
+  );
+  eq('belge anahtarı', T.physicalDocKey({ id: 'c1' }, { id: 'd1' }), 'c1::pfd:d1');
+
+  // --- Birleştirme: boş alan dolar, farklı dolu değer çakışma (sessiz ezme yok)
+  const mine = T.emptyCaseForTest({ id: 'cM', updatedAt: '2026-11-20T10:00' });
+  mine.physicalFile = S.normalizePhysicalFile({ handover: { delivered: true, at: '2026-11-20T10:30', deliveredBy: 'A' } });
+  const theirs = T.emptyCaseForTest({ id: 'cM', updatedAt: '2026-11-21T10:00' });
+  theirs.physicalFile = S.normalizePhysicalFile({
+    handover: { delivered: true, at: '2026-11-20T10:30', deliveredBy: 'B', folders: '2' },
+    items: [{ id: 'i9', type: 'usb', label: 'USB-9' }]
+  });
+  const m = T.mergeCasesForTest(mine, theirs);
+  eq('birleştirme: boş alan doldu', m.merged.physicalFile.handover.folders, '2');
+  eq('birleştirme: farklı değer korunur', m.merged.physicalFile.handover.deliveredBy, 'A');
+  eq('birleştirme: farklı değer çakışma', m.conflicts.some((x) => x.kind === 'physical-file'), true);
+  eq('birleştirme: yeni materyal eklendi', m.merged.physicalFile.items.map((x) => x.id).join(','), 'i9');
+  const cmp = T.compareCasesForTest(mine, theirs);
+  eq('önizleme: çakışma sayısı', cmp.physical.conflicts.length, 1);
+  eq('önizleme: yeni materyal', cmp.physical.itemsAdded, 1);
+  eq('önizleme: doldurulacak alan', cmp.physical.filled, 1);
+
+  // --- Boş dosya sayılmaz: yalnız fizikî kayıt varsa dosya VERİ TAŞIR
+  const onlyPf = T.emptyCaseForTest({ id: 'cPF3' });
+  onlyPf.physicalFile = S.normalizePhysicalFile({ handover: { delivered: true, at: '2026-11-20T10:30' } });
+  eq('yalnız fizikî kayıt veri sayılır', S.physicalFileActive(onlyPf.physicalFile), true);
+
+  // --- Kaynakta "iade edildi" varsayımı YOK: tüm materyaller varsayılan false
+  const schemaSrc = fs.readFileSync(path.join(ROOT, 'assets/schema.js'), 'utf8');
+  eq('varsayılan iade işareti false', /returned:\s*false/.test(schemaSrc), true);
+  // Rapor metni ürün adı taşımaz (v2.83 kuralı) — fizikî blok metinleri de.
+  const physText = [
+    T.REPORT_TEXT.physicalAnnexEmpty,
+    T.REPORT_TEXT.physicalIntro,
+    T.REPORT_TEXT.physicalSignatureNote,
+    T.REPORT_TEXT.physicalMissingWarning
+  ].join(' ');
+  eq('fizikî metinlerde ürün adı yok', /AKİS|uygulama/i.test(physText), false);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

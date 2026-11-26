@@ -196,6 +196,40 @@ export const MEDIUM_TYPE = MEDIUM_TYPE_OPT.keys;
 export const MEDIUM_TYPE_LABEL = MEDIUM_TYPE_OPT.label;
 
 /**
+ * FİZİKÎ DOSYA TESLİM VE İADE (v2.330) — TEK KAYNAK.
+ *
+ * Mahkeme bilirkişiye fizikî dava dosyası ve/veya ayrı fizikî nesneler (USB,
+ * CD, DVD, harici disk, mühürlü zarf) teslim edebilir. Bu kayıt, neyin teslim
+ * alındığını ve neyin iade edildiğini tutar; içerik analizi YAPMAZ.
+ *
+ * Bu tanımlar ses kaydı kökeninden (`origin`) AYRIDIR: `origin` sesin
+ * nereden geldiğini, `physicalFile` ise kâğıt/nesne teslimini anlatır.
+ */
+export const PHYSICAL_ITEM_DEFS = [
+  { key: 'usb', label: 'USB flaş bellek' },
+  { key: 'cd', label: 'CD' },
+  { key: 'dvd', label: 'DVD' },
+  { key: 'external_disk', label: 'Harici disk' },
+  { key: 'memory_card', label: 'Hafıza kartı' },
+  { key: 'sealed_envelope', label: 'Mühürlü zarf / paket' },
+  { key: 'document', label: 'Belge / evrak' },
+  { key: 'other', label: 'Diğer' }
+];
+const PHYSICAL_ITEM_OPT = defineOptions(PHYSICAL_ITEM_DEFS);
+export const PHYSICAL_ITEM_TYPE = PHYSICAL_ITEM_OPT.keys;
+export const PHYSICAL_ITEM_LABEL = PHYSICAL_ITEM_OPT.label;
+
+/** Dizi pusulası durumu — üç hâlli: verildi / verilmedi / belirtilmedi. */
+export const PHYSICAL_INDEX_DEFS = [
+  { key: 'yes', label: 'Verildi' },
+  { key: 'no', label: 'Verilmedi' },
+  { key: 'unknown', label: 'Belirtilmedi' }
+];
+const PHYSICAL_INDEX_OPT = defineOptions(PHYSICAL_INDEX_DEFS);
+export const PHYSICAL_INDEX_STATE = PHYSICAL_INDEX_OPT.keys;
+export const PHYSICAL_INDEX_LABEL = PHYSICAL_INDEX_OPT.label;
+
+/**
  * ALAN TANIMLAMA — TEK KAYNAK (v2.203).
  *
  * Gözlem bayrakları burada tanımlanır. Yeni bir bayrak eklemek için YALNIZ
@@ -1476,6 +1510,11 @@ export function emptyCase(over = {}) {
     letter: emptyLetter(),
     letterAnnexes: emptyLetterAnnexes(),
 
+    // FİZİKÎ DOSYA TESLİM VE İADE (v2.330): kâğıt dosya + fizikî materyal
+    // (USB/CD/DVD…) teslim ve iade kaydı. Ses kökeninden (`origin`) AYRIDIR;
+    // UYAP erişimi burada tutulmaz ve zorunlu değildir.
+    physicalFile: emptyPhysicalFile(),
+
     // Rapor
     report: {
       date: '',
@@ -1549,6 +1588,215 @@ const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const pick = (v, allowed, fallback) => (allowed.includes(v) ? v : fallback);
 const str = (v) => (typeof v === 'string' ? v : v == null ? '' : String(v));
 const num = (v) => (Number.isFinite(Number(v)) ? Number(v) : 0);
+
+// ---- 5b. Fizikî dosya teslim ve iade (v2.330) ----------------------------
+// KURAL: teslim ve iade AYRI kayıtlardır (ayrı tarih/saat). Teslim alınan
+// materyal listesi iade ekranına AYNEN gelir; hiçbir materyal kendiliğinden
+// "iade edildi" sayılmaz. Dosya içeriği sayılmadıysa bu durum açıkça yazılır.
+export function emptyPhysicalItem(over = {}) {
+  return {
+    id: newId('pf'),
+    type: 'usb',
+    label: '', // görülebilen marka/model/etiket
+    serial: '',
+    seal: '', // mühür/ambalaj numarası
+    condition: '', // teslim anındaki fizikî durum
+    related: false, // inceleme göreviyle ilgili mi
+    materialId: '', // ilişkili ses kaydı (varsa)
+    opened: false, // açıldı/incelendi mi (varsayılan HAYIR)
+    returned: false,
+    returnSeal: '',
+    returnCondition: '',
+    note: '',
+    ...over
+  };
+}
+
+export function emptyPhysicalFile(over = {}) {
+  return {
+    // Teslim alma
+    handover: {
+      delivered: false, // fizikî dosya teslim alındı mı (UYAP erişimi bunun dışındadır)
+      at: '', // YYYY-MM-DDTHH:MM (yerel)
+      deliveredBy: '', // teslim eden görevli
+      receivedBy: '', // teslim alan bilirkişi
+      folders: '', // klasör / cilt sayısı
+      pages: '', // sayfa sayısı (biliniyorsa)
+      condition: '',
+      indexDelivered: 'unknown', // dizi pusulası: yes | no | unknown
+      indexNote: '',
+      note: ''
+    },
+    items: [], // emptyPhysicalItem() listesi
+    // İade
+    returned: false,
+    return: {
+      at: '',
+      returnedBy: '', // iade eden bilirkişi
+      receivedBy: '', // iade alan görevli
+      folders: '',
+      condition: '',
+      indexCompared: 'unknown', // dizi pusulasıyla karşılaştırıldı mı: yes | no | unknown
+      differences: '',
+      note: ''
+    },
+    // Belge kopyaları (taranmış dizi pusulası, imzalı tutanak kopyaları).
+    // Gövde IndexedDB'de tutulur; burada YALNIZ üst veri durur.
+    documents: [], // { id, kind, name, at, size, note }
+    ...over
+  };
+}
+
+export function normalizePhysicalItem(src = {}) {
+  const s = isObj(src) ? src : {};
+  return {
+    ...s,
+    id: str(s.id) || newId('pf'),
+    type: pick(s.type, PHYSICAL_ITEM_TYPE, 'other'),
+    label: str(s.label),
+    serial: str(s.serial),
+    seal: str(s.seal),
+    condition: str(s.condition),
+    related: s.related === true,
+    materialId: str(s.materialId),
+    opened: s.opened === true,
+    returned: s.returned === true,
+    returnSeal: str(s.returnSeal),
+    returnCondition: str(s.returnCondition),
+    note: str(s.note)
+  };
+}
+
+export function normalizePhysicalFile(src = {}) {
+  const p = isObj(src) ? src : {};
+  const base = emptyPhysicalFile();
+  const h = isObj(p.handover) ? p.handover : {};
+  const r = isObj(p.return) ? p.return : {};
+  const docs = (Array.isArray(p.documents) ? p.documents : [])
+    .filter(isObj)
+    .map((d) => ({
+      ...d,
+      id: str(d.id) || newId('pfd'),
+      kind: pick(d.kind, ['index', 'handover', 'return', 'other'], 'other'),
+      name: str(d.name),
+      at: str(d.at),
+      size: num(d.size),
+      note: str(d.note)
+    }))
+    .filter((d) => d.name);
+  return {
+    ...base,
+    ...p,
+    handover: {
+      ...base.handover,
+      ...h,
+      delivered: h.delivered === true,
+      indexDelivered: pick(h.indexDelivered, PHYSICAL_INDEX_STATE, 'unknown')
+    },
+    // Bozuk (nesne olmayan) girdi materyal SAYILMAZ: hayalet satır üretilmez.
+    items: (Array.isArray(p.items) ? p.items : []).filter(isObj).map(normalizePhysicalItem),
+    returned: p.returned === true,
+    return: {
+      ...base.return,
+      ...r,
+      indexCompared: pick(r.indexCompared, PHYSICAL_INDEX_STATE, 'unknown')
+    },
+    documents: docs
+  };
+}
+
+const PHYSICAL_TEXT_KEYS = [
+  'handover.at',
+  'handover.deliveredBy',
+  'handover.receivedBy',
+  'handover.folders',
+  'handover.pages',
+  'handover.condition',
+  'handover.indexNote',
+  'handover.note',
+  'return.at',
+  'return.returnedBy',
+  'return.receivedBy',
+  'return.folders',
+  'return.condition',
+  'return.differences',
+  'return.note'
+];
+const pfGet = (p, path) => {
+  const [a, b] = path.split('.');
+  return str((p && p[a] && p[a][b]) || '');
+};
+
+/** Kullanıcı verisi var mı? Boş taslak dosyayı "dosya" yapmaz. */
+export function physicalFileActive(pf) {
+  if (!isObj(pf)) return false;
+  const h = isObj(pf.handover) ? pf.handover : {};
+  const r = isObj(pf.return) ? pf.return : {};
+  if (h.delivered === true || pf.returned === true) return true;
+  if ((Array.isArray(pf.items) ? pf.items : []).length) return true;
+  if ((Array.isArray(pf.documents) ? pf.documents : []).length) return true;
+  if (PHYSICAL_TEXT_KEYS.some((k) => pfGet(pf, k).trim())) return true;
+  if (h.indexDelivered && h.indexDelivered !== 'unknown') return true;
+  if (r.indexCompared && r.indexCompared !== 'unknown') return true;
+  return false;
+}
+
+/**
+ * Bir materyalin iade durumu. ÜÇ HÂL:
+ *   notReturned — iade edilmedi (teslim alınmışsa EKSİK demektir)
+ *   returned    — iade edildi, mühür/durum aynı
+ *   changed     — iade edildi ama mühür veya fizikî durum değişmiş
+ */
+export function physicalItemReturnState(item) {
+  const it = item || {};
+  if (!it.returned) return 'notReturned';
+  const seal = str(it.seal).trim();
+  const retSeal = str(it.returnSeal).trim();
+  const cond = str(it.condition).trim();
+  const retCond = str(it.returnCondition).trim();
+  if ((seal && retSeal && seal !== retSeal) || (cond && retCond && cond !== retCond)) return 'changed';
+  return 'returned';
+}
+
+/** Özet sayılar. Uydurma yok: yalnız kayıtlı materyaller sayılır. */
+export function physicalCounts(pf) {
+  const p = normalizePhysicalFile(pf);
+  const items = p.items;
+  const states = items.map(physicalItemReturnState);
+  return {
+    items: items.length,
+    related: items.filter((i) => i.related).length,
+    opened: items.filter((i) => i.opened).length,
+    returned: states.filter((s) => s === 'returned').length,
+    changed: states.filter((s) => s === 'changed').length,
+    missing: states.filter((s) => s === 'notReturned').length,
+    handoverDelivered: p.handover.delivered === true,
+    fileReturned: p.returned === true,
+    indexDelivered: p.handover.indexDelivered,
+    indexCompared: p.return.indexCompared,
+    documents: p.documents.length
+  };
+}
+
+/** İade edilmemiş materyaller (senaryo 4: eksik görünür olmalı). */
+export function physicalMissingItems(pf) {
+  const p = normalizePhysicalFile(pf);
+  return p.items.filter((i) => physicalItemReturnState(i) === 'notReturned');
+}
+
+/** İade tamam mı? Eksik materyal varsa TAMAM değildir (varsayılan kabul yok). */
+export function physicalReturnComplete(pf) {
+  const p = normalizePhysicalFile(pf);
+  if (!p.returned) return false;
+  return physicalMissingItems(p).length === 0;
+}
+
+/** Teslim kaydı yeterli mi? Fizikî dosya işaretliyse tarih ve teslim eden aranır. */
+export function physicalHandoverComplete(pf) {
+  const p = normalizePhysicalFile(pf);
+  if (!p.handover.delivered && !p.items.length) return false;
+  return !!str(p.handover.at).trim();
+}
 
 export function normalizeSegment(src = {}) {
   const s = isObj(src) ? src : {};
@@ -2475,6 +2723,8 @@ export function normalizeCase(src = {}) {
     // ÜST YAZI (v2.323): eksik/bozuk alan güvenli varsayılana çekilir.
     letter: normalizeLetter(c.letter),
     letterAnnexes: normalizeLetterAnnexes(c.letterAnnexes),
+    // FİZİKÎ DOSYA (v2.330): eski kayıtta yoktur; boş kayıt olur (veri kaybı yok).
+    physicalFile: normalizePhysicalFile(c.physicalFile),
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),
     materials: (Array.isArray(c.materials) ? c.materials : []).map(normalizeMaterial),
     shared: !!c.shared,
@@ -3112,6 +3362,79 @@ export function mergeCases(mine, theirs) {
     }
   }
 
+  // FİZİKÎ DOSYA TESLİM VE İADE (v2.330): teslim ve iade AYRI kayıtlardır;
+  // metin alanları boşsa doldurulur, iki dolu farklı değer ÇAKIŞMA bildirir.
+  // Materyaller ve belgeler KİMLİKLE eşleşir; aynı kimlikte farklı içerik
+  // sessizce ezilmez.
+  {
+    const mf = normalizePhysicalFile(mine.physicalFile);
+    const tf = normalizePhysicalFile(theirs.physicalFile);
+    const out = normalizePhysicalFile(merged.physicalFile);
+    for (const g of ['handover', 'return']) {
+      out[g] = out[g] || {};
+      for (const k of Object.keys(mf[g] || {})) {
+        const mv = str(mf[g][k]);
+        const tv = str(tf[g][k]);
+        if (!mv && tv) {
+          out[g][k] = tf[g][k];
+          applied.push(`fizikî dosya alanı dolduruldu: ${g}.${k}`);
+        } else if (mv && tv && mv !== tv) {
+          conflicts.push({
+            kind: 'physical-file',
+            field: `${g}.${k}`,
+            mine: mv,
+            theirs: tv,
+            reason: 'aynı fizikî dosya alanında farklı değer'
+          });
+        }
+      }
+    }
+    if (!out.handover.delivered && tf.handover.delivered) {
+      out.handover.delivered = true;
+      applied.push('fizikî dosya teslim alındı bilgisi alındı');
+    }
+    if (!out.returned && tf.returned) {
+      out.returned = true;
+      applied.push('fizikî dosya iade edildi bilgisi alındı');
+    }
+    // Materyaller: id ile ekle; farklı içerik çakışma.
+    const byId = new Map(out.items.map((x) => [x.id, x]));
+    for (const ti of tf.items) {
+      const mi = byId.get(ti.id);
+      if (!mi) {
+        out.items.push(ti);
+        byId.set(ti.id, ti);
+        applied.push(`fizikî materyal eklendi: ${PHYSICAL_ITEM_LABEL[ti.type] || ti.type} ${ti.label || ''}`.trim());
+      } else if (JSON.stringify(mi) !== JSON.stringify(ti)) {
+        // İade bilgisi gelen tarafta ilerlemişse alınır (tek yön: iadeye doğru).
+        if (!mi.returned && ti.returned) {
+          mi.returned = true;
+          mi.returnSeal = ti.returnSeal || mi.returnSeal;
+          mi.returnCondition = ti.returnCondition || mi.returnCondition;
+          applied.push(`fizikî materyal iadesi alındı: ${mi.label || mi.id}`);
+        } else {
+          conflicts.push({
+            kind: 'physical-item',
+            itemId: mi.id,
+            field: 'items',
+            mine: `${PHYSICAL_ITEM_LABEL[mi.type] || mi.type} ${mi.label || ''}`.trim(),
+            theirs: `${PHYSICAL_ITEM_LABEL[ti.type] || ti.type} ${ti.label || ''}`.trim(),
+            reason: 'aynı fizikî materyalde farklı bilgi'
+          });
+        }
+      }
+    }
+    // Belgeler: id ile ekle; aynı kimlikte farklı ad → çakışma (gövde taşınmaz).
+    const docIds = new Set(out.documents.map((d) => d.id));
+    for (const td of tf.documents) {
+      if (docIds.has(td.id)) continue;
+      out.documents.push(td);
+      docIds.add(td.id);
+      applied.push(`fizikî dosya belgesi eklendi: ${td.name}`);
+    }
+    merged.physicalFile = out;
+  }
+
   // İç içe gruplar. Yardımcı bu alanları da doldurabilir/düzeltebilir.
   // v2.65: parties / expert / assignment alanları eksikti; yardımcının
   // doldurduğu davacı, davalı, bilirkişi adı, sicil no, tarihler sessizce
@@ -3491,6 +3814,8 @@ export function compareCases(mine, theirs) {
     profiles: { added: [], conflicts: [] },
     placement: { added: [] },
     disks: { added: 0 },
+    // Fizikî dosya teslim/iade (v2.330): önizleme = birleştirme kuralı.
+    physical: { filled: 0, conflicts: [], itemsAdded: 0, docsAdded: 0, returnsAdvanced: 0 },
     // Dosya geneli kişiler (v2.205): önizleme, birleştirmenin ne yapacağını
     // göstermeli. `linked` = doldurulacak konuşmacı bağı sayısı.
     speakers: { added: [], filled: 0, linked: 0, conflicts: [] },
@@ -3543,6 +3868,32 @@ export function compareCases(mine, theirs) {
   {
     const have = new Set((mine.disks || []).map((d) => d.id));
     out.disks.added = (theirs.disks || []).filter((d) => !have.has(d.id)).length;
+  }
+
+  // Fizikî dosya (v2.330): önizleme = birleştirme kuralı. Boş alan dolar;
+  // iki dolu farklı değer çakışmadır (sessiz seçim yok). Yeni materyal/belge
+  // kimlikleri "eklenecek" sayılır.
+  {
+    const mf = normalizePhysicalFile(mine.physicalFile);
+    const tf = normalizePhysicalFile(theirs.physicalFile);
+    const cmpPf = (label, mv, tv) => {
+      if (!tv || tv === mv) return;
+      if (!mv) out.physical.filled++;
+      else out.physical.conflicts.push({ field: label, mine: mv, theirs: tv });
+    };
+    for (const g of ['handover', 'return']) {
+      for (const k of Object.keys(mf[g] || {})) cmpPf(`${g}.${k}`, str(mf[g][k]), str(tf[g][k]));
+    }
+    const myItems = new Set(mf.items.map((i) => i.id));
+    out.physical.itemsAdded = tf.items.filter((i) => !myItems.has(i.id)).length;
+    const myDocs = new Set(mf.documents.map((d) => d.id));
+    out.physical.docsAdded = tf.documents.filter((d) => !myDocs.has(d.id)).length;
+    // Materyal iadesi ilerlemişse "alınacak" sayılır (birleştirme bunu yapar).
+    const itemMap = new Map(mf.items.map((i) => [i.id, i]));
+    out.physical.returnsAdvanced = tf.items.filter((ti) => {
+      const mi = itemMap.get(ti.id);
+      return mi && !mi.returned && ti.returned;
+    }).length;
   }
 
   const mineMats = new Map((mine.materials || []).map((m) => [m.id, m]));
@@ -3783,6 +4134,7 @@ export function compareCases(mine, theirs) {
     ...out.speakers.conflicts,
     ...out.blocks.conflicts,
     ...out.profiles.conflicts,
+    ...out.physical.conflicts,
     ...out.conflicts
   ];
   return out;
