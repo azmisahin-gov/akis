@@ -2464,5 +2464,15 @@ console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
   check('rapor içi ek adı "Rapor eki"', /heading: `Rapor eki \$\{n\}\. \$\{base\}`/.test(app) && !/heading: `EK-\$\{n\}/.test(app));
 }
 
+console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
+{
+  const layer = read('assets/reading-layer.css');
+  // ÖLÇÜM (v2.325, 1440 px): sayfa tahmini açılınca ek satırı 254 px kutu /
+  // 257 px içerik → 3 px taşma; uzun ek adlarında sağ panel yapısı bozuluyordu.
+  check('ek satırı sarar', /\.la-row \{[^}]*flex-wrap: wrap/.test(layer));
+  check('sayfa etiketi sağa yaslanır', /\.la-row \.la-pages \{[^}]*margin-left: auto/.test(layer));
+  check('araçlar alt satıra inebilir', /\.la-row \.la-tools \{[^}]*margin-left: auto/.test(layer));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

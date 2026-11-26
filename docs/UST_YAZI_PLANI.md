@@ -1,6 +1,8 @@
 # Üst yazı ve belge ekleri — düzenleme önerisi
 
-**Durum:** ÖNERİ (kod yazılmadı). Karar soruları §15'te.
+**Durum:** v2.323–v2.325 UYGULANDI. Görsel/biçim standardı için ayrıca
+[`UST_YAZI_STANDARDI.md`](UST_YAZI_STANDARDI.md) ve değerlendirmesi
+[`UST_YAZI_STANDARDI_DEGERLENDIRME.md`](UST_YAZI_STANDARDI_DEGERLENDIRME.md).
 **Tarih:** 2026-11-25 · **Taban sürüm:** v2.322.
 
 ---
@@ -117,7 +119,7 @@ case.letterAnnexes = [       // SIRALI; EK numarası buradan TÜRETİLİR
 | `sections` | Seçilen rapor bölümlerinden **yeni belge** | Bölümler raporda **çizilmez** (taşıma). Envanter/seviye gibi tablolar burada. |
 | `reportAnnex` | Rapor içi ekin (EK-2 envanter gibi) **ayrı belge** hâli | Rapor içi kopya kapanır. |
 | `custom` | Başlık + serbest metin | Bugünkü `xN` özel ekinin belge hâli. |
-| `file` | Ham dosya (ör. taranmış tebligat PDF) | Yalnız ZIP içinde taşınır; **PDF birleştirme yok** (dürüst sınır). |
+| `file` | Haricî dosya (ör. taranmış tebligat PDF) | **DESTEKLENMİYOR** (v2.326). Uygulanırsa baytlar + SHA-256 ayrı iş; `docs/UST_YAZI_STANDARDI.md` §1.3. |
 
 `normalizeLetter` / `normalizeLetterAnnexes` bilinmeyen alanı **korur**, geçersiz
 `kind`'ı düşürür, `report` yoksa başa ekler.

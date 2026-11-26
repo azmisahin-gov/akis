@@ -4212,3 +4212,9 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 /* v2.325 — Ek listesinde sayfa TAHMİNİ (yalnız ekran; belgeye yazılmaz). */
 .la-pages { flex: 0 0 auto; color: var(--ink-3); font-size: var(--fs-2xs); white-space: nowrap; }
+/* v2.326 — Belge eki satırı SARAR: sayfa tahmini (≈ N sayfa) eklenince içerik
+   292 px'lik panelde taşıyordu (ölçüm: satır 254 px kutu / 257 px içerik) ve
+   sağ panelin yapısı bozuluyordu. Sığmayan araçlar alt satıra iner. */
+.la-row { flex-wrap: wrap; row-gap: 4px; }
+.la-row .la-pages { margin-left: auto; }
+.la-row .la-tools { margin-left: auto; }

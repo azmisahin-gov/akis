@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.325.**
+yazılır. **Güncel sürüm: v2.326.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.326 — Ek satırı taşması + standart değerlendirmesi (TAMAMLANDI)
+
+- Sayfa tahmini açılınca ek satırı taşıyordu (254/257) → `.la-row` **sarar**;
+  sağ panel yapısı korunur.
+- `docs/UST_YAZI_STANDARDI.md` (dış öneri) + değerlendirme
+  `docs/UST_YAZI_STANDARDI_DEGERLENDIRME.md`; v2.327 görsel standardı adayı.
+- `file` eki türü **desteklenmiyor** olarak netleştirildi.
+- Test `tasarim [2df]`.
 
 ## v2.325 — ZIP paketi + sayfa tahmini + "Rapor eki N" (TAMAMLANDI)
 

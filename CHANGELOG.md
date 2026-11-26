@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.325.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.326.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.326 — Ek satırı taşması (sağ panel) + üst yazı standardı değerlendirmesi
+
+**KULLANICI NE GÖRECEK:** “Sayfa sayısı dipnotu”nu açınca **sağ panel artık
+bozulmuyor**; ek satırı sığmazsa alt satıra iniyor.
+
+**Ölçülen hata (v2.325, 1440×900):** sayfa tahmini açılınca ek satırı
+**254 px kutu / 257 px içerik** → 3 px taşma; uzun ek adlarında (“MATERYAL
+TESLİM VE İADE TUTANAĞI”) taşma büyüyor ve sağ panelin yapısı bozuluyordu.
+**Düzeltme:** `.la-row { flex-wrap: wrap }` + sayfa etiketi/araçlar sağa yaslı;
+sığmayan araçlar alt satıra iner (depo kuralı: **kırpma yok, sarma var**).
+**Ölçüm (sonra):** satır 254/254, panel 280/280, yatay taşma **0**.
+
+**Ayrıca:** dışarıdan gelen **`AKIS_UST_YAZI_STANDARDI_V1.md`** incelendi;
+`docs/UST_YAZI_STANDARDI.md` olarak **docs/** altına alındı (kök dizin herkese
+açık yayınlanır) ve değerlendirme yazıldı:
+[`docs/UST_YAZI_STANDARDI_DEGERLENDIRME.md`](docs/UST_YAZI_STANDARDI_DEGERLENDIRME.md).
+Standart, mevcut mimariyi (üç katman, EK-1 sabit, tek kopya, `Rapor eki N`,
+sayfa sayısının belgeye yazılmaması) **doğruluyor**; görsel biçim (12 pt,
+`T.C.`/`Sayı:` kaldırma, `Dosya No:`/`Konu:`/`İlgi:`, imza bloğu, `Ek:` listesi,
+muhatap eki) **v2.327** adayı olarak listelendi. `file` eki türü
+**desteklenmiyor** olarak plan belgesinde düzeltildi.
+
+**Koruyan test:** `tasarim [2df]` (3).
 
 ## v2.325 — Tüm belgeler tek ZIP + sayfa tahmini + "Rapor eki N"
 
