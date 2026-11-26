@@ -1,4 +1,4 @@
-# Özellikler (v2.350 — mevcut durum)
+# Özellikler (v2.351 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,3 +1190,7 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Kurgusal demo paketi (v2.351)
+
+`sample_data/demo/AKIS_Demo_Kurgusal.akis` gerçek veri girmeden denemek içindir: 2 gerçek örnek ses kaydı, 12 bölüm (onaylı · belirsiz okuma · bekleyen · anlaşılmadı), S1/S2 ve K1 konuşmacı eşleştirmesi, 3 soru, kayıt kökeni, fizikî teslim/iade tutanağı ve üst yazı. **Paketten yükle** ile açılır. Tamamen kurgusaldır; gerçek dava verisi değildir.

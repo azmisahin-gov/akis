@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.350';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.350';
+} from './schema.js?v=2.351';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.351';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.350';
+const APP_VERSION = '2.351';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -23596,6 +23596,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.351': {
+    title: 'Kurgusal demo paketi eklendi',
+    body:
+      'Uygulamayı gerçek veri girmeden denemek için kurgusal bir demo paketi eklendi (sample_data/demo/AKIS_Demo_Kurgusal.akis). İçinde iki gerçek örnek ses kaydı (47,7 ve 38,9 saniye), 12 bölüm (onaylı, belirsiz okuma, bekleyen, anlaşılmadı + gürültü gözlemi), iki kaydı birbirine bağlayan konuşmacı eşleştirmesi (S1/S2 ve K1), üç soru ve cevap, kayıt kökeni, fizikî teslim/iade tutanağı ve üst yazı var. Paket üst bardaki “Paketten yükle” ile açılır. Kişi adları, dosya numarası ve konuşmalar tamamen kurgusaldır; gerçek dava verisi değildir.'
+  },
   '2.350': {
     title: 'Boş tablolar ve eski yöntem metni düzeltildi',
     body:

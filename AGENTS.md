@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.350.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.351.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9190,3 +9190,38 @@ cümlesi **var**, eski “her dosyanın SHA-256 özeti hesaplanır” **yok**, j
 ### ÖLÇÜM
 `node tools/metin-envanteri.mjs --check` **GEÇTİ** (1030 satır, v2.349);
 `bash tools/test.sh` yeşil.
+
+## YENİ OTURUM DEVRİ (v2.350–v2.351) — Boş tablo, göç, demo paketi
+
+| | |
+|---|---|
+| Sürüm | **v2.351** |
+| Testler | **2746 birim + 556 şema** + rapor (54) + sürüm + tasarım yeşil |
+| Demo | `sample_data/demo/AKIS_Demo_Kurgusal.akis` (kurgusal, ≈2,7 MB) |
+
+### v2.350 — Boş tablo ve eski yöntem metni
+- **Veri yoksa tablo basılmaz:** envanter/köken/konuşmacı/EK-2/EK-3 yalnız
+  “kayıt yok” cümlesi; `—` satırları ve ZWSP kaldırıldı; üç çıktı aynı
+  (`rapor` Senaryo 54).
+- **`asr`:** yazılım desteği yoksa yalnız `asrNone`; “yararlandım” ve doğrulama
+  cümlesi basılmaz.
+- **`PREV_DEFAULT_METHOD`:** düzenlenmemiş eski yöntem metni yeni anlatıma
+  çevrilir (`birim [173]`).
+- KURAL: **satır yoksa tablo yok**; başlık satırını da basmayın. Boş hücreye
+  görünmez karakter koymayın.
+
+### v2.351 — Kurgusal demo paketi
+- Paket: 2 gerçek WAV, 12 bölüm (onaylı · belirsiz · bekleyen · anlaşılmadı),
+  S/K eşleştirmesi, 3 soru, köken, fizikî teslim/iade, üst yazı.
+- **Kurgusal**: kişi/dosya/konuşmalar örnektir; gerçek veri değildir.
+- `.gitignore` `*.akis` kuralına **`!sample_data/demo/*.akis`** istisnası.
+- Test: `surum-testi [10c]` (9).
+- Gerçek tarayıcıda açıldı: 2 kayıt, ses 47,7 sn, 7 bölüm (m1), rapor 19.887
+  karakter, diyalog/K1/belirsiz/teslim kontrolü var, ZWSP ve `—` satırı yok,
+  JS hatası 0.
+
+### DERS
+Kullanıcının “boş dosya” çıktısı **eski ayarlarla** üretilmişti (18 bölüm,
+eski yöntem metni, boş tablolar). Güncel kodla yeniden üretmek gerçek durumu
+gösterdi; sorunların bir kısmı eski kayıt, bir kısmı gerçek hataydı. **Ayrım
+ölçümle yapılır:** aynı senaryoyu güncel kodla üret, iki çıktıyı karşılaştır.

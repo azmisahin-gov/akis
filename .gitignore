@@ -23,3 +23,6 @@ desktop.ini
 # Kök dizin yayınlanır: rapor çıktıları izlenmez (v2.283)
 /*.docx
 /*.pdf
+
+# Kurgusal demo paketi İZLENİR (kullanıcıya indirilebilir örnek; gerçek veri değil)
+!sample_data/demo/*.akis

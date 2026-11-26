@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.350.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.351.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.351 — Kurgusal demo paketi
+
+**KULLANICI NE GÖRECEK:** Uygulamayı **gerçek veri girmeden** denemek için hazır
+bir **demo paketi** var: `sample_data/demo/AKIS_Demo_Kurgusal.akis` (≈2,7 MB).
+**Paketten yükle** ile açılır; dosya seçicide **2026/214 E.** görünür.
+
+İçinde:
+
+| Öğe | İçerik |
+|---|---|
+| Ses | 2 gerçek WAV (47,7 sn + 38,9 sn), SHA-256 doğrulanmış |
+| Bölüm | 12: onaylı · **belirsiz okuma** (iki okuma + seçim) · bekleyen · anlaşılmadı + gürültü |
+| Konuşmacı | S1/S2 (kayıt içi) + **K1** (dosyalar arası eşleştirme) |
+| Soru | 3 soru + cevap; ikisi bölüm dayanağına bağlı |
+| Köken | USB + SD teslimi, teslim eden/tarih/yer, dosya zamanları |
+| Fizikî dosya | Teslim + iade tutanağı, 2 materyal, dizi pusulası |
+| Üst yazı | Antalya, varsayılan gövde, EK-1 rapor |
+
+- **Tamamen kurgusaldır**; kişi adları, dosya numarası ve konuşmalar örnektir.
+- Yardım ekranına indirme bağlantısı eklendi.
+- Test: `surum-testi [10c]` (9 kontrol: dosya, boyut, `case.json`, 2 ses, şema,
+  dosya no, bölüm/soru/kişi doluluğu).
+- **Not:** `.gitignore` `*.akis` kuralına `!sample_data/demo/*.akis` istisnası
+  eklendi; demo yayına girer, kullanıcı paketleri girmez.
 
 ## v2.350 — Boş tablolar ve eski yöntem metni
 

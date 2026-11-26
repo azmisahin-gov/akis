@@ -339,6 +339,27 @@ try {
   check('metin envanteri güncel (kod ile aynı)', false, 'node tools/metin-envanteri.mjs çalıştırın');
 }
 
+// [10c] DEMO PAKETİ (v2.351): kurgusal demo paketi okunabilir ve doludur.
+{
+  const demoPath = path.join(ROOT, 'sample_data/demo/AKIS_Demo_Kurgusal.akis');
+  check('demo paketi var', fs.existsSync(demoPath));
+  if (fs.existsSync(demoPath)) {
+    const size = fs.statSync(demoPath).size;
+    check('demo paketi makul boyutta', size > 500 * 1024 && size < 6 * 1024 * 1024, `${(size / 1024 / 1024).toFixed(2)} MB`);
+    const JSZip = (await import(path.join(ROOT, 'assets/vendor/jszip.min.js'))).default;
+    const zip = await JSZip.loadAsync(fs.readFileSync(demoPath));
+    const names = Object.keys(zip.files).filter((n) => !zip.files[n].dir);
+    check('demo: case.json var', names.includes('case.json'));
+    check('demo: iki ses dosyası var', names.filter((n) => n.startsWith('audio/') && n.endsWith('.wav')).length === 2);
+    const pack = JSON.parse(await zip.file('case.json').async('string'));
+    check('demo: paket şeması', pack.schema === 'mihenk.project.v1', pack.schema);
+    check('demo: kurgusal dosya numarası', pack.case && pack.case.fileNo === '2026/214 E.', pack.case && pack.case.fileNo);
+    check('demo: bölümler dolu', pack.case.materials.reduce((n, m) => n + m.segments.length, 0) >= 10);
+    check('demo: sorular dolu', (pack.case.questions || []).length >= 3);
+    check('demo: kişi eşleştirmesi var', (pack.case.speakers || []).length >= 1);
+  }
+}
+
 // [11] Terim tutarlılığı (v2.123) -----------------------------------------
 // KURAL: kullanıcı aynı şeye iki ad vermez. "Dosya" = tek dava/çalışma alanı;
 // "Paket" = taşınabilir .akis dosyası (1+ dosya + ses). Eylemler: Paket
