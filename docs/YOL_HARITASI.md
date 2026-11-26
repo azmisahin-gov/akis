@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.337.**
+yazılır. **Güncel sürüm: v2.338.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.338 — Gecikme açılışta bildirilir (A‑3, TAMAMLANDI)
+
+- `overdueNotice` / `overdueCaseNames` / `dueNoticeHtml` saf fonksiyonlar.
+- Açılışta bir kez `maybeShowOverdueNotice()`: gecikmiş aktif dosya için
+  `#dueNotice` kırmızı şerit (role=alert) + kritik toast. Günde bir kez
+  (`akis.dueNotice.<dosyaId>`); dosyaya yazılmaz.
+- Diğer gecikmiş dosyalar adlarıyla sayılır; arşivli ve tarihi olmayan girmez.
+- Yeni test: `birim [164]`; `surum` `#dueNotice` kimliği.
 
 ## v2.337 — Ölü kod temizliği + test/yardım düzeltmesi (TAMAMLANDI)
 

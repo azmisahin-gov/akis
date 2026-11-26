@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.337';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.337';
+} from './schema.js?v=2.338';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.338';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.337';
+const APP_VERSION = '2.338';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -927,6 +927,43 @@ function deliveryDetailText(info) {
   if (i.elapsedDays != null && i.elapsedDays >= 0) parts.push(`Dosya açılışından ${i.elapsedDays} gün`);
   return parts.join(' · ');
 }
+// AÇILIŞ GECİKME UYARISI (v2.338, A-3). SALT KARAR — DOM'a yazmaz.
+// "Gecikme" tanımı TEK KAYNAK: deliveryInfo → level 'late'. Tarih yoksa ya da
+// okunamıyorsa uyarı üretilmez (uydurma yok). Uyarı dosya başına GÜNDE BİR KEZ
+// gösterilir: `akis.dueNotice.<dosyaId>` o günün tarihini tutar; aynı gün
+// tekrar açmak kullanıcıyı taciz etmez, ertesi gün yeniden hatırlatır.
+function overdueNotice(c, opts = {}) {
+  const info = deliveryInfo(c, { today: opts.today });
+  const today = info.today;
+  const key = `akis.dueNotice.${(c && c.id) || 'case'}`;
+  const days = info.daysLeft != null ? Math.abs(info.daysLeft) : 0;
+  if (info.level !== 'late' || !(days > 0)) return { show: false, today, key, days: 0, text: '', others: 0 };
+  if (String(opts.lastShown || '').trim() === today) return { show: false, today, key, days, text: '', others: 0 };
+  const others = (Array.isArray(opts.others) ? opts.others : []).map((x) => String(x || '').trim()).filter(Boolean);
+  const other = others.length ? ` Başka ${others.length} dosya da gecikmiş: ${others.join(', ')}.` : '';
+  const text =
+    `${caseDisplayName(c)}: son teslim tarihi ${days} gün önce geçti (${niceDate(info.dueDate)}). ` +
+    `Rapor gecikmeli teslim ediliyor. Tarih yanlışsa Dosya ekranından düzeltin.${other}`;
+  return { show: true, today, key, days, text, others: others.length };
+}
+// Gecikmiş DİĞER dosyalar: arşivli ve tarihi olmayan girmez; aktif dosya
+// kendini tekrar saymaz. Yalnız GÖRÜNEN ad döner (ham kimlik yazılmaz).
+function overdueCaseNames(cases, activeId, opts = {}) {
+  const today = opts.today || dateToday();
+  return (Array.isArray(cases) ? cases : [])
+    .filter((x) => x && x.id !== activeId && !isArchivedCase(x))
+    .filter((x) => deliveryInfo(x, { today }).level === 'late')
+    .map((x) => caseDisplayName(x));
+}
+// Şerit gövdesi: metin KAÇIRILIR; kapatma yolu her zaman vardır (v2.317 dersi).
+function dueNoticeHtml(text) {
+  return (
+    `<div class="sb-body"><b>SON TESLİM TARİHİ GEÇTİ</b><small>${esc(text)}</small></div>` +
+    `<button class="button button-small" data-due-open>Dosyayı aç</button>` +
+    `<button class="icon-button" data-due-close aria-label="Kapat">×</button>`
+  );
+}
+
 function currentCase() {
   return appState.cases.find((c) => c.id === appState.activeCaseId) || null;
 }
@@ -1310,6 +1347,69 @@ function hideStorageBanner() {
   const el = $('#storageBanner');
   if (el) el.hidden = true;
 }
+// GECİKME ŞERİDİ (v2.338, A-3). Sürüm şeridi de açıksa ÜST ÜSTE BİNMESİN:
+// konum ölçülerek verilir (sabit piksel varsayımı yok).
+function positionDueNotice() {
+  const el = $('#dueNotice');
+  if (!el || el.hidden) return;
+  const vn = $('#versionNotice');
+  const below = vn && !vn.hidden ? vn.getBoundingClientRect().height : 0;
+  el.style.top = `${Math.round(below)}px`;
+}
+function showDueNotice(text) {
+  const el = $('#dueNotice');
+  if (!el || !text) return;
+  el.innerHTML = dueNoticeHtml(text);
+  // Ekran okuyucu kesintili duyurur: son teslim geçti (veri kaybı değil ama
+  // adli takvim riski).
+  el.setAttribute('role', 'alert');
+  el.setAttribute('aria-live', 'assertive');
+  el.hidden = false;
+  el.querySelector('[data-due-close]')?.addEventListener('click', hideDueNotice);
+  el.querySelector('[data-due-open]')?.addEventListener('click', () => {
+    hideDueNotice();
+    switchView('case');
+  });
+  positionDueNotice();
+  if (!showDueNotice.bound) {
+    showDueNotice.bound = true;
+    window.addEventListener('resize', positionDueNotice);
+    // Sürüm şeridi init sırasında SONRADAN açılır ve kullanıcı × ile kapatır;
+    // gecikme şeridi onun altına yerleşmeli (v2.338'de üst üste binme ölçüldü).
+    // `hidden` değişimini izle: açılınca aşağı in, kapanınca tepeye dön.
+    const vn = $('#versionNotice');
+    if (vn && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(positionDueNotice).observe(vn, { attributes: true, attributeFilter: ['hidden'] });
+    }
+  }
+}
+function hideDueNotice() {
+  const el = $('#dueNotice');
+  if (!el) return;
+  el.hidden = true;
+  el.innerHTML = '';
+  el.style.top = '';
+}
+// Açılışta bir kez: aktif dosya gecikmişse kullanıcı GÖRMELİ. Bilgi zaten
+// durum çubuğunda/Özet'te durur; bu şerit "görmemiş olmak" ihtimalini kapatır.
+// Uyarı günde bir kez gösterilir (akis.dueNotice.<id>) — her açılışta taciz yok.
+function maybeShowOverdueNotice() {
+  const c = currentCase();
+  if (!c || isEmptyCase(c)) return;
+  let last = '';
+  try {
+    last = localStorage.getItem(`akis.dueNotice.${c.id}`) || '';
+  } catch (e) {}
+  const others = overdueCaseNames(appState.cases, c.id, { today: dateToday() });
+  const n = overdueNotice(c, { today: dateToday(), lastShown: last, others });
+  if (!n.show) return;
+  try {
+    localStorage.setItem(n.key, n.today);
+  } catch (e) {}
+  showDueNotice(n.text);
+  showToast(`Gecikme: ${caseDisplayName(c)} — son teslim ${n.days} gün önce geçti.`, true);
+}
+
 function freshCase() {
   const now = new Date().toISOString();
   const c = {
@@ -23062,6 +23162,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.338': {
+    title: 'Gecikme açılışta bildirilir',
+    body:
+      'Son teslim tarihi geçmiş bir dosyayı açtığınızda uygulama artık açılışta kırmızı bir şeritle uyarıyor: hangi dosya, kaç gün gecikti ve son teslim tarihi ne. Şerit günde bir kez çıkar; kapatabilirsiniz ve “Dosyayı aç” ile Dosya sayfasına gidebilirsiniz. Başka dosyalar da gecikmişse adlarıyla sayılır. Tarih girilmemişse ya da okunamıyorsa uyarı çıkmaz; “bugün son gün” gecikme sayılmaz.'
+  },
   '2.337': {
     title: 'Ölü kod ve yanlış yardım cümlesi düzeltildi',
     body:
@@ -25160,6 +25265,11 @@ async function init() {
   setupEvents();
   renderObsHelp();
   renderQueue();
+  // GECİKME UYARISI (v2.338, A-3): açılışta bir kez, günde bir kez.
+  // Yükleme bitmeden çağrılmaz — aksi hâlde boş dosya için yanlış uyarı çıkar.
+  try {
+    maybeShowOverdueNotice();
+  } catch (e) {}
   try {
     if (localStorage.getItem('akis.focusMode') === '1') setFocusMode(true);
     // TAKİP TERCİHİ (v2.119): yalnız kullanıcı DAHA ÖNCE açıkça açtıysa açılır.
@@ -25180,6 +25290,9 @@ async function init() {
   initTabGuard();
   // Kullanıcıya sürüm notunu göster (bir kez). Kritik düzeltme sessiz geçmez.
   maybeShowVersionNotice();
+  // Sürüm şeridi açıldıktan SONRA gecikme şeridini yeniden konumla; aksi
+  // hâlde ikisi de top:0'da üst üste biner (v2.338'de ölçüldü).
+  positionDueNotice();
   refreshUsage();
   refreshStorage();
   restoreAudioUrls().then(() => renderAudioList());

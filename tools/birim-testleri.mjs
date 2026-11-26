@@ -124,6 +124,7 @@ const EXPOSE = [
   'caseWorkload', 'formatWorkloadDuration',
   'parseDateOnly', 'dateOnlyStr', 'dateValueToDay', 'addDaysToDate', 'calendarDaysBetween',
   'daysRemaining', 'elapsedDays', 'deliveryInfo', 'deliverySummaryText', 'deliveryDetailText',
+  'overdueNotice', 'overdueCaseNames', 'dueNoticeHtml',
   'deliveryToneClass', 'applyAutoDueDate', 'deliveryPanelHtml', 'caseIdentityRows', 'caseMissingItems',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
@@ -7502,6 +7503,52 @@ console.log('[163] Ön bölüm alan görünürlüğü ve künye (v2.336)');
   eq('toplam süre birimli', /sn|dk|sa/.test(sum.find((r) => r.key === 'totalDuration').value), true);
   eq('deşifre süresi birimli', /sn|dk|sa/.test(sum.find((r) => r.key === 'transcriptDuration').value), true);
   eq('transkript bölümü satırı kaldırıldı', sum.some((r) => /TRANSKRİPTİN BULUNDUĞU/.test(r.label)), false);
+}
+
+
+console.log('[164] Açılış gecikme uyarısı (v2.338)');
+{
+  const c = { id: 'c1', fileNo: '2026/88', assignment: { dueDate: '2026-11-20' } };
+  // 1) Son teslim yoksa uyarı YOK (uydurma yok).
+  eq('tarih yoksa uyarı yok', T.overdueNotice({ id: 'c1', fileNo: '2026/88' }, { today: '2026-11-25' }).show, false);
+  // 2) Gelecekteki tarih uyarı üretmez.
+  eq('gelecek tarih uyarı yok', T.overdueNotice(c, { today: '2026-11-01' }).show, false);
+  // 3) Bugün son gün: gecikme değil.
+  eq('bugün son gün uyarı yok', T.overdueNotice(c, { today: '2026-11-20' }).show, false);
+  // 4) 5 gün gecikme: uyarı var, metin gün ve dosya adını taşır.
+  const n = T.overdueNotice(c, { today: '2026-11-25' });
+  eq('gecikmede uyarı var', n.show, true);
+  eq('gecikme gün sayısı', n.days, 5);
+  eq('metin gün sayısını yazar', /5 gün önce geçti/.test(n.text), true);
+  eq('metin dosya adını yazar', n.text.includes('2026/88'), true);
+  eq('metin yeni gün anahtarı taşır', n.key, 'akis.dueNotice.c1');
+  // 5) Aynı gün ikinci açılışta tekrar etmez.
+  eq('aynı gün tekrar yok', T.overdueNotice(c, { today: '2026-11-25', lastShown: '2026-11-25' }).show, false);
+  // 6) Ertesi gün yeniden hatırlatır.
+  eq('yeni gün tekrar uyarır', T.overdueNotice(c, { today: '2026-11-26', lastShown: '2026-11-25' }).show, true);
+  // 7) Geçersiz tarih uyarı üretmez (uydurma yok).
+  eq('geçersiz tarih uyarı yok', T.overdueNotice({ id: 'c2', assignment: { dueDate: '2026-02-31' } }, { today: '2026-11-25' }).show, false);
+  // 8) Dosya numarası yoksa ham kimlik YAZILMAZ.
+  const noNo = T.overdueNotice({ id: 'mwxopgof-7nke3wo', name: 'Yeni inceleme dosyası', assignment: { dueDate: '2026-11-20' } }, { today: '2026-11-25' });
+  eq('ham kimlik metne girmez', noNo.text.includes('mwxopgof-7nke3wo'), false);
+  // 9) Başka gecikmiş dosyalar metinde sayılır (kullanıcı hepsini bilsin).
+  const multi = T.overdueNotice(c, { today: '2026-11-25', others: ['2026/214', '2026/501'] });
+  eq('diğerleri sayılır', /Başka 2 dosya da gecikmiş/.test(multi.text), true);
+  eq('diğerleri adlarıyla yazılır', multi.text.includes('2026/214') && multi.text.includes('2026/501'), true);
+  // 10) Gecikmiş dosya listesi: arşivli ve süresi olmayan girmez, aktif hariç.
+  const cases = [
+    { id: 'a', fileNo: 'A', assignment: { dueDate: '2026-11-10' } },
+    { id: 'b', fileNo: 'B', assignment: { dueDate: '2026-11-24' } },
+    { id: 'd', fileNo: 'D', assignment: { dueDate: '2027-01-01' } },
+    { id: 'e', fileNo: 'E', status: 'archived', assignment: { dueDate: '2026-11-01' } },
+    { id: 'f', fileNo: 'F' }
+  ];
+  eq('diğer gecikmişler', T.overdueCaseNames(cases, 'a', { today: '2026-11-25' }).join(','), 'B');
+  eq('arşivli gecikmiş sayılmaz', T.overdueCaseNames(cases, 'x', { today: '2026-11-25' }).includes('E'), false);
+  // 11) Şerit HTML'i metni kaçırır (XSS/kırılma yok).
+  const html = T.dueNoticeHtml('A <b> & "B"');
+  eq('şerit metni kaçırılır', html.includes('&lt;b&gt;'), true);
+  eq('şerit kapatma düğmesi taşır', /data-due-close/.test(html), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

@@ -6,12 +6,30 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.337.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.338.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.338 — Gecikme açılışta bildirilir (A‑3)
+
+**KULLANICI NE GÖRECEK:** Son teslim tarihi geçmiş bir dosyayı açtığınızda,
+uygulama açılışta **kırmızı bir şerit** gösterir: hangi dosyanın kaç gün geciktiği
+ve son teslim tarihi yazar. Şerit **günde bir kez** çıkar; kapatabilirsiniz ve
+"Dosyayı aç" ile Dosya sayfasına gidebilirsiniz. Başka dosyalar da gecikmişse
+adlarıyla sayılır.
+
+- Gecikme tanımı **tek kaynaktan** gelir (`deliveryInfo` → `late`); Özet ekranı,
+  durum çubuğu (`#sbDue`), rapor çipi ve bu şerit aynı hesabı kullanır.
+- **Tarih yoksa ya da okunamıyorsa uyarı üretilmez** (uydurma yok). "Bugün son
+  gün" gecikme sayılmaz.
+- Aynı gün ikinci açılışta tekrar etmez; ertesi gün yeniden hatırlatır
+  (`akis.dueNotice.<dosyaId>`). Bu tercih **dosyaya yazılmaz**.
+- "Dosyayı aç" düğmesi Dosya sayfasını açar; şerit kapanır.
+- Yeni test: `birim-testleri` **[164]** (18 kontrol); `surum-testi` `#dueNotice`
+  kimliğini denetler. Düzeltme yokken test **KALDI** (fonksiyon yok).
 
 ## v2.337 — Ölü kod temizliği, test ve yardım metni düzeltmesi
 

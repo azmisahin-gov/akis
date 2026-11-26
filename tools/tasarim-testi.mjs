@@ -2564,5 +2564,23 @@ console.log('\n[2di] Ölü kod ve yardım metni tutarlılığı (v2.337)');
   check('yardım ekranında v2.337 notu var', /Son değişiklikler \(v2\.337\)/.test(read('index.html')));
 }
 
+
+console.log('\n[2dj] Açılış gecikme şeridi (v2.338)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  check('gecikme şeridi HTML\'de', /id="dueNotice"/.test(html));
+  check('şerit erişilebilir uyarı (role=alert)', /id="dueNotice"[^>]*role="alert"/.test(html));
+  // Renk token'dan gelir; ham hex yazılmaz (koyu/sepya tema).
+  const rule = (css.match(/\.due-notice \{[^}]*\}/) || [''])[0];
+  check('şerit kuralı var', rule.length > 10);
+  check('şerit rengi token', /var\(--red-soft\)/.test(rule) && !/#[0-9a-f]{3,8}/i.test(rule));
+  // Sürüm şeridi init sırasında SONRADAN açılır; gecikme şeridi onun altına
+  // yerleşmezse üst üste biner (v2.338'de gerçek Chromium'da ÖLÇÜLDÜ).
+  check('konum sürüm şeridine göre ölçülür', /function positionDueNotice[\s\S]{0,400}versionNotice[\s\S]{0,200}getBoundingClientRect/.test(app));
+  check('sürüm şeridi değişince yeniden konumlanır', /MutationObserver\(positionDueNotice\)/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -276,7 +276,9 @@ const REQUIRED_IDS = [
   ['dosya sayfası gövdesi', 'casePageBody'],
   ['dosya sayfası durumu', 'casePageStatus'],
   // v2.330 — fizikî dosya teslim ve iade (form çekmecede, tek düzenleyici).
-  ['fizikî dosya formu', 'physicalFileForm']
+  ['fizikî dosya formu', 'physicalFileForm'],
+  // v2.338 — açılış gecikme uyarısı (JS #dueNotice arıyor).
+  ['gecikme şeridi', 'dueNotice']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

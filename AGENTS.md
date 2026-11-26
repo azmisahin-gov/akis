@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.337.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.338.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8801,3 +8801,35 @@ DOCX/UDF karışık harf basıyordu.
 çipleri `Ses: hazır · Anlamlı metin yok · **Öncelik: Yüksek**` · yardım
 ekranı eski cümle **yok**, yeni cümle **var**, v2.337 notu **var** · kırpılan 0 ·
 yatay taşma 0 · JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.338) — Gecikme açılışta bildirilir (A‑3)
+
+| | |
+|---|---|
+| Sürüm | **v2.338** |
+| Testler | **2608 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.339 (A‑2 yazdırılan teslim kontrol listesi) |
+
+### Ne yapıldı
+- `overdueNotice(c, {today, lastShown, others})` — **saf karar**; `deliveryInfo`
+  `level==='late'` TEK ölçüt. `overdueCaseNames(cases, activeId)` diğer
+  gecikmişlerin **görünen adlarını** verir (arşivli/tarihsiz girmez).
+- `#dueNotice` kırmızı şerit (role=alert) + kritik toast; **günde bir kez**
+  (`akis.dueNotice.<dosyaId>`; dosyaya YAZILMAZ). "Dosyayı aç" → Dosya sayfası.
+- Yardım ekranı + sürüm notu + OZELLIKLER güncellendi; `surum` `#dueNotice`
+  kimliğini denetler.
+
+### DEĞİŞMEZ DERS (v2.338 — üst üste binme)
+`positionDueNotice` sürüm şeridinin **yüksekliğini ölçer**. Sürüm şeridi init
+sırasında **sonradan** açıldığı için ilk konumlama `top:0` veriyordu ve iki şerit
+üst üste biniyordu (ölçüm: ikisi de 0–115/136). Düzeltme: (a) init'te sürüm
+şeridinden SONRA `positionDueNotice()`, (b) `#versionNotice` `hidden` değişimini
+`MutationObserver` ile izleyip yeniden konumla. **Sabit piksel varsayımı yok.**
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.338` · şerit metni doğru (25 gün, tarih, "Başka 3 dosya da gecikmiş") ·
+role=alert/assertive · aynı gün 2. açılışta **görünmez** · ertesi gün kuralı
+birim testinde · sürüm şeridi açıkken `dueTop=136 = verBottom` (gap 0,
+**örtüşme yok**) · sürüm şeridi kapanınca `dueTop=0` · "Dosyayı aç" →
+`dataset.view='case'` · 1440/1100/900/760/600/360: yatay taşma 0, kırpma 0
+(360'ta şerit 202 px'e sarar) · JS hatası **0**.

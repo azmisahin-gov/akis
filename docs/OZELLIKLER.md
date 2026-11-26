@@ -1,4 +1,4 @@
-# Özellikler (v2.337 — mevcut durum)
+# Özellikler (v2.338 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1146,3 +1146,7 @@ hesaplanamazsa veya bir belgenin bir biçimi üretilemezse paket **eksik
 indirilmez**; hangi belge/biçim olduğu yazılır. ZIP bir **arşiv/taşıma**
 paketidir; UYAP'a tek belge gibi gönderilmez. Test: `rapor` 47,
 `tasarim [2dh]`.
+
+## Teslim tarihi ve gecikme uyarısı (v2.308/v2.312/v2.338)
+
+Son teslim tarihi görevlendirme tarihi + süreden hesaplanır (elle yazılan korunur). Özet ekranında, durum çubuğunda ve rapor çıktısında “N gün kaldı / N gün gecikti” yazar. **Gecikmiş dosya açılışta bir kez kırmızı şeritle bildirilir** (#dueNotice): dosya adı, gecikme günü ve son teslim tarihi; “Dosyayı aç” Dosya sayfasına gider. Şerit günde bir kez çıkar ve dosyaya yazılmaz; tarih yoksa uyarı üretilmez (uydurma yok).
