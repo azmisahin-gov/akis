@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.331.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.332.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.332 — Ses yazılamazsa artık görünür
+
+**KULLANICI NE GÖRECEK:** Ses dosyası tarayıcı deposuna yazılamadığında (depolama
+dolu, izin yok) uygulama artık **"kayıt eklendi" demiyor**. Kırmızı uyarı çıkar:
+hangi kayıtların sesi yazılamadı, bu seslerin yalnız o oturumda çalındığı ve sayfa
+kapanınca kaybolacağı yazılır. Kayıt seçildiğinde **kalıcı uyarı kutusu** görünür —
+bölümü olmayan kayıtta da. Paketten/delil paketinden geri yüklemede yazılamayan ses
+"eksik ses" sayılır ve bildirilir.
+
+**NEDEN:** v2.331'de `storeBlob` hatayı yutuyordu. Ölçüm: depolama hatası
+zorlandığında toast **"1 kayıt eklendi"**, durum **"● Kayıt güncel"** diyor,
+uyarı şeridi çıkmıyordu; yenilemeden sonra kayıt listede kalıyor ama ses yoktu
+(`audio.src=''`, süre 00:00) ve hiçbir uyarı görünmüyordu. "Her yazma hatası
+görünür" kuralı (v2.87) durum yazmasında uygulanmış, blob yazmasında uygulanmamıştı.
+
+**Yapılan**
+- `storeBlob()` **true/false** döndürür; yazma sonucu kontrol edilmeden başarı
+  bildirilmez.
+- Ekleme, delil paketi, tekil/arşiv paket geri yükleme, test paketi ve fizikî
+  belge ekleme yolları sonucu **kontrol eder**; yazılamayan ses/belge sayılır,
+  günlüğe yazılır ve **role=alert** uyarıyla bildirilir.
+- `audioPersistWarningHtml(hasUrl, stored)` — kayıt detayında **kalıcı** uyarı:
+  "oturumda çalınır ama yazılamadı" veya "ses bu tarayıcıda yok". Bölümü olmayan
+  kayıtta da görünür (önceki uyarı yalnız bölüm detayının içindeydi).
+- Fizikî belge yazılamazsa kayıt **açılmaz** (dosyasız üst veri bırakılmaz).
+
+**Koruyan test:** `birim [159]` (11 kontrol; sahte IndexedDB yazma hatası ile
+`storeBlob` false, uyarı metinleri, ekleme yolunun sonucu kontrol ettiği).
 
 ## v2.331 — Belge paketi Word kopyalarını da indiriyor
 

@@ -166,6 +166,7 @@ const EXPOSE = [
   'VOICE_EMBED_SR', 'VOICE_EMBED_SAME', 'VOICE_EMBED_DIFF', 'VOICE_EMBED_MIN_MARGIN',
   'VOICE_EMBED_MIN_PROFILE', 'VOICE_EMBED_WINDOW_SEC', 'VOICE_EMBED_MIN_SEC',
   'discardMaterialMedia', 'purgeCaseMedia', 'objectUrls', 'audioGraphs', 'blobKey', 'closeAudioGraph',
+  'storeBlob', 'deleteBlob', 'audioPersistWarningHtml',
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
@@ -205,15 +206,31 @@ const sandbox = {
   indexedDB: {
     // Silme yolları gerçek bir işlem (transaction) bekler; sahte DB
     // tamamlanmazsa `await deleteBlob()` sonsuza kadar asılı kalır (v2.275).
+    // v2.332: `__idbFail` ile YAZMA/SİLME hatası simüle edilir; storeBlob ve
+    // deleteBlob'un false döndüğü sınanır (sessiz hata testi).
     open: () => {
       const req = {};
       setTimeout(() => {
-        const store = { delete: noop, put: noop, get: () => ({}) };
+        let tx = null;
+        const store = {
+          delete: () => {
+            if (sandbox.__idbFail.delete && tx) tx.__fail = true;
+          },
+          put: () => {
+            if (sandbox.__idbFail.put && tx) tx.__fail = true;
+          },
+          get: () => ({})
+        };
+        tx = { objectStore: () => store, error: new Error('sahte depo hatası'), __fail: false };
         req.result = {
           objectStoreNames: { contains: () => true, length: 2 },
           transaction: () => {
-            const tx = { objectStore: () => store, error: null };
-            setTimeout(() => { if (typeof tx.oncomplete === 'function') tx.oncomplete(); }, 0);
+            tx.__fail = false;
+            setTimeout(() => {
+              if (tx.__fail) {
+                if (typeof tx.onerror === 'function') tx.onerror();
+              } else if (typeof tx.oncomplete === 'function') tx.oncomplete();
+            }, 0);
             return tx;
           },
           close: noop
@@ -223,6 +240,7 @@ const sandbox = {
       return req;
     }
   },
+  __idbFail: { put: false, delete: false },
   DOMParser: class { parseFromString() { return { querySelector: () => null }; } },
   fetch: async () => ({ ok: false }),
   JSZip: { file() { return this; }, folder() { return this; }, async generateAsync() { return new Blob([]); } },
@@ -239,6 +257,7 @@ T.l2Normalize = __schemaMod.l2Normalize;
 T.cosineSimilarity = __schemaMod.cosineSimilarity;
 T.embeddingCentroid = __schemaMod.embeddingCentroid;
 T.revoked = revoked;
+T.idbFail = sandbox.__idbFail;
 
 // --- Test altyapısı -------------------------------------------------------
 let failures = 0, passed = 0;
@@ -7258,6 +7277,41 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     T.REPORT_TEXT.physicalMissingWarning
   ].join(' ');
   eq('fizikî metinlerde ürün adı yok', /AKİS|uygulama/i.test(physText), false);
+}
+
+console.log('[159] Depolama yazma/silme hatası görünür (v2.332)');
+{
+  // Ölçülen hata (v2.331): storeBlob/deleteBlob hatayı yutuyordu; ekleme
+  // "kayıt eklendi" diyor, ses yazılmıyordu. Sözleşme: true/false döner ve
+  // kalıcı uyarı metni üretilir.
+  T.resetDb();
+  T.idbFail.put = false;
+  T.idbFail.delete = false;
+  eq('storeBlob başarılı yazmada true döner', await T.storeBlob('k1', new Blob(['x'])), true);
+  T.idbFail.put = true;
+  eq('storeBlob yazma hatasında false döner', await T.storeBlob('k2', new Blob(['x'])), false);
+  T.idbFail.put = false;
+
+  eq('ses depoda ise uyarı çizilmez', T.audioPersistWarningHtml(true, true), '');
+  const w1 = T.audioPersistWarningHtml(true, false);
+  eq('oturumda çalınan ama yazılamayan ses uyarısı metni', /YAZILAMADI/.test(w1), true);
+  eq('oturum uyarısı erişilebilir (role=alert)', /role="alert"/.test(w1), true);
+  const w2 = T.audioPersistWarningHtml(false, false);
+  eq('hiç olmayan ses uyarısı metni', /Ses dosyası bu tarayıcıda YOK/.test(w2), true);
+  eq('ses yok uyarısı erişilebilir (role=alert)', /role="alert"/.test(w2), true);
+
+  // Uyarı bölümden bağımsız çizilmeli: renderMaterialDetail içinde çağrılır.
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq(
+    'materyal detayı kalıcı ses uyarısını çizer',
+    /async function renderMaterialDetail[\s\S]{0,1200}audioPersistWarningHtml/.test(js),
+    true
+  );
+  eq(
+    'ekleme yolu storeBlob sonucunu kontrol eder',
+    /const storedOk = await storeBlob\(blobKey\(c, m\), file\);[\s\S]{0,200}storeFailed\.push/.test(js),
+    true
+  );
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

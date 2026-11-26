@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.331.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.332.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8644,3 +8644,32 @@ biçimde** üretir: `.udf` (UYAP) + `.docx` (Word). Ayrıca manifest v2
 - ZIP'e `SHA256SUMS.txt`'in kendi özetini ayrı `.sha256` yan dosyası olarak
   eklemek (standart §7.3 "istenirse").
 - Belge adlarında tarih/saat standardı (§7.1) — bugün yalnız dosya numarası.
+
+## YENİ OTURUM DEVRİ (v2.332) — Depolama yazma hatası görünür
+
+| | |
+|---|---|
+| Sürüm | **v2.332** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2532 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.333 (silme hatası görünür), v2.334 (bozuk arşiv dosyası bildirilir), v2.335 (toplu işlem/aktarma bildirimleri) |
+
+**Ölçülen hata (v2.331):** IndexedDB `audio` yazması `QuotaExceededError` ile
+zorlandığında toast **"1 kayıt eklendi"**, durum **"● Kayıt güncel"** diyor,
+uyarı şeridi çıkmıyordu; yenilemeden sonra kayıt listede kalıyor ama
+`audio.src=''`, süre 00:00 ve **hiçbir uyarı yoktu**. `storeBlob` catch'i yalnız
+`console.warn` yazıyordu.
+
+**DEĞİŞMEZ KURALLAR (bu sürümde doğdu)**
+
+1. **Yazma sonucu kontrol edilmeden başarı bildirilmez.** `storeBlob` true/false
+   döner; çağıran yol `false` ise kullanıcıya **role=alert** ile söyler ve
+   günlüğe yazar.
+2. **"Bulundu" ≠ "yazıldı".** Paketten geri yüklemede ses bulundu diye
+   `found`'a eklenmez; **yazıldıysa** eklenir. Yazılamayan ses "eksik ses"tir.
+3. **Ses durumu bölümden bağımsızdır.** `audioPersistWarningHtml(hasUrl, stored)`
+   kayıt detayında **her zaman** çizilir (bölüm yoksa da). Yeni bir uyarı
+   eklerken bölüm detayına hapsetmeyin.
+4. **Fizikî belge dosyasız açılmaz:** `savePhysicalDoc` yazamazsa `null` döner;
+   `attachPhysicalDoc` kaydı oluşturmaz ve hata bildirir.
+5. Sahte IndexedDB testte `__idbFail` ile yazma/silme hatası simüle edilir;
+   `birim [159]` sözleşmeyi korur.

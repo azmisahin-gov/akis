@@ -145,15 +145,15 @@ import {
   physicalMissingItems,
   physicalReturnComplete,
   physicalHandoverComplete
-} from './schema.js?v=2.331';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.331';
+} from './schema.js?v=2.332';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.332';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.331';
+const APP_VERSION = '2.332';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1746,6 +1746,10 @@ function dbOpen() {
   });
   return dbPromise;
 }
+// Ses/belge blob'unu kalıcı depoya yazar. Dönüş: true = yazıldı, false = YAZILAMADI.
+// v2.332: hata yutulmaz. Önceki sürümde catch yalnız console.warn yazıyordu;
+// ekleme "kayıt eklendi" diyor, ses ise hiç yazılmıyordu (kota/izin). Kural:
+// yazma sonucu kontrol edilmeden başarı bildirilmez.
 async function storeBlob(key, blob) {
   try {
     const db = await dbOpen();
@@ -1755,8 +1759,10 @@ async function storeBlob(key, blob) {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
+    return true;
   } catch (e) {
     console.warn('Ses dosyası kalıcı depoya yazılamadı', e);
+    return false;
   }
 }
 async function readBlob(key) {
@@ -1833,7 +1839,8 @@ async function savePhysicalDoc(c, file, kind, note) {
     size: Number(file.size) || 0,
     note: String(note || '')
   };
-  await storeBlob(physicalDocKey(c, doc), file);
+  const storedOk = await storeBlob(physicalDocKey(c, doc), file);
+  if (!storedOk) return null;
   c.physicalFile = normalizePhysicalFile(c.physicalFile);
   c.physicalFile.documents.push(doc);
   return doc;
@@ -2690,7 +2697,15 @@ async function attachPhysicalDoc(file) {
   if (!c || !file) return;
   const kindEl = $('#pfDocKind');
   const kind = kindEl ? kindEl.value : 'other';
-  await savePhysicalDoc(c, file, kind, '');
+  const doc = await savePhysicalDoc(c, file, kind, '');
+  if (!doc) {
+    showToast(
+      `Belge eklenemedi: "${file.name}" tarayıcı deposuna YAZILAMADI (depolama dolu veya izin yok). ` +
+        'Depolama alanını boşaltıp yeniden deneyin.',
+      true
+    );
+    return;
+  }
   persist();
   renderPhysicalForm();
   if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
@@ -3478,6 +3493,11 @@ async function renderMaterialDetail() {
   wrap.innerHTML = '';
   wrap.appendChild(card);
   const url = await attachObjectUrl(c, m);
+  // KALICI SES DURUMU (v2.332): bellekte çalınabilen URL olsa bile ses
+  // tarayıcı deposunda YOKSA söylenir. Bölümü olmayan kayıtta da görünür;
+  // önceki sürümde uyarı yalnız bölüm detayının içinde çiziliyordu.
+  const stored = url ? !!(await readBlob(blobKey(c, m))) : false;
+  if (!stored) card.insertAdjacentHTML('afterbegin', audioPersistWarningHtml(!!url, stored));
   const player = $(`#player-${CSS.escape(m.id)}`, card);
   if (player && url) {
     player.src = url;
@@ -8369,6 +8389,23 @@ function audioStateHint(hasSrc) {
     ? ''
     : 'Ses dosyası bu tarayıcıda yok — dalga ve spektrogram çizilemez. Paketten yükle veya dosyayı yeniden ekleyin.';
 }
+// KALICI ses durumu uyarısı (v2.332). Bölüm olsun olmasın gösterilir: ses
+// yazılamamışsa çözümleme/dalga çalışmaz ve sayfa kapanınca kaybolur. Renk tek
+// başına anlam taşımaz; metin + role=alert vardır.
+function audioPersistWarningHtml(hasUrl, stored) {
+  if (stored) return '';
+  if (hasUrl) {
+    return (
+      '<div class="warn-box" role="alert">Ses dosyası bu oturumda çalınabilir ancak ' +
+      'tarayıcıya YAZILAMADI (depolama dolu veya izin yok). Sayfa kapanınca ses KAYBOLUR. ' +
+      'Paket oluşturmayı deneyin; gerekirse tarayıcı depolamasını boşaltıp dosyayı yeniden ekleyin.</div>'
+    );
+  }
+  return (
+    '<div class="warn-box" role="alert">Ses dosyası bu tarayıcıda YOK — dalga ve çözümleme çalışmaz. ' +
+    'Paketten yükle veya dosyayı yeniden ekleyin.</div>'
+  );
+}
 function refreshAudioState(m) {
   if (!m) return;
   const chip = document.querySelector(`#seg-detail-${CSS.escape(m.id)} [data-status-audio]`);
@@ -11362,6 +11399,10 @@ async function addAudioFiles(files, opts = {}) {
   // Teslim bilgisi: yalnız kullanıcıdan gelen dosyalarda sorulur (test paketi
   // hariç). "Sonra dolduracağım" denirse boş kalır; rapor "—" yazar.
   const intake = opts.synthetic || opts.skipIntake ? null : await askIntake(valid.length);
+  // SES YAZILAMADIĞINDA SESSİZ KALMA (v2.332). Depolama dolu/izin yoksa
+  // `storeBlob` false döner; kayıt bellekte çalışır ama sayfa kapanınca ses
+  // kaybolur. Kullanıcı bunu EKLEME ANINDA görmelidir.
+  const storeFailed = [];
   for (const file of valid) {
     const id = uid();
     const tech = await audioTech(file, file.name);
@@ -11402,7 +11443,16 @@ async function addAudioFiles(files, opts = {}) {
         }`
       );
     }
-    await storeBlob(blobKey(c, m), file);
+    const storedOk = await storeBlob(blobKey(c, m), file);
+    if (!storedOk) {
+      storeFailed.push(m.name);
+      logEvent(
+        m,
+        'Ses yazılamadı',
+        `${file.name}: tarayıcı deposuna yazılamadı (depolama dolu veya izin yok). ` +
+          'Oturumda çalınabilir; sayfa kapanınca KAYBOLUR.'
+      );
+    }
     const url = URL.createObjectURL(file);
     objectUrls.set(blobKey(c, m), url);
   }
@@ -11410,11 +11460,24 @@ async function addAudioFiles(files, opts = {}) {
   renderOverview();
   renderAudioList();
   const vNote = videoCount ? ` (${videoCount} video: yalnız ses çözülecek, görüntü incelenmez)` : '';
-  showToast(
-    intake
-      ? `${valid.length} kayıt teslim bilgisiyle eklendi.${vNote}`
-      : `${valid.length} kayıt eklendi. Teslim bilgisi sonra doldurulabilir.${vNote}`
-  );
+  if (storeFailed.length) {
+    const head = intake
+      ? `${valid.length} kayıt teslim bilgisiyle eklendi`
+      : `${valid.length} kayıt eklendi`;
+    showToast(
+      `${head} ANCAK ${storeFailed.length} kaydın sesi tarayıcıya YAZILAMADI ` +
+        `(${storeFailed.slice(0, 3).join(', ')}${storeFailed.length > 3 ? '…' : ''}). ` +
+        'Bu sesler yalnız bu oturumda çalınır; sayfa kapanınca kaybolur. ' +
+        'Depolama alanını boşaltıp dosyayı yeniden ekleyin veya hemen paket oluşturun.',
+      true
+    );
+  } else {
+    showToast(
+      intake
+        ? `${valid.length} kayıt teslim bilgisiyle eklendi.${vNote}`
+        : `${valid.length} kayıt eklendi. Teslim bilgisi sonra doldurulabilir.${vNote}`
+    );
+  }
 }
 // Delil paketi (v2.208): delil.json + ses dosyaları. Tarayıcı cihazı görmez;
 // yalnız hash doğrular. Uyuşmazlıkta sessizce "doğrulandı" denmez.
@@ -11551,6 +11614,8 @@ async function importDelilPack(file) {
   const origin = delilOriginFromPack(pack);
   let added = 0;
   let linked = 0;
+  // v2.332: ses yazılamazsa "doğrulandı" demek yetmez; yazma hatası sayılır.
+  let writeFailed = 0;
   for (const r of results) {
     const f = r.file;
     if (r.state === 'duplicate' && r.existing) {
@@ -11670,7 +11735,11 @@ async function importDelilPack(file) {
         ? `Özet: ${r.nowHash}`
         : `Beklenen: ${f.sha256 || 'yok'} · Bulunan: ${r.nowHash || 'hesaplanamadı'}`
     );
-    await storeBlob(blobKey(c, m), r.blob);
+    const storedOk = await storeBlob(blobKey(c, m), r.blob);
+    if (!storedOk) {
+      writeFailed++;
+      logEvent(m, 'Ses yazılamadı', 'Delil paketinden gelen ses tarayıcı deposuna yazılamadı (kota/izin).');
+    }
     objectUrls.set(blobKey(c, m), URL.createObjectURL(r.blob));
     added++;
   }
@@ -11717,7 +11786,11 @@ async function importDelilPack(file) {
   if (summary.skipped) parts.push(`${summary.skipped} ses dışı (atlandı)`);
   if (summary.mismatch) parts.push(`${summary.mismatch} uyuşmuyor`);
   if (summary.missing) parts.push(`${summary.missing} pakette yok`);
-  showToast(`Delil paketi: ${parts.join(' · ')}.`, summary.mismatch || summary.missing);
+  if (writeFailed) parts.push(`${writeFailed} ses YAZILAMADI (sayfa kapanınca kaybolur)`);
+  showToast(
+    `Delil paketi: ${parts.join(' · ')}.`,
+    !!(summary.mismatch || summary.missing || writeFailed)
+  );
 }
 // Edinme aracını TEK zip olarak indirir (v2.212). Tarayıcı USB'yi görmez;
 // araç ayrı çalışır. Zip: edinme.ps1 + BASLAT.bat + OKUBENI.md.
@@ -19086,13 +19159,17 @@ async function importArchive(zip, arch) {
       if ((c.team || []).length) identityNeeded = true;
       c.materials = c.materials || [];
       const hits = matchAudioEntries(Object.keys(zip.files), c.materials, sourceId);
-      const found = new Set(hits.map((h) => h.materialId));
+      // v2.332: "bulundu" ≠ "yazıldı". Depoya yazılamayan ses, eksik ses
+      // sayılır ve kullanıcıya bildirilir; sessizce "geri yüklendi" denmez.
+      const found = new Set();
       for (const { materialId, entry } of hits) {
         const m = c.materials.find((x) => x.id === materialId);
         const blob = await zip.file(entry).async('blob');
-        await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: m?.type || 'audio/wav' }));
+        const storedOk = await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: m?.type || 'audio/wav' }));
+        if (storedOk) found.add(materialId);
+        else if (m) logEvent(m, 'Ses yazılamadı', 'Paketten gelen ses tarayıcı deposuna yazılamadı (kota/izin).');
       }
-      // Fizikî dosya belgeleri (v2.330): taranmış dizi pusulası + imzalı
+      // Fizikî dosya belgeleri (v2.330): taranmış dizi pusulası ve imzalı
       // tutanak kopyaları da geri yüklenir.
       for (const { docId, entry } of matchPhysicalDocEntries(
         Object.keys(zip.files),
@@ -19191,11 +19268,16 @@ async function importProject(file) {
   // Paketteki belge klasörü ÖZGÜN dosya kimliğiyle yazılmıştır; yeni kimlik
   // verildiği için eşleştirme eski kimlikle yapılır (v2.330).
   const sourceId = pack.case && pack.case.id;
+  const writeFailed = [];
   for (const { materialId, entry } of matchAudioEntries(entryNames, c.materials)) {
     const m = c.materials.find((x) => x.id === materialId);
     const blob = await zip.file(entry).async('blob');
     const mime = m.type || 'audio/wav';
-    await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
+    const storedOk = await storeBlob(`${c.id}::${materialId}`, new Blob([blob], { type: mime }));
+    if (!storedOk) {
+      writeFailed.push(m.name || materialId);
+      logEvent(m, 'Ses yazılamadı', 'Paketten gelen ses tarayıcı deposuna yazılamadı (kota/izin).');
+    }
   }
   for (const { docId, entry } of matchPhysicalDocEntries(
     entryNames,
@@ -19219,6 +19301,16 @@ async function importProject(file) {
   renderOverview();
   await renderAudioList();
   switchView('overview');
+  if (writeFailed.length) {
+    showToast(
+      `Dosya paketten yüklendi ANCAK ${writeFailed.length} ses dosyası tarayıcıya YAZILAMADI ` +
+        `(${writeFailed.slice(0, 3).join(', ')}${writeFailed.length > 3 ? '…' : ''}). ` +
+        'Bu sesler yalnız bu oturumda çalınır; sayfa kapanınca kaybolur. ' +
+        'Depolama alanını boşaltıp paketi yeniden yükleyin.',
+      true
+    );
+    return;
+  }
   showToast(
     'Dosya paketten yüklendi.' +
       ((c.team || []).length
@@ -19291,6 +19383,7 @@ async function loadSamples() {
     if (!res.ok) throw new Error('Test dosyaları bulunamadı.');
     const pack = await res.json();
     let first = null;
+    let sampleWriteFailed = 0;
     for (const sc of pack.cases) {
       const c = { ...freshCase(), ...sc, id: uid(), materials: [], synthetic: true, sampleKey: sc.sampleKey };
       for (const sm of sc.materials) {
@@ -19315,7 +19408,10 @@ async function loadSamples() {
         };
         c.materials.push(m);
         logEvent(m, 'Kayıt eklendi', `${sm.name} · ${blob.size} bayt · SHA-256 hesaplandı (test paketi)`);
-        await storeBlob(blobKey(c, m), blob);
+        if (!(await storeBlob(blobKey(c, m), blob))) {
+          sampleWriteFailed++;
+          logEvent(m, 'Ses yazılamadı', 'Test paketinden gelen ses tarayıcı deposuna yazılamadı (kota/izin).');
+        }
       }
       appState.cases.push(c);
       if (!first) first = c;
@@ -19328,7 +19424,15 @@ async function loadSamples() {
     renderOverview();
     await renderAudioList();
     refreshSampleAction();
-    showToast('4 kurgusal dosya ve 10 sentetik ses kaydı yüklendi. Kaldırmak için aynı düğmeyi kullanın.');
+    if (sampleWriteFailed) {
+      showToast(
+        `Test dosyaları yüklendi ANCAK ${sampleWriteFailed} ses tarayıcıya YAZILAMADI. ` +
+          'Bu sesler sayfa kapanınca kaybolur; depolama alanını boşaltıp test dosyalarını yeniden yükleyin.',
+        true
+      );
+    } else {
+      showToast('4 kurgusal dosya ve 10 sentetik ses kaydı yüklendi. Kaldırmak için aynı düğmeyi kullanın.');
+    }
   } catch (e) {
     showToast(`Test paketi yüklenemedi: ${e.message}`);
   } finally {
@@ -22802,6 +22906,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.332': {
+    title: 'Ses yazılamazsa artık görünür',
+    body:
+      'Tarayıcı deposu doluysa veya izin yoksa ses dosyası kalıcı depoya yazılamayabilir. Önceki sürümde uygulama yine “kayıt eklendi” diyor, ses ise sayfa kapanınca kayboluyordu. Artık yazma hatası kırmızı uyarıyla bildirilir; kayıt seçildiğinde kalıcı uyarı kutusu görünür ve paketten geri yüklemede yazılamayan ses “eksik ses” sayılır. Depolama alanını boşaltıp dosyayı yeniden ekleyin veya hemen paket oluşturun.'
+  },
   '2.331': {
     title: 'Belge paketi Word kopyalarını da indiriyor',
     body:

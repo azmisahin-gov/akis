@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.331.**
+yazılır. **Güncel sürüm: v2.332.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.332 — Ses yazma hatası görünür (TAMAMLANDI)
+
+- **`storeBlob` true/false** döner; yazma sonucu kontrol edilmeden "eklendi"
+  denmez (v2.331'de kota hatası sessizdi).
+- **Kalıcı uyarı:** kayıt detayında `audioPersistWarningHtml` — "oturumda çalınır
+  ama yazılamadı" / "ses bu tarayıcıda yok"; bölümü olmayan kayıtta da görünür.
+- **Tüm yazma yolları:** ekleme · delil paketi · tekil/arşiv paket · test paketi ·
+  fizikî belge. Yazılamayan ses "eksik" sayılır, role=alert ile bildirilir.
+- **Fizikî belge:** yazılamazsa kayıt açılmaz (dosyasız üst veri yok).
+- Test: `birim [159]`.
 
 ## v2.331 — Belge paketi: UDF + DOCX (TAMAMLANDI)
 

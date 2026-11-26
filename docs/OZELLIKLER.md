@@ -1,4 +1,4 @@
-# Özellikler (v2.331 — mevcut durum)
+# Özellikler (v2.332 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -85,6 +85,17 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 - **Depolama dolunca:** büyük uyarı şeridi + "Dışa aktar" düğmesi. Sessiz
   veri kaybı olmaz.
 - **Model seçimi hatırlanır** (`akis.model`); her açılışta öneri onu ezmez.
+
+### Depolama yazma/silme hatası görünür (v2.332)
+
+- **Ses yazılamazsa "eklendi" denmez.** `storeBlob` true/false döner; ekleme,
+  delil paketi, tekil/arşiv paket, test paketi ve fizikî belge yolları sonucu
+  kontrol eder. Yazılamayan ses/belge **role=alert** ile bildirilir ve günlüğe
+  yazılır.
+- **Kalıcı uyarı:** kayıt detayında `audioPersistWarningHtml` — "oturumda
+  çalınır ama yazılamadı" veya "ses bu tarayıcıda yok". Bölümü olmayan kayıtta
+  da görünür; önceki sürümde uyarı yalnız bölüm detayının içindeydi.
+- **Fizikî belge** yazılamazsa kayıt açılmaz (dosyasız üst veri bırakılmaz).
 
 ## Veri şeması (v3) — tek geçerli yapı
 
