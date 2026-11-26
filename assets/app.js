@@ -145,15 +145,15 @@ import {
   physicalMissingItems,
   physicalReturnComplete,
   physicalHandoverComplete
-} from './schema.js?v=2.332';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.332';
+} from './schema.js?v=2.333';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.333';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.332';
+const APP_VERSION = '2.333';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1786,7 +1786,11 @@ async function deleteBlob(key) {
       tx.oncomplete = resolve;
       tx.onerror = () => reject(tx.error);
     });
-  } catch (e) {}
+    return true;
+  } catch (e) {
+    console.warn('Ses dosyası depodan silinemedi', e);
+    return false;
+  }
 }
 function blobKey(c, m) {
   return `${c.id}::${m.id}`;
@@ -1796,6 +1800,8 @@ function blobKey(c, m) {
 // (kayıt kaldır · dosya kalıcı sil · test dosyalarını kaldır) BUNU kullanır.
 // Kopya temizlik kodu bir yolda eksik kalınca silinen ses sayfa yenilenene
 // kadar çalınabiliyor, kullanıcı "kayıt geri geldi" sanıyordu.
+// v2.333: dönüş = depodan SİLİNDİ mi? `false` ise ses tarayıcıda kalmıştır;
+// çağıran yol kullanıcıya söyler (silindi demek yanıltıcı olur).
 async function discardMaterialMedia(c, m) {
   if (!c || !m) return false;
   closeAudioGraph(m);
@@ -1807,20 +1813,20 @@ async function discardMaterialMedia(c, m) {
     } catch (e) {}
     objectUrls.delete(key);
   }
-  try {
-    await deleteBlob(key);
-  } catch (e) {}
-  return true;
+  return await deleteBlob(key);
 }
+// Dosyaya ait tüm medyayı siler; silinemeyenlerin adlarını döndürür.
 async function purgeCaseMedia(c) {
-  for (const m of (c && c.materials) || []) await discardMaterialMedia(c, m);
+  const failed = [];
+  for (const m of (c && c.materials) || []) {
+    if (!(await discardMaterialMedia(c, m))) failed.push(m.name || m.id);
+  }
   // Fizikî dosya belgeleri (taranmış dizi pusulası, imzalı tutanak kopyaları)
   // de bu dosyaya aittir; kalıcı silmede bırakılmaz (v2.330).
   for (const d of (c && c.physicalFile && c.physicalFile.documents) || []) {
-    try {
-      await deleteBlob(physicalDocKey(c, d));
-    } catch (e) {}
+    if (!(await deleteBlob(physicalDocKey(c, d)))) failed.push(d.name || d.id);
   }
+  return { failed };
 }
 // ---- FİZİKÎ DOSYA BELGELERİ (v2.330) -------------------------------------
 // Taranmış dizi pusulası ve imzalı tutanak kopyaları IndexedDB'de saklanır;
@@ -1846,15 +1852,14 @@ async function savePhysicalDoc(c, file, kind, note) {
   return doc;
 }
 async function removePhysicalDoc(c, docId) {
-  if (!c) return;
+  if (!c) return false;
   const pf = normalizePhysicalFile(c.physicalFile);
   const doc = pf.documents.find((d) => d.id === docId);
-  if (!doc) return;
-  try {
-    await deleteBlob(physicalDocKey(c, doc));
-  } catch (e) {}
+  if (!doc) return false;
+  const removed = await deleteBlob(physicalDocKey(c, doc));
   pf.documents = pf.documents.filter((d) => d.id !== docId);
   c.physicalFile = pf;
+  return removed;
 }
 async function openPhysicalDoc(c, docId) {
   const pf = normalizePhysicalFile(c && c.physicalFile);
@@ -2718,10 +2723,18 @@ async function detachPhysicalDoc(id) {
   if (!doc) return;
   const ok = await askConfirm('Belgeyi kaldır', `"${doc.name}" belge kopyası bu tarayıcıdan silinecek. Devam edilsin mi?`);
   if (!ok) return;
-  await removePhysicalDoc(c, id);
+  const removed = await removePhysicalDoc(c, id);
   persist();
   renderPhysicalForm();
   if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
+  if (!removed) {
+    showToast(
+      `Belge listeden kaldırıldı ANCAK "${doc.name}" kopyası tarayıcı deposundan SİLİNEMEDİ. ` +
+        'Tarayıcı verilerini temizleyerek kaldırabilirsiniz.',
+      true
+    );
+    return;
+  }
   showToast('Belge kopyası kaldırıldı.', false);
 }
 
@@ -19347,7 +19360,11 @@ async function removeSamples() {
   if (!ok) return;
   // Test dosyaları sesleriyle birlikte gider; bellekteki URL/AudioContext de
   // bırakılır (v2.275: aynı yardımcı, kopya kod yok).
-  for (const c of samples) await purgeCaseMedia(c);
+  const failedMedia = [];
+  for (const c of samples) {
+    const r = await purgeCaseMedia(c);
+    failedMedia.push(...r.failed);
+  }
   const ids = new Set(samples.map((c) => c.id));
   appState.cases = (appState.cases || []).filter((c) => !ids.has(c.id));
   if (ids.has(appState.activeCaseId)) {
@@ -19361,6 +19378,14 @@ async function removeSamples() {
   await renderAudioList();
   renderArchiveList();
   refreshSampleAction();
+  if (failedMedia.length) {
+    showToast(
+      `${samples.length} test dosyası listeden kaldırıldı ANCAK ${failedMedia.length} ses dosyası ` +
+        'tarayıcı deposundan SİLİNEMEDİ. Tarayıcı verilerini temizleyerek kaldırabilirsiniz.',
+      true
+    );
+    return;
+  }
   showToast(`${samples.length} test dosyası ve sesleri kaldırıldı. Gerçek dosyalarınıza dokunulmadı.`);
 }
 async function loadSamples() {
@@ -19993,11 +20018,19 @@ function setupEvents() {
       // gidiyor, Ctrl+Z yalnız kaydı geri getiriyor, ses gelmiyordu.
       if (!(await askConfirm('Ses kaydını kaldır', removeAudioWarning(m)))) return;
       snapshotForUndo(`kayıt kaldırıldı: ${m.fileName || m.name || ''}`);
-      await discardMaterialMedia(c, m);
+      const mediaRemoved = await discardMaterialMedia(c, m);
       c.materials = c.materials.filter((x) => x.id !== m.id);
       persist();
       renderAudioList();
       renderOverview();
+      if (!mediaRemoved) {
+        showToast(
+          `"${m.name}" listeden kaldırıldı ANCAK ses dosyası tarayıcı deposundan SİLİNEMEDİ. ` +
+            'Kayıt artık görünmüyor; sesi tamamen kaldırmak için tarayıcı verilerini temizleyin.',
+          true
+        );
+        return;
+      }
       showToast('Ses kaydı kaldırıldı.');
     } else if (b.dataset.verify) {
       await verifyIntegrity(b.dataset.verify);
@@ -22388,7 +22421,7 @@ async function purgeCaseById(id) {
   snapshotForUndo('dosya kalıcı silindi');
   // Ses blobları KALICI silinir; object URL ve AudioContext de bırakılır
   // (v2.275). Aksi hâlde silinen ses, sayfa yenilenene kadar çalınabiliyordu.
-  await purgeCaseMedia(c);
+  const mediaResult = await purgeCaseMedia(c);
   appState.cases = (appState.cases || []).filter((x) => x.id !== id);
   if (appState.activeCaseId === id) appState.activeCaseId = (visibleCases(appState.cases)[0] || appState.cases[0] || {}).id || null;
   persist();
@@ -22397,6 +22430,15 @@ async function purgeCaseById(id) {
   renderOverview();
   await renderAudioList();
   renderArchiveList();
+  if (mediaResult.failed.length) {
+    showToast(
+      `"${phrase}" listeden KALICI SİLİNDİ ANCAK ${mediaResult.failed.length} dosya tarayıcı deposundan SİLİNEMEDİ ` +
+        `(${mediaResult.failed.slice(0, 3).join(', ')}${mediaResult.failed.length > 3 ? '…' : ''}). ` +
+        'Bu dosyalar arayüzde görünmez; tarayıcı verilerini temizleyerek kaldırabilirsiniz.',
+      true
+    );
+    return;
+  }
   showToast(
     `"${phrase}" KALICI SİLİNDİ (${mats} kayıt). Ses dosyaları da silindi. ` +
       'Ctrl+Z yalnız kaydı geri getirir; SES GERİ GELMEZ — paketten yükleyin.'
@@ -22906,6 +22948,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.333': {
+    title: 'Ses silinemezse artık görünür',
+    body:
+      'Bir ses kaydı listeden kaldırıldığında dosya tarayıcı deposundan gerçekten silinemezse uygulama artık “kaldırıldı” demiyor: kaydın listeden kalktığını ancak sesin tarayıcıda kaldığını söyleyen kırmızı uyarı çıkar. Aynı kural kalıcı silme, test dosyalarını kaldırma ve fizikî belge kaldırma için de geçerlidir. Sesi tamamen kaldırmak için tarayıcı verilerini temizleyin.'
+  },
   '2.332': {
     title: 'Ses yazılamazsa artık görünür',
     body:

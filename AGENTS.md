@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.332.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.333.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8673,3 +8673,26 @@ uyarı şeridi çıkmıyordu; yenilemeden sonra kayıt listede kalıyor ama
    `attachPhysicalDoc` kaydı oluşturmaz ve hata bildirir.
 5. Sahte IndexedDB testte `__idbFail` ile yazma/silme hatası simüle edilir;
    `birim [159]` sözleşmeyi korur.
+
+## YENİ OTURUM DEVRİ (v2.333) — Ses silme hatası görünür
+
+| | |
+|---|---|
+| Sürüm | **v2.333** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2541 birim + 555 şema** + rapor/sürüm/tasarım yeşil |
+| Açık konu | v2.334 (bozuk arşiv dosyası bildirilir), v2.335 (toplu işlem/aktarma bildirimleri) |
+
+**Ölçülen hata (v2.331):** silme zorla bozulduğunda toast "Ses kaydı kaldırıldı."
+diyor, kayıt listeden gidiyor, fakat IndexedDB blob sayısı **11 → 11** kalıyordu
+(ses tarayıcıda duruyor, arayüzden erişilemiyor). `deleteBlob` catch'i boştu.
+
+**DEĞİŞMEZ KURALLAR**
+
+1. **Silme sonucu kontrol edilmeden "silindi" denmez.** `deleteBlob` true/false
+   döner; `discardMaterialMedia` iletir; `purgeCaseMedia` `{failed[]}` döndürür.
+2. **Dört silme yolu aynı sözleşme:** kayıt kaldır · kalıcı sil · test dosyalarını
+   kaldır · fizikî belge kaldır. Kısmi başarısızlık **role=alert** + "tarayıcı
+   verilerini temizleyin" yönlendirmesi.
+3. Yeni bir silme yolu eklerken `discardMaterialMedia`/`purgeCaseMedia` kullanın;
+   doğrudan `deleteBlob` çağırıp sonucu yok saymayın.
+4. Test: `birim [160]` (sahte silme hatası).

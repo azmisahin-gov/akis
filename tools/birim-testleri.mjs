@@ -7314,5 +7314,51 @@ console.log('[159] Depolama yazma/silme hatası görünür (v2.332)');
   );
 }
 
+console.log('[160] Silme hatası görünür (v2.333)');
+{
+  // Ölçülen hata (v2.331): deleteBlob hatayı yutuyordu; "Ses kaydı kaldırıldı"
+  // deniyor, blob IndexedDB'de kalıyordu (ölçüm: blob sayısı 11 → 11).
+  T.resetDb();
+  T.idbFail.delete = false;
+  eq('deleteBlob başarılı silmede true döner', await T.deleteBlob('k1'), true);
+  T.idbFail.delete = true;
+  eq('deleteBlob silme hatasında false döner', await T.deleteBlob('k1'), false);
+  const c = { id: 'cD', materials: [] };
+  const m = { id: 'mD', name: 'a.wav' };
+  eq('discardMaterialMedia hatayı iletir', await T.discardMaterialMedia(c, m), false);
+  T.idbFail.delete = false;
+  eq('discardMaterialMedia başarıda true döner', await T.discardMaterialMedia(c, m), true);
+  T.idbFail.delete = true;
+  const purged = await T.purgeCaseMedia({
+    id: 'cE',
+    materials: [{ id: 'm1', name: 'a.wav' }],
+    physicalFile: { documents: [{ id: 'd1', name: 'b.pdf' }] }
+  });
+  eq('purgeCaseMedia silinemeyenleri listeler', purged.failed.length, 2);
+  T.idbFail.delete = false;
+
+  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
+  eq(
+    'kayıt kaldırma silme sonucunu kontrol eder',
+    /const mediaRemoved = await discardMaterialMedia\(c, m\);[\s\S]{0,600}!mediaRemoved/.test(js),
+    true
+  );
+  eq(
+    'kalıcı silme silinemeyenleri bildirir',
+    /const mediaResult = await purgeCaseMedia\(c\);[\s\S]{0,900}mediaResult\.failed\.length/.test(js),
+    true
+  );
+  eq(
+    'test dosyası kaldırma silinemeyenleri bildirir',
+    /const failedMedia = \[\];[\s\S]{0,600}failedMedia\.length/.test(js),
+    true
+  );
+  eq(
+    'belge kaldırma silme sonucunu bildirir',
+    /const removed = await removePhysicalDoc\(c, id\);[\s\S]{0,500}!removed/.test(js),
+    true
+  );
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

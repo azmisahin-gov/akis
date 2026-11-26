@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.332.**
+yazılır. **Güncel sürüm: v2.333.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.333 — Ses silme hatası görünür (TAMAMLANDI)
+
+- **`deleteBlob` true/false** döner; `discardMaterialMedia` sonucu iletir;
+  `purgeCaseMedia` silinemeyenlerin adlarını döndürür.
+- **Dört yol kontrol eder:** kayıt kaldır · kalıcı sil · test dosyalarını kaldır ·
+  fizikî belge kaldır. Kısmi başarısızlık **role=alert** ile bildirilir.
+- Başarı mesajı yalnız silme doğrulandıysa yazılır (v2.331'de "kaldırıldı"
+  deniyor, blob kalıyordu: 11 → 11).
+- Test: `birim [160]`.
 
 ## v2.332 — Ses yazma hatası görünür (TAMAMLANDI)
 

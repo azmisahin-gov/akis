@@ -1,4 +1,4 @@
-# Özellikler (v2.332 — mevcut durum)
+# Özellikler (v2.333 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -96,6 +96,11 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
   çalınır ama yazılamadı" veya "ses bu tarayıcıda yok". Bölümü olmayan kayıtta
   da görünür; önceki sürümde uyarı yalnız bölüm detayının içindeydi.
 - **Fizikî belge** yazılamazsa kayıt açılmaz (dosyasız üst veri bırakılmaz).
+- **Ses silinemezse "kaldırıldı" denmez (v2.333).** `deleteBlob` true/false
+  döner; `discardMaterialMedia` sonucu iletir; `purgeCaseMedia` silinemeyenlerin
+  adlarını listeler. Kayıt kaldır · kalıcı sil · test dosyalarını kaldır · fizikî
+  belge kaldır yolları sonucu **role=alert** ile bildirir; başarı mesajı yalnız
+  silme doğrulandıysa yazılır.
 
 ## Veri şeması (v3) — tek geçerli yapı
 

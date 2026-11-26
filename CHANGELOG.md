@@ -6,12 +6,37 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.332.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.333.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.333 — Ses silinemezse artık görünür
+
+**KULLANICI NE GÖRECEK:** Ses kaydı "Kaldır" ile listeden çıkarıldığında dosya
+tarayıcı deposundan **gerçekten silinemezse** uygulama artık **"Ses kaydı
+kaldırıldı" demiyor**: kaydın listeden kalktığını **ancak sesin tarayıcıda
+kaldığını**, tamamen kaldırmak için tarayıcı verilerinin temizlenmesi gerektiğini
+söyleyen kırmızı uyarı çıkar. Aynı kural **kalıcı silme**, **test dosyalarını
+kaldırma** ve **fizikî belge kaldırma** için de geçerlidir.
+
+**NEDEN:** `deleteBlob` hatayı yutuyordu. Ölçüm: silme zorla bozulduğunda toast
+**"Ses kaydı kaldırıldı."**, kayıt listeden gitti, fakat IndexedDB blob sayısı
+**11 → 11** kaldı. Yani ses tarayıcıda duruyor, arayüzden erişilemiyor ve kullanıcı
+silindiğini sanıyordu. Adli/gizlilik açısından kabul edilemez.
+
+**Yapılan**
+- `deleteBlob()` **true/false** döndürür; `discardMaterialMedia()` sonucu iletir.
+- `purgeCaseMedia()` silinemeyen dosya adlarını **listeler**.
+- Üç silme yolu (kayıt kaldır · dosya kalıcı sil · test dosyalarını kaldır) ve
+  fizikî belge kaldırma sonucu **kontrol eder**; kısmi başarısızlık **role=alert**
+  ile bildirilir. Kullanıcıya "tarayıcı verilerini temizleyin" yolu gösterilir.
+- Başarı mesajı yalnız silme **doğrulandıysa** yazılır.
+
+**Koruyan test:** `birim [160]` (11 kontrol; sahte IndexedDB silme hatası ile
+`deleteBlob`/`discardMaterialMedia`/`purgeCaseMedia` sözleşmesi ve dört çağrı yolu).
 
 ## v2.332 — Ses yazılamazsa artık görünür
 
