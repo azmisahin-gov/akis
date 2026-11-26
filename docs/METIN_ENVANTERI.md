@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.349 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.350 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -875,25 +875,25 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 
 | Üretici | Satır | Tür | Metin (kısaltıldı) |
 |---|---|---|---|
-| `reportAnnexBlocks` | 15879 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
-| `reportAnnexBlocks` | 15880 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
-| `letterDefaultBody` | 16528 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
-| `letterPaperHtml` | 16603 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17270 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17281 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17287 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17290 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17293 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17297 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17299 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17307 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `makeDocx` | 18260 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
-| `udfDocument` | 18362 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 18365 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 18370 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 18964 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 18975 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 18976 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `reportAnnexBlocks` | 15882 | belge metni | Kayıt içi konuşmacı kodu: yalnız o kayıtta geçerlidir, her kayıtta S1'den başlar; kişi kimliği değildir. |
+| `reportAnnexBlocks` | 15883 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
+| `letterDefaultBody` | 16531 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 16606 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17273 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17284 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17290 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17293 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17296 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17300 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17302 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17310 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 18266 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 18368 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 18371 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 18376 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 18960 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 18971 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 18972 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 
@@ -920,7 +920,7 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `noColumns` | Bu tablo için alan seçilmedi. |
 | `noAttachments` | Ek listesi boş: EKLER bölümü kapalı veya ek yok. |
 | `annexIntro` | Raporun denetlenebilirliği için sunulan ekler aşağıdadır. |
-| `noSpeakerRow` | — · Konuşmacı etiketi girilmemiştir. |
+| `noSpeakerText` | Konuşmacı etiketi girilmemiştir. |
 | `spectrogramLabel` | Spektrogram incelendi |
 | `werHeading` | ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER) |
 | `werHeaders` | KAYIT · MODEL · REFERANS KELİME · ÇIKTI KELİME · HATA · WER |

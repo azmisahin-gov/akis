@@ -1887,7 +1887,9 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
 // Senaryo 52: bilirkişi anlatımı ve dürüst sınırlar üç çıktıda (v2.347).
 {
   console.log('\n[Senaryo 52] bilirkişi anlatımı (v2.347)');
-  const c = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { integrity: true, asr: true } } });
+  // ASR satırı OLAN kayıt: doğrulama cümlesi görünmeli.
+  const m1 = { transcribedWithModel: 'Xenova/whisper-small', asrAt: '2026-02-01T10:00:00Z' };
+  const c = __schemaMod.normalizeCase({ ...withMaterial(m1), report: { sections: { integrity: true, asr: true } } });
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('yöntem birinci kişi', 'tarafıma sunulan ses kayıtlarını ayrı ayrı ele aldım', H, U, D);
   checkShared('SHA-256 koşullu yazılır', 'hesaplanmamışsa bu durum açıkça belirtilir', H, U, D);
@@ -1896,6 +1898,12 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('otomatik çözümleme başlığı sade', 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ', H, U, D);
   check('ASR/yapay zekâ jargonu yok', !/(\bASR\b|yapay zekâ|model çıktısı)/i.test(H + U + D));
   checkShared('kontrol durumu kanıt tablosunda', 'kontrolü tamamlanmamış bölümler onaylanmış sayılmaz', H, U, D);
+  // Yazılım desteği KULLANILMADIYSA "yararlandım" girişi ve doğrulama cümlesi basılmaz.
+  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { asr: true } } });
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  checkShared('yazılım yoksa "yok" cümlesi', 'yazılım desteğiyle elde edilmiş bir metin kaydı bulunmamaktadır', H2, U2, D2);
+  check('yazılım yoksa "yararlandım" yok', !(H2 + U2 + D2).includes('yardımcı olarak yararlandım'));
+  check('yazılım yoksa doğrulama cümlesi yok', !(H2 + U2 + D2).includes('kontrolü tamamlanmamış bölümler onaylanmış sayılmaz'));
 }
 
 
@@ -1912,6 +1920,22 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const c2 = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { scopeNote: true } } });
   const H2 = htmlText(c2);
   check('varsayılan silinince kod metni döner', H2.includes('56.12') && !H2.includes('BENİM KAPSAM BEYANIM'));
+}
+
+
+// Senaryo 54: veri yokken boş tablo basılmaz (v2.350). Üç çıktı aynı cümleleri
+// verir; "—" satırları ve görünmez karakter (ZWSP) olmaz.
+{
+  console.log('\n[Senaryo 54] boş tablo yerine tek cümle (v2.350)');
+  const c = __schemaMod.normalizeCase({ id: 'c0', fileNo: '2026/TEST', materials: [], questions: [] });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('envanter boş cümlesi', 'İncelemeye sunulan ses kaydı bulunmamaktadır.', H, U, D);
+  checkShared('konuşmacı boş cümlesi', 'Konuşmacı etiketi girilmemiştir.', H, U, D);
+  checkShared('EK-2 boş cümlesi', 'Teknik envanter kaydı yok.', H, U, D);
+  checkShared('EK-3 boş cümlesi', 'Kayıtlı işlem günlüğü yok.', H, U, D);
+  check('görünmez karakter (ZWSP) yok', !(H + U + D).includes('\u200b'));
+  check('boş envanterde sütun başlığı basılmaz', !H.includes('DOSYA BİÇİMİ') && !U.includes('DOSYA BİÇİMİ') && !D.includes('DOSYA BİÇİMİ'));
+  check('boş konuşmacıda sütun başlığı basılmaz', !H.includes('YAŞ ARALIĞI') && !U.includes('YAŞ ARALIĞI') && !D.includes('YAŞ ARALIĞI'));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

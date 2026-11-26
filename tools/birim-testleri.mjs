@@ -174,7 +174,7 @@ const EXPOSE = [
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
   'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
-  'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS', 'TEXT_DEFAULT_ITEMS',
+  'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS', 'TEXT_DEFAULT_ITEMS', 'stripDerivedFields', 'PREV_DEFAULT_METHOD',
   'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'isDefaultText', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
   // v2.330 — fizikî dosya teslim ve iade
@@ -7906,6 +7906,24 @@ console.log('[172] Rapor dilinde kalan ifadeler (v2.349)');
   eq('kod çakışması öneri dili', /düzeltilmesi önerilir/.test(R.speakerCodeConflict), true);
   eq('teknik tablo yazılım der', R.asrHeaders.includes('KULLANILAN YAZILIM'), true);
   eq('teknik tabloda MODEL etiketi yok', R.asrHeaders.includes('MODEL'), false);
+}
+
+
+console.log('[173] Eski yöntem metni göçü (v2.350)');
+{
+  const store = T.store;
+  store.removeItem('akis.defaults');
+  const prev = T.PREV_DEFAULT_METHOD;
+  eq('önceki varsayılan tanımlı', typeof prev === 'string' && prev.length > 500, true);
+  const mk = (text) => ({ cases: [{ id: 'c1', methodText: text, materials: [] }], activeCaseId: 'c1' });
+  const s1 = mk(prev);
+  T.stripDerivedFields(s1);
+  eq('önceki varsayılan yeni metne çevrilir', s1.cases[0].methodText, T.defaultTextFor('methodText'));
+  eq('yeni metin eski jargonu taşımaz', /otomatik konuşma çözümleme çıktısı/i.test(s1.cases[0].methodText), false);
+  const custom = 'Bilirkişinin kendi yöntem metni.';
+  const s2 = mk(custom);
+  T.stripDerivedFields(s2);
+  eq('düzenlenmiş metne dokunulmaz', s2.cases[0].methodText, custom);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

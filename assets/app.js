@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.349';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.349';
+} from './schema.js?v=2.350';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.350';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.349';
+const APP_VERSION = '2.350';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -293,7 +293,7 @@ const REPORT_TEXT = {
   // (`speakerCodeNote`). Burada TEKRARLANMAZ (aynı bilgi iki yerde gösterilmez).
   speakerIntro:
     'Kayıtta konuşan kişiler, bilirkişinin verdiği etiketlere göre aşağıda listelenmiştir. Etiketler ve öznitelikler bilirkişi beyanına dayanır; konuşmacı kimliği kendiliğinden tespit edilmemiştir. Perde değeri hesaplanan bir tahmindir ve kayıt koşullarına bağlıdır.',
-  noSpeakerRow: ['—', 'Konuşmacı etiketi girilmemiştir.', '', '', '', '', '', ''],
+  noSpeakerText: 'Konuşmacı etiketi girilmemiştir.',
   // TEK KAYNAK (v2.203): etiketler schema.js `OBS_DEFS`ten türetilir.
   obsLabels: OBS_LABEL,
   segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
@@ -775,6 +775,11 @@ function stripQuickTags(text) {
 // Eski sürümlerin varsayılan yöntem metni (iki paragraf). Kayıtlı dosyalarda
 // aracın kendisini anan ifadeler kalmasın diye birebir karşılaştırmayla
 // değiştirilir; bilirkişinin kendi yazdığı metne dokunulmaz.
+// v2.347 ÖNCESİ varsayılan (eski jargonlu metin). Kayıtlı dosya bu metni
+// taşıyorsa (yani uzman düzenlemediyse) yeni bilirkişi anlatımına çevrilir.
+const PREV_DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden saklanır ve her dosyanın SHA-256 özeti hesaplanır. Kaynak ses dosyası üzerinde düzenleme yapılmaz; çözümleme, dosyanın çalışma kopyası üzerinde yürütülür.
+
+Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
 const LEGACY_DEFAULT_METHOD = `İnceleme kapsamında tarafıma sunulan dijital ses dosyalarının dosya adları, biçimleri, boyutları, süreleri ve teknik özellikleri kaydedilir. Orijinal dosyanın içerik baytları değiştirilmeden uygulama depolamasında tutulur. Otomatik çözümleme için ses verisi tarayıcı belleğine alınarak işlenir; kaynak ses dosyası üzerinde düzenleme yapılmaz.
 
 Otomatik konuşma çözümleme çıktısı, dinlemeyi destekleyen bir taslak olarak değerlendirilir ve rapora aktarılmadan önce ilgili ses bölümleriyle karşılaştırılarak uzman tarafından kontrol edilir. Kontrol edilmeyen bölümler ayrıca işaretlenir. Konuşma bölümleri, elde edilen zaman bilgileriyle gösterilir. Konuşmacı etiketleri otomatik kimlik tespiti anlamına gelmez; kayıt içindeki kişileri ayırt etmek amacıyla uzman tarafından girilir. Anlaşılmayan veya üst üste gelen konuşmalar tahmin edilmez; kontrol sırasında uygun biçimde işaretlenir. Kayıt niteliğinin değerlendirmeyi sınırladığı durumlar ayrıca belirtilir.`;
@@ -1699,7 +1704,7 @@ function stripDerivedFields(state) {
     // Eski yöntem metni aracın kendisini anıyordu; kayıtlı dosyalarda da
     // rapora sızmasın diye yeni metne çevrilir. Yalnız eski varsayılanla
     // birebir aynıysa değiştirilir; bilirkişinin yazdığı metne dokunulmaz.
-    if (c.methodText === LEGACY_DEFAULT_METHOD) {
+    if (c.methodText === LEGACY_DEFAULT_METHOD || c.methodText === PREV_DEFAULT_METHOD) {
       c.methodText = defaultTextFor('methodText');
       cleaned = true;
     }
@@ -15861,14 +15866,12 @@ function reportAnnexBlocks(c) {
         : physicalAnnexBlock(c),
     ek2: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
-      : { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, empty: REPORT_TEXT.annexNoInventory },
-    ek3: {
-      kind: 'table',
-      header: true,
-      headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'],
-      rows: logRows,
-      empty: REPORT_TEXT.annexNoLog
-    },
+      : invT.rows.length
+        ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows }
+        : { kind: 'para', text: REPORT_TEXT.annexNoInventory },
+    ek3: logRows.length
+      ? { kind: 'table', header: true, headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], rows: logRows }
+      : { kind: 'para', text: REPORT_TEXT.annexNoLog },
     // v2.268 — GÖSTERİM ANAHTARI ÜÇ TABLO: konuşmacı kodları · metin işaretleri ·
     // gözlem işaretleri. Gözlem satırları OBS_DEFS'ten ÜRETİLİR (tek kaynak);
     // yeni bir bayrak eklendiğinde anahtar kendiliğinden güncellenir.
@@ -17369,9 +17372,12 @@ function renderReport() {
     s3: () => {
       const invRows = inventoryRows(c);
       const t = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, invRows);
+      // v2.350: satır yoksa TABLO BASILMAZ; tek cümle yazılır (üç çıktı aynı).
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
-        : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.length ? t.rows.map((r) => `<tr>${r.map((x, i) => `<td${t.keys[i] === 'sha256' ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${t.headers.length}">${esc(REPORT_TEXT.noInventoryRow[0])}</td></tr>`}</tbody></table>`;
+        : t.rows.length
+          ? `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x, i) => `<td${t.keys[i] === 'sha256' ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+          : `<p class="paper-muted">${esc(REPORT_TEXT.noInventoryRow[0])}</p>`;
       return `<div class="paper-section"><h3>${esc(H('s3'))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.inventoryNote + videoNoteSuffix(c))}</p></div>`;
     },
     origin: () => {
@@ -17379,7 +17385,9 @@ function renderReport() {
       const t = reportTableColumns(c, 'origin', REPORT_TEXT.originHeaders, orgRows);
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
-        : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.length ? t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${t.headers.length}">${esc(REPORT_TEXT.noMaterials)}</td></tr>`}</tbody></table>`;
+        : t.rows.length
+          ? `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
+          : `<p class="paper-muted">${esc(REPORT_TEXT.noMaterials)}</p>`;
       return `<div class="paper-section"><h3>${esc(H('origin'))}</h3><p>${esc(REPORT_TEXT.originIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
     },
     embedded: () => {
@@ -17400,17 +17408,14 @@ function renderReport() {
       const spkRows = speakerRows(c);
       const conf = speakerCodeConflictText(c);
       const durRows = speakerDurationRows(c);
-      const spk = reportTableColumns(
-        c,
-        'speakers',
-        REPORT_TEXT.speakerHeaders,
-        spkRows.length ? spkRows : [REPORT_TEXT.noSpeakerRow]
-      );
+      const spk = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, spkRows);
       const spkTable = spk.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
-        : `<table class="paper-table"><thead><tr>${spk.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spk.rows
-            .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
-            .join('')}</tbody></table>`;
+        : spk.rows.length
+          ? `<table class="paper-table"><thead><tr>${spk.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${spk.rows
+              .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
+              .join('')}</tbody></table>`
+          : `<p class="paper-muted">${esc(REPORT_TEXT.noSpeakerText)}</p>`;
       return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p>${speakerMethodNoteText(c) ? `<p class="paper-muted">${esc(speakerMethodNoteText(c))}</p>` : ''}</div>`;
     },
     speakerDurations: () => {
@@ -17430,11 +17435,12 @@ function renderReport() {
     enhance: () => `<div class="paper-section"><h3>${esc(H('enhance'))}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`,
     asr: () => {
       const asrRows = reportAsrRows(c);
-      let out = `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrIntro'))}</p>`;
-      if (asrRows.length) {
-        out += `<table class="paper-table"><thead><tr>${REPORT_TEXT.asrHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${asrRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      } else out += `<p>${esc(defaultTextFor('asrNone'))}</p>`;
-      return out + `<p class="paper-muted">${esc(defaultTextFor('asrLocal'))} ${esc(defaultTextFor('asrVerify'))}</p></div>`;
+      // v2.350: yazılım desteği KULLANILMADIYSA "yararlandım" girişi basılmaz.
+      if (!asrRows.length) {
+        return `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrNone'))}</p></div>`;
+      }
+      const rowsHtml = `<table class="paper-table"><thead><tr>${REPORT_TEXT.asrHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${asrRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      return `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrIntro'))}</p>${rowsHtml}<p class="paper-muted">${esc(defaultTextFor('asrLocal'))} ${esc(defaultTextFor('asrVerify'))}</p></div>`;
     },
     s5: () => {
       const s5sub = reportSubHeadings(c);
@@ -17923,10 +17929,9 @@ function docxXml(c) {
         wP(REPORT_TEXT.defaultInventoryIntro) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...(t.rows.length ? t.rows : [t.headers.map((_, i) => (i === 0 ? REPORT_TEXT.noInventoryRow[0] : '—'))])], {
-              widths: t.widths,
-              header: true
-            })) +
+          : t.rows.length
+            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })
+            : wP(REPORT_TEXT.noInventoryRow[0], { color: '74869A', size: 17, italic: true })) +
         wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true })
       );
     },
@@ -17938,10 +17943,9 @@ function docxXml(c) {
         wP(REPORT_TEXT.originIntro) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...(t.rows.length ? t.rows : [t.headers.map((_, i) => (i === 0 ? REPORT_TEXT.noMaterials : '—'))])], {
-              widths: t.widths,
-              header: true
-            })) +
+          : t.rows.length
+            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })
+            : wP(REPORT_TEXT.noMaterials, { color: '74869A', size: 17, italic: true })) +
         wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true })
       );
     },
@@ -17976,10 +17980,12 @@ function docxXml(c) {
         wP(REPORT_TEXT.speakerCodeNote, { color: '6F8295', size: 17 }) +
         (conf ? wP(conf, { bold: true, color: '9A6B2D', size: 18 }) : '') +
         (() => {
-          const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, dSpk.length ? dSpk : [REPORT_TEXT.noSpeakerRow], [800, 1400, 1000, 1000, 1000, 1800, 2206]);
+          const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, dSpk, [800, 1400, 1000, 1000, 1000, 1800, 2206]);
           return st.empty
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-            : wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
+            : st.rows.length
+              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true })
+              : wP(REPORT_TEXT.noSpeakerText, { color: '74869A', size: 17, italic: true });
         })() +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true }) +
         (speakerMethodNoteText(c) ? wP(speakerMethodNoteText(c), { color: '74869A', size: 17, italic: true }) : '')
@@ -18005,12 +18011,12 @@ function docxXml(c) {
     enhance: () => headingXml(H('enhance')) + wP(REPORT_TEXT.enhanceText),
     asr: () => {
       const dAsr = reportAsrRows(c);
+      // v2.350: yazılım desteği yoksa yalnız "yok" cümlesi basılır.
+      if (!dAsr.length) return headingXml(H('asr')) + wP(defaultTextFor('asrNone'));
       return (
         headingXml(H('asr')) +
         wP(defaultTextFor('asrIntro')) +
-        (dAsr.length
-          ? wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true })
-          : wP(defaultTextFor('asrNone'))) +
+        wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true }) +
         wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true })
       );
     },
@@ -18568,17 +18574,8 @@ async function udfDocument(opts = {}) {
       const inventory = inventoryRows(c);
       const t = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventory, [90, 60, 60, 55, 75, 80, 120]);
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else
-        el.push(
-          table(
-            [
-              [...t.headers],
-              ...(t.rows.length ? t.rows : [t.headers.map((_, i) => (i === 0 ? REPORT_TEXT.noInventoryRow[0] : '—'))])
-            ],
-            t.widths,
-            { header: true }
-          )
-        );
+      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(paragraph(REPORT_TEXT.noInventoryRow[0], { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     origin: () => {
@@ -18587,14 +18584,8 @@ async function udfDocument(opts = {}) {
       el.push(h(H('origin')));
       el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else
-        el.push(
-          table(
-            [[...t.headers], ...(t.rows.length ? t.rows : [t.headers.map((_, i) => (i === 0 ? REPORT_TEXT.noMaterials : '—'))])],
-            t.widths,
-            { header: true }
-          )
-        );
+      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(paragraph(REPORT_TEXT.noMaterials, { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     embedded: () => {
@@ -18621,9 +18612,10 @@ async function udfDocument(opts = {}) {
       el.push(paragraph(REPORT_TEXT.speakerCodeNote, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (conf) el.push(paragraph(conf, { size: 10, bold: true, color: 'gold', after: 4 }));
       {
-        const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk.length ? uSpk : [REPORT_TEXT.noSpeakerRow], [46, 80, 62, 58, 58, 96, 160]);
+        const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk, [46, 80, 62, 58, 58, 96, 160]);
         if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
-        else el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+        else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+        else el.push(paragraph(REPORT_TEXT.noSpeakerText, { size: 9, italic: true, color: 'muted' }));
       }
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (speakerMethodNoteText(c)) el.push(paragraph(speakerMethodNoteText(c), { size: 9, italic: true, color: 'muted', after: 4 }));
@@ -18652,10 +18644,14 @@ async function udfDocument(opts = {}) {
     },
     asr: () => {
       el.push(h(H('asr')));
-      el.push(paragraph(defaultTextFor('asrIntro'), { size: 10 }));
       const uAsr = reportAsrRows(c);
-      if (uAsr.length) el.push(table([[...REPORT_TEXT.asrHeaders], ...uAsr], [120, 240, 150], { header: true }));
-      else el.push(paragraph(defaultTextFor('asrNone'), { italic: true, color: 'muted' }));
+      // v2.350: yazılım desteği yoksa yalnız "yok" cümlesi basılır.
+      if (!uAsr.length) {
+        el.push(paragraph(defaultTextFor('asrNone'), { size: 9, italic: true, color: 'muted', after: 7 }));
+        return;
+      }
+      el.push(paragraph(defaultTextFor('asrIntro'), { size: 10 }));
+      el.push(table([[...REPORT_TEXT.asrHeaders], ...uAsr], [120, 240, 150], { header: true }));
       el.push(paragraph(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     s5: () => {
@@ -23600,6 +23596,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.350': {
+    title: 'Boş tablolar ve eski yöntem metni düzeltildi',
+    body:
+      'Veri yokken rapor artık boş tablo basmıyor: envanter, kayıt kökeni, konuşmacılar ve eklerde yalnız “kayıt yok” cümlesi yazılıyor; “—” satırları ve görünmez karakterler kaldırıldı. Böylece HTML, DOCX ve UDF aynı metni veriyor. Ayrıca yazılım desteği kullanılmadıysa “yararlandım” girişi ve doğrulama cümlesi basılmıyor; yalnız “bu dosyada yazılım desteğiyle elde edilmiş metin yok” deniyor. Önceki sürümlerde oluşturulmuş dosyalardaki eski yöntem metni (uzman düzenlemediyse) yeni bilirkişi anlatımına çevriliyor; elle yazılmış metne dokunulmuyor.'
+  },
   '2.349': {
     title: 'Rapor dilinde kalan ifadeler tamamlandı',
     body:

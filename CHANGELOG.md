@@ -6,12 +6,29 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.349.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.350.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.350 — Boş tablolar ve eski yöntem metni
+
+**KULLANICI NE GÖRECEK:** Yalnız dosya numarası girilmiş boş bir dosyada rapor
+artık **boş tablo** göstermiyor.
+
+| Sorun (ölçüldü) | Düzeltme |
+|---|---|
+| Envanter/köken/konuşmacı/EK-2/EK-3 tabloları veri yokken **“—” satırı** basıyordu (UDF/DOCX) | Veri yoksa **tablo basılmaz**, tek cümle yazılır |
+| UDF’te boş hücrelerde **görünmez karakter (ZWSP)** | Kaldırıldı |
+| HTML ile DOCX/UDF **farklı** boş görünüm | Üç çıktı aynı cümleyi verir (Senaryo 54) |
+| Yazılım kullanılmadığı hâlde **“yararlandım”** girişi | Yazılım yoksa yalnız **“yok”** cümlesi |
+| Eski dosyada **eski yöntem metni** kalıyordu | Önceki varsayılan metin (düzenlenmemişse) **yeni anlatıma** çevrilir |
+
+- **Dürüst sınır:** Elle yazılmış yöntem metni **değiştirilmez** (yalnız eski
+  varsayılanla birebir aynıysa göç eder).
+- Testler: `birim [173]` (4), `rapor` Senaryo 54 (7).
 
 ## v2.349 — Rapor dilinde kalan ifadeler
 
