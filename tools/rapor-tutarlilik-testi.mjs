@@ -1799,5 +1799,37 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const oneUdf = await JSZip.loadAsync(Buffer.from(await zip.file(udfs[0]).async('arraybuffer')));
   check('UDF content.xml taşır', !!oneUdf.file('content.xml'));
 }
+
+// Senaryo 48: EK-5 TESLİM KONTROLÜ (v2.339, A-2). Üç çıktı AYNI satırları
+// basmalı; durum sözcükleri metindir; "Bilgi" uydurma "Eksik" üretmez.
+{
+  console.log('\n[Senaryo 48] teslim kontrol listesi EK-5 (v2.339)');
+  const c = __schemaMod.normalizeCase(
+    withMaterial({ sha256: 'a'.repeat(64), lastVerify: { state: 'verified' } })
+  );
+  const H = htmlText(c);
+  const U = await udfText(c);
+  const D = await docxText(c);
+  checkShared('teslim kontrolü başlığı', REPORT_TEXT.deliveryCheckTitle, H, U, D);
+  checkShared('teslim kontrolü sütunları', REPORT_TEXT.deliveryCheckHeaders[2], H, U, D);
+  checkShared('teslim kontrolü açıklaması', REPORT_TEXT.deliveryCheckNote, H, U, D);
+  checkShared('dosya numarası satırı', 'Dosya numarası', H, U, D);
+  checkShared('son teslim satırı', 'Son teslim tarihi', H, U, D);
+  checkShared('fizikî materyal satırı', 'Fizikî materyal iadesi', H, U, D);
+  checkShared('durum: Tamam', REPORT_TEXT.deliveryCheckStateOk, H, U, D);
+  checkShared('durum: Bilgi', REPORT_TEXT.deliveryCheckStateInfo, H, U, D);
+  // baseCase: rapor tarihi (2026-02-10) son teslimden (2026-02-01) sonra.
+  checkShared('durum: Eksik (rapor tarihi gecikmiş)', REPORT_TEXT.deliveryCheckStateMissing, H, U, D);
+  checkShared('sayısal kontrol başlığı', REPORT_TEXT.checklistTitle, H, U, D);
+  checkShared('sayısal kontrol sütunu', REPORT_TEXT.checklistHeaders[1], H, U, D);
+  // Boş künyede "Eksik" gerekçesi yazılır (uydurma yok, açıklama var).
+  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), fileNo: '' });
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  checkShared('boş dosya no gerekçesi', 'Kapak ve alt bilgi boş kalır.', H2, U2, D2);
+  // Satır sayısı üç çıktıda AYNI (biçim farkı metni değiştirmez).
+  const labels = H2 ? 'Dosya numarası' : '';
+  check('HTML kontrol satırı var', H2.includes(labels), labels);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -193,7 +193,9 @@ const REQUIRED_TOPICS = [
   // v2.330 — fizikî dosya teslim ve iade.
   ['fizikî dosya teslim/iade', /Fizikî dosya teslim ve iade/],
   // v2.331 — belge paketi UDF + DOCX.
-  ['belge paketi UDF + DOCX', /UDF \+ DOCX|UDF ve DOCX/]
+  ['belge paketi UDF + DOCX', /UDF \+ DOCX|UDF ve DOCX/],
+  // v2.339 — teslim kontrol listesi (EK-5).
+  ['teslim kontrol listesi (EK-5)', /Teslim kontrol listesi \(EK-5|TESLİM KONTROLÜ/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

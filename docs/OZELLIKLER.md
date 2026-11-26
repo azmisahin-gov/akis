@@ -1,4 +1,4 @@
-# Özellikler (v2.338 — mevcut durum)
+# Özellikler (v2.339 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1150,3 +1150,7 @@ paketidir; UYAP'a tek belge gibi gönderilmez. Test: `rapor` 47,
 ## Teslim tarihi ve gecikme uyarısı (v2.308/v2.312/v2.338)
 
 Son teslim tarihi görevlendirme tarihi + süreden hesaplanır (elle yazılan korunur). Özet ekranında, durum çubuğunda ve rapor çıktısında “N gün kaldı / N gün gecikti” yazar. **Gecikmiş dosya açılışta bir kez kırmızı şeritle bildirilir** (#dueNotice): dosya adı, gecikme günü ve son teslim tarihi; “Dosyayı aç” Dosya sayfasına gider. Şerit günde bir kez çıkar ve dosyaya yazılmaz; tarih yoksa uyarı üretilmez (uydurma yok).
+
+## Teslim kontrol listesi (EK-5, v2.339)
+
+Raporun **EK-5 “Son kontrol listesi”** eki teslimden önce otomatik denetim yapan **TESLİM KONTROLÜ** tablosu taşır: künye alanları, kayıt/bölüm durumu, kontrol bekleyen bölüm, belirsiz okumada seçim, konuşmacı ataması ve kod çakışması, kapsama, SHA-256 doğrulaması, son teslim tarihi, rapor tarihi ≤ son teslim ve fizikî materyal iadesi. Durum **metinle** yazılır: Tamam · Eksik · Bilgi. "Bilgi" eksik değildir (isteğe bağlı ya da ölçülmemiş); uydurma "Eksik" üretilmez. Tablo HTML/DOCX/UDF çıktısında **aynı satırları** basar.

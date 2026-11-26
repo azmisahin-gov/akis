@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.338.**
+yazılır. **Güncel sürüm: v2.339.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.339 — Teslim kontrol listesi raporda (A‑2, TAMAMLANDI)
+
+- `deliveryChecklistRows(c)` saf fonksiyon: 14 satır, durum **Tamam/Eksik/Bilgi**.
+- EK-5 "SON KONTROL LİSTESİ" artık `blocks` türünde: açıklama + **TESLİM
+  KONTROLÜ** tablosu + **SAYISAL KONTROL** tablosu. Üç çıktı aynı satırlar.
+- "Bilgi" eksik değildir (isteğe bağlı/ölçülmemiş); uydurma "Eksik" yok.
+- Aynı yardımcılar: `pendingBreakdown` · `speakerCodeIssues` ·
+  `segmentCoverage` · `deliveryInfo` · `physicalCounts`.
+- Test: `birim [165]`, `rapor` Senaryo 48, `surum` OZELLIKLER konusu.
 
 ## v2.338 — Gecikme açılışta bildirilir (A‑3, TAMAMLANDI)
 

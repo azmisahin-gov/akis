@@ -125,6 +125,7 @@ const EXPOSE = [
   'parseDateOnly', 'dateOnlyStr', 'dateValueToDay', 'addDaysToDate', 'calendarDaysBetween',
   'daysRemaining', 'elapsedDays', 'deliveryInfo', 'deliverySummaryText', 'deliveryDetailText',
   'overdueNotice', 'overdueCaseNames', 'dueNoticeHtml',
+  'deliveryChecklistRows',
   'deliveryToneClass', 'applyAutoDueDate', 'deliveryPanelHtml', 'caseIdentityRows', 'caseMissingItems',
   'AMBIGUOUS_REVIEW', 'ambiguousReadings', 'ambiguousReportText',
   'karaokeSegments', 'karaokeActiveIndex', 'karaokeCharSpans',
@@ -7549,6 +7550,90 @@ console.log('[164] Açılış gecikme uyarısı (v2.338)');
   const html = T.dueNoticeHtml('A <b> & "B"');
   eq('şerit metni kaçırılır', html.includes('&lt;b&gt;'), true);
   eq('şerit kapatma düğmesi taşır', /data-due-close/.test(html), true);
+}
+
+
+console.log('[165] Teslim kontrol listesi (v2.339)');
+{
+  const mkCase = (over) =>
+    Object.assign(
+      {
+        fileNo: '2026/88',
+        court: 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİ',
+        expertName: 'Örnek Bilirkişi',
+        subject: 'Ses kaydının çözümlenmesi',
+        materials: [
+          {
+            id: 'm1',
+            duration: 20,
+            sha256: 'a'.repeat(64),
+            lastVerify: { state: 'verified' },
+            segments: [
+              { start: '00:00:00.000', end: '00:00:10.000', text: 'bir', speaker: 'Ali', speakerId: 's1', review: 'approved' },
+              { start: '00:00:10.000', end: '00:00:20.000', text: 'iki', speaker: 'Ali', speakerId: 's1', review: 'pending' }
+            ],
+            speakers: [{ id: 's1', code: 'S1', label: 'Ali' }]
+          }
+        ],
+        assignment: { dueDate: '2026-11-20' },
+        report: { date: '2026-11-21' }
+      },
+      over || {}
+    );
+  const find = (rows, label) => rows.find((r) => r[0] === label);
+  // 1) Eksiksiz dosya: künye satırları "Tamam".
+  const full = T.deliveryChecklistRows(mkCase());
+  eq('satırlar üretilir', Array.isArray(full) && full.length >= 10, true);
+  eq('her satır 3 sütun', full.every((r) => r.length === 3), true);
+  eq('dosya numarası tamam', find(full, 'Dosya numarası')[1], 'Tamam');
+  eq('mahkeme tamam', find(full, 'Mahkeme')[1], 'Tamam');
+  eq('bilirkişi tamam', find(full, 'Bilirkişi adı')[1], 'Tamam');
+  // 2) Boş künye: "Eksik" (hazırlık kartıyla aynı gerçek).
+  const empty = T.deliveryChecklistRows(mkCase({ fileNo: '', court: '', expertName: '', subject: '' }));
+  eq('dosya no eksik', find(empty, 'Dosya numarası')[1], 'Eksik');
+  eq('mahkeme eksik', find(empty, 'Mahkeme')[1], 'Eksik');
+  eq('bilirkişi eksik', find(empty, 'Bilirkişi adı')[1], 'Eksik');
+  eq('konu eksik', find(empty, 'İnceleme konusu')[1], 'Eksik');
+  // 3) Kontrol bekleyen bölüm: eksik + açıklama metni.
+  const pend = find(full, 'Kontrol edilmemiş bölüm');
+  eq('bekleyen bölüm eksik', pend[1], 'Eksik');
+  eq('bekleyen bölüm sayısı', /1 bölüm/.test(pend[2]), true);
+  // 4) Tüm bölümler onaylıysa tamam.
+  const okCase = mkCase();
+  okCase.materials[0].segments.forEach((x) => (x.review = 'approved'));
+  eq('onaylı dosyada bekleyen yok', find(T.deliveryChecklistRows(okCase), 'Kontrol edilmemiş bölüm')[1], 'Tamam');
+  // 5) Konuşmacı atanmamış bölüm görünür.
+  const noSpk = mkCase();
+  delete noSpk.materials[0].segments[1].speaker;
+  delete noSpk.materials[0].segments[1].speakerId;
+  eq('konuşmacısız bölüm eksik', find(T.deliveryChecklistRows(noSpk), 'Konuşmacı atanmamış bölüm')[1], 'Eksik');
+  // 6) SHA-256: doğrulanmışsa tamam, uyuşmazsa EKSİK, hiç yoksa "Bilgi".
+  eq('hash doğrulandı', find(full, 'SHA-256 doğrulaması')[1], 'Tamam');
+  const mismatch = mkCase();
+  mismatch.materials[0].lastVerify = { state: 'mismatch' };
+  eq('hash uyuşmazsa eksik', find(T.deliveryChecklistRows(mismatch), 'SHA-256 doğrulaması')[1], 'Eksik');
+  const noHash = mkCase();
+  delete noHash.materials[0].sha256;
+  eq('hash yoksa bilgi', find(T.deliveryChecklistRows(noHash), 'SHA-256 doğrulaması')[1], 'Bilgi');
+  // 7) Son teslim geçmişse raporda görünür; tarih yoksa "Girilmedi".
+  const late = find(full, 'Son teslim tarihi');
+  eq('son teslim bilgi satırı', late[1], 'Bilgi');
+  eq('son teslim tarihi yazılır', /2026/.test(late[2]), true);
+  const noDue = T.deliveryChecklistRows(mkCase({ assignment: {} }));
+  eq('tarih yoksa girilmedi', /Girilmedi/.test(find(noDue, 'Son teslim tarihi')[2]), true);
+  // 8) Rapor tarihi son teslimden sonraysa EKSİK.
+  eq('rapor tarihi gecikmiş', find(full, 'Rapor tarihi ≤ son teslim')[1], 'Eksik');
+  const okDate = mkCase({ report: { date: '2026-11-19' } });
+  eq('rapor tarihi zamanında', find(T.deliveryChecklistRows(okDate), 'Rapor tarihi ≤ son teslim')[1], 'Tamam');
+  // 9) Fizikî kayıt yoksa "Bilgi" (zorunlu değil — uydurma eksik yok).
+  eq('fizikî kayıt yoksa bilgi', find(full, 'Fizikî materyal iadesi')[1], 'Bilgi');
+  // 10) Kapsama süresi bilinmiyorsa uydurma yüzde YOK.
+  const noDur = mkCase();
+  delete noDur.materials[0].duration;
+  noDur.materials[0].segments = [];
+  eq('süre yoksa kapsama bilgi', find(T.deliveryChecklistRows(noDur), 'Bölümlenmemiş ses aralığı')[1], 'Bilgi');
+  // 11) Durum sözcükleri metindir (renk tek başına anlam vermez).
+  eq('durum sözcükleri metin', full.every((r) => ['Tamam', 'Eksik', 'Bilgi'].includes(r[1])), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

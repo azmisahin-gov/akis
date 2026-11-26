@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.338';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.338';
+} from './schema.js?v=2.339';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.339';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.338';
+const APP_VERSION = '2.339';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -344,6 +344,18 @@ const REPORT_TEXT = {
   reviewSummaryHeading: 'İNCELEME ÖZETİ (DENETİM KAYDI)',
   reviewSummaryIntro:
     'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
+  // TESLİM KONTROLÜ (v2.339, A-2): EK-5'in ilk tablosu. Durum sözcükleri
+  // METİNDİR (Tamam/Eksik/Bilgi); renk tek başına anlam taşımaz. "Bilgi",
+  // eksik DEĞİLDİR: o alan isteğe bağlı ya da ölçülemedi (uydurma yok).
+  deliveryCheckTitle: 'TESLİM KONTROLÜ',
+  deliveryCheckHeaders: ['KONTROL', 'DURUM', 'AÇIKLAMA'],
+  deliveryCheckNote:
+    'Bu tablo teslimden önce otomatik denetimdir; elle işaretlenen satır yoktur. "Eksik" satırı giderilmeden rapor teslim edilmemelidir. "Bilgi" satırı eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılamamıştır.',
+  deliveryCheckStateOk: 'Tamam',
+  deliveryCheckStateMissing: 'Eksik',
+  deliveryCheckStateInfo: 'Bilgi',
+  checklistTitle: 'SAYISAL KONTROL',
+  checklistHeaders: ['KONTROL', 'DEĞER'],
   rsMaterials: 'İncelemeye alınan kayıt',
   rsSegments: 'Çözümlenen bölüm',
   rsReviewed: 'Uzman denetiminden geçen bölüm',
@@ -15326,6 +15338,79 @@ function reportChecklistRows(c) {
     ['SHA-256 doğrulanmış kayıt', String(verified)]
   ];
 }
+// TESLİM KONTROLÜ (v2.339, A-2). EK-5'in ilk tablosu; üç çıktı AYNI satırları
+// basar. Tek kaynak: rapor hazırlığıyla aynı yardımcılar (pendingBreakdown,
+// speakerCodeIssues, segmentCoverage, deliveryInfo, physicalCounts) — iki araç
+// ayrışırsa kullanıcı hangisine güveneceğini bilemez (v2.156 dersi).
+// Durum: Tamam / Eksik / Bilgi. "Bilgi" eksik DEĞİLDİR (isteğe bağlı alan ya
+// da ölçülemedi); uydurma eksik üretilmez.
+function deliveryChecklistRows(c) {
+  const okS = REPORT_TEXT.deliveryCheckStateOk;
+  const badS = REPORT_TEXT.deliveryCheckStateMissing;
+  const infoS = REPORT_TEXT.deliveryCheckStateInfo;
+  const box = c && typeof c === 'object' ? c : {};
+  const materials = Array.isArray(box.materials) ? box.materials : [];
+  const segs = materials.flatMap((m) => (m && Array.isArray(m.segments) ? m.segments : []));
+  const txt = (v) => String(v == null ? '' : v).trim();
+  const rows = [];
+  const add = (label, state, detail) => rows.push([label, state, String(detail == null ? '' : detail)]);
+  const yesNo = (v, missingDetail) => (txt(v) ? okS : badS);
+  add('Dosya numarası', yesNo(box.fileNo), txt(box.fileNo) || 'Kapak ve alt bilgi boş kalır.');
+  add('Mahkeme', yesNo(box.court), txt(box.court) || 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
+  add('Bilirkişi adı', yesNo(box.expertName), txt(box.expertName) || 'Künyede ad alanı boş kalır.');
+  add('İnceleme konusu', yesNo(box.subject), txt(box.subject) || 'Künyede ve 1. bölümde konu boş kalır.');
+  add('Ses/video kaydı', materials.length ? okS : badS, materials.length ? `${materials.length} kayıt` : 'Kayıt yok.');
+  const noSeg = materials.filter((m) => !((m && m.segments) || []).length).length;
+  add('Bölümlenmemiş kayıt', noSeg ? badS : okS, noSeg ? `${noSeg} kayıt` : 'Tüm kayıtlar bölümlendi.');
+  const b = pendingBreakdown(segs);
+  add('Kontrol edilmemiş bölüm', b.total ? badS : okS, b.total ? pendingSummaryText(segs) : 'Tüm bölümler kontrol edildi.');
+  const amb = segs.filter((s) => segReview(s) === 'ambiguous' && !txt(s.chosen)).length;
+  add('Belirsiz okumada seçim', amb ? badS : okS, amb ? `${amb} bölümde okuma seçilmedi.` : 'Seçim gerektiren bölüm yok.');
+  const noSpk = segs.filter((s) => !txt(s.speaker) || txt(s.speaker) === 'Belirtilmedi').length;
+  add('Konuşmacı atanmamış bölüm', noSpk ? badS : okS, noSpk ? `${noSpk} bölüm` : 'Tüm bölümlerde konuşmacı atandı.');
+  const codeConf = speakerCodeIssues(box).reduce((n, i) => n + (i.speakerIds.length - 1), 0);
+  add('Konuşmacı kodu çakışması', codeConf ? badS : okS, codeConf ? `${codeConf} çakışma` : 'Çakışma yok.');
+  // KAPSAMA: süre bilinmiyorsa "Bilgi" — uydurma yüzde/boşluk yok.
+  const covs = materials.map((m) => segmentCoverage((m && m.segments) || [], Number(m && m.duration) || 0)).filter((x) => x && x.ok);
+  if (!covs.length) add('Bölümlenmemiş ses aralığı', infoS, 'Kayıt süresi bilinmiyor; kapsama hesaplanamadı.');
+  else {
+    const gaps = covs.reduce((n, x) => n + x.gaps.length, 0);
+    const gapSec = covs.reduce((n, x) => n + x.gaps.reduce((t, g) => t + (g.b - g.a), 0), 0);
+    add(
+      'Bölümlenmemiş ses aralığı',
+      gaps ? badS : okS,
+      gaps ? `${gaps} boşluk · ${String(gapSec.toFixed(1)).replace('.', ',')} sn` : 'Sesin tamamı bölümlendi.'
+    );
+  }
+  // SHA-256: yalnız ÖLÇÜLEN durumu yazar (uydurma "doğrulandı" yok).
+  const hashed = materials.filter((m) => m && isSha256Hex(m.sha256)).length;
+  const st = (state) => materials.filter((m) => m && m.lastVerify && m.lastVerify.state === state).length;
+  const mism = st('mismatch');
+  const verified = st('verified');
+  if (!hashed) add('SHA-256 doğrulaması', infoS, 'Özet (hash) kayıtlı değil.');
+  else if (mism) add('SHA-256 doğrulaması', badS, `${mism} kayıtta özet UYUŞMUYOR.`);
+  else if (verified >= hashed) add('SHA-256 doğrulaması', okS, `${verified} kayıt doğrulandı.`);
+  else add('SHA-256 doğrulaması', infoS, `${verified}/${hashed} kayıt doğrulandı.`);
+  // TESLİM TARİHİ: bilgi satırıdır (eksik değil); gecikme metinle yazılır.
+  const info = deliveryInfo(box);
+  add(
+    'Son teslim tarihi',
+    infoS,
+    info.dueDate ? `${niceDate(info.dueDate)} · ${info.label}` : 'Girilmedi (zorunlu değildir).'
+  );
+  if (!info.dueDate || info.reportLeft == null) add('Rapor tarihi ≤ son teslim', infoS, 'Hesaplanamadı: tarih eksik.');
+  else if (info.reportLate) add('Rapor tarihi ≤ son teslim', badS, `Rapor tarihi ${Math.abs(info.reportLeft)} gün sonra.`);
+  else add('Rapor tarihi ≤ son teslim', okS, `Rapor tarihi son teslimden ${Math.abs(info.reportLeft)} gün önce.`);
+  // FİZİKÎ MATERYAL: kayıt yoksa "Bilgi" (UYAP erişimi fizikî teslim değildir).
+  const pf = normalizePhysicalFile(box.physicalFile);
+  if (!physicalFileActive(pf)) add('Fizikî materyal iadesi', infoS, 'Fizikî teslim kaydı yok.');
+  else if (physicalReturnComplete(pf)) add('Fizikî materyal iadesi', okS, 'Tüm materyaller iade edildi.');
+  else {
+    const counts = physicalCounts(pf);
+    add('Fizikî materyal iadesi', badS, `${counts.missing} materyal iade edilmedi.`);
+  }
+  return rows;
+}
 // ---- FİZİKÎ DOSYA TESLİM VE İADE (v2.330) --------------------------------
 // Bu blok SES KAYDI KÖKENİNDEN (`origin`) AYRIDIR. `origin` sesin hangi
 // cihazdan/ortamdan geldiğini anlatır; buradaki kayıt mahkemenin fizikî olarak
@@ -15568,7 +15653,26 @@ function reportAnnexBlocks(c) {
         }
       ]
     },
-    ek5: { kind: 'table', header: false, rows: reportChecklistRows(c) },
+    // EK-5 "SON KONTROL LİSTESİ" (v2.339, A-2): ilk tablo TESLİM KONTROLÜ,
+    // ikincisi sayısal özet. Üç çıktı (HTML/DOCX/UDF) aynı satırları basar.
+    ek5: {
+      kind: 'blocks',
+      blocks: [
+        { kind: 'para', text: REPORT_TEXT.deliveryCheckNote },
+        {
+          kind: 'table',
+          title: REPORT_TEXT.deliveryCheckTitle,
+          headers: REPORT_TEXT.deliveryCheckHeaders,
+          rows: deliveryChecklistRows(c)
+        },
+        {
+          kind: 'table',
+          title: REPORT_TEXT.checklistTitle,
+          headers: REPORT_TEXT.checklistHeaders,
+          rows: reportChecklistRows(c)
+        }
+      ]
+    },
     ek6: { kind: 'para', text: REPORT_TEXT.annexLegalText }
   };
   const out = reportAnnexList(c).map((a) => {
@@ -23162,6 +23266,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.339': {
+    title: 'Teslim kontrol listesi raporda (EK-5)',
+    body:
+      'Raporun EK-5 “Son kontrol listesi” eki artık teslimden önce otomatik denetim yapan bir TESLİM KONTROLÜ tablosu taşıyor: dosya numarası, mahkeme, bilirkişi, inceleme konusu, kayıt ve bölüm durumu, kontrol bekleyen bölüm, konuşmacı ataması, SHA-256 doğrulaması, son teslim tarihi ve fizikî materyal iadesi. Her satırda DURUM yazar: Tamam · Eksik · Bilgi. “Bilgi” eksik değildir: alan isteğe bağlıdır ya da ölçüm yapılmamıştır; uydurma “Eksik” üretilmez. Tablo HTML, DOCX ve UDF çıktısında AYNI satırları basar; yazdırılan raporla birlikte gelir.'
+  },
   '2.338': {
     title: 'Gecikme açılışta bildirilir',
     body:

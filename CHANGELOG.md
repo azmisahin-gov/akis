@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.338.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.339.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.339 — Teslim kontrol listesi raporda (A‑2)
+
+**KULLANICI NE GÖRECEK:** Raporun **EK-5 “Son kontrol listesi”** eki artık
+**teslimden önce** yapılan otomatik denetimi gösteren bir **TESLİM KONTROLÜ**
+tablosu taşır. Her satırda **DURUM** metinle yazar: **Tamam · Eksik · Bilgi**.
+
+| Satır | Ne denetler |
+|---|---|
+| Dosya numarası · Mahkeme · Bilirkişi adı · İnceleme konusu | Künye tam mı |
+| Ses/video kaydı · Bölümlenmemiş kayıt | Kayıt bölümlendi mi |
+| Kontrol edilmemiş bölüm | Dinlenip onaylandı mı |
+| Belirsiz okumada seçim | Seçim yapıldı mı |
+| Konuşmacı atanmamış bölüm · Konuşmacı kodu çakışması | Atama tutarlı mı |
+| Bölümlenmemiş ses aralığı | Kapsam tam mı (süre bilinmiyorsa “Bilgi”) |
+| SHA-256 doğrulaması | Özet doğrulandı mı (uyuşmazsa **Eksik**) |
+| Son teslim tarihi · Rapor tarihi ≤ son teslim | Takvim tutuyor mu |
+| Fizikî materyal iadesi | İade tamam mı (kayıt yoksa “Bilgi”) |
+
+- **“Bilgi” eksik değildir:** alan isteğe bağlıdır ya da ölçüm yapılmamıştır.
+  Uydurma “Eksik” üretilmez; tarih/süre yoksa uydurma değer yazılmaz.
+- Tablo, rapor hazırlığıyla **aynı yardımcıları** kullanır
+  (`pendingBreakdown`, `speakerCodeIssues`, `segmentCoverage`, `deliveryInfo`,
+  `physicalCounts`) — iki araç ayrışmaz.
+- **Üç çıktı aynı satırları basar:** HTML, DOCX, UDF. Yazdırılan raporla gelir.
+- Yeni test: `birim-testleri` **[165]** (23 kontrol), `rapor-tutarlilik-testi`
+  **Senaryo 48**. Düzeltme yokken `birim [165]` **KALDI**.
 
 ## v2.338 — Gecikme açılışta bildirilir (A‑3)
 

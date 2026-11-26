@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.338.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.339.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -8833,3 +8833,36 @@ birim testinde · sürüm şeridi açıkken `dueTop=136 = verBottom` (gap 0,
 **örtüşme yok**) · sürüm şeridi kapanınca `dueTop=0` · "Dosyayı aç" →
 `dataset.view='case'` · 1440/1100/900/760/600/360: yatay taşma 0, kırpma 0
 (360'ta şerit 202 px'e sarar) · JS hatası **0**.
+
+## YENİ OTURUM DEVRİ (v2.339) — Teslim kontrol listesi (A‑2)
+
+| | |
+|---|---|
+| Sürüm | **v2.339** |
+| Testler | **2632 birim + 555 şema** + rapor (48) + sürüm + tasarım yeşil |
+| Açık konu | AGENTS backlog'undaki A‑2/A‑3 kapandı; yeni konu seçimi kullanıcıda |
+
+### Ne yapıldı
+- `deliveryChecklistRows(c)` — **saf**; 14 satır, durum **Tamam / Eksik / Bilgi**.
+  Kaynaklar: `pendingBreakdown`, `speakerCodeIssues`, `segmentCoverage`,
+  `deliveryInfo`, `physicalCounts`, `reportChecklistRows` (sayısal tablo).
+- **EK-5 “SON KONTROL LİSTESİ”** artık `kind:'blocks'`: açıklama + **TESLİM
+  KONTROLÜ** tablosu + **SAYISAL KONTROL** tablosu. Üç çıktı aynı satırlar.
+- Metinler `REPORT_TEXT` (`deliveryCheckNote`, `checklistTitle` …) — kopya yok.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **“Bilgi” eksik DEĞİLDİR.** Alan isteğe bağlı ya da ölçüm yapılmamışsa
+   “Bilgi” yazılır; **uydurma “Eksik” üretilmez** (tarih/süre yok → hesaplanamadı).
+2. **Kontrol listesi = rapor hazırlığı.** Aynı yardımcılar kullanılır; iki araç
+   ayrışırsa kullanıcı hangisine güveneceğini bilemez (v2.156 dersi).
+3. **Durum metindir** (Tamam/Eksik/Bilgi); renk tek başına anlam taşımaz.
+4. **Tek yerde tek liste:** yeni bir “kontrol listesi” eklemek yerine EK-5
+   genişletildi; ikinci bir liste kullanıcıyı iki gerçeğe inandırır.
+5. Yeni bir satır eklerken `deliveryChecklistRows` + `birim [165]` + `rapor`
+   Senaryo 48 birlikte güncellenir.
+
+### Ölçüm (gerçek Chromium + CDP)
+`v2.339` · rapor önizlemesinde **TESLİM KONTROLÜ** var; satırlar (dosya no,
+kontrol bekleyen, SHA-256, son teslim, fizikî iade) görünür; durum dağılımı
+**Tamam 9 · Eksik 4 · Bilgi 4**; **SAYISAL KONTROL** tablosu var; 12 tablo ·
+kırpılan tablo **0**; 1440/1100/900/760/600 → clip 0, yatay taşma 0; JS hatası **0**.
