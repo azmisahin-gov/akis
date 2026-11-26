@@ -1543,20 +1543,19 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = letterPaperHtml(c).replace(/<[^>]+>/g, '\n');
   const U = await udfTextLetter(c);
   const D = await docxTextLetter(c);
-  checkShared('T.C.', 'T.C.', H, U, D);
-  checkShared('mahkeme satırı', 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİ’NE', H, U, D);
-  checkShared('sayı', 'Sayı: 2026/214 E.', H, U, D);
-  checkShared('konu', 'Konu: Bilirkişi raporunun sunulması', H, U, D);
-  checkShared('hitap', 'Sayın Hâkimliğine,', H, U, D);
+  checkShared('mahkeme satırı (kesme işaretsiz)', 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİNE', H, U, D);
+  checkShared('dosya no', 'Dosya No: 2026/214 E.', H, U, D);
+  checkShared('konu (baş harfleri büyük)', 'Konu: Bilirkişi Raporunun Sunulması', H, U, D);
   checkShared('birinci paragraf', 'Birinci paragraf metni.', H, U, D);
   checkShared('ikinci paragraf', 'İkinci paragraf metni.', H, U, D);
+  checkShared('ilgi (görevlendirmeden)', 'İlgi: Mahkemenizin 12.10.2026 tarihli görevlendirme yazısı.', H, U, D);
   checkShared('kapanış', 'Bilgilerinize arz ederim.', H, U, D);
   checkShared('yer ve tarih', 'Antalya, 15.11.2026', H, U, D);
   checkShared('imza unvanı', 'Bilirkişi', H, U, D);
-  checkShared('bilirkişi adı', 'Örnek Bilirkişi', H, U, D);
-  checkShared('EKLER', 'EKLER', H, U, D);
+  checkShared('bilirkişi adı (soyadı büyük)', 'Örnek BİLİRKİŞİ', H, U, D);
+  checkShared('ek başlığı', 'Ek:', H, U, D);
   checkShared('EK-1 satırı', 'EK-1', H, U, D);
-  checkShared('EK-1 etiketi', 'Bilirkişi raporu', H, U, D);
+  checkShared('EK-1 etiketi', 'Bilirkişi Raporu', H, U, D);
   // Uygulama adı hiçbir çıktıda geçmez (v2.83 kuralı).
   for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
     check(`${name}: uygulama adı yok`, !/AKİS|uygulama adı/i.test(text));

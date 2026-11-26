@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.326.**
+yazılır. **Güncel sürüm: v2.327.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.327 — Üst yazı görsel standardı, otomatik (TAMAMLANDI)
+
+- `LETTER_FORMAT`: TNR 12 pt, 15 mm, 1,15, ilk satır girintisi 1,25 cm, yaslı;
+  ekran + DOCX + UDF aynı; rapor biçiminden bağımsız.
+- Muhatap otomatik (`MAHKEMESİNE`, kesme işaretsiz, büyük harf); `Dosya No:`,
+  `Konu:`, otomatik `İlgi:`; `T.C.`/`Sayı:`/hitap kaldırıldı.
+- İmza: `Ad SOYADI` + unvan + sicil (otomatik), **çizgi yok** (ıslak imza kipi).
+- `Ek:` + `EK-1 – Bilirkişi Raporu` (baş harfleri büyük).
+- Üst yazı tarihi ilk açılışta bir kez kayda yazılır.
+- Test `birim [159]`, `rapor` 44.
+- UDF'te ilk satır girintisi yok (şemada doğrulanmış alan yok) — dürüst sınır.
 
 ## v2.326 — Ek satırı taşması + standart değerlendirmesi (TAMAMLANDI)
 

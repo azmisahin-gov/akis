@@ -6,12 +6,53 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.326.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.327.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.327 — Üst yazı görsel standardı (otomatik)
+
+**KULLANICI NE GÖRECEK:** Üst yazı artık **standarda uygun** ve **her şey otomatik**:
+muhatap eki, ilgi satırı, tarih, imza bloğu ve ek listesi kendiliğinden üretilir.
+`T.C.`, `Sayı:` ve tekrar eden hitap satırı kalktı.
+
+**Yapılan (standart §2)**
+- **Üst yazıya özgü biçim** `LETTER_FORMAT`: Times New Roman **12 pt**, 15 mm,
+  satır aralığı **1,15**, ilk satır girintisi **1,25 cm**, iki yana yaslı.
+  Ekran (`applyLetterFormat`), DOCX (`docxFormatInit(c, LETTER_FORMAT)`) ve UDF
+  aynı değerleri kullanır. **Rapor biçimi üst yazıyı etkilemez.**
+- **Muhatap otomatik**: `ANTALYA 4. ASLİYE HUKUK MAHKEMESİNE` — kesme işareti
+  yok, ek bitişik ve **büyük harf**; ünlü uyumu + kaynaştırma "n"
+  (`MAHKEMESİNE`, `BAŞSAVCILIĞINA`, `MÜDÜRLÜĞÜNE`). Elle düzeltme alanı korunur.
+- **`Dosya No:` / `Konu:` / `İlgi:`** — `İlgi` görevlendirme tarihinden otomatik
+  (`Mahkemenizin 12.10.2026 tarihli görevlendirme yazısı.`); gerçek dayanak yoksa
+  satır **hiç çizilmez**; kapatma anahtarı var.
+- **`T.C.`, `Sayı:` ve hitap satırı kaldırıldı** (standart §2.2/§2.4).
+- **İmza bloğu**: `Ad SOYADI` (soyadı büyük harf), unvan, `Bilirkişilik Sicil No:`
+  (sicil varsa **otomatik**), **imza çizgisi yok** (yalnız "Islak imza çizgisi"
+  açılırsa; sahte imza izlenimi verilmez).
+- **Ek listesi**: `Ek:` + `EK-1 – Bilirkişi Raporu` (tek ekte tek satır, çok ekte
+  girintili liste); ek adları **baş harfleri büyük**.
+- **Üst yazı tarihi kendi alanı**: boşsa ilk açılışta **bir kez** bugün yazılır ve
+  kayda geçer (`persist({touch:false})`); sonraki açılışlarda değişmez.
+
+**Ölçüm (gerçek Chromium + CDP, 1440×900)**
+Metin: `ANTALYA 4. ASLİYE HUKUK MAHKEMESİNE · Dosya No: 2026/214 E. · Konu:
+Bilirkişi Raporunun Sunulması · İlgi: Mahkemenizin 12.10.2026 tarihli
+görevlendirme yazısı. · … · Bilgilerinize arz ederim. · 26.11.2026 · Örnek
+BİLİRKİŞİ · Bilirkişi · Bilirkişilik Sicil No: … · Ek: EK-1 – Bilirkişi Raporu`.
+Biçim: Times New Roman, ölçek 12/11, kenar 57 px (15 mm), satır 1,15, girinti
+30,8 px, iki yana yaslı; **imza çizgisi yok**; tarih alanı **2026-11-26**.
+`T.C.`/`Sayı:`/hitap **yok**; JS hatası **0**.
+
+**Koruyan test:** `birim [159]` güncellendi · `rapor` Senaryo 44 (üç çıktı aynı
+metin; İlgi dâhil) · `tasarim` yeşil.
+
+**Bilinen sınır:** UDF şemasında **ilk satır girintisi** doğrulanmış alan yok;
+girinti ekran ve DOCX'te uygulanır, UDF'te uygulanmaz (metin bozulmaz).
 
 ## v2.326 — Ek satırı taşması (sağ panel) + üst yazı standardı değerlendirmesi
 

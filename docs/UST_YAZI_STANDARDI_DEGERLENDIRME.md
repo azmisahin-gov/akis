@@ -2,8 +2,8 @@
 
 **Kaynak:** [`UST_YAZI_STANDARDI.md`](UST_YAZI_STANDARDI.md) (AKİS-ÜY-01 v1.0,
 26.11.2026 — dışarıdan gelen öneri).
-**Durum:** DEĞERLENDİRME. Uygulananlar v2.326'da işaretli; geri kalanı v2.327
-adayı. Bu belge standardın kendisi değildir; **neyi alıp neyi almadığımızı** ve
+**Durum:** §2 (görsel standart) **v2.327'de UYGULANDI**; §4–§7 (dosya adları,
+manifest v2, `SHA256SUMS.txt`) v2.328 adayı. Bu belge standardın kendisi değildir; **neyi alıp neyi almadığımızı** ve
 **neden** aldığımızı yazar.
 
 > **Çerçeve:** Standardın kendi notu doğru: bu bir **ürün standardıdır**, kamu

@@ -131,15 +131,15 @@ import {
   letterMovedAnnexKeys,
   removeSectionsFromLetterAnnexes,
   removeAnnexKeyFromLetterAnnexes
-} from './schema.js?v=2.326';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.326';
+} from './schema.js?v=2.327';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.327';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.326';
+const APP_VERSION = '2.327';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15179,24 +15179,86 @@ function readReportFormatPanel(c) {
 // `letterModel()` — HTML önizleme, DOCX ve UDF aynı modelden beslenir.
 // "Teslim" sözcüğü son teslim TARİHİ için ayrılmıştır; belge kümesi "belge
 // ekleri"dir. Ayrıntı: docs/UST_YAZI_PLANI.md.
+// ---- ÜST YAZI (v2.323–v2.327) --------------------------------------------
+// Üst yazı (sunuş yazısı) AYRI bir belgedir; rapor onun EK-1'idir. Tek kaynak:
+// `letterModel()` — HTML önizleme, DOCX ve UDF aynı modelden beslenir.
+// Görsel/biçim standardı: docs/UST_YAZI_STANDARDI.md (§2). Kural: her şey
+// OTOMATİK üretilir (muhatap eki, ilgi, tarih, imza, ek listesi); kullanıcı
+// yalnız istisnayı düzeltir. "Teslim" sözcüğü son teslim TARİHİ içindir.
 const LETTER_TEXT = {
-  subject: 'Bilirkişi raporunun sunulması',
-  greetingCourt: 'Sayın Hâkimliğine,',
-  greetingProsecutor: 'Sayın Cumhuriyet Başsavcılığına,',
-  greetingOther: 'Sayın Yetkiliye,',
+  subject: 'Bilirkişi Raporunun Sunulması',
   closing: 'Bilgilerinize arz ederim.',
-  annexHeading: 'EKLER',
+  annexHeading: 'Ek:',
   signerTitle: 'Bilirkişi',
-  reportAnnexLabel: 'Bilirkişi raporu',
-  defaultSectionsLabel: 'Teknik bilgiler',
+  registryLabel: 'Bilirkişilik Sicil No:',
+  fileNoLabel: 'Dosya No:',
+  subjectLabel: 'Konu:',
+  referenceLabel: 'İlgi:',
+  reportAnnexLabel: 'Bilirkişi Raporu',
+  defaultSectionsLabel: 'Teknik Bilgiler',
   fallbackAnnexLabel: 'Ek',
+  referenceFromAssignment: (dateText) => `Mahkemenizin ${dateText} tarihli görevlendirme yazısı.`,
   missing: {
     court: 'Mahkeme adı girilmedi — üst yazı yazılamaz.',
     fileNo: 'Dosya numarası girilmedi — üst yazı yazılamaz.',
     expert: 'Bilirkişi adı girilmedi — üst yazı yazılamaz.'
-  },
-  pageCountNote: 'Sayfa sayıları belge düzenine göre değişebilir.'
+  }
 };
+
+// Üst yazıya ÖZGÜ biçim (standart §2.1, §8.3). Raporun kullanıcıya açık biçimi
+// (`case.report.format`) üst yazıyı ETKİLEMEZ; tersi de doğrudur.
+const LETTER_FORMAT = {
+  fontFamily: 'times',
+  fontSizePt: 12,
+  marginsMm: { top: 15, right: 15, bottom: 15, left: 15 },
+  lineSpacing: 1.15,
+  firstLineIndentMm: 12.5,
+  orientation: 'portrait'
+};
+const LETTER_FIRST_LINE_INDENT_EM = 2.2; // ≈1,25 cm @12 pt ekran karşılığı
+
+/**
+ * Türkçe yönelme ekini KESME İŞARETSİZ, bitişik üretir (standart §2.2):
+ * `MAHKEMESİ` → `MAHKEMESİNE`, `BAŞSAVCILIĞI` → `BAŞSAVCILIĞINA`,
+ * `MÜDÜRLÜĞÜ` → `MÜDÜRLÜĞÜNE`. İyelik ekiyle biten adlar ünlüyle bittiği için
+ * araya kaynaştırma "n" girer; ek ünlü uyumuna göre -e/-a olur.
+ * Bilinemeyen adlarda `letter.addressee` elle düzeltilir.
+ */
+function trDativeAttached(name) {
+  const s = String(name || '')
+    .trim()
+    .replace(/['’]\s*(ne|na|e|a)?$/i, '')
+    .trim();
+  if (!s) return '';
+  const last = s.split(/\s+/).pop();
+  const lower = last.toLocaleLowerCase('tr-TR');
+  const vowels = 'aeıioöuü';
+  const v = [...lower].reverse().find((ch) => vowels.includes(ch));
+  const back = !!v && 'aıou'.includes(v);
+  const endsVowel = vowels.includes(lower.slice(-1));
+  let suffix = (endsVowel ? 'n' : '') + (back ? 'a' : 'e');
+  // Girdi TAMAMI BÜYÜK HARFSE ek de büyük yazılır (MAHKEMESİNE).
+  if (last && last === last.toLocaleUpperCase('tr-TR')) suffix = suffix.toLocaleUpperCase('tr-TR');
+  return s + suffix;
+}
+
+/** `Ayşe Yılmaz` → `Ayşe YILMAZ` (soyadı büyük harf; standart §2.7). */
+function formatSignerName(name) {
+  const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  const last = parts.pop().toLocaleUpperCase('tr-TR');
+  return [...parts, last].join(' ');
+}
+
+/** Türkçe başlık biçimi: `TEKNİK BİLGİLER` → `Teknik Bilgiler`. */
+function trTitleCase(text) {
+  return String(text || '')
+    .toLocaleLowerCase('tr-TR')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toLocaleUpperCase('tr-TR') + w.slice(1))
+    .join(' ');
+}
 
 function letterAnnexLabel(item) {
   if (!item) return LETTER_TEXT.fallbackAnnexLabel;
@@ -15206,6 +15268,11 @@ function letterAnnexLabel(item) {
   return String(item.title || '').trim() || LETTER_TEXT.fallbackAnnexLabel;
 }
 
+/** Ek listesinde GÖRÜNEN ad: baş harfleri büyük (standart §2.3). */
+function letterAnnexDisplayLabel(a) {
+  return trTitleCase(letterAnnexLabel(a));
+}
+
 /** EK listesi: numara TÜRETİLİR (bitişik), etiket tek kaynaktan. */
 function letterAnnexRows(c) {
   return letterAnnexNumbering((c && c.letterAnnexes) || []).map((a) => ({
@@ -15213,33 +15280,24 @@ function letterAnnexRows(c) {
     kind: a.kind,
     key: a.key || '',
     no: a.no,
-    label: letterAnnexLabel(a)
+    label: letterAnnexLabel(a),
+    display: letterAnnexDisplayLabel(a)
   }));
 }
 
 /**
- * Varsayılan gövde. Uydurma yok: tarih/süre yoksa o cümle kurulmaz.
- * Kullanıcı `letter.bodyText` yazdıysa o kullanılır (paragraflar boş satırla).
+ * Varsayılan gövde (standart §2.5). Uydurma yok: ikinci paragraf yalnız EK-1
+ * dışında ek varsa üretilir. Kullanıcı metni varsa o kullanılır (boş satırla
+ * ayrılmış paragraflar); varsayılanla BİRLEŞTİRİLMEZ.
  */
 function letterDefaultBody(c, annexRows) {
-  const a = (c && c.assignment) || {};
-  const out = [];
-  if (a.date) {
-    out.push(
-      `Mahkemenizce ${niceDate(a.date)} tarihinde bilirkişi olarak görevlendirildim.` +
-        (a.durationDays ? ` Tarafıma ${a.durationDays} gün süre verilmiştir.` : '')
-    );
-  } else {
-    out.push('Mahkemenizin yukarıda sayılı dosyasında bilirkişi olarak görevlendirildim.');
-  }
+  const out = [
+    'Mahkemenizin dosyasında tarafıma tevdi edilen bilirkişilik görevi kapsamında hazırlanan bilirkişi raporu EK-1 olarak sunulmaktadır.'
+  ];
   const others = (annexRows || []).filter((x) => x.kind !== 'report');
-  out.push(
-    others.length
-      ? `Yapılan inceleme sonucunda hazırlanan bilirkişi raporu EK-1'de sunulmuştur. İncelemeye ilişkin diğer belgeler ${others
-          .map((x) => x.no)
-          .join(', ')} numaralı eklerde yer almaktadır.`
-      : `Yapılan inceleme sonucunda hazırlanan bilirkişi raporu EK-1'de sunulmuştur.`
-  );
+  if (others.length) {
+    out.push('İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur.');
+  }
   return out;
 }
 
@@ -15266,29 +15324,35 @@ function letterModel(c) {
         .map((x) => x.trim())
         .filter(Boolean)
     : letterDefaultBody(c, annexes);
+  // İLGİ (standart §2.6): yalnız GERÇEK dayanak varsa. Kullanıcı yazdıysa o;
+  // yoksa görevlendirme tarihinden üretilir; tarih yoksa satır HİÇ çizilmez.
+  const assignmentDate = ((c && c.assignment) || {}).date || '';
+  const reference =
+    L.showReference === false
+      ? ''
+      : String(L.referenceText || '').trim() ||
+        (assignmentDate ? LETTER_TEXT.referenceFromAssignment(niceDate(assignmentDate)) : '');
   return {
     ready: missing.length === 0,
     missing,
     court,
-    courtLine: court ? `${court.toLocaleUpperCase('tr-TR')}’${trDative(court)}` : '',
-    addressee: String(L.addressee || '').trim(),
-    greeting: /Başsavcılı/i.test(court)
-      ? LETTER_TEXT.greetingProsecutor
-      : /Mahkemesi/i.test(court)
-        ? LETTER_TEXT.greetingCourt
-        : LETTER_TEXT.greetingOther,
+    // Muhatap TAMAMI BÜYÜK HARF (standart §2.2); elle yazılan değer korunur.
+    courtLine: String(L.addressee || '').trim()
+      ? String(L.addressee).trim()
+      : trDativeAttached(court.toLocaleUpperCase('tr-TR')),
     subject: String(L.subject || '').trim() || LETTER_TEXT.subject,
     fileNo,
+    reference,
     paragraphs,
     closing: LETTER_TEXT.closing,
     place: String(L.place || '').trim(),
     dateText: dateSrc ? niceDate(dateSrc) : '',
     signerTitle: String(L.signerTitle || '').trim() || LETTER_TEXT.signerTitle,
-    signerName: expert,
-    signerRegistry: L.showRegistry ? registry : '',
+    signerName: formatSignerName(expert),
+    signerRegistry: registry ? `${LETTER_TEXT.registryLabel} ${registry}` : '',
+    signatureLine: L.signatureMode === 'physical',
     annexes,
-    showPageCounts: !!L.showPageCounts,
-    pageCountNote: LETTER_TEXT.pageCountNote
+    showPageCounts: !!L.showPageCounts
   };
 }
 
@@ -15298,7 +15362,10 @@ function letterMissingRows(m) {
   return (m.missing || []).map((k) => ({ key: k, label: where[k] || k, text: LETTER_TEXT.missing[k] || '' }));
 }
 
-/** A4 kâğıdı: ekran, DOCX ve UDF aynı içeriği bu modelden üretir. */
+/**
+ * A4 kâğıdı (standart §2): `T.C.` yok, `Sayı:` yok, hitap satırı yok.
+ * Sıra: muhatap · Dosya No · Konu · İlgi · gövde · kapanış · yer/tarih · imza · Ek.
+ */
 function letterPaperHtml(c) {
   const m = letterModel(c);
   if (!m.ready) {
@@ -15306,19 +15373,31 @@ function letterPaperHtml(c) {
       .map((r) => `<li>${esc(r.text)}</li>`)
       .join('')}</ul><p>Bu alanları <b>Dosya bilgileri</b> çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez.</p></div>`;
   }
+  // Etiket + değer AYNI metin düğümünde (üç çıktı metni birebir aynı olsun).
+  const meta =
+    `<p>${esc(LETTER_TEXT.fileNoLabel)} ${esc(m.fileNo)}</p>` +
+    `<p>${esc(LETTER_TEXT.subjectLabel)} ${esc(m.subject)}</p>` +
+    (m.reference ? `<p>${esc(LETTER_TEXT.referenceLabel)} ${esc(m.reference)}</p>` : '');
+  const annex =
+    m.annexes.length === 1
+      ? `<div class="letter-annex"><p>${esc(LETTER_TEXT.annexHeading)} ${esc(m.annexes[0].no)} – ${esc(
+          m.annexes[0].display
+        )}</p></div>`
+      : `<div class="letter-annex"><p>${esc(LETTER_TEXT.annexHeading)}</p><ul>${m.annexes
+          .map((a) => `<li>${esc(a.no)} – ${esc(a.display)}</li>`)
+          .join('')}</ul></div>`;
   return (
-    `<div class="letter-head"><div class="letter-republic">T.C.</div><div class="letter-court">${esc(m.courtLine)}</div></div>` +
-    `<div class="letter-meta"><p>Sayı: ${esc(m.fileNo)}</p><p>Konu: ${esc(m.subject)}</p></div>` +
-    `<p class="letter-greeting">${esc(m.greeting)}</p>` +
+    `<div class="letter-head"><div class="letter-court">${esc(m.courtLine)}</div></div>` +
+    `<div class="letter-meta">${meta}</div>` +
     m.paragraphs.map((p) => `<p class="letter-para">${esc(p)}</p>`).join('') +
     `<p class="letter-closing">${esc(m.closing)}</p>` +
     `<div class="letter-date">${esc([m.place, m.dateText].filter(Boolean).join(', '))}</div>` +
-    `<div class="letter-sign"><div class="letter-sign-title">${esc(m.signerTitle)}</div><div class="letter-sign-name">${esc(
-      m.signerName
-    )}</div>${m.signerRegistry ? `<div class="letter-sign-reg">Sicil No: ${esc(m.signerRegistry)}</div>` : ''}<div class="letter-sign-line"></div></div>` +
-    `<div class="letter-annex"><h4>${esc(LETTER_TEXT.annexHeading)}</h4><ul>${m.annexes
-      .map((a) => `<li><b>${esc(a.no)}</b> <span>${esc(a.label)}</span></li>`)
-      .join('')}</ul></div>`
+    `<div class="letter-sign"><div class="letter-sign-name">${esc(m.signerName)}</div><div class="letter-sign-title">${esc(
+      m.signerTitle
+    )}</div>${m.signerRegistry ? `<div class="letter-sign-reg">${esc(m.signerRegistry)}</div>` : ''}${
+      m.signatureLine ? '<div class="letter-sign-line"></div>' : ''
+    }</div>` +
+    annex
   );
 }
 
@@ -15354,21 +15433,27 @@ function renderLetterFields(c) {
           .join('')}</ul><button type="button" class="mini-button" data-letter-goto="case">Dosya bilgilerine git</button></div>`
       : '') +
     letterFieldHtml('Yer', 'place', L.place, { placeholder: 'ör. Antalya', title: 'Yazının altına yazılacak yer. Boşsa yalnız tarih yazılır.' }) +
-    letterFieldHtml('Tarih', 'date', L.date, { type: 'date', title: 'Boş bırakılırsa rapor tarihi kullanılır.' }) +
+    letterFieldHtml('Tarih', 'date', L.date, { type: 'date', title: 'Üst yazının kendi tarihi. Boşsa ilk açılışta BİR KEZ bugün yazılır ve kayda geçer; sonra değişmez.' }) +
     letterFieldHtml('Konu', 'subject', L.subject, { placeholder: LETTER_TEXT.subject, title: 'Boşsa varsayılan konu yazılır.' }) +
     letterFieldHtml('Muhatap (isteğe bağlı)', 'addressee', L.addressee, {
-      placeholder: m.courtLine || 'Mahkeme adından türetilir',
-      title: 'Boş bırakılırsa mahkeme adından üretilir.'
+      placeholder: m.courtLine || 'Mahkeme adından üretilir',
+      title: 'Boş bırakılırsa mahkeme adından üretilir (kesme işaretsiz, bitişik ek).'
+    }) +
+    letterFieldHtml('İlgi (isteğe bağlı)', 'referenceText', L.referenceText, {
+      placeholder: m.reference || 'Görevlendirme tarihinden üretilir',
+      title: 'Boş bırakılırsa görevlendirme tarihinden üretilir. Gerçek dayanak yoksa satır hiç çizilmez.'
     }) +
     letterFieldHtml('İmza unvanı', 'signerTitle', L.signerTitle, { placeholder: LETTER_TEXT.signerTitle }) +
     `<label class="field" title="Boş bırakılırsa varsayılan metin yazılır. Paragrafları boş satırla ayırın."><span>Gövde metni</span><textarea data-letter-field="bodyText" rows="7" placeholder="${esc(
       defBody
     )}">${esc(L.bodyText)}</textarea></label>` +
-    `<div class="letter-checks"><label class="letter-check" title="Sicil numarası üst yazıda imza bloğunda görünür."><input type="checkbox" data-letter-field="showRegistry"${
-      L.showRegistry ? ' checked' : ''
-    }> <span>Sicil no görünsün</span></label><label class="letter-check" title="Açılırsa ek listesinin altına 'sayfa sayıları değişebilir' dipnotu eklenir."><input type="checkbox" data-letter-field="showPageCounts"${
+    `<div class="letter-checks"><label class="letter-check" title="Kapatılırsa İlgi satırı hiç çizilmez."><input type="checkbox" data-letter-field="showReference"${
+      L.showReference !== false ? ' checked' : ''
+    }> <span>İlgi satırı</span></label><label class="letter-check" title="Açılırsa imza bloğuna çizgi eklenir (fiziksel/ıslak imza çıktısı için). Varsayılan kapalı: sahte imza izlenimi verilmez."><input type="checkbox" data-letter-field="signaturePhysical"${
+      L.signatureMode === 'physical' ? ' checked' : ''
+    }> <span>Islak imza çizgisi</span></label><label class="letter-check" title="Ek listesinde ≈ sayfa tahmini gösterilir (yalnız ekran; belgeye yazılmaz)."><input type="checkbox" data-letter-field="showPageCounts"${
       L.showPageCounts ? ' checked' : ''
-    }> <span>Sayfa sayısı dipnotu</span></label></div>` +
+    }> <span>Sayfa tahmini</span></label></div>` +
     `<p class="letter-hint">Gövdeyi boş bırakırsanız yukarıdaki varsayılan metin yazılır. <b>Boş alan satır üretmez.</b></p>`;
 }
 
@@ -15803,9 +15888,33 @@ function renderLetterAnnexes(c) {
   }
 }
 
+/**
+ * Üst yazı KENDİ biçimini ekranda uygular (standart §2.1): 12 pt TNR, 15 mm,
+ * 1,15 satır aralığı. Rapor biçimi (`case.report.format`) buraya karışmaz.
+ */
+function applyLetterFormat() {
+  const paper = $('#letterPreview');
+  if (!paper || !paper.style || typeof paper.style.setProperty !== 'function') return;
+  paper.style.setProperty('--paper-font', REPORT_FONT_CSS[LETTER_FORMAT.fontFamily] || 'Times New Roman, serif');
+  paper.style.setProperty('--paper-scale', String(LETTER_FORMAT.fontSizePt / 11));
+  const m = LETTER_FORMAT.marginsMm;
+  paper.style.setProperty(
+    '--paper-margin',
+    `${Math.round(m.top * MM_TO_PX)}px ${Math.round(m.right * MM_TO_PX)}px ${Math.round(m.bottom * MM_TO_PX)}px ${Math.round(m.left * MM_TO_PX)}px`
+  );
+}
+
 function renderLetter() {
   const c = currentCase();
   if (!c) return;
+  // ÜST YAZI TARİHİ (standart §2.7): boşsa BİR KEZ bugün yazılır ve kayda geçer;
+  // her açılışta sessizce değişmez. Dosya açmak `updatedAt`i tazelemez.
+  const L = normalizeLetter(c.letter || {});
+  if (!L.date) {
+    c.letter = { ...L, date: dateToday() };
+    persist({ touch: false });
+  }
+  applyLetterFormat();
   const paper = $('#letterPreview');
   if (paper) paper.innerHTML = letterPaperHtml(c);
   renderLetterFields(c);
@@ -16265,8 +16374,10 @@ function xesc(s = '') {
 // DOCX biçimi (v2.238): font + punto ölçeği + sayfa/yön/marj. docxXml/makeDocx
 // başında `docxFormatInit(c)` ile doldurulur; wRun/wP/cell bu değerleri okur.
 let __docxFmt = { font: 'Arial', scale: 1, margins: { top: 20, right: 20, bottom: 20, left: 20 }, orientation: 'portrait' };
-function docxFormatInit(c) {
-  const f = reportFormat(c);
+function docxFormatInit(c, fmtOverride) {
+  // `fmtOverride`: üst yazı kendi biçimini geçirir (standart §8.3); verilmezse
+  // raporun kullanıcıya açık biçimi kullanılır.
+  const f = fmtOverride || reportFormat(c);
   const mmToTw = (mm) => Math.round((Number(mm) || 0) * 56.6929);
   const pageW = f.orientation === 'landscape' ? 16838 : 11906; // A4 genişliği (twip)
   // Metin genişliği = sayfa − sol/sağ marj. Tablolar bu genişliğe oturur (v2.259;
@@ -16368,7 +16479,8 @@ function headingXml(text, level = 1) {
 // Rapor DOCX'i ile AYNI yardımcıları (wP/wRun/wTable/docxFormatInit) kullanır;
 // böylece font, punto ölçeği ve marj rapor biçiminden gelir (tek kaynak).
 function docxLetterXml(c) {
-  docxFormatInit(c);
+  // Üst yazı KENDİ biçimini kullanır (standart §2.1/§8.3); rapor biçimi etkilemez.
+  docxFormatInit(c, LETTER_FORMAT);
   const m = letterModel(c);
   if (!m.ready) {
     return wP(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`, {
@@ -16376,21 +16488,32 @@ function docxLetterXml(c) {
       color: 'B23B3B'
     });
   }
+  const indentTw = Math.round((LETTER_FORMAT.firstLineIndentMm / 25.4) * 1440); // twip
+  const para = (text) =>
+    wP(text, { size: 24, align: 'both', after: 120 }).replace(
+      '<w:pPr>',
+      `<w:pPr><w:ind w:firstLine="${indentTw}"/>`
+    );
   let out = '';
-  out += wP('T.C.', { bold: true, color: '1C426B', size: 24, align: 'center', after: 60 });
-  out += wP(m.courtLine, { bold: true, color: '1C426B', size: 22, align: 'center', after: 220 });
-  out += wP(`Sayı: ${m.fileNo}`, { size: 22, after: 20 });
-  out += wP(`Konu: ${m.subject}`, { size: 22, after: 200 });
-  out += wP(m.greeting, { size: 22, before: 200, after: 120 });
-  for (const p of m.paragraphs) out += wP(p, { size: 22, align: 'both', after: 140 });
-  out += wP(m.closing, { size: 22, after: 300 });
-  out += wP([m.place, m.dateText].filter(Boolean).join(', '), { size: 22, align: 'right', after: 260 });
-  out += wP(m.signerTitle, { size: 22, align: 'right', after: 20 });
-  out += wP(m.signerName, { bold: true, color: '1C426B', size: 24, align: 'right', after: 20 });
-  if (m.signerRegistry) out += wP(`Sicil No: ${m.signerRegistry}`, { size: 20, align: 'right', after: 20 });
-  out += wP('____________________________', { size: 22, align: 'right', after: 260 });
-  out += wP(LETTER_TEXT.annexHeading, { bold: true, color: '1C426B', size: 22, before: 140, after: 60 });
-  for (const a of m.annexes) out += wP(`${a.no}  ${a.label}`, { size: 22, after: 20 });
+  out += wP(m.courtLine, { bold: true, size: 24, align: 'center', after: 240 });
+  out += wP(`${LETTER_TEXT.fileNoLabel} ${m.fileNo}`, { size: 24, after: 20 });
+  out += wP(`${LETTER_TEXT.subjectLabel} ${m.subject}`, { size: 24, after: 20 });
+  if (m.reference) out += wP(`${LETTER_TEXT.referenceLabel} ${m.reference}`, { size: 24, after: 20 });
+  out += wP('', { size: 24, after: 120 });
+  for (const p of m.paragraphs) out += para(p);
+  out += wP(m.closing, { size: 24, after: 240 });
+  out += wP([m.place, m.dateText].filter(Boolean).join(', '), { size: 24, align: 'right', after: 200 });
+  out += wP(m.signerName, { bold: true, size: 24, align: 'right', after: 20 });
+  out += wP(m.signerTitle, { size: 24, align: 'right', after: 20 });
+  if (m.signerRegistry) out += wP(m.signerRegistry, { size: 22, align: 'right', after: 20 });
+  if (m.signatureLine) out += wP('____________________________', { size: 24, align: 'right', after: 20 });
+  out += wP('', { size: 24, after: 120 });
+  if (m.annexes.length === 1) {
+    out += wP(`${LETTER_TEXT.annexHeading} ${m.annexes[0].no} – ${m.annexes[0].display}`, { size: 24, after: 20 });
+  } else {
+    out += wP(LETTER_TEXT.annexHeading, { bold: true, size: 24, after: 20 });
+    for (const a of m.annexes) out += wP(`    ${a.no} – ${a.display}`, { size: 24, after: 20 });
+  }
   return out;
 }
 
@@ -16910,7 +17033,8 @@ async function udfDocument(opts = {}) {
   const letterMode = !!(opts && opts.letter);
   // Rapor biçimi: font + gövde puntosu + kenar boşluğu + yön UDF'e uygulanır.
   // Varsayılan font Times New Roman (resmî); kullanıcı değiştirirse UDF de izler.
-  const fmt = reportFormat(c);
+  // Üst yazı KENDİ biçimini kullanır (12 pt, 15 mm) — rapor biçiminden bağımsız.
+  const fmt = letterMode ? LETTER_FORMAT : reportFormat(c);
   const udfScale = fmt.fontSizePt / 11;
   // Yazı tipi ÜÇ çıktıya da uygulanır (v2.254). Varsayılan Times New Roman (resmî);
   // kullanıcı değiştirirse UDF de aynı aileyi kullanır → UDF/DOCX/PDF tutarlı.
@@ -17442,27 +17566,32 @@ async function udfDocument(opts = {}) {
   };
 
   if (letterMode) {
-    // ÜST YAZI (v2.323): AYRI belge. Aynı model (`letterModel`) — ekran ve
-    // DOCX ile birebir aynı metin. Eksik zorunlu alan varsa üretilmez.
+    // ÜST YAZI (v2.327): standart §2. `T.C.` yok, `Sayı:` yok, hitap satırı yok;
+    // imza çizgisi yalnız 'physical' kipte. Metin `letterModel`den gelir.
     const m = letterModel(c);
     if (!m.ready) {
       throw new Error(`Üst yazı hazır değil: ${letterMissingRows(m).map((r) => r.label).join(', ')} eksik.`);
     }
-    el.push(paragraph('T.C.', { size: 14, bold: true, color: 'navy', align: 1, after: 6 }));
-    el.push(paragraph(m.courtLine, { size: 13, bold: true, color: 'navy', align: 1, after: 16 }));
-    el.push(paragraph(`Sayı: ${m.fileNo}`, { size: 11, after: 2 }));
-    el.push(paragraph(`Konu: ${m.subject}`, { size: 11, after: 16 }));
-    el.push(paragraph(m.greeting, { size: 11, before: 4, after: 10 }));
-    for (const p of m.paragraphs) el.push(paragraph(p, { size: 11, justify: true, after: 8 }));
-    el.push(paragraph(m.closing, { size: 11, after: 20 }));
-    el.push(paragraph([m.place, m.dateText].filter(Boolean).join(', '), { size: 11, align: 2, after: 24 }));
-    el.push(paragraph(m.signerTitle, { size: 11, align: 2, after: 2 }));
-    el.push(paragraph(m.signerName, { size: 12, bold: true, color: 'navy', align: 2, after: 2 }));
-    if (m.signerRegistry) el.push(paragraph(`Sicil No: ${m.signerRegistry}`, { size: 10, align: 2, after: 2 }));
-    el.push(paragraph('____________________________', { size: 11, align: 2, after: 18 }));
-    el.push(paragraph(LETTER_TEXT.annexHeading, { size: 11, bold: true, color: 'navy', before: 10, after: 4 }));
-    for (const a of m.annexes) el.push(paragraph(`${a.no}  ${a.label}`, { size: 11, after: 2 }));
-  } else {
+    el.push(paragraph(m.courtLine, { size: 12, bold: true, align: 1, after: 16 }));
+    el.push(paragraph(`${LETTER_TEXT.fileNoLabel} ${m.fileNo}`, { size: 12, after: 2 }));
+    el.push(paragraph(`${LETTER_TEXT.subjectLabel} ${m.subject}`, { size: 12, after: 2 }));
+    if (m.reference) el.push(paragraph(`${LETTER_TEXT.referenceLabel} ${m.reference}`, { size: 12, after: 2 }));
+    el.push(paragraph('', { size: 12, after: 8 }));
+    for (const p of m.paragraphs) el.push(paragraph(p, { size: 12, justify: true, after: 10 }));
+    el.push(paragraph(m.closing, { size: 12, after: 22 }));
+    el.push(paragraph([m.place, m.dateText].filter(Boolean).join(', '), { size: 12, align: 2, after: 18 }));
+    el.push(paragraph(m.signerName, { size: 12, bold: true, align: 2, after: 2 }));
+    el.push(paragraph(m.signerTitle, { size: 12, align: 2, after: 2 }));
+    if (m.signerRegistry) el.push(paragraph(m.signerRegistry, { size: 11, align: 2, after: 2 }));
+    if (m.signatureLine) el.push(paragraph('____________________________', { size: 12, align: 2, after: 2 }));
+    el.push(paragraph('', { size: 12, after: 10 }));
+    if (m.annexes.length === 1) {
+      el.push(paragraph(`${LETTER_TEXT.annexHeading} ${m.annexes[0].no} – ${m.annexes[0].display}`, { size: 12, after: 2 }));
+    } else {
+      el.push(paragraph(LETTER_TEXT.annexHeading, { size: 12, bold: true, after: 2 }));
+      for (const a of m.annexes) el.push(paragraph(`    ${a.no} – ${a.display}`, { size: 12, after: 2 }));
+    }
+} else {
   let frontRendered = 0;
   for (const key of REPORT_FRONT_KEYS) {
     if (!on(key) || !front[key]) continue;
@@ -20192,7 +20321,11 @@ function setupEvents() {
     if (!c) return;
     c.letter = normalizeLetter(c.letter || {});
     const field = el.dataset.letterField;
-    c.letter[field] = el.type === 'checkbox' ? !!el.checked : el.value;
+    if (field === 'signaturePhysical') {
+      c.letter.signatureMode = el.checked ? 'physical' : 'electronic';
+    } else {
+      c.letter[field] = el.type === 'checkbox' ? !!el.checked : el.value;
+    }
     persist();
     const paper = $('#letterPreview');
     if (paper) paper.innerHTML = letterPaperHtml(c);
@@ -21820,6 +21953,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.327': {
+    title: 'Üst yazı standarda uydu (otomatik)',
+    body:
+      'Üst yazı artık 12 punto Times New Roman, 15 mm kenar ve 1,25 cm ilk satır girintisiyle üretilir. Muhatap satırı, İlgi, tarih, imza bloğu ve ek listesi otomatik yazılır; T.C., Sayı ve hitap satırı kaldırıldı. İmza çizgisi varsayılan olarak yoktur (ıslak imza için anahtar var). Rapor biçimi üst yazıyı etkilemez.'
+  },
   '2.326': {
     title: 'Ek listesi taşması düzeltildi',
     body:

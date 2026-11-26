@@ -6963,14 +6963,13 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   });
   const m = T.letterModel(c);
   eq('hazır', m.ready, true);
-  eq('mahkeme satırı yönelme', m.courtLine, 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİ’NE');
-  eq('hitap', m.greeting, T.LETTER_TEXT.greetingCourt);
-  eq('konu varsayılan', m.subject, T.LETTER_TEXT.subject);
+  eq('mahkeme satırı bitişik ek', m.courtLine, 'ANTALYA 4. ASLİYE HUKUK MAHKEMESİNE');
+  eq('konu varsayılan', m.subject, 'Bilirkişi Raporunun Sunulması');
   eq('tarih rapor tarihinden', m.dateText, '15.11.2026');
-  eq('EK-1 rapor', m.annexes.map((a) => a.no + ' ' + a.label).join('|'), 'EK-1 Bilirkişi raporu');
-  eq('sicil varsayılan kapalı', m.signerRegistry, '');
-  eq('ilk paragraf görevlendirme', /12\.10\.2026/.test(m.paragraphs[0]), true);
-  eq('ikinci paragraf EK-1', /EK-1/.test(m.paragraphs[1]), true);
+  eq('EK-1 rapor', m.annexes.map((a) => a.no + ' ' + a.display).join('|'), 'EK-1 Bilirkişi Raporu');
+  eq('sicil otomatik', m.signerRegistry, 'Bilirkişilik Sicil No: 1234');
+  eq('ilk paragraf standart cümle', /bilirkişi raporu EK-1 olarak sunulmaktadır/.test(m.paragraphs[0]), true);
+  eq('tek ekte ikinci paragraf yok', m.paragraphs.length, 1);
 
   // MODEL: eksik dosya → hazır değil, uydurma yok
   const empty = T.emptyCaseForTest({ id: 'cE' });
@@ -6984,18 +6983,18 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   // VARSAYILAN GÖVDE: tarih/süre yoksa o cümle kurulmaz (uydurma yok)
   const noDate = T.letterDefaultBody(T.emptyCaseForTest({ id: 'cN' }), []);
-  eq('tarih yoksa genel cümle', /yukarıda sayılı dosyasında bilirkişi olarak görevlendirildim/.test(noDate[0]), true);
-  eq('süre yoksa süre cümlesi yok', /gün süre verilmiştir/.test(noDate.join(' ')), false);
+  eq('varsayılan gövde tek paragraf', noDate.length, 1);
+  eq('gövdede uydurma tarih yok', /\d{2}\.\d{2}\.\d{4}/.test(noDate.join(' ')), false);
 
   // EK etiketleri
-  eq('rapor etiketi', T.letterAnnexLabel({ kind: 'report' }), 'Bilirkişi raporu');
-  eq('bölüm etiketi', T.letterAnnexLabel({ kind: 'sections', label: '' }), 'Teknik bilgiler');
+  eq('rapor etiketi', T.letterAnnexLabel({ kind: 'report' }), 'Bilirkişi Raporu');
+  eq('bölüm etiketi', T.letterAnnexLabel({ kind: 'sections', label: '' }), 'Teknik Bilgiler');
   eq('serbest ek etiketi', T.letterAnnexLabel({ kind: 'custom', title: 'Tapu kaydı' }), 'Tapu kaydı');
 
   // KÂĞIT: uygulama adı geçmez; EKLER ve EK-1 basılır
   const html = T.letterPaperHtml(c);
   eq('kâğıtta AKİS yok', /AKİS/.test(html), false);
-  eq('kâğıtta EKLER var', /EKLER/.test(html), true);
+  eq('kâğıtta Ek: var', /Ek:/.test(html), true);
   eq('kâğıtta EK-1 var', /EK-1/.test(html), true);
   eq('kâğıtta imza var', /letter-sign-name/.test(html), true);
   const blocked = T.letterPaperHtml(empty);

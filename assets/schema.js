@@ -1291,8 +1291,15 @@ export function emptyLetter() {
     addressee: '', // boşsa mahkeme adından türetilir
     subject: '', // boşsa varsayılan konu
     bodyText: '', // boşsa varsayılan gövde (tek kaynak)
-    showRegistry: false, // sicil no üst yazıda görünsün mü
-    showPageCounts: false, // ek listesinde (≈) sayfa sayısı
+    // İLGİ satırı (v2.327): boşsa görevlendirme tarihinden üretilir; gerçek
+    // dayanak yoksa satır hiç çizilmez. `showReference:false` satırı kapatır.
+    referenceText: '',
+    showReference: true,
+    // İmza kipi (v2.327): 'electronic' → imza ÇİZGİSİ yok (sahte imza izlenimi
+    // verilmez); 'physical' → ıslak imza için çizgi.
+    signatureMode: 'electronic',
+    showRegistry: false, // (eski) sicil no görünsün mü — v2.327'den beri OTOMATİK
+    showPageCounts: false, // ek listesinde (≈) sayfa sayısı (yalnız ekran)
     signerTitle: '' // boşsa "Bilirkişi"
   };
 }
@@ -1301,7 +1308,11 @@ export function normalizeLetter(v) {
   const base = emptyLetter();
   if (!isObj(v)) return base;
   const out = { ...base, ...v };
-  for (const k of ['place', 'date', 'addressee', 'subject', 'bodyText', 'signerTitle']) out[k] = str(out[k]).trim();
+  for (const k of ['place', 'date', 'addressee', 'subject', 'bodyText', 'signerTitle', 'referenceText']) {
+    out[k] = str(out[k]).trim();
+  }
+  out.signatureMode = out.signatureMode === 'physical' ? 'physical' : 'electronic';
+  out.showReference = out.showReference !== false;
   out.enabled = !!out.enabled;
   out.showRegistry = !!out.showRegistry;
   out.showPageCounts = !!out.showPageCounts;

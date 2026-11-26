@@ -4130,21 +4130,21 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .letter-head { text-align: center; margin-bottom: 18px; }
 .letter-republic { font-weight: 700; letter-spacing: .06em; color: var(--paper-ink); }
 .letter-court { font-weight: 700; font-size: 1.08em; color: var(--paper-ink); margin-top: 4px; overflow-wrap: anywhere; }
-.letter-meta { margin: 0 0 18px; }
-.letter-meta p { margin: 0 0 3px; color: var(--paper-ink); overflow-wrap: anywhere; }
+.letter-meta { margin: 0 0 14px; }
+.letter-meta p { margin: 0 0 2px; color: var(--paper-ink); overflow-wrap: anywhere; }
 .letter-greeting { margin: 18px 0 12px; color: var(--paper-ink); }
-.letter-para { margin: 0 0 10px; text-align: justify; color: var(--paper-ink); line-height: 1.6; overflow-wrap: anywhere; }
-.letter-closing { margin: 16px 0 22px; color: var(--paper-ink); }
+.letter-para { margin: 0 0 10px; text-align: justify; text-indent: 2.2em; color: var(--paper-ink); line-height: 1.15; overflow-wrap: anywhere; }
+.letter-closing { margin: 14px 0 20px; color: var(--paper-ink); }
 .letter-date { text-align: right; color: var(--paper-ink); margin-bottom: 24px; }
 .letter-sign { text-align: right; margin-bottom: 22px; color: var(--paper-ink); }
 .letter-sign-title { font-size: .95em; color: var(--paper-muted); }
 .letter-sign-name { font-weight: 700; overflow-wrap: anywhere; }
 .letter-sign-reg { font-size: .9em; color: var(--paper-muted); }
 .letter-sign-line { margin: 26px 0 0 auto; border-top: 1px solid var(--paper-line); width: 180px; }
-.letter-annex { border-top: 1px solid var(--paper-line); padding-top: 10px; }
+.letter-annex { border-top: 1px solid var(--paper-line); padding-top: 10px; margin-top: 6px; }
 .letter-annex h4 { margin: 0 0 6px; font-size: .95em; letter-spacing: .06em; color: var(--paper-ink); }
-.letter-annex ul { list-style: none; margin: 0; padding: 0; }
-.letter-annex li { display: flex; gap: 8px; padding: 2px 0; color: var(--paper-ink); overflow-wrap: anywhere; }
+.letter-annex ul { list-style: none; margin: 2px 0 0; padding: 0 0 0 1.6em; }
+.letter-annex li { display: block; padding: 1px 0; color: var(--paper-ink); overflow-wrap: anywhere; }
 .letter-annex li b { min-width: 52px; }
 .letter-note { font-size: .85em; color: var(--paper-muted); margin: 6px 0 0; }
 .letter-blocked { color: var(--red); font-size: var(--fs-xs); }
@@ -4218,3 +4218,11 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .la-row { flex-wrap: wrap; row-gap: 4px; }
 .la-row .la-pages { margin-left: auto; }
 .la-row .la-tools { margin-left: auto; }
+
+/* v2.327 — Üst yazı görsel standardı (docs/UST_YAZI_STANDARDI.md §2).
+   Biçim `LETTER_FORMAT` (12 pt TNR, 15 mm, 1,15) — rapor biçiminden bağımsız;
+   ekran değerleri `applyLetterFormat()` ile kâğıda yazılır. Satır aralığı ve
+   ilk satır girintisi burada; kalan değerler yukarıdaki v2.323 kurallarında. */
+.letter-paper { line-height: 1.15; }
+.letter-meta b { font-weight: 700; }
+.letter-annex p { margin: 0 0 2px; color: var(--paper-ink); overflow-wrap: anywhere; }
