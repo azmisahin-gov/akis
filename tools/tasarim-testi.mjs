@@ -2905,5 +2905,23 @@ console.log('\n[2dx] Kapak sırası + yazdırma üst/alt bilgi (v2.363)');
   check('eski birleşik üst bilgi kalktı', !/BİLİRKİŞİ RAPORU  \|  \$\{REPORT_TEXT\.toplineField\}/.test(app));
 }
 
+console.log('\n[2dy] DOCX uyumluluk ayarları (v2.364)');
+{
+  const app = read('assets/app.js');
+  check('settings.xml yazılır', /w\.file\(\s*'settings\.xml'/.test(app));
+  check(
+    'içerik türü kaydı var',
+    /PartName="\/word\/settings\.xml" ContentType="application\/vnd\.openxmlformats-officedocument\.wordprocessingml\.settings\+xml"/.test(app)
+  );
+  check(
+    'ilişki kaydı var (rId4 settings)',
+    /Id="rId4" Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/settings" Target="settings\.xml"/.test(app)
+  );
+  check('uyumluluk modu 15', /w:name="compatibilityMode"[^>]*w:val="15"/.test(app));
+  check('belge dili tr-TR', /w:themeFontLang w:val="tr-TR"/.test(app));
+  // `w:updateFields` Word'de gereksiz uyarı üretir; kullanılmaz.
+  check('updateFields kullanılmaz', !/<w:updateFields/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

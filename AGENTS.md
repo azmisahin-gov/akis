@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.363.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.364.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9723,3 +9723,40 @@ doğrulanmadı → UDF’e eklenmedi (kapak metni girer).
    tablo sütunları + biçim + ekler + revizyon).
 3. Yerleşim sabitliği (kâğıt 142 px zıplaması), ≤900 px iskelet, araç çubuğu.
 4. Gerekirse **uygulama içi PDF** (pdf-lib + Türkçe font) — sayfa numarası için.
+
+## YENİ OTURUM DEVRİ (v2.364) — Word/OpenOffice uyumu
+
+| | |
+|---|---|
+| Sürüm | **v2.364** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | LibreOffice 25.2.3.2 ile DOCX→PDF: **26 sayfa**; üst/alt bilgi doğru; sağa taşma 0 |
+
+### Yapılan
+- `word/settings.xml`: `compatibilityMode 15` + `themeFontLang tr-TR`; içerik
+  türü (`/word/settings.xml`) + ilişki (`rId4`) eklendi.
+- `w:updateFields` **kullanılmadı** (Word’de gereksiz alan güncelleme uyarısı).
+- Test: `tasarim [2dy]`.
+
+### Ölçüm (tekrar üretilebilir)
+```bash
+# DOCX üret (uygulamadan indir) → LibreOffice ile PDF
+sudo apt-get install -y --no-install-recommends libreoffice-writer poppler-utils
+LD_LIBRARY_PATH=/usr/lib/libreoffice/program soffice --headless \
+  -env:UserInstallation=file:///tmp/lo-profile --convert-to pdf --outdir /tmp/x /tmp/x/a.docx
+pdftoppm -png -r 90 -f 1 -l 2 /tmp/x/a.pdf /tmp/x/page
+```
+Sonuç: üst bilgi y=28, gövde y=47, alt bilgi y=807; `Sayfa N / 26`; taşma 0.
+
+### Dürüst sınır
+Word bu ortamda yok; Word yolu standart OOXML’e dayanır, kullanıcı doğrulamalı.
+TNR yoksa LibreOffice `DejaVu Serif` kullanır (sayfa sayısı değişir).
+
+### Sıradaki iş — v2.365 (kullanıcının açık isteği)
+**Rapor sağ panelini tek “Rapor ayarları” çekmecesinde toplama:**
+- “Ön bölüm alanları” (iskelette `Alanlar · N/M`) + sağdaki “Rapor alanları ·
+  tablo sütunları” + biçim + ekler + teknik + künye + revizyon **tek yerde**.
+- “Metinler” penceresi deseni (ayrı çekmece/pencere).
+- Kâğıdın mod değişiminde **142 px yatay zıplaması** giderilecek
+  (ölçüm: `232/786/292` ↔ `232/1090`).
+- Sol iskelet tek kaydırma/odak; ≤900 px'te iskelet belgenin üstünde.

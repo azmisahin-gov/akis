@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.363.**
+yazılır. **Güncel sürüm: v2.364.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.364 — Word / OpenOffice uyumu (TAMAMLANDI)
+
+- LibreOffice 25.2.3.2 ile gerçek DOCX → PDF: **26 sayfa**, üst/alt bilgi doğru,
+  `Sayfa N / 26`, sağa taşma 0; sayfa 1–2 görsel doğrulandı.
+- `word/settings.xml`: uyumluluk modu 15 + dil tr-TR; içerik türü + ilişki.
+- `w:updateFields` kullanılmaz (Word uyarısı).
+- Test: `tasarim [2dy]` (6).
+- **Sınır:** Word bu ortamda yok; kullanıcı Word’de doğrulamalı.
 
 ## v2.363 — Kapak + profesyonel üst/alt bilgi (TAMAMLANDI)
 

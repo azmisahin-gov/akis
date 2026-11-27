@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.363.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.364.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.364 — Word / OpenOffice uyumu doğrulandı
+
+**KULLANICI NE GÖRECEK:** Raporun Word (.docx) çıktısı artık **LibreOffice
+(OpenOffice) ile de doğrulandı**: kapak, üst bilgi, alt bilgi ve tablolar doğru
+çıkıyor. Word tarafına standart **uyumluluk modu** ve **belge dili** ayarları
+eklendi. Görünür metin değişmedi.
+
+**ÖLÇÜM (LibreOffice 25.2.3.2, Debian; gerçek DOCX → PDF):**
+
+| | Sonuç |
+|---|---|
+| Açılış | **başarılı** (Writer) |
+| Sayfa | **26** (tarayıcı PDF’i 24; yazı tipi ikamesi farkı) |
+| Üst bilgi | her sayfada sol `Dosya No` (x=43) · sağ `BİLİRKİŞİ RAPORU` (x=478–553) |
+| Alt bilgi | her sayfada `Sayfa N / 26` (alanlar güncellendi) |
+| Gövde başlangıcı | y=47 → üst bilgiyle **çakışma yok** |
+| Sağa taşma | **0** (tek uzun kelimede 1,3 pt) |
+| Görsel | sayfa 1–2 PNG ile **gözle doğrulandı** |
+
+**Yapılan:**
+- `word/settings.xml`: `compatibilityMode 15` + `themeFontLang tr-TR`; içerik
+  türü ve ilişki kaydı eklendi. `w:updateFields` **kullanılmadı** (Word’de
+  gereksiz “alanları güncelle” uyarısı çıkarabilir).
+- Test: `tasarim [2dy]` (6 kontrol).
+
+**DÜRÜST SINIR:** Bu ortamda **Word yok**; Word yolu standart OOXML’e dayanır ve
+sizin Word’de açmanızla doğrulanmalıdır. Times New Roman kurulu değilse
+LibreOffice `DejaVu Serif` kullanır (sayfa sayısı değişebilir); Windows’ta
+TNR/Liberation Serif bulunur. Tarayıcı PDF’inde sayfa numarası yoktur.
 
 ## v2.363 — Kapak ve profesyonel üst/alt bilgi
 
