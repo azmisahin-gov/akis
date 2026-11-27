@@ -157,15 +157,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.366';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.366';
+} from './schema.js?v=2.367';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.367';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.366';
+const APP_VERSION = '2.367';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14341,9 +14341,10 @@ function applyReportMode() {
     chip.hidden = mode !== 'edit' || s.total === 0;
     if (!chip.hidden) {
       chip.classList.toggle('is-blocking', s.blocking > 0);
-      chip.textContent = s.blocking
-        ? `⚠ ${s.blocking} engelleyen eksik`
-        : `${s.expert + s.advisory} kontrol maddesi`;
+      chip.textContent = s.blocking ? '⚠ Engelleri aç' : 'Kontrolü aç';
+      chip.title = s.blocking
+        ? `${s.blocking} engelleyen eksik · Kontrol panelini aç`
+        : `${s.expert + s.advisory} kontrol maddesi · Kontrol panelini aç`;
     }
   }
 }
@@ -16422,7 +16423,10 @@ function renderPageGuides() {
     paper.appendChild(layer);
   }
   if (paper.dataset) paper.dataset.pageCount = String(pages);
-  if (pc) pc.textContent = `A4 · ${pages} sayfa`;
+  if (pc) {
+    pc.textContent = `A4 · ≈${pages} sayfa`;
+    pc.title = 'Ekrandaki kâğıt genişliğine göre yaklaşık sayfa sayısı; kesin sayfa sayısı yazdırmada/PDF’te oluşur.';
+  }
 }
 function renderReportReadiness(c) {
   const el = $('#reportReadiness');
@@ -22543,6 +22547,20 @@ $('#addQuestionBtn').addEventListener('click', addQuestion);
       undoLast();
       return;
     }
+    // v2.367 — rapor görünümünde F = tam ekran (düğme ipucu artık doğru).
+    if (
+      (e.key === 'f' || e.key === 'F') &&
+      !typing &&
+      !e.ctrlKey &&
+      !e.metaKey &&
+      !e.altKey &&
+      document.querySelector('#view-report')?.classList.contains('active') &&
+      !document.querySelector('dialog[open]')
+    ) {
+      e.preventDefault();
+      setReportFull(!document.body.classList.contains('report-full'));
+      return;
+    }
     onGlobalSegKey(e);
   });
   const undoBtn = $('#undoBtn');
@@ -22651,6 +22669,26 @@ $('#reportOutlineBtn')?.addEventListener('click', () => {
   const btn = $('#reportOutlineBtn');
   if (btn) btn.setAttribute('aria-expanded', String(on));
 });
+// v2.367 — "⋯ Diğer" menüsü: seçimde ve dışarı tıklamada kapanır.
+$('#reportMore')?.addEventListener('click', (e) => {
+  // Yalnız DAR ekranda seçim menüyü kapatır; geniş ekranda düğmeler satır içidir.
+  if (e.target.closest('.report-more-body button') && window.innerWidth <= 900) {
+    const d = $('#reportMore');
+    if (d) d.open = false;
+  }
+});
+document.addEventListener('click', (e) => {
+  const d = $('#reportMore');
+  if (d && d.open && window.innerWidth <= 900 && !e.target.closest('#reportMore')) d.open = false;
+});
+// Geniş ekranda menü AÇIK (düğmeler satır içi), dar ekranda KAPALI (⋯ menüsü).
+function syncReportMoreMode() {
+  const d = $('#reportMore');
+  if (!d) return;
+  d.open = window.innerWidth > 900;
+}
+window.addEventListener('resize', syncReportMoreMode);
+syncReportMoreMode();
 // Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-report-key]');
@@ -24207,6 +24245,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.367': {
+    title: 'Rapor araç çubuğu sadeleşti',
+    body:
+      'Rapor ekranının araç çubuğu tek satıra indi: birincil “UDF indir (.udf)” ve durum çipleri görünür; Metinler · Tam ekran · Word (.docx) “⋯ Diğer” menüsünde. Geniş ekranda bu düğmeler satır içinde, dar ekranda (≤900 px) menüde. Ölçüm: araç çubuğu 1440’ta 89→50 px, 900’de 122→83, 600’de 212→124. “Kontrol bekliyor: 2” yanındaki ikinci sayı kaldırıldı (çip artık “Kontrolü aç”). Rapor görünümünde F tam ekranı açar/kapatır. Sayfa sayısı “≈” olarak işaretlendi (kesin sayı yazdırmada oluşur).'
+  },
   '2.366': {
     title: 'İskeletten bölüme gitme',
     body:

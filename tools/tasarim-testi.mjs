@@ -2967,5 +2967,24 @@ console.log('\n[2ea] İskelet gezinme + dar ekranda katlanır iskelet (v2.366)')
   check('seçimde iskelet tazelenir', /scrollSkeletonToKey\(b\.dataset\.reportKey\)/.test(app));
 }
 
+console.log('\n[2eb] Araç çubuğu sadeleşmesi + F kısayolu (v2.367)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('⋯ Diğer menüsü var', /id="reportMore"/.test(html));
+  const menu = (html.match(/id="reportMore"[\s\S]*?<\/details>/) || [''])[0];
+  check('ikincil düğmeler menüde', /id="reportTextsBtn"/.test(menu) && /id="reportFullBtn"/.test(menu) && /id="downloadDocxBtn"/.test(menu));
+  check('birincil UDF menü dışında', /id="downloadUdfBtn"/.test(html) && !/id="downloadUdfBtn"/.test(menu));
+  check('menü geniş ekranda satır içi', /\.report-more \{ display: contents; \}/.test(css) && /\.report-more-body \{ display: contents; \}/.test(css));
+  check('menü dar ekranda katlanır', /\.report-more\[open\] > \.report-more-body \{ display: flex; \}/.test(css));
+  check('durum ayrıntısı dar ekranda gizli', /\.report-status-detail \{ display: none; \}/.test(css));
+  check('çip sayı tekrarı yok', /chip\.textContent = s\.blocking \? '⚠ Engelleri aç' : 'Kontrolü aç'/.test(app));
+  check('sayfa sayısı yaklaşık', /A4 · ≈\$\{pages\} sayfa/.test(app));
+  check('F rapor tam ekran', /setReportFull\(!document\.body\.classList\.contains\('report-full'\)\)/.test(app));
+  check('menü seçimde kapanır', /#reportMore'\)\?\.addEventListener\('click'/.test(app));
+  check('iskelet grid izi daraltıldı', /\.report-skeleton \.report-sections,[\s\S]{0,80}grid-template-columns: minmax\(0, 1fr\)/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

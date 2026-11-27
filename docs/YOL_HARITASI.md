@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.366.**
+yazılır. **Güncel sürüm: v2.367.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.367 — Araç çubuğu + F + tek sayaç (TAMAMLANDI)
+
+- İkincil işlemler **⋯ Diğer** menüsünde; geniş ekranda satır içi, ≤900’de menü.
+- Araç çubuğu: 1440 **89→50**, 900 **122→83**, 600 **212→124 px**.
+- “Kontrol bekliyor” yanındaki ikinci sayı kalktı (çip: **Kontrolü aç**).
+- Rapor görünümünde **F** tam ekran; sayfa sayısı **≈**.
+- İskelet 4 px yatay taşması bitti (220/220).
+- Test: `tasarim [2eb]` (11).
 
 ## v2.366 — İskelet gezinme + dar ekranda katlanır iskelet (TAMAMLANDI)
 

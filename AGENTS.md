@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.366.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.367.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9824,3 +9824,35 @@ zıplıyordu). ≤1349 px’te yan panel belgenin altına iner.
 1. **Araç çubuğu sadeleşmesi** (600 px’te 212 px) ve **“Tam ekran (F)”** kısayolu.
 2. Tek durum sayacı (“Kontrol bekliyor: 2” + “2 kontrol maddesi” yan yana).
 3. Sayfa sayısı tahmini (P6) ve kalan kozmetik (skeleton 4 px grid taşması).
+
+## YENİ OTURUM DEVRİ (v2.367) — Araç çubuğu, F, tek sayaç
+
+| | |
+|---|---|
+| Sürüm | **v2.367** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Araç çubuğu 1440 **50 px**, 900 **83**, 600 **124**; ⋯ menü 190×129; JS 0 |
+
+### Yapılan
+- `#reportMore` `<details>`: geniş ekranda **açık + `display:contents`** (düğmeler
+  satır içi), ≤900 px’te **⋯ menüsü**. `syncReportMoreMode()` pencere genişliğine göre
+  açar/kapatır. Menü seçimde/dış tıklamada (yalnız dar ekranda) kapanır.
+- Birincil **UDF indir** menü dışında; Metinler · Tam ekran · Word menüde.
+- **F** rapor görünümünde tam ekran (daha önce ipucu vardı, tuş bağlı değildi).
+- İkinci sayaç kaldırıldı: çip **“Kontrolü aç”**; sayı `title`’da.
+- Sayfa sayısı **`A4 · ≈N sayfa`** + “kesin sayı yazdırmada” ipucu.
+- İskelet grid izi `minmax(0,1fr)` + `.rsec-item{min-width:0}` → 4 px taşma bitti.
+
+### DEĞİŞMEZ KURALLAR
+1. **Birincil çıktı (UDF) her zaman görünür**; ikincil işlemler menüye girebilir.
+2. `<details>` kapalıyken içeriği GİZLİDİR; geniş ekranda satır içi göstermek için
+   `open` + `display:contents` gerekir (v2.367’de ölçüldü).
+3. **Aynı sayıyı iki yerde göstermeyin**: durum çipi sayıyı taşır, ikinci çip eylem
+   metni olur.
+4. Sayfa sayısı **tahmindir**; “≈” ve ipucu korunur.
+5. `scrollIntoView` yok; gezinme mutlak kaydırma.
+
+### Sıradaki iş
+1. İstenirse sağ paneli **çekmece** yapmak (şu an sütun + sekmeli).
+2. Kalan kozmetik/ölçüm: rapor sayfa sayısı tahmini ile gerçek yazdırma farkı.
+3. Delil/rapor derinleştirme (kullanıcı yönü).

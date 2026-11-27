@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.366.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.367.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.367 — Rapor araç çubuğu sadeleşti
+
+**KULLANICI NE GÖRECEK:** Rapor ekranının araç çubuğu **tek satıra** indi.
+Birincil **UDF indir (.udf)** ve durum çipleri görünür; **Metinler · Tam ekran ·
+Word (.docx)** geniş ekranda satır içinde, dar ekranda **⋯ Diğer** menüsünde.
+“Kontrol bekliyor: 2” yanındaki ikinci sayı kaldırıldı; çip artık **“Kontrolü
+aç”**. Rapor görünümünde **F** tam ekranı açar/kapatır. Sayfa sayısı **“≈”**.
+
+**ÖLÇÜM (gerçek Chromium):**
+
+| Genişlik | Araç çubuğu (önce → sonra) |
+|---|---|
+| 1440 | **89 → 50 px** (tek satır) |
+| 900 | **122 → 83 px** |
+| 600 | **212 → 124 px** |
+
+| Diğer | Sonuç |
+|---|---|
+| ⋯ menü (600) | **190×129 px**, sağ kenar 564 < 600 → taşma yok |
+| 1440 ikincil düğmeler | satır içi **görünür** (menü `open`) |
+| Çip | “Kontrolü aç” (sayı tekrarı yok) |
+| Sayfa sayısı | `A4 · ≈14 sayfa` + açıklama ipucu |
+| İskelet yatay taşma | **220/220** (4 px taşma bitti) |
+| F kısayolu | aç **true**, kapat **false** |
+| JS hatası | **0** |
+
+**Yapılan:** `#reportMore` (`<details>`) — geniş ekranda `display:contents`
+(satır içi), ≤900 px’te açılır menü; `syncReportMoreMode`; F dalı; çip metni;
+`≈` sayfa sayısı; `.report-sections/.rsec-group { grid-template-columns:
+minmax(0,1fr) }` + `.rsec-item{min-width:0}`. Test: `tasarim [2eb]` (11).
 
 ## v2.366 — İskeletten bölüme gitme
 

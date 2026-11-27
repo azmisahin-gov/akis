@@ -4619,3 +4619,36 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   }
   #reportWorkspace.outline-open .report-stage { order: 0; }
 }
+
+/* ============================================================================
+   v2.367 — ARAÇ ÇUBUĞU SADELEŞMESİ + İSKELET GRID ONARIMI
+   ----------------------------------------------------------------------------
+   İkincil işlemler (Metinler · Tam ekran · Word) "⋯ Diğer" menüsündedir.
+   ≥901 px: menü AÇIK/INLINE (display:contents) — hiçbir düğme gizlenmez.
+   ≤900 px: menü katlanır; birincil "UDF indir" ve durum çipleri görünür kalır.
+   Durum ayrıntısı ("N kayıt · N bölüm") dar ekranda gizlenir (alt çubukta var).
+   İskelet grid izi `minmax(0,1fr)`: 4 px yatay taşma (satır çizgisi) biter.
+   ========================================================================== */
+.report-more { display: contents; }
+.report-more > summary { display: none; list-style: none; }
+.report-more > summary::-webkit-details-marker { display: none; }
+.report-more-body { display: contents; }
+@media (max-width: 900px) {
+  .report-status-detail { display: none; }
+  .report-more { display: block; position: relative; }
+  .report-more > summary { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+  .report-more-body {
+    display: none; position: absolute; right: 0; top: calc(100% + 4px); z-index: 30;
+    min-width: 190px; padding: 6px; gap: 4px;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-md); box-shadow: var(--shadow-md);
+    flex-direction: column;
+  }
+  .report-more[open] > .report-more-body { display: flex; }
+  .report-more-body .button { width: 100%; justify-content: flex-start; }
+}
+/* İskelet: grid izi max-content'e şişmesin; uzun başlık sarar. */
+.report-skeleton .report-sections,
+.report-skeleton .rsec-group { grid-template-columns: minmax(0, 1fr); }
+.report-skeleton .rsec-item { min-width: 0; }
+.report-skeleton .rsec-go { overflow-wrap: anywhere; }
