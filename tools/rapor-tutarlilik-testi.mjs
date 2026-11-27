@@ -170,6 +170,7 @@ function baseCase(overrides = {}) {
     materials: [], synthetic: false, ...overrides,
   };
 }
+const RECORD_SECTIONS = { handoverRecord: true, fileInventory: true, custodyLog: true, notationKey: true, finalChecklist: true, legalBasis: true };
 const withMaterial = (extra = {}) => baseCase({
   materials: [{
     id: 'm1', name: 'a.wav', type: 'audio/wav', size: 1000, duration: 12.5,
@@ -523,7 +524,7 @@ console.log('\n[Senaryo 12] okuma metni (v2.202)');
     { start: '00:00:05', end: '00:00:10', speaker: 'K', text: 'dünya', review: 'onaylandi' },
     { start: '00:00:10', end: '00:00:15', speaker: 'E', text: 'evet', review: 'onaylandi' }
   ];
-  onlyReading.report = { sections: { s5: false, reading: true } };
+  onlyReading.report = { sections: { s5: false, readingText: true } };
   const HR = htmlText(onlyReading), UR = await udfText(onlyReading), DR = await docxText(onlyReading);
   checkShared('s5 kapalı + okuma açık: başlık görünür', REPORT_TEXT.readingHeading, HR, UR, DR);
   checkShared('s5 kapalı + okuma açık: grup metni', 'merhaba dünya', HR, UR, DR);
@@ -728,7 +729,7 @@ console.log('\n[Senaryo 17] rapor bölüm görünürlüğü (v2.219)');
   checkShared('varsayılan: inceleme özeti', REPORT_TEXT.reviewSummaryHeading, H, U, D);
   checkShared('varsayılan: okuma metni', REPORT_TEXT.readingHeading, H, U, D);
 
-  const off = mk({ sections: { origin: false, reviewSummary: false, s6: false, s7: false, reading: false } });
+  const off = mk({ sections: { origin: false, reviewSummary: false, s6: false, readingText: false } });
   const H2 = htmlText(off), U2 = await udfText(off), D2 = await docxText(off);
   check(
     'kapalı köken üç çıktıda da yok',
@@ -795,15 +796,15 @@ console.log('\n[Senaryo 18] 56.12 şablon bölümleri (v2.220)');
     NEW.every((t) => !Hd.includes(t) && !Ud.includes(t) && !Dd.includes(t))
   );
 
-  const on = mk({ summary: true, enhance: true, asr: true, scopeNote: true, privacy: true, annex: true });
+  const on = mk({ summary: true, enhancement: true, transcriptionMethod: true, scopeNote: true, privacy: true, ...RECORD_SECTIONS });
   const H = htmlText(on), U = await udfText(on), D = await docxText(on);
   for (const t of NEW) checkShared(`açık: ${t.slice(0, 24)}`, t, H, U, D);
   checkShared('künye değeri (dosya no)', '2026/214 E.', H, U, D);
   checkShared('kısa özet başlığı içeriği', 'İNCELENEN SES DOSYASI SAYISI', H, U, D);
   checkShared('ASR modeli', 'Xenova/whisper-small', H, U, D);
-  checkShared('EK-1 teslim tutanağı', 'Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
-  checkShared('EK-3 işlem günlüğü', 'Rapor eki 3. ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
-  checkShared('EK-4 gösterim anahtarı', 'Rapor eki 4. TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
+  checkShared('kayıt: teslim tutanağı', 'MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
+  checkShared('kayıt: işlem günlüğü', 'ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', H, U, D);
+  checkShared('kayıt: gösterim anahtarı', 'TRANSKRİPT GÖSTERİM ANAHTARI', H, U, D);
 }
 
 // Senaryo 19: teknik ortam alanları (v2.222). Bölüm varsayılan kapalı;
@@ -849,7 +850,6 @@ console.log('\n[Senaryo 20] birleşik künye ve alan görünürlüğü (v2.336)'
     physicalFile: { handover: { delivered: true, at: '2026-01-01T10:00', deliveredBy: 'Görevli' } }
   });
   const Ha = htmlText(withAnnex), Ua = await udfText(withAnnex), Da = await docxText(withAnnex);
-  checkShared('rapor içi ekler etiketi', 'RAPOR İÇİ EKLER', Ha, Ua, Da);
   checkShared('ek otomatik listelenir', 'MATERYAL TESLİM VE İADE TUTANAĞI', Ha, Ua, Da);
   check(
     'elle yazılan ek listesi kullanılmaz',
@@ -872,7 +872,7 @@ console.log('\n[Senaryo 21] kalite kontrolü bölümü (v2.226)');
     'varsayılan: kalite bölümü KAPALI (üç çıktıda yok)',
     !Ho.includes(REPORT_TEXT.qcHeading) && !Uo.includes(REPORT_TEXT.qcHeading) && !Do.includes(REPORT_TEXT.qcHeading)
   );
-  const on = mk({ qc: true }, { qcBy: 'Uzman Y', qcScope: 'Tüm bölümler', qcDate: '2026-02-10' });
+  const on = mk({ qualityControl: true }, { qcBy: 'Uzman Y', qcScope: 'Tüm bölümler', qcDate: '2026-02-10' });
   const H = htmlText(on), U = await udfText(on), D = await docxText(on);
   checkShared('kalite bölümü başlığı', REPORT_TEXT.qcHeading, H, U, D);
   checkShared('delil günlüğü satırı', 'Delil günlüğü zinciri', H, U, D);
@@ -889,7 +889,7 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
   const H = htmlText(noS3),
     U = await udfText(noS3),
     D = await docxText(noS3);
-  checkShared('s3 kapalı: 4. bölüm yeniden numaralandı', '5. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR', H, U, D);
+  checkShared('s3 kapalı: bölüm yeniden numaralandı', '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR', H, U, D);
   const stale = '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR';
   check('s3 kapalı: eski 4 numarası kalmadı (H)', !H.includes(stale));
   check('s3 kapalı: eski 4 numarası kalmadı (U)', !U.includes(stale));
@@ -911,50 +911,21 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
     check(`sıra değişti: s2 önce (${n})`, txt.indexOf(first) >= 0 && txt.indexOf(first) < txt.indexOf(second));
   }
 
-  // v2.261 — "EKLER" bölümü ekleri LİSTELER; ek yoksa bunu söyler.
-  const noAnnex = baseCase({ report: { sections: { annex: false } } });
-  const HN = htmlText(noAnnex),
-    UN = await udfText(noAnnex),
-    DN = await docxText(noAnnex);
-  check('ek yokken EKLER bölümü çizilmez (H)', !HN.includes(REPORT_TEXT.annexHeading));
-  check('ek yokken EKLER bölümü çizilmez (U)', !UN.includes(REPORT_TEXT.annexHeading));
-  check('ek yokken EKLER bölümü çizilmez (D)', !DN.includes(REPORT_TEXT.annexHeading));
+  // v2.380 — Kayıt bölümleri DÜZ bölümdür; "EKLER" sarmalayıcısı YOK.
+  const recOff = baseCase({ report: { sections: Object.fromEntries(Object.keys(RECORD_SECTIONS).map((k) => [k, false])) } });
+  const HN = htmlText(recOff), UN = await udfText(recOff), DN = await docxText(recOff);
+  check('kayıt kapalı: teslim tutanağı yok (H)', !HN.includes('MATERYAL TESLİM VE İADE TUTANAĞI'));
+  check('kayıt kapalı: teslim tutanağı yok (U)', !UN.includes('MATERYAL TESLİM VE İADE TUTANAĞI'));
+  check('kayıt kapalı: teslim tutanağı yok (D)', !DN.includes('MATERYAL TESLİM VE İADE TUTANAĞI'));
 
-  const annex = baseCase({ report: { sections: { annex: true } } });
-  const HA = htmlText(annex),
-    UA = await udfText(annex),
-    DA = await docxText(annex);
-  checkShared('EK-4 bitişik numaralı', 'Rapor eki 4. TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
-  checkShared('EK-6 bitişik numaralı', 'Rapor eki 6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
-  check('EK-7 numarası kalmadı (H)', !HA.includes('Rapor eki 7.'));
-  check(
-    'EKLER bölümü ekleri listeler (H)',
-    HA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI') && HA.includes('Rapor eki 6. HUKUKİ VE YÖNTEMSEL DAYANAKLAR')
-  );
-  check(
-    "EKLER listesi UDF ve DOCX'te de var",
-    UA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI') && DA.includes('Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI')
-  );
-}
-
-// Senaryo 23: özel ek (başlık/içerik/not) üç çıktıda aynı (v2.227).
-console.log('\n[Senaryo 23] özel ek başlık/içerik/not üç çıktıda (v2.227)');
-{
-  const custom = baseCase({
-    report: {
-      sections: { annex: true },
-      layout: {
-        annexMeta: { x1: { title: 'UZMAN TEKNİK NOTU', content: 'Gözlenen teknik bulgu.', note: 'Yalnız belgelenmiş bulgu.' } }
-      }
-    }
-  });
-  // x1 yalnız annexMeta'da; normalize onu sıranın sonuna (EK-7) ekler.
-  const H = htmlText(custom),
-    U = await udfText(custom),
-    D = await docxText(custom);
-  checkShared('özel ek başlığı (EK-7)', 'Rapor eki 7. UZMAN TEKNİK NOTU', H, U, D);
-  checkShared('özel ek içeriği', 'Gözlenen teknik bulgu.', H, U, D);
-  checkShared('özel ek notu', 'Yalnız belgelenmiş bulgu.', H, U, D);
+  const rec = baseCase({ report: { sections: { ...RECORD_SECTIONS } } });
+  const HA = htmlText(rec), UA = await udfText(rec), DA = await docxText(rec);
+  checkShared('kayıt: teslim tutanağı', 'MATERYAL TESLİM VE İADE TUTANAĞI', HA, UA, DA);
+  checkShared('kayıt: teknik envanter', 'DOSYA TEKNİK ENVANTERİ', HA, UA, DA);
+  checkShared('kayıt: işlem günlüğü', 'ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ', HA, UA, DA);
+  checkShared('kayıt: gösterim anahtarı', 'TRANSKRİPT GÖSTERİM ANAHTARI', HA, UA, DA);
+  checkShared('kayıt: son kontrol', 'SON KONTROL LİSTESİ', HA, UA, DA);
+  checkShared('kayıt: hukuki dayanak', 'HUKUKİ VE YÖNTEMSEL DAYANAKLAR', HA, UA, DA);
 }
 
 // Senaryo 24: rapor alanları — tablo sütunu aç/kapa (v2.235).
@@ -1086,7 +1057,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
 {
   console.log('[Senaryo 29] sayfa ayırımı (v2.258)');
   const c = withMaterial();
-  c.report = { sections: { annex: true } };
+  c.report = { sections: { ...RECORD_SECTIONS } };
 
   downloads.length = 0; setCase(c); await makeDocx();
   const dZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
@@ -1296,7 +1267,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   c.materials[0].segments = [
     { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' }
   ];
-  c.report = { sections: { annex: true } };
+  c.report = { sections: { ...RECORD_SECTIONS } };
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('S/K açıklaması', 'KAYIT İÇİ', H, U, D);
   checkShared('K dosyalar arası', 'dosyalar arası eşleştirme', H, U, D);
@@ -1316,7 +1287,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'bir', review: 'approved' },
     { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'iki', review: 'approved' }
   ];
-  c.report = { sections: { annex: true, reading: true } };
+  c.report = { sections: { ...RECORD_SECTIONS, readingText: true } };
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('süre tablosu', REPORT_TEXT.speakerDurationHeading, H, U, D);
   checkShared('süre/tarih dipnotu', REPORT_TEXT.speakerFootnote, H, U, D);
@@ -1383,7 +1354,9 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('özel başlık üç çıktıda', 'ÖZEL KONU BAŞLIĞI', H, U, D);
   checkShared('harf numarası (A.)', 'A. ÖZEL KONU BAŞLIĞI', H, U, D);
-  checkShared('harf alt başlık (G.1.)', 'G.1. Ses kayıtlarının çözümlenmesi', H, U, D);
+  check('harf alt başlık biçimi (H)', /[A-Z]\.1\. Ses kayıtlarının çözümlenmesi/.test(H), 'yok');
+  check('harf alt başlık biçimi (U)', /[A-Z]\.1\. Ses kayıtlarının çözümlenmesi/.test(U), 'yok');
+  check('harf alt başlık biçimi (D)', /[A-Z]\.1\. Ses kayıtlarının çözümlenmesi/.test(D), 'yok');
 
   const c2 = withMaterial();
   c2.report = { numbering: 'none' };
@@ -1425,38 +1398,6 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('boş blok D çizilmez', !D2.includes('BOŞ BLOK'), 'başlık sızdı');
 }
 
-
-// Senaryo 39: tek EKLER bölümü (v2.290). Boş "EK LİSTESİ" varsayılan kapalı;
-// asıl EKLER (annex) açık ve EK-1… içeriğini basar.
-{
-  console.log('\n[Senaryo 39] tek EKLER bölümü (v2.290)');
-  const c = withMaterial();
-  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('EKLER başlığı', 'EKLER', H, U, D);
-  checkShared('EK-1 içeriği', 'Rapor eki 1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
-  check('boş EK LİSTESİ yok (H)', !H.includes('EK LİSTESİ'), 'hâlâ var');
-  check('boş EK LİSTESİ yok (U)', !U.includes('EK LİSTESİ'), 'hâlâ var');
-  check('boş EK LİSTESİ yok (D)', !D.includes('EK LİSTESİ'), 'hâlâ var');
-}
-
-
-// Senaryo 40: gövde bölümünü EKLER altına taşıma (v2.291). s5 gövdeden çıkar,
-// EKLER altında EK-7 olarak basılır; içerik aynıdır, alt başlık EK-7.1 olur.
-{
-  console.log('\n[Senaryo 40] bölümü EK altına taşıma (v2.291)');
-  const c = withMaterial();
-  c.report = { annexPlacement: { s5: true } };
-  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('taşınan s5 EK başlığı', 'Rapor eki 7. KAYIT BAZINDA BULGULAR VE TRANSKRİPT', H, U, D);
-  checkShared('taşınan s5 içeriği', 'merhaba', H, U, D);
-  checkShared('taşınan s5 alt başlığı', 'EK-7.1. Ses kayıtlarının çözümlenmesi', H, U, D);
-  // v2.336: künyedeki "RAPOR İÇİ EKLER" satırı da taşınan eki listeler; bu
-  // yüzden başlık 2 kez geçer (ek başlığı + künye listesi), gövdede TEK kez.
-  const count = (t) => (String(t).match(/KAYIT BAZINDA BULGULAR VE TRANSKRİPT/g) || []).length;
-  check('s5 başlığı gövde+ek ve künye listesi (H)', count(H) === 2, String(count(H)));
-  check('s5 başlığı gövde+ek ve künye listesi (U)', count(U) === 2, String(count(U)));
-  check('s5 başlığı gövde+ek ve künye listesi (D)', count(D) === 2, String(count(D)));
-}
 
 // Senaryo 41: soru dayanağı (v2.300). Bir soruya bölüm bağlanınca rapor
 // "Dayanak" satırı serbest notu + KAYIT · ZAMAN ARALIĞI · alıntıyı taşır ve
@@ -1660,7 +1601,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const c2 = withMaterial();
   const doc2 = annexDocumentCase(c2, { id: 'la3', kind: 'reportAnnex', key: 'ek2' });
   const H2 = htmlText(doc2);
-  check('ek belgesi: yalnız EK-2 envanteri', H2.includes('Rapor eki 1. DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
+  check('ek belgesi: yalnız DOSYA TEKNİK ENVANTERİ', H2.includes('DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
   // 4) Serbest ek belgesi.
   const doc3 = annexDocumentCase(c2, { id: 'la4', kind: 'custom', title: 'TAPU KAYDI', content: 'Tapu kaydı incelenmiştir.' });
   const H3 = htmlText(doc3);
@@ -1744,10 +1685,8 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('teslim tutanağı imza alanı', 'İmza:', HH, UH, DH);
   checkShared('teslim tutanağı teslim eden sütunu', 'TESLİM EDEN (Görevli)', HH, UH, DH);
   check('teslim tutanağında "Rapor eki" YOK', !HH.includes('Rapor eki') && !UH.includes('Rapor eki') && !DH.includes('Rapor eki'));
-  // Kendi belgesidir: "EKLER" bölüm başlığı ve ek girişi basılmaz.
-  check('teslim tutanağında "EKLER" başlığı YOK', !HH.includes(SEC_TITLE.annex) && !UH.includes(SEC_TITLE.annex) && !DH.includes(SEC_TITLE.annex));
-  check('teslim tutanağında ek girişi YOK', !HH.includes(REPORT_TEXT.annexIntro));
-  check('ana raporda EKLER başlığı VAR', H.includes(SEC_TITLE.annex));
+  // Kendi belgesidir: tek bölüm; başka bölüm basılmaz.
+  check('teslim tutanağında yalnız tutanak başlığı', HH.includes('FİZİKÎ DOSYA TESLİM TUTANAĞI'));
   check('teslim tutanağında iade tablosu YOK', !HH.includes(REPORT_TEXT.physicalReturnHeading));
   check('teslim tutanağında kapak YOK', !HH.includes(REPORT_TYPES.hukuk.heading));
   check('teslim tutanağında içindekiler YOK', !HH.includes(SEC_TITLE.toc));
@@ -1849,23 +1788,6 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
 }
 
 
-// Senaryo 49: RAPOR İÇİ EKLER — ad ve kısa biçim (v2.340). Üst yazının
-// EK-1/EK-2 belge setiyle karışmamalı; künyede "Rapor eki" öneki 6 kez
-// tekrarlanmamalı (ölçüm: 259 karakterlik tek satır).
-{
-  console.log('\n[Senaryo 49] rapor içi ekler: ad ve biçim (v2.340)');
-  const c = __schemaMod.normalizeCase(withMaterial());
-  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('yeni etiket', 'RAPOR İÇİ EKLER', H, U, D);
-  check('eski etiket kalktı (H)', !H.includes('RAPORUN EKLERİ'));
-  check('eski etiket kalktı (U)', !U.includes('RAPORUN EKLERİ'));
-  check('eski etiket kalktı (D)', !D.includes('RAPORUN EKLERİ'));
-  // Kısa biçim: numara + başlık, tekrar eden "Rapor eki N." öneki YOK.
-  checkShared('kısa biçim (1. başlık)', '1. MATERYAL TESLİM VE İADE TUTANAĞI', H, U, D);
-  checkShared('birleşik liste biçimi', '1. MATERYAL TESLİM VE İADE TUTANAĞI · 2. ', H, U, D);
-}
-
-
 // Senaryo 50: tarafsızlık beyanı — 56.12 anlamı, üç çıktı (v2.341).
 // KURAL: alan "hâl beyanı"dır (engel bulunmadığı / açıklama + merci);
 // taahhüt metni değildir. Boşsa satır basılmaz; uydurma yok.
@@ -1906,17 +1828,17 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   console.log('\n[Senaryo 52] bilirkişi anlatımı (v2.347)');
   // ASR satırı OLAN kayıt: doğrulama cümlesi görünmeli.
   const m1 = { transcribedWithModel: 'Xenova/whisper-small', asrAt: '2026-02-01T10:00:00Z' };
-  const c = __schemaMod.normalizeCase({ ...withMaterial(m1), report: { sections: { integrity: true, asr: true } } });
+  const c = __schemaMod.normalizeCase({ ...withMaterial(m1), report: { sections: { integrity: true, transcriptionMethod: true } } });
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('yöntem birinci kişi', 'tarafıma sunulan ses kayıtlarını ayrı ayrı ele aldım', H, U, D);
   checkShared('SHA-256 koşullu yazılır', 'hesaplanmamışsa bu durum açıkça belirtilir', H, U, D);
   checkShared('bütünlük notu sınırı', 'kanıtlamaz', H, U, D);
   check('elle doldurulmalıdır kalktı (üç çıktı)', !(H + U + D).includes('elle doldurulmalıdır'));
-  checkShared('otomatik çözümleme başlığı sade', 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ', H, U, D);
+  checkShared('metne dönüştürme başlığı sade', 'KONUŞMANIN METNE DÖNÜŞTÜRÜLMESİ YÖNTEMİ', H, U, D);
   check('ASR/yapay zekâ jargonu yok', !/(\bASR\b|yapay zekâ|model çıktısı)/i.test(H + U + D));
   checkShared('kontrol durumu kanıt tablosunda', 'kontrolü tamamlanmamış bölümler onaylanmış sayılmaz', H, U, D);
   // Yazılım desteği KULLANILMADIYSA "yararlandım" girişi ve doğrulama cümlesi basılmaz.
-  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { asr: true } } });
+  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { transcriptionMethod: true } } });
   const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
   checkShared('yazılım yoksa "yok" cümlesi', 'yazılım desteğiyle elde edilmiş bir metin kaydı bulunmamaktadır', H2, U2, D2);
   check('yazılım yoksa "yararlandım" yok', !(H2 + U2 + D2).includes('yardımcı olarak yararlandım'));
@@ -2007,7 +1929,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
       { id: 'n1', at: '2026-11-10T09:00:00.000Z', text: NOTE, materialId: 'm1', segmentId: 'sg1', timecode: '00:00:00' },
       { id: 'n2', at: '2026-11-10T09:05:00.000Z', text: 'davacı vekili 14:20 itiraz etti', pinned: true }
     ],
-    report: { sections: { annex: true, qc: true, scopeNote: true, privacy: true } }
+    report: { sections: { ...RECORD_SECTIONS, qualityControl: true, scopeNote: true, privacy: true } }
   });
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   check('not defteri kayıtta duruyor', c.notebook.length === 2);
@@ -2040,24 +1962,6 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   localStorageStub.removeItem('akis.defaults');
   const H3 = htmlText(__schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { summary: true } } }));
   check('varsayılan silinince kod metni döner', H3.includes('Aşağıdaki özet') && !H3.includes('KULLANICI ÖZET GİRİŞİ'));
-}
-
-// Senaryo 58: gruplu ekler (v2.369). origin + speakers TEK ek (EK-7) içinde alt
-// başlıklarla basılır; üç çıktı aynı grup başlığını ve alt başlıkları üretir.
-{
-  console.log('\n[Senaryo 58] gruplu ekler (v2.369)');
-  const c = withMaterial();
-  c.report = { annexPlacement: { origin: 'ek7', speakers: 'ek7' } };
-  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  checkShared('grup EK-7 başlığı', 'Rapor eki 7. KAYIT KÖKENİ, EDİNME VE GÖMÜLÜ METADATA', H, U, D);
-  checkShared('grup 1. alt başlık', 'EK-7.1. KAYIT KÖKENİ VE TESLİM ZİNCİRİ', H, U, D);
-  checkShared('grup 2. alt başlık', 'EK-7.2. KONUŞMACILAR', H, U, D);
-  // İki bölüm TEK grup başlığı altında; "Rapor eki 7." bir kez geçer.
-  const cnt = (t) => (String(t).match(/Rapor eki 7\./g) || []).length;
-  check('tek grup başlığı (H)', cnt(H) === 1, String(cnt(H)));
-  check('tek grup başlığı (U)', cnt(U) === 1, String(cnt(U)));
-  check('tek grup başlığı (D)', cnt(D) === 1, String(cnt(D)));
-  check('ikinci grup (EK-8) yok', !/Rapor eki 8\./.test(H));
 }
 
 // Senaryo 59: tablo stili (v2.372). DOCX tablo kenarlığı stile göre değişir;

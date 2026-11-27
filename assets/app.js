@@ -76,6 +76,7 @@ import {
   REPORT_BODY_ORDER,
   REPORT_ANNEX_DEFS,
   REPORT_ANNEX_KEYS,
+  mapReportKey,
   REPORT_ANNEX_CUSTOM_TITLE,
   isReportAnnexKey,
   newReportAnnexKey,
@@ -165,15 +166,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.379';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.379';
+} from './schema.js?v=2.380';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.380';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.379';
+const APP_VERSION = '2.380';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -303,7 +304,7 @@ const REPORT_TEXT = {
   obsLabels: OBS_LABEL,
   segmentHeadersObs: ['ZAMAN ARALIĞI', 'KONUŞMACI KODU', 'KONUŞMACI ETİKETİ', 'ÇÖZÜMLENEN KONUŞMA', 'KONTROL DURUMU', 'GÖZLEM'],
   spectrogramLabel: 'Spektrogram incelendi',
-  werHeading: 'ÇÖZÜMLEME DOĞRULUĞU ÖLÇÜMÜ (WER)',
+  werHeading: 'KELİME HATA ORANI ÖLÇÜMÜ (WER)',
   werIntro:
     'Aşağıdaki oranlar, referans metni bulunan kayıtlarda yazılımın ürettiği ilk metnin (bilirkişi düzeltmesinden önceki hâli) referansla karşılaştırılmasıyla hesaplanmıştır. WER (kelime hata oranı) düşük olan daha iyidir; yerine koyma, silme ve ekleme hatalarını referans kelime sayısına böler. Ölçüm, düzeltilmiş metni değil ilk metni ölçer; bu yüzden bilirkişi düzeltmeleri oranı değiştirmez. İlk metni saklanmamış eski kayıtlar ile referans metni bulunmayan kayıtlar bu tabloya girmez.',
   werHeaders: ['KAYIT', 'MODEL', 'REFERANS KELİME', 'ÇIKTI KELİME', 'HATA', 'WER'],
@@ -330,7 +331,7 @@ const REPORT_TEXT = {
     'Aşağıdaki bilgiler, delilin alındığı cihazdan edinme aracıyla çıkarılan tutanağa dayanır. Cihaz bilgisi tutanaktaki beyandır; cihaz bu ortamda okunmaz. Dosya özetleri (SHA-256) hesaplanabildiği ölçüde yeniden hesaplanarak karşılaştırılır. "Doğrulandı" yalnız özet tutuyorsa yazılır; özet yoksa veya hesaplanamazsa "Doğrulanamadı" yazılır.',
   acqHeaders: ['KAYIT', 'CİHAZ', 'ETİKET', 'SERİ NO', 'YÖNTEM', 'ARAÇ', 'OPERATÖR', 'ALINMA', 'DOĞRULAMA'],
   // GÖMÜLÜ METADATA (v2.217): yalnız kullanıcı açarsa rapora girer.
-  embeddedHeading: 'GÖMÜLÜ METADATA (CİHAZ BEYANI)',
+  embeddedHeading: 'DOSYAYA GÖMÜLÜ BİLGİLER (CİHAZ BEYANI)',
   embeddedIntro:
     'Aşağıdaki değerler ses dosyasına gömülü metadata bilgilerinden okunmuştur. Bu bilgiler dosyanın kendi kaydından gelir; kaynağı ve doğruluğu ayrıca doğrulanmadıkça cihaz tarafından doğrulanmış beyan olarak kabul edilmez ve tek başına kayıt zamanı kanıtı sayılmaz.',
   embeddedHeaders: ['KAYIT', 'KAYIT ZAMANI (beyan)', 'YAZILIM (beyan)', 'KAYNAK'],
@@ -413,7 +414,7 @@ Object.assign(REPORT_TEXT, {
   enhanceHeading: 'SES İYİLEŞTİRME / FİLTRELEME İŞLEMLERİ',
   enhanceText:
     'Ses iyileştirme uygulanmamıştır; orijinal kayıt değiştirilmemiştir. Dinleme yardımcıları (hız, filtre, kanal seçimi) yalnızca dinlemeyi kolaylaştırır, kaydı değiştirmez ve deşifre metnini etkilemez. İşlenmiş bir kopya oluşturulmamıştır.',
-  asrHeading: 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ',
+  asrHeading: 'KONUŞMANIN METNE DÖNÜŞTÜRÜLMESİ YÖNTEMİ',
   asrIntro:
     'Konuşma içeriklerinin ilk metin taslağını hazırlarken ilgili yazılımdan yardımcı olarak yararlandım. Oluşan metni ses kayıtlarıyla karşılaştırarak incelemem kapsamında gerekli düzeltmeleri yaptım. Nihai metin ve değerlendirme kendi incelemem doğrultusunda oluşturulmuştur.',
   asrHeaders: ['KAYIT', 'KULLANILAN YAZILIM', 'ÇÖZÜMLEME ZAMANI'],
@@ -13941,7 +13942,6 @@ function reportRows(c) {
     { key: 'expertField', label: REPORT_TEXT.expertFieldHeading, value: String(c.expertField || '').trim() || DEFAULT_EXPERT_FIELD },
     { key: 'registryNo', label: 'BİLİRKİŞİ SİCİL NO', value: c.registryNo },
     // EK LİSTESİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
-    { key: 'annexList', label: 'RAPOR İÇİ EKLER', value: reportAttachmentLines(c).join(' · ') },
     { key: 'impartiality', label: REPORT_TEXT.impartialityHeading, value: (c.report && c.report.impartiality) || '' }
   ].map((row) => ({ ...row, label: up(row.label) }));
 }
@@ -14641,36 +14641,37 @@ function reportSectionDerivedTarget(key) {
     s2: 'questions',
     s3: 'case',
     origin: 'audio',
-    embedded: 'audio',
+    embeddedInfo: 'audio',
     acquisition: 'audio',
     speakers: 'audio',
-    reading: 'audio',
+    speakerDurations: 'audio',
+    readingText: 'audio',
+    transcriptionMethod: 'audio',
+    enhancement: 'audio',
+    terms: 'audio',
     wer: 'audio',
     levels: 'audio',
     reviewSummary: 'audio',
     answers: 'questions',
     integrity: 'audio',
+    qualityControl: 'audio',
+    handoverRecord: 'case',
+    fileInventory: 'audio',
+    custodyLog: 'audio',
+    notationKey: 'audio',
     signature: 'case'
   };
   return map[key] || '';
 }
 function reportSectionInspectorKey(key) {
-  return ['tech', 'qc'].includes(key) ? key : '';
+  return ['tech', 'qualityControl'].includes(key) ? key : '';
 }
 // v2.375 — ÇEKMEDEKİ ORTAK BÖLÜM İŞLEMLERİ: başlık düzenle + EKLER'e taşı/Gövdeye
 // al. Satırdaki ✎/EK/G düğmeleri kaldırıldı; işlev buraya taşındı (tek yer).
 function reportSectionActionsHtml(c, key) {
-  const placed = annexPlacementOf(c, key);
-  let placeBtn = '';
-  if (isAnnexPlaceable(key)) {
-    placeBtn = placed
-      ? `<button type="button" class="mini-button" data-rse-place="${esc(key)}" title="Bu bölümü gövdeye geri al">Gövdeye al</button>`
-      : `<button type="button" class="mini-button" data-rse-place="${esc(key)}" title="Bu bölümü önerilen gruba taşı (EK-7…EK-10)">EKLER'e taşı</button>`;
-  }
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
-    (placeBtn ? `<div class="rtech-actions">${placeBtn}</div>` : '') +
     `</div>`
   );
 }
@@ -14878,12 +14879,8 @@ function reportLayoutOf(c) {
   return normalizeReportLayout(c && c.report && c.report.layout);
 }
 function reportBodyOrder(c) {
-  // v2.287: serbest blok anahtarları da gövde sırasına girer.
-  // v2.291: EKLER altına taşınan bölüm gövdede çizilmez.
-  const placed = normalizeAnnexPlacement(c && c.report && c.report.annexPlacement);
-  return reportLayoutOf(c).order.filter(
-    (k) => (REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k)) && !placed[k]
-  );
+  // v2.380: EK kavramı yok; tüm gövde bölümleri tek düz listede çizilir.
+  return reportLayoutOf(c).order.filter((k) => REPORT_BODY_ORDER.includes(k) || isFreeBlockKey(k));
 }
 // EKLER altına taşınmış ve gerçekten çizilecek bölümler (v2.291).
 function reportMovedSections(c) {
@@ -15030,7 +15027,7 @@ function reportBlockRenders(c, key) {
     return !!(b && String(b.title || '').trim() && String(b.text || '').trim());
   }
   switch (key) {
-    case 'embedded':
+    case 'embeddedInfo':
       return !!(c.report && c.report.includeEmbedded) && embeddedRows(c).length > 0;
     case 'acquisition':
       return acquisitionRows(c).length > 0;
@@ -15043,7 +15040,7 @@ function reportBlockRenders(c, key) {
       return measureWerForCase(c).length > 0;
     case 'levels':
       return levelRowsForCase(c).length > 0;
-    case 'reading':
+    case 'readingText':
       return (c.materials || []).some((m) => readingGroupsFor(m).length > 0);
     case 'speakerDurations':
       return speakerDurationRows(c).length > 0;
@@ -15060,7 +15057,7 @@ function reportBlockEmptyReason(c, key) {
   if (reportBlockRenders(c, key)) return '';
   if (isFreeBlockKey(key)) return 'Başlık veya metin boş.';
   switch (key) {
-    case 'embedded':
+    case 'embeddedInfo':
       return c.report && c.report.includeEmbedded
         ? 'Gömülü metadata bulunamadı.'
         : 'Gömülü metadata “rapora dahil” seçilmedi.';
@@ -15074,7 +15071,7 @@ function reportBlockEmptyReason(c, key) {
       return 'WER için referans metin ve model çıktısı gerekir.';
     case 'levels':
       return 'Seviye/kırpılma ölçümü yapılmadı.';
-    case 'reading':
+    case 'readingText':
       return 'Okuma metni oluşturacak bölüm yok.';
     case 'terms':
       return 'Terim listesi için en az 2 kez geçen anlamlı sözcük yok.';
@@ -15340,28 +15337,33 @@ const REPORT_UI_LABELS = {
   s2: 'Cevaplanacak sorular',
   s3: 'Maddi unsurlar ve dosya envanteri',
   s4: 'İnceleme yöntemi',
-  s5: 'Kayıt bazında bulgular',
-  answers: 'Soruların cevapları',
-  limits: 'Teknik sınırlılıklar',
-  integrity: 'Orijinalin korunması / bütünlük',
-  s6: 'Gerekçeli sonuç',
-  s7: 'Ek listesi (başlıklar)',
+  transcriptionMethod: 'Metne dönüştürme yöntemi',
   origin: 'Kayıt kökeni ve teslim zinciri',
-  embedded: 'Gömülü metadata (beyan)',
+  embeddedInfo: 'Dosyaya gömülü bilgiler',
   acquisition: 'Delil edinme ve doğrulama',
+  integrity: 'Orijinalin korunması / bütünlük',
+  s5: 'Kayıt bazında bulgular',
+  readingText: 'Okuma metni',
   speakers: 'Konuşmacılar',
   speakerDurations: 'Konuşmacı süreleri',
-  tech: 'Teknik özellikler ve ortam',
-  enhance: 'Ses iyileştirme',
-  asr: 'Otomatik konuşma tanıma',
-  scopeNote: 'Sınırlılık beyanı',
-  wer: 'WER ölçümü',
+  wer: 'Kelime hata oranı (WER)',
   levels: 'Ses seviyesi ölçümü',
   reviewSummary: 'İnceleme özeti',
-  qc: 'Kalite kontrolü',
+  answers: 'Soruların cevapları',
+  limits: 'Teknik sınırlılıklar',
+  scopeNote: 'Sınırlılık beyanı',
+  s6: 'Gerekçeli sonuç',
+  tech: 'Teknik özellikler ve ortam',
+  enhancement: 'Ses iyileştirme',
+  terms: 'Terim ve konu listesi',
+  qualityControl: 'Kalite kontrolü',
   privacy: 'Kişisel veri / gizlilik',
-  annex: 'Ekler',
-  reading: 'Okuma metni',
+  handoverRecord: 'Materyal teslim ve iade tutanağı',
+  fileInventory: 'Dosya teknik envanteri',
+  custodyLog: 'Zincirleme muhafaza / işlem günlüğü',
+  notationKey: 'Transkript gösterim anahtarı',
+  finalChecklist: 'Son kontrol listesi',
+  legalBasis: 'Hukuki ve yöntemsel dayanaklar',
   signature: 'İmza ve alt bilgi'
 };
 function reportUiLabel(c, key) {
@@ -15391,28 +15393,32 @@ const REPORT_SECTION_CATEGORY = {
   s3: 'main',
   s4: 'main',
   s5: 'main',
-  answers: 'main',
-  limits: 'main',
-  integrity: 'tech',
-  s6: 'main',
-  s7: 'main',
-  reading: 'main',
-  terms: 'main',
+  transcriptionMethod: 'tech',
   origin: 'tech',
-  embedded: 'tech',
+  embeddedInfo: 'tech',
   acquisition: 'tech',
+  integrity: 'tech',
+  readingText: 'main',
   speakers: 'tech',
   speakerDurations: 'tech',
-  tech: 'tech',
-  enhance: 'tech',
-  asr: 'tech',
   wer: 'tech',
   levels: 'tech',
   reviewSummary: 'tech',
+  answers: 'main',
+  limits: 'main',
   scopeNote: 'statement',
-  qc: 'statement',
+  s6: 'main',
+  tech: 'tech',
+  enhancement: 'tech',
+  terms: 'main',
+  qualityControl: 'statement',
   privacy: 'statement',
-  annex: 'closing',
+  handoverRecord: 'closing',
+  fileInventory: 'closing',
+  custodyLog: 'closing',
+  notationKey: 'closing',
+  finalChecklist: 'closing',
+  legalBasis: 'closing',
   signature: 'closing'
 };
 function reportSectionCategory(key) {
@@ -15458,9 +15464,6 @@ function renderReportSections(c) {
     const editing = reportTitleEditKey === key;
     const free = isFreeBlockKey(key);
     const block = free ? reportBlockByKey(c, key) : null;
-    const placed =
-      isAnnexPlaceable(key) && !!(normalizeAnnexPlacement(c.report && c.report.annexPlacement)[key]);
-    const placedN = placed ? annexNumberForSection(c, key) : 0;
     let label;
     if (editing && free) {
       // Serbest blok: başlık + metin aynı satırda düzenlenir. Metin çok
@@ -15510,8 +15513,6 @@ function renderReportSections(c) {
   // hatası kökten kalkar. Eke taşıma: sürükle veya çekmecedeki düğme.
   let body = '';
   for (const key of layout.order) {
-    // v2.379 — listede EK kavrami YOK: 'EKLER' ve 'EK listesi' satirlari gizlenir.
-    if (key === 'annex' || key === 's7') continue;
     if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
@@ -15545,7 +15546,7 @@ function renderReportSections(c) {
   host.innerHTML =
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     profileBar +
-    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-default-layout="1" title="Bölüm görünürlüğü, sıra, numara ve teknik bölümlerin gruplu eklere yerleşimini başlangıç (Öneri A) düzenine döndürür. Başlık/etiket/özel ek/serbest blok/kanıt KORUNUR; onay ister, Ctrl+Z ile geri alınır.">Varsayılan düzen</button><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler. “Varsayılan düzen” başlangıç sırasını geri getirir; isterseniz profil olarak kaydedin.</span></div>`;
+    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler. İsterseniz bu düzeni profil olarak kaydedin.</span></div>`;
 }
 function setReportField(spec, on) {
   const c = currentCase();
@@ -16222,16 +16223,12 @@ function physicalTutanakCase(c, kind) {
   const rep = base.report;
   const off = {};
   for (const d of REPORT_SECTION_DEFS) off[d.key] = false;
-  rep.sections = { ...off };
-  // EKLER bölümü AÇIK olmalı; aksi hâlde gövde döngüsü hiçbir şey çizmez
-  // (v2.330'da ölçüldü: tutanak belgesi boş iniyordu).
-  rep.sections.annex = true;
+  // v2.380 — EK yok: tutanak belgesi tek düz bölümdür (handoverRecord).
+  rep.sections = { ...off, handoverRecord: true };
   rep.layout = normalizeReportLayout(rep.layout);
   rep.layout.parent = {};
-  rep.layout.order = ['annex'];
-  rep.layout.annexes = Object.fromEntries(REPORT_ANNEX_KEYS.map((k) => [k, k === 'ek1']));
-  rep.layout.annexOrder = ['ek1'];
-  rep.layout.annexMeta = { ek1: { title: physicalTutanakTitle(kind) } };
+  rep.layout.order = ['handoverRecord'];
+  rep.titles = { ...(rep.titles || {}), handoverRecord: physicalTutanakTitle(kind) };
   rep.numbering = 'none';
   rep.blocks = [];
   base.__annexDoc = true;
@@ -16270,35 +16267,35 @@ function physicalTutanakBlocks(c, kind) {
 }
 // Ek blokları: başlık `REPORT_ANNEX_DEFS`ten (tek kaynak), sıra/aç-kapa
 // `case.report.layout`ten. EK numarası bitişiktir (EK-1…EK-6).
-function reportAnnexBlocks(c) {
+function recordSectionDefs(c) {
   const materials = c.materials || [];
   const logRows = [];
   for (const m of materials) {
     for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
   }
-  // EK-2 envanteri ANA envanter tablosuyla AYNI sütun seçimini kullanır (v2.236).
+  // Envanter ANA envanter tablosuyla AYNI sütun seçimini kullanır.
   const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
   const defs = {
     // EK-1 (v2.330): FİZİKÎ dosya teslim ve iade tutanağı. Kaynak artık ses
     // kaydı kökeni DEĞİL, `case.physicalFile` kaydıdır (iki kavram karışmaz).
     // Ayrı tutanak belgesi (`__tutanakKind`) ise yalnız teslim veya yalnız iade
     // tablolarını ve imza alanını basar.
-    ek1:
+    handoverRecord:
       c && c.__tutanakKind
         ? { kind: 'blocks', blocks: physicalTutanakBlocks(c, c.__tutanakKind) }
         : physicalAnnexBlock(c),
-    ek2: invT.empty
+    fileInventory: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
       : invT.rows.length
         ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows }
         : { kind: 'para', text: REPORT_TEXT.annexNoInventory },
-    ek3: logRows.length
+    custodyLog: logRows.length
       ? { kind: 'table', header: true, headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], rows: logRows }
       : { kind: 'para', text: REPORT_TEXT.annexNoLog },
     // v2.268 — GÖSTERİM ANAHTARI ÜÇ TABLO: konuşmacı kodları · metin işaretleri ·
     // gözlem işaretleri. Gözlem satırları OBS_DEFS'ten ÜRETİLİR (tek kaynak);
     // yeni bir bayrak eklendiğinde anahtar kendiliğinden güncellenir.
-    ek4: {
+    notationKey: {
       kind: 'tables',
       tables: [
         {
@@ -16326,7 +16323,7 @@ function reportAnnexBlocks(c) {
     },
     // EK-5 "SON KONTROL LİSTESİ" (v2.339, A-2): ilk tablo TESLİM KONTROLÜ,
     // ikincisi sayısal özet. Üç çıktı (HTML/DOCX/UDF) aynı satırları basar.
-    ek5: {
+    finalChecklist: {
       kind: 'blocks',
       blocks: [
         { kind: 'para', text: defaultTextFor('deliveryCheckNote') },
@@ -16344,8 +16341,93 @@ function reportAnnexBlocks(c) {
         }
       ]
     },
-    ek6: { kind: 'para', text: defaultTextFor('annexLegalText') }
+    legalBasis: { kind: 'para', text: defaultTextFor('annexLegalText') }
   };
+  return defs;
+}
+// v2.380 — Eski ek İÇERİKLERİ artık normal bölüm üreticisidir. Blok → çıktı
+// dönüşümü üç motorda da aynı kuralları izler (para/table/tables/blocks).
+function recordBlockHtml(c, key) {
+  const b = recordSectionDefs(c)[key];
+  if (!b) return '';
+  let out = '';
+  if (b.kind === 'para') out += `<p>${esc(b.text)}</p>`;
+  else if (b.kind === 'tables') {
+    for (const t of b.tables) out += `<p class="paper-muted"><b>${esc(t.title)}</b></p><table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  } else if (b.kind === 'blocks') {
+    for (const sub of b.blocks || []) {
+      if (sub.kind === 'para') out += `<p>${esc(sub.text)}</p>`;
+      else if (sub.kind === 'table') out += `<p class="paper-muted"><b>${esc(sub.title)}</b></p><table class="paper-table"><thead><tr>${sub.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${sub.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+    }
+  } else if (b.header) {
+    out += `<table class="paper-table"><thead><tr>${b.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${b.rows.length ? b.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="${b.headers.length}">${esc(b.empty || '—')}</td></tr>`}</tbody></table>`;
+  } else {
+    out += `<table class="paper-table cover-fields"><tbody>${b.rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>`;
+  }
+  if (b.note) out += `<p class="paper-muted">${esc(b.note)}</p>`;
+  return out;
+}
+function recordBlockXml(c, key) {
+  const b = recordSectionDefs(c)[key];
+  if (!b) return '';
+  let out = '';
+  if (b.kind === 'para') out += wP(b.text);
+  else if (b.kind === 'tables') {
+    for (const t of b.tables) {
+      out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
+      out += wTable([[...t.headers], ...t.rows], { header: true });
+    }
+  } else if (b.kind === 'blocks') {
+    for (const sub of b.blocks || []) {
+      if (sub.kind === 'para') out += wP(sub.text);
+      else if (sub.kind === 'table') {
+        out += wP(sub.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
+        out += wTable([[...sub.headers], ...sub.rows], { header: true });
+      }
+    }
+  } else if (b.header) {
+    const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
+    out += wTable([[...b.headers], ...rows], { header: true });
+  } else {
+    out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true });
+  }
+  if (b.note) out += wP(b.note, { color: '74869A', size: 17, italic: true });
+  return out;
+}
+function recordBlockUdf(c, key, el, H) {
+  const { paragraph, paragraphLines, table } = H || {};
+  const b = recordSectionDefs(c)[key];
+  if (!b) return;
+  if (b.kind === 'para') el.push(paragraphLines(b.text, { justify: true }));
+  else if (b.kind === 'tables') {
+    for (const t of b.tables) {
+      el.push(paragraph(t.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
+      el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true }));
+    }
+  } else if (b.kind === 'blocks') {
+    for (const sub of b.blocks || []) {
+      if (sub.kind === 'para') el.push(paragraphLines(sub.text, { justify: true }));
+      else if (sub.kind === 'table') {
+        el.push(paragraph(sub.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
+        el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true }));
+      }
+    }
+  } else {
+    const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
+    const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
+    el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
+  }
+  if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
+}
+function reportAnnexBlocks(c) {
+  const materials = c.materials || [];
+  const logRows = [];
+  for (const m of materials) {
+    for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
+  }
+  // EK-2 envanteri ANA envanter tablosuyla AYNI sütun seçimini kullanır (v2.236).
+  const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
+  const defs = recordSectionDefs(c);
   const out = reportAnnexList(c).map((a) => {
     const meta = a.meta || {};
     const note = typeof meta.note === 'string' && meta.note.trim() ? meta.note.trim() : '';
@@ -16360,7 +16442,7 @@ function reportAnnexBlocks(c) {
       const text = typeof meta.content === 'string' && meta.content.trim() ? meta.content.trim() : '—';
       return { key: a.key, heading: a.heading, kind: 'para', text, note };
     }
-    return { key: a.key, heading: a.heading, ...defs[a.key], note };
+    return { key: a.key, heading: a.heading, ...defs[mapReportKey(a.key)], note };
   });
   return out;
 }
@@ -17311,17 +17393,17 @@ function estimateDocumentPages(c, annex) {
 // yok): bölüm `report.sections[k]=false`, rapor içi ek `layout.annexes[k]=false`.
 const LETTER_ANNEX_SECTIONS = [
   'origin',
-  'embedded',
+  'embeddedInfo',
   'acquisition',
   'levels',
   'wer',
-  'qc',
+  'qualityControl',
   'integrity',
   'tech',
   'speakerDurations',
   'reviewSummary'
 ];
-const LETTER_ANNEX_DEFAULT_SECTIONS = ['origin', 'embedded', 'acquisition', 'levels', 'wer', 'qc', 'integrity', 'tech'];
+const LETTER_ANNEX_DEFAULT_SECTIONS = ['origin', 'embeddedInfo', 'acquisition', 'levels', 'wer', 'qualityControl', 'integrity', 'tech'];
 
 /** Ek belgesi için geçici dosya kopyası (yalnız ilgili içerik açık). */
 function annexDocumentCase(c, annex) {
@@ -17343,10 +17425,10 @@ function annexDocumentCase(c, annex) {
     rep.layout.order = REPORT_BODY_ORDER.filter((k) => (annex.sections || []).includes(k));
     rep.numbering = 'auto';
   } else if (annex.kind === 'reportAnnex') {
-    rep.sections.annex = true;
-    rep.layout.annexes = Object.fromEntries(REPORT_ANNEX_KEYS.map((k) => [k, k === annex.key]));
-    rep.layout.annexOrder = [annex.key];
-    rep.layout.order = ['annex'];
+    // v2.380: eski ek anahtarı (ek2) yeni düz bölüm anahtarına (fileInventory) çevrilir.
+    const k = mapReportKey(annex.key);
+    rep.sections[k] = true;
+    rep.layout.order = REPORT_BODY_ORDER.filter((x) => x === k);
   } else if (annex.kind === 'custom') {
     const id = 'annexc';
     rep.blocks = [
@@ -17823,7 +17905,6 @@ function renderReport() {
   renderReportTech(c);
   renderReportKunye(c);
   renderReportQc(c);
-  renderReportAnnexEditor(c);
   renderReportColumns(c);
   renderReportFormat(c);
   renderReportRevisions(c);
@@ -17899,10 +17980,10 @@ function renderReport() {
           : `<p class="paper-muted">${esc(REPORT_TEXT.noMaterials)}</p>`;
       return `<div class="paper-section"><h3>${esc(H('origin'))}</h3><p>${esc(REPORT_TEXT.originIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.originFileTimeNote)}</p></div>`;
     },
-    embedded: () => {
+    embeddedInfo: () => {
       const embRows = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
       if (!embRows.length) return '';
-      return `<div class="paper-section"><h3>${esc(H('embedded'))}</h3><p>${esc(defaultTextFor('embeddedIntro'))}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+      return `<div class="paper-section"><h3>${esc(H('embeddedInfo'))}</h3><p>${esc(defaultTextFor('embeddedIntro'))}</p><table class="paper-table"><thead><tr>${REPORT_TEXT.embeddedHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${embRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
     },
     acquisition: () => {
       const acqRows = acquisitionRows(c);
@@ -17941,15 +18022,15 @@ function renderReport() {
       `<div class="paper-section"><h3>${esc(H('tech'))}</h3><p>${esc(REPORT_TEXT.techIntro)}</p><table class="paper-table cover-fields"><tbody>${reportTechRows(c)
         .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.techNote)}</p></div>`,
-    enhance: () => `<div class="paper-section"><h3>${esc(H('enhance'))}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`,
-    asr: () => {
+    enhancement: () => `<div class="paper-section"><h3>${esc(H('enhancement'))}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`,
+    transcriptionMethod: () => {
       const asrRows = reportAsrRows(c);
       // v2.350: yazılım desteği KULLANILMADIYSA "yararlandım" girişi basılmaz.
       if (!asrRows.length) {
-        return `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrNone'))}</p></div>`;
+        return `<div class="paper-section"><h3>${esc(H('transcriptionMethod'))}</h3><p>${esc(defaultTextFor('asrNone'))}</p></div>`;
       }
       const rowsHtml = `<table class="paper-table"><thead><tr>${REPORT_TEXT.asrHeaders.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${asrRows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('asr'))}</h3><p>${esc(defaultTextFor('asrIntro'))}</p>${rowsHtml}<p class="paper-muted">${esc(defaultTextFor('asrLocal'))} ${esc(defaultTextFor('asrVerify'))}</p></div>`;
+      return `<div class="paper-section"><h3>${esc(H('transcriptionMethod'))}</h3><p>${esc(defaultTextFor('asrIntro'))}</p>${rowsHtml}<p class="paper-muted">${esc(defaultTextFor('asrLocal'))} ${esc(defaultTextFor('asrVerify'))}</p></div>`;
     },
     s5: () => {
       const s5sub = reportSubHeadings(c);
@@ -18018,7 +18099,7 @@ function renderReport() {
       );
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234): s5 kapalı olsa da tek başına açılabilir.
-    reading: () => {
+    readingText: () => {
       const parts = [];
       for (const m of c.materials || []) {
         const groups = readingGroupsFor(m);
@@ -18033,7 +18114,7 @@ function renderReport() {
         for (const g of groups) parts.push(`<p><b>${esc(g.head)}</b><br>${esc(g.text)}</p>`);
       }
       if (!parts.length) return '';
-      return `<div class="paper-section"><h3>${esc(H('reading'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>${parts.join('')}</div>`;
+      return `<div class="paper-section"><h3>${esc(H('readingText'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.readingIntro)}</p>${parts.join('')}</div>`;
     },
     // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in). Yalnız görünürse çizilir.
     terms: () => {
@@ -18072,11 +18153,17 @@ function renderReport() {
       const rsRows = reviewSummaryRows(c);
       return `<div class="paper-section"><h3>${esc(H('reviewSummary'))}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
     },
-    qc: () =>
-      `<div class="paper-section"><h3>${esc(H('qc'))}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
+    qualityControl: () =>
+      `<div class="paper-section"><h3>${esc(H('qualityControl'))}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
         .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`,
     privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(defaultTextFor('privacyText'))}</p></div>`,
+    handoverRecord: () => `<div class="paper-section"><h3>${esc(H('handoverRecord'))}</h3>${recordBlockHtml(c, 'handoverRecord')}</div>`,
+    fileInventory: () => `<div class="paper-section"><h3>${esc(H('fileInventory'))}</h3>${recordBlockHtml(c, 'fileInventory')}</div>`,
+    custodyLog: () => `<div class="paper-section"><h3>${esc(H('custodyLog'))}</h3>${recordBlockHtml(c, 'custodyLog')}</div>`,
+    notationKey: () => `<div class="paper-section"><h3>${esc(H('notationKey'))}</h3>${recordBlockHtml(c, 'notationKey')}</div>`,
+    finalChecklist: () => `<div class="paper-section"><h3>${esc(H('finalChecklist'))}</h3>${recordBlockHtml(c, 'finalChecklist')}</div>`,
+    legalBasis: () => `<div class="paper-section"><h3>${esc(H('legalBasis'))}</h3>${recordBlockHtml(c, 'legalBasis')}</div>`,
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı ve ek girişi BASILMAZ;
       // belgenin kendi başlığı (teslim/iade tutanağı) h3 olarak yazılır.
@@ -18503,11 +18590,11 @@ function docxXml(c) {
         wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true })
       );
     },
-    embedded: () => {
+    embeddedInfo: () => {
       const dEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
       if (!dEmb.length) return '';
       return (
-        headingXml(H('embedded')) +
+        headingXml(H('embeddedInfo')) +
         wP(defaultTextFor('embeddedIntro')) +
         wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], { widths: [2200, 2200, 2400, 2200], header: true })
       );
@@ -18562,13 +18649,13 @@ function docxXml(c) {
       wP(REPORT_TEXT.techIntro) +
       wTable(reportTechRows(c), { widths: [3400, 5600], header: false, shadeFirstCol: true }) +
       wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true }),
-    enhance: () => headingXml(H('enhance')) + wP(REPORT_TEXT.enhanceText),
-    asr: () => {
+    enhancement: () => headingXml(H('enhancement')) + wP(REPORT_TEXT.enhanceText),
+    transcriptionMethod: () => {
       const dAsr = reportAsrRows(c);
       // v2.350: yazılım desteği yoksa yalnız "yok" cümlesi basılır.
-      if (!dAsr.length) return headingXml(H('asr')) + wP(defaultTextFor('asrNone'));
+      if (!dAsr.length) return headingXml(H('transcriptionMethod')) + wP(defaultTextFor('asrNone'));
       return (
-        headingXml(H('asr')) +
+        headingXml(H('transcriptionMethod')) +
         wP(defaultTextFor('asrIntro')) +
         wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true }) +
         wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true })
@@ -18645,7 +18732,7 @@ function docxXml(c) {
       wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true }) +
       wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true }),
     // BAĞIMSIZ OKUMA METNİ (v2.234).
-    reading: () => {
+    readingText: () => {
       let out = '';
       for (const m of c.materials || []) {
         const groups = readingGroupsFor(m);
@@ -18661,7 +18748,7 @@ function docxXml(c) {
         }
       }
       if (!out) return '';
-      return headingXml(H('reading')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 }) + out;
+      return headingXml(H('readingText')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 }) + out;
     },
     // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in).
     terms: () => {
@@ -18713,12 +18800,18 @@ function docxXml(c) {
         header: false,
         shadeFirstCol: true
       }),
-    qc: () =>
-      headingXml(H('qc')) +
+    qualityControl: () =>
+      headingXml(H('qualityControl')) +
       wP(REPORT_TEXT.qcIntro) +
       wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true }) +
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
     privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText')),
+    handoverRecord: () => headingXml(H('handoverRecord')) + recordBlockXml(c, 'handoverRecord'),
+    fileInventory: () => headingXml(H('fileInventory')) + recordBlockXml(c, 'fileInventory'),
+    custodyLog: () => headingXml(H('custodyLog')) + recordBlockXml(c, 'custodyLog'),
+    notationKey: () => headingXml(H('notationKey')) + recordBlockXml(c, 'notationKey'),
+    finalChecklist: () => headingXml(H('finalChecklist')) + recordBlockXml(c, 'finalChecklist'),
+    legalBasis: () => headingXml(H('legalBasis')) + recordBlockXml(c, 'legalBasis'),
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok; belge başlığı 1. düzey.
       const tutanakDoc = !!c.__tutanakKind;
@@ -19201,10 +19294,10 @@ async function udfDocument(opts = {}) {
       else el.push(paragraph(REPORT_TEXT.noMaterials, { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
-    embedded: () => {
+    embeddedInfo: () => {
       const uEmb = c.report && c.report.includeEmbedded ? embeddedRows(c) : [];
       if (!uEmb.length) return;
-      el.push(h(H('embedded')));
+      el.push(h(H('embeddedInfo')));
       el.push(paragraph(defaultTextFor('embeddedIntro'), { size: 10 }));
       el.push(table([[...REPORT_TEXT.embeddedHeaders], ...uEmb], [130, 130, 150, 130], { header: true }));
     },
@@ -19251,12 +19344,12 @@ async function udfDocument(opts = {}) {
       el.push(table(reportTechRows(c), [170, 340], { header: false, shadeFirstCol: true }));
       el.push(paragraph(REPORT_TEXT.techNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
-    enhance: () => {
-      el.push(h(H('enhance')));
+    enhancement: () => {
+      el.push(h(H('enhancement')));
       el.push(paragraphLines(REPORT_TEXT.enhanceText, { justify: true }));
     },
-    asr: () => {
-      el.push(h(H('asr')));
+    transcriptionMethod: () => {
+      el.push(h(H('transcriptionMethod')));
       const uAsr = reportAsrRows(c);
       // v2.350: yazılım desteği yoksa yalnız "yok" cümlesi basılır.
       if (!uAsr.length) {
@@ -19363,12 +19456,12 @@ async function udfDocument(opts = {}) {
       el.push(paragraph(defaultTextFor('integrityNote'), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     // BAĞIMSIZ OKUMA METNİ (v2.234).
-    reading: () => {
+    readingText: () => {
       const groupsByMat = (c.materials || [])
         .map((m) => ({ m, groups: readingGroupsFor(m) }))
         .filter((x) => x.groups.length);
       if (!groupsByMat.length) return;
-      el.push(h(H('reading')));
+      el.push(h(H('readingText')));
       el.push(paragraph(REPORT_TEXT.readingIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       for (const { m, groups } of groupsByMat) {
         el.push(paragraph(m.name || '', { size: 10, bold: true, color: 'mid', before: 4, after: 2 }));
@@ -19434,8 +19527,8 @@ async function udfDocument(opts = {}) {
         )
       );
     },
-    qc: () => {
-      el.push(h(H('qc')));
+    qualityControl: () => {
+      el.push(h(H('qualityControl')));
       el.push(paragraph(REPORT_TEXT.qcIntro, { size: 10 }));
       el.push(table(reportQcRows(c), [170, 340], { header: false, shadeFirstCol: true }));
       el.push(paragraph(REPORT_TEXT.qcNote, { size: 9, italic: true, color: 'muted', after: 7 }));
@@ -19443,6 +19536,30 @@ async function udfDocument(opts = {}) {
     privacy: () => {
       el.push(h(H('privacy')));
       el.push(paragraphLines(defaultTextFor('privacyText'), { justify: true }));
+    },
+    handoverRecord: () => {
+      el.push(h(H('handoverRecord')));
+      recordBlockUdf(c, 'handoverRecord', el, { paragraph, paragraphLines, table });
+    },
+    fileInventory: () => {
+      el.push(h(H('fileInventory')));
+      recordBlockUdf(c, 'fileInventory', el, { paragraph, paragraphLines, table });
+    },
+    custodyLog: () => {
+      el.push(h(H('custodyLog')));
+      recordBlockUdf(c, 'custodyLog', el, { paragraph, paragraphLines, table });
+    },
+    notationKey: () => {
+      el.push(h(H('notationKey')));
+      recordBlockUdf(c, 'notationKey', el, { paragraph, paragraphLines, table });
+    },
+    finalChecklist: () => {
+      el.push(h(H('finalChecklist')));
+      recordBlockUdf(c, 'finalChecklist', el, { paragraph, paragraphLines, table });
+    },
+    legalBasis: () => {
+      el.push(h(H('legalBasis')));
+      recordBlockUdf(c, 'legalBasis', el, { paragraph, paragraphLines, table });
     },
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok.
@@ -23199,11 +23316,6 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
 });
 $('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
   // v2.375 — çekmeceden EKLER'e taşı / Gövdeye al (satırdan kalkan işlev).
-  const rp = e.target.closest('[data-rse-place]');
-  if (rp) {
-    toggleAnnexPlacement(rp.dataset.rsePlace);
-    return;
-  }
   // KAYITLI METİNLER (v2.343): ekle / sil / kaydet. Hepsi açık eylem.
   const ins = e.target.closest('[data-lib-insert]');
   if (ins) {
@@ -23374,11 +23486,6 @@ $('#reportSections')?.addEventListener('click', (e) => {
     addReportBlock();
     return;
   }
-  const place = e.target.closest('[data-report-place]');
-  if (place) {
-    toggleAnnexPlacement(place.dataset.reportPlace);
-    return;
-  }
   const bsave = e.target.closest('[data-report-block-save]');
   if (bsave) {
     saveReportBlockFromRow(bsave.dataset.reportBlockSave);
@@ -23420,33 +23527,15 @@ $('#reportSections')?.addEventListener('click', (e) => {
     moveReportSection(mv.dataset.reportMove, Number(mv.dataset.dir));
     return;
   }
-  const amv = e.target.closest('[data-report-annex-move]');
-  if (amv) {
-    moveReportAnnex(amv.dataset.reportAnnexMove, Number(amv.dataset.dir));
-    return;
-  }
-  if (e.target.closest('[data-report-annex-add]')) {
-    addReportAnnex();
-    return;
-  }
-  const adel = e.target.closest('[data-report-annex-del]');
-  if (adel) {
-    removeReportAnnex(adel.dataset.reportAnnexDel);
-    return;
-  }
-  if (e.target.closest('[data-report-default-layout]')) {
-    applyDefaultReportLayout();
-    return;
-  }
   const b = e.target.closest('[data-report-sections-all]');
   if (!b) return;
   const c = currentCase();
   if (!c) return;
   c.report = c.report || {};
-  c.report.sections =
-    b.dataset.reportSectionsAll === 'on'
-      ? emptyReportSections()
-      : emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
+  // v2.380 — "Tümünü aç" GERÇEKTEN tümünü açar (def:false olanlar dâhil).
+  c.report.sections = emptyReportSections(
+    Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, b.dataset.reportSectionsAll === 'on']))
+  );
   persist();
   renderReport();
 });
@@ -23505,21 +23594,12 @@ $('#reportSections')?.addEventListener('dragover', (e) => {
   if (!rsecDrag) return;
   const row = e.target.closest('[data-drag-kind][data-drag-key]');
   if (!row || row.dataset.dragKey === rsecDrag.key) return;
-  const sameKind = row.dataset.dragKind === rsecDrag.kind;
-  // v2.371: gövde satırı → EK başlığı (çapraz tür) = bölümü o eke taşı.
-  const bodyToAnnex = rsecDrag.kind === 'body' && row.dataset.dragKind === 'annex';
-  if (!sameKind && !bodyToAnnex) return;
+  if (row.dataset.dragKind !== rsecDrag.kind) return;
   e.preventDefault();
   clearRsecDropMarks(false);
-  if (bodyToAnnex) {
-    row.dataset.dropMode = 'into-annex';
-    row.classList.add('drag-over', 'drop-under');
-    return;
-  }
   const r = row.getBoundingClientRect();
   const y = (e.clientY - r.top) / Math.max(1, r.height);
-  const isAnnexTarget = row.dataset.dragKind === 'body' && row.dataset.dragKey === 'annex';
-  const zone = rsecDrag.kind === 'annex' || isAnnexTarget ? (y < 0.5 ? 'before' : 'after') : y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
+  const zone = y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
   row.dataset.dropZone = zone;
   row.dataset.dropMode = 'reorder';
   row.classList.add('drag-over', `drop-${zone}`);
@@ -23529,32 +23609,15 @@ $('#reportSections')?.addEventListener('drop', (e) => {
   const row = e.target.closest('[data-drag-kind][data-drag-key]');
   if (!row) return;
   const src = rsecDrag;
-  const sameKind = row.dataset.dragKind === src.kind;
-  const bodyToAnnex = src.kind === 'body' && row.dataset.dragKind === 'annex';
-  if (!sameKind && !bodyToAnnex) return;
+  if (row.dataset.dragKind !== src.kind) return;
   e.preventDefault();
   rsecDrag = null;
   clearRsecDropMarks(true);
   if (row.dataset.dragKey === src.key) return;
-  // v2.371: gövde satırını EK başlığına bırak → o eke taşı.
-  if (bodyToAnnex) {
-    moveSectionIntoAnnex(src.key, row.dataset.dragKey);
-    return;
-  }
-  const zone = row.dataset.dropZone || (src.kind === 'annex' ? 'after' : 'under');
-  if (src.kind === 'body') {
-    // v2.371: rozetli (EK'e taşınmış) satırı GÖVDE listesine bırak = gövdeye al.
-    if (annexPlacementOf(currentCase(), src.key)) {
-      unplaceAndReorder(src.key, row.dataset.dragKey, zone);
-      return;
-    }
-    snapshotForUndo('Sıra değiştirildi');
-    const ok = moveSectionRelative(src.key, row.dataset.dragKey, zone);
-    if (ok) showToast(zone === 'under' ? 'Bölüm altına taşındı (Ctrl+Z ile geri alınır).' : 'Sıra değiştirildi (Ctrl+Z ile geri alınır).');
-    return;
-  }
-  snapshotForUndo('Ek sırası değiştirildi');
-  moveReportAnnexTo(src.key, row.dataset.dragKey);
+  const zone = row.dataset.dropZone || 'under';
+  snapshotForUndo('Sıra değiştirildi');
+  const ok = moveSectionRelative(src.key, row.dataset.dragKey, zone);
+  if (ok) showToast(zone === 'under' ? 'Bölüm altına taşındı (Ctrl+Z ile geri alınır).' : 'Sıra değiştirildi (Ctrl+Z ile geri alınır).');
 });
 $('#reportSections')?.addEventListener('dragend', () => {
   rsecDrag = null;
@@ -23562,30 +23625,6 @@ $('#reportSections')?.addEventListener('dragend', () => {
   document.querySelectorAll('#reportSections [data-rsec-empty-group]').forEach((el) => {
     el.style.display = 'none';
   });
-});
-// Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
-$('#reportAnnexFields')?.addEventListener('input', (e) => {
-  const t = e.target.closest('[data-annex-meta-title]');
-  if (t) return patchReportAnnexMeta(t.dataset.annexMetaTitle, 'title', t.value);
-  const ct = e.target.closest('[data-annex-meta-content]');
-  if (ct) return patchReportAnnexMeta(ct.dataset.annexMetaContent, 'content', ct.value);
-  const n = e.target.closest('[data-annex-meta-note]');
-  if (n) return patchReportAnnexMeta(n.dataset.annexMetaNote, 'note', n.value);
-});
-$('#reportAnnexFields')?.addEventListener('change', (e) => {
-  if (e.target.closest('[data-annex-meta-title],[data-annex-meta-content],[data-annex-meta-note]')) renderReport();
-});
-$('#reportAnnexFields')?.addEventListener('click', (e) => {
-  if (e.target.closest('[data-apply-presentation]')) {
-    applyPresentationPlacement();
-    return;
-  }
-  if (e.target.closest('[data-report-annex-add]')) {
-    addReportAnnex();
-    return;
-  }
-  const del = e.target.closest('[data-report-annex-del]');
-  if (del) removeReportAnnex(del.dataset.reportAnnexDel);
 });
 // Tablo sütunları (v2.235): kapat/aç → üç çıktıda da yansır.
 $('#reportColumnsFields')?.addEventListener('change', (e) => {
@@ -24798,6 +24837,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.380': {
+    title: 'Rapor iskeleti sıfırdan: 36 düz bölüm',
+    body:
+      'Rapor iskeleti baştan yazıldı: 36 bölüm TEK DÜZ listede, grup başlığı ve “EK” kavramı YOK. Yeni dosyada hepsi kapalı başlar; istediğinizi açıp ↑↓ veya sürükleyerek sıralarsınız. Eski “ek” içerikleri (teslim tutanağı, teknik envanter, işlem günlüğü, gösterim anahtarı, son kontrol listesi, hukuki dayanaklar) artık normal bölüm. Üç çıktı (HTML/Word/UDF) aynı metni üretir. Eski dosyalarınız bozulmaz; açık bölümleri korunur.'
+  },
   '2.379': {
     title: 'Liste ve panelde “EK” kaldırıldı',
     body:

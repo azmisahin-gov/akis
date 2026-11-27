@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.379.**
+yazılır. **Güncel sürüm: v2.380.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.380 — Rapor iskeleti sıfırdan: 36 düz bölüm (TAMAMLANDI)
+
+- `REPORT_SECTION_DEFS` = 36 nötr anahtar; `annex` (EKLER) ve `s7` (EK listesi) KALDIRILDI.
+- Eski ek içerikleri DÜZ BÖLÜM: `handoverRecord` · `fileInventory` · `custodyLog` · `notationKey` · `finalChecklist` · `legalBasis`.
+- Göç: `asr→transcriptionMethod`, `enhance→enhancement`, `reading→readingText`, `embedded→embeddedInfo`, `qc→qualityControl`, `ek1…ek6→kayıt bölümleri`; `annex` açıksa 6 kayıt bölümü açılır.
+- `annexPlacement`, grup ekleri (`ek7…ek10`), `reportAnnex*` yolu ve "Varsayılan düzen" düğmesi kaldırıldı.
+- Üç çıktı (HTML/DOCX/UDF) tek döngüde; "EKLER" sarmalayıcısı ve "Rapor eki N." yok.
+- Ölçüm (gerçek Chromium): iskelet **36 satır**, yeni dosya **0 açık**, "Tümünü aç" **36**, EK metni **0**, JS **0**, 600 px taşma **0**. Testler **2787 + 556** yeşil.
 
 ## v2.379 — Liste ve panelde "EK" kaldırıldı (TAMAMLANDI)
 

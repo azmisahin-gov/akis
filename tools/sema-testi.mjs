@@ -1782,7 +1782,7 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   ok('profil: 56.12 sırası şemada', Array.isArray(REPORT_SABLON_ORDER) && REPORT_SABLON_ORDER.length >= 20);
   const sab = reportPresetLayout('sablon');
   ok('profil: 56.12 sıra yazar', Array.isArray(sab.order) && sab.order.indexOf('s5') < sab.order.indexOf('limits'));
-  ok('profil: 56.12 soru listesini kapatır', sab.sections.s2 === false && sab.sections.annex === true);
+  ok('profil: 56.12 soru listesini kapatır', sab.sections.s2 === false && sab.sections.handoverRecord === true);
   ok('profil: full tüm bölümler açık', REPORT_SECTION_KEYS.every((k) => reportSectionsForPreset('full')[k] === true));
   ok(
     'profil: standard = varsayılan',
@@ -1790,9 +1790,9 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   );
   const mn = reportSectionsForPreset('minimal');
   ok('profil: minimal çekirdek açık', mn.cover === true && mn.s5 === true && mn.signature === true);
-  ok('profil: minimal ayrıntı kapalı', mn.annex === false && mn.origin === false && mn.tech === false);
+  ok('profil: minimal ayrıntı kapalı', mn.handoverRecord === false && mn.origin === false && mn.tech === false);
   const unk = reportSectionsForPreset('bilinmeyen');
-  ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.annex === true);
+  ok('profil: bilinmeyen ad → standart', unk.s1 === true && unk.handoverRecord === true);
   // v2.225 — Künye ek alanları: boş varsayılan, dolu değer korunur, birleşir.
   ok('emptyCase künye ek alanları boş', emptyCase().report.impartiality === '' && emptyCase().report.annexList === '');
   const nk = normalizeCase({ id: 'ck', report: { impartiality: 'Engel yok', annexList: 'EK-1' } });

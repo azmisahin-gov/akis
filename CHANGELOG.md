@@ -6,12 +6,18 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.379.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.380.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.380 — Rapor iskeleti sıfırdan: 36 düz bölüm
+
+**KULLANICI NE GÖRECEK:** Rapor iskeleti **baştan yazıldı**. Artık **36 bölüm tek düz listede**: grup başlığı yok, "EK/EKLER" kavramı yok. Yeni dosyada **hepsi kapalı** başlar; istediğinizi açıp **↑↓ veya sürükle** ile sıralarsınız. Eski "ek" içerikleri (materyal teslim/iade tutanağı, dosya teknik envanteri, işlem günlüğü, transkript gösterim anahtarı, son kontrol listesi, hukuki dayanaklar) artık **normal bölüm** olarak listede. Üç çıktı (HTML/Word/UDF) aynı metni üretir. Eski dosyalar bozulmaz; açık bölümler korunur.
+
+**ÖLÇÜM (gerçek Chromium, 1440×900):** iskelet **36 satır**, yeni dosya **0 açık**, "Tümünü aç" **36**, EK metni **0**, JS hatası **0**, 600 px yatay taşma **0**. Testler **2787 birim + 556 şema** + rapor/tasarım/sürüm yeşil.
 
 ## v2.379 — Liste ve panelde "EK" kaldırıldı
 

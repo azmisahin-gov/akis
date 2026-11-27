@@ -127,6 +127,6 @@ anahtarı · Son kontrol listesi · Hukuki/yöntemsel dayanaklar
 
 ## 8. Sürüm/dal
 
-- Mevcut canlı: **v2.379**. Bu alan **tek konu** olarak tek sürümde yeniden yapılmalı.
+- **v2.380’de UYGULANDI.** 36 düz bölüm, EK kavramı yok, yeni dosya tümü kapalı.
 - Kullanıcı tercihi: doğrudan `main`'e push (özellik dalı açma), commit Türkçe.
 - "Ölçülemeyen iddia yok": her düzeltmede önce/sonra ölçümü göster.

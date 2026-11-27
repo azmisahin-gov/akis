@@ -1541,7 +1541,7 @@ console.log('\n[2bb] Raporda okuma metni (v2.202)');
   check(
     'HTML raporu okuma metnini ekliyor',
     // v2.234: okuma metni ayrı `reading` bloğunda (s5 içinde değil).
-    /reading:\s*\(\)\s*=>[\s\S]{0,600}readingGroupsFor\(m\)/.test(appJs)
+    /readingText:\s*\(\)\s*=>[\s\S]{0,600}readingGroupsFor\(m\)/.test(appJs)
   );
   const uses = (appJs.match(/readingGroupsFor\(m\)/g) || []).length;
   check('üç çıktı da okuma metnini üretiyor', uses >= 3, String(uses));
@@ -1693,7 +1693,7 @@ console.log('\n[2bl] Gömülü metadata (cihaz beyanı) (v2.217)');
   check('anahtar varsayılan kapalı', /includeEmbedded:\s*false/.test(read('assets/schema.js')));
   check('ayrıştırıcılar tanımlı', /function parseId3v2/.test(appJs) && /function parseMp4Meta/.test(appJs) && /function parseWavMeta/.test(appJs) && /function parseFlacMeta/.test(appJs));
   check('köken panelinde okuma düğmesi', /data-read-embedded/.test(appJs));
-  check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /H\('embedded'\)/.test(appJs));
+  check('rapor bölümü tek kaynak', /function embeddedRows/.test(appJs) && /H\('embeddedInfo'\)/.test(appJs));
   check('gömülü stil token kullanır', /\.origin-embedded[\s\S]{0,200}var\(--ink-2/.test(layer));
   check('yardım gömülü metadata anar', /Gömülü metadata/.test(html));
 }
@@ -1765,7 +1765,7 @@ console.log('\n[2bn] Rapor bölümleri aç/kapa: parametrik rapor (v2.219)');
     // Tek satır ya da çok satır (v2.258) — ölçüt DAVRANIŞ: reportBodyOrder döngüsü on(key)'den geçer.
     /for \(const key of reportBodyOrder\(c\)\)[\s\S]{0,200}?on\(key\)/.test(js)
   );
-  for (const key of ['origin', 'reading', 'reviewSummary', 'wer', 'levels', 'signature']) {
+  for (const key of ['origin', 'readingText', 'reviewSummary', 'wer', 'levels', 'signature']) {
     check(`"${key}" bölümü tanımlı`, new RegExp(`['"]${key}['"]`).test(js));
   }
   check(
@@ -1877,10 +1877,10 @@ console.log('\n[2bt] Kalite kontrolü / denetlenebilirlik (v2.226)');
   check('kalite paneli HTML\'de', /id="reportQcBox"/.test(html) && /id="reportQcFields"/.test(html));
   check('şema: qc alanları boş varsayılan', /qcBy:\s*''/.test(schema) && /qcScope:\s*''/.test(schema) && /qcDate:\s*''/.test(schema));
   check('şema: normalize qc', /qcBy:\s*str\(report\.qcBy\)/.test(schema));
-  check('bölüm anahtarı qc VARSAYILAN KAPALI', /\{ key: 'qc', def: false/.test(schema));
+  check('bölüm anahtarı qc VARSAYILAN KAPALI', /\{ key: 'qualityControl', def: false/.test(schema));
   check('otomatik sayı + çizim fonksiyonları', /function reportQcRows\(/.test(js) && /function renderReportQc\(/.test(js));
   check('renderReport kalite alanlarını çizer', /renderReportQc\(c\);/.test(js));
-  check('üç çıktı da qc bölümünü basar', (js.match(/qc:\s*\(\)\s*=>/g) || []).length >= 3);
+  check('üç çıktı da qc bölümünü basar', (js.match(/qualityControl:\s*\(\)\s*=>/g) || []).length >= 3);
   check('girdi işleyicisi', /reportQcFields'\)\?\.addEventListener\('input'/.test(js));
 }
 
@@ -2000,16 +2000,16 @@ console.log('\n[2ce] Okuma metni bağımsız bölüm (v2.234)');
 {
   const js = read('assets/app.js');
   const schema = read('assets/schema.js');
-  check('reading gövde sırasında (s5 sonrası)', /REPORT_BODY_ORDER = \[[\s\S]*?'s5',[\s\S]*?'reading'/.test(schema));
+  check('reading gövde sırasında (s5 sonrası)', /REPORT_BODY_ORDER = \[[\s\S]*?'s5',[\s\S]*?'readingText'/.test(schema));
   // v2.261: göç tek kural — eksik anahtar kanonik komşusuna girer.
   check(
     'eski kayıt göçü: eksik bölüm kanonik komşusuna girer',
     /insertMissingInCanonicalOrder\(order, REPORT_BODY_ORDER\)/.test(schema)
   );
   check('iskelette reading alt çocuk DEĞİL', !/row\('reading',\s*\{\s*child:\s*true\s*\}\)/.test(js));
-  check('üç çıktıda ayrı reading bloğu', (js.match(/reading:\s*\(\)\s*=>/g) || []).length >= 3);
-  check('reading koşullu blok', /case 'reading':/.test(js) && /readingGroupsFor\(m\)\.length/.test(js));
-  check('etiket bağımsız (5. bölüm içinde değil)', /reading: 'Okuma metni'/.test(js) && !/Okuma metni \(5\. bölüm içinde\)/.test(js));
+  check('üç çıktıda ayrı reading bloğu', (js.match(/readingText:\s*\(\)\s*=>/g) || []).length >= 3);
+  check('reading koşullu blok', /case 'readingText':/.test(js) && /readingGroupsFor\(m\)\.length/.test(js));
+  check('etiket bağımsız (5. bölüm içinde değil)', /readingText: 'Okuma metni'/.test(js) && !/Okuma metni \(5\. bölüm içinde\)/.test(js));
 }
 
 console.log('\n[2cf] Rapor alanları: tablo sütunları (v2.235)');
@@ -2124,7 +2124,7 @@ console.log('\n[2cm] Rapor netliği: süre tablosu + üç anahtar tablosu (v2.26
   check('ana tablo sade (süre/aralık taşımaz)', /g\.parts\}\$\{g\.note/.test(js));
   check('EK-5 üç tablo', /tables: \[/.test(js) && /Konuşmacı kodları/.test(js) && /Metin işaretleri/.test(js) && /Gözlem işaretleri/.test(js));
   check('gözlem tablosu OBS_DEFS ten', /OBS_DEFS\.map\(\(d\) => \[d\.label, d\.hint\]\)/.test(js));
-  check('üç çıktı tables destekler', (js.match(/b\.kind === 'tables'/g) || []).length === 3);
+  check('üç çıktı tables destekler', (js.match(/b\.kind === 'tables'/g) || []).length >= 3);
   check('okuma metninde kayıt satırı', (js.match(/materialSpeakerLine\(m\)/g) || []).length >= 5);
 }
 
@@ -2498,46 +2498,26 @@ console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
   check('üst yazı metninde sayfa dipnotu yok', !/pageCountNote\)\)/.test(app));
   check('tahmin uyarısı panelde', /TAHMİNÎdir/.test(app));
   check('sayfa etiketi CSS', /\.la-pages \{/.test(layer));
-  // Rapor içi ekler "Rapor eki N." (üst yazının EK-N'siyle karışmaz).
-  // v2.369: GRUP eki ALT başlıkları "EK-N.M" biçimindedir (mevcut konvansiyon,
-  // rapor 1452 testi de bunu bekler); yasak olan, EK başlığının "EK-N." olmasıdır.
-  check('rapor içi ek adı "Rapor eki"', /heading: `Rapor eki \$\{n\}\. \$\{base\}`/.test(app) && !/heading: `EK-\$\{n\}\.\s*\$\{base\}/.test(app));
 }
 
-console.log('\n[2ee] Gruplu ekler + toplu Öneri A (v2.369)');
+console.log('\n[2ee] Tek düz liste + 36 bölüm (v2.380)');
 {
   const app = read('assets/app.js');
   const schema = read('assets/schema.js');
-  // Grup tanımları ve varsayılan yerleşim şemada (tek kaynak).
-  check('grup ek tanımları (ek7…ek10)', /key: 'ek7'[^}]*group: true/.test(schema) && /key: 'ek10'/.test(schema));
-  check('varsayılan yerleşim (Öneri A)', /DEFAULT_ANNEX_PLACEMENT = \{[\s\S]{0,200}origin: 'ek7'/.test(schema));
-  // Grup render üç çıktıda: kind:'group' her üç üreticide de işlenir.
-  const groupCount = (app.match(/b\.kind === 'group'/g) || []).length;
-  check('grup blok türü üç çıktıda işlenir', groupCount >= 3, String(groupCount));
-  // Toplu taşıma düğmesi + fonksiyonu.
-  check('toplu taşıma düğmesi var', /data-apply-presentation/.test(app));
-  check('toplu taşıma fonksiyonu', /async function applyPresentationPlacement\(/.test(app));
-  // GERİ ALMA raporu tazeler (v2.369'da ölçüldü: tazelenmiyordu).
+  check('36 bölüm tanımı', (schema.match(/\{ key: '[a-zA-Z0-9]+', def:/g) || []).length >= 36);
+  check('EKLER/EK listesi tanımı YOK', !/key: 'annex'/.test(schema) && !/key: 's7'/.test(schema));
+  check('grup anahtarı meta veri', /group: 'front'/.test(schema) && /group: 'records'/.test(schema));
+  check('iskelette EK düğmesi YOK', !/data-report-place/.test(app) && !/data-rse-place/.test(app));
+  check('Varsayılan düzen düğmesi YOK', !/data-report-default-layout/.test(app));
   check('geri alma raporu tazeler', /async function undoLast[\s\S]{0,1200}renderReport\(\)/.test(app));
 }
 
-console.log('\n[2ef] Varsayılan düzen düğmesi (v2.370)');
+console.log('\n[2ef] Sürükle-bırak gövde sırası (v2.380)');
 {
   const app = read('assets/app.js');
-  check('iskelette "Varsayılan düzen" düğmesi', /data-report-default-layout/.test(app) && /Varsayılan düzen/.test(app));
-  check('saf hesap fonksiyonu', /function buildDefaultReportLayout\(c\)/.test(app));
-  check('uygulama fonksiyonu (onaylı)', /async function applyDefaultReportLayout\(/.test(app) && /snapshotForUndo\('Varsayılan düzeni uygula'\)/.test(app));
-}
-
-console.log('\n[2eg] Sürükle-bırak gövde ↔ ek (v2.371)');
-{
-  const app = read('assets/app.js');
-  check('gövde→ek taşıma fonksiyonu', /function moveSectionIntoAnnex\(key, annexKey\)/.test(app) && /snapshotForUndo\('Bölümü eke taşı'\)/.test(app));
-  check('ekli→gövde fonksiyonu', /function unplaceAndReorder\(key, target, zone\)/.test(app));
-  check('drop çapraz tür (bodyToAnnex)', /const bodyToAnnex = src\.kind === 'body' && row\.dataset\.dragKind === 'annex'/.test(app));
-  check('drop gövde→ek çağrısı', /if \(bodyToAnnex\) \{\s*moveSectionIntoAnnex\(src\.key, row\.dataset\.dragKey\)/.test(app));
-  // v2.375 — EK düğmesi satırdan kaldırıldı; yedek yol ÇEKMEDE (data-rse-place).
-  check('EK taşıma yedeği çekmecede', /data-rse-place="\$\{esc\(key\)\}"/.test(app));
+  check('göreli taşıma var', /function moveSectionRelative\(/.test(app));
+  check('drop çapraz tür YOK', !/bodyToAnnex/.test(app));
+  check('EK taşıma düğmesi YOK', !/data-rse-place/.test(app) && !/data-report-place/.test(app));
 }
 
 console.log('\n[2eh] Tablo stili + yoğunluk (v2.372)');

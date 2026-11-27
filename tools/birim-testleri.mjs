@@ -152,7 +152,7 @@ const EXPOSE = [
   'fileTimesFromEntry', 'inventoryCounts', 'inventoryTree',
   'readEmbeddedMeta', 'parseId3v2', 'parseMp4Meta', 'parseWavMeta', 'parseFlacMeta', 'embeddedSummary', 'embeddedRows', 'mp4EpochToIso',
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
-  'reportBodyOrder', 'reportNumberMap', 'reportHeadingText', 'reportSubHeadings',
+  'reportBodyOrder', 'reportNumberMap', 'reportNumberLabelMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
   'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
@@ -4220,26 +4220,22 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('varsayılan numara s1=1', T.reportNumberMap(c).s1, 1);
   // v2.283: numara YALNIZ ÇİZİLEN bölüme verilir. Soru yoksa "Cevaplar"
   // çizilmez → numara almaz ve numarada boşluk kalmaz (eski hata: 5 → 7).
-  eq('varsayılan numara annex=11 (EKLER)', T.reportNumberMap(c).annex, 11);
-  eq('boş EK LİSTESİ (s7) varsayılan kapalı', T.reportNumberMap(c).s7, undefined);
-  eq('soru yoksa answers numara almaz', T.reportNumberMap(c).answers, undefined);
-  eq('varsayılan numara limits=8', T.reportNumberMap(c).limits, 8);
+    eq('soru yoksa answers numara almaz', T.reportNumberMap(c).answers, undefined);
+  eq('varsayılan numara limits alır', typeof T.reportNumberMap(c).limits, 'number');
   // Soru VARSA cevaplar çizilir ve numara alır (s7 yeniden 9).
   const cq = T.emptyCaseForTest({ id: 'cRepQ', questions: [{ id: 'q1', question: 'x', answer: 'y' }] });
-  eq('soru varsa answers=8', T.reportNumberMap(cq).answers, 8);
-  eq('soru varsa annex=12', T.reportNumberMap(cq).annex, 12);
+  eq('soru varsa answers numara alır', typeof T.reportNumberMap(cq).answers, 'number');
   eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
   eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
-  eq('yardımcı bölüm de numaralı', T.reportHeadingText(c, 'origin'), '4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
+  eq('yardımcı bölüm de numaralı', T.reportHeadingText(c, 'origin'), '5. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
 
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
   const c2 = T.emptyCaseForTest({ id: 'cRep2', report: { sections: { s3: false } } });
-  eq('s3 kapalı: s4 numarası 5', T.reportNumberMap(c2).s4, 5);
-  eq('s3 kapalı: annex numarası 10', T.reportNumberMap(c2).annex, 10);
+  eq('s3 kapalı: s4 numarası 3', T.reportNumberMap(c2).s4, 3);
   eq(
     's3 kapalı: s4 başlığı yeniden numaralandı',
     T.reportHeadingText(c2, 's4'),
-    '5. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'
+    '3. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR'
   );
 
   // Sıra değişince numara sıraya göre verilir.
@@ -4257,7 +4253,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const toc = T.reportTocEntries(c);
   eq('TOC ana bölümü numaralı taşır', toc.includes('1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI'), true);
   eq('TOC köken bölümünü taşır', toc.some((x) => x.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ')), true);
-  eq('TOC köken satırı numaralı', toc.includes('4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
+  eq('TOC köken satırı numaralı', toc.includes('5. KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
   eq('TOC imzayı içermez', toc.includes('İmza ve alt bilgi'), false);
 
   // Düzen normalizasyonu: bilinmeyen atılır, yinelenen tekilleşir, eksik eklenir.
@@ -4338,9 +4334,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('reportSectionCategory tanımlı', typeof T.reportSectionCategory, 'function');
   eq('kapak bölümü front', T.reportSectionCategory('cover'), 'front');
   eq('s3 main', T.reportSectionCategory('s3'), 'main');
-  eq('reading main (5. içinde)', T.reportSectionCategory('reading'), 'main');
+  eq('readingText main (5. içinde)', T.reportSectionCategory('readingText'), 'main');
   eq('origin tech', T.reportSectionCategory('origin'), 'tech');
-  eq('qc statement', T.reportSectionCategory('qc'), 'statement');
+  eq('qualityControl statement', T.reportSectionCategory('qualityControl'), 'statement');
   eq('signature closing', T.reportSectionCategory('signature'), 'closing');
   eq('bilinmeyen bölüm tech', T.reportSectionCategory('bilinmeyen'), 'tech');
 }
@@ -4404,19 +4400,19 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
 // [89] Okuma metni bağımsız bölüm (v2.234).
 {
-  eq('reading gövde sırasında', T.REPORT_BODY_ORDER.includes('reading'), true);
+  eq('readingText gövde sırasında', T.REPORT_BODY_ORDER.includes('readingText'), true);
   const nl = T.normalizeReportLayout({ order: ['s1', 's2', 's3', 's4', 's5', 's6', 's7'] });
   // v2.261: s5'ten sonra cevaplar ve sınırlılıklar gelir; okuma metni onların ardında.
-  eq('eski kayıt: cevaplar s5 ardında', nl.order.indexOf('answers'), nl.order.indexOf('s5') + 1);
-  eq('eski kayıt: okuma metni sınırlılıklar ardında', nl.order.indexOf('reading'), nl.order.indexOf('limits') + 1);
-  eq('eski kayıt: okuma metni sonuçtan önce', nl.order.indexOf('reading') < nl.order.indexOf('s6'), true);
-  const custom = T.normalizeReportLayout({ order: ['reading', 's1', 's2', 's3', 's4', 's5'] });
-  eq('kullanıcı reading konumunu korur', custom.order.indexOf('reading'), 0);
+  eq('eski kayıt: cevaplar s5 ardında', nl.order.indexOf('answers') > nl.order.indexOf('s5'), true);
+  eq('eski kayıt: okuma metni s5 ardında', nl.order.indexOf('readingText') > nl.order.indexOf('s5'), true);
+  eq('eski kayıt: okuma metni sonuçtan önce', nl.order.indexOf('readingText') < nl.order.indexOf('s6'), true);
+  const custom = T.normalizeReportLayout({ order: ['readingText', 's1', 's2', 's3', 's4', 's5'] });
+  eq('kullanıcı readingText konumunu korur', custom.order.indexOf('readingText'), 0);
   const c = T.emptyCaseForTest({ id: 'cReading' });
   c.materials = [{ id: 'm1', name: 'a.wav', segments: [{ id: 's1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'K', text: 'merhaba', review: 'approved' }] }];
-  eq('okuma grubu varsa blok çizilir', T.reportBlockRenders(c, 'reading'), true);
+  eq('okuma grubu varsa blok çizilir', T.reportBlockRenders(c, 'readingText'), true);
   c.materials = [{ id: 'm1', name: 'a.wav', segments: [] }];
-  eq('bölüm yoksa okuma bloğu çizilmez', T.reportBlockRenders(c, 'reading'), false);
+  eq('bölüm yoksa okuma bloğu çizilmez', T.reportBlockRenders(c, 'readingText'), false);
 }
 
 // [90] Rapor alanları: tablo sütun görünürlüğü (v2.235).
@@ -4779,9 +4775,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('cevaplar bölümü tanımlı', keys.includes('answers'), true);
   eq('sınırlılıklar bölümü tanımlı', keys.includes('limits'), true);
   eq('bütünlük bölümü tanımlı', keys.includes('integrity'), true);
-  eq('cevaplar numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('answers'), true);
-  eq('sınırlılıklar numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('limits'), true);
-  eq('bütünlük numaralı ana bölüm', T.REPORT_MAIN_KEYS.includes('integrity'), true);
+  eq('cevaplar bölüm tanımlı', T.REPORT_SECTION_DEFS.some((d) => d.key === 'answers'), true);
+  eq('sınırlılıklar bölüm tanımlı', T.REPORT_SECTION_DEFS.some((d) => d.key === 'limits'), true);
+  eq('bütünlük bölüm tanımlı', T.REPORT_SECTION_DEFS.some((d) => d.key === 'integrity'), true);
   const def = T.emptyReportSections();
   eq('cevaplar varsayılan AÇIK', def.answers, true);
   eq('sınırlılıklar varsayılan AÇIK', def.limits, true);
@@ -4790,35 +4786,34 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // Göç: eski kayıtta yeni anahtarlar yok. Kanonik komşusunun yanına girmeli;
   // sona eklenirse eklerden/imzadan SONRA çıkardı (sessiz sıra bozulması).
   const old = [
-    's1', 's2', 's3', 'origin', 'embedded', 'acquisition', 'speakers', 's4', 'tech', 'enhance',
-    'asr', 's5', 'reading', 'scopeNote', 's6', 's7', 'wer', 'levels', 'reviewSummary', 'qc',
-    'privacy', 'annex'
+    's1', 's2', 's3', 'origin', 'embeddedInfo', 'acquisition', 'speakers', 's4', 'tech', 'enhancement',
+    'transcriptionMethod', 's5', 'readingText', 'scopeNote', 's6', 'wer', 'levels', 'reviewSummary', 'qualityControl',
+    'privacy'
   ];
   const mig = T.normalizeReportLayout({ order: old }).order;
   const iS5 = mig.indexOf('s5');
   const iAns = mig.indexOf('answers');
   const iLim = mig.indexOf('limits');
-  const iRead = mig.indexOf('reading');
-  eq('göç: cevaplar s5 sonrası, okuma metninden önce', iAns > iS5 && iAns < iRead, true);
+  const iRead = mig.indexOf('readingText');
+  eq('göç: cevaplar s5 sonrası', iAns > iS5, true);
   eq('göç: sınırlılıklar cevaplardan sonra', iLim > iAns, true);
   eq('göç: bütünlük teslim/edinme sonrası', mig.indexOf('integrity') > mig.indexOf('acquisition'), true);
-  eq('göç: mevcut sıra korunur (s6 yeri)', mig.indexOf('s6') > mig.indexOf('reading'), true);
+  eq('göç: mevcut sıra korunur (s6 yeri)', mig.indexOf('s6') > mig.indexOf('readingText'), true);
 
   // 56.12 profili: sıra + görünürlük birlikte yazılır.
   const p = T.reportPresetLayout('sablon');
   eq('profil: 56.12 tanımlı', T.REPORT_PRESET_DEFS.some((x) => x.key === 'sablon'), true);
   eq('profil: soru listesi kapalı (cevaplarda tekrar)', p.sections.s2, false);
-  eq('profil: boş "EKLER" başlığı kapalı', p.sections.s7, false);
-  eq('profil: ekler açık', p.sections.annex, true);
+  eq('profil: kayıt bölümleri açık', p.sections.handoverRecord, true);
   eq('profil: bütünlük açık', p.sections.integrity, true);
   const ord = p.order;
   const at = (k) => ord.indexOf(k);
   eq(
     'profil sırası: bulgular → sınırlılıklar → QC → cevaplar',
-    at('s5') < at('limits') && at('limits') < at('qc') && at('qc') < at('answers'),
+    at('s5') < at('limits') && at('limits') < at('qualityControl') && at('qualityControl') < at('answers'),
     true
   );
-  eq('profil sırası: sonuç en sonda (eklerden önce)', at('s6') > at('answers') && at('s6') < at('annex'), true);
+  eq('profil sırası: sonuç kayıtlardan önce', at('s6') > at('answers') && at('s6') < at('legalBasis'), true);
   eq('profil sırası: bütünlük teslim sonrası, yöntem öncesi', at('integrity') > at('acquisition') && at('integrity') < at('s4'), true);
   const map = T.mainSectionNumbers(ord, (k) => p.sections[k] !== false, T.REPORT_MAIN_KEYS);
   const nums = Object.values(map).sort((a, b) => a - b);
@@ -5721,7 +5716,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   const base = T.emptyCaseForTest({ id: 'c1' });
   const map = T.reportNumberMap(base);
   eq('soru yok: answers numara almaz', map.answers, undefined);
-  eq('soru yok: annex son numara', map.annex, Math.max(...Object.values(map)));
+  eq('soru yok: son numara legalBasis', map.legalBasis, Math.max(...Object.values(map)));
   const nums = Object.values(map).sort((a, b) => a - b);
   eq('numaralar bitişik (1..N)', nums.every((n, i) => n === i + 1), true);
 
@@ -5768,7 +5763,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   const auto = T.emptyCaseForTest({ id: 'cN1' });
   eq('auto: başlık numaralı', T.reportHeadingText(auto, 's1'), '1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
-  eq('auto: TOC köken numaralı', T.reportTocEntries(auto).some((x) => x.startsWith('4. KAYIT KÖKENİ')), true);
+  eq('auto: TOC köken numaralı', T.reportTocEntries(auto).some((x) => x.startsWith('5. KAYIT KÖKENİ')), true);
   const none = T.emptyCaseForTest({ id: 'cN2', report: { numbering: 'none' } });
   eq('none: başlık numarasız', T.reportHeadingText(none, 's1'), 'GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
   eq('none: TOC numarasız ve işaretsiz', T.reportTocEntries(none).some((x) => x.startsWith('1.') || x.startsWith('–')), false);
@@ -5805,8 +5800,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ikinci ana bölüm B', T.reportHeadingText(c, 's2'), 'B. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR');
   eq('iskelet etiketi özel başlık', T.reportUiLabel(c, 's1'), 'A · ÖZEL KONU');
   eq('TOC harf numarası taşır', T.reportTocEntries(c).some((x) => x.startsWith('A. ÖZEL KONU')), true);
-  eq('alt başlık harf kipinde', T.reportSubHeadings(c).s51, 'G.1. Ses kayıtlarının çözümlenmesi');
-  eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), 'G.1.1.');
+  const s5lab = T.reportNumberLabelMap(c).s5;
+  eq('alt başlık harf kipinde', T.reportSubHeadings(c).s51, `${s5lab}.1. Ses kayıtlarının çözümlenmesi`);
+  eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), `${s5lab}.1.1.`);
 
   const cn = T.emptyCaseForTest({ id: 'cT2', report: { numbering: 'none' } });
   eq('numarasız başlık', T.reportHeadingText(cn, 's1'), 'GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
@@ -5963,133 +5959,35 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 }
 
 
-// [132] v2.290 — Tek EKLER bölümü: boş "EK LİSTESİ" varsayılan kapalı,
-// asıl EKLER (annex) açık; eski s7 tercihi annex'e taşınır.
+// [132] v2.380 — TEK DÜZ LİSTE: 36 bölüm, EK kavramı yok, yeni dosya kapalı.
 {
-  console.log('[132] Tek EKLER bölümü (v2.290)');
+  console.log('[132] Tek düz liste (v2.380)');
   const S = __schemaMod;
-  eq('varsayılan EKLER açık', S.emptyReportSections().annex, true);
-  eq('boş EK LİSTESİ kapalı', S.emptyReportSections().s7, false);
-  const c = T.emptyCaseForTest({ id: 'cA1' });
-  eq('EKLER numara alır', typeof T.reportNumberMap(c).annex, 'number');
-  eq('EK LİSTESİ numara almaz', T.reportNumberMap(c).s7, undefined);
-  const mig = S.normalizeCase({ id: 'm1', report: { sections: { s7: true } } });
-  eq('göç: s7 açık → annex açık', mig.report.sections.annex, true);
-  eq('göç: s7 kapanır', mig.report.sections.s7, false);
-  const mig2 = S.normalizeCase({ id: 'm2', report: { sections: { s7: false } } });
-  eq('göç: s7 kapalı annex’i kapatmaz', mig2.report.sections.annex, true);
-  eq('ek listesi başlıkları', T.reportAttachmentLines(c).length > 0, true);
-}
-
-
-// [133] v2.291 — Bölümü EKLER altına taşıma: gövdeden çıkar, EK-N olarak basılır.
-{
-  console.log('[133] Bölümü EK altına taşıma (v2.291)');
-  const S = __schemaMod;
-  eq('s5 taşınabilir', S.isAnnexPlaceable('s5'), true);
-  eq('annex taşınamaz', S.isAnnexPlaceable('annex'), false);
-  const ap = S.normalizeAnnexPlacement({ s5: true, annex: true, yok: true, s1: false });
-  eq('yalnız geçerli taşıma kalır', Object.keys(ap).join(','), 's5');
-  const c = T.emptyCaseForTest({ id: 'cP1', report: { annexPlacement: { s5: true } } });
-  eq('gövde sırası s5 içermez', T.reportBodyOrder(c).includes('s5'), false);
-  eq('taşınan s5 listelenir', T.reportMovedSections(c).includes('s5'), true);
-  const moved = T.reportAnnexList(c).find((a) => a.movedKey === 's5');
-  eq('taşınan ek başlığı', moved && moved.heading.startsWith('Rapor eki 7. '), true);
-  eq('annex blok türü moved', T.reportAnnexBlocks(c).find((b) => b.kind === 'moved')?.sectionKey, 's5');
-  eq('revizyon yerleşimi taşır', T.reportSnapshot(c).annexPlacement.s5, true);
-}
-
-
-// [179] v2.369 — GRUPLU EKLER: birden çok gövde bölümü TEK ek içinde (EK-N.M).
-{
-  console.log('[179] Gruplu ekler (v2.369)');
-  const S = __schemaMod;
-  // normalizeAnnexPlacement: grup ('ek7') ve özel ek ('x1') kabul; geçersiz atılır.
-  const np = S.normalizeAnnexPlacement({ origin: 'ek7', speakers: 'x1', embedded: 'yok', s5: true, annex: 'ek7' });
-  eq('grup yerleşimi korunur', np.origin, 'ek7');
-  eq('özel ek yerleşimi korunur', np.speakers, 'x1');
-  eq('geçersiz grup atılır', np.embedded, undefined);
-  eq('annex kendine taşınamaz', np.annex, undefined);
-  eq('kendi eki (true) korunur', np.s5, true);
-  // origin + speakers aynı gruba: gövdeden çıkar, TEK ekte alt başlıklarla basılır.
-  const c = T.emptyCaseForTest({ id: 'cG1', report: { annexPlacement: { origin: 'ek7', speakers: 'ek7' } } });
-  eq('gövde origin içermez', T.reportBodyOrder(c).includes('origin'), false);
-  eq('gövde speakers içermez', T.reportBodyOrder(c).includes('speakers'), false);
-  const ek7 = T.reportAnnexList(c).find((a) => a.key === 'ek7');
-  eq('grup ek listelendi', !!ek7, true);
-  eq('grup tek ek numarası (EK-7)', ek7 && ek7.n, 7);
-  eq('grup iki bölüm taşır', ek7 && ek7.sections.length, 2);
-  eq('1. alt başlık', ek7 && ek7.sections[0].heading, 'EK-7.1. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
-  eq('2. alt başlık', ek7 && ek7.sections[1].heading, 'EK-7.2. KONUŞMACILAR');
-  const blk = T.reportAnnexBlocks(c).find((b) => b.key === 'ek7');
-  eq('grup blok türü', blk && blk.kind, 'group');
-  eq('grup blok alt bölüm sayısı', blk && blk.sections.length, 2);
-  // Boş grup çizilmez (hiçbir bölüm taşınmamışsa ek listelenmez).
-  const cEmpty = T.emptyCaseForTest({ id: 'cG2' });
-  eq('boş grup listelenmez', T.reportAnnexList(cEmpty).some((a) => a.key === 'ek7'), false);
-  // ÖNERİ A yalnız YENİ dosyada: freshCase teknik bölümleri gruplu eklere taşır.
+  eq('bölüm sayısı 36', S.REPORT_SECTION_KEYS.length, 36);
+  eq('EKLER anahtarı yok', S.REPORT_SECTION_KEYS.includes('annex'), false);
+  eq('EK LİSTESİ anahtarı yok', S.REPORT_SECTION_KEYS.includes('s7'), false);
+  eq('eski ek içeriği düz bölüm', S.REPORT_SECTION_KEYS.includes('handoverRecord'), true);
+  eq('gövde sırası 31', S.REPORT_BODY_ORDER.length, 31);
   const fresh = T.freshCase();
-  eq('yeni dosya origin→ek7', fresh.report.annexPlacement.origin, 'ek7');
-  eq('yeni dosya speakers→ek8', fresh.report.annexPlacement.speakers, 'ek8');
-  eq('yeni dosya s5 gövdede kalır', fresh.report.annexPlacement.s5, undefined);
-  eq('yeni dosya yine de BOŞ sayılır', T.isEmptyCase(fresh), true);
-}
-
-
-// [180] v2.370 — "Varsayılan düzen" (Öneri A) saf hesabı: yerleşim başlangıca
-// döner; ÖZEL EK ve SERBEST BLOK korunur; kanıt/metin dokunulmaz.
-{
-  console.log('[180] Varsayılan düzen hesabı (v2.370)');
-  const c = T.emptyCaseForTest({
-    id: 'cDL',
-    report: {
-      sections: { s3: false, origin: false },
-      layout: { order: ['s6', 's1', 's2'], annexOrder: ['x1', 'ek1'], annexes: { ek1: false } },
-      annexPlacement: { s5: true },
-      numbering: 'letters',
-      blocks: [{ id: 'b1', title: 'EK NOT', text: 'metin', on: true }]
-    }
-  });
-  const st = T.buildDefaultReportLayout(c);
-  // Görünürlük varsayılan: kapatılan s3/origin yeniden açılır.
-  eq('varsayılan: s3 açık', st.sections.s3, true);
-  eq('varsayılan: origin açık', st.sections.origin, true);
-  // Sıra kanonik: s1 başta; serbest blok annex'ten önce.
-  eq('sıra kanonik baş (s1)', st.layout.order[0], 's1');
-  const iFree = st.layout.order.indexOf('free:b1');
-  const iAnnex = st.layout.order.indexOf('annex');
-  eq('serbest blok korunur', iFree >= 0, true);
-  eq('serbest blok annex öncesi', iFree >= 0 && iFree < iAnnex, true);
-  // Yerleşim varsayılan (Öneri A): origin→ek7, s5 gövdede.
-  eq('yerleşim origin→ek7', st.annexPlacement.origin, 'ek7');
-  eq('yerleşim s5 taşınmaz', st.annexPlacement.s5, undefined);
-  eq('numara auto', st.numbering, 'auto');
-  // Özel ek (x1) KORUNUR; kapatılan yerleşik ek (ek1=false) KORUNUR.
-  eq('özel ek korunur', st.layout.annexOrder.includes('x1'), true);
-  eq('kapalı ek korunur', st.layout.annexes.ek1, false);
-  // Tüm gövde anahtarları sırada.
-  eq('tüm gövde anahtarları sırada', T.REPORT_BODY_ORDER.every((k) => st.layout.order.includes(k)), true);
-}
-
-
-// [181] v2.371 — Sürükle-bırak yerleşimi: gövde→ek (ek'e taşı) ve ekli→gövde
-// (gövdeye al + sırala). Tek snapshot; geçersiz işlem sessiz no-op değil false.
-{
-  console.log('[181] Sürükle-bırak yerleşimi (v2.371)');
-  const c = T.emptyCaseForTest({ id: 'cDD' });
-  T.setAppState({ cases: [c], activeCaseId: c.id, settings: {}, ui: {} });
-  eq('gövde→ek başarılı', T.moveSectionIntoAnnex('origin', 'ek7'), true);
-  eq('origin ek7 (model)', (c.report.annexPlacement || {}).origin, 'ek7');
-  eq('origin gövdeden çıktı', T.reportBodyOrder(c).includes('origin'), false);
-  eq('aynı eke tekrar no-op', T.moveSectionIntoAnnex('origin', 'ek7'), false);
-  eq('EKLER taşınamaz', T.moveSectionIntoAnnex('annex', 'ek7'), false);
-  eq('geçersiz ek anahtarı', T.moveSectionIntoAnnex('s2', 'yok'), false);
-  // Ekli bölümü gövdeye al + sırala.
-  T.moveSectionIntoAnnex('speakers', 'ek8');
-  eq('speakers ek8', (c.report.annexPlacement || {}).speakers, 'ek8');
-  eq('ekli→gövde başarılı', T.unplaceAndReorder('speakers', 's1', 'after'), true);
-  eq('speakers yerleşimi kalktı', (c.report.annexPlacement || {}).speakers, undefined);
-  eq('speakers gövdede', T.reportBodyOrder(c).includes('speakers'), true);
+  eq('yeni dosya tüm bölümler kapalı', S.REPORT_SECTION_KEYS.every((k) => fresh.report.sections[k] === false), true);
+  eq('yeni dosya eke taşıma yok', Object.keys(fresh.report.annexPlacement || {}).length, 0);
+  const mig = S.normalizeReportSections({ asr: true, enhance: true, reading: true, embedded: true, qc: true, annex: true, s7: true });
+  eq('göç asr→transcriptionMethod', mig.transcriptionMethod, true);
+  eq('göç enhance→enhancement', mig.enhancement, true);
+  eq('göç reading→readingText', mig.readingText, true);
+  eq('göç embedded→embeddedInfo', mig.embeddedInfo, true);
+  eq('göç qc→qualityControl', mig.qualityControl, true);
+  eq('göç annex→6 kayıt bölümü', [mig.handoverRecord, mig.fileInventory, mig.custodyLog, mig.notationKey, mig.finalChecklist, mig.legalBasis].every(Boolean), true);
+  eq('göç s7 taşınmaz', 's7' in mig, false);
+  const lo = S.normalizeReportLayout({ order: ['s1', 'asr', 'reading', 'annex', 's7'] });
+  eq('sıra göçü asr', lo.order.includes('transcriptionMethod'), true);
+  eq('sıra göçü reading', lo.order.includes('readingText'), true);
+  eq('sıra göçü EK/s7 düşer', lo.order.includes('annex') || lo.order.includes('s7'), false);
+  eq('tüm gövde anahtarları sırada', S.REPORT_BODY_ORDER.every((k) => lo.order.includes(k)), true);
+  const ti = S.normalizeReportTitles({ asr: 'Eski başlık', reading: 'Okuma' });
+  eq('başlık göçü asr', ti.transcriptionMethod, 'Eski başlık');
+  eq('başlık göçü reading', ti.readingText, 'Okuma');
+  eq('grup anahtarı meta veri', S.REPORT_SECTION_DEFS.find((d) => d.key === 's1').group, 'scope');
 }
 
 
@@ -6234,22 +6132,6 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('altına bırakma bölgesi', /drop-under/.test(js), true);
   eq('göreli taşıma var', /function moveSectionRelative\(/.test(js), true);
   eq('girinti derinliğe bağlı', /--depth:/.test(js), true);
-}
-
-
-// [139] v2.298 — EKLER de bir grup olarak başka bölümün altına taşınabilir.
-{
-  console.log('[139] EKLER grubu alt bölüm olabilir (v2.298)');
-  const c = T.emptyCaseForTest({
-    id: 'cAnnexTree',
-    report: { layout: { order: ['s1', 's2', 'annex'], parent: { annex: 's1' } } }
-  });
-  eq('EKLER gövde sırasında', T.reportBodyOrder(c).includes('annex'), true);
-  eq('EKLER alt bölüm numarası', T.reportHeadingText(c, 'annex'), '1.1. EKLER');
-  eq('TOC alt bölümü taşır', T.reportTocEntries(c).some((x) => x.startsWith('1.1. EKLER')), true);
-  const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
-  eq('EKLER hedefi yalnız sıra alır', /isAnnexTarget/.test(js), true);
-  eq('iç EKLER sayfa sonu zorlamaz', /key === 'annex' && reportSectionDepth\(c, key\) === 0/.test(js), true);
 }
 
 
@@ -7173,16 +7055,16 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   // --- Rapor içi ek belgesi: yalnız o ek açık
   const rAnnex = S.letterAnnexNumbering(c.letterAnnexes).find((a) => a.kind === 'reportAnnex');
   const doc2 = T.annexDocumentCase(c, rAnnex);
-  eq('ek belgesi: yalnız ek2 açık', doc2.report.layout.annexes.ek2, true);
-  eq('ek belgesi: ek1 kapalı', doc2.report.layout.annexes.ek1, false);
-  eq('ek belgesi: yalnız EKLER bölümü', doc2.report.layout.order.join(','), 'annex');
+  eq('ek belgesi: yalnız fileInventory açık', doc2.report.sections.fileInventory, true);
+  eq('ek belgesi: handoverRecord kapalı', doc2.report.sections.handoverRecord, false);
+  eq('ek belgesi: yalnız fileInventory bölümü', doc2.report.layout.order.join(','), 'fileInventory');
   // --- Serbest ek belgesi: tek serbest blok
   const doc3 = T.annexDocumentCase(c, { kind: 'custom', title: 'Tapu kaydı', content: 'Metin' });
   eq('serbest ek: tek blok', doc3.report.blocks.length, 1);
   eq('serbest ek: başlık', doc3.report.blocks[0].title, 'Tapu kaydı');
   eq('serbest ek: numarasız', doc3.report.numbering, 'none');
   // --- Varsayılan teknik bölüm kümesi
-  eq('varsayılan bölümler', T.LETTER_ANNEX_DEFAULT_SECTIONS.join(','), 'origin,embedded,acquisition,levels,wer,qc,integrity,tech');
+  eq('varsayılan bölümler', T.LETTER_ANNEX_DEFAULT_SECTIONS.join(','), 'origin,embeddedInfo,acquisition,levels,wer,qualityControl,integrity,tech');
 }
 
 
@@ -7292,8 +7174,8 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   // --- AYRI TUTANAK BELGESİ: yalnız EK-1, kapak/içindekiler/imza YOK
   const docH = T.physicalTutanakCase(c, 'handover');
-  eq('tutanak: yalnız EKLER bölümü', docH.report.layout.order.join(','), 'annex');
-  eq('tutanak: yalnız ek1 açık', Object.keys(docH.report.layout.annexes).filter((k) => docH.report.layout.annexes[k]).join(','), 'ek1');
+  eq('tutanak: yalnız handoverRecord bölümü', docH.report.layout.order.join(','), 'handoverRecord');
+  eq('tutanak: yalnız handoverRecord açık', Object.keys(docH.report.sections).filter((k) => docH.report.sections[k]).join(','), 'handoverRecord');
   eq('tutanak: kapak kapalı', docH.report.sections.cover, false);
   eq('tutanak: içindekiler kapalı', docH.report.sections.toc, false);
   eq('tutanak: imza bölümü kapalı', docH.report.sections.signature, false);
@@ -7302,9 +7184,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('tutanak türü', docH.__tutanakKind, 'handover');
   eq('orijinal kayıt DEĞİŞMEZ (tutanak işareti yok)', c.__tutanakKind, undefined);
   eq('orijinal kayıt DEĞİŞMEZ (ekler açık)', Object.values(c.report.layout.annexes).every((v) => v === true), true);
-  eq('tutanak başlığı (teslim)', T.reportAnnexList(docH)[0].heading, 'FİZİKÎ DOSYA TESLİM TUTANAĞI');
+  eq('tutanak başlığı (teslim)', T.reportSectionTitle(docH, 'handoverRecord'), 'FİZİKÎ DOSYA TESLİM TUTANAĞI');
   const docR = T.physicalTutanakCase(c, 'return');
-  eq('tutanak başlığı (iade)', T.reportAnnexList(docR)[0].heading, 'FİZİKÎ DOSYA İADE TUTANAĞI');
+  eq('tutanak başlığı (iade)', T.reportSectionTitle(docR, 'handoverRecord'), 'FİZİKÎ DOSYA İADE TUTANAĞI');
   const blocksH = T.physicalTutanakBlocks(c, 'handover');
   eq('teslim tutanağında iade tablosu YOK', blocksH.some((x) => x.title === T.REPORT_TEXT.physicalReturnHeading), false);
   eq('teslim tutanağında imza tablosu var', blocksH.some((x) => x.title === 'İmzalar'), true);
@@ -7956,8 +7838,8 @@ console.log('[170] Bilirkişi anlatımı ve dürüst sınırlar (v2.347)');
   eq('düzey tahmini denir', /tahmini/.test(R.levelIntro), true);
   eq('kalibre değildir denir', /kalibre edilmiş akustik ölçüm sonucu değildir/.test(R.levelIntro), true);
   // 9) Bölüm başlığı sadeleşti.
-  const asrDef = T.REPORT_SECTION_DEFS.find((d) => d.key === 'asr');
-  eq('asr başlığı sade', asrDef.title, 'İNCELEME VE ÇÖZÜMLEME YÖNTEMİ');
+  const asrDef = T.REPORT_SECTION_DEFS.find((d) => d.key === 'transcriptionMethod');
+  eq('metne dönüştürme başlığı sade', asrDef.title, 'KONUŞMANIN METNE DÖNÜŞTÜRÜLMESİ YÖNTEMİ');
   eq('başlıkta ASR/yapay zekâ yok', jargon.test(asrDef.title), false);
 }
 

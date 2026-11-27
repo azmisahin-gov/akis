@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.379.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.380.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10179,3 +10179,19 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 **Öneri:** eski ek İÇERİKLERİNİ (teslim/envanter/işlem günlüğü/gösterim/kontrol/dayanak)
 **düz bölüm** olarak listeye kat (içerik kaybı olmasın); "EKLER" sarmalayıcısını kaldır; üç
 çıktı aynı metni üretsin; eski dosyaları `normalizeCase` ile göç et.
+
+
+## YENİ OTURUM DEVRİ (v2.380) — Rapor iskeleti sıfırdan (36 düz bölüm)
+
+| | |
+|---|---|
+| Sürüm | **v2.380** |
+| Testler | **2787 birim + 556 şema** + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium: iskelet **36 satır**, yeni dosya **0 açık**, "Tümünü aç" **36**, EK metni **0**, JS **0**, 600 px taşma **0** |
+
+- `REPORT_SECTION_DEFS` = 36 nötr anahtar; `annex`/`s7` YOK. Gövde 31 + ön 4 + imza 1.
+- Eski ek içerikleri düz bölüm: `handoverRecord` · `fileInventory` · `custodyLog` · `notationKey` · `finalChecklist` · `legalBasis`.
+- Göç: `asr→transcriptionMethod`, `enhance→enhancement`, `reading→readingText`, `embedded→embeddedInfo`, `qc→qualityControl`, `ek1…ek6→kayıt bölümleri`; `annex` açıksa 6 kayıt bölümü açılır.
+- `annexPlacement`, grup ekleri (`ek7…ek10`), `reportAnnex*` yolu ve "Varsayılan düzen" düğmesi kaldırıldı.
+- **DEĞİŞMEZ:** EK kavramı temel modelde yok; ek sonradan kullanıcı seçimiyle (üst yazı/rapor) kurulur. Yeni dosya tümü kapalı.
+- **Ölçüm tuzağı:** `#reportSections` yalnız rapor görünümü açılınca çizilir; CDP'de önce `[data-view="report"]` tıkla.
