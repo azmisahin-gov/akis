@@ -4456,3 +4456,64 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .texts-dialog { width: min(720px, calc(100vw - 30px)); }
 .texts-dialog .dialog-body { max-height: 74vh; }
 .texts-dialog .defaults-panel { box-shadow: none; border: 0; padding: 0; }
+
+/* ============================================================================
+   v2.362 — YAZDIRMA / PDF: ÇOK SAYFALI ÇIKTI
+   ----------------------------------------------------------------------------
+   ÖLÇÜM (v2.361, gerçek Chromium `Page.printToPDF`): kâğıt ~13.436 px (~11 A4)
+   ama çıktı **1 sayfa** idi. Kök neden: `body`, `.app-shell`, `.main-area`,
+   `#view-report` `height:900px; overflow:hidden` ile kilitliydi ve yazdırma
+   CSS'i bunları sıfırlamıyordu. Tek-sayfa modunda ayrıca `.report-page-window`
+   satır içi yükseklik + kâğıtta `translateY` vardı; yazdırmada temizlenmiyordu.
+
+   DEĞİŞMEZ KURAL: yazdırmada HİÇBİR ata kutu yükseklik dayatmaz, kaydırma
+   kırpmaz, transform uygulamaz. Sayfa kırılması @page + normal akışa bırakılır.
+   Bu blok reading-layer'ın SONUNDA olmalı (app.css yazdırma kurallarını ezer).
+   `!important` YALNIZ satır içi stili veya ekran `!important`'ını ezmek için:
+   toplam 4 bildirim. Ekran CSS borcuna sayılmaz (ayrı medya; `tasarim [8]`).
+   ========================================================================== */
+@media print {
+  html,
+  body {
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+  }
+  .app-shell {
+    height: auto;
+    overflow: visible;
+  }
+  .main-area {
+    height: auto;
+    /* v2.129 ekran kuralı `overflow-y:auto !important` taşır; ezmek için gerekli. */
+    overflow: visible !important;
+  }
+  #view-report,
+  #view-report.active {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+  .report-page-window {
+    /* Tek-sayfa modunda satır içi `height` yazılır; yalnız `!important` ezer. */
+    height: auto !important;
+    max-height: none;
+    overflow: visible;
+    width: auto;
+    max-width: none;
+    margin: 0;
+  }
+  #reportPreview,
+  #reportPreview.report-paper {
+    /* Tek-sayfa modunda satır içi `translateY`; sığdırmada satır içi `max-width`. */
+    transform: none !important;
+    max-width: none !important;
+    width: auto;
+    margin: 0;
+  }
+  /* Sabit alt bilgi her sayfada içeriği örter; akışa alınır (app.css print). */
+  .paper-footer {
+    position: static;
+  }
+}

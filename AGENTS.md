@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.361.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.362.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9628,3 +9628,55 @@ curl -s https://azmisahin-gov.github.io/akis/version.json
 ```
 Beklenen: **2773 + 556** yeşil; sürüm **2.361**; git temiz.
 
+## YENİ OTURUM DEVRİ (v2.362) — Rapor çıktısı ve ekran düzeni planı
+
+| | |
+|---|---|
+| Sürüm | **v2.362** |
+| Testler | `bash tools/test.sh` → 2773 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium `Page.printToPDF`: **1 → 23 sayfa** (286 KB → 4,99 MB), JS hatası 0 |
+
+### v2.362 — Yazdırma/PDF çok sayfalı (TAMAMLANDI)
+
+**Ölçülen hata:** Kâğıt ~13.436 px (~11 A4) ama `printToPDF` **1 sayfa**.
+Kök: `body`, `.app-shell`, `.main-area`, `#view-report`
+`height:900px; overflow:hidden` ile kilitliydi; yazdırma CSS'i sıfırlamıyordu.
+Tek-sayfa modunda `.report-page-window` satır içi yükseklik + kâğıtta
+`translateY` de temizlenmiyordu.
+
+**DEĞİŞMEZ KURAL (yazdırma):** Yazdırmada HİÇBİR ata kutu yükseklik dayatmaz,
+kaydırma kırpmaz, transform uygulamaz. Sayfa kırılması `@page` + normal akışa
+bırakılır. Kural `reading-layer.css` **sonundaki** `@media print` bloğunda;
+app.css yazdırma kurallarını ezer. Sabit alt bilgi akışa alınır.
+
+**Nöbetçi değişikliği:** `tasarim [8]` CSS borç sayaçları **medya-duyarlı**:
+`@media print` ekran borcuna sayılmaz (ayrı medya; satır içi stili ve ekran
+`!important`'ını ezmek zorundadır). Yazdırma için ayrı sınır: `!important <= 6`
+(şu an 4). Yeni `[2dw]` yazdırma bloğunu denetler.
+
+### Bu oturumda kullanıcının verdiği yön (sıradaki işler)
+
+1. **PDF/çıktı:** tarayıcı PDF'i artık çalışıyor. Sonraki adım **kapak + üst/alt
+   bilgi standardı** (v2.363) ve **DOCX LibreOffice uyumu** (v2.364). Uygulama
+   içi tek tık PDF (pdf-lib + gömülü Türkçe font) ayrı ve büyük karar.
+2. **Kapak (kullanıcının istediği):**
+   `T.C.` · `[GÖREVLENDİREN MAHKEMENİN TAM ADI]` · `ADLİ VE KRİMİNALİSTİK
+   İNCELEMELER` · `BİLİRKİŞİ RAPORU` · `56.12 – SES KAYITLARININ METİN HALİNE
+   DÖNÜŞTÜRÜLMESİ` · `(Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin
+   Kullanılması Hariç)`. Şu an `UZMANLIK ALANI · 56.12` kısa kodu ve farklı alt
+   başlık var; içerik `DEFAULT_EXPERT_FIELD`'de mevcut, **yerleşim** değişecek.
+3. **Rapor ekranı düzeni (v2.365):** “Ön bölüm alanları” (iskelette
+   `Alanlar · N/M`) ile sağ paneldeki “Rapor alanları · tablo sütunları” iki
+   ayrı yer → **tek yerde** toplanacak. Sağ panel **çekmeceye** alınacak
+   (“Metinler” penceresi deseni). Sol iskelet tek kaydırma olacak; Düzenle/Kontrol
+   mod değişimi kâğıdı 142 px yatay kaydırıyor (ölçüldü: `232/786/292` ↔
+   `232/1090`), bu zıplama giderilecek.
+4. **Bilinen ölçümler:** ≤900 px'te iskelet belgenin ALTINDA (900'de üst kenar
+   13.988 px); araç çubuğu 89/122/212 px (1440/900/600); “Tam ekran (F)” ipucu
+   var ama F raporda bağlı değil.
+
+### İlk komutlar
+```bash
+bash tools/test.sh
+git log --oneline -3; git status --short
+```

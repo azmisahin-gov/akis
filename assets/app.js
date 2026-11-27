@@ -155,15 +155,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.361';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.361';
+} from './schema.js?v=2.362';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.362';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.361';
+const APP_VERSION = '2.362';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -24018,6 +24018,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.362': {
+    title: 'PDF çıktısı artık tüm sayfaları veriyor',
+    body:
+      'Raporu “PDF / Yazdır” ile yazdırdığınızda yalnız İLK SAYFA çıkıyordu; belge 20+ sayfa olsa bile çıktı tek sayfaydı. Sebep tarayıcı değil, yazdırma düzenindeki kilitli yüksekliklerdi (gövde, kabuk, rapor alanı 900 px’e kilitliydi). Artık yazdırma/PDF çıktısı belgenin TAMAMINI sayfa sayfa veriyor: ölçüm 1 → 23 sayfa. “Sürekli” ve tek-sayfa görünümünün ikisinde de çalışır. Değişiklik yalnız yazdırma düzenindedir; ekrandaki görünüm, Word (.docx) ve UDF çıktısı değişmedi.'
+  },
   '2.361': {
     title: 'Rapor metinleri ayrı pencereye taşındı',
     body:

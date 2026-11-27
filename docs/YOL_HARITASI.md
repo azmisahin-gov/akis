@@ -2,11 +2,24 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.361.**
+yazılır. **Güncel sürüm: v2.362.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.362 — Yazdırma / PDF çok sayfalı çıktı (TAMAMLANDI)
+
+- Ölçüm (gerçek Chromium `Page.printToPDF`): **1 → 23 sayfa** (286 KB → 4,99 MB).
+- Kök: `body/.app-shell/.main-area/#view-report` 900 px + `overflow:hidden`;
+  yazdırma bunları sıfırlamıyordu. Tek-sayfa modunda satır içi yükseklik +
+  `translateY` de temizlenmiyordu.
+- `reading-layer.css` sonunda yazdırma bloğu: yükseklik/kaydırma/transform
+  sıfırlanır; alt bilgi akışa alınır. Ekran/Word/UDF değişmedi.
+- CSS borcu artmadı; `tasarim [8]` artık **medya-duyarlı** (yazdırma ayrı medya).
+- Test: `tasarim [2dw]` (8).
+- **Sırada:** kapak/üst-alt bilgi standardı (v2.363), DOCX LibreOffice uyumu
+  (v2.364), rapor sağ panelini tek çekmecede toplama (v2.365).
 
 ## v2.361 — Rapor metinleri ayrı pencere (TAMAMLANDI)
 

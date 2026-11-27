@@ -1397,10 +1397,40 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   }
   // Yorum içindeki "!important" kelimesi SAYILMAZ (v2.139'da yanlış pozitif üretti).
   const noComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
+  // YAZDIRMA AYRI MEDYADIR (v2.362). `@media print` kuralları ekran CSS'ini
+  // KAÇINILMAZ olarak ezer: satır içi `height`/`transform` ve ekran
+  // `!important`'ını (ör. `.main-area{overflow-y:auto!important}`) yalnız
+  // `!important` ile geçebilir. Bu yüzden borç sayaçları YALNIZ EKRAN medyasını
+  // sayar; yazdırma için ayrı ve dar bir üst sınır vardır. Böylece "borç
+  // artmaz" kuralı ekran için korunur, yazdırma da ölçülü kalır.
+  const stripPrintMedia = (css) => {
+    let out = '';
+    let i = 0;
+    for (;;) {
+      const rest = css.slice(i);
+      const m = rest.match(/@media\s+print\s*\{/);
+      if (!m) {
+        out += rest;
+        break;
+      }
+      out += rest.slice(0, m.index);
+      let j = i + m.index + m[0].length;
+      let depth = 1;
+      while (j < css.length && depth > 0) {
+        if (css[j] === '{') depth++;
+        else if (css[j] === '}') depth--;
+        j++;
+      }
+      i = j;
+    }
+    return out;
+  };
+  const layerScreen = stripPrintMedia(layerCss);
   const impApp = (noComments(appCss).match(/!important/g) || []).length;
-  const impLayer = (noComments(layerCss).match(/!important/g) || []).length;
-  const mainArea = (appCss.match(/\.main-area\s*\{/g) || []).length + (layerCss.match(/\.main-area\s*\{/g) || []).length;
-  console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} · .main-area ${mainArea}`);
+  const impLayer = (noComments(layerScreen).match(/!important/g) || []).length;
+  const impPrint = (noComments(layerCss).match(/!important/g) || []).length - impLayer;
+  const mainArea = (appCss.match(/\.main-area\s*\{/g) || []).length + (layerScreen.match(/\.main-area\s*\{/g) || []).length;
+  console.log(`  ölçüm: app.css kural ${appRules.length} · reading-layer ${layerRules.length} · !important ${impApp}+${impLayer} (yazdırma ${impPrint}) · .main-area ${mainArea}`);
   console.log(`  ölü bildirim: reading-layer içi ${deadCount(layerRules)} · app.css→layer ${cross}`);
 
   // Nöbetçi eşikleri (v2.141 ölçümü: 26/70/98/507/15). Borç ARTARSA test
@@ -1409,7 +1439,8 @@ console.log('\n[8] CSS borcu (nöbetçi)');
   // `!important` taşıyan taşma kurallarını ezmek için). !important sayacı
   // YORUMLARI saymaz (v2.139'da yanlış pozitif üretti).
   check('app.css !important sayısı artmadı (<=26)', impApp <= 26, String(impApp));
-  check('reading-layer !important sayısı artmadı (<=55)', impLayer <= 55, String(impLayer));
+  check('reading-layer !important sayısı (ekran) artmadı (<=55)', impLayer <= 55, String(impLayer));
+  check('yazdırma !important sınırlı (<=6)', impPrint <= 6, String(impPrint));
   check('reading-layer içi ölü bildirim artmadı (<=60)', deadCount(layerRules) <= 60, String(deadCount(layerRules)));
   check('app.css→reading-layer ölü bildirim artmadı (<=500)', cross <= 500, String(cross));
   check('.main-area tanımı artmadı (<=15)', mainArea <= 15, String(mainArea));
@@ -2805,6 +2836,38 @@ console.log('\n[2dv] Ayarlar sekmeleri + metin penceresi (v2.360/v2.361)');
       /#reportTextsBtn'\)\.addEventListener\('click', openTextsDialog\)/.test(app)
   );
   check('sekme stili token kullanır', /\.settings-tab\.is-active\s*\{[^}]*var\(--/.test(css));
+}
+
+console.log('\n[2dw] Yazdırma/PDF çok sayfalı çıktı (v2.362)');
+{
+  // ÖLÇÜM (v2.361, gerçek Chromium `Page.printToPDF`): kâğıt ~13.436 px (~11 A4)
+  // ama çıktı **1 sayfa**. Kök: `body`, `.app-shell`, `.main-area`, `#view-report`
+  // `height:900px; overflow:hidden` ile kilitliydi; yazdırma CSS'i bunları
+  // sıfırlamıyordu. Bu test, yazdırmada hiçbir ata kutunun kırpmadığını denetler.
+  const css = read('assets/reading-layer.css');
+  const idx = css.indexOf('v2.362');
+  const block = idx >= 0 ? css.slice(idx) : '';
+  check('yazdırma düzeltme bloğu var (v2.362)', idx >= 0);
+  check('yazdırma bloğu @media print içinde', /@media print\s*\{/.test(block));
+  check(
+    'html/body yüksekliği ve kaydırması sıfırlanır',
+    /html,\s*body\s*\{[^}]*height:\s*auto[^}]*overflow:\s*visible/s.test(block)
+  );
+  check(
+    'kabuk (.app-shell) yükseklik dayatmaz',
+    /\.app-shell\s*\{[^}]*height:\s*auto[^}]*overflow:\s*visible/s.test(block)
+  );
+  check(
+    '.main-area ekran !important kaydırmasını ezer',
+    /\.main-area\s*\{[^}]*overflow:\s*visible\s*!important/s.test(block)
+  );
+  check('#view-report kırpmaz', /#view-report[^{]*\{[^}]*overflow:\s*visible/s.test(block));
+  check(
+    'sayfa penceresi yükseklik dayatmaz',
+    /\.report-page-window\s*\{[^}]*height:\s*auto\s*!important[^}]*overflow:\s*visible/s.test(block)
+  );
+  check('kâğıdın transform değeri temizlenir', /#reportPreview[^{]*\{[^}]*transform:\s*none\s*!important/s.test(block));
+  check('alt bilgi sabit konumdan çıkar', /\.paper-footer\s*\{[^}]*position:\s*static/s.test(block));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

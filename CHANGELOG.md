@@ -6,12 +6,42 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.361.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.362.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.362 — Yazdırma / PDF tüm sayfaları veriyor
+
+**KULLANICI NE GÖRECEK:** Raporu “🖨 PDF / Yazdır” ile yazdırdığınızda artık
+**belgenin tamamı** sayfa sayfa çıkıyor. Önceden yalnız ilk sayfa geliyordu;
+20+ sayfalık raporda bile çıktı tek sayfaydı (tarayıcı sorunu gibi görünüyordu,
+sebep uygulamanın yazdırma düzenindeydi). “Sürekli” ve tek-sayfa A4 görünümünün
+ikisinde de çalışır.
+
+**ÖLÇÜM (gerçek Chromium `Page.printToPDF`, kurgusal demo):**
+
+| | Önce (v2.361) | Sonra (v2.362) |
+|---|---|---|
+| PDF sayfası | **1** | **23** |
+| PDF boyutu | 286 KB | 4,99 MB |
+| Ataların yüksekliği | 900 px (kırpıyor) | 11.561 px (akış) |
+| Ataların `overflow` | hidden | visible |
+
+**Kök neden:** `body`, `.app-shell`, `.main-area`, `#view-report`
+`height:900px; overflow:hidden` ile kilitliydi; yazdırma CSS'i bunları
+sıfırlamıyordu. Tek-sayfa modunda ayrıca `.report-page-window` satır içi
+yükseklik ve kâğıtta `translateY` vardı.
+
+**Yapılan:** `reading-layer.css` sonuna yazdırma bloğu; yazdırmada hiçbir ata
+kutu yükseklik dayatmaz, kaydırma kırpmaz, transform uygulamaz. Sabit alt bilgi
+akışa alındı (sayfada içeriği örtmesin).
+
+**Ekran/Word/UDF değişmedi.** CSS borcu artmadı (26+55, ölü 60/500,
+`.main-area` 15; yazdırma `!important` 4). Test: `tasarim [2dw]` (8 kontrol) +
+`[8]` medya-duyarlı sayaç.
 
 ## v2.361 — Rapor metinleri ayrı pencereye taşındı
 
