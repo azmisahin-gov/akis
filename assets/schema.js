@@ -1551,11 +1551,13 @@ export function normalizeReportSections(src) {
 // Üst yazı (sunuş yazısı) AYRI bir belgedir; rapor onun EK-1'idir. "Teslim"
 // sözcüğü son teslim TARİHİ için ayrılmıştır (deliveryInfo); belge kümesi için
 // "belge ekleri" denir. Ayrıntı: docs/UST_YAZI_PLANI.md.
-export const LETTER_ANNEX_KINDS = ['report', 'sections', 'reportAnnex', 'custom'];
+// v2.387 — belge eki türleri: EK-1 rapor · bölüm eki · serbest ek.
+// `reportAnnex` KALDIRILDI: rapor içi ek kavramı v2.380'de kalktı; eski kayıtlar
+// `sections` ekine göç eder (aşağıdaki normalizeLetterAnnexes).
+export const LETTER_ANNEX_KINDS = ['report', 'sections', 'custom'];
 
 export function emptyLetter() {
   return {
-    enabled: false, // kapalıyken hiçbir çıktı değişmez (göç güvenliği)
     place: '', // "Antalya" — boşsa yazılmaz
     date: '', // boşsa rapor tarihi
     addressee: '', // boşsa mahkeme adından türetilir
@@ -1568,8 +1570,6 @@ export function emptyLetter() {
     // İmza kipi (v2.327): 'electronic' → imza ÇİZGİSİ yok (sahte imza izlenimi
     // verilmez); 'physical' → ıslak imza için çizgi.
     signatureMode: 'electronic',
-    showRegistry: false, // (eski) sicil no görünsün mü — v2.327'den beri OTOMATİK
-    showPageCounts: false, // ek listesinde (≈) sayfa sayısı (yalnız ekran)
     signerTitle: '' // boşsa "Bilirkişi"
   };
 }
@@ -1583,9 +1583,10 @@ export function normalizeLetter(v) {
   }
   out.signatureMode = out.signatureMode === 'physical' ? 'physical' : 'electronic';
   out.showReference = out.showReference !== false;
-  out.enabled = !!out.enabled;
-  out.showRegistry = !!out.showRegistry;
-  out.showPageCounts = !!out.showPageCounts;
+  // v2.387 — kaldırılan ölü alanlar eski kayıttan TAŞINMAZ.
+  delete out.enabled;
+  delete out.showRegistry;
+  delete out.showPageCounts;
   return out;
 }
 
@@ -1605,6 +1606,15 @@ export function normalizeLetterAnnexes(list) {
   for (const raw of src) {
     if (!isObj(raw)) continue;
     const kind = String(raw.kind || '');
+    // v2.387 — GÖÇ: `reportAnnex` artık yok. Rapor içi ek kavramı v2.380'de
+    // kalktığı için eski ek, BÖLÜM EKİNE çevrilir; normalizeCase taşınan
+    // bölümü raporda kapatır (aynı içerik iki yerde bulunmaz).
+    if (kind === 'reportAnnex') {
+      const k = mapReportKey(raw.key);
+      if (!REPORT_SECTION_KEYS.includes(k)) continue;
+      out.push({ ...raw, kind: 'sections', sections: [k], label: reportAnnexBaseTitle(raw.key), id: str(raw.id) });
+      continue;
+    }
     if (!LETTER_ANNEX_KINDS.includes(kind)) continue;
     if (kind === 'report') {
       if (report) continue;
@@ -1615,9 +1625,6 @@ export function normalizeLetterAnnexes(list) {
       const sections = (Array.isArray(raw.sections) ? raw.sections : []).filter((k) => REPORT_SECTION_KEYS.includes(k));
       if (!sections.length) continue;
       out.push({ ...raw, kind, sections, label: str(raw.label), id: str(raw.id) });
-    } else if (kind === 'reportAnnex') {
-      if (!isReportAnnexKey(raw.key)) continue;
-      out.push({ ...raw, kind, key: String(raw.key), id: str(raw.id) });
     } else {
       const title = str(raw.title);
       const content = str(raw.content);
@@ -1651,15 +1658,6 @@ export function letterMovedSectionKeys(annexes) {
   return out;
 }
 
-/** Belge eklerine taşınmış RAPOR İÇİ EK anahtarları (v2.324). */
-export function letterMovedAnnexKeys(annexes) {
-  const out = new Set();
-  for (const a of normalizeLetterAnnexes(annexes)) {
-    if (a.kind === 'reportAnnex') out.add(a.key);
-  }
-  return out;
-}
-
 /** Bölümleri belge eklerinden çıkarır (rapora geri döner); boşalan ek düşer. */
 export function removeSectionsFromLetterAnnexes(annexes, keys) {
   const drop = new Set(Array.isArray(keys) ? keys : [keys]);
@@ -1673,12 +1671,6 @@ export function removeSectionsFromLetterAnnexes(annexes, keys) {
     if (left.length) out.push({ ...a, sections: left });
   }
   return normalizeLetterAnnexes(out);
-}
-
-/** Rapor içi ek anahtarını belge eklerinden çıkarır (rapordaki kopya açılır). */
-export function removeAnnexKeyFromLetterAnnexes(annexes, key) {
-  const k = String(key || '');
-  return normalizeLetterAnnexes(normalizeLetterAnnexes(annexes).filter((a) => !(a.kind === 'reportAnnex' && a.key === k)));
 }
 
 /** EK numarası TÜRETİLİR: bitişik, silinen/kapatılan ek boşluk bırakmaz. */
@@ -2986,6 +2978,9 @@ export function normalizeCase(src = {}) {
     sectionsSrc.annex = true;
     sectionsSrc.s7 = false;
   }
+  // v2.387 — BELGE EKİNE TAŞINMIŞ BÖLÜM RAPORDA AÇIK KALAMAZ (tek kopya).
+  const letterAnnexes = normalizeLetterAnnexes(c.letterAnnexes);
+  for (const k of letterMovedSectionKeys(letterAnnexes)) sectionsSrc[k] = false;
   const team = (Array.isArray(c.team) ? c.team : []).map((t) => ({
     ...emptyTeamMember(),
     ...(isObj(t) ? t : {}),
@@ -3089,7 +3084,7 @@ export function normalizeCase(src = {}) {
     },
     // ÜST YAZI (v2.323): eksik/bozuk alan güvenli varsayılana çekilir.
     letter: normalizeLetter(c.letter),
-    letterAnnexes: normalizeLetterAnnexes(c.letterAnnexes),
+    letterAnnexes,
     // FİZİKÎ DOSYA (v2.330): eski kayıtta yoktur; boş kayıt olur (veri kaybı yok).
     physicalFile: normalizePhysicalFile(c.physicalFile),
     questions: (Array.isArray(c.questions) ? c.questions : []).map(normalizeQuestion),

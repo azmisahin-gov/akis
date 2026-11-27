@@ -2433,21 +2433,26 @@ console.log('\n[2dc] Üst yazı sekmesi ve ayrı belge (v2.323)');
   // Üst yazı AYRI belgedir; rapor onun EK-1'idir. Sekme + kâğıt + panel tek yerde.
   check('belge sekmeleri var', /id="reportDocs"/.test(html) && /data-report-doc="report"/.test(html) && /data-report-doc="letter"/.test(html));
   check('üst yazı kâğıdı var', /id="letterWindow"/.test(html) && /id="letterPreview"/.test(html));
-  check('üst yazı alanları paneli var', /id="letterFieldsBox"/.test(html) && /id="letterFields"/.test(html));
+  // v2.387 — alanlar SOL sütunda değil, SAĞ ÇEKMECEDE (rapor ayarları deseni).
+  check('üst yazı alanları çekmecede', /id="letterSide"/.test(html) && /data-lside-section="fields"/.test(html) && /id="letterFields"/.test(html));
+  check('eski sol sütun kaldırıldı', !/id="letterFieldsBox"/.test(html));
   check('belge ekleri paneli var', /id="letterSide"/.test(html) && /id="letterAnnexList"/.test(html));
-  check('araç çubuğunda üst yazı çıktıları', /id="letterToolbarActions"/.test(html) && /id="letterUdfBtn2"/.test(html) && /id="letterBothBtn2"/.test(html));
+  check('araç çubuğunda üst yazı çıktıları', /id="letterToolbarActions"/.test(html) && /id="letterUdfBtn2"/.test(html) && /id="letterZipBtn2"/.test(html) && /id="letterPrintBtn2"/.test(html));
+  check('üst yazı ayarları düğmesi', /id="letterSettingsBtn"/.test(html));
   check('rapor çıktı grubu kimlikli', /id="reportToolbarActions"/.test(html));
   // Tek kaynak: üç çıktı da letterModel()den beslenir.
   check('model tek kaynak', /function letterModel\(/.test(app) && /function letterPaperHtml\(/.test(app) && /function docxLetterXml\(/.test(app));
   check('UDF üst yazı kipi', /async function makeUdf\(opts = \{\}\)/.test(app) && /if \(letterMode\)/.test(app));
   check('DOCX üst yazı kipi', /async function makeDocx\(opts = \{\}\)/.test(app) && /docxLetterXml\(c\)/.test(app));
   check('dosya adı UstYazi_', /UstYazi_\$\{safeName/.test(app));
-  check('iki dosya indirme', /function downloadLetterAndReport\(/.test(app) && /makeUdf\(\{ letter: true \}\)/.test(app));
+  check('çift indirme kaldırıldı (ZIP tek yol)', !/downloadLetterAndReport/.test(app) && !/letterBothBtn/.test(html));
   // Ek numarası şemadan türetilir (kopya numaralandırma yok).
   check('EK numarası şemadan', /letterAnnexNumbering\(/.test(app) && /export function letterAnnexNumbering/.test(read('assets/schema.js')));
   // Yerleşim: üst yazıda rapor iskeleti/denetim paneli gizlenir, belge ekleri görünür.
   check('rapor paneli gizlenir', /toggle\('#reportSectionsBox', !isLetter\)/.test(app) && /toggle\('#reportSide', !isLetter\)/.test(app));
-  check('belge ekleri her zaman görünür', /#view-report\[data-doc="letter"\] \.letter-side \{ display: block; \}/.test(layer));
+  check('üst yazı çekmecesi (overlay)', /#letterSide\.drawer \{/.test(layer) && /#letterSide\.drawer\.open \{ transform: none; \}/.test(layer));
+  // YAZDIRMA: üst yazı KENDİ @page'ini yazar (rapor başlığı/alt bilgisi YOK).
+  check('üst yazı @page ayrı', /@page \{ size: A4 portrait; margin: \$\{m\.top\}mm/.test(app));
   check('uzun metin sarar (kırpma yok)', /\.letter-para \{[^}]*overflow-wrap: anywhere/.test(layer));
   check('kâğıt rengi temadan bağımsız', /\.letter-court \{[^}]*var\(--paper-ink\)/.test(layer));
   // Uygulama adı belgede geçmez (v2.83 kuralı) — metin sabitlerinde yok.
@@ -2462,12 +2467,13 @@ console.log('\n[2dd] Belge ekleri: düzenleme ve tek kopya (v2.324)');
   const layer = read('assets/reading-layer.css');
   const noComments = (t) => t.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   const code = noComments(app);
-  check('ek ekle düğmeleri (3 tür)', /data-letter-annex-add="sections"/.test(html) && /data-letter-annex-add="reportAnnex"/.test(html) && /data-letter-annex-add="custom"/.test(html));
+  check('ek ekle düğmeleri (bölüm + serbest)', /data-letter-annex-add="sections"/.test(html) && /data-letter-annex-add="custom"/.test(html) && !/data-letter-annex-add="reportAnnex"/.test(html));
   check('ek düzenleyici var', /id="letterAnnexEditor"/.test(html));
   check('ek işlemleri tanımlı', /function addLetterAnnex\(/.test(code) && /function removeLetterAnnex\(/.test(code) && /function moveLetterAnnex\(/.test(code) && /function toggleLetterAnnexSection\(/.test(code) && /function exportLetterAnnex\(/.test(code));
   // TEK KOPYA: bölüm/ek raporda yeniden açılınca belge ekinden çıkar.
   check('bölüm açılınca ekten çıkar', /letterMovedSectionKeys\(c\.letterAnnexes\)\.has\(key\)/.test(code) && /removeSectionsFromLetterAnnexes/.test(code));
-  check('rapor içi ek açılınca ekten çıkar', /letterMovedAnnexKeys\(c\.letterAnnexes\)\.has\(key\)/.test(code) && /removeAnnexKeyFromLetterAnnexes/.test(code));
+  check('eski rapor eki göç eder', /if \(kind === 'reportAnnex'\)/.test(read('assets/schema.js')) && /kind: 'sections', sections: \[k\]/.test(read('assets/schema.js')));
+  check('rapor içi ek kavramı app kodunda yok', !/letterMovedAnnexKeys/.test(code) && !/removeAnnexKeyFromLetterAnnexes/.test(code));
   // EK BELGESİ: kapak/içindekiler/imza yok + kompakt akış.
   const annexFn = (code.match(/function annexDocumentCase\([\s\S]*?\n\}/) || [''])[0];
   check('ek belgesi: kapak/toc/imza kapatılır', !!annexFn && /'cover', 'coverFields', 'toc', 'signature'/.test(annexFn));
@@ -2477,7 +2483,7 @@ console.log('\n[2dd] Belge ekleri: düzenleme ve tek kopya (v2.324)');
   check('dışa aktarma opts.case kullanır', /const c = \(opts && opts\.case\) \|\| currentCase\(\);/.test(code));
   // `hidden` niteliği yazar display kuralınca ezilmez; üst yazı ızgarası 3 sütun.
   check('hidden niteliği korunur', /#view-report \[hidden\] \{ display: none; \}/.test(layer));
-  check('üst yazı ızgarası 3 sütun', /#view-report\[data-doc="letter"\] #reportWorkspace \{ grid-template-columns: 232px minmax\(0, 1fr\) 292px; \}/.test(layer));
+  check('üst yazı tek sütun (kâğıt tam genişlik)', /#view-report\[data-doc="letter"\] #reportWorkspace \{ grid-template-columns: minmax\(0, 1fr\); \}/.test(layer));
   check('ek listesi satırı sarar', /\.la-label \{[^}]*overflow-wrap: anywhere/.test(layer));
   check('ek düğmeleri var', /\.la-btn \{/.test(layer));
 }
@@ -2487,17 +2493,17 @@ console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
   const html = read('index.html');
   const app = read('assets/app.js');
   const layer = read('assets/reading-layer.css');
-  check('ZIP düğmesi (araç çubuğu + panel)', /id="letterZipBtn2"/.test(html) && /id="letterZipBtn"/.test(html));
+  check('ZIP düğmesi (araç çubuğu)', /id="letterZipBtn2"/.test(html));
   check('ZIP üreticisi var', /async function buildDocumentsZip\(/.test(app));
   check('belgeler.json manifesti', /schema: 'akis\.documents\.v2'/.test(app) && /zip\.file\('belgeler\.json'/.test(app));
   check('ZIP adında "Paket" yok', /UstYazi_Belgeler_/.test(app) && !/documentsZipName[\s\S]{0,200}Paket/.test(app));
   check('üreticiler blob döndürür', /async function udfDocument\(opts = \{\}\)/.test(app) && /async function docxDocument\(opts = \{\}\)/.test(app));
   check('makeUdf sarmalayıcı', /const out = await udfDocument\(opts\)/.test(app));
-  // Sayfa tahmini YALNIZ EKRAN: belge metnine sayfa sayısı yazılmaz.
-  check('sayfa tahmini ekranda', /function estimateDocumentPages\(/.test(app) && /la-pages/.test(app));
+  // v2.387 — ek sayfa tahmini kaldırıldı; üst yazı kâğıdının GERÇEK sayfa
+  // sayısı çekmece başlığında gösterilir (belge metnine yazılmaz).
+  check('ek sayfa tahmini kaldırıldı', !/estimateDocumentPages/.test(app) && !/la-pages/.test(layer));
+  check('üst yazı sayfa sayısı gerçek ölçüm', /function refreshLetterStatus\(/.test(app) && /reportPageCountFor\(paper\.scrollHeight/.test(app));
   check('üst yazı metninde sayfa dipnotu yok', !/pageCountNote\)\)/.test(app));
-  check('tahmin uyarısı panelde', /TAHMİNÎdir/.test(app));
-  check('sayfa etiketi CSS', /\.la-pages \{/.test(layer));
 }
 
 console.log('\n[2ee] Tek düz liste + 36 bölüm (v2.380)');
@@ -2566,7 +2572,6 @@ console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
   // ÖLÇÜM (v2.325, 1440 px): sayfa tahmini açılınca ek satırı 254 px kutu /
   // 257 px içerik → 3 px taşma; uzun ek adlarında sağ panel yapısı bozuluyordu.
   check('ek satırı sarar', /\.la-row \{[^}]*flex-wrap: wrap/.test(layer));
-  check('sayfa etiketi sağa yaslanır', /\.la-row \.la-pages \{[^}]*margin-left: auto/.test(layer));
   check('araçlar alt satıra inebilir', /\.la-row \.la-tools \{[^}]*margin-left: auto/.test(layer));
 }
 
@@ -2641,9 +2646,9 @@ console.log('\n[2di] Ölü kod ve yardım metni tutarlılığı (v2.337)');
   //    "fonksiyon var" ≠ "fonksiyon kullanılıyor").
   check('listedeki öncelik rozeti üreteci kaldırıldı', !/function segPriorityBadge\s*\(/.test(app));
   check('liste satırı öncelik rozeti basmıyor', !/badge prio/.test(app));
-  // 2) Kullanılmayan sayfa sayacı (yerini estimateDocumentPages aldı).
+  // 2) Sayfa sayısı: üst yazı kâğıdı GERÇEK yükseklikten ölçülür; ek tahmini yok.
   check('ölü letterPageCount kaldırıldı', !/function letterPageCount\s*\(/.test(app));
-  check('sayfa tahmini tek kaynaktan', /function estimateDocumentPages\s*\(/.test(app));
+  check('üst yazı sayfa sayısı tek kaynaktan', /function refreshLetterStatus\s*\(/.test(app));
   // 3) Yardım metni geçmiş sürümün davranışını BUGÜN gibi anlatmaz.
   //    Yardım EKRANI index.html'de, sürüm notu app.js'tedir; İKİSİ de sınanır
   //    (v2.337'de ilk deneme yalnız app.js düzeltildi, ekran eski cümleyi

@@ -1601,7 +1601,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('ek belgesi: uygulama adı yok', !/AKİS/.test(UA) && !/AKİS/.test(DA));
   // 3) Rapor içi ek belgesi: yalnız o ek.
   const c2 = withMaterial();
-  const doc2 = annexDocumentCase(c2, { id: 'la3', kind: 'reportAnnex', key: 'ek2' });
+  const doc2 = annexDocumentCase(c2, { id: 'la3', kind: 'sections', sections: ['fileInventory'] });
   const H2 = htmlText(doc2);
   check('ek belgesi: yalnız DOSYA TEKNİK ENVANTERİ', H2.includes('DOSYA TEKNİK ENVANTERİ') && !H2.includes('ZİNCİRLEME MUHAFAZA'));
   // 4) Serbest ek belgesi.

@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.386.**
+yazılır. **Güncel sürüm: v2.387.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.387 — Üst yazı yeniden yapımı (TAMAMLANDI)
+
+- Üst yazı ekranı: **A4 kâğıt + sağ çekmece** (Bilgiler · Belge ekleri); sol 232 px form kaldırıldı.
+- `LETTER_ANNEX_KINDS` = `report` · `sections` · `custom`; **`reportAnnex` kaldırıldı**; eski kayıtlar bölüm ekine göçer ve `normalizeCase` taşınan bölümü raporda kapatır.
+- Bölüm eki seçimi **tüm gövde bölümleri** (sabit 10'lu liste kaldırıldı).
+- Yazdırma: üst yazıya özel `@page` (A4, 15 mm, başlık/alt bilgi/sayfa no yok); yazdırmada satır içi A4 yüksekliği sıfırlanır (ikinci boş sayfa kapandı).
+- Kâğıt yüksekliği A4 oranından; `#letterStatus` gerçek sayfa sayısını yazar.
+- Dosya adları: `UstYazi_<no>_<tarih>`, `EK-01_…_<tarih>`.
+- Ölü alanlar kaldırıldı; `isEmptyCase` üst yazı metnini sayar; çift indirme kaldırıldı (ZIP tek yol).
 
 ## v2.386 — Kurumsal belge tasarımı (TAMAMLANDI)
 

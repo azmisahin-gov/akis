@@ -1,4 +1,4 @@
-# Özellikler (v2.386 — mevcut durum)
+# Özellikler (v2.387 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -6,6 +6,15 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 
 
 
+
+## Üst yazı yeniden yapıldı (v2.387)
+
+- Üst yazı **ayrı belge**dir; rapor onun **EK-1**'idir. Ekran: **A4 kâğıt** + sağ **çekmece** (Bilgiler · Belge ekleri).
+- **Kendi yazdırma ayarı:** 15 mm kenar; rapor başlığı/alt bilgisi ve sayfa numarası **basılmaz**; ekrandaki A4 yüksekliği yazdırmada sayfa taşırmaz.
+- **Gerçek sayfa sayısı** çekmece başlığında (`Hazır · N sayfa`); kâğıt A4 oranındadır.
+- **Belge ekleri:** EK-1 rapor · **bölüm eki** (raporun **herhangi** bir bölümü ayrı belgeye taşınır) · **serbest ek**. Bölüm eke taşınınca **raporda kapanır** (tek kopya).
+- **Dosya adları:** `UstYazi_<no>_<tarih>`, `EK-01_…_<tarih>`; tek ZIP düğmesi (çift indirme kaldırıldı).
+- Eski `reportAnnex` ekleri **bölüm ekine** göç eder; ölü alanlar kaldırıldı.
 
 ## Kurumsal belge tasarımı (v2.386)
 

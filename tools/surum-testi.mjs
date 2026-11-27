@@ -210,7 +210,9 @@ const REQUIRED_TOPICS = [
   // v2.385 — her kayıt yeni sayfa + DOCX XML güvenliği.
   ['kayıt yeni sayfa / XML güvenliği', /Her kayıt yeni sayfadan|XML güvenliği|xesc/i],
   // v2.386 — kurumsal belge tasarımı (üst/alt bilgi, künye, tablo teması).
-  ['kurumsal belge tasarımı', /Kurumsal belge tasarımı|İki sütunlu sade|Nötr gri/]
+  ['kurumsal belge tasarımı', /Kurumsal belge tasarımı|İki sütunlu sade|Nötr gri/],
+  // v2.387 — üst yazı sıfırdan: A4 kâğıt + çekmece, kendi yazdırma ayarı.
+  ['üst yazı yeniden yapım', /Üst yazı yeniden yapıldı|Üst yazı sıfırdan|A4 kâğıt.*çekmece/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

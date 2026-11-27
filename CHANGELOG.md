@@ -6,12 +6,28 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.386.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.387.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.387 — Üst yazı sıfırdan: kâğıt + çekmece, kendi yazdırma ayarı
+
+**KULLANICI NE GÖRECEK:**
+- **Üst yazı** sekmesi artık **tek A4 kâğıt** ve sağda **⚙ Üst yazı çekmecesi**: **Bilgiler** (yer, tarih, konu, muhatap, ilgi, imza, gövde) + **Belge ekleri**.
+- Sol taraftaki dar form kaldırıldı; gövde metni geniş alanda yazılır.
+- Kâğıt **A4 oranında**; çekmece başlığında **“Hazır · N sayfa”** yazar. Bir sayfayı aşarsa sayı gerçekten artar (ölçüldü: uzun gövde **2 sayfa**).
+- **Yazdırma/PDF artık üst yazının kendi ayarıyla**: 15 mm kenar; **rapor başlığı, alt bilgisi ve sayfa numarası yok**. Önce üst yazıya rapor başlığı (“BİLİRKİŞİ RAPORU”) ve “Sayfa 1 / 1” basılıyordu; ayrıca ekrandaki A4 yüksekliği yazdırmada **ikinci boş sayfa** üretiyordu (PDF **2 → 1** sayfa).
+- **Belge ekleri sadeleşti:** EK-1 rapor · **Bölüm eki** (raporun **istediğiniz** bölümlerini ayrı belgeye taşır) · **Serbest ek**. “Rapor içi ek” kaldırıldı: rapor içi ek kavramı v2.380'de kalkmıştı, ek eklenince içerik raporda da kalıyordu (**çift üretim**).
+- **Tek kopya:** bölüm eke taşınınca raporda kapanır; raporda yeniden açılınca ekten çıkar.
+- **Dosya adları:** `UstYazi_<no>_<tarih>.udf`, `EK-01_<ad>_<no>_<tarih>.udf`.
+- **“Üst yazı + rapor (2 dosya)” kaldırıldı** (tarayıcı ikinci indirmeyi engelleyebiliyordu); tek ZIP düğmesi kaldı.
+
+**GÖÇ:** Eski `reportAnnex` belge ekleri **bölüm ekine** çevrilir (`normalizeLetterAnnexes`); `normalizeCase` taşınan bölümü raporda kapatır. Ölü alanlar (`letter.enabled`, `showRegistry`, `showPageCounts`) kaldırıldı; üst yazı metni `isEmptyCase`'te veri sayılır.
+
+**ÖLÇÜM (gerçek Chromium + CDP, 1440×900):** üst yazı kâğıdı **900×1273 px** (A4 oranı), çekmece **440 px**, kırpılan öğe **0**, yatay taşma **0**; yazdırma `@page` **15 mm**, PDF **1 sayfa**; rapora dönünce `@page` rapor başlığına döner ve ekine taşınan 8 bölüm raporda **kapalı** (metin de yok); **Esc** çekmeceyi kapatır; JS hatası **0**. Testler **2860 birim + 565 şema** + rapor/sürüm/tasarım yeşil.
 
 ## v2.386 — Kurumsal belge tasarımı
 

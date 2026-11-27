@@ -4146,10 +4146,12 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 .report-doc-btn[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
 #view-report[data-doc="letter"] .report-stage-bar { display: none; }
-.letter-window { padding: 0 0 12px; }
+.letter-window { padding: 0 0 12px; width: 100%; max-width: 920px; margin-inline: auto; }
 .letter-paper { min-height: 320px; }
+/* v2.387 — A4 oranı: yükseklik JS'ten `--letter-page-h` ile gelir. */
+#view-report[data-doc="letter"] .letter-paper { min-height: var(--letter-page-h, 0); }
 .letter-form .field { margin-bottom: 8px; }
-.letter-form textarea { min-height: 120px; font-size: var(--fs-xs); line-height: 1.5; }
+.letter-form textarea { min-height: 160px; font-size: var(--fs-xs); line-height: 1.5; }
 .letter-checks { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 4px; }
 .letter-check { display: inline-flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); color: var(--ink-2); }
 .letter-hint, .letter-side-hint, .letter-side-note { font-size: var(--fs-2xs); color: var(--ink-3); line-height: 1.45; margin: 6px 0 0; }
@@ -4199,10 +4201,29 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   overflow-wrap: anywhere;
 }
 .letter-annex-list li b { color: var(--ink); min-width: 44px; }
-.letter-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 12px; }
 /* v2.323 — Üst yazıda sağ panel (belge ekleri) HER ZAMAN görünür: "Düzenle"
    kipinde `.report-side` gizlenir; üst yazı bir düzenleme iskeleti değildir. */
-#view-report[data-doc="letter"] .letter-side { display: block; }
+#view-report[data-doc="letter"] .letter-side { display: flex; }
+#letterSide.drawer {
+  position: fixed; top: 0; right: 0; left: auto; bottom: auto; height: 100vh;
+  width: min(440px, 94vw); max-height: none; align-self: auto; margin: 0;
+  border: 0; border-left: 1px solid var(--line); border-radius: 0; padding: 0;
+  background: var(--surface); box-shadow: -14px 0 40px rgba(17, 41, 68, .14);
+  transform: translateX(102%); transition: transform .22s ease;
+  z-index: 60; display: flex; flex-direction: column; overflow: hidden;
+}
+#letterSide.drawer.open { transform: none; }
+#letterSide.drawer .drawer-body { flex: 1; overflow-y: auto; padding: 10px 14px 24px; }
+#letterSide .rside-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0; }
+#letterDrawerBackdrop { z-index: 55; background: rgba(10, 20, 32, .10); }
+@media print {
+  #letterSide.drawer, #letterDrawerBackdrop { display: none !important; }
+  /* v2.387 — EKRANDAKİ A4 yüksekliği yazdırmada SAYFA TAŞIRIR: üst yazı
+     1 sayfa görünürken PDF 2 sayfa çıkıyordu (ölçüldü). Ekran yüksekliği
+     `--letter-page-h` değişkeninden gelir; yazdırmada değişken yok sayılır.
+     `!important` GEREKMEZ (değişken satır içi, kural değil). */
+  #view-report[data-doc="letter"] .letter-paper.report-paper { min-height: 0; }
+}
 #view-report[data-doc="letter"] .report-editor { display: none; }
 /* v2.324 — Belge ekleri: düzenlenebilir liste (ekle · sırala · düzenle ·
    indir · kaldır). Liste satırı SARAR; düğmeler erişilebilir kalır. */
@@ -4238,21 +4259,12 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.324 — Üst yazıda ızgara ÜÇ sütun: sol alanlar · kâğıt · belge ekleri.
    "Düzenle" kipi ızgarayı iki sütuna düşürdüğü için sağ panel alt satıra
    kayıyordu (ölçüldü: letterSide x=82, y=812). */
-#view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 232px minmax(0, 1fr) 292px; }
-@media (max-width: 1280px) {
-  #view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 216px minmax(0, 1fr) 268px; }
-}
-@media (max-width: 1100px) {
-  #view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: 216px minmax(0, 1fr); }
-  #view-report[data-doc="letter"] .letter-side { grid-column: 1 / -1; }
-}
+#view-report[data-doc="letter"] #reportWorkspace { grid-template-columns: minmax(0, 1fr); }
 /* v2.325 — Ek listesinde sayfa TAHMİNİ (yalnız ekran; belgeye yazılmaz). */
-.la-pages { flex: 0 0 auto; color: var(--ink-3); font-size: var(--fs-2xs); white-space: nowrap; }
 /* v2.326 — Belge eki satırı SARAR: sayfa tahmini (≈ N sayfa) eklenince içerik
    292 px'lik panelde taşıyordu (ölçüm: satır 254 px kutu / 257 px içerik) ve
    sağ panelin yapısı bozuluyordu. Sığmayan araçlar alt satıra iner. */
 .la-row { flex-wrap: wrap; row-gap: 4px; }
-.la-row .la-pages { margin-left: auto; }
 .la-row .la-tools { margin-left: auto; }
 
 /* v2.327 — Üst yazı görsel standardı (docs/UST_YAZI_STANDARDI.md §2).

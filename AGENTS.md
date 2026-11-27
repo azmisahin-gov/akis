@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.386.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.387.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10351,3 +10351,22 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - `REPORT_PAGE_BREAK_KEYS = s1…s6 + handoverRecord`; kısa bölümler akar; özet `keepNext`.
 - ZWSP 32 karakterde bir; demo q2/q3/conclusion/overlap güncellendi.
 - **DERS:** DOCX `gridCol` toplamı **10206** olmalı; eksik genişlik dizisi son sütunu **300 twip** yapar (5,3 mm). `reportTableColumns` artık eksik genişlikte `null` döner.
+
+
+## YENİ OTURUM DEVRİ (v2.387) — Üst yazı sıfırdan
+
+| | |
+|---|---|
+| Sürüm | **v2.387** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2860 birim + 565 şema** + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium: üst yazı kâğıdı 900×1273 (A4), çekmece 440, PDF **1 sayfa**, uzun gövde **2 sayfa**, JS **0** |
+
+- Ekran: **A4 kâğıt + sağ çekmece** (`#letterSide.drawer`, sekmeler `Bilgiler`/`Belge ekleri`); sol 232 px form kaldırıldı. Giriş: araç çubuğu **⚙ Üst yazı**.
+- **Yazdırma:** `applyLetterFormat()` üst yazıya özel `@page` yazar (A4, 15 mm, margin box YOK). Rapor moduna dönünce `renderReport` kendi `@page`'ini yazar. Yazdırmada `#view-report[data-doc="letter"] .letter-paper { min-height:0 !important }` — satır içi A4 yüksekliği **ikinci boş sayfa** üretiyordu.
+- **Sayfa sayısı:** `letterPageHeight()` kâğıdın GERÇEK genişliğinden A4 oranı; `refreshLetterStatus` `Hazır · N sayfa`. `reportPageHeight()` üst yazıda kullanılmaz (rapor kâğıdı gizli → 0).
+- **Belge ekleri:** `LETTER_ANNEX_KINDS = report|sections|custom`; **`reportAnnex` YOK**. `normalizeLetterAnnexes` eski `reportAnnex`'i `sections` ekine çevirir (`mapReportKey`); `normalizeCase` taşınan bölümü `report.sections[k]=false` yapar (tek kopya). `letterMovedAnnexKeys` / `removeAnnexKeyFromLetterAnnexes` kaldırıldı.
+- **Bölüm seçimi:** sabit `LETTER_ANNEX_SECTIONS` yerine `reportBodyOrder(c)` (tüm gövde bölümleri).
+- **Ölü alanlar** (`letter.enabled`, `showRegistry`, `showPageCounts`) ve ek sayfa tahmini kaldırıldı; `isEmptyCase` üst yazı metnini sayar; `downloadLetterAndReport` (2 dosya) kaldırıldı.
+- **Dosya adları:** `UstYazi_<no>_<YYYY-MM-DD>`, `EK-01_<ad>_<no>_<YYYY-MM-DD>`.
+
+**DERS:** Ekranda A4 oranı için verilen satır içi `min-height`, yazdırmada `@page` yüksekliğini aşınca **boş sayfa** üretir; yazdırma kuralı `!important` ile sıfırlanmalı. Ayrıca gizli rapor kâğıdından sayfa yüksekliği okumak (`reportPageHeight`) üst yazıda **0** döner; üst yazı kendi genişliğinden hesaplanır.

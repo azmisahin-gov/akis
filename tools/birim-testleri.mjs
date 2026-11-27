@@ -120,7 +120,7 @@ const EXPOSE = [
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
-  'annexDocumentCase', 'LETTER_ANNEX_DEFAULT_SECTIONS', 'letterMovedSectionKeys', 'letterMovedAnnexKeys',
+  'annexDocumentCase', 'LETTER_ANNEX_DEFAULT_SECTIONS', 'letterMovedSectionKeys',
   'documentsZipName', 'annexFileName', 'blobSha256Hex', 'udfDocument', 'docxDocument',
   'QUICK_TAGS', 'QUICK_TAG_GROUPS', 'QUICK_TAG_DEFS', 'quickTagButton', 'quickMenuHtml', 'quickTagRecent', 'rememberQuickTag', 'filterQuickMenu',
   'reportFormat', 'normalizeReportFormat', 'emptyReportFormat', 'REPORT_FONT_KEYS', 'REPORT_FONT_DOCX', 'REPORT_FONT_CSS', 'REPORT_ORIENTATIONS',
@@ -6956,15 +6956,18 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     { kind: 'bilinmeyen' }
   ]);
   eq('rapor tek', norm.filter((x) => x.kind === 'report').length, 1);
-  eq('boş sections/custom düşer', norm.length, 2);
-  eq('geçerli rapor eki korunur', norm[1].key, 'ek2');
+  eq('geçersiz/boş düşer; reportAnnex bölüm ekine göçer', norm.length, 2);
+  eq('göç: tür bölüm eki', norm[1].kind, 'sections');
+  eq('göç: doğru bölüm', (norm[1].sections || []).join(','), 'fileInventory');
+  eq('göç: etiket korunur', norm[1].label, 'DOSYA TEKNİK ENVANTERİ');
   eq('kimlik verilir', !!norm[1].id, true);
-  // normalizeLetter: bilinmeyen alan korunur, boole'lar sağlam.
-  const L = S.normalizeLetter({ place: ' Antalya ', showRegistry: 1, gelecek: 'x' });
+  // normalizeLetter: bilinmeyen alan korunur; ölü alanlar taşınmaz.
+  const L = S.normalizeLetter({ place: ' Antalya ', showReference: false, gelecek: 'x', enabled: true });
   eq('yer kırpılır', L.place, 'Antalya');
-  eq('boole', L.showRegistry, true);
+  eq('ilgi tercihi korunur', L.showReference, false);
   eq('bilinmeyen alan korunur', L.gelecek, 'x');
-  eq('varsayılan enabled kapalı', L.enabled, false);
+  eq('ölü alan taşınmaz (enabled)', L.enabled, undefined);
+  eq('ölü alan taşınmaz (showRegistry)', L.showRegistry, undefined);
 
   // MODEL: hazır dosya
   const c = T.emptyCaseForTest({
@@ -7037,22 +7040,21 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     { kind: 'sections', sections: ['levels', 'wer'] },
     { kind: 'reportAnnex', key: 'ek2' }
   ];
-  eq('taşınan bölümler', [...S.letterMovedSectionKeys(c.letterAnnexes)].sort().join(','), 'levels,wer');
-  eq('taşınan rapor içi ek', [...S.letterMovedAnnexKeys(c.letterAnnexes)].join(','), 'ek2');
+  // v2.387 — eski `reportAnnex` göçle BÖLÜM EKİNE dönüşür (tek kopya).
+  eq('taşınan bölümler (göç dahil)', [...S.letterMovedSectionKeys(c.letterAnnexes)].sort().join(','), 'fileInventory,levels,wer');
   // --- Bölüm geri alınınca ekten düşer
   const back = S.removeSectionsFromLetterAnnexes(c.letterAnnexes, ['levels']);
-  eq('geri alınan bölüm ekte kalmaz', [...S.letterMovedSectionKeys(back)].join(','), 'wer');
-  eq('ek kaldı', back.filter((a) => a.kind === 'sections').length, 1);
+  eq('geri alınan bölüm ekte kalmaz', [...S.letterMovedSectionKeys(back)].sort().join(','), 'fileInventory,wer');
+  eq('ek kaldı', back.filter((a) => a.kind === 'sections').length, 2);
   // --- Son bölüm de çıkarsa ek düşer
-  const none = S.removeSectionsFromLetterAnnexes(back, ['wer']);
+  const none = S.removeSectionsFromLetterAnnexes(back, ['wer', 'fileInventory']);
   eq('boşalan ek düşer', none.filter((a) => a.kind === 'sections').length, 0);
-  // --- Rapor içi ek geri alınınca belge ekinden düşer
-  const back2 = S.removeAnnexKeyFromLetterAnnexes(c.letterAnnexes, 'ek2');
-  eq('rapor içi ek belge ekinden düşer', [...S.letterMovedAnnexKeys(back2)].length, 0);
 
   // --- EK BELGESİ: yalnız seçili bölümler, kapak/içindekiler/imza YOK
   c.report.sections = { cover: true, levels: true };
-  const annex = S.letterAnnexNumbering(c.letterAnnexes).find((a) => a.kind === 'sections');
+  const annex = S.letterAnnexNumbering(c.letterAnnexes).find(
+    (a) => a.kind === 'sections' && (a.sections || []).includes('levels')
+  );
   const doc = T.annexDocumentCase(c, annex);
   eq('ek belgesi: yalnız seçili bölüm açık', Object.keys(doc.report.sections).filter((k) => doc.report.sections[k]).sort().join(','), 'levels,wer');
   eq('ek belgesi: kapak kapalı', doc.report.sections.cover, false);
@@ -7061,7 +7063,9 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ek belgesi: kompakt akış', doc.__annexDoc, true);
   eq('ek belgesi: orijinal kayıt DEĞİŞMEZ', c.report.sections.cover, true);
   // --- Rapor içi ek belgesi: yalnız o ek açık
-  const rAnnex = S.letterAnnexNumbering(c.letterAnnexes).find((a) => a.kind === 'reportAnnex');
+  const rAnnex = S.letterAnnexNumbering(c.letterAnnexes).find(
+    (a) => a.kind === 'sections' && (a.sections || []).includes('fileInventory')
+  );
   const doc2 = T.annexDocumentCase(c, rAnnex);
   eq('ek belgesi: yalnız fileInventory açık', doc2.report.sections.fileInventory, true);
   eq('ek belgesi: handoverRecord kapalı', doc2.report.sections.handoverRecord, false);
@@ -7092,7 +7096,12 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('ZIP adı dosya no taşır', zn.includes('2026_214_E'), true);
   eq('ZIP adında "Paket" YOK', /Paket/.test(zn), false);
   const a = { id: 'la2', kind: 'sections', sections: ['levels'], label: 'TEKNİK BİLGİLER' };
-  eq('ek dosya adı', T.annexFileName(c, { ...a, no: 'EK-2' }), 'EK-2_TEKNİK_BİLGİLER_2026_214_E');
+  // v2.387 — dosya adı standardı: EK-01 (iki hane) + tarih (YYYY-MM-DD).
+  eq(
+    'ek dosya adı',
+    /^EK-02_TEKNİK_BİLGİLER_2026_214_E_\d{4}-\d{2}-\d{2}$/.test(T.annexFileName(c, { ...a, no: 'EK-2' })),
+    true
+  );
   // sha256 yardımcısı 64 karakter döndürür (sandbox crypto stub).
   const hex = await T.blobSha256Hex(new Blob(['x']));
   eq('sha256 uzunluğu', hex.length, 64);
