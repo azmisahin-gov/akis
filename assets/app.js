@@ -155,15 +155,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.358';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.358';
+} from './schema.js?v=2.359';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.359';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.358';
+const APP_VERSION = '2.359';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -793,6 +793,7 @@ const TEXT_DEFAULT_ITEMS = [
   { key: 'methodText', label: 'İnceleme yöntemi', where: 'Rapor · 4. bölüm' },
   { key: 'limitationsText', label: 'Teknik sınırlılıklar', where: 'Rapor · sınırlılıklar bölümü' },
   { key: 'conclusionText', label: 'Sonuç ve kanaat', where: 'Rapor · sonuç bölümü' },
+  { key: 'summaryIntro', label: 'Rapor özeti girişi', where: 'Rapor · kısa özet' },
   { key: 'scopeNoteText', label: 'Görev alanı dışı / sınırlılık beyanı', where: 'Rapor · kapsam beyanı (varsayılan kapalı)' },
   { key: 'annexLegalText', label: 'Hukuki ve yöntemsel dayanaklar', where: 'Ek · dayanaklar', legal: true },
   { key: 'privacyText', label: 'Kişisel veri / gizlilik', where: 'Rapor · gizlilik (varsayılan kapalı)' },
@@ -895,6 +896,12 @@ function codeDefaultText(field) {
   const alias = { limitationsText: 'defaultLimitations', conclusionText: 'defaultConclusion' };
   const v = REPORT_TEXT[alias[field] || field];
   return typeof v === 'string' ? v : '';
+}
+// Dosya alanı ile katalog anahtarı ayrışabilir (v2.359): özet girişi dosyada
+// `report.summaryIntroText`, katalogda `summaryIntro` adıyla durur.
+const FIELD_DEFAULT_ALIAS = { summaryIntroText: 'summaryIntro' };
+function defaultTextForField(field) {
+  return defaultTextFor(FIELD_DEFAULT_ALIAS[field] || field);
 }
 // ETKİN varsayılan: kullanıcı metni varsa o, yoksa kod varsayılanı.
 function defaultTextFor(field) {
@@ -1568,6 +1575,7 @@ function freshCase() {
     report: {
       date: dateToday(),
       methodText: defaultTextFor('methodText'),
+      summaryIntroText: '',
       limitationsText: '',
       conclusionText: ''
     },
@@ -1604,6 +1612,9 @@ const CASE_MIRROR = [
   ['expertField', 'expert', 'field'],
   ['reportDate', 'report', 'date'],
   ['methodText', 'report', 'methodText'],
+  // ÖZET GİRİŞİ (v2.359): bölüm düzenleyici düz alan yazar; asıl veri
+  // `report.summaryIntroText`. Eşleme olmadan yazma SESSİZCE kaybolurdu.
+  ['summaryIntroText', 'report', 'summaryIntroText'],
   ['limitationsText', 'report', 'limitationsText'],
   ['conclusionText', 'report', 'conclusionText']
 ];
@@ -2456,6 +2467,12 @@ function applyRoleLabels(type) {
 }
 // İNCELEME KONUSU (v2.354): dava konusundan AYRI alan. Boşsa satır YAZILMAZ;
 // aynı metni künyede ve gövdede iki kez basmak yanıltıcıydı (ölçüldü).
+// RAPOR ÖZETİ GİRİŞİ (v2.359): dosyaya özel metin varsa o, yoksa etkin
+// varsayılan (kullanıcı → kod). Üç çıktı bu tek fonksiyonu kullanır.
+function reportSummaryIntro(c) {
+  const own = String((c && c.report && c.report.summaryIntroText) || '').trim();
+  return own || defaultTextFor('summaryIntro');
+}
 function examinationSubjectText(c) {
   return String((c && c.examinationSubject) || '').trim();
 }
@@ -14411,6 +14428,8 @@ let movedAnnexNo = 0;
 let movedAnnexHeading = '';
 let movedAnnexKey = '';
 const REPORT_NARRATIVE_FIELDS = {
+  // ÖZET GİRİŞİ (v2.359): dosyaya özel yazılabilir; boşsa varsayılan basılır.
+  summary: [{ field: 'summaryIntroText', label: 'Rapor özeti girişi', rows: 4 }],
   s4: [{ field: 'methodText', label: 'İnceleme yöntemi', rows: 8 }],
   limits: [{ field: 'limitationsText', label: 'Teknik sınırlılıklar', rows: 6 }],
   s6: [{ field: 'conclusionText', label: 'Sonuç ve kanaat (bilirkişi yazar)', rows: 6 }]
@@ -14462,7 +14481,7 @@ function renderReportSectionEditor(c) {
           // VARSAYILAN METİN (v2.342): alan boşsa etkin varsayılan GÖSTERİLİR.
           // Rozet, metnin dosyaya yazılmadığını söyler (yanlış izlenim yok).
           const stored = String(c[f.field] || '');
-          const val = stored.trim() ? stored : defaultTextFor(f.field);
+          const val = stored.trim() ? stored : defaultTextForField(f.field);
           const badge = stored.trim()
             ? ''
             : ' <span class="rse-badge" title="Bu metin varsayılandan geliyor; alana yazmaya başladığınızda dosyaya kaydedilir.">VARSAYILAN METİN</span>';
@@ -17307,7 +17326,7 @@ function renderReport() {
         .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
         .join('')}</tbody></table>`,
     summary: () =>
-      `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(REPORT_TEXT.summaryIntro)}</p><table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'summary', reportSummaryRows(c))
+      `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(reportSummaryIntro(c))}</p><table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'summary', reportSummaryRows(c))
         .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
         .join('')}</tbody></table></div>`,
     toc: () => {
@@ -17850,7 +17869,7 @@ function docxXml(c) {
       ),
     summary: () =>
       headingXml(H('summary')) +
-      wP(REPORT_TEXT.summaryIntro) +
+      wP(reportSummaryIntro(c)) +
       wTable(frontRowsFor(c, 'summary', reportSummaryRows(c)).map((r) => [r.label, r.value]), {
         widths: [4200, 4800],
         header: false,
@@ -18492,7 +18511,7 @@ async function udfDocument(opts = {}) {
       ),
     summary: () => {
       el.push(h(H('summary')));
-      el.push(paragraph(REPORT_TEXT.summaryIntro, { size: 10 }));
+      el.push(paragraph(reportSummaryIntro(c), { size: 10 }));
       el.push(
         table(
           frontRowsFor(c, 'summary', reportSummaryRows(c)).map((r) => [r.label, r.value]),
@@ -23897,6 +23916,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.359': {
+    title: 'Rapor özeti girişi artık düzenlenebilir',
+    body:
+      'Raporun “RAPORUN KISA ÖZETİ” bölümünün giriş paragrafı artık değiştirilebilir. İki yol var: (1) Ayarlar → Kendi varsayılan metinlerim → “Rapor özeti girişi” ile kendi standart cümlenizi yazın; yeni dosyalarda o gelir. (2) Rapor görünümünde özet bölümüne tıklayıp sağdaki “Bölüm düzenle” panelinden yalnız o dosya için yazın; “Varsayılana dön” ile kendi varsayılanınıza çevirirsiniz. Boş bırakılırsa uygulamanın sade varsayılan cümlesi basılır.'
+  },
   '2.358': {
     title: 'Notlar bölüme bağlanabiliyor',
     body:

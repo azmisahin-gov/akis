@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.358.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.359.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9453,4 +9453,31 @@ Yeni bir alan eklediğinizde üç yeri birlikte düşünün: (1) şema/normalize
 5. **`scrollIntoView` KULLANMAYIN** (v2.193): üst kapları kaydırır. Defter
    listesinde kaydırma `host.scrollTop` ile hesaplanır (v2.358'de test yakaladı).
 6. Birleştirmede aynı not + farklı bağ **çakışma**dır (sessiz seçim yok).
+
+## YENİ OTURUM DEVRİ (v2.359) — Rapor özeti girişi düzenlenebilir
+
+| | |
+|---|---|
+| Sürüm | **v2.359** |
+| Testler | 2771 birim + 556 şema + rapor (57) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium: Ayarlar'da alan görünür; dosyaya özel metin üç çıktıda; "Varsayılana dön" varsayılanı getirir |
+
+### Kural
+**Dosya alanı ile katalog anahtarı ayrışabilir.** Özet girişi dosyada
+`report.summaryIntroText`, katalogda `summaryIntro` adıyla durur. Eşleme
+`FIELD_DEFAULT_ALIAS` + `defaultTextForField()` ile TEK yerde; yeni bir alan
+eklerken eşlemeyi de yazın (yoksa düzenleyici boş varsayılan gösterir).
+
+### Sıra (değişmez)
+**dosyaya özel → kullanıcı varsayılanı → kod metni.** Üç çıktı tek fonksiyon
+(`reportSummaryIntro(c)`); renderer'larda `REPORT_TEXT.summaryIntro` doğrudan
+basılmaz (`tasarim [2du]` bunu denetler).
+
+### DERS (ölçüldü): düz alan yazımı iç içe alana YANSIMAZ
+Bölüm düzenleyici `c[field]` (düz) yazar. Yeni alan `report.*` içindeyse
+`CASE_MIRROR`'a eşleme **şart**; yoksa yazma sessizce kaybolur (v2.359'da
+ölçüldü: önizleme değişmedi). Ayrıca `normalizeCase` göçte düz alanı okumalı:
+`report.summaryIntroText || c.summaryIntroText` (`??` boş dizeyi geçirmez).
+Yeni bir düzenlenebilir alan eklerken üçlüyü birlikte yapın:
+(1) şema + normalize, (2) `CASE_MIRROR`, (3) düzenleyici + üç çıktı.
 

@@ -2003,5 +2003,27 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('paket kopyası notsuz', stripped.notebook.length === 0 && c.notebook.length === 2);
 }
 
+// Senaryo 57: rapor özeti girişi düzenlenebilir (v2.359). Dosyaya özel metin
+// varsa o; yoksa kullanıcı varsayılanı; o da yoksa kod metni. Üç çıktı aynı.
+{
+  console.log('\n[Senaryo 57] rapor özeti girişi (v2.359)');
+  const own = __schemaMod.normalizeCase({
+    ...withMaterial(),
+    report: { sections: { summary: true }, summaryIntroText: 'DOSYAYA ÖZEL ÖZET GİRİŞİ' }
+  });
+  const H = htmlText(own), U = await udfText(own), D = await docxText(own);
+  checkShared('dosyaya özel özet girişi', 'DOSYAYA ÖZEL ÖZET GİRİŞİ', H, U, D);
+
+  localStorageStub.setItem('akis.defaults', JSON.stringify({ summaryIntro: 'KULLANICI ÖZET GİRİŞİ' }));
+  const plain = __schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { summary: true } } });
+  const H2 = htmlText(plain), U2 = await udfText(plain), D2 = await docxText(plain);
+  checkShared('kullanıcı varsayılanı kullanılır', 'KULLANICI ÖZET GİRİŞİ', H2, U2, D2);
+  check('dosyaya özel metin varsayılanı ezmez', !H2.includes('DOSYAYA ÖZEL ÖZET GİRİŞİ'));
+
+  localStorageStub.removeItem('akis.defaults');
+  const H3 = htmlText(__schemaMod.normalizeCase({ ...withMaterial(), report: { sections: { summary: true } } }));
+  check('varsayılan silinince kod metni döner', H3.includes('Aşağıdaki özet') && !H3.includes('KULLANICI ÖZET GİRİŞİ'));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

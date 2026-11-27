@@ -1604,6 +1604,9 @@ export function emptyCase(over = {}) {
       methodText: '',
       limitationsText: '',
       conclusionText: '',
+      // RAPOR ÖZETİ GİRİŞİ (v2.359): dosyaya özel; boşsa etkin varsayılan
+      // (Ayarlar → Kendi varsayılan metinlerim) kullanılır.
+      summaryIntroText: '',
       // Bölüm görünürlüğü (v2.219): anahtar → açık mı. Varsayılan tümü açık.
       sections: emptyReportSections(),
       // Rapor iskeleti (v2.227): gövde sırası + ek sırası + ek görünürlüğü.
@@ -2874,6 +2877,9 @@ export function normalizeCase(src = {}) {
       includeEmbedded: !!report.includeEmbedded,
       speakerMethod: !!report.speakerMethod,
       methodText: str(report.methodText ?? c.methodText),
+      // Boş iç içe alan düz alandan (eski/göç) doldurulur: `??` boş dizeyi
+      // geçirmediği için `||` kullanılır.
+      summaryIntroText: str(report.summaryIntroText || c.summaryIntroText),
       limitationsText: str(report.limitationsText ?? c.limitationsText),
       conclusionText: str(report.conclusionText ?? c.conclusionText),
       // Bölüm görünürlüğü (v2.219): eksik anahtar varsayılanla tamamlanır.
@@ -3645,7 +3651,7 @@ export function mergeCases(mine, theirs) {
     ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
     ['expert', ['name', 'registryNo', 'field']],
     ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
-    ['report', ['date', 'methodText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']]
+    ['report', ['date', 'methodText', 'summaryIntroText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']]
   ]) {
     const mg = mine[group] || {};
     const tg = theirs[group] || {};
@@ -4048,7 +4054,7 @@ export function compareCases(mine, theirs) {
   };
   for (const k of ['court', 'fileNo', 'subject', 'examinationSubject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
   for (const [g, keys] of [
-    ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']],
+    ['report', ['methodText', 'summaryIntroText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']],
     ['assignment', ['scope', 'body']]
   ]) {
     for (const k of keys) cmpField(g, k, `${g}.${k}`);

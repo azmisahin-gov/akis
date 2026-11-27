@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.358.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.359.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.359 — Rapor özeti girişi düzenlenebilir
+
+**KULLANICI NE GÖRECEK:** **"RAPORUN KISA ÖZETİ"** bölümünün giriş paragrafı
+artık değiştirilebilir. Önceden kodda sabitti; ne Ayarlar'dan ne dosyadan
+değişiyordu.
+
+İki yol var:
+
+| Yol | Nerede | Kapsam |
+|---|---|---|
+| **Kendi varsayılan metnim** | Ayarlar → **Kendi varsayılan metinlerim** → "Rapor özeti girişi" | Yeni dosyalarda ve metni olmayan dosyalarda |
+| **Yalnız bu dosya** | Rapor → özet bölümüne tıkla → **Bölüm düzenle** → "Rapor özeti girişi" | Yalnız o dosya |
+
+- **Sıra:** dosyaya özel metin → kullanıcı varsayılanı → uygulama metni.
+- **"Varsayılana dön"** dosyadaki metni siler, kullanıcı varsayılanını geri
+  getirir; kullanıcı varsayılanı yoksa uygulama metni gelir.
+- **Üç çıktı aynı:** HTML/DOCX/UDF tek fonksiyondan (`reportSummaryIntro`).
+- Metin katalogda **16.** düzenlenebilir metin oldu; `METIN_ENVANTERI.md`
+  kendiliğinden güncellendi.
+- **Ölçümde bulunan ara hata (düzeltildi):** bölüm düzenleyici düz alan yazar
+  (`c.summaryIntroText`); asıl veri `report.summaryIntroText` olduğu için ilk
+  denemede yazma **sessizce kayboldu** (önizleme değişmedi). `CASE_MIRROR`'a
+  eşleme eklendi; normalize düz alanı iç içeye taşır. Test bunu korur.
+- **Koruyan testler:** `birim [178]` (11), `rapor` Senaryo 57 (4),
+  `tasarim [2du]` (5).
 
 ## v2.358 — Notu bölüme bağlama
 

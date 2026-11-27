@@ -2772,5 +2772,15 @@ console.log('\n[2dt] Notu bölüme bağlama (v2.358)');
   check('bağlam stili token kullanır', /\.nb-anchor\s*\{[^}]*var\(--/.test(css));
 }
 
+console.log('\n[2du] Rapor özeti girişi düzenlenebilir (v2.359)');
+{
+  const app = read('assets/app.js');
+  check('katalogda özet girişi var', /key: 'summaryIntro'/.test(app));
+  check('bölüm düzenleyicide özet alanı var', /summary: \[\{ field: 'summaryIntroText'/.test(app));
+  check('alan→katalog eşlemesi var', /FIELD_DEFAULT_ALIAS = \{ summaryIntroText: 'summaryIntro' \}/.test(app));
+  check('üç çıktı tek fonksiyon kullanır', (app.match(/reportSummaryIntro\(c\)/g) || []).length >= 3);
+  check('sabit metin doğrudan basılmıyor', !/REPORT_TEXT\.summaryIntro\b(?!:)/.test(app.replace(/summaryIntro:\s*\n?\s*'[^']*'/, '')));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

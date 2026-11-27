@@ -183,6 +183,7 @@ const EXPOSE = [
   'physicalDocKey', 'PHYSICAL_ITEM_DEFS', 'PHYSICAL_INDEX_DEFS', 'physicalMutate',
   // v2.356 — çalışma notları
   'normalizeNotebook', 'emptyNotebookEntry', 'caseWithoutNotebook', 'NOTEBOOK_TEXT_MAX', 'NOTEBOOK_MAX',
+  'reportSummaryIntro',
   'notebooksForSegment',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
@@ -7679,7 +7680,8 @@ console.log('[168] Varsayılan metinlerim (v2.342)');
   const store = T.store;
   store.removeItem('akis.defaults');
   // 1) Varsayılan kapsamı: YALNIZ 3 metin. Beyan bilinçli olarak DIŞARIDA.
-  eq('varsayılan alan sayısı 15', T.USER_DEFAULT_FIELDS.length, 15);
+  // v2.359: özet girişi eklendi → 16 (kapsam listesi tek kaynak: TEXT_DEFAULT_ITEMS).
+  eq('varsayılan alan sayısı 16', T.USER_DEFAULT_FIELDS.length, 16);
   eq('kritik metinler kapsamda', ['scopeNoteText', 'annexLegalText', 'privacyText', 'integrityNote', 'asrIntro'].every((k) => T.USER_DEFAULT_FIELDS.includes(k)), true);
   eq('her metnin etiketi ve yeri var', T.TEXT_DEFAULT_ITEMS.every((x) => x.label && x.where), true);
   eq('hukuki metin işaretli', T.TEXT_DEFAULT_ITEMS.find((x) => x.key === 'annexLegalText').legal, true);
@@ -8000,6 +8002,47 @@ console.log('\n[177] Notu bölüme bağlama (v2.358)');
   const theirs = T.normalizeNotebook([{ id: 'x', at: '2026-01-01T00:00:00.000Z', text: 'aynı', segmentId: 's2' }]);
   const plan = T.notebookMergePlanForTest(mine, theirs);
   eq('farklı bölüm bağı çakışma bildirir', plan.conflicts.length, 1);
+}
+
+// --- 178. Rapor özeti girişi düzenlenebilir (v2.359) ----------------------
+// KULLANICI: "Raporun kısa özeti kısmındaki giriş metnini değiştirebiliyor
+// muyum?" Önceden metin kodda sabitti; ne Ayarlar'dan ne dosyadan değişiyordu.
+console.log('\n[178] Rapor özeti girişi düzenlenebilir (v2.359)');
+{
+  // 1) Katalogda olmalı (Ayarlar → Kendi varsayılan metinlerim).
+  const keys = T.TEXT_DEFAULT_ITEMS.map((x) => x.key);
+  eq('katalogda özet girişi var', keys.includes('summaryIntro'), true);
+  eq('katalogda alan adı var', keys.includes('summaryIntroText') || T.USER_DEFAULT_FIELDS.includes('summaryIntro'), true);
+
+  // 2) Global varsayılan: kullanıcı metni kod metnini geçer.
+  const codeText = T.defaultTextFor('summaryIntro');
+  eq('kod varsayılanı boş değil', codeText.length > 20, true);
+  T.saveUserDefaults({ summaryIntro: 'BENİM ÖZET GİRİŞİM' });
+  eq('kullanıcı varsayılanı etkin', T.defaultTextFor('summaryIntro'), 'BENİM ÖZET GİRİŞİM');
+  const fresh = T.freshCase();
+  eq('dosya metni yoksa kullanıcı varsayılanı', T.reportSummaryIntro(fresh), 'BENİM ÖZET GİRİŞİM');
+
+  // 3) Dosyaya özel metin varsayılanı geçer.
+  const own = T.normalizeCase({ ...fresh, report: { ...(fresh.report || {}), summaryIntroText: 'DOSYAYA ÖZEL GİRİŞ' } });
+  eq('normalize alanı korur', own.report.summaryIntroText, 'DOSYAYA ÖZEL GİRİŞ');
+  eq('dosya metni varsayılanı geçer', T.reportSummaryIntro(own), 'DOSYAYA ÖZEL GİRİŞ');
+
+  // 3b) DÜZ ALAN EŞLEMESİ: bölüm düzenleyici `c.summaryIntroText` yazar;
+  // eşleme olmadan yazma sessizce kaybolurdu (v2.359'da ölçüldü).
+  const mir = T.freshCase();
+  mir.summaryIntroText = 'DÜZ ALANDAN YAZILDI';
+  eq('düz alan iç içe alana yansır', mir.report.summaryIntroText, 'DÜZ ALANDAN YAZILDI');
+  const mirNorm = T.normalizeCase({ ...T.freshCase(), id: 'cm', summaryIntroText: 'GÖÇ EDEN METİN' });
+  eq('normalize düz alanı iç içeye taşır', mirNorm.report.summaryIntroText, 'GÖÇ EDEN METİN');
+
+  // 4) Birleştirme: boş alan dolar; iki dolu farklı değer çakışma.
+  const a = T.normalizeCase({ ...fresh, id: 'c1', updatedAt: '2026-01-01T00:00:00.000Z' });
+  const b = T.normalizeCase({ ...fresh, id: 'c1', report: { summaryIntroText: 'GELEN GİRİŞ' }, updatedAt: '2026-01-02T00:00:00.000Z' });
+  const m1 = T.mergeCasesForTest(a, b);
+  eq('boş alan doldurulur', m1.merged.report.summaryIntroText, 'GELEN GİRİŞ');
+
+  T.saveUserDefaults({ summaryIntro: '' });
+  eq('kullanıcı metni silinince kod metnine döner', T.defaultTextFor('summaryIntro'), codeText);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

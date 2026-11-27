@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.358.**
+yazılır. **Güncel sürüm: v2.359.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.359 — Rapor özeti girişi düzenlenebilir (TAMAMLANDI)
+
+- `report.summaryIntroText` (dosyaya özel) + katalogda `summaryIntro`
+  (kullanıcı varsayılanı) + kod metni; sıra: dosya → kullanıcı → kod.
+- Bölüm düzenleyicide "Rapor özeti girişi"; "Varsayılana dön" çalışır.
+- Üç çıktı tek kaynak (`reportSummaryIntro`); HTML/DOCX/UDF aynı metni basar.
+- Test: `birim [178]`, `rapor 57`, `tasarim [2du]`.
 
 ## v2.358 — Notu bölüme bağlama (TAMAMLANDI)
 
