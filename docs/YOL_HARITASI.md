@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.382.**
+yazılır. **Güncel sürüm: v2.383.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.383 — Okuma metni durumu, konuşmacı tablosu, sayfa düzeni (TAMAMLANDI)
+
+- `readingStatusLabel` + `paragraphGroups` durum anahtarı: onaylı/anlaşılmadı/belirsiz/relisten/machine ayrı paragraf; başlıkta durum yazılır.
+- `materialShortLabels` / `speakerReportRows` / `speakerDurationReportRows` / `speakerRecordLegend`: KAYIT ve BÖLÜM/NOT kısa “Kayıt N”; tam ad efsanede.
+- DOCX konuşmacı tablosu genişlikleri `[650,1150,1100,1100,1250,1150,1250,2556]`; UDF `[35,58,55,58,56,56,66,126]`.
+- İÇİNDEKİLER üç çıktıda yeni sayfadan başlar (`key === 'toc'` + frontCount/frontRendered/html).
+- DOCX `keepNext`: bölüm girişleri ve kayıt başlığı/süre/“Konuşmacılar”/“Deşifre” etiketleri tabloyla kalır; HTML yazdırmada `p:first-of-type`/`p:has(+ table)`/`h4` `break-after: avoid`.
+- `deliveryChecklistRows` “kalan gün” **rapor tarihine** göre (26.11 → 10.12 = 14).
+- Testler: `birim [187]`, `rapor` Senaryo 61, `tasarim [2el]`; 2822 + 556 yeşil.
 
 ## v2.382 — Rapor içerik denetimi 2 (TAMAMLANDI)
 

@@ -166,15 +166,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.382';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.382';
+} from './schema.js?v=2.383';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.383';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.382';
+const APP_VERSION = '2.383';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -483,6 +483,8 @@ Object.assign(REPORT_TEXT, {
   speakerFootnote:
     'Süre, ilgili konuşmacının bölümlerinin toplamı; ilk–son, kayıtta duyulduğu zaman aralığıdır. Ölçülmeyen değer “—” olarak yazılır.',
   speakerVerifiedSuffix: 'doğrulandı',
+  // v2.383 — raporda KAYIT sütunu kısa etiket taşır; tam ad bu satırda yazılır.
+  speakerRecordLegendPrefix: 'KAYIT NUMARALARI',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
   speakerMethodNote:
@@ -10897,22 +10899,41 @@ function mergeSegmentWithNext(m, index) {
 // cümle zamanları kayboluyor, kanıt tablosu kabalaşıyordu. Kullanıcı bunun
 // yerine salt-okunur paragraf görünümü istedi.
 // KURAL: bu görünüm `m.segments`e DOKUNMAZ; yalnız grupları HESAPLAR.
+// OKUMA METNİNDE KONTROL DURUMU (v2.383). Onaysız metin, okuma metni tek
+// başına okunduğunda doğrulanmış ifade izlenimi vermemeli. Belirsiz okuma
+// genel "kontrol bekliyor" yerine KENDİ durumuyla ve seçimiyle yazılır.
+function readingStatusLabel(s) {
+  const r = segReview(s);
+  if (r === 'ambiguous') {
+    const chosen = String((s && s.chosen) || '').trim();
+    return chosen ? `${REVIEW_LABEL.ambiguous} (seçilen: "${chosen}")` : `${REVIEW_LABEL.ambiguous} (seçim yok)`;
+  }
+  if (r === 'machine') return 'Çözümlendi (bilirkişi onayı değil)';
+  return REVIEW_LABEL[r] || REVIEW_LABEL.pending;
+}
 function paragraphGroups(segments) {
   const segs = Array.isArray(segments) ? segments : [];
   const groups = [];
   let cur = null;
   for (const s of segs) {
     const spk = String(s.speaker || '').trim();
-    if (cur && cur.speaker === spk) {
+    // Kontrol durumu da gruplama anahtarıdır: onaylı ve onaysız metin aynı
+    // paragrafta birleşirse onaysız kısım onaylı görünür (v2.383). Anahtar
+    // DURUM METNİDİR: belirsiz okumanın seçimli/seçimsiz hâli ayrı yazılır.
+    const rev = segReview(s);
+    const st = readingStatusLabel(s);
+    if (cur && cur.speaker === spk && cur.status === st) {
       cur.items.push(s);
       cur.end = s.end;
     } else {
-      cur = { speaker: spk, start: s.start, end: s.end, items: [s] };
+      cur = { speaker: spk, review: rev, status: st, start: s.start, end: s.end, items: [s] };
       groups.push(cur);
     }
   }
   return groups.map((g) => ({
     speaker: g.speaker,
+    review: g.review,
+    status: g.status,
     start: g.start,
     end: g.end,
     count: g.items.length,
@@ -10932,9 +10953,9 @@ function paragraphSpeakerLabel(m, name) {
 // zaman aralığını kullanır; kontrol bekleyen grup AÇIKÇA işaretlenir.
 function readingGroupsFor(m) {
   return paragraphGroups((m && m.segments) || []).map((g) => ({
-    head: `${paragraphSpeakerLabel(m, g.speaker)} · ${tcRange(g.start, g.end)} · ${g.count} bölüm${
-      g.unreviewed ? ' · kontrol bekliyor' : ''
-    }`,
+    head: `${paragraphSpeakerLabel(m, g.speaker)} · ${tcRange(g.start, g.end)} · ${g.count} bölüm · ${g.status}`,
+    status: g.status,
+    count: g.count,
     text: g.text || '(metin yok)'
   }));
 }
@@ -10960,7 +10981,7 @@ function openParagraphView(m) {
     ? groups
         .map(
           (g) =>
-            `<div class="paragraph-item"><div class="paragraph-head"><b>${esc(paragraphSpeakerLabel(m, g.speaker))}</b><span>${esc(tcRange(g.start, g.end))} · ${g.count} bölüm${g.unreviewed ? ' · kontrol bekliyor' : ''}</span></div><p class="paragraph-text">${esc(g.text || '(metin yok)')}</p></div>`
+            `<div class="paragraph-item"><div class="paragraph-head"><b>${esc(paragraphSpeakerLabel(m, g.speaker))}</b><span>${esc(tcRange(g.start, g.end))} · ${g.count} bölüm · ${esc(g.status)}</span></div><p class="paragraph-text">${esc(g.text || '(metin yok)')}</p></div>`
         )
         .join('')
     : '<p class="seg-empty-note">Görüntülenecek bölüm yok.</p>';
@@ -13650,6 +13671,53 @@ function speakerRows(c) {
     g.parts
   ]);
 }
+// v2.383 — RAPOR KONUŞMACI TABLOLARI: KAYIT sütunu dosya adı yerine kısa
+// "Kayıt N" etiketi taşır. Uzun WAV adları dar sütunda ortadan bölünüyordu.
+// Ad KAYBOLMAZ: tablo altında eşleme (speakerRecordLegend) yazılır.
+// Veri fonksiyonları (speakerRows/speakerDurationRows) DEĞİŞMEZ.
+function materialShortLabels(c) {
+  const map = new Map();
+  ((c && c.materials) || []).forEach((m, i) => {
+    const name = String((m && m.name) || '').trim();
+    if (name) map.set(name, `Kayıt ${i + 1}`);
+  });
+  return map;
+}
+function materialShortLabel(c, name) {
+  const n = String(name == null ? '' : name).trim();
+  if (!n) return '—';
+  return materialShortLabels(c).get(n) || n;
+}
+function speakerReportRows(c) {
+  const short = (name) => materialShortLabel(c, name);
+  return speakerGroups(c).map((g) => {
+    const links = Array.isArray(g.links) && g.links.length ? g.links : [];
+    const kayit =
+      links.length > 1
+        ? [...new Set(links.map((l) => short(l.m && l.m.name)))].join(', ')
+        : short(g.material);
+    // BÖLÜM / NOT de kısa etiket kullanır: uzun dosya adı dar sütunda
+    // ortadan bölünüyordu. Tam ad tablo altındaki eşlemede yazılıdır.
+    const parts =
+      links.length > 1
+        ? links.map((l) => `${short(l.m && l.m.name)}: ${(l.sp && l.sp.code) || ''} · ${(l.segs || []).length} bölüm`).join(' · ')
+        : `${short(g.material)}: ${g.count} bölüm`;
+    return [g.code || '—', g.name, kayit || '—', g.role, g.gender, g.age, g.pitches || '—', parts];
+  });
+}
+function speakerDurationReportRows(c) {
+  return speakerDurationRows(c).map((r) => {
+    const out = r.slice();
+    out[2] = materialShortLabel(c, r[2]);
+    return out;
+  });
+}
+function speakerRecordLegend(c) {
+  const labels = materialShortLabels(c);
+  if (!labels.size) return '';
+  const list = [...labels.entries()].map(([name, label]) => `${label} = ${name}`).join(' · ');
+  return `${REPORT_TEXT.speakerRecordLegendPrefix}: ${list}`;
+}
 /** Konuşmacı notları tablo dışında (uzun metin sütunu ezmesin). */
 function speakerNotes(c) {
   return speakerGroups(c)
@@ -16126,11 +16194,16 @@ function deliveryChecklistRows(c) {
   else if (verified >= hashed) add('SHA-256 doğrulaması', okS, `${verified} kayıt doğrulandı.`);
   else add('SHA-256 doğrulaması', infoS, `${verified}/${hashed} kayıt doğrulandı.`);
   // TESLİM TARİHİ: bilgi satırıdır (eksik değil); gecikme metinle yazılır.
-  const info = deliveryInfo(box);
+  // v2.383 — RAPOR TARİHİNE göre hesaplanır. Bugüne göre hesaplamak, aynı
+  // raporun gün geçtikçe farklı "kalan gün" yazmasına ve bir sonraki satırla
+  // çelişmesine yol açıyordu (26.11 → 10.12 = 14 gün, "13 gün kaldı").
+  const baseInfo = deliveryInfo(box);
+  const info = baseInfo.reportDate ? deliveryInfo(box, { today: baseInfo.reportDate }) : baseInfo;
+  const dayRef = info.reportDate ? 'rapor tarihinde ' : '';
   add(
     'Son teslim tarihi',
     infoS,
-    info.dueDate ? `${niceDate(info.dueDate)} · ${info.label}` : 'Girilmedi (zorunlu değildir).'
+    info.dueDate ? `${niceDate(info.dueDate)} · ${dayRef}${info.label}` : 'Girilmedi (zorunlu değildir).'
   );
   if (!info.dueDate || info.reportLeft == null) add('Rapor tarihi ≤ son teslim', infoS, 'Hesaplanamadı: tarih eksik.');
   else if (info.reportLate) add('Rapor tarihi ≤ son teslim', badS, `Rapor tarihi ${Math.abs(info.reportLeft)} gün sonra.`);
@@ -18048,7 +18121,8 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('acquisition'))}</h3><p>${esc(REPORT_TEXT.acqIntro)}</p>${body}</div>`;
     },
     speakers: () => {
-      const spkRows = speakerRows(c);
+      const spkRows = speakerReportRows(c);
+      const legend = speakerRecordLegend(c);
       const conf = speakerCodeConflictText(c);
       const notes = speakerNotes(c);
       const notesHtml = notes.length
@@ -18062,15 +18136,16 @@ function renderReport() {
               .map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`)
               .join('')}</tbody></table>`
           : `<p class="paper-muted">${esc(REPORT_TEXT.noSpeakerText)}</p>`;
-      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}${notesHtml}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p>${speakerMethodNoteText(c) ? `<p class="paper-muted">${esc(speakerMethodNoteText(c))}</p>` : ''}</div>`;
+      return `<div class="paper-section"><h3>${esc(H('speakers'))}</h3><p>${esc(REPORT_TEXT.speakerIntro)}</p><p class="paper-muted">${esc(REPORT_TEXT.speakerCodeNote)}</p>${conf ? `<p class="paper-warn"><b>${esc(conf)}</b></p>` : ''}${spkTable}${legend ? `<p class="paper-muted">${esc(legend)}</p>` : ''}${notesHtml}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p>${speakerMethodNoteText(c) ? `<p class="paper-muted">${esc(speakerMethodNoteText(c))}</p>` : ''}</div>`;
     },
     speakerDurations: () => {
-      const rows = speakerDurationRows(c);
+      const rows = speakerDurationReportRows(c);
+      const legend = speakerRecordLegend(c);
       const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows);
       const body = t.empty
         ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
         : `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-      return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
+      return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}${legend ? `<p class="paper-muted">${esc(legend)}</p>` : ''}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
@@ -18300,6 +18375,9 @@ function renderReport() {
   for (const key of REPORT_FRONT_KEYS) {
     if (!(on(key) && front[key])) continue;
     if (key === 'summary' && html) html += '<div class="paper-page-break"></div>';
+    // v2.383 — İÇİNDEKİLER kendi sayfasından başlar; özetle birleşince son
+    // maddeler sonraki sayfaya taşıyordu.
+    if (key === 'toc' && html) html += '<div class="paper-page-break"></div>';
     html += wrapBlock(key, front[key]());
   }
   html += '<div class="paper-page-break">';
@@ -18629,7 +18707,7 @@ function docxXml(c) {
       const names = dInv.map((r) => r[0]).filter(Boolean);
       return (
         headingXml(H('s3')) +
-        wP(REPORT_TEXT.defaultInventoryIntro) +
+        wP(REPORT_TEXT.defaultInventoryIntro, { keep: true }) +
         (names.length
           ? names.map((n) => wP(`• ${n}`)).join('')
           : wP(REPORT_TEXT.noInventoryRow[0], { color: '74869A', size: 17, italic: true })) +
@@ -18641,7 +18719,7 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'origin', REPORT_TEXT.originHeaders, dOrg, [1100, 900, 900, 900, 900, 1000, 1100, 1200]);
       return (
         headingXml(H('origin')) +
-        wP(REPORT_TEXT.originIntro) +
+        wP(REPORT_TEXT.originIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : t.rows.length
@@ -18655,7 +18733,7 @@ function docxXml(c) {
       if (!dEmb.length) return '';
       return (
         headingXml(H('embeddedInfo')) +
-        wP(defaultTextFor('embeddedIntro')) +
+        wP(defaultTextFor('embeddedIntro'), { keep: true }) +
         wTable([[...REPORT_TEXT.embeddedHeaders], ...dEmb], { widths: [2200, 2200, 2400, 2200], header: true })
       );
     },
@@ -18665,30 +18743,31 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'acquisition', REPORT_TEXT.acqHeaders, dAcq, [950, 850, 800, 850, 850, 850, 900, 850, 900]);
       return (
         headingXml(H('acquisition')) +
-        wP(REPORT_TEXT.acqIntro) +
+        wP(REPORT_TEXT.acqIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
       );
     },
     speakers: () => {
-      const dSpk = speakerRows(c);
-      const dDur = speakerDurationRows(c);
+      const dSpk = speakerReportRows(c);
+      const legend = speakerRecordLegend(c);
       const conf = speakerCodeConflictText(c);
       const notes = speakerNotes(c);
       return (
         headingXml(H('speakers')) +
-        wP(REPORT_TEXT.speakerIntro) +
-        wP(REPORT_TEXT.speakerCodeNote, { color: '6F8295', size: 17 }) +
+        wP(REPORT_TEXT.speakerIntro, { keep: true }) +
+        wP(REPORT_TEXT.speakerCodeNote, { color: '6F8295', size: 17, keep: true }) +
         (conf ? wP(conf, { bold: true, color: '9A6B2D', size: 18 }) : '') +
         (() => {
-          const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, dSpk, [700, 1200, 900, 850, 850, 1400, 1800, 2506]);
+          const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, dSpk, [650, 1150, 1100, 1100, 1250, 1150, 1250, 2556]);
           return st.empty
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : st.rows.length
               ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true })
               : wP(REPORT_TEXT.noSpeakerText, { color: '74869A', size: 17, italic: true });
         })() +
+        (legend ? wP(legend, { color: '74869A', size: 17, italic: true }) : '') +
         (notes.length
           ? wP('Notlar:', { bold: true, color: '6F8295', size: 17 }) +
             notes.map((n) => wP(`${n.code} · ${n.name}: ${n.note}`, { color: '657D92', size: 17, italic: true })).join('')
@@ -18698,13 +18777,15 @@ function docxXml(c) {
       );
     },
     speakerDurations: () => {
-      const rows = speakerDurationRows(c);
-      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [700, 1500, 1100, 1200, 2200, 3506]);
+      const rows = speakerDurationReportRows(c);
+      const legend = speakerRecordLegend(c);
+      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [700, 1500, 1300, 1100, 2000, 3606]);
       return (
         headingXml(H('speakerDurations')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })) +
+        (legend ? wP(legend, { color: '74869A', size: 17, italic: true }) : '') +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
       );
     },
@@ -18714,7 +18795,7 @@ function docxXml(c) {
       const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
       return (
         headingXml(H('tech')) +
-        wP(REPORT_TEXT.techIntro) +
+        wP(REPORT_TEXT.techIntro, { keep: true }) +
         (has ? wTable(rows, { widths: [3400, 5600], header: false, shadeFirstCol: true }) : wP(REPORT_TEXT.techEmpty, { color: '74869A', size: 17, italic: true })) +
         wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true })
       );
@@ -18726,20 +18807,20 @@ function docxXml(c) {
       if (!dAsr.length) return headingXml(H('transcriptionMethod')) + wP(defaultTextFor('asrNone'));
       return (
         headingXml(H('transcriptionMethod')) +
-        wP(defaultTextFor('asrIntro')) +
+        wP(defaultTextFor('asrIntro'), { keep: true }) +
         wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true }) +
         wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true })
       );
     },
     s5: () => {
       const s5sub = reportSubHeadings(c);
-      let out = headingXml(H('s5')) + headingXml(s5sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17 });
+      let out = headingXml(H('s5')) + headingXml(s5sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17, keep: true });
       for (let i = 0; i < c.materials.length; i++) {
         const m = c.materials[i];
         out += headingXml(`${s5sub.recordPrefix(i)} ${m.name}`, 2);
         out += wP(
           `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
-          { color: '6F8295', size: 17 }
+          { color: '6F8295', size: 17, keep: true }
         );
         {
           const spkTable = materialSpeakerRows(c, m);
@@ -18747,7 +18828,7 @@ function docxXml(c) {
             const st = reportTableColumns(c, 'materialSpeakers', spkTable.headers, spkTable.rows, null, spkTable.keys);
             out += st.empty
               ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-              : wP(REPORT_TEXT.recordSpeakersHeading, { bold: true, color: '6F8295', size: 17 }) +
+              : wP(REPORT_TEXT.recordSpeakersHeading, { bold: true, color: '6F8295', size: 17, keep: true }) +
                 wTable([[...st.headers], ...st.rows], { header: true });
           }
         }
@@ -18761,7 +18842,7 @@ function docxXml(c) {
             return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
           });
           const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1200, 900, 1100, 3100, 1000, 800]);
-          out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17 });
+          out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17, keep: true });
           out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
@@ -18770,7 +18851,7 @@ function docxXml(c) {
     // v2.261 — CEVAPLAR ayrı bölüm (soru yoksa çizilmez).
     answers: () => {
       const na = map.answers || 0;
-      let out = headingXml(H('answers')) + wP(REPORT_TEXT.answersIntro, { color: '6F8295', size: 17 });
+      let out = headingXml(H('answers')) + wP(REPORT_TEXT.answersIntro, { color: '6F8295', size: 17, keep: true });
       c.questions.forEach((q, i) => {
         out += wP(`${na}.${i + 1}. ${q.question || REPORT_TEXT.defaultQuestion}`, {
           bold: true,
@@ -18790,7 +18871,7 @@ function docxXml(c) {
       const meas = limitsMeasuredText(c);
       return (
         headingXml(H('limits')) +
-        wP(REPORT_TEXT.limitsIntro, { color: '6F8295', size: 17 }) +
+        wP(REPORT_TEXT.limitsIntro, { color: '6F8295', size: 17, keep: true }) +
         wP(c.limitationsText || defaultTextFor('limitationsText')) +
         (meas ? wP(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { color: '6F8295', size: 17, italic: true }) : '')
       );
@@ -18798,7 +18879,7 @@ function docxXml(c) {
     // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK.
     integrity: () =>
       headingXml(H('integrity')) +
-      wP(REPORT_TEXT.integrityIntro) +
+      wP(REPORT_TEXT.integrityIntro, { keep: true }) +
       wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true }) +
       wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true }),
     // BAĞIMSIZ OKUMA METNİ (v2.234).
@@ -18818,13 +18899,13 @@ function docxXml(c) {
         }
       }
       if (!out) return '';
-      return headingXml(H('readingText')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17 }) + out;
+      return headingXml(H('readingText')) + wP(REPORT_TEXT.readingIntro, { color: '6F8295', size: 17, keep: true }) + out;
     },
     // v2.311 (C2) — TERİM/KONU LİSTESİ (opt-in).
     terms: () => {
       const t = termsText(c);
       if (!t) return '';
-      return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17 }) + wP(t);
+      return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17, keep: true }) + wP(t);
     },
     scopeNote: () => headingXml(H('scopeNote')) + wP(defaultTextFor('scopeNoteText')),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || defaultTextFor('conclusionText')),
@@ -18844,7 +18925,7 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'wer', REPORT_TEXT.werHeaders, dWer, [1800, 2200, 1200, 1200, 900, 700]);
       return (
         headingXml(H('wer')) +
-        wP(defaultTextFor('werIntro')) +
+        wP(defaultTextFor('werIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
@@ -18856,7 +18937,7 @@ function docxXml(c) {
       const t = reportTableColumns(c, 'levels', REPORT_TEXT.levelHeaders, dLevel, [1500, 800, 800, 900, 1000, 1000, 1900]);
       return (
         headingXml(H('levels')) +
-        wP(defaultTextFor('levelIntro')) +
+        wP(defaultTextFor('levelIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
@@ -18864,7 +18945,7 @@ function docxXml(c) {
     },
     reviewSummary: () =>
       headingXml(H('reviewSummary')) +
-      wP(REPORT_TEXT.reviewSummaryIntro) +
+      wP(REPORT_TEXT.reviewSummaryIntro, { keep: true }) +
       wTable(reviewSummaryRows(c).map((r) => [r[0], String(r[1])]), {
         widths: [6000, 3000],
         header: false,
@@ -18873,20 +18954,20 @@ function docxXml(c) {
       wP(REPORT_TEXT.reviewSummaryNote, { color: '74869A', size: 17, italic: true }),
     qualityControl: () =>
       headingXml(H('qualityControl')) +
-      wP(REPORT_TEXT.qcIntro) +
+      wP(REPORT_TEXT.qcIntro, { keep: true }) +
       wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true }) +
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
     privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText')),
     handoverRecord: () => headingXml(H('handoverRecord')) + recordBlockXml(c, 'handoverRecord'),
-    fileInventory: () => headingXml(H('fileInventory')) + wP(REPORT_TEXT.fileInventoryIntro) + recordBlockXml(c, 'fileInventory') + wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true }),
-    custodyLog: () => headingXml(H('custodyLog')) + wP(REPORT_TEXT.custodyLogIntro) + recordBlockXml(c, 'custodyLog'),
-    notationKey: () => headingXml(H('notationKey')) + wP(REPORT_TEXT.notationKeyIntro) + recordBlockXml(c, 'notationKey'),
+    fileInventory: () => headingXml(H('fileInventory')) + wP(REPORT_TEXT.fileInventoryIntro, { keep: true }) + recordBlockXml(c, 'fileInventory') + wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true }),
+    custodyLog: () => headingXml(H('custodyLog')) + wP(REPORT_TEXT.custodyLogIntro, { keep: true }) + recordBlockXml(c, 'custodyLog'),
+    notationKey: () => headingXml(H('notationKey')) + wP(REPORT_TEXT.notationKeyIntro, { keep: true }) + recordBlockXml(c, 'notationKey'),
     finalChecklist: () => headingXml(H('finalChecklist')) + recordBlockXml(c, 'finalChecklist'),
     legalBasis: () => headingXml(H('legalBasis')) + recordBlockXml(c, 'legalBasis'),
     annex: () => {
       // AYRI TUTANAK BELGESİ (v2.330): "EKLER" başlığı/girişi yok; belge başlığı 1. düzey.
       const tutanakDoc = !!c.__tutanakKind;
-      let out = tutanakDoc ? '' : headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
+      let out = tutanakDoc ? '' : headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17, keep: true });
       for (const b of reportAnnexBlocks(c)) {
         if (b.kind === 'group') {
           // v2.369: grup başlığı (düzey 2) + her taşınmış bölüm (düzey 3).
@@ -18966,6 +19047,8 @@ function docxXml(c) {
     if (!on(key) || !front[key]) continue;
     // Özet tablosu kapak/künyeden ayrı sayfada başlar (satır bölünmesi olmaz).
     if (key === 'summary' && frontCount) body += pageBreakPara;
+    // v2.383 — İÇİNDEKİLER kendi sayfasından başlar.
+    if (key === 'toc' && frontCount) body += pageBreakPara;
     body += front[key]();
     frontCount += 1;
   }
@@ -19378,7 +19461,8 @@ async function udfDocument(opts = {}) {
       else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
     speakers: () => {
-      const uSpk = speakerRows(c);
+      const uSpk = speakerReportRows(c);
+      const legend = speakerRecordLegend(c);
       const conf = speakerCodeConflictText(c);
       const notes = speakerNotes(c);
       el.push(h(H('speakers')));
@@ -19386,11 +19470,12 @@ async function udfDocument(opts = {}) {
       el.push(paragraph(REPORT_TEXT.speakerCodeNote, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (conf) el.push(paragraph(conf, { size: 10, bold: true, color: 'gold', after: 4 }));
       {
-        const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk, [40, 65, 50, 45, 45, 65, 80, 120]);
+        const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk, [35, 58, 55, 58, 56, 56, 66, 126]);
         if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
         else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
         else el.push(paragraph(REPORT_TEXT.noSpeakerText, { size: 9, italic: true, color: 'muted' }));
       }
+      if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
       if (notes.length) {
         el.push(paragraph('Notlar:', { size: 10, bold: true, color: 'mid', after: 3 }));
         for (const n of notes) el.push(paragraph(`${n.code} · ${n.name}: ${n.note}`, { size: 9, italic: true, color: 'muted', after: 3 }));
@@ -19400,10 +19485,12 @@ async function udfDocument(opts = {}) {
     },
     speakerDurations: () => {
       el.push(h(H('speakerDurations')));
-      const rows = speakerDurationRows(c);
-      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [40, 75, 55, 50, 110, 180]);
+      const rows = speakerDurationReportRows(c);
+      const legend = speakerRecordLegend(c);
+      const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows, [40, 80, 65, 55, 110, 160]);
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
       else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
     s4: () => {
@@ -19768,6 +19855,8 @@ async function udfDocument(opts = {}) {
   for (const key of REPORT_FRONT_KEYS) {
     if (!on(key) || !front[key]) continue;
     if (key === 'summary' && frontRendered) el.push(pageBreak());
+    // v2.383 — İÇİNDEKİLER kendi sayfasından başlar.
+    if (key === 'toc' && frontRendered) el.push(pageBreak());
     front[key]();
     frontRendered += 1;
   }
@@ -24914,6 +25003,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.383': {
+    title: 'Okuma metni durumu, konuşmacı tablosu ve sayfa düzeni',
+    body:
+      'Okuma metninde her paragrafın kontrol durumu artık yazılı: onaylı metin “Onaylandı”, anlaşılmayan metin “Anlaşılmadı”, belirsiz okuma seçimiyle birlikte görünür. Metin silinmez; ancak doğrulanmamış ifade artık doğrulanmış gibi okunmaz. Konuşmacı tablosunda uzun dosya adları yerine “Kayıt 1 / Kayıt 2” kısa adları kullanılır; tam adlar tablonun altında yazar. Rol sütunu (Davacı/Davalı) ve sütun başlıkları ortadan bölünmüyor. Word çıktısında İÇİNDEKİLER kendi sayfasından başlar; bölüm başlığı, giriş cümlesi ve tablo aynı sayfada kalır. Son kontrol listesindeki “kalan gün” artık RAPOR TARİHİNE göre hesaplanır; aynı raporda 13/14 gün çelişkisi olmaz.'
+  },
   '2.382': {
     title: 'Rapor içerik denetimi 2: roller, kanıt, tablo ve sayfa düzeni',
     body:

@@ -114,6 +114,7 @@ const EXPOSE = [
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'asrProfile', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
+  'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -3611,10 +3612,14 @@ console.log('\n== [74] Raporda okuma metni (v2.202)');
   eq('iki konuşmacı → iki grup', g.length, 2);
   eq('aynı konuşmacının metni birleşir', g[0].text, 'merhaba dünya');
   eq('grup 1 bölüm sayısı', /2 bölüm/.test(g[0].head), true);
-  eq('grup 1 onaylı (kontrol bekliyor yok)', /kontrol bekliyor/.test(g[0].head), false);
+  // v2.383 — kontrol durumu okuma metninde AÇIKÇA yazılır (onaylı dâhil).
+  eq('grup 1 onaylı (durum yazılı)', g[0].status, 'Onaylandı');
+  eq('grup 1 başlıkta durum var', /Onaylandı/.test(g[0].head), true);
+  eq('grup 1 kontrol bekliyor yok', /kontrol bekliyor/i.test(g[0].head), false);
   eq('grup 1 konuşmacı kodu (S1 · Kiracı)', /S1 · Kiracı/.test(g[0].head), true);
   eq('grup 2 metni', g[1].text, 'evet');
-  eq('grup 2 kontrol bekliyor', /kontrol bekliyor/.test(g[1].head), true);
+  eq('grup 2 kontrol bekliyor', /kontrol bekliyor/i.test(g[1].head), true);
+  eq('grup 2 durumu', g[1].status, 'Kontrol bekliyor');
   const before = JSON.stringify(m.segments);
   T.readingGroupsFor(m);
   eq('okuma metni veriyi değiştirmez', JSON.stringify(m.segments), before);
@@ -8120,6 +8125,68 @@ console.log('\n[178] Rapor özeti girişi düzenlenebilir (v2.359)');
   const wrapped = T.zwspWrapLongHex(h);
   eq('ZWSP 32 karakterde bir', (wrapped.match(/\u200b/g) || []).length, 1);
   eq('ZWSP metni bozmaz', wrapped.replace(/\u200b/g, ''), h);
+}
+
+
+console.log('\n== [187] Okuma metni durumu, kısa kayıt adları, tarih tutarlılığı (v2.383)');
+{
+  // A) OKUMA METNİ: onaysız metin doğrulanmış görünmesin; belirsiz okuma
+  // kendi durumuyla yazılsın. Grup, kontrol durumu değişince AYRILIR.
+  const seg = (id, a, b, review, extra = {}) =>
+    Object.assign({ id, start: a, end: b, text: id, speaker: 'A', review }, extra);
+  const m = {
+    id: 'm1',
+    name: 'a.wav',
+    segments: [
+      seg('s1', '00:00:00.000', '00:00:05.000', 'approved'),
+      seg('s2', '00:00:05.000', '00:00:10.000', 'approved'),
+      seg('s3', '00:00:10.000', '00:00:15.000', 'inaudible'),
+      seg('s4', '00:00:15.000', '00:00:20.000', 'ambiguous', { reading1: 'geldi', reading2: 'kaldı', chosen: 'geldi' }),
+      seg('s5', '00:00:20.000', '00:00:25.000', 'ambiguous', { reading1: 'bir', reading2: 'iki' }),
+      seg('s6', '00:00:25.000', '00:00:30.000', 'machine')
+    ]
+  };
+  const g = T.readingGroupsFor(m);
+  eq('durum değişince grup ayrılır (5)', g.length, 5);
+  eq('onaylı grup iki bölümü birleştirir', g[0].count, 2);
+  eq('onaylı grup durumu', g[0].status, 'Onaylandı');
+  eq('anlaşılmadı durumu yazılır', g[1].status, 'Anlaşılmadı');
+  eq('anlaşılmadı metni KORUNUR', g[1].text, 's3');
+  eq('belirsiz okuma seçimli', g[2].status, 'Belirsiz okuma (seçilen: "geldi")');
+  eq('belirsiz okuma seçimsiz', g[3].status, 'Belirsiz okuma (seçim yok)');
+  eq('makine işareti onay sayılmaz', /bilirkişi onayı değil/i.test(g[4].status), true);
+  eq('grup başlığında durum var', /Anlaşılmadı/.test(g[1].head), true);
+
+  // B) KISA KAYIT ADI: rapor tablosunda "Kayıt N"; veri fonksiyonu DEĞİŞMEZ.
+  const c = {
+    id: 'c',
+    materials: [
+      { id: 'm1', name: 'ses_01_uzun_dosya_adi.wav', speakers: [{ id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant' }], segments: [seg('g1', '00:00:00.000', '00:00:05.000', 'approved', { speaker: 'Kiracı', speakerId: 'a' })] },
+      { id: 'm2', name: 'ses_02_diger_kayit.wav', speakers: [{ id: 'b', code: 'S1', name: 'Ev sahibi', label: 'Ev sahibi', role: 'defendant' }], segments: [seg('g2', '00:00:00.000', '00:00:05.000', 'approved', { speaker: 'Ev sahibi', speakerId: 'b' })] }
+    ]
+  };
+  eq('veri satırı tam adı korur', T.speakerRows(c)[0][2], 'ses_01_uzun_dosya_adi.wav');
+  const rr = T.speakerReportRows(c);
+  eq('rapor satırı kısa kayıt adı', rr[0][2], 'Kayıt 1');
+  eq('ikinci kayıt kısa adı', rr[1][2], 'Kayıt 2');
+  eq('süre rapor satırı kısa adı', T.speakerDurationReportRows(c)[1][2], 'Kayıt 2');
+  const legend = T.speakerRecordLegend(c);
+  eq('efsane tam adı taşır (1)', legend.includes('Kayıt 1 = ses_01_uzun_dosya_adi.wav'), true);
+  eq('efsane tam adı taşır (2)', legend.includes('Kayıt 2 = ses_02_diger_kayit.wav'), true);
+
+  // C) TARİH: kontrol listesi RAPOR TARİHİNE göre hesaplar (26.11 → 10.12 = 14).
+  const dc = {
+    id: 'dc', fileNo: '2026/1', court: 'Mahkeme', expertName: 'Uzman', subject: 'Konu',
+    report: { date: '2026-11-26' },
+    assignment: { dueDate: '2026-12-10', dueDateManual: true },
+    materials: [{ id: 'm1', name: 'a.wav', duration: 10, sha256: 'a'.repeat(64), segments: [seg('x', '00:00:00.000', '00:00:10.000', 'approved', { speaker: 'A' })] }]
+  };
+  const rows = T.deliveryChecklistRows(dc);
+  const due = rows.find((r) => r[0] === 'Son teslim tarihi');
+  const cmp = rows.find((r) => r[0] === 'Rapor tarihi ≤ son teslim');
+  eq('son teslim satırı rapor tarihine göre', /14 gün kaldı/.test(due[2]), true);
+  eq('son teslim satırı 13 gün DEMEZ', /13 gün/.test(due[2]), false);
+  eq('rapor tarihi satırı 14 gün der', /14 gün önce/.test(cmp[2]), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

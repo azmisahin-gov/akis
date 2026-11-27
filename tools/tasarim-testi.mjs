@@ -3075,5 +3075,24 @@ console.log('\n[2ec] Sağ çekmece + stage bar kaldırıldı (v2.368)');
   check('yazdırmada çekmece gizli', /#reportSide\.drawer,[\s\S]{0,120}#reportDrawerBackdrop \{ display: none !important; \}/.test(css));
 }
 
+
+console.log('\n[2el] Rapor sayfa akışı: İÇİNDEKİLER + başlık/giriş/tablo birlikte (v2.383)');
+{
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  // KULLANICI BULGUSU (DOCX): İÇİNDEKİLER özetle birleşip 3 madde sonraki
+  // sayfaya taşıyordu; başlık+giriş bir sayfada, tablo sonrakinde kalıyordu.
+  check('HTML: İÇİNDEKİLER öncesi sayfa sonu', /key === 'toc' && html/.test(app));
+  check('DOCX: İÇİNDEKİLER öncesi sayfa sonu', /key === 'toc' && frontCount/.test(app));
+  check('UDF: İÇİNDEKİLER öncesi sayfa sonu', /key === 'toc' && frontRendered/.test(app));
+  check('DOCX: envanter girişi tabloyla kalır (keep)', /wP\(REPORT_TEXT\.fileInventoryIntro, \{ keep: true \}\)/.test(app));
+  check('DOCX: edinme girişi tabloyla kalır (keep)', /wP\(REPORT_TEXT\.acqIntro, \{ keep: true \}\)/.test(app));
+  check('yazdırmada giriş+tablo birlikte', /\.report-paper \.paper-section > p:first-of-type \{ break-after: avoid;/.test(css));
+  // Okuma metni kontrol durumu (v2.383): onaysız metin çıplak görünmez.
+  check('okuma metni durum etiketi tek kaynak', /function readingStatusLabel\(s\)/.test(app));
+  check('okuma metni durumu başlıkta', /· \$\{g\.status\}/.test(app));
+  check('grup kontrol durumuna göre ayrılır', /cur\.speaker === spk && cur\.status === st/.test(app));
+  check('kısa kayıt adı rapor tablosunda', /function speakerReportRows\(c\)/.test(app) && /function speakerRecordLegend\(c\)/.test(app));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

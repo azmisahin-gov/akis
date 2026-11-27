@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.382.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.383.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10215,6 +10215,36 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - Teknik ortam boşsa `techEmpty`; 22/23/24 giriş cümleleri; dizi pusulası satırı.
 - `sample_data/demo/AKIS_Demo_Kurgusal.akis` yeni sıra/anahtarlarla yeniden yazıldı.
 
+
+
+## YENİ OTURUM DEVRİ (v2.383) — Okuma metni durumu, kısa kayıt adı, sayfa akışı
+
+| | |
+|---|---|
+| Sürüm | **v2.383** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2822 birim + 556 şema** + rapor (Senaryo 61) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium + LibreOffice 25.2.3.2: DOCX **17/18 sayfa**, TOC kendi sayfasında, envanter başlık+giriş+tablo aynı sayfa; UDF `<page-break>` TOC öncesi; kırpma 0 |
+
+**İkinci bağımsız denetimin 7 bulgusu kapatıldı (v2.382’nin 10 bulgusu korunuyor).**
+
+1. **Okuma metni durumu:** `readingStatusLabel` + `paragraphGroups` (durum anahtarı). Her paragraf `· Onaylandı / Anlaşılmadı / Belirsiz okuma (seçilen: …) / Kontrol bekliyor` taşır. **Metin silinmez**; onaylı ve onaysız metin aynı paragrafta birleşmez.
+2. **Başlık/giriş/tablo birlikte:** DOCX `wP(..., {keep:true})` tüm bölüm girişlerinde + kayıt başlığı/süre/“Konuşmacılar”/“Deşifre” etiketlerinde; HTML yazdırmada `p:first-of-type`, `p:has(+ table)`, `h4` → `break-after: avoid`.
+3. **İÇİNDEKİLER kendi sayfası:** üç çıktıda `key === 'toc'` + `frontCount`/`frontRendered`/`html`.
+4. **Tek paragraf sayfası:** s5 kayıt başlığı + süre satırı + tablo etiketleri tabloyla taşınır (P7→P8 ölçümü).
+5. **Konuşmacı tablosu:** `materialShortLabels` → `Kayıt N`; `speakerReportRows`/`speakerDurationReportRows`; `speakerRecordLegend` tam adları verir. DOCX genişlikleri `[650,1150,1100,1100,1250,1150,1250,2556]`; UDF `[35,58,55,58,56,56,66,126]`. **Veri fonksiyonları (`speakerRows`, `speakerDurationRows`) DEĞİŞMEDİ** (testler tam adı bekler).
+6. **Tarih:** `deliveryChecklistRows` “kalan gün”ü **rapor tarihine** göre hesaplar (`deliveryInfo(box,{today:reportDate})`); canlı ekran/durum çubuğu bugünü kullanmaya devam eder.
+7. **Üç çıktı aynı metin:** `rapor` Senaryo 61 üçünde de durum satırı, kısa kayıt adı ve efsaneyi sınar.
+
+### DEĞİŞMEZ KURALLAR
+1. **Okuma metni = kanıt değil, sunum.** Durum yazılmadan paragraf basılmaz; durum değişince paragraf ayrılır.
+2. **Rapor tablosunda kısa kayıt adı**, tam ad **efsanede**. Yeni bir tablo eklerken `speakerReportRows` desenini kullanın; `speakerRows` verisini bozmayın.
+3. **Sayfa akışı:** başlık + giriş + tablo ayrılmaz. DOCX’te `keep:true`, HTML’de `break-after: avoid`. Yeni bir “giriş + tablo” bölümü eklerken `keep` verin.
+4. **İÇİNDEKİLER her zaman yeni sayfa** (kapak/künye/özetten sonra).
+5. **Yazdırılan raporda “kalan gün” rapor tarihine göre**; bugüne göre hesaplamak aynı belgede çelişki üretir.
+
+### Dürüst sınır
+- **UYAP editörü bu ortamda yok**; UDF XML geçerliliği + `<page-break>` konumu + metin doğrulandı. Açılış/kırılma kontrolü kullanıcıda.
+- **Tarayıcı PDF’inde** kanıt tablosunun dar sütunları sözcük bölüyor (DOCX/UDF’de değil); bu turun kapsamı DOCX/UDF idi.
 
 ## YENİ OTURUM DEVRİ (v2.382) — Rapor içerik denetimi 2
 

@@ -556,8 +556,8 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   // v2.281: ana/süre tablolarında kod ve etiket AYRI hücre; kayıt tablosunda
   // "DOSYALAR ARASI KİŞİ" tek sütun ("K1 · Kiracı").
   checkShared('kayıt tablosunda kişi kodu', 'K1 · Kiracı', H, U, D);
-  checkShared('iki kayıt tek satırda (A)', 'a.wav: S1 · 1 bölüm', H, U, D);
-  checkShared('iki kayıt tek satırda (B)', 'b.wav: S1 · 1 bölüm', H, U, D);
+  checkShared('iki kayıt tek satırda (A)', 'Kayıt 1: S1 · 1 bölüm', H, U, D);
+  checkShared('iki kayıt tek satırda (B)', 'Kayıt 2: S1 · 1 bölüm', H, U, D);
   checkShared('uzman eşleştirmesi notu', 'uzman eşleştirmesi', H, U, D);
   checkShared('konuşmacı açıklaması', REPORT_TEXT.speakerIntro, H, U, D);
   // Kişi etiketi TABLO BAŞINA bir kez görünür: künye (1) + süre (1) +
@@ -1251,7 +1251,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('süre tablosu sütunları', REPORT_TEXT.speakerDurationHeaders[2], H, U, D);
   checkShared('süre değeri', '00:10', H, U, D);
   checkShared('ilk/son duyulma', '00:00:10.000', H, U, D);
-  checkShared('ana tabloda bölüm sayısı', 'a.wav: 2 bölüm', H, U, D);
+  checkShared('ana tabloda bölüm sayısı', 'Kayıt 1: 2 bölüm', H, U, D);
   checkShared('süre tablosu dipnotu', REPORT_TEXT.speakerFootnote, H, U, D);
 }
 
@@ -2033,6 +2033,28 @@ console.log('\n[Senaryo 60] içerik denetimi düzeltmeleri (v2.382)');
   check('hukuk rolü DAVACI', txt.includes('DAVACI'));
   check('ceza rolü yok', !txt.includes('Müşteki') && !txt.includes('Şüpheli'));
   check('anlaşılmadı dayanağı işaretli', txt.includes('Anlaşılmadı — kanıt olarak kullanılamaz'));
+}
+
+
+// Senaryo 61 (v2.383): okuma metninde kontrol durumu + kısa kayıt adı.
+// KULLANICI BULGUSU: anlaşılmadı bölümünün metni okuma metninde duruyor ama
+// kontrol durumu görünmüyordu; okuma metni tek başına doğrulanmış izlenimi
+// veriyordu. Ayrıca uzun WAV adları konuşmacı tablosunda bölünüyordu.
+console.log('\n[Senaryo 61] okuma metni durumu + kısa kayıt adı (v2.383)');
+{
+  const c = withMaterial();
+  c.materials[0].name = 'ses_01_uzun_dosya_adi.wav';
+  c.materials[0].speakers = [{ id: 'sp1', code: 'S1', name: 'Kiracı', label: 'Kiracı', role: 'complainant', gender: 'unspecified' }];
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'merhaba', review: 'approved' },
+    { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'Kiracı', speakerId: 'sp1', text: 'ikinci kısım', review: 'inaudible' }
+  ];
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('okuma metni onay durumu', '· 1 bölüm · Onaylandı', H, U, D);
+  checkShared('okuma metni anlaşılmadı durumu', '· 1 bölüm · Anlaşılmadı', H, U, D);
+  checkShared('okuma metni anlaşılmadı metni KORUNUR', 'ikinci kısım', H, U, D);
+  checkShared('kısa kayıt adı', 'Kayıt 1', H, U, D);
+  checkShared('kayıt eşlemesi tam adı taşır', 'Kayıt 1 = ses_01_uzun_dosya_adi.wav', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

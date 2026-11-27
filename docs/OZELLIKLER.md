@@ -1,7 +1,15 @@
-# Özellikler (v2.382 — mevcut durum)
+# Özellikler (v2.383 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
+
+
+## Rapor okuma metni, konuşmacı tablosu ve sayfa düzeni (v2.383)
+
+- **Okuma metninde kontrol durumu görünür.** Her paragrafın başlığında `Onaylandı · Anlaşılmadı · Belirsiz okuma (seçilen: …) · Yeniden dinlenecek · Kontrol bekliyor` yazar (`readingStatusLabel`). Gruplama konuşmacı **ve** kontrol durumuna göre yapılır; onaylı ve onaysız metin aynı paragrafta birleşmez. Metin **silinmez**; yalnız durum görünür olur.
+- **Konuşmacı tablosunda kısa kayıt adı.** KAYIT ve BÖLÜM/NOT sütunları `Kayıt 1`, `Kayıt 2` yazar (`speakerReportRows`, `speakerDurationReportRows`); tam dosya adları tablonun altındaki **KAYIT NUMARALARI** satırındadır (`speakerRecordLegend`). Rol (Davacı/Davalı) ve başlık sözcükleri ortadan bölünmez.
+- **Word/PDF sayfa düzeni.** İÇİNDEKİLER kendi sayfasından başlar; bölüm başlığı + giriş cümlesi + tablo aynı sayfada kalır (DOCX `w:keepNext`; HTML yazdırmada `break-after: avoid`).
+- **Teslim kontrolünde tarih tutarlılığı.** “Kalan gün” **rapor tarihine** göre hesaplanır; “13 gün / 14 gün” çelişkisi olmaz.
 
 ## Arayüz düzeni (v2.27–v2.31)
 

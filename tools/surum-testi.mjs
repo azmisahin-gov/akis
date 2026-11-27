@@ -201,7 +201,10 @@ const REQUIRED_TOPICS = [
   // v2.342 — kullanıcı varsayılan metinleri.
   ['varsayılan metinler', /Kendi varsayılan metinlerim|Varsayılan metinler \(v2\.342\)/],
   // v2.343 — kayıtlı metinler (tek tıkla ekle).
-  ['kayıtlı metinler', /Kayıtlı metinlerim/]
+  ['kayıtlı metinler', /Kayıtlı metinlerim/],
+  // v2.383 — okuma metni durumu + kısa kayıt adı.
+  ['okuma metni kontrol durumu', /Okuma metninde kontrol durumu görünür|readingStatusLabel/],
+  ['kısa kayıt adı', /Kayıt 1[\s\S]{0,160}(KAYIT NUMARALARI|speakerRecordLegend)/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

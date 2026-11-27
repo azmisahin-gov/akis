@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.382 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.383 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -895,23 +895,23 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 
 | Üretici | Satır | Tür | Metin (kısaltıldı) |
 |---|---|---|---|
-| `letterDefaultBody` | 17120 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
-| `letterPaperHtml` | 17195 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17908 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17919 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17925 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17928 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17931 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17935 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17937 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17945 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `makeDocx` | 19007 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
-| `udfDocument` | 19141 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 19144 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 19149 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 19789 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 19800 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 19801 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `letterDefaultBody` | 17193 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 17268 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17981 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17992 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17998 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 18001 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 18004 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 18008 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 18010 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 18018 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 19090 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 19224 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 19227 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 19232 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 19878 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 19889 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 19890 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 
@@ -1011,6 +1011,7 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `speakerDurationHeading` | KONUŞMACI SÜRELERİ |
 | `speakerDurationHeaders` | KOD · ETİKET · KAYIT · BÖLÜM · SÜRE · İLK – SON |
 | `speakerVerifiedSuffix` | doğrulandı |
+| `speakerRecordLegendPrefix` | KAYIT NUMARALARI |
 | `physicalHandoverHeading` | Fizikî dosya teslimi |
 | `physicalReturnHeading` | Fizikî dosya iadesi |
 | `physicalItemsHeading` | Teslim alınan fizikî materyaller |

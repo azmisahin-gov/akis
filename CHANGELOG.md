@@ -6,12 +6,23 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.382.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.383.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.383 — Okuma metni durumu, konuşmacı tablosu, sayfa düzeni
+
+**KULLANICI NE GÖRECEK:**
+- **Okuma metninde kontrol durumu görünür:** her paragrafın yanında **Onaylandı · Anlaşılmadı · Belirsiz okuma (seçilen: …) · Kontrol bekliyor** yazar. Anlaşılmayan bölümün **metni silinmez**; ama artık **doğrulanmış ifade** gibi okunmaz.
+- **Konuşmacı tablosu okunur:** uzun WAV adları yerine **Kayıt 1 / Kayıt 2**; tam adlar tablonun altında **KAYIT NUMARALARI** satırında. **Davacı/Davalı** ve sütun başlıkları **ortadan bölünmüyor**.
+- **Word çıktısı:** **İÇİNDEKİLER kendi sayfasından** başlar (özetle birleşip taşmaz). Bölüm **başlığı + giriş cümlesi + tablo aynı sayfada** kalır (ör. “Dosya teknik envanteri”, kayıt başlıkları).
+- **Tarih tutarlı:** son kontrol listesindeki “kalan gün” **rapor tarihine** göre hesaplanır; aynı raporda “13 gün / 14 gün” çelişkisi olmaz.
+- Üç çıktı (**HTML · Word · UDF**) aynı metni üretir.
+
+**ÖLÇÜM (gerçek Chromium + LibreOffice, demo paketi):** Okuma metni 00:00:34–00:00:40 satırı **“1 bölüm · Anlaşılmadı”** (metin korunuyor); belirsiz okuma **“Belirsiz okuma (seçilen: …)”**; konuşmacı tablosu **DAVACI/DAVALI** tek satır, **Kayıt 1/2**, efsane tam adları taşıyor. DOCX: **17 sayfa** (özet kapalı) / **18 sayfa** (özet açık); **İÇİNDEKİLER sayfa 2/3’te tek başına**; “DOSYA TEKNİK ENVANTERİ” başlık+giriş+tablo **aynı sayfada**; 6.1.2 kayıt başlığı tablosuyla birlikte. Kontrol listesi: **“10.12.2026 · rapor tarihinde 14 gün kaldı”** ve **“Rapor tarihi son teslimden 14 gün önce.”** UDF: `<page-break>` İÇİNDEKİLER’den hemen önce; ZWSP yalnız SHA-256 içinde (2). Kırpma/yatay taşma **0** (1440/1100/900/760/600). Testler **2822 birim + 556 şema** + rapor/sürüm/tasarım yeşil.
 
 ## v2.382 — Rapor içerik denetimi 2
 

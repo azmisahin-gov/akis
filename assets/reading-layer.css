@@ -4730,3 +4730,19 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
 @media print {
   .report-paper .paper-table.cover-fields { break-inside: avoid; page-break-inside: avoid; }
 }
+
+/* v2.383 — bölüm başlığı + giriş paragrafı + tablo AYNI sayfada kalır.
+   DOCX'te aynı kural `w:keepNext` ile verilir (v2.382'de başlık sayfa
+   sonunda yalnız kalıyor, tablo sonraki sayfaya geçiyordu). */
+@media print {
+  .report-paper .paper-section > p:first-of-type { break-after: avoid; page-break-after: avoid; }
+  .report-paper .paper-section > p:first-of-type + table { break-before: avoid; page-break-before: avoid; }
+}
+
+/* v2.383 — tablodan hemen önce gelen etiket/paragraf tabloyla aynı sayfada
+   kalır (kayıt başlığı, "Konuşmacılar", "Deşifre" gibi). DOCX karşılığı:
+   `w:keepNext`. */
+@media print {
+  .report-paper .paper-section > p:has(+ table) { break-after: avoid; page-break-after: avoid; }
+  .report-paper .paper-section > h4 { break-after: avoid; page-break-after: avoid; }
+}
