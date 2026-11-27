@@ -10158,3 +10158,24 @@ dümdüz tek liste, ben açar/kapatır/sıralarım."
 - Ölçüm: 30 satır, annex/s7 yok, listede EK yok, 4 sekme, JS 0. `tasarim` 4 sekmeye güncellendi.
 - **DERS:** index.html'de panel kaldırırken REGEX (`.+?</div></div>`) div yapısını bozdu (revision
   paneli gitti). Doğrusu: birebir metin eşleşmesi + `div open==close` kontrolü.
+
+## YENİ OTURUM DEVRİ (v2.379 → İSKELET SIFIRDAN YENİDEN YAPIM)
+
+**KULLANICI KARARI:** "Bence hepsini bozdun, düzeltmiyorsun; bunu yeni oturuma taşıyalım,
+iskeleti sıfırdan yapsın. Burada daha fazla olması lazım; bazıları çalışmıyor, hâlâ sorun var.
+Sen yeni oturuma devret, o sıfırdan yapsın burayı, bu raporu."
+
+**Yeni oturum İLK İŞ:** [`docs/ISKELET_YENIDEN.md`](docs/ISKELET_YENIDEN.md) belgesini oku.
+O belge: kullanıcının net isteği, bugünkü çelişkiler (model hâlâ ek/annex içeriyor ama UI
+gizliyor), HEDEF düz model, kod haritası (dosya/satır/fonksiyon), yeniden yapım adımları,
+bu oturumda yaşanan tuzaklar (kodlama bozulması, index.html regex div kırdı, indeks tabanlı
+Python yanlış çapa, imza testleri) ve kabul ölçütlerini içerir.
+
+**Durum:** v2.379 canlı. İskelet görünen = 30 düz bölüm (annex/s7 gizli), sağ çekmece 4 sekme,
+yeni dosya tümü kapalı. **AMA model altta hâlâ ek/annex/placement içeriyor** (`annexPlacement`,
+`reportAnnex*`, grup ekleri ek7–ek10); "Varsayılan düzen" EKLER'i geri getiriyor; eski dosyalar
+EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
+
+**Öneri:** eski ek İÇERİKLERİNİ (teslim/envanter/işlem günlüğü/gösterim/kontrol/dayanak)
+**düz bölüm** olarak listeye kat (içerik kaybı olmasın); "EKLER" sarmalayıcısını kaldır; üç
+çıktı aynı metni üretsin; eski dosyaları `normalizeCase` ile göç et.
