@@ -6,12 +6,44 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.367.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.368.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.368 — Rapor ayarları sağ çekmecede
+
+**KULLANICI NE GÖRECEK:** Rapor ekranının sağ paneli artık **sağdan açılan
+çekmecedir**. Araç çubuğundaki **⚙** açar; **×**, **Esc** veya karartma kapatır.
+Bölüm düzenleyici de **aynı çekmecede** açılır. **Kâğıt genişliği değişmez.**
+Üstteki ayrı **görünüm çubuğu kaldırıldı**: gömülü metadata + konuşmacı yöntem
+notu → **Alanlar**; A4 / sığdır / sürekli / sayfa gezinme → **Biçim**.
+**Sol iskelet sütun olarak kaldı** (gezinme sürekli kullanılıyor).
+
+**ÖLÇÜM (gerçek Chromium):**
+
+| | Sonuç |
+|---|---|
+| Kâğıt (1440) | **898 px — sabit** (çekmece aç/kapa, düzenleyici aç/kapa) |
+| Izgara | `232px 1090px` (2 sütun; çekmece overlay) |
+| Çekmece | **440 px**, sağ kenar 1440; karartma var |
+| Araç çubuğu | **50 px** (tek satır; stage bar yok) |
+| 600 px | kâğıt **534**, çekmece **440**, “Bölümler” görünür, taşma **0** |
+| Tek-sayfa modu | `Sayfa 1 / 24`, gezinme + `≈24 sayfa` çekmecede |
+| İçerik anahtarı | gömülü metadata **false → true** (kalıcı) |
+| Yazdırma | çekmece/düzenleyici/karartma **gizli**, yalnız kâğıt |
+| JS hatası | **0** |
+
+**Yapılan:** `#reportSide` ve `#reportSectionEditor` `.drawer` sınıfına alındı
+(sabit konum, 440 px, transform); `setReportSettings`/`setReportEditor`;
+`#reportSettingsBtn`, `#closeReportSettings`, `#reportDrawerBackdrop`;
+stage bar kaldırıldı; grid 2 sütun; durum ayrıntısı (alt çubukta var) araç
+çubuğundan kaldırıldı. Test: `tasarim [2ec]` (14) + güncellenen çekmece testleri.
+
+**DÜRÜST NOT:** Çekmece açıkken kâğıdın sağ kısmını **örter** (overlay); kapatınca
+tam görünür. Bu, genişliği oynatmamak için bilinçli tercihtir.
 
 ## v2.367 — Rapor araç çubuğu sadeleşti
 

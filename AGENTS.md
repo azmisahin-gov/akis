@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.367.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.368.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9855,4 +9855,42 @@ zıplıyordu). ≤1349 px’te yan panel belgenin altına iner.
 ### Sıradaki iş
 1. İstenirse sağ paneli **çekmece** yapmak (şu an sütun + sekmeli).
 2. Kalan kozmetik/ölçüm: rapor sayfa sayısı tahmini ile gerçek yazdırma farkı.
+3. Delil/rapor derinleştirme (kullanıcı yönü).
+
+## YENİ OTURUM DEVRİ (v2.368) — Sağ çekmece, stage bar kaldırıldı
+
+| | |
+|---|---|
+| Sürüm | **v2.368** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Kâğıt **898 px sabit**; çekmece 440; araç çubuğu 50; 600 px taşma 0; JS 0 |
+
+### Yapılan
+- `#reportSide` ve `#reportSectionEditor` **`.drawer`**: sabit konum, 440 px,
+  `translateX(102%)` → `.open`; `#reportDrawerBackdrop`; ⚙/×/Esc/karartma.
+- `setReportSettings(open)`, `setReportEditor(open)`; bölüm seçimi düzenleyici
+  çekmecesini açar; “Kontrol” çekmeceyi Kontrol sekmesiyle açar.
+- **`report-stage-bar` KALDIRILDI.** İçerik anahtarları (gömülü metadata,
+  konuşmacı yöntem notu) **Alanlar**; görünüm (A4, sığdır, sürekli, sayfa
+  gezinme/sayacı) **Biçim** sekmesinde. “Bölümler” araç çubuğunda (≤900).
+- Grid **2 sütun** (`232px 1090px`); çekmece overlay olduğu için kâğıt sabit.
+- Durum ayrıntısı (“N kayıt · N bölüm”) araç çubuğundan kaldırıldı (alt çubukta var).
+
+### DEĞİŞMEZ KURALLAR
+1. **Sağ panel ve düzenleyici grid sütunu DEĞİL, çekmecedir.** Yeni bir panel
+   eklerseniz çekmeceye koyun; grid’e sütun eklemeyin (kâğıt genişliği oynar).
+2. **Kâğıt genişliği çekmece aç/kapa ile değişmez** (ölçüm: 898 px).
+3. **Görünüm anahtarları Biçim’de, içerik anahtarları Alanlar’da**; stage bar’ı
+   geri getirmeyin.
+4. `hidden` + `display:flex` çakışması: `.drawer[hidden] { display:none }` kuralı
+   korunur (v2.322 dersi).
+5. Yazdırmada çekmece/düzenleyici/karartma **gizli** (yalnız kâğıt).
+
+### Sol panel kararı
+**Sütun kaldı.** İskelet sürekli kullanılan gezinmedir; çekmece her bölüm
+geçişinde ekstra tık ve bağlam kaybı yaratır. ≤900 px’te zaten katlanır panel var.
+
+### Sıradaki iş
+1. İstenirse sol iskelete **daralt/genişlet** düğmesi (kâğıda yer açmak için).
+2. Sayfa sayısı tahmini ile gerçek yazdırma farkı.
 3. Delil/rapor derinleştirme (kullanıcı yönü).

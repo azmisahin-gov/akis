@@ -1897,9 +1897,8 @@ console.log('\n[2by] Rapor çalışma modları + önem gruplu kontrol (v2.228)')
   check('gruplu gösterim', /ready-group ready-\$\{sev\}|ready-group/.test(js) && /Engelleyen eksikler/.test(js) && /Uzman kontrolü gerekli/.test(js));
   check('geniş uyarı sağ panele taşındı', html.indexOf('id="reportSide"') < html.indexOf('id="reportWarning"'));
   check(
-    'yan panel her modda görünür; düzenleyici açılınca gizlenir',
-    !/#reportWorkspace\[data-mode="edit"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer) &&
-      /#reportWorkspace\[data-edit="open"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer)
+    'sağ panel çekmece olarak açılır',
+    /#reportSide\.drawer\.open/.test(layer) && /#reportSide\.drawer[\s\S]{0,120}position:\s*fixed/.test(layer)
   );
   const modeCss = layer.slice(layer.indexOf('/* v2.228 — Rapor çalışma modu'), layer.indexOf('/* Orta genişlik'));
   check('mod stilleri ham hex kullanmaz', modeCss.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(modeCss));
@@ -1954,7 +1953,7 @@ console.log('\n[2cb] Belge odaklı bölüm düzenleme (v2.231)');
   check('belge tıklama işleyicisi', /reportPreview'\)\?\.addEventListener\('click'/.test(js));
   check('contentEditable KULLANILMAZ', !/contentEditable\s*=\s*true/.test(js));
   check('paper-block display:contents', /\.paper-block\s*\{\s*display:\s*contents/.test(layer));
-  check('düzenleyici sütunu (edit+open)', /#reportWorkspace\[data-edit="open"\]/.test(layer) && /\.report-editor/.test(layer));
+  check('düzenleyici çekmece', /#reportSectionEditor\.drawer/.test(layer) && /\.report-editor/.test(layer));
   check('yazdırmada düzenleyici gizli', /\.report-editor,\s*\n\s*\.report-stage-bar\s*\{\s*display:\s*none/.test(layer));
   const css = layer.slice(layer.indexOf('/* v2.231'), layer.indexOf('/* Orta genişlik'));
   check('v2.231 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
@@ -2941,9 +2940,9 @@ console.log('\n[2dz] Rapor ayarları sekmeleri + tek alan yeri (v2.365)');
   check('alan kutusu sağ panele bağlı', /#reportSide'\)\?\.addEventListener\('change'/.test(app));
   check('sekme durumu saklanır', /akis\.reportSideTab/.test(app) && /function applyReportSideTab/.test(app));
   check('render sırasında sekme uygulanır', /applyReportSideTab\(reportSideTabPref\(\)\)/.test(app));
-  check('kâğıt 3. sütunu sabit 300px', /grid-template-columns: 232px minmax\(0, 1fr\) 320px;/.test(css));
+  check('kâğıt 2 sütun (çekmece sütun değil)', /grid-template-columns: 232px minmax\(0, 1fr\);/.test(css));
   check('mod sütun değiştirmez', !/#reportWorkspace\[data-mode="edit"\]\s*\{[^}]*grid-template-columns/.test(css));
-  check('düzenleyici yan panelin yerini alır', /#reportWorkspace\[data-edit="open"\] \.report-side \{ display: none; \}/.test(css));
+  check('düzenleyici çekmece (v2.368)', /#reportSectionEditor\.drawer/.test(css));
   check('sekme stili token kullanır', /\.rside-tab\.is-active \{[^}]*var\(--accent/.test(css));
 }
 
@@ -2984,6 +2983,38 @@ console.log('\n[2eb] Araç çubuğu sadeleşmesi + F kısayolu (v2.367)');
   check('F rapor tam ekran', /setReportFull\(!document\.body\.classList\.contains\('report-full'\)\)/.test(app));
   check('menü seçimde kapanır', /#reportMore'\)\?\.addEventListener\('click'/.test(app));
   check('iskelet grid izi daraltıldı', /\.report-skeleton \.report-sections,[\s\S]{0,80}grid-template-columns: minmax\(0, 1fr\)/.test(css));
+}
+
+console.log('\n[2ec] Sağ çekmece + stage bar kaldırıldı (v2.368)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('sağ panel çekmece', /class="report-side drawer" id="reportSide"/.test(html));
+  check('düzenleyici çekmece', /class="report-editor drawer" id="reportSectionEditor"/.test(html));
+  check('çekmece kapatma düğmesi', /id="closeReportSettings"/.test(html));
+  check('ayarlar düğmesi', /id="reportSettingsBtn"/.test(html));
+  check('çekmece karartması', /id="reportDrawerBackdrop"/.test(html));
+  check('stage bar kaldırıldı', !/report-stage-bar/.test(html));
+  const fieldsPanel = (html.match(/data-rside-section="fields"[\s\S]*?data-rside-section="format"/) || [''])[0];
+  const formatPanel = (html.match(/data-rside-section="format"[\s\S]*?data-rside-section="annex"/) || [''])[0];
+  check(
+    'içerik anahtarları Alanlar sekmesinde',
+    /id="reportContentBox"/.test(fieldsPanel) && /id="reportEmbeddedToggle"/.test(fieldsPanel) && /id="reportSpeakerMethodToggle"/.test(fieldsPanel)
+  );
+  check(
+    'görünüm anahtarları Biçim sekmesinde',
+    /id="reportViewBox"/.test(formatPanel) && /id="reportContinuousToggle"/.test(formatPanel) && /id="reportPageCount"/.test(formatPanel)
+  );
+  check('grid 2 sütun', /grid-template-columns: 232px minmax\(0, 1fr\);/.test(css));
+  check(
+    'çekmece sabit konum',
+    /#reportSide\.drawer,[\s\S]{0,80}#reportSectionEditor\.drawer \{[\s\S]{0,260}position:\s*fixed/.test(css)
+  );
+  check('çekmece aç/kapa', /function setReportSettings\(open\)/.test(app) && /function setReportEditor\(open\)/.test(app));
+  check('Esc çekmeceyi kapatır', /setReportSettings\(false\);\n        return;/.test(app));
+  check('karartma kapatır', /#reportDrawerBackdrop'\)\?\.addEventListener\('click'/.test(app));
+  check('yazdırmada çekmece gizli', /#reportSide\.drawer,[\s\S]{0,120}#reportDrawerBackdrop \{ display: none !important; \}/.test(css));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

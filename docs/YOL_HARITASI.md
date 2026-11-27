@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.367.**
+yazılır. **Güncel sürüm: v2.368.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.368 — Sağ çekmece + stage bar kaldırıldı (TAMAMLANDI)
+
+- Sağ panel ve bölüm düzenleyici **çekmece** (440 px); ⚙/×/Esc/karartma.
+- Kâğıt **898 px sabit**; grid `232px 1090px`; çekmece aç/kapa genişliği değiştirmez.
+- `report-stage-bar` kaldırıldı: içerik anahtarları **Alanlar**, görünüm anahtarları
+  **Biçim** sekmesinde; sayfa gezinme/sayacı Biçim’de.
+- Sol iskelet **sütun** kaldı (gezinme).
+- Araç çubuğu **50 px**; durum ayrıntısı alt çubukta.
+- Ölçüm: 600 px çekmece 440, taşma 0; yazdırmada çekmeceler gizli; JS 0.
+- Test: `tasarim [2ec]` (14).
 
 ## v2.367 — Araç çubuğu + F + tek sayaç (TAMAMLANDI)
 

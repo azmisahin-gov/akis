@@ -270,6 +270,9 @@ const REQUIRED_IDS = [
   ['rapor ayar sekmeleri', 'reportSideTabs'],
   ['dar ekran iskelet düğmesi', 'reportOutlineBtn'],
   ['rapor diğer işlemler menüsü', 'reportMore'],
+  ['rapor ayarları düğmesi', 'reportSettingsBtn'],
+  ['rapor ayarları kapatma', 'closeReportSettings'],
+  ['rapor çekmece karartması', 'reportDrawerBackdrop'],
   ['rapor profili penceresi', 'profileDialog'],
   ['rapor profili adı', 'profileName'],
   // v2.312 — teslim tarihi zekâsı (JS bu kimlikleri arıyor; yoksa sessiz boş).

@@ -157,15 +157,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.367';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.367';
+} from './schema.js?v=2.368';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.368';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.367';
+const APP_VERSION = '2.368';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14372,19 +14372,66 @@ function applyReportSideTab(tab) {
     localStorage.setItem('akis.reportSideTab', t);
   } catch (e) {}
 }
+// v2.368 — SAĞ PANEL ve BÖLÜM DÜZENLEYİCİ artık ÇEKMEDİR.
+// Çekmece açıkken kâğıt genişliği DEĞİŞMEZ (grid 2 sütun; çekmece overlay).
+function setReportEditor(open) {
+  const ed = $('#reportSectionEditor');
+  const b = $('#reportDrawerBackdrop');
+  if (!ed) return;
+  ed.classList.toggle('open', !!open);
+  ed.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (b) b.hidden = !open;
+  if (open) {
+    const s = $('#reportSide');
+    if (s) {
+      s.classList.remove('open');
+      s.setAttribute('aria-hidden', 'true');
+    }
+  }
+}
+function setReportSettings(open) {
+  const d = $('#reportSide');
+  const b = $('#reportDrawerBackdrop');
+  if (!d) return;
+  if (open) {
+    try {
+      setSettingsDrawer(false);
+      setCaseDrawer(false);
+    } catch (e) {}
+    if (reportEditKey) {
+      reportEditKey = null;
+      renderReport();
+    }
+    const ed = $('#reportSectionEditor');
+    if (ed) {
+      ed.classList.remove('open');
+      ed.setAttribute('aria-hidden', 'true');
+    }
+    d.classList.add('open');
+    d.setAttribute('aria-hidden', 'false');
+    if (b) b.hidden = false;
+    applyReportSideTab(reportSideTabPref());
+  } else {
+    d.classList.remove('open');
+    d.setAttribute('aria-hidden', 'true');
+    if (b) b.hidden = true;
+  }
+}
 function setReportMode(mode) {
   const m = REPORT_MODES.includes(mode) ? mode : 'edit';
   try {
     localStorage.setItem('akis.reportMode', m);
   } catch (e) {}
-  // v2.365: mod artık sütun değiştirmez; yalnız "Kontrol" sekmesini açar ve
-  // bölüm düzenleyicisini kapatır (yan panel görünür kalsın).
+  // v2.368: "Kontrol" sağ çekmeceyi Kontrol sekmesiyle açar; "Düzenle" kapatır.
   if (m === 'check') {
     reportEditKey = null;
     applyReportSideTab('check');
+    setReportSettings(true);
+  } else {
+    setReportSettings(false);
   }
   applyReportMode();
-  if (m === 'check') renderReport();
+  renderReport();
 }
 
 // ---- Sayfaya sığdır (v2.232) ---------------------------------------------
@@ -14662,6 +14709,7 @@ function setReportEditSection(key) {
     } catch (e) {}
   }
   renderReport();
+  setReportEditor(!!reportEditKey);
 }
 // v2.366 — İSKELET ↔ BELGE GEZİNME. Kaydırma MUTLAK hesaplanır; scrollIntoView
 // KULLANILMAZ (v2.193 dersi: üst kapları da kaydırır).
@@ -17361,6 +17409,7 @@ function setReportDoc(mode) {
   toggle('#letterFieldsBox', isLetter);
   toggle('#reportSectionsBox', !isLetter);
   toggle('#reportSide', !isLetter);
+  if (isLetter) setReportSettings(false);
   toggle('#letterSide', isLetter);
   toggle('#letterWindow', isLetter);
   toggle('#reportPageWindow', !isLetter);
@@ -17820,6 +17869,12 @@ function renderReport() {
   applyReportPageView();
   const wsEl = $('#reportWorkspace');
   if (wsEl) wsEl.dataset.edit = reportEditKey ? 'open' : 'closed';
+  // v2.368 — düzenleyici çekmecesi seçime göre açık/kapalı.
+  const edEl = $('#reportSectionEditor');
+  if (edEl) {
+    if (edEl.classList && typeof edEl.classList.toggle === 'function') edEl.classList.toggle('open', !!reportEditKey);
+    if (typeof edEl.setAttribute === 'function') edEl.setAttribute('aria-hidden', reportEditKey ? 'false' : 'true');
+  }
   renderReportSectionEditor(c);
   renderPageGuides();
   syncReportToolbarHeight();
@@ -20197,6 +20252,17 @@ async function loadSamples() {
 // Rapor tam ekran modu: kabuk gizlenir, yalnızca ince çubuk kalır.
 function setReportFull(on) {
   document.body.classList.toggle('report-full', on);
+  // v2.368 — tam ekranda çekmeceler kapanır (yalnız kâğıt kalır).
+  if (on) {
+    try {
+      setReportSettings(false);
+    } catch (e) {}
+    if (reportEditKey) {
+      reportEditKey = null;
+      renderReport();
+    }
+    setReportEditor(false);
+  }
   const bar = $('#reportFullbar');
   if (bar) bar.hidden = !on;
   if (on) switchView('report');
@@ -22536,8 +22602,20 @@ $('#addQuestionBtn').addEventListener('click', addQuestion);
     }
   });
   document.addEventListener('keydown', (e) => {
-    // Escape: açık Etiket/Gözlem menülerini kapat (v2.317).
-    if (e.key === 'Escape') closeFloatingMenus(null);
+    // Escape: açık Etiket/Gözlem menülerini ve rapor çekmecelerini kapat (v2.317/v2.368).
+    if (e.key === 'Escape') {
+      closeFloatingMenus(null);
+      const red = $('#reportSectionEditor');
+      if (red && red.classList.contains('open')) {
+        setReportEditSection(null);
+        return;
+      }
+      const rsd = $('#reportSide');
+      if (rsd && rsd.classList.contains('open')) {
+        setReportSettings(false);
+        return;
+      }
+    }
     // Ctrl+Z belge düzeyinde: hangi görünümde olursa olsun işlem geri alınır.
     // Metin alanındayken tarayıcının kendi geri almasına bırakılır.
     const tag = (e.target?.tagName || '').toLowerCase();
@@ -22689,6 +22767,14 @@ function syncReportMoreMode() {
 }
 window.addEventListener('resize', syncReportMoreMode);
 syncReportMoreMode();
+// v2.368 — sağ çekmeceyi aç/kapat.
+$('#reportSettingsBtn')?.addEventListener('click', () => setReportSettings(true));
+$('#closeReportSettings')?.addEventListener('click', () => setReportSettings(false));
+$('#reportDrawerBackdrop')?.addEventListener('click', () => {
+  const ed = $('#reportSectionEditor');
+  if (ed && ed.classList.contains('open')) setReportEditSection(null);
+  else setReportSettings(false);
+});
 // Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-report-key]');
@@ -24245,6 +24331,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.368': {
+    title: 'Rapor ayarları sağ çekmecede',
+    body:
+      'Rapor ekranının sağ paneli artık sağdan açılan çekmecedir: araç çubuğundaki ⚙ düğmesi açar; ×, Esc veya karartma kapatır. Bölüm düzenleyici de aynı çekmecede açılır; kâğıt genişliği değişmez (ölçüm: 898 px sabit). Üstteki ayrı görünüm çubuğu kaldırıldı: gömülü metadata ve konuşmacı yöntem notu Alanlar sekmesine, A4/sığdır/sürekli ve sayfa gezinme Biçim sekmesine taşındı. Sol iskelet gezinme için sütun olarak kaldı.'
+  },
   '2.367': {
     title: 'Rapor araç çubuğu sadeleşti',
     body:
