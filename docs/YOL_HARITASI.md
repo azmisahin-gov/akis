@@ -2,11 +2,24 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.381.**
+yazılır. **Güncel sürüm: v2.382.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.382 — Rapor içerik denetimi 2 (TAMAMLANDI)
+
+- Konuşmacı rolleri rapor türüne göre (`speakerRoleText`): hukuk Davacı/Davalı; ceza Müşteki/Sanık.
+- `questionBasisText`: anlaşılmadı → “kanıt olarak kullanılamaz”; belirsiz okuma → “Kontrol: Belirsiz okuma…”.
+- `speakerDurationRows`: çok kayıtlı kişi her kayıt için AYRI satır (İLK–SON karışmaz).
+- Konuşmacı notları tablo dışında (`speakerNotes`); KAYIT hücresi çok kayıtta “N kayıt”.
+- DOCX konuşmacı tablosu son sütunu 2506/3506 twip (5,3 mm değil); envanter SHA sütunu 3406 twip.
+- ZWSP 32 karakterde bir (SHA-256 iki satır); envanter başlıkları daha okunur.
+- Sayfa kırılımı: yalnız s1–s6 + kayıt bloğu; kısa destek bölümleri akar (35 → 20 sayfa); boş sayfa yok.
+- Özet tablosu `keepNext` ile bölünmez; yazdırmada `.cover-fields` `break-inside: avoid`.
+- Demo verisi: q2 belirsiz, q3 anlaşılmadı, üst üste gözlemi işaretli; demo sırası yeni.
+- Ölçüm: DOCX 20 sayfa (eski 35), boş sayfa 0; testler 2801 + 556 yeşil.
 
 ## v2.381 — Rapor içerik denetimi (TAMAMLANDI)
 

@@ -4725,3 +4725,8 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 }
 body.report-full #reportSide.drawer,
 body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
+
+/* v2.382 — kapak/künye/özet tabloları sayfa arasında bölünmez. */
+@media print {
+  .report-paper .paper-table.cover-fields { break-inside: avoid; page-break-inside: avoid; }
+}

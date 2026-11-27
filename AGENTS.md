@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.381.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.382.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10214,3 +10214,22 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - `reportQcRows` generic 7 satırı basmaz; son kontrol listesinde SAYISAL KONTROL tablosu yok.
 - Teknik ortam boşsa `techEmpty`; 22/23/24 giriş cümleleri; dizi pusulası satırı.
 - `sample_data/demo/AKIS_Demo_Kurgusal.akis` yeni sıra/anahtarlarla yeniden yazıldı.
+
+
+## YENİ OTURUM DEVRİ (v2.382) — Rapor içerik denetimi 2
+
+| | |
+|---|---|
+| Sürüm | **v2.382** |
+| Testler | **2801 birim + 556 şema** + rapor/sürüm/tasarım yeşil |
+| Ölçüm | DOCX **35 → 20 sayfa**, boş sayfa **0**; son sütun **300 → 2506/3506 twip**; roller **DAVACI/DAVALI**; dayanak işaretleri var |
+
+- `speakerRoleText(c, role)` — rapor türüne göre rol (hukuk Davacı/Davalı; ceza Müşteki/Sanık).
+- `questionBasisText` — anlaşılmadı “kanıt olarak kullanılamaz”; belirsiz okuma “Kontrol: …”.
+- `speakerDurationRows` — çok kayıtlı kişi kayıt başına ayrı satır; `links` taşınır.
+- `speakerNotes` — notlar tablo dışında; `speakerRows` KAYIT “N kayıt”.
+- DOCX genişlikleri: konuşmacı 8 sütun `[700,1200,900,850,850,1400,1800,2506]`; süre 6 sütun `[700,1500,1100,1200,2200,3506]`; envanter `[1800,1100,1000,1000,900,1000,3406]`.
+- `reportTableColumns`/`wTable` — eksik/sıfır genişlikte eşit dağıtım (300 twip tuzağı kapandı).
+- `REPORT_PAGE_BREAK_KEYS = s1…s6 + handoverRecord`; kısa bölümler akar; özet `keepNext`.
+- ZWSP 32 karakterde bir; demo q2/q3/conclusion/overlap güncellendi.
+- **DERS:** DOCX `gridCol` toplamı **10206** olmalı; eksik genişlik dizisi son sütunu **300 twip** yapar (5,3 mm). `reportTableColumns` artık eksik genişlikte `null` döner.

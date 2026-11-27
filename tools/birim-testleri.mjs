@@ -113,7 +113,7 @@ const EXPOSE = [
   'casesForStorage',
   'exportPlanFor', 'backupFileName', 'EXPORT_SCOPE',
   'profileRunLabel', 'asrProfile', 'PROFILE_LOCK',
-  'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'reviewSummaryRows',
+  'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -3681,7 +3681,7 @@ console.log('\n== [76] Dosyalar arası kişi: rapor satırları (v2.205)');
   eq('ilk satır kişi kodu', rows[0][0], 'K1');
   eq('ilk satır kişi etiketi', rows[0][1], 'Kiracı');
   eq('iki kayıt da BÖLÜM/NOT ta', /A\.wav: S1 · 2 bölüm/.test(rows[0][7]) && /B\.wav: S1 · 1 bölüm/.test(rows[0][7]), true);
-  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(rows[0][7]), true);
+  eq('uzman eşleştirmesi notu', /uzman eşleştirmesi/.test(T.speakerNotes(c).map((n) => n.note).join(' ')), true);
   eq('perde iki kayıt için listelenir', /A\.wav: 120/.test(rows[0][6]) && /B\.wav: 118/.test(rows[0][6]), true);
   eq('bağsız konuşmacı ayrı satır (kod)', rows[1][0], 'S2');
   eq('bağsız konuşmacı ayrı satır (etiket)', rows[1][1], 'Tanık');
@@ -8076,6 +8076,50 @@ console.log('\n[178] Rapor özeti girişi düzenlenebilir (v2.359)');
 
   T.saveUserDefaults({ summaryIntro: '' });
   eq('kullanıcı metni silinince kod metnine döner', T.defaultTextFor('summaryIntro'), codeText);
+}
+
+
+// [186] v2.382 — rapor içerik denetimi: rol, süre, not, kanıt durumu, ZWSP.
+{
+  console.log('\n[186] Rapor içerik denetimi (v2.382)');
+  // a) Rol metni rapor türüne göre (hukukta ceza terimi kullanılmaz).
+  eq('hukuk: davacı', T.speakerRoleText({ reportType: 'hukuk' }, 'complainant'), 'DAVACI');
+  eq('hukuk: davalı', T.speakerRoleText({ reportType: 'hukuk' }, 'defendant'), 'DAVALI');
+  eq('ceza: müşteki', T.speakerRoleText({ reportType: 'ceza' }, 'complainant'), 'MÜŞTEKİ/MAĞDUR /KATILAN');
+  eq('ceza: sanık', T.speakerRoleText({ reportType: 'ceza' }, 'defendant'), 'SANIK');
+  // b) Çok kayıtlı kişi süre tablosunda AYRI satır; İLK–SON karışmaz.
+  const sg = (id, a, b) => ({ id, start: a, end: b, speaker: 'Kiracı', speakerId: 'a' });
+  const c = {
+    id: 'c', reportType: 'hukuk',
+    speakers: [{ id: 'p1', code: 'K1', label: 'Kiracı', role: 'complainant', notes: 'Her iki kayıtta da konuşan kişi (uzman eşleştirmesi).' }],
+    materials: [
+      { id: 'm1', name: 'a.wav', speakers: [{ id: 'a', code: 'S1', name: 'Kiracı', label: 'Kiracı', personId: 'p1', role: 'complainant' }], segments: [sg('g1', '00:00:00.000', '00:00:10.000')] },
+      { id: 'm2', name: 'b.wav', speakers: [{ id: 'b', code: 'S1', name: 'Kiracı', label: 'Kiracı', personId: 'p1', role: 'complainant' }], segments: [sg('g2', '00:00:00.000', '00:00:20.000')] }
+    ]
+  };
+  const rows = T.speakerDurationRows(c);
+  eq('K1 iki satır (kayıt başına)', rows.length, 2);
+  eq('1. kayıt aralığı', rows[0][5], '00:00:00.000 – 00:00:10.000');
+  eq('2. kayıt aralığı', rows[1][5], '00:00:00.000 – 00:00:20.000');
+  // c) Ana tabloda uzun not yok; not ayrı listede.
+  const sr = T.speakerRows(c);
+  eq('ana tablo KAYIT hücresi kısa', sr[0][2], '2 kayıt');
+  eq('ana tabloda not yok', /uzman eşleştirmesi/.test(sr[0][7]), false);
+  eq('not ayrı listede', /uzman eşleştirmesi/.test(T.speakerNotes(c).map((n) => n.note).join(' ')), true);
+  // d) Kanıt durumu: anlaşılmadı ve belirsiz okuma dayanakta görünür.
+  const cq = JSON.parse(JSON.stringify(c));
+  cq.materials[0].segments = [
+    { id: 's1', start: '00:00:00.000', end: '00:00:05.000', text: 'bir', review: 'inaudible' },
+    { id: 's2', start: '00:00:05.000', end: '00:00:10.000', text: 'iki', review: 'ambiguous', chosen: 'iki', reading1: 'iki', reading2: 'üç' }
+  ];
+  const basis = T.questionBasisText(cq, { evidence: [{ materialId: 'm1', segmentId: 's1' }, { materialId: 'm1', segmentId: 's2' }] });
+  eq('anlaşılmadı dayanağı işaretlenir', basis.includes('Anlaşılmadı — kanıt olarak kullanılamaz'), true);
+  eq('belirsiz okuma dayanağı işaretlenir', basis.includes('Belirsiz okuma'), true);
+  // e) ZWSP yalnız uzun hex; 32 karakterde bir.
+  const h = 'a'.repeat(64);
+  const wrapped = T.zwspWrapLongHex(h);
+  eq('ZWSP 32 karakterde bir', (wrapped.match(/\u200b/g) || []).length, 1);
+  eq('ZWSP metni bozmaz', wrapped.replace(/\u200b/g, ''), h);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

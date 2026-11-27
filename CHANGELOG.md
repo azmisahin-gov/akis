@@ -6,12 +6,25 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.381.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.382.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.382 — Rapor içerik denetimi 2
+
+**KULLANICI NE GÖRECEK:**
+- **Konuşmacı rolleri** rapor türüne göre: hukukta **Davacı/Davalı**, cezada **Müşteki/Sanık**.
+- **Anlaşılmadı** bölüm soru dayanağında **“kanıt olarak kullanılamaz”** notuyla görünür; **belirsiz okuma** dayanakta işaretlenir.
+- Birden çok kayıtta konuşan kişi **süre tablosunda her kayıt için ayrı satır** ve **ayrı zaman aralığı** alır.
+- Konuşmacı **notları tablo dışında**; KAYIT sütunu çok kayıtta **“N kayıt”** der.
+- Word tablolarında **son sütun 5,3 mm’ye sıkışmaz**; **SHA-256** iki satırda okunur.
+- **Kısa bölümler aynı sayfada akar** (örnek rapor **35 → 20 sayfa**), **boş sayfa yok**; özet tablosu bölünmez.
+- **Demo verisi** bu kurallara göre güncellendi (belirsiz/anlaşılmadı kanıt, üst üste gözlemi).
+
+**ÖLÇÜM (LibreOffice + gerçek Chromium):** eski DOCX **35 sayfa**, yeni **20 sayfa**, **boş sayfa 0**; konuşmacı tablosu son sütun **2506/3506 twip** (eski **300**), envanter SHA **3406 twip**; roller **DAVACI/DAVALI** (Müşteki/Şüpheli **0**); dayanakta **“Anlaşılmadı — kanıt olarak kullanılamaz”** var; K1 **iki satır** (00:00:47.700 ve 00:00:38.900). Testler **2801 birim + 556 şema** + rapor/sürüm/tasarım yeşil.
 
 ## v2.381 — Rapor içerik denetimi
 

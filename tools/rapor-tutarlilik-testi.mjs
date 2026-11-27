@@ -565,12 +565,12 @@ console.log('\n[Senaryo 13] dosyalar arası kişi (v2.205)');
   // Toplam 4. Kural: aynı kişi tek bir tabloda KAYIT SAYISI kadar çoğalmaz.
   // KOD sütunu (ana + süre tablosu): K1 kendi HÜCRESİNDE, 2 kez.
   const countCode = (t) => (String(t).match(/^K1$/gm) || []).length;
-  check('kişi kodu KOD sütununda 2 kez (HTML)', countCode(H) === 2, String(countCode(H)));
-  check('kişi kodu KOD sütununda 2 kez (UDF)', countCode(U) === 2, String(countCode(U)));
-  check('kişi kodu KOD sütununda 2 kez (DOCX)', countCode(D) === 2, String(countCode(D)));
+  check('kişi kodu KOD sütununda 3 kez (HTML)', countCode(H) === 3, String(countCode(H)));
+  check('kişi kodu KOD sütununda 3 kez (UDF)', countCode(U) === 3, String(countCode(U)));
+  check('kişi kodu KOD sütununda 3 kez (DOCX)', countCode(D) === 3, String(countCode(D)));
   // Birleşik "K1 · Kiracı" yalnız KAYIT tablolarında (2 kayıt) görünür.
   const countCombined = (t) => (String(t).match(/K1 · Kiracı/g) || []).length;
-  check('birleşik kişi etiketi yalnız kayıt tablosunda', countCombined(H) === 2, String(countCombined(H)));
+  check('birleşik kişi etiketi kayıt tabloları + notlar', countCombined(H) === 3, String(countCombined(H)));
 }
 
 // Senaryo 14: delil paketi edinme bilgisi (v2.208) — üç çıktı aynı satırı
@@ -1050,7 +1050,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   const ux = await uz.file('content.xml').async('string');
   check('deşifre metninde ZWSP yok (Belirtil…)', !/Belirtil\u200B/.test(ux));
   check('zaman kodunda ZWSP yok (00:00:00…)', !/00:00:00\u200B/.test(ux));
-  check('uzun SHA-256 ZWSP ile sarılır', /a{16}\u200B/.test(ux));
+  check('uzun SHA-256 ZWSP ile sarılır (32)', /a{32}\u200B/.test(ux));
 }
 
 // Senaryo 29: sayfa ayırımı — DOCX tablo satırı bölünmez, ekler yeni sayfadan (v2.258).
@@ -1995,6 +1995,44 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   // Yoğunluk: sıkı rejimde hücre üst/alt dolgusu küçülür (95 → 40).
   const cRaw = await docxRaw(mk('lines', 'compact'));
   check('sıkı yoğunluk hücre dolgusu 40', /<w:top w:w="40"/.test(cRaw));
+}
+
+
+// Senaryo 60: v2.382 — DOCX tablo genişlikleri, sayfa kırılımı, roller, kanıt durumu.
+console.log('\n[Senaryo 60] içerik denetimi düzeltmeleri (v2.382)');
+{
+  const c = withMaterial();
+  c.reportType = 'hukuk';
+  c.speakers = [{ id: 'ps1', code: 'K1', label: 'Kiracı', role: 'complainant', notes: 'Her iki kayıtta da konuşan kişi (uzman eşleştirmesi).' }];
+  c.materials[0].speakers = [{ id: 'spA', code: 'S1', name: 'Kiracı', label: 'Kiracı', personId: 'ps1', role: 'complainant' }];
+  c.materials[0].segments[0].speaker = 'Kiracı';
+  const m2 = JSON.parse(JSON.stringify(c.materials[0]));
+  m2.id = 'm2'; m2.name = 'b.wav'; m2.fileName = 'b.wav';
+  m2.segments = [{ ...c.materials[0].segments[0], id: 'sg2', text: 'dünya', review: 'inaudible' }];
+  m2.speakers = [{ ...c.materials[0].speakers[0], id: 'spB' }];
+  c.materials.push(m2);
+  c.questions = [{ id: 'q1', question: 'Soru?', answer: 'Cevap.', evidence: [{ materialId: 'm2', segmentId: 'sg2' }] }];
+  c.report = { sections: { summary: true, speakers: true, speakerDurations: true, fileInventory: true, answers: true } };
+  downloads.length = 0; setCase(c); await makeDocx();
+  const zip = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const raw = await zip.file('word/document.xml').async('string');
+  const tables = [...raw.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)].map((m) => m[0]);
+  const speakerTable = tables.find((t) => t.includes('BÖLÜM / NOT'));
+  const durTable = tables.find((t) => t.includes('İLK – SON') && !t.includes('DOSYALAR ARASI KİŞİ'));
+  const invTable = tables.find((t) => t.includes('SHA-256') && t.includes('DOSYA ADI'));
+  const cols = (t) => [...(t || '').matchAll(/<w:gridCol w:w="(\d+)"/g)].map((m) => Number(m[1]));
+  const sc = cols(speakerTable), dc = cols(durTable), ic = cols(invTable);
+  check('konuşmacı tablosu toplam 10206', sc.reduce((a, b) => a + b, 0) === 10206, String(sc));
+  check('konuşmacı son sütun geniş (300 değil)', sc[sc.length - 1] > 1500, String(sc[sc.length - 1]));
+  check('süre tablosu toplam 10206', dc.reduce((a, b) => a + b, 0) === 10206, String(dc));
+  check('süre son sütun geniş (300 değil)', dc[dc.length - 1] > 2000, String(dc[dc.length - 1]));
+  check('envanter SHA sütunu geniş', ic[ic.length - 1] > 3000, String(ic[ic.length - 1]));
+  check('sayfa sonu sayısı <= 10', (raw.match(/w:type="page"/g) || []).length <= 10, String((raw.match(/w:type="page"/g) || []).length));
+  check('özet tablosu keepNext taşır', /<w:keepNext\/>/.test(raw));
+  const txt = await docxText(c);
+  check('hukuk rolü DAVACI', txt.includes('DAVACI'));
+  check('ceza rolü yok', !txt.includes('Müşteki') && !txt.includes('Şüpheli'));
+  check('anlaşılmadı dayanağı işaretli', txt.includes('Anlaşılmadı — kanıt olarak kullanılamaz'));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
