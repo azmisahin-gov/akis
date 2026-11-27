@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.380 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.381 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -169,16 +169,6 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 
 ### Envanter ve kayıtlar
 
-**`defaultInventoryIntro`**
-
-- **Belge/bölüm:** Rapor · Envanter ve kayıtlar
-- **Koşul:** Bölüm açıksa
-- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
-- **Tür:** otomatik açıklama
-- **Durum:** Aktif
-
-> İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.
-
 **`inventoryNote`**
 
 - **Belge/bölüm:** Rapor · Envanter ve kayıtlar
@@ -187,7 +177,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Aktif
 
-> Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.
+> Envanterdeki biçim, kanal ve örnekleme hızı bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.
 
 **`videoAudioNote`**
 
@@ -407,7 +397,7 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Tür:** otomatik açıklama
 - **Durum:** Kullanılmıyor (kaynakta çağrı yok) — doğrulanmadan silinmemeli
 
-> Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.
+> Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin ses biyometrisiyle tespiti, ses benzerliğine dayalı otomatik eşleştirme, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Raporda görülen dosyalar arası kişi eşleştirmesi (K kodları) varsa bu, bilirkişinin dinleyerek yaptığı uzman kanaatidir; kimlik tespiti değildir. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.
 
 **`privacyText`**
 
@@ -619,6 +609,36 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 
 ### Diğer uzun metinler
 
+**`inventoryPointer`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> Dosyaların biçim, boyut, süre, kanal, örnekleme hızı ve SHA-256 bilgileri ayrı “Dosya teknik envanteri” bölümündedir.
+
+**`custodyLogIntro`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> Bu inceleme ortamında kaydedilen işlemlerin günlüğü aşağıdadır.
+
+**`notationKeyIntro`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> Raporda kullanılan konuşmacı kodları, metin işaretleri ve gözlem işaretlerinin anlamları aşağıdadır.
+
 **`attachmentsText`**
 
 - **Belge/bölüm:** Rapor · Diğer uzun metinler
@@ -698,6 +718,16 @@ Her metin için belge/bölüm, koşul, düzenlenebilirlik, tür ve **durum** yaz
 - **Durum:** Aktif
 
 > KAYIT · CİHAZ · ETİKET · SERİ NO · YÖNTEM · ARAÇ · OPERATÖR · ALINMA · DOĞRULAMA
+
+**`reviewSummaryNote`**
+
+- **Belge/bölüm:** Rapor · Diğer uzun metinler
+- **Koşul:** Bölüm açıksa
+- **Düzenlenebilir:** Kod sabiti (dosya bazında düzenlenemez).
+- **Tür:** otomatik açıklama
+- **Durum:** Aktif
+
+> Uzman denetiminden geçen = onaylanan + anlaşılmadı işaretlenen bölümler.
 
 **`segmentHeaders`**
 
@@ -865,23 +895,23 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 
 | Üretici | Satır | Tür | Metin (kısaltıldı) |
 |---|---|---|---|
-| `letterDefaultBody` | 17064 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
-| `letterPaperHtml` | 17139 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17852 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17863 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17869 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17872 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17875 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17879 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17881 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17889 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `makeDocx` | 18939 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
-| `udfDocument` | 19073 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 19076 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 19081 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 19712 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 19723 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 19724 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `letterDefaultBody` | 17077 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
+| `letterPaperHtml` | 17152 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
+| `renderReport` | 17865 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17876 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17882 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17885 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17888 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17892 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17894 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17902 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `makeDocx` | 18954 | hata/arayüz | DOCX oluşturma bileşeni yüklenemedi. İnternet bağlantısını kontrol edin. |
+| `udfDocument` | 19088 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 19091 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 19096 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 19734 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 19745 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 19746 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 
@@ -900,6 +930,8 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `defaultExpert` | BİLİRKİŞİ |
 | `toplineField` | UZMANLIK ALANI · |
 | `expertFieldHeading` | UZMANLIK ALANI |
+| `defaultInventoryIntro` | İncelemeye sunulan dijital ses materyalleri aşağıdadır. |
+| `fileInventoryIntro` | İncelemeye sunulan dosyaların teknik envanteri aşağıdadır. |
 | `noMaterials` | İncelemeye sunulan ses kaydı bulunmamaktadır. |
 | `codecFallback` | Ses dosyası |
 | `segmentCountLabel` | Deşifre bölümü |
@@ -967,6 +999,7 @@ Hukuki cümle değil; sütun adı/boş durum metni gibi **etiketler**.
 | `annexNoLog` | Kayıtlı işlem günlüğü yok. |
 | `annexNoInventory` | Teknik envanter kaydı yok. |
 | `techHeading` | TEKNİK ÖZELLİKLER VE İNCELEME ORTAMI |
+| `techEmpty` | Teknik ortam bilgisi girilmedi. |
 | `qcHeading` | KALİTE KONTROLÜ VE DENETLENEBİLİRLİK |
 | `limitsMeasuredPrefix` | Bölüm işaretlerinden ölçülen: |
 | `integrityHeaders` | KAYIT · SHA-256 · DOĞRULAMA · DELİL GÜNLÜĞÜ |

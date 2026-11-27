@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.380.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.381.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10195,3 +10195,22 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - `annexPlacement`, grup ekleri (`ek7…ek10`), `reportAnnex*` yolu ve "Varsayılan düzen" düğmesi kaldırıldı.
 - **DEĞİŞMEZ:** EK kavramı temel modelde yok; ek sonradan kullanıcı seçimiyle (üst yazı/rapor) kurulur. Yeni dosya tümü kapalı.
 - **Ölçüm tuzağı:** `#reportSections` yalnız rapor görünümü açılınca çizilir; CDP'de önce `[data-view="report"]` tıkla.
+
+
+## YENİ OTURUM DEVRİ (v2.381) — Rapor içerik denetimi
+
+| | |
+|---|---|
+| Sürüm | **v2.381** |
+| Testler | **2787 birim + 556 şema** + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium (örnek + demo): ZWSP 0 · ISO 0 · DOSYA ADI 1 · SAYISAL KONTROL 0 · JS 0 |
+
+- `paragraphLines` boş satırları atlar (ZWSP paragrafı yok).
+- ASR + işlem günlüğü zamanları `niceDateTime` (`12.11.2026 10:20`).
+- Konuşmacı notunda “uzman eşleştirmesi” tekrarı giderildi.
+- `scopeNoteText`: ses biyometrisiyle kimlik/otomatik eşleştirme yapılmadığı; K eşleştirmesinin uzman kanaati olduğu yazılı.
+- `deliveryChecklistRows`: “seçim bekleyen yok / belirsiz okuma seçildi”, “her kayıtta en az bir bölüm var”.
+- Envanter tablosu yalnız `fileInventory`; `s3` dosya adlarını listeler.
+- `reportQcRows` generic 7 satırı basmaz; son kontrol listesinde SAYISAL KONTROL tablosu yok.
+- Teknik ortam boşsa `techEmpty`; 22/23/24 giriş cümleleri; dizi pusulası satırı.
+- `sample_data/demo/AKIS_Demo_Kurgusal.akis` yeni sıra/anahtarlarla yeniden yazıldı.

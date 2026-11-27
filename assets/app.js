@@ -166,15 +166,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.380';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.380';
+} from './schema.js?v=2.381';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.381';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.380';
+const APP_VERSION = '2.381';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -276,7 +276,12 @@ const REPORT_TEXT = {
   defaultField: DEFAULT_EXPERT_FIELD,
   toplineField: 'UZMANLIK ALANI · ',
   expertFieldHeading: 'UZMANLIK ALANI',
-  defaultInventoryIntro: 'İncelemeye sunulan dijital ses materyalleri aşağıda envanter bilgileriyle gösterilmiştir.',
+  defaultInventoryIntro: 'İncelemeye sunulan dijital ses materyalleri aşağıdadır.',
+  inventoryPointer:
+    'Dosyaların biçim, boyut, süre, kanal, örnekleme hızı ve SHA-256 bilgileri ayrı “Dosya teknik envanteri” bölümündedir.',
+  fileInventoryIntro: 'İncelemeye sunulan dosyaların teknik envanteri aşağıdadır.',
+  custodyLogIntro: 'Bu inceleme ortamında kaydedilen işlemlerin günlüğü aşağıdadır.',
+  notationKeyIntro: 'Raporda kullanılan konuşmacı kodları, metin işaretleri ve gözlem işaretlerinin anlamları aşağıdadır.',
   noMaterials: 'İncelemeye sunulan ses kaydı bulunmamaktadır.',
   codecFallback: 'Ses dosyası',
   segmentCountLabel: 'Deşifre bölümü',
@@ -284,7 +289,7 @@ const REPORT_TEXT = {
     'Teknik sorulara ilişkin değerlendirme, görevlendirme yazısında yer alan sorular doğrultusunda eklenir.',
   noTranscript: 'Bu kayıt için henüz deşifre metni oluşturulmamıştır.',
   inventoryNote:
-    'Envanterdeki codec, kanal, örnekleme ve bit derinliği bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
+    'Envanterdeki biçim, kanal ve örnekleme hızı bilgileri dosya konteynerinden okunmuştur; SHA-256 özeti ise dosyanın hesaplama anındaki dijital özetidir. Bu bilgiler tek başına kaydın gerçekliğini, kayıt tarihini, kayıt tarihçesini veya montaj yapılıp yapılmadığını doğrulamaz.',
   // Video materyal varsa envanter notuna eklenir (yalnız ses; görüntü incelenmez).
   videoAudioNote:
     'Kesitteki video dosyalarından yalnızca ses kanalı çözümlenmiştir; görüntü incelenmemiştir.',
@@ -358,6 +363,7 @@ const REPORT_TEXT = {
   reviewSummaryHeading: 'İNCELEME ÖZETİ (DENETİM KAYDI)',
   reviewSummaryIntro:
     'Aşağıdaki özet, inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Yapılmayan bir işlem raporda yapılmış gibi gösterilmez.',
+  reviewSummaryNote: 'Uzman denetiminden geçen = onaylanan + anlaşılmadı işaretlenen bölümler.',
   // TESLİM KONTROLÜ (v2.339, A-2): EK-5'in ilk tablosu. Durum sözcükleri
   // METİNDİR (Tamam/Eksik/Bilgi); renk tek başına anlam taşımaz. "Bilgi",
   // eksik DEĞİLDİR: o alan isteğe bağlı ya da ölçülemedi (uydurma yok).
@@ -425,7 +431,7 @@ Object.assign(REPORT_TEXT, {
     'Bölümlerin kontrol durumu raporun kanıt tablosunda gösterilir; kontrolü tamamlanmamış bölümler onaylanmış sayılmaz.',
   scopeNoteHeading: 'GÖREV ALANI DIŞINDA KALAN KONULAR VE SINIRLILIK BEYANI',
   scopeNoteText:
-    'Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin sesinden tespiti, iki ayrı kaydın aynı kişiye ait olup olmadığının karşılaştırılması, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.',
+    'Bu rapor 56.12 (ses kayıtlarının metin hâline dönüştürülmesi) kapsamındadır. Ayrıca ve açıkça istenip uygun uzmanlıkla görevlendirilmedikçe; konuşmacının gerçek kimliğinin ses biyometrisiyle tespiti, ses benzerliğine dayalı otomatik eşleştirme, sesin özgünlüğü/kaynağı, montaj veya tahrifat incelemesi, kayıt cihazı/ortamı tespiti ve akustik olay analizi yapılmamıştır. Raporda görülen dosyalar arası kişi eşleştirmesi (K kodları) varsa bu, bilirkişinin dinleyerek yaptığı uzman kanaatidir; kimlik tespiti değildir. Bu nitelikteki sorular ilgili başka uzmanlık alanında ayrıca değerlendirilmelidir. Bu rapor, Yargı mercilerince SEGBİS kullanılarak yapılan kayıt/tutanak işlemlerinin yerine geçmez.',
   privacyHeading: 'KİŞİSEL VERİ, GİZLİLİK VE BİLGİ GÜVENLİĞİ',
   privacyText:
     'Ses içeriği ve inceleme işlemleri bu ortamda yerel olarak yürütülmüştür; kayıt harici bir hizmete yüklenmemiştir. Dosyalar ve proje verisi yerel depolamada tutulur. Kayıtta kişisel veri veya gizli bilgi bulunabileceğinden rapor ve ekleri yalnızca yetkili mercie sunulmalı; üçüncü kişilerle paylaşılmamalıdır.',
@@ -438,6 +444,7 @@ Object.assign(REPORT_TEXT, {
   techIntro:
     'İncelemenin yürütüldüğü iş istasyonu, yazılım ve dinleme donanımı aşağıda bilirkişi beyanına göre gösterilmiştir. Boş alan rapora "—" olarak yazılır; uydurulmaz.',
   techNote: 'Teknik araçların adı ve sürümü yalnız fiilen kullanıldığı ölçüde yazılır; aracın dosyayı açabilmesi tek başına bilimsel doğrulama değildir.',
+  techEmpty: 'Teknik ortam bilgisi girilmedi.',
   qcHeading: 'KALİTE KONTROLÜ VE DENETLENEBİLİRLİK',
   qcIntro:
     'Aşağıdaki sayılar inceleme sırasında gerçekten yapılan işlemleri ve kalan eksikleri gösterir. Bunlar bir ONAY değil, denetim listesidir; son kararı bilirkişi verir.',
@@ -13686,7 +13693,11 @@ function speakerGroups(c) {
         }
         const parts = links.map((x) => `${x.m.name}: ${x.sp.code || ''} · ${x.segs.length} bölüm`).join(' · ');
         const verified = links.some((x) => isSpeakerVerified(x.sp)) ? REPORT_TEXT.speakerVerifiedSuffix : '';
-        const note = [p.notes, 'uzman eşleştirmesi', verified].filter(Boolean).join(' · ');
+        const noteParts = [];
+        if (p.notes) noteParts.push(p.notes);
+        if (!/uzman eşleştirmesi/i.test(String(p.notes || ''))) noteParts.push('uzman eşleştirmesi');
+        if (verified) noteParts.push(verified);
+        const note = noteParts.filter(Boolean).join(' · ');
         out.push({
           code: p.code || '',
           name: label,
@@ -15335,7 +15346,7 @@ const REPORT_UI_LABELS = {
   summary: 'Raporun kısa özeti',
   s1: 'Görevlendirme, incelemenin konusu ve sınırları',
   s2: 'Cevaplanacak sorular',
-  s3: 'Maddi unsurlar ve dosya envanteri',
+  s3: 'Maddi unsurlar',
   s4: 'İnceleme yöntemi',
   transcriptionMethod: 'Metne dönüştürme yöntemi',
   origin: 'Kayıt kökeni ve teslim zinciri',
@@ -15990,7 +16001,7 @@ function reportAsrRows(c) {
   const out = [];
   for (const m of c.materials || []) {
     if (!m.transcribedWithModel) continue;
-    out.push([m.name, m.transcribedWithModel, m.asrAt ? String(m.asrAt) : '—']);
+    out.push([m.name, m.transcribedWithModel, m.asrAt ? niceDateTime(m.asrAt) : '—']);
   }
   return out;
 }
@@ -16035,11 +16046,17 @@ function deliveryChecklistRows(c) {
   add('Konu (künye)', yesNo(box.subject), txt(box.subject) || 'Künyede konu alanı boş kalır.');
   add('Ses/video kaydı', materials.length ? okS : badS, materials.length ? `${materials.length} kayıt` : 'Kayıt yok.');
   const noSeg = materials.filter((m) => !((m && m.segments) || []).length).length;
-  add('Bölümlenmemiş kayıt', noSeg ? badS : okS, noSeg ? `${noSeg} kayıt` : 'Tüm kayıtlar bölümlendi.');
+  add('Bölümlenmemiş kayıt', noSeg ? badS : okS, noSeg ? `${noSeg} kayıt` : 'Her kayıtta en az bir bölüm var.');
   const b = pendingBreakdown(segs);
   add('Kontrol edilmemiş bölüm', b.total ? badS : okS, b.total ? pendingSummaryText(segs) : 'Tüm bölümler kontrol edildi.');
+  const ambAll = segs.filter((s) => segReview(s) === 'ambiguous').length;
   const amb = segs.filter((s) => segReview(s) === 'ambiguous' && !txt(s.chosen)).length;
-  add('Belirsiz okumada seçim', amb ? badS : okS, amb ? `${amb} bölümde okuma seçilmedi.` : 'Seçim gerektiren bölüm yok.');
+  const ambChosen = ambAll - amb;
+  add(
+    'Belirsiz okumada seçim',
+    amb ? badS : okS,
+    amb ? `${amb} bölümde okuma seçilmedi.` : ambChosen ? `${ambChosen} belirsiz okuma seçildi; bekleyen yok.` : 'Belirsiz okuma yok.'
+  );
   const noSpk = segs.filter((s) => !txt(s.speaker) || txt(s.speaker) === 'Belirtilmedi').length;
   add('Konuşmacı atanmamış bölüm', noSpk ? badS : okS, noSpk ? `${noSpk} bölüm` : 'Tüm bölümlerde konuşmacı atandı.');
   const codeConf = speakerCodeIssues(box).reduce((n, i) => n + (i.speakerIds.length - 1), 0);
@@ -16144,7 +16161,7 @@ function physicalReturnRows(c) {
     ['İade alan görevli', pfText(r.receivedBy)],
     ['Klasör / cilt sayısı', pfText(r.folders)],
     ['Dosyanın iade anındaki durumu', pfText(r.condition)],
-    ['Dizi pusulası ile karşılaştırma', physicalIndexText(r.indexCompared)]
+    ['Dizi pusulası', physicalIndexText(r.indexCompared)]
   ];
   if (counts.items) {
     rows.push([
@@ -16271,7 +16288,7 @@ function recordSectionDefs(c) {
   const materials = c.materials || [];
   const logRows = [];
   for (const m of materials) {
-    for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
+    for (const e of m.log || []) logRows.push([m.name, e.at ? niceDateTime(e.at) : '—', e.event || '', e.detail || '']);
   }
   // Envanter ANA envanter tablosuyla AYNI sütun seçimini kullanır.
   const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
@@ -16333,12 +16350,6 @@ function recordSectionDefs(c) {
           headers: REPORT_TEXT.deliveryCheckHeaders,
           rows: deliveryChecklistRows(c)
         },
-        {
-          kind: 'table',
-          title: REPORT_TEXT.checklistTitle,
-          headers: REPORT_TEXT.checklistHeaders,
-          rows: reportChecklistRows(c)
-        }
       ]
     },
     legalBasis: { kind: 'para', text: defaultTextFor('annexLegalText') }
@@ -16423,7 +16434,7 @@ function reportAnnexBlocks(c) {
   const materials = c.materials || [];
   const logRows = [];
   for (const m of materials) {
-    for (const e of m.log || []) logRows.push([m.name, e.at ? String(e.at) : '—', e.event || '', e.detail || '']);
+    for (const e of m.log || []) logRows.push([m.name, e.at ? niceDateTime(e.at) : '—', e.event || '', e.detail || '']);
   }
   // EK-2 envanteri ANA envanter tablosuyla AYNI sütun seçimini kullanır (v2.236).
   const invT = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventoryRows(c));
@@ -16511,7 +16522,9 @@ function limitsMeasuredText(c) {
 // v2.226 — Kalite kontrolü / denetlenebilirlik: otomatik sayılar + ikinci göz.
 function reportQcRows(c) {
   const materials = c.materials || [];
-  const rows = reportChecklistRows(c);
+  const allSegs = materials.flatMap((m) => (m && m.segments) || []);
+  const longSegs = allSegs.filter((s) => segmentLengthInfo(segDurationSec(s)).level === 'long').length;
+  const rows = [['45 sn üstü bölüm', String(longSegs)]];
   let timeIssues = 0;
   let gaps = 0;
   for (const m of materials) {
@@ -17961,14 +17974,11 @@ function renderReport() {
     },
     s3: () => {
       const invRows = inventoryRows(c);
-      const t = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, invRows);
-      // v2.350: satır yoksa TABLO BASILMAZ; tek cümle yazılır (üç çıktı aynı).
-      const body = t.empty
-        ? `<p class="paper-muted">${esc(REPORT_TEXT.noColumns)}</p>`
-        : t.rows.length
-          ? `<table class="paper-table"><thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${t.rows.map((r) => `<tr>${r.map((x, i) => `<td${t.keys[i] === 'sha256' ? ' class="paper-hash"' : ''}>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`
-          : `<p class="paper-muted">${esc(REPORT_TEXT.noInventoryRow[0])}</p>`;
-      return `<div class="paper-section"><h3>${esc(H('s3'))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p>${body}<p class="paper-muted">${esc(REPORT_TEXT.inventoryNote + videoNoteSuffix(c))}</p></div>`;
+      const names = invRows.map((r) => r[0]).filter(Boolean);
+      const list = names.length
+        ? `<ul class="paper-list">${names.map((n) => `<li>${esc(n)}</li>`).join('')}</ul>`
+        : `<p class="paper-muted">${esc(REPORT_TEXT.noInventoryRow[0])}</p>`;
+      return `<div class="paper-section"><h3>${esc(H('s3'))}</h3><p>${esc(REPORT_TEXT.defaultInventoryIntro)}</p>${list}<p class="paper-muted">${esc(REPORT_TEXT.inventoryPointer)}</p></div>`;
     },
     origin: () => {
       const orgRows = originRows(c);
@@ -18018,10 +18028,11 @@ function renderReport() {
     },
     s4: () =>
       `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
-    tech: () =>
-      `<div class="paper-section"><h3>${esc(H('tech'))}</h3><p>${esc(REPORT_TEXT.techIntro)}</p><table class="paper-table cover-fields"><tbody>${reportTechRows(c)
-        .map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`)
-        .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.techNote)}</p></div>`,
+    tech: () => {
+      const rows = reportTechRows(c);
+      const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
+      return `<div class="paper-section"><h3>${esc(H('tech'))}</h3><p>${esc(REPORT_TEXT.techIntro)}</p>${has ? `<table class="paper-table cover-fields"><tbody>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td></tr>`).join('')}</tbody></table>` : `<p class="paper-muted">${esc(REPORT_TEXT.techEmpty)}</p>`}<p class="paper-muted">${esc(REPORT_TEXT.techNote)}</p></div>`;
+    },
     enhancement: () => `<div class="paper-section"><h3>${esc(H('enhancement'))}</h3><p>${esc(REPORT_TEXT.enhanceText)}</p></div>`,
     transcriptionMethod: () => {
       const asrRows = reportAsrRows(c);
@@ -18151,7 +18162,7 @@ function renderReport() {
     },
     reviewSummary: () => {
       const rsRows = reviewSummaryRows(c);
-      return `<div class="paper-section"><h3>${esc(H('reviewSummary'))}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table></div>`;
+      return `<div class="paper-section"><h3>${esc(H('reviewSummary'))}</h3><p>${esc(REPORT_TEXT.reviewSummaryIntro)}</p><table class="paper-table"><tbody>${rsRows.map((r) => `<tr><td>${esc(r[0])}</td><td>${esc(String(r[1]))}</td></tr>`).join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.reviewSummaryNote)}</p></div>`;
     },
     qualityControl: () =>
       `<div class="paper-section"><h3>${esc(H('qualityControl'))}</h3><p>${esc(REPORT_TEXT.qcIntro)}</p><table class="paper-table cover-fields"><tbody>${reportQcRows(c)
@@ -18159,9 +18170,9 @@ function renderReport() {
         .join('')}</tbody></table><p class="paper-muted">${esc(REPORT_TEXT.qcNote)}</p></div>`,
     privacy: () => `<div class="paper-section"><h3>${esc(H('privacy'))}</h3><p>${esc(defaultTextFor('privacyText'))}</p></div>`,
     handoverRecord: () => `<div class="paper-section"><h3>${esc(H('handoverRecord'))}</h3>${recordBlockHtml(c, 'handoverRecord')}</div>`,
-    fileInventory: () => `<div class="paper-section"><h3>${esc(H('fileInventory'))}</h3>${recordBlockHtml(c, 'fileInventory')}</div>`,
-    custodyLog: () => `<div class="paper-section"><h3>${esc(H('custodyLog'))}</h3>${recordBlockHtml(c, 'custodyLog')}</div>`,
-    notationKey: () => `<div class="paper-section"><h3>${esc(H('notationKey'))}</h3>${recordBlockHtml(c, 'notationKey')}</div>`,
+    fileInventory: () => `<div class="paper-section"><h3>${esc(H('fileInventory'))}</h3><p>${esc(REPORT_TEXT.fileInventoryIntro)}</p>${recordBlockHtml(c, 'fileInventory')}<p class="paper-muted">${esc(REPORT_TEXT.inventoryNote + videoNoteSuffix(c))}</p></div>`,
+    custodyLog: () => `<div class="paper-section"><h3>${esc(H('custodyLog'))}</h3><p>${esc(REPORT_TEXT.custodyLogIntro)}</p>${recordBlockHtml(c, 'custodyLog')}</div>`,
+    notationKey: () => `<div class="paper-section"><h3>${esc(H('notationKey'))}</h3><p>${esc(REPORT_TEXT.notationKeyIntro)}</p>${recordBlockHtml(c, 'notationKey')}</div>`,
     finalChecklist: () => `<div class="paper-section"><h3>${esc(H('finalChecklist'))}</h3>${recordBlockHtml(c, 'finalChecklist')}</div>`,
     legalBasis: () => `<div class="paper-section"><h3>${esc(H('legalBasis'))}</h3>${recordBlockHtml(c, 'legalBasis')}</div>`,
     annex: () => {
@@ -18564,16 +18575,14 @@ function docxXml(c) {
     },
     s3: () => {
       const dInv = inventoryRows(c);
-      const t = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, dInv, [1700, 900, 900, 900, 1100, 1100, 2400]);
+      const names = dInv.map((r) => r[0]).filter(Boolean);
       return (
         headingXml(H('s3')) +
         wP(REPORT_TEXT.defaultInventoryIntro) +
-        (t.empty
-          ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : t.rows.length
-            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })
-            : wP(REPORT_TEXT.noInventoryRow[0], { color: '74869A', size: 17, italic: true })) +
-        wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true })
+        (names.length
+          ? names.map((n) => wP(`• ${n}`)).join('')
+          : wP(REPORT_TEXT.noInventoryRow[0], { color: '74869A', size: 17, italic: true })) +
+        wP(REPORT_TEXT.inventoryPointer, { color: '74869A', size: 17, italic: true })
       );
     },
     origin: () => {
@@ -18644,11 +18653,16 @@ function docxXml(c) {
       );
     },
     s4: () => headingXml(H('s4')) + wP(c.methodText || defaultTextFor('methodText')),
-    tech: () =>
-      headingXml(H('tech')) +
-      wP(REPORT_TEXT.techIntro) +
-      wTable(reportTechRows(c), { widths: [3400, 5600], header: false, shadeFirstCol: true }) +
-      wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true }),
+    tech: () => {
+      const rows = reportTechRows(c);
+      const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
+      return (
+        headingXml(H('tech')) +
+        wP(REPORT_TEXT.techIntro) +
+        (has ? wTable(rows, { widths: [3400, 5600], header: false, shadeFirstCol: true }) : wP(REPORT_TEXT.techEmpty, { color: '74869A', size: 17, italic: true })) +
+        wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true })
+      );
+    },
     enhancement: () => headingXml(H('enhancement')) + wP(REPORT_TEXT.enhanceText),
     transcriptionMethod: () => {
       const dAsr = reportAsrRows(c);
@@ -18799,7 +18813,8 @@ function docxXml(c) {
         widths: [6000, 3000],
         header: false,
         shadeFirstCol: true
-      }),
+      }) +
+      wP(REPORT_TEXT.reviewSummaryNote, { color: '74869A', size: 17, italic: true }),
     qualityControl: () =>
       headingXml(H('qualityControl')) +
       wP(REPORT_TEXT.qcIntro) +
@@ -18807,9 +18822,9 @@ function docxXml(c) {
       wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
     privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText')),
     handoverRecord: () => headingXml(H('handoverRecord')) + recordBlockXml(c, 'handoverRecord'),
-    fileInventory: () => headingXml(H('fileInventory')) + recordBlockXml(c, 'fileInventory'),
-    custodyLog: () => headingXml(H('custodyLog')) + recordBlockXml(c, 'custodyLog'),
-    notationKey: () => headingXml(H('notationKey')) + recordBlockXml(c, 'notationKey'),
+    fileInventory: () => headingXml(H('fileInventory')) + wP(REPORT_TEXT.fileInventoryIntro) + recordBlockXml(c, 'fileInventory') + wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true }),
+    custodyLog: () => headingXml(H('custodyLog')) + wP(REPORT_TEXT.custodyLogIntro) + recordBlockXml(c, 'custodyLog'),
+    notationKey: () => headingXml(H('notationKey')) + wP(REPORT_TEXT.notationKeyIntro) + recordBlockXml(c, 'notationKey'),
     finalChecklist: () => headingXml(H('finalChecklist')) + recordBlockXml(c, 'finalChecklist'),
     legalBasis: () => headingXml(H('legalBasis')) + recordBlockXml(c, 'legalBasis'),
     annex: () => {
@@ -19146,7 +19161,7 @@ async function udfDocument(opts = {}) {
   function paragraphLines(text, opts = {}) {
     return String(text ?? '')
       .split(/\r?\n/)
-      .filter((line, i, a) => line.length || i < a.length - 1)
+      .filter((line) => String(line).trim().length > 0)
       .map((line) => paragraph(line, opts))
       .join('');
   }
@@ -19278,11 +19293,10 @@ async function udfDocument(opts = {}) {
       el.push(h(H('s3')));
       el.push(paragraph(REPORT_TEXT.defaultInventoryIntro));
       const inventory = inventoryRows(c);
-      const t = reportTableColumns(c, 'inventory', REPORT_TEXT.inventoryHeaders, inventory, [90, 60, 60, 55, 75, 80, 120]);
-      if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      const names = inventory.map((r) => r[0]).filter(Boolean);
+      if (names.length) for (const n of names) el.push(paragraph(`• ${n}`, { size: 10 }));
       else el.push(paragraph(REPORT_TEXT.noInventoryRow[0], { size: 9, italic: true, color: 'muted', after: 7 }));
-      el.push(paragraph(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { size: 9, italic: true, color: 'muted', after: 7 }));
+      el.push(paragraph(REPORT_TEXT.inventoryPointer, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     origin: () => {
       const uOrg = originRows(c);
@@ -19341,7 +19355,10 @@ async function udfDocument(opts = {}) {
     tech: () => {
       el.push(h(H('tech')));
       el.push(paragraph(REPORT_TEXT.techIntro, { size: 10 }));
-      el.push(table(reportTechRows(c), [170, 340], { header: false, shadeFirstCol: true }));
+      const rows = reportTechRows(c);
+      const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
+      if (has) el.push(table(rows, [170, 340], { header: false, shadeFirstCol: true }));
+      else el.push(paragraph(REPORT_TEXT.techEmpty, { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.techNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     enhancement: () => {
@@ -19526,6 +19543,7 @@ async function udfDocument(opts = {}) {
           { header: false, shadeFirstCol: true }
         )
       );
+      el.push(paragraph(REPORT_TEXT.reviewSummaryNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     qualityControl: () => {
       el.push(h(H('qualityControl')));
@@ -19543,14 +19561,18 @@ async function udfDocument(opts = {}) {
     },
     fileInventory: () => {
       el.push(h(H('fileInventory')));
+      el.push(paragraph(REPORT_TEXT.fileInventoryIntro, { size: 10 }));
       recordBlockUdf(c, 'fileInventory', el, { paragraph, paragraphLines, table });
+      el.push(paragraph(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
     custodyLog: () => {
       el.push(h(H('custodyLog')));
+      el.push(paragraph(REPORT_TEXT.custodyLogIntro, { size: 10 }));
       recordBlockUdf(c, 'custodyLog', el, { paragraph, paragraphLines, table });
     },
     notationKey: () => {
       el.push(h(H('notationKey')));
+      el.push(paragraph(REPORT_TEXT.notationKeyIntro, { size: 10 }));
       recordBlockUdf(c, 'notationKey', el, { paragraph, paragraphLines, table });
     },
     finalChecklist: () => {
@@ -24837,6 +24859,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.381': {
+    title: 'Rapor içerik denetimi: tekrarlar ve görünmez karakterler',
+    body:
+      'Rapor içeriği denetlendi ve düzeltildi: boş satırdan gelen görünmez karakter kaldırıldı; tarih/saatler artık “12.11.2026 10:20” biçiminde; konuşmacı notunda “uzman eşleştirmesi” iki kez yazılmıyor; kapsam beyanı ile dosyalar arası kişi (K) eşleştirmesi çelişmiyor; kontrol listesi ifadeleri netleşti; dosya envanteri yalnız “Dosya teknik envanteri” bölümünde (maddi unsurlar bölümünde tekrar yok); aynı sayılar 17/18/25’te üç kez yazılmıyor; teknik ortam boşsa tek satır; kayıt bölümlerine kısa giriş eklendi. Demo paketi yeni 36 bölüm sırasına çekildi.'
+  },
   '2.380': {
     title: 'Rapor iskeleti sıfırdan: 36 düz bölüm',
     body:

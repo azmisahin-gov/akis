@@ -1776,8 +1776,10 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   checkShared('durum: Bilgi', REPORT_TEXT.deliveryCheckStateInfo, H, U, D);
   // baseCase: rapor tarihi (2026-02-10) son teslimden (2026-02-01) sonra.
   checkShared('durum: Eksik (rapor tarihi gecikmiş)', REPORT_TEXT.deliveryCheckStateMissing, H, U, D);
-  checkShared('sayısal kontrol başlığı', REPORT_TEXT.checklistTitle, H, U, D);
-  checkShared('sayısal kontrol sütunu', REPORT_TEXT.checklistHeaders[1], H, U, D);
+  // v2.381 — aynı sayılar 17/18'de; son kontrol listesinde TEKRARLANMAZ.
+  check('sayısal kontrol tablosu tekrarlanmaz (H)', !H.includes(REPORT_TEXT.checklistTitle));
+  check('sayısal kontrol tablosu tekrarlanmaz (U)', !U.includes(REPORT_TEXT.checklistTitle));
+  check('sayısal kontrol tablosu tekrarlanmaz (D)', !D.includes(REPORT_TEXT.checklistTitle));
   // Boş künyede "Eksik" gerekçesi yazılır (uydurma yok, açıklama var).
   const c2 = __schemaMod.normalizeCase({ ...withMaterial(), fileNo: '' });
   const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);

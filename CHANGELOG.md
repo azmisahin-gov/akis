@@ -6,12 +6,27 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.380.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.381.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.381 — Rapor içerik denetimi
+
+**KULLANICI NE GÖRECEK:** Rapor içeriği denetlendi ve düzeltildi:
+- Boş satırdan gelen **görünmez karakter** kaldırıldı.
+- Tarih/saatler artık **“12.11.2026 10:20”** biçiminde (ASR ve işlem günlüğü).
+- Konuşmacı notunda **“uzman eşleştirmesi” iki kez** yazılmıyor.
+- **Kapsam beyanı** ile dosyalar arası kişi (K) eşleştirmesi **çelişmiyor**: K eşleştirmesi varsa bunun uzman kanaati olduğu yazılı.
+- **Kontrol listesi** ifadeleri netleşti: “seçim bekleyen yok / belirsiz okuma seçildi” ve “her kayıtta en az bir bölüm var”.
+- **Dosya envanteri yalnız “Dosya teknik envanteri” bölümünde**; “Maddi unsurlar” bölümü dosya adlarını listeler (tekrar yok).
+- **Aynı sayılar 17/18/25’te üç kez** yazılmıyor; son kontrol listesindeki SAYISAL KONTROL tablosu kaldırıldı.
+- Teknik ortam boşsa **tek satır**; 22/23/24 bölümlerine **kısa giriş**; dizi pusulası satırı düzeltildi.
+- **Demo paketi** yeni 36 bölüm sırasına çekildi.
+
+**ÖLÇÜM (gerçek Chromium):** ZWSP **0** · ISO tarih **0** · “DOSYA ADI” tablosu **1** · “SAYISAL KONTROL” **0** · JS hatası **0**; demo sırası s1→s2→s3→s4→metne dönüştürme→köken… Testler **2787 birim + 556 şema** + rapor/sürüm/tasarım yeşil.
 
 ## v2.380 — Rapor iskeleti sıfırdan: 36 düz bölüm
 

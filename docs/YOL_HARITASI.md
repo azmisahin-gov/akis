@@ -2,11 +2,24 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.380.**
+yazılır. **Güncel sürüm: v2.381.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.381 — Rapor içerik denetimi (TAMAMLANDI)
+
+- Görünmez ZWSP satırı kaldırıldı (`paragraphLines` boş satırları atlar).
+- Tarih/saatler `niceDateTime` ile `12.11.2026 10:20` biçiminde (ASR + işlem günlüğü).
+- Konuşmacı notunda “uzman eşleştirmesi” tekrarı giderildi.
+- Kapsam beyanı: ses biyometrisiyle kimlik/otomatik eşleştirme yapılmadığı; K eşleştirmesinin uzman kanaati olduğu yazılı.
+- Kontrol listesi: “seçim bekleyen yok / belirsiz okuma seçildi” ve “her kayıtta en az bir bölüm var”.
+- Envanter tablosu yalnız “Dosya teknik envanteri” bölümünde; maddi unsurlar bölümü dosya adlarını listeler.
+- Aynı sayılar 17/18/25’te tekrarlanmaz; son kontrol listesinde SAYISAL KONTROL tablosu kaldırıldı.
+- Teknik ortam boşsa tek satır; 22/23/24 bölümlerine kısa giriş; dizi pusulası satırı düzeltildi.
+- Demo paketi yeni 36 bölüm sırasına ve yeni anahtarlara çekildi.
+- Ölçüm: gerçek Chromium (örnek + demo) ZWSP 0 · ISO 0 · DOSYA ADI 1 · SAYISAL KONTROL 0 · JS 0.
 
 ## v2.380 — Rapor iskeleti sıfırdan: 36 düz bölüm (TAMAMLANDI)
 
