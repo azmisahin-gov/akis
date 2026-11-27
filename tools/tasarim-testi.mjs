@@ -2562,6 +2562,17 @@ console.log('\n[2ei] Sol iskelet daraltma (v2.373)');
   check('CSS daraltma ızgarası (48px)', /\.report-workspace\.skeleton-collapsed\s*\{\s*grid-template-columns:\s*48px/.test(layer));
 }
 
+console.log('\n[2ej] İskelet: eke taşınan bölüm tek konumda (v2.374)');
+{
+  const app = read('assets/app.js');
+  // Gövde döngüsü eke taşınmışları ATLAR.
+  check('gövde listesi eke taşınanı atlar', /if \(annexPlacementOf\(c, key\)\) continue;/.test(app));
+  // Ek altında çocuk satır üreteci + grup çocukları + tek başına taşınanlar.
+  check('çocuk satır üreteci (annexChildRow)', /const annexChildRow = \(secKey, labelText, indent\)/.test(app));
+  check('grup çocukları ek altında', /if \(isGroup && on\) \{\s*groupSecs\.forEach/.test(app));
+  check('tek başına taşınanlar ek satırı', /for \(const sk of standalonePlaced\)/.test(app));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

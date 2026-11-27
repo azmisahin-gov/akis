@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.373.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.374.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10062,3 +10062,22 @@ Sıradaki: **v2.373 sol iskelet daraltma** (48 px ince ray).
 - Test: `birim [183]`, `tasarim [2ei]`.
 
 Sıradaki: **v2.374 uçtan uca doğrulama** (PDF/DOCX/UDF + 3 tema + 5 genişlik).
+
+## EK DÜZELTME (v2.374) — İskelet: eke taşınan bölüm tek konumda
+
+**KULLANICI:** "Eke giden şeyler hâlâ gövde kısmında duruyor; eke basılan düğmeler var."
+
+- `renderReportSections`: **gövde döngüsü `annexPlacementOf` olanı ATLAR**; eke taşınan bölüm
+  **ekinin ALTINDA** çocuk satır (`annexChildRow`, EK-N.M) olarak görünür. Tek konum.
+- Çocuk satır: aç/kapa + ✎ + **G** (gövdeye al) + `data-drag-kind="body"` (sürükle → gövde/başka ek).
+- Grup çocukları `inGroup(gk)` (annexPlacementOf) ile; tek başına (`true`) taşınanlar `standalonePlaced`
+  ile ek satırı olarak. `an` sayacı rapor numarasıyla hizalı.
+- Ölçüm: origin gövdede YOK, EK-7.1 VAR; çocuk→gövde sürükle geri döndü; JS 0.
+- Test: `tasarim [2ej]`.
+
+**ÜST YAZI EKLERİ (kavram — kod DEĞİŞMEDİ):** İki AYRI numara sistemi vardır:
+1. **Rapor içi ekler** ("Rapor eki N."): raporun EKLER bölümü (ek1…ek10 gruplu). Raporun içinde.
+2. **Üst yazı belge ekleri** (`EK-N`): üst yazıyla sunulan AYRI belgeler. `LETTER_ANNEX_KINDS`:
+   `report` (EK-1 = TÜM rapor belgesi), `sections` (rapordan çıkarılıp ayrı belge olan bölümler,
+   ör. "teknik bilgiler" = EK-2), `reportAnnex` (rapor içi ekin ayrı belgeye çıkarılması), `custom`.
+   Varsayılan: yalnız `report` (EK-1 = rapor). Diğerleri isteğe bağlıdır.

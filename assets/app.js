@@ -165,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.373';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.373';
+} from './schema.js?v=2.374';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.374';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.373';
+const APP_VERSION = '2.374';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15417,13 +15417,35 @@ function renderReportSections(c) {
       : `<button type="button" class="rsec-go" data-report-goto="${esc(key)}" title="Bu bölüme git">${label}</button>`;
     return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${inner}</span>${editBtn}</div>`;
   };
+  // v2.374 — EK ALTINDAKİ BÖLÜM SATIRI (çocuk). Eke taşınmış bölüm gövde
+  // listesinde DEĞİL, ekinin altında görünür (raporla birebir). Sürüklenebilir
+  // (gövdeye/başka eke taşınır), aç/kapa + başlık düzenle + "G" (gövdeye al).
+  const annexChildRow = (secKey, labelText, indent) => {
+    const on = reportSectionOn(c, secKey);
+    const editing = reportTitleEditKey === secKey;
+    const inner = editing
+      ? `<input class="rsec-title-input" type="text" maxlength="160" data-report-title-input="${esc(secKey)}" value="${esc(reportSectionTitle(c, secKey))}" aria-label="Bölüm başlığı" title="Enter: uygula · Esc: vazgeç">`
+      : `<button type="button" class="rsec-go" data-report-goto="${esc(secKey)}" title="Bu bölüme git"><span>${esc(labelText)}</span></button>`;
+    const editBtn = editing
+      ? `<button type="button" class="rsec-edit" data-report-title-cancel="${esc(secKey)}" aria-label="Vazgeç" title="Vazgeç (Esc)">×</button>`
+      : `<button type="button" class="rsec-edit" data-report-title="${esc(secKey)}" aria-label="Başlığı düzenle" title="Başlığı düzenle">✎</button>` +
+        `<button type="button" class="rsec-edit" data-report-place="${esc(secKey)}" aria-label="Gövdeye geri al" title="Bu bölümü gövdeye geri al">G</button>`;
+    const drag = canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(secKey)}"` : '';
+    const depth = indent ? 1 : 0;
+    return `<div style="--depth:${depth}" data-rsec-key="${esc(secKey)}" class="rsec-row rsec-child rsec-annex-child${on ? '' : ' is-excluded'}${reportEditKey === secKey ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}><span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası eke göre">•</span><span class="rsec-item"><input type="checkbox" data-report-section="${esc(secKey)}"${on ? ' checked' : ''}> ${inner}</span>${editBtn}</div>`;
+  };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
     .map((k) => row(k))
     .join('');
   let body = '';
+  // v2.374 — Eke taşınmış bölümler GÖVDE listesinde GÖRÜNMEZ; ekinin ALTINDA.
+  const placedKeys = layout.order.filter((k) => annexPlacementOf(c, k));
+  const inGroup = (gk) => placedKeys.filter((k) => annexPlacementOf(c, k) === gk);
+  const standalonePlaced = placedKeys.filter((k) => annexPlacementOf(c, k) === true);
   for (const key of layout.order) {
     // v2.234: `reading` artık kendi satırı olan bağımsız gövde bölümü.
+    if (annexPlacementOf(c, key)) continue; // ek altında gösterilir (tek konum)
     if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
   let annexRows = '';
@@ -15432,7 +15454,8 @@ function renderReportSections(c) {
     for (const key of layout.annexOrder) {
       if (!isReportAnnexKey(key)) continue;
       const isGroup = isReportAnnexGroup(key);
-      const groupEmpty = isGroup && !reportGroupSections(c, key).length;
+      const groupSecs = isGroup ? inGroup(key) : [];
+      const groupEmpty = isGroup && !groupSecs.length;
       const on = layout.annexes[key] !== false;
       // Kapalı boş grup hiç gösterilmez. Boş grup NORMALDE gizli; sürükleme
       // başlayınca (dragstart) BIRAKMA HEDEFİ olarak açığa çıkar (v2.371).
@@ -15454,6 +15477,19 @@ function renderReportSections(c) {
         ? ` data-rsec-empty-group="1" style="display:none" title="Boş grup — buraya bir bölüm sürükleyin (veya bölüm satırındaki EK düğmesi)"`
         : '';
       annexRows += `<div class="rsec-row rsec-child${groupEmpty ? ' rsec-annex-empty' : ''}"${emptyAttr}${adrag}><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
+      // v2.374 — Grup ekinin ALTINDA, ona taşınmış bölümler (çocuk satırlar).
+      if (isGroup && on) {
+        groupSecs.forEach((sk, i) => {
+          const clabel = `EK-${an}.${i + 1}. ${reportSectionTitle(c, sk)}`;
+          if (reportOutlineMatch(c, sk, clabel, reportSectionOn(c, sk))) annexRows += annexChildRow(sk, clabel, true);
+        });
+      }
+    }
+    // v2.374 — Kendi ekine (true) taşınmış bölümler: ek satırı olarak gösterilir.
+    for (const sk of standalonePlaced) {
+      an += 1;
+      const clabel = `EK-${an}. ${reportSectionTitle(c, sk)}`;
+      if (reportOutlineMatch(c, sk, clabel, reportSectionOn(c, sk))) annexRows += annexChildRow(sk, clabel, false);
     }
     if (reportOutlineState.cat === 'all' || reportOutlineState.cat === 'closing') {
       annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
@@ -24725,6 +24761,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.374': {
+    title: 'İskelette eke taşınan bölüm artık tek yerde',
+    body:
+      'Rapor iskeletinde eke taşınmış bölüm artık GÖVDE listesinde görünmüyor; ilgili EK’in ALTINDA (EK-7.1, EK-8.2… gibi) çocuk satır olarak duruyor. Yani iskelet raporla birebir: bir bölüm tek yerde. Gövdedeki bir bölümün EK düğmesi onu önerilen gruba taşır; taşınınca gövdeden çıkar, ekin altına gelir. Çocuk satırı aç/kapa, başlık düzenle (✎) ve “G” (gövdeye geri al) taşır; sürükleyip gövdeye/başka eke taşınabilir. Kanıt/metin/onay değişmez.'
+  },
   '2.373': {
     title: 'Sol iskelet daraltma',
     body:

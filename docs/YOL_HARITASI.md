@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.373.**
+yazılır. **Güncel sürüm: v2.374.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.374 — İskelet: eke taşınan bölüm tek konumda (TAMAMLANDI)
+
+- **Tek konum:** eke taşınan bölüm gövde listesinden çıkar, **ekinin ALTINDA** çocuk satır
+  (EK-N.M) olur. `renderReportSections` gövde döngüsü `annexPlacementOf` olanı atlar;
+  `annexChildRow` çocuk satır üretir; grup çocukları + tek başına taşınanlar listelenir.
+- Çocuk satır: aç/kapa + ✎ + **G** (gövdeye al) + sürüklenebilir (gövde/başka ek).
+- Ölçüm (demo + Öneri A): origin gövdede YOK, EK-7.1 olarak VAR; çocuk→gövde sürükle
+  geri döndü; JS 0.
+- Test: `tasarim [2ej]` (4).
 
 ## v2.373 — Sol iskelet daraltma (TAMAMLANDI)
 
