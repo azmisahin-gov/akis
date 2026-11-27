@@ -7953,5 +7953,22 @@ console.log('\n[175] Çalışma notları (v2.356)');
   eq('önizleme çakışma sayısı', cmp.notebook.conflicts.length, 1);
 }
 
+// --- 176. Notlar dosya verisidir: yalnız not girilen dosya BOŞ DEĞİL (v2.357)
+// ÖLÇÜLEN RİSK: isEmptyCase notebook'u saymıyordu. Yeni dosyada yalnız not
+// yazılırsa dosya "boş" sayılıp KAYDA YAZILMIYOR, pakete/arşive girmiyordu —
+// notlar sessizce kaybolurdu. Aynı açık examinationSubject için de vardı.
+console.log('\n[176] Notlar/inceleme konusu dosya verisidir (v2.357)');
+{
+  const base = T.freshCase();
+  eq('boş dosya hâlâ boş', T.isEmptyCase(base), true);
+  const onlyNote = { ...base, id: 'c1', notebook: T.normalizeNotebook([{ text: 'yalnız not' }]) };
+  eq('yalnız notu olan dosya BOŞ DEĞİL', T.isEmptyCase(onlyNote), false);
+  eq('yalnız notlu dosya kayda yazılır', T.casesForStorage([onlyNote]).length, 1);
+  const blankNote = { ...base, id: 'c2', notebook: T.normalizeNotebook([{ text: '   ' }]) };
+  eq('boş metinli not dosyayı doldurmaz', T.isEmptyCase(blankNote), true);
+  const onlyExam = { ...base, id: 'c3', examinationSubject: 'Ses kayıtlarının çözümlenmesi' };
+  eq('yalnız inceleme konusu olan dosya BOŞ DEĞİL', T.isEmptyCase(onlyExam), false);
+}
+
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

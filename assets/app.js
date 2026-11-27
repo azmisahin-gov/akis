@@ -154,15 +154,15 @@ import {
   emptyNotebookEntry,
   caseWithoutNotebook,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.356';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.356';
+} from './schema.js?v=2.357';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.357';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.356';
+const APP_VERSION = '2.357';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -18991,11 +18991,17 @@ function isEmptyCase(c) {
   // Fizikî dosya teslim/iade kaydı kullanıcı verisidir (v2.330): yalnız bu
   // kayıt girilse bile dosya boş sayılmaz; aksi hâlde pakete girmezdi.
   if (physicalFileActive(c.physicalFile)) return false;
+  // ÇALIŞMA NOTLARI (v2.357): kişisel defter de dosya verisidir. Yalnız not
+  // yazılmış dosya "boş" sayılırsa kayda yazılmaz ve notlar SESSİZCE kaybolur
+  // (v2.356'da ölçüldü). Boş metinli not dosyayı doldurmaz.
+  if ((c.notebook || []).some((n) => String((n && n.text) || '').trim())) return false;
   if ((c.questions || []).some((q) => String(q?.question || '').trim() || String(q?.answer || '').trim())) return false;
   const filled = [
     c.court,
     c.fileNo,
     c.subject,
+    // İnceleme konusu (v2.354) de kullanıcı verisidir (v2.357'de ölçüldü).
+    c.examinationSubject,
     c.caseDate,
     c.inspectionDate,
     c.parties?.plaintiff,
@@ -23771,6 +23777,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.357': {
+    title: 'Yalnız not yazılan dosya artık kaydediliyor',
+    body:
+      'Yeni bir dosyada yalnızca çalışma notu yazıp başka bilgi girmezseniz, dosya “boş” sayıldığı için kaydedilmiyordu; yenilemede notlar kaybolurdu. Artık çalışma notu (ve inceleme konusu) dosya verisi sayılıyor: yalnız not yazılmış dosya da kaydedilir, pakete ve arşive girer. Boş metinli not dosyayı doldurmaz. Hiçbir veri silinmedi.'
+  },
   '2.356': {
     title: 'Çalışma notları eklendi (rapora girmez)',
     body:

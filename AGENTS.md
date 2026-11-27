@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.356.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.357.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9405,4 +9405,28 @@ bir "gözlem" kavramı terim birliğini bozar. Ad: **Çalışma notları**.
 Notlar **kişisel**dir; paketle paylaşılırsa alıcı görür (anahtar bunun için).
 Notların hukuken ibraz edilip edilmeyeceği mesleki usul konusudur; uygulama
 yalnız "rapora girmez" sınırını garanti eder, ibraz muafiyeti vaat etmez.
+
+## YENİ OTURUM DEVRİ (v2.357) — Notlar dosya verisidir
+
+| | |
+|---|---|
+| Sürüm | **v2.357** |
+| Testler | 2753 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium: yalnız not yazılan dosya yenilemeden sonra duruyor (önce kaybolurdu) |
+
+### Ölçülen hata (v2.356)
+`isEmptyCase` **notebook'u saymıyordu**. Yeni dosyada yalnız not yazılırsa dosya
+"boş" sayılıyor, `casesForStorage` onu eliyor → **kayda yazılmıyor**, pakete ve
+arşive girmiyordu (sessiz veri kaybı). Aynı açık `examinationSubject` için vardı.
+
+### DEĞİŞMEZ KURAL
+**Kullanıcının yazdığı her şey dosya verisidir.** `isEmptyCase` yeni bir alan
+eklerken **güncellenmeli**: dolu not, dolu inceleme konusu, dolu fizikî kayıt
+vb. dosyayı dolu yapar. Boş metin (yalnız boşluk) dosyayı doldurmaz — hayalet
+dosya üretilmez (v2.109).
+
+### Test yazım dersi
+Yeni bir alan eklediğinizde üç yeri birlikte düşünün: (1) şema/normalize,
+(2) **`isEmptyCase`** (kayıt/paket/arşiv), (3) rapor/çıktı. Yalnız (1)'i yapmak
+"yazdım ama kayboldu" üretir.
 

@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.356.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.357.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.357 — Yalnız not yazılan dosya kaydediliyor
+
+**KULLANICI NE GÖRECEK:** Yeni dosyada **sadece çalışma notu** yazıp başka alan
+doldurmazsanız, dosya artık **kaydediliyor**; yenilemede notlar durur, pakete ve
+arşive girer.
+
+**Ölçülen risk (v2.356):** "Boş taslak kayda yazılmaz" kuralı (v2.109) boş dosyayı
+`isEmptyCase` ile eliyordu; bu kontrol **notebook'u saymıyordu**. Yalnız not
+girilmiş dosya "boş" sayılıp **kayda yazılmıyordu** → notlar sessizce kaybolurdu
+(`casesForStorage` 0 kayıt). Aynı açık **inceleme konusu** (`examinationSubject`)
+için de vardı.
+
+- `isEmptyCase`: dolu bir not (boşluk kırpıldıktan sonra) dosyayı **dolu** yapar;
+  `examinationSubject` da dolu alan listesine eklendi.
+- **Boş metinli not dosyayı doldurmaz** (hayalet dosya üretilmez).
+- Davranış korunur: hiç veri yoksa dosya yine kayda yazılmaz (v2.109).
+- **Koruyan test:** `birim [176]` (6) — düzeltme yokken **3 kontrol KALDI**.
+- **Ölçüm (gerçek Chromium):** yalnız not yazılan dosya yenilemeden sonra
+  duruyor; dosya seçicide görünüyor.
 
 ## v2.356 — Çalışma notları (kişisel defter)
 

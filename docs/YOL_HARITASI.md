@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.356.**
+yazılır. **Güncel sürüm: v2.357.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.357 — Yalnız not yazılan dosya kaydediliyor (TAMAMLANDI)
+
+- `isEmptyCase` çalışma notunu (ve `examinationSubject`'i) kullanıcı verisi
+  sayar; yalnız notlu dosya kayda/pakete/arşive girer.
+- Boş metinli not dosyayı doldurmaz; v2.109 kuralı korunur.
+- Test: `birim [176]` (düzeltme yokken 3 kontrol KALDI).
 
 ## v2.356 — Çalışma notları (TAMAMLANDI)
 

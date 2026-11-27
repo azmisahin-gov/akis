@@ -1,4 +1,4 @@
-# Özellikler (v2.356 — mevcut durum)
+# Özellikler (v2.357 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,6 +1190,12 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Yalnız not yazılan dosya kaydedilir (v2.357)
+
+Çalışma notu (ve inceleme konusu) dosya verisidir: yalnız not yazılmış dosya da
+kaydedilir, pakete ve arşive girer. Boş metinli not dosyayı doldurmaz. Hiç veri
+yoksa dosya yine kayda yazılmaz. Koruyan test: `birim [176]`.
 
 ## Çalışma notları — kişisel defter (v2.356)
 
