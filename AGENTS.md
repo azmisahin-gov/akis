@@ -9538,3 +9538,93 @@ değil bu pencereye bağlayın (`#defaultsHost` + `TEXT_DEFAULT_ITEMS`).
 `#defaultsSearch` gibi JS'in ürettiği kimlikleri `surum` REQUIRED_IDS'e
 koymayın; statik HTML'de yoktur. `tasarim` app.js üzerinden denetler.
 
+## YENİ OTURUM DEVRİ (v2.361 → sonraki) — ODAK: RAPOR SAYFASI
+
+> Kullanıcı: *"Artık tamamen rapor sayfasına odaklanabiliriz; yeni oturumda tek
+> odak noktamız rapor."* Aşağıdaki not o oturumun başlangıç bağlamıdır.
+
+| | |
+|---|---|
+| Sürüm | **v2.361** (`assets/app.js` → `APP_VERSION`) |
+| Testler | `bash tools/test.sh` → **2773 birim + 556 şema** + rapor/sürüm/tasarım yeşil |
+| Git | `main` = `origin/main` = **deb11ab** (push edildi) |
+| Canlı | <https://azmisahin-gov.github.io/akis/> → `version.json` = **2.361** |
+| Açık konu | **Rapor sayfası** (aşağıdaki ölçüm ve adaylar) |
+
+### Bu oturumda yapılanlar (v2.352–v2.361)
+
+| Sürüm | Konu | Koruyan test |
+|---|---|---|
+| v2.352 | Biçim ipucu satırı okunur (ham hex → token; 2.48/2.30 → 5.93/6.11) | `tasarim [2dq]` |
+| v2.353 | Ölü kod: 9 fonksiyon + `REPORT_TEXT.sections/sub51` silindi | `birim [32/37]` güncellendi |
+| v2.354 | **Dava konusu ≠ inceleme konusu** (`examinationSubject`) | `birim [174]`, `rapor 55`, `tasarim [2dr]` |
+| v2.355 | §1 başlığı 56.12 dili; başlığın ikinci kaynağı kaldırıldı | `birim` başlık |
+| v2.356 | **Çalışma notları** (📝 / Alt+N; rapora girmez) | `birim [175]`, `rapor 56`, `tasarim [2ds]` |
+| v2.357 | Yalnız notlu dosya kaydedilir (`isEmptyCase`) | `birim [176]` |
+| v2.358 | Notu bölüme bağlama (↪ Git, 📝 rozet) | `birim [177]`, `tasarim [2dt]` |
+| v2.359 | Rapor özeti girişi düzenlenebilir (16. metin) | `birim [178]`, `rapor 57`, `tasarim [2du]` |
+| v2.360 | Ayarlar sekmeleri (3.453 px → sekme başına 1,0–1,8 ekran) | `tasarim [2dv]` |
+| v2.361 | Rapor metinleri ayrı pencere (`#textsDialog`) | `tasarim [2dv]`, `surum` |
+
+### Bu oturumda doğan DEĞİŞMEZ kurallar
+1. **Not bir BULGU DEĞİLDİR.** `case.notebook` rapora/eklerine/UDF-DOCX-ZIP'e
+   girmez (`rapor 56`). "Gözlem" sözcüğü gözlem işaretlerine ayrılmıştır.
+2. **Kullanıcının yazdığı her şey dosya verisidir.** Yeni alan eklerken
+   `isEmptyCase` güncellenir (yoksa "yazdım ama kayboldu").
+3. **Düz alan ↔ iç içe alan eşlemesi** (`CASE_MIRROR`) yoksa düzenleyici yazımı
+   sessizce kaybolur (v2.359'da ölçüldü).
+4. **Bölüm başlığı tek kaynak:** `reportSectionTitle` → `REPORT_SECTION_DEFS`.
+   Başlıkların ikinci listesini tutmayın.
+5. **Ayarlar = uygulama davranışı** (Görünüm · Model · Depolama). Rapor içeriği
+   (16 varsayılan metin) ayrı pencerede (`#textsDialog`).
+
+### Ölçüm tuzakları (bu oturumda yaşandı)
+- **Tema denetimi:** `data-theme` **boyamadan önce** uygulanmalı (localStorage →
+  yenile); sonradan değiştirmek CSS transition'ı dondurup yanlış "beyaz üzerine
+  beyaz" okuması üretir.
+- **`--virtual-time-budget` + `--dump-dom`** IndexedDB/paket akışlarını
+  tamamlatmaz (init yarıda kalır). Güvenilir yol: `chromium
+  --remote-debugging-port` + Node 24 yerleşik `WebSocket` ile CDP.
+- **Alan değişikliği `input` olayıyla** işlenir; yalnız `change` göndermek
+  "çalışmıyor" yanılgısı verir.
+- **`scrollIntoView` kullanılmaz** (üst kapları kaydırır; v2.193).
+- **Dinamik kimlik** (`#defaultsSearch`) `surum` REQUIRED_IDS'e konmaz.
+
+### RAPOR SAYFASI — bugünkü ölçüm (1440×900, demo, gerçek Chromium)
+| Ölçüm | Değer |
+|---|---|
+| `#view-report` görünür / içerik | **717 px / 13.695 px** (kaydırır) |
+| Kâğıt | 900 × 13.438 px · 20.681 karakter |
+| İskelet | 232 px genişlik · **40 satır** · kendi içinde kayar |
+| Sağ panel | "Düzenle" modunda **gizli** (tasarım), "Kontrol"de açılır |
+| Bölüm | **32** tanım · varsayılan **22 açık** |
+| Araç çubuğu (DOM) | **13 düğme** (Rapor/Üst yazı, 📄 Metinler, Düzenle/Kontrol, kontrol çipi, Tam ekran, DOCX, UDF; üst yazı düğmeleri ikinci modda) |
+| Hazırlık | "Teslim 10.12.2026 · 13 gün kaldı…" |
+
+### SIRADAKİ İŞ — yalnız rapor sayfası (öneri sırası)
+**Önce ölç, sonra yerleştir.** Her adım tek sürüm; üç çıktı eşitliği
+(`rapor-tutarlilik-testi`) ve "rapor bilirkişi adına" kuralı bozulmaz.
+
+1. **Araç çubuğu sadeleşmesi:** 13 düğme; hangileri birinci ekranda görünür,
+   hangileri ikinci moda saklanabilir? Ölçüt: rapor okurken göz yormayan tek
+   satır; çıktı düğmeleri (UDF/DOCX) birincil kalır.
+2. **İskelet 40 satır / 32 bölüm:** ek (annex) satırları ve alt ağaç gürültüsü;
+   gruplama/katlama ile kısaltma (filtre zaten var).
+3. **"Kontrol" paneli:** 2 kontrol maddesi → engelleyen/uzman/öneri grupları
+   okunur mu; satıra tıklayınca ilgili yere gitme.
+4. **Uzun belge gezinmesi:** 19 ekranlık kâğıtta bölüm içi gezinme (iskelet ↔
+   belge eşlemesi, "bu bölüme git"), sayfa/sürekli mod ilişkisi.
+5. **Yazdırma sadakati:** `@page` + satır bölünmezliği + ekler yeni sayfa
+   (v2.258/v2.259) gerçek yazdırmada doğrulanmalı (PDF çıktısıyla).
+
+**Yapmayın:** kâğıdı `contentEditable` yapmak (üç çıktı eşitliği bozulur);
+rapor metnine ürün adı/sürüm eklemek; ölçülmemiş değeri tabloya yazmak.
+
+### İlk komutlar
+```bash
+bash tools/test.sh
+git log --oneline -5; git status --short
+curl -s https://azmisahin-gov.github.io/akis/version.json
+```
+Beklenen: **2773 + 556** yeşil; sürüm **2.361**; git temiz.
+
