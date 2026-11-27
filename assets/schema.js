@@ -1538,6 +1538,10 @@ export function emptyCase(over = {}) {
     court: '',
     fileNo: '',
     subject: '',
+    // İNCELEME KONUSU (v2.354): dava konusundan AYRI. Dava konusu hukuki
+    // uyuşmazlıktır; inceleme konusu bilirkişiye verilen teknik görevdir.
+    // Boşsa raporun 1. bölümünde satır yazılmaz (aynı metin iki kez basılmaz).
+    examinationSubject: '',
     caseDate: '',
     inspectionDate: '',
 
@@ -2729,6 +2733,7 @@ export function normalizeCase(src = {}) {
     court: str(c.court),
     fileNo: str(c.fileNo),
     subject: str(c.subject),
+    examinationSubject: str(c.examinationSubject),
     caseDate: str(c.caseDate),
     inspectionDate: str(c.inspectionDate),
     // v2 düz alanları → iç içe (kaybolmadan).
@@ -3385,7 +3390,7 @@ export function mergeCases(mine, theirs) {
   // ikisi de doluysa gelen dosya daha yeniyse onun değeri alınır, aksi hâlde
   // sessizce seçmek yerine çakışma olarak raporlanır.
   const newer = (theirs.updatedAt || '') > (mine.updatedAt || '');
-  for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) {
+  for (const k of ['court', 'fileNo', 'subject', 'examinationSubject', 'caseDate', 'inspectionDate', 'reportType', 'status']) {
     mergeTextField(merged, mine, theirs, newer, k, applied, conflicts, k);
   }
 
@@ -3925,7 +3930,7 @@ export function compareCases(mine, theirs) {
     else if (newer) out.caseFields.autoResolved.push(item);
     else out.caseFields.conflicts.push(item);
   };
-  for (const k of ['court', 'fileNo', 'subject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
+  for (const k of ['court', 'fileNo', 'subject', 'examinationSubject', 'caseDate', 'inspectionDate', 'reportType', 'status']) cmpField(null, k, k);
   for (const [g, keys] of [
     ['report', ['methodText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']],
     ['assignment', ['scope', 'body']]

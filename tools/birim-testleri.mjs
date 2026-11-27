@@ -104,7 +104,7 @@ const EXPOSE = [
   'parseTimecodeStrict', 'normalizeTimeInput',
   'paragraphGroups', 'splitSegmentAt', 'quickApproveTargets', 'trLowerCase',
   'detectPitchAmbiguity', 'pitchCellText',
-  'isEmptyCase', 'exportPlanFor', 'selectCaseFromArchive', 'freshCase',
+  'isEmptyCase', 'exportPlanFor', 'selectCaseFromArchive', 'freshCase', 'normalizeCase',
   'reprocessPlan', 'queueReprocessSummary',
   'isHumanApprovedReview', 'reviewCellText', 'reviewHintText',
   'isArchivedCase', 'visibleCases', 'archiveCase', 'unarchiveCase',
@@ -7540,7 +7540,8 @@ console.log('[165] Teslim kontrol listesi (v2.339)');
   eq('dosya no eksik', find(empty, 'Dosya numarası')[1], 'Eksik');
   eq('mahkeme eksik', find(empty, 'Mahkeme')[1], 'Eksik');
   eq('bilirkişi eksik', find(empty, 'Bilirkişi adı')[1], 'Eksik');
-  eq('konu eksik', find(empty, 'İnceleme konusu')[1], 'Eksik');
+  // v2.354: satır adı "Konu (künye)"; gövdedeki inceleme konusu AYRI alandır.
+  eq('konu eksik', find(empty, 'Konu (künye)')[1], 'Eksik');
   // 3) Kontrol bekleyen bölüm: eksik + açıklama metni.
   const pend = find(full, 'Kontrol edilmemiş bölüm');
   eq('bekleyen bölüm eksik', pend[1], 'Eksik');
@@ -7865,6 +7866,34 @@ console.log('[173] Eski yöntem metni göçü (v2.350)');
   const s2 = mk(custom);
   T.stripDerivedFields(s2);
   eq('düzenlenmiş metne dokunulmaz', s2.cases[0].methodText, custom);
+}
+
+// --- 174. Konu alanları: dava konusu ≠ inceleme konusu (v2.354) ------------
+// KULLANICI (canlı inceleme): "Hukuk seçtiğimde künyede DAVA KONUSU, gövdede
+// İnceleme konusu olarak AYNI metin çıkıyordu." Tek alan iki kavramı taşıyordu:
+// dava konusu (hukuki uyuşmazlık) ile bilirkişiye verilen teknik görev.
+console.log('\n[174] Konu alanları ayrıldı (v2.354)');
+{
+  const base = T.freshCase();
+  eq('inceleme konusu varsayılan boş', base.examinationSubject, '');
+  eq(
+    'normalize alanı korur',
+    T.normalizeCase({ ...base, examinationSubject: 'Ses kayıtlarının çözümlenmesi' }).examinationSubject,
+    'Ses kayıtlarının çözümlenmesi'
+  );
+  eq('boş değer güvenli', T.normalizeCase({ ...base, examinationSubject: null }).examinationSubject, '');
+
+  const mine = T.normalizeCase({ ...base, id: 'c1', subject: 'Depozito iadesi talebi', updatedAt: '2026-01-01T00:00:00.000Z' });
+  const theirs = T.normalizeCase({ ...base, id: 'c1', examinationSubject: 'Ses kayıtlarının çözümlenmesi', updatedAt: '2026-01-02T00:00:00.000Z' });
+  const m1 = T.mergeCasesForTest(mine, theirs);
+  eq('birleştirme boş alanı doldurur', m1.merged.examinationSubject, 'Ses kayıtlarının çözümlenmesi');
+  eq('künye konusu korunur', m1.merged.subject, 'Depozito iadesi talebi');
+
+  // ÇAKIŞMA ölçütü: iki taraf da dolu ve gelen dosya DAHA YENİ DEĞİL.
+  const mine2 = T.normalizeCase({ ...mine, examinationSubject: 'A incelemesi', updatedAt: '2026-01-05T00:00:00.000Z' });
+  const theirs2 = T.normalizeCase({ ...theirs, examinationSubject: 'B incelemesi', updatedAt: '2026-01-04T00:00:00.000Z' });
+  const m2 = T.mergeCasesForTest(mine2, theirs2);
+  eq('farklı inceleme konusu çakışma bildirir', m2.conflicts.some((x) => x.field === 'examinationSubject'), true);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

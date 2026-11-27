@@ -1,4 +1,4 @@
-# Özellikler (v2.353 — mevcut durum)
+# Özellikler (v2.354 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,6 +1190,15 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Dava konusu ≠ inceleme konusu (v2.354)
+
+Rapor künyesindeki konu (`subject`) hukuki uyuşmazlığı; 1. bölümdeki **İnceleme
+konusu** (`examinationSubject`) bilirkişiye verilen teknik görevi anlatır. İkisi
+ayrı alandır; inceleme konusu boşsa 1. bölümde satır yazılmaz. Form yer tutucusu
+türe göre değişir. İnceleme görünümündeki alan **"Görevlendirme kapsamı ve
+sınırları"** adını taşır. Koruyan testler: `birim [174]`, `rapor 55`,
+`tasarim [2dr]`.
 
 ## Ölü kod temizliği (v2.353)
 

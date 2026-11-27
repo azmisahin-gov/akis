@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.353'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.354'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.353">
-  <link rel="stylesheet" href="assets/app.css?v=2.353">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.354">
+  <link rel="stylesheet" href="assets/app.css?v=2.354">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.353">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.354">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.353"></script>
+  <script type="module" src="assets/app.js?v=2.354"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -202,13 +202,14 @@
         <div class="section-intro"><div><div class="eyebrow">03 / İNCELEME</div><h2>Görevlendirme soruları ve teknik değerlendirme</h2></div><span class="subtle-pill">Uzman kontrolü gerekli</span></div>
         <div class="split-workspace">
           <nav class="split-nav" role="tablist" aria-label="İnceleme bölümleri">
-            <button class="split-item on" data-qtab="scope" role="tab" aria-selected="true"><span class="split-no">01</span><span><b>Görevlendirme kapsamı</b><small>Mahkemenin talebi</small></span></button>
+            <button class="split-item on" data-qtab="scope" role="tab" aria-selected="true"><span class="split-no">01</span><span><b>Görevlendirme kapsamı ve sınırları</b><small>Mahkemenin talebi</small></span></button>
             <button class="split-item" data-qtab="questions" role="tab" aria-selected="false"><span class="split-no">02</span><span><b>Cevaplanacak sorular</b><small>Teknik cevaplar</small></span><span class="split-n" id="qCount">0</span></button>
             <button class="split-item" data-qtab="method" role="tab" aria-selected="false"><span class="split-no">03</span><span><b>Yöntem ve değerlendirme</b><small>Rapor görünümünde düzenlenir</small></span></button>
           </nav>
           <div class="split-body">
             <div class="split-pane on" data-qpane="scope" role="tabpanel">
-              <label class="field"><span>Görevlendirme / inceleme talebi</span><textarea id="assignmentScope" rows="12" placeholder="Mahkeme ara kararında belirtilen inceleme kapsamını mümkün olduğunca aynen ve tarafsız biçimde yazın."></textarea></label>
+              <label class="field"><span>Görevlendirme kapsamı ve sınırları</span><textarea id="assignmentScope" rows="12" placeholder="Ara kararda / görevlendirme yazısında belirtilen kapsamı ve sınırları mümkün olduğunca aynen ve tarafsız biçimde yazın."></textarea></label>
+              <p class="single-home-note-inline">Dava konusu ve inceleme konusu <b>Dosya bilgileri</b> çekmecesinde girilir; burada yalnız görevlendirmenin kapsamı ve sınırları yazılır.</p>
             </div>
             <div class="split-pane" data-qpane="questions" role="tabpanel">
               <div class="split-pane-head"><span>Her soruya ayrı yanıt; dayanak kaydı ve zaman aralığını belirtin.</span><button id="addQuestionBtn" class="button button-light button-small">＋ Soru ekle</button></div>
@@ -356,7 +357,8 @@
           <div class="form-grid two">
             <label class="field"><span id="labelFileNo">Esas / soruşturma / takip no *</span><input id="fileNo" placeholder="2026/… E."></label>
             <label class="field"><span>Bilirkişinin adı soyadı *</span><input id="expertName" placeholder="Ad Soyad"></label>
-            <label class="field span-2"><span id="labelSubject">Dava / inceleme konusu *</span><textarea id="subject" rows="2" placeholder="İncelemenin konusunu kısa ve tarafsız şekilde yazın."></textarea></label>
+            <label class="field span-2"><span id="labelSubject">Dava / inceleme konusu *</span><textarea id="subject" rows="2" placeholder="Konuyu kısa ve tarafsız şekilde yazın."></textarea></label>
+            <label class="field span-2"><span>İnceleme konusu (rapor gövdesi)</span><textarea id="examinationSubject" rows="2" placeholder="Bilirkişiye verilen teknik görevi yazın (ör. ses kayıtlarının çözümlenmesi ve beyanların tespiti). Boş bırakılırsa raporun 1. bölümünde bu satır yazılmaz."></textarea><small class="field-hint">Künyedeki konu ile aynı şey değildir: künye hukuki uyuşmazlığı, bu alan yapılacak teknik incelemeyi anlatır.</small></label>
           </div>
           <div class="form-divider"></div>
           <div class="form-section-title"><span>02</span><div><h3>Görevlendirme tarihleri</h3><p>İsteğe bağlı: atama tarihi, verilen süre ve son teslim.</p></div></div>

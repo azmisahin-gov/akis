@@ -2726,5 +2726,17 @@ console.log('\n[2dq] Kompakt yükleme alanı ipucu kontrastı (v2.352)');
   }
 }
 
+console.log('\n[2dr] Konu alanları: dava konusu ve inceleme konusu (v2.354)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  check('çekmecede inceleme konusu alanı var', /id="examinationSubject"/.test(html));
+  check('etiket ne olduğunu söyler', /İnceleme konusu \(rapor gövdesi\)/.test(html));
+  check('dava konusu alanı korunur', /id="subject"/.test(html));
+  check('eski belirsiz terim kalktı', !/Görevlendirme \/ inceleme talebi/.test(html));
+  check('görevlendirme kapsamı tek terim', /Görevlendirme kapsamı ve sınırları/.test(html));
+  check('alan forma bağlı (CASE_FIELDS)', /'examinationSubject'/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

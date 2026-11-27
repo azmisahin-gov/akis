@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.353.**
+yazılır. **Güncel sürüm: v2.354.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.354 — Dava konusu ve inceleme konusu ayrıldı (TAMAMLANDI)
+
+- `case.examinationSubject` (yeni) + normalize/birleştirme/önizleme; künye
+  konusu (`subject`) değişmedi.
+- §1 üç çıktıda (HTML/DOCX/UDF) inceleme konusunu **yalnız doluysa** yazar.
+- Form: "İnceleme konusu (rapor gövdesi)" alanı + türe uygun yer tutucu.
+- Terim birliği: "Görevlendirme / inceleme talebi" → "Görevlendirme kapsamı ve
+  sınırları"; EK-5 satırı "Konu (künye)".
+- Demo paketi iki konuyu ayrı gösterecek şekilde güncellendi.
+- Test: `birim [174]`, `rapor 55`, `tasarim [2dr]`.
 
 ## v2.353 — Ölü kod temizliği (TAMAMLANDI)
 

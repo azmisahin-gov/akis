@@ -6,12 +6,45 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.353.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.354.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.354 — Dava konusu ve inceleme konusu ayrıldı
+
+**KULLANICI NE GÖRECEK:** Rapor künyesindeki konu ile raporun **1. bölümündeki
+"İnceleme konusu"** artık **ayrı alanlardır**. Önceden tek alan iki yere
+yazılıyordu: Hukuk türünde künyede **DAVA KONUSU**, gövdede **İnceleme konusu**
+olarak **aynı cümle** çıkıyordu (ölçüldü: metin raporda 4 kez).
+
+| Kavram | Alan | Nerede | Etiket |
+|---|---|---|---|
+| Dava / soruşturma / takip konusu | `subject` | Rapor künyesi | türe göre (DAVA KONUSU · SORUŞTURMA KONUSU · TAKİP KONUSU) |
+| İnceleme konusu (teknik görev) | `examinationSubject` (**yeni**) | 1. bölüm, tek satır | İNCELEME KONUSU |
+| Görevlendirme kapsamı ve sınırları | `assignmentScope` | 1. bölüm, birinci paragraf | Görevlendirme kapsamı ve sınırları |
+
+- **Boş alan satır üretmez:** inceleme konusu boşsa 1. bölümde o satır **hiç
+  yazılmaz**; "—" veya dava konusu tekrarı yok.
+- **Form:** Dosya bilgileri çekmecesinde yeni **"İnceleme konusu (rapor gövdesi)"**
+  alanı; altında "künyedeki konu ile aynı şey değildir" açıklaması. Konu alanının
+  yer tutucusu **türe göre** değişir (DAVA KONUSU iken "Dava konusunu…").
+- **Terim birliği:** İnceleme görünümündeki **"Görevlendirme / inceleme talebi"**
+  → **"Görevlendirme kapsamı ve sınırları"**; aynı görünümde dava/inceleme
+  konusunun Dosya çekmecesinde girildiğini söyleyen tek satır eklendi.
+- **EK-5 teslim kontrolü:** satır adı **"Konu (künye)"** (gövdedeki inceleme
+  konusuyla karışmıyor).
+- **Varsayılan kapsam cümlesi** sadeleşti: "Görevlendirme yazısında belirtilen
+  kapsam ve sınırlar burada açıklanır."
+- **Demo paketi** güncellendi: künyede *"Depozito iadesi talebi (kira ilişkisi)"*,
+  1. bölümde *"Ses kayıtlarının çözümlenmesi ve depozito iadesine ilişkin
+  beyanların tespiti"*.
+- **Ölçüm (gerçek Chromium + demo, 4 rapor türü):** Hukuk'ta künye **DAVA
+  KONUSU**, 1. bölüm **İnceleme konusu** — ayrı metinler; inceleme konusu
+  boşaltılınca satır kalkıyor; **JS hatası 0**.
+- **Koruyan testler:** `birim [174]` (7), `rapor` Senaryo 55 (11), `tasarim [2dr]` (6).
 
 ## v2.353 — Ölü kod temizliği (davranış değişmedi)
 

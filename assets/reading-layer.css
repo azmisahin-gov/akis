@@ -4306,3 +4306,20 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* ---- v2.348 — Rapor metinleri paneli ------------------------------------ */
 .rtech-where { color: var(--ink-3); font-weight: 400; font-size: var(--fs-xs); }
+
+/* --- Konu alanları: dava konusu ≠ inceleme konusu (v2.354) -----------------
+   Alan altı ipucu ve İnceleme görünümündeki yönlendirme satırı. Metin rengi
+   token'dan gelir (koyu/sepya temada okunur); punto 11px tabanının altına inmez. */
+.field-hint {
+  display: block;
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.single-home-note-inline {
+  margin: 10px 0 0;
+  font-size: var(--fs-2xs);
+  line-height: var(--lh-body);
+  color: var(--ink-3);
+}

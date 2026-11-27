@@ -1938,5 +1938,45 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('boş konuşmacıda sütun başlığı basılmaz', !H.includes('YAŞ ARALIĞI') && !U.includes('YAŞ ARALIĞI') && !D.includes('YAŞ ARALIĞI'));
 }
 
+// Senaryo 55: dava konusu ≠ inceleme konusu (v2.354). Künyede dava konusu,
+// §1'de YALNIZ inceleme konusu yazılır; aynı metni iki kez basmak yanıltıcıydı
+// (Hukuk türünde "DAVA KONUSU" ile "İnceleme konusu" aynı cümleyi gösteriyordu).
+// İnceleme konusu boşsa satır HİÇ yazılmaz (uydurma "—" yok).
+// Not: dava konusu EK-5 teslim kontrolünde de görünür (listenin doğası); bu
+// yüzden "tekrar yok" ölçütü §1 bloğu içinde aranır.
+{
+  console.log('\n[Senaryo 55] dava konusu ve inceleme konusu ayrı (v2.354)');
+  const EXAM = 'Ses kayıtlarının çözümlenmesi ve beyanların tespiti';
+  const SUBJ = 'Depozito iadesi talebi';
+  const c = __schemaMod.normalizeCase({
+    ...withMaterial(),
+    reportType: 'hukuk',
+    subject: SUBJ,
+    examinationSubject: EXAM,
+    assignmentScope: 'KAPSAM İŞARETİ'
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('künye dava konusu etiketi', 'DAVA KONUSU', H, U, D);
+  checkShared('künye dava konusu değeri', SUBJ, H, U, D);
+  // §1 bloğu: kapsam işaretinden sonraki 400 karakter.
+  const sec = (s) => {
+    const i = s.indexOf('KAPSAM İŞARETİ');
+    return i < 0 ? '' : s.slice(i, i + 400);
+  };
+  for (const [name, out] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`§1 inceleme konusu satırı (${name})`, sec(out).includes('İnceleme konusu:') && sec(out).includes(EXAM), sec(out).replace(/\s+/g, ' ').slice(0, 90));
+    check(`§1 dava konusunu TEKRARLAMAZ (${name})`, !sec(out).includes(SUBJ), sec(out).replace(/\s+/g, ' ').slice(0, 90));
+  }
+
+  const c2 = __schemaMod.normalizeCase({ ...withMaterial(), reportType: 'hukuk', subject: SUBJ, assignmentScope: 'KAPSAM İŞARETİ' });
+  const H2 = htmlText(c2), U2 = await udfText(c2), D2 = await docxText(c2);
+  for (const [name, out] of [['HTML', H2], ['UDF', U2], ['DOCX', D2]]) {
+    check(`inceleme konusu boşsa satır yok (${name})`, !sec(out).includes('İnceleme konusu:'), sec(out).replace(/\s+/g, ' ').slice(0, 90));
+  }
+
+  const c3 = __schemaMod.normalizeCase({ ...withMaterial(), reportType: 'ceza', subject: 'Hırsızlık suçuna ilişkin inceleme' });
+  check('ceza türünde künye etiketi İNCELEME KONUSU', htmlText(c3).includes('İNCELEME KONUSU'));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

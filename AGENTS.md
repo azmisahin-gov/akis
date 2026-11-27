@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.353.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.354.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9291,4 +9291,52 @@ aktarma** gibi gerçek zamana bağlı akışları tamamlatmıyor (init yarıda k
 "boş ekran" görünür). Güvenilir yol: `chromium --remote-debugging-port=9333` +
 Node 24'ün yerleşik `WebSocket`'i ile CDP (`Runtime.evaluate`, `awaitPromise`).
 Geçici sürücü `/tmp`'de tutulur, depoya girmez.
+
+## YENİ OTURUM DEVRİ (v2.354) — Dava konusu ≠ inceleme konusu
+
+| | |
+|---|---|
+| Sürüm | **v2.354** |
+| Testler | `bash tools/test.sh` → 2730 birim + 556 şema + rapor (55) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium + CDP, demo paketi, 4 rapor türü: künye ve §1 **ayrı metinler**; boşaltınca satır kalkıyor; yenileme sonrası **korundu**; JS hatası **0** |
+
+### Ölçülen hata (kullanıcı, canlı inceleme)
+Hukuk türünde **künyede "DAVA KONUSU"**, gövdede **"İnceleme konusu:"** olarak
+**aynı cümle** yazılıyordu (demo raporunda metin 4 kez geçiyordu: künye + §1 +
+EK-5 + kapsam cümlesi). Tek alan (`subject`) iki kavramı taşıyordu.
+
+### DEĞİŞMEZ MODEL (bu sürümde doğdu)
+| Kavram | Alan | Nerede | Etiket |
+|---|---|---|---|
+| Dava/soruşturma/takip konusu | `subject` | Rapor künyesi | **türe göre** (`REPORT_TYPES[t].subject`) |
+| İnceleme konusu (teknik görev) | `examinationSubject` (**yeni**) | §1 tek satır | `İnceleme konusu:` |
+| Görevlendirme kapsamı ve sınırları | `assignmentScope` | §1 birinci paragraf | Görevlendirme kapsamı ve sınırları |
+
+Kurallar:
+1. **Boş alan satır üretmez:** `examinationSubject` boşsa §1'de satır **hiç
+   yazılmaz**; `subject`'e **geri düşme (fallback) YOK** — düşme, düzeltilen
+   tekrarı geri getirirdi.
+2. **Üç çıktı tek kaynak:** `examinationSubjectText(c)`; HTML/DOCX/UDF aynı
+   cümleyi basar (`rapor` Senaryo 55 üçünü de sınar).
+3. **Etiket tutarlılığı:** künye etiketi türe göre değişiyorsa gövde etiketi
+   sabit "İnceleme konusu" OLMAMALI; ayrı alan ya da türe uygun etiket gerekir.
+   Aynı hata sınıfı: form etiketi "DAVA KONUSU" iken yer tutucunun
+   "İncelemenin konusunu…" demesi (düzeltildi: yer tutucu türe göre).
+4. **Tek düzenleme yeri:** iki alan da **Dosya bilgileri** çekmecesinde;
+   İnceleme görünümünde yalnız yönlendirme satırı var.
+5. **Terim birliği:** "Görevlendirme / inceleme talebi" adı kaldırıldı →
+   **"Görevlendirme kapsamı ve sınırları"** (sekme + alan aynı ad).
+6. **EK-5** satırı **"Konu (künye)"**; gövdedeki inceleme konusuyla karışmaz.
+7. Birleştirme/önizleme `examinationSubject` alanını **ayrı** taşır (çakışma
+   bildirilir); `subject` ile karıştırılmaz.
+
+### Demo paketi
+`sample_data/demo/AKIS_Demo_Kurgusal.akis` güncellendi: künye
+*"Depozito iadesi talebi (kira ilişkisi)"*, §1 *"İki ses kaydındaki konuşmaların
+metne aktarılması ve depozito iadesine ilişkin beyanların tespiti"*, kapsam
+metni sınırları anlatır. Kullanıcı demo üzerinden iki alanı ayırt edebilir.
+
+### ÖLÇÜM NOTU
+CDP ile ölçerken **içindekiler** de aynı başlığı taşır; §1 gövdesini bulmak için
+başlığın **son** geçişini (`lastIndexOf`) kullanın. İlk geçiş TOC'tur.
 

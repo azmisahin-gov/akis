@@ -16,6 +16,7 @@ metinleri örnek amacıyla üretilmiştir. Gerçek bir dava dosyası değildir.
 | Öğe | İçerik |
 |---|---|
 | Dosya | 2026/214 E. · Antalya 4. Asliye Hukuk Mahkemesi · depozito iadesi |
+| Konu | Künyede **dava konusu** (depozito iadesi talebi) · 1. bölümde **inceleme konusu** (ses kayıtlarının çözümlenmesi) — iki ayrı alan |
 | Ses kayıtları | 2 kayıt (47,7 sn + 38,9 sn), gerçek WAV, SHA-256 doğrulanmış |
 | Bölümler | 12 bölüm: onaylı · **belirsiz okuma** (iki okuma + seçim) · bekleyen · anlaşılmadı + gürültü gözlemi |
 | Konuşmacılar | Her kayıtta S1/S2; iki kaydın S1'i **K1** ile dosyalar arası eşleştirilmiş |

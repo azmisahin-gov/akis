@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.353';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.353';
+} from './schema.js?v=2.354';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.354';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.353';
+const APP_VERSION = '2.354';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -257,7 +257,7 @@ const REPORT_TEXT = {
     'Transkriptte en sık geçen anlamlı sözcükler (parantezdeki sayı = geçiş sayısı). Yazım tutarlılığı ve hızlı tarama içindir; bir özet ya da yorum değildir. Sıra: sıklık, eşitlikte alfabetik.',
   emptyCourt: '……………………………… MAHKEMESİ',
   emptyFileNo: '—',
-  defaultScope: 'Görevlendirme yazısında belirtilen inceleme konusu, kapsamı ve sınırları burada açıklanır.',
+  defaultScope: 'Görevlendirme yazısında belirtilen kapsam ve sınırlar burada açıklanır.',
   defaultQuestions: 'Görevlendirme yazısında bilirkişiye yöneltilen sorular, yazıdaki sırasıyla bu bölümde gösterilir.',
   defaultQuestion: 'Soru metni girilmemiştir.',
   defaultAnswer: 'Bu soruya ilişkin teknik cevap henüz girilmemiştir.',
@@ -1560,6 +1560,8 @@ function freshCase() {
     court: '',
     fileNo: '',
     subject: '',
+    // v2.354: dava konusu (künye) ile inceleme konusu (gövde) AYRI alanlardır.
+    examinationSubject: '',
     caseDate: '',
     inspectionDate: '',
     parties: { plaintiff: '', plaintiffCounsel: '', defendant: '', defendantCounsel: '' },
@@ -2284,6 +2286,7 @@ const CASE_FIELDS = [
   'defendant',
   'defendantCounsel',
   'subject',
+  'examinationSubject',
   'caseDate',
   'inspectionDate',
   'expertName',
@@ -2439,6 +2442,23 @@ function applyRoleLabels(type) {
     const el = $(`#${id}`);
     if (el) el.textContent = map[id];
   }
+  // YER TUTUCU TÜRE UYAR (v2.354): etiket "DAVA KONUSU" iken yer tutucunun
+  // "İncelemenin konusunu…" demesi alanın anlamını belirsizleştiriyordu.
+  const subjectEl = $('#subject');
+  if (subjectEl) {
+    const ph = {
+      hukuk: 'Dava konusunu kısa ve tarafsız şekilde yazın (ör. depozito iadesi talebi).',
+      ceza: 'İnceleme konusunu kısa ve tarafsız şekilde yazın (ör. olay ve suç isnadı).',
+      savcilik: 'Soruşturma konusunu kısa ve tarafsız şekilde yazın.',
+      icra: 'Takip konusunu kısa ve tarafsız şekilde yazın.'
+    };
+    subjectEl.placeholder = ph[type] || ph.hukuk;
+  }
+}
+// İNCELEME KONUSU (v2.354): dava konusundan AYRI alan. Boşsa satır YAZILMAZ;
+// aynı metni künyede ve gövdede iki kez basmak yanıltıcıydı (ölçüldü).
+function examinationSubjectText(c) {
+  return String((c && c.examinationSubject) || '').trim();
 }
 function updateCaseName(c) {
   c.name = c.fileNo ? `${c.fileNo} · ${c.court || 'İnceleme dosyası'}` : c.court || 'Yeni inceleme dosyası';
@@ -3042,6 +3062,8 @@ function caseIdentityRows(c) {
     [spec.merci || 'Mahkeme / merci', c && c.court],
     [spec.fileNo, c && c.fileNo],
     [spec.subject, c && c.subject],
+    // İNCELEME KONUSU (v2.354): künye konusundan AYRI; doluysa gösterilir.
+    ...(String((c && c.examinationSubject) || '').trim() ? [['İnceleme konusu', c.examinationSubject]] : []),
     [r.plaintiff, p.plaintiff || (c && c.plaintiff)],
     [r.plaintiffCounsel, p.plaintiffCounsel || (c && c.plaintiffCounsel)],
     [r.defendant, p.defendant || (c && c.defendant)],
@@ -3142,7 +3164,7 @@ function renderOverview() {
   $('#overviewCase').innerHTML = [
     ['MER Cİ', 'Mahkeme / merci', c.court],
     ['DOSYA NO', 'Dosya numarası', c.fileNo],
-    ['KONU', 'İnceleme konusu', c.subject],
+    ['KONU', reportTypeSpec(c.reportType).subject, c.subject],
     ['BİLİRKİŞİ', 'Bilirkişi', c.expertName]
   ]
     .map((x) => `<div class="overview-item"><small>${x[1].toUpperCase()}</small><b>${esc(x[2] || '—')}</b></div>`)
@@ -15543,7 +15565,7 @@ function deliveryChecklistRows(c) {
   add('Dosya numarası', yesNo(box.fileNo), txt(box.fileNo) || 'Kapak ve alt bilgi boş kalır.');
   add('Mahkeme', yesNo(box.court), txt(box.court) || 'Rapor başlığı varsayılan mahkeme adıyla yazılır.');
   add('Bilirkişi adı', yesNo(box.expertName), txt(box.expertName) || 'Künyede ad alanı boş kalır.');
-  add('İnceleme konusu', yesNo(box.subject), txt(box.subject) || 'Künyede ve 1. bölümde konu boş kalır.');
+  add('Konu (künye)', yesNo(box.subject), txt(box.subject) || 'Künyede konu alanı boş kalır.');
   add('Ses/video kaydı', materials.length ? okS : badS, materials.length ? `${materials.length} kayıt` : 'Kayıt yok.');
   const noSeg = materials.filter((m) => !((m && m.segments) || []).length).length;
   add('Bölümlenmemiş kayıt', noSeg ? badS : okS, noSeg ? `${noSeg} kayıt` : 'Tüm kayıtlar bölümlendi.');
@@ -17296,7 +17318,9 @@ function renderReport() {
   // GÖVDE (sıralanabilir)
   const body = {
     s1: () =>
-      `<div class="paper-section"><h3>${esc(H('s1'))}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p><p><b>İnceleme konusu:</b> ${esc(c.subject || '—')}</p></div>`,
+      `<div class="paper-section"><h3>${esc(H('s1'))}</h3><p>${esc(c.assignmentScope || REPORT_TEXT.defaultScope)}</p>${
+        examinationSubjectText(c) ? `<p><b>İnceleme konusu:</b> ${esc(examinationSubjectText(c))}</p>` : ''
+      }</div>`,
     s2: () => {
       let out = `<div class="paper-section"><h3>${esc(H('s2'))}</h3>`;
       if (c.questions?.length) {
@@ -17839,7 +17863,7 @@ function docxXml(c) {
     s1: () =>
       headingXml(H('s1')) +
       wP(c.assignmentScope || REPORT_TEXT.defaultScope) +
-      wP(`İnceleme konusu: ${c.subject || '—'}`, { bold: true }),
+      (examinationSubjectText(c) ? wP(`İnceleme konusu: ${examinationSubjectText(c)}`, { bold: true }) : ''),
     s2: () => {
       let out = headingXml(H('s2'));
       if (c.questions?.length) {
@@ -18485,7 +18509,7 @@ async function udfDocument(opts = {}) {
     s1: () => {
       el.push(h(H('s1')));
       el.push(paragraphLines(c.assignmentScope || REPORT_TEXT.defaultScope, { justify: true }));
-      el.push(paragraph(`İnceleme konusu: ${c.subject || '—'}`, { bold: true, after: 7 }));
+      if (examinationSubjectText(c)) el.push(paragraph(`İnceleme konusu: ${examinationSubjectText(c)}`, { bold: true, after: 7 }));
     },
     s2: () => {
       el.push(h(H('s2')));
@@ -23517,6 +23541,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.354': {
+    title: 'Dava konusu ve inceleme konusu ayrıldı',
+    body:
+      'Rapor künyesindeki konu ile raporun 1. bölümündeki “İnceleme konusu” artık AYRI alanlardır. Önceden tek alan iki yere yazılıyordu: Hukuk türünde künyede “DAVA KONUSU”, gövdede “İnceleme konusu” olarak aynı cümle çıkıyordu. Artık künye hukuki uyuşmazlığı (dava/soruşturma/takip konusu), 1. bölüm ise bilirkişiye verilen teknik görevi (inceleme konusu) anlatır. İnceleme konusu boş bırakılırsa 1. bölümde o satır hiç yazılmaz; uydurma bir ifade eklenmez. Dosya bilgileri çekmecesinde yeni “İnceleme konusu (rapor gövdesi)” alanı var. Ayrıca İnceleme görünümündeki belirsiz “Görevlendirme / inceleme talebi” adı “Görevlendirme kapsamı ve sınırları” olarak netleştirildi.'
+  },
   '2.353': {
     title: 'Kullanılmayan kod temizlendi (davranış aynı)',
     body:
