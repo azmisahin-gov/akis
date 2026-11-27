@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.377.**
+yazılır. **Güncel sürüm: v2.378.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.378 — İskelet dümdüz tek liste (TAMAMLANDI)
+
+- `renderReportSections`: grup başlıkları (`rsec-group`/`rsec-title`) KALDIRILDI → tek düz liste
+  (`front + body + addBlock + sig`). "Ekler" başlık listesi (annexRows) ve "EK-N/EK'te" rozeti
+  KALDIRILDI. Eke taşıma iskelette yok (çıktı EKLER aynen durur).
+- Ölçüm: grup başlığı 0, EK listesi 0, 32 düz satır, 0 açık, "EK-N" yok, JS 0.
+- Test: `tasarim [2ej]` (flat), `birim [184]` (yeni dosya kapalı).
 
 ## v2.377 — Tek düz liste + yeni dosya kapalı (TAMAMLANDI)
 

@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.377.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.378.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10133,3 +10133,16 @@ KAPALI; istediğimi eke sürüklerim." (İç içe ek/alt-ek modeli sıralama-kay
   sabit; JS 0. Test: `birim [184]`, `tasarim [2ej]`.
 
 **ÜST YAZI:** Kullanıcı aynı sadeleştirmeyi üst yazı için de yapacak (sıradaki iş).
+
+## EK DÜZELTME (v2.378) — İskelet dümdüz tek liste (kullanıcı "SIFIRLA" dedi)
+
+**KULLANICI:** "EK kısmı boş olsun, her şey varsayılan gövdede; grup başlığı/ön bölüm/ek istemiyorum;
+dümdüz tek liste, ben açar/kapatır/sıralarım."
+
+- `renderReportSections`: `rsec-group`/`rsec-title` başlıkları KALDIRILDI → `groups = front + body +
+  addBlock + sig`. "Ekler" başlık listesi (`annexRows`) ve "EK-N/EK'te" rozeti KALDIRILDI.
+  Eke taşıma iskelette YOK (rapor çıktısındaki EKLER aynen durur; istenince geri eklenir).
+- Ölçüm (temiz profil): grup başlığı 0, EK listesi 0, 32 düz satır, 0 açık, "EK-N" yok, JS 0.
+- **DERS:** İndeks tabanlı çoklu Python düzenlemesinde `s.index('const groups =')` YANLIŞ (ilk)
+  eşleşmeyi yakaladı (başka fonksiyon) ve `annexRows` tanımsız kaldı. Doğrusu: benzersiz bağlam
+  çıpası (`"const groups =\n    (front ?"`) + assert. Dosya değişince `node --check` + tarayıcı.

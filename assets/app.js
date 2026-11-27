@@ -165,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.377';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.377';
+} from './schema.js?v=2.378';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.378';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.377';
+const APP_VERSION = '2.378';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15475,7 +15475,6 @@ function renderReportSections(c) {
       const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
       label =
         `<span>${esc(reportUiLabel(c, key))}</span>` +
-        (placed ? ` <span class="rsec-placed" title="Bu bölüm EKLER altında basılıyor">${placedN ? `EK-${placedN}` : "EK'te"}</span>` : '') +
         (emptyReason
           ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
           : '');
@@ -15513,35 +15512,6 @@ function renderReportSections(c) {
   for (const key of layout.order) {
     if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
-  let annexRows = '';
-  if (reportSectionOn(c, 'annex')) {
-    let an = 0;
-    for (const key of layout.annexOrder) {
-      if (!isReportAnnexKey(key)) continue;
-      const isGroup = isReportAnnexGroup(key);
-      const groupEmpty = isGroup && !reportGroupSections(c, key).length;
-      const on = layout.annexes[key] !== false;
-      if (groupEmpty && !on) continue;
-      const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
-      const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
-      const custom = !REPORT_ANNEX_DEFS.some((d) => d.key === key);
-      const label = groupEmpty ? `(boş) ${base}` : on ? `EK-${++an}. ${base}` : `(kapalı) ${base}`;
-      if (!reportOutlineMatch(c, key, base, on)) continue;
-      const del = custom
-        ? `<button type="button" class="rsec-mv rsec-del" data-report-annex-del="${esc(key)}" aria-label="Eki kaldır" title="Bu özel eki kaldır">×</button>`
-        : '';
-      const adrag = canDrag
-        ? ` data-drag-kind="annex" data-drag-key="${esc(key)}"${groupEmpty ? '' : ' draggable="true"'}`
-        : '';
-      const emptyAttr = groupEmpty
-        ? ` data-rsec-empty-group="1" style="display:none" title="Boş grup — buraya bir bölüm sürükleyin"`
-        : '';
-      annexRows += `<div class="rsec-row rsec-child${groupEmpty ? ' rsec-annex-empty' : ''}"${emptyAttr}${adrag}><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
-    }
-    if (reportOutlineState.cat === 'all' || reportOutlineState.cat === 'closing') {
-      annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
-    }
-  }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   host.dataset.allOff = JSON.stringify(allOff);
   const openCount = REPORT_SECTION_DEFS.filter((d) => reportSectionOn(c, d.key)).length;
@@ -15551,11 +15521,8 @@ function renderReportSections(c) {
     ? row('signature')
     : '';
   const addBlock = `<div class="rsec-row"><button type="button" class="mini-button" data-report-block-add="1" title="Başlık ve metinle yeni rapor bölümü ekle">＋ Bölüm ekle</button></div>`;
-  const groups =
-    (front ? `<div class="rsec-group"><div class="rsec-title">Ön bölüm · sırası sabit</div>${front}</div>` : '') +
-    (body ? `<div class="rsec-group"><div class="rsec-title">Bölümler · tek liste · sıralanabilir (EKLER'e sürükleyin)</div>${body}${addBlock}</div>` : '') +
-    (annexRows ? `<div class="rsec-group"><div class="rsec-title">Ekler · sıralanabilir</div>${annexRows}</div>` : '') +
-    (sig ? `<div class="rsec-group"><div class="rsec-title">İmza · sonda</div>${sig}</div>` : '');
+  // v2.378 — DÜMDÜZ TEK LİSTE: grup başlığı YOK, EKLER listesi YOK, rozet YOK.
+  const groups = front + body + addBlock + sig;
   // Kullanıcı profilleri (v2.288): yalnız düzen taşır; kanıt/metin taşımaz.
   const profiles = normalizeReportProfiles(c.report && c.report.userProfiles);
   if (!profiles.some((p) => p.id === reportProfileSel)) reportProfileSel = profiles[0] ? profiles[0].id : '';
@@ -24829,6 +24796,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.378': {
+    title: 'İskelet dümdüz tek liste',
+    body:
+      'Rapor iskeleti artık TEK DÜZ LİSTE: “Ön bölüm / Gövde / Ekler / İmza” grup başlıkları YOK, EKLER listesi YOK, “EK-N” rozeti ve “ekte basılıyor” yazısı YOK. Tüm bölümler alt alta tek listede; her satırda aç/kapa, yukarı/aşağı ve Düzenle var. Hepsi varsayılan KAPALI; neyi açıp kapatacağınızı ve sırasını siz belirlersiniz. Eke taşıma geçici olarak listede yok (rapor çıktısındaki EKLER aynen durur).'
+  },
   '2.377': {
     title: 'Tek düz liste + yeni dosya kapalı',
     body:

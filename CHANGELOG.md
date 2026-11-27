@@ -6,12 +6,20 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.377.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.378.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.378 — İskelet dümdüz tek liste
+
+**KULLANICI NE GÖRECEK:** Rapor iskeleti **tek düz liste**. "Ön bölüm / Gövde / Ekler / İmza" grup başlıkları **yok**, EKLER başlık listesi **yok**, "EK-N" rozeti ve "ekte basılıyor" yazısı **yok**. Tüm bölümler alt alta; her satırda **aç/kapa · ↑↓ · Düzenle**. Hepsi **varsayılan kapalı**; neyi açıp kapatacağınızı ve sırasını siz belirlersiniz.
+
+**Not:** Eke taşıma geçici olarak iskelette **yok** (rapor çıktısındaki EKLER aynen durur). İstenince geri eklenir.
+
+**ÖLÇÜM (gerçek Chromium, temiz profil):** grup başlığı **0**, EK listesi **0**, satır **32** (düz), açık **0**, "EK-N" **yok**, rapor boş, JS **0**. Testler **2832 birim + 556 şema** + rapor/tasarım/sürüm yeşil.
 
 ## v2.377 — Tek düz liste + yeni dosya varsayılan kapalı
 
