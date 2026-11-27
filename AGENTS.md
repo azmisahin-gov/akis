@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.368.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.369.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9966,3 +9966,41 @@ sol iskelet **232 px** · yatay taşma **0** · JS hatası **0**.
   denmez. Hedef: aynı metin + aynı başlık hiyerarşisi.
 - Ek gruplama yapılmadan çok sayıda bölümü eke taşımak **16+ ayrı ek** üretir;
   önce `annexPlacement = 'ekN'` desteği gerekir.
+
+## YENİ OTURUM DEVRİ (v2.369) — Gruplu ekler + Öneri A (TAMAMLANDI)
+
+| | |
+|---|---|
+| Sürüm | **v2.369** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2798 birim + 556 şema** + rapor (Senaryo 58) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium 1440×900 (demo): gövde 1..10 + EKLER; EK-7 tek başlık + EK-7.1; EK-8 + EK-8.1/EK-8.2; toplu düğme Ctrl+Z 0→1→0; JS 0 |
+
+### Ne yapıldı
+- **Gruplu ekler:** `annexPlacement[key]='ekN'` → bölüm gövdeden çıkar, o ekin
+  İÇİNDE **EK-N.M** alt başlığıyla basılır. `true` = kendi eki (geri uyum).
+  Yeni grup ekleri **EK-7…EK-10**; **boş grup çizilmez**.
+- **Öneri A varsayılanı YALNIZ yeni dosyada** (`freshCase` →
+  `defaultAnnexPlacement()`). **Mevcut dosyalar değişmez** (şema varsayılanı nötr).
+- **Toplu taşıma:** Rapor → ⚙ → Ekler → **“Teknik bölümleri eklere taşı (Öneri A)”**
+  (`applyPresentationPlacement`; onay + snapshot + Ctrl+Z). **EK** düğmesi bölümü
+  **önerilen gruba** taşır (`recommendedAnnexForKey`).
+- **Geri alma raporu tazeler:** `undoLast` → `renderReport()` (ölçüldü: eskiden
+  geri alınan yerleşim raporda görünmüyordu; v2.356 dersinin devamı).
+
+### DEĞİŞMEZ KURALLAR
+1. **Tek kopya:** bölüm ya gövdede ya TEK bir ekin içinde. İki yerde olmaz.
+2. **Numara bitişik:** açık ekler EK-1…EK-N; **boş grup numara tüketmez**.
+3. **Alt başlık `EK-N.M`** (mevcut konvansiyon, `rapor` 1452 de bunu bekler);
+   **ek başlığı `Rapor eki N.`** (v2.340).
+4. **Üç çıktı aynı** grup/numara/sıra (`kind:'group'` her üç üreticide).
+5. **Kanıt/metin/onay değişmez**; taşıma yalnız yerleşimdir.
+6. **Şema varsayılanı nötr** (`annexPlacement: {}`); Öneri A yalnız `freshCase`'te.
+   Testler `emptyCaseForTest` kullandığı için varsayılan orada DEĞİL.
+
+### Sıradaki iş (plan: `docs/RAPOR_SUNUM_PLANI.md`)
+1. **v2.371 — Sürükle-bırak** gövde ↔ ek (onay + geri alma + günlük; EK
+   düğmesi/klavye yedeği korunur; filtre açıkken kapalı).
+2. **v2.372 — Tablo/font/görünüm** (`tableStyle` grid/lines, `density`; yoğun
+   görünüm yalnız ekran; UDF sınırı belgelenir).
+3. **v2.373 — Sol iskelet daraltma** (48 px ince ray; tercih tarayıcıda).
+4. **v2.374 — Uçtan uca doğrulama** (PDF/DOCX/UDF + 3 tema + 5 genişlik).

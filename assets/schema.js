@@ -797,10 +797,54 @@ export const REPORT_ANNEX_DEFS = [
   { key: 'ek3', title: 'ZİNCİRLEME MUHAFAZA / İŞLEM GÜNLÜĞÜ' },
   { key: 'ek4', title: 'TRANSKRİPT GÖSTERİM ANAHTARI' },
   { key: 'ek5', title: 'SON KONTROL LİSTESİ' },
-  { key: 'ek6', title: 'HUKUKİ VE YÖNTEMSEL DAYANAKLAR' }
+  { key: 'ek6', title: 'HUKUKİ VE YÖNTEMSEL DAYANAKLAR' },
+  // v2.369 — GRUPLU EKLER: gövde bölümlerini İÇİNDE toplayan "kap" eklerdir.
+  // Kendi üretilmiş içerikleri YOKTUR; içerikleri, `annexPlacement[key]='ekN'`
+  // ile bu eke taşınmış gövde bölümleridir (EK-N.1, EK-N.2…). Boş grup çizilmez.
+  { key: 'ek7', title: 'KAYIT KÖKENİ, EDİNME VE GÖMÜLÜ METADATA', group: true },
+  { key: 'ek8', title: 'KONUŞMACILAR, ÖLÇÜMLER VE İNCELEME ÖZETİ', group: true },
+  { key: 'ek9', title: 'TEKNİK ORTAM, KALİTE VE BEYANLAR', group: true },
+  { key: 'ek10', title: 'YARDIMCI BİLGİLER VE YÖNTEM AYRINTISI', group: true }
 ];
 export const REPORT_ANNEX_KEYS = REPORT_ANNEX_DEFS.map((d) => d.key);
 export const REPORT_ANNEX_CUSTOM_TITLE = 'YENİ EK';
+/** Gruplu (kap) ek anahtarları: içerikleri taşınmış bölümlerdir (v2.369). */
+export const REPORT_ANNEX_GROUP_KEYS = REPORT_ANNEX_DEFS.filter((d) => d.group).map((d) => d.key);
+export function isReportAnnexGroup(key) {
+  return REPORT_ANNEX_GROUP_KEYS.includes(String(key || ''));
+}
+/**
+ * Yeni dosyalar için ÖNERİ A yerleşimi (v2.369): teknik/ölçüm bölümleri gövdeyi
+ * kesmemesi için gruplu eklere taşınır. YALNIZ yeni dosyada uygulanır; mevcut
+ * dosyaların `annexPlacement`'ı korunur (göç: boş kalır).
+ */
+export const DEFAULT_ANNEX_PLACEMENT = {
+  origin: 'ek7',
+  embedded: 'ek7',
+  acquisition: 'ek7',
+  speakers: 'ek8',
+  speakerDurations: 'ek8',
+  wer: 'ek8',
+  levels: 'ek8',
+  reviewSummary: 'ek8',
+  integrity: 'ek9',
+  tech: 'ek9',
+  qc: 'ek9',
+  privacy: 'ek9',
+  scopeNote: 'ek9',
+  terms: 'ek10',
+  enhance: 'ek10',
+  asr: 'ek10'
+};
+/** Yeni dosya için varsayılan yerleşimin taze kopyası. */
+export function defaultAnnexPlacement() {
+  return { ...DEFAULT_ANNEX_PLACEMENT };
+}
+/** Bir bölümün önerilen grup eki (yoksa ''). */
+export function recommendedAnnexForKey(key) {
+  const v = DEFAULT_ANNEX_PLACEMENT[key];
+  return typeof v === 'string' ? v : '';
+}
 /** Yerleşik ek anahtarı ya da kullanıcı eki (x1, x2…). */
 export function isReportAnnexKey(key) {
   const k = String(key || '');
@@ -1186,7 +1230,11 @@ export function normalizeAnnexPlacement(src) {
   const out = {};
   if (!src || typeof src !== 'object') return out;
   for (const key of REPORT_BODY_ORDER) {
-    if (isAnnexPlaceable(key) && src[key] === true) out[key] = true;
+    if (!isAnnexPlaceable(key)) continue;
+    const v = src[key];
+    // v2.291: `true` = kendi eki. v2.369: `'ekN'`/`'xN'` = gruplu ekin içine.
+    if (v === true) out[key] = true;
+    else if (typeof v === 'string' && isReportAnnexKey(v)) out[key] = v;
   }
   return out;
 }
@@ -1649,7 +1697,9 @@ export function emptyCase(over = {}) {
       blocks: [],
       // Kullanıcı rapor profilleri (v2.288): yalnız düzen; kanıt/metin taşımaz.
       userProfiles: [],
-      // Bölümü EKLER altına taşıma (v2.291): { s5: true } gibi.
+      // Bölümü EKLER altına taşıma (v2.291): { s5: true } gibi. v2.369: ÖNERİ A
+      // yerleşimi YENİ dosyada `freshCase()` (app.js) tarafından atanır; şema
+      // varsayılanı NÖTR kalır (mevcut dosyalar ve testler değişmez).
       annexPlacement: {},
       // Sütun başlığı düzenlemeleri (v2.295): tablo → sütun → metin.
       labels: {},
@@ -3753,7 +3803,9 @@ export function mergeCases(mine, theirs) {
     const tp = normalizeAnnexPlacement((theirs.report || {}).annexPlacement);
     for (const k of Object.keys(tp)) {
       if (!mp[k]) {
-        mp[k] = true;
+        // v2.369: değer `true` (kendi eki) VEYA grup anahtarı ('ek7') olabilir;
+        // gelen değeri AYNEN koru (grubu `true`'ya çevirmek taşımayı bozardı).
+        mp[k] = tp[k];
         applied.push(`bölüm EK'e taşındı: ${k}`);
       }
     }

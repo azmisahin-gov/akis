@@ -5998,6 +5998,42 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 }
 
 
+// [179] v2.369 — GRUPLU EKLER: birden çok gövde bölümü TEK ek içinde (EK-N.M).
+{
+  console.log('[179] Gruplu ekler (v2.369)');
+  const S = __schemaMod;
+  // normalizeAnnexPlacement: grup ('ek7') ve özel ek ('x1') kabul; geçersiz atılır.
+  const np = S.normalizeAnnexPlacement({ origin: 'ek7', speakers: 'x1', embedded: 'yok', s5: true, annex: 'ek7' });
+  eq('grup yerleşimi korunur', np.origin, 'ek7');
+  eq('özel ek yerleşimi korunur', np.speakers, 'x1');
+  eq('geçersiz grup atılır', np.embedded, undefined);
+  eq('annex kendine taşınamaz', np.annex, undefined);
+  eq('kendi eki (true) korunur', np.s5, true);
+  // origin + speakers aynı gruba: gövdeden çıkar, TEK ekte alt başlıklarla basılır.
+  const c = T.emptyCaseForTest({ id: 'cG1', report: { annexPlacement: { origin: 'ek7', speakers: 'ek7' } } });
+  eq('gövde origin içermez', T.reportBodyOrder(c).includes('origin'), false);
+  eq('gövde speakers içermez', T.reportBodyOrder(c).includes('speakers'), false);
+  const ek7 = T.reportAnnexList(c).find((a) => a.key === 'ek7');
+  eq('grup ek listelendi', !!ek7, true);
+  eq('grup tek ek numarası (EK-7)', ek7 && ek7.n, 7);
+  eq('grup iki bölüm taşır', ek7 && ek7.sections.length, 2);
+  eq('1. alt başlık', ek7 && ek7.sections[0].heading, 'EK-7.1. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
+  eq('2. alt başlık', ek7 && ek7.sections[1].heading, 'EK-7.2. KONUŞMACILAR');
+  const blk = T.reportAnnexBlocks(c).find((b) => b.key === 'ek7');
+  eq('grup blok türü', blk && blk.kind, 'group');
+  eq('grup blok alt bölüm sayısı', blk && blk.sections.length, 2);
+  // Boş grup çizilmez (hiçbir bölüm taşınmamışsa ek listelenmez).
+  const cEmpty = T.emptyCaseForTest({ id: 'cG2' });
+  eq('boş grup listelenmez', T.reportAnnexList(cEmpty).some((a) => a.key === 'ek7'), false);
+  // ÖNERİ A yalnız YENİ dosyada: freshCase teknik bölümleri gruplu eklere taşır.
+  const fresh = T.freshCase();
+  eq('yeni dosya origin→ek7', fresh.report.annexPlacement.origin, 'ek7');
+  eq('yeni dosya speakers→ek8', fresh.report.annexPlacement.speakers, 'ek8');
+  eq('yeni dosya s5 gövdede kalır', fresh.report.annexPlacement.s5, undefined);
+  eq('yeni dosya yine de BOŞ sayılır', T.isEmptyCase(fresh), true);
+}
+
+
 // [134] v2.292 — Atanmamış bölüm kümeleme: eşik üstü gruplar; atama yapmaz.
 {
   console.log('[134] Konuşmacı gömme kümeleme (v2.292)');

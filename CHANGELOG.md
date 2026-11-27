@@ -6,12 +6,47 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.368.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.369.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.369 — Teknik bölümler gruplu eklere taşındı (Öneri A)
+
+**KULLANICI NE GÖRECEK:** Yeni dosyada rapor **daha okunaklı bir sırada** akar:
+1 kapsam → 2 sorular → 3 maddi unsurlar → 4 yöntem → 5 bulgular/transkript →
+6 cevaplar → 7 sınırlılıklar → 8 okuma metni → 9 inceleme özeti → 10 sonuç →
+**11 EKLER**. Teknik/ölçüm bölümleri (köken, konuşmacılar, süreler, ölçümler,
+teknik/beyanlar) artık gövdeyi kesmiyor; **EKLER** altında **gruplu** basılıyor:
+**EK-7** kayıt kökeni/edinme/gömülü metadata · **EK-8** konuşmacılar/ölçümler/
+inceleme özeti · **EK-9** teknik ortam/kalite/beyanlar · **EK-10** yardımcı
+bilgiler. Her bölüm grup içinde **EK-N.1, EK-N.2…** alt başlığıyla görünür.
+
+**ÖNEMLİ:** Bu yalnız **yeni** dosyada varsayılandır; **mevcut dosyaların sırası
+değişmez** (veri/kanıt/onay korunur). Mevcut dosyaya uygulamak için Rapor →
+⚙ → **Ekler** → **“Teknik bölümleri eklere taşı (Öneri A)”** düğmesi (onay ister,
+**Ctrl+Z** ile geri alınır). Tek tek taşımak için her bölüm satırındaki **EK**
+düğmesi, bölümü **önerilen gruba** taşır (G = gövdeye geri al).
+
+**DEĞİŞMEZ KURALLAR (v2.369):**
+- Bölüm **ya gövdede ya tek bir ekin içinde**; iki yerde olmaz.
+- **Boş grup çizilmez** (içinde bölüm yoksa ek görünmez; numara boşluğu olmaz).
+- Ek başlığı **“Rapor eki N.”**, grup içi alt başlık **“EK-N.M.”** (mevcut konvansiyon).
+- **Üç çıktı aynı** başlık/sıra/numarayı üretir (`rapor` Senaryo 58).
+- **Kanıt/metin/onay değişmez**; taşıma yalnız yerleşimdir.
+- **Geri alma raporu tazeler** (ölçüldü: eskiden tazelenmiyordu).
+
+**ÖLÇÜM (gerçek Chromium 1440×900, demo):**
+| | Sonuç |
+|---|---|
+| Gövde | 1..3 · 4 yöntem · 5 bulgular · 6 cevaplar · 7 sınırlılıklar · 8 okuma · 9 özet · 10 sonuç · **11 EKLER** |
+| EK-7 | tek başlık + **EK-7.1** köken (2 bölüm değil, 1 ek) |
+| EK-8 | tek başlık + **EK-8.1** konuşmacılar · **EK-8.2** süreler |
+| “Rapor eki 7.” sayısı | **1** (bölüm başına değil, grup başına) |
+| Toplu düğme → Ctrl+Z | EK-7/EK-8: **0→1→0** (geri alındı) |
+| Testler | **2798 birim + 556 şema** + rapor (Senaryo 58) + tasarım + sürüm yeşil |
 
 ## v2.368 — Rapor ayarları sağ çekmecede
 

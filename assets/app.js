@@ -99,6 +99,10 @@ import {
   normalizeAnnexPlacement,
   normalizeReportLabels,
   isAnnexPlaceable,
+  REPORT_ANNEX_GROUP_KEYS,
+  isReportAnnexGroup,
+  defaultAnnexPlacement,
+  recommendedAnnexForKey,
   ensureFreeBlockOrder,
   isFreeBlockKey,
   freeBlockKey,
@@ -157,15 +161,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.368';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.368';
+} from './schema.js?v=2.369';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.369';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.368';
+const APP_VERSION = '2.369';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1348,6 +1352,11 @@ async function undoLast() {
   // Çalışma notları da geri gelir; çekmece açıkken liste TAZELENMELİ (v2.356).
   renderNotebook();
   await renderAudioList();
+  // v2.369 — GERİ ALMA RAPORU DA TAZELER: yerleşim/başlık/ek gibi rapor
+  // değişiklikleri geri alınınca #reportPreview eski kalıyordu (ölçüldü:
+  // "Teknik bölümleri eklere taşı" geri alınınca ekler görünür kalıyordu).
+  // Yeni bir panel eklerken buraya tazelemesini de ekleyin (v2.356 dersi).
+  if (currentCase()) renderReport();
   showToast(`Geri alındı: ${snap.label}`);
 }
 function renderUndoState() {
@@ -1580,7 +1589,11 @@ function freshCase() {
       methodText: defaultTextFor('methodText'),
       summaryIntroText: '',
       limitationsText: '',
-      conclusionText: ''
+      conclusionText: '',
+      // v2.369 — ÖNERİ A: teknik/ölçüm bölümleri gruplu eklere (EK-7…EK-10)
+      // taşınır; gövde kapsam→sorular→yöntem→bulgular→cevaplar→sonuç akışında
+      // kalır. YALNIZ yeni dosyada; mevcut dosyaların yerleşimi korunur.
+      annexPlacement: defaultAnnexPlacement()
     },
     questions: [],
     // ÇALIŞMA NOTLARI (v2.356): kişisel defter; rapora GİRMEZ.
@@ -14597,6 +14610,8 @@ let reportProfileSel = '';
 let movedAnnexNo = 0;
 let movedAnnexHeading = '';
 let movedAnnexKey = '';
+// Gruplu ekte bölümün alt numarası (EK-N.M için, v2.369); 0 = grup dışı.
+let movedAnnexSub = 0;
 const REPORT_NARRATIVE_FIELDS = {
   // ÖZET GİRİŞİ (v2.359): dosyaya özel yazılabilir; boşsa varsayılan basılır.
   summary: [{ field: 'summaryIntroText', label: 'Rapor özeti girişi', rows: 4 }],
@@ -14792,6 +14807,26 @@ function reportMovedSections(c) {
     (k) => isAnnexPlaceable(k) && placed[k] && reportBlockRenders(c, k)
   );
 }
+// Bir bölümün ek yerleşimi: '' (gövde) | true (kendi eki) | 'ekN'/'xN' (grup).
+function annexPlacementOf(c, key) {
+  const placed = normalizeAnnexPlacement(c && c.report && c.report.annexPlacement);
+  return placed[key] || '';
+}
+// KENDİ ekine (true) taşınmış bölümler — her biri ayrı EK olur (v2.291).
+function reportStandaloneMovedSections(c) {
+  return reportMovedSections(c).filter((k) => annexPlacementOf(c, k) === true);
+}
+// Bir GRUP ekine (ek7…ek10) taşınmış bölümler, gövde sırasıyla (v2.369).
+function reportGroupSections(c, groupKey) {
+  return reportMovedSections(c).filter((k) => annexPlacementOf(c, k) === groupKey);
+}
+// Bir bölümün raporda bastığı ek numarası (EK-N); gövdede/boşsa 0.
+function annexNumberForSection(c, key) {
+  const a = reportAnnexList(c).find(
+    (x) => (x.movedKey === key) || (Array.isArray(x.sections) && x.sections.some((s) => s.sectionKey === key))
+  );
+  return a ? a.n : 0;
+}
 function reportBlockByKey(c, key) {
   if (!isFreeBlockKey(key)) return null;
   const id = key.slice(5);
@@ -14872,7 +14907,9 @@ function reportHeadingText(c, key, map) {
 // kipte alt başlık da numarasız olur (eskiden h3 numarasızken h4 "5.1" kalıyordu).
 function reportSubHeadings(c) {
   const mode = reportNumbering(c);
-  const label = movedAnnexNo ? `EK-${movedAnnexNo}` : reportNumberLabelMap(c).s5 || '';
+  const label = movedAnnexNo
+    ? `EK-${movedAnnexNo}${movedAnnexSub ? `.${movedAnnexSub}` : ''}`
+    : reportNumberLabelMap(c).s5 || '';
   if ((mode === 'none' && !movedAnnexNo) || !label) {
     return { s51: 'Ses kayıtlarının çözümlenmesi', recordPrefix: (i) => `${i + 1}.` };
   }
@@ -14976,27 +15013,51 @@ function reportTocEntries(c) {
 // bir ek kapatılınca sonrakiler bir öne gelir (EK-1…EK-N bitişik).
 function reportAnnexList(c) {
   const layout = reportLayoutOf(c);
+  const tutanakDoc = !!(c && c.__tutanakKind);
   const out = [];
   let n = 0;
-  for (const key of layout.annexOrder) {
-    if (!isReportAnnexKey(key)) continue;
-    if (layout.annexes[key] === false) continue;
+  const pushNamed = (key) => {
+    if (!isReportAnnexKey(key)) return;
+    if (layout.annexes[key] === false) return;
+    const isGroup = isReportAnnexGroup(key);
+    // v2.369: gruplu ek YALNIZ içinde çizilecek bölüm varsa listelenir (boş
+    // grup çizilmez). Böylece mevcut dosyalarda ek7…ek10 kendiliğinden görünmez.
+    const groupSecs = isGroup ? reportGroupSections(c, key) : [];
+    if (isGroup && !groupSecs.length) return;
     const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
     const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
     n += 1;
+    // Alt başlık numarası mevcut konvansiyonu izler: "EK-N.M. <başlık>"
+    // (rapor 1452 testi de bunu bekler). Ek başlığı v2.340 gereği "Rapor eki N.".
+    const sections = isGroup
+      ? groupSecs.map((sk, i) => ({
+          sectionKey: sk,
+          sub: i + 1,
+          heading: `EK-${n}.${i + 1}. ${reportSectionTitle(c, sk)}`
+        }))
+      : [];
     out.push({
       key,
       n,
       title: base,
       // Ayrı tutanak belgesinde "Rapor eki 1." öneki YOKTUR: belge bir rapor
       // eki değil, kendi başlığı olan bir tutanaktır (v2.330).
-      heading: c && c.__tutanakKind ? base : `Rapor eki ${n}. ${base}`,
+      heading: tutanakDoc ? base : `Rapor eki ${n}. ${base}`,
       custom: !REPORT_ANNEX_DEFS.some((d) => d.key === key),
+      group: isGroup,
+      sections,
       meta
     });
+  };
+  for (const key of layout.annexOrder) pushNamed(key);
+  // normalizeReportLayout grup anahtarlarını her zaman annexOrder'a ekler;
+  // yine de kuşak için (çok eski/elle kurulmuş düzen) eksik grupları ekle.
+  for (const gk of REPORT_ANNEX_GROUP_KEYS) {
+    if (!layout.annexOrder.includes(gk)) pushNamed(gk);
   }
-  // v2.291: gövdeden EKLER altına taşınan bölümler EK olarak listelenir.
-  for (const key of reportMovedSections(c)) {
+  // v2.291: KENDİ ekine (true) taşınan bölümler ayrı ek olarak listelenir.
+  // v2.369: gruplu eklere ('ekN') taşınanlar burada DEĞİL, grubun içinde çizilir.
+  for (const key of reportStandaloneMovedSections(c)) {
     n += 1;
     const base = reportSectionTitle(c, key);
     out.push({
@@ -15270,6 +15331,7 @@ function renderReportSections(c) {
     const block = free ? reportBlockByKey(c, key) : null;
     const placed =
       isAnnexPlaceable(key) && !!(normalizeAnnexPlacement(c.report && c.report.annexPlacement)[key]);
+    const placedN = placed ? annexNumberForSection(c, key) : 0;
     let label;
     if (editing && free) {
       // Serbest blok: başlık + metin aynı satırda düzenlenir. Metin çok
@@ -15284,7 +15346,7 @@ function renderReportSections(c) {
       const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
       label =
         `<span>${esc(reportUiLabel(c, key))}</span>` +
-        (placed ? ` <span class="rsec-placed" title="Bu bölüm EKLER altında basılıyor">EK'te</span>` : '') +
+        (placed ? ` <span class="rsec-placed" title="Bu bölüm EKLER altında basılıyor">${placedN ? `EK-${placedN}` : "EK'te"}</span>` : '') +
         (emptyReason
           ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
           : '');
@@ -15324,6 +15386,8 @@ function renderReportSections(c) {
     let an = 0;
     for (const key of layout.annexOrder) {
       if (!isReportAnnexKey(key)) continue;
+      // v2.369: boş gruplu ek iskelette görünmez (raporla aynı kural).
+      if (isReportAnnexGroup(key) && !reportGroupSections(c, key).length) continue;
       const on = layout.annexes[key] !== false;
       const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
       const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
@@ -15416,18 +15480,42 @@ function toggleAnnexPlacement(key) {
   const map = normalizeAnnexPlacement(c.report && c.report.annexPlacement);
   const on = !map[key];
   snapshotForUndo(on ? 'Bölümü EK altına taşı' : 'Bölümü gövdeye al');
-  if (on) map[key] = true;
-  else delete map[key];
+  // v2.369: önerilen grup eki varsa oraya (EK-7…EK-10), yoksa kendi ekine.
+  if (on) {
+    const g = recommendedAnnexForKey(key);
+    map[key] = g || true;
+  } else delete map[key];
   c.report = c.report || {};
   c.report.annexPlacement = normalizeAnnexPlacement(map);
   persist();
   renderReport();
-  const n = reportAnnexList(c).find((a) => a.movedKey === key)?.n;
+  const n = annexNumberForSection(c, key);
   showToast(
     on
       ? `“${reportUiLabel(c, key)}” EKLER altına taşındı${n ? ` (EK-${n})` : ''}.`
       : `“${reportUiLabel(c, key)}” gövdeye geri alındı.`
   );
+}
+// v2.369 — MEVCUT dosyaya ÖNERİ A yerleşimini tek tıkla uygula (toplu taşıma).
+// Yalnız yerleşim değişir; kanıt/metin/silme YOK. Onay + Ctrl+Z.
+async function applyPresentationPlacement() {
+  const c = currentCase();
+  if (!c) return;
+  const ok = await askConfirm(
+    'Teknik bölümleri eklere taşı',
+    'Teknik/ölçüm bölümleri (köken, konuşmacılar, ölçümler, teknik ve beyanlar) gruplu eklere (EK-7…EK-10) taşınacak. Gövde kapsam → yöntem → bulgular → cevaplar → sonuç akışında kalır. Kanıt, metin ve onaylar DEĞİŞMEZ. Devam edilsin mi?'
+  );
+  if (!ok) return;
+  snapshotForUndo('Teknik bölümleri eklere taşı');
+  const map = {
+    ...normalizeAnnexPlacement(c.report && c.report.annexPlacement),
+    ...defaultAnnexPlacement()
+  };
+  c.report = c.report || {};
+  c.report.annexPlacement = normalizeAnnexPlacement(map);
+  persist();
+  renderReport();
+  showToast('Teknik bölümler gruplu eklere taşındı (EK-7…EK-10). Ctrl+Z ile geri alınabilir.');
 }
 // Bölüm başlığını yaz (v2.285). Boş değer varsayılana döndürür. Başlık
 // `case.report.titles`ta tutulur; üç çıktı `reportHeadingText` üzerinden okur.
@@ -15710,7 +15798,7 @@ function renderReportAnnexEditor(c) {
   host.innerHTML =
     `<p class="rannex-hint">Başlığı değiştirin; özel eke içerik yazın. Yerleşik ek gövdesi veriden üretilir; boş alan rapora “—” olarak girer, uydurulmaz.</p>` +
     rows +
-    `<button type="button" class="mini-button" data-report-annex-add="1">＋ Yeni ek</button>`;
+    `<div class="rannex-actions"><button type="button" class="mini-button" data-apply-presentation="1" title="Teknik/ölçüm bölümlerini gruplu eklere (EK-7…EK-10) taşır; gövde kapsam→yöntem→bulgular→cevaplar→sonuç akışında kalır. Kanıt/metin değişmez; onay ister, Ctrl+Z ile geri alınır.">Teknik bölümleri eklere taşı (Öneri A)</button><button type="button" class="mini-button" data-report-annex-add="1">＋ Yeni ek</button></div>`;
 }
 // v2.225 — Künye ek alanları (elle). Boşsa rapora "—".
 function reportSummaryRows(c) {
@@ -16106,6 +16194,10 @@ function reportAnnexBlocks(c) {
   const out = reportAnnexList(c).map((a) => {
     const meta = a.meta || {};
     const note = typeof meta.note === 'string' && meta.note.trim() ? meta.note.trim() : '';
+    // v2.369: GRUPLU EK — kendi içeriği yok; içeriği taşınmış bölümlerdir.
+    if (a.group) {
+      return { key: a.key, heading: a.heading, kind: 'group', n: a.n, note: '', sections: a.sections || [] };
+    }
     if (a.movedKey) {
       return { key: a.key, heading: a.heading, kind: 'moved', sectionKey: a.movedKey, n: a.n, note: '' };
     }
@@ -17784,6 +17876,29 @@ function renderReport() {
       const tutanakDoc = !!c.__tutanakKind;
       let out = tutanakDoc ? '<div class="paper-section">' : `<div class="paper-section"><h3>${esc(H('annex'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.annexIntro)}</p>`;
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'group') {
+          // v2.369: gruplu ek — grup başlığı (h4) + her taşınmış bölüm (h5).
+          out += `<h4>${esc(b.heading)}</h4>`;
+          for (const sec of b.sections || []) {
+            const fn = body[sec.sectionKey];
+            if (!fn) continue;
+            movedAnnexNo = b.n || 0;
+            movedAnnexSub = sec.sub || 0;
+            movedAnnexHeading = sec.heading;
+            movedAnnexKey = sec.sectionKey;
+            let raw = '';
+            try {
+              raw = fn();
+            } finally {
+              movedAnnexNo = 0;
+              movedAnnexSub = 0;
+              movedAnnexHeading = '';
+              movedAnnexKey = '';
+            }
+            out += `<h5>${esc(sec.heading)}</h5>` + String(raw).replace(/<h3>[\s\S]*?<\/h3>/, '');
+          }
+          continue;
+        }
         if (b.kind === 'moved') {
           const fn = body[b.sectionKey];
           if (!fn) continue;
@@ -18386,6 +18501,31 @@ function docxXml(c) {
       const tutanakDoc = !!c.__tutanakKind;
       let out = tutanakDoc ? '' : headingXml(H('annex')) + wP(REPORT_TEXT.annexIntro, { color: '6F8295', size: 17 });
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'group') {
+          // v2.369: grup başlığı (düzey 2) + her taşınmış bölüm (düzey 3).
+          out += headingXml(b.heading, 2);
+          for (const sec of b.sections || []) {
+            const fn = blocks[sec.sectionKey];
+            if (!fn) continue;
+            movedAnnexNo = b.n || 0;
+            movedAnnexSub = sec.sub || 0;
+            movedAnnexHeading = sec.heading;
+            movedAnnexKey = sec.sectionKey;
+            let raw = '';
+            let head = '';
+            try {
+              raw = fn();
+              head = headingXml(reportHeadingText(c, sec.sectionKey));
+            } finally {
+              movedAnnexNo = 0;
+              movedAnnexSub = 0;
+              movedAnnexHeading = '';
+              movedAnnexKey = '';
+            }
+            out += headingXml(sec.heading, 3) + (raw.startsWith(head) ? raw.slice(head.length) : raw);
+          }
+          continue;
+        }
         if (b.kind === 'moved') {
           const fn = blocks[b.sectionKey];
           if (!fn) continue;
@@ -18395,6 +18535,7 @@ function docxXml(c) {
             raw = fn();
           } finally {
             movedAnnexNo = 0;
+            movedAnnexSub = 0;
           }
           const head = headingXml(reportHeadingText(c, b.sectionKey));
           out += headingXml(b.heading, 2) + (raw.startsWith(head) ? raw.slice(head.length) : raw);
@@ -18734,7 +18875,15 @@ async function udfDocument(opts = {}) {
   }
   const el = [];
   const on = (k) => reportSectionOn(c, k);
-  const h = (t) => paragraph(t, { size: 14, bold: true, color: 'navy', before: 9, after: 5 });
+  // v2.369: grup eki içindeki bölüm başlığı bir düzey küçük (grup başlığından
+  // ayrışsın) — movedAnnexSub>0 iken devreye girer.
+  const h = (t) =>
+    paragraph(
+      t,
+      movedAnnexSub
+        ? { size: 12, bold: true, color: 'mid', before: 7, after: 3 }
+        : { size: 14, bold: true, color: 'navy', before: 9, after: 5 }
+    );
   const map = reportNumberMap(c);
   const sub = reportSubHeadings(c);
   const H = (k) => reportHeadingText(c, k, map);
@@ -19080,6 +19229,27 @@ async function udfDocument(opts = {}) {
         el.push(paragraph(REPORT_TEXT.annexIntro, { size: 9, italic: true, color: 'muted', after: 4 }));
       }
       for (const b of reportAnnexBlocks(c)) {
+        if (b.kind === 'group') {
+          // v2.369: grup başlığı (küçük) + her taşınmış bölüm (h() ile).
+          el.push(paragraph(b.heading, { size: 11, bold: true, color: 'mid', before: 8, after: 3 }));
+          for (const sec of b.sections || []) {
+            const fn = blocks[sec.sectionKey];
+            if (!fn) continue;
+            movedAnnexNo = b.n || 0;
+            movedAnnexSub = sec.sub || 0;
+            movedAnnexHeading = sec.heading;
+            movedAnnexKey = sec.sectionKey;
+            try {
+              fn();
+            } finally {
+              movedAnnexNo = 0;
+              movedAnnexSub = 0;
+              movedAnnexHeading = '';
+              movedAnnexKey = '';
+            }
+          }
+          continue;
+        }
         if (b.kind === 'moved') {
           const fn = blocks[b.sectionKey];
           if (!fn) continue;
@@ -19090,6 +19260,7 @@ async function udfDocument(opts = {}) {
             fn();
           } finally {
             movedAnnexNo = 0;
+            movedAnnexSub = 0;
             movedAnnexHeading = '';
             movedAnnexKey = '';
           }
@@ -23113,6 +23284,10 @@ $('#reportAnnexFields')?.addEventListener('change', (e) => {
   if (e.target.closest('[data-annex-meta-title],[data-annex-meta-content],[data-annex-meta-note]')) renderReport();
 });
 $('#reportAnnexFields')?.addEventListener('click', (e) => {
+  if (e.target.closest('[data-apply-presentation]')) {
+    applyPresentationPlacement();
+    return;
+  }
   if (e.target.closest('[data-report-annex-add]')) {
     addReportAnnex();
     return;
@@ -24331,6 +24506,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.369': {
+    title: 'Teknik bölümler gruplu eklere taşındı',
+    body:
+      'Yeni dosyada rapor daha okunaklı akar: kapsam → sorular → yöntem → bulgular/transkript → cevaplar → sınırlılıklar → okuma → sonuç. Teknik/ölçüm bölümleri (köken, konuşmacılar, süreler, ölçümler, teknik/beyanlar) artık gövdeyi kesmez; EKLER altında gruplu basılır (EK-7…EK-10) ve her bölüm EK-N.1, EK-N.2… alt başlığıyla görünür. MEVCUT dosyalarınızın sırası DEĞİŞMEZ. Uygulamak isterseniz: Rapor → ⚙ → Ekler → “Teknik bölümleri eklere taşı (Öneri A)” (onay ister, Ctrl+Z ile geri alınır). Tek tek taşımak için bölüm satırındaki EK düğmesi bölümü önerilen gruba taşır.'
+  },
   '2.368': {
     title: 'Rapor ayarları sağ çekmecede',
     body:

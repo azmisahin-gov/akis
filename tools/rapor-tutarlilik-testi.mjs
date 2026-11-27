@@ -2042,5 +2042,23 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('varsayılan silinince kod metni döner', H3.includes('Aşağıdaki özet') && !H3.includes('KULLANICI ÖZET GİRİŞİ'));
 }
 
+// Senaryo 58: gruplu ekler (v2.369). origin + speakers TEK ek (EK-7) içinde alt
+// başlıklarla basılır; üç çıktı aynı grup başlığını ve alt başlıkları üretir.
+{
+  console.log('\n[Senaryo 58] gruplu ekler (v2.369)');
+  const c = withMaterial();
+  c.report = { annexPlacement: { origin: 'ek7', speakers: 'ek7' } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('grup EK-7 başlığı', 'Rapor eki 7. KAYIT KÖKENİ, EDİNME VE GÖMÜLÜ METADATA', H, U, D);
+  checkShared('grup 1. alt başlık', 'EK-7.1. KAYIT KÖKENİ VE TESLİM ZİNCİRİ', H, U, D);
+  checkShared('grup 2. alt başlık', 'EK-7.2. KONUŞMACILAR', H, U, D);
+  // İki bölüm TEK grup başlığı altında; "Rapor eki 7." bir kez geçer.
+  const cnt = (t) => (String(t).match(/Rapor eki 7\./g) || []).length;
+  check('tek grup başlığı (H)', cnt(H) === 1, String(cnt(H)));
+  check('tek grup başlığı (U)', cnt(U) === 1, String(cnt(U)));
+  check('tek grup başlığı (D)', cnt(D) === 1, String(cnt(D)));
+  check('ikinci grup (EK-8) yok', !/Rapor eki 8\./.test(H));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

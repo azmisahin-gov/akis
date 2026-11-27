@@ -2,11 +2,28 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.368.**
+yazılır. **Güncel sürüm: v2.369.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.369 — Teknik bölümler gruplu eklere taşındı (TAMAMLANDI)
+
+- **Gruplu ekler:** `annexPlacement[key]='ekN'` → bölüm gövdeden çıkar, o ekin
+  İÇİNDE **EK-N.M** alt başlığıyla basılır. `true` = kendi eki (geri uyum).
+- Yeni grup ekleri: **EK-7** köken/edinme/gömülü · **EK-8** konuşmacılar/ölçümler/
+  özet · **EK-9** teknik/kalite/beyan · **EK-10** yardımcı. **Boş grup çizilmez.**
+- **Öneri A varsayılanı YENİ dosyada** (`freshCase`): gövde kapsam→yöntem→
+  bulgular→cevaplar→sonuç; teknik bölümler eklere. **Mevcut dosya değişmez.**
+- Mevcut dosya için **Ekler → “Teknik bölümleri eklere taşı (Öneri A)”** (onay +
+  Ctrl+Z). EK düğmesi bölümü **önerilen gruba** taşır.
+- **Geri alma raporu tazeler** (`undoLast` → `renderReport`); ölçüldü: eskiden
+  geri alınan yerleşim raporda görünmüyordu.
+- Üç çıktı (HTML/DOCX/UDF) aynı grup/alt başlık numarasını üretir.
+- Ölçüm: demo gövde 1..10 + EKLER; EK-7 tek başlık + EK-7.1; EK-8 + EK-8.1/EK-8.2;
+  toplu düğme Ctrl+Z ile 0→1→0; JS 0.
+- Test: `birim [179]` (19), `rapor` Senaryo 58, `tasarim [2ee]` (6).
 
 ## v2.368 — Sağ çekmece + stage bar kaldırıldı (TAMAMLANDI)
 

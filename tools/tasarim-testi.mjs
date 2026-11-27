@@ -2499,7 +2499,26 @@ console.log('\n[2de] Belge paketi (ZIP) ve sayfa tahmini (v2.325)');
   check('tahmin uyarısı panelde', /TAHMİNÎdir/.test(app));
   check('sayfa etiketi CSS', /\.la-pages \{/.test(layer));
   // Rapor içi ekler "Rapor eki N." (üst yazının EK-N'siyle karışmaz).
-  check('rapor içi ek adı "Rapor eki"', /heading: `Rapor eki \$\{n\}\. \$\{base\}`/.test(app) && !/heading: `EK-\$\{n\}/.test(app));
+  // v2.369: GRUP eki ALT başlıkları "EK-N.M" biçimindedir (mevcut konvansiyon,
+  // rapor 1452 testi de bunu bekler); yasak olan, EK başlığının "EK-N." olmasıdır.
+  check('rapor içi ek adı "Rapor eki"', /heading: `Rapor eki \$\{n\}\. \$\{base\}`/.test(app) && !/heading: `EK-\$\{n\}\.\s*\$\{base\}/.test(app));
+}
+
+console.log('\n[2ee] Gruplu ekler + toplu Öneri A (v2.369)');
+{
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  // Grup tanımları ve varsayılan yerleşim şemada (tek kaynak).
+  check('grup ek tanımları (ek7…ek10)', /key: 'ek7'[^}]*group: true/.test(schema) && /key: 'ek10'/.test(schema));
+  check('varsayılan yerleşim (Öneri A)', /DEFAULT_ANNEX_PLACEMENT = \{[\s\S]{0,200}origin: 'ek7'/.test(schema));
+  // Grup render üç çıktıda: kind:'group' her üç üreticide de işlenir.
+  const groupCount = (app.match(/b\.kind === 'group'/g) || []).length;
+  check('grup blok türü üç çıktıda işlenir', groupCount >= 3, String(groupCount));
+  // Toplu taşıma düğmesi + fonksiyonu.
+  check('toplu taşıma düğmesi var', /data-apply-presentation/.test(app));
+  check('toplu taşıma fonksiyonu', /async function applyPresentationPlacement\(/.test(app));
+  // GERİ ALMA raporu tazeler (v2.369'da ölçüldü: tazelenmiyordu).
+  check('geri alma raporu tazeler', /async function undoLast[\s\S]{0,1200}renderReport\(\)/.test(app));
 }
 
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
