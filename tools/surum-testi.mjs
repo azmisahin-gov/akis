@@ -295,7 +295,11 @@ const REQUIRED_IDS = [
   ['not defteri girişi', 'notebookInput'],
   ['not defteri ekle düğmesi', 'notebookAdd'],
   ['not defteri listesi', 'notebookList'],
-  ['paket not anahtarı', 'scopeExcludeNotes']
+  ['paket not anahtarı', 'scopeExcludeNotes'],
+  // v2.360 — Ayarlar sekmeleri + metin araması.
+  ['ayarlar sekmeleri', 'settingsTabs'],
+  ['metin sayacı', 'settingsTextCount']
+  // `defaultsSearch` JS ile üretilir (statik HTML'de yok); tasarim [2dv] denetler.
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

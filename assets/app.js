@@ -155,15 +155,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.359';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.359';
+} from './schema.js?v=2.360';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.360';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.359';
+const APP_VERSION = '2.360';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -909,6 +909,7 @@ function defaultTextFor(field) {
   if (u[field]) return u[field];
   return codeDefaultText(field);
 }
+let defaultsSearchText = '';
 let appState = { cases: [], activeCaseId: null };
 let asrPipeline = null;
 let modelLoading = false;
@@ -10024,11 +10025,20 @@ function defaultsPanelHtml() {
     const s = String(t || '').replace(/\s+/g, ' ').trim();
     return s.length > 90 ? s.slice(0, 90) + '…' : s;
   };
+  // KATLANIR MADDE (v2.360): 16 metin alt alta açıkken panel 2.039 px oluyordu.
+  // Kapalı başlar; başlıkta etkin kaynak (sizin/uygulama) görünür. Arama açar.
   const item = (x) => {
     const field = x.key;
     const mine = !!u[field];
     return (
-      `<label class="field"><span>${esc(x.label)} <small class="rtech-where">${esc(x.where || '')}</small></span>` +
+      `<details class="dflt-item" data-dflt-item data-dflt-search="${esc(
+        trLowerCase(`${x.label} ${x.where || ''} ${field}`)
+      )}">` +
+      `<summary><span class="dflt-title">${esc(x.label)}</span>` +
+      `<span class="rtech-where">${esc(x.where || '')}</span>` +
+      `<span class="dflt-badge${mine ? ' is-mine' : ''}">${mine ? 'sizin metniniz' : 'uygulama metni'}</span></summary>` +
+      `<div class="dflt-body">` +
+      `<label class="field"><span class="sr-only">${esc(x.label)}</span>` +
       `<textarea rows="4" data-default-field="${field}" placeholder="Boş: uygulama varsayılanı kullanılır">${esc(u[field] || '')}</textarea></label>` +
       `<div class="rtech-actions">` +
       `<button type="button" class="mini-button" data-default-load="${field}" title="Uygulamanın metnini bu alana yükler; sonra düzenleyebilirsiniz.">Uygulama varsayılanını yükle</button>` +
@@ -10039,7 +10049,8 @@ function defaultsPanelHtml() {
       `<p class="rtech-hint">${mine ? 'Etkin: <b>sizin metniniz</b>' : 'Etkin: <b>uygulama metni</b>'} — “${esc(brief(codeDefaultText(field)))}”</p>` +
       (x.legal
         ? '<p class="rtech-hint"><b>Hukuki beyandır.</b> Doğrulanmamış mevzuat maddesi veya standart künyesi eklemeyin; kullanılan dayanak varsa tam künyesini (başlık, sürüm, tarih) yazın.</p>'
-        : '')
+        : '') +
+      `</div></details>`
     );
   };
   const first = TEXT_DEFAULT_ITEMS.filter((x) => ['methodText', 'limitationsText', 'conclusionText', 'scopeNoteText', 'annexLegalText', 'privacyText', 'integrityNote'].includes(x.key));
@@ -10048,6 +10059,7 @@ function defaultsPanelHtml() {
     <div class="panel-heading"><div><div class="eyebrow">RAPOR METİNLERİ</div>
       <h3>Kendi varsayılan metinlerim<span class="info-i" tabindex="0" data-tip="Buraya yazdığınız metin rapora basılır; dosyaya YAZILMAZ. Yalnız bu tarayıcıda saklanır (pakete girmez). Buradaki metinler bölümü AÇIK olan TÜM raporlarda kullanılır; eski dosyalar da yeni metinle basılır. Tarafsızlık beyanı burada yoktur: kişisel beyandır, kendiliğinden dolmaz.">i</span></h3></div></div>
     <p class="queue-copy"><b>Buradaki metinler bölümü açık olan tüm raporlarda kullanılır.</b> Dosyaya yazılmaz; yalnız bu tarayıcıda saklanır. Boş bıraktığınız alan uygulamanın metnini kullanır.</p>
+    <label class="dflt-search"><input type="search" id="defaultsSearch" placeholder="Metin ara (ör. yöntem, gizlilik, WER)" aria-label="Varsayılan metinlerde ara"><span id="defaultsCount">${TEXT_DEFAULT_ITEMS.length}</span></label>
     ${first.map(item).join('')}
     <details class="rtech-box"><summary>Ölçüm ve teknik açıklamalar (${rest.length})</summary>${rest.map(item).join('')}</details>
     <p class="rtech-hint"><b>Tarafsızlık beyanı burada yoktur.</b> O alan kişisel beyandır; boş başlar ve yalnız sizin yazmanızla dolar (v2.341).</p>
@@ -10056,11 +10068,38 @@ function defaultsPanelHtml() {
 }
 function renderDefaultsPanel() {
   const host = $('#defaultsHost');
-  if (host) host.innerHTML = defaultsPanelHtml();
+  if (!host) return;
+  host.innerHTML = defaultsPanelHtml();
+  // Arama metni yeniden çizimde KAYBOLMAZ (v2.360).
+  const q = $('#defaultsSearch');
+  if (q && defaultsSearchText) {
+    q.value = defaultsSearchText;
+    filterDefaultsPanel(defaultsSearchText);
+  }
+}
+// Arama yalnız GÖRÜNÜRLÜK süzer; metinleri değiştirmez (v2.360).
+function filterDefaultsPanel(q) {
+  const term = trLowerCase(String(q || '').trim());
+  defaultsSearchText = String(q || '');
+  let shown = 0;
+  $$('#defaultsHost [data-dflt-item]').forEach((el) => {
+    const hit = !term || String(el.dataset.dfltSearch || '').includes(term);
+    el.hidden = !hit;
+    if (hit) {
+      shown++;
+      if (term) el.open = true;
+    }
+  });
+  const c = $('#defaultsCount');
+  if (c) c.textContent = String(shown);
 }
 // Varsayılan metin işleyicileri (v2.342): yazarken kaydet, odaktan çıkınca
 // rapor önizlemesini tazele. Dolu metin sessizce SİLİNMEZ (reset onay ister).
 $('#defaultsHost')?.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'defaultsSearch') {
+    filterDefaultsPanel(e.target.value);
+    return;
+  }
   const ta = e.target.closest('[data-default-field]');
   if (!ta) return;
   saveUserDefaults({ [ta.dataset.defaultField]: ta.value });
@@ -20303,6 +20342,42 @@ function setCaseDrawer(open) {
   }
 }
 
+// ---- AYARLAR SEKMELERİ (v2.360) -------------------------------------------
+// NEDEN: Ayarlar içeriği 3.453 px'e çıkmıştı (1440×900'de 4,7 ekran); bunun
+// %59'u 16 metin listesiydi. Bölümler sekmeye ayrıldı; her sekme tek ekran.
+// Tercih TARAYICIDA saklanır (akis.settingsTab); dosyaya yazılmaz.
+const SETTINGS_TABS = ['appearance', 'texts', 'model', 'storage'];
+const SETTINGS_TAB_KEY = 'akis.settingsTab';
+function settingsTabPref() {
+  try {
+    const v = localStorage.getItem(SETTINGS_TAB_KEY);
+    return SETTINGS_TABS.includes(v) ? v : 'appearance';
+  } catch (e) {
+    return 'appearance';
+  }
+}
+function setSettingsTab(tab) {
+  const t = SETTINGS_TABS.includes(tab) ? tab : 'appearance';
+  try {
+    localStorage.setItem(SETTINGS_TAB_KEY, t);
+  } catch (e) {}
+  applySettingsTab(t);
+}
+function applySettingsTab(tab) {
+  const t = SETTINGS_TABS.includes(tab) ? tab : 'appearance';
+  $$('[data-settings-section]').forEach((el) => {
+    el.hidden = el.dataset.settingsSection !== t;
+  });
+  $$('#settingsTabs [data-settings-tab]').forEach((b) => {
+    const on = b.dataset.settingsTab === t;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  const body = $('#settingsDrawer .drawer-body');
+  if (body) body.scrollTop = 0;
+  const cnt = $('#settingsTextCount');
+  if (cnt) cnt.textContent = String(TEXT_DEFAULT_ITEMS.length);
+}
 function setSettingsDrawer(open) {
   const d = $('#settingsDrawer');
   const b = $('#drawerBackdrop');
@@ -20317,6 +20392,7 @@ function setSettingsDrawer(open) {
       updateModelBadge();
       refreshStorage();
     } catch (e) {}
+    applySettingsTab(settingsTabPref());
   }
 }
 function setFocusMode(on) {
@@ -22936,6 +23012,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 $('#closeCase').addEventListener('click', () => setCaseDrawer(false));
+// Ayarlar sekmeleri (v2.360): tek ekran kuralı.
+$('#settingsTabs').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-settings-tab]');
+  if (b) setSettingsTab(b.dataset.settingsTab);
+});
 // Dosya bilgilerini açan düğmeler (özet ekranı).
 ['#openCaseDrawer', '#quickCaseBtn', '#overviewEditBtn', '#stepCaseBtn'].forEach((sel) => {
   const el = $(sel);
@@ -23916,6 +23997,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.360': {
+    title: 'Ayarlar sekmelere ayrıldı',
+    body:
+      'Ayarlar penceresi uzayıp karışmaya başlamıştı (tek listede 51 kontrol, ~4,7 ekran kaydırma). Artık dört sekme var: Görünüm · Metinler · Model · Depolama. Her sekme tek ekrana sığacak kadar kısa. “Kendi varsayılan metinlerim” içindeki 16 metin artık kapalı başlıklar hâlinde; üstteki arama kutusuna yazınca ilgili metin açılır. Hiçbir metin silinmedi veya taşınmadı; yalnız düzen değişti. Son açtığınız sekme hatırlanır.'
+  },
   '2.359': {
     title: 'Rapor özeti girişi artık düzenlenebilir',
     body:

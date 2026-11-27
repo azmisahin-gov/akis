@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.359.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.360.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9480,4 +9480,37 @@ Bölüm düzenleyici `c[field]` (düz) yazar. Yeni alan `report.*` içindeyse
 `report.summaryIntroText || c.summaryIntroText` (`??` boş dizeyi geçirmez).
 Yeni bir düzenlenebilir alan eklerken üçlüyü birlikte yapın:
 (1) şema + normalize, (2) `CASE_MIRROR`, (3) düzenleyici + üç çıktı.
+
+## YENİ OTURUM DEVRİ (v2.360) — Ayarlar sekmeleri
+
+| | |
+|---|---|
+| Sürüm | **v2.360** |
+| Testler | 2773 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | 1440×900: tek liste **3.453 px / 4,7 ekran** → Görünüm 1,5 · Metinler 1,8 · Model 1,0 · Depolama 1,0 ekran; arama "gizlilik" → 1 madde açık; JS hatası 0 |
+
+### Neden
+Kullanıcı: "her şeyi ayar kısmına doldurduk, orası uzamaya karışmaya başlayacak."
+Ölçüm doğruladı: **%59**'u 16 metin listesiydi, %27'si model/depolama.
+
+### Yapı
+- `[data-settings-tab]` (4) + `[data-settings-section]`; `applySettingsTab`.
+- Tercih **`akis.settingsTab`** (tarayıcı; dosyaya yazılmaz).
+- 16 metin: `<details class="dflt-item">` (kapalı) + `#defaultsSearch` →
+  `filterDefaultsPanel` yalnız **görünürlük** süzer (metin değişmez).
+- Arama metni yeniden çizimde korunur (`defaultsSearchText`).
+
+### DEĞİŞMEZ KURALLAR
+1. **Sekme = kısa ekran.** Yeni bir ayar eklerken uygun sekmeye koyun; tek
+   sekmeyi 2 ekranın üstüne çıkarmayın (ölçün).
+2. **Katlanır madde varsayılan KAPALI**; kullanıcı açtığını görür. Arama
+   yalnız görünürlük süzer.
+3. **Hiçbir metin taşınmaz/silinmez**; düzen değişir, davranış değişmez.
+4. Dinamik üretilen kimlikleri (`#defaultsSearch`) **`surum` REQUIRED_IDS**'e
+   koymayın (statik HTML'de yok); `tasarim` app.js üzerinden denetler.
+
+### Sıradaki (v2.361 adayı)
+**"Metinler" Ayarlar'dan çıksın:** 16 varsayılan + "Kayıtlı metinlerim" rapora
+ait; Rapor görünümünde ayrı ekran/dialog, Ayarlar'da kısa bağlantı. Böylece
+Ayarlar yalnız uygulama davranışı taşır.
 

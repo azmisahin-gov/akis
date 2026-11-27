@@ -1,4 +1,4 @@
-# Özellikler (v2.359 — mevcut durum)
+# Özellikler (v2.360 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1190,6 +1190,12 @@ Rapor metinleri bilirkişinin kendi anlatımıyla yazılır: inceleme yöntemi b
 ## Boş tablo kuralı (v2.350)
 
 Veri yoksa rapor **boş tablo basmaz**: envanter, kayıt kökeni, konuşmacılar, EK-2 ve EK-3 bölümlerinde yalnız “kayıt yok” cümlesi yazılır; “—” satırları ve görünmez karakter kullanılmaz. Üç çıktı (HTML/DOCX/UDF) aynı cümleyi verir. Yazılım desteği kullanılmadıysa çözümleme bölümünde “yararlandım” girişi ve doğrulama cümlesi basılmaz. Önceki sürümlerin eski yöntem metni, uzman düzenlemediyse yeni anlatıma çevrilir.
+
+## Ayarlar sekmeleri (v2.360)
+
+Ayarlar dört sekmeye ayrıldı (Görünüm · Metinler · Model · Depolama); son sekme
+hatırlanır. “Kendi varsayılan metinlerim” 16 metin kapalı başlık hâlinde ve
+aranabilir. Ölçüm: tek liste 3.453 px (4,7 ekran) → sekme başına 1,0–1,8 ekran.
 
 ## Rapor özeti girişi düzenlenebilir (v2.359)
 

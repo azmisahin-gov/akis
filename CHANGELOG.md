@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.359.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.360.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.360 — Ayarlar sekmelere ayrıldı
+
+**KULLANICI NE GÖRECEK:** Ayarlar artık **dört sekme**: **Görünüm · Metinler ·
+Model · Depolama**. Her sekme kısa; aradığınız ayarı görmek için 4–5 ekran
+kaydırmıyorsunuz. Son açtığınız sekme hatırlanır.
+
+**Ölçüm (1440×900, gerçek Chromium):**
+
+| | Önce | Sonra |
+|---|---|---|
+| Tek listenin içeriği | **3.453 px** (4,7 ekran) | — |
+| Görünüm sekmesi | — | 1.071 px (**1,5 ekran**) |
+| Metinler sekmesi | 2.039 px (panel) | 1.245 px (**1,8 ekran**) |
+| Model sekmesi | 506 + 169 px | 716 px (**1,0 ekran**) |
+| Depolama sekmesi | 918 px | 721 px (**1,0 ekran**) |
+| İlk ekranda görünen kontrol | 9 / 51 | sekme başına 2–34 |
+
+**"Kendi varsayılan metinlerim" katlanır oldu:**
+- 16 metin **kapalı başlık** (başlıkta "sizin metniniz / uygulama metni" rozeti).
+- Üstte **arama**: "gizlilik" yazınca **1** madde kalıyor ve kendiliğinden
+  açılıyor; arama silinince 16'ya dönüyor.
+- Hiçbir metin **silinmedi/taşınmadı**; davranış aynı (`input` ile kaydeder).
+
+**Teknik:** `[data-settings-section]` + `[data-settings-tab]`;
+`akis.settingsTab` tercihi tarayıcıda (dosyaya yazılmaz). Arama yalnız
+**görünürlük** süzer (`filterDefaultsPanel`), metne dokunmaz.
+
+**Koruyan testler:** `tasarim [2dv]` (9), `surum` kimlikleri (3).
 
 ## v2.359 — Rapor özeti girişi düzenlenebilir
 

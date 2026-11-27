@@ -2782,5 +2782,22 @@ console.log('\n[2du] Rapor özeti girişi düzenlenebilir (v2.359)');
   check('sabit metin doğrudan basılmıyor', !/REPORT_TEXT\.summaryIntro\b(?!:)/.test(app.replace(/summaryIntro:\s*\n?\s*'[^']*'/, '')));
 }
 
+console.log('\n[2dv] Ayarlar sekmeleri + katlanır metinler (v2.360)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('sekme çubuğu var', /id="settingsTabs"/.test(html));
+  check('dört sekme var', (html.match(/data-settings-tab="/g) || []).length === 4);
+  check('bölümler etiketli (appearance/texts/model/storage)', ['appearance', 'texts', 'model', 'storage'].every((t) => new RegExp(`data-settings-section="${t}"`).test(html)));
+  check('metin sayacı var', /id="settingsTextCount"/.test(html));
+  // Arama alanı JS ile üretilir (panel her çizimde yeniden kurulur).
+  check('metin araması var (JS üretir)', /id="defaultsSearch"/.test(app));
+  check('metinler katlanır madde', /\.dflt-item/.test(css) && /<details class="dflt-item"/.test(app));
+  check('arama yalnız görünürlük süzer', /function filterDefaultsPanel[\s\S]{0,600}el\.hidden = !hit/.test(app));
+  check('sekme tercihi saklanır', /akis\.settingsTab/.test(app));
+  check('sekme stili token kullanır', /\.settings-tab\.is-active\s*\{[^}]*var\(--/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

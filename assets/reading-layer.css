@@ -4397,3 +4397,50 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .nb-anchor.is-missing { color: var(--ink-3); cursor: default; }
 .nb-item.is-focus { box-shadow: 0 0 0 2px var(--accent); }
 .nb-seg-badge { cursor: pointer; }
+
+/* --- Ayarlar sekmeleri + katlanır metinler (v2.360) -----------------------
+   NEDEN: Ayarlar 3.453 px'e çıkmıştı; %59'u 16 metin listesiydi. Sekmeler her
+   bölümü tek ekrana indirir; metinler kapalı başlar, arama açar. */
+.settings-tabs {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  padding: 8px 16px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+.settings-tab {
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+  border-radius: var(--r-pill); padding: 5px 12px; font: inherit;
+  font-size: var(--fs-2xs); cursor: pointer;
+}
+.settings-tab:hover { border-color: var(--accent); color: var(--accent); }
+.settings-tab.is-active {
+  background: var(--accent-soft); border-color: var(--accent);
+  color: var(--accent); font-weight: 700;
+}
+.settings-tab-n { display: inline-block; margin-left: 4px; font-size: var(--fs-2xs); color: var(--ink-3); }
+.settings-tab.is-active .settings-tab-n { color: var(--accent); }
+.dflt-search { display: flex; align-items: center; gap: 8px; margin: 8px 0 10px; }
+.dflt-search input {
+  flex: 1 1 auto; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 6px 10px; background: var(--surface); color: var(--ink);
+  font: inherit; font-size: var(--fs-2xs);
+}
+.dflt-search span { font-size: var(--fs-2xs); color: var(--ink-3); }
+.dflt-item { border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); margin: 6px 0; }
+.dflt-item > summary {
+  cursor: pointer; padding: 8px 10px; display: flex; align-items: center;
+  gap: 8px; flex-wrap: wrap; font-size: var(--fs-sm); color: var(--ink);
+}
+.dflt-item[open] > summary { border-bottom: 1px solid var(--line); }
+.dflt-title { font-weight: 700; }
+.dflt-badge {
+  margin-left: auto; font-size: var(--fs-2xs); color: var(--ink-3);
+  border: 1px solid var(--line); border-radius: var(--r-pill); padding: 1px 8px;
+}
+.dflt-badge.is-mine { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.dflt-body { padding: 8px 10px 10px; }
+.dflt-item[hidden] { display: none; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
