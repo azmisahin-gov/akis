@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.365.**
+yazılır. **Güncel sürüm: v2.366.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.366 — İskelet gezinme + dar ekranda katlanır iskelet (TAMAMLANDI)
+
+- İskelet başlığı **düğme**: bölümü belgede açar; kutucuk aç/kapa.
+- Belge ↔ iskelet **mutlak** kaydırma (`scrollIntoView` yok); seçili satır vurgulu.
+- ≤900 px: iskelet gizli; **Bölümler** düğmesi 50vh kaydırmalı açar, seçimde kapanır.
+- Ölçüm: 32 satır; 1440’ta belge 0→4.218, iskelet 0→805; 900’de 450 px açık,
+  seçimde kapanır, düzenleyici 286 px alt şerit; taşma/JS 0.
+- Test: `tasarim [2ea]` (12).
 
 ## v2.365 — Rapor ayarları sekmeleri + tek alan yeri (TAMAMLANDI)
 

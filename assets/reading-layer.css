@@ -4594,3 +4594,28 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .rside-tab.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
 .rside-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
 .rside-panel[hidden] { display: none; }
+
+/* ============================================================================
+   v2.366 — İSKELET GEZİNME + DAR EKRANDA KATLANIR İSKELET
+   ----------------------------------------------------------------------------
+   İskelet satırındaki başlık artık bir DÜĞMEDİR: tıklayınca o bölüm belgede
+   açılır (kutucuk yalnız aç/kapa yapar). Belgede bir bölüme tıklanınca iskelet
+   o satıra MUTLAK hesapla kaydırılır (scrollIntoView KULLANILMAZ).
+   ≤900 px: iskelet varsayılan GİZLİ; "Bölümler" düğmesi 50vh'lik kaydırmalı
+   panel olarak açar. Böylece belgenin üstünde 2.000 px'lik iskelet yığılmaz.
+   ========================================================================== */
+.rsec-go {
+  border: 0; background: none; padding: 0; margin: 0;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.rsec-go:hover { color: var(--accent); text-decoration: underline; }
+.rsec-go:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: 3px; }
+.report-outline-btn { display: none; }
+@media (max-width: 900px) {
+  .report-outline-btn { display: inline-flex; align-items: center; }
+  .report-skeleton { display: none; }
+  #reportWorkspace.outline-open .report-skeleton {
+    display: block; order: -1; max-height: 50vh; overflow-y: auto;
+  }
+  #reportWorkspace.outline-open .report-stage { order: 0; }
+}

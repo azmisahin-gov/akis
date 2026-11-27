@@ -2947,5 +2947,25 @@ console.log('\n[2dz] Rapor ayarları sekmeleri + tek alan yeri (v2.365)');
   check('sekme stili token kullanır', /\.rside-tab\.is-active \{[^}]*var\(--accent/.test(css));
 }
 
+console.log('\n[2ea] İskelet gezinme + dar ekranda katlanır iskelet (v2.366)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('satır anahtarı taşır', /data-rsec-key="\$\{esc\(key\)\}"/.test(app));
+  check('başlık gezinme düğmesi', /class="rsec-go" data-report-goto=/.test(app));
+  check('düzenleme sırasında düğme yok', /const inner = editing/.test(app));
+  check('bölüme git fonksiyonu', /function goToReportSection\(key\)/.test(app));
+  check('belge kaydırma mutlak', /function scrollReportToKey\(key\)/.test(app));
+  check('iskelet kaydırma mutlak', /function scrollSkeletonToKey\(key\)/.test(app));
+  const nav = app.slice(app.indexOf('function scrollReportToKey'), app.indexOf('// ---- Rapor bölüm görünürlüğü'));
+  check('gezinmede scrollIntoView yok', nav.length > 0 && !/scrollIntoView/.test(nav));
+  check('dar ekranda iskelet katlanır', /\.report-skeleton \{ display: none; \}/.test(css) && /#reportWorkspace\.outline-open \.report-skeleton \{/.test(css));
+  check('Bölümler düğmesi HTML\'de', /id="reportOutlineBtn"/.test(html));
+  check('düğme ≤900 görünür', /\.report-outline-btn \{ display: inline-flex; align-items: center; \}/.test(css));
+  check('aç/kapa işleyicisi', /#reportOutlineBtn'\)\?\.addEventListener\('click'/.test(app));
+  check('seçimde iskelet tazelenir', /scrollSkeletonToKey\(b\.dataset\.reportKey\)/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

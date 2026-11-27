@@ -157,15 +157,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.365';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.365';
+} from './schema.js?v=2.366';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.366';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.365';
+const APP_VERSION = '2.366';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14662,6 +14662,47 @@ function setReportEditSection(key) {
   }
   renderReport();
 }
+// v2.366 — İSKELET ↔ BELGE GEZİNME. Kaydırma MUTLAK hesaplanır; scrollIntoView
+// KULLANILMAZ (v2.193 dersi: üst kapları da kaydırır).
+function scrollReportToKey(key) {
+  const vr = $('#view-report');
+  const block = document.querySelector(`#reportPreview .paper-block[data-report-key="${CSS.escape(key)}"]`);
+  if (!vr || !block) return;
+  // `display:contents` kutusunun kendi dikdörtgeni yoktur; ilk çocuğu ölçülür.
+  const el = block.firstElementChild || block;
+  const vrRect = vr.getBoundingClientRect();
+  const r = el.getBoundingClientRect();
+  const tb = $('.report-toolbar');
+  const offset = (tb ? tb.getBoundingClientRect().height : 0) + 14;
+  vr.scrollTop = Math.max(0, Math.round(vr.scrollTop + r.top - vrRect.top - offset));
+}
+function scrollSkeletonToKey(key) {
+  const box = $('#reportSectionsBox');
+  const row = document.querySelector(`#reportSections .rsec-row[data-rsec-key="${CSS.escape(key)}"]`);
+  if (!box || !row) return;
+  const boxRect = box.getBoundingClientRect();
+  const r = row.getBoundingClientRect();
+  box.scrollTop = Math.max(0, Math.round(box.scrollTop + r.top - boxRect.top - 8));
+}
+function goToReportSection(key) {
+  const c = currentCase();
+  if (!c) return;
+  if (!reportSectionOn(c, key)) {
+    showToast(`“${reportUiLabel(c, key)}” bölümü kapalı; iskeletten açabilirsiniz.`);
+    return;
+  }
+  setReportEditSection(key);
+  const ws = $('#reportWorkspace');
+  if (ws && window.innerWidth <= 900) {
+    ws.classList.remove('outline-open');
+    const btn = $('#reportOutlineBtn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  requestAnimationFrame(() => {
+    scrollReportToKey(key);
+    scrollSkeletonToKey(key);
+  });
+}
 
 // ---- Rapor bölüm görünürlüğü (v2.219) ------------------------------------
 // PARAMETRİK RAPOR: bütün bölümler hazır tutulur; bilirkişi her birini açar/
@@ -15212,7 +15253,13 @@ function renderReportSections(c) {
           : '');
     const drag = move && canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(key)}"` : '';
     const depth = reportSectionDepth(c, key);
-    return `<div style="--depth:${depth}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<label class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${label}</label>${editBtn}</div>`;
+    // v2.366 — Başlık bir DÜĞMEDİR: tıklayınca o bölüm belgede açılır.
+    // Kutucuk yalnız aç/kapa yapar; düzenleme sırasında (input/textarea içeren
+    // satırda) düğme kullanılmaz (iç içe etkileşim olmaz).
+    const inner = editing
+      ? label
+      : `<button type="button" class="rsec-go" data-report-goto="${esc(key)}" title="Bu bölüme git">${label}</button>`;
+    return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${inner}</span>${editBtn}</div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -22595,10 +22642,23 @@ $('#reportSide')?.addEventListener('change', (e) => {
   if (fcb) setReportField(fcb.dataset.reportField, fcb.checked);
 });
 $('#reportCheckChip')?.addEventListener('click', () => setReportMode('check'));
+// v2.366 — ≤900 px'te iskelet varsayılan gizli; "Bölümler" açar/kapatır.
+$('#reportOutlineBtn')?.addEventListener('click', () => {
+  const ws = $('#reportWorkspace');
+  if (!ws) return;
+  const on = !ws.classList.contains('outline-open');
+  ws.classList.toggle('outline-open', on);
+  const btn = $('#reportOutlineBtn');
+  if (btn) btn.setAttribute('aria-expanded', String(on));
+});
 // Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-report-key]');
-  if (b) setReportEditSection(b.dataset.reportKey);
+  if (b) {
+    setReportEditSection(b.dataset.reportKey);
+    // v2.366 — seçilen bölüm iskelette görünür kalsın (mutlak kaydırma).
+    requestAnimationFrame(() => scrollSkeletonToKey(b.dataset.reportKey));
+  }
 });
 $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
   const f = e.target.closest('[data-rse-field]');
@@ -22752,6 +22812,12 @@ $('#reportSections')?.addEventListener('change', (e) => {
   setReportSection(cb.dataset.reportSection, cb.checked);
 });
 $('#reportSections')?.addEventListener('click', (e) => {
+  // v2.366 — başlık düğmesi: bölüme git (kutucuk yalnız aç/kapa yapar).
+  const go = e.target.closest('[data-report-goto]');
+  if (go) {
+    goToReportSection(go.dataset.reportGoto);
+    return;
+  }
   if (e.target.closest('[data-report-profile-save]')) {
     saveReportProfile();
     return;
@@ -24141,6 +24207,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.366': {
+    title: 'İskeletten bölüme gitme',
+    body:
+      'Rapor iskeletinde bir bölüm başlığına tıklayınca o bölüm belgede açılır ve iskelet o satıra kayar; yanındaki kutucuk yalnız bölümü açar/kapatır. Belgede bir bölüme tıklayınca iskelet o satırı gösterir; seçili satır vurgulanır. Dar ekranda (≤900 px) iskelet artık belgenin üstünde 2.000 px yığılmıyor: üstteki “Bölümler” düğmesi 50vh’lik kaydırmalı liste açar, bölüm seçilince kapanır. Görünür metin ve çıktılar değişmedi.'
+  },
   '2.365': {
     title: 'Rapor ayarları sekmelendi, alanlar tek yerde',
     body:

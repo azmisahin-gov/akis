@@ -6,12 +6,38 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.365.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.366.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.366 — İskeletten bölüme gitme
+
+**KULLANICI NE GÖRECEK:** Rapor iskeletinde bir **bölüm başlığına** tıklayınca
+o bölüm **belgede açılır** ve iskelet o satıra kayar; yanındaki **kutucuk** yalnız
+bölümü açar/kapatır. Belgede bir bölüme tıklayınca iskelet o satırı gösterir ve
+satır **vurgulanır**. Dar ekranda (≤900 px) iskelet belgenin üstünde yığılmaz:
+üstteki **Bölümler** düğmesi 50vh’lik kaydırmalı listeyi açar, bölüm seçilince
+kapanır.
+
+**ÖLÇÜM (gerçek Chromium):**
+
+| | Sonuç |
+|---|---|
+| İskelet satırı | **32** (hepsi gezinme düğmesi + `data-rsec-key`) |
+| Başlık tıklaması (1440) | belge **0 → 4.218 px**, iskelet **0 → 805 px**, satır seçili |
+| Belge tıklaması | iskelet **805 → 1.286 px** (tıklanan satır görünür) |
+| 900 px başlangıç | iskelet **gizli**, “Bölümler” görünür |
+| 900 px açık | iskelet **450 px** (50vh), belge altta |
+| Bölüm seçimi (900) | iskelet **kapanır**, belge **3.944 px**, düzenleyici alt şerit **286 px** |
+| Yatay taşma / JS hatası | **0 / 0** |
+
+**Yapılan:** iskelet satırı `data-rsec-key`; başlık `data-report-goto` düğmesi;
+`goToReportSection` / `scrollReportToKey` / `scrollSkeletonToKey` (**mutlak**
+kaydırma; `scrollIntoView` yok); `#reportOutlineBtn` + `.outline-open` ile dar
+ekranda katlanır iskelet. Test: `tasarim [2ea]` (12).
 
 ## v2.365 — Rapor ayarları sekmelendi, alanlar tek yerde
 

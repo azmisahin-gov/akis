@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.365.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.366.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9797,3 +9797,30 @@ zıplıyordu). ≤1349 px’te yan panel belgenin altına iner.
 2. Araç çubuğu sadeleşmesi (600 px’te 212 px yüksek), “Tam ekran (F)” kısayolu,
    tek durum sayacı.
 3. İstenirse sağ paneli **çekmece** yapmak (şu an sütun + sekmeli).
+
+## YENİ OTURUM DEVRİ (v2.366) — İskelet gezinme
+
+| | |
+|---|---|
+| Sürüm | **v2.366** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | 1440: belge 0→4.218, iskelet 0→805; 900: iskelet gizli→450 px, seçimde kapanır; taşma/JS 0 |
+
+### Yapılan
+- İskelet satırı `data-rsec-key`; başlık `data-report-goto` **düğmesi** (kutucuk aç/kapa).
+- `goToReportSection` → `setReportEditSection` + `scrollReportToKey` + `scrollSkeletonToKey`.
+  **Mutlak kaydırma**; `scrollIntoView` KULLANILMAZ (v2.193).
+- Belgede bölüme tıklayınca iskelet o satıra kayar (`requestAnimationFrame`).
+- ≤900 px: `.report-skeleton` gizli; `#reportOutlineBtn` + `.outline-open` 50vh panel;
+  bölüm seçilince kapanır.
+
+### DEĞİŞMEZ KURALLAR
+1. **İskelet başlığı = gezinme**, kutucuk = aç/kapa. Bu ayrımı bozmayın.
+2. **Kaydırma mutlak hesaplanır** (`scrollTop +=` yok; `scrollIntoView` yok).
+3. Dar ekranda iskelet **belgenin üstüne yığılmaz**; katlanır panel kullanın.
+4. Yeni bir iskelet satırı türü eklerken `data-rsec-key` verin (seçim/gezinme için).
+
+### Sıradaki iş (v2.367)
+1. **Araç çubuğu sadeleşmesi** (600 px’te 212 px) ve **“Tam ekran (F)”** kısayolu.
+2. Tek durum sayacı (“Kontrol bekliyor: 2” + “2 kontrol maddesi” yan yana).
+3. Sayfa sayısı tahmini (P6) ve kalan kozmetik (skeleton 4 px grid taşması).
