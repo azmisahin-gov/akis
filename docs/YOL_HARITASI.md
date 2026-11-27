@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.376.**
+yazılır. **Güncel sürüm: v2.377.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.377 — Tek düz liste + yeni dosya kapalı (TAMAMLANDI)
+
+- İskelet tek düz liste: gövde döngüsü tüm `layout.order`'ı basar; eke taşınan "EK-N" çipiyle
+  görünür. İç içe çocuk (`annexChildRow`), `groupSecs`/`standalonePlaced` KALDIRILDI
+  (sıralama-kaybolma hatasının kökü).
+- `freshCase` → `sections` tümü false (yeni dosya boş). Mevcut dosyalar korunur (normalize).
+- Ölçüm: yeni dosya 0 açık/boş; demo+default 32 satır, 0 child; ek ↑↓ satır/metin sabit; JS 0.
+- Test: `birim [184]`, `tasarim [2ej]` güncellendi.
 
 ## v2.376 — Taşınan bölüm/ek görünür (TAMAMLANDI)
 

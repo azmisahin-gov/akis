@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.376.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.377.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10118,3 +10118,18 @@ yukarıdayken görünmüyordu.
 (Türkçe çift kodlandı). Belirti: testlerde "sayńĪsal"/"√∂l√ß√ľlemedi". Düzeltme:
 `git checkout HEAD -- assets/app.js` + değişiklikleri Python `io.open(encoding='utf-8')` ile
 yeniden uygula. Türkçe metin düzenlerken dosya kodlamasını DOĞRULA; mojibake taraması yap.
+
+## YENİ OTURUM DEVRİ (v2.377) — TEK DÜZ LİSTE + YENİ DOSYA KAPALI
+
+**KULLANICI KARARI:** "Her şey tek düz listede (ideal sıra), alt öğe/nesting YOK; hepsi varsayılan
+KAPALI; istediğimi eke sürüklerim." (İç içe ek/alt-ek modeli sıralama-kaybolma hatası üretiyordu.)
+
+- `renderReportSections`: gövde döngüsü TÜM `layout.order`'ı basar; eke taşınan "EK-N" çipiyle
+  görünür. `annexChildRow` + grup çocukları + standalone satırları KALDIRILDI. Ekler yalnız
+  başlık listesi (aç/kapa, ↑↓, ＋Yeni ek) — sürükleme HEDEFİ.
+- `freshCase` → `sections` tümü **false** (yeni dosya boş). Mevcut dosyalar `normalizeReportSections`
+  ile korunur. "Varsayılan düzen" önerilen seti açar.
+- Ölçüm: yeni dosya 32 bölüm **0 açık**/boş; demo+default **32 satır, 0 child**; ek ↑↓ satır/metin
+  sabit; JS 0. Test: `birim [184]`, `tasarim [2ej]`.
+
+**ÜST YAZI:** Kullanıcı aynı sadeleştirmeyi üst yazı için de yapacak (sıradaki iş).

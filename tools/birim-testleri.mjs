@@ -6125,6 +6125,16 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 }
 
 
+// [184] v2.377 — yeni dosya: TÜM bölümler varsayılan KAPALI; boş taslak boş kalır.
+{
+  console.log('[184] Yeni dosya tüm bölümler kapalı (v2.377)');
+  const fresh = T.freshCase();
+  const keys = T.REPORT_SECTION_DEFS.map((d) => d.key);
+  eq('hepsi kapalı', keys.every((k) => fresh.report.sections[k] === false), true);
+  eq('boş taslak hâlâ boş sayılır', T.isEmptyCase(fresh), true);
+}
+
+
 // [134] v2.292 — Atanmamış bölüm kümeleme: eşik üstü gruplar; atama yapmaz.
 {
   console.log('[134] Konuşmacı gömme kümeleme (v2.292)');

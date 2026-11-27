@@ -6,12 +6,23 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.376.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.377.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.377 — Tek düz liste + yeni dosya varsayılan kapalı
+
+**KULLANICI NE GÖRECEK:**
+- Rapor iskeleti artık **TEK DÜZ LİSTE**: her bölüm tek listede (ideal sırada). Eke taşınan bölüm aynı listede **“EK-N” çipiyle** görünür; **alt öğe/iç içe (nesting) YOK** — ek sıralarken "kaybolma" hatası kökten kalkar.
+- **Yeni dosya: TÜM bölümler varsayılan KAPALI** başlar (rapor boş). İstediğinizi iskeletten açarsınız; istediğinizi **sürükleyip EKLER'e** taşırsınız (veya çekmecedeki düğme). Hepsi tek listede yukarı/aşağı taşınır.
+- **Varsayılan düzen** düğmesi isterseniz önerilen bölüm setini topluca açar.
+
+**DEĞİŞMEZ:** Mevcut dosyaların görünürlüğü KORUNUR (yalnız yeni dosya kapalı başlar). Kanıt/metin/onay değişmez. Rapor çıktısı (EKLER gruplu) aynı.
+
+**ÖLÇÜM (gerçek Chromium):** yeni dosya 32 bölüm **0 açık**, rapor boş; demo + Varsayılan düzen → **32 satır, 0 iç içe çocuk**; ek ↑↓ → **satır ve metin uzunluğu değişmedi**; JS 0.
 
 ## v2.376 — "Eke atadım kayboldu" düzeltildi
 
