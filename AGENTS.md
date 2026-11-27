@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.385.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.386.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10218,6 +10218,40 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 
 
 
+
+
+## YENİ OTURUM DEVRİ (v2.386) — Kurumsal belge tasarımı
+
+| | |
+|---|---|
+| Sürüm | **v2.386** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2859 birim + 565 şema** + rapor (Senaryo 64) + sürüm + tasarım yeşil |
+| Belge | `docs/BELGE_TASARIM_STANDARDI.md` (kurumsal varsayılan; mevzuat şablonu değil) |
+| Ölçüm | DOCX 16 sayfa (üst/alt bilgi + gerçek sayfa no); HTML 20 sayfa `Sayfa 1 / 20`…; UDF üst/alt bilgi YOK |
+
+**Kapsam:** yalnız GÖRSEL + künye yerleşimi. İçerik, bölüm sırası ve hesaplar değişmedi (v2.385 korunuyor).
+
+### Yapılan
+1. **Üst bilgi:** sol `Dosya No: {veri}` (aynen), sağ `BİLİRKİŞİ RAPORU`; 8.5 pt `595959`, `BFC7CF` ince çizgi. DOCX `header1.xml`; HTML `@page @top-left/@top-right`.
+2. **Alt bilgi:** sol uzmanlık (`expertFieldParts().main`), sağ `Sayfa PAGE / NUMPAGES`; DOCX gerçek alanlar + `w:pgNumType w:start="1"`; HTML `counter(page)`/`counter(pages)` (Chrome 131+).
+3. **Kapak:** `${court}${trDative(court)}` — **kesme işareti yok**; `paper-court` 20px / `paper-type` 30px / uzmanlık 12px / not 11px (DOCX 14/20/10/8 pt; UDF 14/24/11/10).
+4. **Künye:** `coverFieldPlan` (6 eşleşme + 5 tam genişlik + kalanlar) → HTML `.paper-kunye` grid, DOCX kenarlıksız 4 sütun (`gridSpan` ile tam genişlik), UDF tek sütun `ETİKET: değer`. **Boş alan satır üretmez**, bilgi kaybı yok.
+5. **Tablo teması:** `tableTheme` neutral/classic; DOCX `EDF1F5`/`1C426B`, UDF `pale`/navy, HTML `--paper-band`/`--paper-head`. Varsayılan **nötr**.
+6. **Tercihler:** Biçim sekmesinde `[data-fmt-cover]`, `[data-fmt-theme]`; `case.report.format.coverFields/tableTheme`.
+7. **Kutu/çubuk temizliği:** kapak kutusu, h3 sol çubuğu, imza kutusu, çift alt çizgi kaldırıldı (ince çizgi).
+
+### DEĞİŞMEZ KURALLAR
+1. **Tasarım içeriğe karışmaz.** `coverFields`/`tableTheme` yalnız görünüm; hesaplar/durumlar değişmez.
+2. **Bilgi kaybı yok:** yeni künye planı tüm `reportRows` anahtarlarını kapsar; eşleşmeyen alan tam genişlikte listelenir.
+3. **Uydurma yok:** uzmanlık alanı yoksa alt bilgi yazılmaz; sayfa numarası gerçek sayaçtır.
+4. **UDF’e üst/alt bilgi eklenmez** (şemada doğrulanmış alan yok). UYAP’ta ayrıca kontrol edilir.
+5. **HTML yazdırma** `@page` margin box’larına dayanır; desteklemeyen tarayıcıda numara görünmez (uydurulmaz).
+6. Tema (açık/koyu/sepya) yalnız ekranı etkiler; kâğıt/çıktı değişmez.
+
+### Dürüst sınır
+- UYAP editörü bu ortamda yok; UDF künye/başlık/tablo XML’i doğrulandı, üst/alt bilgi **yok**.
+- HTML sayfa numarası tarayıcı desteğine bağlı (Chrome/Edge 131+); Firefox/Safari’de görünmeyebilir.
+- DOCX/HTML/UDF sayfa kırılımları birebir aynı olmak zorunda değil; bilgi hiyerarşisi ortak.
 
 ## YENİ OTURUM DEVRİ (v2.385) — Deşifre tablosu satırları + DOCX XML güvenliği
 

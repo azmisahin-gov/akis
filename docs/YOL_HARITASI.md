@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.385.**
+yazılır. **Güncel sürüm: v2.386.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.386 — Kurumsal belge tasarımı (TAMAMLANDI)
+
+- `report.format.coverFields` (simple/classic) + `tableTheme` (neutral/classic); varsayılan sade + nötr.
+- `coverFieldPlan` + `coverFieldsSimpleHtml/Xml/Udf`: iki sütunlu sade künye; uzun alanlar tam genişlik; bilgi kaybı yok.
+- DOCX üst/alt bilgi: 2 sütun, 8.5/8 pt koyu gri, `BFC7CF` ince çizgi, `PAGE`/`NUMPAGES`, `pgNumType start=1`.
+- HTML yazdırma: `@page` margin box'ları (`counter(page)`/`counter(pages)`); akış iskeleti gizli.
+- DOCX/UDF tablo teması: nötr (açık başlık) / klasik (koyu mavi).
+- Kapak: `MAHKEMESİNE` (kesme işaretsiz), `paper-court`/`paper-type` hiyerarşisi, kutusuz.
+- Biçim paneli: **Künye düzeni** + **Tablo görünümü** seçimleri.
+- Belge: `docs/BELGE_TASARIM_STANDARDI.md`.
+- Testler: `birim [190]`, `sema` (format), `rapor` Senaryo 64, `tasarim [2ep]`; 2859 + 565 yeşil.
 
 ## v2.385 — Her kayıt yeni sayfada; deşifre tablosu satırları (TAMAMLANDI)
 

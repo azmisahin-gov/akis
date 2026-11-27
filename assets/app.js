@@ -113,6 +113,10 @@ import {
   REPORT_FONT_CSS,
   REPORT_FONT_DOCX,
   REPORT_ORIENTATIONS,
+  REPORT_COVER_LAYOUTS,
+  REPORT_COVER_LAYOUT_LABEL,
+  REPORT_TABLE_THEMES,
+  REPORT_TABLE_THEME_LABEL,
   REPORT_ORIENTATION_LABEL,
   REPORT_TABLE_STYLES,
   REPORT_TABLE_STYLE_LABEL,
@@ -166,15 +170,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.385';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.385';
+} from './schema.js?v=2.386';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.386';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.385';
+const APP_VERSION = '2.386';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14031,7 +14035,9 @@ function expertFieldShort(c) {
 function coverLines(c) {
   const spec = reportTypeSpec(c && c.reportType);
   const courtRaw = (c && c.court) || REPORT_TEXT.emptyCourt;
-  const court = `${courtRaw.toLocaleUpperCase('tr-TR')}’${trDative(courtRaw)}`;
+  // v2.386 — kurum adına gelen ek KESME İŞARETİYLE ayrılmaz:
+  // "MAHKEMESİ'NE" değil "MAHKEMESİNE". Ek yine Türkçe yönelme kuralıyla üretilir.
+  const court = `${courtRaw.toLocaleUpperCase('tr-TR')}${trDative(courtRaw)}`;
   const parts = expertFieldParts((c && c.expertField) || '');
   const lines = [
     { role: 'republic', text: 'T.C.' },
@@ -14082,6 +14088,97 @@ function reportRows(c) {
 // üretmez; "—" ile doldurulmaz (uydurma yok).
 function frontRowsFor(c, section, rows) {
   return rows.filter((r) => reportFieldVisible(c, section, r.key) && r.value && r.value !== '—');
+}
+// v2.386 — KÜNYE DÜZENİ (yalnız GÖRSEL): iki sütunlu sade (varsayılan) veya
+// klasik tablo. Hangi alanların EŞLEŞTİĞİ ve TAM GENİŞLİK olduğu TEK KAYNAK.
+// Boş alan satır üretmez (uydurma yok); mevcut künye bilgilerinin hiçbiri
+// kaybolmaz — eşleşmeyen anahtarlar tam genişlikte listelenir.
+const KUNYE_PAIRS = [
+  ['fileNo', 'assignmentDate'],
+  ['court', 'reportDate'],
+  ['expertName', 'registryNo'],
+  ['plaintiff', 'defendant'],
+  ['caseDate', 'inspectionDate'],
+  ['assignmentDuration', 'dueDate']
+];
+const KUNYE_WIDE = ['plaintiffCounsel', 'defendantCounsel', 'subject', 'expertField', 'impartiality'];
+function coverFieldPlan(c) {
+  const rows = frontRowsFor(c, 'coverFields', reportRows(c));
+  const by = new Map(rows.map((r) => [r.key, r]));
+  const pairs = KUNYE_PAIRS.map(([a, b]) => ({ left: by.get(a) || null, right: by.get(b) || null })).filter(
+    (p) => p.left || p.right
+  );
+  const wide = KUNYE_WIDE.map((k) => by.get(k)).filter(Boolean);
+  // Eşleşmeyen/gelecekte eklenen alanlar kaybolmasın: kalanlar tam genişlikte.
+  const used = new Set([...KUNYE_PAIRS.flat(), ...KUNYE_WIDE]);
+  const rest = rows.filter((r) => !used.has(r.key));
+  return { pairs, wide: wide.concat(rest) };
+}
+// v2.386 — DOCX sade künye: KENARLIKSIZ 4 sütun (etiket/değer ×2).
+// Dikey bölme, renkli hücre, kart/gölge YOK. Uzun alan 3 sütuna yayılır.
+function kunyeDocxCell(r, width, { label = false, span = 1 } = {}) {
+  const text = r ? String(label ? r.label : r.value) : '';
+  return (
+    `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${span > 1 ? `<w:gridSpan w:val="${span}"/>` : ''}<w:vAlign w:val="top"/></w:tcPr>` +
+    `<w:p><w:pPr><w:spacing w:before="0" w:after="30" w:line="240"/></w:pPr>` +
+    `${wRun(text, { bold: label, color: label ? '6F8295' : '24384D', size: label ? 16 : 19 })}</w:p></w:tc>`
+  );
+}
+function coverFieldsSimpleXml(c) {
+  const { pairs, wide } = coverFieldPlan(c);
+  if (!pairs.length && !wide.length) return '';
+  const ct = (__docxFmt && __docxFmt.contentTw) || 10206;
+  const w1 = Math.round(ct * 0.24);
+  const w2 = Math.round(ct * 0.26);
+  const w3 = Math.round(ct * 0.24);
+  const w4 = ct - w1 - w2 - w3;
+  const widths = [w1, w2, w3, w4];
+  const rows = [];
+  for (const p of pairs) {
+    rows.push(
+      `<w:tr><w:trPr><w:cantSplit/></w:trPr>` +
+        kunyeDocxCell(p.left, w1, { label: true }) +
+        kunyeDocxCell(p.left, w2) +
+        kunyeDocxCell(p.right, w3, { label: true }) +
+        kunyeDocxCell(p.right, w4) +
+        `</w:tr>`
+    );
+  }
+  for (const r of wide) {
+    // Uzun alan: etiket üstte, değer altta; TAM genişlik. Uzun etiket dar
+    // sütunda ortadan bölünmez (v2.386 ölçümü: "TARAFSIZLIĞI ETKİLEYEBİLECE/K").
+    rows.push(
+      `<w:tr><w:trPr><w:cantSplit/></w:trPr>` +
+        `<w:tc><w:tcPr><w:tcW w:w="${ct}" w:type="dxa"/><w:gridSpan w:val="4"/><w:vAlign w:val="top"/></w:tcPr>` +
+        `<w:p><w:pPr><w:spacing w:before="0" w:after="0" w:line="240"/></w:pPr>${wRun(r.label, { bold: true, color: '6F8295', size: 16 })}</w:p>` +
+        `<w:p><w:pPr><w:spacing w:before="0" w:after="30" w:line="240"/></w:pPr>${wRun(r.value, { color: '24384D', size: 19 })}</w:p>` +
+        `</w:tc></w:tr>`
+    );
+  }
+  const noBorder =
+    '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>';
+  return (
+    `<w:tbl><w:tblPr><w:tblW w:w="${ct}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${noBorder}` +
+    `<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr>` +
+    `<w:tblGrid>${widths.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${rows.join('')}</w:tbl>`
+  );
+}
+function coverFieldsLayout(c) {
+  const f = reportFormat(c);
+  return f.coverFields === 'classic' ? 'classic' : 'simple';
+}
+function coverFieldsSimpleHtml(c) {
+  const { pairs, wide } = coverFieldPlan(c);
+  if (!pairs.length && !wide.length) return '';
+  const cell = (r) =>
+    r
+      ? `<span class="kunye-label">${esc(r.label)}</span><span class="kunye-value">${esc(r.value)}</span>`
+      : `<span class="kunye-label"></span><span class="kunye-value"></span>`;
+  const pairRows = pairs.map((p) => `<div class="kunye-row">${cell(p.left)}${cell(p.right)}</div>`).join('');
+  const wideRows = wide
+    .map((r) => `<div class="kunye-row kunye-wide">${cell(r)}</div>`)
+    .join('');
+  return `<div class="paper-kunye">${pairRows}${wideRows}</div>`;
 }
 // RAPOR HAZIRLIK DENETİMİ (v2.150).
 // Kullanıcı: "eksikle rapor üretmeyi engelle." KURAL: uydurma "hazırlık
@@ -17007,6 +17104,9 @@ function applyReportFormat(c) {
       // v2.372 — tablo stili + yoğunluk CSS ile okunur (ekran + yazdırma).
       paper.dataset.tableStyle = fmt.tableStyle || 'grid';
       paper.dataset.density = fmt.density || 'comfortable';
+      // v2.386 — tasarım tercihleri (yalnız görsel): künye + tablo teması.
+      paper.dataset.coverFields = fmt.coverFields || 'simple';
+      paper.dataset.tableTheme = fmt.tableTheme || 'neutral';
     }
   }
   // Yazdırma/PDF için GERÇEK sayfa ayarı: A4 + yön + ölçülü kenar boşluğu.
@@ -17014,7 +17114,24 @@ function applyReportFormat(c) {
     const st = ensureReportPrintStyle();
     if (st) {
       const m = fmt.marginsMm;
-      st.textContent = `@page { size: A4 ${fmt.orientation}; margin: ${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm; }`;
+      // v2.386 — ÜST/ALT BİLGİ GERÇEK SAYFA KENARINDA (CSS Paged Media).
+      // Chrome/Edge `@page` margin box'larını ve counter(page/pages) destekler;
+      // sayfa numarası UYDURULMAZ, tarayıcının gerçek sayfalama sayacıdır.
+      const cssStr = (v) =>
+        `"${String(v == null ? '' : v)
+          .replace(/\\/g, '\\\\')
+          .replace(/"/g, '\\"')
+          .replace(/[\r\n]+/g, ' ')}"`;
+      const fileNo = `Dosya No: ${(c && c.fileNo) || '—'}`;
+      const heading = reportTypeSpec(c && c.reportType).heading;
+      const expert = expertFieldParts((c && c.expertField) || '').main || '';
+      const fontCss = REPORT_FONT_CSS[fmt.fontFamily] || 'Arial, sans-serif';
+      st.textContent =
+        `@page { size: A4 ${fmt.orientation}; margin: ${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm;` +
+        ` @top-left { content: ${cssStr(fileNo)}; font: 9pt ${fontCss}; color: #595959; vertical-align: bottom; border-bottom: 0.5pt solid #BFC7CF; width: 50%; }` +
+        ` @top-right { content: ${cssStr(heading)}; font: 9pt ${fontCss}; color: #595959; text-align: right; vertical-align: bottom; border-bottom: 0.5pt solid #BFC7CF; width: 50%; }` +
+        ` @bottom-left { content: ${cssStr(expert)}; font: 8pt ${fontCss}; color: #595959; vertical-align: top; }` +
+        ` @bottom-right { content: "Sayfa " counter(page) " / " counter(pages); font: 8pt ${fontCss}; color: #595959; text-align: right; vertical-align: top; } }`;
     }
   } catch (e) {}
 }
@@ -17040,6 +17157,13 @@ function renderReportFormat(c) {
   const denOpts = REPORT_DENSITIES.map(
     (d) => `<option value="${d}"${d === f.density ? ' selected' : ''}>${esc(REPORT_DENSITY_LABEL[d] || d)}</option>`
   ).join('');
+  // v2.386 — kurumsal tasarım tercihleri (yalnız görsel).
+  const cfOpts = REPORT_COVER_LAYOUTS.map(
+    (k) => `<option value="${k}"${k === f.coverFields ? ' selected' : ''}>${esc(REPORT_COVER_LAYOUT_LABEL[k] || k)}</option>`
+  ).join('');
+  const thOpts = REPORT_TABLE_THEMES.map(
+    (k) => `<option value="${k}"${k === f.tableTheme ? ' selected' : ''}>${esc(REPORT_TABLE_THEME_LABEL[k] || k)}</option>`
+  ).join('');
   const mx = (k, lab) =>
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="0.5" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
@@ -17051,6 +17175,10 @@ function renderReportFormat(c) {
     `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
     `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
+    `</div>` +
+    `<div class="report-tech">` +
+    `<label class="field rtech-field"><span>Künye düzeni</span><select data-fmt-cover>${cfOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Tablo görünümü</span><select data-fmt-theme>${thOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Tablo çizgisi</span><select data-fmt-table-style>${tsOpts}</select></label>` +
@@ -17072,6 +17200,8 @@ function readReportFormatPanel(c) {
   const orient = host.querySelector('[data-fmt-orient]');
   const tableStyle = host.querySelector('[data-fmt-table-style]');
   const density = host.querySelector('[data-fmt-density]');
+  const coverFields = host.querySelector('[data-fmt-cover]');
+  const tableTheme = host.querySelector('[data-fmt-theme]');
   const marginsMm = {};
   host.querySelectorAll('[data-fmt-margin]').forEach((el) => {
     marginsMm[el.dataset.fmtMargin] = el.value;
@@ -17083,6 +17213,8 @@ function readReportFormatPanel(c) {
     orientation: orient ? orient.value : undefined,
     tableStyle: tableStyle ? tableStyle.value : undefined,
     density: density ? density.value : undefined,
+    coverFields: coverFields ? coverFields.value : undefined,
+    tableTheme: tableTheme ? tableTheme.value : undefined,
     marginsMm
   });
   applyReportFormat(c);
@@ -17968,15 +18100,14 @@ async function downloadLetterAndReport() {
 // Üst: sol "Dosya No", orta boş, sağ rapor türü. Alt: orta uzmanlık alanı.
 // Sayfa numarası tarayıcıda CSS ile ÜRETİLEMEZ (ölçüldü: counter(page) → 0/0);
 // gerçek numara DOCX (Word/LibreOffice) alanlarındadır.
+// v2.386 — ÜST/ALT BİLGİ artık `@page` margin box'larında (gerçek sayfa
+// numarası). Akış içindeki yazdırma iskeleti (thead/tfoot) KULLANILMAZ; boş
+// kalır. Eski çağrılar için işlev korunur ama DOM'a metin yazmaz.
 function renderPrintChrome(c) {
   const hdr = $('#printChromeHdr');
   const ftr = $('#printChromeFtr');
-  if (hdr) {
-    hdr.innerHTML =
-      `<span>${esc(`Dosya No: ${(c && c.fileNo) || '—'}`)}</span>` +
-      `<span>${esc(reportTypeSpec(c && c.reportType).heading)}</span>`;
-  }
-  if (ftr) ftr.textContent = `${REPORT_TEXT.toplineField}${expertFieldShort(c)}`;
+  if (hdr) hdr.innerHTML = '';
+  if (ftr) ftr.textContent = '';
 }
 function renderReport() {
   const c = currentCase();
@@ -18067,9 +18198,9 @@ function renderReport() {
       const note = coverLine(c, 'note');
       return (
         `<div class="paper-title"><div class="republic">${esc(coverLine(c, 'republic'))}</div>` +
-        `<h2>${esc(coverLine(c, 'court'))}</h2>` +
+        `<h2 class="paper-court">${esc(coverLine(c, 'court'))}</h2>` +
         `<p class="paper-family">${esc(coverLine(c, 'family'))}</p>` +
-        `<h2>${esc(coverLine(c, 'type'))}</h2>` +
+        `<h2 class="paper-type">${esc(coverLine(c, 'type'))}</h2>` +
         `<p class="paper-expert">${esc(coverLine(c, 'expert'))}</p>` +
         (note ? `<p class="paper-expert-note">${esc(note)}</p>` : '') +
         `</div>` +
@@ -18077,9 +18208,11 @@ function renderReport() {
       );
     },
     coverFields: () =>
-      `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
-        .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
-        .join('')}</tbody></table>`,
+      coverFieldsLayout(c) === 'simple'
+        ? coverFieldsSimpleHtml(c)
+        : `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
+            .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
+            .join('')}</tbody></table>`,
     summary: () =>
       `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(reportSummaryIntro(c))}</p><table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'summary', reportSummaryRows(c))
         .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
@@ -18486,7 +18619,9 @@ function docxFormatInit(c, fmtOverride) {
     contentTw,
     // v2.372 — tablo stili + yoğunluk (görsel). wTable/cell bunları okur.
     tableStyle: f.tableStyle || 'grid',
-    density: f.density || 'comfortable'
+    density: f.density || 'comfortable',
+    // v2.386 — tablo teması (nötr gri / klasik koyu mavi). Yalnız GÖRSEL.
+    tableTheme: f.tableTheme || 'neutral'
   };
   return __docxFmt;
 }
@@ -18521,9 +18656,10 @@ function wP(
     .join('');
   return `<w:p>${ppr}${runs}</w:p>`;
 }
-function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, keep = false } = {}) {
+function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, headerColor = null, keep = false } = {}) {
   const sh = shade ? `<w:shd w:fill="${shade}"/>` : '';
-  const col = header ? 'FFFFFF' : color || '24384D';
+  // v2.386 — başlık yazı rengi temaya bağlı (nötr: koyu; klasik: beyaz).
+  const col = header ? headerColor || 'FFFFFF' : color || '24384D';
   // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
   // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
   // v2.372 — yoğunluk: sıkı rejimde satır aralığı küçülür.
@@ -18546,6 +18682,12 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
   });
   // v2.372 — tablo stili (görsel). grid: tam çerçeve · lines: yalnız yatay ·
   // plain: çizgisiz. UDF bu ayarı KULLANMAZ (UYAP şablonu).
+  // v2.386 — TABLO TEMASI (yalnız görsel): nötr gri (varsayılan) veya
+  // klasik koyu mavi. İçerik ve sütunlar değişmez.
+  const theme = (__docxFmt && __docxFmt.tableTheme) || 'neutral';
+  const neutralTheme = theme !== 'classic';
+  const headFill = neutralTheme ? 'EDF1F5' : '1C426B';
+  const headInk = neutralTheme ? '1C426B' : 'FFFFFF';
   const tstyle = (__docxFmt && __docxFmt.tableStyle) || 'grid';
   const borders =
     tstyle === 'plain'
@@ -18563,7 +18705,17 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
         `<w:tr><w:trPr><w:cantSplit/>${keepTogether && ri < rows.length - 1 ? '<w:keepNext/>' : ''}${header && ri === 0 ? '<w:tblHeader w:val="true"/>' : ''}</w:trPr>${row
           .map((t, ci) => {
             const isHead = header && ri === 0;
-            const shade = isHead ? '1C426B' : shadeFirstCol && ci === 0 ? 'EAF0F6' : ri % 2 === 0 ? 'F8FAFC' : null;
+            const shade = isHead
+              ? headFill
+              : shadeFirstCol && ci === 0
+                ? neutralTheme
+                  ? 'F2F5F8'
+                  : 'EAF0F6'
+                : ri % 2 === 0
+                  ? neutralTheme
+                    ? 'FBFCFD'
+                    : 'F8FAFC'
+                  : null;
             return cell(String(t ?? ''), {
               header: isHead,
               shade,
@@ -18571,6 +18723,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
               width: ws[ci] || 2200,
               size: isHead ? 17 : 18,
               color: shadeFirstCol && ci === 0 ? '1C426B' : null,
+              headerColor: headInk,
               keep: keepLast && !isHead && ri === rows.length - 1
             });
           })
@@ -18609,7 +18762,7 @@ function docxSectionXml() {
     landscape ? ' w:orient="landscape"' : ''
   }/><w:pgMar w:top="${mmToTw(dm.top)}" w:right="${mmToTw(dm.right)}" w:bottom="${mmToTw(
     dm.bottom
-  )}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr>`;
+  )}" w:left="${mmToTw(dm.left)}" w:header="500" w:footer="500" w:gutter="0"/><w:pgNumType w:start="1"/></w:sectPr>`;
 }
 
 /**
@@ -18675,9 +18828,9 @@ function docxXml(c) {
       const note = coverLine(c, 'note');
       return (
         wP(coverLine(c, 'republic'), { bold: false, color: '000000', size: 24, align: 'center', before: 60, after: 40 }) +
-        wP(coverLine(c, 'court'), { bold: true, color: '1C426B', size: 26, align: 'center', after: 120, keep: true }) +
-        wP(coverLine(c, 'family'), { bold: true, color: '385873', size: 20, align: 'center', after: 60, keep: true }) +
-        wP(coverLine(c, 'type'), { bold: true, color: '1C426B', size: 34, align: 'center', before: 120, after: 100, keep: true }) +
+        wP(coverLine(c, 'court'), { bold: true, color: '1C426B', size: 28, align: 'center', after: 120, keep: true }) +
+        wP(coverLine(c, 'family'), { bold: true, color: '385873', size: 18, align: 'center', after: 60, keep: true }) +
+        wP(coverLine(c, 'type'), { bold: true, color: '1C426B', size: 40, align: 'center', before: 120, after: 100, keep: true }) +
         wP(coverLine(c, 'expert'), {
           bold: true,
           color: '1C426B',
@@ -18693,10 +18846,12 @@ function docxXml(c) {
       );
     },
     coverFields: () =>
-      wTable(
-        frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
-        { widths: [3000, 6000], header: false, shadeFirstCol: true }
-      ),
+      coverFieldsLayout(c) === 'simple'
+        ? coverFieldsSimpleXml(c)
+        : wTable(
+            frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
+            { widths: [3000, 6000], header: false, shadeFirstCol: true }
+          ),
     summary: () =>
       headingXml(H('summary')) +
       wP(reportSummaryIntro(c)) +
@@ -19177,36 +19332,42 @@ async function docxDocument(opts = {}) {
     'settings.xml',
     `<?xml version="1.0" encoding="UTF-8"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:compat><w:compatSetting w:name="compatibilityMode" w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat><w:themeFontLang w:val="tr-TR"/></w:settings>`
   );
-  // ÜST/ALT BİLGİ (v2.363) — PROFESYONEL 3 SÜTUN.
-  // Üst: sol "Dosya No", orta boş, sağ rapor türü. Alt: orta "Sayfa N / M".
-  // TEK KAYNAK: aynı metin üç çıktıda (HTML yazdırma, DOCX, UDF kapak) kullanılır.
-  // 3 sütun TABLO ile kurulur: Word/LibreOffice'te hizalama kaymaz; `w:tblLayout
-  // fixed` + tam `contentTw` genişliği ile sayfa metin alanına oturur.
+  // ÜST/ALT BİLGİ (v2.386) — KURUMSAL BELGE STANDARDI.
+  // Üst: sol "Dosya No: X", sağ rapor başlığı, ARADA BOŞ; ince gri çizgi.
+  // Alt: sol uzmanlık (kod – ad), sağ "Sayfa PAGE / NUMPAGES"; ince gri çizgi.
+  // 8–9 punto, koyu gri; logo/ürün adı/sürüm/dekorasyon YOK. Sayfa numarası
+  // GERÇEK alanlardır (PAGE/NUMPAGES); `w:pgNumType start=1` ile 1'den başlar.
+  // Dosya numarası kullanıcı verisinden AYNEN gelir (E./Esas/K. dönüştürülmez).
   const chromeTw = (__docxFmt && __docxFmt.contentTw) || 9000;
-  const chromeCol = Math.round(chromeTw / 3);
-  const chromeColLast = chromeTw - chromeCol * 2;
-  const chromeCell = (inner, align) =>
-    `<w:tc><w:tcPr><w:tcW w:w="${chromeCol}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:after="0" w:line="240"/></w:pPr>${inner}</w:p></w:tc>`;
+  const chromeLeft = Math.round(chromeTw * 0.6);
+  const chromeRight = chromeTw - chromeLeft;
+  const chromeInk = '595959';
+  const chromeLine = 'BFC7CF';
+  const chromeCell = (inner, align, width, valign = 'bottom') =>
+    `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/><w:vAlign w:val="${valign}"/></w:tcPr><w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:after="0" w:line="240"/></w:pPr>${inner}</w:p></w:tc>`;
   const chromeTable = (cells, border) =>
-    `<w:tbl><w:tblPr><w:tblW w:w="${chromeTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${border}<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${chromeCol}"/><w:gridCol w:w="${chromeCol}"/><w:gridCol w:w="${chromeColLast}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr>${cells[0]}${cells[1]}${cells[2]}</w:tr></w:tbl>`;
-  const chromeHdrLeft = letterMode ? `Dosya No: ${c.fileNo || '—'}` : `Dosya No: ${c.fileNo || '—'}`;
+    `<w:tbl><w:tblPr><w:tblW w:w="${chromeTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${border}<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${chromeLeft}"/><w:gridCol w:w="${chromeRight}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr>${cells[0]}${cells[1]}</w:tr></w:tbl>`;
+  const chromeHdrLeft = `Dosya No: ${(c && c.fileNo) || '—'}`;
   const chromeHdrRight = letterMode ? 'ÜST YAZI' : reportTypeSpec(c.reportType).heading;
   const headerXml = chromeTable(
     [
-      chromeCell(wRun(chromeHdrLeft, { color: '70869C', size: 15 }), 'left'),
-      chromeCell('', 'center'),
-      chromeCell(wRun(chromeHdrRight, { color: '70869C', size: 15 }), 'right')
+      chromeCell(wRun(chromeHdrLeft, { color: chromeInk, size: 17 }), 'left', chromeLeft),
+      chromeCell(wRun(chromeHdrRight, { color: chromeInk, size: 17 }), 'right', chromeRight)
     ],
-    '<w:tblBorders><w:bottom w:val="single" w:sz="6" w:color="1C426B"/></w:tblBorders>'
+    `<w:tblBorders><w:bottom w:val="single" w:sz="4" w:color="${chromeLine}"/></w:tblBorders>`
   );
+  const chromeExpert = expertFieldParts((c && c.expertField) || '').main || '';
   const footerInner =
-    wRun('Sayfa ', { color: '8293A3', size: 15 }) +
-    `<w:fldSimple w:instr="PAGE">${wRun('1', { color: '8293A3', size: 15 })}</w:fldSimple>` +
-    wRun(' / ', { color: '8293A3', size: 15 }) +
-    `<w:fldSimple w:instr="NUMPAGES">${wRun('1', { color: '8293A3', size: 15 })}</w:fldSimple>`;
+    wRun('Sayfa ', { color: chromeInk, size: 16 }) +
+    `<w:fldSimple w:instr="PAGE">${wRun('1', { color: chromeInk, size: 16 })}</w:fldSimple>` +
+    wRun(' / ', { color: chromeInk, size: 16 }) +
+    `<w:fldSimple w:instr="NUMPAGES">${wRun('1', { color: chromeInk, size: 16 })}</w:fldSimple>`;
   const footerXml = chromeTable(
-    [chromeCell('', 'left'), chromeCell(footerInner, 'center'), chromeCell('', 'right')],
-    '<w:tblBorders><w:top w:val="single" w:sz="6" w:color="C9D5E1"/></w:tblBorders>'
+    [
+      chromeCell(chromeExpert ? wRun(chromeExpert, { color: chromeInk, size: 16 }) : '', 'left', chromeLeft, 'top'),
+      chromeCell(footerInner, 'right', chromeRight, 'top')
+    ],
+    `<w:tblBorders><w:top w:val="single" w:sz="4" w:color="${chromeLine}"/></w:tblBorders>`
   );
   w.file(
     'header1.xml',
@@ -19331,20 +19492,34 @@ async function udfDocument(opts = {}) {
     codePointOffset += length + 1;
     return `<content startOffset="${start}" length="${length}" family="${udfFamily}" size="11" bold="false" italic="false" underline="false" foreground="${colors.body}" background="-1" />`;
   }
-  function paragraph(
-    text,
-    { size = 11, bold = false, italic = false, color = 'body', align = 0, before = 0, after = 5, justify = false } = {}
-  ) {
+  // v2.386 — ÇOK PARÇALI paragraf (etiket gri + değer koyu) için tek run
+  // üreticisi. `paragraph` bunu kullanır; davranış aynı kalır.
+  function runRef(text, { size = 11, bold = false, italic = false, color = 'body' } = {}) {
     const ref = addText(text);
     const fg = colors[color] ?? colors.body;
     const szEf = Math.round(size * udfScale * 10) / 10; // punto ölçeği (v2.238)
-    const formatted = ref
+    return ref
       .replace('size="11"', `size="${szEf}"`)
       .replace('bold="false"', `bold="${bold ? 'true' : 'false'}"`)
       .replace('italic="false"', `italic="${italic ? 'true' : 'false'}"`)
       .replace('underline="false"', 'underline="false"')
       .replace(`foreground="${colors.body}"`, `foreground="${fg}"`);
-    return `<paragraph Alignment="${align}" SpaceBefore="${before}" SpaceAfter="${after}" LineSpacing="1.15">${formatted}</paragraph>`;
+  }
+  function paragraph(
+    text,
+    { size = 11, bold = false, italic = false, color = 'body', align = 0, before = 0, after = 5, justify = false } = {}
+  ) {
+    return `<paragraph Alignment="${align}" SpaceBefore="${before}" SpaceAfter="${after}" LineSpacing="1.15">${runRef(text, {
+      size,
+      bold,
+      italic,
+      color
+    })}</paragraph>`;
+  }
+  function paragraphRuns(parts, { align = 0, before = 0, after = 4 } = {}) {
+    return `<paragraph Alignment="${align}" SpaceBefore="${before}" SpaceAfter="${after}" LineSpacing="1.15">${(parts || [])
+      .map((p) => runRef(p.text, p))
+      .join('')}</paragraph>`;
   }
   function paragraphLines(text, opts = {}) {
     return String(text ?? '')
@@ -19357,6 +19532,8 @@ async function udfDocument(opts = {}) {
     return `<page-break><paragraph><content startOffset="${codePointOffset}" length="0" family="${udfFamily}" size="11" underline="false" /></paragraph></page-break>`;
   }
   function table(rows, widths, { header = true, shadeFirstCol = false } = {}) {
+    // v2.386 — tablo teması (yalnız görsel): nötr gri / klasik koyu mavi.
+    const neutralTheme = (fmt.tableTheme || 'neutral') !== 'classic';
     if (!rows?.length) return '';
     const colCount = rows[0].length;
     const safeWidths = widths?.length === colCount ? widths : Array(colCount).fill(Math.floor(510 / colCount));
@@ -19371,13 +19548,21 @@ async function udfDocument(opts = {}) {
             // sarıyordu; bu, deşifre metnine görünmez karakter sokuyordu).
             if (!isHeader) cellText = zwspWrapLongHex(cellText);
             const fill = isHeader
-              ? colors.pale
+              ? neutralTheme
+                ? colors.pale
+                : colors.navy
               : shadeFirstCol && ci === 0
                 ? colors.pale
                 : ri % 2 === 0
                   ? '16777215'
                   : udfSignedColor('F8FAFC');
-            const fg = isHeader ? colors.navy : shadeFirstCol && ci === 0 ? colors.navy : colors.body;
+            const fg = isHeader
+              ? neutralTheme
+                ? colors.navy
+                : colors.white
+              : shadeFirstCol && ci === 0
+                ? colors.navy
+                : colors.body;
             const bold = isHeader || (shadeFirstCol && ci === 0);
             const ref = addText(cellText);
             const formatted = ref
@@ -19411,9 +19596,9 @@ async function udfDocument(opts = {}) {
     cover: () => {
       const note = coverLine(c, 'note');
       el.push(paragraph(coverLine(c, 'republic'), { size: 12, bold: false, color: 'black', align: 1, after: 4 }));
-      el.push(paragraph(coverLine(c, 'court'), { size: 15, bold: true, color: 'navy', align: 1, after: 10 }));
-      el.push(paragraph(coverLine(c, 'family'), { size: 11, bold: true, color: 'muted', align: 1, after: 4 }));
-      el.push(paragraph(coverLine(c, 'type'), { size: 22, bold: true, color: 'navy', align: 1, before: 6, after: 7 }));
+      el.push(paragraph(coverLine(c, 'court'), { size: 14, bold: true, color: 'navy', align: 1, after: 10 }));
+      el.push(paragraph(coverLine(c, 'family'), { size: 10, bold: true, color: 'muted', align: 1, after: 4 }));
+      el.push(paragraph(coverLine(c, 'type'), { size: 24, bold: true, color: 'navy', align: 1, before: 6, after: 7 }));
       el.push(
         paragraph(coverLine(c, 'expert'), {
           size: 11,
@@ -19427,14 +19612,39 @@ async function udfDocument(opts = {}) {
       if (c.synthetic)
         el.push(paragraph(REPORT_TEXT.synthetic, { size: 10, bold: true, color: 'mid', align: 1, after: 10 }));
     },
-    coverFields: () =>
+    coverFields: () => {
+      const plan = coverFieldPlan(c);
+      if (coverFieldsLayout(c) === 'simple') {
+        // UDF'te doğrulanmış iki sütunlu ızgara/borderless tablo yok: aynı
+        // bilgiler TEK SÜTUN "ETİKET: değer" olarak yazılır (çizgi/renk yok).
+        if (!plan.pairs.length && !plan.wide.length) return;
+        for (const p of plan.pairs) {
+          const parts = [];
+          if (p.left) parts.push({ text: `${p.left.label}: `, size: 8.5, bold: true, color: 'muted' }, { text: p.left.value, size: 10 });
+          if (p.right) {
+            if (parts.length) parts.push({ text: '   ·   ', size: 9, color: 'muted' });
+            parts.push({ text: `${p.right.label}: `, size: 8.5, bold: true, color: 'muted' }, { text: p.right.value, size: 10 });
+          }
+          el.push(paragraphRuns(parts, { after: 3 }));
+        }
+        for (const r of plan.wide) {
+          el.push(
+            paragraphRuns(
+              [{ text: `${r.label}: `, size: 8.5, bold: true, color: 'muted' }, { text: r.value, size: 10 }],
+              { after: 3 }
+            )
+          );
+        }
+        return;
+      }
       el.push(
         table(
           frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
           [170, 340],
           { header: false, shadeFirstCol: true }
         )
-      ),
+      );
+    },
     summary: () => {
       el.push(h(H('summary')));
       el.push(paragraph(reportSummaryIntro(c), { size: 10 }));
@@ -23927,6 +24137,8 @@ $('#reportFormatFields')?.addEventListener('change', () => {
   readReportFormatPanel(c);
   persist();
   renderReportFormat(c);
+  // Künye/tablo teması değiştiyse belge yeniden çizilir (içerik değişmez).
+  renderReport();
 });
 // Künye ek alanları (v2.225) — aynı desen: yazarken model, çıkınca önizleme.
 $('#reportKunyeFields')?.addEventListener('input', (e) => {
@@ -25058,6 +25270,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.386': {
+    title: 'Kurumsal belge tasarımı: sade künye, nötr tablo, gerçek sayfa numarası',
+    body:
+      'Rapor artık kurumsal ve sade bir belge tasarımı kullanıyor: üst bilgi solda “Dosya No”, sağda “BİLİRKİŞİ RAPORU”, alt bilgi solda uzmanlık alanı, sağda gerçek “Sayfa N / M” (ilk sayfa 1). Kapakta mahkeme adı kesme işareti olmadan yazılır (MAHKEMESİNE) ve BİLİRKİŞİ RAPORU en belirgin başlıktır. Rapor künyesi iki sütunlu sade yerleşime geçti; renkli hücre, dikey bölme, kart ve gölge yok; mevcut bilgilerin hiçbiri kaybolmadı. Tablolar varsayılan olarak nötr gri (açık başlık, ince çizgi). İsterseniz Rapor → Ayarlar → Biçim’den künyeyi “Klasik tablo”, tabloları “Koyu mavi” yapabilirsiniz. UDF’e üst/alt bilgi eklenmedi (şemada doğrulanmış alan yok); UYAP görünümü ayrıca kontrol edilmelidir.'
+  },
   '2.385': {
     title: 'Her kayıt yeni sayfada; deşifre tablosu satırları eksilmez',
     body:

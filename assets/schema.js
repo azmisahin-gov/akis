@@ -1329,6 +1329,13 @@ export const REPORT_ORIENTATION_LABEL = { portrait: 'Dikey', landscape: 'Yatay' 
 // density: comfortable (rahat) · compact (sıkı). Ekran + yazdırma + DOCX'e
 // uygulanır; UDF tablo kenarlığı UYAP şablonundan gelir (UDF'e uygulanmaz).
 export const REPORT_TABLE_STYLES = ['grid', 'lines', 'plain'];
+// v2.386 — KURUMSAL BELGE TASARIMI (yalnız GÖRSEL). İki tercih:
+// künye düzeni (iki sütunlu sade / klasik tablo) ve tablo görünümü
+// (nötr gri / mevcut koyu mavi). İçerik, durum ve hesaplar DEĞİŞMEZ.
+export const REPORT_COVER_LAYOUTS = ['simple', 'classic'];
+export const REPORT_COVER_LAYOUT_LABEL = { simple: 'İki sütunlu sade', classic: 'Klasik tablo' };
+export const REPORT_TABLE_THEMES = ['neutral', 'classic'];
+export const REPORT_TABLE_THEME_LABEL = { neutral: 'Nötr gri', classic: 'Koyu mavi' };
 export const REPORT_TABLE_STYLE_LABEL = { grid: 'Tam çerçeve', lines: 'Yalnız yatay çizgi', plain: 'Çizgisiz' };
 export const REPORT_DENSITIES = ['comfortable', 'compact'];
 export const REPORT_DENSITY_LABEL = { comfortable: 'Rahat', compact: 'Sıkı' };
@@ -1354,7 +1361,10 @@ export function emptyReportFormat(over = {}) {
     orientation: 'portrait',
     // v2.372 — yeni dosya: yalnız yatay çizgi + rahat yoğunluk (Öneri A görünümü).
     tableStyle: 'lines',
-    density: 'comfortable'
+    density: 'comfortable',
+    // v2.386 — kurumsal varsayılan: sade resmî künye + nötr tablo.
+    coverFields: 'simple',
+    tableTheme: 'neutral'
   };
   return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };
 }
@@ -1395,7 +1405,11 @@ export function normalizeReportFormat(src) {
       : REPORT_DENSITIES.includes(src.density)
         ? src.density
         : base.density;
-  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation, tableStyle, density };
+  // v2.386 — tasarım tercihleri. Tanımsızsa (eski dosya) yeni kurumsal
+  // varsayılan uygulanır: sade künye + nötr tablo. Geçersiz değer base'e döner.
+  const coverFields = REPORT_COVER_LAYOUTS.includes(src.coverFields) ? src.coverFields : base.coverFields;
+  const tableTheme = REPORT_TABLE_THEMES.includes(src.tableTheme) ? src.tableTheme : base.tableTheme;
+  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation, tableStyle, density, coverFields, tableTheme };
 }
 
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------

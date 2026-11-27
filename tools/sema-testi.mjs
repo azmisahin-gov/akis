@@ -34,6 +34,10 @@ import {
   SPEAKER_GENDER_DEFS,
   MEDIUM_TYPE_DEFS,
   TEAM_ROLE_DEFS,
+  emptyReportFormat,
+  normalizeReportFormat,
+  REPORT_COVER_LAYOUTS,
+  REPORT_TABLE_THEMES,
   STATUS_LABEL,
   CASE_STATUS_LABEL,
   REVIEW_LABEL,
@@ -1899,6 +1903,23 @@ console.log('\n[10] Şemanın tek geçerli yapı olması');
   eq('önizleme: iade ilerlemesi', compareCases(mine2, theirs2).physical.returnsAdvanced, 1);
   const m2 = mergeCases(mine2, theirs2);
   ok('birleştirme: iade bilgisi alınır', m2.merged.physicalFile.items[0].returned === true && m2.merged.physicalFile.items[0].returnSeal === 'M9');
+}
+
+// v2.386 — Kurumsal belge tasarımı tercihleri (yalnız görsel).
+{
+  const base = emptyReportFormat();
+  eq('varsayılan künye: sade', base.coverFields, 'simple');
+  eq('varsayılan tablo: nötr', base.tableTheme, 'neutral');
+  const n1 = normalizeReportFormat({});
+  eq('eski dosya: sade künye', n1.coverFields, 'simple');
+  eq('eski dosya: nötr tablo', n1.tableTheme, 'neutral');
+  const n2 = normalizeReportFormat({ coverFields: 'classic', tableTheme: 'classic' });
+  eq('klasik künye korunur', n2.coverFields, 'classic');
+  eq('klasik tablo korunur', n2.tableTheme, 'classic');
+  const n3 = normalizeReportFormat({ coverFields: 'x', tableTheme: 'y' });
+  eq('geçersiz künye varsayılana döner', n3.coverFields, 'simple');
+  eq('geçersiz tablo varsayılana döner', n3.tableTheme, 'neutral');
+  eq('tercih listeleri', REPORT_COVER_LAYOUTS.length === 2 && REPORT_TABLE_THEMES.length === 2, true);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failed} kaldı ==`);
 process.exit(failed === 0 ? 0 : 1);

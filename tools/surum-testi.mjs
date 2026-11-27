@@ -208,7 +208,9 @@ const REQUIRED_TOPICS = [
   // v2.384 — belge akışı: kısa bölümler akar, tablo notu tabloyla kalır.
   ['belge akışı', /Belge akışı|keepLines|tek paragraf kalan sayfa/i],
   // v2.385 — her kayıt yeni sayfa + DOCX XML güvenliği.
-  ['kayıt yeni sayfa / XML güvenliği', /Her kayıt yeni sayfadan|XML güvenliği|xesc/i]
+  ['kayıt yeni sayfa / XML güvenliği', /Her kayıt yeni sayfadan|XML güvenliği|xesc/i],
+  // v2.386 — kurumsal belge tasarımı (üst/alt bilgi, künye, tablo teması).
+  ['kurumsal belge tasarımı', /Kurumsal belge tasarımı|İki sütunlu sade|Nötr gri/]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

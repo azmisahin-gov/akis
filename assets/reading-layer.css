@@ -3678,14 +3678,13 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
    Yalnız GÖRSEL. Metin DEĞİŞMEZ → üç çıktı (HTML/DOCX/UDF) aynı metni üretir.
    Seçiciler `.report-paper` önekli: app.css kurallarını özgüllükle ezer, CSS
    borcu nöbetçisini (tam-seçici eşleşmesi) artırmaz. */
-/* Kapak: çerçeveli başlık bandı */
+/* Kapak (v2.386): KUTUSUZ — çerçeve/renkli bant/gölge yok; yalnız tipografi. */
 .report-paper .paper-title {
-  border: 1px solid var(--paper-line);
-  border-top: 4px solid var(--paper-head);
-  border-radius: 4px;
-  padding: 22px 18px 18px;
-  margin: 26px 0 20px;
-  background: var(--paper-band);
+  border: 0;
+  border-radius: 0;
+  padding: 6px 0 2px;
+  margin: 10px 0 16px;
+  background: transparent;
 }
 /* v2.329 — `T.C.` satırı: AKİS belge tasarımı tercihi (mevzuat zorunluluğu
    değil). Ortada, SİYAH ve sade: kalın değil, harf aralığı yok. Punto
@@ -3694,8 +3693,8 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .report-paper .paper-title h2 { margin: 10px 0 6px; }
 /* Üst şerit: hafif vurgu */
 .report-paper .paper-topline { font-weight: 700; letter-spacing: .6px; }
-/* Bölüm başlığı: sol vurgu çubuğu + alt kural (mevcut border-bottom korunur) */
-.report-paper .paper-section h3 { border-left: 4px solid var(--paper-head); padding-left: 10px; }
+/* Bölüm başlığı (v2.386): arka plansız/kalın; sol çubuk YOK; alt ince çizgi
+   v2.310 kuralından gelir. */
 /* Tablo tipografisi: başlık bandı + zebra + ilk sütun */
 .report-paper .paper-table th { letter-spacing: .3px; }
 .report-paper .paper-table tbody tr:nth-child(even) td:not(:first-child) { background: var(--paper-band); }
@@ -4022,8 +4021,8 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .report-paper[data-table-style="plain"] .paper-table td { border: 0; }
 .report-paper[data-density="compact"] .paper-table th,
 .report-paper[data-density="compact"] .paper-table td { padding-top: 3px; padding-bottom: 3px; }
-.report-paper .paper-signature { border: 1px solid var(--paper-line); border-radius: 4px; padding: 10px 12px; }
-.report-paper .paper-footer { border-top: 3px double var(--paper-line); padding-top: 6px; }
+.report-paper .paper-signature { border: 0; border-top: 1px solid var(--paper-line); border-radius: 0; padding: 10px 0 0; background: transparent; }
+.report-paper .paper-footer { border-top: 1px solid var(--paper-line); padding-top: 6px; }
 
 /* v2.312 — Teslim tarihi zekâsı. Dashboard teslim paneli, durum çubuğu teslim
    göstergesi ve rapor ekranı teslim satırı. Hesap app.js'te `deliveryInfo`;
@@ -4588,21 +4587,14 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .print-chrome > tbody > tr,
 .print-chrome > tbody > tr > td { display: block; }
 @media print {
-  .print-chrome { display: table; width: 100%; border-collapse: collapse; }
-  .print-chrome > thead { display: table-header-group; }
-  .print-chrome > tfoot { display: table-footer-group; }
-  .print-chrome > tbody { display: table-row-group; }
-  .print-chrome > tbody > tr { display: table-row; }
-  .print-chrome > tbody > tr > td { display: table-cell; padding: 0; }
-  .print-chrome-hdr {
-    display: flex; justify-content: space-between; align-items: baseline;
-    gap: 8mm; border-bottom: .5pt solid var(--paper-line); padding-bottom: 2mm;
-    font-size: 9pt; color: var(--paper-muted);
-  }
-  .print-chrome-ftr {
-    text-align: center; border-top: .5pt solid var(--paper-line);
-    padding-top: 2mm; font-size: 9pt; color: var(--paper-muted);
-  }
+  /* v2.386 — Üst/alt bilgi artık @page margin box'larında; akış iskeleti
+     (thead/tfoot) KULLANILMAZ. Çift başlık/altlık oluşmaz. */
+  .print-chrome { display: block; width: 100%; border-collapse: collapse; }
+  .print-chrome > thead,
+  .print-chrome > tfoot { display: none; }
+  .print-chrome > tbody,
+  .print-chrome > tbody > tr,
+  .print-chrome > tbody > tr > td { display: block; }
 }
 
 /* ============================================================================
@@ -4746,3 +4738,46 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
   .report-paper .paper-section > p:has(+ table) { break-after: avoid; page-break-after: avoid; }
   .report-paper .paper-section > h4 { break-after: avoid; page-break-after: avoid; }
 }
+
+
+/* ============================================================================
+   v2.386 — KURUMSAL BELGE TASARIMI (yalnız GÖRSEL; içerik değişmez)
+   ----------------------------------------------------------------------------
+   Kapak hiyerarşisi, iki sütunlu sade künye, nötr tablo teması. Renkler
+   `--paper-*` token'larından; tema (açık/koyu/sepya) yalnız ekranı etkiler,
+   kâğıt ve çıktı değişmez.
+   ========================================================================== */
+/* Kapak: mahkeme ortalı/kalın; BİLİRKİŞİ RAPORU en belirgin; uzmanlık ve not
+   daha küçük. Punto ölçeği `--paper-scale` ile kullanıcı puntosuna uyar. */
+.report-paper .paper-title .paper-court { font-size: calc(20px * var(--paper-scale)); font-weight: 700; }
+.report-paper .paper-title .paper-type { font-size: calc(30px * var(--paper-scale)); font-weight: 800; letter-spacing: .6px; }
+.report-paper .paper-title .paper-family { font-size: calc(12px * var(--paper-scale)); letter-spacing: 1px; }
+.report-paper .paper-title .paper-expert { font-size: calc(12px * var(--paper-scale)); }
+.report-paper .paper-title .paper-expert-note { font-size: calc(11px * var(--paper-scale)); }
+
+/* Künye: iki sütunlu sade yerleşim. Dikey bölme çizgisi, renkli hücre, kart,
+   yuvarlatılmış köşe ve gölge YOK. Etiket küçük/gri/büyük harf; değer koyu. */
+.report-paper .paper-kunye { margin: 2px 0 10px; }
+.report-paper .kunye-row {
+  display: grid; grid-template-columns: .95fr 1.05fr .95fr 1.05fr;
+  column-gap: 14px; padding: 4px 0;
+}
+/* Uzun alan: etiket üstte, değer altta; tam genişlik (dar sütunda bölünmez). */
+.report-paper .kunye-row.kunye-wide { grid-template-columns: 1fr; row-gap: 2px; }
+.report-paper .kunye-label {
+  font-size: var(--fs-2xs); line-height: 1.35; color: var(--paper-muted);
+  letter-spacing: .4px; font-weight: 600;
+}
+.report-paper .kunye-value {
+  font-size: calc(11px * var(--paper-scale)); line-height: 1.5;
+  color: var(--paper-ink); font-weight: 500; overflow-wrap: anywhere;
+}
+
+/* Tablo teması: NÖTR GRİ (varsayılan) — açık gri başlık, koyu kalın metin,
+   ince açık gri çizgiler, beyaz/çok hafif nötr gövde. Koyu mavi dolgu yok. */
+.report-paper[data-table-theme="neutral"] .paper-table { border-top: 1px solid var(--paper-line); border-bottom: 1px solid var(--paper-line); }
+.report-paper[data-table-theme="neutral"] .paper-table th {
+  background: var(--paper-band); color: var(--paper-ink);
+  border-bottom: 1px solid var(--paper-line);
+}
+.report-paper[data-table-theme="neutral"] .paper-table td { border-color: var(--paper-line); }

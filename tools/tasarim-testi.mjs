@@ -2956,12 +2956,14 @@ console.log('\n[2dx] Kapak sırası + yazdırma üst/alt bilgi (v2.363)');
   check('iskelette thead/tfoot var', /<thead>[\s\S]{0,200}<tfoot>/.test(html));
   check('üst/alt bilgi konakları var', /id="printChromeHdr"/.test(html) && /id="printChromeFtr"/.test(html));
   check('ekranda iskelet gizli', /\.print-chrome > thead,[\s\S]{0,80}\.print-chrome > tfoot \{ display: none; \}/.test(css));
-  check('yazdırmada başlık her sayfada', /\.print-chrome > thead \{ display: table-header-group; \}/.test(css));
-  check('yazdırmada altlık her sayfada', /\.print-chrome > tfoot \{ display: table-footer-group; \}/.test(css));
+  // v2.386 — üst/alt bilgi akış iskeletinde DEĞİL, @page margin box'larında.
+  check('yazdırmada üst bilgi @page kutusunda', /@top-left \{ content: \$\{cssStr\(fileNo\)\}/.test(app) && /counter\(page\)/.test(app));
+  check('yazdırmada alt bilgi @page kutusunda', /@bottom-right \{ content: "Sayfa " counter\(page\)/.test(app));
+  check('akış iskeleti yazdırmada gizli', /\.print-chrome > thead,[\s\S]{0,120}\.print-chrome > tfoot \{ display: none; \}/.test(css));
   check('iskelet render çağrısı bağlı', /renderPrintChrome\(c\);/.test(app));
   // DOCX üst/alt bilgi: 3 sütun + sayfa alanları.
   check('DOCX üst bilgi 3 sütun tablo', /const chromeTable = \(cells, border\)/.test(app));
-  check('DOCX üst sol "Dosya No"', /Dosya No: \$\{c\.fileNo \|\| '—'\}/.test(app));
+  check('DOCX üst sol "Dosya No"', /Dosya No: \$\{\(c && c\.fileNo\) \|\| '—'\}/.test(app));
   check('DOCX alt bilgi PAGE/NUMPAGES', /w:instr="PAGE"[\s\S]{0,200}w:instr="NUMPAGES"/.test(app));
   check('eski birleşik üst bilgi kalktı', !/BİLİRKİŞİ RAPORU  \|  \$\{REPORT_TEXT\.toplineField\}/.test(app));
 }
@@ -3119,6 +3121,33 @@ console.log('\n[2en] Her kayıt yeni sayfadan; DOCX XML doğrulanır (v2.385)');
   check('DOCX XML yazılmadan doğrulanır', /DOCX XML yapısı doğrulanamadı; çıktı oluşturulmadı/.test(app));
   check('kontrol karakterleri atılır (xesc)', /u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F/.test(app));
   check('UDF kayıt tablosu korunur (ek sayfa sonu yok)', !/if \(!compact && i > 0\) el\.push\(pageBreak\(\)\)/.test(app));
+}
+
+console.log('\n[2ep] Kurumsal belge tasarımı: üst/alt bilgi, künye, tema (v2.386)');
+{
+  const app = read('assets/app.js');
+  const css = read('assets/reading-layer.css');
+  // ÜST/ALT BİLGİ: gerçek sayfa kenarı (@page margin box). Uydurma numara yok.
+  check('@page üst-sol dosya no', /@top-left \{ content: \$\{cssStr\(fileNo\)\}/.test(app));
+  check('@page üst-sağ rapor başlığı', /@top-right \{ content: \$\{cssStr\(heading\)\}/.test(app));
+  check('@page alt-sol uzmanlık', /@bottom-left \{ content: \$\{cssStr\(expert\)\}/.test(app));
+  check('@page alt-sağ gerçek sayfa', /@bottom-right \{ content: "Sayfa " counter\(page\) " \/ " counter\(pages\)/.test(app));
+  check('üst/alt bilgi 8–9 pt koyu gri', /font: 9pt \$\{fontCss\}; color: #595959/.test(app) && /font: 8pt \$\{fontCss\}; color: #595959/.test(app));
+  check('ince ayırıcı çizgi', /border-bottom: 0\.5pt solid #BFC7CF/.test(app));
+  const pageBlock = (app.match(/@page \{ size: A4[\s\S]{0,900}/) || [''])[0];
+  check('üst/alt bilgide ürün adı/sürüm yok', !/AKİS|APP_VERSION/.test(pageBlock));
+  // KÜNYE: iki sütunlu sade grid; dikey bölme/renkli hücre yok.
+  check('künye sade grid', /\.report-paper \.kunye-row \{[\s\S]{0,180}grid-template-columns/.test(css));
+  check('künye uzun alan tam genişlik', /\.kunye-row\.kunye-wide \{ grid-template-columns: 1fr/.test(css));
+  check('künye etiketi token rengi', /\.kunye-label \{[^}]*var\(--paper-muted\)/.test(css));
+  check('künyede gölge/kart yok', !/\.paper-kunye[^{]*\{[^}]*(box-shadow|border-radius|background)/.test(css));
+  // TABLO TEMASI: nötr varsayılan; koyu mavi yalnız klasik tercihte.
+  check('nötr tablo başlığı açık gri', /\[data-table-theme="neutral"\] \.paper-table th \{[^}]*background: var\(--paper-band\)/.test(css));
+  check('nötr tablo koyu mavi dolgu kullanmaz', /\[data-table-theme="neutral"\] \.paper-table th \{[^}]*color: var\(--paper-ink\)/.test(css));
+  // KAPAK hiyerarşisi + tasarım tercihleri.
+  check('kapak sınıfları ayrı', /paper-court/.test(app) && /paper-type/.test(app));
+  check('tasarım tercihleri panelde', /data-fmt-cover/.test(app) && /data-fmt-theme/.test(app));
+  check('tercihler kalıcı biçimde', /coverFields: coverFields \? coverFields\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

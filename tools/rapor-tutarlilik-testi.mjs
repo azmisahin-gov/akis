@@ -2118,5 +2118,68 @@ console.log('\n[Senaryo 63] her kayıt yeni sayfa + ikinci tablo 5 satır (v2.38
   check('satırlar bölünmez (cantSplit)', (table.match(/<w:cantSplit\/>/g) || []).length === 6, String((table.match(/<w:cantSplit\/>/g) || []).length));
 }
 
+
+// Senaryo 64 (v2.386): kurumsal belge tasarımı — üst/alt bilgi, künye, tablo
+// teması, kapak eki. Yalnız GÖRSEL; içerik değişmez.
+console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v2.386)');
+{
+  const mk = (fmt) => {
+    const c = withMaterial();
+    c.fileNo = '2026/214 E.';
+    c.court = 'Antalya 4. Asliye Hukuk Mahkemesi';
+    c.plaintiff = 'Deniz Aras';
+    c.defendant = 'Mert Yalçın';
+    c.expertName = 'Örnek Bilirkişi';
+    c.registryNo = 'B-1234';
+    c.report = { format: fmt || {}, impartiality: 'Engel bulunmamaktadır.' };
+    return c;
+  };
+  const doc = async (c) => {
+    downloads.length = 0;
+    setCase(c);
+    await makeDocx();
+    const zip = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+    return {
+      doc: await zip.file('word/document.xml').async('string'),
+      hdr: await zip.file('word/header1.xml').async('string'),
+      ftr: await zip.file('word/footer1.xml').async('string')
+    };
+  };
+  const d1 = await doc(mk());
+  check('üst bilgi: sol Dosya No', /Dosya No: 2026\/214 E\./.test(d1.hdr));
+  check('üst bilgi: sağ rapor başlığı', /BİLİRKİŞİ RAPORU/.test(d1.hdr));
+  check('üst bilgi: ince gri çizgi', /w:bottom w:val="single" w:sz="4" w:color="BFC7CF"/.test(d1.hdr));
+  check('alt bilgi: uzmanlık (kod – ad)', /56\.12 – Ses Kayıtlarının Metin Haline Dönüştürülmesi/.test(d1.ftr));
+  check('alt bilgi: gerçek PAGE / NUMPAGES', /w:instr="PAGE"/.test(d1.ftr) && /w:instr="NUMPAGES"/.test(d1.ftr));
+  check('sayfa numarası 1den başlar', /<w:pgNumType w:start="1"\/>/.test(d1.doc));
+  check('künye kenarlıksız (dikey bölme yok)', /<w:tblBorders><w:top w:val="nil"\/><w:left w:val="nil"\/>/.test(d1.doc));
+  check('künye etiketleri korunur', /DOSYA NO/.test(d1.doc) && /DAVA KONUSU/.test(d1.doc) && /TARAFSIZLIĞI ETKİLEYEBİLECEK HÂL BEYANI/.test(d1.doc));
+  check('kapak eki kesme işaretsiz', /MAHKEMESİNE/.test(d1.doc) && !/MAHKEMESİ’NE/.test(d1.doc));
+  check('nötr tablo: açık gri başlık', /w:shd w:fill="EDF1F5"/.test(d1.doc));
+  check('nötr tablo: koyu mavi dolgu YOK', !/w:shd w:fill="1C426B"/.test(d1.doc));
+  const d2 = await doc(mk({ coverFields: 'classic', tableTheme: 'classic' }));
+  check('klasik tema: koyu mavi başlık dolgusu', /w:shd w:fill="1C426B"/.test(d2.doc));
+  check('klasik künye: etiket sütunu gölgeli', /w:shd w:fill="EAF0F6"/.test(d2.doc));
+
+  // UDF: aynı tercihler metin/XML düzeyinde.
+  const udf = async (c) => {
+    downloads.length = 0;
+    setCase(c);
+    await makeUdf();
+    const zip = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+    return zip.file('content.xml').async('string');
+  };
+  const u1 = await udf(mk());
+  check('UDF künye etiketleri', /DOSYA NO: /.test(u1) && /DAVACI: /.test(u1));
+  check('UDF nötr tablo: açık başlık dolgusu', /fillColor="-1380106"/.test(u1));
+  check('UDF nötr: koyu mavi başlık dolgusu YOK', !/fillColor="-14925205"/.test(u1));
+  const u2 = await udf(mk({ coverFields: 'classic', tableTheme: 'classic' }));
+  check('UDF klasik: koyu mavi başlık dolgusu', /fillColor="-14925205"/.test(u2));
+
+  // Üç çıktı aynı metin (kapak eki).
+  const H = htmlText(mk()), U = await udfText(mk()), D = await docxText(mk());
+  checkShared('kapak eki kesme işaretsiz (üç çıktı)', 'MAHKEMESİNE', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

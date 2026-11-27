@@ -6,12 +6,25 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.385.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.386.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.386 — Kurumsal belge tasarımı
+
+**KULLANICI NE GÖRECEK:**
+- **Üst bilgi:** solda **Dosya No**, sağda **BİLİRKİŞİ RAPORU**; ince gri çizgi, 8–9 punto koyu gri. Dosya numarası **aynen** (E./Esas/K. korunur).
+- **Alt bilgi:** solda **uzmanlık alanı** (dosyadaki alandan), sağda **gerçek “Sayfa N / M”**; ilk sayfa **1**.
+- **Kapak:** mahkeme adı **kesme işareti olmadan** (`MAHKEMESİNE`); **BİLİRKİŞİ RAPORU** en belirgin başlık; kutu/bant/gölge yok.
+- **Künye:** iki sütunlu sade yerleşim; renkli hücre, dikey bölme, kart yok; **bilgi kaybı yok**, boş alan uydurulmaz.
+- **Tablolar:** varsayılan **nötr gri** (açık başlık, ince çizgi); koyu mavi dolgu yok.
+- **Tercihler:** Rapor → Ayarlar → Biçim → **Künye düzeni** (sade/klasik) ve **Tablo görünümü** (nötr/koyu mavi). İçerik ve durumlar değişmez.
+- **UDF:** üst/alt bilgi **eklenmedi** (şemada doğrulanmış alan yok); statik metinle taklit edilmez.
+
+**ÖLÇÜM (gerçek Chromium + LibreOffice 25.2.3.2):** DOCX **16 sayfa**; üst bilgi `Dosya No: 2026/214 E.` + `BİLİRKİŞİ RAPORU`, alt bilgi `56.12 – …` + `Sayfa 1 / 16`; `pgNumType start=1`; künye kenarlıksız 4 sütun; nötr başlık dolgusu `EDF1F5` (85), koyu mavi dolgu **0**; klasik tercihte `1C426B`. HTML yazdırma **20 sayfa**, `Sayfa 1 / 20` … `Sayfa 20 / 20` (gerçek `counter(page)`), üst/alt bilgi `@page` margin box'larında; kapak kutusuz; tablo başlığı `rgb(246,248,251)`. UDF künye etiketleri ve nötr başlık dolgusu doğrulandı; üst/alt bilgi **yok**. Klasik tercih: HTML `rgb(22,50,79)`/beyaz, DOCX `1C426B`, UDF koyu mavi dolgu. Testler **2859 birim + 565 şema** + rapor (Senaryo 64) + sürüm + tasarım yeşil.
 
 ## v2.385 — Her kayıt yeni sayfada; deşifre tablosu satırları
 

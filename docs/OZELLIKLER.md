@@ -1,10 +1,19 @@
-# Özellikler (v2.385 — mevcut durum)
+# Özellikler (v2.386 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 
 
+
+
+## Kurumsal belge tasarımı (v2.386)
+
+- **Üst/alt bilgi:** solda Dosya No / uzmanlık alanı, sağda BİLİRKİŞİ RAPORU / gerçek “Sayfa N / M”; 8–9 pt koyu gri, ince çizgi. DOCX `PAGE`/`NUMPAGES`, HTML `@page` margin box (`counter(page)`).
+- **Kapak:** `MAHKEMESİNE` (kesme işaretsiz), BİLİRKİŞİ RAPORU en belirgin, kutusuz.
+- **Künye:** iki sütunlu sade (varsayılan) / klasik tablo; uzun alanlar tam genişlik; bilgi kaybı yok.
+- **Tablo:** nötr gri (varsayılan) / koyu mavi; seçim Rapor → Ayarlar → Biçim.
+- **UDF:** üst/alt bilgi yok (şemada doğrulanmış alan yok); taklit edilmez. Ayrıntı: `docs/BELGE_TASARIM_STANDARDI.md`.
 
 ## Deşifre tablosu satırları ve DOCX XML güvenliği (v2.385)
 

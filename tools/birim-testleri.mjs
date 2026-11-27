@@ -116,6 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
   'reviewTableText', 'ambiguousSegmentNotes', 'xesc',
+  'coverFieldPlan', 'coverFieldsLayout', 'coverFieldsSimpleHtml', 'coverLines', 'coverLine',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -4764,9 +4765,10 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 {
   console.log('[104] Rapor kâğıdı biçimi (v2.253)');
   const css = fs.readFileSync(path.join(ROOT, 'assets/reading-layer.css'), 'utf8');
-  eq('kapak bandı (4px üst çizgi)', /\.report-paper \.paper-title \{[\s\S]*?border-top:\s*4px solid/.test(css), true);
-  eq('kapak zemini paper-band', /\.report-paper \.paper-title \{[\s\S]*?background:\s*var\(--paper-band\)/.test(css), true);
-  eq('bölüm başlığı sol vurgu (4px)', /\.report-paper \.paper-section h3 \{[\s\S]*?border-left:\s*4px solid/.test(css), true);
+  // v2.386 — kurumsal sade tasarım: kapak KUTUSUZ, başlıkta sol çubuk YOK.
+  eq('kapak kutusuz (çerçeve yok)', /\.report-paper \.paper-title \{[\s\S]*?border:\s*0;/.test(css), true);
+  eq('kapak zemini şeffaf', /\.report-paper \.paper-title \{[\s\S]*?background:\s*transparent/.test(css), true);
+  eq('bölüm başlığı sol çubuk YOK', !/\.report-paper \.paper-section h3 \{[\s\S]{0,80}border-left:\s*4px/.test(css), true);
   eq('tablo zebra (çift satır)', /\.report-paper \.paper-table tbody tr:nth-child\(even\)/.test(css), true);
   eq('yazdırma: tablo satırı bölünmez', css.includes('.report-paper .paper-table tr { break-inside: avoid'), true);
   eq('yazdırma: başlık yalnız kalmaz', css.includes('.report-paper .paper-section h3 { break-after: avoid'), true);
@@ -6561,13 +6563,13 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
     true
   );
   eq(
-    'imza bloğu kutusu',
-    /\.report-paper \.paper-signature \{ border: 1px solid var\(--paper-line\)/.test(css),
+    'imza bloğu kutusuz (ince çizgi)',
+    /\.report-paper \.paper-signature \{ border: 0; border-top: 1px solid var\(--paper-line\)/.test(css),
     true
   );
   eq(
-    'alt bilgi çift kural',
-    /\.report-paper \.paper-footer \{ border-top: 3px double var\(--paper-line\)/.test(css),
+    'alt bilgi ince tek kural',
+    /\.report-paper \.paper-footer \{ border-top: 1px solid var\(--paper-line\)/.test(css),
     true
   );
   const block = css.slice(css.indexOf('v2.310'));
@@ -8222,6 +8224,48 @@ console.log('\n== [189] DOCX XML güvenliği: kontrol karakteri + kaçış (v2.3
   eq('& kaçırılır', T.xesc('a & b'), 'a &amp; b');
   eq('< kaçırılır', T.xesc('<x>'), '&lt;x&gt;');
   eq('Türkçe bozulmaz', T.xesc('İğdır şöyle'), 'İğdır şöyle');
+}
+
+console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
+{
+  // KURAL: mevcut künye bilgilerinin HİÇBİRİ kaybolmaz; boş alan satır üretmez.
+  const c = T.emptyCaseForTest({ id: 'k1' });
+  c.fileNo = '2026/214 E.';
+  c.court = 'Antalya 4. Asliye Hukuk Mahkemesi';
+  c.plaintiff = 'Deniz Aras';
+  c.defendant = 'Mert Yalçın';
+  c.plaintiffCounsel = 'Av. Ece';
+  c.subject = 'Depozito';
+  c.expertName = 'Örnek Bilirkişi';
+  c.registryNo = 'B-1';
+  c.assignmentDate = '2026-01-01';
+  c.reportDate = '2026-02-10';
+  c.expertField = '56.12 – Ses Kayıtlarının Metin Haline Dönüştürülmesi';
+  c.report = { impartiality: 'Engel yok.' };
+  const plan = T.coverFieldPlan(c);
+  const keys = [...plan.pairs.flatMap((p) => [p.left?.key, p.right?.key]), ...plan.wide.map((r) => r.key)].filter(Boolean);
+  for (const k of ['fileNo', 'court', 'plaintiff', 'defendant', 'plaintiffCounsel', 'subject', 'expertName', 'registryNo', 'assignmentDate', 'reportDate', 'expertField', 'impartiality']) {
+    eq(`künye kaybı yok: ${k}`, keys.includes(k), true);
+  }
+  eq('eşleşme sırası: dosya no + görevlendirme tarihi', plan.pairs[0].left.key, 'fileNo');
+  eq('eşleşme sırası: dosya no + görevlendirme tarihi (sağ)', plan.pairs[0].right.key, 'assignmentDate');
+  // Boş alan satır üretmez.
+  const c2 = T.emptyCaseForTest({ id: 'k2' });
+  c2.fileNo = '2026/1';
+  const p2 = T.coverFieldPlan(c2);
+  const rows2 = [...p2.pairs.flatMap((p) => [p.left, p.right]), ...p2.wide].filter(Boolean);
+  eq('boş alan satır üretmez', rows2.every((r) => r.value && r.value !== '—'), true);
+  eq('dosya no planda', rows2.some((r) => r.key === 'fileNo'), true);
+  // Düzen tercihi.
+  c.report = { format: { coverFields: 'classic', tableTheme: 'classic' } };
+  eq('klasik künye tercihi okunur', T.coverFieldsLayout(c), 'classic');
+  c.report = { format: { coverFields: 'simple', tableTheme: 'neutral' } };
+  eq('sade künye tercihi okunur', T.coverFieldsLayout(c), 'simple');
+  eq('sade künye HTML etiketi taşır', /kunye-label/.test(T.coverFieldsSimpleHtml(c)), true);
+  // Kapak: kurum adına ek KESME İŞARETSİZ.
+  const court = T.coverLine(c, 'court');
+  eq('mahkeme eki kesme işaretsiz', /MAHKEMESİNE$/.test(court), true);
+  eq('kesme işareti yok', /’/.test(court), false);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
