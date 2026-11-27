@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.369.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.370.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10004,3 +10004,21 @@ sol iskelet **232 px** · yatay taşma **0** · JS hatası **0**.
    görünüm yalnız ekran; UDF sınırı belgelenir).
 3. **v2.373 — Sol iskelet daraltma** (48 px ince ray; tercih tarayıcıda).
 4. **v2.374 — Uçtan uca doğrulama** (PDF/DOCX/UDF + 3 tema + 5 genişlik).
+
+## EK DÜZELTME (v2.370) — "Varsayılan düzen" tek tık
+
+Kullanıcı: *"Mevcut dosyaların sırası değişmiyor; başlangıç düzenini getirecek bir
+ayar olsa — 'Tümünü aç/kapat' yanına 'Varsayılanlar'."*
+
+- İskelet altındaki **“Tümünü aç / Tümünü kapat”** yanına **“Varsayılan düzen”**
+  düğmesi (`data-report-default-layout`). `buildDefaultReportLayout(c)` **saf**
+  hesap; `applyDefaultReportLayout()` onay + `snapshotForUndo` + Ctrl+Z.
+- **Kapsam:** bölüm görünürlüğü + sıra + numara + `annexPlacement` (Öneri A).
+  **Korunur:** özel ek (xN), serbest blok, kapatılmış ek tercihi, başlık/etiket/
+  tablo alanları, kanıt/onay/metin.
+- **Mevcut dosyalar siz basmadıkça değişmez.** Beğenilen düzen “＋ Bu düzeni
+  kaydet” ile profil olarak saklanır.
+- Ölçüm (demo): EK-7/EK-8 0→1, gövde 1..9 + EKLER; ↶ 2 → 1→0; JS 0.
+- Test: `birim [180]` (11), `tasarim [2ef]` (3).
+
+Sıradaki: **v2.371 sürükle-bırak** (gövde ↔ ek).

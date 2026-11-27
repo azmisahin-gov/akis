@@ -156,6 +156,7 @@ const EXPOSE = [
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
   'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
+  'buildDefaultReportLayout',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
@@ -6031,6 +6032,42 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('yeni dosya speakers→ek8', fresh.report.annexPlacement.speakers, 'ek8');
   eq('yeni dosya s5 gövdede kalır', fresh.report.annexPlacement.s5, undefined);
   eq('yeni dosya yine de BOŞ sayılır', T.isEmptyCase(fresh), true);
+}
+
+
+// [180] v2.370 — "Varsayılan düzen" (Öneri A) saf hesabı: yerleşim başlangıca
+// döner; ÖZEL EK ve SERBEST BLOK korunur; kanıt/metin dokunulmaz.
+{
+  console.log('[180] Varsayılan düzen hesabı (v2.370)');
+  const c = T.emptyCaseForTest({
+    id: 'cDL',
+    report: {
+      sections: { s3: false, origin: false },
+      layout: { order: ['s6', 's1', 's2'], annexOrder: ['x1', 'ek1'], annexes: { ek1: false } },
+      annexPlacement: { s5: true },
+      numbering: 'letters',
+      blocks: [{ id: 'b1', title: 'EK NOT', text: 'metin', on: true }]
+    }
+  });
+  const st = T.buildDefaultReportLayout(c);
+  // Görünürlük varsayılan: kapatılan s3/origin yeniden açılır.
+  eq('varsayılan: s3 açık', st.sections.s3, true);
+  eq('varsayılan: origin açık', st.sections.origin, true);
+  // Sıra kanonik: s1 başta; serbest blok annex'ten önce.
+  eq('sıra kanonik baş (s1)', st.layout.order[0], 's1');
+  const iFree = st.layout.order.indexOf('free:b1');
+  const iAnnex = st.layout.order.indexOf('annex');
+  eq('serbest blok korunur', iFree >= 0, true);
+  eq('serbest blok annex öncesi', iFree >= 0 && iFree < iAnnex, true);
+  // Yerleşim varsayılan (Öneri A): origin→ek7, s5 gövdede.
+  eq('yerleşim origin→ek7', st.annexPlacement.origin, 'ek7');
+  eq('yerleşim s5 taşınmaz', st.annexPlacement.s5, undefined);
+  eq('numara auto', st.numbering, 'auto');
+  // Özel ek (x1) KORUNUR; kapatılan yerleşik ek (ek1=false) KORUNUR.
+  eq('özel ek korunur', st.layout.annexOrder.includes('x1'), true);
+  eq('kapalı ek korunur', st.layout.annexes.ek1, false);
+  // Tüm gövde anahtarları sırada.
+  eq('tüm gövde anahtarları sırada', T.REPORT_BODY_ORDER.every((k) => st.layout.order.includes(k)), true);
 }
 
 

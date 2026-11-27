@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.369.**
+yazılır. **Güncel sürüm: v2.370.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.370 — "Varsayılan düzen" tek tık (TAMAMLANDI)
+
+- İskelet altındaki **“Tümünü aç / Tümünü kapat”** yanına **“Varsayılan düzen”**
+  düğmesi: bölüm görünürlüğü + sıra + numara + teknik bölümlerin gruplu eklere
+  yerleşimi **başlangıç (Öneri A)** değerine döner. Onay + Ctrl+Z.
+- **Saf hesap** `buildDefaultReportLayout(c)`; **özel ek (xN), serbest blok,
+  kapatılmış ek tercihi, başlık/etiket/kanıt KORUNUR.**
+- Mevcut dosyaların sırası **siz basmadıkça** değişmez; beğenilen düzen
+  “＋ Bu düzeni kaydet” ile profille saklanabilir.
+- Ölçüm (demo): EK-7/EK-8 0→1, gövde 1..9 + EKLER; ↶ 2 → 1→0; JS 0.
+- Test: `birim [180]` (11), `tasarim [2ef]` (3).
 
 ## v2.369 — Teknik bölümler gruplu eklere taşındı (TAMAMLANDI)
 

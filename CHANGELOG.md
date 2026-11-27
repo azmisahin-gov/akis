@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.369.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.370.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.370 — "Varsayılan düzen" tek tık (başlangıç düzeni)
+
+**KULLANICI NE GÖRECEK:** Rapor iskeletinin altında, **“Tümünü aç / Tümünü kapat”**
+yanında **“Varsayılan düzen”** düğmesi var. Basınca rapor **başlangıç (Öneri A)
+düzenine** döner: bölüm görünürlüğü, sıra, numara biçimi ve teknik bölümlerin
+gruplu eklere (EK-7…EK-10) yerleşimi varsayılana gelir. **Başlık/etiket/tablo
+alanları, özel ekler, serbest bloklar, kanıt ve onaylar DEĞİŞMEZ.** Onay ister;
+**Ctrl+Z** ile geri alınır. Mevcut dosyalarınızın sırası **siz basmadıkça
+değişmez**. Beğendiğiniz düzeni **“＋ Bu düzeni kaydet”** ile profil olarak
+saklayabilir, başka dosyalarda uygulayabilirsiniz.
+
+**DEĞİŞMEZ:** Varsayılan düzen yalnız **YERLEŞİMDİR**. Serbest bloklar EKLER'den
+önce korunur; kapatılmış yerleşik ek tercihi ve özel ek (xN) korunur; kanıt/metin/
+onay/özel başlık dokunulmaz.
+
+**ÖLÇÜM (gerçek Chromium 1440×900, demo):**
+| | Sonuç |
+|---|---|
+| Önce → Sonra | EK-7/EK-8: **0 → 1**; EK-7.1 var |
+| Gövde | **1..9 + EKLER** (teknik bölümler eklere) |
+| Geri alma | ↶ 2 → tıklayınca EK-7/EK-8: **1 → 0** |
+| JS hatası | **0** |
+| Testler | **2809 birim + 556 şema** + rapor + tasarım + sürüm yeşil |
 
 ## v2.369 — Teknik bölümler gruplu eklere taşındı (Öneri A)
 

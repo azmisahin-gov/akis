@@ -2521,6 +2521,14 @@ console.log('\n[2ee] Gruplu ekler + toplu Öneri A (v2.369)');
   check('geri alma raporu tazeler', /async function undoLast[\s\S]{0,1200}renderReport\(\)/.test(app));
 }
 
+console.log('\n[2ef] Varsayılan düzen düğmesi (v2.370)');
+{
+  const app = read('assets/app.js');
+  check('iskelette "Varsayılan düzen" düğmesi', /data-report-default-layout/.test(app) && /Varsayılan düzen/.test(app));
+  check('saf hesap fonksiyonu', /function buildDefaultReportLayout\(c\)/.test(app));
+  check('uygulama fonksiyonu (onaylı)', /async function applyDefaultReportLayout\(/.test(app) && /snapshotForUndo\('Varsayılan düzeni uygula'\)/.test(app));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

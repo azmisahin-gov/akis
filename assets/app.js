@@ -161,15 +161,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.369';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.369';
+} from './schema.js?v=2.370';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.370';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.369';
+const APP_VERSION = '2.370';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15438,7 +15438,7 @@ function renderReportSections(c) {
   host.innerHTML =
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
     profileBar +
-    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler.</span></div>`;
+    `<div class="rsec-actions"><button type="button" class="mini-button" data-report-default-layout="1" title="Bölüm görünürlüğü, sıra, numara ve teknik bölümlerin gruplu eklere yerleşimini başlangıç (Öneri A) düzenine döndürür. Başlık/etiket/özel ek/serbest blok/kanıt KORUNUR; onay ister, Ctrl+Z ile geri alınır.">Varsayılan düzen</button><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler. “Varsayılan düzen” başlangıç sırasını geri getirir; isterseniz profil olarak kaydedin.</span></div>`;
 }
 function setReportField(spec, on) {
   const c = currentCase();
@@ -15516,6 +15516,53 @@ async function applyPresentationPlacement() {
   persist();
   renderReport();
   showToast('Teknik bölümler gruplu eklere taşındı (EK-7…EK-10). Ctrl+Z ile geri alınabilir.');
+}
+// v2.370 — VARSAYILAN DÜZEN (Öneri A) saf hesabı: bölüm görünürlüğü, sıra,
+// numara ve teknik bölümlerin gruplu eklere yerleşimi başlangıç değerine döner.
+// ÖZEL BAŞLIK/ETİKET/EK (xN)/SERBEST BLOK/KANIT KORUNUR.
+function buildDefaultReportLayout(c) {
+  const layout = reportLayoutOf(c);
+  const freeKeys = ((c && c.report && c.report.blocks) || [])
+    .map((b) => (b && b.id ? freeBlockKey(b.id) : ''))
+    .filter(Boolean);
+  const order = [...REPORT_BODY_ORDER];
+  const ai = order.indexOf('annex');
+  if (ai >= 0) order.splice(ai, 0, ...freeKeys);
+  else order.push(...freeKeys);
+  const nextLayout = normalizeReportLayout({
+    order,
+    parent: {},
+    annexOrder: layout.annexOrder,
+    annexes: layout.annexes,
+    annexMeta: layout.annexMeta
+  });
+  return {
+    sections: emptyReportSections(),
+    layout: nextLayout,
+    annexPlacement: defaultAnnexPlacement(),
+    numbering: 'auto'
+  };
+}
+// v2.370 — "Varsayılan düzen" düğmesi: başlangıç (Öneri A) düzenini uygular.
+// Onay + Ctrl+Z. Yalnız YERLEŞİM değişir; kanıt/metin/onay/özel ek korunur.
+async function applyDefaultReportLayout() {
+  const c = currentCase();
+  if (!c) return;
+  const ok = await askConfirm(
+    'Varsayılan düzeni uygula',
+    'Bölüm görünürlüğü, sıra, numara biçimi ve teknik/ölçüm bölümlerinin gruplu eklere (EK-7…EK-10) yerleşimi BAŞLANGIÇ (Öneri A) düzenine dönecek. Başlık/etiket/tablo alanları, özel ekler, serbest bloklar, kanıt ve onaylar DEĞİŞMEZ. Devam edilsin mi?'
+  );
+  if (!ok) return;
+  snapshotForUndo('Varsayılan düzeni uygula');
+  const st = buildDefaultReportLayout(c);
+  c.report = c.report || {};
+  c.report.sections = st.sections;
+  c.report.layout = st.layout;
+  c.report.annexPlacement = st.annexPlacement;
+  c.report.numbering = st.numbering;
+  persist();
+  renderReport();
+  showToast('Varsayılan düzen (Öneri A) uygulandı. Ctrl+Z ile geri alınabilir.');
 }
 // Bölüm başlığını yaz (v2.285). Boş değer varsayılana döndürür. Başlık
 // `case.report.titles`ta tutulur; üç çıktı `reportHeadingText` üzerinden okur.
@@ -23191,6 +23238,10 @@ $('#reportSections')?.addEventListener('click', (e) => {
     removeReportAnnex(adel.dataset.reportAnnexDel);
     return;
   }
+  if (e.target.closest('[data-report-default-layout]')) {
+    applyDefaultReportLayout();
+    return;
+  }
   const b = e.target.closest('[data-report-sections-all]');
   if (!b) return;
   const c = currentCase();
@@ -24506,6 +24557,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.370': {
+    title: 'Varsayılan düzen tek tıkla',
+    body:
+      'Rapor iskeletinin altındaki “Tümünü aç / Tümünü kapat” yanına “Varsayılan düzen” düğmesi eklendi. Basınca bölüm görünürlüğü, sıra, numara biçimi ve teknik bölümlerin gruplu eklere (EK-7…EK-10) yerleşimi BAŞLANGIÇ (Öneri A) düzenine döner. Başlık/etiket/tablo alanları, özel ekler, serbest bloklar, kanıt ve onaylar KORUNUR; onay ister, Ctrl+Z ile geri alınır. Mevcut dosyalarınızın sırası siz basmadıkça değişmez. Beğendiğiniz düzeni “＋ Bu düzeni kaydet” ile profil olarak saklayabilirsiniz.'
+  },
   '2.369': {
     title: 'Teknik bölümler gruplu eklere taşındı',
     body:
