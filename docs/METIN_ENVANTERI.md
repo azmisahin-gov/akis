@@ -1,6 +1,6 @@
 # Metin Envanteri (uygulamadaki tüm belge metinleri)
 
-**Üretildiği uygulama sürümü:** v2.372 (kaynaktan okunur)
+**Üretildiği uygulama sürümü:** v2.373 (kaynaktan okunur)
 
 Bu dosya **koddaki güncel metinleri** tek yerde toplar. Amacı hukuk danışmanlığı ve
 denetimde “hangi metin, hangi belgede, hangi koşulda, kim düzenleyebilir” sorusunu
@@ -869,20 +869,20 @@ sabitlerinden gelmediği için gözden kaçabilir. Tarama bunu engeller.
 | `reportAnnexBlocks` | 16254 | belge metni | Dosyalar arası kişi kodu: aynı kişinin birden çok kayıttaki konuşmacıları; uzman eşleştirmesidir. |
 | `letterDefaultBody` | 16930 | belge metni | İncelemeye ilişkin teknik destek belgeleri EK-2 ve devamındaki eklerde sunulmuştur. |
 | `letterPaperHtml` | 17005 | belge metni | Bu alanları Dosya bilgileri çekmecesinden tamamlayın; eksik bilgiyle üst yazı üretilmez. |
-| `renderReport` | 17687 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
-| `renderReport` | 17698 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
-| `renderReport` | 17704 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
-| `renderReport` | 17707 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
-| `renderReport` | 17710 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
-| `renderReport` | 17714 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
-| `renderReport` | 17716 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
-| `renderReport` | 17724 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
-| `udfDocument` | 18894 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
-| `udfDocument` | 18897 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
-| `udfDocument` | 18902 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
-| `udfDocument` | 19509 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
-| `udfDocument` | 19520 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
-| `udfDocument` | 19521 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `renderReport` | 17718 | parça (dinamik) | gün önce geçti; rapor gecikmeli teslim ediliyor. |
+| `renderReport` | 17729 | parça (dinamik) | kaydın teslim bilgisi (ortam türü/teslim eden) girilmedi; raporda "—" olarak görünecek. |
+| `renderReport` | 17735 | parça (dinamik) | kaydın delil günlüğünde zincir kırığı var; günlük sonradan değiştirilmiş olabilir. |
+| `renderReport` | 17738 | parça (dinamik) | deşifre bölümü henüz uzman tarafından kontrol edilmedi. |
+| `renderReport` | 17741 | parça (dinamik) | bölüm "anlaşılmadı" olarak işaretlendi; bu bölümler için metin iddia edilmemelidir. |
+| `renderReport` | 17745 | parça (dinamik) | deşifre bölümünde anlamlı metin yok (dolgu/boş). |
+| `renderReport` | 17747 | parça (dinamik) | deşifre bölümünde model tekrarı olasılığı var; kaydı dinleyerek doğrulayın. |
+| `renderReport` | 17755 | parça (dinamik) | önerilen 1–3 cümle veya 15–30 sn, üst sınır 45 sn. |
+| `udfDocument` | 18926 | hata/arayüz | UDF oluşturma bileşeni yüklenemedi. Sayfayı yenileyip tekrar deneyin. |
+| `udfDocument` | 18929 | hata/arayüz | Boş UYAP UDF şablonu bulunamadı. templates/BOS.udf dosyasını kontrol edin. |
+| `udfDocument` | 18934 | belge metni | Boş UYAP UDF şablonunun sayfa veya stil tanımları okunamadı. |
+| `udfDocument` | 19541 | hata/arayüz | UDF XML yapısı doğrulanamadı; çıktı oluşturulmadı. |
+| `udfDocument` | 19552 | hata/arayüz | Üst yazı UDF oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
+| `udfDocument` | 19553 | hata/arayüz | UDF raporu oluşturuldu. UYAP Editöründe son görünümü kontrol edin. |
 
 ## 7) Kısa etiket ve başlıklar (60 karakterden kısa)
 

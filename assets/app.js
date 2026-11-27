@@ -165,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.372';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.372';
+} from './schema.js?v=2.373';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.373';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.372';
+const APP_VERSION = '2.373';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -17609,6 +17609,36 @@ function renderLetter() {
 }
 
 /** Belge sekmesi: rapor ↔ üst yazı. Görünürlük dışında bir şey değiştirmez. */
+// v2.373 — SOL İSKELET DARALTMA (tarayıcı tercihi; dosyaya yazılmaz).
+// Daraltınca sol sütun 48 px ince raya döner; kâğıt genişler. ≥901px'te etkin.
+function reportSkeletonCollapsedPref() {
+  try {
+    return localStorage.getItem('akis.reportSkeletonCollapsed') === '1';
+  } catch (e) {
+    return false;
+  }
+}
+function applyReportSkeletonCollapsed() {
+  const ws = $('#reportWorkspace');
+  if (!ws) return;
+  const on = reportSkeletonCollapsedPref() && reportDocMode === 'report';
+  if (ws.classList && typeof ws.classList.toggle === 'function') ws.classList.toggle('skeleton-collapsed', on);
+  const btn = $('#reportSkeletonToggle');
+  if (btn) {
+    if (typeof btn.setAttribute === 'function') {
+      btn.setAttribute('aria-expanded', String(!on));
+      btn.setAttribute('aria-label', on ? 'İskeleti genişlet' : 'İskeleti daralt');
+    }
+    btn.title = on ? 'İskeleti genişlet' : 'İskeleti daralt';
+    btn.textContent = on ? '›' : '‹';
+  }
+}
+function toggleReportSkeletonCollapsed() {
+  try {
+    localStorage.setItem('akis.reportSkeletonCollapsed', reportSkeletonCollapsedPref() ? '0' : '1');
+  } catch (e) {}
+  applyReportSkeletonCollapsed();
+}
 function setReportDoc(mode) {
   reportDocMode = mode === 'letter' ? 'letter' : 'report';
   const view = $('#view-report');
@@ -17634,6 +17664,7 @@ function setReportDoc(mode) {
   toggle('#letterToolbarActions', isLetter);
   if (isLetter) renderLetter();
   else renderReport();
+  applyReportSkeletonCollapsed();
 }
 
 /** İki dosya: üst yazı (ayrı) + rapor (EK-1). Kullanıcının ana akışı. */
@@ -18105,6 +18136,7 @@ function renderReport() {
   applyReportFormat(c);
   applyReportFit();
   applyReportPageView();
+  applyReportSkeletonCollapsed();
   const wsEl = $('#reportWorkspace');
   if (wsEl) wsEl.dataset.edit = reportEditKey ? 'open' : 'closed';
   // v2.368 — düzenleyici çekmecesi seçime göre açık/kapalı.
@@ -23054,6 +23086,8 @@ $('#reportOutlineBtn')?.addEventListener('click', () => {
   const btn = $('#reportOutlineBtn');
   if (btn) btn.setAttribute('aria-expanded', String(on));
 });
+// v2.373 — sol iskelet daralt/genişlet (≥901px; tercih tarayıcıda).
+$('#reportSkeletonToggle')?.addEventListener('click', () => toggleReportSkeletonCollapsed());
 // v2.367 — "⋯ Diğer" menüsü: seçimde ve dışarı tıklamada kapanır.
 $('#reportMore')?.addEventListener('click', (e) => {
   // Yalnız DAR ekranda seçim menüyü kapatır; geniş ekranda düğmeler satır içidir.
@@ -24691,6 +24725,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.373': {
+    title: 'Sol iskelet daraltma',
+    body:
+      'Rapor iskeletinin başlığında ‹ / › düğmesi var. Basınca sol sütun 48 px ince raya iner; belge alanı genişler ve kâğıt ortalanır (A4 oranı korunur). Tekrar basınca iskelet geri açılır. Tercih bu tarayıcıda saklanır (dosyaya yazılmaz), sonraki açılışta korunur. Dar ekranda (≤900 px) zaten “Bölümler” düğmesi vardır.'
+  },
   '2.372': {
     title: 'Tablo çizgisi ve yoğunluk',
     body:

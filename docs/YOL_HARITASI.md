@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.372.**
+yazılır. **Güncel sürüm: v2.373.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.373 — Sol iskelet daraltma (TAMAMLANDI)
+
+- İskelet başlığında **‹ / ›** düğmesi (`#reportSkeletonToggle`); ≥901 px'te sol sütun
+  **232 → 48 px** ince raya iner, kâğıt ortalanır. Tercih `akis.reportSkeletonCollapsed`
+  (tarayıcı; dosyaya yazılmaz).
+- `applyReportSkeletonCollapsed()` + `toggleReportSkeletonCollapsed()`; setReportDoc/
+  renderReport'ta uygulanır. ≤900 px'te "Bölümler" düğmesi yolu korunur.
+- Ölçüm: ızgara `232px 1090px` → `48px 1274px`, taşma 0, yenilemede korundu, JS 0.
+- Test: `birim [183]`, `tasarim [2ei]`.
 
 ## v2.372 — Tablo çizgisi ve yoğunluk (TAMAMLANDI)
 

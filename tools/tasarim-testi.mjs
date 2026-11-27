@@ -2551,6 +2551,17 @@ console.log('\n[2eh] Tablo stili + yoğunluk (v2.372)');
   check('DOCX tablo kenarlığı stile bağlı', /tstyle === 'plain'/.test(app) && /tstyle === 'lines'/.test(app));
 }
 
+console.log('\n[2ei] Sol iskelet daraltma (v2.373)');
+{
+  const app = read('assets/app.js');
+  const html = read('index.html');
+  const layer = read('assets/reading-layer.css');
+  check('daraltma düğmesi HTML', /id="reportSkeletonToggle"/.test(html));
+  check('daraltma fonksiyonu + tercih', /function applyReportSkeletonCollapsed\(/.test(app) && /akis\.reportSkeletonCollapsed/.test(app));
+  check('düğme işleyicisi bağlı', /\$\('#reportSkeletonToggle'\)\?\.addEventListener\('click'/.test(app));
+  check('CSS daraltma ızgarası (48px)', /\.report-workspace\.skeleton-collapsed\s*\{\s*grid-template-columns:\s*48px/.test(layer));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

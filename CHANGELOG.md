@@ -6,12 +6,29 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.372.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.373.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.373 — Sol iskelet daraltma
+
+**KULLANICI NE GÖRECEK:** Rapor iskeletinin başlığında **‹ / ›** düğmesi var. Basınca sol
+sütun **48 px ince raya** iner; belge alanı genişler ve kâğıt ortalanır (A4 oranı korunur,
+900 px). Tekrar basınca iskelet geri açılır. Tercih **tarayıcıda** saklanır (dosyaya yazılmaz),
+sonraki açılışta korunur. Dar ekranda (≤900 px) zaten “Bölümler” düğmesi vardır; bu düğme
+yalnız geniş ekranda (≥901 px) çalışır.
+
+**ÖLÇÜM (gerçek Chromium 1440×900, demo):**
+| | Sonuç |
+|---|---|
+| Önce | iskelet **232 px**, ızgara `232px 1090px` |
+| Daralt | iskelet **48 px**, ızgara `48px 1274px`, taşma **0** |
+| Kalıcılık | yenileme sonrası daraltılmış **korundu** |
+| JS hatası | **0** |
+| Testler | **2830 birim + 556 şema** + rapor/tasarım/sürüm yeşil |
 
 ## v2.372 — Tablo çizgisi ve yoğunluk
 

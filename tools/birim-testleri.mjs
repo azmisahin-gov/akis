@@ -157,6 +157,7 @@ const EXPOSE = [
   'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
+  'reportSkeletonCollapsedPref', 'toggleReportSkeletonCollapsed',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
@@ -6107,6 +6108,20 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('compact korunur', S.normalizeReportFormat({ tableStyle: 'plain', density: 'compact' }).density, 'compact');
   eq('geçersiz stil → lines', S.normalizeReportFormat({ tableStyle: 'zzz' }).tableStyle, 'lines');
   eq('geçersiz yoğunluk → comfortable', S.normalizeReportFormat({ density: 'zzz' }).density, 'comfortable');
+}
+
+
+// [183] v2.373 — sol iskelet daraltma tercihi (tarayıcı; dosyaya yazılmaz).
+{
+  console.log('[183] Sol iskelet daraltma (v2.373)');
+  const store = T.store;
+  store.removeItem('akis.reportSkeletonCollapsed');
+  eq('varsayılan geniş', T.reportSkeletonCollapsedPref(), false);
+  T.toggleReportSkeletonCollapsed();
+  eq('toggle daraltır', T.reportSkeletonCollapsedPref(), true);
+  T.toggleReportSkeletonCollapsed();
+  eq('toggle genişletir', T.reportSkeletonCollapsedPref(), false);
+  store.removeItem('akis.reportSkeletonCollapsed');
 }
 
 

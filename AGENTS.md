@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.372.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.373.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10050,3 +10050,15 @@ Sıradaki: **v2.372 tablo/font/görünüm** (tableStyle grid/lines, density).
 - Test: `birim [182]`, `rapor` Senaryo 59, `tasarim [2eh]`.
 
 Sıradaki: **v2.373 sol iskelet daraltma** (48 px ince ray).
+
+## EK DÜZELTME (v2.373) — Sol iskelet daraltma
+
+- İskelet başlığında **‹ / ›** (`#reportSkeletonToggle`); ≥901px'te sol sütun 232→48px.
+- `applyReportSkeletonCollapsed()` + `toggleReportSkeletonCollapsed()`; tercih
+  `akis.reportSkeletonCollapsed` (tarayıcı; dosyaya yazılmaz). setReportDoc/renderReport'ta uygulanır.
+- **Sahte DOM dersi:** `applyReportSkeletonCollapsed` `btn.setAttribute`/`classList.toggle`
+  öncesi `typeof ... === 'function'` denetler (rapor testi sahte DOM'unda patlıyordu).
+- Ölçüm: ızgara `232px 1090px` → `48px 1274px`, taşma 0, yenilemede korundu, JS 0.
+- Test: `birim [183]`, `tasarim [2ei]`.
+
+Sıradaki: **v2.374 uçtan uca doğrulama** (PDF/DOCX/UDF + 3 tema + 5 genişlik).

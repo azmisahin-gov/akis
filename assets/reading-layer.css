@@ -3216,6 +3216,30 @@ input::placeholder, textarea::placeholder {
 }
 .rs-head b { font-size: var(--fs-sm); color: var(--ink); }
 .rs-head small { font-size: var(--fs-2xs); color: var(--ink-3); }
+/* v2.373 — Sol iskelet daraltma düğmesi + daraltılmış ince ray (≥901px). */
+.rs-head .rs-collapse {
+  margin-left: auto;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border-radius: 6px;
+  width: 24px;
+  height: 22px;
+  line-height: 1;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  padding: 0;
+}
+.rs-head .rs-collapse:hover { background: var(--accent-soft); color: var(--accent); }
+@media (min-width: 901px) {
+  .report-workspace.skeleton-collapsed { grid-template-columns: 48px minmax(0, 1fr); }
+  .report-workspace.skeleton-collapsed #reportSectionsBox { padding: 8px 4px; overflow: hidden; }
+  .report-workspace.skeleton-collapsed #reportSectionsBox > :not(.rs-head) { display: none; }
+  .report-workspace.skeleton-collapsed #reportSectionsBox .rs-head b,
+  .report-workspace.skeleton-collapsed #reportSectionsBox .rs-head small { display: none; }
+  .report-workspace.skeleton-collapsed #reportSectionsBox .rs-head { justify-content: center; margin-bottom: 0; }
+  .report-workspace.skeleton-collapsed #reportSectionsBox .rs-collapse { margin-left: 0; width: 30px; height: 42px; }
+}
 .rs-hint {
   margin: 0 0 8px;
   font-size: var(--fs-2xs);

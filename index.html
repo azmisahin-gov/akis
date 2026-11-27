@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.372'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.373'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.372">
-  <link rel="stylesheet" href="assets/app.css?v=2.372">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.373">
+  <link rel="stylesheet" href="assets/app.css?v=2.373">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.372">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.373">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.372"></script>
+  <script type="module" src="assets/app.js?v=2.373"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -245,7 +245,7 @@
         </div>
         <div class="report-workspace" id="reportWorkspace">
           <aside class="report-skeleton" id="reportSectionsBox" aria-label="Rapor iskeleti">
-            <div class="rs-head"><b>Rapor iskeleti</b><small id="reportSkeletonCount"></small></div>
+            <div class="rs-head"><b>Rapor iskeleti</b><small id="reportSkeletonCount"></small><button type="button" class="rs-collapse" id="reportSkeletonToggle" aria-label="İskeleti daralt" title="İskeleti daralt / genişlet" aria-expanded="true">‹</button></div>
             <p class="rs-hint">Tüm parçalar tek listede. Gövde ve ekleri ↑↓ ile sıralayın; kapalı bölüm rapora girmez. Numaralar açık bölümlere göre yeniden verilir.</p>
             <div class="rs-tools"><input type="search" id="reportSectionSearch" class="rs-search" placeholder="Bölüm ara…" aria-label="Bölüm ara" autocomplete="off"><label class="rs-onlyopen" title="Yalnız rapora giren (açık) bölümleri göster"><input type="checkbox" id="reportOnlyOpen"> <span>Yalnız açık</span></label><label class="rs-onlyopen" title="Bölüm numaralandırma biçimi: 1, 2, 3… · A, B, C… · numarasız. Numarasız seçilirse başlıklara numara yazılmaz; istediğiniz numarayı bölüm metnine kendiniz yazabilirsiniz."><span>Numaralar</span><select id="reportNumberingToggle" aria-label="Bölüm numaralandırma biçimi"><option value="auto">1, 2, 3…</option><option value="letters">A, B, C…</option><option value="none">Numarasız</option></select></label></div>
             <div class="rsec-cats" id="reportSectionCats" role="group" aria-label="Bölüm kategorisi"><button type="button" class="rsec-cat" data-rsec-cat="all" aria-pressed="true">Tümü</button><button type="button" class="rsec-cat" data-rsec-cat="front" aria-pressed="false">Kapak</button><button type="button" class="rsec-cat" data-rsec-cat="main" aria-pressed="false">Ana</button><button type="button" class="rsec-cat" data-rsec-cat="tech" aria-pressed="false">Teknik</button><button type="button" class="rsec-cat" data-rsec-cat="statement" aria-pressed="false">Beyan</button><button type="button" class="rsec-cat" data-rsec-cat="closing" aria-pressed="false">Kapanış</button></div>
