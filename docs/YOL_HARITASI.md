@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.362.**
+yazılır. **Güncel sürüm: v2.363.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.363 — Kapak + profesyonel üst/alt bilgi (TAMAMLANDI)
+
+- Kapak 6 satır TEK KAYNAK (`coverLines`): T.C. · mahkeme · ADLİ VE KRİMİNALİSTİK
+  İNCELEMELER · BİLİRKİŞİ RAPORU · 56.12 satırı · parantezli not.
+- `expertFieldParts` (kısa kod/eski varsayılan → tam metin; tek çizgi).
+- Tarayıcı yazdırma iskeleti (`thead`/`tfoot`): başlık her sayfada, çakışma yok;
+  ekran düzeni değişmedi (898/220).
+- DOCX üst/alt bilgi 3 sütun + `PAGE`/`NUMPAGES`.
+- Ölçüm: PDF 24 sayfa; üst bilgi y=46, içerik y=124; JS hatası 0.
+- **Sınır:** tarayıcıda `counter(page)` yok (0/0) → sayfa numarası DOCX’te.
+- Test: `tasarim [2dx]`, `rapor` Senaryo 1 (kapak), `birim` kapak ayrıştırma.
 
 ## v2.362 — Yazdırma / PDF çok sayfalı çıktı (TAMAMLANDI)
 

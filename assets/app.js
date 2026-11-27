@@ -150,20 +150,22 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD,
+  REPORT_FAMILY_LINE,
+  expertFieldParts,
   normalizeNotebook,
   emptyNotebookEntry,
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.362';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.362';
+} from './schema.js?v=2.363';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.363';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.362';
+const APP_VERSION = '2.363';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -13869,6 +13871,28 @@ function expertFieldShort(c) {
   const code = raw.match(/^\d+(?:\.\d+)*/);
   return code ? code[0] : raw;
 }
+// KAPAK SATIRLARI (v2.363) — TEK KAYNAK. Üç çıktı (HTML/DOCX/UDF) aynı sırayı
+// basar: T.C. · mahkeme tam adı · aile satırı · rapor türü · uzmanlık alanı ·
+// parantezli not. Uydurma satır yok: not boşsa çizilmez.
+function coverLines(c) {
+  const spec = reportTypeSpec(c && c.reportType);
+  const courtRaw = (c && c.court) || REPORT_TEXT.emptyCourt;
+  const court = `${courtRaw.toLocaleUpperCase('tr-TR')}’${trDative(courtRaw)}`;
+  const parts = expertFieldParts((c && c.expertField) || '');
+  const lines = [
+    { role: 'republic', text: 'T.C.' },
+    { role: 'court', text: court },
+    { role: 'family', text: REPORT_FAMILY_LINE },
+    { role: 'type', text: spec.heading },
+    { role: 'expert', text: parts.main.toLocaleUpperCase('tr-TR') }
+  ];
+  if (parts.note) lines.push({ role: 'note', text: parts.note });
+  return lines;
+}
+function coverLine(c, role) {
+  const hit = coverLines(c).find((l) => l.role === role);
+  return hit ? hit.text : '';
+}
 // RAPOR KÜNYESİ SATIRLARI (v2.336) — TEK KAYNAK. Her satır `{ key, label, value }`
 // taşır: alan görünürlüğü `key` ile yönetilir, üç çıktı `label/value` basar.
 // Etiketler BÜYÜK harfe burada çevrilir; CSS'e `text-transform` yazılmaz
@@ -17271,6 +17295,20 @@ async function downloadLetterAndReport() {
   showToast('Üst yazı ve rapor (EK-1) iki ayrı dosya olarak indirildi. Tarayıcı ikinci dosyayı engellerse tek tek indirin.');
 }
 
+// YAZDIRMA ÜST/ALT BİLGİ (v2.363) — `thead`/`tfoot` iskeletini doldurur.
+// Üst: sol "Dosya No", orta boş, sağ rapor türü. Alt: orta uzmanlık alanı.
+// Sayfa numarası tarayıcıda CSS ile ÜRETİLEMEZ (ölçüldü: counter(page) → 0/0);
+// gerçek numara DOCX (Word/LibreOffice) alanlarındadır.
+function renderPrintChrome(c) {
+  const hdr = $('#printChromeHdr');
+  const ftr = $('#printChromeFtr');
+  if (hdr) {
+    hdr.innerHTML =
+      `<span>${esc(`Dosya No: ${(c && c.fileNo) || '—'}`)}</span>` +
+      `<span>${esc(reportTypeSpec(c && c.reportType).heading)}</span>`;
+  }
+  if (ftr) ftr.textContent = `${REPORT_TEXT.toplineField}${expertFieldShort(c)}`;
+}
 function renderReport() {
   const c = currentCase();
   if (!c) return;
@@ -17357,9 +17395,19 @@ function renderReport() {
 
   // ÖN BÖLÜM (sırası sabit)
   const front = {
-    cover: () =>
-      `<div class="paper-topline"><span>${esc(reportTypeLabel(c.reportType))}</span><span>${esc(REPORT_TEXT.toplineField)}${esc(expertFieldShort(c))}</span></div><div class="paper-title"><div class="republic">T.C.</div><h2>${esc((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR'))}’${esc(trDative(c.court || 'Mahkemesi'))}</h2><h2>${esc(reportTypeSpec(c.reportType).heading)}</h2><p>${esc(REPORT_TEXT.subtitle)}</p></div>` +
-      (c.synthetic ? `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>` : ''),
+    cover: () => {
+      const note = coverLine(c, 'note');
+      return (
+        `<div class="paper-title"><div class="republic">${esc(coverLine(c, 'republic'))}</div>` +
+        `<h2>${esc(coverLine(c, 'court'))}</h2>` +
+        `<p class="paper-family">${esc(coverLine(c, 'family'))}</p>` +
+        `<h2>${esc(coverLine(c, 'type'))}</h2>` +
+        `<p class="paper-expert">${esc(coverLine(c, 'expert'))}</p>` +
+        (note ? `<p class="paper-expert-note">${esc(note)}</p>` : '') +
+        `</div>` +
+        (c.synthetic ? `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>` : '')
+      );
+    },
     coverFields: () =>
       `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
         .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
@@ -17663,6 +17711,7 @@ function renderReport() {
   if (on('signature')) html += wrapBlock('signature', body.signature());
   html += '</div>';
   $('#reportPreview').innerHTML = html;
+  renderPrintChrome(c);
   // TEK kayıt durumu (v2.230) + kısa ayrıntı. Ayrıntı istatistik tekrarı
   // yapmaz; asıl durum tek çipte.
   const rec = reportRecordStatus(c);
@@ -17878,29 +17927,27 @@ function docxXml(c) {
   const H = (k) => reportHeadingText(c, k, map);
 
   const front = {
-    cover: () =>
-      wP('T.C.', { bold: false, color: '000000', size: 24, align: 'center', before: 60, after: 40 }) +
-      wP((c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR') + '’' + trDative(c.court || 'Mahkemesi'), {
-        bold: true,
-        color: '1C426B',
-        size: 26,
-        align: 'center',
-        after: 180,
-        keep: true
-      }) +
-      wP(reportTypeSpec(c.reportType).heading, {
-        bold: true,
-        color: '1C426B',
-        size: 34,
-        align: 'center',
-        before: 170,
-        after: 100,
-        keep: true
-      }) +
-      wP(REPORT_TEXT.subtitle, { color: '58718A', size: 18, align: 'center', after: 240 }) +
-      (c.synthetic
-        ? `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun(REPORT_TEXT.synthetic, { bold: true, color: '9A6B2D', size: 18 })}</w:p>`
-        : ''),
+    cover: () => {
+      const note = coverLine(c, 'note');
+      return (
+        wP(coverLine(c, 'republic'), { bold: false, color: '000000', size: 24, align: 'center', before: 60, after: 40 }) +
+        wP(coverLine(c, 'court'), { bold: true, color: '1C426B', size: 26, align: 'center', after: 120, keep: true }) +
+        wP(coverLine(c, 'family'), { bold: true, color: '385873', size: 20, align: 'center', after: 60, keep: true }) +
+        wP(coverLine(c, 'type'), { bold: true, color: '1C426B', size: 34, align: 'center', before: 120, after: 100, keep: true }) +
+        wP(coverLine(c, 'expert'), {
+          bold: true,
+          color: '1C426B',
+          size: 20,
+          align: 'center',
+          after: note ? 40 : 240,
+          keep: true
+        }) +
+        (note ? wP(note, { color: '58718A', size: 16, align: 'center', after: 240 }) : '') +
+        (c.synthetic
+          ? `<w:p><w:pPr><w:jc w:val="center"/><w:spacing w:before="90" w:after="170"/></w:pPr>${wRun(REPORT_TEXT.synthetic, { bold: true, color: '9A6B2D', size: 18 })}</w:p>`
+          : '')
+      );
+    },
     coverFields: () =>
       wTable(
         frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
@@ -18315,20 +18362,44 @@ async function docxDocument(opts = {}) {
     'styles.xml',
     `<?xml version="1.0" encoding="UTF-8"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${__docxFmt.font}" w:hAnsi="${__docxFmt.font}"/><w:sz w:val="${docxSz(22)}"/><w:lang w:val="tr-TR"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="90" w:line="276"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="Heading 1"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="280" w:after="100"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="1C426B"/><w:sz w:val="${docxSz(24)}"/></w:rPr></w:style><w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="Heading 2"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="180" w:after="70"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="385873"/><w:sz w:val="${docxSz(20)}"/></w:rPr></w:style></w:styles>`
   );
+  // ÜST/ALT BİLGİ (v2.363) — PROFESYONEL 3 SÜTUN.
+  // Üst: sol "Dosya No", orta boş, sağ rapor türü. Alt: orta "Sayfa N / M".
+  // TEK KAYNAK: aynı metin üç çıktıda (HTML yazdırma, DOCX, UDF kapak) kullanılır.
+  // 3 sütun TABLO ile kurulur: Word/LibreOffice'te hizalama kaymaz; `w:tblLayout
+  // fixed` + tam `contentTw` genişliği ile sayfa metin alanına oturur.
+  const chromeTw = (__docxFmt && __docxFmt.contentTw) || 9000;
+  const chromeCol = Math.round(chromeTw / 3);
+  const chromeColLast = chromeTw - chromeCol * 2;
+  const chromeCell = (inner, align) =>
+    `<w:tc><w:tcPr><w:tcW w:w="${chromeCol}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="${align}"/><w:spacing w:after="0" w:line="240"/></w:pPr>${inner}</w:p></w:tc>`;
+  const chromeTable = (cells, border) =>
+    `<w:tbl><w:tblPr><w:tblW w:w="${chromeTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${border}<w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="${chromeCol}"/><w:gridCol w:w="${chromeCol}"/><w:gridCol w:w="${chromeColLast}"/></w:tblGrid><w:tr><w:trPr><w:cantSplit/></w:trPr>${cells[0]}${cells[1]}${cells[2]}</w:tr></w:tbl>`;
+  const chromeHdrLeft = letterMode ? `Dosya No: ${c.fileNo || '—'}` : `Dosya No: ${c.fileNo || '—'}`;
+  const chromeHdrRight = letterMode ? 'ÜST YAZI' : reportTypeSpec(c.reportType).heading;
+  const headerXml = chromeTable(
+    [
+      chromeCell(wRun(chromeHdrLeft, { color: '70869C', size: 15 }), 'left'),
+      chromeCell('', 'center'),
+      chromeCell(wRun(chromeHdrRight, { color: '70869C', size: 15 }), 'right')
+    ],
+    '<w:tblBorders><w:bottom w:val="single" w:sz="6" w:color="1C426B"/></w:tblBorders>'
+  );
+  const footerInner =
+    wRun('Sayfa ', { color: '8293A3', size: 15 }) +
+    `<w:fldSimple w:instr="PAGE">${wRun('1', { color: '8293A3', size: 15 })}</w:fldSimple>` +
+    wRun(' / ', { color: '8293A3', size: 15 }) +
+    `<w:fldSimple w:instr="NUMPAGES">${wRun('1', { color: '8293A3', size: 15 })}</w:fldSimple>`;
+  const footerXml = chromeTable(
+    [chromeCell('', 'left'), chromeCell(footerInner, 'center'), chromeCell('', 'right')],
+    '<w:tblBorders><w:top w:val="single" w:sz="6" w:color="C9D5E1"/></w:tblBorders>'
+  );
   w.file(
     'header1.xml',
-    letterMode
-      ? `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`ÜST YAZI  |  ${c.fileNo || ''}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
-      : `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="right"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:color="1C426B"/></w:pBdr></w:pPr>${wRun(`BİLİRKİŞİ RAPORU  |  ${REPORT_TEXT.toplineField}${expertFieldShort(c)}`, { bold: true, color: '70869C', size: 15 })}</w:p></w:hdr>`
+    `<?xml version="1.0" encoding="UTF-8"?><w:hdr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${headerXml}</w:hdr>`
   );
   w.file(
     'footer1.xml',
-    letterMode
-      ? `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${wRun(
-          `Dosya: ${c.fileNo || '—'}`,
-          { color: '8293A3', size: 15 }
-        )}</w:p></w:ftr>`
-      : `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:p><w:pPr><w:jc w:val="center"/></w:pPr>${wRun(`Dosya: ${c.fileNo || '—'}  •  Sayfa `, { color: '8293A3', size: 15 })}<w:fldSimple w:instr="PAGE"><w:r><w:t>1</w:t></w:r></w:fldSimple></w:p></w:ftr>`
+    `<?xml version="1.0" encoding="UTF-8"?><w:ftr xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${footerXml}</w:ftr>`
   );
   const blob = await zip.generateAsync({
     type: 'blob',
@@ -18515,28 +18586,21 @@ async function udfDocument(opts = {}) {
 
   const front = {
     cover: () => {
-      // `T.C.` — AKİS tasarım tercihi: ortada, siyah, sade (rapor ve üst yazı aynı).
-      el.push(paragraph('T.C.', { size: 12, bold: false, color: 'black', align: 1, after: 4 }));
+      const note = coverLine(c, 'note');
+      el.push(paragraph(coverLine(c, 'republic'), { size: 12, bold: false, color: 'black', align: 1, after: 4 }));
+      el.push(paragraph(coverLine(c, 'court'), { size: 15, bold: true, color: 'navy', align: 1, after: 10 }));
+      el.push(paragraph(coverLine(c, 'family'), { size: 11, bold: true, color: 'muted', align: 1, after: 4 }));
+      el.push(paragraph(coverLine(c, 'type'), { size: 22, bold: true, color: 'navy', align: 1, before: 6, after: 7 }));
       el.push(
-        paragraph(`${(c.court || REPORT_TEXT.emptyCourt).toLocaleUpperCase('tr-TR')}’${trDative(c.court || 'Mahkemesi')}`, {
-          size: 15,
+        paragraph(coverLine(c, 'expert'), {
+          size: 11,
           bold: true,
           color: 'navy',
           align: 1,
-          after: 16
+          after: note ? 3 : 15
         })
       );
-      el.push(
-        paragraph(reportTypeSpec(c.reportType).heading, {
-          size: 22,
-          bold: true,
-          color: 'navy',
-          align: 1,
-          before: 8,
-          after: 7
-        })
-      );
-      el.push(paragraph(REPORT_TEXT.subtitle, { size: 10, bold: true, color: 'muted', align: 1, after: 15 }));
+      if (note) el.push(paragraph(note, { size: 10, bold: false, color: 'muted', align: 1, after: 15 }));
       if (c.synthetic)
         el.push(paragraph(REPORT_TEXT.synthetic, { size: 10, bold: true, color: 'mid', align: 1, after: 10 }));
     },
@@ -24018,6 +24082,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.363': {
+    title: 'Kapak ve üst/alt bilgi yenilendi',
+    body:
+      'Rapor kapağı artık istediğiniz sırada: T.C. · mahkemenin tam adı · ADLİ VE KRİMİNALİSTİK İNCELEMELER · BİLİRKİŞİ RAPORU · 56.12 – SES KAYITLARININ METİN HALİNE DÖNÜŞTÜRÜLMESİ · (Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç). Sayfa üst bilgisi: solda “Dosya No”, sağda “BİLİRKİŞİ RAPORU”. Word (.docx) çıktısında alt bilgi her sayfada “Sayfa N / M” olarak basılır. Tarayıcı PDF’inde üst bilgi her sayfada görünür; sayfa numarasını tarayıcı ekler (uygulama CSS ile üretemiyor). Üç çıktı aynı kapak metnini kullanır.'
+  },
   '2.362': {
     title: 'PDF çıktısı artık tüm sayfaları veriyor',
     body:

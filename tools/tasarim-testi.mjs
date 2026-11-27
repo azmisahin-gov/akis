@@ -2870,5 +2870,40 @@ console.log('\n[2dw] Yazdırma/PDF çok sayfalı çıktı (v2.362)');
   check('alt bilgi sabit konumdan çıkar', /\.paper-footer\s*\{[^}]*position:\s*static/s.test(block));
 }
 
+console.log('\n[2dx] Kapak sırası + yazdırma üst/alt bilgi (v2.363)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  // Kapak TEK KAYNAK ve sıra sabit.
+  check('kapak satırları tek kaynak (coverLines)', /function coverLines\(c\)/.test(app));
+  check(
+    'kapak sırası: T.C. → mahkeme → aile → tür → uzmanlık → not',
+    /role: 'republic'[\s\S]{0,120}role: 'court'[\s\S]{0,120}role: 'family'[\s\S]{0,120}role: 'type'[\s\S]{0,160}role: 'expert'/.test(app)
+  );
+  check('aile satırı şemada', /REPORT_FAMILY_LINE = 'ADLİ VE KRİMİNALİSTİK İNCELEMELER'/.test(schema));
+  check('uzmanlık alanı ayrıştırıcı var', /export function expertFieldParts/.test(schema));
+  // HTML kapağı yeni satırları kullanır; eski topline kalktı.
+  const coverBlock = (app.match(/cover: \(\) => \{[\s\S]*?\n    \},/) || [''])[0];
+  check('HTML kapak aile satırı', /paper-family/.test(coverBlock));
+  check('HTML kapak uzmanlık satırı', /paper-expert\b/.test(coverBlock));
+  check('HTML kapak notu', /paper-expert-note/.test(coverBlock));
+  check('eski üst şerit kapaktan kalktı', !/paper-topline/.test(coverBlock));
+  // Tarayıcı yazdırma iskeleti.
+  check('yazdırma iskeleti tablosu var', /id="reportPrintChrome"/.test(html));
+  check('iskelette thead/tfoot var', /<thead>[\s\S]{0,200}<tfoot>/.test(html));
+  check('üst/alt bilgi konakları var', /id="printChromeHdr"/.test(html) && /id="printChromeFtr"/.test(html));
+  check('ekranda iskelet gizli', /\.print-chrome > thead,[\s\S]{0,80}\.print-chrome > tfoot \{ display: none; \}/.test(css));
+  check('yazdırmada başlık her sayfada', /\.print-chrome > thead \{ display: table-header-group; \}/.test(css));
+  check('yazdırmada altlık her sayfada', /\.print-chrome > tfoot \{ display: table-footer-group; \}/.test(css));
+  check('iskelet render çağrısı bağlı', /renderPrintChrome\(c\);/.test(app));
+  // DOCX üst/alt bilgi: 3 sütun + sayfa alanları.
+  check('DOCX üst bilgi 3 sütun tablo', /const chromeTable = \(cells, border\)/.test(app));
+  check('DOCX üst sol "Dosya No"', /Dosya No: \$\{c\.fileNo \|\| '—'\}/.test(app));
+  check('DOCX alt bilgi PAGE/NUMPAGES', /w:instr="PAGE"[\s\S]{0,200}w:instr="NUMPAGES"/.test(app));
+  check('eski birleşik üst bilgi kalktı', !/BİLİRKİŞİ RAPORU  \|  \$\{REPORT_TEXT\.toplineField\}/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

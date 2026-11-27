@@ -4517,3 +4517,61 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
     position: static;
   }
 }
+
+/* ============================================================================
+   v2.363 — KAPAK SATIRLARI + YAZDIRMA ÜST/ALT BİLGİ İSKELETİ
+   ----------------------------------------------------------------------------
+   Kapak sırası TEK KAYNAK (`coverLines`): T.C. · mahkeme · aile · rapor türü ·
+   uzmanlık alanı · parantezli not. Eski `paper-topline` (tür etiketi + kısa
+   uzmanlık kodu) kaldırıldı; yerini aile satırı ve tam uzmanlık satırı aldı.
+
+   YAZDIRMA İSKELETİ: `#reportPreview`, `thead`/`tfoot` taşıyan bir tabloya
+   sarıldı. Tarayıcı `thead`ı HER SAYFADA, `tfoot`u sayfa altında tekrarlar;
+   içerik otomatik olarak araya akar (çakışma yok). EKRANDA tablo düzeni
+   kapatılır: kâğıt davranışı birebir aynı kalır (ölçüm: 898 px).
+   DÜRÜST SINIR: tarayıcı yazdırmasında `counter(page)` ÇALIŞMAZ (ölçüldü:
+   "0/0"). Sayfa numarası Word/LibreOffice DOCX alanlarıyla verilir.
+   ========================================================================== */
+.report-paper .paper-family {
+  margin: 2px 0 0;
+  font-size: calc(12px * var(--paper-scale));
+  font-weight: 700;
+  letter-spacing: .6px;
+  color: var(--paper-ink-2);
+}
+.report-paper .paper-expert {
+  margin: 6px 0 0;
+  font-size: calc(12px * var(--paper-scale));
+  font-weight: 700;
+  color: var(--paper-head);
+}
+.report-paper .paper-expert-note {
+  margin: 2px 0 0;
+  font-size: calc(11px * var(--paper-scale));
+  color: var(--paper-muted);
+  font-style: italic;
+}
+/* Ekran: yazdırma iskeleti görünmez; tablo düzeni kapatılır. */
+.print-chrome { display: block; width: 100%; border-collapse: collapse; }
+.print-chrome > thead,
+.print-chrome > tfoot { display: none; }
+.print-chrome > tbody,
+.print-chrome > tbody > tr,
+.print-chrome > tbody > tr > td { display: block; }
+@media print {
+  .print-chrome { display: table; width: 100%; border-collapse: collapse; }
+  .print-chrome > thead { display: table-header-group; }
+  .print-chrome > tfoot { display: table-footer-group; }
+  .print-chrome > tbody { display: table-row-group; }
+  .print-chrome > tbody > tr { display: table-row; }
+  .print-chrome > tbody > tr > td { display: table-cell; padding: 0; }
+  .print-chrome-hdr {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 8mm; border-bottom: .5pt solid var(--paper-line); padding-bottom: 2mm;
+    font-size: 9pt; color: var(--paper-muted);
+  }
+  .print-chrome-ftr {
+    text-align: center; border-top: .5pt solid var(--paper-line);
+    padding-top: 2mm; font-size: 9pt; color: var(--paper-muted);
+  }
+}

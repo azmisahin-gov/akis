@@ -172,7 +172,7 @@ const EXPOSE = [
   'measurementStatus', 'measurementStatusText', 'MEASURE_ALL_STEPS', 'measurementPanelHtml',
   'werStatus', 'werStatusText', 'werPanelHtml', 'segObsText',
   'reportSectionsForPreset', 'reportPresetLayout', 'mainSectionNumbers', 'segSpeakerCells', 'decodeErrorText', 'unassignedSegments', 'reportNumbering',
-  'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
+  'REPORT_FIELD_DEFS', 'normalizeReportFieldVisibility', 'reportFieldVisible', 'DEFAULT_EXPERT_FIELD', 'REPORT_FAMILY_LINE', 'expertFieldParts', 'reportRows', 'reportSummaryRows', 'frontRowsFor', 'normalizeExpertField',
   'impartialityTemplateText', 'compareCases', 'DEFAULT_METHOD', 'REPORT_SECTION_DEFS', 'TEXT_DEFAULT_ITEMS', 'stripDerivedFields', 'PREV_DEFAULT_METHOD',
   'userDefaults', 'saveUserDefaults', 'defaultTextFor', 'USER_DEFAULT_FIELDS', 'USER_DEFAULTS_KEY',
   'textLibrary', 'saveLibraryEntry', 'removeLibraryEntry', 'libraryFor', 'TEXT_LIBRARY_KEY', 'TEXT_LIBRARY_MAX',
@@ -266,6 +266,8 @@ vm.runInContext(code, sandbox, { filename: 'app.js' });
 const T = sandbox.__t;
 T.reconcileSpeakerRefsForTest = __schemaMod.reconcileSpeakerRefs;
 T.normalizeExpertField = __schemaMod.normalizeExpertField;
+T.expertFieldParts = __schemaMod.expertFieldParts;
+T.REPORT_FAMILY_LINE = __schemaMod.REPORT_FAMILY_LINE;
 T.normalizeCaseForTest = __schemaMod.normalizeCase;
 T.l2Normalize = __schemaMod.l2Normalize;
 T.cosineSimilarity = __schemaMod.cosineSimilarity;
@@ -7431,8 +7433,20 @@ console.log('[163] Ön bölüm alan görünürlüğü ve künye (v2.336)');
     rows.find((r) => r.key === 'expertField').value,
     T.DEFAULT_EXPERT_FIELD
   );
-  eq('varsayılan metin 56.12 ile başlar', /^56\.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi/.test(T.DEFAULT_EXPERT_FIELD), true);
-  eq('parantezli kapsam metni', /Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç/.test(T.DEFAULT_EXPERT_FIELD), true);
+  eq('varsayılan metin 56.12 koduyla başlar', /^56\.12\s*[–-]\s*\S/.test(T.DEFAULT_EXPERT_FIELD), true);
+  eq(
+    'parantezli kapsam notu var',
+    /\(Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç\)/i.test(T.DEFAULT_EXPERT_FIELD),
+    true
+  );
+  // v2.363 — kapak satırları: kod tekrar etmez, tek çizgi, not parantezli.
+  const parts = T.expertFieldParts('');
+  eq('kapak: kod', parts.code, '56.12');
+  eq('kapak: başlık kodu tekrarlamaz', /^Ses Kayıtlarının/.test(parts.title), true);
+  eq('kapak: ana satırda tek çizgi', (parts.main.match(/–/g) || []).length, 1);
+  eq('kapak: not parantezli', parts.note.startsWith('(') && parts.note.endsWith(')'), true);
+  eq('kapak: kısa kod tam metne çekilir', T.expertFieldParts('56.12').main, parts.main);
+  eq('kapak: aile satırı', T.REPORT_FAMILY_LINE, 'ADLİ VE KRİMİNALİSTİK İNCELEMELER');
   eq('uzmanlık kodu tam metne çekilir', T.normalizeExpertField('56.12'), T.DEFAULT_EXPERT_FIELD);
   eq(
     'eski varsayılan metin tam metne çekilir',

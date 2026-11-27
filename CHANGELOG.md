@@ -6,12 +6,55 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.362.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.363.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.363 — Kapak ve profesyonel üst/alt bilgi
+
+**KULLANICI NE GÖRECEK:** Rapor kapağı artık şu sırada:
+
+```
+T.C.
+[GÖREVLENDİREN MAHKEMENİN / CUMHURİYET BAŞSAVCILIĞININ TAM ADI]
+ADLİ VE KRİMİNALİSTİK İNCELEMELER
+BİLİRKİŞİ RAPORU
+56.12 – SES KAYITLARININ METİN HALİNE DÖNÜŞTÜRÜLMESİ
+(Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)
+```
+
+Sayfa üst bilgisi: **sol** “Dosya No: …”, **orta** boş, **sağ** “BİLİRKİŞİ
+RAPORU”. Alt bilgi: **orta** “Sayfa N / M” (Word/LibreOffice). Eski birleşik
+“BİLİRKİŞİ RAPORU | UZMANLIK ALANI · 56.12” satırı kaldırıldı.
+
+**ÖLÇÜM (gerçek Chromium + pdfplumber):**
+
+| | Sonuç |
+|---|---|
+| Kapak sırası (ekran/DOCX/UDF) | **6 satır, birebir** |
+| Ekran düzeni | kâğıt **898 px**, iskelet **220 px**, yatay taşma **yok** (değişmedi) |
+| PDF sayfası | **24** |
+| PDF üst bilgi | her sayfada: sol x=63 · sağ x=453 · y=46 |
+| İçerik başlangıcı | y=124 → **çakışma yok** |
+| DOCX üst/alt bilgi | **3 sütun**; `PAGE` + `NUMPAGES` alanları |
+| JS hatası | **0** |
+
+**Yapılan:**
+- `coverLines(c)` — kapak TEK KAYNAK; üç üretici aynı satırları basar.
+- `expertFieldParts()` — “56.12 – …” ve parantezli not ayrıştırılır; kısa kod
+  (`56.12`) ve eski varsayılan tam metne çekilir.
+- Tarayıcı yazdırma iskeleti: `#reportPreview` `thead`/`tfoot` taşıyan tabloya
+  sarıldı → başlık **her sayfada** içeriğin üstünde, çakışma yok; ekran
+  görünümü değişmedi (tablo düzeni ekranda kapatılır).
+- DOCX üst/alt bilgi 3 sütun tablo; sayfa numarası gerçek alan.
+
+**DÜRÜST SINIR:** Tarayıcı yazdırmasında CSS `counter(page)` **çalışmıyor**
+(ölçüldü: “0/0”). Bu yüzden tarayıcı PDF’inde sayfa numarası uygulamadan
+gelmez; Word/LibreOffice çıktısında gerçek `Sayfa N / M` vardır. UDF şablonunda
+üst/alt bilgi içeriği doğrulanmadığı için UDF’e eklenmedi (kapak metni girer).
 
 ## v2.362 — Yazdırma / PDF tüm sayfaları veriyor
 

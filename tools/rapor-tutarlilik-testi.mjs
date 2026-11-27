@@ -200,7 +200,24 @@ console.log('== Rapor tutarlılık kontrolü ==\n');
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   console.log('[Senaryo 1] kayıt var, uyarılar var');
   // `T.C.` rapor kapağında: AKİS tasarım tercihi (v2.329).
-  checkShared('alt başlık', REPORT_TEXT.subtitle, H, U, D);
+  // v2.363: kapak sırası TEK KAYNAK (`coverLines`). Eski alt başlık kaldırıldı;
+  // yerine aile satırı + uzmanlık alanı + parantezli not gelir. Üç çıktı AYNI.
+  checkShared('kapak T.C.', 'T.C.', H, U, D);
+  checkShared('kapak aile satırı', 'ADLİ VE KRİMİNALİSTİK İNCELEMELER', H, U, D);
+  checkShared(
+    'kapak uzmanlık satırı',
+    '56.12 – SES KAYITLARININ METİN HALİNE DÖNÜŞTÜRÜLMESİ',
+    H,
+    U,
+    D
+  );
+  checkShared(
+    'kapak uzmanlık notu',
+    '(Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)',
+    H,
+    U,
+    D
+  );
   checkShared('5.1 bölüm etiketi', REPORT_TEXT.segmentCountLabel, H, U, D);
   checkShared('envanter notu', REPORT_TEXT.inventoryNote, H, U, D);
   checkShared('envanter başlığı', REPORT_TEXT.inventoryHeaders[0], H, U, D);

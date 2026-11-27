@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.362.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.363.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9680,3 +9680,46 @@ app.css yazdırma kurallarını ezer. Sabit alt bilgi akışa alınır.
 bash tools/test.sh
 git log --oneline -3; git status --short
 ```
+
+## YENİ OTURUM DEVRİ (v2.363) — Kapak + üst/alt bilgi
+
+| | |
+|---|---|
+| Sürüm | **v2.363** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium + `pdfplumber`: PDF 24 sayfa; üst bilgi her sayfada y=46, içerik y=124 (çakışma yok) |
+
+### Kapak (DEĞİŞMEZ SIRA)
+`T.C.` · mahkeme tam adı · `ADLİ VE KRİMİNALİSTİK İNCELEMELER` · `BİLİRKİŞİ
+RAPORU` · `56.12 – SES KAYITLARININ METİN HALİNE DÖNÜŞTÜRÜLMESİ` · `(Yargı
+mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)`.
+
+- **TEK KAYNAK:** `coverLines(c)` (app.js) + `expertFieldParts` /
+  `REPORT_FAMILY_LINE` (schema.js). Üç üretici aynı satırları basar; kapak
+  metnini başka yerde yeniden biçimlendirmeyin.
+- Eski `paper-topline` (tür etiketi + kısa uzmanlık kodu) kapaktan KALDIRILDI.
+- `DEFAULT_EXPERT_FIELD` yeni metin; `normalizeExpertField` eski tam metni ve
+  `56.12` kısa kodunu yeni metne çeker. `expertFieldParts` de normalize eder
+  (normalizeCase’ten geçmemiş kayıt/test de tam satırı görür).
+
+### Üst/alt bilgi (DEĞİŞMEZ YERLEŞİM)
+- **Üst:** sol `Dosya No: …` · orta boş · sağ `BİLİRKİŞİ RAPORU`.
+- **Alt:** orta `Sayfa N / M`.
+- DOCX: 3 sütun **tablo** (`w:tblLayout fixed`, `contentTw`); `PAGE` +
+  `NUMPAGES`. Word/LibreOffice’te gerçek sayfa numarası.
+- Tarayıcı PDF: `#reportPreview` `thead`/`tfoot` tablosuna sarıldı; başlık
+  **her sayfada** içeriğin üstünde (çakışma yok). Ekranda tablo düzeni kapatılır
+  → görünüm birebir aynı (898 px).
+
+### DEĞİŞMEZ SINIR (ölçüldü)
+Tarayıcı yazdırmasında CSS `counter(page)`/`counter(pages)` **çalışmaz**
+(“0/0”). Bu yüzden tarayıcı PDF’inde sayfa numarası uygulamadan gelmez; gerçek
+numara DOCX (Word/LibreOffice) alanındadır. UDF şablonunda üst/alt bilgi içeriği
+doğrulanmadı → UDF’e eklenmedi (kapak metni girer).
+
+### Sıradaki iş
+1. **v2.364 — DOCX LibreOffice uyumu** (kullanıcı gerçek dosyayla denemeli).
+2. **v2.365 — Rapor sağ panelini tek çekmecede toplama** (alan görünürlüğü +
+   tablo sütunları + biçim + ekler + revizyon).
+3. Yerleşim sabitliği (kâğıt 142 px zıplaması), ≤900 px iskelet, araç çubuğu.
+4. Gerekirse **uygulama içi PDF** (pdf-lib + Türkçe font) — sayfa numarası için.

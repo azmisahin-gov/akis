@@ -652,18 +652,42 @@ export function reportFieldVisible(c, section, key) {
 }
 // UZMANLIK ALANI varsayılanı TEK KAYNAK (v2.336). Kullanıcı dosya künyesinden
 // değiştirebilir; boş bırakılırsa bu metin kullanılır.
+// v2.363: kapakta iki satıra ayrılır — `56.12 – BAŞLIK` ve parantezli not.
 export const DEFAULT_EXPERT_FIELD =
-  '56.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)';
-// Eski varsayılan ("56.12 – Ses kayıtlarının metin hâline dönüştürülmesi") ve
-// yalnız kod ("56.12") TAM metne çekilir; özel yazılmış metin korunur.
+  '56.12 – Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)';
+// Kapakta mahkeme satırının altında görünen sabit aile satırı (v2.363).
+export const REPORT_FAMILY_LINE = 'ADLİ VE KRİMİNALİSTİK İNCELEMELER';
+// Eski varsayılanlar TAM metne çekilir; ÖZEL yazılmış metin korunur. Karşılaştırma
+// boşluk/büyük-küçük harf duyarsızdır (Türkçe küçültme ile).
+const LEGACY_EXPERT_DEFAULTS = [
+  '56.12',
+  '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi',
+  '56.12 Ses Kayıtlarının Metin Haline Dönüştürülmesi (Yargı Mercilerince Ses ve Görüntü Bilişim Sisteminin Kullanılması Hariç)'
+];
 export function normalizeExpertField(v) {
   const s = str(v).trim();
   if (!s) return DEFAULT_EXPERT_FIELD;
-  if (/^56\.12$/.test(s)) return DEFAULT_EXPERT_FIELD;
-  if (/^56\.12\s*[–-]\s*Ses kayıtlarının metin hâline dönüştürülmesi\.?$/i.test(s)) {
-    return DEFAULT_EXPERT_FIELD;
-  }
+  const norm = (x) => x.replace(/\s+/g, ' ').trim().toLocaleLowerCase('tr-TR');
+  const n = norm(s);
+  if (LEGACY_EXPERT_DEFAULTS.some((d) => norm(d) === n)) return DEFAULT_EXPERT_FIELD;
   return s;
+}
+// Uzmanlık alanı metnini kapak satırlarına ayırır (v2.363):
+//   "56.12 – Ses ... (Yargı ... Hariç)"
+//   → { code:'56.12', title:'Ses ...', main:'56.12 – Ses ...', note:'(Yargı ... Hariç)' }
+// Kod yoksa `main` metnin kendisidir. Uydurma kod üretilmez.
+export function expertFieldParts(v) {
+  // Kısa kod/eski varsayılan da TAM metne çekilir: ayrıştırıcı her çağrıldığında
+  // normalize eder. Böylece normalizeCase'ten geçmemiş (bellek/test/göç) kayıt da
+  // kapakta tam satırı gösterir; '56.12' tek başına kalmaz.
+  const s = normalizeExpertField(v);
+  const i = s.indexOf('(');
+  const mainRaw = (i >= 0 ? s.slice(0, i) : s).trim();
+  const note = i >= 0 ? s.slice(i).trim() : '';
+  const m = mainRaw.match(/^(\d{2}\.\d{2})\s*(?:[–-]\s*)?(.+)$/);
+  const code = m ? m[1] : '';
+  const title = m ? m[2].trim() : mainRaw;
+  return { code, title, main: code ? `${code} – ${title}` : title, note };
 }
 
 // ---- 5b. Rapor bölüm görünürlüğü (v2.219) --------------------------------
