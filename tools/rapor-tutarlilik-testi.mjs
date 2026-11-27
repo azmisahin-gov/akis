@@ -2076,5 +2076,47 @@ console.log('\n[Senaryo 62] belirsiz okuma: kısa hücre + tablo altı not (v2.3
   checkShared('not zaman aralığı taşır', '00:00:05.000 – 00:00:10.000', H, U, D);
 }
 
+
+// Senaryo 63 (v2.385): her kayıt YENİ SAYFADAN başlar; ikinci kaydın deşifre
+// tablosu 5 satırın tamamını taşır ve başlık satırı tekrar eder.
+console.log('\n[Senaryo 63] her kayıt yeni sayfa + ikinci tablo 5 satır (v2.385)');
+{
+  const mk = (n) => {
+    const c = withMaterial();
+    const seg = (i, t) => ({ id: 'g' + i, start: '00:00:0' + i + '.000', end: '00:00:0' + (i + 1) + '.000', speaker: 'K', text: t, review: 'approved' });
+    c.materials[0].segments = [seg(1, 'bir'), seg(2, 'iki')];
+    if (n > 1) {
+      const m2 = JSON.parse(JSON.stringify(c.materials[0]));
+      m2.id = 'm2';
+      m2.name = 'b.wav';
+      m2.segments = [seg(1, 'bir'), seg(2, 'iki'), seg(3, 'üç'), seg(4, 'dört'), seg(5, 'beş')];
+      c.materials.push(m2);
+    }
+    return c;
+  };
+  const readDoc = async (c) => {
+    downloads.length = 0;
+    setCase(c);
+    await makeDocx();
+    const zip = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+    return zip.file('word/document.xml').async('string');
+  };
+  const one = await readDoc(mk(1));
+  const two = await readDoc(mk(2));
+  const pages = (x) => (x.match(/w:type="page"/g) || []).length;
+  check('ikinci kayıt bir sayfa sonu ekler', pages(two) === pages(one) + 1, `${pages(one)} -> ${pages(two)}`);
+  const th = REPORT_TEXT.recordTranscriptHeading;
+  const i1 = two.indexOf(th);
+  const i2 = two.indexOf(th, i1 + 1);
+  check('iki deşifre tablosu var', i1 > 0 && i2 > i1);
+  const t0 = two.indexOf('<w:tbl>', i2);
+  const t1 = two.indexOf('</w:tbl>', t0);
+  const table = two.slice(t0, t1);
+  const rows = (table.match(/<w:tr>/g) || []).length;
+  check('ikinci tablo 6 satır (başlık + 5 veri)', rows === 6, String(rows));
+  check('başlık satırı sonraki sayfada tekrar eder', /<w:tblHeader w:val="true"\/>/.test(table));
+  check('satırlar bölünmez (cantSplit)', (table.match(/<w:cantSplit\/>/g) || []).length === 6, String((table.match(/<w:cantSplit\/>/g) || []).length));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

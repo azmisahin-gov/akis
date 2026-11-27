@@ -6,12 +6,22 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.384.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.385.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.385 — Her kayıt yeni sayfada; deşifre tablosu satırları
+
+**KULLANICI NE GÖRECEK:**
+- **Her ses kaydı yeni sayfadan başlar.** Deşifre tablosu sayfa dibinde başlamaz; **ikinci kaydın beş satırının tamamı** görünür.
+- **Tablo başlığı** sonraki sayfalarda **yinelenir**; satırlar bölünmez.
+- **Bozuk/görünmez karakter** (ör. dikey sekme) DOCX’i açılamaz yapmaz: metin temizlenir, XML **yazılmadan önce doğrulanır**; doğrulanamazsa dosya indirilmez ve neden söylenir.
+- UDF aynı kalır: ikinci kayıtta **5 veri satırı**, zorunlu sayfa sonu **5**.
+
+**ÖLÇÜM (gerçek Chromium + LibreOffice 25.2.3.2):** 8.1.2 kaydı **sayfa başında**; tablo **6 satır** (başlık + 5 veri); dört cümlenin her biri PDF’te **2 kez** (Bölüm 8 tablosu + Bölüm 9 okuma metni). DOCX **16 / 20 sayfa** (değişmedi), UDF sayfa sonu **5** (değişmedi). Kontrol karakterli DOCX artık üretilmiyor (önce LibreOffice dönüştüremiyordu). Testler **2838 birim + 556 şema** + rapor (Senaryo 63) + sürüm + tasarım yeşil.
 
 ## v2.384 — Belge akışı: boş sayfa, tablo notu, kısa durum
 

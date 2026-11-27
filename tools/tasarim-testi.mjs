@@ -3109,5 +3109,16 @@ console.log('\n[2em] Belge akışı: kısa bölümler akar, tablo notu tabloyla 
   check('kanıt tablosu kısa durum + not', /function reviewTableText\(s\)/.test(app) && /function ambiguousSegmentNotes\(m\)/.test(app));
   check('kanıt tablosu sütunları dengeli', /\[1200, 900, 1100, 3100, 1200, 800\]/.test(app));
 }
+
+console.log('\n[2en] Her kayıt yeni sayfadan; DOCX XML doğrulanır (v2.385)');
+{
+  const app = read('assets/app.js');
+  // KULLANICI BULGUSU: ikinci kaydın deşifre tablosu sayfa dibinde başlayınca
+  // LibreOffice satırları düşürdü. Kayıt başlığı yeni sayfadan başlar.
+  check('kayıt başlığı yeni sayfadan', /if \(!c\.__annexDoc && i > 0\) out \+= pageBreakPara;/.test(app));
+  check('DOCX XML yazılmadan doğrulanır', /DOCX XML yapısı doğrulanamadı; çıktı oluşturulmadı/.test(app));
+  check('kontrol karakterleri atılır (xesc)', /u0000-\\u0008\\u000B\\u000C\\u000E-\\u001F/.test(app));
+  check('UDF kayıt tablosu korunur (ek sayfa sonu yok)', !/if \(!compact && i > 0\) el\.push\(pageBreak\(\)\)/.test(app));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

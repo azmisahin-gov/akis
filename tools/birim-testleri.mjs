@@ -115,7 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'asrProfile', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
-  'reviewTableText', 'ambiguousSegmentNotes',
+  'reviewTableText', 'ambiguousSegmentNotes', 'xesc',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -8209,6 +8209,19 @@ console.log('\n== [188] Kanıt tablosu: kısa durum + belirsiz okuma notu (v2.38
   eq('not iki okumayı taşır', notes[0].includes('geldi') && notes[0].includes('kaldı'), true);
   eq('not seçimi taşır', /seçilen: geldi/.test(notes[0]), true);
   eq('belirsiz yoksa not yok', T.ambiguousSegmentNotes({ segments: [app] }).length, 0);
+}
+
+console.log('\n== [189] DOCX XML güvenliği: kontrol karakteri + kaçış (v2.385)');
+{
+  // v2.385 — XML 1.0'ın izin vermediği kontrol karakterleri DOCX'i açılamaz
+  // yapıyordu (LibreOffice dönüştürmeyi tamamen durdurdu). xesc artık atar.
+  eq('dikey sekme atılır', T.xesc('a\u000Bb'), 'ab');
+  eq('NUL atılır', T.xesc('a\u0000b'), 'ab');
+  eq('satır sonu KORUNUR', T.xesc('a\nb'), 'a\nb');
+  eq('sekme KORUNUR', T.xesc('a\tb'), 'a\tb');
+  eq('& kaçırılır', T.xesc('a & b'), 'a &amp; b');
+  eq('< kaçırılır', T.xesc('<x>'), '&lt;x&gt;');
+  eq('Türkçe bozulmaz', T.xesc('İğdır şöyle'), 'İğdır şöyle');
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

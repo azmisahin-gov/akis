@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.384.**
+yazılır. **Güncel sürüm: v2.385.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.385 — Her kayıt yeni sayfada; deşifre tablosu satırları (TAMAMLANDI)
+
+- DOCX `s5`: her kayıt başlığından önce `pageBreakPara` (`i > 0`); deşifre tablosu sayfa dibinde başlamaz.
+- `xesc`: XML 1.0 dışı kontrol karakterleri (`\u0000-\u0008`, `\u000B`, `\u000C`, `\u000E-\u001F`, `\uFFFE`, `\uFFFF`) atılır.
+- `docxDocument`: `document.xml` yazılmadan önce DOMParser ile doğrulanır; `parsererror` → çıktı üretilmez.
+- UDF değişmedi (5 satır, 5 zorunlu sayfa sonu).
+- Testler: `birim [189]`, `rapor` Senaryo 63, `tasarim [2en]`; 2838 + 556 yeşil.
 
 ## v2.384 — Belge akışı: boş sayfa, tablo notu, kısa durum (TAMAMLANDI)
 

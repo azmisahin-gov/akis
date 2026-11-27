@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.384.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.385.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10217,6 +10217,33 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 
 
 
+
+
+## YENİ OTURUM DEVRİ (v2.385) — Deşifre tablosu satırları + DOCX XML güvenliği
+
+| | |
+|---|---|
+| Sürüm | **v2.385** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2838 birim + 556 şema** + rapor (Senaryo 63) + sürüm + tasarım yeşil |
+| Ölçüm | LibreOffice 25.2.3.2: 8.1.2 sayfa başında; tablo **6 satır** (başlık+5); dört cümle PDF’te **2 kez**; DOCX 16/20 sayfa (değişmedi); UDF sayfa sonu 5 (değişmedi) |
+
+**Bulgu:** ikinci kaydın deşifre tablosunda yalnız ilk satır görünüyordu (DOCX/UDF XML’de 5 satır vardı). Kök neden bu ortamda **birebir üretilemedi**; tablonun **sayfa dibinde başlaması** sınıfı en olası tetikleyici olduğu için tablo artık **her kayıtta sayfa başından** başlıyor.
+
+### Yapılan
+1. **DOCX s5:** her kayıt başlığından önce `pageBreakPara` (`i > 0`; `__annexDoc` hariç). İkinci kayıt sayfa başında → 5 satır görünür.
+2. **`xesc`:** XML 1.0 dışı kontrol karakterleri atılır. Ölçüldü: tek `\u000B` DOCX’i **tamamen açılamaz** yapıyordu (LibreOffice dönüştürmüyordu); UDF `addText` zaten temizliyordu.
+3. **`docxDocument`:** `document.xml` DOMParser ile doğrulanır; `parsererror` → çıktı üretilmez (sessiz bozuk dosya yok).
+4. UDF değişmedi (5 satır, 5 sayfa sonu). v2.384 akış düzeltmeleri korunur.
+
+### DEĞİŞMEZ KURALLAR
+1. **Her kayıt yeni sayfadan** (DOCX). Yeni bir kayıt döngüsü eklerken aynı kuralı uygulayın.
+2. **XML’e yazmadan önce temizle ve doğrula:** kontrol karakterleri `xesc`’te atılır; DOCX/UDF yazılmadan doğrulanır.
+3. Tablo `tblHeader` + `cantSplit` korunur.
+4. **Regresyon:** her deşifre cümlesi PDF’te **2 kez** (Bölüm 8 tablosu + Bölüm 9 okuma metni). Ölçüm: `pdftotext` (düz) + boşluk normalizasyonu; `-layout` sütunları karıştırdığı için saymaz.
+
+### Dürüst sınır
+- Kullanıcının dosyasındaki satır kaybı bu ortamda **birebir üretilemedi** (LibreOffice 25.2.3.2, demo verisi). Düzeltme, tablo başlangıcını sayfa başına alarak en olası sınıfı kapatır; kullanıcı kendi dosyasıyla doğrulamalı.
+- UYAP görünümü kullanıcıda.
 
 ## YENİ OTURUM DEVRİ (v2.384) — Belge akışı: boş sayfa, tablo notu, kısa durum
 

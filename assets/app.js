@@ -166,15 +166,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.384';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.384';
+} from './schema.js?v=2.385';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.385';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.384';
+const APP_VERSION = '2.385';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -18455,7 +18455,11 @@ function renderReport() {
   if (reportDocMode === 'letter') renderLetter();
 }
 function xesc(s = '') {
+  // v2.385 — XML 1.0'ın izin VERMEDİĞİ kontrol karakterleri atılır. Aksi
+  // hâlde tek bir \u000B bile DOCX'i açılamaz yapar (LibreOffice: dönüştürme
+  // başarısız). UDF `addText` aynı temizliği zaten yapıyordu.
   return String(s)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/g, '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -18846,6 +18850,10 @@ function docxXml(c) {
       let out = headingXml(H('s5')) + headingXml(s5sub.s51, 2) + wP(REPORT_TEXT.s5Intro, { color: '6F8295', size: 17, keep: true });
       for (let i = 0; i < c.materials.length; i++) {
         const m = c.materials[i];
+        // v2.385 — HER KAYIT YENİ SAYFADAN başlar (ilki bölüm girişinin
+        // ardından). Böylece deşifre tablosu sayfa dibinde başlamaz ve
+        // LibreOffice'te satır kaybı oluşmaz (v2.384'te ölçüldü).
+        if (!c.__annexDoc && i > 0) out += pageBreakPara;
         out += headingXml(`${s5sub.recordPrefix(i)} ${m.name}`, 2);
         out += wP(
           `Süre: ${matDuration(m) ? fmtTime(matDuration(m)) : 'Bilinmiyor'}  |  Biçim: ${matFormat(m)}  |  ${REPORT_TEXT.segmentCountLabel}: ${(m.segments || []).length}`,
@@ -19145,7 +19153,14 @@ async function docxDocument(opts = {}) {
       `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`
     );
   const w = zip.folder('word');
-  w.file('document.xml', letterMode ? docxLetterXml(c) : docxXml(c));
+  const docXml = letterMode ? docxLetterXml(c) : docxXml(c);
+  // v2.385 — UDF'te olduğu gibi DOCX de yazılmadan ÖNCE doğrulanır. Bozuk
+  // XML üretilirse dosya indirilmez; sessizce "açılamayan DOCX" oluşmaz.
+  {
+    const parsed = new DOMParser().parseFromString(docXml, 'application/xml');
+    if (parsed.querySelector('parsererror')) throw new Error('DOCX XML yapısı doğrulanamadı; çıktı oluşturulmadı.');
+  }
+  w.file('document.xml', docXml);
   w.file(
     '_rels/document.xml.rels',
     `<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/header" Target="header1.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer" Target="footer1.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/></Relationships>`
@@ -25043,6 +25058,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.385': {
+    title: 'Her kayıt yeni sayfada; deşifre tablosu satırları eksilmez',
+    body:
+      'Word çıktısında her ses kaydı yeni sayfadan başlar; böylece deşifre tablosu sayfa dibinde başlayıp satır kaybına uğramaz. İkinci kaydın beş satırının tamamı görünür, tablo başlığı sonraki sayfalarda yinelenir. Ayrıca DOCX yazılmadan önce XML doğrulanır ve metindeki görünmez kontrol karakterleri temizlenir; tek bir bozuk karakter dosyayı açılamaz yapamaz. UDF çıktısı ve v2.384 düzeltmeleri korunur.'
+  },
   '2.384': {
     title: 'Belge akışı: boş sayfa, tablo notu ve kısa durum',
     body:

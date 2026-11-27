@@ -1,9 +1,15 @@
-# Özellikler (v2.384 — mevcut durum)
+# Özellikler (v2.385 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
 
+
+
+## Deşifre tablosu satırları ve DOCX XML güvenliği (v2.385)
+
+- **Her kayıt yeni sayfadan.** DOCX’te kayıt başlığından önce sayfa sonu; deşifre tablosu sayfa dibinde başlamaz, satır kaybı oluşmaz. Başlık satırı `tblHeader` ile yinelenir, satırlar `cantSplit`.
+- **XML güvenliği.** `xesc` XML 1.0 dışı kontrol karakterlerini atar; `docxDocument` `document.xml`’i yazmadan önce DOMParser ile doğrular. Bozuk çıktı indirilmez, neden söylenir.
 
 ## Belge akışı: boş sayfa, tablo notu, kısa durum (v2.384)
 
