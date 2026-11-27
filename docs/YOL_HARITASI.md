@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.355.**
+yazılır. **Güncel sürüm: v2.356.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.356 — Çalışma notları (TAMAMLANDI)
+
+- `case.notebook[]` (id, at, updatedAt, by, text, pinned) + normalize sınırları.
+- Sağ çekmece (📝 / Alt+N): ekle, sabitle, ara, kopyala, **soruya dönüştür**,
+  onaylı sil (Ctrl+Z).
+- **Rapora girmez** (üç çıktı testi); paket anahtarı ile paketten çıkarılabilir.
+- Birleştirme/önizleme tek kaynak: `notebookMergePlan`.
+- Test: `birim [175]`, `rapor 56`, `tasarim [2ds]`, `surum` kimlikleri.
 
 ## v2.355 — 1. bölüm başlığı + başlığın ikinci kaynağı (TAMAMLANDI)
 

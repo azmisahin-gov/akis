@@ -4323,3 +4323,54 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
   line-height: var(--lh-body);
   color: var(--ink-3);
 }
+
+/* --- Çalışma notları çekmecesi (v2.356) -----------------------------------
+   Kişisel defter; rapora GİRMEZ. Liste kendi içinde kayar (kırpma yok),
+   metin rengi token'dan gelir, punto 11px tabanının altına inmez. */
+.notebook-drawer { display: flex; flex-direction: column; gap: 10px; overflow: hidden; }
+.nb-hint { margin: 0; font-size: var(--fs-2xs); line-height: var(--lh-body); color: var(--ink-3); }
+.nb-add { display: flex; flex-direction: column; gap: 6px; }
+.nb-add textarea {
+  width: 100%; min-height: 76px; resize: vertical;
+  border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px;
+  background: var(--surface); color: var(--ink); font: inherit;
+  font-size: var(--fs-sm); line-height: 1.5;
+}
+.nb-add textarea:focus { border-color: var(--accent); box-shadow: var(--focus-ring); outline: none; }
+.nb-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.nb-add-hint { font-size: var(--fs-2xs); color: var(--ink-3); }
+.nb-list-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  font-size: var(--fs-2xs); color: var(--ink-3);
+}
+.nb-list-head input[type='search'] {
+  flex: 0 1 60%; min-width: 0; border: 1px solid var(--line); border-radius: var(--r-pill);
+  padding: 5px 10px; background: var(--surface); color: var(--ink);
+  font: inherit; font-size: var(--fs-2xs);
+}
+.nb-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; padding-right: 2px; }
+.nb-item { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 8px 10px; }
+.nb-item.is-pinned { border-color: var(--accent); background: var(--accent-soft); }
+.nb-head {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  font-size: var(--fs-2xs); color: var(--ink-3);
+}
+.nb-by { color: var(--ink-2); }
+.nb-tools { margin-left: auto; display: flex; gap: 2px; }
+.nb-btn {
+  border: 1px solid transparent; background: transparent; color: var(--ink-2);
+  border-radius: var(--r-sm); padding: 2px 6px; font-size: var(--fs-2xs); cursor: pointer;
+}
+.nb-btn:hover, .nb-btn:focus-visible { background: var(--surface-3); border-color: var(--line); }
+.nb-btn[aria-pressed='true'] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.nb-del { color: var(--red); }
+.nb-text {
+  width: 100%; margin-top: 6px; border: 1px solid transparent; border-radius: var(--r-sm);
+  padding: 6px 8px; background: transparent; color: var(--ink); font: inherit;
+  font-size: var(--fs-sm); line-height: 1.6; resize: vertical;
+}
+.nb-text:focus { border-color: var(--accent); background: var(--surface); outline: none; }
+.nb-empty { font-size: var(--fs-2xs); line-height: var(--lh-body); color: var(--ink-3); padding: 8px 2px; }
+.nb-count { display: inline-block; margin-left: 4px; font-size: var(--fs-2xs); color: var(--accent); }
+.nb-count[hidden] { display: none; }
+.scope-notes { margin-top: 8px; }

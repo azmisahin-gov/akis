@@ -149,16 +149,20 @@ import {
   REPORT_FIELD_DEFS,
   normalizeReportFieldVisibility,
   reportFieldVisible,
-  DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.355';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.355';
+  DEFAULT_EXPERT_FIELD,
+  normalizeNotebook,
+  emptyNotebookEntry,
+  caseWithoutNotebook,
+  NOTEBOOK_TEXT_MAX
+} from './schema.js?v=2.356';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.356';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.355';
+const APP_VERSION = '2.356';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1330,6 +1334,8 @@ async function undoLast() {
   populateCaseForm();
   populateQuestionsForm();
   renderOverview();
+  // Çalışma notları da geri gelir; çekmece açıkken liste TAZELENMELİ (v2.356).
+  renderNotebook();
   await renderAudioList();
   showToast(`Geri alındı: ${snap.label}`);
 }
@@ -1565,6 +1571,8 @@ function freshCase() {
       conclusionText: ''
     },
     questions: [],
+    // ÇALIŞMA NOTLARI (v2.356): kişisel defter; rapora GİRMEZ.
+    notebook: [],
     materials: [],
     shared: false,
     lastEditedBy: '',
@@ -3162,6 +3170,7 @@ function renderOverview() {
   renderWorkload(c);
   renderDeliveryPanel(c);
   renderStatusBar();
+  refreshNotebookBadge();
   // Dosya SAYFASI açıksa künye/teslim/eksikler de tazelenir (v2.315).
   if (document.body && document.body.dataset && document.body.dataset.view === 'case') renderCasePage(c);
 }
@@ -19245,6 +19254,7 @@ async function ensureEditorIdentity() {
 async function exportProject(scope) {
   const c = currentCase();
   if (!c) return;
+  let excludeNotes = false;
   const real = (appState.cases || []).filter((x) => !isEmptyCase(x));
   if (!real.length) {
     showToast(
@@ -19256,12 +19266,15 @@ async function exportProject(scope) {
   if (!EXPORT_SCOPE.includes(scope)) {
     // Aktif dosya boşsa "bu dosya" seçeneği sunulamaz.
     const curEmpty = isEmptyCase(c);
+    const notesTotal = (appState.cases || []).reduce((n, x) => n + notebookCount(x), 0);
     const pick = await askExportScope({
       currentName: curEmpty ? '' : caseDisplayName(c),
-      total: real.length
+      total: real.length,
+      notesTotal
     });
     if (!pick) return; // kullanıcı vazgeçti
-    scope = pick;
+    scope = pick.scope;
+    excludeNotes = pick.excludeNotes;
   }
   // Kimliği belirsiz paylaşım sonradan çözülemez; doğru anda sorulur.
   if (!(await ensureEditorIdentity())) {
@@ -19302,7 +19315,8 @@ async function exportProject(scope) {
           exportedAt: new Date().toISOString(),
           kind: 'archive',
           activeCaseId: all.some((x) => x.id === c.id) ? c.id : all[0].id,
-          cases: all
+          // Kişisel çalışma notları istenirse pakete KONMAZ (v2.356).
+          cases: excludeNotes ? all.map(caseWithoutNotebook) : all
         },
         null,
         2
@@ -19329,7 +19343,7 @@ async function exportProject(scope) {
     // Tek dosyalı paket: paketlenen dosya aktif dosya olmayabilir (aktif dosya
     // boşsa elenmiştir). Paket DAİMA paketlenen dosyayı taşır.
     const only = all[0];
-    zip.file('case.json', JSON.stringify(buildProjectPack(only), null, 2));
+    zip.file('case.json', JSON.stringify(buildProjectPack(excludeNotes ? caseWithoutNotebook(only) : only), null, 2));
     const assets = zip.folder('audio');
     for (const m of only.materials || []) {
       const blob = await getAudioBlob(only, m);
@@ -19385,7 +19399,8 @@ async function exportProject(scope) {
         ? `Paket oluşturuldu: TÜM dosyalar (${all.length} dosya) → ${fileName}`
         : `Paket oluşturuldu: yalnız "${caseDisplayName(all[0])}" → ${fileName}`) +
         ' — güvenli yerde saklayın.' +
-        skippedNote
+        skippedNote +
+        (excludeNotes ? ' Kişisel çalışma notları pakete KONMADI.' : '')
     );
   }
 }
@@ -19966,6 +19981,169 @@ function setReportFull(on) {
 }
 // Dosya bilgileri çekmecesi. Form artık ayrı sayfa değil; çalışma alanının
 // üzerine sağdan açılır. Aynı anda yalnızca bir çekmece açık olur.
+// ---- ÇALIŞMA NOTLARI (v2.356) --------------------------------------------
+// KURAL: not bir BULGU DEĞİLDİR. Rapora, rapor eklerine ve belge paketine
+// kendiliğinden GİRMEZ. Bilirkişinin dosyayı incelerken tuttuğu kişisel
+// defterdir (tarih, kişi, iddia, büyük resim).
+function notebookList(c) {
+  return normalizeNotebook((c && c.notebook) || []);
+}
+function notebookSorted(c) {
+  const list = notebookList(c);
+  return [...list].sort(
+    (a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || String(b.at).localeCompare(String(a.at))
+  );
+}
+function notebookCount(c) {
+  return notebookList(c).length;
+}
+function refreshNotebookBadge() {
+  const c = currentCase();
+  const n = notebookCount(c);
+  const badge = $('#notebookCount');
+  if (badge) {
+    badge.textContent = n ? String(n) : '';
+    badge.hidden = !n;
+  }
+  const btn = $('#notebookBtn');
+  if (btn) btn.title = `Çalışma notları (Alt+N) — ${n} not · rapora girmez`;
+}
+function notebookTimeText(iso) {
+  const v = String(iso || '');
+  const d = new Date(v);
+  if (!v || Number.isNaN(d.getTime())) return '—';
+  const p = (n) => String(n).padStart(2, '0');
+  return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+function notebookItemHtml(e) {
+  return (
+    `<article class="nb-item${e.pinned ? ' is-pinned' : ''}" data-nb="${esc(e.id)}">` +
+    `<header class="nb-head"><time datetime="${esc(e.at)}">${esc(notebookTimeText(e.at))}</time>` +
+    (e.by ? `<span class="nb-by" title="Yazan">${esc(e.by)}</span>` : '') +
+    `<span class="nb-tools">` +
+    `<button type="button" class="nb-btn" data-nb-pin aria-pressed="${e.pinned ? 'true' : 'false'}" title="${e.pinned ? 'Sabitlemeyi kaldır' : 'Sabitle (listenin başında dursun)'}">${e.pinned ? '📌' : '📍'}</button>` +
+    `<button type="button" class="nb-btn" data-nb-copy title="Metni panoya kopyala">⧉</button>` +
+    `<button type="button" class="nb-btn" data-nb-ask title="Bu notu cevaplanacak sorulara ekle (not silinmez)">→ Soru</button>` +
+    `<button type="button" class="nb-btn nb-del" data-nb-del title="Notu sil (onay ister)">×</button>` +
+    `</span></header>` +
+    `<textarea class="nb-text" data-nb-text rows="3" maxlength="${NOTEBOOK_TEXT_MAX}" aria-label="Not metni">${esc(e.text)}</textarea>` +
+    `</article>`
+  );
+}
+function renderNotebook() {
+  const c = currentCase();
+  const host = $('#notebookList');
+  if (!host) return;
+  const q = trLowerCase(String(($('#notebookSearch') || {}).value || '').trim());
+  const all = notebookSorted(c);
+  const list = q
+    ? all.filter((e) => trLowerCase(e.text).includes(q) || trLowerCase(e.by || '').includes(q))
+    : all;
+  const count = $('#notebookDrawerCount');
+  if (count) count.textContent = `${notebookCount(c)} not`;
+  host.innerHTML = list.length
+    ? list.map(notebookItemHtml).join('')
+    : `<div class="nb-empty">${
+        all.length
+          ? 'Arama ile eşleşen not yok.'
+          : 'Henüz not yok. Dosyayı incelerken aklınıza geleni buraya yazın; rapora girmez.'
+      }</div>`;
+  refreshNotebookBadge();
+}
+function notebookEntryById(c, id) {
+  return notebookList(c).find((e) => e.id === id) || null;
+}
+function addNotebookEntry() {
+  const c = currentCase();
+  const input = $('#notebookInput');
+  if (!c || !input) return;
+  const text = String(input.value || '').trim();
+  if (!text) {
+    showToast('Not boş: önce bir şey yazın.');
+    input.focus();
+    return;
+  }
+  c.notebook = notebookList(c);
+  const e = emptyNotebookEntry({ text, by: String(c.lastEditedBy || '').trim() });
+  c.notebook.push(e);
+  logEvent(c, 'Çalışma notu eklendi', text.slice(0, 80));
+  input.value = '';
+  persist();
+  renderNotebook();
+  input.focus();
+}
+function patchNotebookEntry(id, patch) {
+  const c = currentCase();
+  if (!c) return;
+  const list = notebookList(c);
+  const e = list.find((x) => x.id === id);
+  if (!e) return;
+  Object.assign(e, patch, { updatedAt: new Date().toISOString() });
+  c.notebook = list;
+  persist();
+}
+async function removeNotebookEntry(id) {
+  const c = currentCase();
+  const e = notebookEntryById(c, id);
+  if (!e) return;
+  const ok = await askConfirm(
+    'Çalışma notunu sil',
+    'Bu not silinecek. Not rapora zaten girmez; silme geri alınabilir (Ctrl+Z).'
+  );
+  if (!ok) return;
+  snapshotForUndo('Çalışma notu silindi');
+  c.notebook = notebookList(c).filter((x) => x.id !== id);
+  logEvent(c, 'Çalışma notu silindi', e.text.slice(0, 80));
+  persist();
+  renderNotebook();
+  showToast('Not silindi. Ctrl+Z ile geri alabilirsiniz.');
+}
+function notebookToQuestion(id) {
+  const c = currentCase();
+  const e = notebookEntryById(c, id);
+  if (!e) return;
+  c.questions = Array.isArray(c.questions) ? c.questions : [];
+  c.questions.push({
+    id: newId('q'),
+    question: e.text,
+    answer: '',
+    basisNote: 'Çalışma notundan aktarıldı',
+    evidence: []
+  });
+  logEvent(c, 'Çalışma notu soruya dönüştürüldü', e.text.slice(0, 80));
+  persist();
+  renderQuestions();
+  showToast('Soru listesine eklendi. Not defterinde de duruyor.');
+}
+async function copyNotebookText(id) {
+  const c = currentCase();
+  const e = notebookEntryById(c, id);
+  if (!e) return;
+  try {
+    await navigator.clipboard.writeText(e.text);
+    showToast('Not metni panoya kopyalandı.');
+  } catch (err) {
+    showToast('Kopyalama başarısız: metni seçip elle kopyalayın.');
+  }
+}
+function setNotebookDrawer(open) {
+  const d = $('#notebookDrawer');
+  const b = $('#drawerBackdrop');
+  if (!d) return;
+  if (open) {
+    setCaseDrawer(false);
+    setSettingsDrawer(false);
+  }
+  d.classList.toggle('open', open);
+  d.setAttribute('aria-hidden', open ? 'false' : 'true');
+  if (b) b.hidden = !open;
+  if (open) {
+    renderNotebook();
+    const i = $('#notebookInput');
+    if (i) i.focus();
+  }
+}
+
 function setCaseDrawer(open) {
   const d = $('#caseDrawer');
   const b = $('#drawerBackdrop');
@@ -22562,6 +22740,55 @@ $('#reportUdfBtn2').addEventListener('click', () => makeUdf().catch((e) => showT
 $('#drawerBackdrop').addEventListener('click', () => {
   setSettingsDrawer(false);
   setCaseDrawer(false);
+  setNotebookDrawer(false);
+});
+// ÇALIŞMA NOTLARI (v2.356): üst bar düğmesi + Alt+N + çekmece olayları.
+$('#notebookBtn').addEventListener('click', () =>
+  setNotebookDrawer(!$('#notebookDrawer').classList.contains('open'))
+);
+$('#closeNotebook').addEventListener('click', () => setNotebookDrawer(false));
+$('#notebookAdd').addEventListener('click', addNotebookEntry);
+$('#notebookInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    addNotebookEntry();
+  }
+});
+$('#notebookSearch').addEventListener('input', renderNotebook);
+$('#notebookList').addEventListener('click', (e) => {
+  const item = e.target.closest('[data-nb]');
+  if (!item) return;
+  const id = item.dataset.nb;
+  if (e.target.closest('[data-nb-pin]')) {
+    const cur = notebookEntryById(currentCase(), id);
+    patchNotebookEntry(id, { pinned: !(cur && cur.pinned) });
+    renderNotebook();
+  } else if (e.target.closest('[data-nb-copy]')) {
+    copyNotebookText(id);
+  } else if (e.target.closest('[data-nb-ask]')) {
+    notebookToQuestion(id);
+  } else if (e.target.closest('[data-nb-del]')) {
+    removeNotebookEntry(id);
+  }
+});
+$('#notebookList').addEventListener('input', (e) => {
+  const ta = e.target.closest('[data-nb-text]');
+  if (!ta) return;
+  const item = ta.closest('[data-nb]');
+  if (item) patchNotebookEntry(item.dataset.nb, { text: ta.value });
+});
+// Alt+N: not defterini aç/kapat (tarayıcı kısayolu değil). Esc kapatır.
+document.addEventListener('keydown', (e) => {
+  if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey && String(e.key).toLowerCase() === 'n') {
+    e.preventDefault();
+    const d = $('#notebookDrawer');
+    setNotebookDrawer(!(d && d.classList.contains('open')));
+    return;
+  }
+  if (e.key === 'Escape') {
+    const d = $('#notebookDrawer');
+    if (d && d.classList.contains('open')) setNotebookDrawer(false);
+  }
 });
 $('#closeCase').addEventListener('click', () => setCaseDrawer(false));
 // Dosya bilgilerini açan düğmeler (özet ekranı).
@@ -22806,7 +23033,7 @@ function askConfirm(title, text) {
 }
 // Dışa aktarma kapsamı sorar (v2.110). Kullanıcı TEK dosya mı TÜM dosyalar mı
 // aktaracağını görür; sessizce "hepsi"ne dönüşmez.
-function askExportScope({ currentName, total }) {
+function askExportScope({ currentName, total, notesTotal = 0 }) {
   return new Promise((resolve) => {
     const dlg = $('#exportScopeDialog');
     const curLabel = $('#scopeCurrentLabel');
@@ -22814,6 +23041,15 @@ function askExportScope({ currentName, total }) {
     const allInput = $('#scopeAll');
     $('#scopeCurrentName').textContent = currentName || '';
     $('#scopeAllName').textContent = `${total} dosya + ses kayıtları`;
+    // KİŞİSEL NOTLAR (v2.356): pakete girip girmediği AÇIKÇA söylenir.
+    const notesNote = $('#scopeNotesNote');
+    if (notesNote) {
+      notesNote.textContent = notesTotal
+        ? `Pakette ${notesTotal} kişisel çalışma notu var (rapora girmez). İşaretlerseniz notlar pakete konmaz.`
+        : 'Kişisel çalışma notu yok.';
+    }
+    const excludeNotesEl = $('#scopeExcludeNotes');
+    if (excludeNotesEl) excludeNotesEl.checked = false;
     // Aktif dosya boşsa "yalnız bu dosya" sunulamaz: seçilemez ve açıklanır.
     const canCurrent = !!currentName;
     curInput.disabled = !canCurrent;
@@ -22835,7 +23071,11 @@ function askExportScope({ currentName, total }) {
       if (dlg.open) dlg.close();
       resolve(v);
     };
-    const onOk = () => finish(curInput.checked && canCurrent ? 'current' : 'all');
+    const onOk = () =>
+      finish({
+        scope: curInput.checked && canCurrent ? 'current' : 'all',
+        excludeNotes: !!($('#scopeExcludeNotes') || {}).checked
+      });
     const onCancel = () => finish(null);
     $('#exportScopeOk').addEventListener('click', onOk);
     $('#exportScopeCancel').addEventListener('click', onCancel);
@@ -23531,6 +23771,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.356': {
+    title: 'Çalışma notları eklendi (rapora girmez)',
+    body:
+      'Dosyayı incelerken tuttuğunuz notlar için kişisel bir defter eklendi: üst bardaki 📝 düğmesi veya Alt+N. Notlar zaman damgasıyla kaydedilir; sabitleyebilir, arayabilir, kopyalayabilir ve tek tıkla cevaplanacak sorulara aktarabilirsiniz. Bu notlar BULGU DEĞİLDİR: rapora, rapor eklerine ve belge çıktılarına kendiliğinden girmez. Paket oluştururken “Kişisel çalışma notlarını pakete koyma” seçeneğiyle notları paket dışında bırakabilirsiniz. Silme onay ister ve Ctrl+Z ile geri alınır.'
+  },
   '2.355': {
     title: '1. bölüm başlığı 56.12 diliyle',
     body:

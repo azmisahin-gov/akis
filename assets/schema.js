@@ -1576,6 +1576,8 @@ export function emptyCase(over = {}) {
     // burada TEK kayıt olarak tutulur; kayıt içi konuşmacılar `personId` ile
     // bağlanır. Uzman kanaatidir; otomatik kimlik tespiti değildir.
     speakers: [], // emptyCaseSpeaker() listesi
+    // ÇALIŞMA NOTLARI (v2.356): kişisel defter; rapora GİRMEZ, eklerine girmez.
+    notebook: [],
     // DİSK ENVANTERİ (v2.215): delil paketindeki disk.json kayıtları.
     // Disk/bölüm/birim metadata'sı + dizin ağacı; raw sektör YOKTUR.
     // Kayıtlar burada tutulur; materyal `origin.acquisition.diskId` ile bağlanır.
@@ -2690,6 +2692,81 @@ export function questionEvidenceRows(c, q) {
   return out;
 }
 
+// ---- ÇALIŞMA NOTLARI (v2.356) -------------------------------------------
+// KURAL: not bir BULGU DEĞİLDİR. Rapora, rapor eklerine ve belge paketine
+// kendiliğinden girmez; bilirkişinin dosyayı incelerken tuttuğu kişisel
+// çalışma defteridir (tarih, kişi, iddia, büyük resim).
+export const NOTEBOOK_TEXT_MAX = 4000;
+export const NOTEBOOK_MAX = 500;
+
+export function emptyNotebookEntry(over = {}) {
+  return {
+    id: newId('nt'),
+    at: new Date().toISOString(),
+    updatedAt: '',
+    by: '',
+    text: '',
+    pinned: false,
+    ...(isObj(over) ? over : {})
+  };
+}
+
+export function normalizeNotebookEntry(src) {
+  const e = isObj(src) ? src : {};
+  const text = str(e.text).trim().slice(0, NOTEBOOK_TEXT_MAX);
+  if (!text) return null;
+  return {
+    ...e,
+    id: e.id || newId('nt'),
+    at: str(e.at) || new Date().toISOString(),
+    updatedAt: str(e.updatedAt),
+    by: str(e.by),
+    text,
+    pinned: e.pinned === true
+  };
+}
+
+export function normalizeNotebook(list) {
+  const arr = Array.isArray(list) ? list : [];
+  const out = [];
+  for (const x of arr) {
+    const e = normalizeNotebookEntry(x);
+    if (e) out.push(e);
+    if (out.length >= NOTEBOOK_MAX) break;
+  }
+  return out;
+}
+
+/**
+ * TEK KAYNAK: birleştirme ve önizleme AYNI planı kullanır (v2.156 dersi).
+ * Notlar id ile eşleşir; aynı id + farklı metin SESSİZCE ezilmez.
+ */
+export function notebookMergePlan(mine, theirs) {
+  const a = normalizeNotebook(mine);
+  const b = normalizeNotebook(theirs);
+  const byId = new Map(a.map((e) => [e.id, e]));
+  const added = [];
+  const conflicts = [];
+  for (const te of b) {
+    const me = byId.get(te.id);
+    if (!me) {
+      added.push(te);
+      continue;
+    }
+    if (String(me.text) !== String(te.text) || !!me.pinned !== !!te.pinned) {
+      conflicts.push({ kind: 'notebook', id: te.id, mine: me, theirs: te });
+    }
+  }
+  const merged = [...a, ...added].sort((x, y) => String(x.at).localeCompare(String(y.at)));
+  return { merged, added, conflicts };
+}
+
+/** Paket dışa aktarımında "notları pakete koyma" seçeneği (v2.356). */
+export function caseWithoutNotebook(c) {
+  if (!isObj(c)) return c;
+  return { ...c, notebook: [] };
+}
+
 export function normalizeCase(src = {}) {
   const c = isObj(src) ? src : {};
   const parties = isObj(c.parties) ? c.parties : {};
@@ -2761,6 +2838,7 @@ export function normalizeCase(src = {}) {
     expertField: expertFieldNorm,
     team,
     speakers,
+    notebook: normalizeNotebook(c.notebook),
     // Disk envanteri: bilinmeyen alanlar korunur; kimlik yoksa verilir.
     disks: (Array.isArray(c.disks) ? c.disks : []).filter(isObj).map((d) => ({ ...d, id: d.id || newId('dk') })),
     report: {
@@ -3394,6 +3472,14 @@ export function mergeCases(mine, theirs) {
     mergeTextField(merged, mine, theirs, newer, k, applied, conflicts, k);
   }
 
+  // ÇALIŞMA NOTLARI (v2.356): id ile eklenir; aynı id + farklı metin çakışma.
+  {
+    const plan = notebookMergePlan(merged.notebook, theirs.notebook);
+    merged.notebook = plan.merged;
+    for (const a of plan.added) applied.push(`notebook: ${a.id} eklendi`);
+    for (const c of plan.conflicts) conflicts.push(c);
+  }
+
   // DOSYA GENELİ KİŞİLER (v2.205): id ile birleşir. Boş alan doldurulur;
   // iki dolu farklı değer sessizce ezilmez, çakışma bildirilir.
   merged.speakers = Array.isArray(merged.speakers) ? merged.speakers : [];
@@ -3901,6 +3987,8 @@ export function compareCases(mine, theirs) {
     // Kullanıcı profilleri (v2.288): önizleme = birleştirme kuralı.
     profiles: { added: [], conflicts: [] },
     placement: { added: [] },
+    // Çalışma notları (v2.356): önizleme = birleştirme kuralı.
+    notebook: { added: 0, conflicts: [] },
     disks: { added: 0 },
     // Fizikî dosya teslim/iade (v2.330): önizleme = birleştirme kuralı.
     physical: { filled: 0, conflicts: [], itemsAdded: 0, docsAdded: 0, returnsAdvanced: 0 },
@@ -4110,6 +4198,15 @@ export function compareCases(mine, theirs) {
 
   // DOSYA GENELİ KİŞİLER (v2.205): önizleme, birleştirme ile AYNI kuralı
   // kullanmalı. Ekleme/doldurma/çakışma sayıları burada çıkar.
+  // ÇALIŞMA NOTLARI (v2.356): önizleme, birleştirmenin gerçekte ne yapacağını
+  // gösterir; aynı plan fonksiyonu kullanılır.
+  {
+    const plan = notebookMergePlan(mine.notebook, theirs.notebook);
+    out.notebook.added = plan.added.length;
+    out.notebook.conflicts.push(...plan.conflicts);
+    for (const c of plan.conflicts) out.conflicts.push(c);
+  }
+
   const minePersons = new Map((mine.speakers || []).map((p) => [p.id, p]));
   for (const tp of theirs.speakers || []) {
     const mp = minePersons.get(tp.id);

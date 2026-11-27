@@ -2738,5 +2738,24 @@ console.log('\n[2dr] Konu alanları: dava konusu ve inceleme konusu (v2.354)');
   check('alan forma bağlı (CASE_FIELDS)', /'examinationSubject'/.test(app));
 }
 
+console.log('\n[2ds] Çalışma notları çekmecesi (v2.356)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('üst barda not defteri düğmesi var', /id="notebookBtn"/.test(html));
+  check('çekmece var', /id="notebookDrawer"/.test(html));
+  check('giriş alanı + ekle düğmesi var', /id="notebookInput"/.test(html) && /id="notebookAdd"/.test(html));
+  check('listede arama var', /id="notebookSearch"/.test(html));
+  check('sınır ekranda yazılı', /rapora ve eklerine girmez/i.test(html));
+  check('paket anahtarı var', /id="scopeExcludeNotes"/.test(html));
+  check('not defteri CSS kuralı var', /\.nb-item\s*\{/.test(css));
+  check('not defteri CSS ham hex taşımaz', !/\.nb-[a-z-]+[^{]*\{[^}]*#[0-9a-f]{3,8}/i.test(css));
+  check('not defteri rapora bağlanmamış', !/renderReport[\s\S]{0,400}notebook/i.test(app));
+  check('kısayol tanımlı (Alt+N)', /Alt\+N/.test(html));
+  // Geri alma veriyi getirir; çekmece listesi de tazelenmeli (v2.356'da ölçüldü).
+  check('geri alma not defterini tazeler', /async function undoLast[\s\S]{0,900}renderNotebook\(\)/.test(app));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

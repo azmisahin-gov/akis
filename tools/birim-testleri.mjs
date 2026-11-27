@@ -181,6 +181,8 @@ const EXPOSE = [
   'physicalHandoverRows', 'physicalReturnRows', 'physicalItemRows', 'physicalSignatureTable',
   'physicalItemStateText', 'physicalStatusChip', 'niceDateTime', 'matchPhysicalDocEntries',
   'physicalDocKey', 'PHYSICAL_ITEM_DEFS', 'PHYSICAL_INDEX_DEFS', 'physicalMutate',
+  // v2.356 — çalışma notları
+  'normalizeNotebook', 'emptyNotebookEntry', 'caseWithoutNotebook', 'NOTEBOOK_TEXT_MAX', 'NOTEBOOK_MAX',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -192,6 +194,8 @@ globalThis.__t.emptySegmentForTest = (o) => globalThis.__schema.emptySegment(o);
 globalThis.__t.setAppState = (s) => { appState = s; };
 globalThis.__t.store = localStorage;
 globalThis.__t.mergeCasesForTest = (a, b) => globalThis.__schema.mergeCases(a, b);
+globalThis.__t.notebookMergePlanForTest = (a, b) => globalThis.__schema.notebookMergePlan(a, b);
+globalThis.__t.compareCasesForTest2 = (a, b) => globalThis.__schema.compareCases(a, b);
 globalThis.__t.compareCasesForTest = (a, b) => globalThis.__schema.compareCases(a, b);
 globalThis.__t.resetDb = () => { dbPromise = undefined; };
 `;
@@ -7894,6 +7898,59 @@ console.log('\n[174] Konu alanları ayrıldı (v2.354)');
   const theirs2 = T.normalizeCase({ ...theirs, examinationSubject: 'B incelemesi', updatedAt: '2026-01-04T00:00:00.000Z' });
   const m2 = T.mergeCasesForTest(mine2, theirs2);
   eq('farklı inceleme konusu çakışma bildirir', m2.conflicts.some((x) => x.field === 'examinationSubject'), true);
+}
+
+// --- 175. Çalışma notları: kişisel defter, rapora girmez (v2.356) ---------
+// KULLANICI: "Bilirkişi dosyayı incelerken notlar alıyor; bunları yazacağı bir
+// yer yok." Kural: not BULGU DEĞİLDİR; rapora/eklerine kendiliğinden girmez.
+console.log('\n[175] Çalışma notları (v2.356)');
+{
+  eq('varsayılan defter boş', Array.isArray(T.freshCase().notebook), true);
+  eq('defter yeni dosyada boş', T.freshCase().notebook.length, 0);
+
+  // 1) Normalize: boş metin atılır, boşluk kırpılır, kimlik/zaman verilir.
+  const list = T.normalizeNotebook([
+    { text: '  dizi pusulasında 2. sayfa eksik  ' },
+    { text: '   ' },
+    { text: 'davacı vekili 14:20 itiraz etti', pinned: true }
+  ]);
+  eq('boş not atılır', list.length, 2);
+  eq('metin kırpılır', list[0].text, 'dizi pusulasında 2. sayfa eksik');
+  eq('kimlik verilir', typeof list[0].id, 'string');
+  eq('zaman verilir', /^\d{4}-\d{2}-\d{2}T/.test(list[0].at), true);
+  eq('sabitleme korunur', list[1].pinned, true);
+  eq('sabitleme varsayılanı false', list[0].pinned, false);
+
+  // 2) Uzunluk sınırı: metin kırpılır (sessiz şişme yok).
+  const long = T.normalizeNotebook([{ text: 'x'.repeat(T.NOTEBOOK_TEXT_MAX + 500) }]);
+  eq('metin üst sınırı', long[0].text.length, T.NOTEBOOK_TEXT_MAX);
+
+  // 3) Birleştirme: id ile eklenir; aynı id + farklı metin ÇAKIŞMA.
+  const mine = T.normalizeNotebook([{ id: 'n1', at: '2026-01-01T00:00:00.000Z', text: 'benim notum' }]);
+  const theirs = T.normalizeNotebook([
+    { id: 'n2', at: '2026-01-02T00:00:00.000Z', text: 'gelen not' },
+    { id: 'n1', at: '2026-01-01T00:00:00.000Z', text: 'değiştirilmiş' }
+  ]);
+  const plan = T.notebookMergePlanForTest(mine, theirs);
+  eq('yeni not eklenir', plan.added.length, 1);
+  eq('aynı id çakışma bildirir', plan.conflicts.length, 1);
+  eq('çakışma türü', plan.conflicts[0].kind, 'notebook');
+  eq('çakışmada yerel metin korunur', plan.merged.find((e) => e.id === 'n1').text, 'benim notum');
+  eq('birleşik liste tarihe göre sıralı', plan.merged.map((e) => e.id).join(','), 'n1,n2');
+
+  // 4) Paket: notlar istenirse çıkarılabilir (kopya; kayıt değişmez).
+  const c = { ...T.freshCase(), id: 'c1', notebook: mine };
+  const stripped = T.caseWithoutNotebook(c);
+  eq('paket kopyasında not yok', stripped.notebook.length, 0);
+  eq('asıl kayıt korunur', c.notebook.length, 1);
+
+  // 5) Önizleme = birleştirme: aynı plan kullanılır.
+  const cmp = T.compareCasesForTest2(
+    { ...T.freshCase(), id: 'c1', notebook: mine },
+    { ...T.freshCase(), id: 'c1', notebook: theirs }
+  );
+  eq('önizleme yeni not sayısı', cmp.notebook.added, 1);
+  eq('önizleme çakışma sayısı', cmp.notebook.conflicts.length, 1);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

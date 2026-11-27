@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.355.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.356.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9365,4 +9365,44 @@ eski kalır.
 `assignment.body` şemada var, hiçbir ekran/çıktı okumuyor (ölü alan). Veri
 kaybı riski nedeniyle silinmedi; sıradaki temizlik turunda ya kaldırılmalı ya
 "görevlendirme yazısı metni" olarak arayüze bağlanmalı.
+
+## YENİ OTURUM DEVRİ (v2.356) — Çalışma notları (kişisel defter)
+
+| | |
+|---|---|
+| Sürüm | **v2.356** |
+| Testler | 2748 birim + 556 şema + rapor (56) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium + demo: Alt+N açıyor; not zaman damgalı eklendi (badge 1); **rapor önizlemesinde not YOK**; → Soru sayacı 3→4 (not duruyor); sabitleme; arama; 13 notta liste kayıyor, kırpma yok; paket diyaloğu "1 kişisel not" diyor; silme onaylı; **Ctrl+Z 12→13 geri getirdi**; JS hatası 0 |
+
+### Neden "gözlem defteri" DEĞİL
+Uygulamada **"Gözlem işaretleri"** (gürültü, üst üste konuşma…) zaten var. İkinci
+bir "gözlem" kavramı terim birliğini bozar. Ad: **Çalışma notları**.
+
+### DEĞİŞMEZ KURALLAR (bu sürümde doğdu)
+1. **Not bir BULGU DEĞİLDİR.** Rapora, rapor eklerine, UDF/DOCX/ZIP belge
+   çıktısına **kendiliğinden girmez**; `rapor` Senaryo 56 üç çıktıda da
+   sızmadığını denetler. Yeni bir çıktı yolu eklerken `notebook` alanını
+   **okumayın**.
+2. **"GÖZLEM" sütununa yazılmaz.** Gözlem işaretleri ayrı kavramdır.
+3. **Tek kaynak birleştirme:** `notebookMergePlan(mine, theirs)`; hem
+   `mergeCases` hem `compareCases` bunu kullanır (önizleme = birleştirme).
+   Aynı id + farklı metin **çakışma**; sessiz ezme yok.
+4. **Paket varsayılanı: notlar dâhil.** Dışa aktarma diyaloğunda
+   **"Kişisel çalışma notlarını pakete koyma"** anahtarı vardır;
+   `caseWithoutNotebook(c)` yalnız **paket kopyasından** çıkarır, kaydı bozmaz
+   ve bildirimde "notlar pakete KONMADI" denir.
+5. **Sınırlar:** not metni 4.000 karakter, en çok 500 not; boş not atılır,
+   metin kırpılır.
+6. **Silme** onay ister + `snapshotForUndo` + `logEvent`.
+7. **Yeni panel eklerken geri alma listesini unutmayın:** `undoLast()` bilinen
+   panelleri tazeler. v2.356'da not defteri eklenince liste bayat kaldı
+   (badge 13, liste 12 — ölçüldü); `renderNotebook()` eklendi. Yeni bir panel
+   eklerseniz `undoLast` içine tazelemesini de ekleyin.
+8. Kısayol **Alt+N** (tarayıcı kısayolu değil); Esc ve karartma kapatır; aynı
+   anda tek çekmece açık (Ayarlar/Dosya/Notlar).
+
+### Bilinen sınır
+Notlar **kişisel**dir; paketle paylaşılırsa alıcı görür (anahtar bunun için).
+Notların hukuken ibraz edilip edilmeyeceği mesleki usul konusudur; uygulama
+yalnız "rapora girmez" sınırını garanti eder, ibraz muafiyeti vaat etmez.
 

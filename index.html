@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.355'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.356'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.355">
-  <link rel="stylesheet" href="assets/app.css?v=2.355">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.356">
+  <link rel="stylesheet" href="assets/app.css?v=2.356">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.355">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.356">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.355"></script>
+  <script type="module" src="assets/app.js?v=2.356"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -155,7 +155,7 @@
             <h1 id="pageTitle">Genel görünüm</h1>
           </div>
         </div>
-        <div class="top-actions"><button class="button button-light button-small" id="reloadVersionBtn" title="Sayfayı önbelleği kırarak yenile — yeni sürümü al">⟳ <span id="topVersion">v—</span></button><span class="save-state" id="saveState">● Yerel kayıt açık</span><span class="backup-state none" id="backupState" title="Veri yalnız bu tarayıcıda; paket oluşturun">Hiç paket oluşturulmadı</span><span class="usage-state" id="usageState" title="Depolama kullanımı"></span><button class="button button-light button-small" id="undoBtn" disabled title="Geri al (Ctrl+Z)">↶ 0</button><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn" title="Paketi (.akis) bu bilgisayara EKLE — yeni kopya açar, mevcut dosyalarla birleştirmez">Paketten yükle</button><button class="button button-light" id="exportProjectBtn" title="Paket (.akis) oluştur — yalnız bu dosya veya tüm dosyalar; ses kayıtları dâhil">Paket oluştur</button><button class="button button-light" id="mergeProjectBtn" title="Başka bir bilirkişinin gönderdiği .akis paketini BU dosyayla BİRLEŞTİR — kopya açmaz, çakışmaları gösterir">⇄ Birleştir</button><input type="file" id="mergeProjectInput" accept=".akis,.mihenk,.zip" hidden><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
+        <div class="top-actions"><button class="button button-light button-small" id="reloadVersionBtn" title="Sayfayı önbelleği kırarak yenile — yeni sürümü al">⟳ <span id="topVersion">v—</span></button><span class="save-state" id="saveState">● Yerel kayıt açık</span><span class="backup-state none" id="backupState" title="Veri yalnız bu tarayıcıda; paket oluşturun">Hiç paket oluşturulmadı</span><span class="usage-state" id="usageState" title="Depolama kullanımı"></span><button class="icon-button" id="notebookBtn" title="Çalışma notları (Alt+N) — rapora girmez" aria-label="Çalışma notları"><span aria-hidden="true">📝</span><span class="nb-count" id="notebookCount" hidden></span></button><button class="button button-light button-small" id="undoBtn" disabled title="Geri al (Ctrl+Z)">↶ 0</button><button class="button button-light" id="focusExitBtn" hidden>⤢ Odak modundan çık</button><button class="button button-light" id="importProjectBtn" title="Paketi (.akis) bu bilgisayara EKLE — yeni kopya açar, mevcut dosyalarla birleştirmez">Paketten yükle</button><button class="button button-light" id="exportProjectBtn" title="Paket (.akis) oluştur — yalnız bu dosya veya tüm dosyalar; ses kayıtları dâhil">Paket oluştur</button><button class="button button-light" id="mergeProjectBtn" title="Başka bir bilirkişinin gönderdiği .akis paketini BU dosyayla BİRLEŞTİR — kopya açmaz, çakışmaları gösterir">⇄ Birleştir</button><input type="file" id="mergeProjectInput" accept=".akis,.mihenk,.zip" hidden><input type="file" id="importProjectInput" accept=".akis,.mihenk,.zip" hidden></div>
       </header>
 
       <section class="view active" id="view-overview">
@@ -342,6 +342,25 @@
   <div class="drawer-backdrop" id="drawerBackdrop" hidden></div>
 
   <!-- Dosya bilgileri çekmecesi: form çalışma alanını işgal etmez. -->
+  <aside class="drawer notebook-drawer" id="notebookDrawer" aria-hidden="true" aria-label="Çalışma notları">
+    <div class="drawer-head">
+      <div><div class="eyebrow">KİŞİSEL DEFTER</div><h2>Çalışma notları</h2></div>
+      <button class="icon-button drawer-close" id="closeNotebook" aria-label="Kapat">×</button>
+    </div>
+    <p class="nb-hint"><b>Kişisel çalışma notu — rapora ve eklerine girmez.</b> Dosyayı incelerken tarih, kişi, iddia ve aklınıza gelenleri buraya yazın. İsterseniz bir notu tek tıkla cevaplanacak sorulara aktarabilirsiniz.</p>
+    <div class="nb-add">
+      <textarea id="notebookInput" rows="3" maxlength="4000" placeholder="Örn. 12.11.2026 — dizi pusulasında 2. sayfa eksik; davacı vekili 14:20'de depozito iadesini kabul etti." aria-label="Yeni çalışma notu"></textarea>
+      <div class="nb-add-row">
+        <button type="button" class="button button-primary button-small" id="notebookAdd">Not ekle</button>
+        <small class="nb-add-hint">Ctrl+Enter ile de eklenir · en çok 4.000 karakter</small>
+      </div>
+    </div>
+    <div class="nb-list-head">
+      <span id="notebookDrawerCount">0 not</span>
+      <input type="search" id="notebookSearch" placeholder="Notlarda ara" aria-label="Notlarda ara">
+    </div>
+    <div id="notebookList" class="nb-list"></div>
+  </aside>
   <aside class="drawer" id="caseDrawer" aria-hidden="true" aria-label="Dosya bilgileri">
     <div class="drawer-head">
       <div><div class="eyebrow">DOSYA TANIMI</div><h2>Mahkeme ve görevlendirme</h2></div>
@@ -459,6 +478,13 @@
       </div>
       <p class="scope-note">Paket adı: <code>AKIS_Paket_&lt;dosya no&gt;_tarih_saat.akis</code></p>
       <p class="scope-note">Dosya adına tarih ve <b>saat</b> eklenir; aynı gün iki paket birbirinin üzerine yazmaz. Arşivlenmiş dosyalar da pakete dâhildir.</p>
+      <label class="scope-choice scope-notes" id="scopeNotesLabel">
+        <input type="checkbox" id="scopeExcludeNotes">
+        <span class="scope-body">
+          <b>Kişisel çalışma notlarını pakete koyma</b>
+          <small id="scopeNotesNote">—</small>
+        </span>
+      </label>
       <div class="dialog-actions">
         <button id="exportScopeCancel" class="button button-light">Vazgeç</button>
         <button id="exportScopeOk" class="button button-primary">Paketi oluştur</button>

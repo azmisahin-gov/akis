@@ -1978,5 +1978,30 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('ceza türünde künye etiketi İNCELEME KONUSU', htmlText(c3).includes('İNCELEME KONUSU'));
 }
 
+// Senaryo 56: çalışma notları rapora SIZMAZ (v2.356). Not kişisel defterdir;
+// üç çıktıda da (HTML/DOCX/UDF) görünmemelidir. Görünürse "bulgu" sanılır.
+{
+  console.log('\n[Senaryo 56] çalışma notları rapora sızmaz (v2.356)');
+  const NOTE = 'NOT-SIZMA-TESTI: dizi pusulasında 2. sayfa eksik';
+  const c = __schemaMod.normalizeCase({
+    ...withMaterial(),
+    subject: 'Depozito iadesi talebi',
+    notebook: [
+      { id: 'n1', at: '2026-11-10T09:00:00.000Z', text: NOTE },
+      { id: 'n2', at: '2026-11-10T09:05:00.000Z', text: 'davacı vekili 14:20 itiraz etti', pinned: true }
+    ],
+    report: { sections: { annex: true, qc: true, scopeNote: true, privacy: true } }
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  check('not defteri kayıtta duruyor', c.notebook.length === 2);
+  for (const [name, out] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`not metni raporda YOK (${name})`, !out.includes('NOT-SIZMA-TESTI'), out.slice(0, 0));
+    check(`ikinci not raporda YOK (${name})`, !out.includes('davacı vekili 14:20 itiraz etti'));
+  }
+  // Paket çıktısında (dışa aktarım) istenirse çıkarılabilir; kopya üretir.
+  const stripped = __schemaMod.caseWithoutNotebook(c);
+  check('paket kopyası notsuz', stripped.notebook.length === 0 && c.notebook.length === 2);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

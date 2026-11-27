@@ -288,7 +288,14 @@ const REQUIRED_IDS = [
   // v2.338 — açılış gecikme uyarısı (JS #dueNotice arıyor).
   ['gecikme şeridi', 'dueNotice'],
   // v2.342 — varsayılan metinler (Ayarlar).
-  ['varsayılan metinler paneli', 'defaultsHost']
+  ['varsayılan metinler paneli', 'defaultsHost'],
+  // v2.356 — çalışma notları (kişisel defter; rapora girmez).
+  ['not defteri düğmesi', 'notebookBtn'],
+  ['not defteri çekmecesi', 'notebookDrawer'],
+  ['not defteri girişi', 'notebookInput'],
+  ['not defteri ekle düğmesi', 'notebookAdd'],
+  ['not defteri listesi', 'notebookList'],
+  ['paket not anahtarı', 'scopeExcludeNotes']
 ];
 for (const [label, id] of REQUIRED_IDS) {
   check(`index.html '${label}' (#${id}) içeriyor`, new RegExp(`id="${id}"`).test(indexHtml));

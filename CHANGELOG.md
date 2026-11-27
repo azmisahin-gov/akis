@@ -6,12 +6,48 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.355.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.356.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.356 — Çalışma notları (kişisel defter)
+
+**KULLANICI NE GÖRECEK:** Üst barda **📝** düğmesi (veya **Alt+N**) ile açılan
+**Çalışma notları** çekmecesi. Dosyayı incelerken tarih, kişi, iddia ve aklınıza
+gelenleri yazarsınız; her not **zaman damgasıyla** kaydedilir.
+
+| Yetenek | Ayrıntı |
+|---|---|
+| Ekleme | Metin + **Not ekle** (veya Ctrl+Enter); en çok 4.000 karakter |
+| Sabitle | 📌 ile listenin başında tutulur |
+| Arama | Notlarda metin araması |
+| Kopyala | ⧉ metni panoya alır |
+| Soruya dönüştür | **→ Soru**: notu cevaplanacak sorulara ekler (not silinmez) |
+| Silme | Onay ister; **Ctrl+Z** ile geri alınır |
+| Paket | Dışa aktarma diyaloğunda **“Kişisel çalışma notlarını pakete koyma”** |
+
+**DEĞİŞMEZ SINIR: not bir BULGU DEĞİLDİR.**
+- Rapora, rapor eklerine, UDF/DOCX/ZIP belge çıktısına **kendiliğinden girmez**;
+  üç çıktı için otomatik test vardır (`rapor` Senaryo 56).
+- "GÖZLEM" sütununa yazılmaz; gözlem işaretleri (gürültü, üst üste konuşma…)
+  ayrı kavramdır. Bu yüzden adı **"gözlem defteri" değil, "çalışma notları"**.
+- Ekranda **"Kişisel çalışma notu — rapora ve eklerine girmez"** yazar.
+- LLM/otomatik özet yoktur; notu yalnız siz yazarsınız.
+
+**Teknik:**
+- `case.notebook[] = { id, at, updatedAt, by, text, pinned }`; boş metin atılır,
+  metin kırpılır, en çok 500 not.
+- **Birleştirme/önizleme tek kaynak:** `notebookMergePlan` — yeni notlar id ile
+  eklenir; aynı id + farklı metin **çakışma** olarak bildirilir (sessiz ezme yok).
+- **Paket:** varsayılan **dâhil** (yedek notları da taşır); anahtar işaretlenirse
+  `caseWithoutNotebook` ile yalnız paket kopyasından çıkarılır, kayıt değişmez ve
+  bildirimde "notlar pakete KONMADI" denir.
+- Silme `snapshotForUndo` + `logEvent` ile günlüğe yazılır.
+- **Koruyan testler:** `birim [175]` (18), `rapor` Senaryo 56 (8),
+  `tasarim [2ds]` (10), `surum` kimlikleri (6).
 
 ## v2.355 — 1. bölüm başlığı 56.12 diliyle + başlığın ikinci kaynağı kaldırıldı
 
