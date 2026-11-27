@@ -1287,6 +1287,14 @@ export const REPORT_FONT_DOCX = Object.fromEntries(REPORT_FONT_DEFS.map((d) => [
 
 export const REPORT_ORIENTATIONS = ['portrait', 'landscape'];
 export const REPORT_ORIENTATION_LABEL = { portrait: 'Dikey', landscape: 'Yatay' };
+// v2.372 — TABLO STİLİ ve YOĞUNLUK (görsel; metin DEĞİŞMEZ).
+// tableStyle: grid (tam çerçeve) · lines (yalnız yatay çizgi) · plain (çizgisiz).
+// density: comfortable (rahat) · compact (sıkı). Ekran + yazdırma + DOCX'e
+// uygulanır; UDF tablo kenarlığı UYAP şablonundan gelir (UDF'e uygulanmaz).
+export const REPORT_TABLE_STYLES = ['grid', 'lines', 'plain'];
+export const REPORT_TABLE_STYLE_LABEL = { grid: 'Tam çerçeve', lines: 'Yalnız yatay çizgi', plain: 'Çizgisiz' };
+export const REPORT_DENSITIES = ['comfortable', 'compact'];
+export const REPORT_DENSITY_LABEL = { comfortable: 'Rahat', compact: 'Sıkı' };
 export const REPORT_MARGIN_MIN_MM = 10;
 export const REPORT_MARGIN_MAX_MM = 50;
 // Gövde puntosu 11–14: depo kuralı ekran metnini 11px altına indirmez; 11 taban
@@ -1306,7 +1314,10 @@ export function emptyReportFormat(over = {}) {
     fontFamily: 'times',
     fontSizePt: REPORT_FONT_SIZE_DEFAULT,
     marginsMm: { top: 15, right: 15, bottom: 15, left: 15 },
-    orientation: 'portrait'
+    orientation: 'portrait',
+    // v2.372 — yeni dosya: yalnız yatay çizgi + rahat yoğunluk (Öneri A görünümü).
+    tableStyle: 'lines',
+    density: 'comfortable'
   };
   return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };
 }
@@ -1332,7 +1343,22 @@ export function normalizeReportFormat(src) {
     left: fmtClamp(m.left, REPORT_MARGIN_MIN_MM, REPORT_MARGIN_MAX_MM, base.marginsMm.left)
   };
   const orientation = REPORT_ORIENTATIONS.includes(src.orientation) ? src.orientation : base.orientation;
-  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation };
+  // v2.372 — ESKİ dosyalarda bu alanlar YOKTUR; mevcut görünümü (tam çerçeve +
+  // rahat) KORUMAK için tanımsızsa eski değere düşülür. Yeni dosya (emptyReportFormat)
+  // 'lines' alır; geçersiz değer base'e döner.
+  const tableStyle =
+    src.tableStyle === undefined
+      ? 'grid'
+      : REPORT_TABLE_STYLES.includes(src.tableStyle)
+        ? src.tableStyle
+        : base.tableStyle;
+  const density =
+    src.density === undefined
+      ? 'comfortable'
+      : REPORT_DENSITIES.includes(src.density)
+        ? src.density
+        : base.density;
+  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation, tableStyle, density };
 }
 
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------

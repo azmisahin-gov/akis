@@ -2060,5 +2060,36 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   check('ikinci grup (EK-8) yok', !/Rapor eki 8\./.test(H));
 }
 
+// Senaryo 59: tablo stili (v2.372). DOCX tablo kenarlığı stile göre değişir;
+// metin AYNI kalır. grid=çift yön, lines=yalnız yatay, plain=tümü nil.
+// UDF değişmez (UYAP şablonu) — ayrıntı dürüst sınır olarak belgelenir.
+{
+  console.log('\n[Senaryo 59] tablo stili (v2.372)');
+  async function docxRaw(c) {
+    downloads.length = 0; setCase(c); await makeDocx();
+    const buf = Buffer.from(await downloads[0].blob.arrayBuffer());
+    const zip = await JSZip.loadAsync(buf);
+    return zip.file('word/document.xml').async('string');
+  }
+  const mk = (style, density) => {
+    const c = withMaterial();
+    c.report = { format: { tableStyle: style, density: density || 'comfortable' } };
+    return c;
+  };
+  const gRaw = await docxRaw(mk('grid'));
+  const lRaw = await docxRaw(mk('lines'));
+  const pRaw = await docxRaw(mk('plain'));
+  check('grid: sol/sağ kenar single', /<w:left w:val="single"/.test(gRaw) && /<w:right w:val="single"/.test(gRaw));
+  check('lines: sol/sağ nil, alt single', /<w:left w:val="nil"/.test(lRaw) && /<w:right w:val="nil"/.test(lRaw) && /<w:bottom w:val="single"/.test(lRaw));
+  check('plain: tümü nil', /<w:top w:val="nil"\/>/.test(pRaw) && /<w:insideH w:val="nil"/.test(pRaw));
+  // Metin stil değişince AYNI.
+  const gT = await docxText(mk('grid'));
+  const pT = await docxText(mk('plain'));
+  check('metin stil değişince aynı', gT === pT);
+  // Yoğunluk: sıkı rejimde hücre üst/alt dolgusu küçülür (95 → 40).
+  const cRaw = await docxRaw(mk('lines', 'compact'));
+  check('sıkı yoğunluk hücre dolgusu 40', /<w:top w:w="40"/.test(cRaw));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

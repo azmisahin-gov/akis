@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.371.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.372.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10036,3 +10036,17 @@ Sıradaki: **v2.371 sürükle-bırak** (gövde ↔ ek).
 - Test: `birim [181]`, `tasarim [2eg]`.
 
 Sıradaki: **v2.372 tablo/font/görünüm** (tableStyle grid/lines, density).
+
+## EK DÜZELTME (v2.372) — Tablo çizgisi + yoğunluk
+
+- `case.report.format` → **`tableStyle`** (grid/lines/plain) + **`density`** (comfortable/compact).
+- **Yeni dosya:** lines + comfortable. **Eski dosya (alan YOK):** normalize grid'e düşer
+  (mevcut görünüm KORUNUR). Geçersiz değer → base.
+- **DOCX:** `wTable` kenarlığı stile göre (grid çift yön · lines yatay · plain nil);
+  yoğunluk hücre dolgusu 95→40 + satır aralığı. **Metin değişmez.**
+- **Ekran/yazdırma:** `#reportPreview[data-table-style|data-density]` + reading-layer CSS
+  (no `!important`). Ölçüm: lines `border-left` 1→0px; compact dolgu 8→3px.
+- **UDF:** tablo kenarlığı UYAP şablonundan; tablo stili/yoğunluk UDF'e UYGULANMAZ (dürüst sınır).
+- Test: `birim [182]`, `rapor` Senaryo 59, `tasarim [2eh]`.
+
+Sıradaki: **v2.373 sol iskelet daraltma** (48 px ince ray).

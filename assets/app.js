@@ -113,6 +113,10 @@ import {
   REPORT_FONT_DOCX,
   REPORT_ORIENTATIONS,
   REPORT_ORIENTATION_LABEL,
+  REPORT_TABLE_STYLES,
+  REPORT_TABLE_STYLE_LABEL,
+  REPORT_DENSITIES,
+  REPORT_DENSITY_LABEL,
   REPORT_MARGIN_MIN_MM,
   REPORT_MARGIN_MAX_MM,
   REPORT_FONT_SIZE_MIN,
@@ -161,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.371';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.371';
+} from './schema.js?v=2.372';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.372';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.371';
+const APP_VERSION = '2.372';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -16715,7 +16719,12 @@ function applyReportFormat(c) {
           `${Math.round(m.bottom * MM_TO_PX)}px ${Math.round(m.left * MM_TO_PX)}px`
       );
     }
-    if (paper.dataset) paper.dataset.orientation = fmt.orientation;
+    if (paper.dataset) {
+      paper.dataset.orientation = fmt.orientation;
+      // v2.372 — tablo stili + yoğunluk CSS ile okunur (ekran + yazdırma).
+      paper.dataset.tableStyle = fmt.tableStyle || 'grid';
+      paper.dataset.density = fmt.density || 'comfortable';
+    }
   }
   // Yazdırma/PDF için GERÇEK sayfa ayarı: A4 + yön + ölçülü kenar boşluğu.
   try {
@@ -16741,16 +16750,28 @@ function renderReportFormat(c) {
   const orOpts = REPORT_ORIENTATIONS.map(
     (o) => `<option value="${o}"${o === f.orientation ? ' selected' : ''}>${esc(REPORT_ORIENTATION_LABEL[o] || o)}</option>`
   ).join('');
+  // v2.372 — tablo çizgisi + yoğunluk seçenekleri (görsel; metin değişmez).
+  const tsOpts = REPORT_TABLE_STYLES.map(
+    (s) => `<option value="${s}"${s === f.tableStyle ? ' selected' : ''}>${esc(REPORT_TABLE_STYLE_LABEL[s] || s)}</option>`
+  ).join('');
+  const denOpts = REPORT_DENSITIES.map(
+    (d) => `<option value="${d}"${d === f.density ? ' selected' : ''}>${esc(REPORT_DENSITY_LABEL[d] || d)}</option>`
+  ).join('');
   const mx = (k, lab) =>
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="0.5" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
     `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
-    `Kenar boşluğu varsayılan 15 mm (1,5 cm, UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır. UDF bu değeri punto olarak saklar.</p>` +
+    `Kenar boşluğu varsayılan 15 mm (1,5 cm, UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır. UDF bu değeri punto olarak saklar. ` +
+    `<b>Tablo çizgisi</b> ve <b>yoğunluk</b> ekran + yazdırma/PDF + Word’e uygulanır; <b>UDF tablo kenarlığı UYAP şablonundan gelir</b> (UDF’e uygulanmaz). Metin değişmez.</p>` +
     `<div class="report-tech">` +
     `<label class="field rtech-field"><span>Yazı tipi (tüm çıktılar)</span><select data-fmt-font>${fontOpts}</select></label>` +
     `<label class="field rtech-field"><span>Gövde puntosu</span><select data-fmt-size>${sizeOpts.join('')}</select></label>` +
     `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
+    `</div>` +
+    `<div class="report-tech">` +
+    `<label class="field rtech-field"><span>Tablo çizgisi</span><select data-fmt-table-style>${tsOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Yoğunluk</span><select data-fmt-density>${denOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
     mx('top', 'Üst') +
@@ -16766,6 +16787,8 @@ function readReportFormatPanel(c) {
   const font = host.querySelector('[data-fmt-font]');
   const size = host.querySelector('[data-fmt-size]');
   const orient = host.querySelector('[data-fmt-orient]');
+  const tableStyle = host.querySelector('[data-fmt-table-style]');
+  const density = host.querySelector('[data-fmt-density]');
   const marginsMm = {};
   host.querySelectorAll('[data-fmt-margin]').forEach((el) => {
     marginsMm[el.dataset.fmtMargin] = el.value;
@@ -16775,6 +16798,8 @@ function readReportFormatPanel(c) {
     fontFamily: font ? font.value : undefined,
     fontSizePt: size ? size.value : undefined,
     orientation: orient ? orient.value : undefined,
+    tableStyle: tableStyle ? tableStyle.value : undefined,
+    density: density ? density.value : undefined,
     marginsMm
   });
   applyReportFormat(c);
@@ -18119,7 +18144,10 @@ function docxFormatInit(c, fmtOverride) {
     scale: f.fontSizePt / 11,
     margins: f.marginsMm,
     orientation: f.orientation,
-    contentTw
+    contentTw,
+    // v2.372 — tablo stili + yoğunluk (görsel). wTable/cell bunları okur.
+    tableStyle: f.tableStyle || 'grid',
+    density: f.density || 'comfortable'
   };
   return __docxFmt;
 }
@@ -18156,7 +18184,9 @@ function cell(text, { header = false, shade = null, bold = false, width = 2200, 
   const col = header ? 'FFFFFF' : color || '24384D';
   // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
   // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
-  const p = `<w:p><w:pPr><w:spacing w:after="50" w:line="240"/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
+  // v2.372 — yoğunluk: sıkı rejimde satır aralığı küçülür.
+  const sp = (__docxFmt && __docxFmt.density) === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
+  const p = `<w:p><w:pPr><w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
 function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = {}) {
@@ -18172,8 +18202,16 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = 
     acc += v;
     return v;
   });
+  // v2.372 — tablo stili (görsel). grid: tam çerçeve · lines: yalnız yatay ·
+  // plain: çizgisiz. UDF bu ayarı KULLANMAZ (UYAP şablonu).
+  const tstyle = (__docxFmt && __docxFmt.tableStyle) || 'grid';
   const borders =
-    '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
+    tstyle === 'plain'
+      ? '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
+      : tstyle === 'lines'
+        ? '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:left w:val="nil"/><w:right w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
+        : '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
+  const cellPad = (__docxFmt && __docxFmt.density) === 'compact' ? 40 : 95;
   const r = rows
     .map(
       (row, ri) =>
@@ -18193,7 +18231,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false } = 
           .join('')}</w:tr>`
     )
     .join('');
-  return `<w:tbl><w:tblPr><w:tblW w:w="${contentTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="95" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="95" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
+  return `<w:tbl><w:tblPr><w:tblW w:w="${contentTw}" w:type="dxa"/><w:tblInd w:w="0" w:type="dxa"/><w:tblLayout w:type="fixed"/>${borders}<w:tblCellMar><w:top w:w="${cellPad}" w:type="dxa"/><w:left w:w="0" w:type="dxa"/><w:bottom w:w="${cellPad}" w:type="dxa"/><w:right w:w="0" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${ws.map((w) => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>${r}</w:tbl>`;
 }
 function headingXml(text, level = 1) {
   return wP(text, {
@@ -24653,6 +24691,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.372': {
+    title: 'Tablo çizgisi ve yoğunluk',
+    body:
+      'Rapor → ⚙ → Biçim sekmesinde iki yeni seçim var: “Tablo çizgisi” (Tam çerçeve · Yalnız yatay çizgi · Çizgisiz) ve “Yoğunluk” (Rahat · Sıkı). Bu ayarlar ekran + yazdırma/PDF + Word (DOCX) çıktısına uygulanır; METİN DEĞİŞMEZ. Yeni dosyada varsayılan “Yalnız yatay çizgi + Rahat”; mevcut dosyalarınızın görünümü korunur. Not: UDF (UYAP) tablo kenarlığı UYAP şablonundan gelir; tablo stili/yoğunluk UDF’e uygulanmaz.'
+  },
   '2.371': {
     title: 'Sürükle-bırak: gövde ↔ ek',
     body:

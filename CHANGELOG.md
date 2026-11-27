@@ -6,12 +6,32 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.371.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.372.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.372 — Tablo çizgisi ve yoğunluk
+
+**KULLANICI NE GÖRECEK:** Rapor → ⚙ → **Biçim** sekmesinde iki yeni seçim:
+- **Tablo çizgisi:** **Tam çerçeve** (grid) · **Yalnız yatay çizgi** (lines) · **Çizgisiz** (plain).
+- **Yoğunluk:** **Rahat** · **Sıkı** (satır dolgusu/aralığı küçülür).
+
+Bu ayarlar **ekran + yazdırma/PDF + Word (DOCX)** çıktısına uygulanır; **metin değişmez** (üç çıktı aynı metni verir). Yeni dosyada varsayılan **Yalnız yatay çizgi + Rahat**; **mevcut dosyaların görünümü korunur** (eksik alan → Tam çerçeve).
+
+**DÜRÜST SINIR:** **UDF (UYAP) tablo kenarlığı UYAP şablonundan gelir**; tablo stili/yoğunluk UDF’e uygulanmaz (panelde yazar). UDF yalnız punto/marj/font/yön alır.
+
+**ÖLÇÜM (gerçek Chromium, demo):**
+| | Sonuç |
+|---|---|
+| Demo (eski dosya) başlangıç | **grid** (mevcut korundu) |
+| lines seçilince | hücre `border-left` **1px → 0px**, alt çizgi kalır |
+| compact seçilince | hücre dolgusu **8px → 3px** |
+| JS hatası | **0** |
+| DOCX (Scenario 59) | grid/lines/plain kenarlık XML’de ayrışır; metin aynı |
+| Testler | **2827 birim + 556 şema** + rapor (Senaryo 59) + tasarım + sürüm yeşil |
 
 ## v2.371 — Sürükle-bırak: gövde ↔ ek
 

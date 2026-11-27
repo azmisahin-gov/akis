@@ -3981,6 +3981,16 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .report-paper .paper-section h3 { border-bottom: 1px solid var(--paper-line); padding-bottom: 5px; }
 .report-paper .paper-table { border-top: 2px solid var(--paper-head); border-bottom: 2px solid var(--paper-head); }
 .report-paper .paper-table th { border-bottom: 1.5px solid var(--paper-head); }
+
+/* v2.372 — Rapor tablo stili + yoğunluk (YALNIZ görsel; metin DEĞİŞMEZ).
+   Ekran + yazdırma/PDF. UDF tablo kenarlığı UYAP şablonundan gelir (buraya girmez). */
+.report-paper[data-table-style="lines"] .paper-table th,
+.report-paper[data-table-style="lines"] .paper-table td { border-left: 0; border-right: 0; }
+.report-paper[data-table-style="plain"] .paper-table { border-top: 0; border-bottom: 0; }
+.report-paper[data-table-style="plain"] .paper-table th,
+.report-paper[data-table-style="plain"] .paper-table td { border: 0; }
+.report-paper[data-density="compact"] .paper-table th,
+.report-paper[data-density="compact"] .paper-table td { padding-top: 3px; padding-bottom: 3px; }
 .report-paper .paper-signature { border: 1px solid var(--paper-line); border-radius: 4px; padding: 10px 12px; }
 .report-paper .paper-footer { border-top: 3px double var(--paper-line); padding-top: 6px; }
 

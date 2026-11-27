@@ -6092,6 +6092,24 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 }
 
 
+// [182] v2.372 — tablo stili + yoğunluk (görsel; metin değişmez).
+{
+  console.log('[182] Tablo stili + yoğunluk (v2.372)');
+  const S = __schemaMod;
+  const nf = S.emptyReportFormat();
+  eq('yeni dosya tablo stili lines', nf.tableStyle, 'lines');
+  eq('yeni dosya yoğunluk comfortable', nf.density, 'comfortable');
+  // Eski dosya (alan YOK) → grid korunur (mevcut görünüm bozulmaz).
+  const legacy = S.normalizeReportFormat({ fontFamily: 'times' });
+  eq('eski dosya grid korunur', legacy.tableStyle, 'grid');
+  eq('eski dosya yoğunluk comfortable', legacy.density, 'comfortable');
+  eq('grid korunur', S.normalizeReportFormat({ tableStyle: 'grid' }).tableStyle, 'grid');
+  eq('compact korunur', S.normalizeReportFormat({ tableStyle: 'plain', density: 'compact' }).density, 'compact');
+  eq('geçersiz stil → lines', S.normalizeReportFormat({ tableStyle: 'zzz' }).tableStyle, 'lines');
+  eq('geçersiz yoğunluk → comfortable', S.normalizeReportFormat({ density: 'zzz' }).density, 'comfortable');
+}
+
+
 // [134] v2.292 — Atanmamış bölüm kümeleme: eşik üstü gruplar; atama yapmaz.
 {
   console.log('[134] Konuşmacı gömme kümeleme (v2.292)');

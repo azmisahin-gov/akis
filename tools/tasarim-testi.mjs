@@ -2540,6 +2540,17 @@ console.log('\n[2eg] Sürükle-bırak gövde ↔ ek (v2.371)');
   check('EK düğmesi yedeği korunur', /data-report-place="\$\{esc\(key\)\}"/.test(app));
 }
 
+console.log('\n[2eh] Tablo stili + yoğunluk (v2.372)');
+{
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('biçim panelinde tablo çizgisi + yoğunluk', /data-fmt-table-style/.test(app) && /data-fmt-density/.test(app));
+  check('şema sabitleri (grid/lines/plain)', /REPORT_TABLE_STYLES = \['grid', 'lines', 'plain'\]/.test(schema));
+  check('CSS: lines/plain/compact kuralları', /\.report-paper\[data-table-style="lines"\]/.test(layer) && /\.report-paper\[data-table-style="plain"\]/.test(layer) && /\.report-paper\[data-density="compact"\]/.test(layer));
+  check('DOCX tablo kenarlığı stile bağlı', /tstyle === 'plain'/.test(app) && /tstyle === 'lines'/.test(app));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.371.**
+yazılır. **Güncel sürüm: v2.372.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.372 — Tablo çizgisi ve yoğunluk (TAMAMLANDI)
+
+- `case.report.format` → **`tableStyle`** (grid/lines/plain) + **`density`** (comfortable/compact).
+- **Yeni dosya:** lines + comfortable. **Eski dosya (alan yok):** grid korunur (mevcut görünüm).
+- **DOCX:** `wTable` kenarlığı stile göre (grid çift yön · lines yatay · plain nil);
+  yoğunluk hücre dolgusu 95→40 + satır aralığı. **Metin değişmez.**
+- **Ekran/yazdırma:** `#reportPreview[data-table-style|data-density]` + `reading-layer`
+  CSS (no `!important`). Ölçüm: lines `border-left` 1→0px; compact dolgu 8→3px.
+- **UDF:** tablo kenarlığı UYAP şablonundan; tablo stili/yoğunluk UDF’e UYGULANMAZ (dürüst sınır).
+- Test: `birim [182]` (8), `rapor` Senaryo 59, `tasarim [2eh]` (4).
 
 ## v2.371 — Sürükle-bırak: gövde ↔ ek (TAMAMLANDI)
 
