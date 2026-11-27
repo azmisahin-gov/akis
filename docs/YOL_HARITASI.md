@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.364.**
+yazılır. **Güncel sürüm: v2.365.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.365 — Rapor ayarları sekmeleri + tek alan yeri (TAMAMLANDI)
+
+- Sağ panel sekmeli: Kontrol · Alanlar · Biçim · Ekler · Revizyon.
+- Künye/özet alanları + tablo sütunları tek panelde (`reportFieldGroupsHtml`).
+- İskeletteki `Alanlar · N/M` ve ölü CSS kaldırıldı.
+- Kâğıt genişliği sabit **754 px** (önce 786↔900 zıplıyordu); ızgara
+  `232 / 1fr / 320`; düzenleyici aynı sütunu kaplar.
+- Ölçüm: 25 alan + 63 sütun; alan kapatma metni değiştirir; taşma/JS 0.
+- Test: `tasarim [2dz]` (13) + güncellenen mod/alan testleri.
 
 ## v2.364 — Word / OpenOffice uyumu (TAMAMLANDI)
 

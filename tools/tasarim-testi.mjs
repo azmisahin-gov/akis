@@ -1896,7 +1896,11 @@ console.log('\n[2by] Rapor çalışma modları + önem gruplu kontrol (v2.228)')
   check('readiness maddesi severity taşır', /severity: readinessSeverity\(key\)/.test(js));
   check('gruplu gösterim', /ready-group ready-\$\{sev\}|ready-group/.test(js) && /Engelleyen eksikler/.test(js) && /Uzman kontrolü gerekli/.test(js));
   check('geniş uyarı sağ panele taşındı', html.indexOf('id="reportSide"') < html.indexOf('id="reportWarning"'));
-  check('Düzenle modu sağ paneli gizler', /#reportWorkspace\[data-mode="edit"\]\s*\{[^}]*grid-template-columns/.test(layer) && /#reportWorkspace\[data-mode="edit"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer));
+  check(
+    'yan panel her modda görünür; düzenleyici açılınca gizlenir',
+    !/#reportWorkspace\[data-mode="edit"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer) &&
+      /#reportWorkspace\[data-edit="open"\]\s+\.report-side\s*\{[^}]*display:\s*none/.test(layer)
+  );
   const modeCss = layer.slice(layer.indexOf('/* v2.228 — Rapor çalışma modu'), layer.indexOf('/* Orta genişlik'));
   check('mod stilleri ham hex kullanmaz', modeCss.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(modeCss));
   check('mod punto tabanı ≥11px (token)', !/font-size:\s*(?:[0-9]|10)px/.test(modeCss));
@@ -1950,7 +1954,7 @@ console.log('\n[2cb] Belge odaklı bölüm düzenleme (v2.231)');
   check('belge tıklama işleyicisi', /reportPreview'\)\?\.addEventListener\('click'/.test(js));
   check('contentEditable KULLANILMAZ', !/contentEditable\s*=\s*true/.test(js));
   check('paper-block display:contents', /\.paper-block\s*\{\s*display:\s*contents/.test(layer));
-  check('düzenleyici sütunu (edit+open)', /#reportWorkspace\[data-mode="edit"\]\[data-edit="open"\]/.test(layer) && /\.report-editor/.test(layer));
+  check('düzenleyici sütunu (edit+open)', /#reportWorkspace\[data-edit="open"\]/.test(layer) && /\.report-editor/.test(layer));
   check('yazdırmada düzenleyici gizli', /\.report-editor,\s*\n\s*\.report-stage-bar\s*\{\s*display:\s*none/.test(layer));
   const css = layer.slice(layer.indexOf('/* v2.231'), layer.indexOf('/* Orta genişlik'));
   check('v2.231 stilleri ham hex yok', css.length > 0 && !/#[0-9a-fA-F]{3,6}\b/.test(css));
@@ -2921,6 +2925,26 @@ console.log('\n[2dy] DOCX uyumluluk ayarları (v2.364)');
   check('belge dili tr-TR', /w:themeFontLang w:val="tr-TR"/.test(app));
   // `w:updateFields` Word'de gereksiz uyarı üretir; kullanılmaz.
   check('updateFields kullanılmaz', !/<w:updateFields/.test(app));
+}
+
+console.log('\n[2dz] Rapor ayarları sekmeleri + tek alan yeri (v2.365)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('sekme çubuğu var', /id="reportSideTabs"/.test(html));
+  check('beş sekme var', (html.match(/data-rside-tab="/g) || []).length === 5);
+  check('beş panel var', (html.match(/data-rside-section="/g) || []).length === 5);
+  check('alan paneli açık başlar', /id="reportColumnsBox" open/.test(html));
+  check('tek alan yeri (künye+sütun)', /function reportFieldGroupsHtml\(c\)/.test(app) && /reportFieldGroupsHtml\(c\) \+/.test(app));
+  check('iskelette alan listesi kalmadı', !/frontFieldsHtml/.test(app) && !/rsec-fields/.test(app));
+  check('alan kutusu sağ panele bağlı', /#reportSide'\)\?\.addEventListener\('change'/.test(app));
+  check('sekme durumu saklanır', /akis\.reportSideTab/.test(app) && /function applyReportSideTab/.test(app));
+  check('render sırasında sekme uygulanır', /applyReportSideTab\(reportSideTabPref\(\)\)/.test(app));
+  check('kâğıt 3. sütunu sabit 300px', /grid-template-columns: 232px minmax\(0, 1fr\) 320px;/.test(css));
+  check('mod sütun değiştirmez', !/#reportWorkspace\[data-mode="edit"\]\s*\{[^}]*grid-template-columns/.test(css));
+  check('düzenleyici yan panelin yerini alır', /#reportWorkspace\[data-edit="open"\] \.report-side \{ display: none; \}/.test(css));
+  check('sekme stili token kullanır', /\.rside-tab\.is-active \{[^}]*var\(--accent/.test(css));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);

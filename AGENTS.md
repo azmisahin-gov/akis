@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.364.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.365.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9760,3 +9760,40 @@ TNR yoksa LibreOffice `DejaVu Serif` kullanır (sayfa sayısı değişir).
 - Kâğıdın mod değişiminde **142 px yatay zıplaması** giderilecek
   (ölçüm: `232/786/292` ↔ `232/1090`).
 - Sol iskelet tek kaydırma/odak; ≤900 px'te iskelet belgenin üstünde.
+
+## YENİ OTURUM DEVRİ (v2.365) — Rapor ayarları sekmeleri
+
+| | |
+|---|---|
+| Sürüm | **v2.365** |
+| Testler | `bash tools/test.sh` → 2779 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium 1440×900: kâğıt **754 px sabit**, 25 alan + 63 sütun, taşma/JS 0 |
+
+### Yapılan
+- `#reportSide` sekmeli: **Kontrol · Alanlar · Biçim · Ekler · Revizyon**;
+  tercih `akis.reportSideTab` (tarayıcı).
+- `reportFieldGroupsHtml(c)` — künye/özet alan görünürlüğü + tablo sütunları
+  **tek panelde**. İskeletteki `frontFieldsHtml`/`Alanlar · N/M` kaldırıldı.
+- `#reportWorkspace` 3. sütun **sabit 300 px**; `[data-mode]` sütun değiştirmez.
+  Düzenleyici açılınca `[data-edit="open"] .report-side { display:none }` ile
+  aynı sütunu kaplar → kâğıt yatay zıplamaz.
+- Alan kutusu `#reportSide` change delegasyonunda (`data-report-field`).
+
+### DEĞİŞMEZ KURALLAR
+1. **Alan/sütun ayarı TEK yerde** (rapor ayarları → Alanlar). İskelete ikinci bir
+   alan listesi koymayın.
+2. **Kâğıt genişliği moda/seçime göre değişmez.** Yeni bir panel eklerken
+   3. sütunu paylaştırın; ek sütun açmayın.
+3. Sekme tercihi **oturumluk/tarayıcı**; dosyaya yazılmaz.
+4. Yeni sekme eklerken `REPORT_SIDE_TABS` + `data-rside-section` + test [2dz].
+
+### Dürüst bedel
+Yan panel her zaman görünür → kâğıt 900 → **754 px** daraldı (önce 786↔900
+zıplıyordu). ≤1349 px’te yan panel belgenin altına iner.
+
+### Sıradaki iş
+1. **Sol iskelet odağı:** aktif bölüm vurgusu + otomatik kaydırma; ≤900 px’te
+   iskelet belgenin üstünde.
+2. Araç çubuğu sadeleşmesi (600 px’te 212 px yüksek), “Tam ekran (F)” kısayolu,
+   tek durum sayacı.
+3. İstenirse sağ paneli **çekmece** yapmak (şu an sütun + sekmeli).

@@ -157,15 +157,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.364';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.364';
+} from './schema.js?v=2.365';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.365';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.364';
+const APP_VERSION = '2.365';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14261,11 +14261,39 @@ function setReportColumn(table, key, on) {
   persist();
   renderReport();
 }
+// v2.365 — KÜNYE/ÖZET ALAN GÖRÜNÜRLÜĞÜ + TABLO SÜTUNLARI TEK PANELDE.
+// İskeletteki `Alanlar · N/M` kaldırıldı; kullanıcı alan/sütun ayarını tek
+// yerde (rapor ayarları → Alanlar) yapar. Model aynı: `data-report-field`.
+function reportFieldGroupsHtml(c) {
+  if (!c) return '';
+  return Object.keys(REPORT_FIELD_DEFS)
+    .map((key) => {
+      const defs = REPORT_FIELD_DEFS[key] || [];
+      if (!defs.length) return '';
+      const labels = new Map(
+        (key === 'coverFields' ? reportRows(c) : reportSummaryRows(c)).map((r) => [r.key, r.label])
+      );
+      const on = defs.filter((d) => reportFieldVisible(c, key, d.key)).length;
+      const title = key === 'coverFields' ? 'Künye alanları' : key === 'summary' ? 'Özet alanları' : key;
+      return (
+        `<div class="rcol-group"><div class="rcol-head"><b>${esc(title)}</b><span>${on}/${defs.length}</span></div>` +
+        defs
+          .map(
+            (d) =>
+              `<label class="rcol-item"><input type="checkbox" data-report-field="${esc(key)}|${esc(d.key)}"${reportFieldVisible(c, key, d.key) ? ' checked' : ''}> <span>${esc(labels.get(d.key) || d.key)}</span></label>`
+          )
+          .join('') +
+        `</div>`
+      );
+    })
+    .join('');
+}
 function renderReportColumns(c) {
   const host = $('#reportColumnsFields');
   if (!host) return;
   const cols = normalizeReportColumns(c.report && c.report.columns);
   host.innerHTML =
+    reportFieldGroupsHtml(c) +
     Object.keys(REPORT_COLUMN_TABLES)
       .map((table) => {
         const keys = REPORT_COLUMN_TABLES[table];
@@ -14319,12 +14347,43 @@ function applyReportMode() {
     }
   }
 }
+// v2.365 — Sağ panel sekmeleri (Kontrol · Alanlar · Biçim · Ekler · Revizyon).
+const REPORT_SIDE_TABS = ['check', 'fields', 'format', 'annex', 'revision'];
+function reportSideTabPref() {
+  try {
+    const v = localStorage.getItem('akis.reportSideTab');
+    return REPORT_SIDE_TABS.includes(v) ? v : 'check';
+  } catch (e) {
+    return 'check';
+  }
+}
+function applyReportSideTab(tab) {
+  const t = REPORT_SIDE_TABS.includes(tab) ? tab : 'check';
+  $$('#reportSideTabs [data-rside-tab]').forEach((b) => {
+    const on = b.dataset.rsideTab === t;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  $$('#reportSide [data-rside-section]').forEach((p) => {
+    p.hidden = p.dataset.rsideSection !== t;
+  });
+  try {
+    localStorage.setItem('akis.reportSideTab', t);
+  } catch (e) {}
+}
 function setReportMode(mode) {
   const m = REPORT_MODES.includes(mode) ? mode : 'edit';
   try {
     localStorage.setItem('akis.reportMode', m);
   } catch (e) {}
+  // v2.365: mod artık sütun değiştirmez; yalnız "Kontrol" sekmesini açar ve
+  // bölüm düzenleyicisini kapatır (yan panel görünür kalsın).
+  if (m === 'check') {
+    reportEditKey = null;
+    applyReportSideTab('check');
+  }
   applyReportMode();
+  if (m === 'check') renderReport();
 }
 
 // ---- Sayfaya sığdır (v2.232) ---------------------------------------------
@@ -15106,25 +15165,6 @@ function syncReportOutlineControls() {
 // Ön bölüm ALAN anahtarları (v2.336): bölüm satırının altında açılır liste.
 // Her alan bölüm gibi tek tek kapatılabilir; kapatılan alan üç çıktıda da
 // görünmez (veri silinmez).
-function frontFieldsHtml(c, key) {
-  if (!c) return '';
-  const defs = REPORT_FIELD_DEFS[key];
-  if (!defs) return '';
-  const labels = new Map(
-    (key === 'coverFields' ? reportRows(c) : reportSummaryRows(c)).map((r) => [r.key, r.label])
-  );
-  const onCount = defs.filter((d) => reportFieldVisible(c, key, d.key)).length;
-  return (
-    `<details class="rsec-fields"><summary>Alanlar · ${onCount}/${defs.length}</summary>` +
-    defs
-      .map(
-        (d) =>
-          `<label class="rsec-field-item"><input type="checkbox" data-report-field="${esc(key)}|${esc(d.key)}"${reportFieldVisible(c, key, d.key) ? ' checked' : ''}> ${esc(labels.get(d.key) || d.key)}</label>`
-      )
-      .join('') +
-    '</details>'
-  );
-}
 function renderReportSections(c) {
   const host = $('#reportSections');
   if (!host) return;
@@ -15176,7 +15216,7 @@ function renderReportSections(c) {
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
-    .map((k) => row(k) + frontFieldsHtml(c, k))
+    .map((k) => row(k))
     .join('');
   let body = '';
   for (const key of layout.order) {
@@ -17723,6 +17763,7 @@ function renderReport() {
   const pvToggle = $('#reportPageViewToggle');
   if (pvToggle) pvToggle.checked = !!(c.report && c.report.pageView);
   applyReportMode();
+  applyReportSideTab(reportSideTabPref());
   applyReportFormat(c);
   applyReportFit();
   applyReportPageView();
@@ -22543,6 +22584,16 @@ $('#reportModes')?.addEventListener('click', (e) => {
   const b = e.target.closest('[data-report-mode]');
   if (b) setReportMode(b.dataset.reportMode);
 });
+// v2.365 — Sağ panel sekmeleri (Kontrol · Alanlar · Biçim · Ekler · Revizyon).
+$('#reportSideTabs')?.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-rside-tab]');
+  if (b) applyReportSideTab(b.dataset.rsideTab);
+});
+// Alan görünürlüğü artık sağ paneldedir (iskeletteki `Alanlar` kaldırıldı).
+$('#reportSide')?.addEventListener('change', (e) => {
+  const fcb = e.target.closest('[data-report-field]');
+  if (fcb) setReportField(fcb.dataset.reportField, fcb.checked);
+});
 $('#reportCheckChip')?.addEventListener('click', () => setReportMode('check'));
 // Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
@@ -24090,6 +24141,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.365': {
+    title: 'Rapor ayarları sekmelendi, alanlar tek yerde',
+    body:
+      'Rapor ekranının sağ paneli artık sekmeli: Kontrol · Alanlar · Biçim · Ekler · Revizyon. Künye/özet alan görünürlüğü ile tablo sütunları tek yerde (Alanlar) toplandı; iskeletteki ayrı “Alanlar” listesi kaldırıldı. Kâğıt genişliği artık moda göre değişmiyor: belgeye tıklayınca açılan düzenleyici sağ sütunu kaplar, belge yatay kaymaz (ölçüm: 754 px sabit). Görünür metin ve çıktılar değişmedi.'
+  },
   '2.364': {
     title: 'Word ve OpenOffice uyumu doğrulandı',
     body:

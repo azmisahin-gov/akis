@@ -267,6 +267,7 @@ const REQUIRED_IDS = [
   ['sürekli mod anahtarı', 'reportContinuousToggle'],
   ['rapor alanları paneli', 'reportColumnsBox'],
   ['rapor alanları listesi', 'reportColumnsFields'],
+  ['rapor ayar sekmeleri', 'reportSideTabs'],
   ['rapor profili penceresi', 'profileDialog'],
   ['rapor profili adı', 'profileName'],
   // v2.312 — teslim tarihi zekâsı (JS bu kimlikleri arıyor; yoksa sessiz boş).

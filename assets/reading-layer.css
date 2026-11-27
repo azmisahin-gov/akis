@@ -3170,7 +3170,7 @@ input::placeholder, textarea::placeholder {
    ============================================================================ */
 .report-workspace {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr) 292px;
+  grid-template-columns: 232px minmax(0, 1fr) 320px;
   gap: 12px;
   align-items: start;
   min-height: 0;
@@ -3345,8 +3345,7 @@ input::placeholder, textarea::placeholder {
 }
 .report-check-chip.is-blocking { background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
 /* Düzenle modu: kontrol paneli kapalı; iki sütun (iskelet + belge). */
-#reportWorkspace[data-mode="edit"] { grid-template-columns: 232px minmax(0, 1fr); }
-#reportWorkspace[data-mode="edit"] .report-side { display: none; }
+#reportWorkspace[data-edit="open"] .report-side { display: none; }
 /* Kontrol maddeleri önem grupları (v2.228) */
 .ready-group { margin: 0 0 10px; }
 .ready-group-head {
@@ -3480,8 +3479,8 @@ body.report-full .report-edit-hint { display: none; }
   max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
-#reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: 232px minmax(0, 1fr) 320px; }
-#reportWorkspace[data-mode="edit"][data-edit="open"] .report-editor { display: block; }
+#reportWorkspace[data-edit="open"] { grid-template-columns: 232px minmax(0, 1fr) 320px; }
+#reportWorkspace[data-edit="open"] .report-editor { display: block; }
 .rse-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; margin-bottom: 6px; }
 .rse-head b { font-size: var(--fs-sm); color: var(--ink); }
 .rse-head small { font-size: var(--fs-2xs); color: var(--ink-3); text-align: right; }
@@ -3496,7 +3495,7 @@ body.report-full .report-edit-hint { display: none; }
 @media (max-width: 1349px) {
   .report-workspace { grid-template-columns: 216px minmax(0, 1fr); }
   .report-side { grid-column: 1 / -1; position: static; max-height: none; }
-  #reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: 216px minmax(0, 1fr); }
+  #reportWorkspace[data-edit="open"] { grid-template-columns: 216px minmax(0, 1fr); }
   /* Dar/orta ekranda düzenleyici ALT SHEET olur (belge görünür kalır). */
   .report-editor {
     position: fixed;
@@ -3514,8 +3513,7 @@ body.report-full .report-edit-hint { display: none; }
 @media (max-width: 900px) {
   .report-workspace { grid-template-columns: minmax(0, 1fr); }
   /* Düzenle modunda da dar ekranda tek sütun (ID kuralını ez). */
-  #reportWorkspace[data-mode="edit"] { grid-template-columns: minmax(0, 1fr); }
-  #reportWorkspace[data-mode="edit"][data-edit="open"] { grid-template-columns: minmax(0, 1fr); }
+  #reportWorkspace[data-edit="open"] { grid-template-columns: minmax(0, 1fr); }
   .report-stage { order: -1; }
   .report-skeleton, .report-side { position: static; max-height: none; }
 }
@@ -4261,11 +4259,6 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 
 /* ÖN BÖLÜM ALAN GÖRÜNÜRLÜĞÜ (v2.336): bölüm satırının altında açılır liste.
    Alanlar bölüm gibi tek tek kapatılır; kapatılan alan üç çıktıda da çizilmez. */
-.rsec-fields { margin: 2px 0 4px 26px; font-size: var(--fs-xs); }
-.rsec-fields > summary { cursor: pointer; color: var(--ink-3); font-size: var(--fs-xs); }
-.rsec-fields > summary:hover { color: var(--ink); }
-.rsec-field-item { display: flex; align-items: center; gap: 6px; padding: 2px 0 2px 10px; color: var(--ink-2); }
-.rsec-field-item input { flex: 0 0 auto; }
 
 /* ---- v2.338 — Açılış gecikme şeridi ------------------------------------- */
 /* Son teslim geçtiyse açılışta bir kez görünür. Renk tek başına anlam
@@ -4575,3 +4568,29 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
     padding-top: 2mm; font-size: 9pt; color: var(--paper-muted);
   }
 }
+
+/* ============================================================================
+   v2.365 — RAPOR AYARLARI SEKMELERİ + SABİT KÂĞIT GENİŞLİĞİ
+   ----------------------------------------------------------------------------
+   Sağ panel artık sekmelidir (Kontrol · Alanlar · Biçim · Ekler · Revizyon).
+   "Alanlar" sekmesi künye/özet alan görünürlüğü ile tablo sütunlarını TEK yerde
+   toplar (iskeletteki `Alanlar · N/M` kaldırıldı).
+   Kâğıt genişliği SABİT: 3. sütun her zaman 320 px. Bölüm düzenleyici açılınca
+   aynı sütunu kaplar (yan panel gizlenir); böylece kâğıt yatay ZIPLAMAZ
+   (ölçüm: önce `232/786/292` ↔ `232/1090`, 114 px zıplama; sonra `232/758/320` sabit).
+   ========================================================================== */
+.rside-tabs {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px;
+  margin: -2px 0 8px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; background: var(--surface); z-index: 2;
+}
+.rside-tab {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2);
+  border-radius: 999px; padding: 3px 2px; font-size: var(--fs-2xs);
+  cursor: pointer; line-height: 1.2; text-align: center; white-space: nowrap;
+}
+.rside-tab:hover { background: var(--surface-3); color: var(--ink); }
+.rside-tab.is-active { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+.rside-tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.rside-panel[hidden] { display: none; }

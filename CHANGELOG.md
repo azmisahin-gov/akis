@@ -6,12 +6,43 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.364.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.365.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.365 — Rapor ayarları sekmelendi, alanlar tek yerde
+
+**KULLANICI NE GÖRECEK:** Rapor ekranının sağ paneli artık **sekmeli**:
+**Kontrol · Alanlar · Biçim · Ekler · Revizyon**. **Künye/özet alanları** ile
+**tablo sütunları** tek yerde (**Alanlar**) toplandı; iskeletteki ayrı
+“Alanlar · N/M” listesi kaldırıldı. Belgeye tıklayınca açılan düzenleyici sağ
+sütunu kaplar; **kâğıt artık yatay kaymaz**.
+
+**ÖLÇÜM (gerçek Chromium, 1440×900, kurgusal demo):**
+
+| | Sonuç |
+|---|---|
+| Kâğıt genişliği | **754 px — sabit** (Kontrol · Düzenle · düzenleyici açık/kapalı) |
+| Izgara | `232px 758px 320px` (3. sütun her zaman 320) |
+| Sekmeler | **5**; panel geçişi çalışıyor |
+| Alanlar sekmesi | **25 alan** + **63 sütun** tek panelde |
+| İskelette alan listesi | **0** |
+| Alan kapatma | rapor metni **20.710 → 20.689** karakter (satır kalktı) |
+| Yatay taşma / JS hatası | **0 / 0** |
+
+**Yapılan:**
+- `#reportSide` sekmeli yapı; tercih `akis.reportSideTab`.
+- `reportFieldGroupsHtml()` — künye/özet alanları + tablo sütunları aynı panelde.
+- `#reportWorkspace` 3. sütun sabit 300 px; `[data-mode]` artık sütun değiştirmez;
+  düzenleyici açılınca yan panel gizlenir, aynı sütunu kullanır.
+- İskeletteki `Alanlar` listesi ve ölü CSS’i kaldırıldı.
+
+**DÜRÜST BEDEL:** Yan panel her zaman görünür olduğu için kâğıt **900 → 754 px**
+daraldı (önce moda göre 786↔900 arasında zıplıyordu). ≤1349 px’te yan panel
+zaten belgenin altına iner.
 
 ## v2.364 — Word / OpenOffice uyumu doğrulandı
 
