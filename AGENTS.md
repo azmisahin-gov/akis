@@ -9894,3 +9894,75 @@ geçişinde ekstra tık ve bağlam kaybı yaratır. ≤900 px’te zaten katlan�
 1. İstenirse sol iskelete **daralt/genişlet** düğmesi (kâğıda yer açmak için).
 2. Sayfa sayısı tahmini ile gerçek yazdırma farkı.
 3. Delil/rapor derinleştirme (kullanıcı yönü).
+
+## YENİ OTURUM DEVRİ (v2.368 → v2.369) — ODAK: RAPOR SUNUMU UÇTAN UCA
+
+| | |
+|---|---|
+| Sürüm | **v2.368** (yayında; `version.json` = 2.368) |
+| Testler | **2779 birim + 556 şema** + rapor/sürüm/tasarım yeşil |
+| Plan | **`docs/RAPOR_SUNUM_PLANI.md`** — yeni oturum ÖNCE bunu okur |
+| Açık konu | Raporun **kapaktan imzaya** okunaklı, sıralı, profesyonel sunumu |
+
+### Kullanıcının yeni oturum talimatı (özet)
+Raporun **sunuşu ve içeriği baştan sona** gözden geçirilecek: ilk girişten
+(kapak) gövdeye, **eklere ve imzaya** kadar. Amaç: raporu **inceleyenlerin**
+(hâkim/savcı/avukat) profesyonelce ve anlaşılır biçimde okuyabilmesi.
+Özellikle:
+- Ön bölüm (4 tanım), gövde (27 anahtar; 18 açık), **6 yerleşik ek**, imza için
+  **en mantıklı varsayılan sıra**.
+- Gövdedeki hangi bölümler **teknik** olduğu için **eke** taşınmalı.
+- **EK düğmesi yerine** gövde parçasını **eke sürükleme** (drag & drop).
+- **Tablo çerçevesi/font** için alternatifler (iki gösterim/farklı düzen).
+- Gerekirse **sol iskelet daraltma** paralel yürütülebilir.
+
+### Bu oturumda yapılanlar (v2.362–v2.368)
+| Sürüm | Konu |
+|---|---|
+| v2.362 | Yazdırma/PDF **çok sayfalı** (1 → 23 sayfa) |
+| v2.363 | **Kapak 6 satır** (T.C. · mahkeme · ADLİ VE KRİMİNALİSTİK İNCELEMELER · BİLİRKİŞİ RAPORU · 56.12 satırı · parantezli not) + 3 sütunlu üst/alt bilgi |
+| v2.364 | **Word/OpenOffice** doğrulandı (LibreOffice ile DOCX→PDF; `settings.xml`) |
+| v2.365 | Sağ panel **sekmeli**; künye/özet alanları + tablo sütunları tek yerde |
+| v2.366 | İskelet **başlıktan bölüme gitme**; dar ekranda katlanır iskelet |
+| v2.367 | Araç çubuğu **50 px** (⋯ Diğer menüsü), **F** tam ekran, tek sayaç, sayfa “≈” |
+| v2.368 | **Sağ panel + düzenleyici ÇEKMECE** (440 px); `report-stage-bar` kaldırıldı; kâğıt **898 px sabit** |
+
+### Bugünkü envanter (koddan — `assets/schema.js`)
+- **Ön bölüm 4:** `cover`, `coverFields`, `summary`(kapalı), `toc`.
+- **Gövde 27 anahtar**; **18 açık**, 9 kapalı (`summary` hariç kapalılar:
+  `terms`, `integrity`, `s7`, `enhance`, `asr`, `tech`, `scopeNote`, `qc`, `privacy`).
+- **Yerleşik ek 6:** `ek1` teslim/iade · `ek2` teknik envanter · `ek3` işlem
+  günlüğü · `ek4` gösterim anahtarı · `ek5` son kontrol listesi · `ek6` hukuki
+  dayanaklar.
+- **İmza 1:** `signature` (gövde sırası dışında, sonda).
+- Mevcut sıra: `REPORT_BODY_ORDER` (schema.js ~760. satır).
+- EK taşıma bugün `annexPlacement[key] = true` → **kendi eki**. Grup desteği YOK.
+
+### Ölçüm (v2.368, gerçek Chromium 1440×900)
+Kâğıt **898 px sabit** · araç çubuğu **50 px** · sağ çekmece **440 px** ·
+sol iskelet **232 px** · yatay taşma **0** · JS hatası **0**.
+600 px: kâğıt 534, çekmece 440, taşma 0.
+
+### Değişmez kısıtlar (bozulmamalı)
+- Rapor **bilirkişi adına**; uygulama adı/sürümü çıktıda geçmez.
+- **Üç çıktı (HTML/DOCX/UDF) aynı metni** üretir (`rapor-tutarlilik-testi`).
+- **Ölçülmeyen değer yazılmaz**; boş alan “—”.
+- **Kırpma yok**; sığmayan öğe sarar.
+- **Tek kaynak:** bölüm/ek tanımı, numara, TOC, üç çıktı.
+- **Sürükle-bırak tek yol olamaz**; düğme/menü/klavye korunur.
+- **Mevcut dosyaların sırası korunur**; yeni varsayılan yalnız yeni dosyada.
+
+### Yeni oturumun ilk işi (plan §13)
+1. `bash tools/test.sh` (yeşil olmalı), `git log -3`, `git status`.
+2. `docs/RAPOR_SUNUM_PLANI.md` oku.
+3. Mevcut raporu **kapaktan imzaya** gerçek Chromium’da aç; her bölümün ekran
+   görüntüsünü al; plan §2 envanteriyle karşılaştır.
+4. Plan §11 kararlarını (varsayılan sıra, eke taşınacaklar, ek gruplama,
+   tablo stili, yoğun görünüm, sol iskelet) kullanıcıya sor.
+5. Onay olmadan **varsayılan sıra değiştirilmez**; ilk uygulama **v2.369**.
+
+### Dürüst sınır
+- UDF (UYAP) tablo/font konusunda kısıtlı; “üç çıktı birebir aynı görünür”
+  denmez. Hedef: aynı metin + aynı başlık hiyerarşisi.
+- Ek gruplama yapılmadan çok sayıda bölümü eke taşımak **16+ ayrı ek** üretir;
+  önce `annexPlacement = 'ekN'` desteği gerekir.
