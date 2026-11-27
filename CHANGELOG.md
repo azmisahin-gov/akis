@@ -6,12 +6,41 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.360.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.361.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.361 — Rapor metinleri ayrı pencereye taşındı
+
+**KULLANICI NE GÖRECEK:** 16 varsayılan rapor metni artık **Ayarlar'ın içinde
+değil**, ayrı bir pencerede. İki giriş:
+
+- **Rapor** görünümünde araç çubuğu: **📄 Metinler**
+- **Ayarlar** → üstteki bağlantı: **"Rapor metinleri 16 · Pencereyi aç →"**
+
+Ayarlar **üç sekmeye** indi: **Görünüm · Model · Depolama** (Metinler sekmesi
+kalktı). Arama, katlanır başlıklar ve "Varsayılana dön" aynen çalışıyor.
+
+| Ölçüm (1440×900, gerçek Chromium) | Sonuç |
+|---|---|
+| Ayarlar sekmeleri | **3** (Görünüm · Model · Depolama) |
+| Ayarlar içeriği | 1.071 px → **1,6 ekran** (metinler çıkmadan önce 4,7) |
+| Bağlantı satırı | "Rapor metinleri 16 · Pencereyi aç →" |
+| Pencere | 16 madde, ekrana sığıyor, taşma yok |
+| Arama "özet" | **2** madde (özet girişi + rapor özeti) |
+| Rapor → 📄 Metinler | pencere açıldı; yazılan metin **raporda göründü** |
+| JS hatası | **0** |
+
+**Teknik:** `#textsDialog` (`<dialog>`, `defaultsHost` buraya taşındı);
+`openTextsDialog()` iki girişten de çağrılır. Eski `akis.settingsTab='texts'`
+tercihi **görünüme** düşer (sekme artık yok). `renderDefaultsPanel` davranışı
+değişmedi; tüm işleyiciler `#defaultsHost` delegasyonunda kaldığı için
+kaydetme/iptal aynı.
+
+**Koruyan testler:** `tasarim [2dv]` (14), `surum` kimlikleri (6).
 
 ## v2.360 — Ayarlar sekmelere ayrıldı
 

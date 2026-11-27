@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.360.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.361.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9509,8 +9509,32 @@ Kullanıcı: "her şeyi ayar kısmına doldurduk, orası uzamaya karışmaya ba�
 4. Dinamik üretilen kimlikleri (`#defaultsSearch`) **`surum` REQUIRED_IDS**'e
    koymayın (statik HTML'de yok); `tasarim` app.js üzerinden denetler.
 
-### Sıradaki (v2.361 adayı)
-**"Metinler" Ayarlar'dan çıksın:** 16 varsayılan + "Kayıtlı metinlerim" rapora
-ait; Rapor görünümünde ayrı ekran/dialog, Ayarlar'da kısa bağlantı. Böylece
-Ayarlar yalnız uygulama davranışı taşır.
+### v2.361'de YAPILDI: "Metinler" Ayarlar'dan çıktı
+16 varsayılan metin **ayrı pencere** (`#textsDialog`); girişler: Rapor araç
+çubuğu **📄 Metinler** ve Ayarlar bağlantı satırı. Ayarlar **üç sekme**
+(Görünüm · Model · Depolama). Eski `akis.settingsTab='texts'` görünüme düşer.
+`#defaultsHost` pencereye taşındı; işleyiciler delegasyonda olduğu için
+kaydetme/iptal değişmedi. Ölçüm: Ayarlar 1,6 ekran; pencere taşmasız.
+
+## YENİ OTURUM DEVRİ (v2.361) — Rapor metinleri ayrı pencere
+
+| | |
+|---|---|
+| Sürüm | **v2.361** |
+| Testler | 2773 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Ayarlar 3 sekme, içerik 1.071 px (1,6 ekran); pencere 16 madde, ekrana sığıyor; arama "özet" → 2; Rapor → 📄 Metinler ile yazılan metin raporda; JS hatası 0 |
+
+### Kural
+**Ayarlar = uygulama davranışı** (görünüm · model · depolama). **Rapor içeriği**
+(16 varsayılan metin) ayrı pencerede; yeni bir rapor metni eklerken Ayarlar'a
+değil bu pencereye bağlayın (`#defaultsHost` + `TEXT_DEFAULT_ITEMS`).
+
+### Teknik
+`#textsDialog` (native `<dialog>`), `openTextsDialog()` iki girişten çağrılır;
+`#defaultsHost` pencerenin içinde; tüm işleyiciler `#defaultsHost` delegasyonunda
+(kaydetme/iptal aynı). Sekme tercihi göçü: bilinmeyen/eski değer → 'appearance'.
+
+### Dinamik kimlik dersi (yine)
+`#defaultsSearch` gibi JS'in ürettiği kimlikleri `surum` REQUIRED_IDS'e
+koymayın; statik HTML'de yoktur. `tasarim` app.js üzerinden denetler.
 

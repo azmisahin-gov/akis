@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.360.**
+yazılır. **Güncel sürüm: v2.361.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.361 — Rapor metinleri ayrı pencere (TAMAMLANDI)
+
+- `#textsDialog`; iki giriş: Rapor araç çubuğu **📄 Metinler** + Ayarlar bağlantısı.
+- Ayarlar üç sekmeye indi (Görünüm · Model · Depolama); eski 'texts' tercihi göçer.
+- Ölçüm: Ayarlar 1,6 ekran; pencere 16 madde, taşma yok; yazılan metin raporda.
+- Test: `tasarim [2dv]`, `surum` kimlikleri.
 
 ## v2.360 — Ayarlar sekmelere ayrıldı (TAMAMLANDI)
 

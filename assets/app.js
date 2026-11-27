@@ -155,15 +155,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.360';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.360';
+} from './schema.js?v=2.361';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.361';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.360';
+const APP_VERSION = '2.361';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -20346,11 +20346,13 @@ function setCaseDrawer(open) {
 // NEDEN: Ayarlar içeriği 3.453 px'e çıkmıştı (1440×900'de 4,7 ekran); bunun
 // %59'u 16 metin listesiydi. Bölümler sekmeye ayrıldı; her sekme tek ekran.
 // Tercih TARAYICIDA saklanır (akis.settingsTab); dosyaya yazılmaz.
-const SETTINGS_TABS = ['appearance', 'texts', 'model', 'storage'];
+// v2.361: "Metinler" ayrı pencereye taşındı; sekme değil.
+const SETTINGS_TABS = ['appearance', 'model', 'storage'];
 const SETTINGS_TAB_KEY = 'akis.settingsTab';
 function settingsTabPref() {
   try {
     const v = localStorage.getItem(SETTINGS_TAB_KEY);
+    // Eski tercih 'texts' ise görünüme düş (sekme artık yok).
     return SETTINGS_TABS.includes(v) ? v : 'appearance';
   } catch (e) {
     return 'appearance';
@@ -20377,6 +20379,20 @@ function applySettingsTab(tab) {
   if (body) body.scrollTop = 0;
   const cnt = $('#settingsTextCount');
   if (cnt) cnt.textContent = String(TEXT_DEFAULT_ITEMS.length);
+}
+// RAPOR METİNLERİ PENCERESİ (v2.361): 16 varsayılan metin Ayarlar'dan çıktı.
+// Gerekçe: rapora ait içerik, uygulama ayarı değil; Ayarlar kısa kalmalı.
+function openTextsDialog() {
+  const dlg = $('#textsDialog');
+  if (!dlg) return;
+  renderDefaultsPanel();
+  if (!dlg.open) dlg.showModal();
+  const q = $('#defaultsSearch');
+  if (q) q.focus();
+}
+function closeTextsDialog() {
+  const dlg = $('#textsDialog');
+  if (dlg && dlg.open) dlg.close();
 }
 function setSettingsDrawer(open) {
   const d = $('#settingsDrawer');
@@ -23012,6 +23028,11 @@ document.addEventListener('keydown', (e) => {
   }
 });
 $('#closeCase').addEventListener('click', () => setCaseDrawer(false));
+// Rapor metinleri penceresi (v2.361): iki giriş — Ayarlar bağlantısı ve Rapor araç çubuğu.
+$('#openTextsBtn').addEventListener('click', openTextsDialog);
+$('#reportTextsBtn').addEventListener('click', openTextsDialog);
+$('#closeTexts').addEventListener('click', closeTextsDialog);
+$('#textsDialog').addEventListener('close', () => {});
 // Ayarlar sekmeleri (v2.360): tek ekran kuralı.
 $('#settingsTabs').addEventListener('click', (e) => {
   const b = e.target.closest('[data-settings-tab]');
@@ -23997,6 +24018,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.361': {
+    title: 'Rapor metinleri ayrı pencereye taşındı',
+    body:
+      'Kendi varsayılan rapor metinleriniz (16 metin) artık Ayarlar’ın içinde değil, ayrı bir pencerede: Rapor görünümündeki “📄 Metinler” düğmesi veya Ayarlar’daki “Rapor metinleri · Pencereyi aç” bağlantısı. Ayarlar üç sekmeye indi (Görünüm · Model · Depolama) ve daha kısa kaldı. Metinler, arama ve “Varsayılana dön” aynen çalışıyor; hiçbir metin değişmedi.'
+  },
   '2.360': {
     title: 'Ayarlar sekmelere ayrıldı',
     body:

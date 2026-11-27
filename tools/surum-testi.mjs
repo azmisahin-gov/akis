@@ -298,7 +298,11 @@ const REQUIRED_IDS = [
   ['paket not anahtarı', 'scopeExcludeNotes'],
   // v2.360 — Ayarlar sekmeleri + metin araması.
   ['ayarlar sekmeleri', 'settingsTabs'],
-  ['metin sayacı', 'settingsTextCount']
+  ['metin sayacı', 'settingsTextCount'],
+  // v2.361 — rapor metinleri ayrı pencere.
+  ['metinler penceresi', 'textsDialog'],
+  ['metinler bağlantısı', 'openTextsBtn'],
+  ['rapor metinleri düğmesi', 'reportTextsBtn']
   // `defaultsSearch` JS ile üretilir (statik HTML'de yok); tasarim [2dv] denetler.
 ];
 for (const [label, id] of REQUIRED_IDS) {

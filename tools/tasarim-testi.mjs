@@ -2782,20 +2782,28 @@ console.log('\n[2du] Rapor özeti girişi düzenlenebilir (v2.359)');
   check('sabit metin doğrudan basılmıyor', !/REPORT_TEXT\.summaryIntro\b(?!:)/.test(app.replace(/summaryIntro:\s*\n?\s*'[^']*'/, '')));
 }
 
-console.log('\n[2dv] Ayarlar sekmeleri + katlanır metinler (v2.360)');
+console.log('\n[2dv] Ayarlar sekmeleri + metin penceresi (v2.360/v2.361)');
 {
   const html = read('index.html');
   const css = read('assets/reading-layer.css');
   const app = read('assets/app.js');
   check('sekme çubuğu var', /id="settingsTabs"/.test(html));
-  check('dört sekme var', (html.match(/data-settings-tab="/g) || []).length === 4);
-  check('bölümler etiketli (appearance/texts/model/storage)', ['appearance', 'texts', 'model', 'storage'].every((t) => new RegExp(`data-settings-section="${t}"`).test(html)));
-  check('metin sayacı var', /id="settingsTextCount"/.test(html));
-  // Arama alanı JS ile üretilir (panel her çizimde yeniden kurulur).
+  check('üç sekme var (Metinler ayrı pencere)', (html.match(/data-settings-tab="/g) || []).length === 3);
+  check('bölümler etiketli (appearance/model/storage)', ['appearance', 'model', 'storage'].every((t) => new RegExp(`data-settings-section="${t}"`).test(html)));
+  check('metinler sekmesi kalktı', !/data-settings-section="texts"/.test(html) && !/data-settings-tab="texts"/.test(html));
+  check('Ayarlar bağlantı satırı var', /id="settingsTextsRow"/.test(html) && /id="openTextsBtn"/.test(html));
+  check('metinler penceresi var', /id="textsDialog"/.test(html));
+  check('varsayılan metinler pencerede', /id="textsDialog"[\s\S]{0,700}id="defaultsHost"/.test(html));
+  check('rapor araç çubuğunda Metinler düğmesi', /id="reportTextsBtn"/.test(html));
   check('metin araması var (JS üretir)', /id="defaultsSearch"/.test(app));
   check('metinler katlanır madde', /\.dflt-item/.test(css) && /<details class="dflt-item"/.test(app));
   check('arama yalnız görünürlük süzer', /function filterDefaultsPanel[\s\S]{0,600}el\.hidden = !hit/.test(app));
   check('sekme tercihi saklanır', /akis\.settingsTab/.test(app));
+  check(
+    'iki giriş de pencereyi açar',
+    /#openTextsBtn'\)\.addEventListener\('click', openTextsDialog\)/.test(app) &&
+      /#reportTextsBtn'\)\.addEventListener\('click', openTextsDialog\)/.test(app)
+  );
   check('sekme stili token kullanır', /\.settings-tab\.is-active\s*\{[^}]*var\(--/.test(css));
 }
 
