@@ -6,12 +6,30 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.370.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.371.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.371 — Sürükle-bırak: gövde ↔ ek
+
+**KULLANICI NE GÖRECEK:** Rapor iskeletinde bölümleri **sürükleyerek** düzenleyin:
+- Bir **gövde bölümünü EK başlığına** sürükleyin → o eke taşınır (EK-N.M olarak basılır).
+  Sürüklerken **boş gruplar (EK-7…EK-10) görünür** olur ve bırakma hedefi olur.
+- **EK'e taşınmış (rozetli)** bir bölümü **gövde listesine** bırakın → eke bağı kalkar (gövdeye döner) ve bıraktığınız yere sıralanır.
+- Her taşıma **Ctrl+Z** ile geri alınır; açık bir bildirim ne olduğunu söyler.
+
+**DEĞİŞMEZ:** Sürükleme **tek yol değildir**; **EK düğmesi** ve **↑↓** çalışmaya devam eder. Filtre/arama açıkken sürükleme **kapalıdır** (yanıltıcı komşuluk olmasın). Kanıt/metin/onay değişmez.
+
+**ÖLÇÜM (gerçek Chromium, DragEvent):**
+| | Sonuç |
+|---|---|
+| Gövde → boş grup EK-7 | ek7 **0→1**, **EK-7.1** görünür, iskelette EK-7 |
+| EK'li → gövde (s2'ye) | ek7 **1→0**, içerik gövdeye döndü |
+| JS hatası | **0** |
+| Testler | **2819 birim + 556 şema** + rapor + tasarım + sürüm yeşil |
 
 ## v2.370 — "Varsayılan düzen" tek tık (başlangıç düzeni)
 

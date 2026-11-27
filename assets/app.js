@@ -161,15 +161,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.370';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.370';
+} from './schema.js?v=2.371';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.371';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.370';
+const APP_VERSION = '2.371';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15144,6 +15144,47 @@ function moveSectionRelative(key, target, mode) {
   return true;
 }
 
+// v2.371 — SÜRÜKLE-BIRAK: gövde satırını EK başlığına bırak → o eke taşı.
+// Onay yerine geri alma (Ctrl+Z) + açık toast; tek snapshot, tek çizim.
+function moveSectionIntoAnnex(key, annexKey) {
+  const c = currentCase();
+  if (!c) return false;
+  if (!isAnnexPlaceable(key)) return false;
+  if (!isReportAnnexKey(annexKey)) return false;
+  const cur = annexPlacementOf(c, key);
+  if (cur === annexKey) return false;
+  snapshotForUndo('Bölümü eke taşı');
+  const map = normalizeAnnexPlacement(c.report && c.report.annexPlacement);
+  map[key] = annexKey;
+  c.report = c.report || {};
+  c.report.annexPlacement = normalizeAnnexPlacement(map);
+  persist();
+  renderReport();
+  const n = annexNumberForSection(c, key);
+  showToast(`“${reportUiLabel(c, key)}” → EK-${n} (Ctrl+Z ile geri alınır).`);
+  return true;
+}
+// v2.371 — EK'e taşınmış (rozetli) gövde satırını GÖVDE listesine bırak →
+// eke bağını kaldır (gövdeye al) + bırakılan konuma sırala. Tek snapshot.
+function unplaceAndReorder(key, target, zone) {
+  const c = currentCase();
+  if (!c) return false;
+  const placed = !!annexPlacementOf(c, key);
+  if (!placed) return moveSectionRelative(key, target, zone);
+  snapshotForUndo('Bölümü gövdeye al');
+  const map = normalizeAnnexPlacement(c.report && c.report.annexPlacement);
+  delete map[key];
+  c.report = c.report || {};
+  c.report.annexPlacement = normalizeAnnexPlacement(map);
+  const ok = moveSectionRelative(key, target, zone); // persist + render (yerleşim dâhil)
+  if (!ok) {
+    persist();
+    renderReport();
+  }
+  showToast('Bölüm gövdeye alındı (Ctrl+Z ile geri alınır).');
+  return true;
+}
+
 function moveReportAnnexTo(key, targetKey) {
   const c = currentCase();
   if (!c) return;
@@ -15386,19 +15427,29 @@ function renderReportSections(c) {
     let an = 0;
     for (const key of layout.annexOrder) {
       if (!isReportAnnexKey(key)) continue;
-      // v2.369: boş gruplu ek iskelette görünmez (raporla aynı kural).
-      if (isReportAnnexGroup(key) && !reportGroupSections(c, key).length) continue;
+      const isGroup = isReportAnnexGroup(key);
+      const groupEmpty = isGroup && !reportGroupSections(c, key).length;
       const on = layout.annexes[key] !== false;
+      // Kapalı boş grup hiç gösterilmez. Boş grup NORMALDE gizli; sürükleme
+      // başlayınca (dragstart) BIRAKMA HEDEFİ olarak açığa çıkar (v2.371).
+      if (groupEmpty && !on) continue;
       const meta = (layout.annexMeta && layout.annexMeta[key]) || {};
       const base = (typeof meta.title === 'string' && meta.title.trim()) || reportAnnexBaseTitle(key);
       const custom = !REPORT_ANNEX_DEFS.some((d) => d.key === key);
-      const label = on ? `EK-${++an}. ${base}` : `(kapalı) ${base}`;
+      // Boş grup numara TÜKETMEZ (raporla aynı kural); "(boş)" etiketiyle hedef.
+      const label = groupEmpty ? `(boş) ${base}` : on ? `EK-${++an}. ${base}` : `(kapalı) ${base}`;
       if (!reportOutlineMatch(c, key, base, on)) continue;
       const del = custom
         ? `<button type="button" class="rsec-mv rsec-del" data-report-annex-del="${esc(key)}" aria-label="Eki kaldır" title="Bu özel eki kaldır">×</button>`
         : '';
-      const adrag = canDrag ? ` draggable="true" data-drag-kind="annex" data-drag-key="${esc(key)}"` : '';
-      annexRows += `<div class="rsec-row rsec-child"${adrag}><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
+      // data-drag-kind/key: boş grup da BIRAKMA HEDEFİ; yalnız dolu/özel ek sürüklenir.
+      const adrag = canDrag
+        ? ` data-drag-kind="annex" data-drag-key="${esc(key)}"${groupEmpty ? '' : ' draggable="true"'}`
+        : '';
+      const emptyAttr = groupEmpty
+        ? ` data-rsec-empty-group="1" style="display:none" title="Boş grup — buraya bir bölüm sürükleyin (veya bölüm satırındaki EK düğmesi)"`
+        : '';
+      annexRows += `<div class="rsec-row rsec-child${groupEmpty ? ' rsec-annex-empty' : ''}"${emptyAttr}${adrag}><span class="rsec-move"><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-annex-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span><label class="rsec-item"><input type="checkbox" data-report-annex="${esc(key)}"${on ? ' checked' : ''}> <span>${esc(label)}</span></label>${del}</div>`;
     }
     if (reportOutlineState.cat === 'all' || reportOutlineState.cat === 'closing') {
       annexRows += `<div class="rsec-row"><button type="button" class="mini-button" data-report-annex-add="1" title="Yeni özel ek ekle (başlık/içerik/not düzenlenebilir)">＋ Yeni ek</button></div>`;
@@ -23289,38 +23340,83 @@ $('#reportSections')?.addEventListener('dragstart', (e) => {
     e.dataTransfer.setData('text/plain', rsecDrag.key);
   }
   row.classList.add('dragging');
+  // v2.371: gövde satırı sürüklenirken BOŞ grupları bırakma hedefi olarak aç.
+  if (rsecDrag.kind === 'body') {
+    document.querySelectorAll('#reportSections [data-rsec-empty-group]').forEach((el) => {
+      el.style.display = '';
+    });
+  }
 });
+// v2.371 — bırakma işaretlerini temizle (kaynak 'dragging' yalnız drop/dragend'de).
+function clearRsecDropMarks(withDragging) {
+  const sel =
+    '#reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under, #reportSections .drop-into-annex' +
+    (withDragging ? ', #reportSections .dragging' : '');
+  document.querySelectorAll(sel).forEach((x) =>
+    x.classList.remove('drag-over', 'drop-before', 'drop-after', 'drop-under', 'drop-into-annex', 'dragging')
+  );
+}
 $('#reportSections')?.addEventListener('dragover', (e) => {
   if (!rsecDrag) return;
   const row = e.target.closest('[data-drag-kind][data-drag-key]');
-  if (!row || row.dataset.dragKind !== rsecDrag.kind || row.dataset.dragKey === rsecDrag.key) return;
+  if (!row || row.dataset.dragKey === rsecDrag.key) return;
+  const sameKind = row.dataset.dragKind === rsecDrag.kind;
+  // v2.371: gövde satırı → EK başlığı (çapraz tür) = bölümü o eke taşı.
+  const bodyToAnnex = rsecDrag.kind === 'body' && row.dataset.dragKind === 'annex';
+  if (!sameKind && !bodyToAnnex) return;
   e.preventDefault();
+  clearRsecDropMarks(false);
+  if (bodyToAnnex) {
+    row.dataset.dropMode = 'into-annex';
+    row.classList.add('drag-over', 'drop-under');
+    return;
+  }
   const r = row.getBoundingClientRect();
   const y = (e.clientY - r.top) / Math.max(1, r.height);
   const isAnnexTarget = row.dataset.dragKind === 'body' && row.dataset.dragKey === 'annex';
   const zone = rsecDrag.kind === 'annex' || isAnnexTarget ? (y < 0.5 ? 'before' : 'after') : y < 0.25 ? 'before' : y > 0.75 ? 'after' : 'under';
   row.dataset.dropZone = zone;
-  document.querySelectorAll('#reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('drag-over', 'drop-before', 'drop-after', 'drop-under'));
+  row.dataset.dropMode = 'reorder';
   row.classList.add('drag-over', `drop-${zone}`);
 });
 $('#reportSections')?.addEventListener('drop', (e) => {
   if (!rsecDrag) return;
   const row = e.target.closest('[data-drag-kind][data-drag-key]');
-  if (!row || row.dataset.dragKind !== rsecDrag.kind) return;
-  e.preventDefault();
+  if (!row) return;
   const src = rsecDrag;
+  const sameKind = row.dataset.dragKind === src.kind;
+  const bodyToAnnex = src.kind === 'body' && row.dataset.dragKind === 'annex';
+  if (!sameKind && !bodyToAnnex) return;
+  e.preventDefault();
   rsecDrag = null;
-  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('dragging', 'drag-over', 'drop-before', 'drop-after', 'drop-under'));
+  clearRsecDropMarks(true);
   if (row.dataset.dragKey === src.key) return;
+  // v2.371: gövde satırını EK başlığına bırak → o eke taşı.
+  if (bodyToAnnex) {
+    moveSectionIntoAnnex(src.key, row.dataset.dragKey);
+    return;
+  }
   const zone = row.dataset.dropZone || (src.kind === 'annex' ? 'after' : 'under');
-  let ok = true;
-  if (src.kind === 'body') ok = moveSectionRelative(src.key, row.dataset.dragKey, zone);
-  else moveReportAnnexTo(src.key, row.dataset.dragKey);
-  if (ok) showToast(zone === 'under' ? 'Bölüm altına taşındı (Ctrl+Z ile geri alınır).' : 'Sıra değiştirildi (Ctrl+Z ile geri alınır).');
+  if (src.kind === 'body') {
+    // v2.371: rozetli (EK'e taşınmış) satırı GÖVDE listesine bırak = gövdeye al.
+    if (annexPlacementOf(currentCase(), src.key)) {
+      unplaceAndReorder(src.key, row.dataset.dragKey, zone);
+      return;
+    }
+    snapshotForUndo('Sıra değiştirildi');
+    const ok = moveSectionRelative(src.key, row.dataset.dragKey, zone);
+    if (ok) showToast(zone === 'under' ? 'Bölüm altına taşındı (Ctrl+Z ile geri alınır).' : 'Sıra değiştirildi (Ctrl+Z ile geri alınır).');
+    return;
+  }
+  snapshotForUndo('Ek sırası değiştirildi');
+  moveReportAnnexTo(src.key, row.dataset.dragKey);
 });
 $('#reportSections')?.addEventListener('dragend', () => {
   rsecDrag = null;
-  document.querySelectorAll('#reportSections .dragging, #reportSections .drag-over, #reportSections .drop-before, #reportSections .drop-after, #reportSections .drop-under').forEach((x) => x.classList.remove('dragging', 'drag-over', 'drop-before', 'drop-after', 'drop-under'));
+  clearRsecDropMarks(true);
+  document.querySelectorAll('#reportSections [data-rsec-empty-group]').forEach((el) => {
+    el.style.display = 'none';
+  });
 });
 // Ek düzenleyici (v2.227): yazarken model, çıkınca önizleme (odak korunur).
 $('#reportAnnexFields')?.addEventListener('input', (e) => {
@@ -24557,6 +24653,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.371': {
+    title: 'Sürükle-bırak: gövde ↔ ek',
+    body:
+      'Rapor iskeletinde bölümleri sürükleyerek düzenleyin: bir gövde bölümünü EK başlığına sürükleyin → o eke taşınır (EK-N.M). Sürüklerken boş gruplar (EK-7…EK-10) görünür olur ve bırakma hedefi olur. EK’e taşınmış (rozetli) bir bölümü gövde listesine bırakın → eke bağı kalkar ve bıraktığınız yere sıralanır. Her taşıma Ctrl+Z ile geri alınır. Sürükleme tek yol değildir: EK düğmesi ve ↑↓ çalışmaya devam eder; filtre/arama açıkken sürükleme kapalıdır.'
+  },
   '2.370': {
     title: 'Varsayılan düzen tek tıkla',
     body:

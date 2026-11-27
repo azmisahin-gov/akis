@@ -156,7 +156,7 @@ const EXPOSE = [
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
   'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
-  'buildDefaultReportLayout',
+  'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
   'reportSnapshot', 'applyReportSnapshot', 'reportSnapshotDiff',
   'normalizeReportLayout', 'emptyReportLayout', 'REPORT_ANNEX_DEFS', 'REPORT_BODY_ORDER', 'REPORT_MAIN_KEYS',
   'REPORT_SECTION_DEFS', 'emptyReportSections', 'REPORT_PRESET_DEFS',
@@ -6068,6 +6068,27 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kapalı ek korunur', st.layout.annexes.ek1, false);
   // Tüm gövde anahtarları sırada.
   eq('tüm gövde anahtarları sırada', T.REPORT_BODY_ORDER.every((k) => st.layout.order.includes(k)), true);
+}
+
+
+// [181] v2.371 — Sürükle-bırak yerleşimi: gövde→ek (ek'e taşı) ve ekli→gövde
+// (gövdeye al + sırala). Tek snapshot; geçersiz işlem sessiz no-op değil false.
+{
+  console.log('[181] Sürükle-bırak yerleşimi (v2.371)');
+  const c = T.emptyCaseForTest({ id: 'cDD' });
+  T.setAppState({ cases: [c], activeCaseId: c.id, settings: {}, ui: {} });
+  eq('gövde→ek başarılı', T.moveSectionIntoAnnex('origin', 'ek7'), true);
+  eq('origin ek7 (model)', (c.report.annexPlacement || {}).origin, 'ek7');
+  eq('origin gövdeden çıktı', T.reportBodyOrder(c).includes('origin'), false);
+  eq('aynı eke tekrar no-op', T.moveSectionIntoAnnex('origin', 'ek7'), false);
+  eq('EKLER taşınamaz', T.moveSectionIntoAnnex('annex', 'ek7'), false);
+  eq('geçersiz ek anahtarı', T.moveSectionIntoAnnex('s2', 'yok'), false);
+  // Ekli bölümü gövdeye al + sırala.
+  T.moveSectionIntoAnnex('speakers', 'ek8');
+  eq('speakers ek8', (c.report.annexPlacement || {}).speakers, 'ek8');
+  eq('ekli→gövde başarılı', T.unplaceAndReorder('speakers', 's1', 'after'), true);
+  eq('speakers yerleşimi kalktı', (c.report.annexPlacement || {}).speakers, undefined);
+  eq('speakers gövdede', T.reportBodyOrder(c).includes('speakers'), true);
 }
 
 

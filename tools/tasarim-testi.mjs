@@ -2529,6 +2529,17 @@ console.log('\n[2ef] Varsayılan düzen düğmesi (v2.370)');
   check('uygulama fonksiyonu (onaylı)', /async function applyDefaultReportLayout\(/.test(app) && /snapshotForUndo\('Varsayılan düzeni uygula'\)/.test(app));
 }
 
+console.log('\n[2eg] Sürükle-bırak gövde ↔ ek (v2.371)');
+{
+  const app = read('assets/app.js');
+  check('gövde→ek taşıma fonksiyonu', /function moveSectionIntoAnnex\(key, annexKey\)/.test(app) && /snapshotForUndo\('Bölümü eke taşı'\)/.test(app));
+  check('ekli→gövde fonksiyonu', /function unplaceAndReorder\(key, target, zone\)/.test(app));
+  check('drop çapraz tür (bodyToAnnex)', /const bodyToAnnex = src\.kind === 'body' && row\.dataset\.dragKind === 'annex'/.test(app));
+  check('drop gövde→ek çağrısı', /if \(bodyToAnnex\) \{\s*moveSectionIntoAnnex\(src\.key, row\.dataset\.dragKey\)/.test(app));
+  // EK düğmesi (yedek yol) KORUNUR.
+  check('EK düğmesi yedeği korunur', /data-report-place="\$\{esc\(key\)\}"/.test(app));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

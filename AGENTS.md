@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.370.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.371.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10022,3 +10022,17 @@ ayar olsa — 'Tümünü aç/kapat' yanına 'Varsayılanlar'."*
 - Test: `birim [180]` (11), `tasarim [2ef]` (3).
 
 Sıradaki: **v2.371 sürükle-bırak** (gövde ↔ ek).
+
+## EK DÜZELTME (v2.371) — Sürükle-bırak: gövde ↔ ek
+
+- **Gövde satırı → EK başlığı** (`moveSectionIntoAnnex`): bölümü o eke taşır.
+  Sürüklerken **boş gruplar (EK-7…EK-10)** açığa çıkar (normalde gizli) ve hedef olur.
+- **EK'li (rozetli) satır → gövde** (`unplaceAndReorder`): eke bağı kaldırır + sıralar.
+  Tek snapshot + tek çizim; Ctrl+Z.
+- **Yedek yollar korunur:** EK düğmesi (`data-report-place`) + ↑↓. Filtre/arama
+  açıkken sürükleme kapalı (`canDrag`).
+- Çapraz tür yalnız **body→annex**; annex→body yok (ek bütün olarak sürüklenir).
+- Boş grup numara tüketmez; iskelet etiketi `(boş) <ad>`.
+- Test: `birim [181]`, `tasarim [2eg]`.
+
+Sıradaki: **v2.372 tablo/font/görünüm** (tableStyle grid/lines, density).

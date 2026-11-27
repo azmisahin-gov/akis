@@ -2,11 +2,22 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.370.**
+yazılır. **Güncel sürüm: v2.371.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.371 — Sürükle-bırak: gövde ↔ ek (TAMAMLANDI)
+
+- **Gövde satırı → EK başlığı**: bölümü o eke taşır (`moveSectionIntoAnnex`).
+  Sürüklerken **boş gruplar (EK-7…EK-10) açığa çıkar** ve bırakma hedefi olur.
+- **EK'li (rozetli) satır → gövde**: eke bağı kaldırır + bırakılan yere sıralar
+  (`unplaceAndReorder`). Tek snapshot, tek çizim.
+- **Yedek yollar korunur:** EK düğmesi + ↑↓. Filtre/arama açıkken sürükleme kapalı.
+- Boş grup iskelette normalde gizli; yalnız sürükleme sırasında görünür (temizlik).
+- Ölçüm (DragEvent): gövde→EK-7 (0→1, EK-7.1), EK'li→gövde (1→0); JS 0.
+- Test: `birim [181]` (10), `tasarim [2eg]` (5).
 
 ## v2.370 — "Varsayılan düzen" tek tık (TAMAMLANDI)
 
