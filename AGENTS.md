@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.378.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.379.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10146,3 +10146,15 @@ dümdüz tek liste, ben açar/kapatır/sıralarım."
 - **DERS:** İndeks tabanlı çoklu Python düzenlemesinde `s.index('const groups =')` YANLIŞ (ilk)
   eşleşmeyi yakaladı (başka fonksiyon) ve `annexRows` tanımsız kaldı. Doğrusu: benzersiz bağlam
   çıpası (`"const groups =\n    (front ?"`) + assert. Dosya değişince `node --check` + tarayıcı.
+
+## EK DÜZELTME (v2.379) — Liste ve panelde "EK" kaldırıldı
+
+**KULLANICI:** "Hâlâ bir şeyleri eklere mi bağladın? Tüm listeleri düzgünce yeniden yaz."
+
+- İskelet: gövde döngüsünde `annex` ve `s7` satırları GİZLENDİ → 30 içerik bölümü düz liste.
+- Sağ çekmece: `REPORT_SIDE_TABS`'tan `annex` çıkarıldı; index.html'de "Ekler" sekme düğmesi + paneli
+  birebir (regex'siz) kaldırıldı (div dengesi 262=262). Revision paneli korundu.
+- Rapor çıktısı (HTML/DOCX/UDF) DEĞİŞMEDİ; EKLER yalnız eski dosyada açık kaldıysa görünür.
+- Ölçüm: 30 satır, annex/s7 yok, listede EK yok, 4 sekme, JS 0. `tasarim` 4 sekmeye güncellendi.
+- **DERS:** index.html'de panel kaldırırken REGEX (`.+?</div></div>`) div yapısını bozdu (revision
+  paneli gitti). Doğrusu: birebir metin eşleşmesi + `div open==close` kontrolü.

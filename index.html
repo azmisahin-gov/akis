@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.378'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.379'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.378">
-  <link rel="stylesheet" href="assets/app.css?v=2.378">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.379">
+  <link rel="stylesheet" href="assets/app.css?v=2.379">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.378">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.379">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.378"></script>
+  <script type="module" src="assets/app.js?v=2.379"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -268,7 +268,7 @@
                 <button type="button" class="rside-tab is-active" data-rside-tab="check" role="tab" aria-selected="true">Kontrol</button>
                 <button type="button" class="rside-tab" data-rside-tab="fields" role="tab" aria-selected="false">Alanlar</button>
                 <button type="button" class="rside-tab" data-rside-tab="format" role="tab" aria-selected="false">Biçim</button>
-                <button type="button" class="rside-tab" data-rside-tab="annex" role="tab" aria-selected="false">Ekler</button>
+                
                 <button type="button" class="rside-tab" data-rside-tab="revision" role="tab" aria-selected="false">Revizyon</button>
               </div>
               <div class="rside-panel" data-rside-section="check">
@@ -294,9 +294,6 @@
                   <div class="report-page-nav" id="reportPageNav" hidden><button type="button" class="report-pg-btn" id="reportPagePrev" aria-label="Önceki sayfa" title="Önceki sayfa (PageUp)">‹</button><span class="report-pg-label" id="reportPageLabel">Sayfa 1 / 1</span><button type="button" class="report-pg-btn" id="reportPageNext" aria-label="Sonraki sayfa" title="Sonraki sayfa (PageDown)">›</button></div>
                   <span class="report-pagecount" id="reportPageCount"></span>
                 </details>
-              </div>
-              <div class="rside-panel" data-rside-section="annex" hidden>
-                <details class="report-tech-box" id="reportAnnexBox" open><summary>Ekler · başlık / içerik / not</summary><div class="report-tech" id="reportAnnexFields"></div></details>
               </div>
               <div class="rside-panel" data-rside-section="revision" hidden>
                 <div class="report-revisions" id="reportRevisions"></div>

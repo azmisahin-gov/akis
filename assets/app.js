@@ -165,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.378';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.378';
+} from './schema.js?v=2.379';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.379';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.378';
+const APP_VERSION = '2.379';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14369,7 +14369,7 @@ function applyReportMode() {
   }
 }
 // v2.365 — Sağ panel sekmeleri (Kontrol · Alanlar · Biçim · Ekler · Revizyon).
-const REPORT_SIDE_TABS = ['check', 'fields', 'format', 'annex', 'revision'];
+const REPORT_SIDE_TABS = ['check', 'fields', 'format', 'revision'];
 function reportSideTabPref() {
   try {
     const v = localStorage.getItem('akis.reportSideTab');
@@ -15510,6 +15510,8 @@ function renderReportSections(c) {
   // hatası kökten kalkar. Eke taşıma: sürükle veya çekmecedeki düğme.
   let body = '';
   for (const key of layout.order) {
+    // v2.379 — listede EK kavrami YOK: 'EKLER' ve 'EK listesi' satirlari gizlenir.
+    if (key === 'annex' || key === 's7') continue;
     if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
@@ -24796,6 +24798,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.379': {
+    title: 'Liste ve panelde “EK” kaldırıldı',
+    body:
+      'Rapor iskeletindeki “EKLER” ve “EK LİSTESİ” satırları kaldırıldı; liste artık yalnız gerçek içerik bölümlerini (30 bölüm) tek düz sırada gösterir. Sağ çekmecedeki “Ekler” sekmesi de kaldırıldı (Kontrol · Alanlar · Biçim · Revizyon kaldı). Böylece iskelette/panelde “EK” kavramı görünmez; her bölümü aç/kapa ve sırala. Rapor çıktısındaki EKLER bölümü yalnız eski dosyalarda “EKLER” açık kaldıysa görünür.'
+  },
   '2.378': {
     title: 'İskelet dümdüz tek liste',
     body:

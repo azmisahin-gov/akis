@@ -3010,8 +3010,8 @@ console.log('\n[2dz] Rapor ayarları sekmeleri + tek alan yeri (v2.365)');
   const css = read('assets/reading-layer.css');
   const app = read('assets/app.js');
   check('sekme çubuğu var', /id="reportSideTabs"/.test(html));
-  check('beş sekme var', (html.match(/data-rside-tab="/g) || []).length === 5);
-  check('beş panel var', (html.match(/data-rside-section="/g) || []).length === 5);
+  check('dört sekme var (Ekler kaldırıldı)', (html.match(/data-rside-tab="/g) || []).length === 4);
+  check('dört panel var (Ekler kaldırıldı)', (html.match(/data-rside-section="/g) || []).length === 4);
   check('alan paneli açık başlar', /id="reportColumnsBox" open/.test(html));
   check('tek alan yeri (künye+sütun)', /function reportFieldGroupsHtml\(c\)/.test(app) && /reportFieldGroupsHtml\(c\) \+/.test(app));
   check('iskelette alan listesi kalmadı', !/frontFieldsHtml/.test(app) && !/rsec-fields/.test(app));
@@ -3075,7 +3075,7 @@ console.log('\n[2ec] Sağ çekmece + stage bar kaldırıldı (v2.368)');
   check('çekmece karartması', /id="reportDrawerBackdrop"/.test(html));
   check('stage bar kaldırıldı', !/report-stage-bar/.test(html));
   const fieldsPanel = (html.match(/data-rside-section="fields"[\s\S]*?data-rside-section="format"/) || [''])[0];
-  const formatPanel = (html.match(/data-rside-section="format"[\s\S]*?data-rside-section="annex"/) || [''])[0];
+  const formatPanel = (html.match(/data-rside-section="format"[\s\S]*?data-rside-section="revision"/) || [''])[0];
   check(
     'içerik anahtarları Alanlar sekmesinde',
     /id="reportContentBox"/.test(fieldsPanel) && /id="reportEmbeddedToggle"/.test(fieldsPanel) && /id="reportSpeakerMethodToggle"/.test(fieldsPanel)

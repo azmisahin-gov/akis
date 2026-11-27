@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.378.**
+yazılır. **Güncel sürüm: v2.379.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.379 — Liste ve panelde "EK" kaldırıldı (TAMAMLANDI)
+
+- İskelet: 'annex' (EKLER) ve 's7' (EK listesi) satırları gizlendi → 30 içerik bölümü düz liste.
+- Sağ çekmece: 'Ekler' sekmesi + paneli kaldırıldı (REPORT_SIDE_TABS = check/fields/format/revision).
+- Rapor çıktısı DEĞİŞMEDİ; EKLER yalnız eski dosyada açık kaldıysa görünür.
+- Ölçüm: 30 satır, annex/s7 yok, listede EK yok, 4 sekme, JS 0. Test: tasarim güncellendi (4 sekme).
 
 ## v2.378 — İskelet dümdüz tek liste (TAMAMLANDI)
 
