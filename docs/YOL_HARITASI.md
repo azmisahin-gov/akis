@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.383.**
+yazılır. **Güncel sürüm: v2.384.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.384 — Belge akışı: boş sayfa, tablo notu, kısa durum (TAMAMLANDI)
+
+- `REPORT_PAGE_BREAK_KEYS` = `['s5','s6']`: ilk dört kısa bölüm ve materyal tutanağı AKAR (zorunlu sayfa sonu yok).
+- `wP(..., {keepLines:true})`: not/açıklama paragrafları sayfa arasında bölünmez.
+- `wTable(..., {keepLast:true})`: tablo son satırı, ardından gelen notla aynı sayfada kalır (`w:keepNext`).
+- `recordBlockXml(c, key, {noteAfter})`: envanter gibi dış notu olan bloklarda son satır nota bağlanır.
+- `reviewTableText` + `ambiguousSegmentNotes`: kanıt tablosunda kısa durum; iki okuma tablo altı notta (`ambiguousNotePrefix`).
+- Kanıt tablosu genişlikleri `[1200,900,1100,3100,1200,800]` (UDF `[62,46,56,200,62,50]`).
+- Testler: `birim [188]`, `rapor` Senaryo 62, `tasarim [2em]`; 2831 + 556 yeşil.
 
 ## v2.383 — Okuma metni durumu, konuşmacı tablosu, sayfa düzeni (TAMAMLANDI)
 

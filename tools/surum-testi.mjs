@@ -204,7 +204,9 @@ const REQUIRED_TOPICS = [
   ['kayıtlı metinler', /Kayıtlı metinlerim/],
   // v2.383 — okuma metni durumu + kısa kayıt adı.
   ['okuma metni kontrol durumu', /Okuma metninde kontrol durumu görünür|readingStatusLabel/],
-  ['kısa kayıt adı', /Kayıt 1[\s\S]{0,160}(KAYIT NUMARALARI|speakerRecordLegend)/]
+  ['kısa kayıt adı', /Kayıt 1[\s\S]{0,160}(KAYIT NUMARALARI|speakerRecordLegend)/],
+  // v2.384 — belge akışı: kısa bölümler akar, tablo notu tabloyla kalır.
+  ['belge akışı', /Belge akışı|keepLines|tek paragraf kalan sayfa/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

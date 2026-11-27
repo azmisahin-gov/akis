@@ -1070,13 +1070,15 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
   // dolgu paragraf girintisiyle (v2.260).
   check('DOCX hücre sol dolgusu 0', /<w:tblCellMar><w:top w:w="95" w:type="dxa"\/><w:left w:w="0"/.test(dx));
   check('DOCX hücre paragraf girintisi (kenarlık hizalı)', /<w:ind w:left="90"/.test(dx));
-  // Her ana bölüm (1–7) yeni sayfa + kapak + ekler → en az 7 sayfa sonu.
-  check('DOCX ana bölümler yeni sayfa (>=7)', (dx.match(/w:type="page"/g) || []).length >= 7);
+  // v2.384 — Zorunlu sayfa sonu yalnız s5 (bulgular) ve s6 (sonuç). Kısa
+  // bölümler ve tutanak AKAR; böylece "tek paragraf kalan sayfa" oluşmaz.
+  // Bu senaryoda ön bölüm sonları + s5/s6 (varsayılan açık) = 4.
+  check('DOCX sayfa sonu akışa uygun (<=4)', (dx.match(/w:type="page"/g) || []).length <= 4, String((dx.match(/w:type="page"/g) || []).length));
 
   downloads.length = 0; setCase(c); await makeUdf();
   const uZ = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
   const ux = await uZ.file('content.xml').async('string');
-  check('UDF ana bölümler yeni sayfa (>=7)', (ux.match(/<page-break>/g) || []).length >= 7);
+  check('UDF sayfa sonu akışa uygun (<=4)', (ux.match(/<page-break>/g) || []).length <= 4, String((ux.match(/<page-break>/g) || []).length));
 }
 
 // Senaryo 30: parçalar ayrı — cevaplar · sınırlılıklar · bütünlük (v2.261).
@@ -2055,6 +2057,23 @@ console.log('\n[Senaryo 61] okuma metni durumu + kısa kayıt adı (v2.383)');
   checkShared('okuma metni anlaşılmadı metni KORUNUR', 'ikinci kısım', H, U, D);
   checkShared('kısa kayıt adı', 'Kayıt 1', H, U, D);
   checkShared('kayıt eşlemesi tam adı taşır', 'Kayıt 1 = ses_01_uzun_dosya_adi.wav', H, U, D);
+}
+
+
+// Senaryo 62 (v2.384): kanıt tablosunda KISA durum; iki okuma tablo altındaki
+// notta. Belirsizlik raporda GİZLENMEZ, yalnız yer değiştirir.
+console.log('\n[Senaryo 62] belirsiz okuma: kısa hücre + tablo altı not (v2.384)');
+{
+  const c = withMaterial();
+  c.materials[0].segments = [
+    { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'K', text: 'merhaba', review: 'approved' },
+    { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'K', text: 'hesabı göndereceğim', review: 'ambiguous', reading1: 'göndereceğim', reading2: 'göndermeyeceğim', chosen: 'göndereceğim' }
+  ];
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('belirsiz okuma notu var', REPORT_TEXT.ambiguousNotePrefix, H, U, D);
+  checkShared('not iki okumayı taşır', '"göndereceğim" / "göndermeyeceğim"', H, U, D);
+  checkShared('not seçimi taşır', '(seçilen: göndereceğim)', H, U, D);
+  checkShared('not zaman aralığı taşır', '00:00:05.000 – 00:00:10.000', H, U, D);
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);

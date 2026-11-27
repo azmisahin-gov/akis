@@ -6,12 +6,22 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.383.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.384.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.384 — Belge akışı: boş sayfa, tablo notu, kısa durum
+
+**KULLANICI NE GÖRECEK:**
+- **Tek paragraf kalan sayfa yok:** ilk dört bölüm ve materyal tutanağı artık kendi sayfalarını zorlamıyor; kısa bölümler aynı akışta. Örnek raporda **24 → 20 sayfa** (tam bölüm seti **20 → 16**).
+- **Tablo notu tabloyla kalır:** tablo sonundaki açıklama **son satırla aynı sayfada**; paragraf **ikiye bölünmez** (“son iki satır tek başına” bitti).
+- **Belirsiz okuma hücresi kısa:** kanıt tablosunda **“Belirsiz okuma”** yazar; iki okuma ve seçim tablonun altındaki **“Belirsiz okumalar”** notunda **tam** durur. Belirsizlik gizlenmez.
+- İçindekiler kendi sayfasında; v2.383’ün tüm düzeltmeleri korunuyor.
+
+**ÖLÇÜM (gerçek Chromium + LibreOffice 25.2.3.2, demo + uzun işlem günlüğü):** uzun günlüklü rapor **24 → 20 sayfa**, tam bölüm seti **20 → 16 sayfa**; **10 satırdan az sayfa 0** (önce 2 satırlık sayfa vardı). Belirsiz okuma hücresi **7 → 2 satır**; tablo altı notu 2 satır ve iki okumayı taşıyor. UDF zorunlu sayfa sonu **8 → 5**. Testler **2831 birim + 556 şema** + rapor (Senaryo 62) + sürüm + tasarım yeşil.
 
 ## v2.383 — Okuma metni durumu, konuşmacı tablosu, sayfa düzeni
 

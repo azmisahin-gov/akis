@@ -115,6 +115,7 @@ const EXPOSE = [
   'profileRunLabel', 'asrProfile', 'PROFILE_LOCK',
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
+  'reviewTableText', 'ambiguousSegmentNotes',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -8189,5 +8190,25 @@ console.log('\n== [187] Okuma metni durumu, kısa kayıt adları, tarih tutarlı
   eq('rapor tarihi satırı 14 gün der', /14 gün önce/.test(cmp[2]), true);
 }
 
+
+console.log('\n== [188] Kanıt tablosu: kısa durum + belirsiz okuma notu (v2.384)');
+{
+  // KULLANICI BULGUSU: belirsiz okuma açıklaması dar "KONTROL DURUMU"
+  // sütununda 7 satıra çıkıyordu. Tablo hücresi KISA etiket taşır; iki okuma
+  // ve seçim tablonun altındaki notta TAM yazılır (belirsizlik gizlenmez).
+  const amb = { id: 'a1', start: '00:00:20.000', end: '00:00:27.000', review: 'ambiguous', reading1: 'geldi', reading2: 'kaldı', chosen: 'geldi' };
+  const app = { id: 'a2', start: '00:00:00.000', end: '00:00:05.000', review: 'approved' };
+  const ina = { id: 'a3', start: '00:00:05.000', end: '00:00:10.000', review: 'inaudible' };
+  eq('tablo hücresi belirsizde KISA', T.reviewTableText(amb), 'Belirsiz okuma');
+  eq('tablo hücresi okumaları taşımaz', /geldi|kaldı/.test(T.reviewTableText(amb)), false);
+  eq('tablo hücresi onaylıda Onaylandı', T.reviewTableText(app), 'Onaylandı');
+  eq('tablo hücresi anlaşılmadıda Anlaşılmadı', T.reviewTableText(ina), 'Anlaşılmadı');
+  const notes = T.ambiguousSegmentNotes({ segments: [amb, app, ina] });
+  eq('yalnız belirsiz için not', notes.length, 1);
+  eq('not zaman aralığını taşır', notes[0].includes('00:00:20.000 – 00:00:27.000'), true);
+  eq('not iki okumayı taşır', notes[0].includes('geldi') && notes[0].includes('kaldı'), true);
+  eq('not seçimi taşır', /seçilen: geldi/.test(notes[0]), true);
+  eq('belirsiz yoksa not yok', T.ambiguousSegmentNotes({ segments: [app] }).length, 0);
+}
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

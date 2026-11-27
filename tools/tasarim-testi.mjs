@@ -3094,5 +3094,20 @@ console.log('\n[2el] Rapor sayfa akışı: İÇİNDEKİLER + başlık/giriş/tab
   check('grup kontrol durumuna göre ayrılır', /cur\.speaker === spk && cur\.status === st/.test(app));
   check('kısa kayıt adı rapor tablosunda', /function speakerReportRows\(c\)/.test(app) && /function speakerRecordLegend\(c\)/.test(app));
 }
+
+console.log('\n[2em] Belge akışı: kısa bölümler akar, tablo notu tabloyla kalır (v2.384)');
+{
+  const app = read('assets/app.js');
+  // KULLANICI BULGUSU: "tek paragraf kalan sayfa" + "son iki satır tek başına".
+  check('zorunlu sayfa sonu yalnız s5/s6', /REPORT_PAGE_BREAK_KEYS = new Set\(\['s5', 's6'\]\)/.test(app));
+  check('s1–s4 zorunlu sayfa sonu DEĞİL', !/REPORT_PAGE_BREAK_KEYS = new Set\(\['s1'/.test(app));
+  check('tutanak zorunlu sayfa sonu DEĞİL', !/REPORT_PAGE_BREAK_KEYS = new Set\(\[[^\]]*handoverRecord/.test(app));
+  check('paragraf bölünmez (keepLines)', /keepLines = false/.test(app) && /<w:keepLines\/>/.test(app));
+  check('tablo son satırı nota bağlanır (keepLast)', /keepLast = false/.test(app) && /keep: keepLast && !isHead/.test(app));
+  check('envanter notu tabloya bağlı', /recordBlockXml\(c, 'fileInventory', \{ noteAfter: true \}\)/.test(app));
+  check('gizlilik paragrafı bölünmez', /wP\(defaultTextFor\('privacyText'\), \{ keepLines: true \}\)/.test(app));
+  check('kanıt tablosu kısa durum + not', /function reviewTableText\(s\)/.test(app) && /function ambiguousSegmentNotes\(m\)/.test(app));
+  check('kanıt tablosu sütunları dengeli', /\[1200, 900, 1100, 3100, 1200, 800\]/.test(app));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

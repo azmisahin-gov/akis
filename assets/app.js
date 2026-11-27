@@ -166,15 +166,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.383';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.383';
+} from './schema.js?v=2.384';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.384';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.383';
+const APP_VERSION = '2.384';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -485,6 +485,7 @@ Object.assign(REPORT_TEXT, {
   speakerVerifiedSuffix: 'doğrulandı',
   // v2.383 — raporda KAYIT sütunu kısa etiket taşır; tam ad bu satırda yazılır.
   speakerRecordLegendPrefix: 'KAYIT NUMARALARI',
+  ambiguousNotePrefix: 'Belirsiz okumalar',
   speakerVerifiedNote:
     'Konuşmacı künyesi doğrulanmıştır (etiket/rol bilgisi bilirkişi tarafından kontrol edilmiştir). Bu, bölümlerin dinlenerek onaylandığı anlamına gelmez.',
   speakerMethodNote:
@@ -7079,6 +7080,17 @@ function ambiguousReportText(s) {
   const quoted = list.map((v) => `"${v}"`).join(' / ');
   const chosen = String((s && s.chosen) || '').trim();
   return `Belirsiz okuma: ${quoted} (seçilen: ${chosen || 'seçilmedi'})`;
+}
+// v2.384 — KANIT TABLOSU HÜCRESİ: belirsiz okumada KISA etiket yazılır
+// ("Belirsiz okuma"); iki okuma ve seçim tablonun ALTINDAKİ notta TAM yazılır.
+// Böylece dar "KONTROL DURUMU" sütunu 7 satıra çıkmaz; belirsizlik GİZLENMEZ.
+function reviewTableText(s) {
+  return segReview(s) === AMBIGUOUS_REVIEW ? REVIEW_LABEL.ambiguous : reviewCellText(s);
+}
+function ambiguousSegmentNotes(m) {
+  return ((m && m.segments) || [])
+    .filter((s) => segReview(s) === AMBIGUOUS_REVIEW)
+    .map((s) => `${tcRange(s.start, s.end)} — ${ambiguousReportText(s)}`);
 }
 // "%100 OLMAZ" SORUSUNUN CEVABI (v2.114).
 // Sayaç `isReviewed()` kullanır: yalnız `approved` ve `inaudible` sayılır.
@@ -15504,7 +15516,10 @@ function reportUiLabel(c, key) {
 // KATEGORİ yalnız GÖRÜNÜRLÜK/filtre içindir; rapor SIRASINI değiştirmez.
 // Sıra tek kaynak: `case.report.layout.order`. Kategoriye göre yeniden
 // sıralamak çıktı sırasını sessizce bozardı; bu yüzden yapılmaz.
-const REPORT_PAGE_BREAK_KEYS = new Set(['s1', 's2', 's3', 's4', 's5', 's6', 'handoverRecord']);
+// v2.384 — Sayfa sonu yalnız BÜYÜK eşiklerde: bulgular/transkript (s5) ve
+// sonuç (s6). İlk dört kısa bölüm ve tutanak AKAR; böylece "tek paragraf
+// kalan sayfa" ve boş sayfa oluşmaz (ölçüm: v2.383 DOCX 20 sayfa, boş 1).
+const REPORT_PAGE_BREAK_KEYS = new Set(['s5', 's6']);
 const REPORT_SECTION_CATEGORY = {
   cover: 'front',
   coverFields: 'front',
@@ -16494,31 +16509,35 @@ function recordBlockHtml(c, key) {
   if (b.note) out += `<p class="paper-muted">${esc(b.note)}</p>`;
   return out;
 }
-function recordBlockXml(c, key) {
+function recordBlockXml(c, key, opts = {}) {
   const b = recordSectionDefs(c)[key];
   if (!b) return '';
+  // v2.384 — blok sonundaki not (b.note) veya bölüm sonrası not
+  // (`opts.noteAfter`) varsa tablonun SON SATIRI nota bağlanır; not da
+  // bölünmez. Böylece not tek başına sonraki sayfaya düşmez.
+  const keepLast = !!b.note || !!opts.noteAfter;
   let out = '';
-  if (b.kind === 'para') out += wP(b.text);
+  if (b.kind === 'para') out += wP(b.text, { keepLines: true });
   else if (b.kind === 'tables') {
     for (const t of b.tables) {
       out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
-      out += wTable([[...t.headers], ...t.rows], { header: true });
+      out += wTable([[...t.headers], ...t.rows], { header: true, keepLast });
     }
   } else if (b.kind === 'blocks') {
     for (const sub of b.blocks || []) {
-      if (sub.kind === 'para') out += wP(sub.text);
+      if (sub.kind === 'para') out += wP(sub.text, { keepLines: true });
       else if (sub.kind === 'table') {
         out += wP(sub.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
-        out += wTable([[...sub.headers], ...sub.rows], { header: true });
+        out += wTable([[...sub.headers], ...sub.rows], { header: true, keepLast });
       }
     }
   } else if (b.header) {
     const rows = b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
-    out += wTable([[...b.headers], ...rows], { widths: b.widths, header: true });
+    out += wTable([[...b.headers], ...rows], { widths: b.widths, header: true, keepLast });
   } else {
-    out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true });
+    out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true, keepLast });
   }
-  if (b.note) out += wP(b.note, { color: '74869A', size: 17, italic: true });
+  if (b.note) out += wP(b.note, { color: '74869A', size: 17, italic: true, keepLines: true });
   return out;
 }
 function recordBlockUdf(c, key, el, H) {
@@ -18187,12 +18206,15 @@ function renderReport() {
           if (m.languageWarning)
             out += `<p class="paper-muted">${esc(REPORT_TEXT.languageWarningPrefix)} ${esc(m.languageWarning)}</p>`;
           if (m.segments?.length) {
+            const amb = ambiguousSegmentNotes(m);
             const segRows = m.segments.map((s) => {
               const sp = segSpeakerCells(m, s);
-              return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
+              return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewTableText(s), segObsText(s)];
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
             out += `<p class="paper-muted"><b>${esc(REPORT_TEXT.recordTranscriptHeading)}</b></p><table class="paper-table"><thead><tr>${st.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${st.rows.map((r) => `<tr>${r.map((x) => `<td>${esc(x)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+            if (amb.length)
+              out += `<p class="paper-muted">${esc(REPORT_TEXT.ambiguousNotePrefix)}: ${esc(amb.join(' · '))}</p>`;
           } else out += `<p>${esc(REPORT_TEXT.noTranscript)}</p>`;
         }
       } else out += `<p>${esc(REPORT_TEXT.noMaterials)}</p>`;
@@ -18482,27 +18504,30 @@ function wP(
     before = 0,
     after = 80,
     keep = false,
+    keepLines = false,
     italic = false
   } = {}
 ) {
-  const ppr = `<w:pPr>${style ? `<w:pStyle w:val="${style}"/>` : ''}${align ? `<w:jc w:val="${align}"/>` : ''}<w:spacing w:before="${before}" w:after="${after}" w:line="300" w:lineRule="auto"/>${keep ? '<w:keepNext/>' : ''}</w:pPr>`;
+  // v2.384 — `keepLines`: paragraf SAYFA ARASINDA BÖLÜNMEZ. Kısa açıklama
+  // paragraflarında 2 satırlık "dul" satır kalmasını önler.
+  const ppr = `<w:pPr>${style ? `<w:pStyle w:val="${style}"/>` : ''}${keep ? '<w:keepNext/>' : ''}${keepLines ? '<w:keepLines/>' : ''}${align ? `<w:jc w:val="${align}"/>` : ''}<w:spacing w:before="${before}" w:after="${after}" w:line="300" w:lineRule="auto"/></w:pPr>`;
   const runs = String(text)
     .split('\n')
     .map((line, i) => (i ? '<w:r><w:br/></w:r>' : '') + wRun(line, { bold, color, size, italic }))
     .join('');
   return `<w:p>${ppr}${runs}</w:p>`;
 }
-function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null } = {}) {
+function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, keep = false } = {}) {
   const sh = shade ? `<w:shd w:fill="${shade}"/>` : '';
   const col = header ? 'FFFFFF' : color || '24384D';
   // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
   // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
   // v2.372 — yoğunluk: sıkı rejimde satır aralığı küçülür.
   const sp = (__docxFmt && __docxFmt.density) === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
-  const p = `<w:p><w:pPr><w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
+  const p = `<w:p><w:pPr>${keep ? '<w:keepNext/>' : ''}<w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
-function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false } = {}) {
+function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false } = {}) {
   const n = rows[0]?.length || 1;
   // Tablo, metin genişliğine (contentTw) oturur; sütun oranları korunur. (v2.259)
   const contentTw = (__docxFmt && __docxFmt.contentTw) || 9000;
@@ -18525,6 +18550,9 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
         ? '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:left w:val="nil"/><w:right w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
         : '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
   const cellPad = (__docxFmt && __docxFmt.density) === 'compact' ? 40 : 95;
+  // v2.384 — `keepLast`: son satır, kendisinden SONRA gelen not/açıklama ile
+  // aynı sayfada kalır (`w:keepNext`). Böylece tablo sonu notu tek başına
+  // sonraki sayfaya düşmez.
   const r = rows
     .map(
       (row, ri) =>
@@ -18538,7 +18566,8 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
               bold: isHead || (shadeFirstCol && ci === 0),
               width: ws[ci] || 2200,
               size: isHead ? 17 : 18,
-              color: shadeFirstCol && ci === 0 ? '1C426B' : null
+              color: shadeFirstCol && ci === 0 ? '1C426B' : null,
+              keep: keepLast && !isHead && ri === rows.length - 1
             });
           })
           .join('')}</w:tr>`
@@ -18723,9 +18752,9 @@ function docxXml(c) {
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : t.rows.length
-            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })
+            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })
             : wP(REPORT_TEXT.noMaterials, { color: '74869A', size: 17, italic: true })) +
-        wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true })
+        wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
     embeddedInfo: () => {
@@ -18764,16 +18793,16 @@ function docxXml(c) {
           return st.empty
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : st.rows.length
-              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true })
+              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: true })
               : wP(REPORT_TEXT.noSpeakerText, { color: '74869A', size: 17, italic: true });
         })() +
-        (legend ? wP(legend, { color: '74869A', size: 17, italic: true }) : '') +
+        (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
         (notes.length
-          ? wP('Notlar:', { bold: true, color: '6F8295', size: 17 }) +
-            notes.map((n) => wP(`${n.code} · ${n.name}: ${n.note}`, { color: '657D92', size: 17, italic: true })).join('')
+          ? wP('Notlar:', { bold: true, color: '6F8295', size: 17, keepLines: true }) +
+            notes.map((n) => wP(`${n.code} · ${n.name}: ${n.note}`, { color: '657D92', size: 17, italic: true, keepLines: true })).join('')
           : '') +
-        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true }) +
-        (speakerMethodNoteText(c) ? wP(speakerMethodNoteText(c), { color: '74869A', size: 17, italic: true }) : '')
+        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true, keepLines: true }) +
+        (speakerMethodNoteText(c) ? wP(speakerMethodNoteText(c), { color: '74869A', size: 17, italic: true, keepLines: true }) : '')
       );
     },
     speakerDurations: () => {
@@ -18784,9 +18813,9 @@ function docxXml(c) {
         headingXml(H('speakerDurations')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true })) +
-        (legend ? wP(legend, { color: '74869A', size: 17, italic: true }) : '') +
-        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true })
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
+        (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
+        wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
     s4: () => headingXml(H('s4')) + wP(c.methodText || defaultTextFor('methodText')),
@@ -18796,8 +18825,8 @@ function docxXml(c) {
       return (
         headingXml(H('tech')) +
         wP(REPORT_TEXT.techIntro, { keep: true }) +
-        (has ? wTable(rows, { widths: [3400, 5600], header: false, shadeFirstCol: true }) : wP(REPORT_TEXT.techEmpty, { color: '74869A', size: 17, italic: true })) +
-        wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true })
+        (has ? wTable(rows, { widths: [3400, 5600], header: false, shadeFirstCol: true, keepLast: true }) : wP(REPORT_TEXT.techEmpty, { color: '74869A', size: 17, italic: true, keepLines: true })) +
+        wP(REPORT_TEXT.techNote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
     enhancement: () => headingXml(H('enhancement')) + wP(REPORT_TEXT.enhanceText),
@@ -18808,8 +18837,8 @@ function docxXml(c) {
       return (
         headingXml(H('transcriptionMethod')) +
         wP(defaultTextFor('asrIntro'), { keep: true }) +
-        wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true }) +
-        wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true })
+        wTable([[...REPORT_TEXT.asrHeaders], ...dAsr], { widths: [2400, 4000, 2600], header: true, keepLast: true }) +
+        wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
     s5: () => {
@@ -18837,13 +18866,16 @@ function docxXml(c) {
         if (m.languageWarning)
           out += wP(`${REPORT_TEXT.languageWarningPrefix} ${m.languageWarning}`, { color: '9A6B2D', size: 17 });
         if (m.segments?.length) {
+          const amb = ambiguousSegmentNotes(m);
           const segRows = m.segments.map((s) => {
             const sp = segSpeakerCells(m, s);
-            return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewCellText(s), segObsText(s)];
+            return [tcRange(s.start, s.end), sp.code, sp.label, s.text || '', reviewTableText(s), segObsText(s)];
           });
-          const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1200, 900, 1100, 3100, 1000, 800]);
+          const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [1200, 900, 1100, 3100, 1200, 800]);
           out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17, keep: true });
-          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true });
+          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: amb.length > 0 });
+          if (amb.length)
+            out += wP(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { color: '74869A', size: 17, italic: true, keepLines: true });
         } else out += wP(REPORT_TEXT.noTranscript);
       }
       return out;
@@ -18862,7 +18894,7 @@ function docxXml(c) {
           keep: true
         });
         out += wP(q.answer || REPORT_TEXT.defaultAnswer);
-        out += wP(`Dayanak: ${questionBasisText(c, q)}`, { color: '657D92', size: 17, italic: true });
+        out += wP(`Dayanak: ${questionBasisText(c, q)}`, { color: '657D92', size: 17, italic: true, keepLines: true });
       });
       return out;
     },
@@ -18873,15 +18905,15 @@ function docxXml(c) {
         headingXml(H('limits')) +
         wP(REPORT_TEXT.limitsIntro, { color: '6F8295', size: 17, keep: true }) +
         wP(c.limitationsText || defaultTextFor('limitationsText')) +
-        (meas ? wP(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { color: '6F8295', size: 17, italic: true }) : '')
+        (meas ? wP(`${REPORT_TEXT.limitsMeasuredPrefix}${meas}`, { color: '6F8295', size: 17, italic: true, keepLines: true }) : '')
       );
     },
     // v2.261 — ORİJİNALİN KORUNMASI / BÜTÜNLÜK.
     integrity: () =>
       headingXml(H('integrity')) +
       wP(REPORT_TEXT.integrityIntro, { keep: true }) +
-      wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true }) +
-      wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true }),
+      wTable([[...REPORT_TEXT.integrityHeaders], ...integrityRows(c)], { widths: [1800, 3400, 1300, 1600], header: true, keepLast: true }) +
+      wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true, keepLines: true }),
     // BAĞIMSIZ OKUMA METNİ (v2.234).
     readingText: () => {
       let out = '';
@@ -18907,7 +18939,7 @@ function docxXml(c) {
       if (!t) return '';
       return headingXml(H('terms')) + wP(REPORT_TEXT.termsIntro, { color: '6F8295', size: 17, keep: true }) + wP(t);
     },
-    scopeNote: () => headingXml(H('scopeNote')) + wP(defaultTextFor('scopeNoteText')),
+    scopeNote: () => headingXml(H('scopeNote')) + wP(defaultTextFor('scopeNoteText'), { keepLines: true }),
     s6: () => headingXml(H('s6')) + wP(c.conclusionText || defaultTextFor('conclusionText')),
     s7: () => {
       const lines = reportAttachmentLines(c);
@@ -18949,17 +18981,22 @@ function docxXml(c) {
       wTable(reviewSummaryRows(c).map((r) => [r[0], String(r[1])]), {
         widths: [6000, 3000],
         header: false,
-        shadeFirstCol: true
+        shadeFirstCol: true,
+        keepLast: true
       }) +
-      wP(REPORT_TEXT.reviewSummaryNote, { color: '74869A', size: 17, italic: true }),
+      wP(REPORT_TEXT.reviewSummaryNote, { color: '74869A', size: 17, italic: true, keepLines: true }),
     qualityControl: () =>
       headingXml(H('qualityControl')) +
       wP(REPORT_TEXT.qcIntro, { keep: true }) +
-      wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true }) +
-      wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true }),
-    privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText')),
+      wTable(reportQcRows(c), { widths: [3600, 5400], header: false, shadeFirstCol: true, keepLast: true }) +
+      wP(REPORT_TEXT.qcNote, { color: '74869A', size: 17, italic: true, keepLines: true }),
+    privacy: () => headingXml(H('privacy')) + wP(defaultTextFor('privacyText'), { keepLines: true }),
     handoverRecord: () => headingXml(H('handoverRecord')) + recordBlockXml(c, 'handoverRecord'),
-    fileInventory: () => headingXml(H('fileInventory')) + wP(REPORT_TEXT.fileInventoryIntro, { keep: true }) + recordBlockXml(c, 'fileInventory') + wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true }),
+    fileInventory: () =>
+      headingXml(H('fileInventory')) +
+      wP(REPORT_TEXT.fileInventoryIntro, { keep: true }) +
+      recordBlockXml(c, 'fileInventory', { noteAfter: true }) +
+      wP(REPORT_TEXT.inventoryNote + videoNoteSuffix(c), { color: '74869A', size: 17, italic: true, keepLines: true }),
     custodyLog: () => headingXml(H('custodyLog')) + wP(REPORT_TEXT.custodyLogIntro, { keep: true }) + recordBlockXml(c, 'custodyLog'),
     notationKey: () => headingXml(H('notationKey')) + wP(REPORT_TEXT.notationKeyIntro, { keep: true }) + recordBlockXml(c, 'notationKey'),
     finalChecklist: () => headingXml(H('finalChecklist')) + recordBlockXml(c, 'finalChecklist'),
@@ -19565,13 +19602,16 @@ async function udfDocument(opts = {}) {
               })
             );
           if (m.segments?.length) {
+            const amb = ambiguousSegmentNotes(m);
             const segRows = m.segments.map((seg) => {
               const sp = segSpeakerCells(m, seg);
-              return [tcRange(seg.start, seg.end), sp.code, sp.label, seg.text || '', reviewCellText(seg), segObsText(seg)];
+              return [tcRange(seg.start, seg.end), sp.code, sp.label, seg.text || '', reviewTableText(seg), segObsText(seg)];
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows, [62, 46, 56, 200, 62, 50]);
             el.push(paragraph(REPORT_TEXT.recordTranscriptHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
             el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+            if (amb.length)
+              el.push(paragraph(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { size: 9, italic: true, color: 'muted', after: 4 }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
         });
       } else el.push(paragraph(REPORT_TEXT.noMaterials));
@@ -25003,6 +25043,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.384': {
+    title: 'Belge akışı: boş sayfa, tablo notu ve kısa durum',
+    body:
+      'Word çıktısında kısa bölümler artık aynı akışta: ilk dört bölüm ve materyal tutanağı kendi sayfalarını zorlamıyor (örnek raporda 24 → 20, tam bölüm setinde 20 → 16 sayfa). Tablo sonundaki açıklama notu tablonun son satırıyla aynı sayfada kalır ve paragraf ikiye bölünmez; “yalnızca açıklama paragrafı kalan sayfa” ve “son iki satır tek başına” durumu giderildi. Kanıt tablosunda belirsiz okuma hücresi kısa “Belirsiz okuma” yazar; iki okuma ve seçim tablonun altındaki “Belirsiz okumalar” notunda tam olarak durur — belirsizlik gizlenmez.'
+  },
   '2.383': {
     title: 'Okuma metni durumu, konuşmacı tablosu ve sayfa düzeni',
     body:

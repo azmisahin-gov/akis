@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.383.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.384.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10216,6 +10216,33 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - `sample_data/demo/AKIS_Demo_Kurgusal.akis` yeni sıra/anahtarlarla yeniden yazıldı.
 
 
+
+
+## YENİ OTURUM DEVRİ (v2.384) — Belge akışı: boş sayfa, tablo notu, kısa durum
+
+| | |
+|---|---|
+| Sürüm | **v2.384** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **2831 birim + 556 şema** + rapor (Senaryo 62) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium + LibreOffice 25.2.3.2: uzun günlüklü rapor **24 → 20 sayfa**, tam bölüm seti **20 → 16**; **10 satırdan az sayfa 0**; belirsiz okuma hücresi **7 → 2 satır**; UDF zorunlu sayfa sonu **8 → 5** |
+
+**Bağımsız denetimin 2 sayfa kusuru + 2 tasarım notu kapatıldı (v2.383 korunuyor).**
+
+1. **“Yalnız açıklama paragrafı kalan sayfa”:** zorunlu sayfa sonları azaltıldı (`['s5','s6']`); kısa bölümler ve tutanak akar. Ayrıca tüm bölüm girişleri `keep:true` ile sonraki bloğa bağlı; `recordBlockXml` `kind:'para'` blokları `keepLines` taşır.
+2. **“Son iki satır tek başına”:** `wP(..., {keepLines:true})` kısa not/açıklama paragraflarını bölmez; `wTable(..., {keepLast:true})` son satırı izleyen nota bağlar (`w:keepNext`). Envanter dış notu `recordBlockXml(c,'fileInventory',{noteAfter:true})` ile bağlanır.
+3. **Boş sayfalar (4–6):** ilk dört bölüm aynı akışta; ölçüm 20 → 16 sayfa (tam set), 24 → 20 (uzun günlük).
+4. **Belirsiz okuma sütunu:** `reviewTableText` tabloda kısa “Belirsiz okuma”; `ambiguousSegmentNotes` + `REPORT_TEXT.ambiguousNotePrefix` tablo altında iki okuma + seçim. **Belirsizlik gizlenmez**; `reviewCellText` (soru dayanağı) DEĞİŞMEDİ.
+
+### DEĞİŞMEZ KURALLAR
+1. **Zorunlu sayfa sonu yalnız s5/s6.** Yeni bir “yeni sayfadan başlasın” eklerken gerekçesi ölçülmeli; kısa bölümler akar.
+2. **Not = tablo ile birlikte.** Tablo sonuna not eklerken `keepLast:true` + `keepLines:true` birlikte kullanılır.
+3. **Belirsizlik iki yerde:** tablo hücresi KISA, tablo altı not TAM. Hücrede iki okumayı bırakmayın (dar sütunda 7 satır); notu da silmeyin (gizleme olur).
+4. **`reviewCellText` soru dayanağında TAM kalır** (orada not yok).
+5. UYAP akışı kullanıcıda doğrulanır; UDF yalnız zorunlu sayfa sonlarını taşır, kalan sayfalama UYAP editörünündür.
+
+### Dürüst sınır
+- UYAP editörü bu ortamda yok; UDF’te `<page-break>` sayısı 8 → 5’e indi ve metin doğrulandı. Sayfa kırılması UYAP’ta kullanıcı tarafından kontrol edilecek.
+- LibreOffice ile ölçüldü; Word’de font/paragraf ayarları küçük farklar üretebilir (kullanıcı doğrulaması).
 
 ## YENİ OTURUM DEVRİ (v2.383) — Okuma metni durumu, kısa kayıt adı, sayfa akışı
 

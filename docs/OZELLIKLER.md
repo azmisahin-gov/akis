@@ -1,8 +1,15 @@
-# Özellikler (v2.383 — mevcut durum)
+# Özellikler (v2.384 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
 
+
+
+## Belge akışı: boş sayfa, tablo notu, kısa durum (v2.384)
+
+- **Kısa bölümler akar.** Zorunlu sayfa sonu yalnız **s5** (bulgular/transkript) ve **s6** (sonuç); ilk dört bölüm ve materyal tutanağı aynı akışta. “Tek paragraf kalan sayfa” oluşmaz.
+- **Tablo notu tabloyla kalır.** `wTable(..., {keepLast:true})` son satırı izleyen nota bağlar; `wP(..., {keepLines:true})` notun sayfa arasında bölünmesini önler. Envanter gibi dış notlu bloklar `recordBlockXml(..., {noteAfter:true})` kullanır.
+- **Belirsiz okuma:** kanıt tablosunda kısa **“Belirsiz okuma”**; iki okuma ve seçim tablo altındaki **“Belirsiz okumalar”** notunda tam yazılır (`reviewTableText`, `ambiguousSegmentNotes`). Belirsizlik gizlenmez.
 
 ## Rapor okuma metni, konuşmacı tablosu ve sayfa düzeni (v2.383)
 
