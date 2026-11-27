@@ -6,12 +6,35 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.374.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.375.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.375 — Sade iskelet: tıkla=seç, Düzenle=çekmece
+
+**KULLANICI NE GÖRECEK:** Rapor iskeleti sadeleşti:
+- Satırlardaki **EK / G / ✎** düğmeleri **kaldırıldı**. Her bölüm satırında **tek “Düzenle”** düğmesi var.
+- **Satıra tıklayınca bölüm SEÇİLİR** (belgede vurgulanır ve o bölüme kaydırılır); **sağ çekmece
+  KENDİLİĞİNDEN AÇILMAZ**. Çekmeceyi yalnız **“Düzenle”** düğmesi açar.
+- Çekmecede artık **bölüm başlığı düzenleme** ve **“EKLER'e taşı / Gövdeye al”** vardır (satırdan
+  kalkan işlevler buraya taşındı). Bölümü eke taşımanın öteki yolu **sürükle-bırak**.
+- Sağ çekmece açılınca ekranın **karartması yumuşatıldı** (0.45 → 0.10; ekran artık kararmıyor).
+
+**DEĞİŞMEZ:** Belge tıklaması (kâğıtta bir bölüme tıklama) hâlâ o bölümün düzenleyicisini açar.
+Kanıt/metin/onay değişmez. Sürükle-bırak + çekmecedeki taşıma + aç/kapa + başlık düzenle korunur.
+
+**ÖLÇÜM (gerçek Chromium, demo):**
+| | Sonuç |
+|---|---|
+| Satırda EK/G/✎ düğmesi | **0** (yerine her satırda 1 “Düzenle”) |
+| Satıra tıkla | çekmece **kapalı**, bölüm **seçili** |
+| “Düzenle” | çekmece **açık**, başlık + “EKLER'e taşı” var |
+| Karartma | **rgba(…,0.10)** |
+| JS hatası | **0** |
+| Testler | **2830 birim + 556 şema** + rapor/tasarım/sürüm yeşil |
 
 ## v2.374 — İskelet: eke taşınan bölüm tek konumda
 

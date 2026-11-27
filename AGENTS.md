@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.374.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.375.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10081,3 +10081,22 @@ Sıradaki: **v2.374 uçtan uca doğrulama** (PDF/DOCX/UDF + 3 tema + 5 genişlik
    `report` (EK-1 = TÜM rapor belgesi), `sections` (rapordan çıkarılıp ayrı belge olan bölümler,
    ör. "teknik bilgiler" = EK-2), `reportAnnex` (rapor içi ekin ayrı belgeye çıkarılması), `custom`.
    Varsayılan: yalnız `report` (EK-1 = rapor). Diğerleri isteğe bağlıdır.
+
+## EK DÜZELTME (v2.375) — Sade iskelet: tıkla=seç, Düzenle=çekmece
+
+**KULLANICI:** "Sağdaki EK/düzeltme düğmelerini kaldır; satıra basınca sağ çekmece sürekli
+açılıyor; çekmeyi açacak düğme olsun; ekran kararıyor."
+
+- **SEÇİM ≠ ÇEKMECE:** `reportEditKey` = seçili bölüm (vurgu+kaydır). Yeni `reportEditorOpen`
+  = çekmece. Satıra tıklama `selectReportSection` (seç, çekmece YOK); çekmece `setReportEditSection`
+  (yalnız "Düzenle" düğmesi). renderReport çekmeceyi `reportEditorOpen` ile açar.
+- Satırdaki **EK/G/✎ kaldırıldı** → her satırda tek **"Düzenle"** (`data-report-edit`).
+  Serbest blok satır içi ✎/× KORUNUR.
+- Çekmeceye **başlık** (`data-rse-title`) + **EKLER'e taşı/Gövdeye al** (`data-rse-place`) taşındı.
+- **Karartma** `#reportDrawerBackdrop` 0.45 → 0.10 (ekran kararmıyor).
+- Ölçüm: placeBtns 0; satır tıkla → çekmece kapalı + seçili; Düzenle → açık (başlık+place); JS 0.
+
+**ÜST YAZI "TEKNİK BİLGİLER" NETLEŞTİRME (kullanıcı sorusu):** Rapor gövdesini AYIRMAYA gerek YOK.
+Teknik içerik raporun **EKLER → EK-7…EK-10** kısmındadır. Üst yazıda "teknik bilgiler" (EK-2) yalnız
+kullanıcı AÇIKÇA eklerse (`LETTER_ANNEX_KINDS='sections'`) oluşur; varsayılan yalnız `report`
+(EK-1 = tüm rapor). Karışıklık istemezse üst yazı ek panelindeki isteğe bağlı türler gizlenebilir.

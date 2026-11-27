@@ -2,11 +2,23 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.374.**
+yazılır. **Güncel sürüm: v2.375.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.375 — Sade iskelet: tıkla=seç, Düzenle=çekmece (TAMAMLANDI)
+
+- **Seçim ≠ çekmece:** `reportEditKey` (seçim) + yeni `reportEditorOpen` (çekmece). Satıra
+  tıklama `selectReportSection` (seç+kaydır, çekmece YOK); çekmece `setReportEditSection` (Düzenle).
+- Satırdaki **EK/G/✎ kaldırıldı**; her satırda tek **“Düzenle”** (`data-report-edit`). Serbest blok
+  satır içi ✎/× korunur.
+- Çekmeceye **başlık düzenle** (`data-rse-title`) + **“EKLER'e taşı / Gövdeye al”** (`data-rse-place`)
+  eklendi (satırdan kalkan işlevlerin yeni yeri).
+- **Karartma yumuşatıldı:** `#reportDrawerBackdrop` 0.45 → **0.10**.
+- Ölçüm: placeBtns 0, satır tıkla çekmece kapalı+seçili, Düzenle açık (başlık+place), JS 0.
+- Test: `tasarim [2eg]` güncellendi (yedek yol çekmecede).
 
 ## v2.374 — İskelet: eke taşınan bölüm tek konumda (TAMAMLANDI)
 

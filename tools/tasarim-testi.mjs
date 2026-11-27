@@ -2536,8 +2536,8 @@ console.log('\n[2eg] Sürükle-bırak gövde ↔ ek (v2.371)');
   check('ekli→gövde fonksiyonu', /function unplaceAndReorder\(key, target, zone\)/.test(app));
   check('drop çapraz tür (bodyToAnnex)', /const bodyToAnnex = src\.kind === 'body' && row\.dataset\.dragKind === 'annex'/.test(app));
   check('drop gövde→ek çağrısı', /if \(bodyToAnnex\) \{\s*moveSectionIntoAnnex\(src\.key, row\.dataset\.dragKey\)/.test(app));
-  // EK düğmesi (yedek yol) KORUNUR.
-  check('EK düğmesi yedeği korunur', /data-report-place="\$\{esc\(key\)\}"/.test(app));
+  // v2.375 — EK düğmesi satırdan kaldırıldı; yedek yol ÇEKMEDE (data-rse-place).
+  check('EK taşıma yedeği çekmecede', /data-rse-place="\$\{esc\(key\)\}"/.test(app));
 }
 
 console.log('\n[2eh] Tablo stili + yoğunluk (v2.372)');

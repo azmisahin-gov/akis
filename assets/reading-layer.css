@@ -3240,6 +3240,10 @@ input::placeholder, textarea::placeholder {
   .report-workspace.skeleton-collapsed #reportSectionsBox .rs-head { justify-content: center; margin-bottom: 0; }
   .report-workspace.skeleton-collapsed #reportSectionsBox .rs-collapse { margin-left: 0; width: 30px; height: 42px; }
 }
+/* v2.375 — sade iskelet: tek "Düzenle" düğmesi + çekmece işlem satırı. */
+.rsec-edit-open { font-size: var(--fs-2xs); white-space: nowrap; }
+.rse-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 8px; }
+.rse-actions .rse-title { flex: 1 1 200px; margin: 0; }
 .rs-hint {
   margin: 0 0 8px;
   font-size: var(--fs-2xs);
@@ -4706,7 +4710,7 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 #reportSectionEditor.drawer .drawer-body { flex: 1; overflow-y: auto; padding: 10px 14px 24px; }
 #reportSide.drawer .rside-tabs { margin-top: 0; }
 .drawer-body .report-toggle { display: flex; align-items: flex-start; gap: 6px; margin: 5px 0; }
-#reportDrawerBackdrop { z-index: 55; }
+#reportDrawerBackdrop { z-index: 55; background: rgba(10, 20, 32, .10); }
 /* Durum ayrıntısı alt durum çubuğunda zaten var; araç çubuğunda tekrar etmez. */
 .report-status-detail { display: none; }
 #reportSide.drawer[hidden],
