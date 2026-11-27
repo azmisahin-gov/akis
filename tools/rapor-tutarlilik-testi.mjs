@@ -889,7 +889,7 @@ console.log('\n[Senaryo 22] rapor sırası, türetilmiş numara, ekler (v2.227)'
     U2 = await udfText(reordered),
     D2 = await docxText(reordered);
   const first = '1. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR';
-  const second = '2. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI';
+  const second = '2. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI';
   for (const [n, txt] of [['H', H2], ['U', U2], ['D', D2]]) {
     check(`sıra değişti: s2 önce (${n})`, txt.indexOf(first) >= 0 && txt.indexOf(first) < txt.indexOf(second));
   }

@@ -2,11 +2,21 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.354.**
+yazılır. **Güncel sürüm: v2.355.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.355 — 1. bölüm başlığı + başlığın ikinci kaynağı (TAMAMLANDI)
+
+- `REPORT_SECTION_DEFS.s1.title` → "GÖREVLENDİRME, İNCELEMENİN KONUSU VE
+  SINIRLARI"; iskelet etiketi aynı dile çekildi.
+- Ölü `REPORT_TEXT.sections` (7 satırlık ikinci başlık listesi) ve
+  `REPORT_TEXT.sub51` silindi; başlık tek kaynak.
+- "Tek alan iki kavram" taraması: konu alanları dışında çelişki yok;
+  `assignment.body` ölü alan olarak not edildi (silinmedi).
+- Test: `birim` başlık beklentileri, `rapor` sıra senaryosu güncellendi.
 
 ## v2.354 — Dava konusu ve inceleme konusu ayrıldı (TAMAMLANDI)
 

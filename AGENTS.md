@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.354.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.355.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9339,4 +9339,30 @@ metni sınırları anlatır. Kullanıcı demo üzerinden iki alanı ayırt edebi
 ### ÖLÇÜM NOTU
 CDP ile ölçerken **içindekiler** de aynı başlığı taşır; §1 gövdesini bulmak için
 başlığın **son** geçişini (`lastIndexOf`) kullanın. İlk geçiş TOC'tur.
+
+## YENİ OTURUM DEVRİ (v2.355) — Başlık tek kaynak + ölü başlık listesi
+
+| | |
+|---|---|
+| Sürüm | **v2.355** |
+| Testler | 2730 birim + 556 şema + rapor/sürüm/tasarım yeşil |
+| Ölçüm | Gerçek Chromium: "1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI" (gövde + içindekiler), JS hatası 0 |
+
+### Ne bulundu (ölçüldü)
+Aynı bölümün **üç adı** vardı: `REPORT_UI_LABELS.s1` (iskelet), 
+`REPORT_SECTION_DEFS.s1.title` (rapor) ve **hiç okunmayan**
+`REPORT_TEXT.sections` (7 satırlık ikinci başlık listesi) + `REPORT_TEXT.sub51`.
+Ölü olanlar silindi; canlı başlık 56.12 diliyle hizalandı.
+
+### DEĞİŞMEZ KURAL
+**Bölüm başlığı tek kaynaktan gelir:** `reportSectionTitle(c,key)` →
+`REPORT_SECTION_DEFS[].title` (kullanıcı başlığı varsa o). İskelet için kısa
+`REPORT_UI_LABELS` kullanılabilir ama **aynı dili** taşımalı; başlıkların ikinci
+bir listesini (ör. `REPORT_TEXT.sections`) **tutmayın** — kimse okumaz, sessizce
+eski kalır.
+
+### Bilinen borç
+`assignment.body` şemada var, hiçbir ekran/çıktı okumuyor (ölü alan). Veri
+kaybı riski nedeniyle silinmedi; sıradaki temizlik turunda ya kaldırılmalı ya
+"görevlendirme yazısı metni" olarak arayüze bağlanmalı.
 

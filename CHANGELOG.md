@@ -6,12 +6,36 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.354.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.355.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.355 — 1. bölüm başlığı 56.12 diliyle + başlığın ikinci kaynağı kaldırıldı
+
+**KULLANICI NE GÖRECEK:** Raporun **1. bölüm başlığı** artık
+**"GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI"** (56.12 ana şablonunun
+başlığı). Kendi başlığını yazdıysanız **korunur**; metin/bulgular değişmedi.
+
+- Başlık artık **tek kaynaktan** gelir: `REPORT_SECTION_DEFS[].title`.
+- **Ölçülen çelişki:** aynı bölümün **üç adı** vardı —
+  `REPORT_UI_LABELS.s1` (iskelet: "Görevlendirme, incelemenin konusu ve
+  sınırları"), `REPORT_SECTION_DEFS.s1.title` (rapor: "İNCELEMENİN KONUSU,
+  KAPSAM VE SINIRLARI") ve **hiçbir yerde okunmayan** `REPORT_TEXT.sections`
+  listesi ("1. İNCELEMENİN KONUSU…", "5. ANALİZ, TESPİT VE DEĞERLENDİRME" gibi
+  7 satır) + `REPORT_TEXT.sub51`. Ölü liste **silindi**; iskelet etiketi 56.12
+  diliyle hizalandı. Böylece "belgede bir türlü, panelde başka türlü" durumu
+  kalmadı.
+- **"Tek alan iki kavram" taraması:** konu alanları (`subject` /
+  `examinationSubject` / `assignmentScope`) dışında kullanıcıya iki farklı adla
+  görünen alan **bulunmadı**. Bulunan tek ölü alan `assignment.body` (hiçbir
+  ekran/çıktı okumuyor) — şema veri kaybı riski nedeniyle **silinmedi**, not
+  edildi.
+- Testler: `birim` (başlık beklentileri), `rapor` (sıra senaryosu) güncellendi.
+- **Ölçüm (gerçek Chromium + demo):** rapor gövdesi ve içindekiler
+  "1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI"; **JS hatası 0**.
 
 ## v2.354 — Dava konusu ve inceleme konusu ayrıldı
 

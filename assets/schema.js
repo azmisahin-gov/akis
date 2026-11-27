@@ -681,7 +681,7 @@ export const REPORT_SECTION_DEFS = [
   { key: 'cover', def: true, title: 'KAPAK' },
   { key: 'coverFields', def: true, title: 'RAPOR KÜNYESİ' },
   { key: 'toc', def: true, title: 'İÇİNDEKİLER' },
-  { key: 's1', def: true, title: 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI' },
+  { key: 's1', def: true, title: 'GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI' },
   { key: 's2', def: true, title: 'BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR' },
   { key: 's3', def: true, title: 'BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR' },
   { key: 'origin', def: true, title: 'KAYIT KÖKENİ VE TESLİM ZİNCİRİ' },

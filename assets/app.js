@@ -150,15 +150,15 @@ import {
   normalizeReportFieldVisibility,
   reportFieldVisible,
   DEFAULT_EXPERT_FIELD
-} from './schema.js?v=2.354';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.354';
+} from './schema.js?v=2.355';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.355';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.354';
+const APP_VERSION = '2.355';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -238,16 +238,6 @@ const REPORT_TEXT = {
   subtitle: 'SES KAYITLARININ TEKNİK İNCELEMESİ VE KONUŞMA İÇERİĞİNİN ÇÖZÜMLENMESİ',
   synthetic: 'KURGUSAL TEST MATERYALİDİR · RESMÎ BELGE DEĞİLDİR',
   tocHeading: 'İÇİNDEKİLER',
-  sections: [
-    '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI',
-    '2. BİLİRKİŞİNİN CEVAPLAMASI GEREKEN SORULAR',
-    '3. BİLİRKİŞİDEN GÖZLEMLENMESİ VE İNCELENMESİ İSTENEN MADDİ UNSURLAR',
-    '4. İNCELEME YÖNTEMİ, BİLİMSEL VE TEKNİK DAYANAKLAR',
-    '5. ANALİZ, TESPİT VE DEĞERLENDİRME',
-    '6. GEREKÇELİ SONUÇ',
-    '7. EKLER'
-  ],
-  sub51: '5.1. Ses kayıtlarının çözümlenmesi',
   // RAPOR "OKUMA METNİ" (v2.202). Paragraf görünümüyle AYNI gruplama; rapora
   // yalnız okunabilir metin olarak eklenir. Kanıt tablosu DEĞİŞMEZ.
   readingHeading: 'OKUMA METNİ',
@@ -14910,7 +14900,7 @@ const REPORT_UI_LABELS = {
   coverFields: 'Rapor künyesi',
   toc: 'İçindekiler',
   summary: 'Raporun kısa özeti',
-  s1: 'Konu, kapsam ve sınırlar',
+  s1: 'Görevlendirme, incelemenin konusu ve sınırları',
   s2: 'Cevaplanacak sorular',
   s3: 'Maddi unsurlar ve dosya envanteri',
   s4: 'İnceleme yöntemi',
@@ -23541,6 +23531,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.355': {
+    title: '1. bölüm başlığı 56.12 diliyle',
+    body:
+      'Raporun 1. bölümünün varsayılan başlığı “Görevlendirme, incelemenin konusu ve sınırları” oldu (56.12 ana şablonunun başlığı). Başlık düzenlenebilir; kendi başlığını yazdıysanız o korunur. Metin ve bulgular değişmedi; yalnız başlık netleşti. Ayrıca “tek alan iki kavram” taraması yapıldı: konu alanları dışında kullanıcıya iki farklı adla görünen alan bulunmadı.'
+  },
   '2.354': {
     title: 'Dava konusu ve inceleme konusu ayrıldı',
     body:

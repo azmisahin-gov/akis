@@ -4219,7 +4219,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('soru varsa answers=8', T.reportNumberMap(cq).answers, 8);
   eq('soru varsa annex=12', T.reportNumberMap(cq).annex, 12);
   eq('kapalı bütünlük numara almaz', T.reportNumberMap(c).integrity, undefined);
-  eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('varsayılan başlık numaralı', T.reportHeadingText(c, 's1'), '1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
   eq('yardımcı bölüm de numaralı', T.reportHeadingText(c, 'origin'), '4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ');
 
   // s3 kapatılınca numara boşluğu OLMAZ: s4 → 3, s7 → 6.
@@ -4245,7 +4245,7 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
 
   // TOC: ana bölümler + yardımcı bölümler, gövde sırasıyla.
   const toc = T.reportTocEntries(c);
-  eq('TOC ana bölümü numaralı taşır', toc.includes('1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI'), true);
+  eq('TOC ana bölümü numaralı taşır', toc.includes('1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI'), true);
   eq('TOC köken bölümünü taşır', toc.some((x) => x.includes('KAYIT KÖKENİ VE TESLİM ZİNCİRİ')), true);
   eq('TOC köken satırı numaralı', toc.includes('4. KAYIT KÖKENİ VE TESLİM ZİNCİRİ'), true);
   eq('TOC imzayı içermez', toc.includes('İmza ve alt bilgi'), false);
@@ -5757,10 +5757,10 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('reportNumbering tanımlı', typeof T.reportNumbering, 'function');
 
   const auto = T.emptyCaseForTest({ id: 'cN1' });
-  eq('auto: başlık numaralı', T.reportHeadingText(auto, 's1'), '1. İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('auto: başlık numaralı', T.reportHeadingText(auto, 's1'), '1. GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
   eq('auto: TOC köken numaralı', T.reportTocEntries(auto).some((x) => x.startsWith('4. KAYIT KÖKENİ')), true);
   const none = T.emptyCaseForTest({ id: 'cN2', report: { numbering: 'none' } });
-  eq('none: başlık numarasız', T.reportHeadingText(none, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('none: başlık numarasız', T.reportHeadingText(none, 's1'), 'GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
   eq('none: TOC numarasız ve işaretsiz', T.reportTocEntries(none).some((x) => x.startsWith('1.') || x.startsWith('–')), false);
 
   const js = fs.readFileSync(path.join(ROOT, 'assets/app.js'), 'utf8');
@@ -5799,10 +5799,10 @@ console.log('\n== [83] Gömülü metadata (cihaz beyanı) — ID3/MP4/WAV/FLAC (
   eq('kayıt öneki harf kipinde', T.reportSubHeadings(c).recordPrefix(0), 'G.1.1.');
 
   const cn = T.emptyCaseForTest({ id: 'cT2', report: { numbering: 'none' } });
-  eq('numarasız başlık', T.reportHeadingText(cn, 's1'), 'İNCELEMENİN KONUSU, KAPSAM VE SINIRLARI');
+  eq('numarasız başlık', T.reportHeadingText(cn, 's1'), 'GÖREVLENDİRME, İNCELEMENİN KONUSU VE SINIRLARI');
   eq('numarasız alt başlık', T.reportSubHeadings(cn).s51, 'Ses kayıtlarının çözümlenmesi');
   eq('numarasız kayıt öneki', T.reportSubHeadings(cn).recordPrefix(0), '1.');
-  eq('iskelet numarasız', T.reportUiLabel(cn, 's1'), 'Konu, kapsam ve sınırlar');
+  eq('iskelet numarasız', T.reportUiLabel(cn, 's1'), 'Görevlendirme, incelemenin konusu ve sınırları');
 
   // s5 kapalıysa alt başlık numara UYDURMAZ (eski kod "5.1" yazıyordu).
   const cc = T.emptyCaseForTest({ id: 'cT3', report: { sections: { s5: false } } });
