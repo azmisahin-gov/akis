@@ -2757,5 +2757,20 @@ console.log('\n[2ds] Çalışma notları çekmecesi (v2.356)');
   check('geri alma not defterini tazeler', /async function undoLast[\s\S]{0,900}renderNotebook\(\)/.test(app));
 }
 
+console.log('\n[2dt] Notu bölüme bağlama (v2.358)');
+{
+  const html = read('index.html');
+  const css = read('assets/reading-layer.css');
+  const app = read('assets/app.js');
+  check('bağlam anahtarı var', /id="notebookAnchor"/.test(html));
+  check('bağlam etiketi var', /id="notebookAnchorLabel"/.test(html));
+  check('bağlam satırı varsayılan gizli', /id="notebookAnchorRow" hidden/.test(html));
+  check('Git düğmesi üretiliyor', /data-nb-goto/.test(app));
+  check('bölüm satırında not rozeti var', /data-nb-seg=/.test(app));
+  check('rozet sayacı tek kaynak', /notebooksForSegment\(/.test(app));
+  check('Git deşifre görünümüne gider', /function notebookGoTo[\s\S]{0,400}switchView\('audio'\)/.test(app));
+  check('bağlam stili token kullanır', /\.nb-anchor\s*\{[^}]*var\(--/.test(css));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

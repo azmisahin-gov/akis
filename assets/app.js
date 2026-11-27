@@ -153,16 +153,17 @@ import {
   normalizeNotebook,
   emptyNotebookEntry,
   caseWithoutNotebook,
+  notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.357';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.357';
+} from './schema.js?v=2.358';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.358';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.357';
+const APP_VERSION = '2.358';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -7444,13 +7445,18 @@ function segItemHtml(m, s, i, prev, issue) {
   // getirilmesini istedi). Liste dizin kalır: TEK satır önizleme; tam metin
   // satırın ipucunda ve editörde. Boş metin "—" ile gösterilir.
   const preview = String(s.text || '').replace(/\s+/g, ' ').trim();
+  // BÖLÜMÜN ÇALIŞMA NOTLARI (v2.358): rozet sayısı = not defteri sayacı.
+  const nbCount = notebooksForSegment((currentCase() || {}).notebook, m.id, s.id).length;
+  const nbBadge = nbCount
+    ? `<button type="button" class="badge nb-seg-badge" data-nb-seg="${esc(s.id)}" title="${nbCount} çalışma notu — defteri aç" aria-label="${nbCount} çalışma notu">📝 ${nbCount}</button>`
+    : '';
   // LİSTE = DİZİN + TEK SATIR ÖNİZLEME (v2.193): satırda metnin KISA hâli
   // görünür; tam metin editörde ve satır ipucunda. Amaç birleştirme/bölme
   // sırasında satırları ayırt edebilmek.
   return `<div class="seg-item st-${rev} ${halluc ? 'is-empty' : ''} ${s.proposal ? 'has-proposal' : ''}" data-seg-item="${i}" role="button" tabindex="0" title="${esc((s.text || '').trim().slice(0, 240))}">
     <span class="seg-no">${i + 1}</span>
     <span class="seg-time" title="Başlangıç – bitiş (milisaniye detayda)"><span class="seg-start">${esc(shortClock(s.start))}</span><span class="seg-dash" aria-hidden="true">–</span><span class="seg-end">${esc(shortClock(s.end))}</span></span>
-    <span class="seg-badges">${timeBadge}${lenBadge}${voiceBadge}${embedBadge}${candBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
+    <span class="seg-badges">${timeBadge}${lenBadge}${voiceBadge}${embedBadge}${candBadge}${nbBadge}${spk}${propBadge}<span class="seg-drag" draggable="true" data-seg-drag="${i}" title="Sürükleyip KOMŞU bölümle birleştir. Yalnız komşu satıra bırakılır; geri alınabilir." aria-hidden="true">⋮⋮</span><button class="seg-menu-btn" data-seg-menu="${i}" title="Bölüm işlemleri: birleştir, böl, çözümle, geçmiş, sessizlik, sil" aria-label="Bölüm işlemleri" aria-haspopup="menu">⋮</button>${state}</span>
     <span class="seg-text-preview ${preview ? '' : 'is-empty'}" aria-hidden="true">${esc(preview || '—')}</span>
   </div>`;
 }
@@ -20022,8 +20028,18 @@ function notebookTimeText(iso) {
   return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
 function notebookItemHtml(e) {
+  const anchor = e.segmentId ? notebookAnchorOf(e) : null;
+  const anchorHtml = !e.segmentId
+    ? ''
+    : `<div class="nb-anchor-row">${
+        anchor && !anchor.missing
+          ? `<button type="button" class="nb-anchor" data-nb-goto="${esc(e.id)}" title="Bu bölüme git (deşifre görünümü)">↪ ${esc(anchor.label)}</button>`
+          : `<span class="nb-anchor is-missing">${esc((anchor && anchor.label) || 'Bölüm silinmiş')}</span>`
+      }</div>`;
   return (
-    `<article class="nb-item${e.pinned ? ' is-pinned' : ''}" data-nb="${esc(e.id)}">` +
+    `<article class="nb-item${e.pinned ? ' is-pinned' : ''}" data-nb="${esc(e.id)}"${
+      e.segmentId ? ` data-nb-seg-id="${esc(e.segmentId)}"` : ''
+    }>` +
     `<header class="nb-head"><time datetime="${esc(e.at)}">${esc(notebookTimeText(e.at))}</time>` +
     (e.by ? `<span class="nb-by" title="Yazan">${esc(e.by)}</span>` : '') +
     `<span class="nb-tools">` +
@@ -20033,6 +20049,7 @@ function notebookItemHtml(e) {
     `<button type="button" class="nb-btn nb-del" data-nb-del title="Notu sil (onay ister)">×</button>` +
     `</span></header>` +
     `<textarea class="nb-text" data-nb-text rows="3" maxlength="${NOTEBOOK_TEXT_MAX}" aria-label="Not metni">${esc(e.text)}</textarea>` +
+    anchorHtml +
     `</article>`
   );
 }
@@ -20059,6 +20076,87 @@ function renderNotebook() {
 function notebookEntryById(c, id) {
   return notebookList(c).find((e) => e.id === id) || null;
 }
+// BAĞLAM (v2.358): not, o an seçili bölüme bağlanabilir. Kimlikle bağlanır;
+// bölüm sırası değişse de kopmaz. Bölüm silinirse yalnız zaman kopyası kalır.
+function notebookContext() {
+  const c = currentCase();
+  const m = activeMaterial();
+  if (!c || !m) return null;
+  const idx = activeSegIndex(m);
+  const s = (m.segments || [])[idx];
+  return s ? { material: m, index: idx, segment: s } : null;
+}
+function notebookAnchorOf(e) {
+  const c = currentCase();
+  if (!c || !e || !e.segmentId) return null;
+  const mats = c.materials || [];
+  const m = e.materialId
+    ? mats.find((x) => x.id === e.materialId)
+    : mats.find((x) => (x.segments || []).some((s) => s.id === e.segmentId));
+  const missing = { missing: true, label: e.timecode ? `Bölüm silinmiş · ${shortClock(e.timecode)}` : 'Bölüm silinmiş' };
+  if (!m) return missing;
+  const idx = (m.segments || []).findIndex((s) => s.id === e.segmentId);
+  if (idx < 0) return missing;
+  const seg = m.segments[idx];
+  const multi = mats.length > 1;
+  return {
+    material: m,
+    index: idx,
+    segment: seg,
+    label: `${multi ? `${m.name || 'Kayıt'} · ` : ''}Bölüm ${idx + 1} · ${shortClock(seg.start)}–${shortClock(seg.end)}`
+  };
+}
+function syncNotebookAnchorRow() {
+  const row = $('#notebookAnchorRow');
+  const lab = $('#notebookAnchorLabel');
+  if (!row || !lab) return;
+  const ctx = notebookContext();
+  if (!ctx) {
+    row.hidden = true;
+    return;
+  }
+  const multi = ((currentCase() || {}).materials || []).length > 1;
+  row.hidden = false;
+  lab.textContent = `${multi ? `${ctx.material.name || 'Kayıt'} · ` : ''}Bölüm ${ctx.index + 1} · ${shortClock(ctx.segment.start)}–${shortClock(ctx.segment.end)}`;
+}
+function notebookGoTo(id) {
+  const c = currentCase();
+  const e = notebookEntryById(c, id);
+  const a = e && notebookAnchorOf(e);
+  if (!a || a.missing) {
+    showToast('Notun bağlı olduğu bölüm artık yok (silinmiş olabilir).');
+    return;
+  }
+  setNotebookDrawer(false);
+  switchView('audio');
+  c.activeMaterialId = a.material.id;
+  Promise.resolve(renderAudioList()).then(() => goToSegment(a.material, a.index));
+}
+function openNotebookForSegment(segmentId) {
+  setNotebookDrawer(true);
+  requestAnimationFrame(() => {
+    const host = $('#notebookList');
+    const item = host && host.querySelector(`.nb-item[data-nb-seg-id="${CSS.escape(segmentId)}"]`);
+    if (!item) return;
+    item.classList.add('is-focus');
+    // scrollIntoView KULLANILMAZ (v2.193 dersi: üst kapları da kaydırır).
+    // Yalnız defter listesinin kendi kaydırması, görünür alana göre ayarlanır.
+    const hr = host.getBoundingClientRect();
+    const ir = item.getBoundingClientRect();
+    if (ir.top < hr.top) host.scrollTop = Math.max(0, host.scrollTop - (hr.top - ir.top) - 6);
+    else if (ir.bottom > hr.bottom) host.scrollTop += ir.bottom - hr.bottom + 6;
+    setTimeout(() => item.classList.remove('is-focus'), 1600);
+  });
+}
+// Bölüm satırındaki not rozeti tazelenir; kaydırma KORUNUR (v2.193 dersi).
+function refreshSegNoteBadges(m) {
+  if (!m) return;
+  const card = $(`#segments-${CSS.escape(m.id)}`)?.closest('.audio-card');
+  if (!card) return;
+  const scroll = captureSegScroll(m);
+  renderSegments(m, card);
+  restoreSegScroll(m, scroll, activeSegIndex(m));
+}
 function addNotebookEntry() {
   const c = currentCase();
   const input = $('#notebookInput');
@@ -20070,12 +20168,22 @@ function addNotebookEntry() {
     return;
   }
   c.notebook = notebookList(c);
-  const e = emptyNotebookEntry({ text, by: String(c.lastEditedBy || '').trim() });
+  const ctx = notebookContext();
+  const row = $('#notebookAnchorRow');
+  const useAnchor = !!(ctx && row && !row.hidden && ($('#notebookAnchor') || {}).checked);
+  const e = emptyNotebookEntry({
+    text,
+    by: String(c.lastEditedBy || '').trim(),
+    materialId: useAnchor ? ctx.material.id : '',
+    segmentId: useAnchor ? ctx.segment.id : '',
+    timecode: useAnchor ? ctx.segment.start : ''
+  });
   c.notebook.push(e);
   logEvent(c, 'Çalışma notu eklendi', text.slice(0, 80));
   input.value = '';
   persist();
   renderNotebook();
+  if (useAnchor) refreshSegNoteBadges(ctx.material);
   input.focus();
 }
 function patchNotebookEntry(id, patch) {
@@ -20102,6 +20210,7 @@ async function removeNotebookEntry(id) {
   logEvent(c, 'Çalışma notu silindi', e.text.slice(0, 80));
   persist();
   renderNotebook();
+  if (e.materialId) refreshSegNoteBadges((c.materials || []).find((m) => m.id === e.materialId));
   showToast('Not silindi. Ctrl+Z ile geri alabilirsiniz.');
 }
 function notebookToQuestion(id) {
@@ -20145,6 +20254,7 @@ function setNotebookDrawer(open) {
   if (b) b.hidden = !open;
   if (open) {
     renderNotebook();
+    syncNotebookAnchorRow();
     const i = $('#notebookInput');
     if (i) i.focus();
   }
@@ -21459,6 +21569,14 @@ $('#addQuestionBtn').addEventListener('click', addQuestion);
   });
   // Hızlı etiket araması (v2.313): yalnız menü içindeki görünürlüğü süzer.
   // Metne/veriye dokunmaz. Escape menüyü kapatır ve odağı düğmeye verir.
+  // Bölüm satırındaki not rozeti (v2.358): defteri açar, o bölümün notunu vurgular.
+  $('#view-audio').addEventListener('click', (e) => {
+    const nbSeg = e.target && e.target.closest ? e.target.closest('[data-nb-seg]') : null;
+    if (!nbSeg) return;
+    e.preventDefault();
+    e.stopPropagation();
+    openNotebookForSegment(nbSeg.dataset.nbSeg);
+  }, true);
   $('#view-audio').addEventListener('input', (e) => {
     const search = e.target && e.target.closest ? e.target.closest('.qt-search') : null;
     if (!search) return;
@@ -22773,6 +22891,8 @@ $('#notebookList').addEventListener('click', (e) => {
     copyNotebookText(id);
   } else if (e.target.closest('[data-nb-ask]')) {
     notebookToQuestion(id);
+  } else if (e.target.closest('[data-nb-goto]')) {
+    notebookGoTo(id);
   } else if (e.target.closest('[data-nb-del]')) {
     removeNotebookEntry(id);
   }
@@ -23777,6 +23897,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.358': {
+    title: 'Notlar bölüme bağlanabiliyor',
+    body:
+      'Çalışma notu artık belirli bir bölüme (dolayısıyla belirli bir ana) bağlanabilir. Ses görünümünde bir bölüm seçiliyken defteri açarsanız “Bu bölüme bağla” satırı görünür; not eklenince bölümün yanında 📝 rozeti çıkar. Notun üzerindeki bağlantıya basınca o bölüm deşifre görünümünde açılır. Bağ kimlikle kurulur: bölüm sırası değişse de kopmaz; bölüm silinirse not silinmez, yalnız bağlantı “Bölüm silinmiş” olur. Notlar yine rapora ve eklerine girmez.'
+  },
   '2.357': {
     title: 'Yalnız not yazılan dosya artık kaydediliyor',
     body:

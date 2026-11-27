@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.357.**
+yazılır. **Güncel sürüm: v2.358.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.358 — Notu bölüme bağlama (TAMAMLANDI)
+
+- `notebook[]` alanları: `materialId`, `segmentId`, `timecode`; normalize korur.
+- Defterde "Bu bölüme bağla" anahtarı; notta **↪ Bölüm N · aralık** bağlantısı.
+- Bölüm satırında **📝 N** rozeti; rozet → defter + vurgu; bağlantı → deşifre.
+- `notebooksForSegment` tek kaynak (sayaç = rozet); birleştirmede bağ farkı çakışma.
+- Test: `birim [177]`, `rapor 56`, `tasarim [2dt]`.
 
 ## v2.357 — Yalnız not yazılan dosya kaydediliyor (TAMAMLANDI)
 

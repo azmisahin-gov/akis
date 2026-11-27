@@ -1987,7 +1987,7 @@ console.log('\n[Senaryo 25] kanıt tablosu sütunları (v2.236)');
     ...withMaterial(),
     subject: 'Depozito iadesi talebi',
     notebook: [
-      { id: 'n1', at: '2026-11-10T09:00:00.000Z', text: NOTE },
+      { id: 'n1', at: '2026-11-10T09:00:00.000Z', text: NOTE, materialId: 'm1', segmentId: 'sg1', timecode: '00:00:00' },
       { id: 'n2', at: '2026-11-10T09:05:00.000Z', text: 'davacı vekili 14:20 itiraz etti', pinned: true }
     ],
     report: { sections: { annex: true, qc: true, scopeNote: true, privacy: true } }

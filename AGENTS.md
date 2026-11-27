@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.357.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.358.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -9429,4 +9429,28 @@ dosya üretilmez (v2.109).
 Yeni bir alan eklediğinizde üç yeri birlikte düşünün: (1) şema/normalize,
 (2) **`isEmptyCase`** (kayıt/paket/arşiv), (3) rapor/çıktı. Yalnız (1)'i yapmak
 "yazdım ama kayboldu" üretir.
+
+## YENİ OTURUM DEVRİ (v2.358) — Notu bölüme bağlama
+
+| | |
+|---|---|
+| Sürüm | **v2.358** |
+| Testler | 2762 birim + 556 şema + rapor (56) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium + demo: bağlam satırı `ses_01…wav · Bölüm 3 · 00:00:13–00:00:20`; rozet **📝 1**; raporda not **yok**; rozet→defter+vurgu; **Git→view=audio, Bölüm 3**; yenilemede korundu; JS hatası 0 |
+
+### Model
+`notebook[]` alanları: `materialId`, `segmentId`, `timecode` (anlık kopya) +
+`text`, `pinned`, `by`, `at`, `updatedAt`.
+
+### DEĞİŞMEZ KURALLAR
+1. **Bağ kimlikle:** `materialId` + `segmentId`. Bölüm sırası değişse de kopmaz;
+   indeks veya zaman metniyle bağ KURMAYIN.
+2. **Bölüm silinirse not silinmez:** bağ "Bölüm silinmiş · <timecode>" olur,
+   "Git" gösterilmez. Not defteri dosya verisidir (v2.357).
+3. **Sayaç = rozet:** `notebooksForSegment` tek kaynak; liste rozeti ve
+   (ileride) filtre aynı fonksiyonu kullanmalı.
+4. **Rapora girmez:** bağlı not da üç çıktıya sızmaz (`rapor` Senaryo 56).
+5. **`scrollIntoView` KULLANMAYIN** (v2.193): üst kapları kaydırır. Defter
+   listesinde kaydırma `host.scrollTop` ile hesaplanır (v2.358'de test yakaladı).
+6. Birleştirmede aynı not + farklı bağ **çakışma**dır (sessiz seçim yok).
 

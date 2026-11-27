@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.357'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.358'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.357">
-  <link rel="stylesheet" href="assets/app.css?v=2.357">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.358">
+  <link rel="stylesheet" href="assets/app.css?v=2.358">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.357">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.358">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.357"></script>
+  <script type="module" src="assets/app.js?v=2.358"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -350,6 +350,10 @@
     <p class="nb-hint"><b>Kişisel çalışma notu — rapora ve eklerine girmez.</b> Dosyayı incelerken tarih, kişi, iddia ve aklınıza gelenleri buraya yazın. İsterseniz bir notu tek tıkla cevaplanacak sorulara aktarabilirsiniz.</p>
     <div class="nb-add">
       <textarea id="notebookInput" rows="3" maxlength="4000" placeholder="Örn. 12.11.2026 — dizi pusulasında 2. sayfa eksik; davacı vekili 14:20'de depozito iadesini kabul etti." aria-label="Yeni çalışma notu"></textarea>
+      <label class="nb-anchor-pick" id="notebookAnchorRow" hidden>
+        <input type="checkbox" id="notebookAnchor" checked>
+        <span>Bu bölüme bağla: <b id="notebookAnchorLabel">—</b></span>
+      </label>
       <div class="nb-add-row">
         <button type="button" class="button button-primary button-small" id="notebookAdd">Not ekle</button>
         <small class="nb-add-hint">Ctrl+Enter ile de eklenir · en çok 4.000 karakter</small>

@@ -4374,3 +4374,26 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 .nb-count { display: inline-block; margin-left: 4px; font-size: var(--fs-2xs); color: var(--accent); }
 .nb-count[hidden] { display: none; }
 .scope-notes { margin-top: 8px; }
+
+/* --- Not bağlamı: bölüme bağlı not (v2.358) -------------------------------
+   Not belirli bir bölüme bağlanabilir; "Git" o bölümü açar. Rozet sayısı not
+   defteri sayacıyla AYNI kaynaktan gelir. Renkler token'dan. */
+.nb-anchor-pick {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--fs-2xs); color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 6px 8px;
+}
+.nb-anchor-pick[hidden] { display: none; }
+.nb-anchor-pick b { color: var(--ink); font-weight: 700; }
+.nb-anchor-row { margin-top: 6px; }
+.nb-anchor {
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--accent);
+  border-radius: var(--r-pill); padding: 2px 9px; font: inherit;
+  font-size: var(--fs-2xs); cursor: pointer; max-width: 100%;
+  overflow-wrap: anywhere; text-align: left;
+}
+.nb-anchor:hover, .nb-anchor:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
+.nb-anchor.is-missing { color: var(--ink-3); cursor: default; }
+.nb-item.is-focus { box-shadow: 0 0 0 2px var(--accent); }
+.nb-seg-badge { cursor: pointer; }

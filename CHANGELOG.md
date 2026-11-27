@@ -6,12 +6,39 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.357.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.358.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.358 — Notu bölüme bağlama
+
+**KULLANICI NE GÖRECEK:** Ses görünümünde bir bölüm seçiliyken **📝 / Alt+N**
+defterini açtığınızda **"Bu bölüme bağla: Kayıt · Bölüm 3 · 00:00:13–00:00:20"**
+satırı çıkar. Not eklenince:
+
+- notun altında **↪ Bölüm 3 · 00:00:13–00:00:20** bağlantısı,
+- bölüm satırında **📝 1** rozeti görünür.
+
+Bağlantıya basınca **o bölüm deşifre görünümünde açılır**; bölüm rozetine basınca
+defter açılır ve **o bölümün notu vurgulanır**.
+
+| Kural | Ayrıntı |
+|---|---|
+| Bağ kimlikle | `materialId` + `segmentId`; bölüm sırası değişse de kopmaz |
+| Bölüm silinirse | not **silinmez**; bağlantı "Bölüm silinmiş · 00:00:13" olur (Git yok) |
+| Rapora girmez | değişmedi — `rapor` Senaryo 56 (bağlı not dâhil) |
+| Sayaç = rozet | `notebooksForSegment` tek kaynak (v2.99 dersi) |
+| Kaydırma | `scrollIntoView` **kullanılmaz** (v2.193 dersi); liste kendi kaydırması |
+| Birleştirme | aynı not + **farklı bölüm bağı** da çakışma bildirir |
+
+- **Ölçüm (gerçek Chromium + demo):** bağlam satırı doğru; not eklendi →
+  rozet **📝 1**, bağlantı **↪ … Bölüm 3 · 00:00:13–00:00:20**; **raporda not
+  yok**; rozete tıkla → defter açıldı + not vurgulandı; **Git** → `view=audio`,
+  `Bölüm 3`; yenileme sonrası rozet ve bağlantı **korundu**; **JS hatası 0**.
+- **Koruyan testler:** `birim [177]` (9), `rapor 56` (bağlı not), `tasarim [2dt]` (8).
 
 ## v2.357 — Yalnız not yazılan dosya kaydediliyor
 

@@ -183,6 +183,7 @@ const EXPOSE = [
   'physicalDocKey', 'PHYSICAL_ITEM_DEFS', 'PHYSICAL_INDEX_DEFS', 'physicalMutate',
   // v2.356 — çalışma notları
   'normalizeNotebook', 'emptyNotebookEntry', 'caseWithoutNotebook', 'NOTEBOOK_TEXT_MAX', 'NOTEBOOK_MAX',
+  'notebooksForSegment',
 ];
 code += `\n;globalThis.__t={${EXPOSE.map((n) => `${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}};\n`;
 // Testin ihtiyaç duyduğu yardımcılar: sahte DOM elemanına erişim ve şema
@@ -7968,6 +7969,37 @@ console.log('\n[176] Notlar/inceleme konusu dosya verisidir (v2.357)');
   eq('boş metinli not dosyayı doldurmaz', T.isEmptyCase(blankNote), true);
   const onlyExam = { ...base, id: 'c3', examinationSubject: 'Ses kayıtlarının çözümlenmesi' };
   eq('yalnız inceleme konusu olan dosya BOŞ DEĞİL', T.isEmptyCase(onlyExam), false);
+}
+
+// --- 177. Notu bölüme bağlama (v2.358) -----------------------------------
+// KULLANICI: "Not belirli bir ana aitse, oraya dönebileyim." Not kimlikle
+// bağlanır (materialId + segmentId); bölüm sırası değişse de kopmaz.
+console.log('\n[177] Notu bölüme bağlama (v2.358)');
+{
+  const e = T.emptyNotebookEntry({ text: 'şüpheli cümle', materialId: 'm1', segmentId: 's1', timecode: '00:00:12' });
+  const n = T.normalizeNotebook([e])[0];
+  eq('materialId korunur', n.materialId, 'm1');
+  eq('segmentId korunur', n.segmentId, 's1');
+  eq('timecode korunur', n.timecode, '00:00:12');
+  const plain = T.normalizeNotebook([{ text: 'bağlamsız' }])[0];
+  eq('bağlamsız not boş kimlik taşır', plain.segmentId, '');
+
+  const nb = T.normalizeNotebook([
+    { id: 'a', at: '2026-01-01T00:00:00.000Z', text: 'A', materialId: 'm1', segmentId: 's1' },
+    { id: 'b', at: '2026-01-01T00:01:00.000Z', text: 'B', materialId: 'm1', segmentId: 's1' },
+    { id: 'c', at: '2026-01-01T00:02:00.000Z', text: 'C', materialId: 'm1', segmentId: 's2' },
+    { id: 'd', at: '2026-01-01T00:03:00.000Z', text: 'D' }
+  ]);
+  eq('bölümün notları sayılır', T.notebooksForSegment(nb, 'm1', 's1').length, 2);
+  eq('başka bölümün notu sayılmaz', T.notebooksForSegment(nb, 'm1', 's2').length, 1);
+  eq('bağlamsız not hiçbir bölüme sayılmaz', T.notebooksForSegment(nb, 'm1', 's1').every((x) => x.id !== 'd'), true);
+  eq('segment kimliği yoksa boş liste', T.notebooksForSegment(nb, 'm1', '').length, 0);
+
+  // Bağlam değişikliği de çakışmadır (aynı not, farklı bölüm).
+  const mine = T.normalizeNotebook([{ id: 'x', at: '2026-01-01T00:00:00.000Z', text: 'aynı', segmentId: 's1' }]);
+  const theirs = T.normalizeNotebook([{ id: 'x', at: '2026-01-01T00:00:00.000Z', text: 'aynı', segmentId: 's2' }]);
+  const plan = T.notebookMergePlanForTest(mine, theirs);
+  eq('farklı bölüm bağı çakışma bildirir', plan.conflicts.length, 1);
 }
 
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);

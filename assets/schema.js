@@ -2707,6 +2707,12 @@ export function emptyNotebookEntry(over = {}) {
     by: '',
     text: '',
     pinned: false,
+    // BAĞLAM (v2.358): not belirli bir bölüme/zamana bağlanabilir. Kimlikle
+    // bağlanır (materialId + segmentId); sıra değişse de kopmaz. `timecode`
+    // yalnız bölüm silinirse gösterim için saklanan anlık kopyadır.
+    materialId: '',
+    segmentId: '',
+    timecode: '',
     ...(isObj(over) ? over : {})
   };
 }
@@ -2722,7 +2728,11 @@ export function normalizeNotebookEntry(src) {
     updatedAt: str(e.updatedAt),
     by: str(e.by),
     text,
-    pinned: e.pinned === true
+    pinned: e.pinned === true,
+    // Bağlam alanları (v2.358): bilinmeyen değer korunur; boşsa '' olur.
+    materialId: str(e.materialId),
+    segmentId: str(e.segmentId),
+    timecode: str(e.timecode)
   };
 }
 
@@ -2753,12 +2763,30 @@ export function notebookMergePlan(mine, theirs) {
       added.push(te);
       continue;
     }
-    if (String(me.text) !== String(te.text) || !!me.pinned !== !!te.pinned) {
+    if (
+      String(me.text) !== String(te.text) ||
+      !!me.pinned !== !!te.pinned ||
+      String(me.materialId || '') !== String(te.materialId || '') ||
+      String(me.segmentId || '') !== String(te.segmentId || '')
+    ) {
       conflicts.push({ kind: 'notebook', id: te.id, mine: me, theirs: te });
     }
   }
   const merged = [...a, ...added].sort((x, y) => String(x.at).localeCompare(String(y.at)));
   return { merged, added, conflicts };
+}
+
+/**
+ * Bir bölüme bağlı notlar (v2.358). Segment listesindeki rozet ve "bu bölümün
+ * notları" sayacı AYNI kaynağı kullanır (v2.99 dersi: sayaç ≠ filtre olmaz).
+ */
+export function notebooksForSegment(notebook, materialId, segmentId) {
+  const mid = String(materialId || '');
+  const sid = String(segmentId || '');
+  if (!sid) return [];
+  return normalizeNotebook(notebook).filter(
+    (e) => String(e.segmentId || '') === sid && (!e.materialId || String(e.materialId) === mid)
+  );
 }
 
 /** Paket dışa aktarımında "notları pakete koyma" seçeneği (v2.356). */
