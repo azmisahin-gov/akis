@@ -3244,6 +3244,9 @@ input::placeholder, textarea::placeholder {
 .rsec-edit-open { font-size: var(--fs-2xs); white-space: nowrap; }
 .rse-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 0 0 8px; }
 .rse-actions .rse-title { flex: 1 1 200px; margin: 0; }
+/* v2.376 — taşınan bölüm/ek iskelette bulunabilsin: kısa parlama. */
+.rsec-row.rsec-flash { animation: rsecFlash 1.5s ease; }
+@keyframes rsecFlash { 0%, 40% { background: var(--accent-soft); } 100% { background: transparent; } }
 .rs-hint {
   margin: 0 0 8px;
   font-size: var(--fs-2xs);

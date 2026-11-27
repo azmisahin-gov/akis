@@ -2,11 +2,20 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.375.**
+yazılır. **Güncel sürüm: v2.376.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.376 — Taşınan bölüm/ek görünür (TAMAMLANDI)
+
+- Taşıma sonrası iskelet ilgili satıra kayar + satır kısa parlar (`flashSkeletonRow`,
+  `flashAnnexRow`). `moveSectionIntoAnnex`, `toggleAnnexPlacement`, `moveReportAnnex`,
+  `moveReportAnnexTo` bunları çağırır.
+- Amaç: "eke atadım kayboldu" izlenimini gidermek (içerik korunuyordu; satır listenin
+  altında kalıyordu). CSS `.rsec-flash` (keyframes; `!important` yok).
+- Ölçüm: s5→EKLER görünür+parladı; ek sırala parladı; JS 0. Test: `tasarim [2ek]`.
 
 ## v2.375 — Sade iskelet: tıkla=seç, Düzenle=çekmece (TAMAMLANDI)
 

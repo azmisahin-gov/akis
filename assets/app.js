@@ -165,15 +165,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.375';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.375';
+} from './schema.js?v=2.376';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.376';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.375';
+const APP_VERSION = '2.376';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14786,6 +14786,51 @@ function scrollSkeletonToKey(key) {
   const r = row.getBoundingClientRect();
   box.scrollTop = Math.max(0, Math.round(box.scrollTop + r.top - boxRect.top - 8));
 }
+// v2.376 - moved section/annex must not get lost: scroll skeleton to it + brief flash.
+function _raf(fn) {
+  try {
+    if (typeof requestAnimationFrame === 'function') return requestAnimationFrame(fn);
+    return setTimeout(fn, 0);
+  } catch (e) {}
+}
+function _cssEsc(v) {
+  try {
+    if (typeof CSS !== 'undefined' && CSS && typeof CSS.escape === 'function') return CSS.escape(v);
+  } catch (e) {}
+  return String(v).replace(/["\\]/g, '\\$&');
+}
+function _flashRow(row) {
+  if (!row || !row.classList) return;
+  row.classList.remove('rsec-flash');
+  void row.offsetWidth;
+  row.classList.add('rsec-flash');
+  setTimeout(() => { try { row.classList.remove('rsec-flash'); } catch (e) {} }, 1600);
+}
+function flashSkeletonRow(key) {
+  _raf(() => {
+    try {
+      const row = document.querySelector('#reportSections .rsec-row[data-rsec-key="' + _cssEsc(key) + '"]');
+      if (!row) return;
+      scrollSkeletonToKey(key);
+      _flashRow(row);
+    } catch (e) {}
+  });
+}
+function flashAnnexRow(annexKey) {
+  _raf(() => {
+    try {
+      const row = document.querySelector('#reportSections [data-drag-kind="annex"][data-drag-key="' + _cssEsc(annexKey) + '"]');
+      if (!row) return;
+      const box = $('#reportSectionsBox');
+      if (box && row.getBoundingClientRect && box.getBoundingClientRect) {
+        const br = box.getBoundingClientRect();
+        const rr = row.getBoundingClientRect();
+        box.scrollTop = Math.max(0, Math.round(box.scrollTop + rr.top - br.top - 8));
+      }
+      _flashRow(row);
+    } catch (e) {}
+  });
+}
 function goToReportSection(key) {
   const c = currentCase();
   if (!c) return;
@@ -15198,6 +15243,7 @@ function moveSectionIntoAnnex(key, annexKey) {
   persist();
   renderReport();
   const n = annexNumberForSection(c, key);
+  flashSkeletonRow(key);
   showToast(`“${reportUiLabel(c, key)}” → EK-${n} (Ctrl+Z ile geri alınır).`);
   return true;
 }
@@ -15230,11 +15276,13 @@ function moveReportAnnexTo(key, targetKey) {
   c.report.layout = normalizeReportLayout(layout);
   persist();
   renderReport();
+  flashAnnexRow(key);
 }
 function moveReportAnnex(key, dir) {
   setReportLayout((l) => {
     l.annexOrder = moveInList(l.annexOrder, key, dir);
   });
+  flashAnnexRow(key);
 }
 function setReportAnnexOn(key, on) {
   const c = currentCase();
@@ -15612,6 +15660,7 @@ function toggleAnnexPlacement(key) {
   persist();
   renderReport();
   const n = annexNumberForSection(c, key);
+  flashSkeletonRow(key);
   showToast(
     on
       ? `“${reportUiLabel(c, key)}” EKLER altına taşındı${n ? ` (EK-${n})` : ''}.`
@@ -24812,6 +24861,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.376': {
+    title: 'Eke atadım kayboldu — düzeltildi',
+    body:
+      'Bir bölümü EKLER’e taşıdığınızda (çekmecedeki düğme veya sürükleme) iskelet artık otomatik olarak o satıra kayar ve satır kısa süre parlar; böylece taşınan bölüm/ek gözden kaybolmaz. Ekleri ↑↓ ile sıralarken de taşınan ek görünür kalır. İçerik zaten kaybolmuyordu; satır listenin en altında kalıp görünmüyordu. Kanıt/metin/onay değişmez.'
+  },
   '2.375': {
     title: 'Sade iskelet: tıkla=seç, Düzenle=çekmece',
     body:

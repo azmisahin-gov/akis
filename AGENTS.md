@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.375.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.376.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10100,3 +10100,21 @@ açılıyor; çekmeyi açacak düğme olsun; ekran kararıyor."
 Teknik içerik raporun **EKLER → EK-7…EK-10** kısmındadır. Üst yazıda "teknik bilgiler" (EK-2) yalnız
 kullanıcı AÇIKÇA eklerse (`LETTER_ANNEX_KINDS='sections'`) oluşur; varsayılan yalnız `report`
 (EK-1 = tüm rapor). Karışıklık istemezse üst yazı ek panelindeki isteğe bağlı türler gizlenebilir.
+
+## EK DÜZELTME (v2.376) — Taşınan bölüm/ek görünür
+
+**KULLANICI:** "Kayıt bazında bulguları eke atadım KAYBOLDU; ekleri sıralarken alt ekler kayboluyor."
+
+**ÖLÇÜM:** İçerik KAYBOLMUYOR (rapor metni ≈20.0k korundu; yenilemede de duruyor; JS 0).
+Sorun GÖRÜNÜRLÜK: tek başına eke taşınan bölüm iskelet listesinin en altına düşüp kaydırma
+yukarıdayken görünmüyordu.
+
+- `flashSkeletonRow(key)` / `flashAnnexRow(annexKey)`: iskeleti o satıra kaydır + `.rsec-flash`
+  ile kısa parlat (keyframes; `!important` yok). `_raf`/`_cssEsc` savunmacı (sahte DOM/Node test).
+- Çağrı yerleri: `moveSectionIntoAnnex`, `toggleAnnexPlacement`, `moveReportAnnex`, `moveReportAnnexTo`.
+- Test: `tasarim [2ek]`.
+
+**DERS (kodlama):** Bu oturumda bir metin editörü aracı `app.js`'in UTF-8'ini BOZDU
+(Türkçe çift kodlandı). Belirti: testlerde "sayńĪsal"/"√∂l√ß√ľlemedi". Düzeltme:
+`git checkout HEAD -- assets/app.js` + değişiklikleri Python `io.open(encoding='utf-8')` ile
+yeniden uygula. Türkçe metin düzenlerken dosya kodlamasını DOĞRULA; mojibake taraması yap.

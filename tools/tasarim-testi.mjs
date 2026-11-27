@@ -2573,6 +2573,15 @@ console.log('\n[2ej] İskelet: eke taşınan bölüm tek konumda (v2.374)');
   check('tek başına taşınanlar ek satırı', /for \(const sk of standalonePlaced\)/.test(app));
 }
 
+console.log('\n[2ek] Taşınan bölüm/ek görünür (v2.376)');
+{
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('flash fonksiyonları', /function flashSkeletonRow\(/.test(app) && /function flashAnnexRow\(/.test(app));
+  check('taşıma çağrıları bağlı', (app.match(/flashSkeletonRow\(/g) || []).length >= 2 && (app.match(/flashAnnexRow\(/g) || []).length >= 2);
+  check('CSS parlama kuralı', /\.rsec-row\.rsec-flash/.test(layer) && /@keyframes rsecFlash/.test(layer));
+}
+
 console.log('\n[2df] Ek satırı sayfa tahmininde taşmaz (v2.326)');
 {
   const layer = read('assets/reading-layer.css');

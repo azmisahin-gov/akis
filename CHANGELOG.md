@@ -6,12 +6,30 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.375.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.376.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.376 — "Eke atadım kayboldu" düzeltildi
+
+**KULLANICI NE GÖRECEK:** Bir bölümü EKLER'e taşıdığınızda (çekmecedeki düğme veya sürükleme)
+artık **iskelet otomatik olarak o satıra kayar** ve satır **kısa süre parlar**; taşınan
+bölüm/ek **gözden kaybolmaz**. Ekleri ↑↓ ile sıralarken de taşınan ek **görünür kalır**.
+
+**Not (ölçüm):** İçerik zaten kaybolmuyordu (rapor metni korunuyordu); sorun, tek başına eke
+taşınan bölümün iskelet listesinin en altına düşüp **kaydırma yukarıdayken görünmemesiydi**.
+
+**ÖLÇÜM (gerçek Chromium, demo):**
+| | Sonuç |
+|---|---|
+| s5 → EKLER (çekmece) | satır **görünür**, **parladı**, kaydırma 2636 |
+| ek sırala (↑↓) | taşınan ek **parladı** |
+| rapor metni | korundu (≈20.0k karakter) |
+| JS hatası | **0** |
+| Testler | **2830 birim + 556 şema** + rapor/tasarim/sürüm yeşil |
 
 ## v2.375 — Sade iskelet: tıkla=seç, Düzenle=çekmece
 
