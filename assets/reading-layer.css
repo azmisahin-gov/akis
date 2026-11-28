@@ -4857,3 +4857,17 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
 .fmt-global-note { border-left: 3px solid var(--accent); padding-left: 8px; }
 .rse-columns-action { margin: 6px 0 2px; }
 .rse-appearance-lead { margin: 0 0 6px; }
+
+/* v2.398 — TABLO BAZINDA görünüm. Bölüm (>genel) ayarını YALNIZ o tablo için
+   ezer. Aynı özgüllükte olduğu için bölüm kurallarından SONRA yazılır. */
+.report-paper .paper-block .paper-table[data-tbl-style="lines"] th,
+.report-paper .paper-block .paper-table[data-tbl-style="lines"] td { border-left: 0; border-right: 0; }
+.report-paper .paper-block .paper-table[data-tbl-style="plain"] { border-top: 0; border-bottom: 0; }
+.report-paper .paper-block .paper-table[data-tbl-style="plain"] th,
+.report-paper .paper-block .paper-table[data-tbl-style="plain"] td { border: 0; }
+.report-paper .paper-block .paper-table[data-tbl-density="compact"] th,
+.report-paper .paper-block .paper-table[data-tbl-density="compact"] td { padding-left: 5px; padding-right: 5px; padding-top: 3px; padding-bottom: 3px; }
+/* Rapor alanları panosunda tablo grubunun başında çizgi/yoğunluk seçimi. */
+.rcol-appearance { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 6px; }
+.rcol-appearance label { display: flex; align-items: center; gap: 4px; font-size: var(--fs-2xs); color: var(--ink-3); }
+.rcol-appearance select { font-size: var(--fs-2xs); }

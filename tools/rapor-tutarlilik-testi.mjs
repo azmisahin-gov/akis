@@ -2452,5 +2452,46 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   checkShared('görünüm ikinci bölüm metni', 'dünya', H, U, D);
 }
 
+// Senaryo 72: v2.398 — TABLO bazında görünüm (aynı bölümde iki tablo ayrı).
+{
+  console.log('\n[Senaryo 72] tablo bazında görünüm (v2.398)');
+  const S = __schemaMod;
+  const c = S.normalizeCase({
+    ...withMaterial({
+      segments: [
+        { id: 't1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba', review: 'approved' },
+        { id: 't2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'S1', text: 'dünya', review: 'approved' }
+      ]
+    }),
+    report: {
+      sections: { s5: true },
+      tableAppearance: { segments: { tableStyle: 'plain', density: 'compact' } }
+    }
+  });
+  // HTML: iki tablo aynı bölümde; YALNIZ deşifre tablosu özel nitelik taşır.
+  setCase(c); renderReport();
+  const raw = els.get('#reportPreview').innerHTML;
+  const tables = raw.match(/<table class="paper-table"[^>]*>[\s\S]*?<\/table>/g) || [];
+  const segT = tables.find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA')) || '';
+  const spkT = tables.find((t) => t.includes('İLK – SON') && t.includes('BÖLÜM')) || '';
+  check('HTML: deşifre tablosu çizgisiz', /data-tbl-style="plain"/.test(segT));
+  check('HTML: deşifre tablosu sıkı', /data-tbl-density="compact"/.test(segT));
+  check('HTML: konuşmacı tablosu etkilenmez', !!spkT && !/data-tbl-style|data-tbl-density/.test(spkT));
+  // DOCX: deşifre = çizgisiz + w:after=20; konuşmacı = varsayılan (lines) + w:after=50.
+  downloads.length = 0; setCase(c); await makeDocx();
+  const z = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const dx = await z.file('word/document.xml').async('string');
+  const dt = [...dx.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)].map((m) => m[0]);
+  const dSeg = dt.find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA')) || '';
+  const dSpk = dt.find((t) => t.includes('İLK – SON') && t.includes('BÖLÜM')) || '';
+  check('DOCX: deşifre tablosu çizgisiz', /<w:tblBorders><w:top w:val="nil"\/>/.test(dSeg));
+  check('DOCX: deşifre tablosu sıkı', /w:after="20"/.test(dSeg));
+  check('DOCX: konuşmacı tablosu varsayılan çizgili', /<w:tblBorders><w:top w:val="single"/.test(dSpk));
+  check('DOCX: konuşmacı tablosu rahat', /w:after="50"/.test(dSpk));
+  // METİN DEĞİŞMEZ.
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('tablo görünümü metni değiştirmez', 'merhaba', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

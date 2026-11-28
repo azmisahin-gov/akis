@@ -3292,5 +3292,23 @@ console.log('\n[2es] Bölüm bazında görünüm (v2.396)');
   const blk = layer.slice(layer.indexOf('v2.396'), layer.indexOf('v2.396') + 1500);
   check('v2.396 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }
+console.log('\n[2et] Tablo bazında görünüm (v2.398)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('şema: tablo görünümü normalizasyonu', /export function normalizeReportTableAppearance\(/.test(schema) && /export function reportTableAppearance\(/.test(schema));
+  check('şema: tablo birleştirme planı', /export function tableAppearanceMergePlan\(/.test(schema) && /tableAppearanceMergePlan\(mine, theirs\)/.test(schema));
+  check('şema: boş rapor tableAppearance taşır', /tableAppearance: \{\},/.test(schema) && /tableAppearance: normalizeReportTableAppearance\(report\.tableAppearance\)/.test(schema));
+  check('revizyon: tablo görünümü snapshot + etiket', /tableAppearance: normalizeReportTableAppearance\(r\.tableAppearance\)/.test(app) && /tableAppearance: 'Tablo görünümü/.test(app));
+  check('rapor alanları: tablo görünümü seçicisi', /function tableAppearanceSelects\(/.test(app) && /data-rcol-app-table=/.test(app) && /function setReportTableAppearance\(/.test(app));
+  check('HTML: tablo nitelikleri', /data-tbl-style="\$\{esc\(ap\.tableStyle\)\}"/.test(app) && /data-tbl-density="\$\{esc\(ap\.density\)\}"/.test(app));
+  check('sütun çıktısı tablo görünümü taşır', /appearance: reportTableAppearance\(c, table\)/.test(app));
+  check('DOCX: tablo bazında stil/yoğunluk', /function tableFmtOpts\(/.test(app) && /tableStyle = null, density = null/.test(app) && /\.\.\.tableFmtOpts\(t\)/.test(app));
+  check('CSS: tablo bazında çizgi/yoğunluk', /\.paper-table\[data-tbl-style="plain"\]/.test(layer) && /\.paper-table\[data-tbl-density="compact"\]/.test(layer));
+  check('CSS: tablo görünümü seçicisi', /\.rcol-appearance \{/.test(layer));
+  const blk = layer.slice(layer.indexOf('v2.398'), layer.indexOf('v2.398') + 1600);
+  check('v2.398 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.397.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.398.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,18 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.398 — Tablo bazında görünüm (her tablo ayrı)
+
+**KULLANICI NE GÖRECEK:**
+- **Rapor ayarları → Alanlar** listesinde **her tablonun** başında iki açılır liste var: **Tablo çizgisi** ve **Yoğunluk**.
+- Yani artık **her tabloyu ayrı ayrı** değiştirebilirsiniz: ör. “Analiz / kanıt tablosu” çizgisiz + sıkı, “Konuşmacı tablosu” tam çerçeve + rahat. Aynı bölümdeki iki tablo bile birbirinden bağımsızdır.
+- “Genel ayarı kullan” seçilirse o tablo, **Biçim** sekmesindeki genel ayarı izler.
+- Öncelik: **tablo > bölüm > genel**. Ekran + yazdırma/PDF + Word (DOCX) çıktısına uygulanır.
+
+**DÜRÜST SINIR:** UYAP (UDF) çıktısında tablo çizgisi/yoğunluk **UYAP şablonundan** gelir; tablo bazında uygulanmaz.
+
+**NOT:** Metin, kanıt ve hesaplar **değişmez**. Ayar yalnız siz seçtiğinizde yazılır; revizyona girer; birleştirmede çakışma sessizce ezilmez.
 
 ## v2.397 — Genel mi bölüm mü? ⚙ artık bölüm görünümünü açar
 

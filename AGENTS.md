@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.397.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.398.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10506,3 +10506,20 @@ Kullanıcı: *"Alan görünümü sadece kapağı değiştiriyor; istediğim böl
 - ⚙ artık `setReportEditSection(key)` → bölüm düzenleyici + “Bu bölümün görünümü” kutusuna kaydırma. `goToReportSetting` yalnız **“Tablo sütunları ›”** düğmesinden çağrılır.
 - Biçim sekmesi: **“Bu sekmedeki ayarlar TÜM BELGEYİ etkiler”** + “(tüm belge)” etiketleri. Bölüm görünümü: **“yalnız bu bölüm”**.
 - DEĞİŞMEZ: genel Biçim = tüm belge; bölüm görünümü = yalnız o bölüm; metin/kanıt değişmez.
+
+## YENİ OTURUM DEVRİ (v2.398) — Tablo bazında görünüm
+
+| | |
+|---|---|
+| Sürüm | **v2.398** |
+| Testler | **3041 birim + 565 şema** + rapor (72) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+- Kullanıcı: *"Bölümlerde tabloları ayrı ayrı değiştirebileceğimizi düşünmüştüm."* v2.396/397 **bölüm** düzeyiydi; bir bölümdeki tüm tablolar birlikte değişiyordu.
+- `case.report.tableAppearance[table] = { tableStyle, density }`; öncelik **tablo > bölüm > genel**.
+- UI: **Rapor alanları → her tablo grubunda** “Tablo çizgisi / Yoğunluk” (`data-rcol-app-table`); `setReportTableAppearance`.
+- HTML: `paperTable` tabloya `data-tbl-style`/`data-tbl-density` yazar; CSS bölüm kurallarından SONRA (aynı özgüllük → sonra yazan kazanır).
+- DOCX: `wTable`/`cell` `tableStyle`/`density` seçenekleri; `reportTableColumns` `appearance` taşır, `tableFmtOpts` ile geçirilir.
+- UDF: tablo stili/yoğunluk UYAP şablonundan (uygulanmaz).
+- Revizyon + birleştirme (`tableAppearanceMergePlan`, `report-table-appearance` çakışması).
+- DEĞİŞMEZ: her tablo bağımsız; metin/kanıt değişmez; ayar yalnız seçilince yazılır.

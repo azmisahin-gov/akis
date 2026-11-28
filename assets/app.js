@@ -130,6 +130,8 @@ import {
   REPORT_APPEARANCE_LABELS,
   reportSectionAppearance,
   normalizeReportAppearance,
+  reportTableAppearance,
+  normalizeReportTableAppearance,
   REPORT_TABLE_THEMES,
   REPORT_TABLE_THEME_LABEL,
   REPORT_ORIENTATION_LABEL,
@@ -183,15 +185,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.397';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.397';
+} from './schema.js?v=2.398';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.398';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.397';
+const APP_VERSION = '2.398';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14538,10 +14540,13 @@ function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
   const explicit = Array.isArray(widths) && idx.every((i) => Number(widths[i]) > 0);
   const model = REPORT_COLUMN_WEIGHTS[table] ? reportColumnWidths(table, keys, 1000) : null;
   return {
+    table,
     keys: idx.map((i) => keys[i]),
     headers: idx.map((i) => tableLabels[keys[i]] || headers[i]),
     rows: (rows || []).map((r) => idx.map((i) => r[i])),
     widths: explicit ? idx.map((i) => widths[i]) : model ? idx.map((i) => model[i]) : null,
+    // v2.398 — tablo bazında görünüm (varsa). Bölüm/genel ayarı EZER.
+    appearance: reportTableAppearance(c, table),
     empty: idx.length === 0
   };
 }
@@ -14569,7 +14574,22 @@ function paperTable(t, opts = {}) {
           )
           .join('')
       : `<tr><td colspan="${t.headers.length}">${esc(t.empty || '—')}</td></tr>`;
-  return `<table class="${opts.cls || 'paper-table'}">${colgroup}<thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+  // v2.398 — tablo bazında görünüm nitelikleri (varsa). CSS'te bölüm/genel
+  // ayardan daha yüksek özgüllükle kazanır. `inherit` yazılmaz.
+  const ap = t.appearance || {};
+  const tattrs = [];
+  if (ap.tableStyle && ap.tableStyle !== 'inherit') tattrs.push(`data-tbl-style="${esc(ap.tableStyle)}"`);
+  if (ap.density && ap.density !== 'inherit') tattrs.push(`data-tbl-density="${esc(ap.density)}"`);
+  return `<table class="${opts.cls || 'paper-table'}"${tattrs.length ? ' ' + tattrs.join(' ') : ''}>${colgroup}<thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
+}
+// v2.398 — DOCX tablo seçenekleri: yalnız tablo bazında AÇIK tercihler eklenir
+// (`inherit` gönderilmez; bölüm/genel ayar geçerli kalır).
+function tableFmtOpts(t) {
+  const a = (t && t.appearance) || {};
+  const o = {};
+  if (a.tableStyle && a.tableStyle !== 'inherit') o.tableStyle = a.tableStyle;
+  if (a.density && a.density !== 'inherit') o.density = a.density;
+  return o;
 }
 function werTableRows(c) {
   return measureWerForCase(c).map((r) => [
@@ -14619,6 +14639,36 @@ function reportFieldGroupsHtml(c) {
     })
     .join('');
 }
+// v2.398 — TABLO BAZINDA GÖRÜNÜM: her tablo grubunun başında kendi çizgi ve
+// yoğunluk seçimi. "Genel ayarı kullan" = dosya biçimi geçerli.
+function tableAppearanceSelects(c, table) {
+  const cur = reportTableAppearance(c, table);
+  const opts = (field, values) =>
+    values
+      .map(
+        (v) =>
+          `<option value="${esc(v)}"${cur[field] === v ? ' selected' : ''}>${esc(REPORT_APPEARANCE_LABELS[field][v] || v)}</option>`
+      )
+      .join('');
+  return (
+    `<div class="rcol-appearance">` +
+    `<label><span>Tablo çizgisi</span><select data-rcol-app-table="${esc(table)}" data-rcol-app-field="tableStyle">${opts('tableStyle', REPORT_APPEARANCE_TABLESTYLE)}</select></label>` +
+    `<label><span>Yoğunluk</span><select data-rcol-app-table="${esc(table)}" data-rcol-app-field="density">${opts('density', REPORT_APPEARANCE_DENSITY)}</select></label>` +
+    `</div>`
+  );
+}
+function setReportTableAppearance(table, field, value) {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  const all = normalizeReportTableAppearance(c.report.tableAppearance);
+  const cur = { ...reportTableAppearance(c, table), ...(all[table] || {}) };
+  cur[field] = value;
+  all[table] = cur;
+  c.report.tableAppearance = normalizeReportTableAppearance(all);
+  persist();
+  renderReport();
+}
 function renderReportColumns(c) {
   const host = $('#reportColumnsFields');
   if (!host) return;
@@ -14632,6 +14682,7 @@ function renderReportColumns(c) {
         const on = keys.filter((k) => cols[table][k] !== false).length;
         return (
           `<div class="rcol-group" data-rcol-group="${esc(table)}"><div class="rcol-head"><b>${esc(REPORT_COLUMN_TABLE_LABELS[table] || table)}</b><span>${on}/${keys.length}</span></div>` +
+          tableAppearanceSelects(c, table) +
           keys
             .map((k) => {
               const locked = reportColumnLocked(table, k);
@@ -16811,7 +16862,7 @@ function recordSectionDefs(c) {
     fileInventory: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
       : invT.rows.length
-        ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, widths: invT.widths }
+        ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, widths: invT.widths, appearance: invT.appearance }
         : { kind: 'para', text: REPORT_TEXT.annexNoInventory },
     custodyLog: logRows.length
       ? { kind: 'table', header: true, columns: 'custodyLog', headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], rows: logRows }
@@ -16871,7 +16922,7 @@ function recordSectionDefs(c) {
 // `columns` taşıyorsa sütunlar `reportTableColumns` ile süzülür; yoksa blok
 // olduğu gibi basılır (geriye uyum). `empty` = tüm sütunlar kapalı.
 function recordTableCols(c, b) {
-  if (!b || !b.columns) return { headers: b.headers, rows: b.rows, widths: b.widths, empty: false };
+  if (!b || !b.columns) return { headers: b.headers, rows: b.rows, widths: b.widths, appearance: b.appearance, empty: false };
   return reportTableColumns(c, b.columns, b.headers, b.rows, b.widths);
 }
 // v2.380 — Eski ek İÇERİKLERİ artık normal bölüm üreticisidir. Blok → çıktı
@@ -16926,7 +16977,7 @@ function recordBlockXml(c, key, opts = {}) {
       out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
       out += tc.empty
         ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-        : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast });
+        : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
     }
   } else if (b.kind === 'blocks') {
     for (const sub of b.blocks || []) {
@@ -16936,7 +16987,7 @@ function recordBlockXml(c, key, opts = {}) {
         out += wP(sub.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
         out += tc.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast });
+          : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
       }
     }
   } else if (b.header) {
@@ -16944,7 +16995,7 @@ function recordBlockXml(c, key, opts = {}) {
     if (tc.empty) out += wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true });
     else {
       const rows = tc.rows.length ? tc.rows : [tc.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
-      out += wTable([[...tc.headers], ...rows], { widths: tc.widths, header: true, keepLast });
+      out += wTable([[...tc.headers], ...rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
     }
   } else {
     out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true, keepLast });
@@ -17159,6 +17210,8 @@ function reportSnapshot(c) {
     columns: normalizeReportColumns(r.columns),
     // Bölüm bazında görünüm (v2.396): revizyona girer.
     appearance: normalizeReportAppearance(r.appearance),
+    // Tablo bazında görünüm (v2.398): revizyona girer.
+    tableAppearance: normalizeReportTableAppearance(r.tableAppearance),
     // Ön bölüm ALAN görünürlüğü (v2.336): revizyona girer.
     fields: normalizeReportFieldVisibility(r.fields),
     includeEmbedded: !!r.includeEmbedded,
@@ -17183,6 +17236,7 @@ const REPORT_SNAPSHOT_LABELS = {
   annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
   appearance: 'Bölüm görünümü (sayfa/tablo)',
+  tableAppearance: 'Tablo görünümü (çizgi/yoğunluk)',
   fields: 'Künye/özet alan görünürlüğü',
   includeEmbedded: 'Gömülü metadata',
   speakerMethod: 'Konuşmacı yöntem notu',
@@ -17216,6 +17270,7 @@ function applyReportSnapshot(c, snap) {
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
   if (snap.appearance) r.appearance = normalizeReportAppearance(snap.appearance);
+  if (snap.tableAppearance) r.tableAppearance = normalizeReportTableAppearance(snap.tableAppearance);
   if (snap.fields) r.fields = normalizeReportFieldVisibility(snap.fields);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.speakerMethod = !!snap.speakerMethod;
@@ -19019,18 +19074,20 @@ function wP(
     .join('');
   return `<w:p>${ppr}${runs}</w:p>`;
 }
-function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, headerColor = null, keep = false } = {}) {
+function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, headerColor = null, keep = false, density = null } = {}) {
   const sh = shade ? `<w:shd w:fill="${shade}"/>` : '';
   // v2.386 — başlık yazı rengi temaya bağlı (nötr: koyu; klasik: beyaz).
   const col = header ? headerColor || 'FFFFFF' : color || '24384D';
   // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
   // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
   // v2.372 — yoğunluk: sıkı rejimde satır aralığı küçülür.
-  const sp = (__docxFmt && __docxFmt.density) === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
+  // v2.398 — tablo bazında yoğunluk `density` ile ezilebilir.
+  const dens = density || (__docxFmt && __docxFmt.density);
+  const sp = dens === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
   const p = `<w:p><w:pPr>${keep ? '<w:keepNext/>' : ''}<w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
-function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false } = {}) {
+function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false, tableStyle = null, density = null } = {}) {
   const n = rows[0]?.length || 1;
   // Tablo, metin genişliğine (contentTw) oturur; sütun oranları korunur. (v2.259)
   const contentTw = (__docxFmt && __docxFmt.contentTw) || 9000;
@@ -19051,14 +19108,16 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
   const neutralTheme = theme !== 'classic';
   const headFill = neutralTheme ? 'EDF1F5' : '1C426B';
   const headInk = neutralTheme ? '1C426B' : 'FFFFFF';
-  const tstyle = (__docxFmt && __docxFmt.tableStyle) || 'grid';
+  // v2.398 — tablo bazında stil/yoğunluk, bölüm/genel ayarı EZER.
+  const tstyle = tableStyle || (__docxFmt && __docxFmt.tableStyle) || 'grid';
   const borders =
     tstyle === 'plain'
       ? '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
       : tstyle === 'lines'
         ? '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:left w:val="nil"/><w:right w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
         : '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
-  const cellPad = (__docxFmt && __docxFmt.density) === 'compact' ? 40 : 95;
+  const effDensity = density || (__docxFmt && __docxFmt.density) || 'comfortable';
+  const cellPad = effDensity === 'compact' ? 40 : 95;
   // v2.384 — `keepLast`: son satır, kendisinden SONRA gelen not/açıklama ile
   // aynı sayfada kalır (`w:keepNext`). Böylece tablo sonu notu tek başına
   // sonraki sayfaya düşmez.
@@ -19087,7 +19146,8 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
               size: isHead ? 17 : 18,
               color: shadeFirstCol && ci === 0 ? '1C426B' : null,
               headerColor: headInk,
-              keep: keepLast && !isHead && ri === rows.length - 1
+              keep: keepLast && !isHead && ri === rows.length - 1,
+              density: effDensity
             });
           })
           .join('')}</w:tr>`
@@ -19276,7 +19336,7 @@ function docxXml(c) {
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : t.rows.length
-            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })
+            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })
             : wP(REPORT_TEXT.noMaterials, { color: '74869A', size: 17, italic: true })) +
         wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
@@ -19290,7 +19350,7 @@ function docxXml(c) {
         wP(defaultTextFor('embeddedIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
       );
     },
     acquisition: () => {
@@ -19302,7 +19362,7 @@ function docxXml(c) {
         wP(REPORT_TEXT.acqIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
       );
     },
     speakers: () => {
@@ -19320,7 +19380,7 @@ function docxXml(c) {
           return st.empty
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : st.rows.length
-              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: true })
+              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: true, ...tableFmtOpts(st) })
               : wP(REPORT_TEXT.noSpeakerText, { color: '74869A', size: 17, italic: true });
         })() +
         (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
@@ -19340,7 +19400,7 @@ function docxXml(c) {
         headingXml(H('speakerDurations')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
         (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
@@ -19367,7 +19427,7 @@ function docxXml(c) {
         wP(defaultTextFor('asrIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
         wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
@@ -19392,7 +19452,7 @@ function docxXml(c) {
             out += st.empty
               ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
               : wP(REPORT_TEXT.recordSpeakersHeading, { bold: true, color: '6F8295', size: 17, keep: true }) +
-                wTable([[...st.headers], ...st.rows], { header: true });
+                wTable([[...st.headers], ...st.rows], { header: true, ...tableFmtOpts(st) });
           }
         }
         if (m.hallucinationWarning)
@@ -19407,7 +19467,7 @@ function docxXml(c) {
           });
           const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
           out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17, keep: true });
-          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: amb.length > 0 });
+          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: amb.length > 0, ...tableFmtOpts(st) });
           if (amb.length)
             out += wP(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { color: '74869A', size: 17, italic: true, keepLines: true });
         } else out += wP(REPORT_TEXT.noTranscript);
@@ -19450,7 +19510,7 @@ function docxXml(c) {
         wP(REPORT_TEXT.integrityIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
         wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
@@ -19500,7 +19560,7 @@ function docxXml(c) {
         wP(defaultTextFor('werIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
       );
     },
     levels: () => {
@@ -19512,7 +19572,7 @@ function docxXml(c) {
         wP(defaultTextFor('levelIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
       );
     },
     reviewSummary: () =>
@@ -19592,7 +19652,7 @@ function docxXml(c) {
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
-            out += wTable([[...t.headers], ...t.rows], { header: true });
+            out += wTable([[...t.headers], ...t.rows], { header: true, ...tableFmtOpts(t) });
           }
         } else if (b.kind === 'blocks') {
           // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
@@ -21190,7 +21250,9 @@ function renderMergePreview(cmp) {
                     ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
                     : c.kind === 'report-appearance'
                       ? `Bölüm görünümü · ${c.section || ''}`
-                      : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+                      : c.kind === 'report-table-appearance'
+                        ? `Tablo görünümü · ${c.section || ''}`
+                        : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
         ${c.reason ? `<p class="merge-reason">${esc(c.reason)}</p>` : ''}
@@ -24537,6 +24599,12 @@ $('#reportSections')?.addEventListener('dragend', () => {
 });
 // Tablo sütunları (v2.235): kapat/aç → üç çıktıda da yansır.
 $('#reportColumnsFields')?.addEventListener('change', (e) => {
+  // v2.398 — tablo bazında çizgi/yoğunluk.
+  const appSel = e.target.closest('[data-rcol-app-table]');
+  if (appSel) {
+    setReportTableAppearance(appSel.dataset.rcolAppTable, appSel.dataset.rcolAppField, appSel.value);
+    return;
+  }
   const lab = e.target.closest('[data-rcol-label-key]');
   if (lab) {
     const c = currentCase();
@@ -25748,6 +25816,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.398': {
+    title: 'Her tabloyu ayrı ayrı değiştirin: tablo çizgisi ve yoğunluk',
+    body:
+      'Rapor ayarları → Alanlar listesinde artık HER tablonun başında “Tablo çizgisi” ve “Yoğunluk” seçimi var. Böylece her tabloyu ayrı ayrı değiştirebilirsiniz (ör. kanıt tablosu çizgisiz + sıkı, konuşmacı tablosu tam çerçeve + rahat). Aynı bölümdeki iki tablo bile birbirinden bağımsızdır. “Genel ayarı kullan” seçilirse o tablo Biçim sekmesindeki genel ayarı izler. Öncelik: tablo > bölüm > genel. Ekran, yazdırma/PDF ve Word çıktısına uygulanır; metin ve kanıt değişmez. UYAP (UDF) çıktısında tablo çizgisi/yoğunluk UYAP şablonundan gelir; uygulanmaz.'
+  },
   '2.397': {
     title: '⚙ artık bölümün kendi görünümünü açar; genel ayarlar “TÜM BELGE” olarak yazılı',
     body:

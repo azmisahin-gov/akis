@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.397.**
+yazılır. **Güncel sürüm: v2.398.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.398 — Tablo bazında görünüm (TAMAMLANDI)
+
+- `case.report.tableAppearance[table] = { tableStyle, density }`; öncelik **tablo > bölüm > genel**.
+- Rapor alanları → her tablo grubunda **Tablo çizgisi / Yoğunluk** seçimi (`data-rcol-app-table`).
+- HTML `data-tbl-style`/`data-tbl-density`; DOCX `wTable/cell` `tableStyle/density` seçenekleri (`tableFmtOpts`). UDF tablo stili UYAP'tan (uygulanmaz).
+- Revizyon + birleştirme (`tableAppearanceMergePlan`), sessiz ezme yok.
 
 ## v2.397 — ⚙ bölüm görünümüne + genel/bölüm ayrımı (TAMAMLANDI)
 

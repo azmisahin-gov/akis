@@ -8533,5 +8533,46 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   const diff = T.reportSnapshotDiff(c2, { ...snap, appearance: {} });
   eq('fark etiketi görünür', diff.includes('Bölüm görünümü (sayfa/tablo)'), true);
 }
+// [196] v2.398 — TABLO bazında görünüm (bölümden daha ince).
+// Kullanıcı: "bölümlerde tabloları ayrı ayrı değiştirebilelim."
+{
+  console.log('\n[196] Tablo bazında görünüm (v2.398)');
+  const S = __schemaMod;
+  const n = S.normalizeReportTableAppearance({
+    segments: { tableStyle: 'plain', density: 'compact' },
+    speakers: { tableStyle: 'inherit', density: 'inherit' },
+    x: { tableStyle: 'BOZUK', density: 'zzz' }
+  });
+  eq('geçerli tablo korunur', JSON.stringify(n.segments), JSON.stringify({ tableStyle: 'plain', density: 'compact' }));
+  eq('tamamen varsayılan tablo atılır', 'speakers' in n, false);
+  eq('bozuk değer varsayılana döner (girdi atılır)', 'x' in n, false);
+  const c = T.emptyCaseForTest({ id: 'cTblApp' });
+  c.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { density: 'compact' } });
+  eq('etkin: segments yoğunluk özel', S.reportTableAppearance(c, 'segments').density, 'compact');
+  eq('etkin: segments çizgi genel', S.reportTableAppearance(c, 'segments').tableStyle, 'inherit');
+  eq('etkin: başka tablo varsayılan', S.reportTableAppearance(c, 'origin').density, 'inherit');
+  // reportTableColumns tablo görünümünü taşır (üç çıktı bunu kullanır).
+  const tc = T.reportTableColumns(c, 'segments', ['ZAMAN', 'METİN'], [['a', 'b']]);
+  eq('sütun çıktısı tablo anahtarını taşır', tc.table, 'segments');
+  eq('sütun çıktısı tablo görünümünü taşır', tc.appearance.density, 'compact');
+  // Birleştirme: çakışma sessiz ezilmez.
+  const plan = S.tableAppearanceMergePlan(
+    { report: { tableAppearance: { segments: { tableStyle: 'plain', density: 'inherit' } } } },
+    { report: { tableAppearance: { segments: { tableStyle: 'lines', density: 'inherit' }, origin: { density: 'compact' } } } }
+  );
+  eq('tablo birleştirme: bu dosya korunur', plan.tableAppearance.segments.tableStyle, 'plain');
+  eq('tablo birleştirme: eksik tablo alınır', plan.tableAppearance.origin.density, 'compact');
+  eq('tablo birleştirme: çakışma bildirilir', plan.conflicts.length, 1);
+  eq('tablo çakışma türü', plan.conflicts[0].kind, 'report-table-appearance');
+  // Revizyon: snapshot + geri yükleme.
+  const c2 = T.emptyCaseForTest({ id: 'cTblApp2' });
+  c2.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { tableStyle: 'plain' } });
+  const snap = T.reportSnapshot(c2);
+  eq('snapshot tablo görünümünü taşır', snap.tableAppearance.segments.tableStyle, 'plain');
+  c2.report.tableAppearance = {};
+  T.applyReportSnapshot(c2, snap);
+  eq('geri yükleme tablo görünümünü getirir', c2.report.tableAppearance.segments.tableStyle, 'plain');
+  eq('fark etiketi tablo görünümü', T.reportSnapshotDiff(c2, { ...snap, tableAppearance: {} }).includes('Tablo görünümü (çizgi/yoğunluk)'), true);
+}
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);
