@@ -6,12 +6,33 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.388.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.389.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+> **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
+> kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
+> **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.389 — Bölüm arşivi: kullanılmayan bölümler listeden çıkar, geri alınabilir
+
+**KULLANICI NE GÖRECEK:**
+- Rapor iskeletinde kullanmadığınız bölümü **Düzenle → “Bu bölümü arşive al”** ile **çalışma listesinden çıkarırsınız**.
+- Arşivdeki bölüm **raporda, üç çıktıda (HTML/DOCX/UDF) ve üst yazıda KULLANILMAZ**; yanlışlıkla hiçbir alana girmez.
+- **Silme DEĞİLDİR:** ses, deşifre, ölçüm ve kanıt yerinde kalır.
+- İskeletin altındaki **Arşiv (N)** panelinden **“Geri al”** ile listeye döner; bölüm **kapalı** başlar, açmak sizin kararınız.
+- **Yeni dosyada** önerilen **20** teknik/ölçüm/tutanak bölümü arşivde başlar; **“Çekirdek raporu kur”** ile mevcut dosyanıza da uygulayabilirsiniz.
+- **Profil uygulaması ve paket birleştirme arşivi AÇAMAZ.**
+- Arşiv **paketle taşınır**, **yenilemede korunur**, **revizyona girer**.
+
+**ÖNERİLEN ARŞİV (yeni dosya):** özet · metne dönüştürme yöntemi · gömülü bilgi · delil edinme · bütünlük · konuşmacı süreleri · WER · ses seviyesi · inceleme özeti · kapsam dışı beyanı · teknik özellikler · iyileştirme · terim listesi · kalite kontrolü · gizlilik · materyal tutanağı · işlem günlüğü · gösterim anahtarı · son kontrol listesi · hukuki dayanaklar.
+
+**ÇEKİRDEK (listede kalan 16):** kapak · künye · içindekiler · 1 görevlendirme · 2 sorular · 3 maddi unsurlar · 4 yöntem · 5 kayıt kökeni · 6 bulgular/transkript · 7 okuma metni · 8 konuşmacılar · cevaplar · sınırlılıklar · gerekçeli sonuç · dosya envanteri · imza.
+
+**ÖLÇÜM (gerçek Chromium + CDP, demo dosyası):** arşive alınan s5 **listede yok**, raporda yok; **Arşiv (1)** panelinde; **Geri al** → listeye döndü (kapalı); **Çekirdek raporu kur** → **20 bölüm arşive**, **16 çekirdek bölüm AÇIK** (rapor **13 bölüm**); **yenileme** ve **profil** arşivi açmadı; JS hatası **0**. Testler **2896 birim + 565 şema** + rapor (65) + sürüm + tasarım yeşil.
 
 ## v2.388 — Hiç gösterme: bölüm kalıcı olarak kapatılabilir
 

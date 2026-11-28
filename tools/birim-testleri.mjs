@@ -157,7 +157,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportNumberLabelMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportSectionArchived', 'freshCase', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
   'reportSkeletonCollapsedPref', 'toggleReportSkeletonCollapsed',
@@ -8276,32 +8276,50 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   eq('mahkeme eki kesme işaretsiz', /MAHKEMESİNE$/.test(court), true);
   eq('kesme işareti yok', /’/.test(court), false);
 }
-// [189] v2.388 — HİÇ GÖSTERME (bölüm kilidi): silmez, hiçbir koşulda göstermez.
+// [189] v2.389 — BÖLÜM ARŞİVİ: listede/raporda görünmez; geri alınır.
 {
-  console.log('\n[189] Hiç gösterme kilidi (v2.388)');
+  console.log('\n[189] Bölüm arşivi (v2.389)');
   const S = __schemaMod;
   const c = T.emptyCaseForTest({ id: 'nx' });
-  c.report = { sections: { s5: true, origin: true }, excluded: { s5: true, origin: false, yok: true } };
+  c.report = { sections: { s5: true, origin: true }, archived: { s5: true, origin: false, yok: true } };
   const n = S.normalizeCase(c);
-  eq('bilinmeyen kilit atılır', !!n.report.excluded.yok, false);
-  eq('yalnız true kilit', n.report.excluded.s5, true);
-  eq('false kilit taşınmaz', n.report.excluded.origin, undefined);
-  eq('kilitli bölüm kapalı', n.report.sections.s5, false);
-  eq('kilitli bölüm açık sayılmaz', T.reportSectionOn(n, 's5'), false);
-  eq('kilitli bölüm çizilmez', T.reportBlockRenders(n, 's5'), false);
+  eq('bilinmeyen arşiv anahtarı atılır', !!n.report.archived.yok, false);
+  eq('yalnız true arşiv', n.report.archived.s5, true);
+  eq('false arşiv taşınmaz', n.report.archived.origin, undefined);
+  eq('arşivli bölüm kapalı', n.report.sections.s5, false);
+  eq('arşivli bölüm açık sayılmaz', T.reportSectionOn(n, 's5'), false);
+  eq('arşivli bölüm çizilmez', T.reportBlockRenders(n, 's5'), false);
   eq('diğer bölüm etkilenmez', T.reportSectionOn(n, 'origin'), true);
-  // Revizyon: kilit saklanır ve geri yüklenir.
+  // GÖÇ: v2.388 `excluded` → `archived` (veri kaybı yok).
+  const legacy = S.normalizeCase({ ...c, report: { sections: { s5: true }, excluded: { s5: true } } });
+  eq('eski excluded arşive göçer', legacy.report.archived.s5, true);
+  eq('göçte bölüm kapalı', legacy.report.sections.s5, false);
+  // Revizyon: arşiv saklanır ve geri yüklenir.
   const snap = T.reportSnapshot(n);
-  eq('revizyon kilidi taşır', snap.excluded.s5, true);
-  const n2 = S.normalizeCase({ ...n, report: { ...n.report, excluded: {} } });
-  eq('kilitsiz kopya', !!n2.report.excluded.s5, false);
+  eq('revizyon arşivi taşır', snap.archived.s5, true);
+  const n2 = S.normalizeCase({ ...n, report: { ...n.report, archived: {} } });
+  eq('arşivsiz kopya', !!n2.report.archived.s5, false);
   T.applyReportSnapshot(n2, snap);
-  eq('geri yükleme kilidi getirir', n2.report.excluded.s5, true);
+  eq('geri yükleme arşivi getirir', n2.report.archived.s5, true);
   eq('geri yükleme bölümü kapatır', n2.report.sections.s5, false);
   eq('geri yükleme sonrası kapalı', T.reportSectionOn(n2, 's5'), false);
-  // Kilitli bölüm TOC/numara tüketmez: numara haritasında yok.
+  // Arşivli bölüm TOC/numara tüketmez.
   const map = T.reportNumberMap(n);
-  eq('kilitli bölüm numara almaz', !!map.s5, false);
+  eq('arşivli bölüm numara almaz', !!map.s5, false);
+  // ÖNERİLEN ARŞİV: anahtarlar geçerli; çekirdek bölümler arşivde DEĞİL.
+  const defs = new Set(S.REPORT_SECTION_KEYS);
+  eq('önerilen arşiv anahtarları geçerli', S.DEFAULT_ARCHIVED_SECTIONS.every((k) => defs.has(k)), true);
+  eq('önerilen arşiv 20 bölüm', S.DEFAULT_ARCHIVED_SECTIONS.length, 20);
+  for (const core of ['cover', 'coverFields', 'toc', 's1', 's2', 's3', 's4', 'origin', 's5', 'speakers', 'answers', 'limits', 's6', 'signature']) {
+    eq(`çekirdek arşivde değil: ${core}`, S.DEFAULT_ARCHIVED_SECTIONS.includes(core), false);
+  }
+  eq('defaultArchivedMap true üretir', S.defaultArchivedMap().wer, true);
+  // YENİ DOSYA: önerilen arşivle başlar; çekirdek arşivde DEĞİL.
+  const f = T.freshCase();
+  eq('yeni dosya önerilen arşivle başlar', !!f.report.archived.wer, true);
+  eq('yeni dosyada 20 arşiv', Object.keys(f.report.archived).length, 20);
+  eq('yeni dosyada s5 arşivde değil', !!f.report.archived.s5, false);
+  eq('yeni dosyada imza arşivde değil', !!f.report.archived.signature, false);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

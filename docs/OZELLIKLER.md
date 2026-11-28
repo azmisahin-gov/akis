@@ -1,4 +1,4 @@
-# Özellikler (v2.388 — mevcut durum)
+# Özellikler (v2.389 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -7,12 +7,12 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 
 
 
-## Hiç gösterme kilidi (v2.388)
+## Bölüm arşivi (v2.389)
 
-- Bir bölüm **hiçbir koşulda** rapora girmesin isteniyorsa satırdaki **Düzenle → “Bu bölümü hiç gösterme”** işaretlenir.
-- **Profil, varsayılan düzen ve paket birleştirme** kilidi açamaz; yalnız kullanıcı kutucuğu işaretleyerek açar.
-- **Silme değildir:** ses, deşifre, ölçüm ve kanıt yerinde kalır; yalnız rapora basılmaz.
-- Kilitli bölüm numara/içindekiler tüketmez, “veri yok” uyarısı üretmez; yenilemede ve pakette korunur; revizyona girer.
+- Kullanılmayan bölüm **çalışma listesinden çıkarılır** (Düzenle → “Bu bölümü arşive al”); raporda, üç çıktıda ve üst yazıda **kullanılmaz**.
+- **Silme değildir:** ses, deşifre, ölçüm ve kanıt yerinde kalır; **Arşiv (N)** panelinden **Geri al** ile listeye döner (kapalı başlar).
+- **Yeni dosyada** önerilen 20 teknik/ölçüm/tutanak bölümü arşivde başlar; “Çekirdek raporu kur” mevcut dosyaya da uygular.
+- Profil/birleştirme arşivi açamaz; arşiv paketle taşınır, yenilemede korunur, revizyona girer.
 
 ## Üst yazı yeniden yapıldı (v2.387)
 

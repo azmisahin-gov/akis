@@ -92,8 +92,10 @@ import {
   REPORT_COLUMN_TABLES,
   REPORT_COLUMN_LABELS,
   REPORT_COLUMN_TABLE_LABELS,
-  normalizeReportExcluded,
-  reportSectionExcluded,
+  normalizeReportArchived,
+  reportSectionArchived,
+  DEFAULT_ARCHIVED_SECTIONS,
+  defaultArchivedMap,
   REPORT_COLUMN_LOCKED,
   emptyReportColumns,
   normalizeReportColumns,
@@ -171,15 +173,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.388';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.388';
+} from './schema.js?v=2.389';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.389';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.388';
+const APP_VERSION = '2.389';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -1616,7 +1618,10 @@ function freshCase() {
       annexPlacement: defaultAnnexPlacement(),
       // v2.377 — YENİ dosya: HEPSİ VARSAYILAN KAPALI. Kullanıcı iskeletten istediğini
       // açar / eke sürükler. "Varsayılan düzen" düğmesi önerilen seti topluca açar.
-      sections: emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])))
+      sections: emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false]))),
+      // v2.389 — YENİ dosya: önerilen teknik/ölçüm/tutanak bölümleri ARŞİVDE.
+      // Çalışma listesinde yalnız çekirdek bölümler görünür. Mevcut dosyalar DEĞİŞMEZ.
+      archived: defaultArchivedMap()
     },
     questions: [],
     // ÇALIŞMA NOTLARI (v2.356): kişisel defter; rapora GİRMEZ.
@@ -14903,9 +14908,7 @@ function reportSectionActionsHtml(c, key) {
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
-    `<label class="rse-field rse-exclude" title="Bu bölüm HİÇBİR KOŞULDA rapora girmez (profil/varsayılan/birleştirme açamaz). Silme değildir: veri durur. Kutuyu kaldırınca bölüm kapalı kalır; isterseniz açarsınız."><input type="checkbox" data-rse-exclude="${esc(key)}"${
-      reportSectionExcluded(c, key) ? ' checked' : ''
-    }> <span>Bu bölümü hiç gösterme (kapalı, açılabilir)</span></label>` +
+    `<div class="rse-archive-action"><button type="button" class="mini-button" data-rse-archive="${esc(key)}" title="Bölümü arşive alır: raporda ve üst yazıda kullanılmaz. Veri SİLİNMEZ; Arşiv panelinden geri alınır.">Bu bölümü arşive al</button></div>` +
     `</div>`
   );
 }
@@ -15094,7 +15097,7 @@ function goToReportSection(key) {
 // kısa arayüz etiketidir. Eksik anahtar = tanımdaki varsayılan (eski kayıt bozulmaz).
 function reportSectionOn(c, key) {
   // HİÇ GÖSTERME (v2.388): kilitli bölüm HİÇBİR KOŞULDA açık sayılmaz.
-  if (reportSectionExcluded(c, key)) return false;
+  if (reportSectionArchived(c, key)) return false;
   // Serbest blok görünürlüğü bloktaki `on` alanındadır (v2.287).
   if (isFreeBlockKey(key)) {
     const b = reportBlockByKey(c, key);
@@ -15691,7 +15694,6 @@ function renderReportSections(c) {
   const canDrag = !reportOutlineState.q && reportOutlineState.cat === 'all' && !reportOutlineState.onlyOpen;
   const row = (key, { move = false, child = false } = {}) => {
     const on = reportSectionOn(c, key);
-    const never = reportSectionExcluded(c, key);
     const mover = move
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
@@ -15712,9 +15714,6 @@ function renderReportSections(c) {
       const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
       label =
         `<span>${esc(reportUiLabel(c, key))}</span>` +
-        (never
-          ? ` <span class="rsec-never" title="Hiç gösterme: bu bölüm hiçbir koşulda rapora girmez. Kutucuğu işaretleyerek geri açabilirsiniz. Veri silinmedi.">∅ hiç gösterme</span>`
-          : '') +
         (emptyReason
           ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
           : '');
@@ -15739,10 +15738,12 @@ function renderReportSections(c) {
     const inner = editing
       ? label
       : `<button type="button" class="rsec-go" data-report-goto="${esc(key)}" title="Bu bölüme git">${label}</button>`;
-    return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${never ? ' is-never' : ''}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}${never ? ' title="Hiç gösterme kilitli. İşaretlerseniz kilit kalkar ve bölüm açılır."' : ''}> ${inner}</span>${editBtn}</div>`;
+    return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${inner}</span>${editBtn}</div>`;
   };
   syncReportOutlineControls();
-  const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
+  const front = REPORT_FRONT_KEYS.filter(
+    (k) => !reportSectionArchived(c, k) && reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k))
+  )
     .map((k) => row(k))
     .join('');
   // v2.377 — TEK DÜZ LİSTE: her bölüm tek listede (gövde + eke taşınanlar). Eke
@@ -15750,19 +15751,42 @@ function renderReportSections(c) {
   // hatası kökten kalkar. Eke taşıma: sürükle veya çekmecedeki düğme.
   let body = '';
   for (const key of layout.order) {
+    if (reportSectionArchived(c, key)) continue;
     if (reportOutlineMatch(c, key, reportUiLabel(c, key), reportSectionOn(c, key))) body += row(key, { move: true });
   }
   const allOff = emptyReportSections(Object.fromEntries(REPORT_SECTION_DEFS.map((d) => [d.key, false])));
   host.dataset.allOff = JSON.stringify(allOff);
+  const archivedKeys = REPORT_SECTION_DEFS.filter((d) => reportSectionArchived(c, d.key));
+  const activeCount = REPORT_SECTION_DEFS.length - archivedKeys.length;
   const openCount = REPORT_SECTION_DEFS.filter((d) => reportSectionOn(c, d.key)).length;
   const cnt = $('#reportSkeletonCount');
-  if (cnt) cnt.textContent = `${openCount} dahil · ${REPORT_SECTION_DEFS.length - openCount} hariç`;
-  const sig = reportOutlineMatch(c, 'signature', reportUiLabel(c, 'signature'), reportSectionOn(c, 'signature'))
-    ? row('signature')
-    : '';
+  if (cnt) {
+    cnt.textContent =
+      `${openCount} dahil · ${Math.max(0, activeCount - openCount)} hariç` +
+      (archivedKeys.length ? ` · ${archivedKeys.length} arşivde` : '');
+  }
+  const sig =
+    !reportSectionArchived(c, 'signature') &&
+    reportOutlineMatch(c, 'signature', reportUiLabel(c, 'signature'), reportSectionOn(c, 'signature'))
+      ? row('signature')
+      : '';
   const addBlock = `<div class="rsec-row"><button type="button" class="mini-button" data-report-block-add="1" title="Başlık ve metinle yeni rapor bölümü ekle">＋ Bölüm ekle</button></div>`;
   // v2.378 — DÜMDÜZ TEK LİSTE: grup başlığı YOK, EKLER listesi YOK, rozet YOK.
   const groups = front + body + addBlock + sig;
+  // v2.389 — ARŞİV: arşivdeki bölüm listede GÖRÜNMEZ; burada geri alınır.
+  const archiveRows = archivedKeys
+    .map(
+      (d) =>
+        `<div class="rsec-archive-row"><span>${esc(reportUiLabel(c, d.key))}</span><button type="button" class="mini-button" data-report-unarchive="${esc(
+          d.key
+        )}" title="Bölümü listeye geri alır; KAPALI başlar, isterseniz açarsınız.">Geri al</button></div>`
+    )
+    .join('');
+  const archivePanel =
+    `<details class="rsec-archive" id="reportArchive"><summary>Arşiv (${archivedKeys.length})</summary>` +
+    `<p class="rsec-note">Arşivdeki bölümler <b>raporda ve üst yazıda kullanılmaz</b>. Veri silinmez; “Geri al” listeye döndürür (kapalı başlar).</p>` +
+    (archiveRows || `<p class="rsec-note">Arşivde bölüm yok.</p>`) +
+    `<div class="rsec-archive-actions"><button type="button" class="mini-button" data-report-archive-default="1" title="Önerilen teknik/ölçüm/tutanak bölümlerini arşive alır; çekirdek rapor kalır. Veri silinmez.">Çekirdek raporu kur (${DEFAULT_ARCHIVED_SECTIONS.length} arşiv · ${REPORT_SECTION_DEFS.length - DEFAULT_ARCHIVED_SECTIONS.length} açık)</button></div></details>`;
   // Kullanıcı profilleri (v2.288): yalnız düzen taşır; kanıt/metin taşımaz.
   const profiles = normalizeReportProfiles(c.report && c.report.userProfiles);
   if (!profiles.some((p) => p.id === reportProfileSel)) reportProfileSel = profiles[0] ? profiles[0].id : '';
@@ -15782,6 +15806,7 @@ function renderReportSections(c) {
     `<button type="button" class="mini-button" data-report-profile-save="1" title="Bu rapor düzenini (bölümler, sıra, başlıklar, numara biçimi, tablo alanları) profil olarak kaydet. Ses/deşifre kanıtı girmez.">＋ Bu düzeni kaydet</button></div>`;
   host.innerHTML =
     (groups || `<div class="rsec-empty">Eşleşen bölüm yok. Arama veya kategori filtresini temizleyin.</div>`) +
+    archivePanel +
     profileBar +
     `<div class="rsec-actions"><button type="button" class="mini-button" data-report-sections-all="on">Tümünü aç</button><button type="button" class="mini-button" data-report-sections-all="off">Tümünü kapat</button><span class="rsec-note">Kapalı bölüm rapora ve üç çıktıya da girmez. Çizilen her bölüm numara alır; veri yoksa “veri yok” rozeti nedenini söyler. İsterseniz bu düzeni profil olarak kaydedin.</span></div>`;
 }
@@ -15803,11 +15828,11 @@ function setReportSection(key, on) {
   if (!c) return;
   c.report = c.report || {};
   // HİÇ GÖSTERME kilidi yalnız KULLANICI açıkça açınca kalkar (v2.388).
-  if (on && reportSectionExcluded(c, key)) {
-    const ex = normalizeReportExcluded(c.report.excluded);
+  if (on && reportSectionArchived(c, key)) {
+    const ex = normalizeReportArchived(c.report.archived);
     delete ex[key];
-    c.report.excluded = normalizeReportExcluded(ex);
-    showToast(`“${reportUiLabel(c, key)}” hiç gösterme kilidi kaldırıldı; bölüm açıldı.`);
+    c.report.archived = normalizeReportArchived(ex);
+    showToast(`“${reportUiLabel(c, key)}” arşivden çıkarıldı; bölüm açıldı.`);
   }
   // v2.324: bölüm belge ekine taşınmışsa ve raporda yeniden AÇILIYORSA, ekten
   // çıkarılır. Aynı içerik hem raporda hem ekte bulunmaz.
@@ -15826,25 +15851,74 @@ function setReportSection(key, on) {
 }
 /** HİÇ GÖSTERME (v2.388): bölümü kalıcı olarak kapatır (silmez).
  *  Kilitli bölümü profil/varsayılan/birleştirme AÇAMAZ; yalnız kullanıcı açar. */
-function setReportExcluded(key, on) {
+/** BÖLÜM ARŞİVİ (v2.389): bölümü çalışma listesinden ve rapordan çıkarır.
+ *  Silmez; veri durur. Arşiv panelinden geri alınır. Profil/birleştirme açamaz. */
+function setReportArchived(key, on) {
   const c = currentCase();
   if (!c || !REPORT_SECTION_KEYS.includes(key)) return;
-  snapshotForUndo(on ? 'Bölüm hiç gösterilmiyor' : 'Hiç gösterme kaldırıldı');
+  snapshotForUndo(on ? 'Bölüm arşive alındı' : 'Bölüm arşivden geri alındı');
   c.report = c.report || {};
-  const ex = normalizeReportExcluded(c.report.excluded);
+  const arch = normalizeReportArchived(c.report.archived);
   if (on) {
-    ex[key] = true;
+    arch[key] = true;
     c.report.sections = { ...(c.report.sections || {}), [key]: false };
+    // ÜST YAZI: arşivdeki bölüm belge ekinde de kalmaz (tek kural).
+    c.letterAnnexes = removeSectionsFromLetterAnnexes(c.letterAnnexes, [key]);
   } else {
-    delete ex[key];
+    delete arch[key];
   }
-  c.report.excluded = normalizeReportExcluded(ex);
+  c.report.archived = normalizeReportArchived(arch);
   persist();
   renderReport();
   showToast(
     on
-      ? `“${reportUiLabel(c, key)}” hiç gösterilmeyecek. Veri SİLİNMEDİ; düzenleyiciden geri açabilirsiniz.`
-      : `“${reportUiLabel(c, key)}” artık kilitli değil; bölüm kapalı durumda. Açmak için kutucuğu işaretleyin.`
+      ? `“${reportUiLabel(c, key)}” arşive alındı. Raporda ve üst yazıda kullanılmaz; veri SİLİNMEDİ. Arşivden geri alabilirsiniz.`
+      : `“${reportUiLabel(c, key)}” arşivden geri alındı; bölüm kapalı durumda. Açmak için kutucuğu işaretleyin.`
+  );
+}
+async function archiveReportSection(key) {
+  const c = currentCase();
+  if (!c) return;
+  const ok = await askConfirm(
+    'Bölümü arşive al',
+    `“${reportUiLabel(c, key)}” arşive alınacak: raporda ve üst yazıda kullanılmaz. ` +
+      'Veri (ses, deşifre, ölçüm) SİLİNMEZ; Arşiv panelinden geri alabilirsiniz.'
+  );
+  if (!ok) return;
+  setReportArchived(key, true);
+}
+function unarchiveReportSection(key) {
+  setReportArchived(key, false);
+}
+/** Çekirdek raporu kurar: teknik/ölçüm/tutanak arşive, çekirdek bölümler AÇIK. */
+async function applyDefaultArchive() {
+  const c = currentCase();
+  if (!c) return;
+  const ok = await askConfirm(
+    'Çekirdek raporu kur',
+    `${DEFAULT_ARCHIVED_SECTIONS.length} teknik/ölçüm/tutanak bölümü arşive alınacak ve ` +
+      'çekirdek bölümler AÇILACAK (minimal ama dolu rapor). Veri SİLİNMEZ; arşivdekiler geri alınabilir.'
+  );
+  if (!ok) return;
+  snapshotForUndo('Çekirdek raporu kuruldu');
+  c.report = c.report || {};
+  c.report.archived = normalizeReportArchived({ ...(c.report.archived || {}), ...defaultArchivedMap() });
+  c.report.sections = { ...(c.report.sections || {}) };
+  for (const k of DEFAULT_ARCHIVED_SECTIONS) {
+    c.report.sections[k] = false;
+    c.letterAnnexes = removeSectionsFromLetterAnnexes(c.letterAnnexes, [k]);
+  }
+  // ÇEKİRDEK: en az bölümle DOLU rapor (kapalı bırakmak "boş rapor" demekti).
+  const core = REPORT_SECTION_DEFS.map((d) => d.key).filter((k) => !DEFAULT_ARCHIVED_SECTIONS.includes(k));
+  for (const k of core) {
+    c.report.sections[k] = true;
+    c.letterAnnexes = removeSectionsFromLetterAnnexes(c.letterAnnexes, [k]);
+  }
+  persist();
+  renderReport();
+  showToast(
+    `${DEFAULT_ARCHIVED_SECTIONS.length} bölüm arşive alındı; ${core.length} çekirdek bölüm açıldı. ` +
+      'Arşivdekileri panelden geri alabilirsiniz.'
   );
 }
 
@@ -16056,7 +16130,7 @@ async function applyReportProfile(id) {
   snapshotForUndo('Rapor profili uygula');
   c.report.sections = normalizeReportSections(p.sections);
   // HİÇ GÖSTERME kilidi profille AÇILMAZ (v2.388): kilitli bölüm kapalı kalır.
-  for (const k of Object.keys(normalizeReportExcluded(c.report.excluded))) c.report.sections[k] = false;
+  for (const k of Object.keys(normalizeReportArchived(c.report.archived))) c.report.sections[k] = false;
   const layout = normalizeReportLayout({
     ...(c.report.layout || {}),
     order: p.order,
@@ -16857,7 +16931,7 @@ function reportSnapshot(c) {
   for (const k of REPORT_TECH_KEYS) tech[k] = (r.tech && r.tech[k]) || '';
   return {
     sections,
-    excluded: normalizeReportExcluded(r.excluded),
+    archived: normalizeReportArchived(r.archived),
     layout: normalizeReportLayout(r.layout),
     // Serbest bloklar (v2.287): rapor metnidir, kanıt değildir; revizyona girer.
     blocks: normalizeReportBlocks(r.blocks),
@@ -16881,7 +16955,7 @@ function reportSnapshot(c) {
 }
 const REPORT_SNAPSHOT_LABELS = {
   sections: 'Bölüm görünürlüğü',
-  excluded: 'Hiç gösterme (bölüm kilidi)',
+  archived: 'Bölüm arşivi',
   layout: 'Bölüm sırası / ekler',
   blocks: 'Serbest bölümler',
   annexPlacement: 'Bölüm → EK yerleşimi',
@@ -16912,8 +16986,8 @@ function applyReportSnapshot(c, snap) {
   c.report = c.report || {};
   const r = c.report;
   if (snap.sections) r.sections = { ...snap.sections };
-  r.excluded = normalizeReportExcluded(snap.excluded);
-  for (const k of Object.keys(r.excluded)) r.sections[k] = false;
+  r.archived = normalizeReportArchived(snap.archived);
+  for (const k of Object.keys(r.archived)) r.sections[k] = false;
   if (snap.layout) r.layout = normalizeReportLayout(snap.layout);
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
@@ -17870,7 +17944,8 @@ function renderLetterAnnexEditor(c, rows) {
   if (a.kind === 'sections') {
     // v2.387 — SEÇİM TÜM GÖVDE BÖLÜMLERİNDEN. Sabit 10'lu liste kaldırıldı:
     // kullanıcı raporun herhangi bir bölümünü ayrı belgeye taşıyabilir.
-    const bodyKeys = reportBodyOrder(c).filter((k) => !isFreeBlockKey(k));
+    // ARŞİVDEKİ bölüm üst yazı ekinde SEÇİLEMEZ (v2.389).
+    const bodyKeys = reportBodyOrder(c).filter((k) => !isFreeBlockKey(k) && !reportSectionArchived(c, k));
     const chosen = new Set(a.sections || []);
     host.innerHTML =
       `<div class="la-ed-title">${esc(a.no)} · bölümler (${chosen.size} seçili)</div>` +
@@ -23761,9 +23836,9 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
     setReportSectionTitle(tt.dataset.rseTitle, tt.value);
     return;
   }
-  const ex = e.target.closest('[data-rse-exclude]');
-  if (ex) {
-    setReportExcluded(ex.dataset.rseExclude, ex.checked);
+  const ar = e.target.closest('[data-rse-archive]');
+  if (ar) {
+    archiveReportSection(ar.dataset.rseArchive);
     return;
   }
   if (e.target.closest('[data-rse-field]')) renderReport();
@@ -23920,6 +23995,15 @@ $('#reportSections')?.addEventListener('click', (e) => {
   const go = e.target.closest('[data-report-goto]');
   if (go) {
     goToReportSection(go.dataset.reportGoto);
+    return;
+  }
+  const un = e.target.closest('[data-report-unarchive]');
+  if (un) {
+    unarchiveReportSection(un.dataset.reportUnarchive);
+    return;
+  }
+  if (e.target.closest('[data-report-archive-default]')) {
+    applyDefaultArchive();
     return;
   }
   if (e.target.closest('[data-report-profile-save]')) {
@@ -25293,6 +25377,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.389': {
+    title: 'Bölüm arşivi: kullanılmayan bölümler listeden çıkar, geri alınabilir',
+    body:
+      'Rapor iskeletinde kullanmadığınız bölümleri “Bu bölümü arşive al” ile ÇALIŞMA LİSTESİNDEN çıkarabilirsiniz. Arşivdeki bölüm raporda, üç çıktıda ve üst yazıda KULLANILMAZ; yanlışlıkla hiçbir alana girmez. Silme DEĞİLDİR: ses, deşifre, ölçüm ve kanıt yerinde kalır. İskeletin altındaki “Arşiv (N)” panelinden “Geri al” ile listeye döner (kapalı başlar; açmak sizin kararınız). Yeni dosyada önerilen 20 teknik/ölçüm/tutanak bölümü arşivde başlar; “Çekirdek raporu kur” ile mevcut dosyanızda 20 bölüm arşive alınır, 16 çekirdek bölüm açılır (minimal ama dolu rapor). Profil uygulaması ve paket birleştirme arşivi AÇAMAZ. Amaç: en az bölümle, çekirdek bir rapor.'
+  },
   '2.388': {
     title: 'Hiç gösterme: bölüm kalıcı olarak kapatılabilir',
     body:

@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.388.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.389.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10386,3 +10386,20 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - **UI:** iskelet satırı `is-never` + `∅ hiç gösterme` rozeti; düzenleyicide `[data-rse-exclude]`; kutucuk kilidi kaldırır (`setReportSection` içinde).
 - **Kural:** kilit bir DOSYA kararıdır (profil taşımaz); veri silinmez; kilit paketle taşınır.
 - **Sıradaki:** v2.389 — eksik 7 tablonun sütun aç/kapa kapsamı (teslim/iade, işlem günlüğü, gösterim anahtarı, son kontrol, gömülü bilgi, bütünlük, ASR).
+
+
+## YENİ OTURUM DEVRİ (v2.389) — Bölüm arşivi (v2.388 geri alındı)
+
+| | |
+|---|---|
+| Sürüm | **v2.389** |
+| Testler | **2896 birim + 565 şema** + rapor (65) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium: arşive al → listede/raporda yok; Arşiv (1); Geri al → döndü; çekirdek rapor 20 arşiv + 16 açık (13 bölüm); yenileme/profil açmadı; JS 0 |
+
+- **v2.388 dersi:** “hiç gösterme” satırı listede soluk bırakıyordu; kullanıcı **çalışma listesinden çıkmasını** istedi. Doğru kavram **ARŞİV**.
+- `case.report.archived` (bölüm → true). `normalizeReportArchived` + `reportSectionArchived`; v2.388 `excluded` **göç** eder.
+- `DEFAULT_ARCHIVED_SECTIONS` (20) + `defaultArchivedMap()`; **yalnız yeni dosya** arşivli başlar. `freshCase` yazar; `emptyCase` nötr kalır (mevcut dosya değişmez).
+- Arşivli bölüm: iskelet listesinden çıkar; `reportSectionOn` false; numara/TOC tüketmez; üst yazı ekinden çıkarılır.
+- **Arşiv paneli:** `Arşiv (N)` → satır + **Geri al** (`data-report-unarchive`) + **Çekirdek raporu kur** (`data-report-archive-default`, 20 arşiv · 16 açık). Veri silinmez.
+- Profil/birleştirme arşivi açamaz; revizyon `archived` taşır.
+- **Sıradaki:** v2.390 — eksik 7 tablonun sütun aç/kapa kapsamı; sonra genişlik ve görünüm.

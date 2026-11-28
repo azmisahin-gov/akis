@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.388.**
+yazılır. **Güncel sürüm: v2.389.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.389 — Bölüm arşivi (TAMAMLANDI)
+
+- `case.report.archived` (bölüm → true); `normalizeReportArchived` + `reportSectionArchived`; v2.388 `excluded` göçü.
+- `DEFAULT_ARCHIVED_SECTIONS` (20) + `defaultArchivedMap()`; **yeni dosya** arşivli başlar (mevcut dosyalar değişmez).
+- Arşivli bölüm iskelet listesinden ÇIKAR; raporda/üç çıktıda/üst yazıda kullanılmaz; numara/TOC tüketmez.
+- Arşiv paneli (`Arşiv (N)`): **Geri al** + **Çekirdek raporu kur** (20 arşiv · 16 açık); veri silinmez.
+- Profil/birleştirme arşivi açamaz; revizyon arşivi taşır; üst yazı eklerinden arşivli bölüm çıkarılır.
 
 ## v2.388 — Hiç gösterme kilidi (TAMAMLANDI)
 

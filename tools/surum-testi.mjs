@@ -213,8 +213,8 @@ const REQUIRED_TOPICS = [
   ['kurumsal belge tasarımı', /Kurumsal belge tasarımı|İki sütunlu sade|Nötr gri/],
   // v2.387 — üst yazı sıfırdan: A4 kâğıt + çekmece, kendi yazdırma ayarı.
   ['üst yazı yeniden yapım', /Üst yazı yeniden yapıldı|Üst yazı sıfırdan|A4 kâğıt.*çekmece/i],
-  // v2.388 — hiç gösterme kilidi (kalıcı kapalı, açılabilir).
-  ['hiç gösterme kilidi', /Hiç gösterme kilidi|hiç gösterme/i]
+  // v2.389 — bölüm arşivi (listeden çıkar, geri alınabilir).
+  ['bölüm arşivi', /Bölüm arşivi|Arşiv \(N\)|arşive al/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

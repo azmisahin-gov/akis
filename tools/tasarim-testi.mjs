@@ -1929,7 +1929,10 @@ console.log('\n[2ca] Tek kayıt durumu + dahil/kontrol (v2.230)');
   const html = read('index.html');
   check('reportRecordStatus tanımlı', /function reportRecordStatus\(/.test(js));
   check('durum çipi render', /report-status-chip \$\{rec\.tone\}/.test(js) && /report-status-detail/.test(js));
-  check('dahil/hariç sayacı', /dahil · \$\{REPORT_SECTION_DEFS\.length - openCount\} hariç/.test(js));
+  check(
+    'dahil/hariç sayacı',
+    /dahil · \$\{Math\.max\(0, activeCount - openCount\)\} hariç/.test(js) && /arşivde/.test(js)
+  );
   check('is-excluded sınıfı', /is-excluded/.test(js));
   check('dahil/kontrol açıklaması', /ready-concepts/.test(js) && /Dahil<\/b> = rapora girer/.test(js));
   check('body dataset view', /document\.body\.dataset\.view = name/.test(js));
@@ -3154,26 +3157,29 @@ console.log('\n[2ep] Kurumsal belge tasarımı: üst/alt bilgi, künye, tema (v2
   check('tasarım tercihleri panelde', /data-fmt-cover/.test(app) && /data-fmt-theme/.test(app));
   check('tercihler kalıcı biçimde', /coverFields: coverFields \? coverFields\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
 }
-console.log('\n[2em] Hiç gösterme kilidi (v2.388)');
+console.log('\n[2em] Bölüm arşivi (v2.389)');
 {
-  const html = read('index.html');
   const app = read('assets/app.js');
   const schema = read('assets/schema.js');
   const layer = read('assets/reading-layer.css');
-  check('şemada kilit alanı', /excluded: \{\}/.test(schema) && /export function normalizeReportExcluded/.test(schema) && /export function reportSectionExcluded/.test(schema));
-  check('kilit her koşulda kapalı', /if \(reportSectionExcluded\(c, key\)\) return false;/.test(app));
-  check('kilit profille açılmaz', /normalizeReportExcluded\(c\.report\.excluded\)\)\) c\.report\.sections\[k\] = false;/.test(app));
-  check('kilit revizyona girer', /excluded: normalizeReportExcluded\(r\.excluded\)/.test(app));
-  check('düzenleyicide kilit anahtarı', /data-rse-exclude=/.test(app));
-  check('iskelette kilit rozeti', /rsec-never/.test(app) && /is-never/.test(app));
-  check('kilit rozeti CSS', /\.rsec-never \{/.test(layer) && /\.rsec-row\.is-never \{/.test(layer));
   check(
-    'kilit rozeti kendi satırına iner (kırpma yok)',
-    /\.rsec-row\.is-never \.rsec-item \{ flex-wrap: wrap; \}/.test(layer) &&
-      /\.rsec-row\.is-never \.rsec-never \{ flex: 0 0 100%;/.test(layer)
+    'şemada arşiv alanı',
+    /archived: \{\}/.test(schema) &&
+      /export function normalizeReportArchived/.test(schema) &&
+      /export function reportSectionArchived/.test(schema) &&
+      /export const DEFAULT_ARCHIVED_SECTIONS/.test(schema)
   );
-  check('kilit anahtarı CSS', /\.rse-field\.rse-exclude \{/.test(layer));
-  check('veri silinmez metni', /Veri SİLİNMEDİ/.test(app));
+  check('arşiv her koşulda kapalı', /if \(reportSectionArchived\(c, key\)\) return false;/.test(app));
+  check('arşiv profille açılmaz', /normalizeReportArchived\(c\.report\.archived\)\)\) c\.report\.sections\[k\] = false;/.test(app));
+  check('arşiv revizyona girer', /archived: normalizeReportArchived\(r\.archived\)/.test(app));
+  check('arşivli bölüm listeden çıkar', /if \(reportSectionArchived\(c, key\)\) continue;/.test(app));
+  check('düzenleyicide arşive al', /data-rse-archive=/.test(app));
+  check('arşiv paneli + geri al', /data-report-unarchive=/.test(app) && /id="reportArchive"/.test(app));
+  check('önerilen arşiv düğmesi', /data-report-archive-default=/.test(app) && /DEFAULT_ARCHIVED_SECTIONS\.length/.test(app));
+  check('üst yazı ekinde arşiv seçilemez', /!reportSectionArchived\(c, k\)/.test(app));
+  check('arşiv paneli CSS', /\.rsec-archive \{/.test(layer) && /\.rsec-archive-row \{/.test(layer));
+  check('eski kilit UI kaldırıldı', !/rsec-never/.test(app) && !/rsec-never/.test(layer) && !/data-rse-exclude/.test(app));
+  check('veri silinmez metni', /Veri SİLİNMEDİ/.test(app) || /veri SİLİNMEDİ/.test(app));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
