@@ -214,7 +214,9 @@ const REQUIRED_TOPICS = [
   // v2.387 — üst yazı sıfırdan: A4 kâğıt + çekmece, kendi yazdırma ayarı.
   ['üst yazı yeniden yapım', /Üst yazı yeniden yapıldı|Üst yazı sıfırdan|A4 kâğıt.*çekmece/i],
   // v2.389 — bölüm arşivi (listeden çıkar, geri alınabilir).
-  ['bölüm arşivi', /Bölüm arşivi|Arşiv \(N\)|arşive al/i]
+  ['bölüm arşivi', /Bölüm arşivi|Arşiv \(N\)|arşive al/i],
+  // v2.391 — bilirkişi unvanı ayrı alan.
+  ['bilirkişi unvanı', /Bilirkişi unvanı|BİLİRKİŞİ UNVANI|Unvan/i]
 ];
 for (const [label, rx] of REQUIRED_TOPICS) {
   check(`OZELLIKLER.md '${label}' konusunu anıyor`, rx.test(ozellikler));

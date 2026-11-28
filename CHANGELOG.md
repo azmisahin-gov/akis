@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.390.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.391.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,17 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.391 — Bilirkişi unvanı ayrı alan (rapor + üst yazı)
+
+**KULLANICI NE GÖRECEK:**
+- Dosya bilgileri → Bilirkişi künyesi → **Unvan** alanı (ör. “Bilirkişi”, “Doç. Dr.”). Boş bırakılırsa **“Bilirkişi”** yazılır.
+- **Rapor imza bloğunda** adın altında artık **unvan** yazar; **uzmanlık alanı** künyede kalır (56.12 satırı).
+- **Rapor künyesinde** “BİLİRKİŞİ UNVANI” satırı eklendi (alan görünürlüğünden kapatılabilir).
+- **Üst yazı imza unvanı** boşsa dosyadaki unvanı kullanır; üst yazıda ayrıca değiştirilebilir.
+- Eski dosyalarda unvan yoksa “Bilirkişi” görünür; mevcut veri değişmez.
+
+**ÖLÇÜM (gerçek Chromium + CDP):** unvan “Doç. Dr.” → rapor imza bloğu + künye + üst yazı imza bloğu **üç çıktıda** aynı; boş unvan → “Bilirkişi”; JS hatası **0**. Testler **2904 birim + 565 şema** + rapor (66) + sürüm + tasarım yeşil.
 
 ## v2.390 — Arşive al düğmesi düzeltildi
 

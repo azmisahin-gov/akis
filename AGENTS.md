@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.390.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.391.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10410,3 +10410,18 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - v2.389'da “Bu bölümü arşive al” düğmesi **`change`** dinleyicisine bağlanmıştı; düğme `click` üretir → tıklama **sessizce** hiçbir şey yapmıyordu (canlıda ölçüldü).
 - Düğme **`#reportSectionEditorFields` click** dinleyicisine taşındı; onay → arşive al → Arşiv (N) → Geri al akışı canlıda doğrulandı.
 - **DERS:** `<input type=checkbox>` → `change`; `<button>` → `click`. Aynı işleyicide ikisini karıştırmak sessiz no-op üretir. Test: `tasarim [2em]` click bağını denetler.
+
+
+## YENİ OTURUM DEVRİ (v2.391) — Bilirkişi unvanı
+
+| | |
+|---|---|
+| Sürüm | **v2.391** |
+| Testler | **2904 birim + 565 şema** + rapor (66) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium: unvan “Doç. Dr.” → rapor imza + künye + üst yazı imza aynı; boş → “Bilirkişi”; JS 0 |
+
+- `expert.title` + `expertTitle` düz eşleme; **boş = gösterimde “Bilirkişi”** (`REPORT_TEXT.defaultTitle`). Varsayılan değer kayda yazılmaz → birleştirme gerçek unvanı maskelemez.
+- Rapor imza bloğu **unvan** yazar; **uzmanlık alanı** künyede kalır. Künyeye **BİLİRKİŞİ UNVANI** satırı eklendi (`REPORT_FIELD_DEFS`).
+- Üst yazı `signerTitle` boşsa `expert.title`; alandan ezilebilir.
+- **Kural:** unvan ≠ uzmanlık alanı. Uzmanlık alanı 56.12 satırıdır; unvan “Bilirkişi/Doç. Dr.” gibi addır.
+- **Sıradaki (v2.392+):** tablo sütun kapsamı (7 tablo), sütun genişliği, alan görünümü (tablo/liste/yan yana), kâğıttan ⚙.

@@ -620,6 +620,7 @@ export const REPORT_FIELD_DEFS = {
     { key: 'inspectionDate' },
     { key: 'reportDate' },
     { key: 'expertName' },
+    { key: 'expertTitle' },
     { key: 'expertField' },
     { key: 'registryNo' },
     { key: 'annexList' },
@@ -1770,6 +1771,11 @@ export function emptyCase(over = {}) {
     // Bilirkişi ve ekip
     expert: {
       name: '',
+      // UNVAN (v2.391): imza bloğunda adın altında yazılır ("Bilirkişi",
+      // "Doç. Dr." gibi). Uzmanlık alanından AYRIDIR; künyede alan olarak durur.
+      // Boş = varsayılan "Bilirkişi" (gösterimde); böylece birleştirme ve
+      // varsayılan değer gerçek unvanı maskelemez.
+      title: '',
       registryNo: '',
       field: '56.12 – Ses kayıtlarının metin hâline dönüştürülmesi'
     },
@@ -3081,12 +3087,15 @@ export function normalizeCase(src = {}) {
     },
     expert: {
       name: str(expert.name || c.expertName),
+      // Unvan boşsa gösterimde "Bilirkişi" yazılır (bkz. reportRows/letterModel).
+      title: str(expert.title || c.expertTitle),
       registryNo: str(expert.registryNo || c.registryNo),
       // UZMANLIK ALANI (v2.336): boş, yalnız kod ("56.12") veya eski varsayılan
       // metin ise TAM varsayılana çekilir. Kullanıcının yazdığı özel metin korunur.
       field: expertFieldNorm
     },
     expertField: expertFieldNorm,
+    expertTitle: str(expert.title || c.expertTitle),
     team,
     speakers,
     notebook: normalizeNotebook(c.notebook),
@@ -3871,7 +3880,7 @@ export function mergeCases(mine, theirs) {
   // kayboluyordu. Artık hepsi birleştirmeye giriyor.
   for (const [group, keys] of [
     ['parties', ['plaintiff', 'plaintiffCounsel', 'defendant', 'defendantCounsel']],
-    ['expert', ['name', 'registryNo', 'field']],
+    ['expert', ['name', 'title', 'registryNo', 'field']],
     ['assignment', ['date', 'dueDate', 'durationDays', 'scope', 'body']],
     ['report', ['date', 'methodText', 'summaryIntroText', 'limitationsText', 'conclusionText', 'impartiality', 'qcBy', 'qcScope', 'qcDate']]
   ]) {

@@ -173,15 +173,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.390';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.390';
+} from './schema.js?v=2.391';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.391';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.390';
+const APP_VERSION = '2.391';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -283,6 +283,9 @@ const REPORT_TEXT = {
   defaultField: DEFAULT_EXPERT_FIELD,
   toplineField: 'UZMANLIK ALANI · ',
   expertFieldHeading: 'UZMANLIK ALANI',
+  // v2.391 — imza bloğunda adın altındaki UNVAN (uzmanlık alanı değil).
+  expertTitleHeading: 'BİLİRKİŞİ UNVANI',
+  defaultTitle: 'Bilirkişi',
   defaultInventoryIntro: 'İncelemeye sunulan dijital ses materyalleri aşağıdadır.',
   inventoryPointer:
     'Dosyaların biçim, boyut, süre, kanal, örnekleme hızı ve SHA-256 bilgileri ayrı “Dosya teknik envanteri” bölümündedir.',
@@ -1652,6 +1655,7 @@ const CASE_MIRROR = [
   ['assignmentDurationDays', 'assignment', 'durationDays'],
   ['assignmentScope', 'assignment', 'scope'],
   ['expertName', 'expert', 'name'],
+  ['expertTitle', 'expert', 'title'],
   ['registryNo', 'expert', 'registryNo'],
   ['expertField', 'expert', 'field'],
   ['reportDate', 'report', 'date'],
@@ -2344,6 +2348,7 @@ const CASE_FIELDS = [
   'caseDate',
   'inspectionDate',
   'expertName',
+  'expertTitle',
   'registryNo',
   'expertField',
   'reportDate'
@@ -3131,6 +3136,7 @@ function caseIdentityRows(c) {
     [spec.date, c && c.caseDate ? niceDate(c.caseDate) : ''],
     ['İnceleme tarihi', c && c.inspectionDate ? niceDate(c.inspectionDate) : ''],
     ['Bilirkişi', e.name || (c && c.expertName)],
+    ['Unvan', e.title || (c && c.expertTitle) || REPORT_TEXT.defaultTitle],
     ['Sicil no', e.registryNo || (c && c.registryNo)],
     ['Uzmanlık alanı', e.field || (c && c.expertField)],
     ['Görevlendirme tarihi', (a.date || (c && c.assignmentDate)) ? niceDate(a.date || c.assignmentDate) : ''],
@@ -14084,6 +14090,7 @@ function reportRows(c) {
     { key: 'inspectionDate', label: 'İNCELEME TARİHİ', value: niceDate(c.inspectionDate) },
     { key: 'reportDate', label: 'RAPOR TARİHİ', value: niceDate(c.reportDate) },
     { key: 'expertName', label: 'BİLİRKİŞİ ADI SOYADI', value: c.expertName },
+    { key: 'expertTitle', label: REPORT_TEXT.expertTitleHeading, value: c.expertTitle || REPORT_TEXT.defaultTitle },
     { key: 'expertField', label: REPORT_TEXT.expertFieldHeading, value: String(c.expertField || '').trim() || DEFAULT_EXPERT_FIELD },
     { key: 'registryNo', label: 'BİLİRKİŞİ SİCİL NO', value: c.registryNo },
     // EK LİSTESİ elle yazılmaz: EKLER bölümündeki gerçek eklerden türetilir.
@@ -14107,7 +14114,7 @@ const KUNYE_PAIRS = [
   ['caseDate', 'inspectionDate'],
   ['assignmentDuration', 'dueDate']
 ];
-const KUNYE_WIDE = ['plaintiffCounsel', 'defendantCounsel', 'subject', 'expertField', 'impartiality'];
+const KUNYE_WIDE = ['plaintiffCounsel', 'defendantCounsel', 'subject', 'expertTitle', 'expertField', 'impartiality'];
 function coverFieldPlan(c) {
   const rows = frontRowsFor(c, 'coverFields', reportRows(c));
   const by = new Map(rows.map((r) => [r.key, r]));
@@ -17473,6 +17480,7 @@ function letterModel(c) {
   const fileNo = String((c && c.fileNo) || '').trim();
   const expert = String(((c && c.expert) || {}).name || '').trim();
   const registry = String(((c && c.expert) || {}).registryNo || '').trim();
+  const expertTitle = String(((c && c.expert) || {}).title || (c && c.expertTitle) || '').trim();
   const missing = [];
   if (!court) missing.push('court');
   if (!fileNo) missing.push('fileNo');
@@ -17509,7 +17517,7 @@ function letterModel(c) {
     closing: LETTER_TEXT.closing,
     place: String(L.place || '').trim(),
     dateText: dateSrc ? niceDate(dateSrc) : '',
-    signerTitle: String(L.signerTitle || '').trim() || LETTER_TEXT.signerTitle,
+    signerTitle: String(L.signerTitle || '').trim() || expertTitle || LETTER_TEXT.signerTitle,
     signerName: formatSignerName(expert),
     signerRegistry: registry ? `${LETTER_TEXT.registryLabel} ${registry}` : '',
     signatureLine: L.signatureMode === 'physical',
@@ -17604,7 +17612,10 @@ function renderLetterFields(c) {
       placeholder: m.reference || 'Görevlendirme tarihinden üretilir',
       title: 'Boş bırakılırsa görevlendirme tarihinden üretilir. Gerçek dayanak yoksa satır hiç çizilmez.'
     }) +
-    letterFieldHtml('İmza unvanı', 'signerTitle', L.signerTitle, { placeholder: LETTER_TEXT.signerTitle }) +
+    letterFieldHtml('İmza unvanı', 'signerTitle', L.signerTitle, {
+      placeholder: m.signerTitle,
+      title: 'Boş bırakılırsa dosyadaki bilirkişi unvanı, o da yoksa “Bilirkişi” yazılır.'
+    }) +
     `<label class="field" title="Boş bırakılırsa varsayılan metin yazılır. Paragrafları boş satırla ayırın."><span>Gövde metni</span><textarea data-letter-field="bodyText" rows="7" placeholder="${esc(
       defBody
     )}">${esc(L.bodyText)}</textarea></label>` +
@@ -18614,7 +18625,7 @@ function renderReport() {
       return out + `</div>`;
     },
     signature: () =>
-      `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertField || REPORT_TEXT.defaultField)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div>`
+      `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertTitle || REPORT_TEXT.defaultTitle)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div>`
   };
 
   // Her bölüm `data-report-key` ile sarılır (v2.231): belgede tıklayınca
@@ -19332,7 +19343,7 @@ function docxXml(c) {
       return out;
     },
     signature: () =>
-      `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertField || REPORT_TEXT.defaultField, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`
+      `<w:p><w:pPr><w:jc w:val="right"/><w:spacing w:before="260" w:after="0"/><w:keepLines/></w:pPr>${wRun(c.expertName || 'BİLİRKİŞİ', { bold: true, size: 22, color: '1C426B' })}<w:r><w:br/></w:r>${wRun(c.expertTitle || REPORT_TEXT.defaultTitle, { size: 20 })}<w:r><w:br/></w:r>${wRun(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, { size: 20 })}<w:r><w:br/></w:r>${wRun(REPORT_TEXT.signatureLabel, { size: 18, color: '718399' })}</w:p>`
   };
 
   const pageBreakPara = '<w:p><w:r><w:br w:type="page"/></w:r></w:p>';
@@ -20172,7 +20183,7 @@ async function udfDocument(opts = {}) {
           after: 2
         })
       );
-      el.push(paragraph(c.expertField || REPORT_TEXT.defaultField, { size: 10, align: 2, after: 2 }));
+      el.push(paragraph(c.expertTitle || REPORT_TEXT.defaultTitle, { size: 10, align: 2, after: 2 }));
       el.push(
         paragraph(`${REPORT_TEXT.signatureRegistry}: ${c.registryNo || REPORT_TEXT.emptyFileNo}`, {
           size: 10,
@@ -25378,6 +25389,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.391': {
+    title: 'Bilirkişi unvanı ayrı alan: raporda ve üst yazıda doğru satır',
+    body:
+      'Dosya bilgileri → Bilirkişi künyesi → “Unvan” alanı eklendi (ör. Bilirkişi, Doç. Dr.). Rapor imza bloğunda adın altında artık UNVAN yazar; uzmanlık alanı (56.12 satırı) künyede kalır. Rapor künyesine “BİLİRKİŞİ UNVANI” satırı eklendi (alan görünürlüğünden kapatılabilir). Üst yazının “İmza unvanı” alanı boşsa dosyadaki unvan kullanılır; isterseniz üst yazıda ayrıca değiştirebilirsiniz. Unvan boşsa “Bilirkişi” yazılır; veri silinmez.'
+  },
   '2.390': {
     title: 'Arşive al düğmesi düzeltildi',
     body:

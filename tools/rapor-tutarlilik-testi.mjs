@@ -2205,5 +2205,21 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   check('arşivden çıkınca bölüm gelir', H2.includes(s5Title));
 }
 
+// Senaryo 66: bilirkişi UNVANI ayrı alan (v2.391). Rapor imza bloğunda ve
+// üst yazı imza bloğunda unvan yazılır; uzmanlık alanı künyede kalır.
+{
+  console.log('\n[Senaryo 66] bilirkişi unvanı (v2.391)');
+  const c = __schemaMod.normalizeCase({
+    ...withMaterial(),
+    expert: { name: 'Ayşe Yılmaz', title: 'Doç. Dr.', registryNo: 'R-9', field: '56.12' }
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('raporda imza unvanı', 'Doç. Dr.', H, U, D);
+  checkShared('raporda uzmanlık alanı künyede', 'UZMANLIK ALANI', H, U, D);
+  const HL = letterPaperHtml(c).replace(/<[^>]+>/g, '\n');
+  const UL = await udfTextLetter(c), DL = await docxTextLetter(c);
+  checkShared('üst yazıda imza unvanı', 'Doç. Dr.', HL, UL, DL);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

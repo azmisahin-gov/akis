@@ -36,7 +36,7 @@
        `window.__akisIdle` ile bildirir. -->
   <script>
     (function () {
-      var RUNNING = '2.390'; // bu dosyanın sürümü (surum-testi doğrular)
+      var RUNNING = '2.391'; // bu dosyanın sürümü (surum-testi doğrular)
       var CHECK_MS = 30000; // 30 sn'de bir denetle (v2.319)
       var notified = false;
       function banner(msg) {
@@ -109,13 +109,13 @@
   </script>
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
   <link rel="alternate icon" href="favicon.ico">
-  <link rel="stylesheet" href="assets/tokens.css?v=2.390">
-  <link rel="stylesheet" href="assets/app.css?v=2.390">
+  <link rel="stylesheet" href="assets/tokens.css?v=2.391">
+  <link rel="stylesheet" href="assets/app.css?v=2.391">
   <!-- Okuma katmanı en sonda: eski yamaları geçersiz kılar, tek tutarlı
        tipografi/kontrast/tema katmanı kurar (bkz. dosya başlığı). -->
-  <link rel="stylesheet" href="assets/reading-layer.css?v=2.390">
+  <link rel="stylesheet" href="assets/reading-layer.css?v=2.391">
   <script src="assets/vendor/jszip.min.js" defer></script>
-  <script type="module" src="assets/app.js?v=2.390"></script>
+  <script type="module" src="assets/app.js?v=2.391"></script>
 </head>
 <body>
   <!-- Sürüm notu: kritik düzeltmeler bir kez gösterilir (v2.87). -->
@@ -429,11 +429,12 @@
             <label class="field"><span>İnceleme tarihi</span><input id="inspectionDate" type="date"></label>
           </div>
           <div class="form-divider"></div>
-          <div class="form-section-title"><span>04</span><div><h3>Bilirkişi künyesi</h3><p>İsteğe bağlı: sicil numarası, uzmanlık alanı ve rapor tarihi.</p></div></div>
+          <div class="form-section-title"><span>04</span><div><h3>Bilirkişi künyesi</h3><p>İsteğe bağlı: unvan, sicil numarası, uzmanlık alanı ve rapor tarihi.</p></div></div>
           <div class="form-grid three">
+            <label class="field"><span>Unvan</span><input id="expertTitle" placeholder="Bilirkişi"></label>
             <label class="field"><span>Sicil numarası</span><input id="registryNo" placeholder="Bilirkişi sicil no"></label>
-            <label class="field span-2"><span>Uzmanlık alanı</span><input id="expertField" value="56.12 – Ses kayıtlarının metin hâline dönüştürülmesi"></label>
             <label class="field"><span>Rapor tarihi</span><input id="reportDate" type="date"></label>
+            <label class="field span-2"><span>Uzmanlık alanı</span><input id="expertField" value="56.12 – Ses kayıtlarının metin hâline dönüştürülmesi"></label>
           </div>
           <div class="form-divider"></div>
           <div class="form-section-title"><span>05</span><div><h3>İnceleme ekibi</h3><p>Aynı dosyada birden fazla bilirkişi çalışacaksa buraya ekleyin. Rapor yalnızca imza sahibi adına yazılır; ekip iç iş bölümü içindir.</p></div></div>

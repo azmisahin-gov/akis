@@ -1,4 +1,4 @@
-# Özellikler (v2.390 — mevcut durum)
+# Özellikler (v2.391 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -6,6 +6,13 @@ ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakı
 
 
 
+
+## Bilirkişi unvanı (v2.391)
+
+- Dosya bilgileri → Bilirkişi künyesi → **Unvan** (ör. Bilirkişi, Doç. Dr.). Boşsa gösterimde **“Bilirkişi”**.
+- **Rapor imza bloğunda unvan**, künyede **uzmanlık alanı** (56.12) yazar; künyeye “BİLİRKİŞİ UNVANI” satırı eklendi.
+- **Üst yazı imza unvanı** boşsa dosyadaki unvanı kullanır; alandan ezilebilir.
+- Üç çıktı (HTML/DOCX/UDF) aynı metni üretir; eski dosyalarda unvan yoksa “Bilirkişi” görünür.
 
 ## Bölüm arşivi (v2.389)
 

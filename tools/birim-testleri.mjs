@@ -7438,7 +7438,8 @@ console.log('[163] Ön bölüm alan görünürlüğü ve künye (v2.336)');
   // farklı değer gösteriyordu ("56.12 – …" / "56.12"); özet süreleri birimsizdi.
   const defs = T.REPORT_FIELD_DEFS;
   eq('alan tanımları var', !!(defs && defs.coverFields && defs.summary), true);
-  eq('künye alanı sayısı', defs.coverFields.length, 18);
+  eq('künye alanı sayısı', defs.coverFields.length, 19);
+  eq('künyede unvan alanı var', defs.coverFields.some((d) => d.key === 'expertTitle'), true);
   eq('özet alanı sayısı', defs.summary.length, 7);
 
   const v = T.normalizeReportFieldVisibility();
@@ -8320,6 +8321,33 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   eq('yeni dosyada 20 arşiv', Object.keys(f.report.archived).length, 20);
   eq('yeni dosyada s5 arşivde değil', !!f.report.archived.s5, false);
   eq('yeni dosyada imza arşivde değil', !!f.report.archived.signature, false);
+}
+// [190] v2.391 — Bilirkişi UNVANI ayrı alan (uzmanlık alanından farklı).
+{
+  console.log('\n[190] Bilirkişi unvanı (v2.391)');
+  const S = __schemaMod;
+  const c = S.normalizeCase({ id: 't1', expert: { name: 'Ayşe Yılmaz', title: 'Doç. Dr.', registryNo: '123', field: '56.12' } });
+  eq('unvan korunur', c.expert.title, 'Doç. Dr.');
+  eq('düz alan eşlenir', c.expertTitle, 'Doç. Dr.');
+  eq('uzmanlık alanı ayrı kalır', c.expert.field !== c.expert.title && /Ses/.test(c.expert.field), true);
+  const c2 = S.normalizeCase({ id: 't2', expert: { name: 'Ali' } });
+  eq('unvan varsayılanı boş (gösterimde Bilirkişi)', c2.expert.title, '');
+  const m = S.mergeCases(
+    S.normalizeCase({ id: 'm', expert: { name: 'A' } }),
+    S.normalizeCase({ id: 't', expert: { name: 'A', title: 'Prof. Dr.' } })
+  );
+  eq('birleştirmede unvan taşınır', m.merged.expert.title, 'Prof. Dr.');
+  const L = T.letterModel(
+    S.normalizeCase({
+      id: 'l', court: 'Antalya 4. Asliye Hukuk Mahkemesi', fileNo: '2026/1',
+      expert: { name: 'Ayşe Yılmaz', title: 'Doç. Dr.' }, letter: { place: 'Antalya' }
+    })
+  );
+  eq('üst yazı unvanı dosyadan', L.signerTitle, 'Doç. Dr.');
+  const L2 = T.letterModel(
+    S.normalizeCase({ id: 'l2', court: 'X', fileNo: '1', expert: { name: 'A', title: 'Doç. Dr.' }, letter: { signerTitle: 'Bilirkişi' } })
+  );
+  eq('üst yazı unvanı ezilebilir', L2.signerTitle, 'Bilirkişi');
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

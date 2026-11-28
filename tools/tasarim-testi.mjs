@@ -3185,5 +3185,17 @@ console.log('\n[2em] Bölüm arşivi (v2.389)');
   check('eski kilit UI kaldırıldı', !/rsec-never/.test(app) && !/rsec-never/.test(layer) && !/data-rse-exclude/.test(app));
   check('veri silinmez metni', /Veri SİLİNMEDİ/.test(app) || /veri SİLİNMEDİ/.test(app));
 }
+console.log('\n[2en] Bilirkişi unvanı (v2.391)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  check('dosya formunda unvan alanı', /id="expertTitle"/.test(html) && /'expertTitle'/.test(app));
+  check('şemada unvan alanı (boş = varsayılan)', /title: ''/.test(schema) && /defaultTitle: 'Bilirkişi'/.test(app));
+  check('düz alan eşlemesi', /\['expertTitle', 'expert', 'title'\]/.test(app));
+  check('raporda unvan kullanılır', /expertTitle \|\| REPORT_TEXT\.defaultTitle/.test(app));
+  check('üst yazı unvanı dosyadan', /expertTitle \|\| LETTER_TEXT\.signerTitle/.test(app));
+  check('üst yazı alanı unvanı gösterir', /placeholder: m\.signerTitle/.test(app));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.390.**
+yazılır. **Güncel sürüm: v2.391.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.391 — Bilirkişi unvanı (TAMAMLANDI)
+
+- `expert.title` (+ `expertTitle` düz eşleme); **boş = gösterimde “Bilirkişi”** (varsayılan gerçek unvanı maskelemez).
+- Rapor imza bloğu **unvan** yazar; uzmanlık alanı künyede kalır; künyeye **BİLİRKİŞİ UNVANI** satırı.
+- Üst yazı `signerTitle` boşsa dosyadaki unvan; alandan ezilebilir.
+- Birleştirme unvanı taşır; üç çıktı aynı metni üretir.
 
 ## v2.390 — Arşive al düğmesi (TAMAMLANDI)
 
