@@ -173,15 +173,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.389';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.389';
+} from './schema.js?v=2.390';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.390';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.389';
+const APP_VERSION = '2.390';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -23836,14 +23836,15 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
     setReportSectionTitle(tt.dataset.rseTitle, tt.value);
     return;
   }
+  if (e.target.closest('[data-rse-field]')) renderReport();
+});
+$('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
+  // v2.389 — BÖLÜM ARŞİVİ: düğme (change değil, click). Onay sorulur.
   const ar = e.target.closest('[data-rse-archive]');
   if (ar) {
     archiveReportSection(ar.dataset.rseArchive);
     return;
   }
-  if (e.target.closest('[data-rse-field]')) renderReport();
-});
-$('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
   // v2.375 — çekmeceden EKLER'e taşı / Gövdeye al (satırdan kalkan işlev).
   // KAYITLI METİNLER (v2.343): ekle / sil / kaydet. Hepsi açık eylem.
   const ins = e.target.closest('[data-lib-insert]');
@@ -25377,6 +25378,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.390': {
+    title: 'Arşive al düğmesi düzeltildi',
+    body:
+      'Bölüm düzenleyicideki “Bu bölümü arşive al” düğmesi tıklamayı işlemiyordu (düğme, onay bekleyen yanlış olay dinleyicisine bağlıydı). Artık düğme onay sorar ve bölümü arşive alır; Arşiv (N) panelinden geri alınabilir. Veri silinmez.'
+  },
   '2.389': {
     title: 'Bölüm arşivi: kullanılmayan bölümler listeden çıkar, geri alınabilir',
     body:

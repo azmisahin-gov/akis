@@ -3174,6 +3174,10 @@ console.log('\n[2em] Bölüm arşivi (v2.389)');
   check('arşiv revizyona girer', /archived: normalizeReportArchived\(r\.archived\)/.test(app));
   check('arşivli bölüm listeden çıkar', /if \(reportSectionArchived\(c, key\)\) continue;/.test(app));
   check('düzenleyicide arşive al', /data-rse-archive=/.test(app));
+  check(
+    'arşive al düğmesi CLICK ile (change değil)',
+    /#reportSectionEditorFields'\)\?\.addEventListener\('click', async \(e\) => \{[\s\S]{0,400}data-rse-archive/.test(app)
+  );
   check('arşiv paneli + geri al', /data-report-unarchive=/.test(app) && /id="reportArchive"/.test(app));
   check('önerilen arşiv düğmesi', /data-report-archive-default=/.test(app) && /DEFAULT_ARCHIVED_SECTIONS\.length/.test(app));
   check('üst yazı ekinde arşiv seçilemez', /!reportSectionArchived\(c, k\)/.test(app));

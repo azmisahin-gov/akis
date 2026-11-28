@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.389.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.390.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10403,3 +10403,10 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - **Arşiv paneli:** `Arşiv (N)` → satır + **Geri al** (`data-report-unarchive`) + **Çekirdek raporu kur** (`data-report-archive-default`, 20 arşiv · 16 açık). Veri silinmez.
 - Profil/birleştirme arşivi açamaz; revizyon `archived` taşır.
 - **Sıradaki:** v2.390 — eksik 7 tablonun sütun aç/kapa kapsamı; sonra genişlik ve görünüm.
+
+
+## EK DÜZELTME (v2.390) — Arşive al düğmesi
+
+- v2.389'da “Bu bölümü arşive al” düğmesi **`change`** dinleyicisine bağlanmıştı; düğme `click` üretir → tıklama **sessizce** hiçbir şey yapmıyordu (canlıda ölçüldü).
+- Düğme **`#reportSectionEditorFields` click** dinleyicisine taşındı; onay → arşive al → Arşiv (N) → Geri al akışı canlıda doğrulandı.
+- **DERS:** `<input type=checkbox>` → `change`; `<button>` → `click`. Aynı işleyicide ikisini karıştırmak sessiz no-op üretir. Test: `tasarim [2em]` click bağını denetler.

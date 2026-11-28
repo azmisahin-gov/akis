@@ -2,11 +2,16 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.389.**
+yazılır. **Güncel sürüm: v2.390.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.390 — Arşive al düğmesi (TAMAMLANDI)
+
+- Düğme `click` olayına bağlandı (v2.389'da yanlışlıkla `change` dinleyicisindeydi; düğme sessizce çalışmıyordu).
+- Onay → arşive al → Arşiv (N) → Geri al akışı canlıda doğrulandı; veri silinmez.
 
 ## v2.389 — Bölüm arşivi (TAMAMLANDI)
 

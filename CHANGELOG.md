@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.389.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.390.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,15 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.390 — Arşive al düğmesi düzeltildi
+
+**KULLANICI NE GÖRECEK:**
+- Bölüm düzenleyicideki **“Bu bölümü arşive al”** düğmesi artık çalışıyor: onay sorar, bölümü **çalışma listesinden çıkarır** ve **Arşiv (N)** paneline taşır.
+- Hata: düğme `change` olayına bağlıydı; düğme `click` üretir → tıklama sessizce hiçbir şey yapmıyordu (v2.389 canlıda ölçüldü).
+- Veri silinmez; **Geri al** ile listeye döner.
+
+**ÖLÇÜM (gerçek Chromium + CDP, canlı):** s5 “arşive al” → onay → s5 listede yok, **Arşiv (1)**; **Geri al** → listeye döndü; JS hatası **0**. Testler **2896 birim + 565 şema** + rapor/sürüm/tasarım yeşil.
 
 ## v2.389 — Bölüm arşivi: kullanılmayan bölümler listeden çıkar, geri alınabilir
 
