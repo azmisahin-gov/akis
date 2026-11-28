@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.391.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.395.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10425,3 +10425,35 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - Üst yazı `signerTitle` boşsa `expert.title`; alandan ezilebilir.
 - **Kural:** unvan ≠ uzmanlık alanı. Uzmanlık alanı 56.12 satırıdır; unvan “Bilirkişi/Doç. Dr.” gibi addır.
 - **Sıradaki (v2.392+):** tablo sütun kapsamı (7 tablo), sütun genişliği, alan görünümü (tablo/liste/yan yana), kâğıttan ⚙.
+
+## YENİ OTURUM DEVRİ (v2.395) — Rapor alanları: 7 tablo, tek genişlik, alan görünümü, ⚙
+
+| | |
+|---|---|
+| Sürüm | **v2.395** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **3011 birim + 565 şema** + rapor (Senaryo 67–70) + sürüm + tasarım yeşil |
+| Açık konu | Yok (v2.392–v2.395 turu kapandı) |
+
+### Ne yapıldı
+- **v2.392 — eksik 7 tablo:** `REPORT_COLUMN_TABLES`'a `physicalItems`, `custodyLog`, `notationKey`, `finalChecklist`, `embedded`, `integrity`, `transcription` eklendi. Blok tabloları `columns` alanıyla `recordTableCols` üzerinden süzülür; gömülü/ASR/bütünlük üç çıktıda `reportTableColumns` kullanır.
+- **v2.393 — tek genişlik modeli:** `REPORT_COLUMN_WEIGHTS` + `reportColumnWidths(table, keys, total)`. `reportTableColumns` açık genişlik yoksa modelden türetir (1000 ölçeği). HTML `<colgroup>` yüzde, DOCX twip (10206), UDF `columnSpans` (≈510). Elle yazılmış genişlik dizileri kaldırıldı.
+- **v2.394 — alan görünümü:** `case.report.format.fieldLayout` (`side`/`table`/`list`); eski `coverFields` (simple/classic) eşlenir. HTML `coverFieldsListHtml`, DOCX `coverFieldsListXml`, UDF tek satır "ETİKET: değer". Panel: Biçim → Alan görünümü.
+- **v2.395 — kâğıttan ⚙:** `REPORT_SECTION_SETTINGS` TEK KAYNAK; eşlemesi olan bölüm başlığında `button.paper-gear`. Tıklama `goToReportSetting` → ayar çekmecesi + Alanlar sekmesi + `data-rcol-group`/`data-rfield-group` vurgusu. Drawer `.drawer-body` mutlak kaydırılır (`scrollIntoView` YOK). ⚙ yalnız ekranda; yazdırmada gizli.
+
+### DEĞİŞMEZ KURALLAR (bu turda doğdu)
+1. **Sütun genişliği tek modelden.** `REPORT_COLUMN_WEIGHTS` dışında genişlik dizisi yazmayın; HTML/DOCX/UDF kendi birimine ölçekler.
+2. **Blok tablosu sütunu `columns` ile süzülür.** `recordTableCols` kullanın; ayrı süzgeç yazmayın.
+3. **Alan görünümü bir TERCİHTİR; metin değişmez.** Yeni bir görünüm eklerken üç çıktıyı birlikte güncelleyin.
+4. **⚙ eşlemesi tek kaynak.** Yeni bir bölüm eklerken `REPORT_SECTION_SETTINGS`'e yazın; `col:` hedefi gerçek bir `REPORT_COLUMN_TABLES` anahtarı olmalı (test [194] denetler).
+5. **`scrollIntoView` kullanmayın** (v2.193). Çekmecede kaydırmayı `.drawer-body.scrollTop` ile yapın.
+6. **Gear yalnız ekranda.** DOCX/UDF metnine `⚙` girmemeli (`rapor` Senaryo 70 denetler).
+
+### Ölçüm (gerçek Chromium + CDP, örnek dosyalar)
+- Bölüm açıkken **5 ⚙** (coverFields, origin, s5, speakers, fileInventory); s5 ⚙ → çekmece açık, sekme `fields`, vurgu `segments`; coverFields ⚙ → vurgu `coverFields`.
+- `fieldLayout='list'` → `#reportPreview .paper-kunye-list` 16 satır; `side`'a dönüş.
+- 16 sütun grubu panelde; yatay taşma **0**; JS hatası **0**.
+
+### Sıradaki iş (adaylar)
+- Rapor kâğıdından **bölüm aç/kapa** (⚙ yanında göz simgesi) — istenirse.
+- Gear eşlemesini **Biçim** sekmesine de genişletmek (tablo stili/yoğunluk hedefleri).
+- Kalan rapor sunumu işleri: gerçek A4 sayfa kırılması, UDF yatay tablo genişliği.

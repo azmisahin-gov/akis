@@ -4801,3 +4801,36 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
   border-bottom: 1px solid var(--paper-line);
 }
 .report-paper[data-table-theme="neutral"] .paper-table td { border-color: var(--paper-line); }
+
+/* v2.395 — Kâğıttan ⚙: bölüm başlığından ilgili ayar grubuna atlama.
+   Düğme başlığın içinde sağa yaslı; yazdırmada GÖRÜNMEZ. Hedef grup kısa
+   süre vurgulanır (renk + kenarlık; renk tek başına anlam taşımaz). */
+.report-paper h3 { position: relative; }
+.report-paper .paper-gear {
+  float: right; margin: 0 0 0 8px; padding: 0 6px;
+  font-size: var(--fs-sm); line-height: 1.4;
+  color: var(--paper-muted); background: transparent;
+  border: 1px solid transparent; border-radius: var(--r-sm, 6px);
+  cursor: pointer;
+}
+.report-paper .paper-gear:hover,
+.report-paper .paper-gear:focus-visible {
+  color: var(--paper-ink); border-color: var(--paper-line);
+  background: var(--paper-band); outline: none;
+}
+.report-paper .paper-gear-row { display: flex; justify-content: flex-end; margin: 0 0 2px; }
+.report-side .rcol-group.is-flash {
+  animation: rcol-flash 1.6s ease;
+  border-radius: var(--r-sm, 6px);
+}
+@keyframes rcol-flash {
+  0%, 100% { background: transparent; box-shadow: inset 0 0 0 0 var(--accent); }
+  15% { background: var(--accent-soft); box-shadow: inset 3px 0 0 0 var(--accent); }
+}
+@media print {
+  .report-paper .paper-gear,
+  .report-paper .paper-gear-row { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .report-side .rcol-group.is-flash { animation: none; }
+}

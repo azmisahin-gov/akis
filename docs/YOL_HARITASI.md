@@ -2,11 +2,34 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.391.**
+yazılır. **Güncel sürüm: v2.395.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.395 — Kâğıttan ⚙: bölüm → ayar grubu (TAMAMLANDI)
+
+- `REPORT_SECTION_SETTINGS` TEK KAYNAK; eşlemesi olan bölüm başlığında **⚙** düğmesi.
+- Tıklama: sağ ayar çekmecesi açılır, **Alanlar** sekmesi + ilgili grup vurgulanır (`data-rcol-group` / `data-rfield-group`).
+- Drawer `.drawer-body` mutlak kaydırılır (`scrollIntoView` YOK). ⚙ yalnız ekranda; yazdırmada gizli.
+
+## v2.394 — Alan görünümü: tablo · düz liste · yan yana (TAMAMLANDI)
+
+- `case.report.format.fieldLayout` (`side`/`table`/`list`); eski `coverFields` (simple/classic) eşlenir.
+- Üç çıktı: HTML (`paper-kunye-list`), DOCX (`coverFieldsListXml`), UDF (tek satır "ETİKET: değer").
+- Panel: **Biçim → Alan görünümü**. Boş alan satır üretmez; bilgi kaybı yok.
+
+## v2.393 — Sütun genişliği tek model (TAMAMLANDI)
+
+- `REPORT_COLUMN_WEIGHTS` + `reportColumnWidths(table, keys, total)`; göreli ağırlık.
+- `reportTableColumns` açık genişlik yoksa modelden türetir (1000 ölçeği).
+- HTML `<colgroup>` yüzde, DOCX twip (10206), UDF `columnSpans` (≈510). Elle yazılmış diziler kaldırıldı.
+
+## v2.392 — "Rapor alanları"nda eksik 7 tablo (TAMAMLANDI)
+
+- `physicalItems`, `custodyLog`, `notationKey`, `finalChecklist`, `embedded`, `integrity`, `transcription` tabloları sütunlarıyla eklendi.
+- Blok tabloları `columns` alanıyla süzülür (`recordTableCols`); gömülü/ASR/bütünlük üç çıktıda `reportTableColumns` kullanır.
 
 ## v2.391 — Bilirkişi unvanı (TAMAMLANDI)
 

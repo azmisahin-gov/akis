@@ -1041,7 +1041,8 @@ console.log('\n[2af] Rapor kâğıdı: punto alt sınırı ve belge fontu (v2.16
   const paperRule = rl2.match(/(^|\n)\.report-paper\s*\{([^}]*)\}/);
   check("kâğıt kendi font token'ını kullanır", !!paperRule && /font-family:\s*var\(--paper-font\)/.test(paperRule[2]));
   check('kâğıt arayüz fontu kullanmaz', !(paperRule && /var\(--font-ui\)/.test(paperRule[2])));
-  check('SHA hücresi sınıf taşır (satır içi stil yok)', /class="paper-hash"/.test(js));
+  // v2.393: sınıf artık `paperTable` hücre sınıfıyla verilir (satır içi stil yok).
+  check('SHA hücresi sınıf taşır (satır içi stil yok)', /'paper-hash'/.test(js) && /cellClass/.test(js));
   check('paper-hash 11px tabanlı', /\.paper-hash\s*\{[^}]*font-size:\s*var\(--fs-2xs\)/.test(rl2));
 }
 
@@ -3117,7 +3118,12 @@ console.log('\n[2em] Belge akışı: kısa bölümler akar, tablo notu tabloyla 
   check('envanter notu tabloya bağlı', /recordBlockXml\(c, 'fileInventory', \{ noteAfter: true \}\)/.test(app));
   check('gizlilik paragrafı bölünmez', /wP\(defaultTextFor\('privacyText'\), \{ keepLines: true \}\)/.test(app));
   check('kanıt tablosu kısa durum + not', /function reviewTableText\(s\)/.test(app) && /function ambiguousSegmentNotes\(m\)/.test(app));
-  check('kanıt tablosu sütunları dengeli', /\[1200, 900, 1100, 3100, 1200, 800\]/.test(app));
+  // v2.393: genişlikler tek ağırlık modelinden; metin sütunu en ağır.
+  const schemaW = read('assets/schema.js');
+  check(
+    'kanıt tablosu sütunları dengeli (metin en ağır)',
+    /segments: \{ time: \d+, speakerCode: \d+, speakerLabel: \d+, text: 42,/.test(schemaW) && /reportTableColumns\(c, 'segments'/.test(app)
+  );
 }
 
 console.log('\n[2en] Her kayıt yeni sayfadan; DOCX XML doğrulanır (v2.385)');
@@ -3154,8 +3160,8 @@ console.log('\n[2ep] Kurumsal belge tasarımı: üst/alt bilgi, künye, tema (v2
   check('nötr tablo koyu mavi dolgu kullanmaz', /\[data-table-theme="neutral"\] \.paper-table th \{[^}]*color: var\(--paper-ink\)/.test(css));
   // KAPAK hiyerarşisi + tasarım tercihleri.
   check('kapak sınıfları ayrı', /paper-court/.test(app) && /paper-type/.test(app));
-  check('tasarım tercihleri panelde', /data-fmt-cover/.test(app) && /data-fmt-theme/.test(app));
-  check('tercihler kalıcı biçimde', /coverFields: coverFields \? coverFields\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
+  check('tasarım tercihleri panelde', /data-fmt-fieldlayout/.test(app) && /data-fmt-theme/.test(app));
+  check('tercihler kalıcı biçimde', /fieldLayout: fieldLayout \? fieldLayout\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
 }
 console.log('\n[2em] Bölüm arşivi (v2.389)');
 {
@@ -3196,6 +3202,71 @@ console.log('\n[2en] Bilirkişi unvanı (v2.391)');
   check('raporda unvan kullanılır', /expertTitle \|\| REPORT_TEXT\.defaultTitle/.test(app));
   check('üst yazı unvanı dosyadan', /expertTitle \|\| LETTER_TEXT\.signerTitle/.test(app));
   check('üst yazı alanı unvanı gösterir', /placeholder: m\.signerTitle/.test(app));
+}
+console.log('\n[2eo] Rapor alanları: eksik 7 tablo (v2.392)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  const tables = ['physicalItems', 'custodyLog', 'notationKey', 'finalChecklist', 'embedded', 'integrity', 'transcription'];
+  for (const t of tables) {
+    check(`şema: ${t} sütun tanımı`, new RegExp(`${t}: \\[`).test(schema));
+    check(`şema: ${t} görünen adı`, new RegExp(`${t}: '[^']+'`).test(schema));
+  }
+  check('blok süzgeci fonksiyonu', /function recordTableCols\(/.test(app));
+  check('blok tabloları süzülür', /recordTableCols\(c, (t|sub|b)\)/.test(app));
+  check('teslim materyalleri sütunlu', /columns: 'physicalItems'/.test(app));
+  check('işlem günlüğü sütunlu', /columns: 'custodyLog'/.test(app));
+  check('gösterim anahtarı sütunlu', /columns: 'notationKey'/.test(app));
+  check('son kontrol sütunlu', /columns: 'finalChecklist'/.test(app));
+  check(
+    'gömülü/bütünlük/ASR üç çıktıda süzülür',
+    ['embedded', 'transcription', 'integrity'].every((t) => (app.match(new RegExp(`reportTableColumns\\(c, '${t}'`, 'g')) || []).length >= 3)
+  );
+}
+console.log('\n[2ep] Sütun genişliği tek model (v2.393)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  check('şema: ağırlık tablosu', /export const REPORT_COLUMN_WEIGHTS = \{/.test(schema));
+  check('şema: ağırlık → genişlik yardımcısı', /export function reportColumnWidths\(/.test(schema));
+  check('her tablonun ağırlığı var', /speakers: \{ code:/.test(schema) && /transcription: \{ material:/.test(schema) && /custodyLog: \{/.test(schema));
+  check('app: tek modelden türetir', /REPORT_COLUMN_WEIGHTS\[table\] \? reportColumnWidths\(table, keys, 1000\)/.test(app));
+  check('app: HTML colgroup', /function paperTable\(/.test(app) && /<colgroup>/.test(app));
+  check('app: UDF columnSpans 510 ölçeği', /\(w \* 510\) \/ sum/.test(app));
+  // Eski elle yazılmış DOCX/UDF genişlik dizileri KALDIRILDI (tek model).
+  check('elle DOCX genişlik dizisi kalmadı', !/\[650, 1150, 1100, 1100, 1250, 1150, 1250, 2556\]/.test(app));
+  check('elle UDF genişlik dizisi kalmadı', !/\[35, 58, 55, 58, 56, 56, 66, 126\]/.test(app));
+}
+console.log('\n[2eq] Alan görünümü: tablo · düz liste · yan yana (v2.394)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('şema: üç görünüm', /REPORT_FIELD_LAYOUTS = \['side', 'table', 'list'\]/.test(schema));
+  check('şema: etiketler', /REPORT_FIELD_LAYOUT_LABEL = \{ side: 'Yan yana', table: 'Tablo', list: 'Düz liste' \}/.test(schema));
+  check('normalize: eski coverFields eşlenir', /coverFieldsRaw === 'classic'[\s\S]{0,40}\? 'table'[\s\S]{0,20}: 'side'/.test(schema));
+  check('panel: Alan görünümü seçici', /data-fmt-fieldlayout/.test(app) && /Alan görünümü/.test(app));
+  check('üç kip render', /function coverFieldsListHtml\(/.test(app) && /function coverFieldsListXml\(/.test(app) && /if \(f\.fieldLayout === 'list'\) return 'list'/.test(app));
+  check('düz liste tek sütun CSS', /\.kunye-row\.kunye-wide \{ grid-template-columns: 1fr/.test(layer));
+  // Yeni kodda ham hex yok (token).
+  const fn = (app.match(/function coverFieldsListHtml\([\s\S]*?\n\}/) || [''])[0] + (app.match(/function coverFieldsListXml\([\s\S]*?\n\}/) || [''])[0];
+  check('yeni fonksiyonlarda ham hex yok', fn.length > 100 && !/#[0-9a-fA-F]{3,6}\b/.test(fn));
+}
+console.log('\n[2er] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
+{
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('bölüm ⚙ düğmesi', /class="paper-gear" data-report-gear=/.test(app));
+  check('⚙ bir button (erişilebilir)', /<button type="button" class="paper-gear"/.test(app));
+  check('tıklama ⚙ yakalar', /const gear = e\.target\.closest\('\[data-report-gear\]'\)/.test(app) && /goToReportSetting\(gear\.dataset\.reportGear\)/.test(app));
+  check('ayar eşlemesi tek kaynak', /const REPORT_SECTION_SETTINGS = \{/.test(app) && /function reportSectionSettings\(/.test(app));
+  check('hedef gruplar veri nitelikli', /data-rcol-group=/.test(app) && /data-rfield-group=/.test(app));
+  check('drawer içinde kaydırma (scrollIntoView yok)', /#reportSide \.drawer-body/.test(app) && !/scrollIntoView/.test(app.match(/function goToReportSetting\([\s\S]*?\n\}/)[0]));
+  check('CSS: ⚙ + vurgu', /\.report-paper \.paper-gear \{/.test(layer) && /\.rcol-group\.is-flash/.test(layer) && /@keyframes rcol-flash/.test(layer));
+  check('yazdırmada ⚙ gizli', /@media print \{[\s\S]{0,200}\.paper-gear/.test(layer));
+  // Yeni CSS ham hex taşımaz (token).
+  const blk = layer.slice(layer.indexOf('v2.395'), layer.indexOf('v2.395') + 1600);
+  check('v2.395 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

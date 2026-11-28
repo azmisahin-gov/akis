@@ -2221,5 +2221,171 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   checkShared('üst yazıda imza unvanı', 'Doç. Dr.', HL, UL, DL);
 }
 
+// Senaryo 67: "Rapor alanları" — eksik 7 tablonun sütunları üç çıktıda süzülür
+// (v2.392). Kullanıcı: "teslim/iade materyalleri, işlem günlüğü, gösterim
+// anahtarı, son kontrol, gömülü bilgi, bütünlük, ASR tablolarının sütunlarını
+// da rapor alanlarına ekle."
+{
+  console.log('\n[Senaryo 67] eksik 7 tablonun sütunları (v2.392)');
+  const S = __schemaMod;
+  const mk = (columns) =>
+    S.normalizeCase({
+      ...withMaterial({
+        sha256: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+        log: [{ at: '2026-02-01T10:00:00Z', event: 'teslim', detail: 'kayıt alındı' }],
+        transcribedWithModel: 'Xenova/whisper-small',
+        asrAt: '2026-02-01T10:05:00Z',
+        origin: {
+          embedded: { source: 'MP4/M4A', recordingAt: '2026-03-12T14:20:00.000Z', software: 'PhoneRecorder 2.0' }
+        }
+      }),
+      physicalFile: {
+        handover: { delivered: true, at: '2026-11-20T09:30', deliveredBy: 'Zabıt Kâtibi' },
+        items: [{ id: 'pf1', type: 'usb', label: 'Kingston DT-1', serial: 'SN-111', seal: 'M-1', condition: 'sağlam', related: true, materialId: 'm1', returned: true }],
+        returned: true,
+        return: { at: '2026-11-25T16:00', returnedBy: 'Örnek Bilirkişi', receivedBy: 'Zabıt Kâtibi' }
+      },
+      report: {
+        includeEmbedded: true,
+        sections: {
+          handoverRecord: true, custodyLog: true, notationKey: true, finalChecklist: true,
+          embeddedInfo: true, integrity: true, transcriptionMethod: true
+        },
+        columns
+      }
+    });
+
+  // Her tablodan BİR sütun kapatılır; o sütunun AYIRT EDİCİ değeri/başlığı
+  // üç çıktıda da görünmemeli, kalan sütun korunmalı.
+  const off = mk({
+    // Envanter (s3 varsayılan açık) da SHA-256 basar; yalnız bütünlük sütununu
+    // sınamak için envanterdeki özeti de kapatıyoruz.
+    inventory: { sha256: false },
+    physicalItems: { serial: false },
+    custodyLog: { detail: false },
+    notationKey: { meaning: false },
+    finalChecklist: { detail: false },
+    embedded: { software: false },
+    integrity: { sha256: false },
+    transcription: { tool: false }
+  });
+  const H = htmlText(off), U = await udfText(off), D = await docxText(off);
+  // Kapatılan değerler (üç çıktıda da YOK).
+  for (const [label, val] of [
+    ['teslim materyali seri no kapalı', 'SN-111'],
+    ['işlem günlüğü ayrıntı kapalı', 'kayıt alındı'],
+    ['gösterim anahtarı anlam kapalı', 'Kayıt içi konuşmacı kodu'],
+    ['son kontrol açıklama kapalı', 'Her kayıtta en az bir bölüm var.'],
+    ['gömülü yazılım kapalı', 'PhoneRecorder 2.0'],
+    ['bütünlük SHA-256 kapalı', 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef'],
+    ['ASR yazılım kapalı', 'Xenova/whisper-small']
+  ]) {
+    check(`${label} (üç çıktı)`, !H.includes(val) && !U.includes(val) && !D.includes(val));
+  }
+  // Kalan sütunlar korunur (üç çıktıda da VAR).
+  checkShared('teslim materyali etiketi korunur', 'Kingston DT-1', H, U, D);
+  checkShared('işlem günlüğü olay korunur', 'teslim', H, U, D);
+  checkShared('gösterim anahtarı işaret korunur', 'S1, S2…', H, U, D);
+  checkShared('son kontrol kontrol adı korunur', 'Kontrol edilmemiş bölüm', H, U, D);
+  checkShared('gömülü kaynak korunur', 'MP4/M4A', H, U, D);
+  checkShared('bütünlük kaydı korunur', 'a.wav', H, U, D);
+  checkShared('ASR kaydı korunur', 'a.wav', H, U, D);
+}
+
+// Senaryo 68: v2.393 — sütun genişliği TEK model (ağırlık), üç çıktıya eşlenir.
+// HTML yüzde (colgroup), DOCX twip (10206), UDF columnSpans (510).
+{
+  console.log('\n[Senaryo 68] sütun genişliği tek model (v2.393)');
+  const c = withMaterial();
+  c.materials[0].segments = [
+    { id: 's1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba', review: 'approved' },
+    { id: 's2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'S1', text: 'dünya', review: 'approved' }
+  ];
+  c.report = { sections: { s3: true, s5: true, speakers: false, fileInventory: true } };
+
+  // HTML: kanıt tablosunda <colgroup> yüzdeleri olmalı.
+  setCase(c); renderReport();
+  const rawHtml = els.get('#reportPreview').innerHTML;
+  const segTable = (rawHtml.match(/<table class="paper-table">[\s\S]*?<\/table>/g) || []).find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA'));
+  check('HTML tabloda colgroup var', !!segTable && /<colgroup>/.test(segTable));
+  const cols = [...(segTable || '').matchAll(/<col style="width:([0-9.]+)%">/g)].map((m) => Number(m[1]));
+  check('HTML sütun sayısı 6', cols.length === 6, String(cols.length));
+  check('HTML yüzdeler toplamı ~100', Math.abs(cols.reduce((a, b) => a + b, 0) - 100) < 0.5, String(cols.reduce((a, b) => a + b, 0)));
+  check('HTML metin sütunu en geniş', cols.indexOf(Math.max(...cols)) === 3, String(cols));
+
+  // DOCX: kanıt tablosu genişlikleri 10206'ya oturur; metin sütunu en geniş.
+  downloads.length = 0; setCase(c); await makeDocx();
+  const dz = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const dx = await dz.file('word/document.xml').async('string');
+  const tables = [...dx.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)].map((m) => m[0]);
+  const dSeg = tables.find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA'));
+  const dw = [...(dSeg || '').matchAll(/<w:gridCol w:w="(\d+)"/g)].map((m) => Number(m[1]));
+  check('DOCX kanıt tablosu 10206', dw.reduce((a, b) => a + b, 0) === 10206, String(dw));
+  check('DOCX metin sütunu en geniş', dw.indexOf(Math.max(...dw)) === 3, String(dw));
+
+  // UDF: columnSpans toplamı ~510; metin sütunu en geniş.
+  downloads.length = 0; setCase(c); await makeUdf();
+  const uz = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+  const ux = await uz.file('content.xml').async('string');
+  const uTables = [...ux.matchAll(/columnSpans="([^"]+)"/g)].map((m) => m[1].split(',').map(Number));
+  const uSeg = uTables.find((w) => w.length === 6 && w.indexOf(Math.max(...w)) === 3);
+  check('UDF kanıt tablosu 6 sütun', !!uSeg, JSON.stringify(uTables));
+  check('UDF columnSpans toplamı ~510', !!uSeg && Math.abs(uSeg.reduce((a, b) => a + b, 0) - 510) <= 3, uSeg ? String(uSeg.reduce((a, b) => a + b, 0)) : '');
+  check('UDF metin sütunu en geniş', !!uSeg && uSeg.indexOf(Math.max(...uSeg)) === 3, uSeg ? String(uSeg) : '');
+}
+
+// Senaryo 69: v2.394 — alan görünümü (yan yana · tablo · düz liste) üç çıktıda.
+{
+  console.log('\n[Senaryo 69] alan görünümü: tablo · düz liste · yan yana (v2.394)');
+  const mk = (fl) => {
+    const c = withMaterial();
+    c.report = { format: { fieldLayout: fl } };
+    return c;
+  };
+  // DÜZ LİSTE: tüm künye alanları tek tek (etiket + değer) üç çıktıda.
+  const cList = mk('list');
+  const HL = htmlText(cList), UL = await udfText(cList), DL = await docxText(cList);
+  for (const [label, val] of [
+    ['dosya no', '2026/214 E.'],
+    ['görevlendirme makamı', 'Antalya 4. Asliye Hukuk Mahkemesi'],
+    ['konu', 'Depozito uyuşmazlığı'],
+    ['bilirkişi adı', 'Örnek Bilirkişi']
+  ]) {
+    checkShared(`düz liste: ${label}`, val, HL, UL, DL);
+  }
+  // HTML düz liste sınıfı taşır; iki sütunlu satır yok.
+  setCase(cList); renderReport();
+  const listHtml = els.get('#reportPreview').innerHTML;
+  check('HTML düz liste sınıfı', /paper-kunye-list/.test(listHtml));
+  // YAN YANA: iki sütunlu sade düzen (liste değil).
+  setCase(mk('side')); renderReport();
+  const sideHtml = els.get('#reportPreview').innerHTML;
+  check('yan yana: liste sınıfı YOK', !/paper-kunye-list/.test(sideHtml));
+  check('yan yana: iki sütunlu satır var', /kunye-row/.test(sideHtml));
+  // TABLO: kenarlıklı cover-fields tablosu.
+  setCase(mk('table')); renderReport();
+  const tableHtml = els.get('#reportPreview').innerHTML;
+  check('tablo: cover-fields tablosu', /paper-table cover-fields/.test(tableHtml));
+  // Bilgi kaybı yok: düz listede yan yanadaki tüm anahtarlar var.
+  const sideKeys = ['DOSYA NO', 'GÖREVLENDİRME MAKAMI', 'DAVACI', 'DAVALI', 'KONU'];
+  check('düz liste yan yanadaki alanları korur', sideKeys.every((k) => HL.includes(k)), true);
+}
+
+// Senaryo 70: v2.395 — kâğıttan ⚙ yalnız EKRANDA; DOCX/UDF metnine girmez.
+{
+  console.log('\n[Senaryo 70] kâğıttan ⚙ yalnız ekranda (v2.395)');
+  const c = withMaterial();
+  c.report = { sections: { s5: true, speakers: true, integrity: true, fileInventory: true } };
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  check('HTML bölüm ⚙ taşır', H.includes('⚙'));
+  check('DOCX ⚙ taşımaz', !D.includes('⚙'));
+  check('UDF ⚙ taşımaz', !U.includes('⚙'));
+  // HTML'de gear düğmesi hedef anahtarı taşır (tıklama buna dayanır).
+  setCase(c); renderReport();
+  const raw = els.get('#reportPreview').innerHTML;
+  check('gear veri anahtarı taşır', /data-report-gear="s5"/.test(raw));
+  check('gear olmayan bölümde düğme yok', !/data-report-gear="s1"/.test(raw));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

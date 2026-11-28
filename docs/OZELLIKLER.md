@@ -1,4 +1,4 @@
-# Özellikler (v2.391 — mevcut durum)
+# Özellikler (v2.395 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1319,3 +1319,19 @@ Davranış değişmedi; koruyan test `tasarim [2dq]`.
 ## Kurgusal demo paketi (v2.351)
 
 `sample_data/demo/AKIS_Demo_Kurgusal.akis` gerçek veri girmeden denemek içindir: 2 gerçek örnek ses kaydı, 12 bölüm (onaylı · belirsiz okuma · bekleyen · anlaşılmadı), S1/S2 ve K1 konuşmacı eşleştirmesi, 3 soru, kayıt kökeni, fizikî teslim/iade tutanağı ve üst yazı. **Paketten yükle** ile açılır. Tamamen kurgusaldır; gerçek dava verisi değildir.
+
+## Rapor alanları: eksik 7 tablo (v2.392)
+
+Rapor ayarları → **Alanlar** listesine yedi tablo daha eklendi: **Teslim/iade materyalleri · İşlem günlüğü · Gösterim anahtarı · Son kontrol listesi · Gömülü bilgi · Bütünlük · ASR / çözümleme**. Her tablonun sütunu tek tek açılıp kapatılır; kapatılan sütun **üç çıktıda da** (HTML/DOCX/UDF) basılmaz. Veri silinmez; yalnız gösterim değişir. Blok tabloları `columns` alanıyla süzülür (`recordTableCols`).
+
+## Sütun genişliği: tek model (v2.393)
+
+Sütun genişlikleri tek bir **göreli ağırlık** modelinden (`REPORT_COLUMN_WEIGHTS`) türetilir. HTML `<colgroup>` yüzdesi, Word (DOCX) twip (içerik 10206), UYAP (UDF) `columnSpans` (≈510) aynı oranı kullanır. Kanıt tablosunda metin sütunu üç çıktıda da en geniştir. Bir sütun kapatılınca kalanların oranı korunur.
+
+## Alan görünümü: tablo · düz liste · yan yana (v2.394)
+
+Rapor ayarları → **Biçim → Alan görünümü**. Künye alanları **Yan yana** (iki sütun, varsayılan), **Tablo** (kenarlıklı) veya **Düz liste** (her alan tek satır, tam genişlik) gösterilir. Seçim ekran + yazdırma/PDF + Word + UYAP çıktısına uygulanır; metin ve alanlar değişmez, boş alan satır üretmez. Eski "Künye düzeni" (sade/klasik) yeni üçlüye eşlenir.
+
+## Kâğıttan ⚙: bölüm → ayar grubu (v2.395)
+
+Rapor kâğıdında ayarı olan bölüm başlıklarında **⚙** düğmesi vardır. Basınca sağ **rapor ayarları** çekmecesi açılır, ilgili sekme seçilir ve o bölümün ayar grubu (künye alanları ya da tablo sütunları) kısa süre vurgulanır. Eşlemesi olmayan bölümde ⚙ çizilmez. ⚙ yalnız ekranda; yazdırma/PDF, DOCX ve UDF çıktısında görünmez.

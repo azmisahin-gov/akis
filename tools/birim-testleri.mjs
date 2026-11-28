@@ -116,7 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
   'reviewTableText', 'ambiguousSegmentNotes', 'xesc',
-  'coverFieldPlan', 'coverFieldsLayout', 'coverFieldsSimpleHtml', 'coverLines', 'coverLine',
+  'coverFieldPlan', 'coverFieldsLayout', 'coverFieldsSimpleHtml', 'coverFieldsListHtml', 'coverFieldsListXml', 'coverLines', 'coverLine', 'REPORT_FIELD_LAYOUTS',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -145,7 +145,7 @@ const EXPOSE = [
   'segmentCoverage', 'coveragePctText',
   'mergeCandidateAt', 'mergeCandidateIndexes', 'MERGE_CANDIDATE', 'SEG_FILTERS', 'CONDITIONAL_FILTERS', 'segFilterChipsHtml', 'nextMergeFilter',
   'reviewSelectOptions', 'syncNarrowBarHeight', 'segmentLengthInfo', 'SEG_LENGTH', 'readingGroupsFor',
-  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
+  'reportReadiness', 'readinessRowsHtml', 'readinessRowHtml', 'readinessSummary', 'readinessSeverity', 'READINESS_SEVERITY', 'READINESS_GROUPS', 'reportRecordStatus', 'reportSectionCategory', 'reportOutlineState', 'reportOutlineMatch', 'reportSectionEditableFields', 'reportSectionDerivedTarget', 'reportSectionInspectorKey', 'reportFitWidth', 'reportFitPref', 'reportPageCountFor', 'reportContinuousPref', 'reportColumnOn', 'reportColumnLocked', 'reportTableColumns', 'normalizeReportColumns', 'emptyReportColumns', 'REPORT_COLUMN_TABLES', 'REPORT_COLUMN_LOCKED', 'REPORT_COLUMN_WEIGHTS', 'reportColumnWeights', 'reportColumnWidths', 'nextPendingIndex', 'nextPendingPref', 'sampleCases', 'audioStateText', 'audioStateHint', 'removeAudioWarning',
   'DELIL_SCHEMA', 'DELIL_COPY_TYPES', 'delilCopyTypeLabel', 'findDelilManifestPath', 'validateDelilPack',
   'delilFileState', 'delilOriginFromPack', 'delilSummary', 'delilStateLabel', 'acquisitionRows',
   'isAudioFileName', 'delilDuplicateOf', 'isVideoFileName', 'isMediaFileName', 'isMediaFileObject', 'isVideoMaterial', 'reportVideoNote', 'videoNoteSuffix', 'zwspWrapLongHex',
@@ -157,7 +157,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportNumberLabelMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportSectionArchived', 'freshCase', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportSectionArchived', 'freshCase', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText', 'recordTableCols', 'reportSectionSettings', 'REPORT_SECTION_SETTINGS', 'goToReportSetting',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
   'reportSkeletonCollapsedPref', 'toggleReportSkeletonCollapsed',
@@ -8348,6 +8348,148 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
     S.normalizeCase({ id: 'l2', court: 'X', fileNo: '1', expert: { name: 'A', title: 'Doç. Dr.' }, letter: { signerTitle: 'Bilirkişi' } })
   );
   eq('üst yazı unvanı ezilebilir', L2.signerTitle, 'Bilirkişi');
+}
+// [191] v2.392 — "Rapor alanları"nda eksik kalan YEDİ tablo.
+// Kullanıcı: "teslim/iade materyalleri, işlem günlüğü, gösterim anahtarı, son
+// kontrol, gömülü bilgi, bütünlük, ASR tablolarının sütunlarını da ekle."
+{
+  console.log('\n[191] Eksik 7 tablo rapor alanlarına eklendi (v2.392)');
+  const S = __schemaMod;
+  const expect = {
+    physicalItems: 'index,type,label,serial,seal,condition,related,returned',
+    custodyLog: 'material,time,event,detail',
+    notationKey: 'symbol,meaning',
+    finalChecklist: 'check,state,detail',
+    embedded: 'name,recordingAt,software,source',
+    integrity: 'name,sha256,verify,log',
+    transcription: 'material,tool,at'
+  };
+  for (const [table, keys] of Object.entries(expect)) {
+    eq(`${table} tanımlı`, S.REPORT_COLUMN_TABLES[table].join(','), keys);
+    eq(`${table} görünen adı var`, typeof S.REPORT_COLUMN_TABLE_LABELS[table], 'string');
+    eq(`${table} her sütunun etiketi var`, S.REPORT_COLUMN_TABLES[table].every((k) => typeof S.REPORT_COLUMN_LABELS[table][k] === 'string'), true);
+  }
+  eq('tablo adları = tablo sayısı', Object.keys(S.REPORT_COLUMN_TABLE_LABELS).length, Object.keys(S.REPORT_COLUMN_TABLES).length);
+  // Varsayılan AÇIK; kapatma korunur.
+  const n = S.normalizeReportColumns({ integrity: { sha256: false } });
+  eq('normalize: bütünlük sha256 kapalı', n.integrity.sha256, false);
+  eq('normalize: bütünlük adı açık', n.integrity.name, true);
+  eq('normalize: yeni tablo varsayılan açık', n.custodyLog.detail, true);
+  // reportTableColumns süzgeci yeni tabloda da çalışır.
+  const c = T.emptyCaseForTest({ id: 'cNewCols' });
+  c.report.columns = { custodyLog: { detail: false } };
+  const t = T.reportTableColumns(c, 'custodyLog', ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], [['a', 'b', 'c', 'd']], [90, 120, 150, 150]);
+  eq('işlem günlüğü: ayrıntı kapalı', t.headers.includes('AYRINTI'), false);
+  eq('işlem günlüğü: 3 sütun', t.headers.length, 3);
+  eq('işlem günlüğü: genişlik 3', t.widths.length, 3);
+  const allOff = S.emptyReportColumns();
+  for (const k of S.REPORT_COLUMN_TABLES.transcription) allOff.transcription[k] = false;
+  c.report.columns = allOff;
+  eq('ASR: hepsi kapalı → empty', T.reportTableColumns(c, 'transcription', ['KAYIT', 'YAZILIM', 'ZAMAN'], [], null).empty, true);
+  // Blok tablosu süzgeci: `columns` taşıyan blok süzülür.
+  const c2 = T.emptyCaseForTest({ id: 'cBlockCols' });
+  c2.report.columns = { finalChecklist: { detail: false } };
+  const tc = T.recordTableCols(c2, { columns: 'finalChecklist', headers: ['KONTROL', 'DURUM', 'AÇIKLAMA'], rows: [['a', 'b', 'c']] });
+  eq('blok süzgeci: açıklama kapalı', tc.headers.includes('AÇIKLAMA'), false);
+  eq('blok süzgeci: 2 sütun', tc.headers.length, 2);
+}
+// [192] v2.393 — Sütun genişliği TEK model (ağırlık).
+// Kullanıcı: "genişlikler üç çıktıda ayrı ayrı elle yazılmasın; tek model olsun."
+{
+  console.log('\n[192] Sütun genişliği tek model (v2.393)');
+  const S = __schemaMod;
+  const keys = S.REPORT_COLUMN_TABLES.speakers;
+  const w = S.reportColumnWeights('speakers', keys);
+  eq('ağırlık sayısı = sütun sayısı', w.length, keys.length);
+  eq('ağırlıklar pozitif', w.every((x) => x > 0), true);
+  eq('PARÇA sütunu en ağır (konuşmacı)', w[keys.indexOf('parts')] === Math.max(...w), true);
+  // Toplam = istenen birim (DOCX 10206, UDF 510, HTML 100).
+  for (const total of [10206, 510, 100]) {
+    const ws = S.reportColumnWidths('speakers', keys, total);
+    eq(`genişlik toplamı ${total}`, ws.reduce((a, b) => a + b, 0), total);
+    eq(`her genişlik ≥ 1 (${total})`, ws.every((x) => x >= 1), true);
+  }
+  // Oran korunur: ağırlığı 2 kat olan sütun ~2 kat geniş.
+  const ww = S.reportColumnWidths('speakers', keys, 10000);
+  eq('ağırlık oranı korunur', Math.abs(ww[keys.indexOf('parts')] / ww[keys.indexOf('code')] - w[keys.indexOf('parts')] / w[keys.indexOf('code')]) < 0.5, true);
+  // Ağırlığı olmayan tablo eşit pay alır.
+  const eqw = S.reportColumnWidths('bilinmeyenTablo', ['a', 'b', 'c'], 300);
+  eq('ağırlık yoksa eşit pay', eqw.join(','), '100,100,100');
+  // reportTableColumns açık genişlik yoksa modelden türetir.
+  const c = T.emptyCaseForTest({ id: 'cWeights' });
+  const t = T.reportTableColumns(c, 'speakers', ['KOD', 'ETİKET', 'KAYIT', 'ROL', 'CİNSİYET', 'YAŞ', 'PERDE', 'BÖLÜM'], []);
+  eq('model genişliği döner', Array.isArray(t.widths) && t.widths.length === 8, true);
+  eq('model toplamı 1000', t.widths.reduce((a, b) => a + b, 0), 1000);
+  // Sütun kapatılınca genişlik de küçülür (anahtar hizası korunur).
+  c.report.columns = { speakers: { parts: false } };
+  const t2 = T.reportTableColumns(c, 'speakers', ['KOD', 'ETİKET', 'KAYIT', 'ROL', 'CİNSİYET', 'YAŞ', 'PERDE', 'BÖLÜM'], []);
+  eq('kapalı sütun genişlikte yok', t2.widths.length, 7);
+  // Kalan sütunların ORANLARI korunur (kapalı sütunun payı düşer; normalize
+  // işini her çıktı kendi tarafında yapar).
+  const partsIdx = keys.indexOf('parts');
+  eq('kalan genişlikler = tam model eksi kapalı sütun', t2.widths.join(','), t.widths.filter((_, i) => i !== partsIdx).join(','));
+}
+// [193] v2.394 — ALAN GÖRÜNÜMÜ: Tablo · Düz liste · Yan yana.
+// Kullanıcı: "künye alanları üç biçimde gösterilebilsin."
+{
+  console.log('\n[193] Alan görünümü: tablo · düz liste · yan yana (v2.394)');
+  const S = __schemaMod;
+  eq('üç görünüm tanımlı', S.REPORT_FIELD_LAYOUTS.join(','), 'side,table,list');
+  // Eski `coverFields` → yeni `fieldLayout` eşlemesi.
+  eq('simple → side', S.normalizeReportFormat({ coverFields: 'simple' }).fieldLayout, 'side');
+  eq('classic → table', S.normalizeReportFormat({ coverFields: 'classic' }).fieldLayout, 'table');
+  eq('açık fieldLayout korunur', S.normalizeReportFormat({ fieldLayout: 'list' }).fieldLayout, 'list');
+  eq('list → coverFields simple', S.normalizeReportFormat({ fieldLayout: 'list' }).coverFields, 'simple');
+  eq('table → coverFields classic', S.normalizeReportFormat({ fieldLayout: 'table' }).coverFields, 'classic');
+  eq('geçersiz fieldLayout → side', S.normalizeReportFormat({ fieldLayout: 'x' }).fieldLayout, 'side');
+
+  const base = { id: 'cFL', court: 'Antalya 4. Asliye Hukuk Mahkemesi', fileNo: '2026/9', plaintiff: 'A', defendant: 'B', subject: 'Konu', reportDate: '2026-01-01' };
+  const mk = (fl) => T.emptyCaseForTest({ ...base, report: { format: { fieldLayout: fl } } });
+  eq('yan yana → simple', T.coverFieldsLayout(mk('side')), 'simple');
+  eq('tablo → classic', T.coverFieldsLayout(mk('table')), 'classic');
+  eq('düz liste → list', T.coverFieldsLayout(mk('list')), 'list');
+
+  // DÜZ LİSTE: her alan tek satır (kunye-wide), tam genişlik; iki sütuna bölünmez.
+  const cl = mk('list');
+  const html = T.coverFieldsListHtml(cl);
+  eq('düz liste HTML üretir', html.length > 0, true);
+  eq('düz liste sınıfı', /paper-kunye-list/.test(html), true);
+  const rows = (html.match(/kunye-row kunye-wide/g) || []).length;
+  eq('her alan ayrı satır', rows >= 4, true);
+  eq('iki sütunlu satır YOK', /kunye-row">/.test(html), false);
+  eq('etiket + değer birlikte', /GÖREVLENDİRME MAKAMI/.test(html) && /Antalya 4\. Asliye Hukuk Mahkemesi/.test(html), true);
+  // Boş alan satır üretmez.
+  eq('boş alan satır üretmez', /İNCELEME TARİHİ/.test(html), false);
+  // DOCX listesi de her alan için ayrı paragraf üretir.
+  const dx = T.coverFieldsListXml(cl);
+  eq('düz liste DOCX paragraf', (dx.match(/<w:p>/g) || []).length >= 4, true);
+}
+// [194] v2.395 — Kâğıttan ⚙: bölümden ilgili ayar grubuna atlama.
+// Kullanıcı: "rapordaki bölümden o bölümün ayarına gidebileyim."
+{
+  console.log('\n[194] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
+  const S = __schemaMod;
+  // Eşleme TEK kaynak; hedef tablolar GERÇEKTEN var olmalı.
+  const map = T.REPORT_SECTION_SETTINGS;
+  eq('eşleme tanımlı', !!map && Object.keys(map).length >= 15, true);
+  eq('s5 → kanıt tablosu', T.reportSectionSettings('s5').target, 'col:segments');
+  eq('konuşmacı → konuşmacı tablosu', T.reportSectionSettings('speakers').target, 'col:speakers');
+  eq('künye → künye alanları', T.reportSectionSettings('coverFields').target, 'field:coverFields');
+  // Yeni 7 tablonun hepsi gear ile erişilebilir.
+  for (const t of ['physicalItems', 'custodyLog', 'notationKey', 'finalChecklist', 'embedded', 'integrity', 'transcription']) {
+    eq(`${t} eşlemesi var`, Object.values(map).some((v) => v.target === 'col:' + t), true);
+  }
+  // Her `col:` hedefi gerçek bir tabloya işaret eder (yanlış anahtar yok).
+  for (const [k, v] of Object.entries(map)) {
+    if (!v.target || !v.target.startsWith('col:')) continue;
+    eq(`eşleme hedefi geçerli tablo (${k})`, !!S.REPORT_COLUMN_TABLES[v.target.slice(4)], true);
+    eq(`eşleme sekmesi geçerli (${k})`, ['check', 'fields', 'format', 'revision'].includes(v.tab), true);
+  }
+  // Eşlemesi olmayan bölümde gear YOK (boş düğme üretilmez).
+  eq('s1 eşlemesi yok', T.reportSectionSettings('s1'), null);
+  eq('eşlemesiz bölümde git false', T.goToReportSetting('s1'), false);
+  // Eşlemeli bölümde git true (DOM stub'ında patlamaz).
+  eq('eşlemeli bölümde git true', T.goToReportSetting('s5'), true);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

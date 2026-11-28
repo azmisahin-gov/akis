@@ -1041,7 +1041,16 @@ export const REPORT_COLUMN_TABLES = {
   segments: ['time', 'speakerCode', 'speakerLabel', 'text', 'review', 'obs'],
   speakers: ['code', 'label', 'material', 'role', 'gender', 'age', 'pitch', 'parts'],
   speakerDurations: ['code', 'label', 'material', 'chapters', 'duration', 'span'],
-  materialSpeakers: ['code', 'label', 'chapters', 'duration', 'span', 'person']
+  materialSpeakers: ['code', 'label', 'chapters', 'duration', 'span', 'person'],
+  // v2.392 — Eksik kalan yedi tablo. Bunlar "Rapor alanları" panelinde
+  // sütunlarıyla görünür; kapatılan sütun üç çıktıda da basılmaz.
+  physicalItems: ['index', 'type', 'label', 'serial', 'seal', 'condition', 'related', 'returned'],
+  custodyLog: ['material', 'time', 'event', 'detail'],
+  notationKey: ['symbol', 'meaning'],
+  finalChecklist: ['check', 'state', 'detail'],
+  embedded: ['name', 'recordingAt', 'software', 'source'],
+  integrity: ['name', 'sha256', 'verify', 'log'],
+  transcription: ['material', 'tool', 'at']
 };
 export const REPORT_COLUMN_LABELS = {
   inventory: {
@@ -1117,7 +1126,23 @@ export const REPORT_COLUMN_LABELS = {
     duration: 'SÜRE',
     span: 'İLK – SON',
     person: 'DOSYALAR ARASI KİŞİ'
-  }
+  },
+  physicalItems: {
+    index: 'SIRA',
+    type: 'TÜR',
+    label: 'MARKA / ETİKET',
+    serial: 'SERİ NO',
+    seal: 'MÜHÜR / AMBALAJ',
+    condition: 'TESLİM DURUMU',
+    related: 'İLGİLİ',
+    returned: 'İADE'
+  },
+  custodyLog: { material: 'KAYIT', time: 'ZAMAN', event: 'OLAY', detail: 'AYRINTI' },
+  notationKey: { symbol: 'İŞARET', meaning: 'ANLAMI' },
+  finalChecklist: { check: 'KONTROL', state: 'DURUM', detail: 'AÇIKLAMA' },
+  embedded: { name: 'KAYIT', recordingAt: 'KAYIT ZAMANI (beyan)', software: 'YAZILIM (beyan)', source: 'KAYNAK' },
+  integrity: { name: 'KAYIT', sha256: 'SHA-256', verify: 'DOĞRULAMA', log: 'DELİL GÜNLÜĞÜ' },
+  transcription: { material: 'KAYIT', tool: 'KULLANILAN YAZILIM', at: 'ÇÖZÜMLEME ZAMANI' }
 };
 // Kanıt tablosunda ZORUNLU sütunlar: gizlenemez (adli kayıt bütünlüğü).
 export const REPORT_COLUMN_LOCKED = { segments: ['time', 'text'] };
@@ -1130,8 +1155,64 @@ export const REPORT_COLUMN_TABLE_LABELS = {
   segments: 'Analiz / kanıt tablosu',
   speakers: 'Konuşmacı tablosu',
   speakerDurations: 'Konuşmacı süreleri',
-  materialSpeakers: 'Kayıt konuşmacı tablosu'
+  materialSpeakers: 'Kayıt konuşmacı tablosu',
+  physicalItems: 'Teslim/iade materyalleri',
+  custodyLog: 'İşlem günlüğü',
+  notationKey: 'Gösterim anahtarı',
+  finalChecklist: 'Son kontrol listesi',
+  embedded: 'Gömülü bilgi tablosu',
+  integrity: 'Bütünlük tablosu',
+  transcription: 'ASR / çözümleme tablosu'
 };
+// v2.393 — SÜTUN GENİŞLİĞİ TEK MODEL. Ağırlıklar göreli sayılardır; her çıktı
+// bunları kendi birimine eşler (HTML yüzde, DOCX twip, UDF columnSpans).
+// KURAL: genişlik dizilerini çıktı başına elle yazmayın; buradan türetin.
+// Ağırlık yoksa sütun eşit pay alır.
+export const REPORT_COLUMN_WEIGHTS = {
+  inventory: { name: 16, format: 10, size: 9, duration: 9, channels: 8, sampleRate: 9, sha256: 28 },
+  origin: { name: 11, mediumType: 9, mediumLabel: 9, deliveredBy: 9, deliveredAt: 9, deliveryPlace: 10, recordingDevice: 12, recordingAt: 10 },
+  acquisition: { name: 10, device: 9, label: 8, serial: 8, method: 8, tool: 8, operator: 10, acquiredAt: 8, hashState: 10 },
+  wer: { material: 16, model: 18, ref: 10, hyp: 10, errors: 8, wer: 8 },
+  levels: { name: 14, peak: 8, rms: 8, clipped: 9, noiseFloor: 10, snr: 10, extra: 14 },
+  segments: { time: 10, speakerCode: 7, speakerLabel: 9, text: 42, review: 9, obs: 8 },
+  speakers: { code: 7, label: 11, material: 10, role: 10, gender: 9, age: 9, pitch: 10, parts: 18 },
+  speakerDurations: { code: 7, label: 13, material: 11, chapters: 9, duration: 14, span: 20 },
+  materialSpeakers: { code: 8, label: 12, chapters: 9, duration: 12, span: 18, person: 15 },
+  physicalItems: { index: 6, type: 8, label: 12, serial: 9, seal: 9, condition: 10, related: 9, returned: 9 },
+  custodyLog: { material: 12, time: 12, event: 16, detail: 30 },
+  notationKey: { symbol: 14, meaning: 60 },
+  finalChecklist: { check: 22, state: 10, detail: 40 },
+  embedded: { name: 14, recordingAt: 16, software: 18, source: 14 },
+  integrity: { name: 14, sha256: 30, verify: 11, log: 13 },
+  transcription: { material: 18, tool: 30, at: 18 }
+};
+/** Verilen sütun anahtarları için göreli ağırlıklar (yoksa 10). */
+export function reportColumnWeights(table, keys) {
+  const w = REPORT_COLUMN_WEIGHTS[table] || {};
+  return (Array.isArray(keys) ? keys : []).map((k) => (Number(w[k]) > 0 ? Number(w[k]) : 10));
+}
+/**
+ * Ağırlıkları `total` birimine ölçekler (tam sayı, toplam = total).
+ * HTML yüzde (100), DOCX twip (~10206), UDF columnSpans (510) için kullanılır.
+ */
+export function reportColumnWidths(table, keys, total = 100) {
+  const w = reportColumnWeights(table, keys);
+  const n = w.length;
+  if (!n) return [];
+  const sum = w.reduce((a, b) => a + b, 0) || n;
+  const t = Number(total) > 0 ? Number(total) : 100;
+  const out = [];
+  let acc = 0;
+  for (let i = 0; i < n; i++) {
+    if (i === n - 1) out.push(Math.max(1, Math.round(t - acc)));
+    else {
+      const v = Math.max(1, Math.round((w[i] * t) / sum));
+      acc += v;
+      out.push(v);
+    }
+  }
+  return out;
+}
 /** Tüm sütunlar AÇIK. */
 export function emptyReportColumns(over = {}) {
   const out = {};
@@ -1335,6 +1416,13 @@ export const REPORT_TABLE_STYLES = ['grid', 'lines', 'plain'];
 // (nötr gri / mevcut koyu mavi). İçerik, durum ve hesaplar DEĞİŞMEZ.
 export const REPORT_COVER_LAYOUTS = ['simple', 'classic'];
 export const REPORT_COVER_LAYOUT_LABEL = { simple: 'İki sütunlu sade', classic: 'Klasik tablo' };
+// v2.394 — ALAN GÖRÜNÜMÜ: künye alanları nasıl gösterilsin?
+//   side  = yan yana (iki sütun; varsayılan)
+//   table = tablo (kenarlıklı klasik)
+//   list  = düz liste (her alan tek satır, tam genişlik)
+// Eski `coverFields` alanıyla eşlenir (simple→side, classic→table).
+export const REPORT_FIELD_LAYOUTS = ['side', 'table', 'list'];
+export const REPORT_FIELD_LAYOUT_LABEL = { side: 'Yan yana', table: 'Tablo', list: 'Düz liste' };
 export const REPORT_TABLE_THEMES = ['neutral', 'classic'];
 export const REPORT_TABLE_THEME_LABEL = { neutral: 'Nötr gri', classic: 'Koyu mavi' };
 export const REPORT_TABLE_STYLE_LABEL = { grid: 'Tam çerçeve', lines: 'Yalnız yatay çizgi', plain: 'Çizgisiz' };
@@ -1365,7 +1453,9 @@ export function emptyReportFormat(over = {}) {
     density: 'comfortable',
     // v2.386 — kurumsal varsayılan: sade resmî künye + nötr tablo.
     coverFields: 'simple',
-    tableTheme: 'neutral'
+    tableTheme: 'neutral',
+    // v2.394 — alan görünümü (künye). Yan yana = mevcut sade düzen.
+    fieldLayout: 'side'
   };
   return { ...base, ...over, marginsMm: { ...base.marginsMm, ...(over && over.marginsMm) } };
 }
@@ -1408,9 +1498,18 @@ export function normalizeReportFormat(src) {
         : base.density;
   // v2.386 — tasarım tercihleri. Tanımsızsa (eski dosya) yeni kurumsal
   // varsayılan uygulanır: sade künye + nötr tablo. Geçersiz değer base'e döner.
-  const coverFields = REPORT_COVER_LAYOUTS.includes(src.coverFields) ? src.coverFields : base.coverFields;
+  const coverFieldsRaw = REPORT_COVER_LAYOUTS.includes(src.coverFields) ? src.coverFields : base.coverFields;
   const tableTheme = REPORT_TABLE_THEMES.includes(src.tableTheme) ? src.tableTheme : base.tableTheme;
-  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation, tableStyle, density, coverFields, tableTheme };
+  // v2.394 — alan görünümü. Açıkça verilmişse o; yoksa eski `coverFields`ten
+  // türetilir (simple→side, classic→table). İki alan çelişmesin diye
+  // `coverFields` türetilen düzene göre eşitlenir.
+  const fieldLayout = REPORT_FIELD_LAYOUTS.includes(src.fieldLayout)
+    ? src.fieldLayout
+    : coverFieldsRaw === 'classic'
+      ? 'table'
+      : 'side';
+  const coverFields = fieldLayout === 'table' ? 'classic' : 'simple';
+  return { ...src, fontFamily, fontSizePt: size, marginsMm, orientation, tableStyle, density, coverFields, tableTheme, fieldLayout };
 }
 
 // ---- 5c. Teknik ortam alanları (v2.222) ----------------------------------

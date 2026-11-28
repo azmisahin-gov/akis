@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.391.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.395.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,37 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.395 — Kâğıttan ⚙: bölümden ilgili ayar grubuna atlama
+
+**KULLANICI NE GÖRECEK:**
+- Rapor kâğıdında, ayarı olan her bölümün başlığında **⚙** düğmesi. Basınca sağ **rapor ayarları** çekmecesi açılır ve **o bölümün ayar grubu** (künye alanları ya da tablo sütunları) kısa süre vurgulanır.
+- Örn. "Kayıt bazında bulgular" başlığındaki ⚙ → **Alanlar** sekmesi → **Analiz / kanıt tablosu** sütunları. Künyedeki ⚙ → **Künye alanları**.
+- ⚙ **yalnız ekranda**; yazdırma/PDF, Word (DOCX) ve UYAP (UDF) çıktısında görünmez.
+
+**NOT:** Eşlemesi olmayan bölümlerde (ör. 1. kapsam) ⚙ çizilmez; boş düğme üretilmez.
+
+## v2.394 — Alan görünümü: Tablo · Düz liste · Yan yana
+
+**KULLANICI NE GÖRECEK:**
+- Rapor ayarları → **Biçim** → **Alan görünümü**. Künye alanları üç biçimde gösterilir: **Yan yana** (iki sütun, varsayılan), **Tablo** (kenarlıklı), **Düz liste** (her alan tek satır, tam genişlik).
+- Seçim **ekran + yazdırma/PDF + Word (DOCX) + UYAP (UDF)** çıktısına uygulanır. Metin ve alanlar değişmez; yalnız yerleşim değişir. Boş alan satır üretmez.
+
+**NOT:** Eski "Künye düzeni" tercihi (sade/klasik) korunur ve yeni üçlüye eşlenir (sade → yan yana, klasik → tablo).
+
+## v2.393 — Sütun genişliği tek model (ağırlık)
+
+**KULLANICI NE GÖRECEK:**
+- Sütun genişlikleri artık **tek modelden** (göreli ağırlık) türetilir; ekran (HTML), Word (DOCX) ve UYAP (UDF) aynı oranı kullanır. Kanıt tablosunda **metin** sütunu her üç çıktıda da en geniş sütundur.
+- Bir sütunu kapatınca kalan sütunlar aynı oranı korur.
+
+**NOT:** HTML tabloları yüzde (`colgroup`), DOCX twip (10206), UDF `columnSpans` (≈510) birimine eşlenir. Elle yazılmış genişlik dizileri kaldırıldı.
+
+## v2.392 — "Rapor alanları"nda eksik 7 tablo
+
+**KULLANICI NE GÖRECEK:**
+- Rapor ayarları → **Alanlar** listesine **yedi tablo** daha eklendi: **Teslim/iade materyalleri · İşlem günlüğü · Gösterim anahtarı · Son kontrol listesi · Gömülü bilgi · Bütünlük · ASR / çözümleme**.
+- Her tablonun sütunlarını tek tek açıp kapatabilirsiniz; kapatılan sütun **üç çıktıda da** (HTML/DOCX/UDF) görünmez. Veri silinmez.
 
 ## v2.391 — Bilirkişi unvanı ayrı alan (rapor + üst yazı)
 
