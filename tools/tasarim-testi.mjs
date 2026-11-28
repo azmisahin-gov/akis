@@ -3258,7 +3258,13 @@ console.log('\n[2er] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
   const layer = read('assets/reading-layer.css');
   check('bölüm ⚙ düğmesi', /class="paper-gear" data-report-gear=/.test(app));
   check('⚙ bir button (erişilebilir)', /<button type="button" class="paper-gear"/.test(app));
-  check('tıklama ⚙ yakalar', /const gear = e\.target\.closest\('\[data-report-gear\]'\)/.test(app) && /goToReportSetting\(gear\.dataset\.reportGear\)/.test(app));
+  check('tıklama ⚙ yakalar', /const gear = e\.target\.closest\('\[data-report-gear\]'\)/.test(app) && /setReportEditSection\(gear\.dataset\.reportGear\)/.test(app));
+  // v2.397 — ⚙ GENEL ayar çekmecesine GİTMEZ; bölüm düzenleyicisini (Görünüm) açar.
+  check('⚙ bölüm düzenleyicisine gider', !/goToReportSetting\(gear\.dataset\.reportGear\)/.test(app));
+  check('genel Biçim "tüm belge" der', /Bu sekmedeki ayarlar TÜM BELGEYİ etkiler/.test(app));
+  check('genel kontroller "tüm belge" etiketli', /Tablo çizgisi \(tüm belge\)/.test(app) && /Yoğunluk \(tüm belge\)/.test(app));
+  check('bölüm görünümü "yalnız bu bölüm" der', /Bu bölümün görünümü/.test(app) && /yalnız bu bölüm/.test(app));
+  check('bölümden sütun ayarı köprüsü', /data-rse-columns=/.test(app));
   check('ayar eşlemesi tek kaynak', /const REPORT_SECTION_SETTINGS = \{/.test(app) && /function reportSectionSettings\(/.test(app));
   check('hedef gruplar veri nitelikli', /data-rcol-group=/.test(app) && /data-rfield-group=/.test(app));
   check('drawer içinde kaydırma (scrollIntoView yok)', /#reportSide \.drawer-body/.test(app) && !/scrollIntoView/.test(app.match(/function goToReportSetting\([\s\S]*?\n\}/)[0]));

@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.396.**
+yazılır. **Güncel sürüm: v2.397.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.397 — ⚙ bölüm görünümüne + genel/bölüm ayrımı (TAMAMLANDI)
+
+- ⚙ artık **bölüm düzenleyicisini** açar ve “Bu bölümün görünümü” kutusuna kaydırır (genel ayar çekmecesi değil).
+- Bölüm düzenleyicide **“Tablo sütunları ›”** köprüsü (`goToReportSetting`), arşivleme korunur.
+- **Biçim** sekmesi “TÜM BELGE” uyarısı + “(tüm belge)” etiketleri; bölüm görünümü “yalnız bu bölüm” der.
+- Amaç: “bu ayar hepsini değiştiriyor” yanılgısını kaldırmak.
 
 ## v2.396 — Bölüm bazında görünüm (TAMAMLANDI)
 

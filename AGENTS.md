@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.396.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.397.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10493,3 +10493,16 @@ Kullanıcı: *"Alan görünümü sadece kapağı değiştiriyor; istediğim böl
 - Bölüm bazında **başlık biçimi** (ortalı/sol) ve **iki sütunlu metin** (UDF desteği ölçülmeli).
 - Tablo sütun genişliğini sürükleyerek ayarlama (ağırlık modeli hazır).
 - Gerçek A4 sayfa kırılması / UDF yatay tablo genişliği.
+
+## YENİ OTURUM DEVRİ (v2.397) — Genel/bölüm ayrımı netleşti
+
+| | |
+|---|---|
+| Sürüm | **v2.397** |
+| Testler | **3026 birim + 565 şema** + rapor (71) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+- Kullanıcı: *“Hâlâ hepsini aynı anda etkiliyor.”* Ölçüm: per-section izolasyon **doğru** çalışıyordu; ama **⚙ genel ayar çekmecesine** gidiyordu (kullanıcı onu bölüm ayarı sanıyordu).
+- ⚙ artık `setReportEditSection(key)` → bölüm düzenleyici + “Bu bölümün görünümü” kutusuna kaydırma. `goToReportSetting` yalnız **“Tablo sütunları ›”** düğmesinden çağrılır.
+- Biçim sekmesi: **“Bu sekmedeki ayarlar TÜM BELGEYİ etkiler”** + “(tüm belge)” etiketleri. Bölüm görünümü: **“yalnız bu bölüm”**.
+- DEĞİŞMEZ: genel Biçim = tüm belge; bölüm görünümü = yalnız o bölüm; metin/kanıt değişmez.

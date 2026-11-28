@@ -4850,3 +4850,10 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
 .rse-appearance-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
 .rse-appearance-head small { color: var(--ink-3); font-size: var(--fs-2xs); }
 .rse-appearance-field { margin: 4px 0; }
+
+/* v2.397 — GENEL mi BÖLÜM mü ayrımı görünür olsun. Biçim sekmesi "tüm belge";
+   bölüm düzenleyicideki Görünüm "yalnız bu bölüm". Renk tek başına yetmez:
+   metin de yazar. */
+.fmt-global-note { border-left: 3px solid var(--accent); padding-left: 8px; }
+.rse-columns-action { margin: 6px 0 2px; }
+.rse-appearance-lead { margin: 0 0 6px; }

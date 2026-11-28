@@ -183,15 +183,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.396';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.396';
+} from './schema.js?v=2.397';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.397';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.396';
+const APP_VERSION = '2.397';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15045,7 +15045,8 @@ function reportAppearanceSelect(c, key, field, values) {
 function reportAppearanceHtml(c, key) {
   return (
     `<div class="rse-appearance">` +
-    `<div class="rse-appearance-head"><b>Görünüm</b><small>bu bölüm</small></div>` +
+    `<div class="rse-appearance-head"><b>Bu bölümün görünümü</b><small>yalnız bu bölüm</small></div>` +
+    `<p class="rtech-hint rse-appearance-lead">Buradaki seçim <b>sadece bu bölümü</b> etkiler. Tüm belgeyi değiştirmek için <b>Biçim</b> sekmesini kullanın (orada “tüm belge” yazar).</p>` +
     reportAppearanceSelect(c, key, 'pageBreak', REPORT_APPEARANCE_PAGEBREAK) +
     reportAppearanceSelect(c, key, 'tableStyle', REPORT_APPEARANCE_TABLESTYLE) +
     reportAppearanceSelect(c, key, 'density', REPORT_APPEARANCE_DENSITY) +
@@ -15066,10 +15067,16 @@ function setReportSectionAppearance(key, field, value) {
   renderReport();
 }
 function reportSectionActionsHtml(c, key) {
+  // v2.397 — Bu bölümün tablosu varsa sütun ayarlarına köprü (genel Rapor
+  // alanları). ⚙ artık buraya değil, bu düzenleyiciye açılır.
+  const colBtn = reportSectionSettings(key)
+    ? `<div class="rse-columns-action"><button type="button" class="mini-button" data-rse-columns="${esc(key)}" title="Bu bölümün tablosunun sütunlarını aç/kapat (Rapor alanları)">Tablo sütunları ›</button></div>`
+    : '';
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
     reportAppearanceHtml(c, key) +
+    colBtn +
     `<div class="rse-archive-action"><button type="button" class="mini-button" data-rse-archive="${esc(key)}" title="Bölümü arşive alır: raporda ve üst yazıda kullanılmaz. Veri SİLİNMEZ; Arşiv panelinden geri alınır.">Bu bölümü arşive al</button></div>` +
     `</div>`
   );
@@ -17498,6 +17505,8 @@ function renderReportFormat(c) {
   const mx = (k, lab) =>
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="0.5" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
+    `<p class="merge-note fmt-global-note"><b>Bu sekmedeki ayarlar TÜM BELGEYİ etkiler.</b> ` +
+    `Yalnız bir bölümü değiştirmek için kâğıtta o bölüme tıklayın (veya başlığındaki ⚙) → sağda <b>“Bölüm düzenle → Bu bölümün görünümü”</b>.</p>` +
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
     `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
     `Kenar boşluğu varsayılan 15 mm (1,5 cm, UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır. UDF bu değeri punto olarak saklar. ` +
@@ -17508,12 +17517,12 @@ function renderReportFormat(c) {
     `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
-    `<label class="field rtech-field"><span>Alan görünümü</span><select data-fmt-fieldlayout>${flOpts}</select></label>` +
-    `<label class="field rtech-field"><span>Tablo görünümü</span><select data-fmt-theme>${thOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Alan görünümü (tüm belge)</span><select data-fmt-fieldlayout>${flOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Tablo görünümü (tüm belge)</span><select data-fmt-theme>${thOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
-    `<label class="field rtech-field"><span>Tablo çizgisi</span><select data-fmt-table-style>${tsOpts}</select></label>` +
-    `<label class="field rtech-field"><span>Yoğunluk</span><select data-fmt-density>${denOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Tablo çizgisi (tüm belge)</span><select data-fmt-table-style>${tsOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Yoğunluk (tüm belge)</span><select data-fmt-density>${denOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
     mx('top', 'Üst') +
@@ -18850,7 +18859,7 @@ function renderReport() {
   // bölümlerde çizilir; başlık varsa başlığın içine (sağa yaslı) girer.
   const sectionGear = (key) => {
     if (!reportSectionSettings(key)) return '';
-    return `<button type="button" class="paper-gear" data-report-gear="${esc(key)}" title="Bu bölümün ayarlarını aç" aria-label="Bu bölümün ayarlarını aç">⚙</button>`;
+    return `<button type="button" class="paper-gear" data-report-gear="${esc(key)}" title="Bu bölümü düzenle (görünüm, başlık)" aria-label="Bu bölümü düzenle (görünüm, başlık)">⚙</button>`;
   };
   const withSectionGear = (key, piece) => {
     const gear = sectionGear(key);
@@ -24144,12 +24153,23 @@ $('#reportDrawerBackdrop')?.addEventListener('click', () => {
 });
 // Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
-  // v2.395 — bölüm başlığındaki ⚙: düzenleyici yerine İLGİLİ AYAR GRUBUNA git.
+  // v2.397 — bölüm başlığındaki ⚙: O BÖLÜMÜN düzenleyicisini aç ve Görünüm
+  // kutusuna kaydır. (v2.395'te genel ayar çekmecesine gidiyordu; kullanıcı
+  // "hepsi değişiyor" sanıyordu. Genel ayarlar Biçim sekmesinde, açıkça
+  // "tüm belge" etiketiyle durur.)
   const gear = e.target.closest('[data-report-gear]');
   if (gear) {
     e.preventDefault();
     e.stopPropagation();
-    goToReportSetting(gear.dataset.reportGear);
+    setReportEditSection(gear.dataset.reportGear);
+    requestAnimationFrame(() => {
+      const host = document.querySelector('#reportSectionEditor .drawer-body');
+      const box = host && host.querySelector('.rse-appearance');
+      if (!host || !box) return;
+      const hr = host.getBoundingClientRect();
+      const br = box.getBoundingClientRect();
+      host.scrollTop = Math.max(0, host.scrollTop + (br.top - hr.top) - 10);
+    });
     return;
   }
   const b = e.target.closest('[data-report-key]');
@@ -24183,6 +24203,12 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   if (e.target.closest('[data-rse-field]')) renderReport();
 });
 $('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
+  // v2.397 — bölüm düzenleyiciden tablo sütunlarına köprü (genel Rapor alanları).
+  const colGo = e.target.closest('[data-rse-columns]');
+  if (colGo) {
+    goToReportSetting(colGo.dataset.rseColumns);
+    return;
+  }
   // v2.389 — BÖLÜM ARŞİVİ: düğme (change değil, click). Onay sorulur.
   const ar = e.target.closest('[data-rse-archive]');
   if (ar) {
@@ -25722,6 +25748,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.397': {
+    title: '⚙ artık bölümün kendi görünümünü açar; genel ayarlar “TÜM BELGE” olarak yazılı',
+    body:
+      'Kâğıtta bölüm başlığındaki ⚙ artık o bölümün düzenleyicisini açar ve “Bu bölümün görünümü” kutusuna kaydırır (önce genel ayar çekmecesine gidiyordu; bu yüzden “hepsi değişiyor” sanılıyordu). Bölüm düzenleyicide “yalnız bu bölüm” yazar; altında “Tablo sütunları ›” ile o tablonun sütunlarını açıp kapatabilirsiniz. Biçim sekmesi artık “TÜM BELGE” uyarısı taşır ve “Tablo çizgisi (tüm belge) · Yoğunluk (tüm belge)” olarak etiketlidir. Bölüme özel görünüm yalnız o bölümü, Biçim ayarları tüm belgeyi etkiler. Metin ve kanıt değişmez.'
+  },
   '2.396': {
     title: 'Bölüm bazında görünüm: istediğiniz bölümün sayfa/tablo görünümünü değiştirin',
     body:

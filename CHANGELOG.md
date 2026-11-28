@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.396.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.397.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,15 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.397 — Genel mi bölüm mü? ⚙ artık bölüm görünümünü açar
+
+**KULLANICI NE GÖRECEK:**
+- Kâğıtta bölüm başlığındaki **⚙** artık **o bölümün düzenleyicisini** açar ve **“Bu bölümün görünümü”** kutusuna kaydırır (önce genel ayar çekmecesine gidiyordu; bu yüzden “hepsi değişiyor” sanılıyordu).
+- **Bölüm düzenleyicide:** “Bu bölümün görünümü — **yalnız bu bölüm**” açıkça yazar. Altında **“Tablo sütunları ›”** düğmesi (o bölümün tablosunun sütunlarını aç/kapat) bulunur.
+- **Biçim sekmesi** artık açıkça **“TÜM BELGE”** uyarısı taşır; kontroller **“Tablo çizgisi (tüm belge)”, “Yoğunluk (tüm belge)”** olarak etiketlendi. Böylece “bu ayar hepsini değiştirir” yanılgısı kalkar.
+
+**NOT:** Bölüme özel görünüm yalnız o bölümü etkiler; genel Biçim ayarları tüm belgeyi etkiler. Metin/kanıt değişmez.
 
 ## v2.396 — Bölüm bazında görünüm (sayfa · tablo çizgisi · yoğunluk)
 
