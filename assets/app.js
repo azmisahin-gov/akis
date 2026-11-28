@@ -128,6 +128,8 @@ import {
   REPORT_APPEARANCE_TABLESTYLE,
   REPORT_APPEARANCE_DENSITY,
   REPORT_APPEARANCE_LABELS,
+  REPORT_TABLE_LAYOUTS,
+  REPORT_TABLE_LAYOUT_LABEL,
   reportSectionAppearance,
   normalizeReportAppearance,
   reportTableAppearance,
@@ -185,15 +187,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.398';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.398';
+} from './schema.js?v=2.399';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.399';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.398';
+const APP_VERSION = '2.399';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14554,8 +14556,37 @@ function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
 // `t.widths` 1000 ölçeğinde göreli ağırlıklardır; yüzdeye normalize edilir.
 // `table-layout` DEĞİŞTİRİLMEZ (auto): colgroup yalnız oran verir, metin
 // sarmaya devam eder (kırpma yok).
+// v2.399 — ALAN GÖRÜNÜMÜ (yan yana / düz liste). Tablo değil; etiket/değer
+// çiftleri. "Yan yana" sütunları iki yarıya böler; "düz liste" her hücreyi
+// kendi satırına yazar. Metin DEĞİŞMEZ; yalnız görünüm.
+function paperTableAlt(t, layout) {
+  const H = t.headers || [];
+  const rows = t.rows || [];
+  const n = H.length;
+  const half = Math.ceil(n / 2);
+  const cellHtml = (h, v) => `<span class="paper-alt-cell"><span class="paper-alt-k">${esc(h)}</span><span class="paper-alt-v">${esc(v)}</span></span>`;
+  const rowHtml = (r) => {
+    if (layout === 'list') {
+      return `<div class="paper-alt-row paper-alt-row-list">${H.map((h, i) => cellHtml(h, r[i])).join('')}</div>`;
+    }
+    const left = H.slice(0, half).map((h, i) => cellHtml(h, r[i])).join('');
+    const right = H.slice(half).map((h, i) => cellHtml(h, r[half + i])).join('');
+    return `<div class="paper-alt-row"><div class="paper-alt-col">${left}</div><div class="paper-alt-col">${right}</div></div>`;
+  };
+  const body = rows.length ? rows.map(rowHtml).join('') : `<div class="paper-alt-empty">${esc(t.empty || '—')}</div>`;
+  return `<div class="paper-alt paper-alt-${esc(layout)}"${t.table ? ` data-table-key="${esc(t.table)}"` : ''}>${body}</div>`;
+}
 function paperTable(t, opts = {}) {
-  const widths = Array.isArray(t.widths) && t.widths.length === t.headers.length ? t.widths : null;
+  const ap = t.appearance || {};
+  const layout = ap.layout || 'table';
+  if (layout === 'side' || layout === 'list') return paperTableAlt(t, layout);
+  // Elle ayarlanmış sütun genişliği varsa o; yoksa ağırlık modeli.
+  const widths =
+    Array.isArray(ap.widths) && ap.widths.length === t.headers.length
+      ? ap.widths
+      : Array.isArray(t.widths) && t.widths.length === t.headers.length
+        ? t.widths
+        : null;
   const sum = widths ? widths.reduce((a, b) => a + (Number(b) || 1), 0) : 0;
   const colgroup = widths
     ? `<colgroup>${widths.map((w) => `<col style="width:${(((Number(w) || 1) / sum) * 100).toFixed(2)}%">`).join('')}</colgroup>`
@@ -14574,12 +14605,12 @@ function paperTable(t, opts = {}) {
           )
           .join('')
       : `<tr><td colspan="${t.headers.length}">${esc(t.empty || '—')}</td></tr>`;
-  // v2.398 — tablo bazında görünüm nitelikleri (varsa). CSS'te bölüm/genel
-  // ayardan daha yüksek özgüllükle kazanır. `inherit` yazılmaz.
-  const ap = t.appearance || {};
+  // v2.398/399 — tablo bazında görünüm + kimlik (sağ tık menüsü/sürükleme).
   const tattrs = [];
+  if (t.table) tattrs.push(`data-table-key="${esc(t.table)}"`);
   if (ap.tableStyle && ap.tableStyle !== 'inherit') tattrs.push(`data-tbl-style="${esc(ap.tableStyle)}"`);
   if (ap.density && ap.density !== 'inherit') tattrs.push(`data-tbl-density="${esc(ap.density)}"`);
+  if (ap.widths) tattrs.push('data-tbl-manual="1"');
   return `<table class="${opts.cls || 'paper-table'}"${tattrs.length ? ' ' + tattrs.join(' ') : ''}>${colgroup}<thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
 }
 // v2.398 — DOCX tablo seçenekleri: yalnız tablo bazında AÇIK tercihler eklenir
@@ -14589,6 +14620,8 @@ function tableFmtOpts(t) {
   const o = {};
   if (a.tableStyle && a.tableStyle !== 'inherit') o.tableStyle = a.tableStyle;
   if (a.density && a.density !== 'inherit') o.density = a.density;
+  if (a.layout && a.layout !== 'table') o.layout = a.layout;
+  if (Array.isArray(a.widths)) o.widths = a.widths;
   return o;
 }
 function werTableRows(c) {
@@ -14639,24 +14672,8 @@ function reportFieldGroupsHtml(c) {
     })
     .join('');
 }
-// v2.398 — TABLO BAZINDA GÖRÜNÜM: her tablo grubunun başında kendi çizgi ve
-// yoğunluk seçimi. "Genel ayarı kullan" = dosya biçimi geçerli.
-function tableAppearanceSelects(c, table) {
-  const cur = reportTableAppearance(c, table);
-  const opts = (field, values) =>
-    values
-      .map(
-        (v) =>
-          `<option value="${esc(v)}"${cur[field] === v ? ' selected' : ''}>${esc(REPORT_APPEARANCE_LABELS[field][v] || v)}</option>`
-      )
-      .join('');
-  return (
-    `<div class="rcol-appearance">` +
-    `<label><span>Tablo çizgisi</span><select data-rcol-app-table="${esc(table)}" data-rcol-app-field="tableStyle">${opts('tableStyle', REPORT_APPEARANCE_TABLESTYLE)}</select></label>` +
-    `<label><span>Yoğunluk</span><select data-rcol-app-table="${esc(table)}" data-rcol-app-field="density">${opts('density', REPORT_APPEARANCE_DENSITY)}</select></label>` +
-    `</div>`
-  );
-}
+// v2.399 — Tablo görünümü artık PANELDE DEĞİL, kâğıt üzerinde sağ tık
+// menüsündedir (v2.398'deki seçiciler kaldırıldı; kalabalık yapıyordu).
 function setReportTableAppearance(table, field, value) {
   const c = currentCase();
   if (!c) return;
@@ -14668,6 +14685,115 @@ function setReportTableAppearance(table, field, value) {
   c.report.tableAppearance = normalizeReportTableAppearance(all);
   persist();
   renderReport();
+}
+// v2.399 — KÂĞIT ÜZERİNDE SAĞ TIK MENÜSÜ. Tabloya sağ tık: görünüm (tablo/
+// yan yana/düz liste), çizgi, yoğunluk, sütun genişliği. Menüde gezinme yok;
+// seçim o tabloya yazılır.
+let paperTableMenuKey = null;
+function closePaperTableMenu() {
+  const m = $('#paperTableMenu');
+  if (m) m.hidden = true;
+  paperTableMenuKey = null;
+}
+function openPaperTableMenu(key, x, y) {
+  const c = currentCase();
+  if (!c) return;
+  let m = $('#paperTableMenu');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'paperTableMenu';
+    m.className = 'paper-table-menu';
+    m.setAttribute('role', 'menu');
+    document.body.appendChild(m);
+  }
+  paperTableMenuKey = key;
+  const ap = reportTableAppearance(c, key);
+  const opt = (field, val, label, cur) =>
+    `<button type="button" role="menuitemradio" aria-checked="${String(cur === val)}" class="${cur === val ? 'on' : ''}" data-ptm="${esc(field)}" data-ptm-val="${esc(val)}">${esc(label)}</button>`;
+  m.innerHTML =
+    `<div class="ptm-title">${esc(REPORT_COLUMN_TABLE_LABELS[key] || key)}</div>` +
+    `<div class="ptm-group"><div class="ptm-label">Görünüm</div><div class="ptm-opts">${REPORT_TABLE_LAYOUTS.map((v) => opt('layout', v, REPORT_TABLE_LAYOUT_LABEL[v], ap.layout)).join('')}</div></div>` +
+    `<div class="ptm-group"><div class="ptm-label">Tablo çizgisi</div><div class="ptm-opts">${REPORT_APPEARANCE_TABLESTYLE.map((v) => opt('tableStyle', v, REPORT_APPEARANCE_LABELS.tableStyle[v], ap.tableStyle)).join('')}</div></div>` +
+    `<div class="ptm-group"><div class="ptm-label">Yoğunluk</div><div class="ptm-opts">${REPORT_APPEARANCE_DENSITY.map((v) => opt('density', v, REPORT_APPEARANCE_LABELS.density[v], ap.density)).join('')}</div></div>` +
+    `<div class="ptm-group"><div class="ptm-label">Sütun genişlikleri</div><div class="ptm-opts">` +
+    `<button type="button" data-ptm-widths="auto"${ap.widths ? '' : ' class="on"'}>Otomatik</button>` +
+    `<button type="button" data-ptm-widths="manual"${ap.widths ? ' class="on"' : ''}>Elle ayarla (sürükle)</button>` +
+    `</div><div class="ptm-hint">“Elle ayarla” seçip sütun kenarını sağa/sola sürükleyin.</div></div>` +
+    `<div class="ptm-close"><button type="button" data-ptm-close="1">Kapat</button></div>`;
+  m.hidden = false;
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x)) + 'px';
+  m.style.top = Math.min(window.innerHeight - r.height - 8, Math.max(8, y)) + 'px';
+}
+function enableManualWidths(key) {
+  const c = currentCase();
+  if (!c) return;
+  let widths = null;
+  const tbl = document.querySelector(`#reportPreview table.paper-table[data-table-key="${key}"]`);
+  if (tbl) {
+    const cols = [...tbl.querySelectorAll('colgroup col')];
+    widths = cols.map((col) => parseFloat(col.style.width) || 0).filter((x) => x > 0);
+  }
+  if (!widths || widths.length < 2) {
+    const n = (REPORT_COLUMN_TABLES[key] || []).length || 2;
+    widths = Array.from({ length: n }, () => 100 / n);
+  }
+  // Elle ayar "tablo" görünümünde anlamlıdır.
+  setReportTableAppearance(key, 'layout', 'table');
+  setReportTableAppearance(key, 'widths', widths);
+}
+// Sürükleme: yalnız başlık hücresinin SAĞ KENARINA yakınken başlar.
+let paperTableDrag = null;
+let paperTableJustDragged = false;
+function startPaperTableDrag(e) {
+  const th = e.target.closest ? e.target.closest('table.paper-table[data-table-key] th') : null;
+  if (!th) return;
+  const tbl = th.closest('table.paper-table');
+  if (!tbl) return;
+  const cols = [...tbl.querySelectorAll('colgroup col')];
+  if (cols.length < 2) return;
+  const ths = [...tbl.querySelectorAll('thead th')];
+  const idx = ths.indexOf(th);
+  if (idx < 0 || idx >= cols.length - 1) return;
+  const rect = th.getBoundingClientRect();
+  if (e.clientX < rect.right - 10) return; // kenara yakın değil
+  e.preventDefault();
+  tbl.style.tableLayout = 'fixed';
+  paperTableDrag = {
+    key: tbl.dataset.tableKey,
+    cols,
+    idx,
+    startX: e.clientX,
+    total: Math.max(1, tbl.getBoundingClientRect().width),
+    start: cols.map((c) => parseFloat(c.style.width) || 0)
+  };
+}
+function movePaperTableDrag(e) {
+  if (!paperTableDrag) return;
+  const dx = ((e.clientX - paperTableDrag.startX) / paperTableDrag.total) * 100;
+  let a = paperTableDrag.start[paperTableDrag.idx] + dx;
+  let b = paperTableDrag.start[paperTableDrag.idx + 1] - dx;
+  if (a < 5) {
+    b -= 5 - a;
+    a = 5;
+  }
+  if (b < 5) {
+    a -= 5 - b;
+    b = 5;
+  }
+  if (a < 5 || b < 5) return;
+  paperTableDrag.moved = true;
+  paperTableDrag.cols[paperTableDrag.idx].style.width = a.toFixed(2) + '%';
+  paperTableDrag.cols[paperTableDrag.idx + 1].style.width = b.toFixed(2) + '%';
+}
+function endPaperTableDrag() {
+  if (!paperTableDrag) return;
+  const key = paperTableDrag.key;
+  const moved = !!paperTableDrag.moved;
+  const widths = paperTableDrag.cols.map((c) => parseFloat(c.style.width) || 0);
+  paperTableDrag = null;
+  if (moved) paperTableJustDragged = true; // sürükleme sonrası tıklama düzenleyici açmasın
+  if (key && moved && widths.length >= 2) setReportTableAppearance(key, 'widths', widths);
 }
 function renderReportColumns(c) {
   const host = $('#reportColumnsFields');
@@ -14682,7 +14808,6 @@ function renderReportColumns(c) {
         const on = keys.filter((k) => cols[table][k] !== false).length;
         return (
           `<div class="rcol-group" data-rcol-group="${esc(table)}"><div class="rcol-head"><b>${esc(REPORT_COLUMN_TABLE_LABELS[table] || table)}</b><span>${on}/${keys.length}</span></div>` +
-          tableAppearanceSelects(c, table) +
           keys
             .map((k) => {
               const locked = reportColumnLocked(table, k);
@@ -15099,9 +15224,7 @@ function reportAppearanceHtml(c, key) {
     `<div class="rse-appearance-head"><b>Bu bölümün görünümü</b><small>yalnız bu bölüm</small></div>` +
     `<p class="rtech-hint rse-appearance-lead">Buradaki seçim <b>sadece bu bölümü</b> etkiler. Tüm belgeyi değiştirmek için <b>Biçim</b> sekmesini kullanın (orada “tüm belge” yazar).</p>` +
     reportAppearanceSelect(c, key, 'pageBreak', REPORT_APPEARANCE_PAGEBREAK) +
-    reportAppearanceSelect(c, key, 'tableStyle', REPORT_APPEARANCE_TABLESTYLE) +
-    reportAppearanceSelect(c, key, 'density', REPORT_APPEARANCE_DENSITY) +
-    `<p class="rtech-hint">Yalnız yerleşim; metin ve kanıt değişmez. Tablo seçenekleri bölümde tablo varsa görünür. <b>UDF</b>'te tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır.</p>` +
+    `<p class="rtech-hint">Tablo görünümü (Tablo / Yan yana / Düz liste), çizgi, yoğunluk ve sütun genişliği için <b>kâğıtta tabloya sağ tık</b> yapın. Yalnız yerleşim; metin ve kanıt değişmez.</p>` +
     `</div>`
   );
 }
@@ -16862,7 +16985,7 @@ function recordSectionDefs(c) {
     fileInventory: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
       : invT.rows.length
-        ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, widths: invT.widths, appearance: invT.appearance }
+        ? { kind: 'table', header: true, table: 'inventory', headers: invT.headers, rows: invT.rows, widths: invT.widths, appearance: invT.appearance }
         : { kind: 'para', text: REPORT_TEXT.annexNoInventory },
     custodyLog: logRows.length
       ? { kind: 'table', header: true, columns: 'custodyLog', headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], rows: logRows }
@@ -16922,7 +17045,7 @@ function recordSectionDefs(c) {
 // `columns` taşıyorsa sütunlar `reportTableColumns` ile süzülür; yoksa blok
 // olduğu gibi basılır (geriye uyum). `empty` = tüm sütunlar kapalı.
 function recordTableCols(c, b) {
-  if (!b || !b.columns) return { headers: b.headers, rows: b.rows, widths: b.widths, appearance: b.appearance, empty: false };
+  if (!b || !b.columns) return { table: b && b.table, headers: b.headers, rows: b.rows, widths: b.widths, appearance: b.appearance, empty: false };
   return reportTableColumns(c, b.columns, b.headers, b.rows, b.widths);
 }
 // v2.380 — Eski ek İÇERİKLERİ artık normal bölüm üreticisidir. Blok → çıktı
@@ -17015,7 +17138,7 @@ function recordBlockUdf(c, key, el, H) {
       el.push(
         tc.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true })
+          : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true, ...tableFmtOpts(tc) })
       );
     }
   } else if (b.kind === 'blocks') {
@@ -17027,7 +17150,7 @@ function recordBlockUdf(c, key, el, H) {
         el.push(
           tc.empty
             ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-            : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true })
+            : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true, ...tableFmtOpts(tc) })
         );
       }
     }
@@ -17038,7 +17161,7 @@ function recordBlockUdf(c, key, el, H) {
     } else {
       const w = tc.widths || b.udfWidths || (b.header ? tc.headers.map(() => Math.floor(510 / tc.headers.length)) : [170, 340]);
       const rows = b.header ? [tc.headers, ...(tc.rows.length ? tc.rows : [tc.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : tc.rows;
-      el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
+      el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header, ...tableFmtOpts(tc) }));
     }
   }
   if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
@@ -19087,7 +19210,30 @@ function cell(text, { header = false, shade = null, bold = false, width = 2200, 
   const p = `<w:p><w:pPr>${keep ? '<w:keepNext/>' : ''}<w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
-function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false, tableStyle = null, density = null } = {}) {
+function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false, tableStyle = null, density = null, layout = 'table' } = {}) {
+  // v2.399 — ALAN GÖRÜNÜMÜ: tablo yerine "yan yana" veya "düz liste".
+  if (layout === 'side' || layout === 'list') {
+    if (!rows || !rows.length) return '';
+    const headerRow = header ? rows[0] : null;
+    const data = headerRow ? rows.slice(1) : rows;
+    if (!data.length) return '';
+    const labels = headerRow || [];
+    const ncol = (headerRow || data[0] || []).length;
+    const cellText = (r, from, to) => {
+      const out = [];
+      for (let i = from; i < to; i++) {
+        const v = r[i] == null ? '' : r[i];
+        out.push(labels[i] ? `${labels[i]}: ${v}` : String(v));
+      }
+      return out.join(' · ');
+    };
+    if (layout === 'list') return data.map((r) => wP(cellText(r, 0, ncol), { size: 18, keepLines: true })).join('');
+    const half = Math.ceil(ncol / 2);
+    return wTable(
+      data.map((r) => [cellText(r, 0, half), cellText(r, half, ncol)]),
+      { widths: [1, 1], header: false, tableStyle: 'plain', density, keepLast }
+    );
+  }
   const n = rows[0]?.length || 1;
   // Tablo, metin genişliğine (contentTw) oturur; sütun oranları korunur. (v2.259)
   const contentTw = (__docxFmt && __docxFmt.contentTw) || 9000;
@@ -19981,10 +20127,29 @@ async function udfDocument(opts = {}) {
   function pageBreak() {
     return `<page-break><paragraph><content startOffset="${codePointOffset}" length="0" family="${udfFamily}" size="11" underline="false" /></paragraph></page-break>`;
   }
-  function table(rows, widths, { header = true, shadeFirstCol = false } = {}) {
+  function table(rows, widths, { header = true, shadeFirstCol = false, layout = 'table' } = {}) {
     // v2.386 — tablo teması (yalnız görsel): nötr gri / klasik koyu mavi.
     const neutralTheme = (fmt.tableTheme || 'neutral') !== 'classic';
     if (!rows?.length) return '';
+    // v2.399 — ALAN GÖRÜNÜMÜ: tablo yerine yan yana / düz liste (UDF paragrafı).
+    if (layout === 'side' || layout === 'list') {
+      const headerRow = header ? rows[0] : null;
+      const data = headerRow ? rows.slice(1) : rows;
+      if (!data.length) return '';
+      const labels = headerRow || [];
+      const ncol = (headerRow || data[0] || []).length;
+      const cellText = (r, from, to) => {
+        const out = [];
+        for (let i = from; i < to; i++) {
+          const v = r[i] == null ? '' : r[i];
+          out.push(labels[i] ? `${labels[i]}: ${v}` : String(v));
+        }
+        return out.join(' · ');
+      };
+      if (layout === 'list') return data.map((r) => paragraph(cellText(r, 0, ncol), { size: 9, after: 2 })).join('');
+      const half = Math.ceil(ncol / 2);
+      return data.map((r) => paragraph(`${cellText(r, 0, half)}   |   ${cellText(r, half, ncol)}`, { size: 9, after: 2 })).join('');
+    }
     const colCount = rows[0].length;
     // v2.393 — genişlikler TEK modelden (ağırlık) gelir; UDF `columnSpans`
     // birimine (≈510) burada ölçeklenir. Açık dizi de aynı ölçeğe çekilir.
@@ -20174,7 +20339,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('origin')));
       el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
       else el.push(paragraph(REPORT_TEXT.noMaterials, { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20187,7 +20352,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
       );
     },
     acquisition: () => {
@@ -20197,7 +20362,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('acquisition')));
       el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
     },
     speakers: () => {
       const uSpk = speakerReportRows(c);
@@ -20211,7 +20376,7 @@ async function udfDocument(opts = {}) {
       {
         const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk);
         if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
-        else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+        else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true, ...tableFmtOpts(st) }));
         else el.push(paragraph(REPORT_TEXT.noSpeakerText, { size: 9, italic: true, color: 'muted' }));
       }
       if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
@@ -20228,7 +20393,7 @@ async function udfDocument(opts = {}) {
       const legend = speakerRecordLegend(c);
       const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows);
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
       if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
@@ -20262,7 +20427,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
       );
       el.push(paragraph(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20288,7 +20453,7 @@ async function udfDocument(opts = {}) {
               else {
                 el.push(paragraph(REPORT_TEXT.recordSpeakersHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
                 const w = st.headers.map(() => Math.floor(510 / st.headers.length));
-                el.push(table([[...st.headers], ...st.rows], w, { header: true }));
+                el.push(table([[...st.headers], ...st.rows], w, { header: true, ...tableFmtOpts(st) }));
               }
             }
           }
@@ -20316,7 +20481,7 @@ async function udfDocument(opts = {}) {
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
             el.push(paragraph(REPORT_TEXT.recordTranscriptHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
-            el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
+            el.push(table([[...st.headers], ...st.rows], st.widths, { header: true, ...tableFmtOpts(st) }));
             if (amb.length)
               el.push(paragraph(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { size: 9, italic: true, color: 'muted', after: 4 }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
@@ -20365,7 +20530,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
       );
       el.push(paragraph(defaultTextFor('integrityNote'), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20419,7 +20584,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('wer')));
       el.push(paragraph(defaultTextFor('werIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
     },
     levels: () => {
       const uLevel = levelRowsForCase(c);
@@ -20428,7 +20593,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('levels')));
       el.push(paragraph(defaultTextFor('levelIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
     },
     reviewSummary: () => {
       el.push(h(H('reviewSummary')));
@@ -20532,7 +20697,7 @@ async function udfDocument(opts = {}) {
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             el.push(paragraph(t.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
-            el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true }));
+            el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true, ...tableFmtOpts(t) }));
           }
         } else if (b.kind === 'blocks') {
           // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
@@ -20540,13 +20705,13 @@ async function udfDocument(opts = {}) {
             if (sub.kind === 'para') el.push(paragraphLines(sub.text, { justify: true }));
             else if (sub.kind === 'table') {
               el.push(paragraph(sub.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
-              el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true }));
+              el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true, ...tableFmtOpts(t) }));
             }
           }
         } else {
           const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
           const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
-          el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
+          el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header, ...tableFmtOpts(tc) }));
         }
         if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
       }
@@ -24234,12 +24399,56 @@ $('#reportPreview')?.addEventListener('click', (e) => {
     });
     return;
   }
+  if (paperTableJustDragged) {
+    paperTableJustDragged = false;
+    return;
+  }
   const b = e.target.closest('[data-report-key]');
   if (b) {
     setReportEditSection(b.dataset.reportKey);
     // v2.366 — seçilen bölüm iskelette görünür kalsın (mutlak kaydırma).
     requestAnimationFrame(() => scrollSkeletonToKey(b.dataset.reportKey));
   }
+});
+// v2.399 — kâğıt üzerinde tablo: sağ tık menüsü + sütun sürükleme.
+$('#reportPreview')?.addEventListener('contextmenu', (e) => {
+  const el = e.target.closest('[data-table-key]');
+  if (!el) return;
+  e.preventDefault();
+  openPaperTableMenu(el.dataset.tableKey, e.clientX, e.clientY);
+});
+$('#reportPreview')?.addEventListener('pointerdown', (e) => startPaperTableDrag(e));
+document.addEventListener('pointermove', (e) => movePaperTableDrag(e));
+document.addEventListener('pointerup', () => endPaperTableDrag());
+document.addEventListener('click', (e) => {
+  const menu = e.target.closest('#paperTableMenu');
+  if (menu) {
+    if (e.target.closest('[data-ptm-close]')) {
+      closePaperTableMenu();
+      return;
+    }
+    const w = e.target.closest('[data-ptm-widths]');
+    if (w && paperTableMenuKey) {
+      const key = paperTableMenuKey;
+      closePaperTableMenu();
+      if (w.dataset.ptmWidths === 'auto') setReportTableAppearance(key, 'widths', null);
+      else enableManualWidths(key);
+      return;
+    }
+    const b = e.target.closest('[data-ptm]');
+    if (b && paperTableMenuKey) {
+      const key = paperTableMenuKey;
+      closePaperTableMenu();
+      setReportTableAppearance(key, b.dataset.ptm, b.dataset.ptmVal);
+      return;
+    }
+    return;
+  }
+  const pm = $('#paperTableMenu');
+  if (pm && !pm.hidden) closePaperTableMenu();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePaperTableMenu();
 });
 $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
   const f = e.target.closest('[data-rse-field]');
@@ -24599,12 +24808,6 @@ $('#reportSections')?.addEventListener('dragend', () => {
 });
 // Tablo sütunları (v2.235): kapat/aç → üç çıktıda da yansır.
 $('#reportColumnsFields')?.addEventListener('change', (e) => {
-  // v2.398 — tablo bazında çizgi/yoğunluk.
-  const appSel = e.target.closest('[data-rcol-app-table]');
-  if (appSel) {
-    setReportTableAppearance(appSel.dataset.rcolAppTable, appSel.dataset.rcolAppField, appSel.value);
-    return;
-  }
   const lab = e.target.closest('[data-rcol-label-key]');
   if (lab) {
     const c = currentCase();
@@ -25816,6 +26019,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.399': {
+    title: 'Kâğıt üzerinde tablo: sağ tık menüsü ve sütun sürükleme',
+    body:
+      'Rapor kâğıdında bir tabloya SAĞ TIK yapın: açılan menüden Görünüm (Tablo · Yan yana · Düz liste), tablo çizgisi, yoğunluk ve sütun genişliğini seçebilirsiniz. “Elle ayarla (sürükle)” seçip başlık hücresinin sağ kenarını sol tıkla tutup sürükleyin; o sütun genişler/daralır. Her ayar yalnız o tabloya yazılır; hiçbir menüye/sekmeğe gitmeniz gerekmez. “Yan yana” sütunları iki yarıya böler, “Düz liste” her hücreyi “BAŞLIK: değer” olarak alt alta yazar. Seçim ekran, yazdırma/PDF, Word ve UYAP çıktısına yansır; metin ve kanıt DEĞİŞMEZ. Panellerdeki fazladan tablo seçicileri kaldırıldı.'
+  },
   '2.398': {
     title: 'Her tabloyu ayrı ayrı değiştirin: tablo çizgisi ve yoğunluk',
     body:

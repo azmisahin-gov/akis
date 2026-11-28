@@ -3301,12 +3301,19 @@ console.log('\n[2et] Tablo bazında görünüm (v2.398)');
   check('şema: tablo birleştirme planı', /export function tableAppearanceMergePlan\(/.test(schema) && /tableAppearanceMergePlan\(mine, theirs\)/.test(schema));
   check('şema: boş rapor tableAppearance taşır', /tableAppearance: \{\},/.test(schema) && /tableAppearance: normalizeReportTableAppearance\(report\.tableAppearance\)/.test(schema));
   check('revizyon: tablo görünümü snapshot + etiket', /tableAppearance: normalizeReportTableAppearance\(r\.tableAppearance\)/.test(app) && /tableAppearance: 'Tablo görünümü/.test(app));
-  check('rapor alanları: tablo görünümü seçicisi', /function tableAppearanceSelects\(/.test(app) && /data-rcol-app-table=/.test(app) && /function setReportTableAppearance\(/.test(app));
+  // v2.399 — tablo görünümü PANELDE DEĞİL, kâğıt üzerinde sağ tık menüsünde.
+  check('panel seçicileri kaldırıldı', !/data-rcol-app-table/.test(app));
+  check('kâğıt üzerinde tablo menüsü', /function openPaperTableMenu\(/.test(app) && /data-ptm=/.test(app) && /function setReportTableAppearance\(/.test(app));
+  check('sütun sürükleme', /function startPaperTableDrag\(/.test(app) && /pointermove/.test(app) && /data-tbl-manual/.test(app));
+  check('tablo düzeni (yan yana/düz liste)', /function paperTableAlt\(/.test(app) && /REPORT_TABLE_LAYOUTS/.test(app) && /layout === 'side' \|\| layout === 'list'/.test(app));
+  check('tabloya kimlik (sağ tık için)', /data-table-key=/.test(app));
   check('HTML: tablo nitelikleri', /data-tbl-style="\$\{esc\(ap\.tableStyle\)\}"/.test(app) && /data-tbl-density="\$\{esc\(ap\.density\)\}"/.test(app));
   check('sütun çıktısı tablo görünümü taşır', /appearance: reportTableAppearance\(c, table\)/.test(app));
   check('DOCX: tablo bazında stil/yoğunluk', /function tableFmtOpts\(/.test(app) && /tableStyle = null, density = null/.test(app) && /\.\.\.tableFmtOpts\(t\)/.test(app));
   check('CSS: tablo bazında çizgi/yoğunluk', /\.paper-table\[data-tbl-style="plain"\]/.test(layer) && /\.paper-table\[data-tbl-density="compact"\]/.test(layer));
-  check('CSS: tablo görünümü seçicisi', /\.rcol-appearance \{/.test(layer));
+  check('CSS: yan yana / düz liste', /\.paper-alt-row \{/.test(layer) && /\.paper-alt-row-list/.test(layer));
+  check('CSS: sağ tık menüsü', /\.paper-table-menu \{/.test(layer) && /\.ptm-opts/.test(layer));
+  check('CSS: elle sütun genişliği', /\.paper-table\[data-tbl-manual="1"\]/.test(layer));
   const blk = layer.slice(layer.indexOf('v2.398'), layer.indexOf('v2.398') + 1600);
   check('v2.398 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }

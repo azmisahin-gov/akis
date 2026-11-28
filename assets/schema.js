@@ -763,6 +763,10 @@ export const REPORT_APPEARANCE_LABELS = {
   tableStyle: { inherit: 'Genel ayarı kullan', grid: 'Tam çerçeve', lines: 'Yalnız yatay çizgi', plain: 'Çizgisiz' },
   density: { inherit: 'Genel ayarı kullan', comfortable: 'Rahat', compact: 'Sıkı' }
 };
+// v2.399 — TABLO DÜZENİ: 'table' (tablo) · 'side' (yan yana) · 'list' (düz liste).
+// Sayfa üzerinde sağ tık menüsünden seçilir; yalnız o tabloyu etkiler.
+export const REPORT_TABLE_LAYOUTS = ['table', 'side', 'list'];
+export const REPORT_TABLE_LAYOUT_LABEL = { table: 'Tablo', side: 'Yan yana', list: 'Düz liste' };
 export function emptyReportAppearanceEntry() {
   return { pageBreak: 'auto', tableStyle: 'inherit', density: 'inherit' };
 }
@@ -823,7 +827,18 @@ export function appearanceMergePlan(mine, theirs) {
 // Bölümden DAHA İNCE: her tablo (REPORT_COLUMN_TABLES anahtarı) kendi çizgi/
 // yoğunluğunu taşır. Öncelik: tablo > bölüm > genel. Yalnız görsel.
 export function emptyReportTableAppearanceEntry() {
-  return { tableStyle: 'inherit', density: 'inherit' };
+  return { tableStyle: 'inherit', density: 'inherit', layout: 'table', widths: null };
+}
+// Genişlik dizisini yüzdeye (1 ondalık) normalize eder; geçersizse null.
+export function normalizeTableWidths(widths) {
+  if (!Array.isArray(widths) || widths.length < 2) return null;
+  const w = widths.map((x) => Number(x));
+  if (w.some((x) => !Number.isFinite(x) || x <= 0)) return null;
+  const sum = w.reduce((a, b) => a + b, 0) || 1;
+  const pct = w.map((x) => Math.round((x / sum) * 1000) / 10);
+  // En az %5 pay bırak (aşırı sıkışmayı önle).
+  if (pct.some((x) => x < 5)) return null;
+  return pct;
 }
 export function normalizeReportTableAppearance(src = {}) {
   const out = {};
@@ -832,9 +847,11 @@ export function normalizeReportTableAppearance(src = {}) {
     if (!val || typeof val !== 'object') continue;
     const e = {
       tableStyle: REPORT_APPEARANCE_TABLESTYLE.includes(val.tableStyle) ? val.tableStyle : 'inherit',
-      density: REPORT_APPEARANCE_DENSITY.includes(val.density) ? val.density : 'inherit'
+      density: REPORT_APPEARANCE_DENSITY.includes(val.density) ? val.density : 'inherit',
+      layout: REPORT_TABLE_LAYOUTS.includes(val.layout) ? val.layout : 'table',
+      widths: normalizeTableWidths(val.widths)
     };
-    if (e.tableStyle === 'inherit' && e.density === 'inherit') continue;
+    if (e.tableStyle === 'inherit' && e.density === 'inherit' && e.layout === 'table' && !e.widths) continue;
     out[key] = e;
   }
   return out;
@@ -846,14 +863,17 @@ export function reportTableAppearance(c, table) {
   if (!a || typeof a !== 'object') return base;
   return {
     tableStyle: REPORT_APPEARANCE_TABLESTYLE.includes(a.tableStyle) ? a.tableStyle : base.tableStyle,
-    density: REPORT_APPEARANCE_DENSITY.includes(a.density) ? a.density : base.density
+    density: REPORT_APPEARANCE_DENSITY.includes(a.density) ? a.density : base.density,
+    layout: REPORT_TABLE_LAYOUTS.includes(a.layout) ? a.layout : base.layout,
+    widths: normalizeTableWidths(a.widths)
   };
 }
 export function tableAppearanceText(e) {
   const x = e || emptyReportTableAppearanceEntry();
   const t = REPORT_APPEARANCE_LABELS.tableStyle[x.tableStyle] || x.tableStyle;
   const d = REPORT_APPEARANCE_LABELS.density[x.density] || x.density;
-  return `Tablo: ${t} · Yoğunluk: ${d}`;
+  const l = REPORT_TABLE_LAYOUT_LABEL[x.layout] || x.layout;
+  return `Düzen: ${l} · Tablo: ${t} · Yoğunluk: ${d}${x.widths ? ` · ${x.widths.length} sütun elle` : ''}`;
 }
 export function tableAppearanceMergePlan(mine, theirs) {
   const ma = normalizeReportTableAppearance((mine && mine.report && mine.report.tableAppearance) || {});

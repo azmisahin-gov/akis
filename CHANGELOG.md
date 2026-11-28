@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.398.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.399.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,21 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.399 — Kâğıt üzerinde tablo: sağ tık menüsü + sütun sürükleme
+
+**KULLANICI NE GÖRECEK:**
+- Rapor kâğıdında **herhangi bir tabloya sağ tık** → küçük menü:
+  - **Görünüm:** **Tablo · Yan yana · Düz liste**
+  - **Tablo çizgisi:** Genel · Tam çerçeve · Yalnız yatay · Çizgisiz
+  - **Yoğunluk:** Genel · Rahat · Sıkı
+  - **Sütun genişlikleri:** **Otomatik** · **Elle ayarla (sürükle)**
+- **Elle ayarla** seçtikten sonra **başlık hücresinin sağ kenarını** sol tıkla tutup sürükleyin: o sütun genişler/daralır. Yalnız o tablo etkilenir.
+- Her ayar **yalnız o tabloya** yazılır; hiçbir menüye/sekmeğe gitmek gerekmez. “Tablo / Yan yana / Düz liste” seçimi ekran + yazdırma/PDF + Word (DOCX) + UYAP (UDF) çıktısına yansır (metin değişmez).
+
+**SADELEŞTİRME:** v2.396–398’de Alanlar/Biçim panellerine eklenen fazladan seçiciler **kaldırıldı**; tablo görünümü artık **kâğıt üzerinde** yapılır. Bölüm düzenleyicide yalnız “Sayfa düzeni” (yeni sayfa) kaldı.
+
+**DÜRÜST SINIR:** UDF’te tablo çizgisi/yoğunluk UYAP şablonundan gelir; “Tablo / Yan yana / Düz liste” ve sütun genişliği uygulanır.
 
 ## v2.398 — Tablo bazında görünüm (her tablo ayrı)
 

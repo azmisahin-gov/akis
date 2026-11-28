@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.398.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.399.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10523,3 +10523,19 @@ Kullanıcı: *"Alan görünümü sadece kapağı değiştiriyor; istediğim böl
 - UDF: tablo stili/yoğunluk UYAP şablonundan (uygulanmaz).
 - Revizyon + birleştirme (`tableAppearanceMergePlan`, `report-table-appearance` çakışması).
 - DEĞİŞMEZ: her tablo bağımsız; metin/kanıt değişmez; ayar yalnız seçilince yazılır.
+
+## YENİ OTURUM DEVRİ (v2.399) — Kâğıt üzerinde tablo düzenleme
+
+| | |
+|---|---|
+| Sürüm | **v2.399** |
+| Testler | **3050 birim + 565 şema** + rapor (73) + sürüm + tasarım yeşil |
+| Açık konu | Yok |
+
+- Kullanıcı: *"Tabloya mouse ile yapılabilirdi; sağ tık menü popup / sol tık kaydır."* Önceki sürümlerde panellerde gezinme vardı.
+- **Sağ tık menüsü** (`#paperTableMenu`): görünüm (Tablo/Yan yana/Düz liste) · çizgi · yoğunluk · sütun genişliği.
+- **Sütun sürükleme:** `startPaperTableDrag` (başlık hücresinin sağ kenarı) → `data-tbl-manual` + colgroup yüzdesi; bırakınca `tableAppearance[table].widths`.
+- `tableAppearance[table]` artık `layout` + `widths` taşır (v2.398 modeli genişletildi; revizyon/birleştirme aynı).
+- HTML `paperTableAlt` (yan yana = sütunları iki yarıya böl; düz liste = her hücre satırı). DOCX/UDF `wTable`/`table` `layout` seçeneği.
+- **Sadeleştirme:** Alanlar panelindeki tablo seçicileri ve bölüm düzenleyicideki çizgi/yoğunluk seçicileri KALDIRILDI; yalnız sayfa düzeni kaldı.
+- DEĞİŞMEZ: her tablo bağımsız; metin/kanıt değişmez; UDF'te çizgi/yoğunluk UYAP'tan (layout/genişlik uygulanır).

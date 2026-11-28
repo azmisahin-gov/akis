@@ -1,4 +1,4 @@
-# Özellikler (v2.398 — mevcut durum)
+# Özellikler (v2.399 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1347,3 +1347,7 @@ Kâğıtta bölüm başlığındaki **⚙** artık o bölümün düzenleyicisini
 ## Tablo bazında görünüm (v2.398)
 
 Rapor ayarları → **Alanlar** listesinde **her tablonun** başında **Tablo çizgisi** ve **Yoğunluk** seçimi vardır. Her tablo ayrı ayrı değiştirilir (aynı bölümdeki iki tablo bile bağımsız). “Genel ayarı kullan” = Biçim sekmesindeki genel ayar. Öncelik: **tablo > bölüm > genel**. Ekran + yazdırma/PDF + Word'e uygulanır; UDF'te tablo çizgisi/yoğunluk UYAP şablonundan gelir. Revizyona girer; birleştirmede çakışma sessizce ezilmez (`tableAppearanceMergePlan`).
+
+## Kâğıt üzerinde tablo düzenleme (v2.399)
+
+Rapor kâğıdında tabloya **sağ tık**: **Görünüm** (Tablo · Yan yana · Düz liste), **tablo çizgisi**, **yoğunluk**, **sütun genişlikleri** (Otomatik · Elle ayarla). “Elle ayarla” seçilince **başlık hücresinin sağ kenarını sürükleyerek** sütun genişliği ayarlanır. Her ayar yalnız o tabloya yazılır; panellerde gezinmek gerekmez. “Yan yana” sütunları iki yarıya böler; “Düz liste” her hücreyi “BAŞLIK: değer” olarak alt alta yazar. Ekran + yazdırma/PDF + Word + UYAP metnine yansır; metin/kanıt değişmez.

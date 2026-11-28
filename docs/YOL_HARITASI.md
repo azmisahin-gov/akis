@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.398.**
+yazılır. **Güncel sürüm: v2.399.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.399 — Kâğıt üzerinde tablo düzenleme (TAMAMLANDI)
+
+- Sağ tık menüsü (`#paperTableMenu`): görünüm (Tablo/Yan yana/Düz liste) · çizgi · yoğunluk · sütun genişliği.
+- `tableAppearance[table]` artık `layout` ve `widths` taşır; yalnız o tablo.
+- HTML `paperTableAlt` (yan yana/düz liste), `data-table-key`, `data-tbl-manual`; sütun kenarı sürükleme (`startPaperTableDrag`).
+- DOCX/UDF `wTable`/`table` `layout` desteği; `widths` elle ayarı üç çıktıya.
+- Panellerdeki fazladan tablo seçicileri kaldırıldı; bölüm düzenleyicide yalnız sayfa düzeni.
 
 ## v2.398 — Tablo bazında görünüm (TAMAMLANDI)
 

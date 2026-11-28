@@ -8543,7 +8543,7 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
     speakers: { tableStyle: 'inherit', density: 'inherit' },
     x: { tableStyle: 'BOZUK', density: 'zzz' }
   });
-  eq('geçerli tablo korunur', JSON.stringify(n.segments), JSON.stringify({ tableStyle: 'plain', density: 'compact' }));
+  eq('geçerli tablo korunur', JSON.stringify(n.segments), JSON.stringify({ tableStyle: 'plain', density: 'compact', layout: 'table', widths: null }));
   eq('tamamen varsayılan tablo atılır', 'speakers' in n, false);
   eq('bozuk değer varsayılana döner (girdi atılır)', 'x' in n, false);
   const c = T.emptyCaseForTest({ id: 'cTblApp' });
@@ -8573,6 +8573,29 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   T.applyReportSnapshot(c2, snap);
   eq('geri yükleme tablo görünümünü getirir', c2.report.tableAppearance.segments.tableStyle, 'plain');
   eq('fark etiketi tablo görünümü', T.reportSnapshotDiff(c2, { ...snap, tableAppearance: {} }).includes('Tablo görünümü (çizgi/yoğunluk)'), true);
+}
+// [197] v2.399 — Tablo düzeni (tablo/yan yana/düz liste) + elle sütun genişliği.
+{
+  console.log('\n[197] Tablo düzeni ve sütun genişliği (v2.399)');
+  const S = __schemaMod;
+  eq('üç düzen', S.REPORT_TABLE_LAYOUTS.join(','), 'table,side,list');
+  const n = S.normalizeReportTableAppearance({
+    inventory: { layout: 'list' },
+    segments: { layout: 'side', widths: [20, 10, 10, 40, 10, 10] },
+    x: { layout: 'bozuk', widths: [1] }
+  });
+  eq('düz liste korunur', n.inventory.layout, 'list');
+  eq('yan yana + genişlik korunur', n.segments.layout, 'side');
+  eq('genişlik toplamı 100', Math.round(n.segments.widths.reduce((a, b) => a + b, 0)), 100);
+  eq('geçersiz düzen+genişlik girdisi atılır', 'x' in n, false);
+  const c = T.emptyCaseForTest({ id: 'cLay' });
+  c.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { layout: 'side', widths: [30, 70] } });
+  const ap = S.reportTableAppearance(c, 'segments');
+  eq('etkin düzen', ap.layout, 'side');
+  eq('etkin genişlik', ap.widths.join(','), '30,70');
+  eq('metin düzeni söyler', S.tableAppearanceText(ap).includes('Yan yana'), true);
+  // Genişlikler 5% altına inemez (aşırı sıkışma yok).
+  eq('çok küçük pay reddedilir', S.normalizeTableWidths([1, 99]), null);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

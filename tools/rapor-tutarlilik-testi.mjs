@@ -2306,7 +2306,7 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   // HTML: kanıt tablosunda <colgroup> yüzdeleri olmalı.
   setCase(c); renderReport();
   const rawHtml = els.get('#reportPreview').innerHTML;
-  const segTable = (rawHtml.match(/<table class="paper-table">[\s\S]*?<\/table>/g) || []).find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA'));
+  const segTable = (rawHtml.match(/<table class="paper-table"[^>]*>[\s\S]*?<\/table>/g) || []).find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA'));
   check('HTML tabloda colgroup var', !!segTable && /<colgroup>/.test(segTable));
   const cols = [...(segTable || '').matchAll(/<col style="width:([0-9.]+)%">/g)].map((m) => Number(m[1]));
   check('HTML sütun sayısı 6', cols.length === 6, String(cols.length));
@@ -2491,6 +2491,36 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   // METİN DEĞİŞMEZ.
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
   checkShared('tablo görünümü metni değiştirmez', 'merhaba', H, U, D);
+}
+
+// Senaryo 73: v2.399 — tablo düzeni (tablo/yan yana/düz liste) + sütun genişliği.
+{
+  console.log('\n[Senaryo 73] tablo düzeni ve sütun genişliği (v2.399)');
+  const S = __schemaMod;
+  const mk = (ta) =>
+    S.normalizeCase({
+      ...withMaterial(),
+      report: { sections: { fileInventory: true, s5: true }, tableAppearance: ta }
+    });
+  // DÜZ LİSTE: envanter tablosu tablo değil; deşifre tablosu tablo kalır.
+  const c = mk({ inventory: { layout: 'list' } });
+  setCase(c); renderReport();
+  const raw = els.get('#reportPreview').innerHTML;
+  check('düz liste görünümü', /paper-alt-list/.test(raw));
+  check('düz listede envanter tablosu yok', !/<table[^>]*data-table-key="inventory"/.test(raw));
+  check('deşifre tablosu tablo kalır', /<table[^>]*data-table-key="segments"/.test(raw));
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  checkShared('düz liste metni korur (dosya adı)', 'a.wav', H, U, D);
+  // YAN YANA.
+  const c2 = mk({ inventory: { layout: 'side' } });
+  setCase(c2); renderReport();
+  check('yan yana görünümü', /paper-alt-side/.test(els.get('#reportPreview').innerHTML));
+  // SÜTUN GENİŞLİĞİ: elle ayar HTML colgroup'a yansır.
+  const c3 = mk({ segments: { widths: [20, 10, 10, 30, 10, 20] } });
+  setCase(c3); renderReport();
+  const seg = (els.get('#reportPreview').innerHTML.match(/<table[^>]*data-table-key="segments"[^>]*>[\s\S]*?<\/table>/) || [''])[0];
+  const cols = [...seg.matchAll(/<col style="width:([0-9.]+)%">/g)].map((m) => Number(m[1]));
+  check('elle sütun genişliği colgroup', cols.length === 6 && Math.abs(cols[0] - 20) < 0.1, JSON.stringify(cols));
 }
 
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
