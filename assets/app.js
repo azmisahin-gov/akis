@@ -122,18 +122,6 @@ import {
   REPORT_ORIENTATIONS,
   REPORT_COVER_LAYOUTS,
   REPORT_COVER_LAYOUT_LABEL,
-  REPORT_FIELD_LAYOUTS,
-  REPORT_FIELD_LAYOUT_LABEL,
-  REPORT_APPEARANCE_PAGEBREAK,
-  REPORT_APPEARANCE_TABLESTYLE,
-  REPORT_APPEARANCE_DENSITY,
-  REPORT_APPEARANCE_LABELS,
-  REPORT_TABLE_LAYOUTS,
-  REPORT_TABLE_LAYOUT_LABEL,
-  reportSectionAppearance,
-  normalizeReportAppearance,
-  reportTableAppearance,
-  normalizeReportTableAppearance,
   REPORT_TABLE_THEMES,
   REPORT_TABLE_THEME_LABEL,
   REPORT_ORIENTATION_LABEL,
@@ -187,15 +175,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.400';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.400';
+} from './schema.js?v=2.393';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.393';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.400';
+const APP_VERSION = '2.393';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14192,34 +14180,7 @@ function coverFieldsSimpleXml(c) {
 }
 function coverFieldsLayout(c) {
   const f = reportFormat(c);
-  // v2.394 — üç kip: yan yana (simple) · tablo (classic) · düz liste (list).
-  if (f.fieldLayout === 'list') return 'list';
-  if (f.fieldLayout === 'table') return 'classic';
-  if (f.fieldLayout === 'side') return 'simple';
   return f.coverFields === 'classic' ? 'classic' : 'simple';
-}
-// v2.394 — DÜZ LİSTE: her alan kendi satırında (tam genişlik), iki sütuna
-// bölünmez. Boş alan satır üretmez (uydurma yok).
-function coverFieldsListHtml(c) {
-  const rows = frontRowsFor(c, 'coverFields', reportRows(c));
-  if (!rows.length) return '';
-  return (
-    `<div class="paper-kunye paper-kunye-list">` +
-    rows
-      .map((r) => `<div class="kunye-row kunye-wide"><span class="kunye-label">${esc(r.label)}</span><span class="kunye-value">${esc(r.value)}</span></div>`)
-      .join('') +
-    `</div>`
-  );
-}
-function coverFieldsListXml(c) {
-  const rows = frontRowsFor(c, 'coverFields', reportRows(c));
-  if (!rows.length) return '';
-  return rows
-    .map(
-      (r) =>
-        `<w:p><w:pPr><w:spacing w:before="0" w:after="30" w:line="240"/></w:pPr>${wRun(r.label + ': ', { bold: true, color: '6F8295', size: 16 })}${wRun(r.value, { color: '24384D', size: 19 })}</w:p>`
-    )
-    .join('');
 }
 function coverFieldsSimpleHtml(c) {
   const { pairs, wide } = coverFieldPlan(c);
@@ -14542,13 +14503,10 @@ function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
   const explicit = Array.isArray(widths) && idx.every((i) => Number(widths[i]) > 0);
   const model = REPORT_COLUMN_WEIGHTS[table] ? reportColumnWidths(table, keys, 1000) : null;
   return {
-    table,
     keys: idx.map((i) => keys[i]),
     headers: idx.map((i) => tableLabels[keys[i]] || headers[i]),
     rows: (rows || []).map((r) => idx.map((i) => r[i])),
     widths: explicit ? idx.map((i) => widths[i]) : model ? idx.map((i) => model[i]) : null,
-    // v2.398 — tablo bazında görünüm (varsa). Bölüm/genel ayarı EZER.
-    appearance: reportTableAppearance(c, table),
     empty: idx.length === 0
   };
 }
@@ -14556,37 +14514,8 @@ function reportTableColumns(c, table, headers, rows, widths, keysOverride) {
 // `t.widths` 1000 ölçeğinde göreli ağırlıklardır; yüzdeye normalize edilir.
 // `table-layout` DEĞİŞTİRİLMEZ (auto): colgroup yalnız oran verir, metin
 // sarmaya devam eder (kırpma yok).
-// v2.399 — ALAN GÖRÜNÜMÜ (yan yana / düz liste). Tablo değil; etiket/değer
-// çiftleri. "Yan yana" sütunları iki yarıya böler; "düz liste" her hücreyi
-// kendi satırına yazar. Metin DEĞİŞMEZ; yalnız görünüm.
-function paperTableAlt(t, layout) {
-  const H = t.headers || [];
-  const rows = t.rows || [];
-  const n = H.length;
-  const half = Math.ceil(n / 2);
-  const cellHtml = (h, v) => `<span class="paper-alt-cell"><span class="paper-alt-k">${esc(h)}</span><span class="paper-alt-v">${esc(v)}</span></span>`;
-  const rowHtml = (r) => {
-    if (layout === 'list') {
-      return `<div class="paper-alt-row paper-alt-row-list">${H.map((h, i) => cellHtml(h, r[i])).join('')}</div>`;
-    }
-    const left = H.slice(0, half).map((h, i) => cellHtml(h, r[i])).join('');
-    const right = H.slice(half).map((h, i) => cellHtml(h, r[half + i])).join('');
-    return `<div class="paper-alt-row"><div class="paper-alt-col">${left}</div><div class="paper-alt-col">${right}</div></div>`;
-  };
-  const body = rows.length ? rows.map(rowHtml).join('') : `<div class="paper-alt-empty">${esc(t.empty || '—')}</div>`;
-  return `<div class="paper-alt paper-alt-${esc(layout)}"${t.table ? ` data-table-key="${esc(t.table)}"` : ''}>${body}</div>`;
-}
 function paperTable(t, opts = {}) {
-  const ap = t.appearance || {};
-  const layout = ap.layout || 'table';
-  if (layout === 'side' || layout === 'list') return paperTableAlt(t, layout);
-  // Elle ayarlanmış sütun genişliği varsa o; yoksa ağırlık modeli.
-  const widths =
-    Array.isArray(ap.widths) && ap.widths.length === t.headers.length
-      ? ap.widths
-      : Array.isArray(t.widths) && t.widths.length === t.headers.length
-        ? t.widths
-        : null;
+  const widths = Array.isArray(t.widths) && t.widths.length === t.headers.length ? t.widths : null;
   const sum = widths ? widths.reduce((a, b) => a + (Number(b) || 1), 0) : 0;
   const colgroup = widths
     ? `<colgroup>${widths.map((w) => `<col style="width:${(((Number(w) || 1) / sum) * 100).toFixed(2)}%">`).join('')}</colgroup>`
@@ -14605,24 +14534,7 @@ function paperTable(t, opts = {}) {
           )
           .join('')
       : `<tr><td colspan="${t.headers.length}">${esc(t.empty || '—')}</td></tr>`;
-  // v2.398/399 — tablo bazında görünüm + kimlik (sağ tık menüsü/sürükleme).
-  const tattrs = [];
-  if (t.table) tattrs.push(`data-table-key="${esc(t.table)}"`);
-  if (ap.tableStyle && ap.tableStyle !== 'inherit') tattrs.push(`data-tbl-style="${esc(ap.tableStyle)}"`);
-  if (ap.density && ap.density !== 'inherit') tattrs.push(`data-tbl-density="${esc(ap.density)}"`);
-  if (ap.widths) tattrs.push('data-tbl-manual="1"');
-  return `<table class="${opts.cls || 'paper-table'}"${tattrs.length ? ' ' + tattrs.join(' ') : ''}>${colgroup}<thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
-}
-// v2.398 — DOCX tablo seçenekleri: yalnız tablo bazında AÇIK tercihler eklenir
-// (`inherit` gönderilmez; bölüm/genel ayar geçerli kalır).
-function tableFmtOpts(t) {
-  const a = (t && t.appearance) || {};
-  const o = {};
-  if (a.tableStyle && a.tableStyle !== 'inherit') o.tableStyle = a.tableStyle;
-  if (a.density && a.density !== 'inherit') o.density = a.density;
-  if (a.layout && a.layout !== 'table') o.layout = a.layout;
-  if (Array.isArray(a.widths)) o.widths = a.widths;
-  return o;
+  return `<table class="${opts.cls || 'paper-table'}">${colgroup}<thead><tr>${t.headers.map((h) => `<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table>`;
 }
 function werTableRows(c) {
   return measureWerForCase(c).map((r) => [
@@ -14660,7 +14572,7 @@ function reportFieldGroupsHtml(c) {
       const on = defs.filter((d) => reportFieldVisible(c, key, d.key)).length;
       const title = key === 'coverFields' ? 'Künye alanları' : key === 'summary' ? 'Özet alanları' : key;
       return (
-        `<div class="rcol-group" data-rfield-group="${esc(key)}"><div class="rcol-head"><b>${esc(title)}</b><span>${on}/${defs.length}</span></div>` +
+        `<div class="rcol-group"><div class="rcol-head"><b>${esc(title)}</b><span>${on}/${defs.length}</span></div>` +
         defs
           .map(
             (d) =>
@@ -14671,238 +14583,6 @@ function reportFieldGroupsHtml(c) {
       );
     })
     .join('');
-}
-// v2.399 — Tablo görünümü artık PANELDE DEĞİL, kâğıt üzerinde sağ tık
-// menüsündedir (v2.398'deki seçiciler kaldırıldı; kalabalık yapıyordu).
-function setReportTableAppearance(table, field, value) {
-  const c = currentCase();
-  if (!c) return;
-  c.report = c.report || {};
-  const all = normalizeReportTableAppearance(c.report.tableAppearance);
-  const cur = { ...reportTableAppearance(c, table), ...(all[table] || {}) };
-  cur[field] = value;
-  all[table] = cur;
-  c.report.tableAppearance = normalizeReportTableAppearance(all);
-  persist();
-  renderReport();
-}
-// v2.399 — KÂĞIT ÜZERİNDE SAĞ TIK MENÜSÜ. Tabloya sağ tık: görünüm (tablo/
-// yan yana/düz liste), çizgi, yoğunluk, sütun genişliği. Menüde gezinme yok;
-// seçim o tabloya yazılır.
-let paperTableMenuKey = null;
-function closePaperTableMenu() {
-  const m = $('#paperTableMenu');
-  if (m) m.hidden = true;
-  paperTableMenuKey = null;
-}
-function openPaperTableMenu(key, x, y) {
-  const c = currentCase();
-  if (!c) return;
-  let m = $('#paperTableMenu');
-  if (!m) {
-    m = document.createElement('div');
-    m.id = 'paperTableMenu';
-    m.className = 'paper-table-menu';
-    m.setAttribute('role', 'menu');
-    document.body.appendChild(m);
-  }
-  paperTableMenuKey = key;
-  const ap = reportTableAppearance(c, key);
-  const opt = (field, val, label, cur) =>
-    `<button type="button" role="menuitemradio" aria-checked="${String(cur === val)}" class="${cur === val ? 'on' : ''}" data-ptm="${esc(field)}" data-ptm-val="${esc(val)}">${esc(label)}</button>`;
-  m.innerHTML =
-    `<div class="ptm-title">${esc(REPORT_COLUMN_TABLE_LABELS[key] || key)}</div>` +
-    `<div class="ptm-group"><div class="ptm-label">Görünüm</div><div class="ptm-opts">${REPORT_TABLE_LAYOUTS.map((v) => opt('layout', v, REPORT_TABLE_LAYOUT_LABEL[v], ap.layout)).join('')}</div></div>` +
-    `<div class="ptm-group"><div class="ptm-label">Tablo çizgisi</div><div class="ptm-opts">${REPORT_APPEARANCE_TABLESTYLE.map((v) => opt('tableStyle', v, REPORT_APPEARANCE_LABELS.tableStyle[v], ap.tableStyle)).join('')}</div></div>` +
-    `<div class="ptm-group"><div class="ptm-label">Yoğunluk</div><div class="ptm-opts">${REPORT_APPEARANCE_DENSITY.map((v) => opt('density', v, REPORT_APPEARANCE_LABELS.density[v], ap.density)).join('')}</div></div>` +
-    `<div class="ptm-group"><div class="ptm-label">Sütun genişlikleri</div><div class="ptm-opts">` +
-    `<button type="button" data-ptm-widths="auto"${ap.widths ? '' : ' class="on"'}>Otomatik</button>` +
-    `<button type="button" data-ptm-widths="manual"${ap.widths ? ' class="on"' : ''}>Elle ayarla (sürükle)</button>` +
-    `</div><div class="ptm-hint">“Elle ayarla” seçip sütun kenarını sağa/sola sürükleyin.</div></div>` +
-    `<div class="ptm-close"><button type="button" data-ptm-close="1">Kapat</button></div>`;
-  m.hidden = false;
-  const r = m.getBoundingClientRect();
-  m.style.left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x)) + 'px';
-  m.style.top = Math.min(window.innerHeight - r.height - 8, Math.max(8, y)) + 'px';
-}
-function enableManualWidths(key) {
-  const c = currentCase();
-  if (!c) return;
-  let widths = null;
-  const tbl = document.querySelector(`#reportPreview table.paper-table[data-table-key="${key}"]`);
-  if (tbl) {
-    const cols = [...tbl.querySelectorAll('colgroup col')];
-    widths = cols.map((col) => parseFloat(col.style.width) || 0).filter((x) => x > 0);
-  }
-  if (!widths || widths.length < 2) {
-    const n = (REPORT_COLUMN_TABLES[key] || []).length || 2;
-    widths = Array.from({ length: n }, () => 100 / n);
-  }
-  // Elle ayar "tablo" görünümünde anlamlıdır.
-  setReportTableAppearance(key, 'layout', 'table');
-  setReportTableAppearance(key, 'widths', widths);
-}
-// Sürükleme: yalnız başlık hücresinin SAĞ KENARINA yakınken başlar.
-let paperTableDrag = null;
-let paperTableJustDragged = false;
-function startPaperTableDrag(e) {
-  const th = e.target.closest ? e.target.closest('table.paper-table[data-table-key] th') : null;
-  if (!th) return;
-  const tbl = th.closest('table.paper-table');
-  if (!tbl) return;
-  const cols = [...tbl.querySelectorAll('colgroup col')];
-  if (cols.length < 2) return;
-  const ths = [...tbl.querySelectorAll('thead th')];
-  const idx = ths.indexOf(th);
-  if (idx < 0 || idx >= cols.length - 1) return;
-  const rect = th.getBoundingClientRect();
-  if (e.clientX < rect.right - 10) return; // kenara yakın değil
-  e.preventDefault();
-  tbl.style.tableLayout = 'fixed';
-  paperTableDrag = {
-    key: tbl.dataset.tableKey,
-    cols,
-    idx,
-    startX: e.clientX,
-    total: Math.max(1, tbl.getBoundingClientRect().width),
-    start: cols.map((c) => parseFloat(c.style.width) || 0)
-  };
-}
-function movePaperTableDrag(e) {
-  if (!paperTableDrag) return;
-  const dx = ((e.clientX - paperTableDrag.startX) / paperTableDrag.total) * 100;
-  let a = paperTableDrag.start[paperTableDrag.idx] + dx;
-  let b = paperTableDrag.start[paperTableDrag.idx + 1] - dx;
-  if (a < 5) {
-    b -= 5 - a;
-    a = 5;
-  }
-  if (b < 5) {
-    a -= 5 - b;
-    b = 5;
-  }
-  if (a < 5 || b < 5) return;
-  paperTableDrag.moved = true;
-  paperTableDrag.cols[paperTableDrag.idx].style.width = a.toFixed(2) + '%';
-  paperTableDrag.cols[paperTableDrag.idx + 1].style.width = b.toFixed(2) + '%';
-}
-function endPaperTableDrag() {
-  if (!paperTableDrag) return;
-  const key = paperTableDrag.key;
-  const moved = !!paperTableDrag.moved;
-  const widths = paperTableDrag.cols.map((c) => parseFloat(c.style.width) || 0);
-  paperTableDrag = null;
-  if (moved) paperTableJustDragged = true; // sürükleme sonrası tıklama düzenleyici açmasın
-  if (key && moved && widths.length >= 2) setReportTableAppearance(key, 'widths', widths);
-}
-// v2.400 — BÖLÜM ARAÇLARI / MENÜSÜ / YERİNDE DÜZENLEME. Sağ çekmece yok.
-let paperSectionMenuKey = null;
-function closePaperSectionMenu() {
-  const m = $('#paperSectionMenu');
-  if (m) m.hidden = true;
-  paperSectionMenuKey = null;
-}
-function openPaperSectionMenu(key, x, y) {
-  const c = currentCase();
-  if (!c) return;
-  let m = $('#paperSectionMenu');
-  if (!m) {
-    m = document.createElement('div');
-    m.id = 'paperSectionMenu';
-    m.className = 'paper-table-menu paper-section-menu';
-    m.setAttribute('role', 'menu');
-    document.body.appendChild(m);
-  }
-  paperSectionMenuKey = key;
-  const pageNew = reportSectionAppearance(c, key).pageBreak === 'new';
-  const hasText = !!reportSectionEditableFields(key);
-  m.innerHTML =
-    `<div class="ptm-title">${esc(reportUiLabel(c, key))}</div>` +
-    `<div class="ptm-opts ptm-col">` +
-    `<button type="button" data-psm="title">✎ Başlığı düzenle</button>` +
-    (hasText ? `<button type="button" data-psm="text">📝 Metni düzenle</button>` : '') +
-    `<button type="button" data-psm="page" class="${pageNew ? 'on' : ''}">⤒ Yeni sayfadan başlat</button>` +
-    `<button type="button" data-psm="archive">🗄 Arşive al</button>` +
-    `</div><div class="ptm-close"><button type="button" data-psm="close">Kapat</button></div>`;
-  m.hidden = false;
-  const r = m.getBoundingClientRect();
-  m.style.left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x)) + 'px';
-  m.style.top = Math.min(window.innerHeight - r.height - 8, Math.max(8, y)) + 'px';
-}
-function toggleSectionPage(key) {
-  const cur = reportSectionAppearance(currentCase(), key).pageBreak;
-  setReportSectionAppearance(key, 'pageBreak', cur === 'new' ? 'auto' : 'new');
-}
-function startInlineTitle(key) {
-  const c = currentCase();
-  if (!c) return;
-  const h3 = document.querySelector(`#reportPreview [data-report-key="${key}"] h3`);
-  if (!h3) return;
-  const cur = reportSectionTitle(c, key);
-  h3.innerHTML = `<input class="paper-title-input" type="text" maxlength="160" value="${esc(cur)}" aria-label="Bölüm başlığı">`;
-  const input = h3.querySelector('input');
-  input.focus();
-  input.select();
-  let done = false;
-  const finish = (save) => {
-    if (done) return;
-    done = true;
-    if (save) setReportSectionTitle(key, input.value);
-    else renderReport();
-  };
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      finish(true);
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      finish(false);
-    }
-  });
-  input.addEventListener('blur', () => finish(true));
-}
-function startInlineText(key, field) {
-  const c = currentCase();
-  if (!c || !field) return;
-  const host = document.querySelector(`#reportPreview [data-report-key="${key}"]`);
-  if (!host) return;
-  const p = host.querySelector(`[data-inline-field="${field}"]`);
-  if (!p) return;
-  const stored = String(c[field] || '');
-  const cur = stored.trim() ? stored : defaultTextForField(field);
-  const wrap = document.createElement('div');
-  wrap.className = 'paper-inline-edit';
-  wrap.innerHTML = `<textarea rows="6" aria-label="Metin"></textarea><div class="pie-actions"><button type="button" class="mini-button" data-pie-save="1">Kaydet</button><button type="button" class="mini-button" data-pie-cancel="1">Vazgeç</button></div>`;
-  const ta = wrap.querySelector('textarea');
-  ta.value = cur;
-  p.replaceWith(wrap);
-  ta.focus();
-  const finish = (save) => {
-    if (save) {
-      c[field] = ta.value;
-      persist();
-    }
-    renderReport();
-  };
-  wrap.querySelector('[data-pie-save]').addEventListener('click', () => finish(true));
-  wrap.querySelector('[data-pie-cancel]').addEventListener('click', () => finish(false));
-  ta.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      finish(false);
-    }
-  });
-}
-function sectionToolAction(tool, key) {
-  if (!key) return;
-  if (tool === 'title') return startInlineTitle(key);
-  if (tool === 'text') {
-    const f = reportSectionEditableFields(key);
-    if (f && f[0]) startInlineText(key, f[0].field);
-    return;
-  }
-  if (tool === 'page') return toggleSectionPage(key);
-  if (tool === 'archive') return archiveReportSection(key);
 }
 function renderReportColumns(c) {
   const host = $('#reportColumnsFields');
@@ -14916,7 +14596,7 @@ function renderReportColumns(c) {
         const labels = REPORT_COLUMN_LABELS[table] || {};
         const on = keys.filter((k) => cols[table][k] !== false).length;
         return (
-          `<div class="rcol-group" data-rcol-group="${esc(table)}"><div class="rcol-head"><b>${esc(REPORT_COLUMN_TABLE_LABELS[table] || table)}</b><span>${on}/${keys.length}</span></div>` +
+          `<div class="rcol-group"><div class="rcol-head"><b>${esc(REPORT_COLUMN_TABLE_LABELS[table] || table)}</b><span>${on}/${keys.length}</span></div>` +
           keys
             .map((k) => {
               const locked = reportColumnLocked(table, k);
@@ -14987,57 +14667,6 @@ function applyReportSideTab(tab) {
   try {
     localStorage.setItem('akis.reportSideTab', t);
   } catch (e) {}
-}
-// v2.395 — Kâğıttan ⚙: her bölümün İLGİLİ ayar grubuna atlama. Eşleme TEK
-// kaynaktır; gear yalnız burada karşılığı olan bölümlerde görünür (boş düğme
-// yok). Hedef: `col:<tablo>` = tablo sütun grubu, `field:<alan>` = künye/özet
-// alan grubu.
-const REPORT_SECTION_SETTINGS = {
-  coverFields: { tab: 'fields', target: 'field:coverFields' },
-  summary: { tab: 'fields', target: 'field:summary' },
-  fileInventory: { tab: 'fields', target: 'col:inventory' },
-  origin: { tab: 'fields', target: 'col:origin' },
-  acquisition: { tab: 'fields', target: 'col:acquisition' },
-  embeddedInfo: { tab: 'fields', target: 'col:embedded' },
-  integrity: { tab: 'fields', target: 'col:integrity' },
-  transcriptionMethod: { tab: 'fields', target: 'col:transcription' },
-  speakers: { tab: 'fields', target: 'col:speakers' },
-  speakerDurations: { tab: 'fields', target: 'col:speakerDurations' },
-  s5: { tab: 'fields', target: 'col:segments' },
-  wer: { tab: 'fields', target: 'col:wer' },
-  levels: { tab: 'fields', target: 'col:levels' },
-  handoverRecord: { tab: 'fields', target: 'col:physicalItems' },
-  custodyLog: { tab: 'fields', target: 'col:custodyLog' },
-  notationKey: { tab: 'fields', target: 'col:notationKey' },
-  finalChecklist: { tab: 'fields', target: 'col:finalChecklist' }
-};
-function reportSectionSettings(key) {
-  return REPORT_SECTION_SETTINGS[key] || null;
-}
-function goToReportSetting(key) {
-  const s = reportSectionSettings(key);
-  if (!s) return false;
-  setReportSettings(true);
-  applyReportSideTab(s.tab);
-  const raf = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : (fn) => setTimeout(fn, 0);
-  raf(() => {
-    const host = document.querySelector('#reportSide .drawer-body');
-    let el = null;
-    if (s.target && s.target.startsWith('col:')) {
-      el = document.querySelector(`#reportColumnsFields [data-rcol-group="${s.target.slice(4)}"]`);
-    } else if (s.target && s.target.startsWith('field:')) {
-      el = document.querySelector(`#reportColumnsFields [data-rfield-group="${s.target.slice(6)}"]`);
-    }
-    if (!el) return;
-    if (host) {
-      const hr = host.getBoundingClientRect();
-      const er = el.getBoundingClientRect();
-      host.scrollTop = Math.max(0, host.scrollTop + (er.top - hr.top) - 10);
-    }
-    el.classList.add('is-flash');
-    setTimeout(() => el.classList.remove('is-flash'), 1600);
-  });
-  return true;
 }
 // v2.368 — SAĞ PANEL ve BÖLÜM DÜZENLEYİCİ artık ÇEKMEDİR.
 // Çekmece açıkken kâğıt genişliği DEĞİŞMEZ (grid 2 sütun; çekmece overlay).
@@ -15315,51 +14944,10 @@ function reportSectionInspectorKey(key) {
 }
 // v2.375 — ÇEKMEDEKİ ORTAK BÖLÜM İŞLEMLERİ: başlık düzenle + EKLER'e taşı/Gövdeye
 // al. Satırdaki ✎/EK/G düğmeleri kaldırıldı; işlev buraya taşındı (tek yer).
-// v2.396 — BÖLÜM GÖRÜNÜMÜ: yalnız yerleşim (sayfa düzeni · tablo çizgisi ·
-// yoğunluk). Metin ve kanıt DEĞİŞMEZ. `Genel ayarı kullan` = dosya biçimi.
-function reportAppearanceSelect(c, key, field, values) {
-  const cur = reportSectionAppearance(c, key);
-  const labels = REPORT_APPEARANCE_LABELS[field] || {};
-  const opts = values
-    .map((v) => `<option value="${esc(v)}"${cur[field] === v ? ' selected' : ''}>${esc(labels[v] || v)}</option>`)
-    .join('');
-  return `<label class="rse-field rse-appearance-field"><span>${esc(
-    { pageBreak: 'Sayfa düzeni', tableStyle: 'Tablo çizgisi', density: 'Yoğunluk' }[field] || field
-  )}</span><select data-rse-appearance="${esc(field)}" data-rse-key="${esc(key)}">${opts}</select></label>`;
-}
-function reportAppearanceHtml(c, key) {
-  return (
-    `<div class="rse-appearance">` +
-    `<div class="rse-appearance-head"><b>Bu bölümün görünümü</b><small>yalnız bu bölüm</small></div>` +
-    `<p class="rtech-hint rse-appearance-lead">Buradaki seçim <b>sadece bu bölümü</b> etkiler. Tüm belgeyi değiştirmek için <b>Biçim</b> sekmesini kullanın (orada “tüm belge” yazar).</p>` +
-    reportAppearanceSelect(c, key, 'pageBreak', REPORT_APPEARANCE_PAGEBREAK) +
-    `<p class="rtech-hint">Tablo görünümü (Tablo / Yan yana / Düz liste), çizgi, yoğunluk ve sütun genişliği için <b>kâğıtta tabloya sağ tık</b> yapın. Yalnız yerleşim; metin ve kanıt değişmez.</p>` +
-    `</div>`
-  );
-}
-function setReportSectionAppearance(key, field, value) {
-  const c = currentCase();
-  if (!c) return;
-  c.report = c.report || {};
-  const all = normalizeReportAppearance(c.report.appearance);
-  const cur = { ...reportSectionAppearance(c, key), ...(all[key] || {}) };
-  cur[field] = value;
-  all[key] = cur;
-  c.report.appearance = normalizeReportAppearance(all);
-  persist();
-  renderReport();
-}
 function reportSectionActionsHtml(c, key) {
-  // v2.397 — Bu bölümün tablosu varsa sütun ayarlarına köprü (genel Rapor
-  // alanları). ⚙ artık buraya değil, bu düzenleyiciye açılır.
-  const colBtn = reportSectionSettings(key)
-    ? `<div class="rse-columns-action"><button type="button" class="mini-button" data-rse-columns="${esc(key)}" title="Bu bölümün tablosunun sütunlarını aç/kapat (Rapor alanları)">Tablo sütunları ›</button></div>`
-    : '';
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
-    reportAppearanceHtml(c, key) +
-    colBtn +
     `<div class="rse-archive-action"><button type="button" class="mini-button" data-rse-archive="${esc(key)}" title="Bölümü arşive alır: raporda ve üst yazıda kullanılmaz. Veri SİLİNMEZ; Arşiv panelinden geri alınır.">Bu bölümü arşive al</button></div>` +
     `</div>`
   );
@@ -15450,16 +15038,11 @@ function setReportEditSection(key) {
 // v2.375 — iskelet satırına tıklama: bölümü SEÇ (belgede vurgula + kaydır),
 // çekmeceyi AÇMA. Çekmece yalnız "Düzenle" düğmesiyle (setReportEditSection) açılır.
 function selectReportSection(key) {
-  // v2.400 — yalnız SEÇ (vurgula); çekmece açılmaz, belge yeniden çizilmez
-  // (yeniden çizim kaydırmayı sıfırlıyordu). Düzenleme kâğıt üzerinde.
   reportEditKey = key || null;
   reportEditorOpen = false;
   const ws = $('#reportWorkspace');
   if (ws) ws.dataset.edit = 'closed';
-  document.querySelectorAll('#reportPreview .paper-block.is-selected').forEach((el) => el.classList.remove('is-selected'));
-  const b = key ? document.querySelector(`#reportPreview .paper-block[data-report-key="${key}"]`) : null;
-  if (b) b.classList.add('is-selected');
-  document.querySelectorAll('#reportSections .rsec-row').forEach((r) => r.classList.toggle('is-selected', r.dataset.rsecKey === key));
+  renderReport();
   setReportEditor(false);
 }
 // v2.366 — İSKELET ↔ BELGE GEZİNME. Kaydırma MUTLAK hesaplanır; scrollIntoView
@@ -16185,9 +15768,7 @@ function renderReportSections(c) {
         : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle">✎</button>` +
           `<button type="button" class="rsec-edit" data-report-block-del="${esc(key)}" aria-label="Bölümü sil" title="Bu serbest bölümü sil">×</button>`;
     } else {
-      // v2.400 — "Düzenle" metni KALDIRILDI. Düzenleme kâğıt üzerinde:
-      // bölüm başlığındaki araçlar + sağ tık menüsü. İskelet yalnız gezinme.
-      editBtn = '';
+      editBtn = `<button type="button" class="rsec-edit rsec-edit-open" data-report-edit="${esc(key)}" aria-label="Bölümü düzenle" title="Bölümü düzenle (sağ çekmece)">Düzenle</button>`;
     }
     const drag = move && canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(key)}"` : '';
     const depth = reportSectionDepth(c, key);
@@ -17101,7 +16682,7 @@ function recordSectionDefs(c) {
     fileInventory: invT.empty
       ? { kind: 'para', text: REPORT_TEXT.noColumns }
       : invT.rows.length
-        ? { kind: 'table', header: true, table: 'inventory', headers: invT.headers, rows: invT.rows, widths: invT.widths, appearance: invT.appearance }
+        ? { kind: 'table', header: true, headers: invT.headers, rows: invT.rows, widths: invT.widths }
         : { kind: 'para', text: REPORT_TEXT.annexNoInventory },
     custodyLog: logRows.length
       ? { kind: 'table', header: true, columns: 'custodyLog', headers: ['KAYIT', 'ZAMAN', 'OLAY', 'AYRINTI'], rows: logRows }
@@ -17161,7 +16742,7 @@ function recordSectionDefs(c) {
 // `columns` taşıyorsa sütunlar `reportTableColumns` ile süzülür; yoksa blok
 // olduğu gibi basılır (geriye uyum). `empty` = tüm sütunlar kapalı.
 function recordTableCols(c, b) {
-  if (!b || !b.columns) return { table: b && b.table, headers: b.headers, rows: b.rows, widths: b.widths, appearance: b.appearance, empty: false };
+  if (!b || !b.columns) return { headers: b.headers, rows: b.rows, widths: b.widths, empty: false };
   return reportTableColumns(c, b.columns, b.headers, b.rows, b.widths);
 }
 // v2.380 — Eski ek İÇERİKLERİ artık normal bölüm üreticisidir. Blok → çıktı
@@ -17216,7 +16797,7 @@ function recordBlockXml(c, key, opts = {}) {
       out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
       out += tc.empty
         ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-        : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
+        : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast });
     }
   } else if (b.kind === 'blocks') {
     for (const sub of b.blocks || []) {
@@ -17226,7 +16807,7 @@ function recordBlockXml(c, key, opts = {}) {
         out += wP(sub.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
         out += tc.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
+          : wTable([[...tc.headers], ...tc.rows], { widths: tc.widths, header: true, keepLast });
       }
     }
   } else if (b.header) {
@@ -17234,7 +16815,7 @@ function recordBlockXml(c, key, opts = {}) {
     if (tc.empty) out += wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true });
     else {
       const rows = tc.rows.length ? tc.rows : [tc.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))];
-      out += wTable([[...tc.headers], ...rows], { widths: tc.widths, header: true, keepLast, ...tableFmtOpts(tc) });
+      out += wTable([[...tc.headers], ...rows], { widths: tc.widths, header: true, keepLast });
     }
   } else {
     out += wTable(b.rows, { widths: [3000, 6000], header: false, shadeFirstCol: true, keepLast });
@@ -17254,7 +16835,7 @@ function recordBlockUdf(c, key, el, H) {
       el.push(
         tc.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true, ...tableFmtOpts(tc) })
+          : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true })
       );
     }
   } else if (b.kind === 'blocks') {
@@ -17266,7 +16847,7 @@ function recordBlockUdf(c, key, el, H) {
         el.push(
           tc.empty
             ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-            : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true, ...tableFmtOpts(tc) })
+            : table([[...tc.headers], ...tc.rows], tc.widths || [120, 390], { header: true })
         );
       }
     }
@@ -17277,7 +16858,7 @@ function recordBlockUdf(c, key, el, H) {
     } else {
       const w = tc.widths || b.udfWidths || (b.header ? tc.headers.map(() => Math.floor(510 / tc.headers.length)) : [170, 340]);
       const rows = b.header ? [tc.headers, ...(tc.rows.length ? tc.rows : [tc.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : tc.rows;
-      el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header, ...tableFmtOpts(tc) }));
+      el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
     }
   }
   if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
@@ -17447,10 +17028,6 @@ function reportSnapshot(c) {
     blocks: normalizeReportBlocks(r.blocks),
     annexPlacement: normalizeAnnexPlacement(r.annexPlacement),
     columns: normalizeReportColumns(r.columns),
-    // Bölüm bazında görünüm (v2.396): revizyona girer.
-    appearance: normalizeReportAppearance(r.appearance),
-    // Tablo bazında görünüm (v2.398): revizyona girer.
-    tableAppearance: normalizeReportTableAppearance(r.tableAppearance),
     // Ön bölüm ALAN görünürlüğü (v2.336): revizyona girer.
     fields: normalizeReportFieldVisibility(r.fields),
     includeEmbedded: !!r.includeEmbedded,
@@ -17474,8 +17051,6 @@ const REPORT_SNAPSHOT_LABELS = {
   blocks: 'Serbest bölümler',
   annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
-  appearance: 'Bölüm görünümü (sayfa/tablo)',
-  tableAppearance: 'Tablo görünümü (çizgi/yoğunluk)',
   fields: 'Künye/özet alan görünürlüğü',
   includeEmbedded: 'Gömülü metadata',
   speakerMethod: 'Konuşmacı yöntem notu',
@@ -17508,8 +17083,6 @@ function applyReportSnapshot(c, snap) {
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
-  if (snap.appearance) r.appearance = normalizeReportAppearance(snap.appearance);
-  if (snap.tableAppearance) r.tableAppearance = normalizeReportTableAppearance(snap.tableAppearance);
   if (snap.fields) r.fields = normalizeReportFieldVisibility(snap.fields);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.speakerMethod = !!snap.speakerMethod;
@@ -17789,9 +17362,9 @@ function renderReportFormat(c) {
   const denOpts = REPORT_DENSITIES.map(
     (d) => `<option value="${d}"${d === f.density ? ' selected' : ''}>${esc(REPORT_DENSITY_LABEL[d] || d)}</option>`
   ).join('');
-  // v2.394 — alan görünümü (yan yana · tablo · düz liste).
-  const flOpts = REPORT_FIELD_LAYOUTS.map(
-    (k) => `<option value="${k}"${k === f.fieldLayout ? ' selected' : ''}>${esc(REPORT_FIELD_LAYOUT_LABEL[k] || k)}</option>`
+  // v2.386 — künye düzeni (iki sütunlu sade / klasik tablo).
+  const cfOpts = REPORT_COVER_LAYOUTS.map(
+    (k) => `<option value="${k}"${k === f.coverFields ? ' selected' : ''}>${esc(REPORT_COVER_LAYOUT_LABEL[k] || k)}</option>`
   ).join('');
   const thOpts = REPORT_TABLE_THEMES.map(
     (k) => `<option value="${k}"${k === f.tableTheme ? ' selected' : ''}>${esc(REPORT_TABLE_THEME_LABEL[k] || k)}</option>`
@@ -17799,8 +17372,6 @@ function renderReportFormat(c) {
   const mx = (k, lab) =>
     `<label class="field rtech-field"><span>${lab} (mm)</span><input type="number" min="${REPORT_MARGIN_MIN_MM}" max="${REPORT_MARGIN_MAX_MM}" step="0.5" data-fmt-margin="${k}" value="${f.marginsMm[k]}"></label>`;
   host.innerHTML =
-    `<p class="merge-note fmt-global-note"><b>Bu sekmedeki ayarlar TÜM BELGEYİ etkiler.</b> ` +
-    `Yalnız bir bölümü değiştirmek için kâğıtta o bölüme tıklayın (veya başlığındaki ⚙) → sağda <b>“Bölüm düzenle → Bu bölümün görünümü”</b>.</p>` +
     `<p class="merge-note">Ekran önizlemesi, yazdırma/PDF (A4), Word (DOCX) ve UYAP UDF bu biçimi kullanır. ` +
     `Varsayılan <b>Times New Roman</b> (resmî); seçilen yazı tipi, yön ve kenar boşluğu <b>üç çıktıya da</b> (UDF/DOCX/PDF) uygulanır. ` +
     `Kenar boşluğu varsayılan 15 mm (1,5 cm, UYAP boş şablonuyla aynı); 10–50 mm (0,5 adım) ayarlanır. UDF bu değeri punto olarak saklar. ` +
@@ -17811,12 +17382,12 @@ function renderReportFormat(c) {
     `<label class="field rtech-field"><span>Yön</span><select data-fmt-orient>${orOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
-    `<label class="field rtech-field"><span>Alan görünümü (tüm belge)</span><select data-fmt-fieldlayout>${flOpts}</select></label>` +
-    `<label class="field rtech-field"><span>Tablo görünümü (tüm belge)</span><select data-fmt-theme>${thOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Künye düzeni</span><select data-fmt-cover>${cfOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Tablo görünümü</span><select data-fmt-theme>${thOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
-    `<label class="field rtech-field"><span>Tablo çizgisi (tüm belge)</span><select data-fmt-table-style>${tsOpts}</select></label>` +
-    `<label class="field rtech-field"><span>Yoğunluk (tüm belge)</span><select data-fmt-density>${denOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Tablo çizgisi</span><select data-fmt-table-style>${tsOpts}</select></label>` +
+    `<label class="field rtech-field"><span>Yoğunluk</span><select data-fmt-density>${denOpts}</select></label>` +
     `</div>` +
     `<div class="report-tech">` +
     mx('top', 'Üst') +
@@ -17834,7 +17405,7 @@ function readReportFormatPanel(c) {
   const orient = host.querySelector('[data-fmt-orient]');
   const tableStyle = host.querySelector('[data-fmt-table-style]');
   const density = host.querySelector('[data-fmt-density]');
-  const fieldLayout = host.querySelector('[data-fmt-fieldlayout]');
+  const coverFields = host.querySelector('[data-fmt-cover]');
   const tableTheme = host.querySelector('[data-fmt-theme]');
   const marginsMm = {};
   host.querySelectorAll('[data-fmt-margin]').forEach((el) => {
@@ -17847,7 +17418,7 @@ function readReportFormatPanel(c) {
     orientation: orient ? orient.value : undefined,
     tableStyle: tableStyle ? tableStyle.value : undefined,
     density: density ? density.value : undefined,
-    fieldLayout: fieldLayout ? fieldLayout.value : undefined,
+    coverFields: coverFields ? coverFields.value : undefined,
     tableTheme: tableTheme ? tableTheme.value : undefined,
     marginsMm
   });
@@ -18826,14 +18397,12 @@ function renderReport() {
         (c.synthetic ? `<div class="paper-synthetic">${esc(REPORT_TEXT.synthetic)}</div>` : '')
       );
     },
-    coverFields: () => {
-      const layout = coverFieldsLayout(c);
-      if (layout === 'simple') return coverFieldsSimpleHtml(c);
-      if (layout === 'list') return coverFieldsListHtml(c);
-      return `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
-        .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
-        .join('')}</tbody></table>`;
-    },
+    coverFields: () =>
+      coverFieldsLayout(c) === 'simple'
+        ? coverFieldsSimpleHtml(c)
+        : `<table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'coverFields', reportRows(c))
+            .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
+            .join('')}</tbody></table>`,
     summary: () =>
       `<div class="paper-section"><h3>${esc(REPORT_TEXT.summaryHeading)}</h3><p>${esc(reportSummaryIntro(c))}</p><table class="paper-table cover-fields"><tbody>${frontRowsFor(c, 'summary', reportSummaryRows(c))
         .map((r) => `<tr><td>${esc(r.label)}</td><td>${esc(r.value)}</td></tr>`)
@@ -18923,7 +18492,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}${legend ? `<p class="paper-muted">${esc(legend)}</p>` : ''}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
-      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p data-inline-field="methodText" data-inline-key="s4" title="Çift tık: metni düzenle">${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
+      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
     tech: () => {
       const rows = reportTechRows(c);
       const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
@@ -18993,7 +18562,7 @@ function renderReport() {
       const meas = limitsMeasuredText(c);
       return (
         `<div class="paper-section"><h3>${esc(H('limits'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.limitsIntro)}</p>` +
-        `<p data-inline-field="limitationsText" data-inline-key="limits" title="Çift tık: metni düzenle">${esc(c.limitationsText || defaultTextFor('limitationsText'))}</p>` +
+        `<p>${esc(c.limitationsText || defaultTextFor('limitationsText'))}</p>` +
         (meas ? `<p class="paper-muted">${esc(REPORT_TEXT.limitsMeasuredPrefix)}${esc(meas)}</p>` : '') +
         `</div>`
       );
@@ -19037,7 +18606,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('terms'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.termsIntro)}</p><p>${esc(t)}</p></div>`;
     },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(defaultTextFor('scopeNoteText'))}</p></div>`,
-    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p data-inline-field="conclusionText" data-inline-key="s6" title="Çift tık: metni düzenle">${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
+    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
     s7: () => {
       const lines = reportAttachmentLines(c);
       const body = lines.length
@@ -19149,40 +18718,10 @@ function renderReport() {
       `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertTitle || REPORT_TEXT.defaultTitle)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div>`
   };
 
-  // v2.400 — BÖLÜM ARAÇLARI kâğıdın ÜZERİNDE: başlığın sağında ✎ (başlık),
-  // 📝 (metin; yalnız serbest metin bölümlerinde), ⤒ (yeni sayfa), 🗄 (arşiv).
-  // Çekmece YOK. Fareyle üzerine gelince görünür; klavyede odaklanınca da.
-  const sectionTools = (key) => {
-    if (!reportSectionOn(c, key)) return '';
-    const pageNew = reportSectionAppearance(c, key).pageBreak === 'new';
-    const hasText = !!reportSectionEditableFields(key);
-    return (
-      `<span class="paper-sec-tools" role="toolbar" aria-label="Bölüm araçları">` +
-      `<button type="button" data-sec-tool="title" data-sec-key="${esc(key)}" title="Başlığı düzenle" aria-label="Başlığı düzenle">✎</button>` +
-      (hasText ? `<button type="button" data-sec-tool="text" data-sec-key="${esc(key)}" title="Metni düzenle" aria-label="Metni düzenle">📝</button>` : '') +
-      `<button type="button" data-sec-tool="page" data-sec-key="${esc(key)}" class="${pageNew ? 'on' : ''}" title="Yeni sayfadan başlat (aç/kapa)" aria-label="Yeni sayfadan başlat">⤒</button>` +
-      `<button type="button" data-sec-tool="archive" data-sec-key="${esc(key)}" title="Arşive al (veri silinmez)" aria-label="Arşive al">🗄</button>` +
-      `</span>`
-    );
-  };
-  const withSectionTools = (key, piece) => {
-    const tools = sectionTools(key);
-    if (!tools) return piece;
-    if (/<\/h3>/.test(piece)) return piece.replace(/<\/h3>/, `${tools}</h3>`);
-    return piece;
-  };
   // Her bölüm `data-report-key` ile sarılır (v2.231): belgede tıklayınca
   // odaklı düzenleyici açılır. `display:contents` sayesinde yerleşim değişmez.
-  // v2.396 — bölüm bazında görünüm: tablo çizgisi/yoğunluk yalnız o bölümün
-  // tablolarına uygulanır (CSS, data-sec-*). Genel ayardan farklıysa yazılır.
-  const wrapBlock = (key, piece) => {
-    if (!piece) return '';
-    const ap = reportSectionAppearance(c, key);
-    const attrs = [];
-    if (ap.tableStyle !== 'inherit') attrs.push(`data-sec-table-style="${esc(ap.tableStyle)}"`);
-    if (ap.density !== 'inherit') attrs.push(`data-sec-density="${esc(ap.density)}"`);
-    return `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}"${attrs.length ? ' ' + attrs.join(' ') : ''}>${withSectionTools(key, piece)}</div>`;
-  };
+  const wrapBlock = (key, piece) =>
+    piece ? `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}">${piece}</div>` : '';
   let html = '';
   for (const key of REPORT_FRONT_KEYS) {
     if (!(on(key) && front[key])) continue;
@@ -19204,16 +18743,7 @@ function renderReport() {
     if (!piece) continue;
     // v2.382 — yalnız ANA bölümler (s1–s6) ve kayıt bloğu yeni sayfadan başlar;
     // kısa destek bölümleri akar (gereksiz boş sayfa/boşluk olmaz).
-    // v2.396 — bölüm görünümü bu kuralı EZEBİLİR: 'new' zorla yeni sayfa,
-    // 'continue' yeni sayfa açmaz (varsayılan 'auto' = yukarıdaki kural).
-    {
-      const ap = reportSectionAppearance(c, key);
-      const isNew = ap.pageBreak === 'new';
-      const noBreak = ap.pageBreak === 'continue';
-      if (!firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) {
-        html += '<div class="paper-page-break"></div>';
-      }
-    }
+    if (REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) html += '<div class="paper-page-break"></div>';
     html += wrapBlock(key, piece);
     firstBody = false;
   }
@@ -19322,43 +18852,18 @@ function wP(
     .join('');
   return `<w:p>${ppr}${runs}</w:p>`;
 }
-function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, headerColor = null, keep = false, density = null } = {}) {
+function cell(text, { header = false, shade = null, bold = false, width = 2200, size = 18, color = null, headerColor = null, keep = false } = {}) {
   const sh = shade ? `<w:shd w:fill="${shade}"/>` : '';
   // v2.386 — başlık yazı rengi temaya bağlı (nötr: koyu; klasik: beyaz).
   const col = header ? headerColor || 'FFFFFF' : color || '24384D';
   // Hücre dolgusu PARAGRAF GİRİNTİSİYLE verilir (v2.260). Böylece tablo kenarlığı
   // metin marjıyla hizalı kalır; LibreOffice/Word'de "tablo sola çıkıntı" olmaz.
   // v2.372 — yoğunluk: sıkı rejimde satır aralığı küçülür.
-  // v2.398 — tablo bazında yoğunluk `density` ile ezilebilir.
-  const dens = density || (__docxFmt && __docxFmt.density);
-  const sp = dens === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
+  const sp = (__docxFmt && __docxFmt.density) === 'compact' ? 'w:after="20" w:line="220"' : 'w:after="50" w:line="240"';
   const p = `<w:p><w:pPr>${keep ? '<w:keepNext/>' : ''}<w:spacing ${sp}/><w:ind w:left="90" w:right="90"/></w:pPr>${wRun(text, { bold: bold || header, color: col, size })}</w:p>`;
   return `<w:tc><w:tcPr><w:tcW w:w="${width}" w:type="dxa"/>${sh}<w:vAlign w:val="center"/></w:tcPr>${p}</w:tc>`;
 }
-function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false, tableStyle = null, density = null, layout = 'table' } = {}) {
-  // v2.399 — ALAN GÖRÜNÜMÜ: tablo yerine "yan yana" veya "düz liste".
-  if (layout === 'side' || layout === 'list') {
-    if (!rows || !rows.length) return '';
-    const headerRow = header ? rows[0] : null;
-    const data = headerRow ? rows.slice(1) : rows;
-    if (!data.length) return '';
-    const labels = headerRow || [];
-    const ncol = (headerRow || data[0] || []).length;
-    const cellText = (r, from, to) => {
-      const out = [];
-      for (let i = from; i < to; i++) {
-        const v = r[i] == null ? '' : r[i];
-        out.push(labels[i] ? `${labels[i]}: ${v}` : String(v));
-      }
-      return out.join(' · ');
-    };
-    if (layout === 'list') return data.map((r) => wP(cellText(r, 0, ncol), { size: 18, keepLines: true })).join('');
-    const half = Math.ceil(ncol / 2);
-    return wTable(
-      data.map((r) => [cellText(r, 0, half), cellText(r, half, ncol)]),
-      { widths: [1, 1], header: false, tableStyle: 'plain', density, keepLast }
-    );
-  }
+function wTable(rows, { widths = null, header = true, shadeFirstCol = false, keepTogether = false, keepLast = false } = {}) {
   const n = rows[0]?.length || 1;
   // Tablo, metin genişliğine (contentTw) oturur; sütun oranları korunur. (v2.259)
   const contentTw = (__docxFmt && __docxFmt.contentTw) || 9000;
@@ -19379,16 +18884,14 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
   const neutralTheme = theme !== 'classic';
   const headFill = neutralTheme ? 'EDF1F5' : '1C426B';
   const headInk = neutralTheme ? '1C426B' : 'FFFFFF';
-  // v2.398 — tablo bazında stil/yoğunluk, bölüm/genel ayarı EZER.
-  const tstyle = tableStyle || (__docxFmt && __docxFmt.tableStyle) || 'grid';
+  const tstyle = (__docxFmt && __docxFmt.tableStyle) || 'grid';
   const borders =
     tstyle === 'plain'
       ? '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
       : tstyle === 'lines'
         ? '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:left w:val="nil"/><w:right w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>'
         : '<w:tblBorders><w:top w:val="single" w:sz="5" w:color="C9D5E1"/><w:left w:val="single" w:sz="5" w:color="C9D5E1"/><w:bottom w:val="single" w:sz="5" w:color="C9D5E1"/><w:right w:val="single" w:sz="5" w:color="C9D5E1"/><w:insideH w:val="single" w:sz="4" w:color="E1E8EF"/><w:insideV w:val="single" w:sz="4" w:color="E1E8EF"/></w:tblBorders>';
-  const effDensity = density || (__docxFmt && __docxFmt.density) || 'comfortable';
-  const cellPad = effDensity === 'compact' ? 40 : 95;
+  const cellPad = (__docxFmt && __docxFmt.density) === 'compact' ? 40 : 95;
   // v2.384 — `keepLast`: son satır, kendisinden SONRA gelen not/açıklama ile
   // aynı sayfada kalır (`w:keepNext`). Böylece tablo sonu notu tek başına
   // sonraki sayfaya düşmez.
@@ -19417,8 +18920,7 @@ function wTable(rows, { widths = null, header = true, shadeFirstCol = false, kee
               size: isHead ? 17 : 18,
               color: shadeFirstCol && ci === 0 ? '1C426B' : null,
               headerColor: headInk,
-              keep: keepLast && !isHead && ri === rows.length - 1,
-              density: effDensity
+              keep: keepLast && !isHead && ri === rows.length - 1
             });
           })
           .join('')}</w:tr>`
@@ -19539,15 +19041,13 @@ function docxXml(c) {
           : '')
       );
     },
-    coverFields: () => {
-      const layout = coverFieldsLayout(c);
-      if (layout === 'simple') return coverFieldsSimpleXml(c);
-      if (layout === 'list') return coverFieldsListXml(c);
-      return wTable(
-        frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
-        { widths: [3000, 6000], header: false, shadeFirstCol: true }
-      );
-    },
+    coverFields: () =>
+      coverFieldsLayout(c) === 'simple'
+        ? coverFieldsSimpleXml(c)
+        : wTable(
+            frontRowsFor(c, 'coverFields', reportRows(c)).map((r) => [r.label, r.value]),
+            { widths: [3000, 6000], header: false, shadeFirstCol: true }
+          ),
     summary: () =>
       headingXml(H('summary')) +
       wP(reportSummaryIntro(c)) +
@@ -19607,7 +19107,7 @@ function docxXml(c) {
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
           : t.rows.length
-            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })
+            ? wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })
             : wP(REPORT_TEXT.noMaterials, { color: '74869A', size: 17, italic: true })) +
         wP(REPORT_TEXT.originFileTimeNote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
@@ -19621,7 +19121,7 @@ function docxXml(c) {
         wP(defaultTextFor('embeddedIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
       );
     },
     acquisition: () => {
@@ -19633,7 +19133,7 @@ function docxXml(c) {
         wP(REPORT_TEXT.acqIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
       );
     },
     speakers: () => {
@@ -19651,7 +19151,7 @@ function docxXml(c) {
           return st.empty
             ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
             : st.rows.length
-              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: true, ...tableFmtOpts(st) })
+              ? wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: true })
               : wP(REPORT_TEXT.noSpeakerText, { color: '74869A', size: 17, italic: true });
         })() +
         (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
@@ -19671,7 +19171,7 @@ function docxXml(c) {
         headingXml(H('speakerDurations')) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
         (legend ? wP(legend, { color: '74869A', size: 17, italic: true, keepLines: true }) : '') +
         wP(REPORT_TEXT.speakerFootnote, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
@@ -19698,7 +19198,7 @@ function docxXml(c) {
         wP(defaultTextFor('asrIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
         wP(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
@@ -19723,7 +19223,7 @@ function docxXml(c) {
             out += st.empty
               ? wP(REPORT_TEXT.noColumns, { color: '6F8295', size: 17 })
               : wP(REPORT_TEXT.recordSpeakersHeading, { bold: true, color: '6F8295', size: 17, keep: true }) +
-                wTable([[...st.headers], ...st.rows], { header: true, ...tableFmtOpts(st) });
+                wTable([[...st.headers], ...st.rows], { header: true });
           }
         }
         if (m.hallucinationWarning)
@@ -19738,7 +19238,7 @@ function docxXml(c) {
           });
           const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
           out += wP(REPORT_TEXT.recordTranscriptHeading, { bold: true, color: '6F8295', size: 17, keep: true });
-          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: amb.length > 0, ...tableFmtOpts(st) });
+          out += wTable([[...st.headers], ...st.rows], { widths: st.widths, header: true, keepLast: amb.length > 0 });
           if (amb.length)
             out += wP(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { color: '74869A', size: 17, italic: true, keepLines: true });
         } else out += wP(REPORT_TEXT.noTranscript);
@@ -19781,7 +19281,7 @@ function docxXml(c) {
         wP(REPORT_TEXT.integrityIntro, { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true, ...tableFmtOpts(t) })) +
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, keepLast: true })) +
         wP(defaultTextFor('integrityNote'), { color: '74869A', size: 17, italic: true, keepLines: true })
       );
     },
@@ -19831,7 +19331,7 @@ function docxXml(c) {
         wP(defaultTextFor('werIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
       );
     },
     levels: () => {
@@ -19843,7 +19343,7 @@ function docxXml(c) {
         wP(defaultTextFor('levelIntro'), { keep: true }) +
         (t.empty
           ? wP(REPORT_TEXT.noColumns, { color: '74869A', size: 17, italic: true })
-          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true, ...tableFmtOpts(t) }))
+          : wTable([[...t.headers], ...t.rows], { widths: t.widths, header: true }))
       );
     },
     reviewSummary: () =>
@@ -19923,7 +19423,7 @@ function docxXml(c) {
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             out += wP(t.title, { bold: true, color: '385873', size: 18, before: 80, after: 40, keep: true });
-            out += wTable([[...t.headers], ...t.rows], { header: true, ...tableFmtOpts(t) });
+            out += wTable([[...t.headers], ...t.rows], { header: true });
           }
         } else if (b.kind === 'blocks') {
           // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
@@ -19984,19 +19484,8 @@ function docxXml(c) {
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
     const compactDocx = !!c.__annexDoc; // ek belgesi (v2.324)
-    // v2.396 — bölüm görünümü: sayfa düzeni + (varsa) tablo çizgisi/yoğunluk
-    // yalnız bu bölümün tablolarını etkiler. Sonra genel ayar geri yüklenir.
-    const ap = reportSectionAppearance(c, key);
-    const isNew = ap.pageBreak === 'new';
-    const noBreak = ap.pageBreak === 'continue';
-    if (!compactDocx && !firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) body += pageBreakPara;
-    const prevStyle = __docxFmt.tableStyle;
-    const prevDensity = __docxFmt.density;
-    if (ap.tableStyle !== 'inherit') __docxFmt.tableStyle = ap.tableStyle;
-    if (ap.density !== 'inherit') __docxFmt.density = ap.density;
+    if (!compactDocx && REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) body += pageBreakPara;
     body += render();
-    __docxFmt.tableStyle = prevStyle;
-    __docxFmt.density = prevDensity;
     firstBody = false;
   }
   if (on('signature')) body += blocks.signature();
@@ -20252,29 +19741,10 @@ async function udfDocument(opts = {}) {
   function pageBreak() {
     return `<page-break><paragraph><content startOffset="${codePointOffset}" length="0" family="${udfFamily}" size="11" underline="false" /></paragraph></page-break>`;
   }
-  function table(rows, widths, { header = true, shadeFirstCol = false, layout = 'table' } = {}) {
+  function table(rows, widths, { header = true, shadeFirstCol = false } = {}) {
     // v2.386 — tablo teması (yalnız görsel): nötr gri / klasik koyu mavi.
     const neutralTheme = (fmt.tableTheme || 'neutral') !== 'classic';
     if (!rows?.length) return '';
-    // v2.399 — ALAN GÖRÜNÜMÜ: tablo yerine yan yana / düz liste (UDF paragrafı).
-    if (layout === 'side' || layout === 'list') {
-      const headerRow = header ? rows[0] : null;
-      const data = headerRow ? rows.slice(1) : rows;
-      if (!data.length) return '';
-      const labels = headerRow || [];
-      const ncol = (headerRow || data[0] || []).length;
-      const cellText = (r, from, to) => {
-        const out = [];
-        for (let i = from; i < to; i++) {
-          const v = r[i] == null ? '' : r[i];
-          out.push(labels[i] ? `${labels[i]}: ${v}` : String(v));
-        }
-        return out.join(' · ');
-      };
-      if (layout === 'list') return data.map((r) => paragraph(cellText(r, 0, ncol), { size: 9, after: 2 })).join('');
-      const half = Math.ceil(ncol / 2);
-      return data.map((r) => paragraph(`${cellText(r, 0, half)}   |   ${cellText(r, half, ncol)}`, { size: 9, after: 2 })).join('');
-    }
     const colCount = rows[0].length;
     // v2.393 — genişlikler TEK modelden (ağırlık) gelir; UDF `columnSpans`
     // birimine (≈510) burada ölçeklenir. Açık dizi de aynı ölçeğe çekilir.
@@ -20363,19 +19833,6 @@ async function udfDocument(opts = {}) {
     },
     coverFields: () => {
       const plan = coverFieldPlan(c);
-      // v2.394 — DÜZ LİSTE: her alan tek satır ("ETİKET: değer"), iki sütuna
-      // bölünmez. Boş alan satır üretmez.
-      if (coverFieldsLayout(c) === 'list') {
-        for (const r of frontRowsFor(c, 'coverFields', reportRows(c))) {
-          el.push(
-            paragraphRuns(
-              [{ text: `${r.label}: `, size: 8.5, bold: true, color: 'muted' }, { text: r.value, size: 10 }],
-              { after: 3 }
-            )
-          );
-        }
-        return;
-      }
       if (coverFieldsLayout(c) === 'simple') {
         // UDF'te doğrulanmış iki sütunlu ızgara/borderless tablo yok: aynı
         // bilgiler TEK SÜTUN "ETİKET: değer" olarak yazılır (çizgi/renk yok).
@@ -20464,7 +19921,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('origin')));
       el.push(paragraph(REPORT_TEXT.originIntro, { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
+      else if (t.rows.length) el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
       else el.push(paragraph(REPORT_TEXT.noMaterials, { size: 9, italic: true, color: 'muted', after: 7 }));
       el.push(paragraph(REPORT_TEXT.originFileTimeNote, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20477,7 +19934,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true })
       );
     },
     acquisition: () => {
@@ -20487,7 +19944,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('acquisition')));
       el.push(paragraph(REPORT_TEXT.acqIntro, { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
     speakers: () => {
       const uSpk = speakerReportRows(c);
@@ -20501,7 +19958,7 @@ async function udfDocument(opts = {}) {
       {
         const st = reportTableColumns(c, 'speakers', REPORT_TEXT.speakerHeaders, uSpk);
         if (st.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
-        else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true, ...tableFmtOpts(st) }));
+        else if (st.rows.length) el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
         else el.push(paragraph(REPORT_TEXT.noSpeakerText, { size: 9, italic: true, color: 'muted' }));
       }
       if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
@@ -20518,7 +19975,7 @@ async function udfDocument(opts = {}) {
       const legend = speakerRecordLegend(c);
       const t = reportTableColumns(c, 'speakerDurations', REPORT_TEXT.speakerDurationHeaders, rows);
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted' }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
       if (legend) el.push(paragraph(legend, { size: 9, italic: true, color: 'muted', after: 4 }));
       el.push(paragraph(REPORT_TEXT.speakerFootnote, { size: 9, italic: true, color: 'muted', after: 4 }));
     },
@@ -20552,7 +20009,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true })
       );
       el.push(paragraph(`${defaultTextFor('asrLocal')} ${defaultTextFor('asrVerify')}`, { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20578,7 +20035,7 @@ async function udfDocument(opts = {}) {
               else {
                 el.push(paragraph(REPORT_TEXT.recordSpeakersHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
                 const w = st.headers.map(() => Math.floor(510 / st.headers.length));
-                el.push(table([[...st.headers], ...st.rows], w, { header: true, ...tableFmtOpts(st) }));
+                el.push(table([[...st.headers], ...st.rows], w, { header: true }));
               }
             }
           }
@@ -20606,7 +20063,7 @@ async function udfDocument(opts = {}) {
             });
             const st = reportTableColumns(c, 'segments', REPORT_TEXT.segmentHeadersObs, segRows);
             el.push(paragraph(REPORT_TEXT.recordTranscriptHeading, { size: 9, bold: true, color: 'mid', after: 2 }));
-            el.push(table([[...st.headers], ...st.rows], st.widths, { header: true, ...tableFmtOpts(st) }));
+            el.push(table([[...st.headers], ...st.rows], st.widths, { header: true }));
             if (amb.length)
               el.push(paragraph(`${REPORT_TEXT.ambiguousNotePrefix}: ${amb.join(' · ')}`, { size: 9, italic: true, color: 'muted', after: 4 }));
           } else el.push(paragraph(REPORT_TEXT.noTranscript, { italic: true, color: 'muted' }));
@@ -20655,7 +20112,7 @@ async function udfDocument(opts = {}) {
       el.push(
         t.empty
           ? paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 })
-          : table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) })
+          : table([[...t.headers], ...t.rows], t.widths, { header: true })
       );
       el.push(paragraph(defaultTextFor('integrityNote'), { size: 9, italic: true, color: 'muted', after: 7 }));
     },
@@ -20709,7 +20166,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('wer')));
       el.push(paragraph(defaultTextFor('werIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
     levels: () => {
       const uLevel = levelRowsForCase(c);
@@ -20718,7 +20175,7 @@ async function udfDocument(opts = {}) {
       el.push(h(H('levels')));
       el.push(paragraph(defaultTextFor('levelIntro'), { size: 10 }));
       if (t.empty) el.push(paragraph(REPORT_TEXT.noColumns, { size: 9, italic: true, color: 'muted', after: 7 }));
-      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true, ...tableFmtOpts(t) }));
+      else el.push(table([[...t.headers], ...t.rows], t.widths, { header: true }));
     },
     reviewSummary: () => {
       el.push(h(H('reviewSummary')));
@@ -20822,7 +20279,7 @@ async function udfDocument(opts = {}) {
         } else if (b.kind === 'tables') {
           for (const t of b.tables) {
             el.push(paragraph(t.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
-            el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true, ...tableFmtOpts(t) }));
+            el.push(table([[...t.headers], ...t.rows], [120, 390], { header: true }));
           }
         } else if (b.kind === 'blocks') {
           // KARIŞIK BLOK (v2.330): paragraf + tablo aynı ek içinde.
@@ -20830,13 +20287,13 @@ async function udfDocument(opts = {}) {
             if (sub.kind === 'para') el.push(paragraphLines(sub.text, { justify: true }));
             else if (sub.kind === 'table') {
               el.push(paragraph(sub.title, { size: 10, bold: true, color: 'mid', before: 5, after: 3 }));
-              el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true, ...tableFmtOpts(t) }));
+              el.push(table([[...sub.headers], ...sub.rows], [120, 390], { header: true }));
             }
           }
         } else {
           const w = b.header ? b.headers.map(() => Math.floor(510 / b.headers.length)) : [170, 340];
           const rows = b.header ? [b.headers, ...(b.rows.length ? b.rows : [b.headers.map((_, i) => (i === 0 ? b.empty || '—' : ''))])] : b.rows;
-          el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header, ...tableFmtOpts(tc) }));
+          el.push(table(rows, w, { header: !!b.header, shadeFirstCol: !b.header }));
         }
         if (b.note) el.push(paragraph(b.note, { size: 9, italic: true, color: 'muted', after: 3 }));
       }
@@ -20923,14 +20380,7 @@ async function udfDocument(opts = {}) {
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
     const compact = !!c.__annexDoc; // ek belgesi: bölüm başına sayfa sonu yok (v2.324)
-    // v2.396 — bölüm görünümü: UDF'te YALNIZ sayfa düzeni uygulanır (tablo
-    // çizgisi/yoğunluk UYAP şablonundan gelir; uygulanmaz — dürüst sınır).
-    {
-      const ap = reportSectionAppearance(c, key);
-      const isNew = ap.pageBreak === 'new';
-      const noBreak = ap.pageBreak === 'continue';
-      if (!compact && !firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) el.push(pageBreak());
-    }
+    if (!compact && REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) el.push(pageBreak());
     render();
     firstBody = false;
   }
@@ -21538,11 +20988,7 @@ function renderMergePreview(cmp) {
                   ? `Konuşmacı eşleştirmesi · ${c.materialName || ''} · ${c.speakerName || ''}`
                   : c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
                     ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
-                    : c.kind === 'report-appearance'
-                      ? `Bölüm görünümü · ${c.section || ''}`
-                      : c.kind === 'report-table-appearance'
-                        ? `Tablo görünümü · ${c.section || ''}`
-                        : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+                    : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
         ${c.reason ? `<p class="merge-reason">${esc(c.reason)}</p>` : ''}
@@ -22642,12 +22088,8 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-open-report-section]');
   if (!b) return;
   const key = b.dataset.openReportSection;
-  // v2.400 — çekmece yok: rapor görünümünde ilgili metni YERİNDE düzenle.
   switchView('report');
-  requestAnimationFrame(() => {
-    const f = reportSectionEditableFields(key);
-    if (f && f[0]) startInlineText(key, f[0].field);
-  });
+  setReportEditSection(key);
 });
 
 $('#addQuestionBtn').addEventListener('click', addQuestion);
@@ -24507,98 +23949,13 @@ $('#reportDrawerBackdrop')?.addEventListener('click', () => {
   if (ed && ed.classList.contains('open')) setReportEditSection(null);
   else setReportSettings(false);
 });
-// v2.400 — Kâğıt üzerinde düzenleme: sağ çekmece YOK.
-// Bölüm araçları (✎/📝/⤒/🗄), sağ tık menüsü, çift tıkla yerinde metin.
+// Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
 $('#reportPreview')?.addEventListener('click', (e) => {
-  const tool = e.target.closest('[data-sec-tool]');
-  if (tool) {
-    e.preventDefault();
-    e.stopPropagation();
-    sectionToolAction(tool.dataset.secTool, tool.dataset.secKey);
-    return;
-  }
-  if (paperTableJustDragged) {
-    paperTableJustDragged = false;
-    return;
-  }
   const b = e.target.closest('[data-report-key]');
   if (b) {
-    selectReportSection(b.dataset.reportKey);
+    setReportEditSection(b.dataset.reportKey);
+    // v2.366 — seçilen bölüm iskelette görünür kalsın (mutlak kaydırma).
     requestAnimationFrame(() => scrollSkeletonToKey(b.dataset.reportKey));
-  }
-});
-$('#reportPreview')?.addEventListener('dblclick', (e) => {
-  const p = e.target.closest('[data-inline-field]');
-  if (!p) return;
-  e.preventDefault();
-  startInlineText(p.dataset.inlineKey, p.dataset.inlineField);
-});
-// Sağ tık: tablo ise tablo menüsü; değilse bölüm menüsü.
-$('#reportPreview')?.addEventListener('contextmenu', (e) => {
-  const tbl = e.target.closest('[data-table-key]');
-  if (tbl) {
-    e.preventDefault();
-    openPaperTableMenu(tbl.dataset.tableKey, e.clientX, e.clientY);
-    return;
-  }
-  const sec = e.target.closest('[data-report-key]');
-  if (sec) {
-    e.preventDefault();
-    openPaperSectionMenu(sec.dataset.reportKey, e.clientX, e.clientY);
-  }
-});
-$('#reportPreview')?.addEventListener('pointerdown', (e) => startPaperTableDrag(e));
-document.addEventListener('pointermove', (e) => movePaperTableDrag(e));
-document.addEventListener('pointerup', () => endPaperTableDrag());
-document.addEventListener('click', (e) => {
-  // v2.400 — bölüm menüsü.
-  const smenu = e.target.closest('#paperSectionMenu');
-  if (smenu) {
-    if (e.target.closest('[data-psm="close"]')) {
-      closePaperSectionMenu();
-      return;
-    }
-    const b = e.target.closest('[data-psm]');
-    if (b && paperSectionMenuKey) {
-      const key = paperSectionMenuKey;
-      closePaperSectionMenu();
-      sectionToolAction(b.dataset.psm, key);
-      return;
-    }
-    return;
-  }
-  const menu = e.target.closest('#paperTableMenu');
-  if (menu) {
-    if (e.target.closest('[data-ptm-close]')) {
-      closePaperTableMenu();
-      return;
-    }
-    const w = e.target.closest('[data-ptm-widths]');
-    if (w && paperTableMenuKey) {
-      const key = paperTableMenuKey;
-      closePaperTableMenu();
-      if (w.dataset.ptmWidths === 'auto') setReportTableAppearance(key, 'widths', null);
-      else enableManualWidths(key);
-      return;
-    }
-    const b = e.target.closest('[data-ptm]');
-    if (b && paperTableMenuKey) {
-      const key = paperTableMenuKey;
-      closePaperTableMenu();
-      setReportTableAppearance(key, b.dataset.ptm, b.dataset.ptmVal);
-      return;
-    }
-    return;
-  }
-  const pm = $('#paperTableMenu');
-  if (pm && !pm.hidden) closePaperTableMenu();
-  const sm = $('#paperSectionMenu');
-  if (sm && !sm.hidden) closePaperSectionMenu();
-});
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closePaperTableMenu();
-    closePaperSectionMenu();
   }
 });
 $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
@@ -24611,12 +23968,6 @@ $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
 });
 $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   // v2.375 — çekmecedeki başlık düzenleme.
-  // v2.396 — BÖLÜM GÖRÜNÜMÜ: select değişimi (sayfa/tablo/yoğunluk).
-  const apSel = e.target.closest('[data-rse-appearance]');
-  if (apSel) {
-    setReportSectionAppearance(apSel.dataset.rseKey, apSel.dataset.rseAppearance, apSel.value);
-    return;
-  }
   const tt = e.target.closest('[data-rse-title]');
   if (tt) {
     setReportSectionTitle(tt.dataset.rseTitle, tt.value);
@@ -24625,12 +23976,6 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   if (e.target.closest('[data-rse-field]')) renderReport();
 });
 $('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
-  // v2.397 — bölüm düzenleyiciden tablo sütunlarına köprü (genel Rapor alanları).
-  const colGo = e.target.closest('[data-rse-columns]');
-  if (colGo) {
-    goToReportSetting(colGo.dataset.rseColumns);
-    return;
-  }
   // v2.389 — BÖLÜM ARŞİVİ: düğme (change değil, click). Onay sorulur.
   const ar = e.target.closest('[data-rse-archive]');
   if (ar) {
@@ -26170,30 +25515,10 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
-  '2.400': {
-    title: 'Düzenleme artık kâğıdın üzerinde: “Düzenle” yazısı ve sağ çekmece kalktı',
+  '2.393': {
+    title: 'Sürüm v2.393’e dönüldü: 7 yeni tablo ve tek genişlik modeli',
     body:
-      'Sol iskeletteki “Düzenle” yazısı kaldırıldı; liste yalnız gezinme (satıra tıkla = o bölüme git; sıralama ↑↓ ve sürükleme ile). Bölüm ayarları kâğıdın üzerinde: fareyle bölümün üzerine gelin, başlığın sağındaki ✎ (başlık), 📝 (metin), ⤒ (yeni sayfa) ve 🗄 (arşiv) düğmelerini kullanın. Bölüme SAĞ TIK aynı işlemleri menüde verir; metne ÇİFT TIK yerinde metin kutusu açar (Kaydet/Vazgeç). Sağdaki bölüm düzenleme çekmecesi kaldırıldı. Tablo görünümü tabloya sağ tık ile yapılır. Her işlem kâğıtta, ilgili öğenin üstünde; menülerde gezinme yok. Araçlar yazdırmada görünmez.'
-  },
-  '2.399': {
-    title: 'Kâğıt üzerinde tablo: sağ tık menüsü ve sütun sürükleme',
-    body:
-      'Rapor kâğıdında bir tabloya SAĞ TIK yapın: açılan menüden Görünüm (Tablo · Yan yana · Düz liste), tablo çizgisi, yoğunluk ve sütun genişliğini seçebilirsiniz. “Elle ayarla (sürükle)” seçip başlık hücresinin sağ kenarını sol tıkla tutup sürükleyin; o sütun genişler/daralır. Her ayar yalnız o tabloya yazılır; hiçbir menüye/sekmeğe gitmeniz gerekmez. “Yan yana” sütunları iki yarıya böler, “Düz liste” her hücreyi “BAŞLIK: değer” olarak alt alta yazar. Seçim ekran, yazdırma/PDF, Word ve UYAP çıktısına yansır; metin ve kanıt DEĞİŞMEZ. Panellerdeki fazladan tablo seçicileri kaldırıldı.'
-  },
-  '2.398': {
-    title: 'Her tabloyu ayrı ayrı değiştirin: tablo çizgisi ve yoğunluk',
-    body:
-      'Rapor ayarları → Alanlar listesinde artık HER tablonun başında “Tablo çizgisi” ve “Yoğunluk” seçimi var. Böylece her tabloyu ayrı ayrı değiştirebilirsiniz (ör. kanıt tablosu çizgisiz + sıkı, konuşmacı tablosu tam çerçeve + rahat). Aynı bölümdeki iki tablo bile birbirinden bağımsızdır. “Genel ayarı kullan” seçilirse o tablo Biçim sekmesindeki genel ayarı izler. Öncelik: tablo > bölüm > genel. Ekran, yazdırma/PDF ve Word çıktısına uygulanır; metin ve kanıt değişmez. UYAP (UDF) çıktısında tablo çizgisi/yoğunluk UYAP şablonundan gelir; uygulanmaz.'
-  },
-  '2.397': {
-    title: '⚙ artık bölümün kendi görünümünü açar; genel ayarlar “TÜM BELGE” olarak yazılı',
-    body:
-      'Kâğıtta bölüm başlığındaki ⚙ artık o bölümün düzenleyicisini açar ve “Bu bölümün görünümü” kutusuna kaydırır (önce genel ayar çekmecesine gidiyordu; bu yüzden “hepsi değişiyor” sanılıyordu). Bölüm düzenleyicide “yalnız bu bölüm” yazar; altında “Tablo sütunları ›” ile o tablonun sütunlarını açıp kapatabilirsiniz. Biçim sekmesi artık “TÜM BELGE” uyarısı taşır ve “Tablo çizgisi (tüm belge) · Yoğunluk (tüm belge)” olarak etiketlidir. Bölüme özel görünüm yalnız o bölümü, Biçim ayarları tüm belgeyi etkiler. Metin ve kanıt değişmez.'
-  },
-  '2.396': {
-    title: 'Bölüm bazında görünüm: istediğiniz bölümün sayfa/tablo görünümünü değiştirin',
-    body:
-      'Rapor kâğıdında bir bölüme tıklayın (ya da iskelette “Düzenle”): açılan bölüm düzenleyicide artık “Görünüm” grubu var. Sayfa düzeni (Genel / Yeni sayfadan başla / Yeni sayfa açma), tablo çizgisi (Genel / Tam çerçeve / Yalnız yatay / Çizgisiz) ve yoğunluk (Genel / Rahat / Sıkı) seçilebilir. Seçim YALNIZ o bölümü etkiler; diğer bölümler genel Biçim ayarında kalır. Ekran, yazdırma/PDF ve Word çıktısına uygulanır; metin, kanıt ve hesaplar DEĞİŞMEZ. UYAP (UDF) çıktısında tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır. Mevcut dosyalar etkilenmez; ayar yalnız siz seçtiğinizde yazılır.'
+      'Uygulama v2.393 işlev kümesine döndü: “Rapor alanları”nda 7 yeni tablo (teslim/iade materyalleri, işlem günlüğü, gösterim anahtarı, son kontrol, gömülü bilgi, bütünlük, ASR) ve sütun genişliğinde tek ağırlık modeli vardır. v2.394’ün “Alan görünümü”, v2.395’in bölüm ⚙ düğmesi ve v2.396–v2.400’ün bölüm/tablo görünümü ile kâğıt üzerinde düzenleme özellikleri geri alındı. Bölüm düzenleme eski yerinden (sağdaki “Düzenle” çekmecesi) yapılır. Metin ve kanıt değişmez.'
   },
   '2.395': {
     title: 'Rapor ayarları: 7 yeni tablo, tek genişlik modeli, alan görünümü ve bölümden ⚙',

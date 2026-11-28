@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.400.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.393.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -17,70 +17,11 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
 
-## v2.400 — Kâğıt üzerinde düzenleme: çekmece ve “Düzenle” kalktı
-
-**KULLANICI NE GÖRECEK:**
-- **Sol iskeletteki “Düzenle” yazısı kaldırıldı.** İskelet yalnız **gezinme**: satıra tıkla → o bölüme git. Sıralama **↑↓** ve sürükleme ile sürer.
-- **Bölüm ayarları kâğıdın üzerinde:** fareyle bir bölümün üzerine gelin; başlığın sağında küçük araçlar çıkar:
-  - **✎** başlığı **yerinde** düzenle (Enter kaydet, Esc vazgeç)
-  - **📝** metni **yerinde** düzenle (yöntem / sınırlılıklar / sonuç)
-  - **⤒** yeni sayfadan başlat (aç/kapa)
-  - **🗄** arşive al (veri silinmez)
-- **Bölüme sağ tık** → aynı işlemler menüde. **Metne çift tık** → yerinde metin kutusu (Kaydet/Vazgeç).
-- **Sağdaki bölüm düzenleme çekmecesi kaldırıldı.** Tablo görünümü zaten **tabloya sağ tık** (v2.399) ile yapılıyor.
-- Her işlem **kâğıtta, ilgili öğenin üstünde**; menülerde/çekmecelerde gezinme yok.
-
-**DÜRÜST SINIR:** Araçlar yazdırmada/PDF’te **görünmez**; yalnız ekran. Düzenleme metni ve kanıt değiştirmez.
-
-## v2.399 — Kâğıt üzerinde tablo: sağ tık menüsü + sütun sürükleme
-
-**KULLANICI NE GÖRECEK:**
-- Rapor kâğıdında **herhangi bir tabloya sağ tık** → küçük menü:
-  - **Görünüm:** **Tablo · Yan yana · Düz liste**
-  - **Tablo çizgisi:** Genel · Tam çerçeve · Yalnız yatay · Çizgisiz
-  - **Yoğunluk:** Genel · Rahat · Sıkı
-  - **Sütun genişlikleri:** **Otomatik** · **Elle ayarla (sürükle)**
-- **Elle ayarla** seçtikten sonra **başlık hücresinin sağ kenarını** sol tıkla tutup sürükleyin: o sütun genişler/daralır. Yalnız o tablo etkilenir.
-- Her ayar **yalnız o tabloya** yazılır; hiçbir menüye/sekmeğe gitmek gerekmez. “Tablo / Yan yana / Düz liste” seçimi ekran + yazdırma/PDF + Word (DOCX) + UYAP (UDF) çıktısına yansır (metin değişmez).
-
-**SADELEŞTİRME:** v2.396–398’de Alanlar/Biçim panellerine eklenen fazladan seçiciler **kaldırıldı**; tablo görünümü artık **kâğıt üzerinde** yapılır. Bölüm düzenleyicide yalnız “Sayfa düzeni” (yeni sayfa) kaldı.
-
-**DÜRÜST SINIR:** UDF’te tablo çizgisi/yoğunluk UYAP şablonundan gelir; “Tablo / Yan yana / Düz liste” ve sütun genişliği uygulanır.
-
-## v2.398 — Tablo bazında görünüm (her tablo ayrı)
-
-**KULLANICI NE GÖRECEK:**
-- **Rapor ayarları → Alanlar** listesinde **her tablonun** başında iki açılır liste var: **Tablo çizgisi** ve **Yoğunluk**.
-- Yani artık **her tabloyu ayrı ayrı** değiştirebilirsiniz: ör. “Analiz / kanıt tablosu” çizgisiz + sıkı, “Konuşmacı tablosu” tam çerçeve + rahat. Aynı bölümdeki iki tablo bile birbirinden bağımsızdır.
-- “Genel ayarı kullan” seçilirse o tablo, **Biçim** sekmesindeki genel ayarı izler.
-- Öncelik: **tablo > bölüm > genel**. Ekran + yazdırma/PDF + Word (DOCX) çıktısına uygulanır.
-
-**DÜRÜST SINIR:** UYAP (UDF) çıktısında tablo çizgisi/yoğunluk **UYAP şablonundan** gelir; tablo bazında uygulanmaz.
-
-**NOT:** Metin, kanıt ve hesaplar **değişmez**. Ayar yalnız siz seçtiğinizde yazılır; revizyona girer; birleştirmede çakışma sessizce ezilmez.
-
-## v2.397 — Genel mi bölüm mü? ⚙ artık bölüm görünümünü açar
-
-**KULLANICI NE GÖRECEK:**
-- Kâğıtta bölüm başlığındaki **⚙** artık **o bölümün düzenleyicisini** açar ve **“Bu bölümün görünümü”** kutusuna kaydırır (önce genel ayar çekmecesine gidiyordu; bu yüzden “hepsi değişiyor” sanılıyordu).
-- **Bölüm düzenleyicide:** “Bu bölümün görünümü — **yalnız bu bölüm**” açıkça yazar. Altında **“Tablo sütunları ›”** düğmesi (o bölümün tablosunun sütunlarını aç/kapat) bulunur.
-- **Biçim sekmesi** artık açıkça **“TÜM BELGE”** uyarısı taşır; kontroller **“Tablo çizgisi (tüm belge)”, “Yoğunluk (tüm belge)”** olarak etiketlendi. Böylece “bu ayar hepsini değiştirir” yanılgısı kalkar.
-
-**NOT:** Bölüme özel görünüm yalnız o bölümü etkiler; genel Biçim ayarları tüm belgeyi etkiler. Metin/kanıt değişmez.
-
-## v2.396 — Bölüm bazında görünüm (sayfa · tablo çizgisi · yoğunluk)
-
-**KULLANICI NE GÖRECEK:**
-- Rapor kâğıdında **istediğiniz bölüme tıklayın** (ya da iskelette **Düzenle**). Açılan bölüm düzenleyicide artık bir **Görünüm** grubu var:
-  - **Sayfa düzeni:** Genel (otomatik) · **Yeni sayfadan başla** · **Yeni sayfa açma**
-  - **Tablo çizgisi:** Genel ayarı kullan · Tam çerçeve · Yalnız yatay çizgi · Çizgisiz
-  - **Yoğunluk:** Genel ayarı kullan · Rahat · Sıkı
-- Seçim **yalnız o bölümü** etkiler; diğer bölümler genel Biçim ayarında kalır. **Ekran + yazdırma/PDF + Word (DOCX)** çıktısına uygulanır.
-- Metin, kanıt ve hesaplar **değişmez**; yalnız yerleşim değişir. Boş ayar = genel ayar.
-
-**DÜRÜST SINIR:** UYAP (UDF) çıktısında tablo çizgisi/yoğunluk **UYAP şablonundan** gelir, uygulanmaz; **yalnız sayfa düzeni** (yeni sayfa / yeni sayfa açma) UDF’e uygulanır.
-
-**NOT:** Bu, “Alan görünümü”nün (yalnız künye) beklediğiniz karşılığıdır: **bölümün kendi görünümü**. Mevcut dosyalar etkilenmez; ayar yalnız siz seçtiğinizde yazılır. Revizyona girer; birleştirmede çakışma sessizce ezilmez.
+> **DURUM (mevcut v2.393):** v2.394, v2.395 ve v2.396–v2.400 **geri alındı**.
+> Uygulama, **v2.393** işlev kümesinde çalışıyor: 7 tablo “Rapor alanları”nda,
+> sütun genişliği tek ağırlık modelinden. Künye “Alan görünümü”, bölüm ⚙,
+> bölüm/tablo bazında görünüm ve kâğıt üzerinde düzenleme **yoktur**. Aşağıdaki
+> v2.394–v2.400 başlıkları **tarihsel** kayıttır.
 
 ## v2.395 — Kâğıttan ⚙: bölümden ilgili ayar grubuna atlama
 

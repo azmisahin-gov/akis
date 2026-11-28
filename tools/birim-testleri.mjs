@@ -116,7 +116,7 @@ const EXPOSE = [
   'speakerSegments', 'removeSpeaker', 'unusedSpeakers', 'speakerRows', 'speakerNotes', 'speakerRoleText', 'reviewSummaryRows',
   'readingStatusLabel', 'materialShortLabel', 'speakerReportRows', 'speakerDurationReportRows', 'speakerRecordLegend',
   'reviewTableText', 'ambiguousSegmentNotes', 'xesc',
-  'coverFieldPlan', 'coverFieldsLayout', 'coverFieldsSimpleHtml', 'coverFieldsListHtml', 'coverFieldsListXml', 'coverLines', 'coverLine', 'REPORT_FIELD_LAYOUTS',
+  'coverFieldPlan', 'coverFieldsLayout', 'coverFieldsSimpleHtml', 'coverLines', 'coverLine',
   'loopStopTarget', 'LOOP_KEYS',
   'nextScrollTop', 'pendingBreakdown', 'pendingSummaryText', 'clampSegMenuPosition', 'insertTagAt', 'stripQuickTags', 'segmentWorkSummary',
   'letterModel', 'letterPaperHtml', 'letterAnnexRows', 'letterAnnexLabel', 'letterDefaultBody', 'letterMissingRows', 'LETTER_TEXT',
@@ -157,7 +157,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportNumberLabelMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportSectionArchived', 'freshCase', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText', 'recordTableCols', 'reportSectionSettings', 'REPORT_SECTION_SETTINGS', 'goToReportSetting',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportSectionArchived', 'freshCase', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText', 'recordTableCols',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
   'reportSkeletonCollapsedPref', 'toggleReportSkeletonCollapsed',
@@ -8428,174 +8428,6 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   // işini her çıktı kendi tarafında yapar).
   const partsIdx = keys.indexOf('parts');
   eq('kalan genişlikler = tam model eksi kapalı sütun', t2.widths.join(','), t.widths.filter((_, i) => i !== partsIdx).join(','));
-}
-// [193] v2.394 — ALAN GÖRÜNÜMÜ: Tablo · Düz liste · Yan yana.
-// Kullanıcı: "künye alanları üç biçimde gösterilebilsin."
-{
-  console.log('\n[193] Alan görünümü: tablo · düz liste · yan yana (v2.394)');
-  const S = __schemaMod;
-  eq('üç görünüm tanımlı', S.REPORT_FIELD_LAYOUTS.join(','), 'side,table,list');
-  // Eski `coverFields` → yeni `fieldLayout` eşlemesi.
-  eq('simple → side', S.normalizeReportFormat({ coverFields: 'simple' }).fieldLayout, 'side');
-  eq('classic → table', S.normalizeReportFormat({ coverFields: 'classic' }).fieldLayout, 'table');
-  eq('açık fieldLayout korunur', S.normalizeReportFormat({ fieldLayout: 'list' }).fieldLayout, 'list');
-  eq('list → coverFields simple', S.normalizeReportFormat({ fieldLayout: 'list' }).coverFields, 'simple');
-  eq('table → coverFields classic', S.normalizeReportFormat({ fieldLayout: 'table' }).coverFields, 'classic');
-  eq('geçersiz fieldLayout → side', S.normalizeReportFormat({ fieldLayout: 'x' }).fieldLayout, 'side');
-
-  const base = { id: 'cFL', court: 'Antalya 4. Asliye Hukuk Mahkemesi', fileNo: '2026/9', plaintiff: 'A', defendant: 'B', subject: 'Konu', reportDate: '2026-01-01' };
-  const mk = (fl) => T.emptyCaseForTest({ ...base, report: { format: { fieldLayout: fl } } });
-  eq('yan yana → simple', T.coverFieldsLayout(mk('side')), 'simple');
-  eq('tablo → classic', T.coverFieldsLayout(mk('table')), 'classic');
-  eq('düz liste → list', T.coverFieldsLayout(mk('list')), 'list');
-
-  // DÜZ LİSTE: her alan tek satır (kunye-wide), tam genişlik; iki sütuna bölünmez.
-  const cl = mk('list');
-  const html = T.coverFieldsListHtml(cl);
-  eq('düz liste HTML üretir', html.length > 0, true);
-  eq('düz liste sınıfı', /paper-kunye-list/.test(html), true);
-  const rows = (html.match(/kunye-row kunye-wide/g) || []).length;
-  eq('her alan ayrı satır', rows >= 4, true);
-  eq('iki sütunlu satır YOK', /kunye-row">/.test(html), false);
-  eq('etiket + değer birlikte', /GÖREVLENDİRME MAKAMI/.test(html) && /Antalya 4\. Asliye Hukuk Mahkemesi/.test(html), true);
-  // Boş alan satır üretmez.
-  eq('boş alan satır üretmez', /İNCELEME TARİHİ/.test(html), false);
-  // DOCX listesi de her alan için ayrı paragraf üretir.
-  const dx = T.coverFieldsListXml(cl);
-  eq('düz liste DOCX paragraf', (dx.match(/<w:p>/g) || []).length >= 4, true);
-}
-// [194] v2.395 — Kâğıttan ⚙: bölümden ilgili ayar grubuna atlama.
-// Kullanıcı: "rapordaki bölümden o bölümün ayarına gidebileyim."
-{
-  console.log('\n[194] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
-  const S = __schemaMod;
-  // Eşleme TEK kaynak; hedef tablolar GERÇEKTEN var olmalı.
-  const map = T.REPORT_SECTION_SETTINGS;
-  eq('eşleme tanımlı', !!map && Object.keys(map).length >= 15, true);
-  eq('s5 → kanıt tablosu', T.reportSectionSettings('s5').target, 'col:segments');
-  eq('konuşmacı → konuşmacı tablosu', T.reportSectionSettings('speakers').target, 'col:speakers');
-  eq('künye → künye alanları', T.reportSectionSettings('coverFields').target, 'field:coverFields');
-  // Yeni 7 tablonun hepsi gear ile erişilebilir.
-  for (const t of ['physicalItems', 'custodyLog', 'notationKey', 'finalChecklist', 'embedded', 'integrity', 'transcription']) {
-    eq(`${t} eşlemesi var`, Object.values(map).some((v) => v.target === 'col:' + t), true);
-  }
-  // Her `col:` hedefi gerçek bir tabloya işaret eder (yanlış anahtar yok).
-  for (const [k, v] of Object.entries(map)) {
-    if (!v.target || !v.target.startsWith('col:')) continue;
-    eq(`eşleme hedefi geçerli tablo (${k})`, !!S.REPORT_COLUMN_TABLES[v.target.slice(4)], true);
-    eq(`eşleme sekmesi geçerli (${k})`, ['check', 'fields', 'format', 'revision'].includes(v.tab), true);
-  }
-  // Eşlemesi olmayan bölümde gear YOK (boş düğme üretilmez).
-  eq('s1 eşlemesi yok', T.reportSectionSettings('s1'), null);
-  eq('eşlemesiz bölümde git false', T.goToReportSetting('s1'), false);
-  // Eşlemeli bölümde git true (DOM stub'ında patlamaz).
-  eq('eşlemeli bölümde git true', T.goToReportSetting('s5'), true);
-}
-// [195] v2.396 — BÖLÜM BAZINDA GÖRÜNÜM (sayfa/tablo/yoğunluk).
-// Kullanıcı: "istediğim bölümün görünümünü değiştireyim." Yalnız yerleşim;
-// metin/kanıt değişmez. Genel ayarı bölüm için ezer.
-{
-  console.log('\n[195] Bölüm bazında görünüm (v2.396)');
-  const S = __schemaMod;
-  // Normalize: geçersiz değer varsayılana döner; tamamen varsayılan GİRDİ atılır.
-  const n = S.normalizeReportAppearance({
-    s5: { pageBreak: 'new', tableStyle: 'plain', density: 'compact' },
-    s6: { pageBreak: 'auto', tableStyle: 'inherit', density: 'inherit' },
-    x: { tableStyle: 'BOZUK', pageBreak: 'zzz', density: 'zzz' }
-  });
-  eq('geçerli bölüm korunur', JSON.stringify(n.s5), JSON.stringify({ pageBreak: 'new', tableStyle: 'plain', density: 'compact' }));
-  eq('tamamen varsayılan girdi atılır', 's6' in n, false);
-  eq('bozuk değer varsayılana döner (girdi atılır)', 'x' in n, false);
-  eq('boş girdi {} döner', JSON.stringify(S.normalizeReportAppearance(null)), '{}');
-  // Etkin görünüm: eksik alan genel varsayılan.
-  const c = T.emptyCaseForTest({ id: 'cApp' });
-  c.report.appearance = S.normalizeReportAppearance({ s5: { tableStyle: 'plain' } });
-  eq('etkin: tablo çizgisi özel', S.reportSectionAppearance(c, 's5').tableStyle, 'plain');
-  eq('etkin: yoğunluk genel', S.reportSectionAppearance(c, 's5').density, 'inherit');
-  eq('etkin: olmayan bölüm varsayılan', S.reportSectionAppearance(c, 's1').pageBreak, 'auto');
-  // Birleştirme: eksik dolar, çakışma sessiz ezilmez (bu dosya korunur).
-  const mine = { report: { appearance: { s5: { tableStyle: 'plain', density: 'inherit', pageBreak: 'auto' } } } };
-  const theirs = { report: { appearance: { s5: { tableStyle: 'lines', density: 'inherit', pageBreak: 'auto' }, s6: { pageBreak: 'new' } } } };
-  const plan = S.appearanceMergePlan(mine, theirs);
-  eq('birleştirme: çakışmada bu dosya korunur', plan.appearance.s5.tableStyle, 'plain');
-  eq('birleştirme: eksik bölüm alınır', plan.appearance.s6.pageBreak, 'new');
-  eq('birleştirme: çakışma bildirilir', plan.conflicts.length, 1);
-  eq('çakışma türü', plan.conflicts[0].kind, 'report-appearance');
-  eq('çakışma metni okunur (nesne değil)', typeof plan.conflicts[0].mine, 'string');
-  // Revizyon: görünüm snapshot'a girer ve geri yüklenir.
-  const c2 = T.emptyCaseForTest({ id: 'cApp2' });
-  c2.report.appearance = S.normalizeReportAppearance({ speakers: { pageBreak: 'new', tableStyle: 'plain' } });
-  const snap = T.reportSnapshot(c2);
-  eq('snapshot görünümü taşır', snap.appearance.speakers.pageBreak, 'new');
-  c2.report.appearance = {};
-  T.applyReportSnapshot(c2, snap);
-  eq('geri yükleme görünümü getirir', c2.report.appearance.speakers.tableStyle, 'plain');
-  const diff = T.reportSnapshotDiff(c2, { ...snap, appearance: {} });
-  eq('fark etiketi görünür', diff.includes('Bölüm görünümü (sayfa/tablo)'), true);
-}
-// [196] v2.398 — TABLO bazında görünüm (bölümden daha ince).
-// Kullanıcı: "bölümlerde tabloları ayrı ayrı değiştirebilelim."
-{
-  console.log('\n[196] Tablo bazında görünüm (v2.398)');
-  const S = __schemaMod;
-  const n = S.normalizeReportTableAppearance({
-    segments: { tableStyle: 'plain', density: 'compact' },
-    speakers: { tableStyle: 'inherit', density: 'inherit' },
-    x: { tableStyle: 'BOZUK', density: 'zzz' }
-  });
-  eq('geçerli tablo korunur', JSON.stringify(n.segments), JSON.stringify({ tableStyle: 'plain', density: 'compact', layout: 'table', widths: null }));
-  eq('tamamen varsayılan tablo atılır', 'speakers' in n, false);
-  eq('bozuk değer varsayılana döner (girdi atılır)', 'x' in n, false);
-  const c = T.emptyCaseForTest({ id: 'cTblApp' });
-  c.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { density: 'compact' } });
-  eq('etkin: segments yoğunluk özel', S.reportTableAppearance(c, 'segments').density, 'compact');
-  eq('etkin: segments çizgi genel', S.reportTableAppearance(c, 'segments').tableStyle, 'inherit');
-  eq('etkin: başka tablo varsayılan', S.reportTableAppearance(c, 'origin').density, 'inherit');
-  // reportTableColumns tablo görünümünü taşır (üç çıktı bunu kullanır).
-  const tc = T.reportTableColumns(c, 'segments', ['ZAMAN', 'METİN'], [['a', 'b']]);
-  eq('sütun çıktısı tablo anahtarını taşır', tc.table, 'segments');
-  eq('sütun çıktısı tablo görünümünü taşır', tc.appearance.density, 'compact');
-  // Birleştirme: çakışma sessiz ezilmez.
-  const plan = S.tableAppearanceMergePlan(
-    { report: { tableAppearance: { segments: { tableStyle: 'plain', density: 'inherit' } } } },
-    { report: { tableAppearance: { segments: { tableStyle: 'lines', density: 'inherit' }, origin: { density: 'compact' } } } }
-  );
-  eq('tablo birleştirme: bu dosya korunur', plan.tableAppearance.segments.tableStyle, 'plain');
-  eq('tablo birleştirme: eksik tablo alınır', plan.tableAppearance.origin.density, 'compact');
-  eq('tablo birleştirme: çakışma bildirilir', plan.conflicts.length, 1);
-  eq('tablo çakışma türü', plan.conflicts[0].kind, 'report-table-appearance');
-  // Revizyon: snapshot + geri yükleme.
-  const c2 = T.emptyCaseForTest({ id: 'cTblApp2' });
-  c2.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { tableStyle: 'plain' } });
-  const snap = T.reportSnapshot(c2);
-  eq('snapshot tablo görünümünü taşır', snap.tableAppearance.segments.tableStyle, 'plain');
-  c2.report.tableAppearance = {};
-  T.applyReportSnapshot(c2, snap);
-  eq('geri yükleme tablo görünümünü getirir', c2.report.tableAppearance.segments.tableStyle, 'plain');
-  eq('fark etiketi tablo görünümü', T.reportSnapshotDiff(c2, { ...snap, tableAppearance: {} }).includes('Tablo görünümü (çizgi/yoğunluk)'), true);
-}
-// [197] v2.399 — Tablo düzeni (tablo/yan yana/düz liste) + elle sütun genişliği.
-{
-  console.log('\n[197] Tablo düzeni ve sütun genişliği (v2.399)');
-  const S = __schemaMod;
-  eq('üç düzen', S.REPORT_TABLE_LAYOUTS.join(','), 'table,side,list');
-  const n = S.normalizeReportTableAppearance({
-    inventory: { layout: 'list' },
-    segments: { layout: 'side', widths: [20, 10, 10, 40, 10, 10] },
-    x: { layout: 'bozuk', widths: [1] }
-  });
-  eq('düz liste korunur', n.inventory.layout, 'list');
-  eq('yan yana + genişlik korunur', n.segments.layout, 'side');
-  eq('genişlik toplamı 100', Math.round(n.segments.widths.reduce((a, b) => a + b, 0)), 100);
-  eq('geçersiz düzen+genişlik girdisi atılır', 'x' in n, false);
-  const c = T.emptyCaseForTest({ id: 'cLay' });
-  c.report.tableAppearance = S.normalizeReportTableAppearance({ segments: { layout: 'side', widths: [30, 70] } });
-  const ap = S.reportTableAppearance(c, 'segments');
-  eq('etkin düzen', ap.layout, 'side');
-  eq('etkin genişlik', ap.widths.join(','), '30,70');
-  eq('metin düzeni söyler', S.tableAppearanceText(ap).includes('Yan yana'), true);
-  // Genişlikler 5% altına inemez (aşırı sıkışma yok).
-  eq('çok küçük pay reddedilir', S.normalizeTableWidths([1, 99]), null);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -1,4 +1,4 @@
-# Özellikler (v2.400 — mevcut durum)
+# Özellikler (v2.393 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1335,23 +1335,3 @@ Rapor ayarları → **Biçim → Alan görünümü**. Künye alanları **Yan yan
 ## Kâğıttan ⚙: bölüm → ayar grubu (v2.395)
 
 Rapor kâğıdında ayarı olan bölüm başlıklarında **⚙** düğmesi vardır. Basınca sağ **rapor ayarları** çekmecesi açılır, ilgili sekme seçilir ve o bölümün ayar grubu (künye alanları ya da tablo sütunları) kısa süre vurgulanır. Eşlemesi olmayan bölümde ⚙ çizilmez. ⚙ yalnız ekranda; yazdırma/PDF, DOCX ve UDF çıktısında görünmez.
-
-## Bölüm bazında görünüm (v2.396)
-
-Rapor kâğıdında bir bölüme tıklayın (veya iskelette **Düzenle**): bölüm düzenleyicide **Görünüm** grubu açılır. **Sayfa düzeni** (Genel / Yeni sayfadan başla / Yeni sayfa açma), **tablo çizgisi** (Genel / Tam çerçeve / Yalnız yatay / Çizgisiz) ve **yoğunluk** (Genel / Rahat / Sıkı) yalnız o bölüm için genel biçimi ezer. Ekran + yazdırma/PDF + Word çıktısına uygulanır; metin, kanıt ve hesaplar değişmez. UDF'te tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır. Revizyona girer; birleştirmede çakışma sessizce ezilmez (`appearanceMergePlan`).
-
-## Genel mi bölüm mü? ⚙ bölüm görünümüne gider (v2.397)
-
-Kâğıtta bölüm başlığındaki **⚙** artık o bölümün düzenleyicisini açar ve **“Bu bölümün görünümü”** kutusuna kaydırır (önce genel ayar çekmecesine gidiyordu). Bölüm düzenleyicide “yalnız bu bölüm” yazar; altında **“Tablo sütunları ›”** köprüsü vardır. **Biçim** sekmesi **“TÜM BELGE”** uyarısı taşır ve “Tablo çizgisi (tüm belge) · Yoğunluk (tüm belge)” etiketlidir. Böylece bölüme özel görünüm ile genel biçim karışmaz.
-
-## Tablo bazında görünüm (v2.398)
-
-Rapor ayarları → **Alanlar** listesinde **her tablonun** başında **Tablo çizgisi** ve **Yoğunluk** seçimi vardır. Her tablo ayrı ayrı değiştirilir (aynı bölümdeki iki tablo bile bağımsız). “Genel ayarı kullan” = Biçim sekmesindeki genel ayar. Öncelik: **tablo > bölüm > genel**. Ekran + yazdırma/PDF + Word'e uygulanır; UDF'te tablo çizgisi/yoğunluk UYAP şablonundan gelir. Revizyona girer; birleştirmede çakışma sessizce ezilmez (`tableAppearanceMergePlan`).
-
-## Kâğıt üzerinde tablo düzenleme (v2.399)
-
-Rapor kâğıdında tabloya **sağ tık**: **Görünüm** (Tablo · Yan yana · Düz liste), **tablo çizgisi**, **yoğunluk**, **sütun genişlikleri** (Otomatik · Elle ayarla). “Elle ayarla” seçilince **başlık hücresinin sağ kenarını sürükleyerek** sütun genişliği ayarlanır. Her ayar yalnız o tabloya yazılır; panellerde gezinmek gerekmez. “Yan yana” sütunları iki yarıya böler; “Düz liste” her hücreyi “BAŞLIK: değer” olarak alt alta yazar. Ekran + yazdırma/PDF + Word + UYAP metnine yansır; metin/kanıt değişmez.
-
-## Kâğıt üzerinde düzenleme (v2.400)
-
-Sol iskeletteki **“Düzenle” kaldırıldı**; iskelet yalnız gezinme (tıkla = bölüme git; sıralama ↑↓/sürükleme). Bölüm ayarları **kâğıdın üzerinde**: fareyle üzerine gelince başlığın sağında **✎ başlık · 📝 metin · ⤒ yeni sayfa · 🗄 arşiv**; bölüme **sağ tık** aynı işlemleri menüde verir; metne **çift tık** yerinde metin kutusu. Sağdaki bölüm düzenleme çekmecesi kaldırıldı. Tablo görünümü tabloya sağ tık (v2.399). Araçlar yazdırmada görünmez; metin/kanıt değişmez.

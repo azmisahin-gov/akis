@@ -2754,8 +2754,7 @@ console.log('\n[2dn] Tek düzenleme yeri: yöntem/sınırlılık/sonuç (v2.345)
   check('eski form okuyucusu bu alanları yazmıyor', !/\$\('#methodText'\)/.test(app) && !/c\.conclusionText = \$\('#conclusionText'\)/.test(app));
   // 2) Yönlendirme: kullanıcı kaybolmaz — Rapor görünümüne götürür ve bölümü seçer.
   check('yönlendirme düğmeleri var', (html.match(/data-open-report-section=/g) || []).length >= 3);
-  // v2.400 — çekmece yok: yönlendirme rapor görünümünde metni YERİNDE açar.
-  check('yönlendirme rapor görünümünü açar', /data-open-report-section[\s\S]{0,400}switchView\('report'\)[\s\S]{0,300}startInlineText/.test(app));
+  check('yönlendirme rapor görünümünü açar', /data-open-report-section[\s\S]{0,400}switchView\('report'\)[\s\S]{0,200}setReportEditSection/.test(app));
   check('sekme ipucu yerini söyler', /Rapor görünümünde düzenlenir/.test(html));
   check('yönlendirme notu biçimli', /\.single-home-note\s*\{[^}]*display:\s*flex/.test(css) && /\.single-home-actions\s*\{[^}]*flex-wrap:\s*wrap/.test(css));
   // 3) Tek yazma yolu: rapor düzenleyicisi (mevcut testler de bunu korur).
@@ -3161,8 +3160,8 @@ console.log('\n[2ep] Kurumsal belge tasarımı: üst/alt bilgi, künye, tema (v2
   check('nötr tablo koyu mavi dolgu kullanmaz', /\[data-table-theme="neutral"\] \.paper-table th \{[^}]*color: var\(--paper-ink\)/.test(css));
   // KAPAK hiyerarşisi + tasarım tercihleri.
   check('kapak sınıfları ayrı', /paper-court/.test(app) && /paper-type/.test(app));
-  check('tasarım tercihleri panelde', /data-fmt-fieldlayout/.test(app) && /data-fmt-theme/.test(app));
-  check('tercihler kalıcı biçimde', /fieldLayout: fieldLayout \? fieldLayout\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
+  check('tasarım tercihleri panelde', /data-fmt-cover/.test(app) && /data-fmt-theme/.test(app));
+  check('tercihler kalıcı biçimde', /coverFields: coverFields \? coverFields\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
 }
 console.log('\n[2em] Bölüm arşivi (v2.389)');
 {
@@ -3237,85 +3236,6 @@ console.log('\n[2ep] Sütun genişliği tek model (v2.393)');
   // Eski elle yazılmış DOCX/UDF genişlik dizileri KALDIRILDI (tek model).
   check('elle DOCX genişlik dizisi kalmadı', !/\[650, 1150, 1100, 1100, 1250, 1150, 1250, 2556\]/.test(app));
   check('elle UDF genişlik dizisi kalmadı', !/\[35, 58, 55, 58, 56, 56, 66, 126\]/.test(app));
-}
-console.log('\n[2eq] Alan görünümü: tablo · düz liste · yan yana (v2.394)');
-{
-  const schema = read('assets/schema.js');
-  const app = read('assets/app.js');
-  const layer = read('assets/reading-layer.css');
-  check('şema: üç görünüm', /REPORT_FIELD_LAYOUTS = \['side', 'table', 'list'\]/.test(schema));
-  check('şema: etiketler', /REPORT_FIELD_LAYOUT_LABEL = \{ side: 'Yan yana', table: 'Tablo', list: 'Düz liste' \}/.test(schema));
-  check('normalize: eski coverFields eşlenir', /coverFieldsRaw === 'classic'[\s\S]{0,40}\? 'table'[\s\S]{0,20}: 'side'/.test(schema));
-  check('panel: Alan görünümü seçici', /data-fmt-fieldlayout/.test(app) && /Alan görünümü/.test(app));
-  check('üç kip render', /function coverFieldsListHtml\(/.test(app) && /function coverFieldsListXml\(/.test(app) && /if \(f\.fieldLayout === 'list'\) return 'list'/.test(app));
-  check('düz liste tek sütun CSS', /\.kunye-row\.kunye-wide \{ grid-template-columns: 1fr/.test(layer));
-  // Yeni kodda ham hex yok (token).
-  const fn = (app.match(/function coverFieldsListHtml\([\s\S]*?\n\}/) || [''])[0] + (app.match(/function coverFieldsListXml\([\s\S]*?\n\}/) || [''])[0];
-  check('yeni fonksiyonlarda ham hex yok', fn.length > 100 && !/#[0-9a-fA-F]{3,6}\b/.test(fn));
-}
-console.log('\n[2er] Kâğıt üzerinde bölüm/tablo düzenleme (v2.400)');
-{
-  const app = read('assets/app.js');
-  const layer = read('assets/reading-layer.css');
-  // v2.400 — ⚙ ve sağ çekmece kaldırıldı; araçlar kâğıdın üzerinde.
-  check('⚙ kaldırıldı', !/data-report-gear/.test(app) && !/paper-gear/.test(app));
-  check('bölüm araçları kâğıtta', /data-sec-tool="title"/.test(app) && /data-sec-tool="page"/.test(app) && /data-sec-tool="archive"/.test(app));
-  check('bölüm sağ tık menüsü', /function openPaperSectionMenu\(/.test(app) && /data-psm="title"/.test(app));
-  check('başlık yerinde düzenlenir', /function startInlineTitle\(/.test(app));
-  check('metin yerinde (çift tık)', /function startInlineText\(/.test(app) && /addEventListener\('dblclick'/.test(app) && /data-inline-field/.test(app));
-  check('iskelet yalnız gezinme (Düzenle kalktı)', !/data-report-edit=/.test(app) && /data-report-goto=/.test(app));
-  check('bölüm seçimi çekmece açmaz', /function selectReportSection\([\s\S]{0,700}setReportEditor\(false\)/.test(app));
-  check('ayar eşlemesi + sütun köprüsü korunur', /const REPORT_SECTION_SETTINGS = \{/.test(app) && /function goToReportSetting\(/.test(app) && /data-rse-columns=/.test(app));
-  check('hedef gruplar veri nitelikli', /data-rcol-group=/.test(app) && /data-rfield-group=/.test(app));
-  check('genel Biçim "tüm belge" der', /Bu sekmedeki ayarlar TÜM BELGEYİ etkiler/.test(app));
-  check('bölüm görünümü "yalnız bu bölüm" der', /Bu bölümün görünümü/.test(app) && /yalnız bu bölüm/.test(app));
-  check('CSS: araçlar + yerinde düzenleme', /\.paper-sec-tools \{/.test(layer) && /\.paper-title-input/.test(layer) && /\.paper-inline-edit/.test(layer) && /\.ptm-col/.test(layer));
-  check('yazdırmada araçlar gizli', /@media print \{[\s\S]{0,200}\.paper-sec-tools/.test(layer));
-  const blk = layer.slice(layer.indexOf('v2.400'), layer.indexOf('v2.400') + 1600);
-  check('v2.400 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
-}
-console.log('\n[2es] Bölüm bazında görünüm (v2.396)');
-{
-  const schema = read('assets/schema.js');
-  const app = read('assets/app.js');
-  const layer = read('assets/reading-layer.css');
-  check('şema: normalizasyon + etkin görünüm', /export function normalizeReportAppearance\(/.test(schema) && /export function reportSectionAppearance\(/.test(schema));
-  check('şema: birleştirme planı', /export function appearanceMergePlan\(/.test(schema) && /appearanceMergePlan\(mine, theirs\)/.test(schema));
-  check('şema: boş rapor appearance taşır', /appearance: \{\},/.test(schema) && /appearance: normalizeReportAppearance\(report\.appearance\)/.test(schema));
-  check('revizyon: görünüm snapshot + etiket', /appearance: normalizeReportAppearance\(r\.appearance\)/.test(app) && /appearance: 'Bölüm görünümü/.test(app));
-  check('düzenleyici: Görünüm grubu', /data-rse-appearance=/.test(app) && /function reportAppearanceHtml\(/.test(app) && /function setReportSectionAppearance\(/.test(app));
-  check('HTML: bölüm nitelikleri', /data-sec-table-style="\$\{esc\(ap\.tableStyle\)\}"/.test(app) && /data-sec-density="\$\{esc\(ap\.density\)\}"/.test(app));
-  check('sayfa düzeni üç çıktıda (new/continue)', /ap\.pageBreak === 'new'/.test(app) && /ap\.pageBreak === 'continue'/.test(app));
-  check('DOCX: bölüm için stil/yoğunluk geçici ezer', /__docxFmt\.tableStyle = ap\.tableStyle/.test(app) && /__docxFmt\.density = ap\.density/.test(app));
-  check('CSS: bölüm bazında çizgi/yoğunluk', /\.paper-block\[data-sec-table-style="plain"\]/.test(layer) && /\.paper-block\[data-sec-density="compact"\]/.test(layer));
-  check('CSS: görünüm paneli', /\.rse-appearance \{/.test(layer) && /\.rse-appearance-head/.test(layer));
-  const blk = layer.slice(layer.indexOf('v2.396'), layer.indexOf('v2.396') + 1500);
-  check('v2.396 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
-}
-console.log('\n[2et] Tablo bazında görünüm (v2.398)');
-{
-  const schema = read('assets/schema.js');
-  const app = read('assets/app.js');
-  const layer = read('assets/reading-layer.css');
-  check('şema: tablo görünümü normalizasyonu', /export function normalizeReportTableAppearance\(/.test(schema) && /export function reportTableAppearance\(/.test(schema));
-  check('şema: tablo birleştirme planı', /export function tableAppearanceMergePlan\(/.test(schema) && /tableAppearanceMergePlan\(mine, theirs\)/.test(schema));
-  check('şema: boş rapor tableAppearance taşır', /tableAppearance: \{\},/.test(schema) && /tableAppearance: normalizeReportTableAppearance\(report\.tableAppearance\)/.test(schema));
-  check('revizyon: tablo görünümü snapshot + etiket', /tableAppearance: normalizeReportTableAppearance\(r\.tableAppearance\)/.test(app) && /tableAppearance: 'Tablo görünümü/.test(app));
-  // v2.399 — tablo görünümü PANELDE DEĞİL, kâğıt üzerinde sağ tık menüsünde.
-  check('panel seçicileri kaldırıldı', !/data-rcol-app-table/.test(app));
-  check('kâğıt üzerinde tablo menüsü', /function openPaperTableMenu\(/.test(app) && /data-ptm=/.test(app) && /function setReportTableAppearance\(/.test(app));
-  check('sütun sürükleme', /function startPaperTableDrag\(/.test(app) && /pointermove/.test(app) && /data-tbl-manual/.test(app));
-  check('tablo düzeni (yan yana/düz liste)', /function paperTableAlt\(/.test(app) && /REPORT_TABLE_LAYOUTS/.test(app) && /layout === 'side' \|\| layout === 'list'/.test(app));
-  check('tabloya kimlik (sağ tık için)', /data-table-key=/.test(app));
-  check('HTML: tablo nitelikleri', /data-tbl-style="\$\{esc\(ap\.tableStyle\)\}"/.test(app) && /data-tbl-density="\$\{esc\(ap\.density\)\}"/.test(app));
-  check('sütun çıktısı tablo görünümü taşır', /appearance: reportTableAppearance\(c, table\)/.test(app));
-  check('DOCX: tablo bazında stil/yoğunluk', /function tableFmtOpts\(/.test(app) && /tableStyle = null, density = null/.test(app) && /\.\.\.tableFmtOpts\(t\)/.test(app));
-  check('CSS: tablo bazında çizgi/yoğunluk', /\.paper-table\[data-tbl-style="plain"\]/.test(layer) && /\.paper-table\[data-tbl-density="compact"\]/.test(layer));
-  check('CSS: yan yana / düz liste', /\.paper-alt-row \{/.test(layer) && /\.paper-alt-row-list/.test(layer));
-  check('CSS: sağ tık menüsü', /\.paper-table-menu \{/.test(layer) && /\.ptm-opts/.test(layer));
-  check('CSS: elle sütun genişliği', /\.paper-table\[data-tbl-manual="1"\]/.test(layer));
-  const blk = layer.slice(layer.indexOf('v2.398'), layer.indexOf('v2.398') + 1600);
-  check('v2.398 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);
