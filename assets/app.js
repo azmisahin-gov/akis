@@ -68,6 +68,7 @@ import {
   isSecondEyesRole,
   canApproveRole,
   REPORT_SECTION_DEFS,
+  REPORT_SECTION_KEYS,
   emptyReportSections,
   normalizeReportSections,
   REPORT_FRONT_KEYS,
@@ -91,6 +92,8 @@ import {
   REPORT_COLUMN_TABLES,
   REPORT_COLUMN_LABELS,
   REPORT_COLUMN_TABLE_LABELS,
+  normalizeReportExcluded,
+  reportSectionExcluded,
   REPORT_COLUMN_LOCKED,
   emptyReportColumns,
   normalizeReportColumns,
@@ -168,15 +171,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.387';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.387';
+} from './schema.js?v=2.388';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.388';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.387';
+const APP_VERSION = '2.388';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14900,6 +14903,9 @@ function reportSectionActionsHtml(c, key) {
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
+    `<label class="rse-field rse-exclude" title="Bu bölüm HİÇBİR KOŞULDA rapora girmez (profil/varsayılan/birleştirme açamaz). Silme değildir: veri durur. Kutuyu kaldırınca bölüm kapalı kalır; isterseniz açarsınız."><input type="checkbox" data-rse-exclude="${esc(key)}"${
+      reportSectionExcluded(c, key) ? ' checked' : ''
+    }> <span>Bu bölümü hiç gösterme (kapalı, açılabilir)</span></label>` +
     `</div>`
   );
 }
@@ -15087,6 +15093,8 @@ function goToReportSection(key) {
 // kapatır. Anahtar `schema.js` REPORT_SECTION_DEFS'ten gelir; başlık buradaki
 // kısa arayüz etiketidir. Eksik anahtar = tanımdaki varsayılan (eski kayıt bozulmaz).
 function reportSectionOn(c, key) {
+  // HİÇ GÖSTERME (v2.388): kilitli bölüm HİÇBİR KOŞULDA açık sayılmaz.
+  if (reportSectionExcluded(c, key)) return false;
   // Serbest blok görünürlüğü bloktaki `on` alanındadır (v2.287).
   if (isFreeBlockKey(key)) {
     const b = reportBlockByKey(c, key);
@@ -15683,6 +15691,7 @@ function renderReportSections(c) {
   const canDrag = !reportOutlineState.q && reportOutlineState.cat === 'all' && !reportOutlineState.onlyOpen;
   const row = (key, { move = false, child = false } = {}) => {
     const on = reportSectionOn(c, key);
+    const never = reportSectionExcluded(c, key);
     const mover = move
       ? `<span class="rsec-move"><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="-1" aria-label="Yukarı taşı" title="Yukarı taşı">↑</button><button type="button" class="rsec-mv" data-report-move="${esc(key)}" data-dir="1" aria-label="Aşağı taşı" title="Aşağı taşı">↓</button></span>`
       : `<span class="rsec-move rsec-move-lock" aria-hidden="true" title="Sırası sabit">•</span>`;
@@ -15703,6 +15712,9 @@ function renderReportSections(c) {
       const emptyReason = on && !reportBlockRenders(c, key) ? reportBlockEmptyReason(c, key) : '';
       label =
         `<span>${esc(reportUiLabel(c, key))}</span>` +
+        (never
+          ? ` <span class="rsec-never" title="Hiç gösterme: bu bölüm hiçbir koşulda rapora girmez. Kutucuğu işaretleyerek geri açabilirsiniz. Veri silinmedi.">∅ hiç gösterme</span>`
+          : '') +
         (emptyReason
           ? ` <span class="rsec-nodata" title="${esc(emptyReason)}">veri yok</span>`
           : '');
@@ -15727,7 +15739,7 @@ function renderReportSections(c) {
     const inner = editing
       ? label
       : `<button type="button" class="rsec-go" data-report-goto="${esc(key)}" title="Bu bölüme git">${label}</button>`;
-    return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}> ${inner}</span>${editBtn}</div>`;
+    return `<div style="--depth:${depth}" data-rsec-key="${esc(key)}" class="rsec-row${child ? ' rsec-child' : ''}${on ? '' : ' is-excluded'}${never ? ' is-never' : ''}${reportEditKey === key ? ' is-selected' : ''}${editing ? ' is-editing' : ''}"${drag}>${mover}<span class="rsec-item"><input type="checkbox" data-report-section="${esc(key)}"${on ? ' checked' : ''}${never ? ' title="Hiç gösterme kilitli. İşaretlerseniz kilit kalkar ve bölüm açılır."' : ''}> ${inner}</span>${editBtn}</div>`;
   };
   syncReportOutlineControls();
   const front = REPORT_FRONT_KEYS.filter((k) => reportOutlineMatch(c, k, reportUiLabel(c, k), reportSectionOn(c, k)))
@@ -15790,6 +15802,13 @@ function setReportSection(key, on) {
   const c = currentCase();
   if (!c) return;
   c.report = c.report || {};
+  // HİÇ GÖSTERME kilidi yalnız KULLANICI açıkça açınca kalkar (v2.388).
+  if (on && reportSectionExcluded(c, key)) {
+    const ex = normalizeReportExcluded(c.report.excluded);
+    delete ex[key];
+    c.report.excluded = normalizeReportExcluded(ex);
+    showToast(`“${reportUiLabel(c, key)}” hiç gösterme kilidi kaldırıldı; bölüm açıldı.`);
+  }
   // v2.324: bölüm belge ekine taşınmışsa ve raporda yeniden AÇILIYORSA, ekten
   // çıkarılır. Aynı içerik hem raporda hem ekte bulunmaz.
   if (on && letterMovedSectionKeys(c.letterAnnexes).has(key)) {
@@ -15805,6 +15824,30 @@ function setReportSection(key, on) {
     if (reason) showToast(`“${reportUiLabel(c, key)}” rapora girmiyor: ${reason}`, true);
   }
 }
+/** HİÇ GÖSTERME (v2.388): bölümü kalıcı olarak kapatır (silmez).
+ *  Kilitli bölümü profil/varsayılan/birleştirme AÇAMAZ; yalnız kullanıcı açar. */
+function setReportExcluded(key, on) {
+  const c = currentCase();
+  if (!c || !REPORT_SECTION_KEYS.includes(key)) return;
+  snapshotForUndo(on ? 'Bölüm hiç gösterilmiyor' : 'Hiç gösterme kaldırıldı');
+  c.report = c.report || {};
+  const ex = normalizeReportExcluded(c.report.excluded);
+  if (on) {
+    ex[key] = true;
+    c.report.sections = { ...(c.report.sections || {}), [key]: false };
+  } else {
+    delete ex[key];
+  }
+  c.report.excluded = normalizeReportExcluded(ex);
+  persist();
+  renderReport();
+  showToast(
+    on
+      ? `“${reportUiLabel(c, key)}” hiç gösterilmeyecek. Veri SİLİNMEDİ; düzenleyiciden geri açabilirsiniz.`
+      : `“${reportUiLabel(c, key)}” artık kilitli değil; bölüm kapalı durumda. Açmak için kutucuğu işaretleyin.`
+  );
+}
+
 // Bölümü EKLER altına taşı / gövdeye geri al (v2.291).
 function toggleAnnexPlacement(key) {
   const c = currentCase();
@@ -16012,6 +16055,8 @@ async function applyReportProfile(id) {
   if (!ok) return;
   snapshotForUndo('Rapor profili uygula');
   c.report.sections = normalizeReportSections(p.sections);
+  // HİÇ GÖSTERME kilidi profille AÇILMAZ (v2.388): kilitli bölüm kapalı kalır.
+  for (const k of Object.keys(normalizeReportExcluded(c.report.excluded))) c.report.sections[k] = false;
   const layout = normalizeReportLayout({
     ...(c.report.layout || {}),
     order: p.order,
@@ -16812,6 +16857,7 @@ function reportSnapshot(c) {
   for (const k of REPORT_TECH_KEYS) tech[k] = (r.tech && r.tech[k]) || '';
   return {
     sections,
+    excluded: normalizeReportExcluded(r.excluded),
     layout: normalizeReportLayout(r.layout),
     // Serbest bloklar (v2.287): rapor metnidir, kanıt değildir; revizyona girer.
     blocks: normalizeReportBlocks(r.blocks),
@@ -16835,6 +16881,7 @@ function reportSnapshot(c) {
 }
 const REPORT_SNAPSHOT_LABELS = {
   sections: 'Bölüm görünürlüğü',
+  excluded: 'Hiç gösterme (bölüm kilidi)',
   layout: 'Bölüm sırası / ekler',
   blocks: 'Serbest bölümler',
   annexPlacement: 'Bölüm → EK yerleşimi',
@@ -16865,6 +16912,8 @@ function applyReportSnapshot(c, snap) {
   c.report = c.report || {};
   const r = c.report;
   if (snap.sections) r.sections = { ...snap.sections };
+  r.excluded = normalizeReportExcluded(snap.excluded);
+  for (const k of Object.keys(r.excluded)) r.sections[k] = false;
   if (snap.layout) r.layout = normalizeReportLayout(snap.layout);
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
@@ -23712,6 +23761,11 @@ $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
     setReportSectionTitle(tt.dataset.rseTitle, tt.value);
     return;
   }
+  const ex = e.target.closest('[data-rse-exclude]');
+  if (ex) {
+    setReportExcluded(ex.dataset.rseExclude, ex.checked);
+    return;
+  }
   if (e.target.closest('[data-rse-field]')) renderReport();
 });
 $('#reportSectionEditorFields')?.addEventListener('click', async (e) => {
@@ -25239,6 +25293,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.388': {
+    title: 'Hiç gösterme: bölüm kalıcı olarak kapatılabilir',
+    body:
+      'Rapor iskeletinde bir bölümü “hiç gösterme” olarak işaretleyebilirsiniz (bölüm düzenle → “Bu bölümü hiç gösterme”). Bölüm HİÇBİR KOŞULDA rapora girmez: profil uygulaması, varsayılan düzen veya paket birleştirme onu açamaz. Silme DEĞİLDİR: ses, deşifre, ölçüm ve kanıt yerinde kalır; yalnız rapora basılmaz. İskelette satır “∅ hiç gösterme” rozetiyle soluk görünür; kutucuğu işaretleyince kilit kalkar ve bölüm açılır (kapalı başlar; açmak sizin kararınız). Kilitli bölüm numara tüketmez, içindekilere girmez, “veri yok” uyarısı üretmez. Kilit paketle taşınır, yenilemede korunur, revizyona girer.'
+  },
   '2.387': {
     title: 'Üst yazı sıfırdan: A4 kâğıt, sağ çekmece, kendi yazdırma ayarı',
     body:

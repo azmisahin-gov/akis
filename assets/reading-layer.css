@@ -3946,6 +3946,15 @@ body.report-full .report-stage-bar { position: sticky; top: 0; z-index: 5; backg
 /* v2.289 — "veri yok" rozeti: bölüm açık ama rapora giremiyor; nedeni title'da.
    Renk tek başına anlam vermez: metin de taşır. */
 .rsec-nodata { font-size: var(--fs-2xs); color: var(--gold); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+/* v2.388 — HİÇ GÖSTERME: kilitli bölüm soluk görünür; rozet metinle söyler.
+   Dar iskelet sütununda (232 px) rozet etiketle aynı satıra sığmıyordu
+   (ölçüm: öğe 121 px, rozet 99 px → taşma). Rozet KENDİ SATIRINA iner;
+   kırpma yok (depo kuralı: sığmayan öğe sarar). */
+.rsec-row.is-never { opacity: .62; }
+.rsec-row.is-never .rsec-item { flex-wrap: wrap; }
+.rsec-row.is-never .rsec-never { flex: 0 0 100%; margin-left: 22px; }
+.rsec-never { font-size: var(--fs-2xs); color: var(--gold); background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+.rse-field.rse-exclude { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; font-size: var(--fs-2xs); color: var(--ink-2); line-height: 1.4; }
 
 /* v2.291 — Bölüm EKLER altına taşındı rozeti. */
 .rsec-placed { font-size: var(--fs-2xs); color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; white-space: nowrap; }

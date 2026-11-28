@@ -157,7 +157,7 @@ const EXPOSE = [
   // v2.227 — rapor iskeleti, türetilmiş numara, ekler, revizyon
   'reportBodyOrder', 'reportNumberMap', 'reportNumberLabelMap', 'reportHeadingText', 'reportSubHeadings',
   'reportSectionTitle', 'reportUiLabel', 'reportLetter',
-  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
+  'reportTocEntries', 'reportAnnexList', 'reportAnnexBlocks', 'reportBlockRenders', 'reportBlockEmptyReason', 'reportSectionOn', 'reportAttachmentLines', 'reportMovedSections', 'questionBasisText', 'speakerMethodNoteText', 'questionSegmentSuggestions', 'parseId3v1', 'parseMp4MetaTail', 'frequentTerms', 'termsText',
   'addReportAnnex', 'removeReportAnnex', 'patchReportAnnexMeta', 'reportLayoutOf',
   'buildDefaultReportLayout', 'moveSectionIntoAnnex', 'unplaceAndReorder',
   'reportSkeletonCollapsedPref', 'toggleReportSkeletonCollapsed',
@@ -8275,6 +8275,33 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   const court = T.coverLine(c, 'court');
   eq('mahkeme eki kesme işaretsiz', /MAHKEMESİNE$/.test(court), true);
   eq('kesme işareti yok', /’/.test(court), false);
+}
+// [189] v2.388 — HİÇ GÖSTERME (bölüm kilidi): silmez, hiçbir koşulda göstermez.
+{
+  console.log('\n[189] Hiç gösterme kilidi (v2.388)');
+  const S = __schemaMod;
+  const c = T.emptyCaseForTest({ id: 'nx' });
+  c.report = { sections: { s5: true, origin: true }, excluded: { s5: true, origin: false, yok: true } };
+  const n = S.normalizeCase(c);
+  eq('bilinmeyen kilit atılır', !!n.report.excluded.yok, false);
+  eq('yalnız true kilit', n.report.excluded.s5, true);
+  eq('false kilit taşınmaz', n.report.excluded.origin, undefined);
+  eq('kilitli bölüm kapalı', n.report.sections.s5, false);
+  eq('kilitli bölüm açık sayılmaz', T.reportSectionOn(n, 's5'), false);
+  eq('kilitli bölüm çizilmez', T.reportBlockRenders(n, 's5'), false);
+  eq('diğer bölüm etkilenmez', T.reportSectionOn(n, 'origin'), true);
+  // Revizyon: kilit saklanır ve geri yüklenir.
+  const snap = T.reportSnapshot(n);
+  eq('revizyon kilidi taşır', snap.excluded.s5, true);
+  const n2 = S.normalizeCase({ ...n, report: { ...n.report, excluded: {} } });
+  eq('kilitsiz kopya', !!n2.report.excluded.s5, false);
+  T.applyReportSnapshot(n2, snap);
+  eq('geri yükleme kilidi getirir', n2.report.excluded.s5, true);
+  eq('geri yükleme bölümü kapatır', n2.report.sections.s5, false);
+  eq('geri yükleme sonrası kapalı', T.reportSectionOn(n2, 's5'), false);
+  // Kilitli bölüm TOC/numara tüketmez: numara haritasında yok.
+  const map = T.reportNumberMap(n);
+  eq('kilitli bölüm numara almaz', !!map.s5, false);
 }
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

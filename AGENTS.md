@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.387.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.388.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10370,3 +10370,19 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - **Dosya adları:** `UstYazi_<no>_<YYYY-MM-DD>`, `EK-01_<ad>_<no>_<YYYY-MM-DD>`.
 
 **DERS:** Ekranda A4 oranı için verilen satır içi `min-height`, yazdırmada `@page` yüksekliğini aşınca **boş sayfa** üretir; yazdırma kuralı `!important` ile sıfırlanmalı. Ayrıca gizli rapor kâğıdından sayfa yüksekliği okumak (`reportPageHeight`) üst yazıda **0** döner; üst yazı kendi genişliğinden hesaplanır.
+
+
+## YENİ OTURUM DEVRİ (v2.388) — Hiç gösterme kilidi
+
+| | |
+|---|---|
+| Sürüm | **v2.388** |
+| Testler | **2873 birim + 565 şema** + rapor (65) + sürüm + tasarım yeşil |
+| Ölçüm | Gerçek Chromium: s5 kilidi → raporda yok, yenilemede korunur, profil açamaz, kutucuk geri açar; JS 0 |
+
+- `case.report.excluded` (bölüm → true). `normalizeReportExcluded` yalnız bilinen anahtar + `true`; `reportSectionExcluded`.
+- **Zorlama:** `normalizeCase` kilitli bölümü `sections[k]=false` yapar; `reportSectionOn` ve `reportBlockRenders` kilitte `false`. Profil uygulaması sonrası kilit yeniden uygulanır.
+- **Revizyon:** `reportSnapshot.excluded` + `applyReportSnapshot` kilidi geri getirir.
+- **UI:** iskelet satırı `is-never` + `∅ hiç gösterme` rozeti; düzenleyicide `[data-rse-exclude]`; kutucuk kilidi kaldırır (`setReportSection` içinde).
+- **Kural:** kilit bir DOSYA kararıdır (profil taşımaz); veri silinmez; kilit paketle taşınır.
+- **Sıradaki:** v2.389 — eksik 7 tablonun sütun aç/kapa kapsamı (teslim/iade, işlem günlüğü, gösterim anahtarı, son kontrol, gömülü bilgi, bütünlük, ASR).

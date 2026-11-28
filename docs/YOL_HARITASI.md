@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.387.**
+yazılır. **Güncel sürüm: v2.388.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.388 — Hiç gösterme kilidi (TAMAMLANDI)
+
+- `case.report.excluded` (bölüm → `true`); `normalizeReportExcluded` + `reportSectionExcluded` (schema).
+- `normalizeCase` kilitli bölümü **kapalı** zorular; `reportSectionOn` / `reportBlockRenders` kilitte `false`.
+- Profil uygulaması kilidi **açamaz**; revizyon snapshot'ı kilidi taşır ve geri yükler.
+- İskelette `∅ hiç gösterme` rozeti + soluk satır; düzenleyicide kilit anahtarı; kutucuk kilidi kaldırır.
+- Veri silinmez; kilit paketle taşınır, yenilemede korunur.
 
 ## v2.387 — Üst yazı yeniden yapımı (TAMAMLANDI)
 

@@ -1545,6 +1545,18 @@ export function normalizeReportSections(src) {
   if (typeof src.kunye === 'boolean' && src.kunye && src.coverFields === false) base.coverFields = true;
   return base;
 }
+/** HİÇ GÖSTERME (v2.388): yalnız bilinen bölüm anahtarları, yalnız `true`. */
+export function normalizeReportExcluded(src) {
+  const base = src && typeof src === 'object' ? src : {};
+  const out = {};
+  for (const k of REPORT_SECTION_KEYS) if (base[k] === true) out[k] = true;
+  return out;
+}
+/** Bu bölüm "hiç gösterme" olarak kilitli mi? */
+export function reportSectionExcluded(c, key) {
+  const v = c && c.report && c.report.excluded;
+  return !!(v && v[key] === true);
+}
 
 
 // ---- ÜST YAZI (v2.323) ----------------------------------------------------
@@ -1766,6 +1778,10 @@ export function emptyCase(over = {}) {
       summaryIntroText: '',
       // Bölüm görünürlüğü (v2.219): anahtar → açık mı. Varsayılan tümü açık.
       sections: emptyReportSections(),
+      // HİÇ GÖSTERME (v2.388): anahtar → true. Bu bölüm HİÇBİR KOŞULDA rapora
+      // girmez (profil, varsayılan, birleştirme açamaz). Silme DEĞİLDİR: veri
+      // durur; yalnız kullanıcı geri açar. Numarayı tüketmez, içindekilere girmez.
+      excluded: {},
       // Rapor iskeleti (v2.227): gövde sırası + ek sırası + ek görünürlüğü.
       layout: emptyReportLayout(),
       // Tablo sütun görünürlüğü (v2.235): tümü açık.
@@ -2972,6 +2988,9 @@ export function normalizeCase(src = {}) {
   const reportLayout = normalizeReportLayout(report.layout);
   reportLayout.order = ensureFreeBlockOrder(reportLayout.order, reportBlocks);
   const sectionsSrc = { ...(report.sections && typeof report.sections === 'object' ? report.sections : {}) };
+  // v2.388 — HİÇ GÖSTERME kilidi: kilitli bölüm her koşulda KAPALI kalır.
+  const reportExcluded = normalizeReportExcluded(report.excluded);
+  for (const k of Object.keys(reportExcluded)) sectionsSrc[k] = false;
   // Yalnız ESKİ varsayılanı (s7 açık) taşı. s7=false yeni "Ek listesi"
   // tercihidir; annex'i kapatmamalıdır (v2.290'da ölçüldü).
   if (sectionsSrc.annex === undefined && sectionsSrc.s7 === true) {
@@ -3048,6 +3067,8 @@ export function normalizeCase(src = {}) {
       // v2.290: eski kayıtta EKLER listesi (s7) açıksa asıl EKLER bölümüne
       // (annex) taşınır; boş "EKLER" listesi varsayılan olarak kapanır.
       sections: normalizeReportSections(sectionsSrc),
+      // HİÇ GÖSTERME (v2.388): profil/birleştirme açamaz; normalize da kapatır.
+      excluded: reportExcluded,
       // Rapor iskeleti (v2.227): sıra/ekler; bozuk düzen güvenli hâle getirilir.
       layout: reportLayout,
       // Serbest bloklar (v2.287): kullanıcı başlığı + metni.

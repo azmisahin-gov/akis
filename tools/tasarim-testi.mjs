@@ -3154,5 +3154,26 @@ console.log('\n[2ep] Kurumsal belge tasarımı: üst/alt bilgi, künye, tema (v2
   check('tasarım tercihleri panelde', /data-fmt-cover/.test(app) && /data-fmt-theme/.test(app));
   check('tercihler kalıcı biçimde', /coverFields: coverFields \? coverFields\.value : undefined/.test(app) && /tableTheme: tableTheme \? tableTheme\.value : undefined/.test(app));
 }
+console.log('\n[2em] Hiç gösterme kilidi (v2.388)');
+{
+  const html = read('index.html');
+  const app = read('assets/app.js');
+  const schema = read('assets/schema.js');
+  const layer = read('assets/reading-layer.css');
+  check('şemada kilit alanı', /excluded: \{\}/.test(schema) && /export function normalizeReportExcluded/.test(schema) && /export function reportSectionExcluded/.test(schema));
+  check('kilit her koşulda kapalı', /if \(reportSectionExcluded\(c, key\)\) return false;/.test(app));
+  check('kilit profille açılmaz', /normalizeReportExcluded\(c\.report\.excluded\)\)\) c\.report\.sections\[k\] = false;/.test(app));
+  check('kilit revizyona girer', /excluded: normalizeReportExcluded\(r\.excluded\)/.test(app));
+  check('düzenleyicide kilit anahtarı', /data-rse-exclude=/.test(app));
+  check('iskelette kilit rozeti', /rsec-never/.test(app) && /is-never/.test(app));
+  check('kilit rozeti CSS', /\.rsec-never \{/.test(layer) && /\.rsec-row\.is-never \{/.test(layer));
+  check(
+    'kilit rozeti kendi satırına iner (kırpma yok)',
+    /\.rsec-row\.is-never \.rsec-item \{ flex-wrap: wrap; \}/.test(layer) &&
+      /\.rsec-row\.is-never \.rsec-never \{ flex: 0 0 100%;/.test(layer)
+  );
+  check('kilit anahtarı CSS', /\.rse-field\.rse-exclude \{/.test(layer));
+  check('veri silinmez metni', /Veri SİLİNMEDİ/.test(app));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

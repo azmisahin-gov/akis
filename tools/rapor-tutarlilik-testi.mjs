@@ -2181,5 +2181,29 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   checkShared('kapak eki kesme işaretsiz (üç çıktı)', 'MAHKEMESİNE', H, U, D);
 }
 
+// Senaryo 65: HİÇ GÖSTERME (v2.388). Kilitli bölüm ÜÇ çıktıda da yoktur;
+// kilit kaldırılınca bölüm geri gelir. Veri silinmez (kanıt yerinde).
+{
+  console.log('\n[Senaryo 65] hiç gösterme kilidi (v2.388)');
+  const s5Title = __schemaMod.REPORT_SECTION_DEFS.find((d) => d.key === 's5').title;
+  const c = __schemaMod.normalizeCase({
+    ...withMaterial(),
+    report: { sections: { s5: true, origin: true }, excluded: { s5: true } }
+  });
+  const H = htmlText(c), U = await udfText(c), D = await docxText(c);
+  for (const [name, text] of [['HTML', H], ['UDF', U], ['DOCX', D]]) {
+    check(`${name}: kilitli bölüm yok`, !text.includes(s5Title));
+  }
+  check('kilit normalize ile kapalı', c.report.sections.s5 === false);
+  check('kanıt yerinde (segment duruyor)', (c.materials[0].segments || []).length > 0);
+  // Kilit kaldırılınca bölüm geri gelir (kullanıcı kararı).
+  const c2 = __schemaMod.normalizeCase({
+    ...c,
+    report: { ...c.report, excluded: {}, sections: { ...c.report.sections, s5: true } }
+  });
+  const H2 = htmlText(c2);
+  check('kilit kalkınca bölüm gelir', H2.includes(s5Title));
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

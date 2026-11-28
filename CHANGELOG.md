@@ -6,12 +6,24 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.387.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.388.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
 Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 [`docs/YOL_HARITASI.md`](docs/YOL_HARITASI.md).
+
+## v2.388 — Hiç gösterme: bölüm kalıcı olarak kapatılabilir
+
+**KULLANICI NE GÖRECEK:**
+- Rapor iskeletinde bir bölümü **“hiç gösterme”** olarak işaretleyebilirsiniz: satırdaki **Düzenle** → **“Bu bölümü hiç gösterme (kapalı, açılabilir)”**.
+- Bölüm **hiçbir koşulda** rapora girmez: **profil uygulaması, varsayılan düzen veya paket birleştirme** onu **açamaz**.
+- **Silme DEĞİLDİR:** ses, deşifre, ölçüm ve kanıt **yerinde kalır**; yalnız rapora basılmaz.
+- İskelette satır **∅ hiç gösterme** rozetiyle soluk görünür. **Kutucuğu işaretleyince kilit kalkar ve bölüm açılır** (kapalı başlar; açmak sizin kararınız).
+- Kilitli bölüm **numara tüketmez**, **içindekilere girmez**, “veri yok” uyarısı üretmez.
+- Kilit **paketle taşınır**, **yenilemede korunur**, **revizyona girer** (geri yükleme kilidi geri getirir).
+
+**ÖLÇÜM (gerçek Chromium + CDP, demo dosyası):** s5 “hiç gösterme” → raporda **yok**, satır `is-never` + rozet, kutucuk kapalı; **yenileme sonrası korundu**; s5 açık hâliyle kaydedilmiş **profil uygulandı → kilit açılmadı**; kutucuk işaretlenince bölüm **geri geldi**; JS hatası **0**. Testler **2873 birim + 565 şema** + rapor (Senaryo 65) + sürüm + tasarım yeşil.
 
 ## v2.387 — Üst yazı sıfırdan: kâğıt + çekmece, kendi yazdırma ayarı
 
