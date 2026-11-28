@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.399.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.400.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,21 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.400 — Kâğıt üzerinde düzenleme: çekmece ve “Düzenle” kalktı
+
+**KULLANICI NE GÖRECEK:**
+- **Sol iskeletteki “Düzenle” yazısı kaldırıldı.** İskelet yalnız **gezinme**: satıra tıkla → o bölüme git. Sıralama **↑↓** ve sürükleme ile sürer.
+- **Bölüm ayarları kâğıdın üzerinde:** fareyle bir bölümün üzerine gelin; başlığın sağında küçük araçlar çıkar:
+  - **✎** başlığı **yerinde** düzenle (Enter kaydet, Esc vazgeç)
+  - **📝** metni **yerinde** düzenle (yöntem / sınırlılıklar / sonuç)
+  - **⤒** yeni sayfadan başlat (aç/kapa)
+  - **🗄** arşive al (veri silinmez)
+- **Bölüme sağ tık** → aynı işlemler menüde. **Metne çift tık** → yerinde metin kutusu (Kaydet/Vazgeç).
+- **Sağdaki bölüm düzenleme çekmecesi kaldırıldı.** Tablo görünümü zaten **tabloya sağ tık** (v2.399) ile yapılıyor.
+- Her işlem **kâğıtta, ilgili öğenin üstünde**; menülerde/çekmecelerde gezinme yok.
+
+**DÜRÜST SINIR:** Araçlar yazdırmada/PDF’te **görünmez**; yalnız ekran. Düzenleme metni ve kanıt değiştirmez.
 
 ## v2.399 — Kâğıt üzerinde tablo: sağ tık menüsü + sütun sürükleme
 

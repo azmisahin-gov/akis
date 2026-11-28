@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.399.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.400.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10539,3 +10539,20 @@ Kullanıcı: *"Alan görünümü sadece kapağı değiştiriyor; istediğim böl
 - HTML `paperTableAlt` (yan yana = sütunları iki yarıya böl; düz liste = her hücre satırı). DOCX/UDF `wTable`/`table` `layout` seçeneği.
 - **Sadeleştirme:** Alanlar panelindeki tablo seçicileri ve bölüm düzenleyicideki çizgi/yoğunluk seçicileri KALDIRILDI; yalnız sayfa düzeni kaldı.
 - DEĞİŞMEZ: her tablo bağımsız; metin/kanıt değişmez; UDF'te çizgi/yoğunluk UYAP'tan (layout/genişlik uygulanır).
+
+## YENİ OTURUM DEVRİ (v2.400) — Kâğıt üzerinde düzenleme
+
+| | |
+|---|---|
+| Sürüm | **v2.400** |
+| Testler | **3050 birim + 565 şema** + rapor + sürüm + tasarım yeşil |
+| Açık konu | Yok (v2.392–v2.400 rapor-alanı/etkileşim turu kapandı) |
+
+- Kullanıcı: *"Sağa niye çekmece açtık? Tüm işlemler bölümün üstünde olsun; 'Düzenle' yazısına gerek yok."*
+- **Sol iskeletten “Düzenle” kaldırıldı**; iskelet yalnız gezinme (↑↓ + sürükleme sürer).
+- **Bölüm araçları** başlıkta: `data-sec-tool` = title/text/page/archive; `sectionToolAction`.
+- **Yerinde düzenleme:** `startInlineTitle` (Enter/Esc), `startInlineText` (çift tık veya 📝; Kaydet/Vazgeç). `data-inline-field` = methodText/limitationsText/conclusionText.
+- **Bölüm sağ tık menüsü** `#paperSectionMenu` (`data-psm`).
+- Bölüm tıklaması **çekmece açmaz**: `selectReportSection` yalnız seçer/vurgular (render yok → kaydırma korunur).
+- ⚙ kaldırıldı; `#reportSectionEditor` DOM'da geri uyum için durur ama UI'den açılmaz. İnceleme yönlendirmesi `startInlineText` kullanır.
+- DEĞİŞMEZ: her işlem kâğıtta; metin/kanıt değişmez; araçlar yazdırmada gizli; tablo görünümü sağ tık (v2.399).

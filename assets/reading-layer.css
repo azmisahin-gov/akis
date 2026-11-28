@@ -4917,3 +4917,44 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
   border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); cursor: pointer;
 }
 @media print { .paper-table-menu { display: none; } }
+
+/* v2.400 — BÖLÜM ARAÇLARI kâğıdın üzerinde (çekmece YOK). Fareyle üzerine
+   gelince görünür; klavyede odaklanınca da. Yazdırmada gizli. */
+.report-paper h3 .paper-sec-tools {
+  float: right; display: inline-flex; gap: 2px; margin-left: 8px; opacity: 0;
+  transition: opacity .15s ease;
+}
+.report-paper .paper-section:hover .paper-sec-tools,
+.report-paper .paper-section:focus-within .paper-sec-tools { opacity: 1; }
+@media (hover: none) {
+  .report-paper .paper-sec-tools { opacity: 1; }
+}
+.report-paper .paper-sec-tools button {
+  border: 1px solid transparent; background: transparent; color: var(--paper-muted);
+  border-radius: var(--r-sm, 6px); padding: 0 5px; font-size: var(--fs-sm);
+  line-height: 1.5; cursor: pointer;
+}
+.report-paper .paper-sec-tools button:hover,
+.report-paper .paper-sec-tools button:focus-visible {
+  color: var(--paper-ink); border-color: var(--paper-line); background: var(--paper-band); outline: none;
+}
+.report-paper .paper-sec-tools button.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.report-paper .paper-title-input {
+  width: 100%; font: inherit; color: var(--paper-ink); background: var(--paper);
+  border: 1px solid var(--paper-line); border-radius: var(--r-sm, 6px);
+  padding: 2px 6px;
+}
+.report-paper .paper-inline-edit { margin: 4px 0 8px; }
+.report-paper .paper-inline-edit textarea {
+  width: 100%; min-height: 120px; font: inherit; color: var(--paper-ink);
+  background: var(--paper); border: 1px solid var(--paper-line);
+  border-radius: var(--r-sm, 6px); padding: 6px 8px; line-height: 1.6;
+}
+.report-paper .paper-inline-edit .pie-actions { display: flex; gap: 6px; margin-top: 4px; }
+@media print {
+  .report-paper .paper-sec-tools,
+  .report-paper .paper-inline-edit { display: none; }
+}
+/* Bölüm menüsü: dikey düğmeler. */
+.paper-table-menu .ptm-col { flex-direction: column; align-items: stretch; }
+.paper-table-menu .ptm-col button { text-align: left; }

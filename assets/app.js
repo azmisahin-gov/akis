@@ -187,15 +187,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.399';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.399';
+} from './schema.js?v=2.400';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.400';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.399';
+const APP_VERSION = '2.400';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -14795,6 +14795,115 @@ function endPaperTableDrag() {
   if (moved) paperTableJustDragged = true; // sürükleme sonrası tıklama düzenleyici açmasın
   if (key && moved && widths.length >= 2) setReportTableAppearance(key, 'widths', widths);
 }
+// v2.400 — BÖLÜM ARAÇLARI / MENÜSÜ / YERİNDE DÜZENLEME. Sağ çekmece yok.
+let paperSectionMenuKey = null;
+function closePaperSectionMenu() {
+  const m = $('#paperSectionMenu');
+  if (m) m.hidden = true;
+  paperSectionMenuKey = null;
+}
+function openPaperSectionMenu(key, x, y) {
+  const c = currentCase();
+  if (!c) return;
+  let m = $('#paperSectionMenu');
+  if (!m) {
+    m = document.createElement('div');
+    m.id = 'paperSectionMenu';
+    m.className = 'paper-table-menu paper-section-menu';
+    m.setAttribute('role', 'menu');
+    document.body.appendChild(m);
+  }
+  paperSectionMenuKey = key;
+  const pageNew = reportSectionAppearance(c, key).pageBreak === 'new';
+  const hasText = !!reportSectionEditableFields(key);
+  m.innerHTML =
+    `<div class="ptm-title">${esc(reportUiLabel(c, key))}</div>` +
+    `<div class="ptm-opts ptm-col">` +
+    `<button type="button" data-psm="title">✎ Başlığı düzenle</button>` +
+    (hasText ? `<button type="button" data-psm="text">📝 Metni düzenle</button>` : '') +
+    `<button type="button" data-psm="page" class="${pageNew ? 'on' : ''}">⤒ Yeni sayfadan başlat</button>` +
+    `<button type="button" data-psm="archive">🗄 Arşive al</button>` +
+    `</div><div class="ptm-close"><button type="button" data-psm="close">Kapat</button></div>`;
+  m.hidden = false;
+  const r = m.getBoundingClientRect();
+  m.style.left = Math.min(window.innerWidth - r.width - 8, Math.max(8, x)) + 'px';
+  m.style.top = Math.min(window.innerHeight - r.height - 8, Math.max(8, y)) + 'px';
+}
+function toggleSectionPage(key) {
+  const cur = reportSectionAppearance(currentCase(), key).pageBreak;
+  setReportSectionAppearance(key, 'pageBreak', cur === 'new' ? 'auto' : 'new');
+}
+function startInlineTitle(key) {
+  const c = currentCase();
+  if (!c) return;
+  const h3 = document.querySelector(`#reportPreview [data-report-key="${key}"] h3`);
+  if (!h3) return;
+  const cur = reportSectionTitle(c, key);
+  h3.innerHTML = `<input class="paper-title-input" type="text" maxlength="160" value="${esc(cur)}" aria-label="Bölüm başlığı">`;
+  const input = h3.querySelector('input');
+  input.focus();
+  input.select();
+  let done = false;
+  const finish = (save) => {
+    if (done) return;
+    done = true;
+    if (save) setReportSectionTitle(key, input.value);
+    else renderReport();
+  };
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      finish(true);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      finish(false);
+    }
+  });
+  input.addEventListener('blur', () => finish(true));
+}
+function startInlineText(key, field) {
+  const c = currentCase();
+  if (!c || !field) return;
+  const host = document.querySelector(`#reportPreview [data-report-key="${key}"]`);
+  if (!host) return;
+  const p = host.querySelector(`[data-inline-field="${field}"]`);
+  if (!p) return;
+  const stored = String(c[field] || '');
+  const cur = stored.trim() ? stored : defaultTextForField(field);
+  const wrap = document.createElement('div');
+  wrap.className = 'paper-inline-edit';
+  wrap.innerHTML = `<textarea rows="6" aria-label="Metin"></textarea><div class="pie-actions"><button type="button" class="mini-button" data-pie-save="1">Kaydet</button><button type="button" class="mini-button" data-pie-cancel="1">Vazgeç</button></div>`;
+  const ta = wrap.querySelector('textarea');
+  ta.value = cur;
+  p.replaceWith(wrap);
+  ta.focus();
+  const finish = (save) => {
+    if (save) {
+      c[field] = ta.value;
+      persist();
+    }
+    renderReport();
+  };
+  wrap.querySelector('[data-pie-save]').addEventListener('click', () => finish(true));
+  wrap.querySelector('[data-pie-cancel]').addEventListener('click', () => finish(false));
+  ta.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      finish(false);
+    }
+  });
+}
+function sectionToolAction(tool, key) {
+  if (!key) return;
+  if (tool === 'title') return startInlineTitle(key);
+  if (tool === 'text') {
+    const f = reportSectionEditableFields(key);
+    if (f && f[0]) startInlineText(key, f[0].field);
+    return;
+  }
+  if (tool === 'page') return toggleSectionPage(key);
+  if (tool === 'archive') return archiveReportSection(key);
+}
 function renderReportColumns(c) {
   const host = $('#reportColumnsFields');
   if (!host) return;
@@ -15341,11 +15450,16 @@ function setReportEditSection(key) {
 // v2.375 — iskelet satırına tıklama: bölümü SEÇ (belgede vurgula + kaydır),
 // çekmeceyi AÇMA. Çekmece yalnız "Düzenle" düğmesiyle (setReportEditSection) açılır.
 function selectReportSection(key) {
+  // v2.400 — yalnız SEÇ (vurgula); çekmece açılmaz, belge yeniden çizilmez
+  // (yeniden çizim kaydırmayı sıfırlıyordu). Düzenleme kâğıt üzerinde.
   reportEditKey = key || null;
   reportEditorOpen = false;
   const ws = $('#reportWorkspace');
   if (ws) ws.dataset.edit = 'closed';
-  renderReport();
+  document.querySelectorAll('#reportPreview .paper-block.is-selected').forEach((el) => el.classList.remove('is-selected'));
+  const b = key ? document.querySelector(`#reportPreview .paper-block[data-report-key="${key}"]`) : null;
+  if (b) b.classList.add('is-selected');
+  document.querySelectorAll('#reportSections .rsec-row').forEach((r) => r.classList.toggle('is-selected', r.dataset.rsecKey === key));
   setReportEditor(false);
 }
 // v2.366 — İSKELET ↔ BELGE GEZİNME. Kaydırma MUTLAK hesaplanır; scrollIntoView
@@ -16071,7 +16185,9 @@ function renderReportSections(c) {
         : `<button type="button" class="rsec-edit" data-report-title="${esc(key)}" aria-label="Başlığı düzenle" title="Başlığı düzenle">✎</button>` +
           `<button type="button" class="rsec-edit" data-report-block-del="${esc(key)}" aria-label="Bölümü sil" title="Bu serbest bölümü sil">×</button>`;
     } else {
-      editBtn = `<button type="button" class="rsec-edit rsec-edit-open" data-report-edit="${esc(key)}" aria-label="Bölümü düzenle" title="Bölümü düzenle (sağ çekmece)">Düzenle</button>`;
+      // v2.400 — "Düzenle" metni KALDIRILDI. Düzenleme kâğıt üzerinde:
+      // bölüm başlığındaki araçlar + sağ tık menüsü. İskelet yalnız gezinme.
+      editBtn = '';
     }
     const drag = move && canDrag ? ` draggable="true" data-drag-kind="body" data-drag-key="${esc(key)}"` : '';
     const depth = reportSectionDepth(c, key);
@@ -18807,7 +18923,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('speakerDurations'))}</h3>${body}${legend ? `<p class="paper-muted">${esc(legend)}</p>` : ''}<p class="paper-muted">${esc(REPORT_TEXT.speakerFootnote)}</p></div>`;
     },
     s4: () =>
-      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p>${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
+      `<div class="paper-section"><h3>${esc(H('s4'))}</h3><p data-inline-field="methodText" data-inline-key="s4" title="Çift tık: metni düzenle">${esc(c.methodText || defaultTextFor('methodText')).replace(/\n/g, '<br>')}</p></div>`,
     tech: () => {
       const rows = reportTechRows(c);
       const has = rows.some((r) => String(r[1] || '').trim() && String(r[1]).trim() !== '—');
@@ -18877,7 +18993,7 @@ function renderReport() {
       const meas = limitsMeasuredText(c);
       return (
         `<div class="paper-section"><h3>${esc(H('limits'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.limitsIntro)}</p>` +
-        `<p>${esc(c.limitationsText || defaultTextFor('limitationsText'))}</p>` +
+        `<p data-inline-field="limitationsText" data-inline-key="limits" title="Çift tık: metni düzenle">${esc(c.limitationsText || defaultTextFor('limitationsText'))}</p>` +
         (meas ? `<p class="paper-muted">${esc(REPORT_TEXT.limitsMeasuredPrefix)}${esc(meas)}</p>` : '') +
         `</div>`
       );
@@ -18921,7 +19037,7 @@ function renderReport() {
       return `<div class="paper-section"><h3>${esc(H('terms'))}</h3><p class="paper-muted">${esc(REPORT_TEXT.termsIntro)}</p><p>${esc(t)}</p></div>`;
     },
     scopeNote: () => `<div class="paper-section"><h3>${esc(H('scopeNote'))}</h3><p>${esc(defaultTextFor('scopeNoteText'))}</p></div>`,
-    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p>${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
+    s6: () => `<div class="paper-section"><h3>${esc(H('s6'))}</h3><p data-inline-field="conclusionText" data-inline-key="s6" title="Çift tık: metni düzenle">${esc(c.conclusionText || defaultTextFor('conclusionText'))}</p></div>`,
     s7: () => {
       const lines = reportAttachmentLines(c);
       const body = lines.length
@@ -19033,18 +19149,27 @@ function renderReport() {
       `<div class="paper-signature"><div><b>${esc(c.expertName || REPORT_TEXT.defaultExpert)}</b><br>${esc(c.expertTitle || REPORT_TEXT.defaultTitle)}<br>${esc(REPORT_TEXT.signatureRegistry)}: ${esc(c.registryNo || REPORT_TEXT.emptyFileNo)}<br><span class="paper-muted">${esc(REPORT_TEXT.signatureLabel)}</span></div></div><div class="paper-footer"><span>${esc(c.fileNo || REPORT_TEXT.fileMissing)}</span><span>Rapor tarihi: ${esc(niceDate(c.reportDate))}</span></div>`
   };
 
-  // v2.395 — bölümün ilgili ayar grubuna götüren ⚙. Yalnız eşlemesi olan
-  // bölümlerde çizilir; başlık varsa başlığın içine (sağa yaslı) girer.
-  const sectionGear = (key) => {
-    if (!reportSectionSettings(key)) return '';
-    return `<button type="button" class="paper-gear" data-report-gear="${esc(key)}" title="Bu bölümü düzenle (görünüm, başlık)" aria-label="Bu bölümü düzenle (görünüm, başlık)">⚙</button>`;
+  // v2.400 — BÖLÜM ARAÇLARI kâğıdın ÜZERİNDE: başlığın sağında ✎ (başlık),
+  // 📝 (metin; yalnız serbest metin bölümlerinde), ⤒ (yeni sayfa), 🗄 (arşiv).
+  // Çekmece YOK. Fareyle üzerine gelince görünür; klavyede odaklanınca da.
+  const sectionTools = (key) => {
+    if (!reportSectionOn(c, key)) return '';
+    const pageNew = reportSectionAppearance(c, key).pageBreak === 'new';
+    const hasText = !!reportSectionEditableFields(key);
+    return (
+      `<span class="paper-sec-tools" role="toolbar" aria-label="Bölüm araçları">` +
+      `<button type="button" data-sec-tool="title" data-sec-key="${esc(key)}" title="Başlığı düzenle" aria-label="Başlığı düzenle">✎</button>` +
+      (hasText ? `<button type="button" data-sec-tool="text" data-sec-key="${esc(key)}" title="Metni düzenle" aria-label="Metni düzenle">📝</button>` : '') +
+      `<button type="button" data-sec-tool="page" data-sec-key="${esc(key)}" class="${pageNew ? 'on' : ''}" title="Yeni sayfadan başlat (aç/kapa)" aria-label="Yeni sayfadan başlat">⤒</button>` +
+      `<button type="button" data-sec-tool="archive" data-sec-key="${esc(key)}" title="Arşive al (veri silinmez)" aria-label="Arşive al">🗄</button>` +
+      `</span>`
+    );
   };
-  const withSectionGear = (key, piece) => {
-    const gear = sectionGear(key);
-    if (!gear) return piece;
-    if (/<\/h3>/.test(piece)) return piece.replace(/<\/h3>/, `${gear}</h3>`);
-    // Başlığı olmayan bölüm (kapak/künye): kutu başına küçük bir satır.
-    return `<div class="paper-gear-row">${gear}</div>${piece}`;
+  const withSectionTools = (key, piece) => {
+    const tools = sectionTools(key);
+    if (!tools) return piece;
+    if (/<\/h3>/.test(piece)) return piece.replace(/<\/h3>/, `${tools}</h3>`);
+    return piece;
   };
   // Her bölüm `data-report-key` ile sarılır (v2.231): belgede tıklayınca
   // odaklı düzenleyici açılır. `display:contents` sayesinde yerleşim değişmez.
@@ -19056,7 +19181,7 @@ function renderReport() {
     const attrs = [];
     if (ap.tableStyle !== 'inherit') attrs.push(`data-sec-table-style="${esc(ap.tableStyle)}"`);
     if (ap.density !== 'inherit') attrs.push(`data-sec-density="${esc(ap.density)}"`);
-    return `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}"${attrs.length ? ' ' + attrs.join(' ') : ''}>${withSectionGear(key, piece)}</div>`;
+    return `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}"${attrs.length ? ' ' + attrs.join(' ') : ''}>${withSectionTools(key, piece)}</div>`;
   };
   let html = '';
   for (const key of REPORT_FRONT_KEYS) {
@@ -22517,8 +22642,12 @@ document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-open-report-section]');
   if (!b) return;
   const key = b.dataset.openReportSection;
+  // v2.400 — çekmece yok: rapor görünümünde ilgili metni YERİNDE düzenle.
   switchView('report');
-  setReportEditSection(key);
+  requestAnimationFrame(() => {
+    const f = reportSectionEditableFields(key);
+    if (f && f[0]) startInlineText(key, f[0].field);
+  });
 });
 
 $('#addQuestionBtn').addEventListener('click', addQuestion);
@@ -24378,25 +24507,14 @@ $('#reportDrawerBackdrop')?.addEventListener('click', () => {
   if (ed && ed.classList.contains('open')) setReportEditSection(null);
   else setReportSettings(false);
 });
-// Belge odaklı bölüm düzenleme (v2.231): belgede bölüme tıkla → odaklı düzenleyici.
+// v2.400 — Kâğıt üzerinde düzenleme: sağ çekmece YOK.
+// Bölüm araçları (✎/📝/⤒/🗄), sağ tık menüsü, çift tıkla yerinde metin.
 $('#reportPreview')?.addEventListener('click', (e) => {
-  // v2.397 — bölüm başlığındaki ⚙: O BÖLÜMÜN düzenleyicisini aç ve Görünüm
-  // kutusuna kaydır. (v2.395'te genel ayar çekmecesine gidiyordu; kullanıcı
-  // "hepsi değişiyor" sanıyordu. Genel ayarlar Biçim sekmesinde, açıkça
-  // "tüm belge" etiketiyle durur.)
-  const gear = e.target.closest('[data-report-gear]');
-  if (gear) {
+  const tool = e.target.closest('[data-sec-tool]');
+  if (tool) {
     e.preventDefault();
     e.stopPropagation();
-    setReportEditSection(gear.dataset.reportGear);
-    requestAnimationFrame(() => {
-      const host = document.querySelector('#reportSectionEditor .drawer-body');
-      const box = host && host.querySelector('.rse-appearance');
-      if (!host || !box) return;
-      const hr = host.getBoundingClientRect();
-      const br = box.getBoundingClientRect();
-      host.scrollTop = Math.max(0, host.scrollTop + (br.top - hr.top) - 10);
-    });
+    sectionToolAction(tool.dataset.secTool, tool.dataset.secKey);
     return;
   }
   if (paperTableJustDragged) {
@@ -24405,22 +24523,50 @@ $('#reportPreview')?.addEventListener('click', (e) => {
   }
   const b = e.target.closest('[data-report-key]');
   if (b) {
-    setReportEditSection(b.dataset.reportKey);
-    // v2.366 — seçilen bölüm iskelette görünür kalsın (mutlak kaydırma).
+    selectReportSection(b.dataset.reportKey);
     requestAnimationFrame(() => scrollSkeletonToKey(b.dataset.reportKey));
   }
 });
-// v2.399 — kâğıt üzerinde tablo: sağ tık menüsü + sütun sürükleme.
-$('#reportPreview')?.addEventListener('contextmenu', (e) => {
-  const el = e.target.closest('[data-table-key]');
-  if (!el) return;
+$('#reportPreview')?.addEventListener('dblclick', (e) => {
+  const p = e.target.closest('[data-inline-field]');
+  if (!p) return;
   e.preventDefault();
-  openPaperTableMenu(el.dataset.tableKey, e.clientX, e.clientY);
+  startInlineText(p.dataset.inlineKey, p.dataset.inlineField);
+});
+// Sağ tık: tablo ise tablo menüsü; değilse bölüm menüsü.
+$('#reportPreview')?.addEventListener('contextmenu', (e) => {
+  const tbl = e.target.closest('[data-table-key]');
+  if (tbl) {
+    e.preventDefault();
+    openPaperTableMenu(tbl.dataset.tableKey, e.clientX, e.clientY);
+    return;
+  }
+  const sec = e.target.closest('[data-report-key]');
+  if (sec) {
+    e.preventDefault();
+    openPaperSectionMenu(sec.dataset.reportKey, e.clientX, e.clientY);
+  }
 });
 $('#reportPreview')?.addEventListener('pointerdown', (e) => startPaperTableDrag(e));
 document.addEventListener('pointermove', (e) => movePaperTableDrag(e));
 document.addEventListener('pointerup', () => endPaperTableDrag());
 document.addEventListener('click', (e) => {
+  // v2.400 — bölüm menüsü.
+  const smenu = e.target.closest('#paperSectionMenu');
+  if (smenu) {
+    if (e.target.closest('[data-psm="close"]')) {
+      closePaperSectionMenu();
+      return;
+    }
+    const b = e.target.closest('[data-psm]');
+    if (b && paperSectionMenuKey) {
+      const key = paperSectionMenuKey;
+      closePaperSectionMenu();
+      sectionToolAction(b.dataset.psm, key);
+      return;
+    }
+    return;
+  }
   const menu = e.target.closest('#paperTableMenu');
   if (menu) {
     if (e.target.closest('[data-ptm-close]')) {
@@ -24446,9 +24592,14 @@ document.addEventListener('click', (e) => {
   }
   const pm = $('#paperTableMenu');
   if (pm && !pm.hidden) closePaperTableMenu();
+  const sm = $('#paperSectionMenu');
+  if (sm && !sm.hidden) closePaperSectionMenu();
 });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closePaperTableMenu();
+  if (e.key === 'Escape') {
+    closePaperTableMenu();
+    closePaperSectionMenu();
+  }
 });
 $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
   const f = e.target.closest('[data-rse-field]');
@@ -26019,6 +26170,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.400': {
+    title: 'Düzenleme artık kâğıdın üzerinde: “Düzenle” yazısı ve sağ çekmece kalktı',
+    body:
+      'Sol iskeletteki “Düzenle” yazısı kaldırıldı; liste yalnız gezinme (satıra tıkla = o bölüme git; sıralama ↑↓ ve sürükleme ile). Bölüm ayarları kâğıdın üzerinde: fareyle bölümün üzerine gelin, başlığın sağındaki ✎ (başlık), 📝 (metin), ⤒ (yeni sayfa) ve 🗄 (arşiv) düğmelerini kullanın. Bölüme SAĞ TIK aynı işlemleri menüde verir; metne ÇİFT TIK yerinde metin kutusu açar (Kaydet/Vazgeç). Sağdaki bölüm düzenleme çekmecesi kaldırıldı. Tablo görünümü tabloya sağ tık ile yapılır. Her işlem kâğıtta, ilgili öğenin üstünde; menülerde gezinme yok. Araçlar yazdırmada görünmez.'
+  },
   '2.399': {
     title: 'Kâğıt üzerinde tablo: sağ tık menüsü ve sütun sürükleme',
     body:

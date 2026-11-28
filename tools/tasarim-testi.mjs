@@ -2754,7 +2754,8 @@ console.log('\n[2dn] Tek düzenleme yeri: yöntem/sınırlılık/sonuç (v2.345)
   check('eski form okuyucusu bu alanları yazmıyor', !/\$\('#methodText'\)/.test(app) && !/c\.conclusionText = \$\('#conclusionText'\)/.test(app));
   // 2) Yönlendirme: kullanıcı kaybolmaz — Rapor görünümüne götürür ve bölümü seçer.
   check('yönlendirme düğmeleri var', (html.match(/data-open-report-section=/g) || []).length >= 3);
-  check('yönlendirme rapor görünümünü açar', /data-open-report-section[\s\S]{0,400}switchView\('report'\)[\s\S]{0,200}setReportEditSection/.test(app));
+  // v2.400 — çekmece yok: yönlendirme rapor görünümünde metni YERİNDE açar.
+  check('yönlendirme rapor görünümünü açar', /data-open-report-section[\s\S]{0,400}switchView\('report'\)[\s\S]{0,300}startInlineText/.test(app));
   check('sekme ipucu yerini söyler', /Rapor görünümünde düzenlenir/.test(html));
   check('yönlendirme notu biçimli', /\.single-home-note\s*\{[^}]*display:\s*flex/.test(css) && /\.single-home-actions\s*\{[^}]*flex-wrap:\s*wrap/.test(css));
   // 3) Tek yazma yolu: rapor düzenleyicisi (mevcut testler de bunu korur).
@@ -3252,27 +3253,26 @@ console.log('\n[2eq] Alan görünümü: tablo · düz liste · yan yana (v2.394)
   const fn = (app.match(/function coverFieldsListHtml\([\s\S]*?\n\}/) || [''])[0] + (app.match(/function coverFieldsListXml\([\s\S]*?\n\}/) || [''])[0];
   check('yeni fonksiyonlarda ham hex yok', fn.length > 100 && !/#[0-9a-fA-F]{3,6}\b/.test(fn));
 }
-console.log('\n[2er] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
+console.log('\n[2er] Kâğıt üzerinde bölüm/tablo düzenleme (v2.400)');
 {
   const app = read('assets/app.js');
   const layer = read('assets/reading-layer.css');
-  check('bölüm ⚙ düğmesi', /class="paper-gear" data-report-gear=/.test(app));
-  check('⚙ bir button (erişilebilir)', /<button type="button" class="paper-gear"/.test(app));
-  check('tıklama ⚙ yakalar', /const gear = e\.target\.closest\('\[data-report-gear\]'\)/.test(app) && /setReportEditSection\(gear\.dataset\.reportGear\)/.test(app));
-  // v2.397 — ⚙ GENEL ayar çekmecesine GİTMEZ; bölüm düzenleyicisini (Görünüm) açar.
-  check('⚙ bölüm düzenleyicisine gider', !/goToReportSetting\(gear\.dataset\.reportGear\)/.test(app));
-  check('genel Biçim "tüm belge" der', /Bu sekmedeki ayarlar TÜM BELGEYİ etkiler/.test(app));
-  check('genel kontroller "tüm belge" etiketli', /Tablo çizgisi \(tüm belge\)/.test(app) && /Yoğunluk \(tüm belge\)/.test(app));
-  check('bölüm görünümü "yalnız bu bölüm" der', /Bu bölümün görünümü/.test(app) && /yalnız bu bölüm/.test(app));
-  check('bölümden sütun ayarı köprüsü', /data-rse-columns=/.test(app));
-  check('ayar eşlemesi tek kaynak', /const REPORT_SECTION_SETTINGS = \{/.test(app) && /function reportSectionSettings\(/.test(app));
+  // v2.400 — ⚙ ve sağ çekmece kaldırıldı; araçlar kâğıdın üzerinde.
+  check('⚙ kaldırıldı', !/data-report-gear/.test(app) && !/paper-gear/.test(app));
+  check('bölüm araçları kâğıtta', /data-sec-tool="title"/.test(app) && /data-sec-tool="page"/.test(app) && /data-sec-tool="archive"/.test(app));
+  check('bölüm sağ tık menüsü', /function openPaperSectionMenu\(/.test(app) && /data-psm="title"/.test(app));
+  check('başlık yerinde düzenlenir', /function startInlineTitle\(/.test(app));
+  check('metin yerinde (çift tık)', /function startInlineText\(/.test(app) && /addEventListener\('dblclick'/.test(app) && /data-inline-field/.test(app));
+  check('iskelet yalnız gezinme (Düzenle kalktı)', !/data-report-edit=/.test(app) && /data-report-goto=/.test(app));
+  check('bölüm seçimi çekmece açmaz', /function selectReportSection\([\s\S]{0,700}setReportEditor\(false\)/.test(app));
+  check('ayar eşlemesi + sütun köprüsü korunur', /const REPORT_SECTION_SETTINGS = \{/.test(app) && /function goToReportSetting\(/.test(app) && /data-rse-columns=/.test(app));
   check('hedef gruplar veri nitelikli', /data-rcol-group=/.test(app) && /data-rfield-group=/.test(app));
-  check('drawer içinde kaydırma (scrollIntoView yok)', /#reportSide \.drawer-body/.test(app) && !/scrollIntoView/.test(app.match(/function goToReportSetting\([\s\S]*?\n\}/)[0]));
-  check('CSS: ⚙ + vurgu', /\.report-paper \.paper-gear \{/.test(layer) && /\.rcol-group\.is-flash/.test(layer) && /@keyframes rcol-flash/.test(layer));
-  check('yazdırmada ⚙ gizli', /@media print \{[\s\S]{0,200}\.paper-gear/.test(layer));
-  // Yeni CSS ham hex taşımaz (token).
-  const blk = layer.slice(layer.indexOf('v2.395'), layer.indexOf('v2.395') + 1600);
-  check('v2.395 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
+  check('genel Biçim "tüm belge" der', /Bu sekmedeki ayarlar TÜM BELGEYİ etkiler/.test(app));
+  check('bölüm görünümü "yalnız bu bölüm" der', /Bu bölümün görünümü/.test(app) && /yalnız bu bölüm/.test(app));
+  check('CSS: araçlar + yerinde düzenleme', /\.paper-sec-tools \{/.test(layer) && /\.paper-title-input/.test(layer) && /\.paper-inline-edit/.test(layer) && /\.ptm-col/.test(layer));
+  check('yazdırmada araçlar gizli', /@media print \{[\s\S]{0,200}\.paper-sec-tools/.test(layer));
+  const blk = layer.slice(layer.indexOf('v2.400'), layer.indexOf('v2.400') + 1600);
+  check('v2.400 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }
 console.log('\n[2es] Bölüm bazında görünüm (v2.396)');
 {

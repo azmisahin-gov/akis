@@ -2371,20 +2371,20 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   check('düz liste yan yanadaki alanları korur', sideKeys.every((k) => HL.includes(k)), true);
 }
 
-// Senaryo 70: v2.395 — kâğıttan ⚙ yalnız EKRANDA; DOCX/UDF metnine girmez.
+// Senaryo 70: v2.400 — bölüm araçları yalnız EKRANDA; DOCX/UDF metnine girmez.
 {
-  console.log('\n[Senaryo 70] kâğıttan ⚙ yalnız ekranda (v2.395)');
+  console.log('\n[Senaryo 70] bölüm araçları yalnız ekranda (v2.400)');
   const c = withMaterial();
   c.report = { sections: { s5: true, speakers: true, integrity: true, fileInventory: true } };
   const H = htmlText(c), U = await udfText(c), D = await docxText(c);
-  check('HTML bölüm ⚙ taşır', H.includes('⚙'));
-  check('DOCX ⚙ taşımaz', !D.includes('⚙'));
-  check('UDF ⚙ taşımaz', !U.includes('⚙'));
-  // HTML'de gear düğmesi hedef anahtarı taşır (tıklama buna dayanır).
+  check('DOCX araç/metin simgesi taşımaz', !D.includes('⚙') && !D.includes('paper-sec-tools'));
+  check('UDF araç/metin simgesi taşımaz', !U.includes('⚙') && !U.includes('paper-sec-tools'));
+  // HTML'de bölüm araçları hedef anahtarı taşır (tıklama buna dayanır).
   setCase(c); renderReport();
   const raw = els.get('#reportPreview').innerHTML;
-  check('gear veri anahtarı taşır', /data-report-gear="s5"/.test(raw));
-  check('gear olmayan bölümde düğme yok', !/data-report-gear="s1"/.test(raw));
+  check('bölüm araçları çizilir', /paper-sec-tools/.test(raw));
+  check('araçlar bölüm anahtarını taşır', /data-sec-tool="title" data-sec-key="s5"/.test(raw));
+  check('⚙ kaldırıldı', !/data-report-gear/.test(raw));
 }
 
 // Senaryo 71: v2.396 — bölüm bazında görünüm (sayfa/tablo/yoğunluk).

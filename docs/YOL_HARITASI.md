@@ -2,11 +2,19 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.399.**
+yazılır. **Güncel sürüm: v2.400.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.400 — Kâğıt üzerinde düzenleme (TAMAMLANDI)
+
+- Sol iskeletten **“Düzenle” kaldırıldı**; iskelet yalnız gezinme (↑↓ + sürükleme sürer).
+- Bölüm başlığında **araçlar**: ✎ başlık (yerinde) · 📝 metin (yerinde) · ⤒ yeni sayfa · 🗄 arşiv.
+- **Bölüme sağ tık menüsü** (`#paperSectionMenu`); **metne çift tık** yerinde metin kutusu (`startInlineText`).
+- Bölüm tıklaması **çekmece açmaz** (`selectReportSection`), yalnız seçer/vurgular.
+- ⚙ kaldırıldı; sağ bölüm düzenleme çekmecesi kullanılmıyor (DOM'da geri uyum için durur).
 
 ## v2.399 — Kâğıt üzerinde tablo düzenleme (TAMAMLANDI)
 

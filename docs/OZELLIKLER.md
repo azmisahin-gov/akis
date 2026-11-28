@@ -1,4 +1,4 @@
-# Özellikler (v2.399 — mevcut durum)
+# Özellikler (v2.400 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1351,3 +1351,7 @@ Rapor ayarları → **Alanlar** listesinde **her tablonun** başında **Tablo ç
 ## Kâğıt üzerinde tablo düzenleme (v2.399)
 
 Rapor kâğıdında tabloya **sağ tık**: **Görünüm** (Tablo · Yan yana · Düz liste), **tablo çizgisi**, **yoğunluk**, **sütun genişlikleri** (Otomatik · Elle ayarla). “Elle ayarla” seçilince **başlık hücresinin sağ kenarını sürükleyerek** sütun genişliği ayarlanır. Her ayar yalnız o tabloya yazılır; panellerde gezinmek gerekmez. “Yan yana” sütunları iki yarıya böler; “Düz liste” her hücreyi “BAŞLIK: değer” olarak alt alta yazar. Ekran + yazdırma/PDF + Word + UYAP metnine yansır; metin/kanıt değişmez.
+
+## Kâğıt üzerinde düzenleme (v2.400)
+
+Sol iskeletteki **“Düzenle” kaldırıldı**; iskelet yalnız gezinme (tıkla = bölüme git; sıralama ↑↓/sürükleme). Bölüm ayarları **kâğıdın üzerinde**: fareyle üzerine gelince başlığın sağında **✎ başlık · 📝 metin · ⤒ yeni sayfa · 🗄 arşiv**; bölüme **sağ tık** aynı işlemleri menüde verir; metne **çift tık** yerinde metin kutusu. Sağdaki bölüm düzenleme çekmecesi kaldırıldı. Tablo görünümü tabloya sağ tık (v2.399). Araçlar yazdırmada görünmez; metin/kanıt değişmez.
