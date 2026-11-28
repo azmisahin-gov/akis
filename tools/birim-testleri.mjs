@@ -8491,5 +8491,47 @@ console.log('\n== [190] Kurumsal künye planı ve kapak eki (v2.386)');
   // Eşlemeli bölümde git true (DOM stub'ında patlamaz).
   eq('eşlemeli bölümde git true', T.goToReportSetting('s5'), true);
 }
+// [195] v2.396 — BÖLÜM BAZINDA GÖRÜNÜM (sayfa/tablo/yoğunluk).
+// Kullanıcı: "istediğim bölümün görünümünü değiştireyim." Yalnız yerleşim;
+// metin/kanıt değişmez. Genel ayarı bölüm için ezer.
+{
+  console.log('\n[195] Bölüm bazında görünüm (v2.396)');
+  const S = __schemaMod;
+  // Normalize: geçersiz değer varsayılana döner; tamamen varsayılan GİRDİ atılır.
+  const n = S.normalizeReportAppearance({
+    s5: { pageBreak: 'new', tableStyle: 'plain', density: 'compact' },
+    s6: { pageBreak: 'auto', tableStyle: 'inherit', density: 'inherit' },
+    x: { tableStyle: 'BOZUK', pageBreak: 'zzz', density: 'zzz' }
+  });
+  eq('geçerli bölüm korunur', JSON.stringify(n.s5), JSON.stringify({ pageBreak: 'new', tableStyle: 'plain', density: 'compact' }));
+  eq('tamamen varsayılan girdi atılır', 's6' in n, false);
+  eq('bozuk değer varsayılana döner (girdi atılır)', 'x' in n, false);
+  eq('boş girdi {} döner', JSON.stringify(S.normalizeReportAppearance(null)), '{}');
+  // Etkin görünüm: eksik alan genel varsayılan.
+  const c = T.emptyCaseForTest({ id: 'cApp' });
+  c.report.appearance = S.normalizeReportAppearance({ s5: { tableStyle: 'plain' } });
+  eq('etkin: tablo çizgisi özel', S.reportSectionAppearance(c, 's5').tableStyle, 'plain');
+  eq('etkin: yoğunluk genel', S.reportSectionAppearance(c, 's5').density, 'inherit');
+  eq('etkin: olmayan bölüm varsayılan', S.reportSectionAppearance(c, 's1').pageBreak, 'auto');
+  // Birleştirme: eksik dolar, çakışma sessiz ezilmez (bu dosya korunur).
+  const mine = { report: { appearance: { s5: { tableStyle: 'plain', density: 'inherit', pageBreak: 'auto' } } } };
+  const theirs = { report: { appearance: { s5: { tableStyle: 'lines', density: 'inherit', pageBreak: 'auto' }, s6: { pageBreak: 'new' } } } };
+  const plan = S.appearanceMergePlan(mine, theirs);
+  eq('birleştirme: çakışmada bu dosya korunur', plan.appearance.s5.tableStyle, 'plain');
+  eq('birleştirme: eksik bölüm alınır', plan.appearance.s6.pageBreak, 'new');
+  eq('birleştirme: çakışma bildirilir', plan.conflicts.length, 1);
+  eq('çakışma türü', plan.conflicts[0].kind, 'report-appearance');
+  eq('çakışma metni okunur (nesne değil)', typeof plan.conflicts[0].mine, 'string');
+  // Revizyon: görünüm snapshot'a girer ve geri yüklenir.
+  const c2 = T.emptyCaseForTest({ id: 'cApp2' });
+  c2.report.appearance = S.normalizeReportAppearance({ speakers: { pageBreak: 'new', tableStyle: 'plain' } });
+  const snap = T.reportSnapshot(c2);
+  eq('snapshot görünümü taşır', snap.appearance.speakers.pageBreak, 'new');
+  c2.report.appearance = {};
+  T.applyReportSnapshot(c2, snap);
+  eq('geri yükleme görünümü getirir', c2.report.appearance.speakers.tableStyle, 'plain');
+  const diff = T.reportSnapshotDiff(c2, { ...snap, appearance: {} });
+  eq('fark etiketi görünür', diff.includes('Bölüm görünümü (sayfa/tablo)'), true);
+}
 console.log(`\n== Sonuç: ${passed} geçti, ${failures} kaldı ==`);
 process.exit(failures === 0 ? 0 : 1);

@@ -750,6 +750,87 @@ export const REPORT_SECTION_DEFS = [
   { key: 'signature', def: false, group: 'close', title: 'İMZA VE ALT BİLGİ' }
 ];
 export const REPORT_SECTION_KEYS = REPORT_SECTION_DEFS.map((d) => d.key);
+// ---- Bölüm bazında GÖRÜNÜM (v2.396) ------------------------------------
+// Bir bölümün kendi görünümü genel biçimi EZEBİLİR. Değişmez sınır: yalnız
+// YERLEŞİM/görsel; metin, kanıt ve hesaplar DEĞİŞMEZ. `inherit` = genel ayarı
+// kullan (varsayılan). UDF tablo çizgisi/yoğunluğu UYAP şablonundan gelir;
+// UDF'te yalnız sayfa düzeni (yeni sayfa) uygulanır.
+export const REPORT_APPEARANCE_PAGEBREAK = ['auto', 'new', 'continue'];
+export const REPORT_APPEARANCE_TABLESTYLE = ['inherit', 'grid', 'lines', 'plain'];
+export const REPORT_APPEARANCE_DENSITY = ['inherit', 'comfortable', 'compact'];
+export const REPORT_APPEARANCE_LABELS = {
+  pageBreak: { auto: 'Genel (otomatik)', new: 'Yeni sayfadan başla', continue: 'Yeni sayfa açma' },
+  tableStyle: { inherit: 'Genel ayarı kullan', grid: 'Tam çerçeve', lines: 'Yalnız yatay çizgi', plain: 'Çizgisiz' },
+  density: { inherit: 'Genel ayarı kullan', comfortable: 'Rahat', compact: 'Sıkı' }
+};
+export function emptyReportAppearanceEntry() {
+  return { pageBreak: 'auto', tableStyle: 'inherit', density: 'inherit' };
+}
+/** Eksik/bozuk görünüm tercihini güvenli hâle getirir; varsayılanı atar. */
+export function normalizeReportAppearance(src = {}) {
+  const out = {};
+  if (!src || typeof src !== 'object') return out;
+  for (const [key, val] of Object.entries(src)) {
+    if (!val || typeof val !== 'object') continue;
+    const e = {
+      pageBreak: REPORT_APPEARANCE_PAGEBREAK.includes(val.pageBreak) ? val.pageBreak : 'auto',
+      tableStyle: REPORT_APPEARANCE_TABLESTYLE.includes(val.tableStyle) ? val.tableStyle : 'inherit',
+      density: REPORT_APPEARANCE_DENSITY.includes(val.density) ? val.density : 'inherit'
+    };
+    // Tamamen varsayılan girdi saklanmaz (gürültü/yanlış çakışma olmasın).
+    if (e.pageBreak === 'auto' && e.tableStyle === 'inherit' && e.density === 'inherit') continue;
+    out[key] = e;
+  }
+  return out;
+}
+/** Görünüm tercihini okunur metne çevirir (birleştirme çakışması için). */
+export function appearanceText(e) {
+  const x = e || emptyReportAppearanceEntry();
+  const p = REPORT_APPEARANCE_LABELS.pageBreak[x.pageBreak] || x.pageBreak;
+  const t = REPORT_APPEARANCE_LABELS.tableStyle[x.tableStyle] || x.tableStyle;
+  const d = REPORT_APPEARANCE_LABELS.density[x.density] || x.density;
+  return `Sayfa: ${p} · Tablo: ${t} · Yoğunluk: ${d}`;
+}
+/**
+ * Bölüm görünümlerini birleştirir (v2.396). Önizleme ve birleştirme AYNI
+ * kuralı kullanır. Aynı bölümde farklı dolu tercih sessizce EZİLMEZ; çakışma
+ * olarak bildirilir (bu dosyadaki korunur).
+ */
+export function appearanceMergePlan(mine, theirs) {
+  const ma = normalizeReportAppearance((mine && mine.report && mine.report.appearance) || {});
+  const ta = normalizeReportAppearance((theirs && theirs.report && theirs.report.appearance) || {});
+  const out = { ...ma };
+  const applied = [];
+  const conflicts = [];
+  for (const [k, v] of Object.entries(ta)) {
+    if (!out[k]) {
+      out[k] = v;
+      applied.push(k);
+    } else if (JSON.stringify(out[k]) !== JSON.stringify(v)) {
+      conflicts.push({
+        kind: 'report-appearance',
+        section: k,
+        field: 'appearance',
+        mine: appearanceText(out[k]),
+        theirs: appearanceText(v),
+        reason: 'aynı bölümde farklı görünüm; bu dosyadaki korunur'
+      });
+    }
+  }
+  return { appearance: normalizeReportAppearance(out), applied, conflicts };
+}
+/** Bir bölümün ETKİN görünümü (eksik alan genel varsayılan). */
+export function reportSectionAppearance(c, key) {
+  const all = c && c.report && c.report.appearance;
+  const a = all && typeof all === 'object' ? all[key] : null;
+  const base = emptyReportAppearanceEntry();
+  if (!a || typeof a !== 'object') return base;
+  return {
+    pageBreak: REPORT_APPEARANCE_PAGEBREAK.includes(a.pageBreak) ? a.pageBreak : base.pageBreak,
+    tableStyle: REPORT_APPEARANCE_TABLESTYLE.includes(a.tableStyle) ? a.tableStyle : base.tableStyle,
+    density: REPORT_APPEARANCE_DENSITY.includes(a.density) ? a.density : base.density
+  };
+}
 /** Grup anahtarı yalnız meta veridir; iskelette başlık olarak ÇİZİLMEZ. */
 export const REPORT_SECTION_GROUPS = ['front', 'scope', 'evidence', 'findings', 'measure', 'assess', 'detail', 'records', 'close'];
 // v2.380 — eski anahtar adları → yeni nötr adlar. Göç TEK yerde.
@@ -1925,6 +2006,9 @@ export function emptyCase(over = {}) {
       layout: emptyReportLayout(),
       // Tablo sütun görünürlüğü (v2.235): tümü açık.
       columns: emptyReportColumns(),
+      // Bölüm bazında görünüm (v2.396): anahtar → { pageBreak, tableStyle, density }.
+      // Yalnız yerleşim; metin/kanıt değişmez. Varsayılan: genel ayar.
+      appearance: {},
       // Ön bölüm ALAN görünürlüğü (v2.336): tümü açık.
       fields: normalizeReportFieldVisibility(),
       // Numaralandırma (v2.285): 'auto' | 'letters' | 'none'.
@@ -3226,6 +3310,8 @@ export function normalizeCase(src = {}) {
       labels: normalizeReportLabels(report.labels),
       // Tablo sütun görünürlüğü (v2.235): eksik alan açık varsayılır.
       columns: normalizeReportColumns(report.columns),
+      // Bölüm bazında görünüm (v2.396): eksik/bozuk güvenli hâle getirilir.
+      appearance: normalizeReportAppearance(report.appearance),
       // Ön bölüm alan görünürlüğü (v2.336): eksik alan açık varsayılır.
       fields: normalizeReportFieldVisibility(report.fields),
       // Numaralandırma (v2.285): bilinmeyen/boş değer 'auto' olur.
@@ -4026,6 +4112,12 @@ export function mergeCases(mine, theirs) {
     merged.report.blocks = normalizeReportBlocks(blocks);
     const layout = normalizeReportLayout(merged.report.layout || mr.layout);
     merged.report.layout = { ...layout, order: ensureFreeBlockOrder(layout.order, merged.report.blocks) };
+    // Bölüm bazında görünüm (v2.396): eksik tercih doldurulur; aynı bölümde
+    // farklı dolu tercih sessizce EZİLMEZ, çakışma bildirilir.
+    const ap = appearanceMergePlan(mine, theirs);
+    merged.report.appearance = ap.appearance;
+    for (const k of ap.applied) applied.push(`bölüm görünümü alındı: ${k}`);
+    for (const c of ap.conflicts) conflicts.push(c);
   }
 
   // Kullanıcı rapor profilleri (v2.288): id ile eklenir; aynı kimlikte farklı
@@ -4350,6 +4442,8 @@ export function compareCases(mine, theirs) {
     team: { added: [] },
     // Serbest rapor blokları (v2.287): önizleme = birleştirme kuralı.
     blocks: { added: [], conflicts: [] },
+    // Bölüm bazında görünüm (v2.396): önizleme = birleştirme kuralı.
+    appearance: { added: [], conflicts: [] },
     // Kullanıcı profilleri (v2.288): önizleme = birleştirme kuralı.
     profiles: { added: [], conflicts: [] },
     placement: { added: [] },
@@ -4404,6 +4498,14 @@ export function compareCases(mine, theirs) {
       else if (newer) out.caseFields.autoResolved.push(item);
       else out.caseFields.conflicts.push(item);
     }
+  }
+
+  // Bölüm bazında görünüm (v2.396): önizleme = birleştirme kuralı.
+  {
+    const ap = appearanceMergePlan(mine, theirs);
+    out.appearance.added = ap.applied;
+    out.appearance.conflicts = ap.conflicts;
+    for (const c of ap.conflicts) out.conflicts.push(c);
   }
 
   // Disk envanteri: yalnız YENİ kimlikler "eklenecek" sayılır.

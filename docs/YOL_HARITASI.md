@@ -2,11 +2,18 @@
 
 AKİS sürüm numarasını `MAJOR.MINOR` biçiminde tutar. Tek kaynak
 `assets/app.js` içindeki `APP_VERSION` değeridir; arayüzdeki etiket oradan
-yazılır. **Güncel sürüm: v2.395.**
+yazılır. **Güncel sürüm: v2.396.**
 
 Her güncellemede üç yer birlikte artırılır: `APP_VERSION`, bu dosyadaki ilgili
 başlık ve `CHANGELOG.md`. Ayrıntılı sürüm geçmişi:
 [`../CHANGELOG.md`](../CHANGELOG.md).
+
+## v2.396 — Bölüm bazında görünüm (TAMAMLANDI)
+
+- `case.report.appearance[key] = { pageBreak, tableStyle, density }`; yalnız yerleşim (metin/kanıt değişmez).
+- Bölüm düzenleyicide **Görünüm** grubu (3 select); genel ayarı bölüm için ezer.
+- HTML `data-sec-table-style`/`data-sec-density` + sayfa sonu; DOCX `__docxFmt` geçici override + page break; UDF yalnız sayfa sonu (tablo stili UYAP'tan).
+- Revizyon + birleştirme (`appearanceMergePlan`, çakışma sessiz ezilmez).
 
 ## v2.395 — Kâğıttan ⚙: bölüm → ayar grubu (TAMAMLANDI)
 

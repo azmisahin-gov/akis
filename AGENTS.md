@@ -2567,7 +2567,7 @@ fonksiyonlarda olduğu için birim testleriyle otomatik sınanır.
 
 ## Sürüm şeması
 
-Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.395.**
+Biçim `MAJOR.MINOR`. **Güncel sürüm: v2.396.**
 
 Tek kaynak: `assets/app.js` içindeki `APP_VERSION` sabiti. Arayüzdeki sürüm
 etiketi (`#appVersion`) bu değerden yazılır; `index.html`'de yalnızca başlangıç
@@ -10457,3 +10457,39 @@ EKLER gösterebilir. **Yama yapma; tek konu = tek sürümde temiz yeniden yap.**
 - Rapor kâğıdından **bölüm aç/kapa** (⚙ yanında göz simgesi) — istenirse.
 - Gear eşlemesini **Biçim** sekmesine de genişletmek (tablo stili/yoğunluk hedefleri).
 - Kalan rapor sunumu işleri: gerçek A4 sayfa kırılması, UDF yatay tablo genişliği.
+
+## YENİ OTURUM DEVRİ (v2.396) — Bölüm bazında görünüm
+
+| | |
+|---|---|
+| Sürüm | **v2.396** (`assets/app.js` → `APP_VERSION`) |
+| Testler | **3026 birim + 565 şema** + rapor (Senaryo 71) + sürüm + tasarım yeşil |
+| Açık konu | Yok (v2.392–v2.396 rapor-alanı turu kapandı) |
+
+### Neden
+Kullanıcı: *"Alan görünümü sadece kapağı değiştiriyor; istediğim bölümün görünümünü değiştiremiyorum."* v2.394'teki `fieldLayout` yalnız künye alanlarıydı. Doğru çözüm **bölüm bazında görünüm**.
+
+### Ne yapıldı
+- `case.report.appearance[key] = { pageBreak, tableStyle, density }`; `normalizeReportAppearance`, `reportSectionAppearance`, `appearanceMergePlan`, `appearanceText` (schema).
+- Bölüm düzenleyicide **Görünüm** grubu (3 select: sayfa düzeni / tablo çizgisi / yoğunluk). `setReportSectionAppearance`.
+- HTML: `.paper-block[data-sec-table-style|data-sec-density]` + sayfa sonu (new/continue). CSS yüksek özgüllükle genel ayarı ezer.
+- DOCX: bölüm render edilirken `__docxFmt.tableStyle/density` geçici değiştirilir, sonra geri yüklenir; sayfa sonu aynı kuralla.
+- UDF: yalnız sayfa düzeni (tablo stili/yoğunluk UYAP şablonundan — **uygulanmaz**).
+- Revizyon (`reportSnapshot.appearance`) + birleştirme/önizleme (`appearanceMergePlan`, `report-appearance` çakışması, sessiz ezme yok).
+
+### DEĞİŞMEZ KURALLAR
+1. **Görünüm yalnız yerleşim.** Metin/kanıt/hesap değişmez; üç çıktı aynı metni üretir.
+2. **`inherit` = genel ayar.** Tamamen varsayılan girdi saklanmaz (`normalizeReportAppearance`).
+3. **Bölüm ayarı genel ayarı ezer**, tersi değil. Yeni bir görünüm alanı eklerken üç çıktıyı birlikte güncelleyin; UDF sınırını belgeleyin.
+4. **Sessiz ezme yok:** birleştirmede aynı bölümde farklı görünüm `report-appearance` çakışmasıdır.
+5. **UDF tablo stili/yoğunluğu uygulanmaz** (UYAP şablonu). Sayfa düzeni uygulanır.
+
+### Ölçüm (gerçek Chromium + CDP)
+- s5 `tableStyle:'plain'` + `density:'compact'` → HTML blok nitelikleri, DOCX tablosu `tblBorders nil` + `w:after=20`; diğer bölüm etkilenmez.
+- `pageBreak:'new'` bir sayfa ekler; `'continue'` s5 varsayılan sonunu kaldırır (HTML/DOCX/UDF sayıları birebir).
+- Metin üç çıktıda aynı; UDF tablo öğeleri bölüm görünümünden etkilenmez.
+
+### Sıradaki iş (adaylar)
+- Bölüm bazında **başlık biçimi** (ortalı/sol) ve **iki sütunlu metin** (UDF desteği ölçülmeli).
+- Tablo sütun genişliğini sürükleyerek ayarlama (ağırlık modeli hazır).
+- Gerçek A4 sayfa kırılması / UDF yatay tablo genişliği.

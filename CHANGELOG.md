@@ -6,7 +6,7 @@ derlenmiştir. Önceki dosya tek bir sürüm başlığı altında yüzden fazla 
 (yaklaşık 13'ü birebir tekrar) sıralıyordu; burada aynı bilgiler konuya göre
 gruplanmıştır.
 
-**Güncel sürüm: v2.395.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
+**Güncel sürüm: v2.396.** Sürüm numarası `MAJOR.MINOR` biçimindedir ve tek
 kaynaktan gelir: `assets/app.js` içindeki `APP_VERSION`. Her güncellemede o
 değer, bu dosyadaki yeni başlık ve `docs/YOL_HARITASI.md` birlikte artırılır.
 
@@ -16,6 +16,20 @@ Kayıtlar en yeniden en eskiye doğru sıralanır. Yol haritası:
 > **v2.389'da YENİDEN YAPILDI.** Bu sürümdeki “hiç gösterme” satırı listede soluk
 > kalıyordu; kullanıcı bölümün **çalışma listesinden çıkmasını** istedi. v2.389'da
 > **Bölüm Arşivi** olarak yeniden yapıldı (aşağıdaki v2.389).
+
+## v2.396 — Bölüm bazında görünüm (sayfa · tablo çizgisi · yoğunluk)
+
+**KULLANICI NE GÖRECEK:**
+- Rapor kâğıdında **istediğiniz bölüme tıklayın** (ya da iskelette **Düzenle**). Açılan bölüm düzenleyicide artık bir **Görünüm** grubu var:
+  - **Sayfa düzeni:** Genel (otomatik) · **Yeni sayfadan başla** · **Yeni sayfa açma**
+  - **Tablo çizgisi:** Genel ayarı kullan · Tam çerçeve · Yalnız yatay çizgi · Çizgisiz
+  - **Yoğunluk:** Genel ayarı kullan · Rahat · Sıkı
+- Seçim **yalnız o bölümü** etkiler; diğer bölümler genel Biçim ayarında kalır. **Ekran + yazdırma/PDF + Word (DOCX)** çıktısına uygulanır.
+- Metin, kanıt ve hesaplar **değişmez**; yalnız yerleşim değişir. Boş ayar = genel ayar.
+
+**DÜRÜST SINIR:** UYAP (UDF) çıktısında tablo çizgisi/yoğunluk **UYAP şablonundan** gelir, uygulanmaz; **yalnız sayfa düzeni** (yeni sayfa / yeni sayfa açma) UDF’e uygulanır.
+
+**NOT:** Bu, “Alan görünümü”nün (yalnız künye) beklediğiniz karşılığıdır: **bölümün kendi görünümü**. Mevcut dosyalar etkilenmez; ayar yalnız siz seçtiğinizde yazılır. Revizyona girer; birleştirmede çakışma sessizce ezilmez.
 
 ## v2.395 — Kâğıttan ⚙: bölümden ilgili ayar grubuna atlama
 

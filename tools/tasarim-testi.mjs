@@ -3268,5 +3268,23 @@ console.log('\n[2er] Kâğıttan ⚙: bölüm → ayar grubu (v2.395)');
   const blk = layer.slice(layer.indexOf('v2.395'), layer.indexOf('v2.395') + 1600);
   check('v2.395 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
 }
+console.log('\n[2es] Bölüm bazında görünüm (v2.396)');
+{
+  const schema = read('assets/schema.js');
+  const app = read('assets/app.js');
+  const layer = read('assets/reading-layer.css');
+  check('şema: normalizasyon + etkin görünüm', /export function normalizeReportAppearance\(/.test(schema) && /export function reportSectionAppearance\(/.test(schema));
+  check('şema: birleştirme planı', /export function appearanceMergePlan\(/.test(schema) && /appearanceMergePlan\(mine, theirs\)/.test(schema));
+  check('şema: boş rapor appearance taşır', /appearance: \{\},/.test(schema) && /appearance: normalizeReportAppearance\(report\.appearance\)/.test(schema));
+  check('revizyon: görünüm snapshot + etiket', /appearance: normalizeReportAppearance\(r\.appearance\)/.test(app) && /appearance: 'Bölüm görünümü/.test(app));
+  check('düzenleyici: Görünüm grubu', /data-rse-appearance=/.test(app) && /function reportAppearanceHtml\(/.test(app) && /function setReportSectionAppearance\(/.test(app));
+  check('HTML: bölüm nitelikleri', /data-sec-table-style="\$\{esc\(ap\.tableStyle\)\}"/.test(app) && /data-sec-density="\$\{esc\(ap\.density\)\}"/.test(app));
+  check('sayfa düzeni üç çıktıda (new/continue)', /ap\.pageBreak === 'new'/.test(app) && /ap\.pageBreak === 'continue'/.test(app));
+  check('DOCX: bölüm için stil/yoğunluk geçici ezer', /__docxFmt\.tableStyle = ap\.tableStyle/.test(app) && /__docxFmt\.density = ap\.density/.test(app));
+  check('CSS: bölüm bazında çizgi/yoğunluk', /\.paper-block\[data-sec-table-style="plain"\]/.test(layer) && /\.paper-block\[data-sec-density="compact"\]/.test(layer));
+  check('CSS: görünüm paneli', /\.rse-appearance \{/.test(layer) && /\.rse-appearance-head/.test(layer));
+  const blk = layer.slice(layer.indexOf('v2.396'), layer.indexOf('v2.396') + 1500);
+  check('v2.396 CSS ham hex yok', blk.length > 200 && !/#[0-9a-fA-F]{3,6}\b/.test(blk));
+}
 console.log(`\n== Sonuç: ${failures === 0 ? 'TASARIM TUTARLI' : failures + ' SAPMA VAR'} ==`);
 process.exit(failures === 0 ? 0 : 1);

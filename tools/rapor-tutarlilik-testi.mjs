@@ -2387,5 +2387,70 @@ console.log('\n[Senaryo 64] kurumsal tasarım: üst/alt bilgi + künye + tema (v
   check('gear olmayan bölümde düğme yok', !/data-report-gear="s1"/.test(raw));
 }
 
+// Senaryo 71: v2.396 — bölüm bazında görünüm (sayfa/tablo/yoğunluk).
+{
+  console.log('\n[Senaryo 71] bölüm bazında görünüm (v2.396)');
+  const S = __schemaMod;
+  const mk = (appearance) => {
+    const c = withMaterial();
+    c.materials[0].segments = [
+      { id: 'g1', start: '00:00:00.000', end: '00:00:05.000', speaker: 'S1', text: 'merhaba', review: 'approved' },
+      { id: 'g2', start: '00:00:05.000', end: '00:00:10.000', speaker: 'S1', text: 'dünya', review: 'approved' }
+    ];
+    c.report = { sections: { s5: true, integrity: true, s6: true }, appearance };
+    return S.normalizeCase(c);
+  };
+  const rawHtml = (c) => { setCase(c); renderReport(); return els.get('#reportPreview').innerHTML; };
+  const docxRaw = async (c) => {
+    downloads.length = 0; setCase(c); await makeDocx();
+    const z = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+    return z.file('word/document.xml').async('string');
+  };
+  const udfRaw = async (c) => {
+    downloads.length = 0; setCase(c); await makeUdf();
+    const z = await JSZip.loadAsync(Buffer.from(await downloads[0].blob.arrayBuffer()));
+    return z.file('content.xml').async('string');
+  };
+
+  // (a) TABLO ÇİZGİSİ + YOĞUNLUK yalnız s5 için.
+  const cA = mk({ s5: { tableStyle: 'plain', density: 'compact' } });
+  const hA = rawHtml(cA);
+  const s5block = (hA.match(/<div class="paper-block[^"]*" data-report-key="s5"[^>]*>/) || [''])[0];
+  check('HTML: s5 blok çizgi niteliği', /data-sec-table-style="plain"/.test(s5block), s5block);
+  check('HTML: s5 blok yoğunluk niteliği', /data-sec-density="compact"/.test(s5block), s5block);
+  const otherBlock = (hA.match(/<div class="paper-block[^"]*" data-report-key="integrity"[^>]*>/) || [''])[0];
+  check('HTML: diğer bölüm nitelik taşımaz', !/data-sec-table-style|data-sec-density/.test(otherBlock), otherBlock);
+  const dA = await docxRaw(cA);
+  const s5tbl = [...dA.matchAll(/<w:tbl>[\s\S]*?<\/w:tbl>/g)].map((m) => m[0]).find((t) => t.includes('ÇÖZÜMLENEN KONUŞMA'));
+  check('DOCX: s5 tablosu çizgisiz', !!s5tbl && /<w:tblBorders><w:top w:val="nil"\/><w:left w:val="nil"/.test(s5tbl));
+  check('DOCX: s5 tablosu sıkı (w:after=20)', !!s5tbl && /w:after="20"/.test(s5tbl));
+  const uA = await udfRaw(cA);
+
+  // (b) SAYFA DÜZENİ: 'new' yeni sayfa ekler; 'continue' varsayılanı kaldırır.
+  const countHtml = (h) => (h.match(/paper-page-break/g) || []).length;
+  const countDocx = (d) => (d.match(/w:type="page"/g) || []).length;
+  const countUdf = (u) => (u.match(/<page-break>/g) || []).length;
+  const cS5Auto = mk({});
+  const cS5Cont = mk({ s5: { pageBreak: 'continue' } });
+  const cSpkNew = mk({ integrity: { pageBreak: 'new' } });
+  const cSpkAuto = mk({});
+  // UDF tablo çizgisi/yoğunluğu UYAP şablonundan gelir: bölüm görünümü
+  // DEĞİŞTİRMEZ (dürüst sınır). Tablo öğeleri birebir aynı kalır.
+  const uAuto = await udfRaw(cS5Auto);
+  const tblOf = (u) => (u.match(/<table [^>]*>/g) || []).join('|');
+  check('UDF: tablo stili bölüm görünümünden etkilenmez', tblOf(uA) === tblOf(uAuto));
+  check('HTML: continue s5 varsayılan sonunu kaldırır', countHtml(rawHtml(cS5Cont)) === countHtml(rawHtml(cS5Auto)) - 1, `${countHtml(rawHtml(cS5Cont))} vs ${countHtml(rawHtml(cS5Auto))}`);
+  check('HTML: new bölüm yeni sayfa ekler', countHtml(rawHtml(cSpkNew)) === countHtml(rawHtml(cSpkAuto)) + 1);
+  check('DOCX: continue s5 varsayılan sonunu kaldırır', countDocx(await docxRaw(cS5Cont)) === countDocx(await docxRaw(cS5Auto)) - 1);
+  check('DOCX: new bölüm yeni sayfa ekler', countDocx(await docxRaw(cSpkNew)) === countDocx(await docxRaw(cSpkAuto)) + 1);
+  check('UDF: continue s5 varsayılan sonunu kaldırır', countUdf(await udfRaw(cS5Cont)) === countUdf(await udfRaw(cS5Auto)) - 1);
+  check('UDF: new bölüm yeni sayfa ekler', countUdf(await udfRaw(cSpkNew)) === countUdf(await udfRaw(cSpkAuto)) + 1);
+
+  // (c) METİN DEĞİŞMEZ: görünüm yalnız yerleşim.
+  const H = htmlText(cA), U = await udfText(cA), D = await docxText(cA);
+  checkShared('görünüm metni değiştirmez', 'merhaba', H, U, D);
+  checkShared('görünüm ikinci bölüm metni', 'dünya', H, U, D);
+}
+
 console.log(`\n== Sonuç: ${failures === 0 ? 'TÜM KONTROLLER GEÇTİ' : failures + ' KONTROL KALDI'} ==`);
 process.exit(failures === 0 ? 0 : 1);

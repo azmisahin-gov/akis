@@ -4834,3 +4834,19 @@ body.report-full #reportSectionEditor.drawer { transform: translateX(102%); }
 @media (prefers-reduced-motion: reduce) {
   .report-side .rcol-group.is-flash { animation: none; }
 }
+
+/* v2.396 — BÖLÜM BAZINDA GÖRÜNÜM. Genel biçimi YALNIZ o bölüm için ezer.
+   Yalnız görsel: metin, kanıt ve hesaplar değişmez. Genel kurallardan daha
+   yüksek özgüllük (data-sec-* niteliği) ile kazanır. */
+.report-paper .paper-block[data-sec-table-style="lines"] .paper-table th,
+.report-paper .paper-block[data-sec-table-style="lines"] .paper-table td { border-left: 0; border-right: 0; }
+.report-paper .paper-block[data-sec-table-style="plain"] .paper-table { border-top: 0; border-bottom: 0; }
+.report-paper .paper-block[data-sec-table-style="plain"] .paper-table th,
+.report-paper .paper-block[data-sec-table-style="plain"] .paper-table td { border: 0; }
+.report-paper .paper-block[data-sec-density="compact"] .paper-table th,
+.report-paper .paper-block[data-sec-density="compact"] .paper-table td { padding-left: 5px; padding-right: 5px; padding-top: 3px; padding-bottom: 3px; }
+/* Bölüm düzenleyicideki "Görünüm" grubu. */
+.rse-appearance { margin: 8px 0; padding: 8px; border: 1px solid var(--line); border-radius: var(--r-sm, 6px); }
+.rse-appearance-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.rse-appearance-head small { color: var(--ink-3); font-size: var(--fs-2xs); }
+.rse-appearance-field { margin: 4px 0; }

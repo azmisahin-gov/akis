@@ -124,6 +124,12 @@ import {
   REPORT_COVER_LAYOUT_LABEL,
   REPORT_FIELD_LAYOUTS,
   REPORT_FIELD_LAYOUT_LABEL,
+  REPORT_APPEARANCE_PAGEBREAK,
+  REPORT_APPEARANCE_TABLESTYLE,
+  REPORT_APPEARANCE_DENSITY,
+  REPORT_APPEARANCE_LABELS,
+  reportSectionAppearance,
+  normalizeReportAppearance,
   REPORT_TABLE_THEMES,
   REPORT_TABLE_THEME_LABEL,
   REPORT_ORIENTATION_LABEL,
@@ -177,15 +183,15 @@ import {
   caseWithoutNotebook,
   notebooksForSegment,
   NOTEBOOK_TEXT_MAX
-} from './schema.js?v=2.395';
-import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.395';
+} from './schema.js?v=2.396';
+import { moveInList, moveKeyTo, moveTreeBlock, mainSectionNumbers, revisionDigest, compareRevisionGroups } from './report-model.js?v=2.396';
 
 const $ = (s, root = document) => root.querySelector(s);
 const $$ = (s, root = document) => [...root.querySelectorAll(s)];
 // TEK SÜRÜM KAYNAĞI. Arayüzdeki sürüm etiketi buradan okunur. Her sürüm
 // güncellemesinde yalnızca bu satır ve CHANGELOG başlığı değiştirilir; belgeler
 // bu numaraya göre hizalanır. Sürüm şeması: MAJOR.MINOR (bkz. docs/YOL_HARITASI.md).
-const APP_VERSION = '2.395';
+const APP_VERSION = '2.396';
 // Legacy storage key is intentionally retained so existing MİHENK work remains available after the AKİS update.
 const STORE_KEY = 'mihenk.pro.cases.v1';
 const DB_NAME = 'mihenk-pro-assets';
@@ -15024,10 +15030,46 @@ function reportSectionInspectorKey(key) {
 }
 // v2.375 — ÇEKMEDEKİ ORTAK BÖLÜM İŞLEMLERİ: başlık düzenle + EKLER'e taşı/Gövdeye
 // al. Satırdaki ✎/EK/G düğmeleri kaldırıldı; işlev buraya taşındı (tek yer).
+// v2.396 — BÖLÜM GÖRÜNÜMÜ: yalnız yerleşim (sayfa düzeni · tablo çizgisi ·
+// yoğunluk). Metin ve kanıt DEĞİŞMEZ. `Genel ayarı kullan` = dosya biçimi.
+function reportAppearanceSelect(c, key, field, values) {
+  const cur = reportSectionAppearance(c, key);
+  const labels = REPORT_APPEARANCE_LABELS[field] || {};
+  const opts = values
+    .map((v) => `<option value="${esc(v)}"${cur[field] === v ? ' selected' : ''}>${esc(labels[v] || v)}</option>`)
+    .join('');
+  return `<label class="rse-field rse-appearance-field"><span>${esc(
+    { pageBreak: 'Sayfa düzeni', tableStyle: 'Tablo çizgisi', density: 'Yoğunluk' }[field] || field
+  )}</span><select data-rse-appearance="${esc(field)}" data-rse-key="${esc(key)}">${opts}</select></label>`;
+}
+function reportAppearanceHtml(c, key) {
+  return (
+    `<div class="rse-appearance">` +
+    `<div class="rse-appearance-head"><b>Görünüm</b><small>bu bölüm</small></div>` +
+    reportAppearanceSelect(c, key, 'pageBreak', REPORT_APPEARANCE_PAGEBREAK) +
+    reportAppearanceSelect(c, key, 'tableStyle', REPORT_APPEARANCE_TABLESTYLE) +
+    reportAppearanceSelect(c, key, 'density', REPORT_APPEARANCE_DENSITY) +
+    `<p class="rtech-hint">Yalnız yerleşim; metin ve kanıt değişmez. Tablo seçenekleri bölümde tablo varsa görünür. <b>UDF</b>'te tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır.</p>` +
+    `</div>`
+  );
+}
+function setReportSectionAppearance(key, field, value) {
+  const c = currentCase();
+  if (!c) return;
+  c.report = c.report || {};
+  const all = normalizeReportAppearance(c.report.appearance);
+  const cur = { ...reportSectionAppearance(c, key), ...(all[key] || {}) };
+  cur[field] = value;
+  all[key] = cur;
+  c.report.appearance = normalizeReportAppearance(all);
+  persist();
+  renderReport();
+}
 function reportSectionActionsHtml(c, key) {
   return (
     `<div class="rse-actions">` +
     `<label class="rse-field rse-title"><span>Bölüm başlığı</span><input type="text" maxlength="160" data-rse-title="${esc(key)}" value="${esc(reportSectionTitle(c, key))}" aria-label="Bölüm başlığı" title="Başlığı değiştirip Enter'a basın"></label>` +
+    reportAppearanceHtml(c, key) +
     `<div class="rse-archive-action"><button type="button" class="mini-button" data-rse-archive="${esc(key)}" title="Bölümü arşive alır: raporda ve üst yazıda kullanılmaz. Veri SİLİNMEZ; Arşiv panelinden geri alınır.">Bu bölümü arşive al</button></div>` +
     `</div>`
   );
@@ -17108,6 +17150,8 @@ function reportSnapshot(c) {
     blocks: normalizeReportBlocks(r.blocks),
     annexPlacement: normalizeAnnexPlacement(r.annexPlacement),
     columns: normalizeReportColumns(r.columns),
+    // Bölüm bazında görünüm (v2.396): revizyona girer.
+    appearance: normalizeReportAppearance(r.appearance),
     // Ön bölüm ALAN görünürlüğü (v2.336): revizyona girer.
     fields: normalizeReportFieldVisibility(r.fields),
     includeEmbedded: !!r.includeEmbedded,
@@ -17131,6 +17175,7 @@ const REPORT_SNAPSHOT_LABELS = {
   blocks: 'Serbest bölümler',
   annexPlacement: 'Bölüm → EK yerleşimi',
   columns: 'Rapor alanları (tablo sütunları)',
+  appearance: 'Bölüm görünümü (sayfa/tablo)',
   fields: 'Künye/özet alan görünürlüğü',
   includeEmbedded: 'Gömülü metadata',
   speakerMethod: 'Konuşmacı yöntem notu',
@@ -17163,6 +17208,7 @@ function applyReportSnapshot(c, snap) {
   if (snap.blocks) r.blocks = normalizeReportBlocks(snap.blocks);
   if (snap.annexPlacement) r.annexPlacement = normalizeAnnexPlacement(snap.annexPlacement);
   if (snap.columns) r.columns = normalizeReportColumns(snap.columns);
+  if (snap.appearance) r.appearance = normalizeReportAppearance(snap.appearance);
   if (snap.fields) r.fields = normalizeReportFieldVisibility(snap.fields);
   r.includeEmbedded = !!snap.includeEmbedded;
   r.speakerMethod = !!snap.speakerMethod;
@@ -18815,8 +18861,16 @@ function renderReport() {
   };
   // Her bölüm `data-report-key` ile sarılır (v2.231): belgede tıklayınca
   // odaklı düzenleyici açılır. `display:contents` sayesinde yerleşim değişmez.
-  const wrapBlock = (key, piece) =>
-    piece ? `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}">${withSectionGear(key, piece)}</div>` : '';
+  // v2.396 — bölüm bazında görünüm: tablo çizgisi/yoğunluk yalnız o bölümün
+  // tablolarına uygulanır (CSS, data-sec-*). Genel ayardan farklıysa yazılır.
+  const wrapBlock = (key, piece) => {
+    if (!piece) return '';
+    const ap = reportSectionAppearance(c, key);
+    const attrs = [];
+    if (ap.tableStyle !== 'inherit') attrs.push(`data-sec-table-style="${esc(ap.tableStyle)}"`);
+    if (ap.density !== 'inherit') attrs.push(`data-sec-density="${esc(ap.density)}"`);
+    return `<div class="paper-block${reportEditKey === key ? ' is-selected' : ''}" data-report-key="${esc(key)}"${attrs.length ? ' ' + attrs.join(' ') : ''}>${withSectionGear(key, piece)}</div>`;
+  };
   let html = '';
   for (const key of REPORT_FRONT_KEYS) {
     if (!(on(key) && front[key])) continue;
@@ -18838,7 +18892,16 @@ function renderReport() {
     if (!piece) continue;
     // v2.382 — yalnız ANA bölümler (s1–s6) ve kayıt bloğu yeni sayfadan başlar;
     // kısa destek bölümleri akar (gereksiz boş sayfa/boşluk olmaz).
-    if (REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) html += '<div class="paper-page-break"></div>';
+    // v2.396 — bölüm görünümü bu kuralı EZEBİLİR: 'new' zorla yeni sayfa,
+    // 'continue' yeni sayfa açmaz (varsayılan 'auto' = yukarıdaki kural).
+    {
+      const ap = reportSectionAppearance(c, key);
+      const isNew = ap.pageBreak === 'new';
+      const noBreak = ap.pageBreak === 'continue';
+      if (!firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) {
+        html += '<div class="paper-page-break"></div>';
+      }
+    }
     html += wrapBlock(key, piece);
     firstBody = false;
   }
@@ -19581,8 +19644,19 @@ function docxXml(c) {
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
     const compactDocx = !!c.__annexDoc; // ek belgesi (v2.324)
-    if (!compactDocx && REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) body += pageBreakPara;
+    // v2.396 — bölüm görünümü: sayfa düzeni + (varsa) tablo çizgisi/yoğunluk
+    // yalnız bu bölümün tablolarını etkiler. Sonra genel ayar geri yüklenir.
+    const ap = reportSectionAppearance(c, key);
+    const isNew = ap.pageBreak === 'new';
+    const noBreak = ap.pageBreak === 'continue';
+    if (!compactDocx && !firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) body += pageBreakPara;
+    const prevStyle = __docxFmt.tableStyle;
+    const prevDensity = __docxFmt.density;
+    if (ap.tableStyle !== 'inherit') __docxFmt.tableStyle = ap.tableStyle;
+    if (ap.density !== 'inherit') __docxFmt.density = ap.density;
     body += render();
+    __docxFmt.tableStyle = prevStyle;
+    __docxFmt.density = prevDensity;
     firstBody = false;
   }
   if (on('signature')) body += blocks.signature();
@@ -20490,7 +20564,14 @@ async function udfDocument(opts = {}) {
         : null);
     if (!render || !reportBlockRenders(c, key)) continue;
     const compact = !!c.__annexDoc; // ek belgesi: bölüm başına sayfa sonu yok (v2.324)
-    if (!compact && REPORT_PAGE_BREAK_KEYS.has(key) && !firstBody) el.push(pageBreak());
+    // v2.396 — bölüm görünümü: UDF'te YALNIZ sayfa düzeni uygulanır (tablo
+    // çizgisi/yoğunluk UYAP şablonundan gelir; uygulanmaz — dürüst sınır).
+    {
+      const ap = reportSectionAppearance(c, key);
+      const isNew = ap.pageBreak === 'new';
+      const noBreak = ap.pageBreak === 'continue';
+      if (!compact && !firstBody && (isNew || (!noBreak && REPORT_PAGE_BREAK_KEYS.has(key)))) el.push(pageBreak());
+    }
     render();
     firstBody = false;
   }
@@ -21098,7 +21179,9 @@ function renderMergePreview(cmp) {
                   ? `Konuşmacı eşleştirmesi · ${c.materialName || ''} · ${c.speakerName || ''}`
                   : c.kind === 'approval-not-attributed' || c.kind === 'unattributed-approval'
                     ? `Aktarılmayan onay · ${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`
-                    : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
+                    : c.kind === 'report-appearance'
+                      ? `Bölüm görünümü · ${c.section || ''}`
+                      : `${c.materialName || ''} · bölüm ${(c.segmentId || '').slice(-6)}`;
         return `<div class="merge-conflict">
         <div class="merge-conflict-head">${esc(head)}</div>
         ${c.reason ? `<p class="merge-reason">${esc(c.reason)}</p>` : ''}
@@ -24086,6 +24169,12 @@ $('#reportSectionEditorFields')?.addEventListener('input', (e) => {
 });
 $('#reportSectionEditorFields')?.addEventListener('change', (e) => {
   // v2.375 — çekmecedeki başlık düzenleme.
+  // v2.396 — BÖLÜM GÖRÜNÜMÜ: select değişimi (sayfa/tablo/yoğunluk).
+  const apSel = e.target.closest('[data-rse-appearance]');
+  if (apSel) {
+    setReportSectionAppearance(apSel.dataset.rseKey, apSel.dataset.rseAppearance, apSel.value);
+    return;
+  }
   const tt = e.target.closest('[data-rse-title]');
   if (tt) {
     setReportSectionTitle(tt.dataset.rseTitle, tt.value);
@@ -25633,6 +25722,11 @@ function renderVersionHistory() {
       .join('');
 }
 const VERSION_NOTICES = {
+  '2.396': {
+    title: 'Bölüm bazında görünüm: istediğiniz bölümün sayfa/tablo görünümünü değiştirin',
+    body:
+      'Rapor kâğıdında bir bölüme tıklayın (ya da iskelette “Düzenle”): açılan bölüm düzenleyicide artık “Görünüm” grubu var. Sayfa düzeni (Genel / Yeni sayfadan başla / Yeni sayfa açma), tablo çizgisi (Genel / Tam çerçeve / Yalnız yatay / Çizgisiz) ve yoğunluk (Genel / Rahat / Sıkı) seçilebilir. Seçim YALNIZ o bölümü etkiler; diğer bölümler genel Biçim ayarında kalır. Ekran, yazdırma/PDF ve Word çıktısına uygulanır; metin, kanıt ve hesaplar DEĞİŞMEZ. UYAP (UDF) çıktısında tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır. Mevcut dosyalar etkilenmez; ayar yalnız siz seçtiğinizde yazılır.'
+  },
   '2.395': {
     title: 'Rapor ayarları: 7 yeni tablo, tek genişlik modeli, alan görünümü ve bölümden ⚙',
     body:

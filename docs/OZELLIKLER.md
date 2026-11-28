@@ -1,4 +1,4 @@
-# Özellikler (v2.395 — mevcut durum)
+# Özellikler (v2.396 — mevcut durum)
 
 Bu belge, AKİS'in **güncel sürümünde çalışan** özellikleri listeler. Yol haritası
 ve tamamlanma durumu için [`YOL_HARITASI.md`](YOL_HARITASI.md) dosyasına bakın.
@@ -1335,3 +1335,7 @@ Rapor ayarları → **Biçim → Alan görünümü**. Künye alanları **Yan yan
 ## Kâğıttan ⚙: bölüm → ayar grubu (v2.395)
 
 Rapor kâğıdında ayarı olan bölüm başlıklarında **⚙** düğmesi vardır. Basınca sağ **rapor ayarları** çekmecesi açılır, ilgili sekme seçilir ve o bölümün ayar grubu (künye alanları ya da tablo sütunları) kısa süre vurgulanır. Eşlemesi olmayan bölümde ⚙ çizilmez. ⚙ yalnız ekranda; yazdırma/PDF, DOCX ve UDF çıktısında görünmez.
+
+## Bölüm bazında görünüm (v2.396)
+
+Rapor kâğıdında bir bölüme tıklayın (veya iskelette **Düzenle**): bölüm düzenleyicide **Görünüm** grubu açılır. **Sayfa düzeni** (Genel / Yeni sayfadan başla / Yeni sayfa açma), **tablo çizgisi** (Genel / Tam çerçeve / Yalnız yatay / Çizgisiz) ve **yoğunluk** (Genel / Rahat / Sıkı) yalnız o bölüm için genel biçimi ezer. Ekran + yazdırma/PDF + Word çıktısına uygulanır; metin, kanıt ve hesaplar değişmez. UDF'te tablo çizgisi/yoğunluk UYAP şablonundan gelir; yalnız sayfa düzeni uygulanır. Revizyona girer; birleştirmede çakışma sessizce ezilmez (`appearanceMergePlan`).
